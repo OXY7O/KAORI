@@ -22,7 +22,7 @@
                 </p>
             </div>
             {% if bucket_table %}
-                {{ table_label.metadata_label(bucket_table.pagination.total_items ~ ' Buckets', 'database', size='compact') }}
+                {{ table_label.metadata_label(bucket_table.pagination.total_items ~ ' Buckets', size='compact') }}
             {% endif %}
         </div>
         {{ loading_bar.render('object-storage-bucket-table-loading-indicator', label='Refreshing Bucket Capacity Records' if page_key == 'capacity' else ('Refreshing Bucket Request Path Records' if page_key == 'performance' else 'Refreshing Consumer Records')) }}

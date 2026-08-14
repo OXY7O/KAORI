@@ -199,3 +199,46 @@ After normalization, the full Analytics contract suite passes **271/271** and th
 ## Lock condition
 
 Analytics remains **TARGETED FIX — AUTHORITATIVE VALIDATION PENDING** until all L0–L7 suites, browser review (Light, Dark, 14-inch, narrow viewport), and `bash scripts/quality_gate.sh --all` are green. No version bump occurs during this domain review.
+
+## 2026-08-15 page-copy and boundary audit
+
+This pass rechecked all eight Kubernetes Analytics workspaces after the Kubernetes Inventory/Governance/Operations review. The existing dependency blocker presentation remains the accepted baseline and was not redesigned.
+
+### Copy refinement
+
+The review keeps user-facing copy concise while making the worker/materialization boundary explicit where a full-page pending or blocked state needs explanatory text:
+
+- Analytics Overview now names resource utilization, workload posture, storage, forecasts, top consumers, and alert signals.
+- Capacity pending/blocked copy describes shared capacity, allocation, and headroom results.
+- Storage pending/blocked copy states that committed operational snapshots are prepared by the analytics worker and reused across viewers.
+- Workload pending/blocked copy states that committed quota, runtime, and resource snapshots are worker-prepared and reused across viewers.
+- Forecast pending/blocked copy is shorter and explicitly keeps horizon, model, and resource tabs presentation-only.
+
+### Runtime and ownership findings
+
+The audit reconfirmed the current release boundaries:
+
+- all Kubernetes Analytics full-page and fragment routes remain protected by `analytics.view`;
+- route modules do not issue Prometheus/Thanos or Alertmanager queries directly;
+- expensive analytics evidence remains worker-owned and is read through committed materialized snapshots;
+- stale/previous committed evidence can remain visible while source readiness is degraded, with source-warning evidence kept separate from the committed payload;
+- Overview lazy-loads one operational domain at a time instead of materializing every hidden tab on the initial request;
+- Utilization summary, trend, and node detail retain separate materialization ownership so hidden detail tabs do not expand the initial provider workload;
+- Forecast snapshot identity remains limited to committed-history dimensions (`cluster`, `namespace`, `history_window`); horizon, model, and resource-tab changes are local reprojection/presentation state;
+- Top Consumers and Alerts HTMX fragments retain their full-page navigation boundary and do not bypass dependency evaluation;
+- missing evidence remains `Unknown`/`N/A` rather than synthetic zero or Healthy.
+
+### Template and release integrity
+
+Source audit evidence for this pass:
+
+- 85 Python modules under `app/analytics/kubernetes` parse successfully;
+- 395 literal Analytics template references resolve with zero missing targets;
+- Kubernetes Analytics contract suite: **298 passed**;
+- `verify_analytics_final_lock.py`: **PASS**;
+- Hero standard: **PASS**;
+- Dark Mode standard: **PASS**.
+
+The shared Analytics compact-label verifier also exposed two pre-existing Object Storage Analytics presentation drifts during this pass: a count-only bucket metadata badge still carried a database icon, and Operational Metrics Readiness passed an icon into the compact status label. Both were normalized to the shared text-first compact-label standard so the release-wide Analytics verifier remains green.
+
+Functional page-flow import evidence still requires the project devcontainer because the audit runtime does not include Flask. The dependency blocker design itself remains unchanged by this pass.

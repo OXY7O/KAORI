@@ -21,7 +21,7 @@ from app.rbac.decorators import permission_required
 _PAGE = {
     'dataset_key': 'analytics.storage',
     'title': 'Storage Analysis',
-    'description': 'Storage analytics are prepared by the worker and shared across concurrent viewers.',
+    'description': 'Storage analytics are prepared by the analytics worker and reused across viewers from committed operational snapshots.',
     'icon': 'database',
     'page_id': 'storage-page',
 }

@@ -22,7 +22,7 @@ from app.rbac.decorators import permission_required
 _PAGE = {
     'dataset_key': 'analytics.workload',
     'title': 'Workload Analysis',
-    'description': 'Workload analytics are prepared by the worker and reused by every viewer.',
+    'description': 'Workload analytics are prepared by the analytics worker and reused across viewers from committed quota, runtime, and resource snapshots.',
     'icon': 'boxes',
     'page_id': 'workload-page',
 }

@@ -4,7 +4,7 @@
         <div class="{{ page_hero.content_classes() }}">
             {% call page_hero.intro('container', 'Object Storage Inventory', 'container') %}
                 <h1 class="{{ page_hero.title_classes() }}">Buckets &amp; Containers</h1>
-                <p class="mt-2 {{ page_hero.description_classes() }}">Review provider-neutral object-storage namespaces from committed inventory snapshots.</p>
+                <p class="mt-2 {{ page_hero.description_classes() }}">Review provider-neutral object-storage namespaces, asset coverage, and relationships from committed inventory snapshots.</p>
                 <div class="{{ page_hero.metadata_row_classes() }}">
                     {% if inventory.setup.is_blocked %}
                         {{ page_hero.meta_label('database-backup', 'Committed Inventory') }}
@@ -21,7 +21,7 @@
             <aside class="{{ page_hero.aside_classes() }}"
                    aria-label="Object Storage buckets and containers availability">
                 {% set storage_blocked_scope = 'Inventory Readiness' %}
-                {% set storage_blocked_info = 'Register a Storage integration before KAORI can collect committed bucket and container inventory.' %}
+                {% set storage_blocked_info = 'Register a Storage integration to collect bucket and container inventory.' %}
                 {% include 'inventory/object_storage/components/_hero_blocked_context.html' %}
             </aside>
         {% else %}

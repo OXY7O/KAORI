@@ -21,7 +21,7 @@
             <aside class="{{ page_hero.aside_classes() }}"
                    aria-label="Object Storage systems availability">
                 {% set storage_blocked_scope = 'Inventory Readiness' %}
-                {% set storage_blocked_info = 'Register a Storage integration before KAORI can collect committed Object Storage system inventory.' %}
+                {% set storage_blocked_info = 'Register a Storage integration to collect system inventory.' %}
                 {% include 'inventory/object_storage/components/_hero_blocked_context.html' %}
             </aside>
         {% else %}
