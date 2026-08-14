@@ -1,6 +1,7 @@
 {% import "components/loading_bar.html" as loading_bar %}
 {% import "components/table_label.html" as table_label %}
 {% import "components/table_primitives.html" as table_ui %}
+{% import "components/progress_bar.html" as progress_bar %}
 {% import "analytics/components/_record_pagination.html" as record_pagination %}
 <section id="object-storage-bucket-table-panel"
          class="{{ analysis_surface.evidence_shell_classes() if analysis_surface is defined else table_ui.block_classes() }}">
@@ -8,17 +9,21 @@
         <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div>
                 <h2 class="text-lg font-semibold text-content-primary">
-                    {{ 'Consumer Records' if page_key == 'top_consumers' else 'Bucket Consumption Evidence' }}
+                    {% if page_key == 'top_consumers' %}Consumer Records{% elif page_key == 'capacity' %}Bucket Capacity Records{% else %}Bucket Consumption Evidence{% endif %}
                 </h2>
                 <p class="mt-1 max-w-4xl text-sm leading-6 text-content-muted">
-                    Operational metrics are preferred when available. Committed Inventory is used only as an explicit field-level fallback, and the owning source remains visible beside each affected value.
+                    {% if page_key == 'capacity' %}
+                        Review bucket usage, share of system consumption, object population, and known quota pressure. Operational metrics are preferred; committed Inventory remains an explicit field-level fallback.
+                    {% else %}
+                        Operational metrics are preferred when available. Committed Inventory is used only as an explicit field-level fallback, and the owning source remains visible beside each affected value.
+                    {% endif %}
                 </p>
             </div>
             {% if bucket_table %}
                 {{ table_label.metadata_label(bucket_table.pagination.total_items ~ ' Buckets', 'database', size='compact') }}
             {% endif %}
         </div>
-        {{ loading_bar.render('object-storage-bucket-table-loading-indicator', label='Refreshing Bucket Consumption Evidence') }}
+        {{ loading_bar.render('object-storage-bucket-table-loading-indicator', label='Refreshing Bucket Capacity Records' if page_key == 'capacity' else 'Refreshing Bucket Consumption Evidence') }}
     </header>
 
     {% if dependency_blocker %}
@@ -104,6 +109,9 @@
                                         {{ table_label.status_label('Within Quota', 'normal') }}
                                     {% endif %}
                                 </div>
+                                {% if row.quota_utilization is not none %}
+                                    {{ progress_bar.semantic_bar(row.quota_utilization, row.quota_tone, track_classes='mt-2 h-1.5 overflow-hidden rounded-full bg-surface-hover', label=row.name ~ ' quota utilization') }}
+                                {% endif %}
                                 <p class="mt-1 text-xs text-content-muted">{{ row.quota_display }} quota</p>
                                 <div class="mt-1">{{ table_label.metadata_label(row.quota_source, 'gauge', size='compact') }}</div>
                             </td>

@@ -159,6 +159,76 @@ def build_bucket_analysis(rows: list[dict[str, Any]], total_usage: float | None)
     }
 
 
+def build_capacity_usage_view(
+    *,
+    capacity_total: float | None,
+    usage_total: float | None,
+    capacity_free: float | None,
+    capacity_free_source: str,
+    utilization: float | None,
+    trend_summary: dict[str, Any],
+    bucket_analysis: dict[str, Any],
+) -> dict[str, Any]:
+    bucket_count = int(bucket_analysis.get('bucket_count') or 0)
+    quota_known_count = int(bucket_analysis.get('quota_known_count') or 0)
+    quota_pressure_count = int(bucket_analysis.get('quota_pressure_count') or 0)
+    critical_quota_count = int(bucket_analysis.get('critical_quota_count') or 0)
+    warning_quota_count = max(0, quota_pressure_count - critical_quota_count)
+    within_quota_count = max(0, quota_known_count - quota_pressure_count)
+    quota_coverage_percent = (
+        quota_known_count / bucket_count * 100.0 if bucket_count > 0 else None
+    )
+    if quota_known_count == 0:
+        quota_status = 'No Quota Evidence'
+        quota_tone = 'unknown'
+    elif critical_quota_count:
+        quota_status = 'Critical Quota Pressure'
+        quota_tone = 'critical'
+    elif quota_pressure_count:
+        quota_status = 'Quota Pressure'
+        quota_tone = 'warning'
+    else:
+        quota_status = 'Within Known Quotas'
+        quota_tone = 'normal'
+
+    capacity_evidence_available = capacity_total is not None and usage_total is not None
+    trend_sample_count = int(trend_summary.get('sample_count') or 0)
+    trend_evidence_available = trend_sample_count >= 2
+    growth_per_day = trend_summary.get('growth_per_day')
+    growth_capacity_percent = (
+        float(growth_per_day) / capacity_total * 100.0
+        if growth_per_day is not None and capacity_total is not None and capacity_total > 0
+        else None
+    )
+    return {
+        'capacity_evidence_available': capacity_evidence_available,
+        'headroom_source': capacity_free_source,
+        'utilization': utilization,
+        'utilization_display': format_percent(utilization),
+        'utilization_tone': utilization_tone(utilization),
+        'trend_evidence_available': trend_evidence_available,
+        'trend_sample_count': trend_sample_count,
+        'growth_per_day_display': trend_summary.get('growth_per_day_display') or 'N/A',
+        'growth_capacity_percent': growth_capacity_percent,
+        'growth_capacity_percent_display': format_percent(growth_capacity_percent),
+        'trend_direction_label': trend_summary.get('direction_label') or 'Unknown',
+        'trend_tone': trend_summary.get('tone') or 'unknown',
+        'window_delta_display': trend_summary.get('delta_display') or 'N/A',
+        'window_delta_percent_display': trend_summary.get('delta_percent_display') or 'N/A',
+        'quota_coverage_display': format_percent(quota_coverage_percent),
+        'quota_known_count': quota_known_count,
+        'quota_unknown_count': int(bucket_analysis.get('quota_unknown_count') or 0),
+        'quota_within_count': within_quota_count,
+        'quota_warning_count': warning_quota_count,
+        'quota_critical_count': critical_quota_count,
+        'quota_status': quota_status,
+        'quota_tone': quota_tone,
+        'top_usage_share_display': bucket_analysis.get('top_usage_share_display') or 'N/A',
+        'concentration_label': bucket_analysis.get('concentration_label') or 'Unknown',
+        'concentration_tone': bucket_analysis.get('concentration_tone') or 'unknown',
+    }
+
+
 def build_posture_view(posture: OperationalPosture) -> dict[str, str]:
     return {
         'status': posture.status,

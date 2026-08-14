@@ -20,7 +20,7 @@
         {% set cards = [
             ('Current Usage', metrics.usage_total_display, 'Operational usage evidence', 'database'),
             ('Utilization', metrics.utilization_display, 'Used / usable capacity', 'gauge'),
-            ('Remaining Headroom', metrics.headroom_display, metrics.headroom_source, 'circle-gauge'),
+            ('Remaining Headroom', metrics.capacity_free_display, metrics.capacity_free_source, 'circle-gauge'),
             ('Request Rate', metrics.request_rate_display, 'Current S3 request demand', 'activity'),
             ('Error Ratio', metrics.error_ratio_display, 'Errors relative to request rate', 'circle-alert')
         ] %}

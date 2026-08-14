@@ -161,3 +161,46 @@ def test_object_storage_capacity_presentation_uses_kaori_thresholds() -> None:
     assert presentation.utilization_tone(84.9) == 'normal'
     assert presentation.utilization_tone(85.0) == 'warning'
     assert presentation.utilization_tone(95.0) == 'critical'
+
+
+def test_object_storage_capacity_usage_view_separates_physical_and_quota_boundaries() -> None:
+    presentation = load_module(
+        'object_storage_capacity_presentation_under_test',
+        'app/analytics/object_storage/presentation.py',
+    )
+
+    view = presentation.build_capacity_usage_view(
+        capacity_total=1000.0,
+        usage_total=850.0,
+        capacity_free=150.0,
+        capacity_free_source='Operational Metric',
+        utilization=85.0,
+        trend_summary={
+            'sample_count': 4,
+            'growth_per_day': 10.0,
+            'growth_per_day_display': '10.0 B per day',
+            'delta_display': '40 B',
+            'delta_percent_display': '4.9%',
+            'direction': 'increasing',
+            'direction_label': 'Increasing',
+            'tone': 'warning',
+        },
+        bucket_analysis={
+            'bucket_count': 4,
+            'quota_known_count': 3,
+            'quota_unknown_count': 1,
+            'quota_pressure_count': 2,
+            'critical_quota_count': 1,
+            'top_usage_share_display': '52.0%',
+            'concentration_label': 'Concentrated',
+            'concentration_tone': 'warning',
+        },
+    )
+
+    assert view['capacity_evidence_available'] is True
+    assert view['quota_coverage_display'] == '75.0%'
+    assert view['quota_within_count'] == 1
+    assert view['quota_warning_count'] == 1
+    assert view['quota_critical_count'] == 1
+    assert view['quota_status'] == 'Critical Quota Pressure'
+    assert view['growth_capacity_percent_display'] == '1.0%'

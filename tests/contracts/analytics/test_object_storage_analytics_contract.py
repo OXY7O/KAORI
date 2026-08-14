@@ -153,6 +153,7 @@ def test_object_storage_analysis_semantics_are_provider_neutral_and_page_specifi
         'build_trend_view',
         'build_comparison_view',
         'build_bucket_analysis',
+        'build_capacity_usage_view',
         'build_posture_view',
         'build_signal_posture',
     ):
@@ -180,8 +181,15 @@ def test_object_storage_analysis_distinguishes_operational_domains_and_provenanc
 
     assert 'Operational Health Summary' in overview
     assert 'Bucket Concentration' in overview
+    capacity_pressure = read('app/templates/analytics/object_storage/partials/_capacity_pressure.html')
+
     assert 'Capacity Operating Boundary' in capacity
+    assert 'Physical Capacity Utilization' in capacity
+    assert 'Usage Direction' in capacity
     assert 'Remaining Headroom' in capacity
+    assert 'Quota Pressure &amp; Usage Concentration' in capacity_pressure
+    assert 'Quota Evidence Coverage' in capacity_pressure
+    assert 'Critical Quota' in capacity_pressure
     assert 'Request Operating Boundary' in performance
     assert 'Success Ratio' in performance
     assert 'Forecast Operating Boundary' in forecast
@@ -196,6 +204,8 @@ def test_object_storage_analysis_distinguishes_operational_domains_and_provenanc
     assert 'Inventory &amp; Operational Reconciliation' in reconciliation
     assert 'observation times differ' in reconciliation
     assert 'row.usage_source' in bucket_table
+    assert 'Bucket Capacity Records' in bucket_table
+    assert 'progress_bar.semantic_bar(row.quota_utilization' in bucket_table
     assert 'Committed Inventory is used only as an explicit field-level fallback' in bucket_table
 
 

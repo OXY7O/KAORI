@@ -18,6 +18,7 @@ from app.analytics.object_storage.dependencies import system_required_blocker
 from app.analytics.object_storage.materialization import forecast_snapshot_state, get_forecast_snapshot
 from app.analytics.object_storage.presentation import (
     build_bucket_analysis,
+    build_capacity_usage_view,
     build_comparison_view,
     build_posture_view,
     build_signal_posture,
@@ -457,6 +458,16 @@ def _build_metrics(
         _add_performance_metrics(payload, reader, time_range)
     if page_key in {'overview', 'capacity', 'top_consumers'}:
         _add_bucket_metrics(payload, system, reader, include_activity=page_key == 'top_consumers')
+    if page_key == 'capacity':
+        payload['capacity_usage'] = build_capacity_usage_view(
+            capacity_total=payload.get('capacity_total'),
+            usage_total=payload.get('usage_total'),
+            capacity_free=payload.get('capacity_free'),
+            capacity_free_source=str(payload.get('capacity_free_source') or 'Unavailable'),
+            utilization=payload.get('utilization'),
+            trend_summary=payload.get('usage_trend_summary') or {},
+            bucket_analysis=payload.get('bucket_analysis') or {},
+        )
     if page_key == 'overview':
         _add_overview_posture(payload)
     return payload

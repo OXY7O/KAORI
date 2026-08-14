@@ -43,6 +43,7 @@ def main() -> int:
     record_pagination = read('app/templates/analytics/components/_record_pagination.html')
     overview_analysis = read('app/templates/analytics/object_storage/partials/_overview_analysis.html')
     capacity_analysis = read('app/templates/analytics/object_storage/partials/_capacity_analysis.html')
+    capacity_pressure = read('app/templates/analytics/object_storage/partials/_capacity_pressure.html')
     performance_analysis = read('app/templates/analytics/object_storage/partials/_performance_analysis.html')
     forecast_analysis = read('app/templates/analytics/object_storage/partials/_forecast_analysis.html')
     top_consumers_analysis = read('app/templates/analytics/object_storage/partials/_top_consumers_analysis.html')
@@ -150,6 +151,7 @@ def main() -> int:
         'build_trend_view',
         'build_comparison_view',
         'build_bucket_analysis',
+        'build_capacity_usage_view',
         'build_posture_view',
         'build_signal_posture',
     ):
@@ -159,6 +161,13 @@ def main() -> int:
     assert 'MinIO' not in analysis
     assert 'Operational Health Summary' in overview_analysis
     assert 'Capacity Operating Boundary' in capacity_analysis
+    assert 'Physical Capacity Utilization' in capacity_analysis
+    assert 'Usage Direction' in capacity_analysis
+    assert 'Quota Pressure &amp; Usage Concentration' in capacity_pressure
+    assert 'Quota Evidence Coverage' in capacity_pressure
+    assert 'Critical Quota' in capacity_pressure
+    assert 'Bucket Capacity Records' in bucket_table_template
+    assert 'progress_bar.semantic_bar(row.quota_utilization' in bucket_table_template
     assert 'Request Operating Boundary' in performance_analysis
     assert 'Forecast Operating Boundary' in forecast_analysis
     assert 'Top Consumer Snapshot' in top_consumers_analysis
