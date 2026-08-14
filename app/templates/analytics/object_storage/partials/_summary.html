@@ -5,34 +5,14 @@
                 <i data-lucide="{{ page.icon }}" class="h-5 w-5"></i>
             </span>
             <div>
-                <h2 class="text-lg font-semibold text-content-primary">{{ 'Operational Snapshot' if page_key == 'overview' else page.title ~ ' Snapshot' }}</h2>
+                <h2 class="text-lg font-semibold text-content-primary">{{ page.title }} Snapshot</h2>
                 <p class="mt-1 text-sm leading-6 text-content-muted">
-                    {% if page_key == 'overview' %}
-                        Current capacity, demand, and request-path evidence for the selected Object Storage system.
-                    {% else %}
-                        Operational metrics are queried from the active metrics source bound to this object-storage asset.
-                    {% endif %}
+                    Operational metrics are queried from the active metrics source bound to this object-storage asset.
                 </p>
             </div>
         </div>
     </header>
-    {% if page_key == 'overview' %}
-        {% set cards = [
-            ('Current Usage', metrics.usage_total_display, 'Operational usage evidence', 'database'),
-            ('Utilization', metrics.utilization_display, 'Used / usable capacity', 'gauge'),
-            ('Remaining Headroom', metrics.capacity_free_display, metrics.capacity_free_source, 'circle-gauge'),
-            ('Request Rate', metrics.request_rate_display, 'Current S3 request demand', 'activity'),
-            ('Error Ratio', metrics.error_ratio_display, 'Errors relative to request rate', 'circle-alert')
-        ] %}
-    {% elif page_key == 'performance' %}
-        {% set cards = [
-            ('Request Rate', metrics.request_rate_display, 'S3 requests', 'activity'),
-            ('Error Ratio', metrics.error_ratio_display, 'Errors / request rate', 'circle-alert'),
-            ('Inflight', metrics.inflight_display, 'Current requests', 'workflow'),
-            ('Waiting', metrics.waiting_display, 'Queue pressure', 'timer'),
-            ('Traffic In', metrics.received_bps_display, 'Received throughput', 'arrow-down-to-line')
-        ] %}
-    {% elif page_key == 'forecast' %}
+    {% if page_key == 'forecast' %}
         {% set cards = [
             ('Current Usage', metrics.usage_total_display, metrics_source.provider_label ~ ' usage', 'database'),
             ('Growth / Day', metrics.forecast_display.growth_per_day, 'Linear baseline', 'trending-up'),
@@ -55,14 +35,6 @@
             ('Error Ratio', metrics.error_ratio_display, 'Errors / request rate', 'circle-alert'),
             ('Waiting', metrics.waiting_display, 'Queue pressure', 'timer'),
             ('Offline Nodes', metrics.offline_nodes_display, 'Storage availability', 'server-off')
-        ] %}
-    {% else %}
-        {% set cards = [
-            ('Usable Capacity', metrics.capacity_total_display, metrics_source.provider_label ~ ' evidence', 'hard-drive'),
-            ('Current Usage', metrics.usage_total_display, metrics_source.provider_label ~ ' evidence', 'database'),
-            ('Free Capacity', metrics.capacity_free_display, 'Usable headroom', 'circle-gauge'),
-            ('Objects', metrics.object_count_display, 'Stored objects', 'box'),
-            ('Utilization', metrics.utilization_display, 'Capacity pressure', 'gauge')
         ] %}
     {% endif %}
     <div class="{{ analysis_surface.metric_grid_classes(5) }}">

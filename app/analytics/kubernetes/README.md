@@ -73,7 +73,7 @@ status labels, evidence boundaries, modal geometry, and light/dark tokens.
 Domain-specific layouts may differ, but they must not fork shared visual-role or
 interaction contracts.
 
-Interactive Analytics tabs use the native `app/static/js/analytics/kubernetes/controls.js` tab controller; do not restore parallel Alpine tab ownership or a compatibility controller.
+Interactive Analytics tabs use the shared native `app/static/js/analytics/controls.js` tab controller; do not restore parallel Alpine tab ownership or a compatibility controller.
 
 Canonical template ownership is:
 
@@ -131,7 +131,7 @@ Storage Analysis uses mixed but explicit scope ownership: Cluster and Namespace 
 
 ## Analytics presentation contract
 
-- Use the shared KAORI `components/content_tabs.html` component and the native `app/static/js/analytics/kubernetes/controls.js` tab controller. Analytics must not keep an Alpine tab-state duplicate or a compatibility wrapper.
+- Use the shared KAORI `components/content_tabs.html` component and the native `app/static/js/analytics/controls.js` tab controller. Analytics must not keep an Alpine tab-state duplicate or a compatibility wrapper.
 - Materialized snapshot decode is read-only and ORM-free: canonical cluster references carry id/name/environment/status in the committed payload; old payload shapes are refreshed rather than repaired through a database fallback.
 - Forecast reprojection returns a freshly built canonical resource payload and does not preserve/remove obsolete derived keys from historical payloads.
 - Capacity is the analytics snapshot-style baseline. Analytics Overview tabs and domain workspaces use the shared snapshot shell, header, metric strip, evidence surface, and interpretation primitives from `analytics/components/_analysis_surfaces.html`. Domain layouts may differ, but they must not fork the geometry or visual-role contract.

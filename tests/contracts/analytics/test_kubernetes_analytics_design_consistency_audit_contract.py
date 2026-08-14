@@ -33,7 +33,7 @@ def test_shared_controls_and_prometheus_contract_are_compatible() -> None:
 
 def test_analytics_tabs_use_one_shared_runtime_and_native_fallback() -> None:
     tabs = read('app/templates/components/content_tabs.html')
-    runtime = read('app/static/js/analytics/kubernetes/controls.js')
+    runtime = read('app/static/js/analytics/controls.js')
 
     assert 'render_buttons' in tabs
     assert 'nowrap=false' in tabs

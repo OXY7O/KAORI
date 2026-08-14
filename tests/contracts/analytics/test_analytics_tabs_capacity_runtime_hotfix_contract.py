@@ -20,7 +20,7 @@ def test_capacity_allocation_uses_explicit_mapping_keys() -> None:
 def test_shared_tabs_have_native_controller_contract() -> None:
     workspace = read('app/templates/analytics/kubernetes/components/_analysis_workspace.html')
     tabs = read('app/templates/components/content_tabs.html')
-    controls = read('app/static/js/analytics/kubernetes/controls.js')
+    controls = read('app/static/js/analytics/controls.js')
 
     assert 'data-analytics-tabset-id="{{ tabset_id }}"' in workspace
     assert 'data-default-tab="{{ initial_tab }}"' in workspace

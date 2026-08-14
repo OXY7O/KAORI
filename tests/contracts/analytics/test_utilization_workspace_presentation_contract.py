@@ -39,7 +39,7 @@ def test_utilization_uses_shared_workspace_and_has_no_composite_tracker() -> Non
 
 def test_heavy_utilization_tabs_load_only_after_activation() -> None:
     index = read('app/templates/analytics/kubernetes/utilization/index.html')
-    controls = read('app/static/js/analytics/kubernetes/controls.js')
+    controls = read('app/static/js/analytics/controls.js')
     routes = read('app/analytics/kubernetes/utilization/routes.py')
 
     assert index.count('hx-trigger="kaori:analytics-tab-activated once"') == 2

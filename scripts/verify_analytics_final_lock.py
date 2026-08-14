@@ -33,7 +33,7 @@ def require(condition: bool, message: str, errors: list[str]) -> None:
 
 def main() -> int:
     errors: list[str] = []
-    runtime = read('app/static/js/analytics/kubernetes/controls.js')
+    runtime = read('app/static/js/analytics/controls.js')
     shared_tabs = read('app/templates/components/content_tabs.html')
     workspace = read('app/templates/analytics/kubernetes/components/_analysis_workspace.html')
     overview = read('app/templates/analytics/kubernetes/overview/index.html')
@@ -256,7 +256,7 @@ def main() -> int:
         )
 
     require(
-        'native `app/static/js/analytics/kubernetes/controls.js` tab controller' in analytics_readme,
+        'native `app/static/js/analytics/controls.js` tab controller' in analytics_readme,
         'Analytics README must document single native tab ownership.',
         errors,
     )

@@ -164,6 +164,7 @@ def test_object_storage_analysis_semantics_are_provider_neutral_and_page_specifi
     assert 'Prometheus' not in analysis
     assert 'MinIO' not in analysis
     assert 'object_storage/partials/_overview_analysis.html' in index
+    assert 'object_storage/partials/_overview_workspace.html' in index
     assert 'object_storage/partials/_capacity_analysis.html' in index
     assert 'object_storage/partials/_performance_analysis.html' in index
     assert 'object_storage/partials/_forecast_analysis.html' in index
@@ -257,6 +258,7 @@ def test_object_storage_analytics_uses_explicit_runtime_states_and_blocking() ->
     blocker = read('app/templates/analytics/object_storage/partials/_dependency_blocker.html')
     index = read('app/templates/analytics/object_storage/index.html')
     hero = read('app/templates/analytics/object_storage/partials/_hero.html')
+    hero_blocked = read('app/templates/analytics/object_storage/partials/_hero_blocked_posture.html')
 
     for status in (
         'Not Configured',
@@ -282,7 +284,8 @@ def test_object_storage_analytics_uses_explicit_runtime_states_and_blocking() ->
     controls_index = index.index('partials/_controls.html')
     assert blocker_index < else_index < controls_index
     assert 'metrics_source.detail' not in hero
-    assert "'Current Gate'" in hero
+    assert "'Current Step'" in hero_blocked
+    assert "'Progress'" in hero_blocked
 
 
 def test_object_storage_bucket_records_use_shared_kaori_table_contract() -> None:
@@ -299,26 +302,59 @@ def test_object_storage_bucket_records_use_shared_kaori_table_contract() -> None
     assert 'components/analytics/_table_label_primitives.html' not in table
     assert 'object-storage-bucket-table-loading-indicator' in table
     assert "default=5" in table_service
+    assert "{'tab': 'consumers'} if page_key == 'overview' else {}" in table_service
     assert "{5, 10, 25, 50}" in table_service
     assert 'Canonical Inventory-aligned full-page + HTMX pagination' in pagination
 
 
-def test_object_storage_overview_prioritizes_operational_decision_surface() -> None:
+def test_object_storage_overview_matches_kubernetes_overview_hero_and_tab_contract() -> None:
+    service = read('app/analytics/object_storage/service.py')
     index = read('app/templates/analytics/object_storage/index.html')
-    workspaces = read('app/templates/analytics/object_storage/partials/_overview_workspaces.html')
+    hero = read('app/templates/analytics/object_storage/partials/_hero.html')
+    hero_posture = read('app/templates/analytics/object_storage/partials/_hero_posture.html')
+    hero_blocked = read('app/templates/analytics/object_storage/partials/_hero_blocked_posture.html')
+    workspace = read('app/templates/analytics/object_storage/partials/_overview_workspace.html')
+    layout = read('app/templates/layouts/app.html')
 
-    summary = index.index('partials/_summary.html')
-    posture = index.index('partials/_overview_analysis.html')
-    trend = index.index('partials/_trend.html')
-    consumers = index.index('partials/_bucket_table.html')
-    workspaces_index = index.index('partials/_overview_workspaces.html')
-    readiness = index.index('partials/_metrics_readiness.html')
-    assert posture < summary < trend < workspaces_index < consumers < readiness
-    assert 'Analysis Workspace Snapshot' in workspaces
-    assert 'Capacity &amp; Usage' in workspaces
-    assert 'Performance' in workspaces
-    assert 'Top Consumers' in workspaces
-    assert 'Forecast' in workspaces
+    assert "'Object Storage Overview'" in service
+    assert 'partials/_hero_posture.html' in hero
+    assert 'partials/_hero_blocked_posture.html' in hero
+    assert "'Operational Posture'" in hero_posture
+    assert "'Analytics Status'" in hero_posture
+    assert "'Capacity Use'" in hero_posture
+    assert "'Error Ratio'" in hero_posture
+    assert "'Analytics Readiness'" in hero_blocked
+    assert "'Current Step'" in hero_blocked
+    assert "'Progress'" in hero_blocked
+
+    assert 'components/content_tabs.html' in workspace
+    assert 'data-analytics-tabset' in workspace
+    assert 'data-analytics-tabset-id="object-storage-overview-content"' in workspace
+    assert 'data-analytics-preserve-tab' in read('app/templates/analytics/object_storage/partials/_controls.html')
+    for label in ('Capacity', 'Performance', 'Consumers', 'Forecast', 'Evidence'):
+        assert f"'{label}'" in workspace
+    for partial in (
+        '_overview_capacity_snapshot.html',
+        '_overview_performance_snapshot.html',
+        '_bucket_table.html',
+        '_overview_forecast_snapshot.html',
+        '_reconciliation.html',
+        '_metrics_readiness.html',
+        '_evidence_boundary.html',
+    ):
+        assert partial in workspace
+
+    controls_index = index.index('partials/_controls.html')
+    health_index = index.index('partials/_overview_analysis.html')
+    workspace_index = index.index('partials/_overview_workspace.html')
+    assert controls_index < health_index < workspace_index
+    assert 'partials/_overview_workspaces.html' not in index
+    assert not (ROOT / 'app/templates/analytics/object_storage/partials/_overview_workspaces.html').exists()
+
+    assert "js/analytics/controls.js" in layout
+    assert "js/analytics/kubernetes/controls.js" not in layout
+    assert (ROOT / 'app/static/js/analytics/controls.js').exists()
+    assert not (ROOT / 'app/static/js/analytics/kubernetes/controls.js').exists()
 
 
 def test_object_storage_consumer_profile_staleness_is_explicit_and_direct_cutover() -> None:

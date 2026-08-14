@@ -26,7 +26,11 @@
               hx-sync="#object-storage-analytics-page:replace"
               hx-indicator="#object-storage-analytics-refresh-indicator"
               hx-trigger="change delay:120ms"
+              data-analytics-preserve-tab
               class="grid gap-4 sm:grid-cols-2">
+            {% if page_key == 'overview' %}
+                <input type="hidden" name="tab" value="">
+            {% endif %}
             <label class="block" for="object-storage-system-filter">
                 <span class="{{ table_ui.filter_label_classes() }}">Object Storage System</span>
                 <select id="object-storage-system-filter"

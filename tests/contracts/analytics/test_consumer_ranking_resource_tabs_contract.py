@@ -10,7 +10,7 @@ def test_consumer_rankings_are_separated_by_resource_tabs():
 
 
 def test_nested_analytics_tabs_only_control_their_owner():
-    script = Path('app/static/js/analytics/kubernetes/controls.js').read_text()
+    script = Path('app/static/js/analytics/controls.js').read_text()
     assert "button.closest('[data-analytics-tabset]') === tabset" in script
     assert "panel.closest('[data-analytics-tabset]') === tabset" in script
     assert "tabset.dataset.analyticsUpdateQuery !== 'false'" in script

@@ -52,7 +52,7 @@ The component owns active/inactive visual class tokens. A page controller owns s
 
 Controllers must not duplicate Tailwind palette/state class lists.
 
-Kubernetes Analytics uses `app/static/js/analytics/kubernetes/controls.js` as its single tab-state owner. Analytics templates must not add a parallel Alpine `activeTab` controller for the same tabset.
+KAORI Analytics uses `app/static/js/analytics/controls.js` as its single tab-state owner across Kubernetes and Object Storage workspaces. Analytics templates must not add a parallel Alpine `activeTab` controller for the same tabset.
 
 The Analytics controller owns:
 

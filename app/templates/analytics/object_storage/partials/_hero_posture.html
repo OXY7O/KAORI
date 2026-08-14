@@ -1,0 +1,33 @@
+{% import "components/page_hero.html" as page_hero %}
+{% set posture = metrics.operational_posture|default({}) %}
+{% set posture_status = posture.status|default(metrics_source.label|default('Unknown')) %}
+{% set posture_tone = posture.tone|default(metrics_source.tone|default('unknown')) %}
+{% if page_key == 'overview' %}
+    {{ page_hero.context_card_body(
+        'Operational Posture',
+        'Analytics Status',
+        posture_status,
+        posture_tone,
+        [
+            ('gauge', 'Capacity Use', metrics.utilization_display|default('N/A'), 'Current physical utilization'),
+            ('circle-alert', 'Error Ratio', metrics.error_ratio_display|default('N/A'), 'Current request error ratio')
+        ],
+        'Manage Object Storage',
+        url_for('object_storage_inventory.overview'),
+        'database'
+    ) }}
+{% else %}
+    {{ page_hero.context_card_body(
+        'Operational Posture',
+        'Analytics Status',
+        metrics_source.label,
+        metrics_source.tone,
+        [
+            ('activity', 'Metrics Source', metrics_source.provider_label),
+            ('database', 'Inventory', 'Collected' if inventory_observed_at else 'Not Collected')
+        ],
+        'Manage Object Storage',
+        url_for('object_storage_inventory.overview'),
+        'database'
+    ) }}
+{% endif %}

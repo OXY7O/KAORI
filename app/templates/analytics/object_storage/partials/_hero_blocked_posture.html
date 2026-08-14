@@ -1,0 +1,17 @@
+{% import "components/page_hero.html" as page_hero %}
+{% set blocked_step = dependency_blocker.stage|int %}
+{% set completed_step = blocked_step - 1 %}
+{% set blocker_status = dependency_blocker.badge|replace('Consumer ', '') %}
+{{ page_hero.context_card_body(
+    'Operational Posture',
+    'Analytics Readiness',
+    blocker_status,
+    dependency_blocker.tone,
+    [
+        ('list-ordered', 'Current Step', 'Step ' ~ blocked_step, dependency_blocker.title),
+        ('circle-check-big' if completed_step > 0 else 'circle-dashed', 'Progress', completed_step ~ ' of 3', 'Completed readiness stages')
+    ],
+    dependency_blocker.action_label,
+    url_for(dependency_blocker.action_endpoint),
+    'arrow-up-right'
+) }}

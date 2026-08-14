@@ -23,7 +23,7 @@ def test_overview_section_registry_has_one_composite_owner_and_no_legacy_endpoin
 
 def test_overview_tabs_load_only_on_first_activation() -> None:
     index = read('app/templates/analytics/kubernetes/overview/index.html')
-    runtime = read('app/static/js/analytics/kubernetes/controls.js')
+    runtime = read('app/static/js/analytics/controls.js')
 
     assert 'hx-trigger="kaori:analytics-tab-activated once"' in index
     assert 'loads its committed snapshot only when the tab is first activated' in index

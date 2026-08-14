@@ -65,6 +65,7 @@ def build_bucket_table_view(
             'page_key': page_key,
             'bucket_q': search,
             'bucket_per_page': per_page,
+            **({'tab': 'consumers'} if page_key == 'overview' else {}),
         },
         'page_endpoint': _page_endpoint(page_key),
     }

@@ -10,7 +10,7 @@ def read(relative: str) -> str:
 
 
 def test_analytics_tabs_have_one_native_runtime_owner() -> None:
-    runtime = read('app/static/js/analytics/kubernetes/controls.js')
+    runtime = read('app/static/js/analytics/controls.js')
     templates = '\n'.join(
         path.read_text(encoding='utf-8') for path in (ROOT / 'app/templates/analytics').rglob('*.html')
     )

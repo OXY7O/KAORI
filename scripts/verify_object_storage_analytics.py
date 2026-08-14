@@ -37,9 +37,14 @@ def main() -> int:
     bucket_table_template = read('app/templates/analytics/object_storage/partials/_bucket_table.html')
     dependency_blocker = read('app/templates/analytics/object_storage/partials/_dependency_blocker.html')
     hero = read('app/templates/analytics/object_storage/partials/_hero.html')
+    hero_posture = read('app/templates/analytics/object_storage/partials/_hero_posture.html')
+    hero_blocked = read('app/templates/analytics/object_storage/partials/_hero_blocked_posture.html')
     forecast_worker_status = read('app/templates/analytics/object_storage/partials/_forecast_worker_status.html')
     materialization_template = read('app/templates/jobs/configuration/definitions/_materialization_job.html')
-    overview_workspaces = read('app/templates/analytics/object_storage/partials/_overview_workspaces.html')
+    overview_workspace = read('app/templates/analytics/object_storage/partials/_overview_workspace.html')
+    overview_capacity = read('app/templates/analytics/object_storage/partials/_overview_capacity_snapshot.html')
+    overview_performance = read('app/templates/analytics/object_storage/partials/_overview_performance_snapshot.html')
+    overview_forecast = read('app/templates/analytics/object_storage/partials/_overview_forecast_snapshot.html')
     record_pagination = read('app/templates/analytics/components/_record_pagination.html')
     overview_analysis = read('app/templates/analytics/object_storage/partials/_overview_analysis.html')
     capacity_analysis = read('app/templates/analytics/object_storage/partials/_capacity_analysis.html')
@@ -51,6 +56,8 @@ def main() -> int:
     reconciliation = read('app/templates/analytics/object_storage/partials/_reconciliation.html')
     trend = read('app/templates/analytics/object_storage/partials/_trend.html')
     javascript = read('app/static/js/analytics/object_storage.js')
+    analytics_controls = read('app/static/js/analytics/controls.js')
+    layout = read('app/templates/layouts/app.html')
 
     assert 'resolve_object_storage_metrics_source' in runtime
     assert 'MetricsSource' in runtime
@@ -208,6 +215,7 @@ def main() -> int:
     assert 'metrics_query_blocker' in runtime
     assert 'build_bucket_table_view' in bucket_table_service
     assert "default=5" in bucket_table_service
+    assert "{'tab': 'consumers'} if page_key == 'overview' else {}" in bucket_table_service
     assert "{5, 10, 25, 50}" in bucket_table_service
     assert 'components/loading_bar.html' in controls
     assert 'object-storage-analytics-refresh-indicator' in controls
@@ -222,9 +230,24 @@ def main() -> int:
     else_index = template.index('{% else %}', blocker_index)
     assert blocker_index < else_index < controls_index
     assert 'metrics_source.detail' not in hero
-    assert "'Current Gate'" in hero
-    assert 'Analysis Workspace Snapshot' in overview_workspaces
-    assert "analytics.object_storage_capacity" in overview_workspaces
+    assert "'Current Step'" in hero_blocked
+    assert "'Progress'" in hero_blocked
+    assert "'Object Storage Overview'" in service
+    assert "'Operational Posture'" in hero_posture
+    assert "'Analytics Status'" in hero_posture
+    assert 'components/content_tabs.html' in overview_workspace
+    assert 'data-analytics-tabset' in overview_workspace
+    assert 'data-analytics-preserve-tab' in controls
+    for label in ('Capacity', 'Performance', 'Consumers', 'Forecast', 'Evidence'):
+        assert f"'{label}'" in overview_workspace
+    assert 'Capacity Snapshot' in overview_capacity
+    assert 'Request Path Snapshot' in overview_performance
+    assert 'Forecast Snapshot' in overview_forecast
+    assert 'partials/_overview_workspaces.html' not in template
+    assert not (ROOT / 'app/templates/analytics/object_storage/partials/_overview_workspaces.html').exists()
+    assert 'analyticsTabStorageKey' in analytics_controls
+    assert "js/analytics/controls.js" in layout
+    assert not (ROOT / 'app/static/js/analytics/kubernetes/controls.js').exists()
     assert 'Canonical Inventory-aligned full-page + HTMX pagination' in record_pagination
 
     assert 'Consumer Validation Stale' in adapter

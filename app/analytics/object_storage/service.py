@@ -54,8 +54,8 @@ class PageDefinition:
 
 PAGES: dict[str, PageDefinition] = {
     'overview': PageDefinition(
-        'Overview',
-        'Review capacity, request health, demand concentration, growth, and operational readiness at a glance.',
+        'Object Storage Overview',
+        'Review consolidated capacity, request health, consumer concentration, forecast, and evidence posture.',
         'layout-dashboard',
         'Object Storage Analytics',
     ),

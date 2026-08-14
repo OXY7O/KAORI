@@ -10,7 +10,7 @@
                     {% if dependency_blocker %}
                         {{ page_hero.meta_label('lock-keyhole', 'Step ' ~ dependency_blocker.stage ~ ' · ' ~ dependency_blocker.badge) }}
                     {% else %}
-                        {{ page_hero.meta_label('clock-3', selected_forecast_history_window|upper ~ ' History' if page_key == 'forecast' else selected_time_range) }}
+                        {{ page_hero.meta_label('clock-3', selected_forecast_history_window|upper ~ ' History' if page_key == 'forecast' else selected_time_range|upper ~ ' Window') }}
                         {% if inventory_observed_at %}
                             {{ page_hero.meta_label('database-clock', inventory_observed_at|user_datetime('Inventory Not Collected')) }}
                         {% endif %}
@@ -18,35 +18,12 @@
                 </div>
             {% endcall %}
         </div>
-        <aside class="{{ page_hero.aside_classes() }}" aria-label="Object Storage Analytics Posture">
+        <aside class="{{ page_hero.aside_classes() }}"
+               aria-label="Object Storage Analytics Operational Posture">
             {% if dependency_blocker %}
-                {{ page_hero.context_card_body(
-                    'Analytics Readiness',
-                    'Dependency Gate',
-                    dependency_blocker.badge,
-                    dependency_blocker.tone,
-                    [
-                        ('database', 'Inventory', 'Collected' if system and inventory_observed_at else 'Required'),
-                        ('route', 'Current Gate', 'Step ' ~ dependency_blocker.stage ~ ' of 3')
-                    ],
-                    dependency_blocker.action_label,
-                    url_for(dependency_blocker.action_endpoint),
-                    'arrow-up-right'
-                ) }}
+                {% include "analytics/object_storage/partials/_hero_blocked_posture.html" %}
             {% else %}
-                {{ page_hero.context_card_body(
-                    'Operational Analytics',
-                    'Current Posture',
-                    metrics_source.label,
-                    metrics_source.tone,
-                    [
-                        ('activity', 'Metrics Source', metrics_source.provider_label),
-                        ('database', 'Inventory', 'Collected' if inventory_observed_at else 'Not Collected')
-                    ],
-                    'Observability Integrations',
-                    url_for('integrations.observability'),
-                    'settings-2'
-                ) }}
+                {% include "analytics/object_storage/partials/_hero_posture.html" %}
             {% endif %}
         </aside>
     </div>
