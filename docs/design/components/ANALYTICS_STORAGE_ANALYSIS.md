@@ -152,7 +152,7 @@ Record-oriented panels use:
 
 - `analytics/kubernetes/components/_evidence_record_list.html`
 - `analytics/kubernetes/components/_record_filter_bar.html`
-- `analytics/kubernetes/components/_record_pagination.html`
+- `analytics/components/_record_pagination.html`
 
 Filesystem, PVC, and PV pagination is independent and follows the global 5/10/25/50 contract. Full-page links and partial HTMX endpoints must preserve the owning panel state.
 

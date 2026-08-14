@@ -1,8 +1,6 @@
 from __future__ import annotations
 
-from collections import defaultdict
 from dataclasses import dataclass
-from datetime import datetime
 from typing import Any
 
 from sqlalchemy.orm import selectinload
@@ -15,6 +13,8 @@ from app.analytics.object_storage.analysis import (
     metric_risk_signals,
     performance_posture,
 )
+from app.analytics.object_storage.bucket_table import build_bucket_table_view
+from app.analytics.object_storage.dependencies import system_required_blocker
 from app.analytics.object_storage.forecasting import linear_forecast
 from app.analytics.object_storage.presentation import (
     build_bucket_analysis,
@@ -29,12 +29,12 @@ from app.analytics.object_storage.presentation import (
     utilization_percent,
     utilization_tone,
 )
-from app.analytics.object_storage.sources import resolve_object_storage_metrics_source
-from app.analytics.shared.metrics import (
-    MetricReadinessState,
-    MetricsReadinessSnapshot,
-    MetricsSource,
-    MetricsSourceError,
+from app.analytics.object_storage.runtime import (
+    EvidenceReader,
+    runtime_source_state,
+    source_setup,
+    waiting_metrics_readiness,
+    waiting_metrics_source,
 )
 from app.analytics.shared.params import get_allowed_time_ranges, get_selected_time_range
 from app.models.integration import IntegrationBinding, IntegrationInstance
@@ -52,7 +52,7 @@ class PageDefinition:
 PAGES: dict[str, PageDefinition] = {
     'overview': PageDefinition(
         'Overview',
-        'Review object-storage operational posture, demand, and growth signals.',
+        'Review capacity, request health, demand concentration, growth, and operational readiness at a glance.',
         'layout-dashboard',
         'Object Storage Analytics',
     ),
@@ -146,65 +146,9 @@ def _alertmanager_binding(system_id: str) -> dict[str, str | bool]:
     }
 
 
-class _EvidenceReader:
-    """Read canonical metrics once per request and fail fast on source-wide failures."""
-
-    def __init__(self, source: MetricsSource) -> None:
-        self.source = source
-        self.diagnostics: list[str] = []
-        self.source_wide_failure: MetricsSourceError | None = None
-        self.failed_query_count = 0
-        self.successful_query_count = 0
-
-    @property
-    def source_label(self) -> str:
-        return self.source.identity.provider_label
-
-    def _record_failure(self, exc: MetricsSourceError) -> None:
-        self.failed_query_count += 1
-        message = str(exc).strip()
-        if message:
-            self.diagnostics.append(message)
-        if exc.source_wide:
-            self.source_wide_failure = exc
-
-    def scalar(self, key: str) -> float | None:
-        if self.source_wide_failure is not None:
-            return None
-        try:
-            value = self.source.scalar(key)
-        except MetricsSourceError as exc:
-            self._record_failure(exc)
-            return None
-        self.successful_query_count += 1
-        return value
-
-    def vector(self, key: str) -> dict[str, float]:
-        if self.source_wide_failure is not None:
-            return {}
-        try:
-            values = self.source.vector(key, 'bucket')
-        except MetricsSourceError as exc:
-            self._record_failure(exc)
-            return {}
-        self.successful_query_count += 1
-        return values
-
-    def trend(self, key: str, time_range: str) -> list[dict[str, float]]:
-        if self.source_wide_failure is not None:
-            return []
-        try:
-            points = self.source.trend(key, time_range)
-        except MetricsSourceError as exc:
-            self._record_failure(exc)
-            return []
-        self.successful_query_count += 1
-        return points
-
-
 def _bucket_rows(
     system: ObjectStorageSystem,
-    reader: _EvidenceReader,
+    reader: EvidenceReader,
     *,
     include_activity: bool,
 ) -> list[dict[str, Any]]:
@@ -269,7 +213,7 @@ def _bucket_rows(
     return rows
 
 
-def _build_core_metrics(reader: _EvidenceReader, system: ObjectStorageSystem) -> dict[str, Any]:
+def _build_core_metrics(reader: EvidenceReader, system: ObjectStorageSystem) -> dict[str, Any]:
     total = reader.scalar('object_storage.capacity.total_bytes')
     free_metric = reader.scalar('object_storage.capacity.free_bytes')
     used = reader.scalar('object_storage.usage.total_bytes')
@@ -308,13 +252,13 @@ def _build_core_metrics(reader: _EvidenceReader, system: ObjectStorageSystem) ->
     }
 
 
-def _add_usage_trend(payload: dict[str, Any], reader: _EvidenceReader, time_range: str) -> None:
+def _add_usage_trend(payload: dict[str, Any], reader: EvidenceReader, time_range: str) -> None:
     usage_trend = reader.trend('object_storage.usage.total_bytes', time_range)
     payload['usage_trend'] = usage_trend
     payload['usage_trend_summary'] = build_trend_view(usage_trend)
 
 
-def _add_request_metrics(payload: dict[str, Any], reader: _EvidenceReader) -> None:
+def _add_request_metrics(payload: dict[str, Any], reader: EvidenceReader) -> None:
     request_rate = reader.scalar('object_storage.requests.rate')
     request_error_rate = reader.scalar('object_storage.requests.error_rate')
     waiting = reader.scalar('object_storage.requests.waiting')
@@ -355,7 +299,7 @@ def _add_request_metrics(payload: dict[str, Any], reader: _EvidenceReader) -> No
     )
 
 
-def _add_performance_metrics(payload: dict[str, Any], reader: _EvidenceReader, time_range: str) -> None:
+def _add_performance_metrics(payload: dict[str, Any], reader: EvidenceReader, time_range: str) -> None:
     inflight = reader.scalar('object_storage.requests.inflight')
     received_bps = reader.scalar('object_storage.traffic.received_bps')
     sent_bps = reader.scalar('object_storage.traffic.sent_bps')
@@ -383,7 +327,7 @@ def _add_performance_metrics(payload: dict[str, Any], reader: _EvidenceReader, t
 def _add_bucket_metrics(
     payload: dict[str, Any],
     system: ObjectStorageSystem,
-    reader: _EvidenceReader,
+    reader: EvidenceReader,
     *,
     include_activity: bool,
 ) -> None:
@@ -436,7 +380,7 @@ def _add_overview_posture(payload: dict[str, Any]) -> None:
 
 def _build_metrics(
     page_key: str,
-    reader: _EvidenceReader,
+    reader: EvidenceReader,
     system: ObjectStorageSystem,
     time_range: str,
 ) -> dict[str, Any]:
@@ -449,101 +393,14 @@ def _build_metrics(
         _add_performance_metrics(payload, reader, time_range)
     if page_key in {'overview', 'capacity', 'top_consumers'}:
         _add_bucket_metrics(payload, system, reader, include_activity=page_key == 'top_consumers')
-    if page_key == 'forecast':
+    if page_key in {'overview', 'forecast'}:
         _add_forecast_metrics(payload)
     if page_key == 'overview':
         _add_overview_posture(payload)
     return payload
 
 
-def _metrics_readiness_view(snapshot: MetricsReadinessSnapshot) -> dict[str, Any]:
-    state_labels = {
-        MetricReadinessState.READY: ('Ready', 'normal'),
-        MetricReadinessState.PARTIAL: ('Partial Evidence', 'warning'),
-        MetricReadinessState.BLOCKED: ('Blocked', 'critical'),
-        MetricReadinessState.NO_DATA: ('No Data', 'warning'),
-        MetricReadinessState.UNSUPPORTED: ('Unsupported', 'unknown'),
-        MetricReadinessState.NOT_VALIDATED: ('Validation Required', 'info'),
-    }
-    label, tone = state_labels.get(snapshot.state, ('Validation Required', 'info'))
-    counts = {state.value: snapshot.count(state) for state in MetricReadinessState}
-    required_items = [item for item in snapshot.items if item.tier == 'required']
-    domain_items: dict[str, list[Any]] = defaultdict(list)
-    for item in snapshot.items:
-        domain_items[item.domain].append(item)
-    domains: list[dict[str, Any]] = []
-    for domain, items in domain_items.items():
-        ready_count = sum(item.state == MetricReadinessState.READY for item in items)
-        required = [item for item in items if item.tier == 'required']
-        required_ready = sum(item.state == MetricReadinessState.READY for item in required)
-        domain_state = 'ready' if ready_count == len(items) else 'partial'
-        domains.append(
-            {
-                'label': domain,
-                'status': domain_state,
-                'status_label': 'Ready' if domain_state == 'ready' else 'Partial',
-                'tone': 'normal' if domain_state == 'ready' else 'warning',
-                'ready_count': ready_count,
-                'total_count': len(items),
-                'required_ready_count': required_ready,
-                'required_total_count': len(required),
-            }
-        )
-    checked_at: datetime | None = None
-    if snapshot.checked_at:
-        try:
-            checked_at = datetime.fromisoformat(snapshot.checked_at)
-        except ValueError:
-            checked_at = None
-    return {
-        'profile': snapshot.profile,
-        'profile_label': snapshot.profile_label,
-        'status': snapshot.state.value,
-        'label': label,
-        'tone': tone,
-        'checked_at': checked_at,
-        'total_count': snapshot.total_count,
-        'ready_count': counts[MetricReadinessState.READY.value],
-        'no_data_count': counts[MetricReadinessState.NO_DATA.value],
-        'unsupported_count': counts[MetricReadinessState.UNSUPPORTED.value],
-        'blocked_count': counts[MetricReadinessState.BLOCKED.value],
-        'required_ready_count': sum(item.state == MetricReadinessState.READY for item in required_items),
-        'required_total_count': len(required_items),
-        'domains': domains,
-    }
-
-
-def _waiting_metrics_readiness() -> dict[str, Any]:
-    return {
-        'profile': 'not-validated',
-        'profile_label': 'Operational Metrics Contract',
-        'status': 'not_validated',
-        'label': 'Validation Required',
-        'tone': 'info',
-        'checked_at': None,
-        'total_count': 0,
-        'ready_count': 0,
-        'no_data_count': 0,
-        'unsupported_count': 0,
-        'blocked_count': 0,
-        'required_ready_count': 0,
-        'required_total_count': 0,
-        'domains': [],
-    }
-
-
-def _waiting_metrics_source() -> dict[str, Any]:
-    return {
-        'configured': False,
-        'provider': None,
-        'provider_label': 'Metrics Source',
-        'label': 'Waiting for System',
-        'tone': 'unknown',
-        'detail': 'Select an object-storage system.',
-    }
-
-
-def get_object_storage_analytics_context(page_key: str, query_args: Any) -> dict[str, Any]:
+def _base_context(page_key: str, query_args: Any) -> tuple[dict[str, Any], ObjectStorageSystem | None, str]:
     page = PAGES.get(page_key, PAGES['overview'])
     systems = _systems()
     system_id = str(query_args.get('system_id') or '').strip()
@@ -557,8 +414,8 @@ def get_object_storage_analytics_context(page_key: str, query_args: Any) -> dict
         'selected_time_range': time_range,
         'allowed_time_ranges': get_allowed_time_ranges(),
         'dependency_blocker': None,
-        'metrics_source': _waiting_metrics_source(),
-        'metrics_readiness': _waiting_metrics_readiness(),
+        'metrics_source': waiting_metrics_source(),
+        'metrics_readiness': waiting_metrics_readiness(),
         'alertmanager': (
             _alertmanager_binding(system.id)
             if system is not None
@@ -566,63 +423,82 @@ def get_object_storage_analytics_context(page_key: str, query_args: Any) -> dict
                 'configured': False,
                 'label': 'Not Configured',
                 'tone': 'unknown',
-                'description': 'Select an object-storage system.',
+                'description': 'Select an Object Storage system.',
             }
         ),
         'metrics': {},
+        'bucket_table': None,
         'query_diagnostics': [],
         'inventory_observed_at': system.inventory_observed_at if system is not None else None,
     }
+    return context, system, time_range
+
+
+def get_object_storage_analytics_context(page_key: str, query_args: Any) -> dict[str, Any]:
+    context, system, time_range = _base_context(page_key, query_args)
     if system is None:
-        context['dependency_blocker'] = {
-            'title': 'Object Storage System Required',
-            'description': 'Register and collect Object Storage Inventory before opening operational analytics.',
-            'action_label': 'Open Object Storage Inventory',
-            'action_endpoint': 'object_storage_inventory.overview',
-        }
+        context['dependency_blocker'] = system_required_blocker()
         return context
 
-    try:
-        source = resolve_object_storage_metrics_source(system)
-    except MetricsSourceError as exc:
-        context['metrics_source'] = {
-            'configured': False,
-            'provider': exc.provider,
-            'provider_label': 'Metrics Source',
-            'label': 'Metrics Source Required',
-            'tone': 'warning',
-            'detail': str(exc),
-        }
-        context['dependency_blocker'] = {
-            'title': 'Metrics Source Required',
-            'description': str(exc),
-            'action_label': 'Open Observability Integrations',
-            'action_endpoint': 'integrations.observability',
-        }
+    source, source_view, readiness, blocker = source_setup(system)
+    context['metrics_source'] = source_view
+    context['metrics_readiness'] = readiness
+    if source is None or blocker is not None:
+        context['dependency_blocker'] = blocker
         return context
 
-    identity = source.identity
-    context['metrics_readiness'] = _metrics_readiness_view(source.readiness)
-    context['metrics_source'] = {
-        'configured': True,
-        'provider': identity.provider,
-        'provider_label': identity.provider_label,
-        'instance_name': identity.instance_name,
-        'label': 'Bound & Eligible',
-        'tone': 'normal',
-        'detail': identity.detail,
-    }
-    reader = _EvidenceReader(source)
+    reader = EvidenceReader(source)
     context['metrics'] = _build_metrics(page_key, reader, system, time_range)
     context['query_diagnostics'] = list(dict.fromkeys(item for item in reader.diagnostics if item))
+    runtime_blocker = runtime_source_state(system, context['metrics_source'], reader)
+    if runtime_blocker is not None:
+        context['dependency_blocker'] = runtime_blocker
+        return context
 
-    if reader.source_wide_failure is not None:
-        context['metrics_source']['label'] = 'Source Unreachable'
-        context['metrics_source']['tone'] = 'critical'
-        context['metrics_source']['detail'] = str(reader.source_wide_failure)
-    elif reader.failed_query_count:
-        context['metrics_source']['label'] = 'Partial Evidence'
-        context['metrics_source']['tone'] = 'warning'
-        context['metrics_source']['detail'] = context['query_diagnostics'][0]
+    if page_key in {'overview', 'capacity', 'top_consumers'}:
+        context['bucket_table'] = build_bucket_table_view(
+            context['metrics'].get('bucket_rows') or [],
+            query_args,
+            page_key=page_key,
+            system=system,
+            time_range=time_range,
+        )
+    return context
 
+
+def get_object_storage_bucket_table_context(page_key: str, query_args: Any) -> dict[str, Any]:
+    if page_key not in {'overview', 'capacity', 'top_consumers'}:
+        page_key = 'overview'
+    context, system, time_range = _base_context(page_key, query_args)
+    if system is None:
+        context['dependency_blocker'] = system_required_blocker()
+        return context
+
+    source, source_view, readiness, blocker = source_setup(system)
+    context['metrics_source'] = source_view
+    context['metrics_readiness'] = readiness
+    if source is None or blocker is not None:
+        context['dependency_blocker'] = blocker
+        return context
+
+    reader = EvidenceReader(source)
+    core = _build_core_metrics(reader, system)
+    rows = _bucket_rows(system, reader, include_activity=page_key == 'top_consumers')
+    for row in rows:
+        usage_total = core.get('usage_total')
+        row['usage_share'] = utilization_percent(row.get('usage_bytes'), usage_total)
+        row['usage_share_display'] = format_percent(row['usage_share'])
+    context['metrics'] = {'bucket_rows': rows}
+    context['query_diagnostics'] = list(dict.fromkeys(item for item in reader.diagnostics if item))
+    runtime_blocker = runtime_source_state(system, context['metrics_source'], reader)
+    if runtime_blocker is not None:
+        context['dependency_blocker'] = runtime_blocker
+        return context
+    context['bucket_table'] = build_bucket_table_view(
+        rows,
+        query_args,
+        page_key=page_key,
+        system=system,
+        time_range=time_range,
+    )
     return context

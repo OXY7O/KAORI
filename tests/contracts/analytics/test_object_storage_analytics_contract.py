@@ -9,12 +9,13 @@ def read(relative: str) -> str:
 
 def test_object_storage_analytics_domain_is_metrics_backend_neutral() -> None:
     service = read('app/analytics/object_storage/service.py')
+    runtime = read('app/analytics/object_storage/runtime.py')
     resolver = read('app/analytics/object_storage/sources/resolver.py')
     adapter = read('app/analytics/object_storage/sources/minio_prometheus.py')
     contracts = read('app/analytics/shared/metrics/contracts.py')
 
-    assert 'MetricsSource' in service
-    assert 'resolve_object_storage_metrics_source' in service
+    assert 'MetricsSource' in runtime
+    assert 'resolve_object_storage_metrics_source' in runtime
     assert 'PrometheusConsumer' not in service
     assert 'PrometheusError' not in service
     assert 'query_profiles.prometheus' not in service
@@ -29,6 +30,7 @@ def test_object_storage_analytics_domain_is_metrics_backend_neutral() -> None:
 
     for token in ('MinioClient', 'MinioInstance', 'secret_key', 'access_key', 'boto3'):
         assert token not in service
+        assert token not in runtime
         assert token not in contracts
 
 
@@ -72,12 +74,12 @@ def test_object_storage_alertmanager_is_optional_and_evidence_boundaries_are_exp
 
 
 def test_metrics_source_transport_failure_is_request_fail_fast() -> None:
-    service = read('app/analytics/object_storage/service.py')
+    runtime = read('app/analytics/object_storage/runtime.py')
     adapter = read('app/analytics/object_storage/sources/minio_prometheus.py')
 
-    assert 'source_wide_failure' in service
-    assert 'if self.source_wide_failure is not None' in service
-    assert 'if exc.source_wide' in service
+    assert 'source_wide_failure' in runtime
+    assert 'if self.source_wide_failure is not None' in runtime
+    assert 'if exc.source_wide' in runtime
     assert 'retry_count=0' in adapter
 
 
@@ -224,3 +226,65 @@ def test_kubernetes_navigation_uses_full_product_name_instead_of_k8s_abbreviatio
     assert 'Kubernetes Governance' in combined
     assert 'Kubernetes Operations' in combined
     assert 'Kubernetes Administration' in combined
+
+
+
+def test_object_storage_analytics_uses_explicit_runtime_states_and_blocking() -> None:
+    runtime = read('app/analytics/object_storage/runtime.py')
+    dependencies = read('app/analytics/object_storage/dependencies.py')
+    controls = read('app/templates/analytics/object_storage/partials/_controls.html')
+    blocker = read('app/templates/analytics/object_storage/partials/_dependency_blocker.html')
+
+    for status in (
+        'Not Configured',
+        'Validation Required',
+        'Capability Incomplete',
+        'Checking Runtime',
+        'Operational',
+        'Degraded',
+        'Disconnected',
+        'Authentication Failed',
+        'Runtime Query Failed',
+    ):
+        assert status in runtime or status in dependencies
+    assert 'required_contract_ready' in runtime
+    assert 'metrics_runtime_blocker' in runtime
+    assert 'metrics_query_blocker' in runtime
+    assert 'object-storage-analytics-refresh-indicator' in controls
+    assert 'Object Storage Analytics Readiness' in blocker
+    assert 'Alertmanager is not a blocking dependency' in blocker
+
+
+def test_object_storage_bucket_records_use_shared_kaori_table_contract() -> None:
+    routes = read('app/analytics/routes.py')
+    table = read('app/templates/analytics/object_storage/partials/_bucket_table.html')
+    pagination = read('app/templates/analytics/components/_record_pagination.html')
+    table_service = read('app/analytics/object_storage/bucket_table.py')
+
+    assert "endpoint='object_storage_bucket_table'" in routes
+    assert 'components/table_primitives.html' in table
+    assert 'components/table_label.html' in table
+    assert 'components/loading_bar.html' in table
+    assert 'analytics/components/_record_pagination.html' in table
+    assert 'components/analytics/_table_label_primitives.html' not in table
+    assert 'object-storage-bucket-table-loading-indicator' in table
+    assert "default=5" in table_service
+    assert "{5, 10, 25, 50}" in table_service
+    assert 'Canonical Inventory-aligned full-page + HTMX pagination' in pagination
+
+
+def test_object_storage_overview_prioritizes_operational_decision_surface() -> None:
+    index = read('app/templates/analytics/object_storage/index.html')
+    workspaces = read('app/templates/analytics/object_storage/partials/_overview_workspaces.html')
+
+    summary = index.index('partials/_summary.html')
+    posture = index.index('partials/_overview_analysis.html')
+    trend = index.index('partials/_trend.html')
+    consumers = index.index('partials/_bucket_table.html')
+    readiness = index.index('partials/_metrics_readiness.html')
+    assert summary < posture < trend < consumers < readiness
+    assert 'Analysis Workspace Snapshot' in workspaces
+    assert 'Capacity &amp; Usage' in workspaces
+    assert 'Performance' in workspaces
+    assert 'Top Consumers' in workspaces
+    assert 'Forecast' in workspaces

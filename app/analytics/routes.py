@@ -23,6 +23,7 @@ from app.analytics.kubernetes.utilization.routes import utilization, utilization
 from app.analytics.kubernetes.workload.routes import workload, workload_resource_mapping, workload_tenant_quota
 from app.analytics.object_storage.routes import (
     object_storage_alerts,
+    object_storage_bucket_table,
     object_storage_capacity,
     object_storage_forecast,
     object_storage_overview,
@@ -436,6 +437,14 @@ analytics_bp.add_url_rule(
     '/object-storage',
     endpoint='object_storage_overview',
     view_func=object_storage_overview,
+    methods=['GET'],
+)
+
+
+analytics_bp.add_url_rule(
+    '/object-storage/buckets/table',
+    endpoint='object_storage_bucket_table',
+    view_func=object_storage_bucket_table,
     methods=['GET'],
 )
 

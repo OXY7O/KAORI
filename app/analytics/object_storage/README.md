@@ -21,6 +21,9 @@ contract.
 app/analytics/object_storage/
 ├── routes.py
 ├── service.py
+├── runtime.py
+├── dependencies.py
+├── bucket_table.py
 ├── analysis.py
 ├── presentation.py
 ├── forecasting.py
@@ -29,8 +32,7 @@ app/analytics/object_storage/
     └── minio_prometheus.py
 ```
 
-`service.py` orchestrates page evidence and consumes only the provider-neutral contract from
-`app.analytics.shared.metrics`. `analysis.py` owns pure domain calculations such as
+`service.py` orchestrates page evidence. `runtime.py` owns the provider-neutral runtime/readiness state machine and request-local fail-fast reader, while `dependencies.py` owns explicit blocking states. All three consume only the provider-neutral contract from `app.analytics.shared.metrics`. `analysis.py` owns pure domain calculations such as
 capacity/performance/forecast posture, trend summaries, headroom derivation, and
 Inventory-vs-operational reconciliation; it has no provider dependency. Provider-specific query syntax, response parsing,
 and exception translation live in a pair-qualified adapter such as
@@ -91,10 +93,9 @@ Interactive Object Storage analytics is intentionally fail-fast:
    `MetricsSourceError`.
 3. The request-local evidence reader opens its source circuit and skips all
    remaining provider queries for that page request.
-4. Query-specific failures do not trip the circuit; unrelated metrics may still
-   render.
-5. Committed Inventory evidence remains available when operational metrics are
-   degraded.
+4. Query-specific failures do not trip the source circuit; unrelated metrics may still render. If every runtime query fails, Analytics blocks with `Runtime Query Failed` rather than presenting an empty workspace.
+5. Partial query success is reported as `Degraded`; successful runtime query execution is reported as `Operational`.
+6. Committed Inventory evidence remains available when operational metrics are degraded or disconnected.
 
 Background/materialization workloads may use a different retry policy; the UI
 request path must not multiply an unreachable provider into a query storm.
@@ -119,3 +120,16 @@ The current Object Storage Analytics workspace exposes distinct operational sema
 Inventory reconciliation is intentionally non-authoritative: differences within the
 selected thresholds are review evidence because Inventory and operational metrics have
 different observation times. Analytics never rewrites Inventory from this comparison.
+
+
+## UI readiness and record surfaces
+
+Object Storage Analytics follows the same operational interaction contract as Kubernetes Analytics:
+
+- scope changes use the shared KAORI HTMX loading bar and report the runtime state as `Checking Runtime` while the request is in progress;
+- missing configuration, unvalidated required metrics, incomplete capability, disconnection, authentication failure, and total runtime-query failure are explicit blocking states;
+- partial runtime-query failure is a degraded state, not a false healthy state;
+- the Overview prioritizes operational KPI/posture, trend, consumer evidence, and drill-down workspaces before contract-readiness detail;
+- bucket records use the shared Analytics record-pagination owner at `templates/analytics/components/_record_pagination.html`, with search, 5-row default pagination, 5/10/25/50 page sizes, HTMX partial refresh, and a header loading indicator.
+
+The status words describe different evidence layers intentionally: `Ready` is persisted metric-contract validation, `Operational` is successful current runtime query execution, `Degraded` is partial current query success, and `Disconnected` is current transport failure. These terms must not be used interchangeably.

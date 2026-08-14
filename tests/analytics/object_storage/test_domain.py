@@ -5,7 +5,7 @@ from pathlib import Path
 from types import ModuleType
 
 from app.analytics.object_storage.analysis import metric_risk_signals
-from app.analytics.object_storage.service import _EvidenceReader
+from app.analytics.object_storage.runtime import EvidenceReader
 from app.analytics.object_storage.sources import minio_prometheus as prometheus_source
 from app.analytics.shared.metrics import (
     MetricsSourceError,
@@ -71,7 +71,7 @@ def test_request_reader_stops_after_source_wide_transport_failure() -> None:
             return [{'timestamp': 1.0, 'value': 1.0}]
 
     source = Source()
-    reader = _EvidenceReader(source)
+    reader = EvidenceReader(source)
 
     assert reader.scalar('object_storage.capacity.total_bytes') is None
     assert reader.scalar('object_storage.capacity.free_bytes') is None
@@ -102,7 +102,7 @@ def test_query_specific_failure_does_not_trip_source_wide_fail_fast() -> None:
             return []
 
     source = Source()
-    reader = _EvidenceReader(source)
+    reader = EvidenceReader(source)
 
     assert reader.scalar('metric.one') is None
     assert reader.scalar('metric.two') == 42.0

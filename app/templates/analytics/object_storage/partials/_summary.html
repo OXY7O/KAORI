@@ -14,11 +14,11 @@
     </header>
     {% if page_key == 'overview' %}
         {% set cards = [
-            ('Usable Capacity', metrics.capacity_total_display, metrics_source.provider_label ~ ' evidence', 'hard-drive'),
-            ('Current Usage', metrics.usage_total_display, metrics_source.provider_label ~ ' evidence', 'database'),
-            ('Utilization', metrics.utilization_display, 'Capacity pressure', 'gauge'),
-            ('Request Rate', metrics.request_rate_display, 'S3 requests', 'activity'),
-            ('Error Ratio', metrics.error_ratio_display, 'Errors / request rate', 'circle-alert')
+            ('Current Usage', metrics.usage_total_display, 'Operational usage evidence', 'database'),
+            ('Utilization', metrics.utilization_display, 'Used / usable capacity', 'gauge'),
+            ('Remaining Headroom', metrics.headroom_display, metrics.headroom_source, 'circle-gauge'),
+            ('Request Rate', metrics.request_rate_display, 'Current S3 request demand', 'activity'),
+            ('Error Ratio', metrics.error_ratio_display, 'Errors relative to request rate', 'circle-alert')
         ] %}
     {% elif page_key == 'performance' %}
         {% set cards = [

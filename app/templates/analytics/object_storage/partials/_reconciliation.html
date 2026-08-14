@@ -11,26 +11,26 @@
         </div>
     </header>
     <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-outline-subtle text-left">
-            <thead class="bg-surface-muted text-xs font-semibold uppercase tracking-wide text-content-muted">
+        <table class="{{ table_ui.table_classes('min-w-[760px]') }}">
+            <thead class="{{ table_ui.head_classes() }}">
                 <tr>
-                    <th class="px-5 py-3 sm:px-6">Measure</th>
-                    <th class="px-5 py-3">Operational</th>
-                    <th class="px-5 py-3">Inventory</th>
-                    <th class="px-5 py-3">Delta</th>
-                    <th class="px-5 py-3">Variance</th>
-                    <th class="px-5 py-3 text-right sm:px-6">Status</th>
+                    <th class="{{ table_ui.header_cell_classes() }}">Measure</th>
+                    <th class="{{ table_ui.header_cell_classes() }}">Operational</th>
+                    <th class="{{ table_ui.header_cell_classes() }}">Inventory</th>
+                    <th class="{{ table_ui.header_cell_classes() }}">Delta</th>
+                    <th class="{{ table_ui.header_cell_classes() }}">Variance</th>
+                    <th class="{{ table_ui.header_cell_classes(true) }}">Status</th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-outline-subtle bg-surface-card text-sm text-content-secondary">
+            <tbody class="{{ table_ui.body_classes() }} bg-surface-card">
                 {% for item in metrics.reconciliation %}
-                    <tr>
-                        <td class="px-5 py-3 font-semibold text-content-primary sm:px-6">{{ item.label }}</td>
-                        <td class="px-5 py-3 tabular-nums">{{ item.operational_display }}</td>
-                        <td class="px-5 py-3 tabular-nums">{{ item.inventory_display }}</td>
-                        <td class="px-5 py-3 tabular-nums">{{ item.delta_display }}</td>
-                        <td class="px-5 py-3 tabular-nums">{{ item.delta_percent_display }}</td>
-                        <td class="px-5 py-3 text-right sm:px-6">{{ table_label.status_label(item.status, item.tone) }}</td>
+                    <tr class="{{ table_ui.row_classes() }}">
+                        <td class="{{ table_ui.cell_classes() }} font-semibold text-content-primary">{{ item.label }}</td>
+                        <td class="{{ table_ui.cell_classes() }} tabular-nums">{{ item.operational_display }}</td>
+                        <td class="{{ table_ui.cell_classes() }} tabular-nums">{{ item.inventory_display }}</td>
+                        <td class="{{ table_ui.cell_classes() }} tabular-nums">{{ item.delta_display }}</td>
+                        <td class="{{ table_ui.cell_classes() }} tabular-nums">{{ item.delta_percent_display }}</td>
+                        <td class="{{ table_ui.cell_classes(true) }}">{{ table_label.status_label(item.status, item.tone) }}</td>
                     </tr>
                 {% endfor %}
             </tbody>

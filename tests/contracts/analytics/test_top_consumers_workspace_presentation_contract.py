@@ -77,9 +77,9 @@ def test_top_consumers_evidence_and_progress_semantics_are_canonical() -> None:
 
 def test_top_consumers_records_use_shared_pagination_and_modal_details() -> None:
     results = read('app/templates/analytics/kubernetes/top_consumers/partials/_consumer_detail_results.html')
-    shared = read('app/templates/analytics/kubernetes/components/_record_pagination.html')
+    shared = read('app/templates/analytics/components/_record_pagination.html')
 
-    assert 'analytics/kubernetes/components/_record_pagination.html' in results
+    assert 'analytics/components/_record_pagination.html' in results
     assert 'analytics/kubernetes/components/_record_detail_modal.html' in results
     assert "'analytics.top_consumers_table'" in results
     assert "'analytics.top_consumers'" in results

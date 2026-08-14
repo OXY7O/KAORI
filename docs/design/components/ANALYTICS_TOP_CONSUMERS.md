@@ -14,7 +14,7 @@ Implementation owners:
 - `app/analytics/kubernetes/top_consumers/routes.py`
 - `app/templates/analytics/kubernetes/top_consumers/`
 - `app/templates/analytics/kubernetes/components/_ranked_evidence_panel.html`
-- `app/templates/analytics/kubernetes/components/_record_pagination.html`
+- `app/templates/analytics/components/_record_pagination.html`
 
 ## Purpose
 

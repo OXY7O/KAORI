@@ -71,11 +71,11 @@ def test_alerts_readiness_and_overview_follow_bright_evidence_hierarchy() -> Non
 def test_alerts_and_anomalies_use_shared_record_collection_and_pagination() -> None:
     alerts_table = read(PARTIALS / '_alerts_table.html')
     anomalies_table = read(PARTIALS / '_anomalies_table.html')
-    pagination = read('app/templates/analytics/kubernetes/components/_record_pagination.html')
+    pagination = read('app/templates/analytics/components/_record_pagination.html')
 
     for table in (alerts_table, anomalies_table):
         assert 'analytics/kubernetes/components/_evidence_record_list.html' in table
-        assert 'analytics/kubernetes/components/_record_pagination.html' in table
+        assert 'analytics/components/_record_pagination.html' in table
         assert 'record_pagination.render(' in table
         assert 'analytics.alerts' in table
         assert 'partials/_pagination.html' not in table

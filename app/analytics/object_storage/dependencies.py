@@ -1,0 +1,184 @@
+from __future__ import annotations
+
+from typing import Literal, TypedDict
+
+from app.analytics.shared.metrics import MetricReadinessState, MetricsSourceError, MetricsSourceFailureKind
+from app.models.object_storage import ObjectStorageSystem
+
+ObjectStorageDependencyKind = Literal[
+    'system_required',
+    'metrics_source_setup',
+    'metrics_source_validation',
+    'metrics_source_capability',
+    'metrics_source_connection',
+    'metrics_source_authentication',
+    'metrics_source_query',
+]
+
+
+class ObjectStorageDependencyBlocker(TypedDict):
+    kind: ObjectStorageDependencyKind
+    stage: int
+    badge: str
+    tone: str
+    title: str
+    description: str
+    diagnostic_detail: str | None
+    icon: str
+    action_label: str
+    action_endpoint: str
+
+
+def system_required_blocker() -> ObjectStorageDependencyBlocker:
+    return {
+        'kind': 'system_required',
+        'stage': 1,
+        'badge': 'System Required',
+        'tone': 'warning',
+        'title': 'Object Storage System Required',
+        'description': (
+            'Register and collect Object Storage Inventory before opening operational analytics.'
+        ),
+        'diagnostic_detail': None,
+        'icon': 'database-zap',
+        'action_label': 'Open Object Storage Inventory',
+        'action_endpoint': 'object_storage_inventory.overview',
+    }
+
+
+def metrics_source_setup_blocker(
+    system: ObjectStorageSystem,
+    *,
+    detail: str,
+) -> ObjectStorageDependencyBlocker:
+    return {
+        'kind': 'metrics_source_setup',
+        'stage': 2,
+        'badge': 'Metrics Source Required',
+        'tone': 'warning',
+        'title': 'Operational Metrics Source Required',
+        'description': (
+            f'No supported operational metrics source is ready for {system.name}. '
+            'Bind and validate a metrics provider before loading Object Storage Analytics.'
+        ),
+        'diagnostic_detail': detail,
+        'icon': 'activity',
+        'action_label': 'Open Observability Integrations',
+        'action_endpoint': 'integrations.observability',
+    }
+
+
+def metrics_validation_blocker(
+    system: ObjectStorageSystem,
+    *,
+    status: MetricReadinessState,
+    status_label: str,
+    detail: str,
+) -> ObjectStorageDependencyBlocker:
+    if status == MetricReadinessState.NOT_VALIDATED:
+        badge = 'Validation Required'
+        title = 'Operational Metrics Contract Not Validated'
+        icon = 'list-checks'
+    else:
+        badge = status_label
+        title = 'Required Metrics Contract Incomplete'
+        icon = 'shield-alert'
+    return {
+        'kind': 'metrics_source_validation' if status == MetricReadinessState.NOT_VALIDATED else 'metrics_source_capability',
+        'stage': 2,
+        'badge': badge,
+        'tone': 'warning',
+        'title': title,
+        'description': (
+            f'{system.name} has a bound metrics source, but the required Object Storage metric contract '
+            'is not ready. Run Full Validation and resolve required metric-family, label, or query gaps.'
+        ),
+        'diagnostic_detail': detail,
+        'icon': icon,
+        'action_label': 'Review Observability Integrations',
+        'action_endpoint': 'integrations.observability',
+    }
+
+
+def metrics_runtime_blocker(
+    system: ObjectStorageSystem,
+    exc: MetricsSourceError,
+) -> ObjectStorageDependencyBlocker:
+    if exc.kind == MetricsSourceFailureKind.AUTHENTICATION:
+        return {
+            'kind': 'metrics_source_authentication',
+            'stage': 2,
+            'badge': 'Authentication Failed',
+            'tone': 'critical',
+            'title': 'Operational Metrics Authentication Failed',
+            'description': (
+                f'The bound metrics source for {system.name} rejected KAORI runtime access. '
+                'Review credentials and provider authentication before continuing.'
+            ),
+            'diagnostic_detail': str(exc),
+            'icon': 'shield-x',
+            'action_label': 'Review Observability Integrations',
+            'action_endpoint': 'integrations.observability',
+        }
+    return {
+        'kind': 'metrics_source_connection',
+        'stage': 2,
+        'badge': 'Disconnected',
+        'tone': 'critical',
+        'title': 'Operational Metrics Source Disconnected',
+        'description': (
+            f'The metrics source bound to {system.name} is currently unreachable. '
+            'Committed Inventory remains available, but live Object Storage Analytics is blocked until runtime connectivity is restored.'
+        ),
+        'diagnostic_detail': str(exc),
+        'icon': 'plug-zap',
+        'action_label': 'Review Observability Integrations',
+        'action_endpoint': 'integrations.observability',
+    }
+
+
+
+def metrics_query_blocker(
+    system: ObjectStorageSystem,
+    *,
+    detail: str,
+) -> ObjectStorageDependencyBlocker:
+    return {
+        'kind': 'metrics_source_query',
+        'stage': 2,
+        'badge': 'Runtime Query Failed',
+        'tone': 'critical',
+        'title': 'Operational Metrics Query Failed',
+        'description': (
+            f'The metrics source for {system.name} is reachable, but KAORI could not complete any '
+            'runtime metric query for this analysis. Review the validated query profile and provider response before continuing.'
+        ),
+        'diagnostic_detail': detail,
+        'icon': 'file-warning',
+        'action_label': 'Review Observability Integrations',
+        'action_endpoint': 'integrations.observability',
+    }
+
+def resolver_error_blocker(
+    system: ObjectStorageSystem,
+    exc: MetricsSourceError,
+) -> ObjectStorageDependencyBlocker:
+    if exc.kind in {MetricsSourceFailureKind.TRANSPORT, MetricsSourceFailureKind.AUTHENTICATION}:
+        return metrics_runtime_blocker(system, exc)
+    if exc.provider:
+        return {
+            'kind': 'metrics_source_capability',
+            'stage': 2,
+            'badge': 'Capability Incomplete',
+            'tone': 'warning',
+            'title': 'Metrics Provider Profile Not Supported',
+            'description': (
+                f'A metrics provider is bound to {system.name}, but KAORI does not have a qualified '
+                'Object Storage metric profile for this asset/provider combination.'
+            ),
+            'diagnostic_detail': str(exc),
+            'icon': 'shield-alert',
+            'action_label': 'Review Observability Integrations',
+            'action_endpoint': 'integrations.observability',
+        }
+    return metrics_source_setup_blocker(system, detail=str(exc))

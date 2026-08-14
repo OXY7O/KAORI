@@ -96,7 +96,7 @@ def test_storage_record_panels_use_shared_filter_and_record_components() -> None
 
 
 def test_storage_pagination_owns_full_href_and_partial_htmx_endpoint() -> None:
-    pagination = read('app/templates/analytics/kubernetes/components/_record_pagination.html')
+    pagination = read('app/templates/analytics/components/_record_pagination.html')
     shared = read('app/templates/components/pagination.html')
     filesystem = read('app/templates/analytics/kubernetes/storage/partials/_filesystem_panel.html')
     pvc = read('app/templates/analytics/kubernetes/storage/partials/_persistent_volume_claims_panel.html')

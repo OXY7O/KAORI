@@ -56,7 +56,7 @@ def test_analytics_record_collections_use_inventory_table_grammar() -> None:
 
 def test_inventory_and_analytics_share_pagination_footer_contract() -> None:
     pagination = read('app/templates/components/pagination.html')
-    analytics = read('app/templates/analytics/kubernetes/components/_record_pagination.html')
+    analytics = read('app/templates/analytics/components/_record_pagination.html')
     payloads = read('app/analytics/kubernetes/common/payloads.py')
 
     assert "'per_page': 5" in payloads
@@ -115,4 +115,4 @@ def test_showing_and_rows_copy_has_one_analytics_owner() -> None:
         source = template.read_text(encoding='utf-8')
         if re.search(r'\bShowing\s+<', source) or 'Rows Per Page' in source:
             owners.append(str(template.relative_to(ROOT)))
-    assert owners == ['app/templates/analytics/kubernetes/components/_record_pagination.html']
+    assert owners == ['app/templates/analytics/components/_record_pagination.html']

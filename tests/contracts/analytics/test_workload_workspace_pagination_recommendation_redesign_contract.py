@@ -16,7 +16,7 @@ def read(relative: str) -> str:
 def test_workload_table_pagination_uses_full_page_and_partial_endpoint_ownership() -> None:
     pagination = read('app/templates/components/pagination.html')
     pagination_js = read('app/static/js/pagination.js')
-    record_pagination = read('app/templates/analytics/kubernetes/components/_record_pagination.html')
+    record_pagination = read('app/templates/analytics/components/_record_pagination.html')
     tenant = read('app/templates/analytics/kubernetes/workload/partials/_tenant_quota_section.html')
     mapping = read('app/templates/analytics/kubernetes/workload/partials/_workload_mapping_section.html')
 

@@ -60,26 +60,26 @@
         {% if metrics_readiness.domains %}
             <div class="border-t border-outline-subtle">
                 <div class="overflow-x-auto">
-                    <table class="w-full min-w-[680px] text-left">
-                        <thead class="bg-surface-subtle text-xs font-semibold text-content-muted">
+                    <table class="{{ table_ui.table_classes('min-w-[680px]') }}">
+                        <thead class="{{ table_ui.head_classes() }}">
                             <tr>
-                                <th class="px-5 py-3 sm:px-6">Metric Domain</th>
-                                <th class="px-5 py-3">Required Ready</th>
-                                <th class="px-5 py-3">Total Ready</th>
-                                <th class="px-5 py-3 text-right sm:px-6">Status</th>
+                                <th class="{{ table_ui.header_cell_classes() }}">Metric Domain</th>
+                                <th class="{{ table_ui.header_cell_classes() }}">Required Ready</th>
+                                <th class="{{ table_ui.header_cell_classes() }}">Total Ready</th>
+                                <th class="{{ table_ui.header_cell_classes(true) }}">Status</th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-outline-subtle bg-surface-card text-sm">
+                        <tbody class="{{ table_ui.body_classes() }} bg-surface-card">
                             {% for domain in metrics_readiness.domains %}
-                                <tr>
-                                    <td class="px-5 py-3 font-semibold text-content-primary sm:px-6">{{ domain.label }}</td>
-                                    <td class="px-5 py-3 tabular-nums text-content-secondary">
+                                <tr class="{{ table_ui.row_classes() }}">
+                                    <td class="{{ table_ui.cell_classes() }} font-semibold text-content-primary">{{ domain.label }}</td>
+                                    <td class="{{ table_ui.cell_classes() }} tabular-nums">
                                         {{ domain.required_ready_count }} / {{ domain.required_total_count }}
                                     </td>
-                                    <td class="px-5 py-3 tabular-nums text-content-secondary">
+                                    <td class="{{ table_ui.cell_classes() }} tabular-nums">
                                         {{ domain.ready_count }} / {{ domain.total_count }}
                                     </td>
-                                    <td class="px-5 py-3 text-right sm:px-6">
+                                    <td class="{{ table_ui.cell_classes(true) }}">
                                         {{ table_label.status_label(domain.status_label, domain.tone) }}
                                     </td>
                                 </tr>

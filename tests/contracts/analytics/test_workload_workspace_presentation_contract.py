@@ -128,7 +128,7 @@ def test_workload_workspace_matches_storage_integrated_tabbed_composition() -> N
 
 def test_workload_summary_is_top_level_scope_owned() -> None:
     service = read('app/analytics/kubernetes/workload/presentation.py')
-    pagination = read('app/templates/analytics/kubernetes/components/_record_pagination.html')
+    pagination = read('app/templates/analytics/components/_record_pagination.html')
     tenant = read('app/templates/analytics/kubernetes/workload/partials/_tenant_quota_section.html')
     mapping = read('app/templates/analytics/kubernetes/workload/partials/_workload_mapping_section.html')
 
@@ -147,7 +147,7 @@ def test_workload_public_contract_removes_retired_aliases() -> None:
     files = [
         read('app/analytics/kubernetes/workload/service.py'),
         read('app/analytics/kubernetes/common/payloads.py'),
-        read('app/templates/analytics/kubernetes/components/_record_pagination.html'),
+        read('app/templates/analytics/components/_record_pagination.html'),
     ]
     retired = (
         'selected_workload_resource_status',

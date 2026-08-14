@@ -18,10 +18,7 @@
                             {{ page_hero.meta_label('server', system.name if system else 'No System Selected') }}
                             {{ page_hero.meta_label('clock-3', selected_time_range) }}
                             {% if system %}
-                                {{ page_hero.meta_label(
-                                    'database-clock',
-                                    inventory_observed_at|user_datetime('Inventory Not Collected')
-                                ) }}
+                                {{ page_hero.meta_label('database-clock', inventory_observed_at|user_datetime('Inventory Not Collected')) }}
                             {% endif %}
                         </div>
                     {% endcall %}
@@ -29,16 +26,11 @@
                 {{ page_hero.context_card(
                     'Object Storage Analytics Readiness',
                     'Operational Analytics',
-                    'Operational Metrics',
+                    'Runtime Metrics',
                     metrics_source.label,
                     metrics_source.tone,
                     [
-                        (
-                            'database',
-                            'Inventory',
-                            'Committed' if system and inventory_observed_at else 'Pending',
-                            'Canonical state boundary'
-                        ),
+                        ('database', 'Inventory', 'Collected' if system and inventory_observed_at else 'Not Collected', 'Committed current-state evidence'),
                         ('activity', metrics_source.provider_label, metrics_source.label, metrics_source.detail)
                     ],
                     'Observability Integrations',
@@ -48,48 +40,41 @@
             </div>
         </section>
 
-        {% if dependency_blocker %}
-            <section class="{{ analysis_surface.evidence_shell_classes('p-6') }}">
-                <div class="flex min-h-[260px] flex-col items-center justify-center text-center">
-                    <span class="{{ analysis_surface.semantic_icon_classes('warning', 'large') }}">
-                        <i data-lucide="triangle-alert" class="h-5 w-5"></i>
-                    </span>
-                    <h2 class="mt-4 text-lg font-semibold text-content-primary">{{ dependency_blocker.title }}</h2>
-                    <p class="mt-2 max-w-2xl text-sm leading-6 text-content-muted">
-                        {{ dependency_blocker.description }}
-                    </p>
-                    <a href="{{ url_for(dependency_blocker.action_endpoint) }}"
-                       class="mt-5 inline-flex min-h-10 items-center gap-2 rounded-lg bg-kaori-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover">
-                        <i data-lucide="arrow-right" class="h-4 w-4"></i>
-                        {{ dependency_blocker.action_label }}
-                    </a>
-                </div>
-            </section>
-        {% else %}
+        {% if system %}
             {% include "analytics/object_storage/partials/_controls.html" %}
-            {% include "analytics/object_storage/partials/_metrics_readiness.html" %}
-            {% include "analytics/object_storage/partials/_summary.html" %}
+        {% endif %}
+
+        {% if dependency_blocker %}
+            {% include "analytics/object_storage/partials/_dependency_blocker.html" %}
+        {% else %}
             {% if page_key == 'overview' %}
+                {% include "analytics/object_storage/partials/_summary.html" %}
                 {% include "analytics/object_storage/partials/_overview_analysis.html" %}
-                {% include "analytics/object_storage/partials/_reconciliation.html" %}
-            {% elif page_key == 'capacity' %}
-                {% include "analytics/object_storage/partials/_capacity_analysis.html" %}
-                {% include "analytics/object_storage/partials/_reconciliation.html" %}
-            {% elif page_key == 'performance' %}
-                {% include "analytics/object_storage/partials/_performance_analysis.html" %}
-            {% elif page_key == 'forecast' %}
-                {% include "analytics/object_storage/partials/_forecast_analysis.html" %}
-            {% elif page_key == 'top_consumers' %}
-                {% include "analytics/object_storage/partials/_top_consumers_analysis.html" %}
-            {% endif %}
-            {% if page_key in ['overview', 'capacity', 'performance', 'forecast'] %}
                 {% include "analytics/object_storage/partials/_trend.html" %}
-            {% endif %}
-            {% if page_key in ['overview', 'capacity', 'top_consumers'] %}
                 {% include "analytics/object_storage/partials/_bucket_table.html" %}
-            {% endif %}
-            {% if page_key == 'alerts' %}
-                {% include "analytics/object_storage/partials/_alerts.html" %}
+                {% include "analytics/object_storage/partials/_overview_workspaces.html" %}
+                {% include "analytics/object_storage/partials/_reconciliation.html" %}
+                {% include "analytics/object_storage/partials/_metrics_readiness.html" %}
+            {% else %}
+                {% include "analytics/object_storage/partials/_summary.html" %}
+                {% if page_key == 'capacity' %}
+                    {% include "analytics/object_storage/partials/_capacity_analysis.html" %}
+                    {% include "analytics/object_storage/partials/_trend.html" %}
+                    {% include "analytics/object_storage/partials/_bucket_table.html" %}
+                    {% include "analytics/object_storage/partials/_reconciliation.html" %}
+                {% elif page_key == 'performance' %}
+                    {% include "analytics/object_storage/partials/_performance_analysis.html" %}
+                    {% include "analytics/object_storage/partials/_trend.html" %}
+                {% elif page_key == 'forecast' %}
+                    {% include "analytics/object_storage/partials/_forecast_analysis.html" %}
+                    {% include "analytics/object_storage/partials/_trend.html" %}
+                {% elif page_key == 'top_consumers' %}
+                    {% include "analytics/object_storage/partials/_top_consumers_analysis.html" %}
+                    {% include "analytics/object_storage/partials/_bucket_table.html" %}
+                {% elif page_key == 'alerts' %}
+                    {% include "analytics/object_storage/partials/_alerts.html" %}
+                {% endif %}
+                {% include "analytics/object_storage/partials/_metrics_readiness.html" %}
             {% endif %}
             {% include "analytics/object_storage/partials/_evidence_boundary.html" %}
         {% endif %}
