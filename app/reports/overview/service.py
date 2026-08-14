@@ -14,7 +14,7 @@ from app.reports.catalog import (
     REPORT_FAMILY_INVENTORY,
     REPORT_TYPE_SPECS,
 )
-from app.reports.delivery.service import get_delivery_channel_catalog
+from app.notification_channels.service import notification_channel_summary
 from app.reports.export.constants import (
     DEFAULT_REPORT_DOMAIN,
     DEFAULT_REPORT_SOURCE_KIND,
@@ -125,9 +125,9 @@ def get_reports_overview_payload() -> dict[str, Any]:
     report_counts = get_report_counts()
     storage_context = get_storage_context()
     report_type_coverage = get_report_type_coverage()
-    telegram_delivery = get_telegram_delivery_context()
+    notification_delivery = get_notification_delivery_context()
     worker_context = get_queue_readiness(get_reports_queue_name())
-    pipeline_status = get_pipeline_status(storage_context, telegram_delivery, worker_context)
+    pipeline_status = get_pipeline_status(storage_context, notification_delivery, worker_context)
     current_status = get_current_status(report_counts, storage_context, report_type_coverage, worker_context)
 
     return {
@@ -147,13 +147,13 @@ def get_reports_overview_payload() -> dict[str, Any]:
         'report_architecture_context': get_report_architecture_context(),
         'pipeline_status': pipeline_status,
         'pipeline_summary': get_pipeline_summary(pipeline_status),
-        'reporting_context': get_reporting_context(storage_context, telegram_delivery),
+        'reporting_context': get_reporting_context(storage_context, notification_delivery),
         'current_status': current_status,
         'current_status_summary': get_current_status_summary(current_status),
         'reporting_operating_model': get_reporting_operating_model(
-            report_counts, storage_context, report_type_coverage, telegram_delivery
+            report_counts, storage_context, report_type_coverage, notification_delivery
         ),
-        'data_collection_status': get_data_collection_status(storage_context, telegram_delivery),
+        'data_collection_status': get_data_collection_status(storage_context, notification_delivery),
         'related_information': get_related_information(),
         'storage_context': storage_context,
         'worker_context': worker_context,
@@ -571,37 +571,27 @@ def get_report_type_summary(report_type_coverage: dict[str, Any]) -> dict[str, s
     }
 
 
-def get_telegram_delivery_context() -> dict[str, Any]:
-    telegram = next(
-        (item for item in get_delivery_channel_catalog() if item.get('value') == 'telegram'),
-        None,
-    )
-    if telegram is None:
-        return {
-            'label': 'Telegram',
-            'status': 'Unavailable',
-            'tone': 'unknown',
-            'ready': False,
-            'description': 'Telegram delivery is not registered.',
-        }
-
+def get_notification_delivery_context() -> dict[str, Any]:
+    summary = notification_channel_summary()
     return {
-        'label': str(telegram.get('label', 'Telegram')),
-        'status': str(telegram.get('status', 'Configuration Required')),
-        'tone': str(telegram.get('tone', 'warning')),
-        'ready': str(telegram.get('status', '')).strip().lower() == 'ready',
-        'description': str(telegram.get('description', 'Telegram report delivery.')),
+        'label': 'Notification Channels',
+        'status': str(summary['label']),
+        'tone': str(summary['tone']),
+        'ready': int(summary['eligible']) > 0,
+        'eligible': int(summary['eligible']),
+        'operational': int(summary['operational']),
+        'providers': list(summary['provider_labels']),
+        'description': 'Reusable Telegram, email, and Microsoft Teams destinations are managed under Integrations.',
     }
-
 
 def get_pipeline_status(
     storage_context: dict[str, Any],
-    telegram_delivery: dict[str, Any] | None = None,
+    notification_delivery: dict[str, Any] | None = None,
     worker_context: dict[str, Any] | None = None,
 ) -> list[dict[str, str]]:
     storage_tone = 'normal' if str(storage_context.get('tone')) == 'green' else 'warning'
-    telegram = telegram_delivery or get_telegram_delivery_context()
-    telegram_ready = bool(telegram.get('ready'))
+    delivery = notification_delivery or get_notification_delivery_context()
+    delivery_ready = bool(delivery.get('ready'))
     worker = worker_context or get_queue_readiness(get_reports_queue_name())
 
     return [
@@ -656,14 +646,14 @@ def get_pipeline_status(
         },
         {
             'name': 'Complete & Optional Delivery',
-            'summary': 'The report becomes Ready; scheduled reports can notify Telegram.',
+            'summary': 'The report becomes Ready; scheduled reports can notify selected platform channels.',
             'description': (
                 'After storage succeeds, KAORI records the artifact metadata and marks the report Ready. '
-                'When a schedule selects Telegram, KAORI sends a notification and report detail link. '
+                'When a schedule selects validated Notification Channels, KAORI sends a provider-neutral report event and report detail link. '
                 'Manual reports remain available from Generated Reports.'
             ),
-            'status': 'Telegram Ready' if telegram_ready else 'Telegram Setup Required',
-            'tone': 'normal' if telegram_ready else 'warning',
+            'status': 'Delivery Ready' if delivery_ready else 'Channel Setup Required',
+            'tone': 'normal' if delivery_ready else 'warning',
             'icon': 'send',
         },
     ]
@@ -683,9 +673,9 @@ def get_pipeline_summary(pipeline_status: list[dict[str, str]]) -> dict[str, int
 
 def get_reporting_context(
     storage_context: dict[str, Any],
-    telegram_delivery: dict[str, Any] | None = None,
+    notification_delivery: dict[str, Any] | None = None,
 ) -> list[dict[str, Any]]:
-    telegram = telegram_delivery or get_telegram_delivery_context()
+    delivery = notification_delivery or get_notification_delivery_context()
     return [
         {
             'title': 'Integration-Driven Coverage',
@@ -726,9 +716,9 @@ def get_reporting_context(
         {
             'title': 'Automation & Delivery',
             'description': (
-                f'Manual generation and recurring schedules are available now. Telegram delivery is '
-                f'{str(telegram.get("status", "Configuration Required")).lower()}; email, Slack, and webhook '
-                'remain unconnected channels.'
+                f'Manual generation and recurring schedules are available now. Notification Channels are '
+                f'{str(delivery.get("status", "Configuration Required")).lower()} with '
+                f'{int(delivery.get("eligible", 0))} eligible destination(s).'
             ),
             'icon': 'workflow',
             'detail': (
@@ -819,10 +809,10 @@ def get_reporting_operating_model(
     report_counts: dict[str, int],
     storage_context: dict[str, Any],
     report_type_coverage: dict[str, Any],
-    telegram_delivery: dict[str, Any] | None = None,
+    notification_delivery: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     type_summary = get_report_type_summary(report_type_coverage)
-    telegram = telegram_delivery or get_telegram_delivery_context()
+    delivery = notification_delivery or get_notification_delivery_context()
     return {
         'title': 'Reporting Operating Model',
         'description': 'How KAORI composes, governs, stores, and automates infrastructure reports.',
@@ -857,14 +847,13 @@ def get_reporting_operating_model(
             },
             {
                 'label': 'Automate and Deliver',
-                'value': str(telegram.get('status', 'Configuration Required')),
+                'value': str(delivery.get('status', 'Configuration Required')),
                 'description': (
                     f'{report_counts["active_schedules"]} active schedules can generate reports automatically. '
-                    'Telegram delivery is implemented for scheduled report notifications; email, Slack, and '
-                    'webhook remain unconnected.'
+                    'Validated Telegram, email, and Microsoft Teams channels can be selected per report schedule.'
                 ),
                 'icon': 'send-horizontal',
-                'tone': 'normal' if bool(telegram.get('ready')) else 'warning',
+                'tone': 'normal' if bool(delivery.get('ready')) else 'warning',
             },
         ],
     }
@@ -872,9 +861,9 @@ def get_reporting_operating_model(
 
 def get_data_collection_status(
     storage_context: dict[str, Any],
-    telegram_delivery: dict[str, Any] | None = None,
+    notification_delivery: dict[str, Any] | None = None,
 ) -> list[dict[str, Any]]:
-    telegram = telegram_delivery or get_telegram_delivery_context()
+    delivery = notification_delivery or get_notification_delivery_context()
     s3_context = storage_context.get('s3', {})
     s3_selected = storage_context.get('backend') == 's3'
     custom_endpoint = bool(s3_context.get('endpoint_url')) and s3_context.get('endpoint_url') != 'AWS default endpoint'
@@ -976,27 +965,17 @@ def get_data_collection_status(
             ),
         },
         {
-            'stage': 'ready' if bool(telegram.get('ready')) else 'available',
-            'stage_label': 'Ready Now' if bool(telegram.get('ready')) else 'Available to Configure',
-            'name': 'Telegram',
-            'category': 'Delivery Channel',
-            'status': str(telegram.get('status', 'Configuration Required')),
-            'tone': 'normal' if bool(telegram.get('ready')) else 'warning',
+            'stage': 'ready' if bool(delivery.get('ready')) else 'available',
+            'stage_label': 'Ready Now' if bool(delivery.get('ready')) else 'Available to Configure',
+            'name': 'Notification Channels',
+            'category': 'Delivery Integration',
+            'status': str(delivery.get('status', 'Configuration Required')),
+            'tone': 'normal' if bool(delivery.get('ready')) else 'warning',
             'icon': 'send',
             'description': (
-                'Implemented delivery channel for scheduled report notifications and report detail links. '
-                'Bot token and chat ID configuration determine runtime readiness.'
+                'Telegram, email, and Microsoft Teams destinations are configured once under Integrations and '
+                'selected by channel identity on each report schedule.'
             ),
-        },
-        {
-            'stage': 'planned',
-            'stage_label': 'Planned',
-            'name': 'Email, Slack & Webhook',
-            'category': 'Delivery Channel',
-            'status': 'Not Connected',
-            'tone': 'info',
-            'icon': 'send-horizontal',
-            'description': ('Additional delivery adapters can extend the same post-generation delivery contract.'),
         },
     ]
 

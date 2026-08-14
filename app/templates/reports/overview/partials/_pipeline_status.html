@@ -9,8 +9,8 @@
             <p class="mt-1.5 text-sm font-semibold leading-6 text-content-primary">PDF Artifact</p>
         </div>
         <div class="bg-surface-card px-4 py-3">
-            <p class="text-xs font-semibold uppercase tracking-wider text-content-muted">Delivery Channel</p>
-            <p class="mt-1.5 text-sm font-semibold leading-6 text-content-primary">Telegram</p>
+            <p class="text-xs font-semibold uppercase tracking-wider text-content-muted">Delivery Integration</p>
+            <p class="mt-1.5 text-sm font-semibold leading-6 text-content-primary">Notification Channels</p>
         </div>
     </div>
     <div class="space-y-2" aria-label="Generate report pipeline stages">
@@ -53,6 +53,6 @@
         <i data-lucide="info"
            class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary"
            aria-hidden="true"></i>
-        <p><span class="font-semibold text-content-primary">Canonical flow:</span> manual and scheduled requests both create a report record and enqueue one JobExecution on the dedicated Reports queue. The Reports worker renders and stores the artifact, then scheduled delivery sends Telegram when selected and configured.</p>
+        <p><span class="font-semibold text-content-primary">Canonical flow:</span> manual and scheduled requests both create a report record and enqueue one JobExecution on the dedicated Reports queue. The Reports worker renders and stores the artifact, then scheduled delivery emits a governed report event to the selected Notification Channels.</p>
     </div>
 </div>

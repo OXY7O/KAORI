@@ -133,7 +133,6 @@
     "app/analytics/kubernetes/overview/service.py": 1715,
     "app/analytics/kubernetes/utilization/service.py": 1177,
     "app/cluster/routes.py": 871,
-    "app/config/default.py": 803,
     "app/integrations/prometheus/query_profiles/kubernetes_v1.py": 1309,
     "app/integrations/service.py": 902,
     "app/integrations/validation/tasks.py": 909,
@@ -147,8 +146,8 @@
     "app/reports/export/html_pdf/workload_analysis.py": 1000,
     "app/reports/generate/service.py": 961,
     "app/reports/generated/service.py": 2275,
-    "app/reports/overview/service.py": 1096,
-    "app/reports/schedules/service.py": 1230,
+    "app/reports/overview/service.py": 1075,
+    "app/reports/schedules/service.py": 1197,
     "app/reports/storage/service.py": 1417,
     "app/users/service.py": 853
   }

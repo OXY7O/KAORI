@@ -27,5 +27,11 @@
                 <span class="truncate whitespace-nowrap">{{ domain.label }}</span>
             </a>
         {% endfor %}
+        <a href="{{ url_for('notification_channels.index') }}"
+           class="{{ 'bg-white/[0.08] text-kaori-accent' if integration_navigation.notification_channels_active else 'sidebar-item-idle' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm leading-5 transition">
+            <span class="h-1.5 w-1.5 rounded-full {{ 'bg-kaori-accent' if integration_navigation.notification_channels_active else 'bg-white/20 group-hover:bg-white/[0.45]' }}"></span>
+            <i data-lucide="send" class="h-3.5 w-3.5"></i>
+            <span class="truncate whitespace-nowrap">Notification Channels</span>
+        </a>
     </div>
 </details>

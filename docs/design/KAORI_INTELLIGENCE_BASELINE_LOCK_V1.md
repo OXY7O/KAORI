@@ -63,11 +63,11 @@ contracts, and E2E/integration evidence as applicable.
 - No arbitrary typography/raw palette drift.
 - Dark mode and accessibility semantics remain part of the locked baseline.
 
-### Notification Channels
+### Notification Delivery Boundary
 
-- Telegram, SMTP email, and Microsoft Teams Workflows are available outbound Intelligence providers.
-- Credentials remain encrypted and are never rendered back to clients.
-- Automatic delivery requires an enabled channel with a successful test.
-- The initial dispatcher sends first-seen active alert episodes only; resolved-event notification is not yet available.
+- Notification Channels is owned by Integrations and is a platform-wide outbound delivery capability.
+- Telegram, SMTP email, and Microsoft Teams Workflows are current delivery providers; provider credentials remain encrypted and are never rendered back to clients.
+- Alert Intelligence consumes the shared channel layer for governed alert events; it does not own provider credentials or transport adapters.
+- Automatic alert delivery requires an enabled channel with a successful test and an Alert Intelligence allowed-use policy.
+- The initial alert dispatcher sends first-seen active alert episodes only; resolved-event notification is not yet available.
 - Alertmanager remains the raw alert routing and receiver authority; KAORI delivers enriched Intelligence context.
-- Additional channel providers remain future extensions of the same provider-neutral contract; current persistence is not provider-specific.

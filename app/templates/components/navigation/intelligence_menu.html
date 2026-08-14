@@ -1,7 +1,6 @@
 {% set endpoint = request.endpoint or '' %}
 {% set intelligence_active = endpoint.startswith('intelligence.')
     or endpoint.startswith('alert_intelligence.')
-    or endpoint.startswith('notification_channels.')
     or endpoint.startswith('automation_control.') %}
 <details class="sidebar-menu space-y-1"
          {% if intelligence_active %}open{% endif %}>
@@ -22,7 +21,6 @@
         {% set intelligence_links = [
             ('intelligence.recommendations', 'sparkles', 'Recommendations'),
             ('alert_intelligence.index', 'triangle-alert', 'Alert Intelligence'),
-            ('notification_channels.index', 'send', 'Notification Channels'),
             ('intelligence.catalog', 'list-checks', 'Rule Catalog'),
             ('automation_control.index', 'workflow', 'Automation Control')
         ] %}

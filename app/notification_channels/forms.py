@@ -10,6 +10,7 @@ from app.notification_channels.contracts import NotificationChannelFormInput
 _SUPPORTED_PROVIDERS = {'telegram', 'email', 'microsoft_teams'}
 _TEAMS_WORKFLOW_SUFFIXES = ('.environment.api.powerplatform.com', '.logic.azure.com')
 _EMAIL_SECURITY_MODES = {'starttls', 'tls', 'none'}
+_SUPPORTED_EVENT_TYPES = {'alert_intelligence.active_alert', 'report.generated'}
 
 
 def parse_channel_form(
@@ -24,6 +25,7 @@ def parse_channel_form(
     domains = tuple(
         value for value in form.getlist('domains') if value in {'kubernetes', 'object_storage'}
     ) or ('kubernetes', 'object_storage')
+    event_types = tuple(value for value in form.getlist('event_types') if value in _SUPPORTED_EVENT_TYPES)
     destination, credentials, provider_config, credential_changed = _parse_provider_payload(
         provider_key, form, existing
     )
@@ -38,6 +40,7 @@ def parse_channel_form(
             minimum_severity if minimum_severity in {'critical', 'warning', 'info'} else 'warning'
         ),
         domains=domains,
+        event_types=event_types,
         credential_changed=credential_changed,
     )
 
@@ -113,6 +116,8 @@ def validate_channel_input(
     if existing is not None and data.provider_key != existing.provider_key:
         errors.append('Notification provider cannot be changed. Create a new channel instead.')
         return errors
+    if not data.event_types:
+        errors.append('Select at least one allowed use for this notification channel.')
 
     if data.provider_key == 'telegram':
         if not data.credentials.get('bot_token'):
@@ -137,6 +142,7 @@ def get_channel_form_view(channel: NotificationChannel | None) -> dict[str, Any]
         'enabled': channel.enabled,
         'minimum_severity': channel.minimum_severity,
         'domains': list(channel.domains or []),
+        'event_types': list(channel.event_types or []),
         'credential_configured': bool(channel.credential_payload),
         'target_chat_id': channel.destination if channel.provider_key == 'telegram' else '',
         'email_recipients': channel.destination if channel.provider_key == 'email' else '',

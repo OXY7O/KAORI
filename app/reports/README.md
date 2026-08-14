@@ -104,3 +104,8 @@ S3/MinIO unavailability degrades artifact capabilities; it does **not** make the
 - **Storage:** remains available for diagnostics and strong manual verification.
 
 Raw S3 exceptions, access keys, secret keys, tokens, and credential values are never written into the shared readiness payload or rendered in Reports UI. Technical exceptions remain server-side evidence.
+
+
+## Notification delivery
+
+Scheduled Reports use Integrations → Notification Channels. Schedules store selected channel IDs only; provider credentials and transport behavior remain owned by the shared notification integration. Legacy report-specific Telegram environment credentials are not supported.

@@ -226,12 +226,13 @@ def build_navigation_breadcrumb(
         ]
         if endpoint != 'platform_operations.kubernetes.index':
             items.append(BreadcrumbItem(_leaf(endpoint, 'Secret Reveal')))
-    elif endpoint.startswith('integrations.'):
+    elif endpoint.startswith(('integrations.', 'notification_channels.')):
         leaf = {
             'integrations.overview': 'Overview',
             'integrations.orchestration': 'Orchestration',
             'integrations.observability': 'Observability',
             'integrations.storage': 'Storage',
+            'notification_channels.index': 'Notification Channels',
         }.get(endpoint, 'Overview')
         items = [BreadcrumbItem('Integrations', 'plug'), BreadcrumbItem(leaf)]
     elif endpoint.startswith('access.overview.'):

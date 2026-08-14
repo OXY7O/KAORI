@@ -2,7 +2,17 @@
 {% import "components/page_hero.html" as page_hero %}
 {% import "components/table_label.html" as table_label %}
 {% import "components/table_primitives.html" as table_ui %}
-{% import "intelligence/components/_workspace.html" as intelligence_ui %}
+{% import "integrations/components/_workspace.html" as integration_ui %}
+{% macro notification_section(title, description, icon='send', badge_text='', badge_tone='info') -%}
+<section class="{{ integration_ui.section_shell_classes() }}">
+    {{ integration_ui.section_header(icon, title, description, tone='brand') }}
+    {% if badge_text %}<div class="border-b border-outline-subtle px-5 py-3 sm:px-6">{{ table_label.status_label(badge_text, badge_tone, size='compact') }}</div>{% endif %}
+    {{ caller() }}
+</section>
+{%- endmacro %}
+{% macro notification_subsection(title, description='', icon='circle-dot') -%}
+<div class="flex min-w-0 items-start gap-2.5">{{ integration_ui.palette_icon(icon, 'brand', size='sm') }}<div class="min-w-0"><h3 class="text-sm font-semibold leading-5 text-content-primary">{{ title }}</h3>{% if description %}<p class="mt-0.5 text-xs leading-5 text-content-muted">{{ description }}</p>{% endif %}</div></div>
+{%- endmacro %}
 {% block title %}Notification Channels{% endblock title %}
 {% block dashboard_content %}
     {% set can_manage = current_user.has_permission('settings.manage_integrations') %}
@@ -15,11 +25,10 @@
         <section class="{{ page_hero.shell_classes() }}">
             <div class="{{ page_hero.layout_classes() }}">
                 <div class="{{ page_hero.content_classes() }}">
-                    {% call page_hero.intro('send', 'Infrastructure Intelligence', 'bell-ring') %}
+                    {% call page_hero.intro('send', 'Platform Integrations', 'blocks') %}
                         <h1 class="{{ page_hero.title_classes() }}">Notification Channels</h1>
                         <p class="mt-2 {{ page_hero.description_classes() }}">
-                            Govern enriched KAORI Alert Intelligence delivery across Telegram, email, and
-                            Microsoft Teams without replacing Alertmanager receiver routing.
+                            Govern reusable outbound delivery across Alert Intelligence, Scheduled Reports, and future KAORI consumers through Telegram, email, and Microsoft Teams.
                         </p>
                         <div class="{{ page_hero.metadata_row_classes() }}">
                             {{ page_hero.meta_label('message-circle', 'Telegram') }}
@@ -35,8 +44,8 @@
                     payload.posture.label,
                     payload.posture.tone,
                     hero_metrics,
-                    'Open Alert Intelligence',
-                    url_for('alert_intelligence.index'),
+                    'Integrations Overview',
+                    url_for('integrations.overview'),
                     'send'
                 ) }}
             </div>
@@ -48,7 +57,7 @@
             </div>
         {% endif %}
 
-        {% call intelligence_ui.section(
+        {% call notification_section(
             'Delivery Providers',
             'Choose the transport that fits the operational audience. Provider credentials remain scoped to '
             ~ 'the channel and automatic delivery is eligible only after a successful test.',
@@ -60,7 +69,7 @@
                 {% for provider in payload.providers %}
                     <div class="bg-surface-card p-4 sm:p-5">
                         <div class="flex items-start justify-between gap-3">
-                            {{ intelligence_ui.subsection(provider.label, provider.transport, provider.icon) }}
+                            {{ notification_subsection(provider.label, provider.transport, provider.icon) }}
                             {{ table_label.status_label(provider.status, provider.tone, size='compact') }}
                         </div>
                         <p class="mt-3 text-sm leading-6 text-content-secondary">{{ provider.description }}</p>
@@ -70,9 +79,9 @@
             </div>
         {% endcall %}
 
-        {% call intelligence_ui.section(
+        {% call notification_section(
             'Channel Configuration',
-            'Configure one provider destination at a time. Secret values are encrypted at rest and are never '
+            'Configure one reusable provider destination at a time. Secret values are encrypted at rest and are never '
             ~ 'rendered back into this form.',
             'settings-2',
             payload.posture.label,
@@ -119,7 +128,7 @@
                         {% endif %}
                     </div>
                     <div>
-                        <label class="{{ table_ui.filter_label_classes() }}">Minimum Severity</label>
+                        <label class="{{ table_ui.filter_label_classes() }}">Minimum Alert Severity</label>
                         <select name="minimum_severity" class="{{ table_ui.filter_select_classes() }}">
                             {% for option in payload.severity_options %}
                                 <option value="{{ option.value }}"
@@ -128,6 +137,7 @@
                                 </option>
                             {% endfor %}
                         </select>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">Applies to Alert Intelligence events; Scheduled Reports are not severity-filtered.</p>
                     </div>
                 </div>
 
@@ -255,6 +265,18 @@
                             {% endfor %}
                         </div>
                     </div>
+                    <div>
+                        <span class="{{ table_ui.filter_label_classes() }}">Allowed Uses</span>
+                        {% set selected_events = form_channel.event_types if form_channel else ['alert_intelligence.active_alert'] %}
+                        <div class="space-y-2 rounded-md border border-outline-default bg-surface-card px-3 py-2.5">
+                            {% for option in payload.event_type_options %}
+                                <label class="flex items-center gap-2 text-sm text-content-secondary">
+                                    <input type="checkbox" name="event_types" value="{{ option.value }}" {% if option.value in selected_events %}checked{% endif %} class="h-4 w-4 rounded border-outline-default text-kaori-primary">
+                                    {{ option.label }}
+                                </label>
+                            {% endfor %}
+                        </div>
+                    </div>
                     <label class="inline-flex items-center gap-2 text-sm font-medium text-content-secondary">
                         <input type="checkbox" name="enabled" value="1" {% if not form_channel or form_channel.enabled %}checked{% endif %} class="h-4 w-4 rounded border-outline-default text-kaori-primary">
                         Enabled
@@ -276,9 +298,9 @@
             </form>
         {% endcall %}
 
-        {% call intelligence_ui.section(
+        {% call notification_section(
             'Configured Channels',
-            'Test Delivery validates the provider transport and destination. Only enabled channels with a successful test are eligible for automatic Alert Intelligence delivery.',
+            'Test Delivery validates the provider transport and destination. Allowed Uses controls which KAORI capabilities may select the channel.',
             'send',
             payload.posture.label,
             payload.posture.tone
@@ -292,6 +314,7 @@
                             <th class="{{ table_ui.header_cell_classes() }}">Destination</th>
                             <th class="{{ table_ui.header_cell_classes() }}">Policy</th>
                             <th class="{{ table_ui.header_cell_classes() }}">Domains</th>
+                            <th class="{{ table_ui.header_cell_classes() }}">Uses</th>
                             <th class="{{ table_ui.header_cell_classes() }}">Last Delivery</th>
                             <th class="{{ table_ui.header_cell_classes(action=true) }}">Actions</th>
                         </tr>
@@ -304,6 +327,7 @@
                                 <td class="{{ table_ui.cell_classes() }} break-all">{{ channel.destination_label }}</td>
                                 <td class="{{ table_ui.cell_classes() }}">{{ channel.minimum_severity_label }}</td>
                                 <td class="{{ table_ui.cell_classes() }}">{{ channel.domain_labels|join(', ') }}</td>
+                                <td class="{{ table_ui.cell_classes() }}">{{ channel.event_type_labels|join(', ') }}</td>
                                 <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_label(channel.last_delivery_label, channel.last_delivery_tone, size='compact') }}</td>
                                 <td class="{{ table_ui.cell_classes(action=true) }}">
                                     {% if can_manage %}
@@ -323,7 +347,7 @@
                             </tr>
                         {% else %}
                             <tr>
-                                <td colspan="7" class="px-4 py-10 text-center text-sm text-content-muted">
+                                <td colspan="8" class="px-4 py-10 text-center text-sm text-content-muted">
                                     No notification channels configured. Add Telegram, email, or Microsoft Teams above.
                                 </td>
                             </tr>
@@ -333,41 +357,41 @@
             </div>
         {% endcall %}
 
-        {% call intelligence_ui.section(
+        {% call notification_section(
             'Delivery Contract',
-            'These rules apply equally to Telegram, email, and Microsoft Teams so provider choice does not change Alert Intelligence semantics.',
+            'Provider choice changes transport only. Consumer capabilities emit governed events and select approved channel instances.',
             'workflow'
         ) %}
             <div class="grid gap-px bg-outline-subtle sm:grid-cols-2 lg:grid-cols-4">
                 {% for label, value, icon in [
-                    ('Event', payload.delivery_contract.event, 'bell-ring'),
+                    ('Events', payload.delivery_contract.events, 'bell-ring'),
                     ('Retry', payload.delivery_contract.retry, 'refresh-cw'),
                     ('Deduplication', payload.delivery_contract.deduplication, 'copy-check'),
-                    ('Resolved Events', payload.delivery_contract.resolved, 'circle-off')
+                    ('Ownership', payload.delivery_contract.ownership, 'waypoints')
                 ] %}
                     <div class="bg-surface-card p-4 sm:p-5">
-                        {{ intelligence_ui.subsection(label, value, icon) }}
+                        {{ notification_subsection(label, value, icon) }}
                     </div>
                 {% endfor %}
             </div>
         {% endcall %}
 
-        {% call intelligence_ui.section(
-            'Authority Boundary',
-            'KAORI notification channels deliver enriched Intelligence context; Alertmanager remains the raw alert routing authority.',
+        {% call notification_section(
+            'Delivery Ownership',
+            'Notification Channels is a platform integration capability. Alert Intelligence and Reports remain responsible for event meaning and content.',
             'shield-check'
         ) %}
             <div class="grid gap-px bg-outline-subtle lg:grid-cols-2">
                 <div class="bg-surface-card p-4 sm:p-5">
-                    {{ intelligence_ui.subsection('Alertmanager', 'Raw alert notification authority', 'bell-ring') }}
+                    {{ notification_subsection('Consumer Capabilities', 'Emit governed events and choose approved destinations', 'workflow') }}
                     <p class="mt-3 text-sm leading-6 text-content-secondary">
-                        Continue to own provider alert grouping, inhibition, silences, routing, and receiver delivery in Alertmanager.
+                        Alert Intelligence emits enriched alert events; Scheduled Reports emits report completion events. Alertmanager still owns raw alert routing and receivers.
                     </p>
                 </div>
                 <div class="bg-surface-card p-4 sm:p-5">
-                    {{ intelligence_ui.subsection('KAORI Intelligence', 'Enriched contextual delivery', 'brain-circuit') }}
+                    {{ notification_subsection('Notification Channels', 'Reusable provider delivery infrastructure', 'send') }}
                     <p class="mt-3 text-sm leading-6 text-content-secondary">
-                        KAORI adds asset identity, Alert Intelligence evidence, recommendation context, severity/domain policy, retry, and per-channel deduplication before delivery.
+                        KAORI owns encrypted provider credentials, destination validation, transport adapters, delivery journaling, retries, and per-event deduplication.
                     </p>
                 </div>
             </div>

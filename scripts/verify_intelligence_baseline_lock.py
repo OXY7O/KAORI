@@ -43,15 +43,6 @@ def main() -> int:
     object_storage_recommendations = read('app/intelligence/object_storage_recommendations.py')
     alert_intelligence = read('app/alert_intelligence/service.py')
     alert_routes = read('app/alert_intelligence/routes.py')
-    notification_routes = read('app/notification_channels/routes.py')
-    notification_service = read('app/notification_channels/service.py')
-    notification_model = read('app/models/notification_channel.py')
-    telegram_provider = read('app/notification_channels/providers/telegram.py')
-    email_provider = read('app/notification_channels/providers/email.py')
-    teams_provider = read('app/notification_channels/providers/microsoft_teams.py')
-    notification_providers = read('app/notification_channels/providers/__init__.py')
-    notification_forms = read('app/notification_channels/forms.py')
-    notification_page = read('app/templates/intelligence/notification_channels/index.html')
     alert_workspace = read('app/templates/intelligence/partials/_alert_intelligence_workspace.html')
     automation_routes = read('app/automation_control/routes.py')
     automation_presentation = read('app/automation_control/presentation.py')
@@ -175,59 +166,6 @@ def main() -> int:
         'Alert Intelligence must keep contextual correlation distinct from causal attribution',
         errors,
     )
-
-    for route_signature in (
-        "@notification_channels_bp.get('/')",
-    ):
-        position = notification_routes.index(route_signature)
-        permission_position = notification_routes.index("@permission_required('intelligence.view')", position)
-        function_position = notification_routes.index('def ', position)
-        require(position < permission_position < function_position, 'Notification Channels read permission is missing', errors)
-    for route_signature in (
-        "@notification_channels_bp.post('/')",
-        "@notification_channels_bp.post('/<int:channel_id>/update')",
-        "@notification_channels_bp.post('/<int:channel_id>/test')",
-        "@notification_channels_bp.post('/<int:channel_id>/delete')",
-    ):
-        position = notification_routes.index(route_signature)
-        permission_position = notification_routes.index("@permission_required('settings.manage_integrations')", position)
-        function_position = notification_routes.index('def ', position)
-        require(
-            position < permission_position < function_position,
-            f'Notification Channels mutation permission missing after {route_signature}',
-            errors,
-        )
-    for required in (
-        'EncryptedText()',
-        'credential_payload: Mapped[str | None] = mapped_column(EncryptedText()',
-        "event_types=['alert_intelligence.active_alert']",
-        "UniqueConstraint('channel_id', 'event_key'",
-    ):
-        source = notification_model if required != "event_types=['alert_intelligence.active_alert']" else notification_service
-        require(required in source, f'Notification channel persistence contract missing: {required}', errors)
-    for required in (
-        "_TELEGRAM_API = 'https://api.telegram.org'",
-        '/sendMessage',
-        "method='POST'",
-        "'chat_id': chat_id",
-    ):
-        require(required in telegram_provider, f'Telegram provider contract missing: {required}', errors)
-    require('bot_token' not in telegram_provider.split('except HTTPError', 1)[1], 'Telegram errors must not disclose bot tokens', errors)
-    for required in ('smtplib.SMTP', 'smtplib.SMTP_SSL', 'starttls(', 'send_message('):
-        require(required in email_provider, f'Email provider contract missing: {required}', errors)
-    for required in ("'text': _render_message(message)", "method='POST'", 'workflow_url'):
-        require(required in teams_provider, f'Microsoft Teams provider contract missing: {required}', errors)
-    for provider_key in ("'telegram'", "'email'", "'microsoft_teams'"):
-        require(provider_key in notification_providers, f'Notification provider registry missing: {provider_key}', errors)
-    require('_TEAMS_WORKFLOW_SUFFIXES' in notification_forms, 'Teams Workflow URL validation is missing', errors)
-    require("('.environment.api.powerplatform.com', '.logic.azure.com')" in notification_forms, 'Teams Workflow domains must be explicit', errors)
-    require('type="password"' in notification_page, 'Notification secret fields must remain password-only', errors)
-    for forbidden in ('form_channel.bot_token', 'form_channel.smtp_password', 'form_channel.teams_workflow_url'):
-        require(forbidden not in notification_page, f'Notification secret must never be rendered back to HTML: {forbidden}', errors)
-    require('Alertmanager remains the raw alert routing authority' in notification_page, 'Notification Channels must preserve Alertmanager authority boundary', errors)
-    for label in ('Telegram', 'Email', 'Microsoft Teams'):
-        require(label in notification_page, f'Notification Channels UI missing provider: {label}', errors)
-    require('first-seen' in notification_service.lower(), 'Notification delivery must document first-seen deduplication semantics', errors)
 
     recommendations_page = read('app/templates/intelligence/recommendations.html')
     catalog_page = read('app/templates/intelligence/rule_catalog.html')

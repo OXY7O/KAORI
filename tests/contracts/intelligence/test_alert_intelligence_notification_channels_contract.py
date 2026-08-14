@@ -37,7 +37,7 @@ def test_notification_channel_persistence_is_provider_neutral_and_secrets_are_en
 
 def test_telegram_provider_uses_fixed_bot_api_and_template_never_echoes_token():
     provider = read('app/notification_channels/providers/telegram.py')
-    page = read('app/templates/intelligence/notification_channels/index.html')
+    page = read('app/templates/integrations/notification_channels/index.html')
 
     assert "_TELEGRAM_API = 'https://api.telegram.org'" in provider
     assert "f'{_TELEGRAM_API}/bot{bot_token}/sendMessage'" in provider

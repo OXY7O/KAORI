@@ -12,8 +12,8 @@ maintaining duplicate page-specific recommendation logic.
 - `workflow.py`: immutable decision approval and rejection transitions.
 - `routes.py`: read-only domain-owned HTTP/HTMX surfaces for Recommendations and Rule Catalog.
 - `../alert_intelligence/`: multi-domain active-alert normalization, scoped recommendation context, and provider-authority presentation.
-- `../notification_channels/`: governed outbound delivery boundary for enriched Intelligence notifications; Telegram, SMTP email, and Microsoft Teams Workflows are available provider implementations.
-- `../alert_delivery/`: background dispatch orchestration for eligible notification channels.
+- `../notification_channels/`: platform-wide outbound delivery integration consumed by Alert Intelligence, Reports, and future governed capabilities.
+- `../alert_delivery/`: Alert Intelligence background dispatch orchestration over configured Notification Channels.
 
 Rules must identify source, domain, impacted assets, evidence, and remediation.
 Imported and internal rules share one catalog contract. Do not embed page-specific
@@ -65,7 +65,7 @@ Locked current-state contracts:
 - **Rule Catalog** exposes canonical definitions. Rules that do not yet have a validated
   provider/evaluator path remain **Reserved Plan**.
 - **Alert Intelligence** is active for Kubernetes and Object Storage. Automatic alert-source selection prefers Alertmanager and falls back to Prometheus `ALERTS`; committed Recommendations and Rule Catalog definitions provide contextual enrichment without asserting causal correlation. Server and HCI enrichment remain **Reserved Plan**.
-- **Notification Channels** is an outbound Intelligence delivery boundary. Telegram, SMTP email, and Microsoft Teams Workflows are supported providers; secret credentials are encrypted, test delivery is required before automatic delivery, and Alertmanager remains the raw alert routing/receiver authority.
+- **Notification Channels** is owned by Integrations, not Intelligence. Alert Intelligence consumes the platform delivery contract while Alertmanager remains the raw alert routing/receiver authority.
 - **Automation Control** is an application-layer orchestration surface. Its mutation
   routes remain fail-closed behind `AUTOMATION_CONTROL_MUTATIONS_ENABLED`, which must
   remain unset/default-false in this baseline. The approved pre-feature-completion posture
@@ -103,7 +103,7 @@ artifacts can coexist without making one backend the Intelligence schema owner.
 
 ## Alert Intelligence notification delivery
 
-Notification Channels is implemented as a provider-neutral outbound delivery layer. Telegram, SMTP email, and Microsoft Teams Workflows are the current adapters. Channel credentials are stored through `EncryptedText`; the generic persistence contract stores encrypted provider credential payload, destination, provider configuration, severity policy, and domain scope without Telegram-specific database columns.
+Notification Channels is an Integrations-owned provider-neutral outbound delivery layer. Telegram, SMTP email, and Microsoft Teams Workflows are the current adapters. Channel credentials are stored through `EncryptedText`; the generic persistence contract stores encrypted provider credential payload, destination, provider configuration, severity policy, and domain scope without Telegram-specific database columns.
 
 Automatic Alert Intelligence notification polling runs on the existing maintenance worker queue. Current environment controls are:
 
@@ -113,4 +113,4 @@ Automatic Alert Intelligence notification polling runs on the existing maintenan
 - `NOTIFICATION_DELIVERY_TIMEOUT_SECONDS` (default `10`, bounded `1..60`)
 - `NOTIFICATION_DELIVERY_MAX_ATTEMPTS` (default `3`, bounded `1..10`)
 
-An enabled channel is not eligible for automatic delivery until Test Delivery succeeds. Active-alert events are deduplicated per channel and alert episode; failed deliveries can retry up to the configured attempt ceiling. Alertmanager remains the authoritative raw routing/receiver layer. KAORI Notification Channels deliver enriched Alert Intelligence context only.
+An enabled channel is not eligible for automatic delivery until Test Delivery succeeds. Active-alert events are deduplicated per channel and alert episode; failed deliveries can retry up to the configured attempt ceiling. Alertmanager remains the authoritative raw routing/receiver layer. Alert Intelligence emits enriched alert events into Notification Channels; Scheduled Reports can use the same channel infrastructure for report completion events.

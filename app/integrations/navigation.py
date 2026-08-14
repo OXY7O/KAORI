@@ -51,12 +51,19 @@ def build_integration_navigation_context(endpoint: str | None) -> dict[str, Any]
                 break
 
     overview_active = current_endpoint == 'integrations.overview'
-    integrations_active = bool(overview_active or active_domain_key or current_endpoint.startswith('integrations.'))
+    notification_channels_active = current_endpoint.startswith('notification_channels.')
+    integrations_active = bool(
+        overview_active
+        or notification_channels_active
+        or active_domain_key
+        or current_endpoint.startswith('integrations.')
+    )
 
     return {
         'is_active': integrations_active,
         'overview_active': overview_active,
         'active_domain_key': active_domain_key,
+        'notification_channels_active': notification_channels_active,
         'domains': [
             {
                 'key': domain.key,

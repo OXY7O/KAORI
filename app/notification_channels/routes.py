@@ -23,19 +23,19 @@ from app.rbac.decorators import permission_required
 notification_channels_bp = Blueprint(
     'notification_channels',
     __name__,
-    url_prefix='/intelligence/notification-channels',
+    url_prefix='/integrations/notification-channels',
 )
 
 
 @notification_channels_bp.get('/')
-@permission_required('intelligence.view')
+@permission_required('settings.manage_integrations')
 def index() -> ResponseReturnValue:
     payload = get_notification_channels_payload()
     edit_id = request.args.get('edit', type=int)
     form_channel = get_channel_form_view(get_channel(edit_id)) if edit_id else None
     feedback = str(request.args.get('feedback') or '').strip()
     return render_template(
-        'intelligence/notification_channels/index.html',
+        'integrations/notification_channels/index.html',
         payload=payload,
         form_channel=form_channel,
         feedback=feedback,
@@ -114,11 +114,11 @@ def delete(channel_id: int) -> ResponseReturnValue:
     delete_channel(channel)
     record_operational_activity(
         user_id=int(current_user.id),
-        event_type='intelligence.notification_channel.deleted',
+        event_type='integration.notification_channel.deleted',
         status='success',
         title='Notification channel deleted',
         message=f'{name} was removed from KAORI notification delivery.',
-        metadata={'module': 'intelligence', 'channel_id': channel_id},
+        metadata={'module': 'integrations', 'channel_id': channel_id},
     )
     return redirect(url_for('notification_channels.index', feedback='Channel deleted.'))
 
@@ -133,12 +133,12 @@ def _record_channel_activity(
 ) -> None:
     record_operational_activity(
         user_id=int(current_user.id),
-        event_type=f'intelligence.notification_channel.{action}',
+        event_type=f'integration.notification_channel.{action}',
         status=status,
         title=title,
         message=message,
         action_url=url_for('notification_channels.index'),
         action_label='Open Notification Channels',
         action_icon='send',
-        metadata={'module': 'intelligence', 'channel_id': channel_id},
+        metadata={'module': 'integrations', 'channel_id': channel_id},
     )

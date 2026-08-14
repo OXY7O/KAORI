@@ -652,3 +652,12 @@ The fourth domain is authority-specific: Kubernetes and MinIO use **Inventory & 
 Provider detail Hero posture evidence is sourced as **Produced by Full Validation**. Capability counts use **Validated Capabilities** consistently. Prometheus, Alertmanager, and MinIO runtime pages use the shared `integrations/components/_runtime_decision.html` decision surface; provider-specific technical evidence follows underneath. Kubernetes may retain additional lifecycle evidence, but its Runtime Decision semantics must remain equivalent.
 
 Bindings remain source-owned mutations. Asset-owner workspaces expose observability binding evidence read-only. Object Storage Inventory remains committed-snapshot owned and must not be recomputed by opening the MinIO integration detail page.
+
+
+## Notification Channels
+
+Notification Channels is the platform-wide outbound delivery integration at `/integrations/notification-channels`. It owns encrypted provider credentials, destination validation, provider adapters, retry/deduplication policy, and delivery journaling. Current providers are Telegram, SMTP email, and Microsoft Teams Workflows.
+
+Consumer capabilities own event meaning and content. Current event contracts are `alert_intelligence.active_alert` and `report.generated`. Alert Intelligence remains responsible for enriched alert context; Reports remains responsible for report completion semantics. Report schedules persist configured **channel identities**, not provider names or credentials.
+
+A channel must be enabled, successfully tested, allowed for the requested event type, and scoped to the event domain before it is eligible for delivery. Provider choice changes transport only; it must not change the semantic meaning of the emitted event.

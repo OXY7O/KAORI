@@ -2,7 +2,7 @@
 
 ## Scope
 
-This standard covers Recommendations, Rule Catalog, Alert Intelligence, Notification Channels, and Automation Control.
+This standard covers Recommendations, Rule Catalog, Alert Intelligence, and Automation Control. Notification Channels is an Integrations-owned platform delivery capability consumed by Intelligence.
 
 ## Hero
 
@@ -62,6 +62,6 @@ scaffolding exists.
 
 Alert Intelligence is a read-oriented, asset-scoped interpretation workspace. Kubernetes and Object Storage consume their existing alert-source contracts: Automatic mode prefers Alertmanager and may fall back to Prometheus `ALERTS`. Provider alert lifecycle, KAORI recommendations, and catalog rules must remain distinguishable; contextual correlation must never be presented as causal attribution without evidence.
 
-Notification Channels is a separate governed mutation boundary under `/intelligence/notification-channels`. Channel configuration requires integration-management permission because it stores external delivery credentials. Telegram, SMTP email, and Microsoft Teams Workflows are available provider adapters. Provider secrets must use KAORI encrypted credential storage, must never be rendered back into HTML or logs, and a successful test delivery is required before an enabled channel is eligible for automatic Alert Intelligence delivery. Alertmanager remains responsible for raw alert grouping, inhibition, silences, routing, and receiver delivery; KAORI channels deliver enriched Intelligence context and do not replace Alertmanager receiver configuration.
+Notification Channels is owned by **Integrations** at `/integrations/notification-channels`. Alert Intelligence emits governed `alert_intelligence.active_alert` events into that shared delivery layer; it does not own provider credentials, transport adapters, or channel lifecycle. Alertmanager remains responsible for raw alert grouping, inhibition, silences, routing, and receiver delivery.
 
 The provider contract must remain extensible so future Slack, generic webhook, or additional enterprise messaging adapters can be added without changing Alert Intelligence semantics. Microsoft Teams delivery uses the Teams Workflows / Power Automate webhook contract rather than legacy Office 365 connector URLs. SMTP email supports STARTTLS, TLS/SMTPS, and trusted-relay operation. The dispatcher sends first-seen active alert episodes that match channel policy and deduplicates them per channel/event identity. Resolved-event delivery is not part of the current outbound contract and must not be implied by UI status or delivery history.

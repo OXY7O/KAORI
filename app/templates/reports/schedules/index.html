@@ -224,7 +224,8 @@
                     <span class="{{ table_ui.block_icon_classes() }}" aria-hidden="true"><i data-lucide="send" class="h-4 w-4"></i></span>
                     <div>
                         <h3 class="text-sm font-bold text-content-primary">Delivery & State</h3>
-                        <p class="mt-1 text-xs leading-5 text-content-muted">Notifications are delivered only after artifact generation reaches its delivery stage.</p>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">Selected Notification Channels are invoked only after the governed artifact reaches Ready state.</p>
+                        <a href="{{ url_for('notification_channels.index') }}" class="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-kaori-primary hover:underline"><i data-lucide="external-link" class="h-3.5 w-3.5"></i>Manage Notification Channels</a>
                     </div>
                 </div>
                 <label class="inline-flex items-center gap-2 text-xs font-semibold text-content-secondary">
@@ -240,14 +241,14 @@
                 {% for channel in payload.delivery_channel_options %}
                     <label class="flex items-start gap-3 rounded-xl border border-outline-subtle bg-surface-card px-3 py-3 {{ 'cursor-pointer' if channel.selectable else 'cursor-not-allowed opacity-65' }}">
                         <input type="checkbox"
-                               name="notification_channels"
+                               name="notification_channel_ids"
                                value="{{ channel.value }}"
-                               {% if channel.value in form_state.notification_channels %}checked{% endif %}
+                               {% if channel.channel_id in form_state.notification_channel_ids %}checked{% endif %}
                                {% if not channel.selectable %}disabled{% endif %}
                                class="mt-0.5 h-4 w-4 rounded border-outline-default text-kaori-primary focus:ring-kaori-primary/20">
                         <span class="min-w-0"><span class="flex items-center gap-2 text-xs font-bold text-content-primary"><i data-lucide="{{ channel.icon }}"
    class="h-3.5 w-3.5 text-kaori-primary"
-   aria-hidden="true"></i>{{ channel.label }}</span><span class="mt-1 block text-xs leading-5 text-content-muted">{{ channel.status }}</span></span>
+   aria-hidden="true"></i>{{ channel.label }}</span><span class="mt-1 block text-xs leading-5 text-content-muted">{{ channel.provider }} · {{ channel.destination }} · {{ channel.status }}</span></span>
                     </label>
                 {% endfor %}
             </div>

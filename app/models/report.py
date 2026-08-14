@@ -363,7 +363,7 @@ class ReportSchedule(db.Model):
         default=list,
     )
 
-    notification_channels: Mapped[list[str]] = mapped_column(
+    notification_channel_ids: Mapped[list[int]] = mapped_column(
         db.JSON,
         nullable=False,
         default=list,
@@ -466,10 +466,18 @@ class ReportSchedule(db.Model):
             return self.sections
         return []
 
-    def notification_channels_as_list(self) -> list[str]:
-        if isinstance(self.notification_channels, list):
-            return [str(item) for item in self.notification_channels if str(item).strip()]
-        return []
+    def notification_channel_ids_as_list(self) -> list[int]:
+        if not isinstance(self.notification_channel_ids, list):
+            return []
+        values: list[int] = []
+        for item in self.notification_channel_ids:
+            try:
+                value = int(item)
+            except (TypeError, ValueError):
+                continue
+            if value > 0:
+                values.append(value)
+        return values
 
     @property
     def status(self) -> str:
@@ -488,7 +496,7 @@ class ReportSchedule(db.Model):
             'period': self.period,
             'output_format': self.output_format,
             'sections': self.sections_as_list(),
-            'notification_channels': self.notification_channels_as_list(),
+            'notification_channel_ids': self.notification_channel_ids_as_list(),
             'cadence': self.cadence,
             'run_time': self.run_time,
             'day_of_week': self.day_of_week,

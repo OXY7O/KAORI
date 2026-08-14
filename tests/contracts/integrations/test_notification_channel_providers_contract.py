@@ -27,7 +27,7 @@ def test_email_provider_supports_smtp_tls_modes_without_global_credentials():
 def test_microsoft_teams_uses_workflows_webhook_and_keeps_url_secret():
     provider = read('app/notification_channels/providers/microsoft_teams.py')
     forms = read('app/notification_channels/forms.py')
-    page = read('app/templates/intelligence/notification_channels/index.html')
+    page = read('app/templates/integrations/notification_channels/index.html')
     assert "body = json.dumps({'text': _render_message(message)}" in provider
     assert "method='POST'" in provider
     assert "('.environment.api.powerplatform.com', '.logic.azure.com')" in forms
@@ -37,10 +37,10 @@ def test_microsoft_teams_uses_workflows_webhook_and_keeps_url_secret():
 
 
 def test_notification_channels_redesign_surfaces_delivery_governance():
-    page = read('app/templates/intelligence/notification_channels/index.html')
-    for label in ('Delivery Providers', 'Channel Configuration', 'Configured Channels', 'Delivery Contract', 'Authority Boundary'):
+    page = read('app/templates/integrations/notification_channels/index.html')
+    for label in ('Delivery Providers', 'Channel Configuration', 'Configured Channels', 'Delivery Contract', 'Delivery Ownership'):
         assert label in page
     for provider in ('Telegram', 'Email', 'Microsoft Teams'):
         assert provider in page
-    assert 'Alertmanager remains the raw alert routing authority' in page
-    assert 'First-seen active alert episode' in read('app/notification_channels/service.py')
+    assert 'platform integration capability' in page.lower()
+    assert "'report.generated'" in read('app/notification_channels/forms.py')

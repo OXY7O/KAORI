@@ -88,12 +88,12 @@ def test_reporting_capability_explains_types_and_readiness() -> None:
     assert '\n                    Pipeline\n' in workspace
     assert 'Browse report contracts currently supported by connected and validated data sources.' in workspace
     assert (
-        'Follow request creation, format-specific execution, artifact storage, and optional Telegram delivery.'
+        'Follow request creation, format-specific execution, artifact storage, and optional Notification Channel delivery.'
         in workspace
     )
     assert 'output supported by the currently connected and validated data sources' in coverage
     assert 'Canonical flow:' in pipeline
-    assert 'scheduled delivery sends Telegram' in pipeline
+    assert 'scheduled delivery emits a governed report event to the selected Notification Channels' in pipeline
     assert 'text-sm font-semibold leading-5 text-content-primary' in workspace
     assert 'text-xs leading-5 text-content-muted' in workspace
     assert 'Expand one domain at a time' not in workspace + coverage + pipeline
@@ -168,32 +168,31 @@ def test_report_schedule_dispatcher_uses_canonical_worker_job() -> None:
     assert 'REPORTS_CELERY_QUEUE' in queue_contract
 
 
-def test_report_delivery_is_telegram_first_and_channel_extensible() -> None:
+def test_report_delivery_uses_platform_notification_channels_by_identity() -> None:
     model = read(ROOT / 'app' / 'models' / 'report.py')
-    migration = read(ROOT / 'migrations' / 'versions' / '20260729_report_schedule_delivery_channels.py')
-    delivery = read(ROOT / 'app' / 'reports' / 'delivery' / 'service.py')
-    telegram = read(ROOT / 'app' / 'reports' / 'delivery' / 'telegram.py')
+    migration = read(ROOT / 'migrations' / 'versions' / '20260814_report_notification_channels.py')
+    delivery = read(ROOT / 'app' / 'reports' / 'notifications.py')
+    channel_service = read(ROOT / 'app' / 'notification_channels' / 'service.py')
     report_worker = read(ROOT / 'app' / 'reports' / 'jobs' / 'tasks.py')
     schedule_template = read(REPORT_TEMPLATES / 'schedules' / 'index.html')
 
-    assert 'notification_channels' in model
+    assert 'notification_channel_ids' in model
+    assert 'notification_channels:' not in model
     assert 'delivery_result' in model
-    assert "op.add_column(\n        'report_schedules'" in migration
-    for channel in ('telegram', 'email', 'slack', 'webhook'):
-        assert f"'value': '{channel}'" in delivery
-    assert "_CHANNELS: dict[str, ReportDeliveryChannel] = {'telegram': TelegramReportDelivery()}" in delivery
-    assert 'api.telegram.org' in telegram
+    assert "new_column_name='notification_channel_ids'" in migration
+    assert "REPORT_NOTIFICATION_EVENT = 'report.generated'" in delivery
+    assert 'dispatch_notification_event(' in delivery
+    assert 'def dispatch_notification_event(' in channel_service
     assert 'deliver_generated_report(' in report_worker
     assert 'Delivery & State' in schedule_template
     assert 'payload.delivery_channel_options' in schedule_template
-    assert 'notification_channels' in schedule_template
+    assert 'notification_channel_ids' in schedule_template
+    assert 'Manage Notification Channels' in schedule_template
     assert 'run.delivery_label' in schedule_template
 
     overview_service = read(ROOT / 'app' / 'reports' / 'overview' / 'service.py')
-    assert "'name': 'Telegram'" in overview_service
-    assert "'status': 'Telegram Ready' if telegram_ready else 'Telegram Setup Required'" in overview_service
-    assert 'Email, webhook, and notification delivery remain planned' not in overview_service
-
+    assert "'name': 'Notification Channels'" in overview_service
+    assert 'Telegram, email, and Microsoft Teams channels can be selected per report schedule.' in overview_service
 
 def test_report_user_interfaces_do_not_expose_mvp_copy() -> None:
     paths = [

@@ -15,6 +15,7 @@ from app.notification_channels.config import (
 from app.notification_channels.contracts import (
     DeliveryResult,
     NotificationChannelFormInput,
+    NotificationEvent,
     NotificationMessage,
 )
 from app.notification_channels.providers import (
@@ -26,6 +27,10 @@ from app.notification_channels.providers import (
 _PROVIDER_LABELS = provider_labels()
 _SEVERITY_RANK = {'info': 1, 'warning': 2, 'critical': 3}
 _DOMAIN_LABELS = {'kubernetes': 'Kubernetes', 'object_storage': 'Object Storage'}
+_EVENT_LABELS = {
+    'alert_intelligence.active_alert': 'Alert Intelligence',
+    'report.generated': 'Scheduled Reports',
+}
 
 
 def list_channels() -> list[dict[str, Any]]:
@@ -47,7 +52,7 @@ def create_channel(data: NotificationChannelFormInput, *, user_id: int | None) -
         provider_config=dict(data.provider_config),
         minimum_severity=data.minimum_severity,
         domains=list(data.domains),
-        event_types=['alert_intelligence.active_alert'],
+        event_types=list(data.event_types),
         test_status='not_tested',
         created_by_user_id=user_id,
         updated_by_user_id=user_id,
@@ -76,6 +81,7 @@ def update_channel(
     channel.provider_config = dict(data.provider_config)
     channel.minimum_severity = data.minimum_severity
     channel.domains = list(data.domains)
+    channel.event_types = list(data.event_types)
     channel.updated_by_user_id = user_id
     if configuration_changed:
         _reset_channel_validation(channel)
@@ -98,11 +104,11 @@ def test_channel(channel: NotificationChannel, *, base_url: str = '') -> Deliver
                 title=f'Notification Channel Test · {channel.name}',
                 body=(
                     f'KAORI successfully reached this {_provider_label(channel.provider_key)} destination. '
-                    'Alert Intelligence delivery can use this channel when it is enabled and its policy matches.'
+                    'KAORI can use this channel for the allowed delivery events when it is enabled and its policy matches.'
                 ),
                 severity='info',
-                action_url=f'{base_url.rstrip("/")}/intelligence/alert-intelligence' if base_url else None,
-                action_label='Open Alert Intelligence',
+                action_url=f'{base_url.rstrip("/")}/integrations/notification-channels' if base_url else None,
+                action_label='Open Notification Channels',
             ),
         )
     channel.test_status = 'success' if result.success else 'failed'
@@ -172,6 +178,10 @@ def get_notification_channels_payload() -> dict[str, Any]:
         'channels': channels,
         'providers': providers,
         'domain_options': [{'value': key, 'label': label} for key, label in _DOMAIN_LABELS.items()],
+        'event_type_options': [
+            {'value': key, 'label': label}
+            for key, label in _EVENT_LABELS.items()
+        ],
         'severity_options': [
             {'value': 'critical', 'label': 'Critical only'},
             {'value': 'warning', 'label': 'Warning and Critical'},
@@ -183,10 +193,10 @@ def get_notification_channels_payload() -> dict[str, Any]:
             {'value': 'none', 'label': 'None / trusted relay'},
         ],
         'delivery_contract': {
-            'event': 'First-seen active alert episode',
+            'events': 'Alert Intelligence + Scheduled Reports',
             'retry': f'Up to {notification_delivery_max_attempts()} attempts',
-            'deduplication': 'Per channel and alert episode identity',
-            'resolved': 'Not emitted in the current release',
+            'deduplication': 'Per channel and emitted event identity',
+            'ownership': 'Consumers emit governed events; Notification Channels owns provider delivery.',
         },
     }
 
@@ -295,6 +305,162 @@ def dispatch_alert_notification(
     return stats
 
 
+def list_event_channel_options(*, event_type: str, domain: str | None = None) -> list[dict[str, Any]]:
+    """Return configured channel instances for one consumer event contract."""
+    channels = NotificationChannel.query.order_by(NotificationChannel.name.asc(), NotificationChannel.id.asc()).all()
+    options: list[dict[str, Any]] = []
+    for channel in channels:
+        supports_event = event_type in (channel.event_types or [])
+        supports_domain = domain is None or domain in (channel.domains or [])
+        selectable = bool(
+            channel.enabled
+            and channel.configured
+            and channel.test_status == 'success'
+            and supports_event
+            and supports_domain
+        )
+        options.append(
+            {
+                'value': str(channel.id),
+                'channel_id': channel.id,
+                'label': channel.name,
+                'provider': _provider_label(channel.provider_key),
+                'provider_icon': (
+                    get_notification_provider(channel.provider_key).icon
+                    if get_notification_provider(channel.provider_key) is not None
+                    else 'send'
+                ),
+                'destination': channel.destination or '-',
+                'status': channel.display_status,
+                'tone': _channel_view(channel)['tone'],
+                'selectable': selectable,
+                'supports_event': supports_event,
+                'supports_domain': supports_domain,
+            }
+        )
+    return options
+
+
+def dispatch_notification_event(*, channel_ids: list[int], event: NotificationEvent) -> dict[str, Any]:
+    """Deliver one governed event to explicitly selected channel instances."""
+    normalized_ids = list(dict.fromkeys(value for value in channel_ids if int(value) > 0))
+    stats: dict[str, Any] = {
+        'requested': len(normalized_ids),
+        'successful': 0,
+        'failed': 0,
+        'skipped': 0,
+        'duplicate': 0,
+        'results': [],
+    }
+    max_attempts = notification_delivery_max_attempts()
+    for channel_id in normalized_ids:
+        channel = db.session.get(NotificationChannel, channel_id)
+        if channel is None:
+            stats['skipped'] += 1
+            stats['results'].append(
+                {'channel_id': channel_id, 'channel': f'Channel {channel_id}', 'provider': '-', 'status': 'skipped', 'message': 'Notification channel no longer exists.'}
+            )
+            continue
+        if not _channel_matches_event(channel, domain=event.domain, event_type=event.event_type):
+            stats['skipped'] += 1
+            stats['results'].append(
+                {
+                    'channel_id': channel.id,
+                    'channel': channel.name,
+                    'provider': _provider_label(channel.provider_key),
+                    'status': 'skipped',
+                    'message': 'Channel is disabled, unvalidated, or not allowed for this event/domain.',
+                }
+            )
+            continue
+        delivery = NotificationDelivery.query.filter_by(channel_id=channel.id, event_key=event.event_key).first()
+        if delivery is not None:
+            if delivery.status == 'sent':
+                stats['duplicate'] += 1
+                stats['skipped'] += 1
+                stats['results'].append(
+                    {
+                        'channel_id': channel.id,
+                        'channel': channel.name,
+                        'provider': _provider_label(channel.provider_key),
+                        'status': 'skipped',
+                        'message': 'This event was already delivered to the channel.',
+                    }
+                )
+                continue
+            if delivery.status != 'failed' or delivery.attempt_count >= max_attempts:
+                stats['skipped'] += 1
+                stats['results'].append(
+                    {
+                        'channel_id': channel.id,
+                        'channel': channel.name,
+                        'provider': _provider_label(channel.provider_key),
+                        'status': 'skipped',
+                        'message': 'Delivery is not eligible for another attempt.',
+                    }
+                )
+                continue
+            delivery.status = 'queued'
+            delivery.error_message = None
+        else:
+            delivery = NotificationDelivery(
+                channel_id=channel.id,
+                event_key=event.event_key,
+                event_type=event.event_type,
+                domain=event.domain,
+                asset_type=event.asset_type,
+                asset_key=str(event.asset_key),
+                severity=_normalize_severity(event.severity),
+                status='queued',
+                payload_json=dict(event.payload),
+            )
+            db.session.add(delivery)
+            try:
+                db.session.flush()
+            except IntegrityError:
+                db.session.rollback()
+                stats['duplicate'] += 1
+                stats['skipped'] += 1
+                continue
+        result = _deliver(channel, event.message)
+        attempted_at = datetime.now(UTC)
+        delivery.attempt_count += 1
+        channel.last_delivery_attempt_at = attempted_at
+        channel.last_delivery_message = result.message[:500]
+        result_status = 'success' if result.success else 'failed'
+        if result.success:
+            delivery.status = 'sent'
+            delivery.sent_at = attempted_at
+            delivery.provider_message_id = result.provider_message_id
+            channel.last_delivery_status = 'success'
+            channel.last_delivery_at = attempted_at
+            stats['successful'] += 1
+        else:
+            delivery.status = 'failed'
+            delivery.error_message = result.message[:1000]
+            channel.last_delivery_status = 'failed'
+            stats['failed'] += 1
+        db.session.commit()
+        stats['results'].append(
+            {
+                'channel_id': channel.id,
+                'channel': channel.name,
+                'provider': _provider_label(channel.provider_key),
+                'status': result_status,
+                'message': result.message,
+            }
+        )
+    return stats
+
+def _channel_matches_event(channel: NotificationChannel, *, domain: str, event_type: str) -> bool:
+    return bool(
+        channel.enabled
+        and channel.configured
+        and channel.test_status == 'success'
+        and domain in (channel.domains or [])
+        and event_type in (channel.event_types or [])
+    )
+
 def recent_delivery_summary(*, limit: int = 10) -> list[dict[str, Any]]:
     rows = NotificationDelivery.query.order_by(NotificationDelivery.created_at.desc()).limit(max(limit, 1)).all()
     return [
@@ -351,6 +517,11 @@ def _channel_view(channel: NotificationChannel) -> dict[str, Any]:
         'domain_labels': [
             _DOMAIN_LABELS.get(value, value.replace('_', ' ').title())
             for value in (channel.domains or [])
+        ],
+        'event_types': list(channel.event_types or []),
+        'event_type_labels': [
+            _EVENT_LABELS.get(value, value.replace('_', ' ').replace('.', ' ').title())
+            for value in (channel.event_types or [])
         ],
         'status': status,
         'tone': tone,

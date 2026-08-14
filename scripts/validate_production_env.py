@@ -265,11 +265,6 @@ def main() -> int:
             except ValueError:
                 errors.append(f'{name} must be a non-negative integer.')
 
-    report_telegram_token = _value('REPORT_TELEGRAM_BOT_TOKEN')
-    report_telegram_chat = _value('REPORT_TELEGRAM_CHAT_ID')
-    if bool(report_telegram_token) != bool(report_telegram_chat):
-        errors.append('REPORT_TELEGRAM_BOT_TOKEN and REPORT_TELEGRAM_CHAT_ID must be configured together.')
-
     if _value('ADMIN_PASSWORD'):
         warnings.append('Remove ADMIN_PASSWORD after the first bootstrap-admin operation.')
 

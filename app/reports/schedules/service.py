@@ -22,7 +22,7 @@ from app.models.cluster import Cluster
 from app.models.report import Report, ReportSchedule, ReportScheduleRun
 from app.models.user import User
 from app.reports.catalog import ReportContractError, get_report_type_label, validate_report_contract
-from app.reports.delivery import get_delivery_channel_catalog
+from app.reports.notifications import get_report_notification_channel_options
 from app.reports.export.constants import DEFAULT_REPORT_DOMAIN, DEFAULT_REPORT_SOURCE_KIND
 from app.reports.generate.service import (
     OUTPUT_FORMAT_OPTIONS,
@@ -35,6 +35,7 @@ from app.reports.generate.service import (
 )
 from app.reports.jobs.queue import get_reports_queue_name
 from app.reports.jobs.service import ReportJobEnqueueError, enqueue_report_generation
+from app.reports.schedules.delivery import get_recommended_actions, get_scheduler_context
 from app.reports.schedules.failures import mark_schedule_dispatch_failed
 from app.reports.storage.service import get_configured_storage_backend_name, get_report_storage_backend_status
 
@@ -174,7 +175,7 @@ def get_report_schedules_payload(
         'automation_posture': get_automation_posture(storage_context, worker_context),
         'scheduler_context': get_scheduler_context(storage_context, worker_context),
         'recommended_actions': get_recommended_actions(),
-        'delivery_channel_options': get_delivery_channel_catalog(),
+        'delivery_channel_options': get_report_notification_channel_options(domain=DEFAULT_REPORT_DOMAIN),
         'filter_options': _get_schedule_filter_options(all_schedules, cluster_options),
         'selected_filters': selected_filters,
         'pagination': pagination,
@@ -248,7 +249,7 @@ def build_default_schedule_form_state() -> dict[str, Any]:
         'day_of_month': '1',
         'timezone': _get_default_timezone(),
         'is_enabled': '1',
-        'notification_channels': [],
+        'notification_channel_ids': [],
     }
 
 
@@ -268,8 +269,8 @@ def get_form_state_from_schedule_form(
             'day_of_month': form.get('day_of_month', '1').strip(),
             'timezone': form.get('timezone', _get_default_timezone()).strip() or _get_default_timezone(),
             'is_enabled': '1' if form.get('is_enabled') in ['1', 'true', 'on', 'yes'] else '0',
-            'notification_channels': [
-                value.strip().lower() for value in form.getlist('notification_channels') if value.strip()
+            'notification_channel_ids': [
+                int(value) for value in form.getlist('notification_channel_ids') if str(value).isdigit() and int(value) > 0
             ],
         }
     )
@@ -511,6 +512,21 @@ def validate_schedule_form_state(form_state: dict[str, Any]) -> list[str]:
     if not _is_valid_timezone(form_state['timezone']):
         errors.append('Please use a valid IANA timezone, for example Asia/Jakarta.')
 
+    selected_channel_ids = set(form_state.get('notification_channel_ids') or [])
+    if selected_channel_ids:
+        options = {
+            int(item['channel_id']): item
+            for item in get_report_notification_channel_options(domain=DEFAULT_REPORT_DOMAIN)
+        }
+        for channel_id in sorted(selected_channel_ids):
+            option = options.get(channel_id)
+            if option is None:
+                errors.append(f'Notification channel {channel_id} no longer exists.')
+            elif not option.get('selectable'):
+                errors.append(
+                    f"Notification channel {option['label']} must be enabled, tested, and allowed for Scheduled Reports."
+                )
+
     return errors
 
 
@@ -601,55 +617,6 @@ def get_automation_posture(
     }
 
 
-def get_scheduler_context(
-    storage_context: dict[str, Any],
-    worker_context: dict[str, Any],
-) -> list[dict[str, str]]:
-    telegram = next(
-        (item for item in get_delivery_channel_catalog() if item['value'] == 'telegram'),
-        None,
-    )
-    return [
-        {
-            'label': 'Database Schedule',
-            'description': 'Cadence, scope, sections, owner, delivery channels, and next run time are stored with each schedule.',
-            'status': 'Ready',
-            'tone': 'normal',
-            'icon': 'database',
-        },
-        {
-            'label': 'Reports Worker',
-            'description': str(worker_context['description']),
-            'status': str(worker_context['label']),
-            'tone': str(worker_context['tone']),
-            'icon': str(worker_context['icon']),
-        },
-        {
-            'label': 'Artifact Storage',
-            'description': storage_context['description'],
-            'status': storage_context['status'],
-            'tone': 'normal' if storage_context['status'] == 'Ready' else 'warning',
-            'icon': 'hard-drive',
-        },
-        {
-            'label': 'Telegram Delivery',
-            'description': telegram['description'] if telegram else 'Telegram delivery is unavailable.',
-            'status': telegram['status'] if telegram else 'Unavailable',
-            'tone': telegram['tone'] if telegram else 'unknown',
-            'icon': 'send',
-        },
-    ]
-
-
-def get_recommended_actions() -> list[str]:
-    return [
-        'Run the database migration before enabling delivery channels.',
-        'Start the dedicated Reports worker and keep the Report Schedule Dispatcher enabled in Job Configuration.',
-        'Use Run Now to validate report generation, artifact storage, and Telegram delivery before unattended execution.',
-        'Configure REPORT_TELEGRAM_BOT_TOKEN, REPORT_TELEGRAM_CHAT_ID, and KAORI_PUBLIC_BASE_URL for Telegram notifications.',
-    ]
-
-
 def _apply_form_state_to_schedule(schedule: ReportSchedule, form_state: dict[str, Any]) -> None:
     schedule.name = form_state['name']
     schedule.description = form_state['description'] or None
@@ -661,7 +628,7 @@ def _apply_form_state_to_schedule(schedule: ReportSchedule, form_state: dict[str
     schedule.period = form_state['period']
     schedule.output_format = form_state['output_format']
     schedule.sections = list(form_state['sections'])
-    schedule.notification_channels = list(form_state.get('notification_channels') or [])
+    schedule.notification_channel_ids = list(form_state.get('notification_channel_ids') or [])
     schedule.cadence = form_state['cadence']
     schedule.run_time = form_state['run_time']
     schedule.day_of_week = _parse_optional_int(form_state['day_of_week']) if form_state['cadence'] == 'weekly' else None
@@ -740,7 +707,7 @@ def _filter_schedule_rows(
         if cluster and schedule['cluster_id'] != cluster:
             continue
         if delivery:
-            channels = {str(item).lower() for item in schedule['notification_channels']}
+            channels = {str(item).lower() for item in schedule['notification_channel_ids']}
             if delivery == 'none':
                 if channels:
                     continue
@@ -867,7 +834,7 @@ def _get_schedule_filter_options(
     schedules: list[dict[str, Any]],
     cluster_options: list[dict[str, str]],
 ) -> dict[str, list[dict[str, str]]]:
-    delivery_catalog = get_delivery_channel_catalog()
+    delivery_catalog = get_report_notification_channel_options(domain=DEFAULT_REPORT_DOMAIN)
     return {
         'statuses': [
             {'value': '', 'label': 'All Statuses'},
@@ -894,7 +861,7 @@ def _get_schedule_filter_options(
                 for item in delivery_catalog
                 if item.get('selectable')
                 or item.get('value')
-                in {channel for schedule in schedules for channel in schedule['notification_channels']}
+                in {str(channel) for schedule in schedules for channel in schedule['notification_channel_ids']}
             ],
         ],
     }
@@ -929,7 +896,7 @@ def _get_schedule_rows() -> list[dict[str, Any]]:
         select(ReportSchedule).order_by(ReportSchedule.created_at.desc(), ReportSchedule.id.desc())
     ).all()
     cluster_map = _get_cluster_map([item.cluster_id for item in schedules if item.cluster_id])
-    delivery_label_map = {item['value']: item['label'] for item in get_delivery_channel_catalog()}
+    delivery_label_map = {int(item['channel_id']): f"{item['label']} · {item['provider']}" for item in get_report_notification_channel_options(domain=DEFAULT_REPORT_DOMAIN)}
 
     return [_serialize_schedule(item, cluster_map, delivery_label_map) for item in schedules]
 
@@ -948,7 +915,7 @@ def _get_recent_runs(limit: int = 8) -> list[dict[str, Any]]:
 def _serialize_schedule(
     schedule: ReportSchedule,
     cluster_map: dict[str, str],
-    delivery_label_map: dict[str, str],
+    delivery_label_map: dict[int, str],
 ) -> dict[str, Any]:
     report_spec = next(
         (item for item in REPORT_TYPE_OPTIONS if item['value'] == schedule.report_type),
@@ -956,8 +923,8 @@ def _serialize_schedule(
     )
     status_tone = 'normal' if schedule.is_enabled else 'unknown'
     status_icon = 'play-circle' if schedule.is_enabled else 'pause-circle'
-    delivery_channels = schedule.notification_channels_as_list()
-    delivery_labels = [delivery_label_map.get(item, item.replace('_', ' ').title()) for item in delivery_channels]
+    delivery_channels = schedule.notification_channel_ids_as_list()
+    delivery_labels = [delivery_label_map.get(item, f'Channel {item}') for item in delivery_channels]
     return {
         'id': schedule.id,
         'name': schedule.name,
@@ -974,7 +941,7 @@ def _serialize_schedule(
         'output_format': str(schedule.output_format or '').upper(),
         'sections': schedule.sections_as_list(),
         'sections_count': len(schedule.sections_as_list()),
-        'notification_channels': delivery_channels,
+        'notification_channel_ids': delivery_channels,
         'delivery_labels': delivery_labels,
         'delivery_label': ', '.join(delivery_labels) if delivery_labels else 'No Notification',
         'cadence': schedule.cadence.title(),
@@ -1098,7 +1065,7 @@ def _schedule_edit_state(schedule: ReportSchedule) -> dict[str, Any]:
         'day_of_month': str(schedule.day_of_month if schedule.day_of_month is not None else 1),
         'timezone': schedule.timezone,
         'is_enabled': '1' if schedule.is_enabled else '0',
-        'notification_channels': schedule.notification_channels_as_list(),
+        'notification_channel_ids': schedule.notification_channel_ids_as_list(),
     }
 
 

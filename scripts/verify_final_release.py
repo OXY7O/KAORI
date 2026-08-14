@@ -59,6 +59,7 @@ SHARED_CHECKS: tuple[tuple[str, tuple[str, ...]], ...] = (
     ('JavaScript', (PYTHON, 'scripts/verify_javascript_syntax.py')),
     ('Release Governance', (PYTHON, 'scripts/verify_release_governance.py')),
     ('Environment Contract', (PYTHON, 'scripts/verify_environment_contract.py')),
+    ('Notification Channels', (PYTHON, 'scripts/verify_notification_channels.py')),
     ('Obsolete Files', (PYTHON, 'scripts/verify_obsolete_files.py')),
 )
 

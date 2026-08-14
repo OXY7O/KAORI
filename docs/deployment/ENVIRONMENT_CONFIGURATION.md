@@ -25,9 +25,9 @@ The environment templates document these runtime groups:
 - Object Storage inventory usage-statistics policy;
 - Alert Intelligence notification-dispatch scheduling and delivery retry/timeout controls.
 
-Telegram credentials for Intelligence notification channels are **not** environment variables. Notification Channels store provider credentials encrypted per channel. `ALERT_INTELLIGENCE_NOTIFICATION_*` and `NOTIFICATION_DELIVERY_*` only control the background dispatcher and provider delivery policy.
+Provider credentials for platform Notification Channels are **not** environment variables. Notification Channels store provider credentials encrypted per channel. `ALERT_INTELLIGENCE_NOTIFICATION_*` and `NOTIFICATION_DELIVERY_*` only control the background dispatcher and provider delivery policy.
 
-Scheduled report Telegram delivery remains a separate report-delivery capability and currently uses `REPORT_TELEGRAM_BOT_TOKEN` and `REPORT_TELEGRAM_CHAT_ID`.
+Scheduled Reports use reusable Notification Channels configured under Integrations. Provider credentials stay encrypted per channel in the database; report schedules store only selected channel identities.
 
 ## Production validation
 

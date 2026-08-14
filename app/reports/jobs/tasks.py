@@ -12,7 +12,7 @@ from app.models.job import JobExecution
 from app.models.report import Report, ReportSchedule, ReportScheduleRun
 from app.notifications.feedback import OperationalDeliveryPolicy
 from app.notifications.service import record_operational_activity
-from app.reports.delivery import deliver_generated_report
+from app.reports.notifications import deliver_generated_report
 from app.reports.export.service import generate_report_artifact
 
 
@@ -74,7 +74,7 @@ def _finalize_schedule(
         schedule.last_run_at = run.finished_at
         schedule.last_report_id = report.id
         if success:
-            run.delivery_result = deliver_generated_report(report, schedule.notification_channels_as_list())
+            run.delivery_result = deliver_generated_report(report, schedule.notification_channel_ids_as_list())
     db.session.commit()
 
 
