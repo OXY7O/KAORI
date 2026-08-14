@@ -112,11 +112,14 @@ def main() -> int:
     ):
         require(required in automation_routes, f'Automation Control baseline boundary missing: {required}', errors)
 
-    mutation_gate = _function_body(automation_routes, '_handle_mutation', '_actor_user_id')
+    mutation_gate = _function_body(automation_routes, '_handle_mutation', '_handle_control_operation')
     gate_position = mutation_gate.index("current_app.config.get('AUTOMATION_CONTROL_MUTATIONS_ENABLED', False)")
-    operation_position = mutation_gate.index('operation()')
-    require(gate_position < operation_position, 'Automation mutation callback can run before fail-closed gate', errors)
+    operation_position = mutation_gate.index('_handle_control_operation(')
+    require(gate_position < operation_position, 'Automation execution-control callback can cross the fail-closed gate', errors)
     require('detail=str(exc)' not in automation_routes, 'Automation Control must not disclose exception text', errors)
+    governance_gate = _function_body(automation_routes, '_handle_governance_action', '_handle_mutation')
+    require('AUTOMATION_CONTROL_MUTATIONS_ENABLED' not in governance_gate, 'Decision governance must remain available while infrastructure mutation is disabled', errors)
+    require('Governance Workflow Enabled' in read('app/templates/intelligence/partials/automation_control/_decisions.html'), 'Decision Review must expose active governance workflow semantics', errors)
     require(
         "mutations_enabled = bool(current_app.config.get('AUTOMATION_CONTROL_MUTATIONS_ENABLED', False))"
         in automation_presentation,

@@ -14,6 +14,8 @@ _SUPPORTED_EVENT_TYPES = {
     'alert_intelligence.active_alert',
     'report.generated',
     'automation.approval_required',
+    'automation.decision_approved',
+    'automation.decision_rejected',
     'automation.execution_started',
     'automation.execution_completed',
     'automation.execution_failed',

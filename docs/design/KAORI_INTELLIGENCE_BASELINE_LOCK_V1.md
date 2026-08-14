@@ -34,11 +34,13 @@ capabilities to continue development behind explicit Reserved Plan/fail-closed b
 
 - Application-layer orchestration surface under `app/automation_control/`.
 - Read surface requires `intelligence.view`.
-- Mutation routes may exist for continued implementation, but the default is fail-closed.
+- Candidate promotion/dismissal and decision approval/rejection are active governance operations; they are not infrastructure mutation.
+- Approval-required, decision-approved, and decision-rejected events are asynchronously delivered through Notification Channels after the governance transaction commits.
+- Resolver/execution-control mutation routes may exist for continued implementation, but the default is fail-closed.
 - `AUTOMATION_CONTROL_MUTATIONS_ENABLED` must resolve false when absent.
 - Environment-level enablement of that guard is deliberately deferred until the feature-complete review.
-- Disabled mutation attempts return **Automation Mutation Disabled** feedback and must not execute the operation callback.
-- The current read posture is **Governance Only**. `Reserved Plan` is not used for implemented Automation Control read/evidence surfaces.
+- Disabled execution-control mutation attempts return **Automation Mutation Disabled** feedback and must not cross the gated callback boundary.
+- The current posture is **Governance Only**. `Reserved Plan` is not used for implemented Automation Control governance/read/evidence surfaces.
 - Internal exception text must not be exposed to the user.
 
 ## Deferred / non-locking feature work

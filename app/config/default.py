@@ -18,107 +18,43 @@ def _load_environment_files() -> None:
     2. .env.<APP_ENV> values
     3. .env values
     """
-    base_env_file = BASE_DIR / '.env'
-    base_values = dotenv_values(
-        base_env_file,
-    )
-
-    app_env = (
-        os.getenv(
-            'APP_ENV',
-        )
-        or base_values.get(
-            'APP_ENV',
-        )
-        or 'development'
-    )
-
-    environment_env_file = BASE_DIR / f'.env.{app_env}'
-    environment_values = dotenv_values(
-        environment_env_file,
-    )
-
-    merged_values = {
-        **base_values,
-        **environment_values,
-    }
+    base_values = dotenv_values(BASE_DIR / '.env')
+    app_env = os.getenv('APP_ENV') or base_values.get('APP_ENV') or 'development'
+    environment_values = dotenv_values(BASE_DIR / f'.env.{app_env}')
+    merged_values = {**base_values, **environment_values}
 
     for key, value in merged_values.items():
-        if value is None:
-            continue
-
-        os.environ.setdefault(
-            key,
-            value,
-        )
+        if value is not None:
+            os.environ.setdefault(key, value)
 
 
-def _env_str(
-    name: str,
-    default: str = '',
-) -> str:
-    return os.getenv(
-        name,
-        default,
-    )
+def _env_str(name: str, default: str = '') -> str:
+    return os.getenv(name, default)
 
 
-def _env_optional_str(
-    name: str,
-) -> str | None:
-    value = os.getenv(
-        name,
-        '',
-    ).strip()
-
+def _env_optional_str(name: str) -> str | None:
+    value = os.getenv(name, '').strip()
     return value or None
 
 
-def _env_int(
-    name: str,
-    default: int = 0,
-) -> int:
-    value = os.getenv(
-        name,
-    )
-
+def _env_int(name: str, default: int = 0) -> int:
+    value = os.getenv(name)
     if value is None:
         return default
-
     try:
-        return int(
-            value.strip(),
-        )
+        return int(value.strip())
     except ValueError:
         return default
 
 
-def _env_bool(
-    name: str,
-    default: bool = False,
-) -> bool:
-    value = os.getenv(
-        name,
-    )
-
+def _env_bool(name: str, default: bool = False) -> bool:
+    value = os.getenv(name)
     if value is None:
         return default
-
-    return value.strip().lower() in {
-        '1',
-        'true',
-        'yes',
-        'y',
-        'on',
-    }
+    return value.strip().lower() in {'1', 'true', 'yes', 'y', 'on'}
 
 
-def _bounded_env_int(
-    name: str,
-    default: int,
-    minimum: int,
-    maximum: int,
-) -> int:
+def _bounded_env_int(name: str, default: int, minimum: int, maximum: int) -> int:
     return max(minimum, min(_env_int(name, default), maximum))
 
 
@@ -139,9 +75,7 @@ def _build_maintenance_beat_schedule() -> dict[str, dict[str, object]]:
         schedule['data-lifecycle-dispatcher'] = {
             'task': 'app.retention.tasks.run_scheduled_retention',
             'schedule': crontab(minute='*/15'),
-            'options': {
-                'queue': _retention_queue_name(),
-            },
+            'options': {'queue': _retention_queue_name()},
         }
     if _env_bool('JOB_POLICY_SCHEDULER_ENABLED', True):
         schedule['job-policy-dispatcher'] = {
@@ -191,44 +125,14 @@ def _build_maintenance_beat_schedule() -> dict[str, dict[str, object]]:
     return schedule
 
 
-def _normalize_storage_backend(
-    value: str | None,
-) -> str:
+def _normalize_storage_backend(value: str | None) -> str:
     backend = (value or 'local').strip().lower()
-
-    if backend not in {
-        'local',
-        's3',
-    }:
-        return 'local'
-
-    return backend
+    return backend if backend in {'local', 's3'} else 'local'
 
 
-def _resolve_path(
-    value: str | None,
-    default: Path,
-) -> str:
-    raw_value = (
-        value
-        or str(
-            default,
-        )
-    ).strip()
-
-    path = Path(
-        raw_value,
-    )
-
-    if path.is_absolute():
-        return str(
-            path,
-        )
-
-    return str(
-        BASE_DIR / path,
-    )
-
+def _resolve_path(value: str | None, default: Path) -> str:
+    path = Path((value or str(default)).strip())
+    return str(path if path.is_absolute() else BASE_DIR / path)
 
 def _object_storage_usage_stats_mode() -> str:
     mode = _env_str('OBJECT_STORAGE_INVENTORY_USAGE_STATS_MODE', 'disabled').strip().lower()
@@ -420,6 +324,7 @@ class Config:
         'enable_utc': True,
         'imports': (
             'app.alert_delivery.tasks',
+            'app.automation_control.tasks',
             'app.analytics.kubernetes.tasks',
             'app.analytics.object_storage.tasks',
             'app.cluster.tasks',
@@ -438,8 +343,12 @@ class Config:
             'app.analytics.kubernetes.tasks.materialize_analytics_snapshots': {
                 'queue': ANALYTICS_CELERY_QUEUE,
             },
-            'app.analytics.kubernetes.tasks.materialize_forecast_snapshots': {'queue': FORECASTING_CELERY_QUEUE},
-            'app.analytics.object_storage.tasks.materialize_object_storage_forecasts': {'queue': FORECASTING_CELERY_QUEUE},
+            'app.analytics.kubernetes.tasks.materialize_forecast_snapshots': {
+                'queue': FORECASTING_CELERY_QUEUE,
+            },
+            'app.analytics.object_storage.tasks.materialize_object_storage_forecasts': {
+                'queue': FORECASTING_CELERY_QUEUE,
+            },
             'app.cluster.tasks.sync_all_clusters': {
                 'queue': 'inventory',
             },
@@ -477,6 +386,9 @@ class Config:
                 'queue': JOB_MAINTENANCE_CELERY_QUEUE,
             },
             'app.alert_delivery.tasks.dispatch_alert_intelligence_notifications': {
+                'queue': JOB_MAINTENANCE_CELERY_QUEUE,
+            },
+            'app.automation_control.tasks.dispatch_automation_decision_notification': {
                 'queue': JOB_MAINTENANCE_CELERY_QUEUE,
             },
             'app.reports.schedules.tasks.run_report_schedule_job': {

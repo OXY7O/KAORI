@@ -47,7 +47,7 @@ be reintroduced.
 
 Recommendations, Rule Catalog, Alert Intelligence, and Automation Control use the canonical Intelligence workspace contract documented in `docs/design/components/INTELLIGENCE_WORKSPACE_STANDARD.md`.
 
-Automation Control is the governed bridge from Intelligence evidence to controlled execution. Its current UI exposes factual **Governance Only** state across Overview, Runbooks & Bindings, Decision Review, Execution Control, and Production Readiness. Mutations remain disabled by default behind `AUTOMATION_CONTROL_MUTATIONS_ENABLED`; the guard is intentionally not exposed as an environment-configured release toggle in this baseline. Enabling it requires a later feature-complete review with approval, allowlist, dry-run, rollback, verification, notification, audit, and E2E evidence.
+Automation Control is the governed bridge from Intelligence evidence to controlled execution. Its current UI exposes factual **Governance Only** state across Overview, Runbooks & Bindings, Decision Review, Execution Control, and Production Readiness. Decision governance is active: candidates may be promoted or dismissed, accountable approvals/rejections are persisted, and approval lifecycle notifications are emitted through Notification Channels. Resolver execution and execution-control mutations remain disabled by default behind `AUTOMATION_CONTROL_MUTATIONS_ENABLED`; the guard is intentionally not exposed as an environment-configured release toggle in this baseline. Enabling infrastructure mutation requires a later feature-complete review with allowlist, dry-run, rollback, verification, notification, audit, and E2E evidence.
 
 ## Intelligence baseline lock v1
 
@@ -66,9 +66,7 @@ Locked current-state contracts:
   provider/evaluator path remain **Reserved Plan**.
 - **Alert Intelligence** is active for Kubernetes and Object Storage. Automatic alert-source selection prefers Alertmanager and falls back to Prometheus `ALERTS`; committed Recommendations and Rule Catalog definitions provide contextual enrichment without asserting causal correlation. Server and HCI enrichment remain **Reserved Plan**.
 - **Notification Channels** is owned by Integrations, not Intelligence. Alert Intelligence consumes the platform delivery contract while Alertmanager remains the raw alert routing/receiver authority.
-- **Automation Control** is an application-layer orchestration surface. Its mutation
-  routes remain fail-closed behind `AUTOMATION_CONTROL_MUTATIONS_ENABLED`, which must
-  remain unset/default-false in this baseline. The approved current posture is **Governance Only / Mutation Disabled**; the read and evidence workspaces are implemented, while state-changing control-plane operations remain fail-closed.
+- **Automation Control** is an application-layer orchestration surface. Candidate promotion/dismissal and decision approval/rejection are active governance operations and are not controlled by the infrastructure mutation gate. Resolver execution, execution-control policy changes, runbook authoring changes, dead-letter requeue, and rollout/readiness mutations remain fail-closed behind `AUTOMATION_CONTROL_MUTATIONS_ENABLED`, which must remain unset/default-false in this baseline. The approved current posture is **Governance Only / Infrastructure Mutation Disabled**. Approval-required, decision-approved, and decision-rejected events are delivered asynchronously through the Integrations-owned Notification Channels contract.
 
 Deferred work is allowed to evolve behind those boundaries. A future feature-complete
 review must add the applicable Functional, Integration, Security, Rendering, and E2E

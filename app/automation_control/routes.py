@@ -15,7 +15,13 @@ from flask import (
 from flask.typing import ResponseReturnValue
 from flask_login import current_user
 
+from app.automation_control.notifications import (
+    APPROVAL_REQUIRED_EVENT,
+    DECISION_APPROVED_EVENT,
+    DECISION_REJECTED_EVENT,
+)
 from app.automation_control.presentation import build_automation_control_context, upsert_deployment_policy
+from app.automation_control.tasks import dispatch_automation_decision_notification
 from app.extensions.db import db
 from app.integrations.resolver_bootstrap import get_resolver_registry
 from app.intelligence.workflow import approve_decision, reject_decision
@@ -197,7 +203,7 @@ def promote_automation_candidate(candidate_id: int) -> ResponseReturnValue:
             (global_control and global_control.global_kill_switch)
             or (cluster_control and cluster_control.maintenance_mode)
         )
-        return promote_candidate(
+        decision = promote_candidate(
             candidate,
             rule_version=request.form.get('rule_version', 'automation-control-v1'),
             actor_user_id=_actor_user_id(),
@@ -209,8 +215,11 @@ def promote_automation_candidate(candidate_id: int) -> ResponseReturnValue:
             maintenance_mode=maintenance_mode,
             actor_can_execute=_actor_has_permission('intelligence.decisions.execute'),
         )
+        if decision.workflow_status == 'pending_approval':
+            _queue_decision_notification(decision.id, APPROVAL_REQUIRED_EVENT)
+        return decision
 
-    return _handle_mutation(
+    return _handle_governance_action(
         workspace='decisions',
         success_title='Candidate promoted',
         success_message='KAORI created an immutable decision snapshot from the reviewed candidate.',
@@ -232,7 +241,7 @@ def dismiss_automation_candidate(candidate_id: int) -> ResponseReturnValue:
             actor_permissions=_actor_permissions('intelligence.decisions.create'),
         )
 
-    return _handle_mutation(
+    return _handle_governance_action(
         workspace='decisions',
         success_title='Candidate dismissed',
         success_message='KAORI recorded the review outcome and retained the candidate evidence.',
@@ -376,23 +385,45 @@ def _decision_outcome(decision_id: int, *, outcome: str) -> ResponseReturnValue:
             raise ValueError('Selected decision no longer exists.')
         reason = request.form.get('reason', '')
         if outcome == 'approved':
-            return approve_decision(
+            approve_decision(
                 decision,
                 actor_user_id=_actor_user_id(),
                 actor_permissions=_actor_permissions('intelligence.decisions.approve'),
                 reason=_optional_text(reason),
             )
-        return reject_decision(
+            _queue_decision_notification(decision.id, DECISION_APPROVED_EVENT)
+            return decision
+        reject_decision(
             decision,
             actor_user_id=_actor_user_id(),
             actor_permissions=_actor_permissions('intelligence.decisions.approve'),
             reason=reason,
         )
+        _queue_decision_notification(decision.id, DECISION_REJECTED_EVENT)
+        return decision
 
-    return _handle_mutation(
+    return _handle_governance_action(
         workspace='decisions',
         success_title=f'Decision {outcome}',
         success_message=f'KAORI recorded the {outcome} authorization outcome.',
+        operation=operation,
+    )
+
+
+def _handle_governance_action(
+    *,
+    workspace: str,
+    success_title: str,
+    success_message: str,
+    operation: Callable[[], object],
+) -> ResponseReturnValue:
+    """Persist accountable decision governance while infrastructure mutation remains independently gated."""
+    return _handle_control_operation(
+        workspace=workspace,
+        success_title=success_title,
+        success_message=success_message,
+        failure_title='Automation governance update failed',
+        failure_message='KAORI did not record the requested governance outcome.',
         operation=operation,
     )
 
@@ -409,27 +440,55 @@ def _handle_mutation(
             status='warning',
             title='Automation Mutation Disabled',
             message='KAORI did not apply the requested control-plane change.',
-            detail='Automation Control is operating in governance-only mode. Infrastructure mutation and control-plane state changes remain disabled until the feature-complete enablement review passes.',
+            detail='Automation Control is operating in governance-only mode. Resolver execution and execution-control state changes remain disabled until the feature-complete enablement review passes.',
         )
         return redirect(url_for('automation_control.index', workspace=workspace))
+    return _handle_control_operation(
+        workspace=workspace,
+        success_title=success_title,
+        success_message=success_message,
+        failure_title='Automation Control update failed',
+        failure_message='KAORI did not apply the requested change.',
+        operation=operation,
+    )
+
+
+def _handle_control_operation(
+    *,
+    workspace: str,
+    success_title: str,
+    success_message: str,
+    failure_title: str,
+    failure_message: str,
+    operation: Callable[[], object],
+) -> ResponseReturnValue:
     try:
         operation()
     except Exception:
         db.session.rollback()
-        current_app.logger.exception('Automation Control mutation failed in workspace %s.', workspace)
+        current_app.logger.exception('Automation Control operation failed in workspace %s.', workspace)
         queue_transient_feedback(
             status='error',
-            title='Automation Control update failed',
-            message='KAORI did not apply the requested change.',
+            title=failure_title,
+            message=failure_message,
             detail='Review the application log and Activity Audit for the failure context before retrying.',
         )
     else:
-        queue_transient_feedback(
-            status='success',
-            title=success_title,
-            message=success_message,
-        )
+        queue_transient_feedback(status='success', title=success_title, message=success_message)
     return redirect(url_for('automation_control.index', workspace=workspace))
+
+
+def _queue_decision_notification(decision_id: int, event_type: str) -> bool:
+    try:
+        dispatch_automation_decision_notification.delay(decision_id, event_type)
+    except (RuntimeError, ConnectionError, OSError):
+        current_app.logger.exception(
+            'Automation Control could not enqueue notification event %s for decision %s.',
+            event_type,
+            decision_id,
+        )
+        return False
+    return True
 
 
 def _actor_user_id() -> int | None:

@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 from typing import Any
 
+from app.automation_control.notifications import DECISION_NOTIFICATION_EVENTS
 from app.extensions.db import db
 from app.models.intelligence import (
     IntelligenceDecision,
@@ -18,15 +19,15 @@ from app.models.resolver import (
 )
 from app.resolver.production_readiness import ProductionReadinessError, assess_readiness
 
-AUTOMATION_NOTIFICATION_EVENTS = frozenset(
+EXECUTION_NOTIFICATION_EVENTS = frozenset(
     {
-        'automation.approval_required',
         'automation.execution_started',
         'automation.execution_completed',
         'automation.execution_failed',
         'automation.verification_failed',
     }
 )
+AUTOMATION_NOTIFICATION_EVENTS = frozenset((*DECISION_NOTIFICATION_EVENTS, *EXECUTION_NOTIFICATION_EVENTS))
 
 
 def build_automation_overview(*, mutations_enabled: bool, registry_rows: Sequence[dict[str, Any]]) -> dict[str, Any]:
@@ -216,7 +217,7 @@ def _notification_readiness() -> dict[str, str | int]:
     eligible = [
         channel
         for channel in channels
-        if AUTOMATION_NOTIFICATION_EVENTS.intersection(set(channel.event_types or []))
+        if set(DECISION_NOTIFICATION_EVENTS).intersection(set(channel.event_types or []))
     ]
     operational = [channel for channel in eligible if channel.last_delivery_status == 'success']
     if operational:

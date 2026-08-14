@@ -31,6 +31,8 @@ _EVENT_LABELS = {
     'alert_intelligence.active_alert': 'Alert Intelligence · Active Alert',
     'report.generated': 'Scheduled Reports · Report Ready',
     'automation.approval_required': 'Automation Control · Approval Required',
+    'automation.decision_approved': 'Automation Control · Decision Approved',
+    'automation.decision_rejected': 'Automation Control · Decision Rejected',
     'automation.execution_started': 'Automation Control · Execution Started',
     'automation.execution_completed': 'Automation Control · Execution Completed',
     'automation.execution_failed': 'Automation Control · Execution Failed',
@@ -310,6 +312,18 @@ def dispatch_alert_notification(
     return stats
 
 
+def dispatch_matching_notification_event(*, event: NotificationEvent) -> dict[str, Any]:
+    """Deliver one governed event to every validated channel that explicitly allows it."""
+    channel_ids = [
+        channel.id
+        for channel in NotificationChannel.query.filter_by(enabled=True)
+        .order_by(NotificationChannel.id.asc())
+        .all()
+        if _channel_matches_event(channel, domain=event.domain, event_type=event.event_type)
+    ]
+    return dispatch_notification_event(channel_ids=channel_ids, event=event)
+
+
 def list_event_channel_options(*, event_type: str, domain: str | None = None) -> list[dict[str, Any]]:
     """Return configured channel instances for one consumer event contract."""
     channels = NotificationChannel.query.order_by(NotificationChannel.name.asc(), NotificationChannel.id.asc()).all()
@@ -363,7 +377,13 @@ def dispatch_notification_event(*, channel_ids: list[int], event: NotificationEv
         if channel is None:
             stats['skipped'] += 1
             stats['results'].append(
-                {'channel_id': channel_id, 'channel': f'Channel {channel_id}', 'provider': '-', 'status': 'skipped', 'message': 'Notification channel no longer exists.'}
+                {
+                    'channel_id': channel_id,
+                    'channel': f'Channel {channel_id}',
+                    'provider': '-',
+                    'status': 'skipped',
+                    'message': 'Notification channel no longer exists.',
+                }
             )
             continue
         if not _channel_matches_event(channel, domain=event.domain, event_type=event.event_type):
@@ -457,6 +477,7 @@ def dispatch_notification_event(*, channel_ids: list[int], event: NotificationEv
         )
     return stats
 
+
 def _channel_matches_event(channel: NotificationChannel, *, domain: str, event_type: str) -> bool:
     return bool(
         channel.enabled
@@ -466,13 +487,26 @@ def _channel_matches_event(channel: NotificationChannel, *, domain: str, event_t
         and event_type in (channel.event_types or [])
     )
 
-def recent_delivery_summary(*, limit: int = 10) -> list[dict[str, Any]]:
-    rows = NotificationDelivery.query.order_by(NotificationDelivery.created_at.desc()).limit(max(limit, 1)).all()
+
+def recent_delivery_summary(
+    *,
+    limit: int = 10,
+    event_types: tuple[str, ...] | None = None,
+) -> list[dict[str, Any]]:
+    query = NotificationDelivery.query
+    if event_types:
+        query = query.filter(NotificationDelivery.event_type.in_(event_types))
+    rows = query.order_by(NotificationDelivery.created_at.desc()).limit(max(limit, 1)).all()
     return [
         {
             'id': row.id,
             'channel_name': row.channel.name,
             'provider': _PROVIDER_LABELS.get(row.channel.provider_key, row.channel.provider_key.title()),
+            'event_type': row.event_type,
+            'event_label': _EVENT_LABELS.get(
+                row.event_type,
+                row.event_type.replace('_', ' ').replace('.', ' ').title(),
+            ),
             'domain': _DOMAIN_LABELS.get(row.domain, row.domain.replace('_', ' ').title()),
             'asset_key': row.asset_key,
             'severity': row.severity,

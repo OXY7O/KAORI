@@ -28,6 +28,9 @@ def main() -> int:
     readiness = read('app/templates/intelligence/partials/automation_control/_readiness.html')
     notification_forms = read('app/notification_channels/forms.py')
     notification_service = read('app/notification_channels/service.py')
+    notification_module = read('app/automation_control/notifications.py')
+    notification_tasks = read('app/automation_control/tasks.py')
+    celery_config = read('app/config/default.py')
     default_config = read('app/config/default.py')
     env_example = read('.env.example')
     env_production = read('.env.production.example')
@@ -41,8 +44,8 @@ def main() -> int:
         source = routes if required != 'Governance Only' else main_template
         require(required in source, f'Automation Control fail-closed contract missing: {required}', errors)
 
-    gate = routes.split('def _handle_mutation(', 1)[1].split('def _actor_user_id(', 1)[0]
-    require(gate.index("current_app.config.get('AUTOMATION_CONTROL_MUTATIONS_ENABLED', False)") < gate.index('operation()'), 'Automation mutation callback can run before the global gate', errors)
+    gate = routes.split('def _handle_mutation(', 1)[1].split('def _handle_control_operation(', 1)[0]
+    require(gate.index("current_app.config.get('AUTOMATION_CONTROL_MUTATIONS_ENABLED', False)") < gate.index('_handle_control_operation('), 'Automation mutation callback can cross the execution boundary before the global gate', errors)
     require('detail=str(exc)' not in routes, 'Automation Control must not expose raw exception detail', errors)
     require('AUTOMATION_CONTROL_MUTATIONS_ENABLED' not in default_config, 'Automation mutation enablement must not be promoted into default config yet', errors)
     require('AUTOMATION_CONTROL_MUTATIONS_ENABLED' not in env_example, 'Automation mutation enablement must not be exposed in development env template yet', errors)
@@ -74,7 +77,7 @@ def main() -> int:
         require(required in source, f'Runbook governance contract missing: {required}', errors)
 
     require('Execution Journal' not in decisions, 'Execution journals must not be owned by Decision Review', errors)
-    for required in ('Decision Contract', 'Candidate Review Queue', 'Persisted Decisions', 'Decision Mutations Disabled'):
+    for required in ('Decision Contract', 'Candidate Review Queue', 'Persisted Decisions', 'Governance Workflow Enabled', 'Approval Notification Delivery'):
         require(required in decisions, f'Decision Review contract missing: {required}', errors)
 
     for required in (
@@ -100,16 +103,37 @@ def main() -> int:
         automation_templates = '\n'.join((overview, runbooks, decisions, operations, readiness, main_template))
         require(forbidden not in automation_templates, f'Automation Control must use factual current-state wording instead of {forbidden}', errors)
 
-    for event_type in (
+    decision_events = (
         'automation.approval_required',
+        'automation.decision_approved',
+        'automation.decision_rejected',
+    )
+    execution_events = (
         'automation.execution_started',
         'automation.execution_completed',
         'automation.execution_failed',
         'automation.verification_failed',
-    ):
+    )
+    for event_type in (*decision_events, *execution_events):
         require(event_type in notification_forms, f'Notification Channel allowed-use contract missing {event_type}', errors)
         require(event_type in notification_service, f'Notification Channel label contract missing {event_type}', errors)
-        require(event_type in overview_logic, f'Automation notification-readiness contract missing {event_type}', errors)
+    for event_type in decision_events:
+        require(event_type in notification_module, f'Automation decision notification builder missing {event_type}', errors)
+    for event_type in execution_events:
+        require(event_type in overview_logic, f'Automation execution-notification readiness contract missing {event_type}', errors)
+    require('DECISION_NOTIFICATION_EVENTS' in overview_logic, 'Automation notification readiness must consume the active decision-event contract', errors)
+    require('dispatch_matching_notification_event' in notification_service, 'Automation lifecycle delivery must use the generic matching-channel dispatcher', errors)
+    require('dispatch_automation_decision_notification' in notification_tasks, 'Automation approval lifecycle requires an asynchronous notification task', errors)
+    require("'app.automation_control.tasks'" in celery_config, 'Automation notification task module must be registered with Celery', errors)
+    require("'app.automation_control.tasks.dispatch_automation_decision_notification'" in celery_config, 'Automation notification task must be routed to a consumed queue', errors)
+
+    governance = routes.split('def _handle_governance_action(', 1)[1].split('def _handle_mutation(', 1)[0]
+    require('AUTOMATION_CONTROL_MUTATIONS_ENABLED' not in governance, 'Decision governance actions must not depend on the infrastructure mutation gate', errors)
+    require("return _handle_governance_action(" in routes, 'Decision review routes must use the governance-action boundary', errors)
+    require(routes.count('except Exception:') == 1, 'Automation Control write handling must use one shared exception boundary instead of duplicating broad handlers', errors)
+    require("_queue_decision_notification(decision.id, APPROVAL_REQUIRED_EVENT)" in routes, 'Candidate promotion must queue approval-required notification after decision persistence', errors)
+    require("_queue_decision_notification(decision.id, DECISION_APPROVED_EVENT)" in routes, 'Decision approval must queue the approved lifecycle notification', errors)
+    require("_queue_decision_notification(decision.id, DECISION_REJECTED_EVENT)" in routes, 'Decision rejection must queue the rejected lifecycle notification', errors)
 
     require("action_key = 'kubernetes.deployment.restart'" in overview_logic, 'Controlled execution pilot must remain the allowlisted Kubernetes Deployment restart action', errors)
     require('Contract Required' in overview_logic, 'Verification must remain a distinct required contract', errors)

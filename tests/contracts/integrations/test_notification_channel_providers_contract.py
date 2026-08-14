@@ -46,4 +46,6 @@ def test_notification_channels_redesign_surfaces_delivery_governance():
     forms = read('app/notification_channels/forms.py')
     assert "'report.generated'" in forms
     assert "'automation.approval_required'" in forms
+    assert "'automation.decision_approved'" in forms
+    assert "'automation.decision_rejected'" in forms
     assert "'automation.execution_failed'" in forms

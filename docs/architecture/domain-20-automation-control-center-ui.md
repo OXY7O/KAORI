@@ -29,12 +29,13 @@ The old Domain 1–20 Foundation Map is no longer an operator surface. Architect
 When disabled:
 
 - read/evidence workspaces remain available;
-- direct POST requests fail closed before invoking the operation callback;
-- feedback is **Automation Mutation Disabled**;
+- candidate promotion/dismissal and decision approval/rejection remain available as accountable governance operations;
+- resolver execution and execution-control mutations fail closed before the gated callback is invoked;
+- feedback for those gated paths is **Automation Mutation Disabled**;
 - the page posture is **Governance Only**;
-- runbook, decision, deployment-policy, safety-control, dead-letter, readiness-stage, and infrastructure mutations are not applied.
+- runbook authoring changes, deployment-policy changes, safety-control changes, dead-letter requeue, readiness-stage changes, and infrastructure mutations are not applied.
 
-This state is not labelled `Reserved Plan`: the control/evidence capability exists; only state-changing control-plane behavior is intentionally disabled.
+This state is not labelled `Reserved Plan`: the governance capability exists and decision lifecycle state is operational; infrastructure and execution-control mutation remain intentionally disabled.
 
 ## Governed lifecycle
 
@@ -80,15 +81,17 @@ Registration alone does not make the action executable. The pilot requires:
 
 ## Notification delivery
 
-Notification Channels remains Integrations-owned. Automation Control only declares delivery-event contracts:
+Notification Channels remains Integrations-owned. Automation Control declares delivery-event contracts:
 
 - `automation.approval_required`
+- `automation.decision_approved`
+- `automation.decision_rejected`
 - `automation.execution_started`
 - `automation.execution_completed`
 - `automation.execution_failed`
 - `automation.verification_failed`
 
-Configured Telegram, Email, or Microsoft Teams channels may opt into those uses. No provider credential or transport code belongs in Automation Control.
+The three decision-governance events are active in the current Governance Only baseline. They are queued only after the persisted governance transaction commits and are delivered by the maintenance worker through every validated channel that explicitly allows the event/domain. Provider delivery retries are deduplicated by channel and event identity. Execution/verification events remain reserved until those lifecycle stages are activated. No provider credential or transport code belongs in Automation Control.
 
 ## Production-readiness semantics
 

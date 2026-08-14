@@ -84,7 +84,7 @@ def get_alert_intelligence_payload(args: MultiDict[str, str]) -> dict[str, Any]:
         'recommendations': recommendations,
         'catalog_rules': catalog_rules,
         'notification': notification_summary,
-        'recent_deliveries': recent_delivery_summary(limit=6),
+        'recent_deliveries': recent_delivery_summary(limit=6, event_types=('alert_intelligence.active_alert',)),
         'ownership': {
             'detection': 'Prometheus evaluates alert rules and exposes ALERTS state.',
             'lifecycle': (

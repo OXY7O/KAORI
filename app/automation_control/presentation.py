@@ -5,6 +5,7 @@ from typing import Any
 
 from flask import current_app
 
+from app.automation_control.notifications import DECISION_NOTIFICATION_EVENTS
 from app.automation_control.overview import build_automation_overview
 from app.common.pagination import PER_PAGE_OPTIONS, build_pagination_window
 from app.common.presentation import present_key_label, present_user_datetime
@@ -27,10 +28,10 @@ from app.models.resolver import (
     ResolverOperationalControl,
     ResolverProductionReadinessRecord,
 )
+from app.notification_channels.service import list_event_channel_options, recent_delivery_summary
 from app.resolver.production_readiness import REQUIRED_CHECKS, STAGE_ORDER, assess_readiness
 
 WORKSPACE_KEYS = ('overview', 'runbooks', 'decisions', 'operations', 'readiness')
-
 
 
 def build_automation_control_context(query_args: Mapping[str, Any]) -> dict[str, Any]:
@@ -84,6 +85,8 @@ def build_automation_control_context(query_args: Mapping[str, Any]) -> dict[str,
         'binding_rows': [],
         'candidate_rows': [],
         'decision_rows': [],
+        'decision_notification': _decision_notification_context(),
+        'decision_delivery_rows': [],
         'journal_rows': [],
         'dead_letter_rows': [],
         'policy_rows': [],
@@ -137,6 +140,10 @@ def build_automation_control_context(query_args: Mapping[str, Any]) -> dict[str,
             .limit(10)
             .all()
         ]
+        payload['decision_delivery_rows'] = recent_delivery_summary(
+            limit=8,
+            event_types=DECISION_NOTIFICATION_EVENTS,
+        )
         payload['pagination'] = pagination
         payload['resource_label'] = 'candidates'
     elif workspace == 'operations':
@@ -415,6 +422,7 @@ def _candidate_row(record: IntelligenceDecisionCandidate, cluster_names: Mapping
 
 
 def _decision_row(record: IntelligenceDecision, cluster_names: Mapping[str, str]) -> dict[str, Any]:
+    approval = record.approvals[0] if record.approvals else None
     return {
         'id': record.id,
         'public_id': record.public_id,
@@ -425,10 +433,56 @@ def _decision_row(record: IntelligenceDecision, cluster_names: Mapping[str, str]
         'namespace': record.namespace or 'All namespaces',
         'severity': record.severity,
         'policy': record.policy_outcome,
+        'policy_reason': record.policy_reason,
         'approval_required': record.approval_required,
+        'approval_outcome': approval.outcome if approval else None,
+        'approval_reason': approval.reason if approval and approval.reason else '-',
+        'approval_actor': approval.actor.display_label if approval and approval.actor else '-',
+        'approval_at': present_user_datetime(approval.created_at, empty='-') if approval else '-',
         'status': record.workflow_status,
         'evidence_hash': record.evidence_hash,
         'expires_at': present_user_datetime(record.expires_at),
+    }
+
+
+def _decision_notification_context() -> dict[str, Any]:
+    approval_required = list_event_channel_options(
+        event_type='automation.approval_required',
+        domain='kubernetes',
+    )
+    approved = list_event_channel_options(
+        event_type='automation.decision_approved',
+        domain='kubernetes',
+    )
+    rejected = list_event_channel_options(
+        event_type='automation.decision_rejected',
+        domain='kubernetes',
+    )
+    return {
+        'approval_required': _channel_posture(approval_required),
+        'approved': _channel_posture(approved),
+        'rejected': _channel_posture(rejected),
+    }
+
+
+def _channel_posture(options: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
+    eligible = [item for item in options if item.get('selectable')]
+    if eligible:
+        label, tone = 'Ready', 'normal'
+        helper = f'{len(eligible)} validated channel(s) allow this Automation Control event.'
+    elif options:
+        label, tone = 'Configuration Required', 'warning'
+        helper = 'Configured channels exist, but none is currently validated and eligible for this event.'
+    else:
+        label, tone = 'Not Configured', 'unknown'
+        helper = 'No Notification Channel currently allows this Automation Control event.'
+    return {
+        'label': label,
+        'tone': tone,
+        'helper': helper,
+        'eligible': len(eligible),
+        'total': len(options),
+        'channels': list(options),
     }
 
 
