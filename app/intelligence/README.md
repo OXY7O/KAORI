@@ -87,3 +87,13 @@ Reusable recommendation callers must scope findings with canonical `domain` + `a
 Dashboard explicitly requests `domain='kubernetes'`, preventing Object Storage findings from leaking
 into a Kubernetes-only surface. Future Object Storage Analytics recommendation tabs must consume the
 same Intelligence finding source rather than re-implementing these rule conditions.
+
+## Object Storage Rule Catalog coverage
+
+Rule Catalog now records Object Storage definitions as canonical `object_storage.*` rules with explicit
+provider coverage. MinIO is the currently validated provider coverage for Object Storage inventory,
+forecast, and metric-signal definitions; the provider name is evidence metadata rather than a separate
+rule namespace. Metric-signal catalog entries mirror the current Object Storage Analytics capacity,
+request-error, waiting-request, and offline-node boundaries. The catalog schema uses a generic
+`evidence_boundary` field so Prometheus, Alertmanager, provider APIs, committed inventory, and worker
+artifacts can coexist without making one backend the Intelligence schema owner.

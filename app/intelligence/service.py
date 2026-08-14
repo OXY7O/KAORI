@@ -17,226 +17,47 @@ from app.intelligence.finding_presentation import (
     format_affected_summary,
 )
 from app.intelligence.object_storage_recommendations import build_object_storage_recommendation_findings
-
-PER_PAGE_OPTIONS = [5, 10, 25, 50]
-
-DOMAIN_OPTIONS = [
-    {'value': '', 'label': 'All Asset Domains'},
-    {'value': 'kubernetes', 'label': 'Kubernetes'},
-    {'value': 'object_storage', 'label': 'Object Storage'},
-    {'value': 'server', 'label': 'Server'},
-    {'value': 'hci', 'label': 'HCI'},
-]
-CATEGORY_OPTIONS = [
-    {'value': '', 'label': 'All Categories'},
-    {'value': 'capacity', 'label': 'Capacity'},
-    {'value': 'governance', 'label': 'Governance'},
-    {'value': 'reliability', 'label': 'Reliability'},
-    {'value': 'operations', 'label': 'Operations'},
-    {'value': 'optimization', 'label': 'Optimization'},
-    {'value': 'performance', 'label': 'Performance'},
-]
-SEVERITY_OPTIONS = [
-    {'value': '', 'label': 'All Severities'},
-    {'value': 'critical', 'label': 'Critical'},
-    {'value': 'warning', 'label': 'Warning'},
-    {'value': 'info', 'label': 'Info'},
-]
-STATUS_OPTIONS = [
-    {'value': '', 'label': 'All Statuses'},
-    {'value': 'available', 'label': 'Available'},
-    {'value': 'reserved', 'label': 'Reserved Plan'},
-    {'value': 'imported_signal', 'label': 'Imported Signal'},
-]
-SOURCE_KIND_OPTIONS = [
-    {'value': '', 'label': 'All Resource Types'},
-    {'value': 'cluster', 'label': 'Cluster'},
-    {'value': 'node', 'label': 'Node'},
-    {'value': 'namespace', 'label': 'Namespace'},
-    {'value': 'workload', 'label': 'Workload'},
-    {'value': 'pod', 'label': 'Pod'},
-    {'value': 'persistent_volume', 'label': 'Persistent Volume'},
-    {'value': 'tls_secret', 'label': 'TLS Secret'},
-    {'value': 'object_storage_system', 'label': 'Object Storage System'},
-    {'value': 'object_storage_bucket', 'label': 'Object Storage Bucket'},
-    {'value': 'vm', 'label': 'VM'},
-    {'value': 'datastore', 'label': 'Datastore'},
-    {'value': 'hci_cluster', 'label': 'HCI Cluster'},
-]
-LOGIC_TYPE_OPTIONS = [
-    {'value': '', 'label': 'All Logic Types'},
-    {'value': 'recommendation', 'label': 'Recommendation'},
-    {'value': 'governance_check', 'label': 'Governance Check'},
-    {'value': 'forecast_insight', 'label': 'Forecast Insight'},
-    {'value': 'alert_enrichment', 'label': 'Alert Enrichment'},
-    {'value': 'operational_hygiene', 'label': 'Operational Hygiene'},
-]
-SIGNAL_SOURCE_OPTIONS = [
-    {'value': '', 'label': 'All Signal Sources'},
-    {'value': 'kubernetes_api', 'label': 'Kubernetes API'},
-    {'value': 'kaori_kubernetes_analysis', 'label': 'KAORI Kubernetes Analysis'},
-    {'value': 'object_storage_inventory', 'label': 'Object Storage Inventory'},
-    {'value': 'kaori_object_storage_analysis', 'label': 'KAORI Object Storage Analysis'},
-    {'value': 'alertmanager', 'label': 'Alertmanager'},
-    {'value': 'prometheus_metrics', 'label': 'Prometheus Metrics'},
-    {'value': 'server_inventory', 'label': 'Server Node Exporter'},
-    {'value': 'hci_provider_api', 'label': 'HCI API'},
-]
-
-
-def _clean(value: str | None) -> str:
-    return (value or '').strip()
-
-
-def _to_int(value: str | None, default: int) -> int:
-    try:
-        return int(value or default)
-    except (TypeError, ValueError):
-        return default
-
-
-def _format_label(value: str) -> str:
-    return value.replace('_', ' ').title()
-
-
-def _domain_label(value: str) -> str:
-    return {
-        'kubernetes': 'Kubernetes',
-        'object_storage': 'Object Storage',
-        'server': 'Server',
-        'hci': 'HCI',
-    }.get(value, _format_label(value))
-
-
-def _status_label(value: str) -> str:
-    return {
-        'available': 'Available',
-        'reserved': 'Reserved Plan',
-        'imported_signal': 'Imported Signal',
-    }.get(value, _format_label(value))
-
-
-def _signal_label(value: str) -> str:
-    return {
-        'kubernetes_api': 'Kubernetes API',
-        'kaori_kubernetes_analysis': 'KAORI Kubernetes Analysis',
-        'object_storage_inventory': 'Object Storage Inventory',
-        'kaori_object_storage_analysis': 'KAORI Object Storage Analysis',
-        'alertmanager': 'Alertmanager',
-        'prometheus_metrics': 'Prometheus Metrics',
-        'server_inventory': 'Server Node Exporter',
-        'hci_provider_api': 'HCI API',
-    }.get(value, _format_label(value))
-
-
-def _logic_label(value: str) -> str:
-    return {
-        'recommendation': 'Recommendation',
-        'governance_check': 'Governance Check',
-        'forecast_insight': 'Forecast Insight',
-        'alert_enrichment': 'Alert Enrichment',
-        'operational_hygiene': 'Operational Hygiene',
-    }.get(value, _format_label(value))
-
-
-def _normalize_rule(rule: dict[str, Any]) -> dict[str, Any]:
-    domain = str(rule['domain'])
-    status = str(rule['status'])
-    severity = str(rule['severity'])
-    category = str(rule['category'])
-    source_kind = str(rule['source_kind'])
-    logic_type = str(rule.get('logic_type', 'recommendation'))
-    signal_source = str(rule.get('signal_source', 'kaori_kubernetes_analysis'))
-    return {
-        **rule,
-        'domain_label': _domain_label(domain),
-        'status_label': _status_label(status),
-        'severity_label': _format_label(severity),
-        'category_label': _format_label(category),
-        'source_kind_label': _format_label(source_kind),
-        'logic_type_label': _logic_label(logic_type),
-        'signal_source_label': _signal_label(signal_source),
-        'tone': {
-            'critical': 'critical',
-            'warning': 'warning',
-            'info': 'info',
-        }.get(severity, 'unknown'),
-        'status_tone': {
-            'available': 'normal',
-            'reserved': 'unknown',
-            'imported_signal': 'maintenance',
-        }.get(status, 'unknown'),
-    }
-
-
-def _matches(rule: dict[str, Any], filters: dict[str, str]) -> bool:
-    """Apply dropdown and search filters consistently for Catalog and Recommendations."""
-
-    for key in ['domain', 'category', 'severity', 'status', 'source_kind', 'logic_type', 'signal_source']:
-        selected = _clean(filters.get(key))
-        current_value = _clean(str(rule.get(key, '')))
-        if selected and current_value != selected:
-            return False
-
-    query = _clean(filters.get('q')).lower()
-    if query:
-        evidence = rule.get('evidence')
-        evidence_text = (
-            ' '.join(f'{key} {value}' for key, value in evidence.items()) if isinstance(evidence, dict) else ''
-        )
-        fix_steps = rule.get('fix_steps')
-        fix_steps_text = ' '.join(str(step) for step in fix_steps) if isinstance(fix_steps, list) else ''
-
-        haystack = ' '.join(
-            [
-                str(rule.get(field, ''))
-                for field in [
-                    'rule_key',
-                    'title',
-                    'summary',
-                    'condition_summary',
-                    'recommended_action',
-                    'impact',
-                    'prometheus_relationship',
-                    'affected_summary',
-                    'domain_label',
-                    'category_label',
-                    'severity_label',
-                    'status_label',
-                    'source_kind_label',
-                    'logic_type_label',
-                    'signal_source_label',
-                ]
-            ]
-            + [evidence_text, fix_steps_text]
-        ).lower()
-        if query not in haystack:
-            return False
-
-    return True
-
+from app.intelligence.rule_presentation import (
+    CATEGORY_OPTIONS,
+    DOMAIN_OPTIONS,
+    LOGIC_TYPE_OPTIONS,
+    PER_PAGE_OPTIONS,
+    PROVIDER_OPTIONS,
+    SEVERITY_OPTIONS,
+    SIGNAL_SOURCE_OPTIONS,
+    SOURCE_KIND_OPTIONS,
+    STATUS_OPTIONS,
+    clean,
+    domain_label,
+    matches,
+    normalize_rule,
+    provider_keys,
+    provider_label,
+    to_int,
+)
 
 def _base_payload(args: MultiDict[str, str], *, page_mode: str) -> dict[str, Any]:
     filters = {
-        'domain': _clean(args.get('domain')),
-        'category': _clean(args.get('category')),
-        'severity': _clean(args.get('severity')),
-        'status': _clean(args.get('status')),
-        'source_kind': _clean(args.get('source_kind')),
-        'logic_type': _clean(args.get('logic_type')),
-        'signal_source': _clean(args.get('signal_source')),
-        'q': _clean(args.get('q')),
+        'domain': clean(args.get('domain')),
+        'provider': clean(args.get('provider')),
+        'category': clean(args.get('category')),
+        'severity': clean(args.get('severity')),
+        'status': clean(args.get('status')),
+        'source_kind': clean(args.get('source_kind')),
+        'logic_type': clean(args.get('logic_type')),
+        'signal_source': clean(args.get('signal_source')),
+        'q': clean(args.get('q')),
     }
 
-    per_page = _to_int(args.get('per_page'), 5)
+    per_page = to_int(args.get('per_page'), 5)
     if per_page not in PER_PAGE_OPTIONS:
         per_page = 5
 
-    page = max(_to_int(args.get('page'), 1), 1)
+    page = max(to_int(args.get('page'), 1), 1)
 
-    catalog = [_normalize_rule(rule) for rule in INTELLIGENCE_CATALOG]
+    catalog = [normalize_rule(rule) for rule in INTELLIGENCE_CATALOG]
     source_items = catalog if page_mode == 'catalog' else get_active_recommendation_findings()
-    filtered = [rule for rule in source_items if _matches(rule, filters)]
+    filtered = [rule for rule in source_items if matches(rule, filters)]
     total_items = len(filtered)
     total_pages = max(ceil(total_items / per_page), 1)
     page = min(page, total_pages)
@@ -260,6 +81,7 @@ def _base_payload(args: MultiDict[str, str], *, page_mode: str) -> dict[str, Any
         'filters': filters,
         'filter_options': {
             'domains': DOMAIN_OPTIONS,
+            'providers': PROVIDER_OPTIONS,
             'categories': CATEGORY_OPTIONS,
             'severities': SEVERITY_OPTIONS,
             'statuses': STATUS_OPTIONS,
@@ -305,7 +127,7 @@ def _build_recommendation_findings(catalog: list[dict[str, Any]]) -> list[dict[s
     findings.extend(_build_tls_certificate_findings(rules))
     findings.extend(build_object_storage_recommendation_findings(rules))
 
-    findings = [_normalize_rule(finding) for finding in findings]
+    findings = [normalize_rule(finding) for finding in findings]
     for finding in findings:
         finding.setdefault('affected_summary', format_affected_summary(finding))
         finding.setdefault('affected_items', build_affected_items(finding))
@@ -327,14 +149,14 @@ def get_active_recommendation_findings(
     filtering arguments.
     """
 
-    catalog = [_normalize_rule(rule) for rule in INTELLIGENCE_CATALOG]
+    catalog = [normalize_rule(rule) for rule in INTELLIGENCE_CATALOG]
     findings = _build_recommendation_findings(catalog)
 
-    selected_domain = _clean(domain)
+    selected_domain = clean(domain)
     if selected_domain:
-        findings = [finding for finding in findings if _clean(str(finding.get('domain'))) == selected_domain]
+        findings = [finding for finding in findings if clean(str(finding.get('domain'))) == selected_domain]
 
-    selected_asset = _clean(asset_key)
+    selected_asset = clean(asset_key)
     if selected_asset:
         findings = [finding for finding in findings if _finding_asset_key(finding) == selected_asset]
 
@@ -348,7 +170,7 @@ def _finding_asset_key(finding: dict[str, Any]) -> str:
     evidence = finding.get('evidence')
     if not isinstance(evidence, dict):
         return ''
-    return _clean(
+    return clean(
         str(
             evidence.get('asset_key')
             or evidence.get('cluster_id')
@@ -674,7 +496,7 @@ def _build_tls_certificate_findings(rules: dict[str, dict[str, Any]]) -> list[di
         affected_hosts = list(getattr(example, 'ingress_hosts', None) or [])[:3] if example else []
 
         findings.append(
-            _normalize_rule(
+            normalize_rule(
                 {
                     **source_rule,
                     'rule_key': f'kubernetes.tls_secret.{status_value}:{cluster_id}:{namespace}',
@@ -725,13 +547,13 @@ def _severity_rank(value: str) -> int:
 def get_catalog_rule(rule_key: str) -> dict[str, Any] | None:
     """Return one normalized catalog definition by its canonical rule key."""
 
-    resolved_key = _clean(rule_key)
+    resolved_key = clean(rule_key)
     if not resolved_key:
         return None
 
     for raw_rule in INTELLIGENCE_CATALOG:
-        rule = _normalize_rule(dict(raw_rule))
-        if _clean(str(rule.get('rule_key'))) == resolved_key:
+        rule = normalize_rule(dict(raw_rule))
+        if clean(str(rule.get('rule_key'))) == resolved_key:
             return rule
     return None
 
@@ -739,12 +561,12 @@ def get_catalog_rule(rule_key: str) -> dict[str, Any] | None:
 def get_recommendation_finding(recommendation_key: str) -> dict[str, Any] | None:
     """Return one active recommendation finding by its canonical finding key."""
 
-    resolved_key = _clean(recommendation_key)
+    resolved_key = clean(recommendation_key)
     if not resolved_key:
         return None
 
     for finding in get_active_recommendation_findings():
-        if _clean(str(finding.get('rule_key'))) != resolved_key:
+        if clean(str(finding.get('rule_key'))) != resolved_key:
             continue
 
         scope_title, scope_supporting = finding_scope_details(finding)
@@ -756,62 +578,100 @@ def get_recommendation_finding(recommendation_key: str) -> dict[str, Any] | None
     return None
 
 
+def _catalog_scope_label(filters: dict[str, str]) -> str:
+    selected_domain = clean(filters.get('domain'))
+    selected_provider = clean(filters.get('provider'))
+    scope_parts: list[str] = []
+    if selected_domain:
+        scope_parts.append(domain_label(selected_domain))
+    if selected_provider:
+        scope_parts.append(provider_label([selected_provider]))
+    return ' · '.join(scope_parts) if scope_parts else 'Multi-Domain'
+
+
+def _apply_catalog_payload(
+    payload: dict[str, Any],
+    catalog: list[dict[str, Any]],
+    *,
+    available: int,
+    reserved: int,
+    imported: int,
+) -> None:
+    catalog_domains = {str(rule.get('domain') or '') for rule in catalog if rule.get('domain')}
+    minio_coverage = sum(1 for rule in catalog if 'minio' in provider_keys(rule))
+    object_storage_rules = sum(1 for rule in catalog if rule.get('domain') == 'object_storage')
+    payload.update(
+        {
+            'page_title': 'Rule Catalog',
+            'scope_label': _catalog_scope_label(payload['filters']),
+            'summary': {
+                'available': available,
+                'reserved': reserved,
+                'imported': imported,
+                'domains': len(catalog_domains),
+                'object_storage': object_storage_rules,
+                'minio': minio_coverage,
+            },
+            'posture': {
+                'title': 'Catalog Posture',
+                'label': 'Active Coverage' if available else 'Reserved Plan',
+                'tone': 'normal' if available else 'unknown',
+            },
+        }
+    )
+
+
+def _apply_recommendation_payload(payload: dict[str, Any], findings: list[dict[str, Any]]) -> None:
+    critical = sum(1 for item in findings if item.get('severity') == 'critical')
+    warning = sum(1 for item in findings if item.get('severity') == 'warning')
+    selected_domain = clean(payload['filters'].get('domain'))
+    scope_label = domain_label(selected_domain) if selected_domain else 'Multi-Domain'
+    posture_tone = 'critical' if critical else ('warning' if warning else 'normal')
+    if critical:
+        posture_label = 'Critical'
+    elif warning:
+        posture_label = 'Review'
+    elif findings:
+        posture_label = 'Active'
+    else:
+        posture_label = 'No Active Findings'
+    active_domains = {str(item.get('domain') or '') for item in findings if item.get('domain')}
+    payload.update(
+        {
+            'page_title': 'Recommendations',
+            'scope_label': scope_label,
+            'summary': {
+                'actionable': len(findings),
+                'critical': critical,
+                'warning': warning,
+                'domains': len(active_domains),
+                'object_storage': sum(1 for item in findings if item.get('domain') == 'object_storage'),
+            },
+            'posture': {
+                'title': 'Recommendation Posture',
+                'label': posture_label,
+                'tone': posture_tone,
+            },
+        }
+    )
+
+
 def get_recommendations_payload(args: MultiDict[str, str], *, page_mode: str = 'recommendations') -> dict[str, Any]:
     payload = _base_payload(args, page_mode=page_mode)
     catalog = payload['catalog']
     findings = payload['recommendation_findings'] if page_mode != 'catalog' else []
 
-    critical = sum(1 for item in findings if item.get('severity') == 'critical')
-    warning = sum(1 for item in findings if item.get('severity') == 'warning')
-    available = sum(1 for rule in catalog if rule.get('status') == 'available')
-    reserved = sum(1 for rule in catalog if rule.get('status') == 'reserved')
-    imported = sum(1 for rule in catalog if rule.get('status') == 'imported_signal')
-
     if page_mode == 'catalog':
-        payload.update(
-            {
-                'page_title': 'Rule Catalog',
-                'summary': {'available': available, 'reserved': reserved, 'imported': imported},
-                'posture': {
-                    'title': 'Rule Availability',
-                    'label': 'Available' if available else 'Reserved Plan',
-                    'tone': 'normal' if available else 'unknown',
-                },
-            }
+        _apply_catalog_payload(
+            payload,
+            catalog,
+            available=sum(1 for rule in catalog if rule.get('status') == 'available'),
+            reserved=sum(1 for rule in catalog if rule.get('status') == 'reserved'),
+            imported=sum(1 for rule in catalog if rule.get('status') == 'imported_signal'),
         )
     else:
-        selected_domain = _clean(payload['filters'].get('domain'))
-        scope_label = _domain_label(selected_domain) if selected_domain else 'Multi-Domain'
-        posture_tone = 'critical' if critical else ('warning' if warning else 'normal')
-        if critical:
-            posture_label = 'Critical'
-        elif warning:
-            posture_label = 'Review'
-        elif findings:
-            posture_label = 'Active'
-        else:
-            posture_label = 'No Active Findings'
-        active_domains = {str(item.get('domain') or '') for item in findings if item.get('domain')}
-        payload.update(
-            {
-                'page_title': 'Recommendations',
-                'scope_label': scope_label,
-                'summary': {
-                    'actionable': len(findings),
-                    'critical': critical,
-                    'warning': warning,
-                    'domains': len(active_domains),
-                    'object_storage': sum(1 for item in findings if item.get('domain') == 'object_storage'),
-                },
-                'posture': {
-                    'title': 'Recommendation Posture',
-                    'label': posture_label,
-                    'tone': posture_tone,
-                },
-            }
-        )
+        _apply_recommendation_payload(payload, findings)
     return payload
-
 
 def get_alert_intelligence_payload() -> dict[str, Any]:
     imported_rules = sum(1 for rule in INTELLIGENCE_CATALOG if str(rule.get('status')) == 'imported_signal')

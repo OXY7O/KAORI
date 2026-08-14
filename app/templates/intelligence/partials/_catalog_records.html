@@ -32,7 +32,12 @@
                     <td class="px-4 py-4">
                         <p class="text-sm font-semibold leading-5 text-content-primary">{{ item.domain_label }}</p>
                         <p class="mt-1 text-xs leading-5 text-content-muted">{{ item.source_kind_label }}</p>
-                        <div class="mt-2">{{ table_label.metadata_label(item.category_label, 'tag') }}</div>
+                        <div class="mt-2 flex flex-wrap gap-2">
+                            {{ table_label.metadata_label(item.category_label, 'tag') }}
+                            {% if item.provider_keys|default([], true) %}
+                                {{ table_label.metadata_label(item.provider_label, 'database') }}
+                            {% endif %}
+                        </div>
                     </td>
                     <td class="px-4 py-4">
                         <p class="text-sm font-semibold leading-5 text-content-primary">{{ item.signal_source_label }}</p>
@@ -41,7 +46,7 @@
                     </td>
                     <td class="px-4 py-4">
                         {{ table_label.status_label(item.status_label, item.status_tone, size='compact') }}
-                        <p class="mt-2 text-xs leading-5 text-content-muted">{{ 'Evaluator is available in the current KAORI boundary.' if item.status == 'available' else ('Signal is imported from an authoritative alert source.' if item.status == 'imported_signal' else 'Definition is visible, but execution is not enabled.') }}</p>
+                        <p class="mt-2 text-xs leading-5 text-content-muted">{{ 'Evaluator or signal policy is active in the current KAORI boundary.' if item.status == 'available' else ('Signal is imported from an authoritative source and enriched by KAORI.' if item.status == 'imported_signal' else 'Definition is visible, but execution is not enabled.') }}</p>
                     </td>
                     <td class="px-5 py-4 text-right">
                         <button type="button"

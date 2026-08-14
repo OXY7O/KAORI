@@ -49,3 +49,11 @@ scaffolding exists.
 - Object Storage rules remain canonical `object_storage` rules. Provider identity such as MinIO is finding evidence, not a separate Intelligence workspace or rule namespace unless the rule is genuinely provider-exclusive.
 - Active Object Storage recommendation evaluators consume committed evidence only. Intelligence must not issue live MinIO, Prometheus, or Alertmanager queries to construct recommendation findings.
 - A finding with no active match is not equivalent to runtime health. Recommendation posture uses `No Active Findings` rather than claiming infrastructure health.
+
+## Rule Catalog provider-coverage contract
+
+- Rule keys remain canonical to the asset domain. Object Storage definitions use the `object_storage.*` namespace; current MinIO support must not create a parallel `minio.*` rule namespace unless a rule is genuinely exclusive to MinIO semantics.
+- Provider coverage is implementation evidence. It identifies which provider adapters/evidence paths currently satisfy a rule definition and must not change the canonical rule namespace.
+- The catalog may filter by provider coverage, but a provider filter does not imply that the rule condition itself is provider-specific.
+- Rule definitions use a generic `evidence_boundary` contract. Prometheus, Alertmanager, provider APIs, committed inventory, and worker-materialized artifacts are evidence sources; no single backend owns the catalog schema.
+- Object Storage metric-signal definitions must stay aligned with the thresholds used by Object Storage Analytics. Threshold changes require coordinated updates to analysis behavior, catalog definition, recommendation semantics where applicable, and contract tests.

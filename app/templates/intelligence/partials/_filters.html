@@ -36,7 +36,7 @@
            hx-indicator="{{ resolved_indicator }}"
            class="inline-flex min-h-9 shrink-0 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary transition-colors hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
             <i data-lucide="rotate-ccw" class="h-3.5 w-3.5" aria-hidden="true"></i>
-            Reset
+            Reset Filters
         </a>
     </div>
     <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -50,6 +50,15 @@
                 {% for option in payload.filter_options.domains %}
                     <option value="{{ option.value }}"
                             {% if payload.filters.domain == option.value %}selected{% endif %}>{{ option.label }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <label class="block">
+            <span class="{{ table_ui.filter_label_classes() }}">Provider Coverage</span>
+            <select name="provider" class="{{ table_ui.filter_select_classes() }}">
+                {% for option in payload.filter_options.providers %}
+                    <option value="{{ option.value }}"
+                            {% if payload.filters.provider == option.value %}selected{% endif %}>{{ option.label }}</option>
                 {% endfor %}
             </select>
         </label>
@@ -81,7 +90,7 @@
             </select>
         </label>
         <label class="block">
-            <span class="{{ table_ui.filter_label_classes() }}">Logic Type</span>
+            <span class="{{ table_ui.filter_label_classes() }}">Rule Type</span>
             <select name="logic_type" class="{{ table_ui.filter_select_classes() }}">
                 {% for option in payload.filter_options.logic_types %}
                     <option value="{{ option.value }}"

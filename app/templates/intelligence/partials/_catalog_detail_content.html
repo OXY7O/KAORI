@@ -38,7 +38,7 @@
                     <div>
                         <dt class="text-xs font-medium leading-5 text-content-muted">Signal Boundary</dt>
                         <dd class="mt-1 text-sm leading-6 text-content-secondary">
-                            {{ item.prometheus_relationship }}
+                            {{ item.evidence_boundary }}
                         </dd>
                     </div>
                 </dl>
@@ -52,13 +52,15 @@
                 <dl class="mt-4 grid gap-3 sm:grid-cols-2">
                     {{ intelligence_ui.field('Priority', item.priority) }}
                     {{ intelligence_ui.field('Evaluator State', item.status_label) }}
-                    {{ intelligence_ui.field('Logic Type', item.logic_type_label) }}
+                    {{ intelligence_ui.field('Rule Type', item.logic_type_label) }}
                     {{ intelligence_ui.field('Signal Source', item.signal_source_label) }}
+                    {{ intelligence_ui.field('Provider Coverage', item.provider_label) }}
+                    {{ intelligence_ui.field('Canonical Domain', item.domain_label) }}
                 </dl>
             </section>
         </div>
         <section class="border-t border-outline-subtle p-4 sm:p-5">
-            {{ intelligence_ui.subsection('Coverage Contract', 'Evidence dependencies and KAORI surfaces where this definition is visible.', 'network') }}
+            {{ intelligence_ui.subsection('Coverage Contract', 'Evidence dependencies, current provider coverage, and KAORI surfaces where this definition is visible.', 'network') }}
             <div class="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(16rem,0.8fr)]">
                 <div>
                     <p class="text-xs font-medium leading-5 text-content-muted">Supported Sources</p>

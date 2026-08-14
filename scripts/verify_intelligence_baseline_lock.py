@@ -37,6 +37,8 @@ def main() -> int:
 
     intelligence_routes = read('app/intelligence/routes.py')
     intelligence_service = read('app/intelligence/service.py')
+    intelligence_catalog = read('app/intelligence/catalog.py')
+    rule_presentation = read('app/intelligence/rule_presentation.py')
     recommendation_engine = read('app/intelligence/recommendation_engine.py')
     object_storage_recommendations = read('app/intelligence/object_storage_recommendations.py')
     automation_routes = read('app/automation_control/routes.py')
@@ -151,9 +153,13 @@ def main() -> int:
         "{'value': 'object_storage', 'label': 'Object Storage'}",
         "{'value': 'object_storage_bucket', 'label': 'Object Storage Bucket'}",
         "{'value': 'object_storage_inventory', 'label': 'Object Storage Inventory'}",
-        'build_object_storage_recommendation_findings(rules)',
     ):
-        require(required in intelligence_service, f'Object Storage recommendation boundary missing: {required}', errors)
+        require(required in rule_presentation, f'Object Storage recommendation filter boundary missing: {required}', errors)
+    require(
+        'build_object_storage_recommendation_findings(rules)' in intelligence_service,
+        'Object Storage recommendation evaluator boundary missing',
+        errors,
+    )
     require(
         "domain='kubernetes'" in recommendation_engine and 'asset_key=selected_cluster_id' in recommendation_engine,
         'Kubernetes Dashboard recommendation scope must remain explicitly Kubernetes-only',
@@ -169,6 +175,31 @@ def main() -> int:
         'Recommendations Hero must use multi-domain scope instead of a hard-coded Kubernetes label',
         errors,
     )
+
+    for required in (
+        "'rule_key': 'object_storage.metric.capacity_pressure'",
+        "'rule_key': 'object_storage.metric.capacity_critical'",
+        "'rule_key': 'object_storage.metric.request_error_pressure'",
+        "'rule_key': 'object_storage.metric.request_error_critical'",
+        "'rule_key': 'object_storage.metric.requests_waiting'",
+        "'rule_key': 'object_storage.metric.offline_nodes'",
+        "'provider_keys': ['minio']",
+        "'evidence_boundary':",
+    ):
+        require(required in intelligence_catalog, f'Object Storage Rule Catalog boundary missing: {required}', errors)
+    require('prometheus_relationship' not in intelligence_catalog, 'Rule Catalog schema must not remain Prometheus-owned', errors)
+    require(
+        "{'value': 'minio', 'label': 'MinIO'}" in rule_presentation
+        and "selected_provider not in provider_keys(rule)" in rule_presentation,
+        'Rule Catalog provider-coverage filter is missing',
+        errors,
+    )
+    require(
+        'payload.summary.domains' in catalog_page and 'payload.summary.minio' in catalog_page,
+        'Rule Catalog Hero must use dynamic domain and MinIO coverage metadata',
+        errors,
+    )
+    require('3 Asset Domains' not in catalog_page, 'Rule Catalog Hero must not hard-code stale domain count', errors)
 
     require('resource_detail_modal.drawer_host(' in recommendations_page, 'Recommendations drawer host missing', errors)
     require(
