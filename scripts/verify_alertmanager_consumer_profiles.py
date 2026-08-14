@@ -18,6 +18,7 @@ def main() -> int:
     profiles = read('app/integrations/alertmanager/binding_profiles.py')
     binding_validation = read('app/integrations/alertmanager/binding_validation.py')
     resolver = read('app/alertmanager/resolver.py')
+    object_storage_profile_migration = read('migrations/versions/20260814_object_storage_alert_profile.py')
     forms = read('app/alertmanager/forms.py')
     minio_service = read('app/minio/service.py')
     consumer_assets = read('app/integrations/consumer_assets.py')
@@ -42,11 +43,14 @@ def main() -> int:
     assert 'discover_payload_capabilities' not in validation
 
     assert "profile_key='kubernetes-alerts-v1'" in profiles
-    assert "profile_key='minio-alerts-v1'" in profiles
+    assert "profile_key='object-storage-alerts-v1'" in profiles
     assert "asset_type='object_storage_system'" in profiles
     assert 'discover_payload_capabilities' in binding_validation
     assert 'binding.validation_evidence' in binding_validation
     assert 'binding.validation_profile' in binding_validation
+    assert 'get_alert_consumer_profile' in resolver
+    assert 'profile_eligible' in resolver
+    assert 'Consumer validation profile' in resolver
 
     evaluator = resolver.split('def _evaluate_binding', 1)[1].split('def _operational_rank', 1)[0]
     assert 'binding.validation_evidence or {}' in evaluator
@@ -73,7 +77,10 @@ def main() -> int:
     assert 'Inventory & Lifecycle' in minio_detail
 
     assert 'kubernetes-alerts-v1' in alertmanager_readme
-    assert 'minio-alerts-v1' in alertmanager_readme
+    assert 'object-storage-alerts-v1' in alertmanager_readme
+    assert "validation_profile = 'object-storage-alerts-v1'" in object_storage_profile_migration
+    assert "validation_profile = 'minio-alerts-v1'" in object_storage_profile_migration
+    assert "down_revision = '20260814_obj_forecast'" in object_storage_profile_migration
     assert 'Consumer alert contracts are binding-scoped.' in compatibility_doc
     assert 'Alertmanager consumer-profile boundary' in module_map
     assert 'Alertmanager provider validation is consumer-neutral' in workspace_standard

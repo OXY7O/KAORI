@@ -74,15 +74,15 @@ for _profile in (
     ),
     AlertConsumerProfile(
         asset_type='object_storage_system',
-        profile_key='minio-alerts-v1',
-        label='MinIO Alerts v1',
+        profile_key='object-storage-alerts-v1',
+        label='Object Storage Alerts v1',
         required_capabilities=_COMMON_REQUIRED,
         optional_capabilities=_COMMON_OPTIONAL,
         no_match_message=(
-            'The selector is valid and no active MinIO alert currently matches the object-storage asset. '
+            'The selector is valid and no active Object Storage alert currently matches the managed asset. '
             'The binding may remain Ready while payload-label evidence waits for a representative alert.'
         ),
-        selector_hint='Use the same stable MinIO identity carried by alert rules, for example job or deployment labels.',
+        selector_hint='Use the stable Object Storage identity carried by alert rules, for example job, deployment, service, or provider-specific asset labels.',
     ),
     AlertConsumerProfile(
         asset_type='server',

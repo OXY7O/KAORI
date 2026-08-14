@@ -4,6 +4,7 @@ from flask import render_template, request
 from flask.typing import ResponseReturnValue
 
 from app.analytics.object_storage.service import (
+    get_object_storage_alert_table_context,
     get_object_storage_analytics_context,
     get_object_storage_bucket_table_context,
 )
@@ -53,4 +54,12 @@ def object_storage_bucket_table() -> ResponseReturnValue:
     return render_template(
         'analytics/object_storage/partials/_bucket_table.html',
         **get_object_storage_bucket_table_context(page_key, request.args),
+    )
+
+
+@permission_required('analytics.view')
+def object_storage_alert_table() -> ResponseReturnValue:
+    return render_template(
+        'analytics/object_storage/partials/_alert_records.html',
+        **get_object_storage_alert_table_context(request.args),
     )

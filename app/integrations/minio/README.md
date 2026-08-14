@@ -46,7 +46,7 @@ ObjectStorageSystem
   │     → provider-qualified MinIO Metrics v2 validator
   │     → Binding Validation
   └── Alertmanager binding
-        → minio-alerts-v1
+        → object-storage-alerts-v1
         → Binding Validation
 ```
 

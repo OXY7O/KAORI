@@ -34,7 +34,7 @@ or other domain alerts.
 Binding Validation owns consumer semantics. Current canonical profiles include:
 
 - `kubernetes_cluster` → `kubernetes-alerts-v1`
-- `object_storage_system` → `minio-alerts-v1`
+- `object_storage_system` → `object-storage-alerts-v1`
 - `server` → `infrastructure-alerts-v1`
 - `server_group` → `infrastructure-group-alerts-v1`
 - `hci_environment` → `platform-alerts-v1`

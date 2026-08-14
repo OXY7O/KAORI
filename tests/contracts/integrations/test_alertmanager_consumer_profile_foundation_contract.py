@@ -29,7 +29,7 @@ def test_alertmanager_consumer_profiles_are_asset_scoped() -> None:
     binding_management = read('app/integrations/alertmanager/binding_management.py')
 
     assert "profile_key='kubernetes-alerts-v1'" in profiles
-    assert "profile_key='minio-alerts-v1'" in profiles
+    assert "profile_key='object-storage-alerts-v1'" in profiles
     assert "asset_type='object_storage_system'" in profiles
     assert 'get_alert_consumer_profile(binding.asset_type)' in binding_validation
     assert 'discover_payload_capabilities' in binding_validation
@@ -93,8 +93,24 @@ def test_alertmanager_consumer_profile_contract_is_documented() -> None:
     module_map = read('docs/architecture/integration-module-map.md')
 
     assert 'kubernetes-alerts-v1' in readme
-    assert 'minio-alerts-v1' in readme
+    assert 'object-storage-alerts-v1' in readme
     assert 'Provider Core Validation checks only provider-owned contracts' in readme
     assert 'Alert rules themselves are normally evaluated upstream by Prometheus' in readme
     assert 'Consumer alert contracts are binding-scoped.' in compatibility
     assert 'Alertmanager consumer-profile boundary' in module_map
+
+
+def test_object_storage_alert_profile_direct_cutover_is_migration_guarded() -> None:
+    profiles = read('app/integrations/alertmanager/binding_profiles.py')
+    resolver = read('app/alertmanager/resolver.py')
+    migration = read('migrations/versions/20260814_object_storage_alert_profile.py')
+
+    assert "profile_key='object-storage-alerts-v1'" in profiles
+    assert 'minio-alerts-v1' not in profiles
+    assert 'get_alert_consumer_profile' in resolver
+    assert 'profile_eligible' in resolver
+    assert 'Consumer validation profile' in resolver
+    assert "validation_profile = 'object-storage-alerts-v1'" in migration
+    assert "validation_profile = 'minio-alerts-v1'" in migration
+    assert "validation_status = 'validation_required'" in migration
+    assert "down_revision = '20260814_obj_forecast'" in migration

@@ -9,11 +9,15 @@
                 <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Analysis Controls</p>
                 <h2 class="mt-1 text-lg font-semibold text-content-primary">Object Storage Scope &amp; Runtime Readiness</h2>
                 <p class="mt-1 text-sm leading-6 text-content-muted">
-                    Select the managed system and analysis window. KAORI keeps committed Inventory, metric-contract validation, and current runtime connectivity as separate states.
+                    {% if page_key == 'alerts' %}
+                        Select the managed system and alert source. Automatic prefers Alertmanager and falls back to Prometheus ALERTS evidence when Alertmanager is unavailable.
+                    {% else %}
+                        Select the managed system and analysis window. KAORI keeps committed Inventory, metric-contract validation, and current runtime connectivity as separate states.
+                    {% endif %}
                 </p>
             </div>
         </div>
-        {{ loading_bar.render('object-storage-analytics-refresh-indicator', label='Checking Operational Metrics') }}
+        {{ loading_bar.render('object-storage-analytics-refresh-indicator', label='Refreshing Alert Sources' if page_key == 'alerts' else 'Checking Operational Metrics') }}
     </header>
     <div class="space-y-5 p-5 sm:p-6">
         <form id="object-storage-analytics-controls"
@@ -28,9 +32,7 @@
               hx-trigger="change delay:120ms"
               data-analytics-preserve-tab
               class="grid gap-4 sm:grid-cols-2">
-            {% if page_key in ['overview', 'capacity', 'performance', 'forecast', 'top_consumers', 'alerts'] %}
-                <input type="hidden" name="tab" value="">
-            {% endif %}
+            <input type="hidden" name="tab" value="">
             <label class="block" for="object-storage-system-filter">
                 <span class="{{ table_ui.filter_label_classes() }}">Object Storage System</span>
                 <select id="object-storage-system-filter"
@@ -41,7 +43,18 @@
                     {% endfor %}
                 </select>
             </label>
-            {% if page_key == 'forecast' %}
+            {% if page_key == 'alerts' %}
+                <label class="block" for="object-storage-alert-source-filter">
+                    <span class="{{ table_ui.filter_label_classes() }}">Alert Source</span>
+                    <select id="object-storage-alert-source-filter"
+                            name="source"
+                            class="{{ table_ui.filter_select_classes() }}">
+                        <option value="auto" {% if selected_alert_source == 'auto' %}selected{% endif %}>Automatic · Alertmanager Preferred</option>
+                        <option value="alertmanager" {% if selected_alert_source == 'alertmanager' %}selected{% endif %}>Alertmanager</option>
+                        <option value="prometheus" {% if selected_alert_source == 'prometheus' %}selected{% endif %}>Prometheus</option>
+                    </select>
+                </label>
+            {% elif page_key == 'forecast' %}
                 <label class="block" for="object-storage-history-window-filter">
                     <span class="{{ table_ui.filter_label_classes() }}">History Window</span>
                     <select id="object-storage-history-window-filter"
@@ -65,82 +78,128 @@
                 </label>
             {% endif %}
         </form>
-        <div class="grid gap-4 lg:grid-cols-3">
-            <article class="{{ analysis_surface.readiness_shell_classes() }} p-4">
-                <div class="flex items-start justify-between gap-3">
-                    <div class="flex min-w-0 items-start gap-3">
-                        <span class="{{ analysis_surface.semantic_icon_classes('normal' if inventory_observed_at else 'warning') }}">
-                            <i data-lucide="database" class="h-4 w-4"></i>
-                        </span>
-                        <div class="min-w-0">
-                            <p class="text-sm font-semibold text-content-primary">Committed Inventory</p>
-                            <p class="mt-1 text-xs leading-5 text-content-muted">{{ inventory_observed_at|user_datetime('Not Collected') }}</p>
-                        </div>
-                    </div>
-                    {{ table_label.status_label('Collected' if inventory_observed_at else 'Not Collected', 'normal' if inventory_observed_at else 'warning') }}
-                </div>
-            </article>
-            <article class="{{ analysis_surface.readiness_shell_classes() }} p-4">
-                <div class="flex items-start justify-between gap-3">
-                    <div class="flex min-w-0 items-start gap-3">
-                        <span class="{{ analysis_surface.semantic_icon_classes(metrics_source.tone) }}">
-                            <i data-lucide="activity" class="h-4 w-4"></i>
-                        </span>
-                        <div class="min-w-0">
-                            <p class="text-sm font-semibold text-content-primary">Operational Metrics Source</p>
-                            <p class="mt-1 break-words text-xs leading-5 text-content-muted">{{ metrics_source.provider_label }}{% if metrics_source.instance_name %} · {{ metrics_source.instance_name }}{% endif %}</p>
-                        </div>
-                    </div>
-                    {{ table_label.status_label(metrics_source.label, metrics_source.tone) }}
-                </div>
-            </article>
-            {% if page_key == 'forecast' %}
+
+        {% if page_key == 'alerts' %}
+            <div class="grid gap-4 lg:grid-cols-3">
                 <article class="{{ analysis_surface.readiness_shell_classes() }} p-4">
                     <div class="flex items-start justify-between gap-3">
                         <div class="flex min-w-0 items-start gap-3">
-                            <span class="{{ analysis_surface.semantic_icon_classes(forecast_materialization.tone) }}">
-                                <i data-lucide="chart-spline" class="h-4 w-4"></i>
-                            </span>
+                            <span class="{{ analysis_surface.semantic_icon_classes(alert_source.tone) }}"><i data-lucide="radio-tower" class="h-4 w-4"></i></span>
                             <div class="min-w-0">
-                                <p class="text-sm font-semibold text-content-primary">Forecast Worker Snapshot</p>
-                                <p class="mt-1 text-xs leading-5 text-content-muted">{{ selected_forecast_history_window|upper }} · {{ forecast_materialization.method }}</p>
+                                <p class="text-sm font-semibold text-content-primary">Selected Alert Stream</p>
+                                <p class="mt-1 break-words text-xs leading-5 text-content-muted">
+                                    {{ alert_source.resolved_label }}{% if alert_source.instance_name %} · {{ alert_source.instance_name }}{% endif %}
+                                </p>
                             </div>
                         </div>
-                        {{ table_label.status_label(forecast_materialization.label, forecast_materialization.tone) }}
+                        {{ table_label.status_label(alert_source.label, alert_source.tone) }}
                     </div>
                 </article>
-            {% elif page_key == 'alerts' %}
                 <article class="{{ analysis_surface.readiness_shell_classes() }} p-4">
                     <div class="flex items-start justify-between gap-3">
                         <div class="flex min-w-0 items-start gap-3">
-                            <span class="{{ analysis_surface.semantic_icon_classes(alertmanager.tone) }}">
-                                <i data-lucide="bell-ring" class="h-4 w-4"></i>
-                            </span>
+                            <span class="{{ analysis_surface.semantic_icon_classes(alertmanager.tone) }}"><i data-lucide="bell-ring" class="h-4 w-4"></i></span>
                             <div class="min-w-0">
                                 <p class="text-sm font-semibold text-content-primary">Alertmanager Lifecycle</p>
-                                <p class="mt-1 text-xs leading-5 text-content-muted">Optional alert lifecycle correlation.</p>
+                                <p class="mt-1 break-words text-xs leading-5 text-content-muted">
+                                    {{ alertmanager.profile }}{% if alertmanager.instance_name %} · {{ alertmanager.instance_name }}{% endif %}
+                                </p>
                             </div>
                         </div>
                         {{ table_label.status_label(alertmanager.label, alertmanager.tone) }}
                     </div>
                 </article>
-            {% else %}
                 <article class="{{ analysis_surface.readiness_shell_classes() }} p-4">
                     <div class="flex items-start justify-between gap-3">
                         <div class="flex min-w-0 items-start gap-3">
-                            <span class="{{ analysis_surface.semantic_icon_classes(metrics_readiness.tone) }}">
-                                <i data-lucide="list-checks" class="h-4 w-4"></i>
-                            </span>
+                            <span class="{{ analysis_surface.semantic_icon_classes(metrics_source.tone) }}"><i data-lucide="activity" class="h-4 w-4"></i></span>
                             <div class="min-w-0">
-                                <p class="text-sm font-semibold text-content-primary">Metrics Contract</p>
-                                <p class="mt-1 text-xs leading-5 text-content-muted">{{ metrics_readiness.profile_label }}</p>
+                                <p class="text-sm font-semibold text-content-primary">Metric-Derived Signals</p>
+                                <p class="mt-1 break-words text-xs leading-5 text-content-muted">{{ metrics_source.provider_label }}{% if metrics_source.instance_name %} · {{ metrics_source.instance_name }}{% endif %}</p>
                             </div>
                         </div>
-                        {{ table_label.status_label(metrics_readiness.label, metrics_readiness.tone) }}
+                        {{ table_label.status_label(metrics_source.label, metrics_source.tone) }}
                     </div>
                 </article>
+            </div>
+            {% if alert_source.fallback_reason %}
+                <div class="rounded-lg border border-outline-default bg-status-warning-soft px-4 py-3" role="status">
+                    <div class="flex items-start gap-2">
+                        <i data-lucide="route" class="mt-0.5 h-4 w-4 shrink-0 text-status-warning"></i>
+                        <div>
+                            <p class="text-sm font-semibold text-content-primary">Fallback Alert Source Active</p>
+                            <p class="mt-1 text-xs leading-5 text-content-muted">{{ alert_source.fallback_reason }}</p>
+                        </div>
+                    </div>
+                </div>
             {% endif %}
-        </div>
+            {% if not alert_source.connected %}
+                <div class="rounded-lg border border-outline-default bg-status-warning-soft px-4 py-3" role="status">
+                    <div class="flex items-start gap-2">
+                        <i data-lucide="triangle-alert" class="mt-0.5 h-4 w-4 shrink-0 text-status-warning"></i>
+                        <div>
+                            <p class="text-sm font-semibold text-content-primary">Alert Stream Unavailable</p>
+                            <p class="mt-1 text-xs leading-5 text-content-muted">{{ alert_source.detail }}</p>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        {% else %}
+            <div class="grid gap-4 lg:grid-cols-3">
+                <article class="{{ analysis_surface.readiness_shell_classes() }} p-4">
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="flex min-w-0 items-start gap-3">
+                            <span class="{{ analysis_surface.semantic_icon_classes('normal' if inventory_observed_at else 'warning') }}"><i data-lucide="database" class="h-4 w-4"></i></span>
+                            <div class="min-w-0">
+                                <p class="text-sm font-semibold text-content-primary">Committed Inventory</p>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">{{ inventory_observed_at|user_datetime('Not Collected') }}</p>
+                            </div>
+                        </div>
+                        {{ table_label.status_label('Collected' if inventory_observed_at else 'Not Collected', 'normal' if inventory_observed_at else 'warning') }}
+                    </div>
+                </article>
+                <article class="{{ analysis_surface.readiness_shell_classes() }} p-4">
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="flex min-w-0 items-start gap-3">
+                            <span class="{{ analysis_surface.semantic_icon_classes(metrics_source.tone) }}"><i data-lucide="activity" class="h-4 w-4"></i></span>
+                            <div class="min-w-0">
+                                <p class="text-sm font-semibold text-content-primary">Operational Metrics Source</p>
+                                <p class="mt-1 break-words text-xs leading-5 text-content-muted">{{ metrics_source.provider_label }}{% if metrics_source.instance_name %} · {{ metrics_source.instance_name }}{% endif %}</p>
+                            </div>
+                        </div>
+                        {{ table_label.status_label(metrics_source.label, metrics_source.tone) }}
+                    </div>
+                </article>
+                {% if page_key == 'forecast' %}
+                    <article class="{{ analysis_surface.readiness_shell_classes() }} p-4">
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="flex min-w-0 items-start gap-3">
+                                <span class="{{ analysis_surface.semantic_icon_classes(forecast_materialization.tone) }}"><i data-lucide="chart-spline" class="h-4 w-4"></i></span>
+                                <div class="min-w-0">
+                                    <p class="text-sm font-semibold text-content-primary">Forecast Worker Snapshot</p>
+                                    <p class="mt-1 text-xs leading-5 text-content-muted">{{ selected_forecast_history_window|upper }} · {{ forecast_materialization.method }}</p>
+                                </div>
+                            </div>
+                            {{ table_label.status_label(forecast_materialization.label, forecast_materialization.tone) }}
+                        </div>
+                    </article>
+                {% else %}
+                    <article class="{{ analysis_surface.readiness_shell_classes() }} p-4">
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="flex min-w-0 items-start gap-3">
+                                <span class="{{ analysis_surface.semantic_icon_classes(metrics_readiness.tone) }}"><i data-lucide="list-checks" class="h-4 w-4"></i></span>
+                                <div class="min-w-0">
+                                    <p class="text-sm font-semibold text-content-primary">Metrics Contract</p>
+                                    <p class="mt-1 text-xs leading-5 text-content-muted">{{ metrics_readiness.profile_label }}</p>
+                                </div>
+                            </div>
+                            {{ table_label.status_label(metrics_readiness.label, metrics_readiness.tone) }}
+                        </div>
+                    </article>
+                {% endif %}
+            </div>
+        {% endif %}
+
         {% if query_diagnostics|default([]) and not dependency_blocker %}
             <div class="rounded-lg border border-outline-default bg-status-warning-soft px-4 py-3 text-sm text-content-secondary" role="status">
                 <div class="flex items-start gap-2">

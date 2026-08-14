@@ -11,8 +11,7 @@ contract.
   bucket, quota, and configuration evidence.
 - `MetricsSource` is authoritative for operational time-series observations used
   by Analytics.
-- Alertmanager is optional for the current release and is reserved for alert
-  lifecycle/correlation evidence.
+- Alertmanager is the preferred active-alert source for Object Storage when an eligible consumer binding is available. Automatic source selection falls back to scoped Prometheus `ALERTS` evidence when Alertmanager is unavailable.
 - Analytics never reads MinIO credentials or creates MinIO clients.
 
 ## Package layout
@@ -24,6 +23,8 @@ app/analytics/object_storage/
 ├── runtime.py
 ├── dependencies.py
 ├── bucket_table.py
+├── alert_sources.py
+├── alert_table.py
 ├── analysis.py
 ├── presentation.py
 ├── forecasting.py
@@ -118,7 +119,7 @@ The current Object Storage Analytics workspace exposes distinct operational sema
 - **Performance** separates request health, traffic/trend, bucket activity, and evidence into the shared Analytics tab workspace pattern. Request demand stays distinct from reliability, queue/inflight pressure, node availability, ingress/egress throughput, and request/error history; increasing demand is descriptive, while error, waiting, and availability evidence drive request-path posture.
 - **Top Consumers** separates Storage Leaders, Request Activity, detailed Consumer Records, and Evidence. Ranking detail remains outside the Overview.
 - **Forecast** separates Forecast Outlook, committed Usage History, Worker & Method, and Evidence. The linear baseline remains a planning boundary rather than a capacity commitment.
-- **Alerts & Anomalies** separates Signal Overview, Signal Detail, optional Alert Lifecycle, and Evidence. Metric-derived signals are not presented as Alertmanager lifecycle records.
+- **Alerts & Anomalies** separates Alert Overview, provider Alert Records, Metric Signals, and Evidence. Automatic source selection prefers Alertmanager and falls back to scoped Prometheus `ALERTS`; metric-derived signals remain a separate KAORI operating-boundary evidence family.
 
 Inventory reconciliation is intentionally non-authoritative: differences within the
 selected thresholds are review evidence because Inventory and operational metrics have
@@ -163,3 +164,13 @@ The worker resolves the same provider-neutral `MetricsSource` contract with a
 background retry policy. A future non-Prometheus metrics adapter can therefore
 materialize the same forecast artifact without changing Object Storage
 Analytics domain code.
+
+
+## Alert source contract
+
+Object Storage Alerts & Anomalies keeps two different evidence families explicit:
+
+1. **Provider alert records** use `Automatic`, `Alertmanager`, or `Prometheus` source selection. Automatic prefers the governed `object_storage_system` Alertmanager binding (`object-storage-alerts-v1`) and falls back to the scoped Prometheus `ALERTS` metric. Alertmanager is lifecycle-rich; Prometheus fallback is rule-state evidence only.
+2. **KAORI metric-derived signals** continue to evaluate Object Storage capacity, request error, queue-pressure, and node-health operating boundaries from the operational `MetricsSource`. These signals are not duplicated Alertmanager records and do not claim routing, silence, inhibition, or receiver evidence.
+
+Alertmanager and Prometheus are therefore independent evidence paths on the Alerts page. A Prometheus metrics outage must not suppress a usable Alertmanager alert stream, and an Alertmanager outage must not suppress usable metric-derived signals or Prometheus alert fallback.

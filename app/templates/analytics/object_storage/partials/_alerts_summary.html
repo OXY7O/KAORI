@@ -2,39 +2,39 @@
     <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div class="flex min-w-0 items-start gap-3">
-                <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="radar" class="h-5 w-5"></i></span>
+                <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="bell-ring" class="h-5 w-5"></i></span>
                 <div class="min-w-0">
-                    <h2 class="text-lg font-semibold text-content-primary">Operational Signal Overview</h2>
-                    <p class="mt-1 text-sm leading-6 text-content-secondary">Summarize metric-derived capacity, reliability, queue, and node signals without presenting them as Alertmanager lifecycle records.</p>
+                    <h2 class="text-lg font-semibold text-content-primary">Alert &amp; Signal Overview</h2>
+                    <p class="mt-1 text-sm leading-6 text-content-secondary">Separate provider alert records from KAORI metric-derived operating signals while keeping both visible in one operational workspace.</p>
                 </div>
             </div>
-            {{ table_label.status_label(metrics.signal_posture.status, metrics.signal_posture.tone) }}
+            {{ table_label.status_label(alert_posture.status, alert_posture.tone) }}
         </div>
     </header>
     <div class="grid gap-px bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4">
         <article class="bg-surface-card p-5">
-            <p class="{{ analysis_surface.metric_label_classes() }}">Critical Signals</p>
-            <p class="mt-2 text-xl font-semibold tabular-nums text-content-primary">{{ metrics.signal_posture.critical_count }}</p>
-            <p class="mt-1 text-xs leading-5 text-content-muted">Immediate operational triage.</p>
+            <p class="{{ analysis_surface.metric_label_classes() }}">Active Alerts</p>
+            <p class="mt-2 text-xl font-semibold tabular-nums text-content-primary">{{ alert_posture.total }}</p>
+            <p class="mt-1 text-xs leading-5 text-content-muted">{{ alert_source.resolved_label }} alert stream.</p>
         </article>
         <article class="bg-surface-card p-5">
-            <p class="{{ analysis_surface.metric_label_classes() }}">Warning Signals</p>
-            <p class="mt-2 text-xl font-semibold tabular-nums text-content-primary">{{ metrics.signal_posture.warning_count }}</p>
-            <p class="mt-1 text-xs leading-5 text-content-muted">Planned operational review.</p>
+            <p class="{{ analysis_surface.metric_label_classes() }}">Critical Alerts</p>
+            <p class="mt-2 text-xl font-semibold tabular-nums text-content-primary">{{ alert_posture.critical }}</p>
+            <p class="mt-1 text-xs leading-5 text-content-muted">Provider alert severity evidence.</p>
         </article>
         <article class="bg-surface-card p-5">
-            <p class="{{ analysis_surface.metric_label_classes() }}">Baseline Signals</p>
-            <p class="mt-2 text-xl font-semibold tabular-nums text-content-primary">{{ metrics.signal_posture.normal_count }}</p>
-            <p class="mt-1 text-xs leading-5 text-content-muted">Inside current metric boundaries.</p>
+            <p class="{{ analysis_surface.metric_label_classes() }}">Warning Alerts</p>
+            <p class="mt-2 text-xl font-semibold tabular-nums text-content-primary">{{ alert_posture.warning }}</p>
+            <p class="mt-1 text-xs leading-5 text-content-muted">Provider alert severity evidence.</p>
         </article>
         <article class="bg-surface-card p-5">
-            <p class="{{ analysis_surface.metric_label_classes() }}">Unknown Signals</p>
-            <p class="mt-2 text-xl font-semibold tabular-nums text-content-primary">{{ metrics.signal_posture.unknown_count }}</p>
-            <p class="mt-1 text-xs leading-5 text-content-muted">Insufficient metric evidence.</p>
+            <p class="{{ analysis_surface.metric_label_classes() }}">Metric Signals</p>
+            <p class="mt-2 text-xl font-semibold tabular-nums text-content-primary">{{ metrics.signal_posture.critical_count + metrics.signal_posture.warning_count }}</p>
+            <p class="mt-1 text-xs leading-5 text-content-muted">Critical + warning KAORI operating-boundary signals.</p>
         </article>
     </div>
     <div class="{{ analysis_surface.interpretation_grid_classes() }}">
-        {{ analysis_surface.interpretation_callout('Signal Reading', metrics.signal_posture.status, metrics.signal_posture.detail, icon='scan-search', role='status', tone=metrics.signal_posture.tone) }}
-        {{ analysis_surface.interpretation_callout('Anomaly Boundary', 'Threshold-derived signals · not a statistical anomaly model', 'This release evaluates explicit operating boundaries for capacity, request errors, queue pressure, and node availability. It does not claim a separate learned or statistical anomaly score.', icon='radar', role='evidence') }}
+        {{ analysis_surface.interpretation_callout('Alert Reading', alert_posture.status, alert_posture.detail, icon='bell-ring', role='status', tone=alert_posture.tone) }}
+        {{ analysis_surface.interpretation_callout('Evidence Boundary', 'Provider alerts and metric signals are separate', 'Alertmanager or Prometheus ALERTS records represent upstream alert-rule state. KAORI metric-derived signals evaluate explicit Object Storage operating boundaries and are not duplicate Alertmanager lifecycle records.', icon='split-square-vertical', role='evidence') }}
     </div>
 </section>

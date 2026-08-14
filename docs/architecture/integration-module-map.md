@@ -69,9 +69,9 @@ IntegrationInstance
 
 This lets different provider types serve one managed asset without pair-specific
 foreign keys. Existing Kubernetes clusters bind Kubernetes API, Prometheus, and
-Alertmanager providers to `kubernetes_cluster:<cluster-id>`. Object storage will
-follow the same pattern: MinIO API and Prometheus metrics providers bind to the
-same `object_storage_system:<asset-id>` scope.
+Alertmanager providers to `kubernetes_cluster:<cluster-id>`. Object Storage follows
+the same pattern: MinIO API, Prometheus metrics, and Alertmanager providers bind
+to the same `object_storage_system:<asset-id>` scope.
 
 
 ### Object Storage metrics validation boundary
@@ -195,7 +195,7 @@ Provider Full Validation establishes only endpoint compatibility and the core
 Status, Alerts, and Silences API v2 contract. `IntegrationBinding.validation_profile`
 selects the alert consumer contract and `IntegrationBinding.validation_evidence`
 stores selector-scoped payload evidence. Current canonical profiles include
-`kubernetes-alerts-v1` for `kubernetes_cluster` and `minio-alerts-v1` for
+`kubernetes-alerts-v1` for `kubernetes_cluster` and `object-storage-alerts-v1` for
 `object_storage_system`. Non-global bindings require a stable alert identity
 selector so a shared Alertmanager can segregate Kubernetes, MinIO, infrastructure,
 and future alert streams. The resolver evaluates eligibility from binding evidence,

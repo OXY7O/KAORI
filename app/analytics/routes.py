@@ -22,6 +22,7 @@ from app.analytics.kubernetes.top_consumers.routes import top_consumers, top_con
 from app.analytics.kubernetes.utilization.routes import utilization, utilization_node_detail, utilization_trend
 from app.analytics.kubernetes.workload.routes import workload, workload_resource_mapping, workload_tenant_quota
 from app.analytics.object_storage.routes import (
+    object_storage_alert_table,
     object_storage_alerts,
     object_storage_bucket_table,
     object_storage_capacity,
@@ -445,6 +446,13 @@ analytics_bp.add_url_rule(
     '/object-storage/buckets/table',
     endpoint='object_storage_bucket_table',
     view_func=object_storage_bucket_table,
+    methods=['GET'],
+)
+
+analytics_bp.add_url_rule(
+    '/object-storage/alerts/table',
+    endpoint='object_storage_alert_table',
+    view_func=object_storage_alert_table,
     methods=['GET'],
 )
 

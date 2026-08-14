@@ -78,19 +78,20 @@
         'database'
     ) }}
 {% elif page_key == 'alerts' %}
-    {% set signal = metrics.signal_posture|default({}) %}
+    {% set alerts = alert_posture|default({}) %}
+    {% set alert_action_endpoint = 'integrations.alertmanager' if alert_source.resolved_source == 'alertmanager' else 'integrations.prometheus' %}
     {{ page_hero.context_card_body(
-        'Signal Posture',
-        'Operational Signals',
-        signal.status|default('Unknown'),
-        signal.tone|default('unknown'),
+        'Alert Posture',
+        'Active Alert State',
+        alerts.status|default('Unknown'),
+        alerts.tone|default('unknown'),
         [
-            ('shield-alert', 'Critical', signal.critical_count|default(0), 'Critical metric-derived signals'),
-            ('triangle-alert', 'Warning', signal.warning_count|default(0), 'Warning metric-derived signals')
+            ('shield-alert', 'Critical', alerts.critical|default(0), 'Critical alerts from the resolved alert source'),
+            ('bell-ring', 'Firing', alerts.firing|default(0), 'Currently firing alert records')
         ],
-        'Review Metrics Source',
-        url_for('integrations.prometheus'),
-        'activity'
+        'Review Alert Source',
+        url_for(alert_action_endpoint),
+        'radio-tower'
     ) }}
 {% else %}
     {{ page_hero.context_card_body(

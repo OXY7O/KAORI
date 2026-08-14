@@ -69,7 +69,7 @@ For Alertmanager the same boundary applies:
 Alertmanager General
   ├── Core: Status / Alerts / Silences API v2
   ├── Kubernetes binding: kubernetes-alerts-v1
-  └── MinIO binding: minio-alerts-v1
+  └── MinIO binding: object-storage-alerts-v1
 ```
 
 The provider does not become degraded because a Kubernetes or MinIO alert stream
@@ -198,7 +198,7 @@ Provider Full Validation establishes product/version compatibility and the core
 Status, Alerts, and Silences API v2 contract only.
 
 Consumer alert contracts are binding-scoped. `kubernetes_cluster` bindings use
-`kubernetes-alerts-v1`; `object_storage_system` bindings use `minio-alerts-v1`;
+`kubernetes-alerts-v1`; `object_storage_system` bindings use `object-storage-alerts-v1`;
 infrastructure asset types resolve their registered infrastructure profiles.
 Every non-global binding requires a stable alert identity selector.
 `IntegrationBinding.validation_evidence` stores scoped alert evidence and the

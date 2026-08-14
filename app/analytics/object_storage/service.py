@@ -5,6 +5,13 @@ from typing import Any
 
 from sqlalchemy.orm import selectinload
 
+from app.analytics.object_storage.alert_sources import (
+    alertmanager_readiness,
+    build_alert_posture,
+    load_alert_stream,
+    selected_alert_source,
+)
+from app.analytics.object_storage.alert_table import build_alert_table_view
 from app.analytics.object_storage.analysis import (
     capacity_posture,
     derive_headroom,
@@ -40,7 +47,6 @@ from app.analytics.object_storage.runtime import (
     waiting_metrics_source,
 )
 from app.analytics.shared.params import get_allowed_time_ranges, get_selected_time_range
-from app.models.integration import IntegrationBinding, IntegrationInstance
 from app.models.object_storage import ObjectStorageSystem
 
 
@@ -85,7 +91,7 @@ PAGES: dict[str, PageDefinition] = {
     ),
     'alerts': PageDefinition(
         'Alerts & Anomalies',
-        'Review metric-derived risk signals while Alertmanager lifecycle integration remains optional.',
+        'Review active alerts from Alertmanager or Prometheus alongside metric-derived operating signals.',
         'triangle-alert',
         'Object Storage Analytics',
     ),
@@ -120,38 +126,6 @@ def _inventory_totals(system: ObjectStorageSystem) -> dict[str, float | int]:
         'size_bytes': sum(int(item.size_bytes or 0) for item in buckets),
         'object_count': sum(int(item.object_count or 0) for item in buckets),
         'bucket_count': len(buckets),
-    }
-
-
-def _alertmanager_binding(system_id: str) -> dict[str, str | bool]:
-    binding = (
-        IntegrationBinding.query.join(IntegrationInstance)
-        .filter(
-            IntegrationBinding.asset_type == 'object_storage_system',
-            IntegrationBinding.asset_key == str(system_id),
-            IntegrationBinding.enabled.is_(True),
-            IntegrationInstance.provider_type == 'alertmanager',
-            IntegrationInstance.enabled.is_(True),
-        )
-        .order_by(IntegrationBinding.priority.asc(), IntegrationBinding.id.asc())
-        .first()
-    )
-    if binding is None:
-        return {
-            'configured': False,
-            'label': 'Not Configured',
-            'tone': 'unknown',
-            'description': (
-                'Alertmanager is optional for this release. '
-                'Metric-derived signals remain available from the operational metrics source.'
-            ),
-        }
-    ready = str(binding.validation_status or '').strip().lower() == 'ready'
-    return {
-        'configured': True,
-        'label': 'Ready' if ready else 'Validation Required',
-        'tone': 'normal' if ready else 'warning',
-        'description': 'Alert lifecycle correlation is reserved for the Alertmanager integration phase.',
     }
 
 
@@ -548,16 +522,41 @@ def _base_context(page_key: str, query_args: Any) -> tuple[dict[str, Any], Objec
         'dependency_blocker': None,
         'metrics_source': waiting_metrics_source(),
         'metrics_readiness': waiting_metrics_readiness(),
+        'selected_alert_source': selected_alert_source(query_args),
+        'alert_source': {
+            'selected_source': selected_alert_source(query_args),
+            'resolved_source': 'none',
+            'resolved_label': 'Unavailable',
+            'configured': False,
+            'connected': False,
+            'label': 'Waiting for System',
+            'tone': 'unknown',
+            'detail': 'Select an Object Storage system.',
+            'rows': [],
+            'instance_name': None,
+            'fallback_used': False,
+            'fallback_reason': None,
+            'checked_at': None,
+        },
         'alertmanager': (
-            _alertmanager_binding(system.id)
+            alertmanager_readiness(system)
             if system is not None
             else {
                 'configured': False,
+                'connected': False,
                 'label': 'Not Configured',
                 'tone': 'unknown',
                 'description': 'Select an Object Storage system.',
+                'instance_name': None,
+                'profile': 'object-storage-alerts-v1',
             }
         ),
+        'alert_posture': {
+            'total': 0, 'critical': 0, 'warning': 0, 'info': 0, 'firing': 0, 'pending': 0,
+            'silenced': 0, 'inhibited': 0, 'status': 'Unknown', 'tone': 'unknown',
+            'detail': 'Select an Object Storage system.',
+        },
+        'alert_table': None,
         'metrics': {},
         'bucket_table': None,
         'query_diagnostics': [],
@@ -566,11 +565,64 @@ def _base_context(page_key: str, query_args: Any) -> tuple[dict[str, Any], Objec
     return context, system, time_range
 
 
+def _unavailable_alert_metrics() -> dict[str, Any]:
+    signals = metric_risk_signals(
+        utilization=None,
+        error_ratio=None,
+        waiting=None,
+        offline_nodes=None,
+    )
+    return {
+        'signals': signals,
+        'signal_posture': build_signal_posture(signals),
+    }
+
+
+def _get_alerts_context(
+    context: dict[str, Any],
+    system: ObjectStorageSystem,
+    query_args: Any,
+    time_range: str,
+) -> dict[str, Any]:
+    alert_stream = load_alert_stream(system, selected_source=context['selected_alert_source'])
+    context['alert_source'] = alert_stream
+    context['alertmanager'] = alertmanager_readiness(system, runtime_stream=alert_stream)
+    context['alert_posture'] = build_alert_posture(alert_stream)
+    context['alert_table'] = build_alert_table_view(
+        alert_stream.get('rows') or [],
+        query_args,
+        system=system,
+        selected_source=context['selected_alert_source'],
+    )
+
+    source, source_view, readiness, blocker = source_setup(system)
+    context['metrics_source'] = source_view
+    context['metrics_readiness'] = readiness
+    metrics_operational = False
+    if source is not None and blocker is None:
+        reader = EvidenceReader(source)
+        context['metrics'] = _build_metrics('alerts', reader, system, time_range)
+        context['query_diagnostics'] = list(dict.fromkeys(item for item in reader.diagnostics if item))
+        runtime_blocker = runtime_source_state(system, context['metrics_source'], reader)
+        metrics_operational = runtime_blocker is None
+        if not metrics_operational:
+            context['metrics'] = _unavailable_alert_metrics()
+    else:
+        context['metrics'] = _unavailable_alert_metrics()
+
+    context['alerts_evidence_available'] = bool(alert_stream.get('connected')) or metrics_operational
+    context['alerts_degraded'] = not (bool(alert_stream.get('connected')) and metrics_operational)
+    return context
+
+
 def get_object_storage_analytics_context(page_key: str, query_args: Any) -> dict[str, Any]:
     context, system, time_range = _base_context(page_key, query_args)
     if system is None:
         context['dependency_blocker'] = system_required_blocker()
         return context
+
+    if page_key == 'alerts':
+        return _get_alerts_context(context, system, query_args, time_range)
 
     source, source_view, readiness, blocker = source_setup(system)
     context['metrics_source'] = source_view
@@ -601,6 +653,24 @@ def get_object_storage_analytics_context(page_key: str, query_args: Any) -> dict
         )
     return context
 
+
+
+def get_object_storage_alert_table_context(query_args: Any) -> dict[str, Any]:
+    context, system, _ = _base_context('alerts', query_args)
+    if system is None:
+        context['dependency_blocker'] = system_required_blocker()
+        return context
+    alert_stream = load_alert_stream(system, selected_source=context['selected_alert_source'])
+    context['alert_source'] = alert_stream
+    context['alertmanager'] = alertmanager_readiness(system, runtime_stream=alert_stream)
+    context['alert_posture'] = build_alert_posture(alert_stream)
+    context['alert_table'] = build_alert_table_view(
+        alert_stream.get('rows') or [],
+        query_args,
+        system=system,
+        selected_source=context['selected_alert_source'],
+    )
+    return context
 
 def get_object_storage_bucket_table_context(page_key: str, query_args: Any) -> dict[str, Any]:
     if page_key not in {'capacity', 'performance', 'top_consumers'}:

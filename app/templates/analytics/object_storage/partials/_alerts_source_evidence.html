@@ -1,0 +1,32 @@
+<section class="{{ analysis_surface.snapshot_shell_classes() }}">
+    <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+        <div class="flex min-w-0 items-start gap-3">
+            <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="radio-tower" class="h-5 w-5"></i></span>
+            <div class="min-w-0">
+                <h2 class="text-lg font-semibold text-content-primary">Alert Source Evidence</h2>
+                <p class="mt-1 text-sm leading-6 text-content-secondary">Review provider selection and lifecycle capability without conflating alert records with KAORI metric-derived signals.</p>
+            </div>
+        </div>
+    </header>
+    <div class="grid gap-px bg-outline-subtle md:grid-cols-3">
+        <article class="bg-surface-card p-5">
+            <p class="{{ analysis_surface.metric_label_classes() }}">Selected Policy</p>
+            <p class="mt-2 text-base font-semibold text-content-primary">{{ 'Automatic' if selected_alert_source == 'auto' else selected_alert_source|title }}</p>
+            <p class="mt-1 text-xs leading-5 text-content-muted">Automatic prefers Alertmanager, then falls back to Prometheus.</p>
+        </article>
+        <article class="bg-surface-card p-5">
+            <p class="{{ analysis_surface.metric_label_classes() }}">Resolved Alert Source</p>
+            <p class="mt-2 text-base font-semibold text-content-primary">{{ alert_source.resolved_label }}</p>
+            <div class="mt-2">{{ table_label.status_label(alert_source.label, alert_source.tone) }}</div>
+        </article>
+        <article class="bg-surface-card p-5">
+            <p class="{{ analysis_surface.metric_label_classes() }}">Alertmanager Consumer</p>
+            <p class="mt-2 text-base font-semibold text-content-primary">{{ alertmanager.profile }}</p>
+            <div class="mt-2">{{ table_label.status_label(alertmanager.label, alertmanager.tone) }}</div>
+        </article>
+    </div>
+    <div class="{{ analysis_surface.interpretation_grid_classes() }}">
+        {{ analysis_surface.interpretation_callout('Alertmanager Authority', 'Lifecycle-rich alert evidence', 'When Alertmanager is resolved, KAORI can present receiver, silence, inhibition, and provider lifecycle state from the governed object-storage binding.', icon='bell-ring', role='evidence') }}
+        {{ analysis_surface.interpretation_callout('Prometheus Fallback', 'Rule-state evidence only', 'Prometheus ALERTS fallback preserves upstream alert-rule state when Alertmanager is unavailable, but it does not provide Alertmanager routing, receiver, silence, or inhibition lifecycle metadata.', icon='activity', role='insight') }}
+    </div>
+</section>

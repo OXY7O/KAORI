@@ -161,7 +161,7 @@ providers expose MinIO metrics.
 
 Alertmanager follows the same boundary. Provider Core Validation proves only the
 Alertmanager API contract. `alertmanager/binding_profiles.py` resolves
-`kubernetes-alerts-v1`, `minio-alerts-v1`, and future alert consumer profiles by
+`kubernetes-alerts-v1`, `object-storage-alerts-v1`, and future alert consumer profiles by
 asset type. Non-global bindings own their alert identity selector and validation
 evidence, allowing one shared Alertmanager to safely serve multiple alert families.
 

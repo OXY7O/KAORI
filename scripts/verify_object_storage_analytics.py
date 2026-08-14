@@ -19,6 +19,8 @@ def main() -> int:
     forecast_task = read('app/analytics/object_storage/tasks.py')
     forecast_job_adapter = read('app/analytics/object_storage/job_adapter.py')
     bucket_table_service = read('app/analytics/object_storage/bucket_table.py')
+    alert_sources = read('app/analytics/object_storage/alert_sources.py')
+    alert_table_service = read('app/analytics/object_storage/alert_table.py')
     presentation = read('app/analytics/object_storage/presentation.py')
     adapter = read('app/analytics/object_storage/sources/minio_prometheus.py')
     resolver = read('app/analytics/object_storage/sources/resolver.py')
@@ -26,13 +28,16 @@ def main() -> int:
     profile = read('app/integrations/prometheus/query_profiles/object_storage_v1.py')
     audit = read('app/integrations/prometheus/query_profiles/object_storage_audit.py')
     binding_profiles = read('app/integrations/prometheus/binding_profiles.py')
+    alertmanager_profiles = read('app/integrations/alertmanager/binding_profiles.py')
+    alertmanager_profile_migration = read('migrations/versions/20260814_object_storage_alert_profile.py')
     binding_validation = read('app/integrations/prometheus/binding_validation.py')
     binding_validator = read('app/integrations/prometheus/binding_validators/object_storage.py')
     menu = read('app/templates/components/navigation/analytics_menu.html')
     template = read('app/templates/analytics/object_storage/index.html')
     alerts_summary = read('app/templates/analytics/object_storage/partials/_alerts_summary.html')
     alerts_signals = read('app/templates/analytics/object_storage/partials/_alerts_signal_records.html')
-    alerts_lifecycle = read('app/templates/analytics/object_storage/partials/_alerts_lifecycle.html')
+    alert_records = read('app/templates/analytics/object_storage/partials/_alert_records.html')
+    alert_source_evidence = read('app/templates/analytics/object_storage/partials/_alerts_source_evidence.html')
     alerts_workspace = read('app/templates/analytics/object_storage/partials/_alerts_workspace.html')
     boundary = read('app/templates/analytics/object_storage/partials/_evidence_boundary.html')
     readiness = read('app/templates/analytics/object_storage/partials/_metrics_readiness.html')
@@ -77,8 +82,12 @@ def main() -> int:
     assert 'PrometheusError' not in runtime
     assert 'ObjectStorageSystem' in service
     assert 'system.buckets' in service
-    assert 'IntegrationBinding' in service
-    assert "provider_type == 'alertmanager'" in service
+    assert 'load_alert_stream' in service
+    assert 'build_alert_table_view' in service
+    assert "ALERT_SOURCE_OPTIONS = ('auto', 'alertmanager', 'prometheus')" in alert_sources
+    assert "required_capabilities=('alerts_v2',)" in alert_sources
+    assert 'apply_promql_scope' in alert_sources
+    assert '_PROMETHEUS_ALERTS_QUERY' in alert_sources
     assert 'source_wide_failure' in runtime
 
     assert 'class MetricsSource(Protocol)' in contracts
@@ -107,10 +116,11 @@ def main() -> int:
         'object_storage_top_consumers',
         'object_storage_alerts',
         'object_storage_bucket_table',
+        'object_storage_alert_table',
     ):
         assert f'def {endpoint}' in routes
         assert "@permission_required('analytics.view')" in routes
-        if endpoint != 'object_storage_bucket_table':
+        if endpoint not in {'object_storage_bucket_table', 'object_storage_alert_table'}:
             assert f'analytics.{endpoint}' in menu
 
 
@@ -145,14 +155,22 @@ def main() -> int:
     ):
         assert metric in profile
 
-    assert 'Alertmanager is optional for this release' in service
-    assert 'Alertmanager lifecycle integration remains optional' in service
-    assert 'Alertmanager' in alerts_lifecycle
-    assert 'Critical Signals' in alerts_summary
-    assert 'Signal Reading' in alerts_summary
-    assert 'Threshold-derived signals · not a statistical anomaly model' in alerts_summary
+    assert 'Automatic · Alertmanager Preferred' in controls
+    assert 'Prometheus Fallback Active' in alert_sources
+    assert 'Consumer Validation Stale' in alert_sources
+    assert "profile_key='object-storage-alerts-v1'" in alertmanager_profiles
+    assert 'minio-alerts-v1' not in alertmanager_profiles
+    assert "validation_profile = 'object-storage-alerts-v1'" in alertmanager_profile_migration
+    assert "validation_status = 'validation_required'" in alertmanager_profile_migration
+    assert 'Active Alerts' in alerts_summary
+    assert 'Alert Reading' in alerts_summary
+    assert 'Provider alerts and metric signals are separate' in alerts_summary
     assert 'Metric-Derived Signal Detail' in alerts_signals
-    assert 'Deferred' in boundary
+    assert 'Active Alert Records' in alert_records
+    assert 'Reset Filter' in alert_records
+    assert 'Alertmanager Authority' in alert_source_evidence
+    assert 'Alert Lifecycle & Routing' in boundary
+    assert 'Deferred' not in boundary
     assert 'Committed Inventory' in boundary
     assert 'metrics_source.provider_label' in boundary
     assert 'kaori-analytics-page' in template
@@ -281,7 +299,9 @@ def main() -> int:
     assert '_bucket_table.html' in performance_workspace
     assert '_metrics_readiness.html' in performance_workspace
     assert '_evidence_boundary.html' in performance_workspace
-    assert "page_key in ['overview', 'capacity', 'performance', 'forecast', 'top_consumers', 'alerts']" in controls
+    assert 'data-analytics-preserve-tab' in controls
+    assert 'Automatic · Alertmanager Preferred' in controls
+    assert 'build_alert_table_view' in alert_table_service
     assert "document.addEventListener('kaori:analytics-tab-visible'" in javascript
     for label in ('Capacity', 'Performance', 'Consumers', 'Forecast', 'Evidence'):
         assert f"'{label}'" in overview_workspace
@@ -320,14 +340,15 @@ def main() -> int:
     assert "'Usage Concentration'" in hero_posture
 
     assert 'data-analytics-tabset-id="object-storage-alerts-content"' in alerts_workspace
-    for label in ('Signal Overview', 'Signal Detail', 'Alert Lifecycle', 'Evidence'):
+    for label in ('Alert Overview', 'Alert Records', 'Metric Signals', 'Evidence'):
         assert f"'{label}'" in alerts_workspace
     assert '_alerts_summary.html' in alerts_workspace
     assert '_alerts_signal_records.html' in alerts_workspace
-    assert '_alerts_lifecycle.html' in alerts_workspace
-    assert "'Signal Posture'" in hero_posture
-    assert "'Operational Signals'" in hero_posture
-    assert 'Signals are not Alertmanager records' in alerts_lifecycle
+    assert '_alert_records.html' in alerts_workspace
+    assert '_alerts_source_evidence.html' in alerts_workspace
+    assert "'Alert Posture'" in hero_posture
+    assert "'Active Alert State'" in hero_posture
+    assert not (ROOT / 'app/templates/analytics/object_storage/partials/_alerts_lifecycle.html').exists()
 
     for retired in ('_summary.html', '_top_consumers_analysis.html', '_alerts.html'):
         assert not (ROOT / 'app/templates/analytics/object_storage/partials' / retired).exists()
@@ -354,7 +375,7 @@ def main() -> int:
 
     print(
         'PASS — KAORI Object Storage Analytics · '
-        'domain-analysis / metrics-source-neutral / fail-fast / inventory-separated / Alertmanager-optional'
+        'domain-analysis / metrics-source-neutral / fail-fast / inventory-separated / Alertmanager-first-fallback-safe'
     )
     return 0
 

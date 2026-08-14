@@ -62,14 +62,22 @@ def test_object_storage_analytics_exposes_kubernetes_style_surface_set() -> None
         assert f'analytics.{endpoint}' in menu
 
 
-def test_object_storage_alertmanager_is_optional_and_evidence_boundaries_are_explicit() -> None:
-    service = read('app/analytics/object_storage/service.py')
+def test_object_storage_alert_sources_are_alertmanager_first_with_prometheus_fallback() -> None:
+    source = read('app/analytics/object_storage/alert_sources.py')
     boundary = read('app/templates/analytics/object_storage/partials/_evidence_boundary.html')
+    controls = read('app/templates/analytics/object_storage/partials/_controls.html')
 
-    assert 'Alertmanager is optional for this release' in service
+    assert "ALERT_SOURCE_OPTIONS = ('auto', 'alertmanager', 'prometheus')" in source
+    assert "required_capabilities=('alerts_v2',)" in source
+    assert "scope_type=_OBJECT_STORAGE_SCOPE" in source
+    assert "Prometheus Fallback Active" in source
+    assert 'apply_promql_scope' in source
+    assert '_PROMETHEUS_ALERTS_QUERY' in source
+    assert 'Automatic · Alertmanager Preferred' in controls
+    assert 'Alert Lifecycle & Routing' in boundary
+    assert 'Lifecycle Correlation · Deferred' not in boundary
     assert 'Committed Inventory' in boundary
     assert 'Operational Time-Series' in boundary
-    assert 'Lifecycle Correlation · Deferred' in boundary
     assert 'metrics_source.provider_label' in boundary
 
 
@@ -211,14 +219,17 @@ def test_object_storage_analysis_distinguishes_operational_domains_and_provenanc
     methodology = read('app/templates/analytics/object_storage/partials/_forecast_methodology.html')
     assert 'Linear baseline' in methodology
     alerts_summary = read('app/templates/analytics/object_storage/partials/_alerts_summary.html')
-    alerts_lifecycle = read('app/templates/analytics/object_storage/partials/_alerts_lifecycle.html')
+    alert_records = read('app/templates/analytics/object_storage/partials/_alert_records.html')
+    alert_source_evidence = read('app/templates/analytics/object_storage/partials/_alerts_source_evidence.html')
 
     assert 'Storage Consumer Leaders' in consumer_storage
     assert 'Request Activity Leaders' in consumer_activity
-    assert 'Critical Signals' in alerts_summary
-    assert 'Signal Reading' in alerts_summary
-    assert 'Threshold-derived signals · not a statistical anomaly model' in alerts_summary
-    assert 'Alert Lifecycle Boundary' in alerts_lifecycle
+    assert 'Active Alerts' in alerts_summary
+    assert 'Alert Reading' in alerts_summary
+    assert 'Provider alerts and metric signals are separate' in alerts_summary
+    assert 'Active Alert Records' in alert_records
+    assert 'Prometheus fallback uses the scoped ALERTS metric' in alert_records
+    assert 'Alertmanager Authority' in alert_source_evidence
     assert 'Highest Error Ratio' in consumer_activity
     assert 'Inventory &amp; Operational Reconciliation' in reconciliation
     assert 'observation times differ' in reconciliation
@@ -402,7 +413,8 @@ def test_object_storage_capacity_and_performance_match_shared_analytics_hero_and
     for label in ('Request Health', 'Traffic & Trend', 'Bucket Activity', 'Evidence'):
         assert f"'{label}'" in performance_workspace
 
-    assert "page_key in ['overview', 'capacity', 'performance', 'forecast', 'top_consumers', 'alerts']" in controls
+    assert 'data-analytics-preserve-tab' in controls
+    assert 'Automatic · Alertmanager Preferred' in controls
     assert "'capacity': 'quota'" in table_service
     assert "'performance': 'buckets'" in table_service
     assert "'top_consumers': 'records'" in table_service
@@ -416,7 +428,8 @@ def test_object_storage_forecast_consumers_and_alerts_use_shared_tab_workspace_c
     forecast_methodology = read('app/templates/analytics/object_storage/partials/_forecast_methodology.html')
     consumer_workspace = read('app/templates/analytics/object_storage/partials/_top_consumers_workspace.html')
     alerts_workspace = read('app/templates/analytics/object_storage/partials/_alerts_workspace.html')
-    alerts_lifecycle = read('app/templates/analytics/object_storage/partials/_alerts_lifecycle.html')
+    alert_records = read('app/templates/analytics/object_storage/partials/_alert_records.html')
+    alert_source_evidence = read('app/templates/analytics/object_storage/partials/_alerts_source_evidence.html')
 
     assert 'partials/_forecast_workspace.html' in index
     assert 'partials/_top_consumers_workspace.html' in index
@@ -436,11 +449,15 @@ def test_object_storage_forecast_consumers_and_alerts_use_shared_tab_workspace_c
     assert "'Usage Concentration'" in hero_posture
 
     assert 'data-analytics-tabset-id="object-storage-alerts-content"' in alerts_workspace
-    for label in ('Signal Overview', 'Signal Detail', 'Alert Lifecycle', 'Evidence'):
+    for label in ('Alert Overview', 'Alert Records', 'Metric Signals', 'Evidence'):
         assert f"'{label}'" in alerts_workspace
-    assert "'Signal Posture'" in hero_posture
-    assert "'Operational Signals'" in hero_posture
-    assert 'Signals are not Alertmanager records' in alerts_lifecycle
+    assert "'Alert Posture'" in hero_posture
+    assert "'Active Alert State'" in hero_posture
+    assert '_alert_records.html' in alerts_workspace
+    assert '_alerts_source_evidence.html' in alerts_workspace
+    assert 'Reset Filter' in alert_records
+    assert 'Prometheus Fallback' in alert_source_evidence
+    assert not (ROOT / 'app/templates/analytics/object_storage/partials/_alerts_lifecycle.html').exists()
 
     for retired in ('_summary.html', '_top_consumers_analysis.html', '_alerts.html'):
         assert not (ROOT / 'app/templates/analytics/object_storage/partials' / retired).exists()
@@ -502,3 +519,32 @@ def test_object_storage_forecast_is_worker_materialized_on_forecasting_queue() -
     assert 'forecast_materialization.usable' in forecast_workspace
     assert (ROOT / 'app/models/object_storage_analytics.py').exists()
     assert (ROOT / 'migrations/versions/20260814_object_storage_forecast_snapshots.py').exists()
+
+
+def test_object_storage_alerts_use_independent_alert_and_metric_evidence_paths() -> None:
+    service = read('app/analytics/object_storage/service.py')
+    sources = read('app/analytics/object_storage/alert_sources.py')
+    controls = read('app/templates/analytics/object_storage/partials/_controls.html')
+    records = read('app/templates/analytics/object_storage/partials/_alert_records.html')
+    evidence = read('app/templates/analytics/object_storage/partials/_alerts_source_evidence.html')
+    migration = read('migrations/versions/20260814_object_storage_alert_profile.py')
+
+    assert "ALERT_SOURCE_OPTIONS = ('auto', 'alertmanager', 'prometheus')" in sources
+    assert "selected_source == 'alertmanager'" in sources
+    assert "selected_source == 'prometheus'" in sources
+    assert "alertmanager = _load_alertmanager(system, selected_source='auto')" in sources
+    assert "prometheus = _load_prometheus(system, selected_source='auto')" in sources
+    assert 'Prometheus Fallback Active' in sources
+    assert 'Consumer Validation Stale' in sources
+    assert "context['alerts_evidence_available']" in service
+    assert "context['alerts_degraded']" in service
+    assert 'Automatic · Alertmanager Preferred' in controls
+    assert 'Alertmanager Lifecycle' in controls
+    assert 'Metric-Derived Signals' in controls
+    assert 'Metrics Only' in records
+    assert 'Silenced' in records
+    assert 'Inhibited' in records
+    assert 'Alertmanager Authority' in evidence
+    assert 'Prometheus Fallback' in evidence
+    assert "validation_profile = 'object-storage-alerts-v1'" in migration
+    assert "validation_status = 'validation_required'" in migration

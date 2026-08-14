@@ -1,0 +1,144 @@
+{% import "components/loading_bar.html" as loading_bar %}
+{% import "components/table_label.html" as table_label %}
+{% import "components/table_primitives.html" as table_ui %}
+{% import "analytics/components/_record_pagination.html" as record_pagination %}
+<section id="object-storage-alert-records"
+         class="{{ analysis_surface.evidence_shell_classes() if analysis_surface is defined else table_ui.block_classes() }}">
+    <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+                <h2 class="text-lg font-semibold text-content-primary">Active Alert Records</h2>
+                <p class="mt-1 max-w-4xl text-sm leading-6 text-content-muted">
+                    Alertmanager is preferred in Automatic mode because it provides lifecycle metadata such as receiver, silence, and inhibition state. Prometheus fallback uses the scoped ALERTS metric and therefore exposes a narrower record contract.
+                </p>
+            </div>
+            <div class="flex flex-wrap items-center gap-2">
+                {{ table_label.status_label(alert_source.label, alert_source.tone) }}
+                {{ table_label.metadata_label(alert_source.resolved_label ~ ' Source', 'radio-tower', size='compact') }}
+            </div>
+        </div>
+        {{ loading_bar.render('object-storage-alert-records-loading', label='Refreshing Active Alerts') }}
+    </header>
+    <div class="space-y-4 p-4 sm:p-5">
+        {% if not alert_source.connected %}
+            <div class="rounded-lg border border-outline-default bg-status-warning-soft px-4 py-4">
+                <div class="flex items-start gap-3">
+                    <span class="{{ analysis_surface.semantic_icon_classes(alert_source.tone) }}"><i data-lucide="triangle-alert" class="h-4 w-4"></i></span>
+                    <div>
+                        <p class="text-sm font-semibold text-content-primary">Alert Records Unavailable</p>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">{{ alert_source.detail }}</p>
+                    </div>
+                </div>
+            </div>
+        {% elif alert_table %}
+            <form id="object-storage-alert-record-filter"
+                  method="get"
+                  action="{{ url_for('analytics.object_storage_alerts') }}"
+                  hx-get="{{ url_for('analytics.object_storage_alert_table') }}"
+                  hx-target="#object-storage-alert-records"
+                  hx-swap="outerHTML"
+                  hx-sync="#object-storage-alert-records:replace"
+                  hx-indicator="#object-storage-alert-records-loading"
+                  class="space-y-3">
+                <input type="hidden" name="system_id" value="{{ system.id }}">
+                <input type="hidden" name="source" value="{{ selected_alert_source }}">
+                <input type="hidden" name="tab" value="records">
+                <input type="hidden" name="alert_page" value="1">
+                <div class="grid gap-3 lg:grid-cols-[minmax(0,1fr)_180px_180px_auto] lg:items-end">
+                    <label class="block" for="object-storage-alert-search">
+                        <span class="{{ table_ui.filter_label_classes() }}">Search Alerts</span>
+                        {{ table_ui.search_field('alert_q', alert_table.search, 'Search alert name, target, receiver, or summary', id='object-storage-alert-search') }}
+                    </label>
+                    <label class="block" for="object-storage-alert-severity">
+                        <span class="{{ table_ui.filter_label_classes() }}">Severity</span>
+                        <select id="object-storage-alert-severity" name="alert_severity" class="{{ table_ui.filter_select_classes() }}">
+                            {% for value, label in [('all','All Severities'),('critical','Critical'),('warning','Warning'),('info','Info'),('unknown','Unknown')] %}
+                                <option value="{{ value }}" {% if alert_table.severity == value %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </label>
+                    <label class="block" for="object-storage-alert-state">
+                        <span class="{{ table_ui.filter_label_classes() }}">State</span>
+                        <select id="object-storage-alert-state" name="alert_state" class="{{ table_ui.filter_select_classes() }}">
+                            {% for value, label in [('all','All States'),('firing','Firing'),('pending','Pending'),('suppressed','Suppressed')] %}
+                                <option value="{{ value }}" {% if alert_table.state == value %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </label>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <button type="submit" class="{{ table_ui.action_classes() }} h-10 px-4">
+                            <i data-lucide="search" class="h-4 w-4"></i>Apply Filter
+                        </button>
+                        <a href="{{ url_for('analytics.object_storage_alerts', system_id=system.id, source=selected_alert_source, alert_per_page=alert_table.pagination.per_page, tab='records') }}"
+                           hx-get="{{ url_for('analytics.object_storage_alert_table', system_id=system.id, source=selected_alert_source, alert_per_page=alert_table.pagination.per_page, tab='records') }}"
+                           hx-target="#object-storage-alert-records"
+                           hx-swap="outerHTML"
+                           hx-sync="#object-storage-alert-records:replace"
+                           hx-indicator="#object-storage-alert-records-loading"
+                           class="{{ table_ui.action_classes() }} h-10 px-4">
+                            <i data-lucide="rotate-ccw" class="h-4 w-4"></i>Reset Filter
+                        </a>
+                    </div>
+                </div>
+            </form>
+            <div class="overflow-x-auto">
+                <table class="{{ table_ui.table_classes('min-w-[1120px]') }}">
+                    <thead class="{{ table_ui.head_classes() }}">
+                        <tr>
+                            <th class="{{ table_ui.header_cell_classes() }}">Alert</th>
+                            <th class="{{ table_ui.header_cell_classes() }}">Severity</th>
+                            <th class="{{ table_ui.header_cell_classes() }}">State</th>
+                            <th class="{{ table_ui.header_cell_classes() }}">Target</th>
+                            <th class="{{ table_ui.header_cell_classes() }}">Started</th>
+                            <th class="{{ table_ui.header_cell_classes() }}">Receiver</th>
+                            <th class="{{ table_ui.header_cell_classes() }}">Lifecycle</th>
+                        </tr>
+                    </thead>
+                    <tbody class="{{ table_ui.body_classes() }} bg-surface-card">
+                        {% for row in alert_table.rows %}
+                            {% set severity_tone = row.severity if row.severity in ['critical','warning','info'] else 'unknown' %}
+                            {% set state_tone = 'warning' if row.state == 'pending' else ('normal' if row.state == 'resolved' else 'info') %}
+                            <tr class="{{ table_ui.row_classes() }}">
+                                <td class="{{ table_ui.cell_classes() }}">
+                                    {{ table_ui.title_cell(row.name, row.summary, 'bell-ring') }}
+                                    <div class="mt-1">{{ table_label.metadata_label(row.source, 'radio-tower', size='compact') }}</div>
+                                </td>
+                                <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_label(row.severity|title, severity_tone) }}</td>
+                                <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_label(row.state|title, state_tone) }}</td>
+                                <td class="{{ table_ui.cell_classes() }} break-all">{{ row.target }}</td>
+                                <td class="{{ table_ui.cell_classes() }}">{{ row.starts_at|user_datetime('N/A') }}</td>
+                                <td class="{{ table_ui.cell_classes() }} break-all">{{ row.receiver }}</td>
+                                <td class="{{ table_ui.cell_classes() }}">
+                                    <div class="flex flex-wrap gap-1.5">
+                                        {% if row.source_key == 'prometheus' %}
+                                            {{ table_label.status_label('Metrics Only', 'info') }}
+                                        {% else %}
+                                            {% if row.silenced %}{{ table_label.status_label('Silenced', 'warning') }}{% endif %}
+                                            {% if row.inhibited %}{{ table_label.status_label('Inhibited', 'info') }}{% endif %}
+                                            {% if not row.silenced and not row.inhibited %}{{ table_label.status_label('Unsuppressed', 'normal') }}{% endif %}
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                        {% else %}
+                            <tr><td colspan="7" class="px-5 py-10 text-center text-sm text-content-muted">No active alert records match the selected source and filters.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {{ record_pagination.render(
+                alert_table.pagination,
+                'alert_page',
+                'alert_per_page',
+                'object-storage-alert-records',
+                'object-storage-alert-record-filter',
+                'object-storage-alert-records-loading',
+                'analytics.object_storage_alert_table',
+                'analytics.object_storage_alerts',
+                alert_table.query_params,
+                'Alerts',
+                embedded=true
+            ) }}
+        {% endif %}
+    </div>
+</section>

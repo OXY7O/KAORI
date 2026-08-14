@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Final
 
+from app.integrations.alertmanager.binding_profiles import get_alert_consumer_profile
 from app.integrations.binding_selectors import selector_is_configured
 from app.integrations.resolver import resolve_integration
 from app.models.alertmanager import AlertmanagerInstance
@@ -146,6 +147,14 @@ def _evaluate_binding(
 
     selector_required = _selector_required(binding)
     selector_eligible = not selector_required or selector_is_configured(binding.selector_json)
+    profile = get_alert_consumer_profile(binding.asset_type)
+    expected_profile = profile.profile_key if profile is not None else None
+    observed_profile = str(binding.validation_profile or '').strip() or None
+    profile_eligible = expected_profile is not None and observed_profile == expected_profile
+    profile_issue = _profile_issue(
+        expected_profile=expected_profile,
+        observed_profile=observed_profile,
+    )
     binding_validation = (binding.validation_status or 'validation_required').strip().lower()
     binding_validation_eligible = binding_validation in _ELIGIBLE_BINDING_VALIDATION
     readiness_eligible = readiness in (_READY_READINESS | _DEGRADED_READINESS)
@@ -156,13 +165,14 @@ def _evaluate_binding(
         and readiness_eligible
         and capability_eligible
         and selector_eligible
+        and profile_eligible
         and binding_validation_eligible
     )
     operational_rank, operational_state = _operational_rank(readiness=readiness, health=health)
     role_rank = _ROLE_ORDER.get(binding.binding_role, 9)
     eligibility_rank = 0 if eligible else 1
 
-    reason = _decision_reason(
+    reason = profile_issue or _decision_reason(
         eligible=eligible,
         readiness=readiness,
         health=health,
@@ -208,6 +218,15 @@ def _operational_rank(*, readiness: str, health: str) -> tuple[int, str]:
     if readiness in _DEGRADED_READINESS:
         return 4, 'degraded_not_connected'
     return 5, 'validation_required'
+
+
+def _profile_issue(*, expected_profile: str | None, observed_profile: str | None) -> str | None:
+    if expected_profile is not None and observed_profile == expected_profile:
+        return None
+    return (
+        f'Consumer validation profile {observed_profile or "missing"} is stale; '
+        f'expected {expected_profile or "a registered profile"}. Revalidate this binding before operational use.'
+    )
 
 
 def _decision_reason(
