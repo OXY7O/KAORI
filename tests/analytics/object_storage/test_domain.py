@@ -204,3 +204,70 @@ def test_object_storage_capacity_usage_view_separates_physical_and_quota_boundar
     assert view['quota_critical_count'] == 1
     assert view['quota_status'] == 'Critical Quota Pressure'
     assert view['growth_capacity_percent_display'] == '1.0%'
+
+
+def test_object_storage_performance_posture_does_not_claim_healthy_with_partial_evidence() -> None:
+    analysis = load_module('object_storage_analysis_performance_under_test', 'app/analytics/object_storage/analysis.py')
+
+    posture = analysis.performance_posture(
+        error_percent=1.0,
+        waiting=None,
+        offline_nodes=0.0,
+    )
+
+    assert posture.status == 'Partial Evidence'
+    assert posture.tone == 'unknown'
+    assert 'supporting evidence is incomplete' in posture.headline
+
+
+def test_object_storage_performance_view_keeps_demand_and_reliability_semantics_separate() -> None:
+    presentation = load_module(
+        'object_storage_performance_presentation_under_test',
+        'app/analytics/object_storage/presentation.py',
+    )
+
+    view = presentation.build_performance_view(
+        presentation.PerformanceEvidence(
+            request_rate=120.0,
+            error_rate=2.4,
+            error_ratio=2.0,
+            success_ratio=98.0,
+            waiting=0.0,
+            inflight=8.0,
+            offline_nodes=0.0,
+            received_bps=1000.0,
+            sent_bps=3000.0,
+            request_trend_summary={
+                'direction': 'increasing',
+                'sample_count': 8,
+                'delta_display': '20.00/s',
+                'delta_percent_display': '20.0%',
+            },
+            error_trend_summary={
+                'direction': 'decreasing',
+                'sample_count': 8,
+                'delta_display': '-0.20/s',
+                'delta_percent_display': '7.7%',
+            },
+            bucket_analysis={
+                'bucket_count': 4,
+                'request_evidence_count': 4,
+                'error_evidence_count': 3,
+                'top_request_rate': {'name': 'media', 'request_rate_display': '60.00/s'},
+                'top_error_ratio': {'name': 'archive', 'error_ratio_display': '4.0%'},
+            },
+        )
+    )
+
+    assert view['reliability_status'] == 'Within Error Baseline'
+    assert view['queue_status'] == 'No Waiting Requests'
+    assert view['node_status'] == 'No Offline Nodes'
+    assert view['request_trend_status'] == 'Increasing Demand'
+    assert view['request_trend_tone'] == 'info'
+    assert view['error_trend_status'] == 'Errors Decreasing'
+    assert view['received_share_display'] == '25.0%'
+    assert view['sent_share_display'] == '75.0%'
+    assert view['bucket_request_coverage_display'] == '100.0%'
+    assert view['bucket_error_coverage_display'] == '75.0%'
+    assert view['top_request_bucket_name'] == 'media'
+    assert view['top_error_bucket_name'] == 'archive'

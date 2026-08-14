@@ -9,6 +9,7 @@ def _page_endpoint(page_key: str) -> str:
     return {
         'overview': 'analytics.object_storage_overview',
         'capacity': 'analytics.object_storage_capacity',
+        'performance': 'analytics.object_storage_performance',
         'top_consumers': 'analytics.object_storage_top_consumers',
     }.get(page_key, 'analytics.object_storage_overview')
 

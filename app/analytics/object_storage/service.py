@@ -20,6 +20,8 @@ from app.analytics.object_storage.presentation import (
     build_bucket_analysis,
     build_capacity_usage_view,
     build_comparison_view,
+    PerformanceEvidence,
+    build_performance_view,
     build_posture_view,
     build_signal_posture,
     build_trend_view,
@@ -158,10 +160,11 @@ def _bucket_rows(
     reader: EvidenceReader,
     *,
     include_activity: bool,
+    include_capacity_detail: bool = True,
 ) -> list[dict[str, Any]]:
     usage = reader.vector('object_storage.bucket.usage')
-    objects = reader.vector('object_storage.bucket.objects')
-    quota = reader.vector('object_storage.bucket.quota')
+    objects = reader.vector('object_storage.bucket.objects') if include_capacity_detail else {}
+    quota = reader.vector('object_storage.bucket.quota') if include_capacity_detail else {}
     request_rate = reader.vector('object_storage.bucket.request_rate') if include_activity else {}
     error_rate = reader.vector('object_storage.bucket.error_rate') if include_activity else {}
     inventory = {bucket.name: bucket for bucket in system.buckets or ()}
@@ -188,7 +191,9 @@ def _bucket_rows(
             quota_source = 'Committed Snapshot'
 
         bucket_request_rate = request_rate.get(name)
+        request_source = reader.source_label if bucket_request_rate is not None else 'Unavailable'
         bucket_error_rate = error_rate.get(name)
+        error_source = reader.source_label if bucket_error_rate is not None else 'Unavailable'
         bucket_error_ratio = error_ratio(bucket_error_rate, bucket_request_rate)
         quota_utilization = utilization_percent(size, quota_bytes)
         quota_tone = utilization_tone(quota_utilization) if quota_bytes is not None else 'unknown'
@@ -209,8 +214,10 @@ def _bucket_rows(
                 'quota_tone': quota_tone,
                 'request_rate': bucket_request_rate,
                 'request_rate_display': format_rate(bucket_request_rate),
+                'request_source': request_source,
                 'error_rate': bucket_error_rate,
                 'error_rate_display': format_rate(bucket_error_rate),
+                'error_source': error_source,
                 'error_ratio': bucket_error_ratio,
                 'error_ratio_display': format_percent(bucket_error_ratio),
                 'source': usage_source,
@@ -331,14 +338,41 @@ def _add_performance_metrics(payload: dict[str, Any], reader: EvidenceReader, ti
     )
 
 
+def _add_performance_view(payload: dict[str, Any]) -> None:
+    payload['performance'] = build_performance_view(
+        PerformanceEvidence(
+            request_rate=payload.get('request_rate'),
+            error_rate=payload.get('error_rate'),
+            error_ratio=payload.get('error_ratio'),
+            success_ratio=payload.get('success_ratio'),
+            waiting=payload.get('waiting'),
+            inflight=payload.get('inflight'),
+            offline_nodes=payload.get('offline_nodes'),
+            received_bps=payload.get('received_bps'),
+            sent_bps=payload.get('sent_bps'),
+            request_trend_summary=payload.get('request_trend_summary') or {},
+            error_trend_summary=payload.get('error_trend_summary') or {},
+            bucket_analysis=payload.get('bucket_analysis') or {},
+        )
+    )
+
+
 def _add_bucket_metrics(
     payload: dict[str, Any],
     system: ObjectStorageSystem,
     reader: EvidenceReader,
     *,
     include_activity: bool,
+    include_capacity_detail: bool = True,
+    sort_by: str = 'usage_bytes',
 ) -> None:
-    rows = _bucket_rows(system, reader, include_activity=include_activity)
+    rows = _bucket_rows(
+        system,
+        reader,
+        include_activity=include_activity,
+        include_capacity_detail=include_capacity_detail,
+    )
+    rows.sort(key=lambda item: float(item.get(sort_by) or 0), reverse=True)
     payload['bucket_rows'] = rows
     payload['bucket_analysis'] = build_bucket_analysis(rows, payload.get('usage_total'))
 
@@ -456,8 +490,17 @@ def _build_metrics(
         _add_request_metrics(payload, reader)
     if page_key == 'performance':
         _add_performance_metrics(payload, reader, time_range)
-    if page_key in {'overview', 'capacity', 'top_consumers'}:
-        _add_bucket_metrics(payload, system, reader, include_activity=page_key == 'top_consumers')
+    if page_key in {'overview', 'capacity', 'performance', 'top_consumers'}:
+        _add_bucket_metrics(
+            payload,
+            system,
+            reader,
+            include_activity=page_key in {'performance', 'top_consumers'},
+            include_capacity_detail=page_key != 'performance',
+            sort_by='request_rate' if page_key == 'performance' else 'usage_bytes',
+        )
+    if page_key == 'performance':
+        _add_performance_view(payload)
     if page_key == 'capacity':
         payload['capacity_usage'] = build_capacity_usage_view(
             capacity_total=payload.get('capacity_total'),
@@ -548,7 +591,7 @@ def get_object_storage_analytics_context(page_key: str, query_args: Any) -> dict
         history_window = '30d' if page_key == 'overview' else context['selected_forecast_history_window']
         _attach_forecast_materialization(context, system=system, history_window=history_window)
 
-    if page_key in {'overview', 'capacity', 'top_consumers'}:
+    if page_key in {'overview', 'capacity', 'performance', 'top_consumers'}:
         context['bucket_table'] = build_bucket_table_view(
             context['metrics'].get('bucket_rows') or [],
             query_args,
@@ -560,7 +603,7 @@ def get_object_storage_analytics_context(page_key: str, query_args: Any) -> dict
 
 
 def get_object_storage_bucket_table_context(page_key: str, query_args: Any) -> dict[str, Any]:
-    if page_key not in {'overview', 'capacity', 'top_consumers'}:
+    if page_key not in {'overview', 'capacity', 'performance', 'top_consumers'}:
         page_key = 'overview'
     context, system, time_range = _base_context(page_key, query_args)
     if system is None:
@@ -576,7 +619,14 @@ def get_object_storage_bucket_table_context(page_key: str, query_args: Any) -> d
 
     reader = EvidenceReader(source)
     core = _build_core_metrics(reader, system)
-    rows = _bucket_rows(system, reader, include_activity=page_key == 'top_consumers')
+    rows = _bucket_rows(
+        system,
+        reader,
+        include_activity=page_key in {'performance', 'top_consumers'},
+        include_capacity_detail=page_key != 'performance',
+    )
+    if page_key == 'performance':
+        rows.sort(key=lambda item: float(item.get('request_rate') or 0), reverse=True)
     for row in rows:
         usage_total = core.get('usage_total')
         row['usage_share'] = utilization_percent(row.get('usage_bytes'), usage_total)

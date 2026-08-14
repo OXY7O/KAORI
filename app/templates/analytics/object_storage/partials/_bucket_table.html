@@ -9,11 +9,13 @@
         <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div>
                 <h2 class="text-lg font-semibold text-content-primary">
-                    {% if page_key == 'top_consumers' %}Consumer Records{% elif page_key == 'capacity' %}Bucket Capacity Records{% else %}Bucket Consumption Evidence{% endif %}
+                    {% if page_key == 'top_consumers' %}Consumer Records{% elif page_key == 'capacity' %}Bucket Capacity Records{% elif page_key == 'performance' %}Bucket Request Path Records{% else %}Bucket Consumption Evidence{% endif %}
                 </h2>
                 <p class="mt-1 max-w-4xl text-sm leading-6 text-content-muted">
                     {% if page_key == 'capacity' %}
                         Review bucket usage, share of system consumption, object population, and known quota pressure. Operational metrics are preferred; committed Inventory remains an explicit field-level fallback.
+                    {% elif page_key == 'performance' %}
+                        Review bucket-level request demand and error pressure from operational metrics. Request-path fields do not fall back to Inventory because committed Inventory does not contain historical request evidence.
                     {% else %}
                         Operational metrics are preferred when available. Committed Inventory is used only as an explicit field-level fallback, and the owning source remains visible beside each affected value.
                     {% endif %}
@@ -23,7 +25,7 @@
                 {{ table_label.metadata_label(bucket_table.pagination.total_items ~ ' Buckets', 'database', size='compact') }}
             {% endif %}
         </div>
-        {{ loading_bar.render('object-storage-bucket-table-loading-indicator', label='Refreshing Bucket Capacity Records' if page_key == 'capacity' else 'Refreshing Bucket Consumption Evidence') }}
+        {{ loading_bar.render('object-storage-bucket-table-loading-indicator', label='Refreshing Bucket Capacity Records' if page_key == 'capacity' else ('Refreshing Bucket Request Path Records' if page_key == 'performance' else 'Refreshing Bucket Consumption Evidence')) }}
     </header>
 
     {% if dependency_blocker %}
@@ -73,13 +75,20 @@
                 <thead class="{{ table_ui.head_classes() }}">
                     <tr>
                         <th class="{{ table_ui.header_cell_classes() }}">Bucket</th>
-                        <th class="{{ table_ui.header_cell_classes() }}">Usage</th>
-                        <th class="{{ table_ui.header_cell_classes() }}">Share</th>
-                        <th class="{{ table_ui.header_cell_classes() }}">Objects</th>
-                        <th class="{{ table_ui.header_cell_classes() }}">Quota Use</th>
-                        {% if page_key == 'top_consumers' %}
+                        {% if page_key == 'performance' %}
                             <th class="{{ table_ui.header_cell_classes() }}">Request Rate</th>
+                            <th class="{{ table_ui.header_cell_classes() }}">Error Rate</th>
                             <th class="{{ table_ui.header_cell_classes() }}">Error Ratio</th>
+                            <th class="{{ table_ui.header_cell_classes() }}">Usage Context</th>
+                        {% else %}
+                            <th class="{{ table_ui.header_cell_classes() }}">Usage</th>
+                            <th class="{{ table_ui.header_cell_classes() }}">Share</th>
+                            <th class="{{ table_ui.header_cell_classes() }}">Objects</th>
+                            <th class="{{ table_ui.header_cell_classes() }}">Quota Use</th>
+                            {% if page_key == 'top_consumers' %}
+                                <th class="{{ table_ui.header_cell_classes() }}">Request Rate</th>
+                                <th class="{{ table_ui.header_cell_classes() }}">Error Ratio</th>
+                            {% endif %}
                         {% endif %}
                     </tr>
                 </thead>
@@ -87,37 +96,66 @@
                     {% for row in bucket_table.rows %}
                         <tr class="{{ table_ui.row_classes() }}">
                             <td class="{{ table_ui.cell_classes() }}">{{ table_ui.title_cell(row.name, 'Object Storage bucket', 'container') }}</td>
-                            <td class="{{ table_ui.cell_classes() }}">
-                                <p class="tabular-nums font-medium text-content-primary">{{ row.usage_display }}</p>
-                                <div class="mt-1">{{ table_label.metadata_label(row.usage_source, 'database', size='compact') }}</div>
-                            </td>
-                            <td class="{{ table_ui.cell_classes() }} tabular-nums">{{ row.usage_share_display }}</td>
-                            <td class="{{ table_ui.cell_classes() }}">
-                                <p class="tabular-nums font-medium text-content-primary">{{ row.objects_display }}</p>
-                                <div class="mt-1">{{ table_label.metadata_label(row.objects_source, 'boxes', size='compact') }}</div>
-                            </td>
-                            <td class="{{ table_ui.cell_classes() }}">
-                                <div class="flex flex-wrap items-center gap-2">
-                                    <span class="tabular-nums font-medium text-content-primary">{{ row.quota_utilization_display }}</span>
-                                    {% if row.quota_utilization is none %}
-                                        {{ table_label.status_label('No Quota Evidence', 'unknown') }}
-                                    {% elif row.quota_utilization >= 95 %}
-                                        {{ table_label.status_label('Critical', 'critical') }}
-                                    {% elif row.quota_utilization >= 85 %}
-                                        {{ table_label.status_label('Pressure', 'warning') }}
-                                    {% else %}
-                                        {{ table_label.status_label('Within Quota', 'normal') }}
+                            {% if page_key == 'performance' %}
+                                <td class="{{ table_ui.cell_classes() }}">
+                                    <p class="tabular-nums font-medium text-content-primary">{{ row.request_rate_display }}</p>
+                                    <div class="mt-1">{{ table_label.metadata_label(row.request_source, 'activity', size='compact') }}</div>
+                                </td>
+                                <td class="{{ table_ui.cell_classes() }}">
+                                    <p class="tabular-nums font-medium text-content-primary">{{ row.error_rate_display }}</p>
+                                    <div class="mt-1">{{ table_label.metadata_label(row.error_source, 'triangle-alert', size='compact') }}</div>
+                                </td>
+                                <td class="{{ table_ui.cell_classes() }}">
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        <span class="tabular-nums font-medium text-content-primary">{{ row.error_ratio_display }}</span>
+                                        {% if row.error_ratio is none %}
+                                            {{ table_label.status_label('No Error Evidence', 'unknown') }}
+                                        {% elif row.error_ratio >= 10 %}
+                                            {{ table_label.status_label('Critical', 'critical') }}
+                                        {% elif row.error_ratio >= 5 %}
+                                            {{ table_label.status_label('Elevated', 'warning') }}
+                                        {% else %}
+                                            {{ table_label.status_label('Baseline', 'normal') }}
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td class="{{ table_ui.cell_classes() }}">
+                                    <p class="tabular-nums font-medium text-content-primary">{{ row.usage_display }}</p>
+                                    <div class="mt-1">{{ table_label.metadata_label(row.usage_source, 'database', size='compact') }}</div>
+                                </td>
+                            {% else %}
+                                <td class="{{ table_ui.cell_classes() }}">
+                                    <p class="tabular-nums font-medium text-content-primary">{{ row.usage_display }}</p>
+                                    <div class="mt-1">{{ table_label.metadata_label(row.usage_source, 'database', size='compact') }}</div>
+                                </td>
+                                <td class="{{ table_ui.cell_classes() }} tabular-nums">{{ row.usage_share_display }}</td>
+                                <td class="{{ table_ui.cell_classes() }}">
+                                    <p class="tabular-nums font-medium text-content-primary">{{ row.objects_display }}</p>
+                                    <div class="mt-1">{{ table_label.metadata_label(row.objects_source, 'boxes', size='compact') }}</div>
+                                </td>
+                                <td class="{{ table_ui.cell_classes() }}">
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        <span class="tabular-nums font-medium text-content-primary">{{ row.quota_utilization_display }}</span>
+                                        {% if row.quota_utilization is none %}
+                                            {{ table_label.status_label('No Quota Evidence', 'unknown') }}
+                                        {% elif row.quota_utilization >= 95 %}
+                                            {{ table_label.status_label('Critical', 'critical') }}
+                                        {% elif row.quota_utilization >= 85 %}
+                                            {{ table_label.status_label('Pressure', 'warning') }}
+                                        {% else %}
+                                            {{ table_label.status_label('Within Quota', 'normal') }}
+                                        {% endif %}
+                                    </div>
+                                    {% if row.quota_utilization is not none %}
+                                        {{ progress_bar.semantic_bar(row.quota_utilization, row.quota_tone, track_classes='mt-2 h-1.5 overflow-hidden rounded-full bg-surface-hover', label=row.name ~ ' quota utilization') }}
                                     {% endif %}
-                                </div>
-                                {% if row.quota_utilization is not none %}
-                                    {{ progress_bar.semantic_bar(row.quota_utilization, row.quota_tone, track_classes='mt-2 h-1.5 overflow-hidden rounded-full bg-surface-hover', label=row.name ~ ' quota utilization') }}
+                                    <p class="mt-1 text-xs text-content-muted">{{ row.quota_display }} quota</p>
+                                    <div class="mt-1">{{ table_label.metadata_label(row.quota_source, 'gauge', size='compact') }}</div>
+                                </td>
+                                {% if page_key == 'top_consumers' %}
+                                    <td class="{{ table_ui.cell_classes() }} tabular-nums">{{ row.request_rate_display }}</td>
+                                    <td class="{{ table_ui.cell_classes() }} tabular-nums">{{ row.error_ratio_display }}</td>
                                 {% endif %}
-                                <p class="mt-1 text-xs text-content-muted">{{ row.quota_display }} quota</p>
-                                <div class="mt-1">{{ table_label.metadata_label(row.quota_source, 'gauge', size='compact') }}</div>
-                            </td>
-                            {% if page_key == 'top_consumers' %}
-                                <td class="{{ table_ui.cell_classes() }} tabular-nums">{{ row.request_rate_display }}</td>
-                                <td class="{{ table_ui.cell_classes() }} tabular-nums">{{ row.error_ratio_display }}</td>
                             {% endif %}
                         </tr>
                     {% else %}

@@ -31,9 +31,10 @@
                     {% include "analytics/object_storage/partials/_bucket_table.html" %}
                     {% include "analytics/object_storage/partials/_reconciliation.html" %}
                 {% elif page_key == 'performance' %}
-                    {% include "analytics/object_storage/partials/_summary.html" %}
                     {% include "analytics/object_storage/partials/_performance_analysis.html" %}
+                    {% include "analytics/object_storage/partials/_performance_traffic.html" %}
                     {% include "analytics/object_storage/partials/_trend.html" %}
+                    {% include "analytics/object_storage/partials/_bucket_table.html" %}
                 {% elif page_key == 'forecast' %}
                     {% include "analytics/object_storage/partials/_summary.html" %}
                     {% include "analytics/object_storage/partials/_forecast_worker_status.html" %}

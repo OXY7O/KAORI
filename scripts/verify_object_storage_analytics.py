@@ -45,6 +45,7 @@ def main() -> int:
     capacity_analysis = read('app/templates/analytics/object_storage/partials/_capacity_analysis.html')
     capacity_pressure = read('app/templates/analytics/object_storage/partials/_capacity_pressure.html')
     performance_analysis = read('app/templates/analytics/object_storage/partials/_performance_analysis.html')
+    performance_traffic = read('app/templates/analytics/object_storage/partials/_performance_traffic.html')
     forecast_analysis = read('app/templates/analytics/object_storage/partials/_forecast_analysis.html')
     top_consumers_analysis = read('app/templates/analytics/object_storage/partials/_top_consumers_analysis.html')
     reconciliation = read('app/templates/analytics/object_storage/partials/_reconciliation.html')
@@ -152,6 +153,7 @@ def main() -> int:
         'build_comparison_view',
         'build_bucket_analysis',
         'build_capacity_usage_view',
+        'build_performance_view',
         'build_posture_view',
         'build_signal_posture',
     ):
@@ -168,7 +170,16 @@ def main() -> int:
     assert 'Critical Quota' in capacity_pressure
     assert 'Bucket Capacity Records' in bucket_table_template
     assert 'progress_bar.semantic_bar(row.quota_utilization' in bucket_table_template
-    assert 'Request Operating Boundary' in performance_analysis
+    assert 'Request Path Operating Boundary' in performance_analysis
+    assert 'Request Reliability' in performance_analysis
+    assert 'Request Processing Pressure' in performance_analysis
+    assert 'Throughput &amp; Request Direction' in performance_traffic
+    assert 'Increasing demand is descriptive, not automatically unhealthy' in performance_traffic
+    assert 'Bucket Request Path Records' in bucket_table_template
+    assert "page_key == 'performance'" in bucket_table_template
+    assert 'row.request_source' in bucket_table_template
+    assert 'row.error_source' in bucket_table_template
+    assert "include_capacity_detail=page_key != 'performance'" in service
     assert 'Forecast Operating Boundary' in forecast_analysis
     assert 'Top Consumer Snapshot' in top_consumers_analysis
     assert 'Inventory &amp; Operational Reconciliation' in reconciliation

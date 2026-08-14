@@ -115,7 +115,7 @@ The current Object Storage Analytics workspace exposes distinct operational sema
 
 - **Overview** consolidates capacity, request-path, growth, and bucket-concentration posture.
 - **Capacity & Usage** separates physical usable headroom, usage growth, bucket quota pressure, and concentration.
-- **Performance** combines request success, queue/inflight pressure, ingress/egress traffic, and separate request/error history.
+- **Performance** separates request demand from reliability, queue/inflight pressure, node availability, ingress/egress throughput, request/error history, and bucket request-path evidence. Increasing demand is descriptive; only error, waiting, and availability evidence drive request-path posture.
 - **Top Consumers** ranks usage, object density, request demand, and error pressure independently.
 - **Forecast** uses the current linear baseline only as a planning boundary and makes its methodology explicit.
 - **Alerts & Anomalies** continues to provide metric-derived signals while Alertmanager lifecycle correlation remains optional.

@@ -1,10 +1,13 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
 
 from app.analytics.object_storage.analysis import (
+    ERROR_CRITICAL_PERCENT,
+    ERROR_WARNING_PERCENT,
     OperationalPosture,
     compare_evidence,
     summarize_trend,
@@ -152,6 +155,9 @@ def build_bucket_analysis(rows: list[dict[str, Any]], total_usage: float | None)
         'top_objects': leader('objects'),
         'top_request_rate': leader('request_rate'),
         'top_error_rate': leader('error_rate'),
+        'top_error_ratio': leader('error_ratio'),
+        'request_evidence_count': sum(row.get('request_rate') is not None for row in rows),
+        'error_evidence_count': sum(row.get('error_ratio') is not None for row in rows),
         'top_usage_share': top_usage_share,
         'top_usage_share_display': format_percent(top_usage_share),
         'concentration_label': concentration['label'],
@@ -228,6 +234,160 @@ def build_capacity_usage_view(
         'concentration_tone': bucket_analysis.get('concentration_tone') or 'unknown',
     }
 
+
+@dataclass(frozen=True, slots=True)
+class PerformanceEvidence:
+    request_rate: float | None
+    error_rate: float | None
+    error_ratio: float | None
+    success_ratio: float | None
+    waiting: float | None
+    inflight: float | None
+    offline_nodes: float | None
+    received_bps: float | None
+    sent_bps: float | None
+    request_trend_summary: dict[str, Any]
+    error_trend_summary: dict[str, Any]
+    bucket_analysis: dict[str, Any]
+
+
+def _reliability_state(error_ratio: float | None) -> tuple[str, str]:
+    if error_ratio is None:
+        return 'Error Evidence Unavailable', 'unknown'
+    if error_ratio >= ERROR_CRITICAL_PERCENT:
+        return 'Critical Error Pressure', 'critical'
+    if error_ratio >= ERROR_WARNING_PERCENT:
+        return 'Elevated Error Pressure', 'warning'
+    return 'Within Error Baseline', 'normal'
+
+
+def _queue_state(waiting: float | None) -> tuple[str, str]:
+    if waiting is None:
+        return 'Queue Evidence Unavailable', 'unknown'
+    if waiting > 0:
+        return 'Requests Waiting', 'warning'
+    return 'No Waiting Requests', 'normal'
+
+
+def _node_state(offline_nodes: float | None) -> tuple[str, str]:
+    if offline_nodes is None:
+        return 'Node Evidence Unavailable', 'unknown'
+    if offline_nodes > 0:
+        return 'Offline Storage Nodes', 'critical'
+    return 'No Offline Nodes', 'normal'
+
+
+def _request_trend_state(direction: str) -> tuple[str, str]:
+    return {
+        'increasing': ('Increasing Demand', 'info'),
+        'decreasing': ('Decreasing Demand', 'info'),
+        'stable': ('Stable Demand', 'normal'),
+    }.get(direction, ('Demand Trend Unknown', 'unknown'))
+
+
+def _error_trend_state(direction: str) -> tuple[str, str]:
+    return {
+        'increasing': ('Errors Increasing', 'warning'),
+        'decreasing': ('Errors Decreasing', 'normal'),
+        'stable': ('Errors Stable', 'normal'),
+    }.get(direction, ('Error Trend Unknown', 'unknown'))
+
+
+def _traffic_shares(
+    received_bps: float | None,
+    sent_bps: float | None,
+) -> tuple[float | None, float | None, float | None]:
+    if received_bps is None or sent_bps is None:
+        return None, None, None
+    total = received_bps + sent_bps
+    if total <= 0:
+        return total, None, None
+    return total, received_bps / total * 100.0, sent_bps / total * 100.0
+
+
+def _bucket_activity_coverage(bucket_analysis: dict[str, Any]) -> tuple[int, int, int, float | None, float | None]:
+    bucket_count = int(bucket_analysis.get('bucket_count') or 0)
+    request_count = int(bucket_analysis.get('request_evidence_count') or 0)
+    error_count = int(bucket_analysis.get('error_evidence_count') or 0)
+    request_coverage = request_count / bucket_count * 100.0 if bucket_count else None
+    error_coverage = error_count / bucket_count * 100.0 if bucket_count else None
+    return bucket_count, request_count, error_count, request_coverage, error_coverage
+
+
+def build_performance_view(evidence: PerformanceEvidence) -> dict[str, Any]:
+    reliability_status, reliability_tone = _reliability_state(evidence.error_ratio)
+    queue_status, queue_tone = _queue_state(evidence.waiting)
+    node_status, node_tone = _node_state(evidence.offline_nodes)
+    request_trend_status, request_trend_tone = _request_trend_state(
+        str(evidence.request_trend_summary.get('direction') or 'unknown')
+    )
+    error_trend_status, error_trend_tone = _error_trend_state(
+        str(evidence.error_trend_summary.get('direction') or 'unknown')
+    )
+    total_traffic, received_share, sent_share = _traffic_shares(evidence.received_bps, evidence.sent_bps)
+    bucket_count, request_count, error_count, request_coverage, error_coverage = _bucket_activity_coverage(
+        evidence.bucket_analysis
+    )
+    evidence_values = (
+        evidence.request_rate,
+        evidence.error_rate,
+        evidence.error_ratio,
+        evidence.waiting,
+        evidence.inflight,
+        evidence.offline_nodes,
+        evidence.received_bps,
+        evidence.sent_bps,
+    )
+    evidence_available = sum(value is not None for value in evidence_values)
+    evidence_total = len(evidence_values)
+    evidence_coverage = evidence_available / evidence_total * 100.0
+    top_request_bucket = evidence.bucket_analysis.get('top_request_rate')
+    top_error_bucket = evidence.bucket_analysis.get('top_error_ratio')
+
+    return {
+        'request_rate_display': format_rate(evidence.request_rate),
+        'error_rate_display': format_rate(evidence.error_rate),
+        'error_ratio_display': format_percent(evidence.error_ratio),
+        'success_ratio_display': format_percent(evidence.success_ratio),
+        'waiting_display': format_number(evidence.waiting),
+        'inflight_display': format_number(evidence.inflight),
+        'offline_nodes_display': format_number(evidence.offline_nodes),
+        'received_bps_display': (
+            format_bytes(evidence.received_bps) + '/s' if evidence.received_bps is not None else 'N/A'
+        ),
+        'sent_bps_display': format_bytes(evidence.sent_bps) + '/s' if evidence.sent_bps is not None else 'N/A',
+        'total_traffic_display': format_bytes(total_traffic) + '/s' if total_traffic is not None else 'N/A',
+        'received_share_display': format_percent(received_share),
+        'sent_share_display': format_percent(sent_share),
+        'reliability_status': reliability_status,
+        'reliability_tone': reliability_tone,
+        'queue_status': queue_status,
+        'queue_tone': queue_tone,
+        'node_status': node_status,
+        'node_tone': node_tone,
+        'request_trend_status': request_trend_status,
+        'request_trend_tone': request_trend_tone,
+        'request_trend_samples': int(evidence.request_trend_summary.get('sample_count') or 0),
+        'request_window_delta_display': evidence.request_trend_summary.get('delta_display') or 'N/A',
+        'request_window_delta_percent_display': evidence.request_trend_summary.get('delta_percent_display') or 'N/A',
+        'error_trend_status': error_trend_status,
+        'error_trend_tone': error_trend_tone,
+        'error_trend_samples': int(evidence.error_trend_summary.get('sample_count') or 0),
+        'error_window_delta_display': evidence.error_trend_summary.get('delta_display') or 'N/A',
+        'error_window_delta_percent_display': evidence.error_trend_summary.get('delta_percent_display') or 'N/A',
+        'bucket_request_coverage_display': format_percent(request_coverage),
+        'bucket_error_coverage_display': format_percent(error_coverage),
+        'bucket_request_evidence_count': request_count,
+        'bucket_error_evidence_count': error_count,
+        'bucket_count': bucket_count,
+        'top_request_bucket_name': str(top_request_bucket.get('name') or 'N/A') if top_request_bucket else 'N/A',
+        'top_request_bucket_value': top_request_bucket.get('request_rate_display') if top_request_bucket else 'N/A',
+        'top_error_bucket_name': str(top_error_bucket.get('name') or 'N/A') if top_error_bucket else 'N/A',
+        'top_error_bucket_value': top_error_bucket.get('error_ratio_display') if top_error_bucket else 'N/A',
+        'evidence_coverage_display': format_percent(evidence_coverage),
+        'evidence_available_count': evidence_available,
+        'evidence_total_count': evidence_total,
+    }
 
 def build_posture_view(posture: OperationalPosture) -> dict[str, str]:
     return {

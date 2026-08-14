@@ -175,6 +175,13 @@ def performance_posture(
             'Performance posture cannot be confirmed',
             'Request error evidence is unavailable, so a healthy request-path conclusion would be unsafe.',
         )
+    if waiting is None or offline_nodes is None:
+        return OperationalPosture(
+            'Partial Evidence',
+            'unknown',
+            'Request reliability is inside baseline but supporting evidence is incomplete',
+            'Current error ratio is below the review boundary, but queue or storage-node evidence is unavailable.',
+        )
     return OperationalPosture(
         'Healthy',
         'normal',

@@ -154,6 +154,7 @@ def test_object_storage_analysis_semantics_are_provider_neutral_and_page_specifi
         'build_comparison_view',
         'build_bucket_analysis',
         'build_capacity_usage_view',
+        'build_performance_view',
         'build_posture_view',
         'build_signal_posture',
     ):
@@ -190,8 +191,18 @@ def test_object_storage_analysis_distinguishes_operational_domains_and_provenanc
     assert 'Quota Pressure &amp; Usage Concentration' in capacity_pressure
     assert 'Quota Evidence Coverage' in capacity_pressure
     assert 'Critical Quota' in capacity_pressure
-    assert 'Request Operating Boundary' in performance
+    performance_traffic = read('app/templates/analytics/object_storage/partials/_performance_traffic.html')
+
+    assert 'Request Path Operating Boundary' in performance
+    assert 'Request Reliability' in performance
+    assert 'Request Processing Pressure' in performance
     assert 'Success Ratio' in performance
+    assert 'Throughput &amp; Request Direction' in performance_traffic
+    assert 'Increasing demand is descriptive, not automatically unhealthy' in performance_traffic
+    assert 'Bucket Request Path Records' in bucket_table
+    assert 'row.request_source' in bucket_table
+    assert 'row.error_source' in bucket_table
+    assert "include_capacity_detail=page_key != 'performance'" in read('app/analytics/object_storage/service.py')
     assert 'Forecast Operating Boundary' in forecast
     assert 'Linear baseline' in forecast
     alerts = read('app/templates/analytics/object_storage/partials/_alerts.html')
