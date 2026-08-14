@@ -1,44 +1,65 @@
+{% import "components/operational_callout.html" as operational_callout %}
+{% import "components/table_label.html" as table_label %}
 {% import "intelligence/components/_workspace.html" as intelligence_ui %}
 {% import "intelligence/components/_pagination.html" as intelligence_pagination %}
-<section class="grid gap-px overflow-hidden rounded-xl border border-outline-default bg-outline-subtle shadow-sm sm:grid-cols-2 xl:grid-cols-4">
-    {{ intelligence_ui.metric('clock-3', 'Queued', payload.metrics.queued, 'Awaiting resolver lease', 'info') }}
-    {{ intelligence_ui.metric('loader-circle', 'Running', payload.metrics.running, 'Active execution journals', 'normal') }}
-    {{ intelligence_ui.metric('rotate-ccw', 'Retry Wait', payload.metrics.retry_wait, 'Backoff before another attempt', 'warning') }}
-    {{ intelligence_ui.metric('triangle-alert', 'Dead Letter', payload.metrics.dead_letter, 'Retained terminal failures', 'critical' if payload.metrics.dead_letter else 'normal') }}
-</section>
+
 {% call intelligence_ui.section(
-    'Resolver Safety Boundary',
-    'Registry descriptors, deployment policies, operational controls, and dead-letter evidence define where resolver execution is allowed.',
+    'Execution Posture',
+    'Execution Control separates resolver registration, deployment policy, safety controls, orchestration state, and terminal failure evidence.',
     'server-cog',
-    'Read-Only',
-    'unknown'
+    payload.overview_state.posture.label,
+    payload.overview_state.posture.tone
     ) %}
-    <div class="p-4 sm:p-5">
-        {{ intelligence_ui.reserved_plan('Resolver Mutations',
-                'Deployment-policy updates, kill switch changes, rate limits, concurrency controls, circuit changes, and dead-letter requeue remain disabled until behavior tests are enabled.',
-                action_label='Reserved Plan',
-                icon='shield-alert') }}
+    <div class="grid gap-px bg-outline-subtle sm:grid-cols-2 xl:grid-cols-5">
+        {{ intelligence_ui.metric('clock-3', 'Queued', payload.metrics.queued, 'Waiting for resolver execution', 'warning' if payload.metrics.queued else 'normal') }}
+        {{ intelligence_ui.metric('activity', 'Running', payload.metrics.running, 'Currently leased execution journals', 'warning' if payload.metrics.running else 'normal') }}
+        {{ intelligence_ui.metric('rotate-cw', 'Retry Wait', payload.metrics.retry_wait, 'Eligible for controlled retry', 'warning' if payload.metrics.retry_wait else 'normal') }}
+        {{ intelligence_ui.metric('circle-check', 'Completed', payload.metrics.completed, 'Completed orchestration journals', 'normal') }}
+        {{ intelligence_ui.metric('triangle-alert', 'Dead Letter', payload.metrics.dead_letter, 'Terminal execution failures', 'critical' if payload.metrics.dead_letter else 'normal') }}
+    </div>
+    <div class="border-t border-outline-subtle p-4 sm:p-5">
+        {{ operational_callout.render(
+            'Infrastructure Mutation Boundary',
+            'Resolver registration and execution evidence are visible, but deployment-policy changes, safety-control changes, dead-letter requeue, and infrastructure mutation remain blocked while the Automation Control mutation gate is disabled.',
+            icon='lock-keyhole',
+            tone='unknown',
+            variant='semantic'
+        ) }}
     </div>
 {% endcall %}
+
 <section class="grid gap-4 xl:grid-cols-2">
-    {% call intelligence_ui.section('Resolver Registry', 'Allowlisted action descriptors, capability requirements, compatibility profiles, and rollback expectations.', 'list-tree') %}
+    {% call intelligence_ui.section(
+        'Resolver Registry',
+        'Only actions registered in the active process registry are eligible for deployment policy or future execution.',
+        'list-tree',
+        payload.registry_rows|length ~ ' Registered',
+        'info'
+        ) %}
         <div class="grid gap-3 p-4 sm:p-5">
             {% for row in payload.registry_rows %}
-                {% call intelligence_ui.record(row.action_key, row.capabilities|join(', ') or 'No capability keys reported', icon='server-cog', status_text='Registered', status_tone='normal') %}
+                {% call intelligence_ui.record(row.action_key, row.profiles|join(', ') or 'No compatibility profile', icon='server-cog', status_text='Registered', status_tone='normal') %}
                     <dl class="mt-3 grid gap-3 sm:grid-cols-2">
-                        {{ intelligence_ui.field('Compatibility Profiles', row.profiles|join(', ') or 'Not Reported') }}
+                        {{ intelligence_ui.field('Capabilities', row.capabilities|join(', ') or '-') }}
                         {{ intelligence_ui.field('Rollback', 'Required' if row.rollback_required else 'Not Required') }}
                     </dl>
                 {% endcall %}
             {% else %}
-                {{ intelligence_ui.empty_state('No Resolver Actions Registered', 'The active process registry did not return any allowlisted action descriptors.', 'list-tree') }}
+                {{ intelligence_ui.empty_state('No Resolver Actions Registered', 'The active resolver registry does not expose an allowlisted action.', 'list-tree') }}
             {% endfor %}
         </div>
     {% endcall %}
-    {% call intelligence_ui.section('Safety Controls', 'Current global and cluster-specific kill switch, maintenance, circuit, concurrency, and rate-limit evidence.', 'shield-alert') %}
+
+    {% call intelligence_ui.section(
+        'Safety Controls',
+        'Global and cluster-specific kill switch, maintenance, concurrency, rate-limit, and circuit-breaker evidence.',
+        'shield-alert'
+        ) %}
         <div class="grid gap-3 p-4 sm:p-5">
             {% for row in payload.control_rows %}
-                {% call intelligence_ui.record(row.scope, 'Concurrency ' ~ row.concurrency_limit ~ ' · Rate ' ~ row.rate_limit ~ '/min', icon='shield-alert', status_text='Kill Switch Active' if row.kill_switch else ('Maintenance' if row.maintenance_mode else 'Normal'), status_tone='critical' if row.kill_switch else ('maintenance' if row.maintenance_mode else 'normal')) %}
+                {% set control_tone = 'critical' if row.kill_switch else ('maintenance' if row.maintenance_mode else 'normal') %}
+                {% set control_status = 'Kill Switch Active' if row.kill_switch else ('Maintenance' if row.maintenance_mode else 'Normal') %}
+                {% call intelligence_ui.record(row.scope, 'Concurrency ' ~ row.concurrency_limit ~ ' · Rate ' ~ row.rate_limit ~ '/min', icon='shield-alert', status_text=control_status, status_tone=control_tone) %}
                     <dl class="mt-3 grid gap-3 sm:grid-cols-2">
                         {{ intelligence_ui.field('Failure Threshold', row.failure_threshold) }}
                         {{ intelligence_ui.field('Cooldown', row.cooldown_seconds ~ ' seconds') }}
@@ -52,7 +73,14 @@
         </div>
     {% endcall %}
 </section>
-{% call intelligence_ui.section('Deployment Policies', 'Scoped allowlists that bind registered resolver actions to clusters and namespaces.', 'shield-check') %}
+
+{% call intelligence_ui.section(
+    'Deployment Policies',
+    'Scoped allowlists bind registered resolver actions to Kubernetes clusters and explicit namespaces. A stored policy is not an execution request.',
+    'shield-check',
+    payload.overview_state.counts.active_policies ~ ' Active',
+    'normal' if payload.overview_state.counts.active_policies else 'unknown'
+    ) %}
     <div class="grid gap-3 p-4 sm:p-5">
         {% for row in payload.policy_rows %}
             {% call intelligence_ui.record(row.action_key, row.cluster, icon='shield-check', status_text=row.status|title, status_tone='normal' if row.status == 'active' else 'unknown') %}
@@ -63,25 +91,56 @@
                 </dl>
             {% endcall %}
         {% else %}
-            {{ intelligence_ui.empty_state('No Deployment Policies Available', 'No cluster and resolver action allowlist has been recorded.', 'shield-check') }}
+            {{ intelligence_ui.empty_state('No Deployment Policies', 'No cluster and resolver-action allowlist has been recorded.', 'shield-check') }}
         {% endfor %}
     </div>
     {% set query_params = {"workspace": "operations"} %}
     {{ intelligence_pagination.render(payload, 'automation_control.index', query_params, resource_label='Deployment Policies', per_page_options=payload.per_page_options) }}
 {% endcall %}
-{% call intelligence_ui.section('Dead-Letter Review', 'Terminal execution journals retained for diagnosis and controlled requeue decisions.', 'triangle-alert', payload.metrics.dead_letter ~ ' Records', 'critical' if payload.metrics.dead_letter else 'normal') %}
+
+{% call intelligence_ui.section(
+    'Execution Journal',
+    'Authorization, queue, lease, retry, resolver result, and terminal orchestration state remain auditable as separate execution evidence.',
+    'scroll-text'
+    ) %}
     <div class="grid gap-3 p-4 sm:p-5">
         {% for row in payload.journal_rows %}
+            {% set journal_tone = 'critical' if row.orchestration_status == 'dead_letter' or row.status == 'failed' else ('warning' if row.orchestration_status in ['queued', 'running', 'retry_wait'] else 'normal') %}
+            {% call intelligence_ui.record(row.action_key, row.public_id, icon='scroll-text', status_text=row.orchestration_status|replace('_',' ')|title, status_tone=journal_tone) %}
+                <dl class="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+                    {{ intelligence_ui.field('Scope', row.cluster ~ ' / ' ~ row.namespace) }}
+                    {{ intelligence_ui.field('Execution Result', row.status|replace('_',' ')|title) }}
+                    {{ intelligence_ui.field('Attempts', row.attempts) }}
+                    {{ intelligence_ui.field('Updated', row.updated_at) }}
+                </dl>
+                {% if row.error != '-' %}
+                    <div class="mt-3">{{ operational_callout.render('Execution Diagnostic', row.error, icon='triangle-alert', tone='critical', variant='semantic') }}</div>
+                {% endif %}
+            {% endcall %}
+        {% else %}
+            {{ intelligence_ui.empty_state('No Execution Journals', 'No resolver execution authorization or dispatch evidence has been recorded.', 'scroll-text') }}
+        {% endfor %}
+    </div>
+{% endcall %}
+
+{% call intelligence_ui.section(
+    'Dead-Letter Review',
+    'Terminal orchestration failures remain retained for diagnosis. Requeue is a control-plane mutation and stays disabled in governance-only mode.',
+    'triangle-alert',
+    payload.metrics.dead_letter ~ ' Records',
+    'critical' if payload.metrics.dead_letter else 'normal'
+    ) %}
+    <div class="grid gap-3 p-4 sm:p-5">
+        {% for row in payload.dead_letter_rows %}
             {% call intelligence_ui.record(row.action_key, row.error, icon='triangle-alert', status_text='Dead Letter', status_tone='critical') %}
                 <dl class="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                     {{ intelligence_ui.field('Scope', row.cluster ~ ' / ' ~ row.namespace) }}
                     {{ intelligence_ui.field('Attempts', row.attempts) }}
                     {{ intelligence_ui.field('Updated', row.updated_at) }}
                 </dl>
-                <div class="mt-3">{{ intelligence_ui.reserved_plan('Controlled Requeue', 'Requeue remains disabled until retry, lease, and idempotency behavior are validated.', action_label='', compact=true) }}</div>
             {% endcall %}
         {% else %}
-            {{ intelligence_ui.empty_state('No Dead-Letter Journals', 'No terminal resolver execution failures require review.', 'circle-check') }}
+            {{ intelligence_ui.empty_state('No Dead-Letter Journals', 'No terminal resolver execution failure currently requires review.', 'circle-check') }}
         {% endfor %}
     </div>
 {% endcall %}

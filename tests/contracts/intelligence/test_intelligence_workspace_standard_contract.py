@@ -29,14 +29,18 @@ def test_automation_control_mutations_are_fail_closed_by_default():
     assert 'AUTOMATION_CONTROL_MUTATIONS_ENABLED' in routes
     assert 'AUTOMATION_CONTROL_MUTATIONS_ENABLED' in presentation
     assert 'detail=str(exc)' not in routes
-    assert 'Automation Control Reserved Plan' in routes
+    assert 'Automation Mutation Disabled' in routes
 
 
-def test_automation_workspace_uses_integrated_tabs_and_grouped_foundations():
+def test_automation_workspace_uses_integrated_tabs_and_operational_overview():
     template = read('app/templates/intelligence/automation_control.html')
     overview = read('app/templates/intelligence/partials/automation_control/_overview.html')
+    presentation = read('app/automation_control/presentation.py')
     assert 'link_tabs(' in template
-    assert "payload['domain_groups']|default([], true)" in overview
+    assert 'Decision & Execution Pipeline' in overview
+    assert 'Automation Guardrails' in overview
+    assert 'Foundation Map' not in overview
+    assert "('operations', 'Execution Control', 'server-cog')" in presentation
     assert 'overflow-x-auto' not in overview
 
 

@@ -43,4 +43,7 @@ def test_notification_channels_redesign_surfaces_delivery_governance():
     for provider in ('Telegram', 'Email', 'Microsoft Teams'):
         assert provider in page
     assert 'platform integration capability' in page.lower()
-    assert "'report.generated'" in read('app/notification_channels/forms.py')
+    forms = read('app/notification_channels/forms.py')
+    assert "'report.generated'" in forms
+    assert "'automation.approval_required'" in forms
+    assert "'automation.execution_failed'" in forms

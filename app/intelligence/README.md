@@ -47,7 +47,7 @@ be reintroduced.
 
 Recommendations, Rule Catalog, Alert Intelligence, and Automation Control use the canonical Intelligence workspace contract documented in `docs/design/components/INTELLIGENCE_WORKSPACE_STANDARD.md`.
 
-Automation Control mutations are disabled by default. The guard key `AUTOMATION_CONTROL_MUTATIONS_ENABLED` is intentionally not exposed as an environment-configured release toggle in this baseline; enabling it requires a later feature-complete review with validation and behavioral evidence. The disabled UI state is named **Reserved Plan**; MVP, placeholder, preview-only, and coming-soon labels are not used.
+Automation Control is the governed bridge from Intelligence evidence to controlled execution. Its current UI exposes factual **Governance Only** state across Overview, Runbooks & Bindings, Decision Review, Execution Control, and Production Readiness. Mutations remain disabled by default behind `AUTOMATION_CONTROL_MUTATIONS_ENABLED`; the guard is intentionally not exposed as an environment-configured release toggle in this baseline. Enabling it requires a later feature-complete review with approval, allowlist, dry-run, rollback, verification, notification, audit, and E2E evidence.
 
 ## Intelligence baseline lock v1
 
@@ -68,8 +68,7 @@ Locked current-state contracts:
 - **Notification Channels** is owned by Integrations, not Intelligence. Alert Intelligence consumes the platform delivery contract while Alertmanager remains the raw alert routing/receiver authority.
 - **Automation Control** is an application-layer orchestration surface. Its mutation
   routes remain fail-closed behind `AUTOMATION_CONTROL_MUTATIONS_ENABLED`, which must
-  remain unset/default-false in this baseline. The approved pre-feature-completion posture
-  remains **Read-Only Governance / Reserved Plan**.
+  remain unset/default-false in this baseline. The approved current posture is **Governance Only / Mutation Disabled**; the read and evidence workspaces are implemented, while state-changing control-plane operations remain fail-closed.
 
 Deferred work is allowed to evolve behind those boundaries. A future feature-complete
 review must add the applicable Functional, Integration, Security, Rendering, and E2E

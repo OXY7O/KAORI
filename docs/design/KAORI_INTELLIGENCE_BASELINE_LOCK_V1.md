@@ -37,8 +37,8 @@ capabilities to continue development behind explicit Reserved Plan/fail-closed b
 - Mutation routes may exist for continued implementation, but the default is fail-closed.
 - `AUTOMATION_CONTROL_MUTATIONS_ENABLED` must resolve false when absent.
 - Environment-level enablement of that guard is deliberately deferred until the feature-complete review.
-- Disabled mutation attempts return Reserved Plan feedback and must not execute the
-  operation callback.
+- Disabled mutation attempts return **Automation Mutation Disabled** feedback and must not execute the operation callback.
+- The current read posture is **Governance Only**. `Reserved Plan` is not used for implemented Automation Control read/evidence surfaces.
 - Internal exception text must not be exposed to the user.
 
 ## Deferred / non-locking feature work
@@ -51,9 +51,7 @@ The following may remain incomplete without invalidating this baseline lock:
   mutation, operational control mutation, and readiness-stage mutation.
 - Additional external signal/provider enrichments.
 
-Those capabilities must stay visibly Reserved Plan/read-only until a later feature-complete
-review supplies provider validation, behavior tests, security regression, rendering
-contracts, and E2E/integration evidence as applicable.
+Those state-changing capabilities must stay visibly disabled/fail-closed until a later feature-complete review supplies provider validation, behavior tests, security regression, rendering contracts, and E2E/integration evidence as applicable. Implemented Automation Control read/evidence surfaces use factual Governance Only wording rather than Reserved Plan.
 
 ## Non-negotiable KAORI UI boundary
 

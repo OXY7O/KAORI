@@ -8,12 +8,10 @@ def test_record_collections_use_bracket_access_for_items_key():
 
     assert "payload['items']|default([], true)" in recommendations
     assert "payload['items']|default([], true)" in catalog
-    assert "payload['domain_groups']|default([], true)" in overview
-    assert "group['items']|default([], true)" in overview
 
     assert 'payload.items' not in recommendations
     assert 'payload.items' not in catalog
-    assert 'payload.domain_groups' not in overview
+    assert 'domain_groups' not in overview
     assert 'group.items' not in overview
 
 

@@ -27,7 +27,13 @@ MVP, placeholder, preview-only, and coming-soon labels are prohibited.
 
 ## Automation Control
 
-Automation Control is presentation-complete but mutation-disabled by default. The runtime guard key is `AUTOMATION_CONTROL_MUTATIONS_ENABLED`; missing configuration resolves to false. Environment-level enablement is intentionally outside the current baseline lock. Direct POST requests are rejected with a Reserved Plan notification while disabled.
+Automation Control is the governed bridge from Intelligence evidence to a future controlled execution path. Its workspaces are **Overview**, **Runbooks & Bindings**, **Decision Review**, **Execution Control**, and **Production Readiness**. Overview reports factual decision, execution, safety, readiness, and notification-delivery posture; it must not regress to an implementation-domain map.
+
+Mutation is disabled by default. The runtime guard key is `AUTOMATION_CONTROL_MUTATIONS_ENABLED`; missing configuration resolves to false, and the key must not be exposed through environment templates during the current baseline lock. Direct POST requests are rejected with **Automation Mutation Disabled** feedback before the operation callback is invoked. The disabled UI posture is **Governance Only**, not `Reserved Plan`: the read/evidence capability is implemented while state-changing control-plane operations remain intentionally disabled.
+
+Decision candidates are non-executable. Persisted decisions remain separate from execution journals. Execution Control owns resolver registry, deployment policies, safety controls, orchestration journals, and dead letters. Production Readiness reports mutation state, resolver registration, scoped deployment policy, readiness evidence, Notification Channel coverage, and ordered rollout stages independently.
+
+The intended first controlled execution pilot remains `kubernetes.deployment.restart`. Registration alone does not make it executable: approval, namespace allowlist, registry parity, server-side dry-run, rollback, post-action verification, audit, notification delivery, and staged production-readiness evidence remain mandatory.
 
 ## Baseline lock semantics
 

@@ -1,60 +1,87 @@
+{% import "components/operational_callout.html" as operational_callout %}
 {% import "components/table_label.html" as table_label %}
 {% import "intelligence/components/_workspace.html" as intelligence_ui %}
 {% import "intelligence/components/_pagination.html" as intelligence_pagination %}
+
 {% call intelligence_ui.section(
-    'Runbook Governance',
-    'Stable runbook identities, immutable revisions, and deterministic alert bindings define the knowledge boundary for future automation.',
-    'book-open-check',
-    'Read-Only',
-    'unknown'
+    'Runbook & Binding Posture',
+    'Published runbooks define immutable operational procedures. Alert bindings determine when evidence may become a review candidate; neither object is executable by itself.',
+    'book-open-check'
     ) %}
-    <div class="p-4 sm:p-5">
-        {{ intelligence_ui.reserved_plan('Authoring & Publication Controls',
-                'Runbook creation, revision publication, withdrawal, and alert-binding mutations remain disabled until validation behavior and confirmation gates are enabled.',
-                action_label='Reserved Plan',
-                icon='book-lock') }}
+    <div class="grid gap-px bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4">
+        {{ intelligence_ui.metric('library', 'Runbooks', payload.counts.runbooks, 'Stable runbook identities', 'info') }}
+        {{ intelligence_ui.metric('file-check-2', 'Published Revisions', payload.counts.published_revisions, 'Immutable validated revisions', 'normal' if payload.counts.published_revisions else 'warning') }}
+        {{ intelligence_ui.metric('link', 'Active Bindings', payload.overview_state.counts.active_bindings, 'Deterministic evidence selectors', 'normal' if payload.overview_state.counts.active_bindings else 'warning') }}
+        {{ intelligence_ui.metric('server-cog', 'Resolver Actions', payload.overview_state.counts.registered_actions, 'Allowlisted actions in the active registry', 'info') }}
+    </div>
+    <div class="border-t border-outline-subtle p-4 sm:p-5">
+        {{ operational_callout.render(
+            'Authoring Boundary',
+            'Runbook creation, revision publication, and binding changes are currently blocked by the Automation Control mutation gate. Existing knowledge evidence remains fully readable.',
+            icon='lock-keyhole',
+            tone='unknown',
+            variant='semantic'
+        ) }}
     </div>
 {% endcall %}
+
 {% call intelligence_ui.section(
     'Runbook Library',
-    'Primary runbook identities ordered by the latest update. Each identity summarizes revision and publication coverage.',
+    'Primary runbook identities with current revision coverage and deterministic alert-binding coverage.',
     'library'
     ) %}
     <div class="grid gap-3 p-4 sm:p-5">
         {% for row in payload.runbook_rows %}
-            {% call intelligence_ui.record(row.title, row.description, icon='book-open-check', status_text=row.status|replace('_',' ')|title, status_tone='normal' if row.status == 'active' else 'warning') %}
-                <dl class="mt-4 grid gap-3 rounded-lg border border-outline-subtle bg-surface-hover p-3 sm:grid-cols-2 xl:grid-cols-4">
+            {% set runbook_tone = 'normal' if row.status == 'active' and row.published_count else ('warning' if row.status == 'active' else 'unknown') %}
+            {% call intelligence_ui.record(row.title, row.description, icon='book-open-check', status_text=row.status|replace('_',' ')|title, status_tone=runbook_tone) %}
+                <dl class="mt-4 grid gap-3 rounded-lg border border-outline-subtle bg-surface-hover p-3 sm:grid-cols-2 xl:grid-cols-5">
                     {{ intelligence_ui.field('Runbook Key', row.key, true) }}
                     {{ intelligence_ui.field('Revisions', row.revision_count) }}
                     {{ intelligence_ui.field('Published', row.published_count) }}
-                    {{ intelligence_ui.field('Updated', row.updated_at) }}
+                    {{ intelligence_ui.field('Active Bindings', row.binding_count) }}
+                    {{ intelligence_ui.field('Latest Published', row.latest_published_version) }}
                 </dl>
+                <p class="mt-3 text-xs leading-5 text-content-muted">Updated {{ row.updated_at }}</p>
             {% endcall %}
         {% else %}
-            {{ intelligence_ui.empty_state('No Runbooks Available', 'Create and publication controls remain reserved until the runbook behavior contract is enabled.', 'book-open-check') }}
+            {{ intelligence_ui.empty_state('No Runbooks Available', 'No governed runbook identity has been recorded.', 'book-open-check') }}
         {% endfor %}
     </div>
     {% set query_params = {"workspace": "runbooks"} %}
     {{ intelligence_pagination.render(payload, 'automation_control.index', query_params, resource_label='Runbooks', per_page_options=payload.per_page_options) }}
 {% endcall %}
+
 <section class="grid gap-4 xl:grid-cols-2">
-    {% call intelligence_ui.section('Recent Revisions', 'Publication state and validation evidence for the latest immutable revisions.', 'file-check-2') %}
+    {% call intelligence_ui.section(
+        'Revision Execution Eligibility',
+        'Approval policy describes how a published revision may participate in a future decision. Policy Eligible does not mean automatic execution.',
+        'file-check-2'
+        ) %}
         <div class="grid gap-3 p-4 sm:p-5">
             {% for row in payload.revision_rows %}
-                {% call intelligence_ui.record(row.runbook_key ~ ' · ' ~ row.version, row.action_key, icon='file-check-2', status_text=row.status|title, status_tone='normal' if row.status == 'published' else ('warning' if row.status == 'draft' else 'unknown')) %}
+                {% call intelligence_ui.record(row.runbook_key ~ ' · ' ~ row.version, row.action_key, icon='file-check-2', status_text=row.execution_mode, status_tone=row.execution_tone) %}
+                    <div class="mt-3 flex flex-wrap gap-2">
+                        {{ table_label.metadata_label(row.status|replace('_',' ')|title, 'file-check-2') }}
+                        {{ table_label.metadata_label(row.resolver_key, 'server-cog') }}
+                        {{ table_label.metadata_label('Rollback Defined' if row.rollback_defined else 'Rollback Not Defined', 'undo-2') }}
+                    </div>
                     <dl class="mt-3 grid gap-3 sm:grid-cols-2">
-                        {{ intelligence_ui.field('Resolver', row.resolver_key, true) }}
-                        {{ intelligence_ui.field('Approval Policy', row.approval_policy|replace('_',' ') |title) }}
-                        {{ intelligence_ui.field('Validation', 'Passed' if row.validation_valid else ('Failed' if row.validation_valid is sameas false else 'Not Recorded') ) }}
+                        {{ intelligence_ui.field('Approval Policy', row.approval_policy|replace('_',' ')|title) }}
+                        {{ intelligence_ui.field('Publication Validation', 'Passed' if row.validation_valid else ('Failed' if row.validation_valid is sameas false else 'Not Recorded')) }}
                         {{ intelligence_ui.field('Created', row.created_at) }}
                     </dl>
                 {% endcall %}
             {% else %}
-                {{ intelligence_ui.empty_state('No Revisions Available', 'No immutable runbook revision evidence has been recorded.', 'file-check-2') }}
+                {{ intelligence_ui.empty_state('No Runbook Revisions', 'No immutable runbook revision evidence has been recorded.', 'file-check-2') }}
             {% endfor %}
         </div>
     {% endcall %}
-    {% call intelligence_ui.section('Alert Bindings', 'Deterministic selectors linking published revisions to alert evidence.', 'link') %}
+
+    {% call intelligence_ui.section(
+        'Alert & Rule Bindings',
+        'Bindings connect authoritative rule or alert selectors to a published revision. They produce review candidates, never direct resolver execution.',
+        'link'
+        ) %}
         <div class="grid gap-3 p-4 sm:p-5">
             {% for row in payload.binding_rows %}
                 {% call intelligence_ui.record(row.binding_key, row.selector, icon='link', status_text=row.status|replace('_',' ')|title, status_tone='normal' if row.status == 'active' else 'unknown') %}
@@ -65,7 +92,7 @@
                     </dl>
                 {% endcall %}
             {% else %}
-                {{ intelligence_ui.empty_state('No Alert Bindings Available', 'No deterministic alert-to-runbook selector has been recorded.', 'link') }}
+                {{ intelligence_ui.empty_state('No Alert Bindings', 'No deterministic alert-to-runbook binding is currently recorded.', 'link') }}
             {% endfor %}
         </div>
     {% endcall %}

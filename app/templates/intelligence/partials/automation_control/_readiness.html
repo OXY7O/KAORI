@@ -2,12 +2,51 @@
 {% import "components/table_label.html" as table_label %}
 {% import "intelligence/components/_workspace.html" as intelligence_ui %}
 {% import "intelligence/components/_pagination.html" as intelligence_pagination %}
+{% set control = payload.overview_state %}
+
+{% call intelligence_ui.section(
+    'Production Enablement Gate',
+    'Production readiness is a set of independent evidence gates. Mutation configuration alone never makes an action production-ready.',
+    'shield-check',
+    control.guardrails.readiness.label,
+    control.guardrails.readiness.tone
+    ) %}
+    {% set enablement = [
+        ('lock-keyhole' if not control.mutation.enabled else 'unlock', 'Mutation Gate', control.mutation.label, control.mutation.tone, control.mutation.helper),
+        ('list-tree', 'Resolver Registry', control.counts.registered_actions ~ ' Actions', 'normal' if control.counts.registered_actions else 'warning', 'Only registered resolver actions may be considered for controlled execution.'),
+        ('shield-check', 'Active Deployment Policies', control.counts.active_policies, 'normal' if control.counts.active_policies else 'unknown', 'Active policies bind a registered action to explicit cluster and namespace scope.'),
+        ('clipboard-check', 'Readiness Evidence', control.guardrails.readiness.label, control.guardrails.readiness.tone, control.guardrails.readiness.helper),
+        ('send', 'Notification Delivery', control.guardrails.notifications.label, control.guardrails.notifications.tone, control.guardrails.notifications.helper)
+    ] %}
+    <div class="grid gap-3 p-4 sm:grid-cols-2 xl:grid-cols-5 sm:p-5">
+        {% for icon, label, value, tone, helper in enablement %}
+            <article class="rounded-xl border border-outline-subtle bg-surface-card p-4">
+                <div class="flex items-start justify-between gap-3">
+                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
+                        <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
+                    </span>
+                    {{ table_label.status_label(value|string, tone, size='compact') }}
+                </div>
+                <p class="mt-3 text-xs font-medium leading-5 text-content-muted">{{ label }}</p>
+                <p class="mt-1 text-xs leading-5 text-content-muted">{{ helper }}</p>
+            </article>
+        {% endfor %}
+    </div>
+    <div class="border-t border-outline-subtle p-4 sm:p-5">
+        {{ operational_callout.render(
+            'Current Enablement Decision',
+            'Infrastructure mutation remains disabled by default. A later feature-complete enablement review must prove approval, allowlist, server-side dry-run, rollback, verification, notification, and execution-journal behavior before the gate may change.',
+            icon='shield-alert',
+            tone='info',
+            variant='semantic'
+        ) }}
+    </div>
+{% endcall %}
+
 {% call intelligence_ui.section(
     'Controlled Rollout Sequence',
-    'Resolver capabilities advance through ordered stages. Stage skipping remains prohibited and every transition requires complete evidence.',
-    'route',
-    'Read-Only',
-    'unknown'
+    'Resolver capabilities advance through ordered rollout stages. Stage skipping is prohibited and every transition requires persisted evidence.',
+    'route'
     ) %}
     <ol class="grid gap-0 p-4 lg:grid-cols-5 sm:p-5">
         {% for stage in payload.stage_order %}
@@ -19,15 +58,19 @@
                 <article class="relative h-full rounded-xl border border-outline-subtle bg-surface-card p-4">
                     <div class="flex items-center gap-3">
                         <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-brand-outline bg-kaori-soft text-xs font-semibold text-kaori-primary">{{ loop.index }}</span>
-                        <h3 class="text-sm font-semibold leading-5 text-content-primary">{{ stage|replace('_', ' ') |title }}</h3>
+                        <h3 class="text-sm font-semibold leading-5 text-content-primary">{{ stage|replace('_', ' ')|title }}</h3>
                     </div>
                     <p class="mt-3 text-xs leading-5 text-content-muted">
-                        {% if loop.first %}
-                            Registered but unavailable for execution.
-                        {% elif loop.last %}
-                            Production use after all validation and policy gates pass.
+                        {% if stage == 'disabled' %}
+                            Registered evidence only; resolver execution is not admitted.
+                        {% elif stage == 'shadow' %}
+                            Evaluate policy and dry-run evidence without production mutation.
+                        {% elif stage == 'non_production' %}
+                            Controlled execution is limited to explicitly non-production scope.
+                        {% elif stage == 'canary' %}
+                            Production-scope execution remains narrow, observed, and rollback-ready.
                         {% else %}
-                            Scoped validation stage with explicit evidence and rollback checks.
+                            Production use requires complete evidence, explicit policy, and continuous safety controls.
                         {% endif %}
                     </p>
                 </article>
@@ -35,9 +78,10 @@
         {% endfor %}
     </ol>
 {% endcall %}
+
 {% call intelligence_ui.section(
     'Readiness Evidence Contract',
-    'Every required check must be recorded before a resolver action can advance to Canary or Production.',
+    'Every required validation check is independently persisted. A missing or failed check keeps the resolver action below the requested rollout stage.',
     'clipboard-check',
     payload.required_checks|length ~ ' Required Checks',
     'info'
@@ -45,32 +89,28 @@
     <div class="grid gap-3 p-4 sm:grid-cols-2 xl:grid-cols-3 sm:p-5">
         {% for check in payload.required_checks %}
             <article class="flex items-start gap-3 rounded-xl border border-outline-subtle bg-surface-card p-4">
-                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
-                      aria-hidden="true"><i data-lucide="check-check" class="h-4 w-4"></i></span>
+                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
+                    <i data-lucide="check-check" class="h-4 w-4"></i>
+                </span>
                 <div class="min-w-0">
-                    <h3 class="text-sm font-semibold leading-5 text-content-primary">{{ check|replace('_', ' ') |title }}</h3>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">Persisted validation result required for controlled rollout.</p>
+                    <h3 class="text-sm font-semibold leading-5 text-content-primary">{{ check|replace('_', ' ')|title }}</h3>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Persisted validation evidence required for controlled rollout.</p>
                 </div>
             </article>
         {% endfor %}
     </div>
-    <div class="border-t border-outline-subtle p-4 sm:p-5">
-        {{ intelligence_ui.reserved_plan('Readiness & Stage Mutations',
-                'Recording validation evidence, approval, and rollout-stage advancement remains disabled until the behavior and confirmation contracts are enabled.',
-                action_label='Reserved Plan',
-                icon='shield-check') }}
-    </div>
 {% endcall %}
+
 {% call intelligence_ui.section(
     'Readiness Records',
-    'Validation coverage and rollout stage by cluster and registered resolver action.',
+    'Validation coverage and rollout stage by Kubernetes cluster and registered resolver action.',
     'shield-check'
     ) %}
     <div class="grid gap-3 p-4 sm:p-5">
         {% for row in payload.readiness_rows %}
             {% call intelligence_ui.record(row.cluster, row.action_key, icon='clipboard-check', status_text='Ready' if row.ready else 'Incomplete', status_tone='normal' if row.ready else 'warning') %}
                 <div class="mt-3 flex flex-wrap gap-2">
-                    {{ table_label.metadata_label(row.stage|replace('_',' ') |title, 'route') }}
+                    {{ table_label.metadata_label(row.stage|replace('_',' ')|title, 'route') }}
                     {{ table_label.metadata_label(row.completed_checks ~ '/' ~ row.total_checks ~ ' Checks', 'check-check') }}
                 </div>
                 <dl class="mt-4 grid gap-3 rounded-lg border border-outline-subtle bg-surface-hover p-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -80,12 +120,12 @@
                 </dl>
                 {% if row.failed_checks %}
                     <div class="mt-3">
-                        {{ operational_callout.render('Incomplete Evidence', row.failed_checks|join(', ') , icon='shield-alert', tone='warning', variant='semantic') }}
+                        {{ operational_callout.render('Incomplete Evidence', row.failed_checks|join(', '), icon='shield-alert', tone='warning', variant='semantic') }}
                     </div>
                 {% endif %}
             {% endcall %}
         {% else %}
-            {{ intelligence_ui.empty_state('No Readiness Records Available', 'No cluster and resolver action readiness evidence has been recorded.', 'shield-check') }}
+            {{ intelligence_ui.empty_state('No Readiness Records', 'No cluster and resolver-action readiness evidence has been recorded.', 'shield-check') }}
         {% endfor %}
     </div>
     {% set query_params = {"workspace": "readiness"} %}

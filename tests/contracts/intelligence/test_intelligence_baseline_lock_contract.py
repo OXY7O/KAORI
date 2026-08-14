@@ -28,9 +28,11 @@ def test_automation_control_remains_fail_closed_while_reserved_plan_work_is_inco
     gate_position = mutation_gate.index("current_app.config.get('AUTOMATION_CONTROL_MUTATIONS_ENABLED', False)")
     operation_position = mutation_gate.index('operation()')
     assert gate_position < operation_position
-    assert "title='Automation Control Reserved Plan'" in mutation_gate
+    assert "title='Automation Mutation Disabled'" in mutation_gate
     assert 'detail=str(exc)' not in routes
-    assert "'posture': {'label': 'Reserved Plan', 'tone': 'unknown'}" in presentation
+    assert "'posture': overview_state['posture']" in presentation
+    assert 'Governance Only' in read('app/automation_control/overview.py')
+    assert 'DOMAIN_DEFINITIONS' not in presentation
     assert 'AUTOMATION_CONTROL_MUTATIONS_ENABLED' not in default_config
 
 

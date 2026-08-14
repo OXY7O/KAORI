@@ -3,9 +3,10 @@
 {% import "intelligence/components/_workspace.html" as intelligence_ui %}
 {% block title %}Automation Control{% endblock title %}
 {% block dashboard_content %}
+    {% set control = payload.overview_state %}
     {% set hero_metrics = [
-            ('book-open-check', 'Published Runbooks', payload.counts.published_revisions, 'Immutable revisions'),
-            ('clipboard-clock', 'Pending Decisions', payload.counts.pending_decisions, 'Awaiting workflow')
+            ('badge-check', 'Awaiting Approval', payload.counts.awaiting_approval, 'Immutable decisions requiring accountable review'),
+            ('activity', 'Active Executions', payload.counts.running, 'Queued, running, or retry-wait journals')
         ] %}
     <div class="space-y-6">
         <section class="{{ page_hero.shell_classes() }}">
@@ -13,23 +14,35 @@
                 <div class="{{ page_hero.content_classes() }}">
                     {% call page_hero.intro('workflow', 'Governed Automation', 'shield-check') %}
                         <h1 class="{{ page_hero.title_classes() }}">Automation Control</h1>
-                        <p class="mt-2 {{ page_hero.description_classes() }}">Govern runbooks, decision evidence, resolver safety, and staged rollout without exposing unvalidated mutation paths.</p>
+                        <p class="mt-2 {{ page_hero.description_classes() }}">Review runbook matches, decision evidence, execution safety, and production-readiness gates before any infrastructure mutation is allowed.</p>
                         <div class="{{ page_hero.metadata_row_classes() }}">
-                            {{ page_hero.meta_label('book-lock', 'Immutable Evidence') }}
-                            {{ page_hero.meta_label('shield-check', 'Explicit Gates') }}
-                            {{ page_hero.meta_label('lock-keyhole', 'Mutation Disabled') }}
+                            {{ page_hero.meta_label('user-check', 'Human-in-the-Loop') }}
+                            {{ page_hero.meta_label('list-checks', 'Allowlisted Actions') }}
+                            {{ page_hero.meta_label('lock-keyhole' if not payload.mutations_enabled else 'unlock', 'Mutation Disabled' if not payload.mutations_enabled else 'Mutation Enabled') }}
                         </div>
                     {% endcall %}
                 </div>
-                {{ page_hero.context_card('Automation posture', 'Automation Posture', 'Governed Automation', payload.posture.label, payload.posture.tone, hero_metrics, 'Review Production Readiness', url_for('automation_control.index', workspace='readiness') , 'shield-check') }}
+                {{ page_hero.context_card(
+                    'Automation control posture',
+                    'AUTOMATION POSTURE',
+                    'Control State',
+                    control.posture.label,
+                    control.posture.tone,
+                    hero_metrics,
+                    'Review Production Readiness',
+                    url_for('automation_control.index', workspace='readiness'),
+                    'shield-check'
+                ) }}
             </div>
         </section>
+
         <section class="grid gap-px overflow-hidden rounded-xl border border-outline-default bg-outline-subtle shadow-sm sm:grid-cols-2 xl:grid-cols-4">
-            {{ intelligence_ui.metric('book-open-check', 'Runbooks', payload.counts.runbooks, 'Stable runbook identities', 'info') }}
-            {{ intelligence_ui.metric('clipboard-clock', 'Pending Candidates', payload.counts.pending_candidates, 'Awaiting operator review', 'warning') }}
-            {{ intelligence_ui.metric('triangle-alert', 'Dead Letters', payload.counts.dead_letters, 'Retained execution failures', 'critical' if payload.counts.dead_letters else 'normal') }}
-            {{ intelligence_ui.metric('shield-check', 'Readiness Records', payload.counts.readiness_records, 'Resolver rollout evidence', 'maintenance') }}
+            {{ intelligence_ui.metric('clipboard-clock', 'Decision Candidates', payload.counts.pending_candidates, 'Awaiting operator review', 'warning' if payload.counts.pending_candidates else 'normal') }}
+            {{ intelligence_ui.metric('badge-check', 'Awaiting Approval', payload.counts.awaiting_approval, 'Approval-required immutable decisions', 'warning' if payload.counts.awaiting_approval else 'normal') }}
+            {{ intelligence_ui.metric('activity', 'Running Executions', payload.counts.running, 'Queued, running, or retry-wait journals', 'warning' if payload.counts.running else 'normal') }}
+            {{ intelligence_ui.metric('triangle-alert', 'Execution Failures', payload.counts.failures, 'Failed or dead-letter execution evidence', 'critical' if payload.counts.failures else 'normal') }}
         </section>
+
         <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card">
             {{ intelligence_ui.link_tabs(payload.workspace_tabs, payload.workspace, 'Automation Control Workspaces') }}
             <div class="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
@@ -47,10 +60,11 @@
                     <i data-lucide="{{ 'unlock' if payload.mutations_enabled else 'lock-keyhole' }}"
                        class="h-3.5 w-3.5 text-kaori-primary"
                        aria-hidden="true"></i>
-                    {{ 'Mutation Enabled' if payload.mutations_enabled else 'Read-Only Governance' }}
+                    {{ 'Controlled Mutation Enabled' if payload.mutations_enabled else 'Governance Only' }}
                 </span>
             </div>
         </section>
+
         {% if payload.workspace == 'overview' %}
             {% include 'intelligence/partials/automation_control/_overview.html' %}
         {% elif payload.workspace == 'runbooks' %}

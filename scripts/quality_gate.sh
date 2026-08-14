@@ -38,6 +38,7 @@ run_static() {
     python scripts/verify_authentication_surface_final_lock.py
     python scripts/verify_settings_final_lock.py
     python scripts/verify_intelligence_baseline_lock.py
+    python scripts/verify_automation_control.py
     python scripts/verify_tls_certificate_governance_standard.py
     python scripts/verify_workload_inventory_standard.py
     python scripts/verify_pod_inventory_standard.py

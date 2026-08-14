@@ -28,8 +28,13 @@ _PROVIDER_LABELS = provider_labels()
 _SEVERITY_RANK = {'info': 1, 'warning': 2, 'critical': 3}
 _DOMAIN_LABELS = {'kubernetes': 'Kubernetes', 'object_storage': 'Object Storage'}
 _EVENT_LABELS = {
-    'alert_intelligence.active_alert': 'Alert Intelligence',
-    'report.generated': 'Scheduled Reports',
+    'alert_intelligence.active_alert': 'Alert Intelligence · Active Alert',
+    'report.generated': 'Scheduled Reports · Report Ready',
+    'automation.approval_required': 'Automation Control · Approval Required',
+    'automation.execution_started': 'Automation Control · Execution Started',
+    'automation.execution_completed': 'Automation Control · Execution Completed',
+    'automation.execution_failed': 'Automation Control · Execution Failed',
+    'automation.verification_failed': 'Automation Control · Verification Failed',
 }
 
 
@@ -193,7 +198,7 @@ def get_notification_channels_payload() -> dict[str, Any]:
             {'value': 'none', 'label': 'None / trusted relay'},
         ],
         'delivery_contract': {
-            'events': 'Alert Intelligence + Scheduled Reports',
+            'events': 'Alert Intelligence + Scheduled Reports + Automation Control',
             'retry': f'Up to {notification_delivery_max_attempts()} attempts',
             'deduplication': 'Per channel and emitted event identity',
             'ownership': 'Consumers emit governed events; Notification Channels owns provider delivery.',

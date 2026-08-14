@@ -407,9 +407,9 @@ def _handle_mutation(
     if not current_app.config.get('AUTOMATION_CONTROL_MUTATIONS_ENABLED', False):
         queue_transient_feedback(
             status='warning',
-            title='Automation Control Reserved Plan',
-            message='KAORI did not apply the requested mutation.',
-            detail='Mutation execution remains disabled until validation gates and behavioral tests are enabled.',
+            title='Automation Mutation Disabled',
+            message='KAORI did not apply the requested control-plane change.',
+            detail='Automation Control is operating in governance-only mode. Infrastructure mutation and control-plane state changes remain disabled until the feature-complete enablement review passes.',
         )
         return redirect(url_for('automation_control.index', workspace=workspace))
     try:

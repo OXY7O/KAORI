@@ -46,6 +46,7 @@ def main() -> int:
     alert_workspace = read('app/templates/intelligence/partials/_alert_intelligence_workspace.html')
     automation_routes = read('app/automation_control/routes.py')
     automation_presentation = read('app/automation_control/presentation.py')
+    automation_overview = read('app/automation_control/overview.py')
     readme = read('app/intelligence/README.md')
     standard = read('docs/design/components/INTELLIGENCE_WORKSPACE_STANDARD.md')
     default_config = read('app/config/default.py')
@@ -106,8 +107,8 @@ def main() -> int:
         "@automation_control_bp.route('/automation-control')",
         "@permission_required('intelligence.view')",
         "current_app.config.get('AUTOMATION_CONTROL_MUTATIONS_ENABLED', False)",
-        "title='Automation Control Reserved Plan'",
-        "message='KAORI did not apply the requested mutation.'",
+        "title='Automation Mutation Disabled'",
+        "message='KAORI did not apply the requested control-plane change.'",
     ):
         require(required in automation_routes, f'Automation Control baseline boundary missing: {required}', errors)
 
@@ -117,14 +118,14 @@ def main() -> int:
     require(gate_position < operation_position, 'Automation mutation callback can run before fail-closed gate', errors)
     require('detail=str(exc)' not in automation_routes, 'Automation Control must not disclose exception text', errors)
     require(
-        "'mutations_enabled': bool(current_app.config.get('AUTOMATION_CONTROL_MUTATIONS_ENABLED', False))"
+        "mutations_enabled = bool(current_app.config.get('AUTOMATION_CONTROL_MUTATIONS_ENABLED', False))"
         in automation_presentation,
         'Automation Control presentation must expose default-safe mutation state',
         errors,
     )
     require(
-        "'posture': {'label': 'Reserved Plan', 'tone': 'unknown'}" in automation_presentation,
-        'Automation Control pre-feature-completion posture must remain Reserved Plan',
+        "'posture': overview_state['posture']" in automation_presentation,
+        'Automation Control posture must be derived from current automation state',
         errors,
     )
     require(
@@ -132,6 +133,8 @@ def main() -> int:
         'Automation Control environment enablement must remain deferred during baseline lock',
         errors,
     )
+    require('Governance Only' in automation_overview, 'Automation Control must communicate factual governance-only posture while mutations are disabled', errors)
+    require('DOMAIN_DEFINITIONS' not in automation_presentation, 'Legacy Automation Control Foundation Map must not return', errors)
 
     require(
         'def get_alert_intelligence_payload(' not in intelligence_service,
@@ -249,7 +252,7 @@ def main() -> int:
         errors,
     )
     require('data-detail-row' in catalog_records, 'Rule Catalog adjacent detail-row ownership missing', errors)
-    require('Read-Only Governance' in automation_page, 'Automation Control must communicate read-only posture', errors)
+    require('Governance Only' in automation_page, 'Automation Control must communicate governance-only posture while mutations are disabled', errors)
 
     for required in (
         'baseline-locked',

@@ -10,7 +10,15 @@ from app.notification_channels.contracts import NotificationChannelFormInput
 _SUPPORTED_PROVIDERS = {'telegram', 'email', 'microsoft_teams'}
 _TEAMS_WORKFLOW_SUFFIXES = ('.environment.api.powerplatform.com', '.logic.azure.com')
 _EMAIL_SECURITY_MODES = {'starttls', 'tls', 'none'}
-_SUPPORTED_EVENT_TYPES = {'alert_intelligence.active_alert', 'report.generated'}
+_SUPPORTED_EVENT_TYPES = {
+    'alert_intelligence.active_alert',
+    'report.generated',
+    'automation.approval_required',
+    'automation.execution_started',
+    'automation.execution_completed',
+    'automation.execution_failed',
+    'automation.verification_failed',
+}
 
 
 def parse_channel_form(

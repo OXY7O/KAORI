@@ -2,41 +2,115 @@
 
 ## Purpose
 
-The Automation Control Center provides one governed operator surface for KAORI
-Domain 1–20 without collapsing their domain boundaries. Existing domain-specific
-pages remain authoritative for Authentication, Jobs, Kubernetes, Prometheus,
-Alertmanager, Integrations, Recommendations, Alert Intelligence, and Rule
-Catalog. The new application-layer workspace consolidates the backend-only
-operational paths introduced by Domains 8–20.
+Automation Control is KAORI's governed bridge from Intelligence evidence to future controlled execution. It does not own rule evaluation, Alertmanager routing, Kubernetes inventory, or provider-specific mutation logic. It coordinates their public contracts into an operator-facing decision, execution-safety, and readiness workspace.
 
 Route: `GET /intelligence/automation-control`
 
 Navigation: **Intelligence → Automation Control**
 
-Ownership boundary: `app/automation_control/` is an application orchestration
-layer. Knowledge, Intelligence, Resolver, and Integration domains do not import
-it. This prevents a cross-domain dependency cycle while preserving their public
-service contracts.
+Ownership boundary: `app/automation_control/` remains an application orchestration layer. Knowledge, Intelligence, Resolver, Notification Channels, and Integration domains do not import it. Automation Control may consume their public read/service contracts without creating reverse dependencies.
 
 ## Workspace structure
 
-| Workspace | Domain coverage | Operator capability |
-|---|---:|---|
-| Foundation Map | 1–20 | Shows the domain, layer, existing/new operator surface, and persisted safety evidence. |
-| Runbooks & Bindings | 12–14 | Creates stable runbooks, immutable draft revisions, publication validation, withdrawal, and deterministic alert bindings. |
-| Decision Review | 8–9, 15, 18 | Reviews non-executable candidates, creates immutable decisions, records approval/rejection, and observes execution journals. |
-| Resolver Operations | 10–11, 16–19 | Manages registry-aware deployment policy, global/cluster operational controls, resolver metrics, and explicit dead-letter requeue. |
-| Production Readiness | 20 | Records the complete readiness checklist and advances rollout through Disabled → Shadow → Non-Production → Canary → Production. |
+| Workspace | Operator question | Current capability |
+|---|---|---|
+| Overview | What is the automation control posture right now? | Decision pipeline, pending work, execution activity, mutation state, safety controls, production readiness, notification delivery, and the controlled pilot boundary. |
+| Runbooks & Bindings | Which evidence can map to which governed procedure? | Stable runbooks, immutable revisions, approval policy, rollback evidence, resolver action identity, and deterministic alert/rule bindings. |
+| Decision Review | What is awaiting accountable review? | Non-executable candidates, immutable decisions, policy outcome, approval requirement, evidence hash, scope, and expiry. |
+| Execution Control | What can execute and what is happening now? | Resolver registry, deployment policies, safety controls, execution journals, retry state, and dead letters. |
+| Production Readiness | What still blocks controlled execution? | Mutation gate, registry coverage, deployment policy, readiness evidence, Notification Channel coverage, and ordered rollout stage. |
 
-The page shell includes one partial for each workspace. This is a deliberate
-maintainability boundary: changes to one operator flow do not require editing a
-single monolithic template.
+The old Domain 1–20 Foundation Map is no longer an operator surface. Architecture implementation history remains documented elsewhere; Automation Overview now reports operational control state.
 
-## Mutation boundaries
+## Current mutation boundary
 
-All state changes are POST-only, CSRF-protected, permission-gated, audited by the
-owning domain service, and returned through POST/Redirect/GET with KAORI transient
-feedback.
+`AUTOMATION_CONTROL_MUTATIONS_ENABLED` resolves false when absent and is deliberately not exposed through `.env.example` or `.env.production.example` during the current baseline lock.
+
+When disabled:
+
+- read/evidence workspaces remain available;
+- direct POST requests fail closed before invoking the operation callback;
+- feedback is **Automation Mutation Disabled**;
+- the page posture is **Governance Only**;
+- runbook, decision, deployment-policy, safety-control, dead-letter, readiness-stage, and infrastructure mutations are not applied.
+
+This state is not labelled `Reserved Plan`: the control/evidence capability exists; only state-changing control-plane behavior is intentionally disabled.
+
+## Governed lifecycle
+
+```text
+Evidence
+   ↓
+Runbook Match
+   ↓
+Decision Candidate
+   ↓
+Decision & Approval
+   ↓
+Controlled Execution
+   ↓
+Post-action Verification
+```
+
+A candidate is never executable. A persisted decision remains separate from an execution journal. Resolver/API success remains separate from remediation verification.
+
+## Resolver execution boundary
+
+Only typed, registered actions may cross the resolver boundary. Arbitrary shell commands or free-form `kubectl` execution are not part of the automation contract.
+
+The intended first controlled execution pilot remains:
+
+```text
+kubernetes.deployment.restart
+```
+
+Registration alone does not make the action executable. The pilot requires:
+
+1. immutable runbook revision and deterministic binding;
+2. explicit decision policy and approval when required;
+3. active cluster/namespace deployment policy;
+4. current resolver-registry fingerprint;
+5. server-side dry-run evidence;
+6. rollback definition;
+7. global/cluster safety-control admission;
+8. complete production-readiness checks;
+9. execution journal and Activity Audit evidence;
+10. Notification Channel coverage for automation lifecycle events; and
+11. post-action verification before remediation is considered successful.
+
+## Notification delivery
+
+Notification Channels remains Integrations-owned. Automation Control only declares delivery-event contracts:
+
+- `automation.approval_required`
+- `automation.execution_started`
+- `automation.execution_completed`
+- `automation.execution_failed`
+- `automation.verification_failed`
+
+Configured Telegram, Email, or Microsoft Teams channels may opt into those uses. No provider credential or transport code belongs in Automation Control.
+
+## Production-readiness semantics
+
+Readiness is not one boolean. The UI reports these independently:
+
+- Mutation Gate
+- Resolver Registry
+- Active Deployment Policies
+- Readiness Evidence
+- Notification Delivery
+- Global Kill Switch
+- Maintenance Mode
+
+Rollout remains ordered:
+
+```text
+Disabled → Shadow → Non-Production → Canary → Production
+```
+
+Stage skipping remains prohibited.
+
+## Permission boundaries
 
 | Capability | Required permission |
 |---|---|
@@ -47,84 +121,19 @@ feedback.
 | Approve or reject decision | `intelligence.decisions.approve` |
 | Manage policy/control/readiness/dead letters | `intelligence.decisions.execute` |
 
-The UI deliberately does **not** expose direct resolver dispatch. Resolver
-workers enforce the immutable decision token, registered action, active deployment
-policy, namespace allowlist, registry fingerprint parity, executable rollout
-stage, cluster-environment boundary, and Domain 19 operational controls before
-acquiring the distributed execution lease.
+Permissions do not bypass the global mutation gate.
 
-## Deployment-policy validation
+## Quality contract
 
-An active deployment policy is accepted only when:
+`scripts/verify_automation_control.py` locks:
 
-1. the selected cluster exists;
-2. the resolver action is present in the committed registry;
-3. at least one explicit namespace is allow-listed; and
-4. an optional registry fingerprint matches the registered action.
+- default fail-closed mutation behavior;
+- no environment-configured mutation enablement;
+- operational Overview ownership rather than Foundation Map ownership;
+- factual Governance Only / Mutation Disabled wording;
+- Decision Review vs Execution Control separation;
+- Production Readiness evidence boundaries;
+- automation Notification Channel allowed-use keys; and
+- the `kubernetes.deployment.restart` controlled-pilot identity.
 
-A disabled policy may remain stored without an allow-list so operators can stage
-configuration before activation.
-
-## Operational-control uniqueness
-
-KAORI permits one global resolver control (`cluster_id IS NULL`) and one control
-per cluster. PostgreSQL ordinary unique constraints allow multiple `NULL` values,
-so migration `20260723_resolver_controls` uses an expression unique index over
-`COALESCE(cluster_id, '__global__')`. The SQLAlchemy model declares the same index
-so fresh schema generation and Alembic upgrades retain identical semantics.
-
-## Files changed
-
-- `app/automation_control/__init__.py`: application-layer package boundary.
-- `app/automation_control/presentation.py`: Domain 1–20 map, pagination, read models, policy validation, and UI-safe row projection.
-- `app/automation_control/routes.py`: GET workspace plus POST-only governed mutation boundaries.
-- `app/templates/intelligence/automation_control.html`: KAORI Violet shell, workspace navigation, shared feedback, and partial inclusion.
-- `app/templates/intelligence/partials/automation_control/_overview.html`: Domain 1–20 foundation map.
-- `app/templates/intelligence/partials/automation_control/_runbooks.html`: runbook, revision, and alert-binding workflow.
-- `app/templates/intelligence/partials/automation_control/_decisions.html`: candidate and immutable-decision review workflow.
-- `app/templates/intelligence/partials/automation_control/_operations.html`: deployment policy, controls, journals, and resolver observations.
-- `app/templates/intelligence/partials/automation_control/_readiness.html`: readiness evidence and staged rollout workflow.
-- `app/templates/components/navigation/intelligence_menu.html`: Intelligence navigation entry.
-- `app/common/navigation.py`: breadcrumb registration.
-- `tests/contracts/intelligence/test_automation_control_ui_contract.py`: source-level safety, coverage, and template-boundary contract.
-- `tests/intelligence/test_automation_control_behavior.py`: functional behavior for pagination and deployment-policy guardrails.
-- `tests/migrations/test_migration_graph_contract.py`: migration graph, revision-width, and global-control uniqueness contracts.
-
-## Deployment validation
-
-Run in this order from the repository root:
-
-```bash
-python -m pip install -r requirements/dev.txt
-python -m compileall -q app migrations scripts tests
-python scripts/verify_migration_graph.py
-python scripts/verify_architecture_boundaries.py
-pytest -q tests/contracts tests/migrations
-pytest -q tests/intelligence/test_automation_control_behavior.py
-flask db current
-flask db upgrade
-flask db current
-```
-
-After deployment:
-
-1. Open **Intelligence → Automation Control**.
-2. Confirm all five workspaces load for a user with `intelligence.view`.
-3. Confirm mutation controls are absent when the user lacks the associated permission.
-4. Create a draft runbook revision and verify publication remains blocked when resolver capability/profile validation fails.
-5. Attempt an active deployment policy without namespaces and confirm KAORI rejects it.
-6. Record incomplete readiness evidence and verify Canary/Production remain blocked.
-7. Verify an Activity Audit Log entry is present for every successful mutation.
-
-## Rollback
-
-Application rollback is safe because the UI does not alter execution semantics.
-Revert the application commit and retain the resolver tables when operational
-evidence must be preserved. For a full schema rollback, perform a database backup
-first and downgrade from `20260723_resolver_readiness` through the resolver
-migrations in reverse order. Downgrade removes readiness, operational-control,
-and deployment-policy records and therefore destroys rollout evidence.
-
-Do not manually truncate Alembic revision IDs in `alembic_version`. The failed
-upgrade that exposed the 32-character limit runs inside PostgreSQL transactional
-DDL; verify the current revision and rerun the corrected migration graph.
+The verifier runs in the static quality gate and the Intelligence release surface.

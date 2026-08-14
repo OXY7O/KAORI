@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
-from dataclasses import dataclass
 from typing import Any
 
 from flask import current_app
 
+from app.automation_control.overview import build_automation_overview
 from app.common.pagination import PER_PAGE_OPTIONS, build_pagination_window
 from app.common.presentation import present_key_label, present_user_datetime
 from app.extensions.db import db
@@ -32,126 +32,6 @@ from app.resolver.production_readiness import REQUIRED_CHECKS, STAGE_ORDER, asse
 WORKSPACE_KEYS = ('overview', 'runbooks', 'decisions', 'operations', 'readiness')
 
 
-@dataclass(frozen=True, slots=True)
-class DomainDefinition:
-    number: int
-    title: str
-    layer: str
-    operator_surface: str
-    evidence: str
-
-
-DOMAIN_DEFINITIONS: tuple[DomainDefinition, ...] = (
-    DomainDefinition(
-        1, 'Authentication & RBAC Hardening', 'Access', 'Existing Settings UI', 'Server-side permission enforcement'
-    ),
-    DomainDefinition(
-        2,
-        'Job & Integration Runtime Safety',
-        'Runtime',
-        'Existing Jobs and Integrations UI',
-        'Admission locks and terminal-state integrity',
-    ),
-    DomainDefinition(
-        3,
-        'Kubernetes Canonical Inventory',
-        'Inventory',
-        'Existing Kubernetes UI',
-        'Atomic committed inventory generation',
-    ),
-    DomainDefinition(
-        4, 'Prometheus Runtime Stabilization', 'Metrics', 'Existing Prometheus UI', 'Capability-aware source selection'
-    ),
-    DomainDefinition(
-        5,
-        'Alertmanager Runtime Stabilization',
-        'Alerts',
-        'Existing Alertmanager UI',
-        'Lifecycle-aware alert source selection',
-    ),
-    DomainDefinition(
-        6,
-        'Shared Integration Foundation',
-        'Integration',
-        'Existing Integrations UI',
-        'Canonical provider lifecycle contract',
-    ),
-    DomainDefinition(
-        7,
-        'Intelligence Evidence Consistency',
-        'Intelligence',
-        'Recommendations & Catalog',
-        'Committed-generation recommendation evidence',
-    ),
-    DomainDefinition(
-        8, 'Decision Execution Boundary', 'Decision', 'Decision Review', 'Immutable time-bounded decision snapshot'
-    ),
-    DomainDefinition(
-        9, 'Decision Approval Workflow', 'Decision', 'Decision Review', 'Persisted approval and rejection evidence'
-    ),
-    DomainDefinition(
-        10, 'Safe Resolver Engine', 'Resolver', 'Resolver Operations', 'Provider-neutral allowlisted action contract'
-    ),
-    DomainDefinition(
-        11,
-        'Distributed Execution Orchestration',
-        'Resolver',
-        'Resolver Operations',
-        'Lease, retry, dead-letter, and idempotency state',
-    ),
-    DomainDefinition(
-        12,
-        'Knowledge Runbook Foundation',
-        'Knowledge',
-        'Runbooks & Bindings',
-        'Stable identity and immutable revisions',
-    ),
-    DomainDefinition(
-        13,
-        'Runbook Authoring Validation',
-        'Knowledge',
-        'Runbooks & Bindings',
-        'Publication validation against resolver contracts',
-    ),
-    DomainDefinition(
-        14, 'Alert-to-Runbook Matching', 'Knowledge', 'Runbooks & Bindings', 'Deterministic alert selector binding'
-    ),
-    DomainDefinition(
-        15, 'Candidate Review & Promotion', 'Decision', 'Decision Review', 'Non-executable review candidate lifecycle'
-    ),
-    DomainDefinition(
-        16, 'Kubernetes Resolver Adapter', 'Resolver', 'Resolver Operations', 'Allowlisted deployment restart adapter'
-    ),
-    DomainDefinition(
-        17,
-        'Resolver Registry & Deployment Policy',
-        'Resolver',
-        'Resolver Operations',
-        'Registry fingerprint and scoped policy',
-    ),
-    DomainDefinition(
-        18,
-        'End-to-End Remediation Workflow',
-        'Automation',
-        'Decision Review',
-        'Explicit alert-to-review-to-resolver transitions',
-    ),
-    DomainDefinition(
-        19,
-        'Operational Controls & Observability',
-        'Operations',
-        'Resolver Operations',
-        'Kill switch, limits, circuit breaker, dead letter',
-    ),
-    DomainDefinition(
-        20,
-        'Production Readiness & Rollout',
-        'Governance',
-        'Production Readiness',
-        'Evidence checklist and staged rollout',
-    ),
-)
-
 
 def build_automation_control_context(query_args: Mapping[str, Any]) -> dict[str, Any]:
     workspace = str(query_args.get('workspace') or 'overview').strip().lower()
@@ -164,6 +44,11 @@ def build_automation_control_context(query_args: Mapping[str, Any]) -> dict[str,
     cluster_names = {str(cluster.id): cluster.name for cluster in clusters}
     registry_rows, registry_fingerprint = _registry_rows()
 
+    mutations_enabled = bool(current_app.config.get('AUTOMATION_CONTROL_MUTATIONS_ENABLED', False))
+    overview_state = build_automation_overview(
+        mutations_enabled=mutations_enabled,
+        registry_rows=registry_rows,
+    )
     counts = {
         'runbooks': KnowledgeRunbook.query.count(),
         'published_revisions': KnowledgeRunbookRevision.query.filter_by(publication_status='published').count(),
@@ -173,6 +58,7 @@ def build_automation_control_context(query_args: Mapping[str, Any]) -> dict[str,
         ).count(),
         'dead_letters': IntelligenceExecutionJournal.query.filter_by(orchestration_status='dead_letter').count(),
         'readiness_records': ResolverProductionReadinessRecord.query.count(),
+        **overview_state['counts'],
     }
 
     workspace_rows = _workspace_rows(workspace)
@@ -181,8 +67,9 @@ def build_automation_control_context(query_args: Mapping[str, Any]) -> dict[str,
         'workspaces': workspace_rows,
         'workspace_tabs': _workspace_tabs(),
         'active_workspace': next(item for item in workspace_rows if item['active']),
-        'mutations_enabled': bool(current_app.config.get('AUTOMATION_CONTROL_MUTATIONS_ENABLED', False)),
-        'posture': {'label': 'Reserved Plan', 'tone': 'unknown'},
+        'mutations_enabled': mutations_enabled,
+        'posture': overview_state['posture'],
+        'overview_state': overview_state,
         'counts': counts,
         'clusters': clusters,
         'cluster_names': cluster_names,
@@ -192,13 +79,13 @@ def build_automation_control_context(query_args: Mapping[str, Any]) -> dict[str,
         'stage_order': STAGE_ORDER,
         'per_page_options': PER_PAGE_OPTIONS,
         'global_control': ResolverOperationalControl.query.filter_by(cluster_id=None).one_or_none(),
-        'domain_rows': [],
         'runbook_rows': [],
         'revision_rows': [],
         'binding_rows': [],
         'candidate_rows': [],
         'decision_rows': [],
         'journal_rows': [],
+        'dead_letter_rows': [],
         'policy_rows': [],
         'control_rows': [],
         'readiness_rows': [],
@@ -207,14 +94,7 @@ def build_automation_control_context(query_args: Mapping[str, Any]) -> dict[str,
     }
 
     if workspace == 'overview':
-        rows = [_domain_row(item) for item in DOMAIN_DEFINITIONS]
-        grouped: dict[str, list[dict[str, Any]]] = {}
-        for row in rows:
-            grouped.setdefault(str(row['layer']), []).append(row)
-        payload['domain_rows'] = rows
-        payload['domain_groups'] = [{'layer': layer, 'items': items} for layer, items in grouped.items()]
-        payload['pagination'] = None
-        payload['resource_label'] = 'domains'
+        payload.update(_overview_activity(cluster_names))
     elif workspace == 'runbooks':
         query = KnowledgeRunbook.query.order_by(KnowledgeRunbook.updated_at.desc(), KnowledgeRunbook.id.desc())
         records, pagination = _paginate_query(query, page=page, per_page=per_page)
@@ -257,14 +137,6 @@ def build_automation_control_context(query_args: Mapping[str, Any]) -> dict[str,
             .limit(10)
             .all()
         ]
-        payload['journal_rows'] = [
-            _journal_row(record, cluster_names)
-            for record in IntelligenceExecutionJournal.query.order_by(
-                IntelligenceExecutionJournal.created_at.desc(), IntelligenceExecutionJournal.id.desc()
-            )
-            .limit(10)
-            .all()
-        ]
         payload['pagination'] = pagination
         payload['resource_label'] = 'candidates'
     elif workspace == 'operations':
@@ -280,6 +152,12 @@ def build_automation_control_context(query_args: Mapping[str, Any]) -> dict[str,
             ).all()
         ]
         payload['journal_rows'] = [
+            _journal_row(record, cluster_names)
+            for record in IntelligenceExecutionJournal.query.order_by(
+                IntelligenceExecutionJournal.updated_at.desc(), IntelligenceExecutionJournal.id.desc()
+            ).limit(10).all()
+        ]
+        payload['dead_letter_rows'] = [
             _journal_row(record, cluster_names)
             for record in IntelligenceExecutionJournal.query.filter_by(orchestration_status='dead_letter')
             .order_by(IntelligenceExecutionJournal.updated_at.desc(), IntelligenceExecutionJournal.id.desc())
@@ -299,6 +177,25 @@ def build_automation_control_context(query_args: Mapping[str, Any]) -> dict[str,
         payload['resource_label'] = 'readiness records'
 
     return payload
+
+
+def _overview_activity(cluster_names: Mapping[str, str]) -> dict[str, Any]:
+    candidates = IntelligenceDecisionCandidate.query.order_by(
+        IntelligenceDecisionCandidate.created_at.desc(), IntelligenceDecisionCandidate.id.desc()
+    ).limit(5).all()
+    decisions = IntelligenceDecision.query.order_by(
+        IntelligenceDecision.created_at.desc(), IntelligenceDecision.id.desc()
+    ).limit(5).all()
+    journals = IntelligenceExecutionJournal.query.order_by(
+        IntelligenceExecutionJournal.updated_at.desc(), IntelligenceExecutionJournal.id.desc()
+    ).limit(5).all()
+    return {
+        'candidate_rows': [_candidate_row(record, cluster_names) for record in candidates],
+        'decision_rows': [_decision_row(record, cluster_names) for record in decisions],
+        'journal_rows': [_journal_row(record, cluster_names) for record in journals],
+        'pagination': None,
+        'resource_label': 'automation activity',
+    }
 
 
 def upsert_deployment_policy(
@@ -359,10 +256,10 @@ def upsert_deployment_policy(
 
 def _workspace_tabs() -> list[dict[str, str]]:
     definitions = (
-        ('overview', 'Foundation', 'layers-3'),
+        ('overview', 'Overview', 'layout-dashboard'),
         ('runbooks', 'Runbooks & Bindings', 'book-open-check'),
         ('decisions', 'Decision Review', 'clipboard-check'),
-        ('operations', 'Resolver Operations', 'server-cog'),
+        ('operations', 'Execution Control', 'server-cog'),
         ('readiness', 'Production Readiness', 'shield-check'),
     )
     from flask import url_for
@@ -375,19 +272,19 @@ def _workspace_tabs() -> list[dict[str, str]]:
 
 def _workspace_rows(active: str) -> list[dict[str, str | bool]]:
     definitions = (
-        ('overview', 'Foundation', 'layers-3', 'Domains 1–20 grouped by operational layer.'),
+        ('overview', 'Overview', 'layout-dashboard', 'Review decision flow, execution posture, safety controls, and delivery readiness.'),
         (
             'runbooks',
             'Runbooks & Bindings',
             'book-open-check',
-            'Author, validate, publish, and bind immutable runbooks.',
+            'Review immutable runbooks, alert bindings, resolver actions, and execution eligibility.',
         ),
-        ('decisions', 'Decision Review', 'clipboard-check', 'Review candidates, approvals, and execution journals.'),
+        ('decisions', 'Decision Review', 'clipboard-check', 'Review candidates, immutable decisions, approval requirements, scope, and expiry.'),
         (
             'operations',
-            'Resolver Operations',
+            'Execution Control',
             'server-cog',
-            'Control deployment policy, safety posture, and dead letters.',
+            'Review resolver registry, deployment policy, safety controls, execution journals, and dead letters.',
         ),
         ('readiness', 'Production Readiness', 'shield-check', 'Record evidence and advance staged rollout.'),
     )
@@ -430,21 +327,20 @@ def _paginate_sequence(rows: Sequence[Any], *, page: Any, per_page: Any) -> tupl
     }
 
 
-def _domain_row(item: DomainDefinition) -> dict[str, Any]:
-    return {
-        'number': item.number,
-        'title': item.title,
-        'layer': item.layer,
-        'operator_surface': item.operator_surface,
-        'evidence': item.evidence,
-        'status': 'Operational foundation',
-        'tone': 'normal',
-    }
-
 
 def _runbook_row(record: KnowledgeRunbook) -> dict[str, Any]:
     revisions = list(record.revisions or [])
     published = [item for item in revisions if item.publication_status == 'published']
+    revision_ids = [item.id for item in revisions]
+    binding_count = (
+        KnowledgeRunbookAlertBinding.query.filter(
+            KnowledgeRunbookAlertBinding.runbook_revision_id.in_(revision_ids),
+            KnowledgeRunbookAlertBinding.lifecycle_status == 'active',
+        ).count()
+        if revision_ids
+        else 0
+    )
+    latest_published = max(published, key=lambda item: item.published_at or item.created_at) if published else None
     return {
         'id': record.id,
         'key': record.runbook_key,
@@ -453,12 +349,20 @@ def _runbook_row(record: KnowledgeRunbook) -> dict[str, Any]:
         'status': record.lifecycle_status,
         'revision_count': len(revisions),
         'published_count': len(published),
+        'binding_count': binding_count,
+        'latest_published_version': latest_published.version if latest_published else '-',
         'updated_at': present_user_datetime(record.updated_at),
     }
 
 
 def _revision_row(record: KnowledgeRunbookRevision) -> dict[str, Any]:
     validation = record.publication_validation_json or {}
+    execution_modes = {
+        'blocked': ('Advisory Only', 'unknown'),
+        'needs_approval': ('Approval Required', 'warning'),
+        'allowed': ('Policy Eligible', 'info'),
+    }
+    execution_mode, execution_tone = execution_modes.get(record.approval_policy, ('Unknown', 'unknown'))
     return {
         'id': record.id,
         'runbook_key': record.runbook.runbook_key,
@@ -467,6 +371,9 @@ def _revision_row(record: KnowledgeRunbookRevision) -> dict[str, Any]:
         'resolver_key': record.resolver_key,
         'status': record.publication_status,
         'approval_policy': record.approval_policy,
+        'execution_mode': execution_mode,
+        'execution_tone': execution_tone,
+        'rollback_defined': bool(record.rollback_json),
         'validation_valid': validation.get('valid'),
         'validation_errors': list(validation.get('errors') or []),
         'created_at': present_user_datetime(record.created_at),
@@ -496,6 +403,8 @@ def _candidate_row(record: IntelligenceDecisionCandidate, cluster_names: Mapping
         'action_key': candidate.get('action_key') or '-',
         'runbook_key': candidate.get('runbook_key') or '-',
         'runbook_version': candidate.get('runbook_version') or '-',
+        'approval_policy': candidate.get('approval_policy') or 'unknown',
+        'resolver_key': candidate.get('resolver_key') or '-',
         'cluster': cluster_names.get(str(record.cluster_id), record.cluster_id or 'Global'),
         'namespace': record.namespace or 'All namespaces',
         'severity': record.severity,
@@ -518,6 +427,7 @@ def _decision_row(record: IntelligenceDecision, cluster_names: Mapping[str, str]
         'policy': record.policy_outcome,
         'approval_required': record.approval_required,
         'status': record.workflow_status,
+        'evidence_hash': record.evidence_hash,
         'expires_at': present_user_datetime(record.expires_at),
     }
 
@@ -605,6 +515,7 @@ def _resolver_metrics() -> dict[str, int]:
         'queued': int(statuses.get('queued', 0)),
         'running': int(statuses.get('running', 0)),
         'retry_wait': int(statuses.get('retry_wait', 0)),
+        'completed': int(statuses.get('completed', 0)),
         'dead_letter': int(statuses.get('dead_letter', 0)),
     }
 

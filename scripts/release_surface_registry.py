@@ -142,9 +142,12 @@ SURFACES: tuple[ReleaseSurface, ...] = (
             'automation_control.index',
         ),
         blueprint_vars=('intelligence_bp', 'alert_intelligence_bp', 'automation_control_bp'),
-        verifiers=('scripts/verify_intelligence_baseline_lock.py',),
+        verifiers=(
+            'scripts/verify_intelligence_baseline_lock.py',
+            'scripts/verify_automation_control.py',
+        ),
         contract_paths=('tests/contracts/intelligence',),
-        notes='Alert Intelligence supports Kubernetes/Object Storage. Automation mutations and Server/HCI capability remain deferred and fail-closed.',
+        notes='Alert Intelligence supports Kubernetes/Object Storage. Automation Control is governance-complete and mutation-disabled by default; Server/HCI capability remains deferred.',
     ),
     ReleaseSurface(
         key='reports',
