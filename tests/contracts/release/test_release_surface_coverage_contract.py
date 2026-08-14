@@ -17,8 +17,8 @@ def read(relative: str) -> str:
 
 
 def test_release_registry_closes_navigation_and_blueprint_inventory() -> None:
-    assert len(navigation_endpoints()) == 52
-    assert len(set(navigation_endpoints())) == 52
+    assert len(navigation_endpoints()) == 58
+    assert len(set(navigation_endpoints())) == 58
     assert len(blueprint_vars()) == 23
     assert len(set(blueprint_vars())) == 23
     assert len(SURFACES) == 16
@@ -32,7 +32,7 @@ def test_general_release_titles_stay_short() -> None:
     assert set(SHORT_LABELS) == {surface.title for surface in SURFACES}
     assert all(len(label) <= 18 for label in SHORT_LABELS.values())
     assert all('Final Lock' not in label and 'Baseline Lock' not in label for label in SHORT_LABELS.values())
-    assert SHORT_LABELS['Kubernetes Analytics'] == 'Analytics'
+    assert SHORT_LABELS['Analytics'] == 'Analytics'
     assert SHORT_LABELS['Platform Operations'] == 'Platform Ops'
     assert SHORT_LABELS['Notification Center'] == 'Notifications'
 
@@ -83,7 +83,7 @@ def test_cluster_listing_legacy_chain_is_retired_and_guarded() -> None:
 def test_release_coverage_documentation_keeps_explicit_incomplete_feature_state() -> None:
     documentation = read('docs/architecture/RELEASE_SURFACE_COVERAGE.md')
     for token in (
-        '52 navigation links',
+        '58 navigation links',
         '23 registered blueprints',
         'Intelligence | BASELINE LOCKED',
         'Runtime Health | SYSTEM LOCKED',

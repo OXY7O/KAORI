@@ -1,19 +1,20 @@
-{% set analytics_active = request.endpoint and request.endpoint.startswith('analytics.') %}
+{% set object_storage_analytics_active = request.endpoint and request.endpoint.startswith('analytics.object_storage_') %}
+{% set k8s_analytics_active = request.endpoint and request.endpoint.startswith('analytics.') and not object_storage_analytics_active %}
 <details class="sidebar-menu space-y-1"
-         {% if analytics_active %}open{% endif %}>
+         {% if k8s_analytics_active %}open{% endif %}>
     <!-- Analytics Parent -->
-    <summary class="{{ 'sidebar-parent-active' if analytics_active else 'sidebar-item-idle' }} sidebar-parent-link group flex cursor-pointer select-none items-center justify-between min-h-11 rounded-lg px-2.5 py-2 text-base font-semibold leading-6 transition [.sidebar-collapsed_&]:justify-center [.sidebar-collapsed_&]:px-2"
+    <summary class="{{ 'sidebar-parent-active' if k8s_analytics_active else 'sidebar-item-idle' }} sidebar-parent-link group flex cursor-pointer select-none items-center justify-between min-h-11 rounded-lg px-2.5 py-2 text-base font-semibold leading-6 transition [.sidebar-collapsed_&]:justify-center [.sidebar-collapsed_&]:px-2"
              title="K8s Analytics"
              aria-label="K8s Analytics"
              @click="if (!sidebarExpanded) { $event.preventDefault(); toggleSidebar(); $el.parentElement.open = true }">
         <div class="flex min-w-0 items-center gap-2.5">
-            <span class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg {{ 'sidebar-parent-active-icon' if analytics_active else 'sidebar-item-idle-icon' }} transition">
+            <span class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg {{ 'sidebar-parent-active-icon' if k8s_analytics_active else 'sidebar-item-idle-icon' }} transition">
                 <i data-lucide="chart-column" class="h-4 w-4"></i>
             </span>
             <span class="sidebar-expanded-only truncate whitespace-nowrap">K8s Analytics</span>
         </div>
         <i data-lucide="chevron-right"
-           class="sidebar-expanded-only sidebar-menu-chevron h-4 w-4 {{ 'text-kaori-accent' if analytics_active else 'text-white/[0.35]' }}"></i>
+           class="sidebar-expanded-only sidebar-menu-chevron h-4 w-4 {{ 'text-kaori-accent' if k8s_analytics_active else 'text-white/[0.35]' }}"></i>
     </summary>
     <!-- Analytics Sub Menu -->
     <div class="sidebar-expanded-only sidebar-submenu ml-6 mt-1 space-y-1 border-l border-white/10 pl-3">
@@ -65,5 +66,30 @@
             <i data-lucide="triangle-alert" class="h-3.5 w-3.5"></i>
             <span class="truncate whitespace-nowrap">Alerts &amp; Anomalies</span>
         </a>
+    </div>
+</details>
+
+<details class="sidebar-menu space-y-1"
+         {% if object_storage_analytics_active %}open{% endif %}>
+    <summary class="{{ 'sidebar-parent-active' if object_storage_analytics_active else 'sidebar-item-idle' }} sidebar-parent-link group flex cursor-pointer select-none items-center justify-between min-h-11 rounded-lg px-2.5 py-2 text-base font-semibold leading-6 transition [.sidebar-collapsed_&]:justify-center [.sidebar-collapsed_&]:px-2"
+             title="Object Storage Analytics"
+             aria-label="Object Storage Analytics"
+             @click="if (!sidebarExpanded) { $event.preventDefault(); toggleSidebar(); $el.parentElement.open = true }">
+        <div class="flex min-w-0 items-center gap-2.5">
+            <span class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg {{ 'sidebar-parent-active-icon' if object_storage_analytics_active else 'sidebar-item-idle-icon' }} transition">
+                <i data-lucide="database-zap" class="h-4 w-4"></i>
+            </span>
+            <span class="sidebar-expanded-only truncate whitespace-nowrap">Object Storage Analytics</span>
+        </div>
+        <i data-lucide="chevron-right"
+           class="sidebar-expanded-only sidebar-menu-chevron h-4 w-4 {{ 'text-kaori-accent' if object_storage_analytics_active else 'text-white/[0.35]' }}"></i>
+    </summary>
+    <div class="sidebar-expanded-only sidebar-submenu ml-6 mt-1 space-y-1 border-l border-white/10 pl-3">
+        <a href="{{ url_for('analytics.object_storage_overview') }}" class="{{ 'bg-white/[0.08] text-kaori-accent' if request.endpoint == 'analytics.object_storage_overview' else 'sidebar-item-idle' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm leading-5 transition"><span class="h-1.5 w-1.5 rounded-full {{ 'bg-kaori-accent' if request.endpoint == 'analytics.object_storage_overview' else 'bg-white/20 group-hover:bg-white/[0.45]' }}"></span><i data-lucide="layout-dashboard" class="h-3.5 w-3.5"></i><span class="truncate whitespace-nowrap">Overview</span></a>
+        <a href="{{ url_for('analytics.object_storage_capacity') }}" class="{{ 'bg-white/[0.08] text-kaori-accent' if request.endpoint == 'analytics.object_storage_capacity' else 'sidebar-item-idle' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm leading-5 transition"><span class="h-1.5 w-1.5 rounded-full {{ 'bg-kaori-accent' if request.endpoint == 'analytics.object_storage_capacity' else 'bg-white/20 group-hover:bg-white/[0.45]' }}"></span><i data-lucide="database" class="h-3.5 w-3.5"></i><span class="truncate whitespace-nowrap">Capacity &amp; Usage</span></a>
+        <a href="{{ url_for('analytics.object_storage_performance') }}" class="{{ 'bg-white/[0.08] text-kaori-accent' if request.endpoint == 'analytics.object_storage_performance' else 'sidebar-item-idle' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm leading-5 transition"><span class="h-1.5 w-1.5 rounded-full {{ 'bg-kaori-accent' if request.endpoint == 'analytics.object_storage_performance' else 'bg-white/20 group-hover:bg-white/[0.45]' }}"></span><i data-lucide="activity" class="h-3.5 w-3.5"></i><span class="truncate whitespace-nowrap">Performance</span></a>
+        <a href="{{ url_for('analytics.object_storage_forecast') }}" class="{{ 'bg-white/[0.08] text-kaori-accent' if request.endpoint == 'analytics.object_storage_forecast' else 'sidebar-item-idle' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm leading-5 transition"><span class="h-1.5 w-1.5 rounded-full {{ 'bg-kaori-accent' if request.endpoint == 'analytics.object_storage_forecast' else 'bg-white/20 group-hover:bg-white/[0.45]' }}"></span><i data-lucide="line-chart" class="h-3.5 w-3.5"></i><span class="truncate whitespace-nowrap">Forecast</span></a>
+        <a href="{{ url_for('analytics.object_storage_top_consumers') }}" class="{{ 'bg-white/[0.08] text-kaori-accent' if request.endpoint == 'analytics.object_storage_top_consumers' else 'sidebar-item-idle' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm leading-5 transition"><span class="h-1.5 w-1.5 rounded-full {{ 'bg-kaori-accent' if request.endpoint == 'analytics.object_storage_top_consumers' else 'bg-white/20 group-hover:bg-white/[0.45]' }}"></span><i data-lucide="users" class="h-3.5 w-3.5"></i><span class="truncate whitespace-nowrap">Top Consumers</span></a>
+        <a href="{{ url_for('analytics.object_storage_alerts') }}" class="{{ 'bg-white/[0.08] text-kaori-accent' if request.endpoint == 'analytics.object_storage_alerts' else 'sidebar-item-idle' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm leading-5 transition"><span class="h-1.5 w-1.5 rounded-full {{ 'bg-kaori-accent' if request.endpoint == 'analytics.object_storage_alerts' else 'bg-white/20 group-hover:bg-white/[0.45]' }}"></span><i data-lucide="triangle-alert" class="h-3.5 w-3.5"></i><span class="truncate whitespace-nowrap">Alerts &amp; Anomalies</span></a>
     </div>
 </details>

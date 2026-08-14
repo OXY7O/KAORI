@@ -562,3 +562,16 @@ Resource Forecast follows `docs/design/components/ANALYTICS_RESOURCE_FORECAST.md
 CPU, memory, and active-Pod demand are scoped to Ready worker nodes and exclude `control-plane|master`. Duplicate container, Pod, node, and PVC series are normalized before aggregation. Storage compares PVC usage with observed mounted-volume capacity. Resource status uses the highest projected point inside the selected horizon; threshold ETA walks projected points from the latest observation and is bounded by that horizon. Low signal quality is Limited Evidence, never Healthy.
 
 Forecast ownership is split across `contracts.py`, `calculation.py`, `resource.py`, `service.py`, `presentation.py`, and `routes.py`. `/analytics/forecast` is the only workspace route; the unused `/forecast/section` compatibility surface is removed. The chart aligns all resources to one timestamp axis and preserves missing observations as null.
+
+
+## Object Storage Analytics baseline
+
+Object Storage Analytics follows the same KAORI analytics presentation grammar as Kubernetes while preserving a provider-neutral asset boundary. Routes live under the existing `analytics_bp` and use `PrometheusConsumer.for_asset(scope_type="object_storage_system", ...)`; no analytics module reads MinIO credentials or constructs a MinIO client.
+
+Evidence ownership is intentionally split:
+
+- **Committed Object Storage Inventory** provides canonical current state and configuration evidence.
+- **Prometheus binding** provides capacity, usage, request, traffic, bucket, and historical trend evidence.
+- **Alertmanager** is optional for the baseline; metric-derived risk signals remain available while alert lifecycle/routing/correlation is deferred.
+
+The first baseline includes Overview, Capacity & Usage, Performance, Forecast, Top Consumers, and Alerts & Anomalies. Improvements proven here may be promoted into the shared KAORI Analytics standard and selectively backported to Kubernetes Analytics.

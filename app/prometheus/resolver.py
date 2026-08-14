@@ -98,13 +98,7 @@ def _evaluate_binding(
 ) -> ResolvedPrometheusSource:
     readiness = (instance.readiness_status or '').strip().lower()
     health = (instance.last_status or '').strip().lower()
-    capability_payload = binding.validation_evidence or {}
-    observed: set[str] = {str(item) for item in (capability_payload.get('available_capabilities') or ()) if item}
-    observed.update(
-        str(item.get('key'))
-        for item in (capability_payload.get('capability_assessments') or ())
-        if item.get('key') and str(item.get('status') or '').strip().lower() in {'available', 'ready'}
-    )
+    observed = _available_technical_capabilities(binding, instance)
     missing_technical = tuple(sorted(set(required_technical_capabilities) - observed))
 
     if not required_technical_capabilities:
@@ -164,6 +158,32 @@ def _evaluate_binding(
             binding.id,
         ),
     )
+
+
+def _available_technical_capabilities(
+    binding: IntegrationBinding,
+    instance: PrometheusInstance,
+) -> set[str]:
+    """Merge provider-core transport evidence with binding-owned consumer evidence."""
+    provider_payload = instance.capabilities or {}
+    binding_payload = binding.validation_evidence or {}
+    observed: set[str] = {str(item) for item in (provider_payload.get('available') or ()) if item}
+    observed.update(
+        str(item.get('key'))
+        for item in (provider_payload.get('assessments') or ())
+        if isinstance(item, dict)
+        and item.get('key')
+        and str(item.get('status') or '').strip().lower() in {'available', 'ready'}
+    )
+    observed.update(str(item) for item in (binding_payload.get('available_capabilities') or ()) if item)
+    observed.update(
+        str(item.get('key'))
+        for item in (binding_payload.get('capability_assessments') or ())
+        if isinstance(item, dict)
+        and item.get('key')
+        and str(item.get('status') or '').strip().lower() in {'available', 'ready'}
+    )
+    return observed
 
 
 def _operational_rank(*, readiness: str, health: str) -> tuple[int, str]:

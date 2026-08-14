@@ -51,10 +51,9 @@ def main() -> int:
     assert 'validation_profile:' in model
     assert 'validation_evidence:' in model
     assert 'binding.validation_evidence or {}' in resolver
-    assert (
-        'instance.capabilities or {}'
-        not in resolver.split('def _evaluate_binding', 1)[1].split('def _operational_rank', 1)[0]
-    )
+    assert 'instance.capabilities or {}' in resolver
+    assert 'def _available_technical_capabilities' in resolver
+    assert 'observed = _available_technical_capabilities(binding, instance)' in resolver
 
     assert "revision = '20260812_prom_consumer_profiles'" in migration
     assert "down_revision = '20260812_minio_object_storage'" in migration
@@ -87,7 +86,7 @@ def main() -> int:
     assert '## Canonical provider-to-consumer contract' in compatibility_doc
     assert 'Provider Core Validation is product/version/API scoped.' in module_map
     assert 'Provider Core Validation is asynchronous and authoritative only for' in workspace_standard
-    assert 'Consumer eligibility is derived from Binding Validation evidence' in workspace_standard
+    assert 'Consumer eligibility combines provider-owned execution capability evidence' in workspace_standard
 
     print('PASS — Prometheus provider readiness is consumer-neutral and consumer metrics are binding-scoped.')
     return 0

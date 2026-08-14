@@ -132,9 +132,7 @@ Provider
 3. **Binding Validation** proves that one ready provider can serve one managed
    asset. The asset binding selects a consumer profile, selector, and validation
    evidence without changing provider readiness.
-4. **Consumer Eligibility** is derived from the validated binding evidence and
-   the capabilities required by the Inventory, Analytics, Governance, or
-   Operations consumer.
+4. **Consumer Eligibility** combines provider-core execution capability evidence with validated binding evidence for the asset. Transport capabilities such as Prometheus instant/range query remain provider-owned; metric/selector evidence remains consumer-binding-owned.
 5. **Runtime Refresh** performs lightweight provider health observation using
    `integration-runtime` workers and does not replace Core or Binding Validation.
 

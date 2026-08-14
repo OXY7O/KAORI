@@ -182,7 +182,7 @@ def verify() -> None:
             if surface.title not in documentation or surface.lock_state not in documentation:
                 errors.append(f'{surface.title}: release coverage documentation is incomplete')
         for token in (
-            '52 navigation links',
+            '58 navigation links',
             '23 registered blueprints',
             'Cluster Management',
             'Integrations → Orchestration → Kubernetes',
@@ -196,7 +196,7 @@ def verify() -> None:
             print(f'- {error}')
         raise SystemExit(1)
 
-    print('PASS — KAORI Release Coverage · 52 links / 23 blueprints')
+    print('PASS — KAORI Release Coverage · 58 links / 23 blueprints')
 
 
 if __name__ == '__main__':

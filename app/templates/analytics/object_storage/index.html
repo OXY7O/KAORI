@@ -1,0 +1,90 @@
+{% extends "layouts/app.html" %}
+{% import "components/page_hero.html" as page_hero %}
+{% import "analytics/components/_analysis_surfaces.html" as analysis_surface %}
+{% import "analytics/components/_analysis_workspace.html" as analytics_workspace %}
+{% import "components/table_label.html" as table_label %}
+{% block title %}{{ page.title }} · Object Storage Analytics{% endblock title %}
+{% block dashboard_content %}
+    <div id="object-storage-analytics-page"
+         class="kaori-analytics-page space-y-6"
+         data-analytics-page-request-tracking="false">
+        <section class="{{ page_hero.shell_classes() }}">
+            <div class="{{ page_hero.layout_classes() }}">
+                <div class="{{ page_hero.content_classes() }}">
+                    {% call page_hero.intro('database-zap', page.eyebrow, page.icon) %}
+                        <h1 class="{{ page_hero.title_classes() }}">{{ page.title }}</h1>
+                        <p class="mt-2 {{ page_hero.description_classes() }}">{{ page.description }}</p>
+                        <div class="{{ page_hero.metadata_row_classes() }}">
+                            {{ page_hero.meta_label('server', system.name if system else 'No System Selected') }}
+                            {{ page_hero.meta_label('clock-3', selected_time_range) }}
+                            {% if system %}
+                                {{ page_hero.meta_label(
+                                    'database-clock',
+                                    inventory_observed_at|user_datetime('Inventory Not Collected')
+                                ) }}
+                            {% endif %}
+                        </div>
+                    {% endcall %}
+                </div>
+                {{ page_hero.context_card(
+                    'Object Storage Analytics Readiness',
+                    'Operational Analytics',
+                    'Prometheus Evidence',
+                    prometheus.label,
+                    prometheus.tone,
+                    [
+                        (
+                            'database',
+                            'Inventory',
+                            'Committed' if system and inventory_observed_at else 'Pending',
+                            'Canonical state boundary'
+                        ),
+                        ('activity', 'Metrics', prometheus.label, prometheus.detail)
+                    ],
+                    'Manage Prometheus',
+                    url_for('integrations.prometheus'),
+                    'settings-2'
+                ) }}
+            </div>
+        </section>
+
+        {% if dependency_blocker %}
+            <section class="{{ analysis_surface.evidence_shell_classes('p-6') }}">
+                <div class="flex min-h-[260px] flex-col items-center justify-center text-center">
+                    <span class="{{ analysis_surface.semantic_icon_classes('warning', 'large') }}">
+                        <i data-lucide="triangle-alert" class="h-5 w-5"></i>
+                    </span>
+                    <h2 class="mt-4 text-lg font-semibold text-content-primary">{{ dependency_blocker.title }}</h2>
+                    <p class="mt-2 max-w-2xl text-sm leading-6 text-content-muted">
+                        {{ dependency_blocker.description }}
+                    </p>
+                    <a href="{{ url_for(dependency_blocker.action_endpoint) }}"
+                       class="mt-5 inline-flex min-h-10 items-center gap-2 rounded-lg bg-kaori-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover">
+                        <i data-lucide="arrow-right" class="h-4 w-4"></i>
+                        {{ dependency_blocker.action_label }}
+                    </a>
+                </div>
+            </section>
+        {% else %}
+            {% include "analytics/object_storage/partials/_controls.html" %}
+            {% include "analytics/object_storage/partials/_summary.html" %}
+            {% if page_key in ['overview', 'capacity', 'performance', 'forecast'] %}
+                {% include "analytics/object_storage/partials/_trend.html" %}
+            {% endif %}
+            {% if page_key in ['overview', 'capacity', 'top_consumers'] %}
+                {% include "analytics/object_storage/partials/_bucket_table.html" %}
+            {% endif %}
+            {% if page_key == 'alerts' %}
+                {% include "analytics/object_storage/partials/_alerts.html" %}
+            {% endif %}
+            {% include "analytics/object_storage/partials/_evidence_boundary.html" %}
+        {% endif %}
+    </div>
+{% endblock dashboard_content %}
+{% block scripts %}
+    {{ super() }}
+    {% if not dependency_blocker and page_key in ['overview', 'capacity', 'performance', 'forecast'] %}
+        <script src="{{ url_for('static', filename='vendor/chartjs/chart.umd.min.js') }}"></script>
+        <script src="{{ url_for('static', filename='js/object_storage_analytics.js') }}"></script>
+    {% endif %}
+{% endblock scripts %}

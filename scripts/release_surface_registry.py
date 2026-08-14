@@ -104,7 +104,7 @@ SURFACES: tuple[ReleaseSurface, ...] = (
     ),
     ReleaseSurface(
         key='analytics',
-        title='Kubernetes Analytics',
+        title='Analytics',
         lock_state='LOCKED',
         navigation_source='app/templates/components/navigation/analytics_menu.html',
         navigation_endpoints=(
@@ -116,9 +116,18 @@ SURFACES: tuple[ReleaseSurface, ...] = (
             'analytics.forecast',
             'analytics.top_consumers',
             'analytics.alerts',
+            'analytics.object_storage_overview',
+            'analytics.object_storage_capacity',
+            'analytics.object_storage_performance',
+            'analytics.object_storage_forecast',
+            'analytics.object_storage_top_consumers',
+            'analytics.object_storage_alerts',
         ),
         blueprint_vars=('analytics_bp',),
-        verifiers=('scripts/verify_analytics_final_lock.py',),
+        verifiers=(
+            'scripts/verify_analytics_final_lock.py',
+            'scripts/verify_object_storage_analytics_baseline.py',
+        ),
         contract_paths=('tests/contracts/analytics',),
     ),
     ReleaseSurface(

@@ -141,6 +141,7 @@ Effective Consumer Eligibility
 Provider Core Validation is product/version/API scoped. Consumer Profile
 validation is asset/binding scoped. A provider may have many bindings, and each
 binding may have a different consumer profile and readiness state.
+Execution capabilities remain provider-core evidence; asset identity, selector, and domain metric eligibility remain Binding Validation evidence. Consumer source resolution must combine both boundaries without copying provider transport capabilities into each binding.
 
 Compatibility exists at two different layers and must not be confused:
 

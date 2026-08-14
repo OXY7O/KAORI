@@ -4,7 +4,7 @@ Status: **Locked release-coverage contract**
 
 This registry answers one release question: **is every operator-visible menu, nested web domain, and non-navigation system surface explicitly owned by a release verifier or test boundary?**
 
-The current baseline contains **52 navigation links** across the authenticated application shell and **23 registered blueprints**. A new menu link, menu template, or registered Blueprint must be added to the canonical registry in the same change or the general release audit fails closed.
+The current baseline contains **58 navigation links** across the authenticated application shell and **23 registered blueprints**. A new menu link, menu template, or registered Blueprint must be added to the canonical registry in the same change or the general release audit fails closed.
 
 ## Navigation and Surface Matrix
 
@@ -16,7 +16,7 @@ The current baseline contains **52 navigation links** across the authenticated a
 | Object Storage Inventory | LOCKED | Storage → Object Storage | `verify_object_storage_inventory_final_lock.py` |
 | Kubernetes Operations | LOCKED | Kubernetes → Operations | `verify_kubernetes_operations_final_lock.py` |
 | Kubernetes Governance | LOCKED | Kubernetes → Governance | `verify_governance_final_lock.py` |
-| Kubernetes Analytics | LOCKED | Insights & Reporting → K8s Analytics | `verify_analytics_final_lock.py` |
+| Analytics | LOCKED | Insights & Reporting → K8s Analytics + Object Storage Analytics | `verify_analytics_final_lock.py` + `verify_object_storage_analytics_baseline.py` |
 | Intelligence | BASELINE LOCKED | Insights & Reporting → Intelligence | `verify_intelligence_baseline_lock.py` |
 | Reports | LOCKED | Insights & Reporting → Reports | Reports generation/job/storage/runtime verifiers + Reports contracts |
 | Integrations | LOCKED | Platform Extensions → Integrations | `verify_integrations_final_lock.py` |
@@ -90,3 +90,10 @@ Do not silence a new endpoint by increasing a baseline or by classifying an acti
 `Integrations → Storage → Object Storage` owns the MinIO provider workspace. MinIO remains registered under the Integrations release surface.
 
 The provider-neutral inventory workspace is a separate authenticated release surface under **Storage → Object Storage** with **Overview**, **Systems**, and **Buckets & Containers**. It reads committed database snapshots only; provider configuration, validation, and runtime health remain Integration-owned. The `object_storage_inventory_bp` Blueprint and its three navigation endpoints are therefore release-owned independently from the MinIO provider workspace.
+
+
+## Object Storage Analytics Expansion
+
+`Insights & Reporting → Object Storage Analytics` is owned by the existing `analytics_bp` release surface. The first locked baseline adds **Overview**, **Capacity & Usage**, **Performance**, **Forecast**, **Top Consumers**, and **Alerts & Anomalies** without creating a provider-specific Blueprint.
+
+The evidence contract is explicit: committed Object Storage Inventory owns current configuration/state evidence; the asset-bound Prometheus consumer owns operational time-series evidence; Alertmanager lifecycle correlation is optional and deferred until its consumer binding is configured.

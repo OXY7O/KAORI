@@ -323,8 +323,7 @@ Kubernetes connection detail pages return to the canonical Kubernetes Integratio
   consumer-neutral.
 - Binding Validation is asynchronous and asset-specific. It resolves the
   consumer profile, selector, and functional evidence required by that binding.
-- Consumer eligibility is derived from Binding Validation evidence and must not
-  be inferred from provider readiness alone.
+- Consumer eligibility combines provider-owned execution capability evidence with asset-specific Binding Validation evidence. Provider readiness alone is insufficient, and Binding Validation must not duplicate provider-core transport capability ownership.
 - Runtime Refresh is asynchronous and lightweight.
 - Save, remove, and delete operations repeat guardrails in the service boundary.
 - Every outcome records durable Activity Audit evidence and persistent feedback.

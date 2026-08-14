@@ -15,6 +15,14 @@ from app.analytics.alerts.routes import alerts, alerts_table, anomalies_table
 from app.analytics.capacity.routes import capacity
 from app.analytics.forecast.routes import forecast
 from app.analytics.materialization.presentation import materialization_progress_context
+from app.analytics.object_storage.routes import (
+    object_storage_alerts,
+    object_storage_capacity,
+    object_storage_forecast,
+    object_storage_overview,
+    object_storage_performance,
+    object_storage_top_consumers,
+)
 from app.analytics.overview.sections import get_overview_section
 from app.analytics.overview.service import get_analytics_overview, get_analytics_overview_section
 from app.analytics.storage.routes import storage, storage_filesystem_summary, storage_persistent_summary
@@ -422,4 +430,46 @@ analytics_bp.add_url_rule(
     methods=[
         'GET',
     ],
+)
+
+analytics_bp.add_url_rule(
+    '/object-storage',
+    endpoint='object_storage_overview',
+    view_func=object_storage_overview,
+    methods=['GET'],
+)
+
+analytics_bp.add_url_rule(
+    '/object-storage/capacity',
+    endpoint='object_storage_capacity',
+    view_func=object_storage_capacity,
+    methods=['GET'],
+)
+
+analytics_bp.add_url_rule(
+    '/object-storage/performance',
+    endpoint='object_storage_performance',
+    view_func=object_storage_performance,
+    methods=['GET'],
+)
+
+analytics_bp.add_url_rule(
+    '/object-storage/forecast',
+    endpoint='object_storage_forecast',
+    view_func=object_storage_forecast,
+    methods=['GET'],
+)
+
+analytics_bp.add_url_rule(
+    '/object-storage/top-consumers',
+    endpoint='object_storage_top_consumers',
+    view_func=object_storage_top_consumers,
+    methods=['GET'],
+)
+
+analytics_bp.add_url_rule(
+    '/object-storage/alerts',
+    endpoint='object_storage_alerts',
+    view_func=object_storage_alerts,
+    methods=['GET'],
 )

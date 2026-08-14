@@ -1,0 +1,39 @@
+{% set trend = metrics.request_trend|default([]) if page_key == 'performance' else metrics.usage_trend|default([]) %}
+<section class="{{ analysis_surface.evidence_shell_classes() }}"
+         data-object-storage-trend-panel
+         data-object-storage-page-key="{{ page_key }}"
+         data-object-storage-time-range="{{ selected_time_range }}"
+         data-object-storage-trend-points="{{ trend|tojson|forceescape }}">
+    <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+                <h2 class="text-lg font-semibold text-content-primary">
+                    {{ 'Request Activity Trend' if page_key == 'performance' else 'Storage Usage Trend' }}
+                </h2>
+                <p class="mt-1 text-sm leading-6 text-content-muted">
+                    Prometheus range evidence for {{ selected_time_range }}. This is operational history,
+                    not an inventory snapshot.
+                </p>
+            </div>
+            {{ table_label.metadata_label(trend|length ~ ' Samples', none, size='compact') }}
+        </div>
+    </header>
+    <div class="p-5 sm:p-6">
+        {% if trend %}
+            <div class="relative h-[340px] rounded-lg border border-outline-subtle bg-surface-card p-3"
+                 data-object-storage-chart-container>
+                <canvas data-object-storage-chart width="1200" height="340"></canvas>
+            </div>
+        {% else %}
+            <div class="flex min-h-[340px] items-center justify-center rounded-lg border border-dashed border-outline-strong bg-surface-muted p-6 text-center">
+                <div>
+                    <i data-lucide="line-chart" class="mx-auto h-6 w-6 text-content-muted"></i>
+                    <p class="mt-3 text-sm font-semibold text-content-primary">Historical Evidence Not Available</p>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">
+                        The bound Prometheus source returned no range samples for this metric and time window.
+                    </p>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</section>

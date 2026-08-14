@@ -33,20 +33,57 @@ class PrometheusConsumer:
     the provider lifecycle service because they own persistence and evidence updates.
     """
 
-    def __init__(self, cluster: Cluster) -> None:
+    def __init__(
+        self,
+        cluster: Cluster | None = None,
+        *,
+        scope_type: str | None = None,
+        scope_key: object | None = None,
+        scope_name: str | None = None,
+    ) -> None:
+        if cluster is not None:
+            resolved_scope_type = 'kubernetes_cluster'
+            resolved_scope_key = str(cluster.id)
+            resolved_scope_name = str(cluster.name)
+        else:
+            resolved_scope_type = str(scope_type or '').strip()
+            resolved_scope_key = str(scope_key or '').strip()
+            resolved_scope_name = str(scope_name or resolved_scope_key).strip()
+        if not resolved_scope_type or not resolved_scope_key:
+            raise ValueError('PrometheusConsumer requires a Kubernetes cluster or an explicit asset scope.')
+
         self.cluster = cluster
+        self.scope_type = resolved_scope_type
+        self.scope_key = resolved_scope_key
+        self.scope_name = resolved_scope_name or resolved_scope_key
         resolution = resolve_prometheus_sources(
-            scope_type='kubernetes_cluster',
-            scope_key=cluster.id,
+            scope_type=self.scope_type,
+            scope_key=self.scope_key,
         )
         selected = resolution.selected
         if selected is None:
             reasons = '; '.join(candidate.decision_reason for candidate in resolution.candidates)
-            raise PrometheusError(reasons or 'No canonical Prometheus runtime is bound to this Kubernetes cluster.')
+            raise PrometheusError(
+                reasons or f'No canonical Prometheus runtime is bound to {self.scope_type} {self.scope_name}.'
+            )
         self.config = selected.instance
         self.binding = selected.binding
         self._client_cache: dict[tuple[int, int, int | None], Any] = {}
         self._default_instance_id = selected.instance.id
+
+    @classmethod
+    def for_asset(
+        cls,
+        *,
+        scope_type: str,
+        scope_key: object,
+        scope_name: str | None = None,
+    ) -> PrometheusConsumer:
+        return cls(
+            scope_type=scope_type,
+            scope_key=scope_key,
+            scope_name=scope_name,
+        )
 
     def query(
         self,
@@ -320,7 +357,8 @@ class PrometheusConsumer:
                         'Transient Prometheus %s query failed; retrying.',
                         operation_name,
                         extra={
-                            'cluster_id': str(self.cluster.id),
+                            'scope_type': self.scope_type,
+                        'scope_key': self.scope_key,
                             'prometheus_instance_id': source.instance.id,
                             'query_fingerprint': fingerprint,
                             'attempt': attempt + 1,
@@ -336,7 +374,8 @@ class PrometheusConsumer:
                     operation_name,
                     attempt + 1,
                     extra={
-                        'cluster_id': str(self.cluster.id),
+                        'scope_type': self.scope_type,
+                        'scope_key': self.scope_key,
                         'prometheus_instance_id': source.instance.id,
                         'query_fingerprint': fingerprint,
                         'attempts': attempt + 1,
@@ -437,8 +476,8 @@ class PrometheusConsumer:
     ) -> ResolvedPrometheusSource:
         execution_capabilities = self._execution_capabilities(required_capabilities)
         resolution = resolve_prometheus_sources(
-            scope_type='kubernetes_cluster',
-            scope_key=self.cluster.id,
+            scope_type=self.scope_type,
+            scope_key=self.scope_key,
             required_technical_capabilities=execution_capabilities,
         )
         selected = resolution.selected
@@ -517,7 +556,7 @@ class PrometheusConsumer:
         return ConsumerSource(
             provider='prometheus',
             instance_id=getattr(config, 'id', None),
-            instance_name=getattr(config, 'name', None) or getattr(self.cluster, 'name', None) or 'Prometheus',
+            instance_name=getattr(config, 'name', None) or self.scope_name or 'Prometheus',
             endpoint_product=getattr(config, 'endpoint_product', None),
             compatibility_profile=getattr(config, 'compatibility_profile', None),
             capability_profile=getattr(config, 'capability_profile', None),
