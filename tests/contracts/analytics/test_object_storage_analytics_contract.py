@@ -167,8 +167,9 @@ def test_object_storage_analysis_semantics_are_provider_neutral_and_page_specifi
     assert 'object_storage/partials/_overview_workspace.html' in index
     assert 'object_storage/partials/_capacity_workspace.html' in index
     assert 'object_storage/partials/_performance_workspace.html' in index
-    assert 'object_storage/partials/_forecast_analysis.html' in index
-    assert 'object_storage/partials/_top_consumers_analysis.html' in index
+    assert 'object_storage/partials/_forecast_workspace.html' in index
+    assert 'object_storage/partials/_top_consumers_workspace.html' in index
+    assert 'object_storage/partials/_alerts_workspace.html' in index
     capacity_workspace = read('app/templates/analytics/object_storage/partials/_capacity_workspace.html')
     assert 'object_storage/partials/_reconciliation.html' in capacity_workspace
 
@@ -178,7 +179,8 @@ def test_object_storage_analysis_distinguishes_operational_domains_and_provenanc
     capacity = read('app/templates/analytics/object_storage/partials/_capacity_analysis.html')
     performance = read('app/templates/analytics/object_storage/partials/_performance_analysis.html')
     forecast = read('app/templates/analytics/object_storage/partials/_forecast_analysis.html')
-    consumers = read('app/templates/analytics/object_storage/partials/_top_consumers_analysis.html')
+    consumer_storage = read('app/templates/analytics/object_storage/partials/_top_consumers_storage.html')
+    consumer_activity = read('app/templates/analytics/object_storage/partials/_top_consumers_activity.html')
     reconciliation = read('app/templates/analytics/object_storage/partials/_reconciliation.html')
     bucket_table = read('app/templates/analytics/object_storage/partials/_bucket_table.html')
 
@@ -206,20 +208,24 @@ def test_object_storage_analysis_distinguishes_operational_domains_and_provenanc
     assert 'row.error_source' in bucket_table
     assert "include_capacity_detail=page_key != 'performance'" in read('app/analytics/object_storage/service.py')
     assert 'Forecast Operating Boundary' in forecast
-    assert 'Linear baseline' in forecast
-    alerts = read('app/templates/analytics/object_storage/partials/_alerts.html')
+    methodology = read('app/templates/analytics/object_storage/partials/_forecast_methodology.html')
+    assert 'Linear baseline' in methodology
+    alerts_summary = read('app/templates/analytics/object_storage/partials/_alerts_summary.html')
+    alerts_lifecycle = read('app/templates/analytics/object_storage/partials/_alerts_lifecycle.html')
 
-    assert 'Top Consumer Snapshot' in consumers
-    assert 'Critical Signals' in alerts
-    assert 'Signal Reading' in alerts
-    assert 'Lifecycle Boundary' in alerts
-    assert 'Highest Error Rate' in consumers
+    assert 'Storage Consumer Leaders' in consumer_storage
+    assert 'Request Activity Leaders' in consumer_activity
+    assert 'Critical Signals' in alerts_summary
+    assert 'Signal Reading' in alerts_summary
+    assert 'Threshold-derived signals · not a statistical anomaly model' in alerts_summary
+    assert 'Alert Lifecycle Boundary' in alerts_lifecycle
+    assert 'Highest Error Ratio' in consumer_activity
     assert 'Inventory &amp; Operational Reconciliation' in reconciliation
     assert 'observation times differ' in reconciliation
     assert 'row.usage_source' in bucket_table
     assert 'Bucket Capacity Records' in bucket_table
     assert 'progress_bar.semantic_bar(row.quota_utilization' in bucket_table
-    assert 'Committed Inventory is used only as an explicit field-level fallback' in bucket_table
+    assert 'committed Inventory remains an explicit field-level fallback' in bucket_table
 
 
 def test_object_storage_performance_chart_keeps_request_and_error_series_separate() -> None:
@@ -303,11 +309,15 @@ def test_object_storage_bucket_records_use_shared_kaori_table_contract() -> None
     assert 'components/analytics/_table_label_primitives.html' not in table
     assert 'object-storage-bucket-table-loading-indicator' in table
     assert "default=5" in table_service
-    assert "'overview': 'consumers'" in table_service
+    assert "'overview': 'consumers'" not in table_service
     assert "'capacity': 'quota'" in table_service
     assert "'performance': 'buckets'" in table_service
+    assert "'top_consumers': 'records'" in table_service
     assert "{5, 10, 25, 50}" in table_service
     assert 'Canonical Inventory-aligned full-page + HTMX pagination' in pagination
+    assert 'Reset Filter' in table
+    assert 'rotate-ccw' in table
+    assert 'Bucket Consumption Evidence' not in table
 
 
 def test_object_storage_overview_matches_kubernetes_overview_hero_and_tab_contract() -> None:
@@ -319,7 +329,7 @@ def test_object_storage_overview_matches_kubernetes_overview_hero_and_tab_contra
     workspace = read('app/templates/analytics/object_storage/partials/_overview_workspace.html')
     layout = read('app/templates/layouts/app.html')
 
-    assert "'Object Storage Overview'" in service
+    assert "'Analytics Overview'" in service
     assert 'partials/_hero_posture.html' in hero
     assert 'partials/_hero_blocked_posture.html' in hero
     assert "'Operational Posture'" in hero_posture
@@ -339,13 +349,16 @@ def test_object_storage_overview_matches_kubernetes_overview_hero_and_tab_contra
     for partial in (
         '_overview_capacity_snapshot.html',
         '_overview_performance_snapshot.html',
-        '_bucket_table.html',
+        '_overview_consumer_snapshot.html',
         '_overview_forecast_snapshot.html',
         '_reconciliation.html',
         '_metrics_readiness.html',
         '_evidence_boundary.html',
     ):
         assert partial in workspace
+
+    assert 'Consumer Concentration Snapshot' in read('app/templates/analytics/object_storage/partials/_overview_consumer_snapshot.html')
+    assert '_bucket_table.html' not in workspace
 
     controls_index = index.index('partials/_controls.html')
     health_index = index.index('partials/_overview_analysis.html')
@@ -389,10 +402,48 @@ def test_object_storage_capacity_and_performance_match_shared_analytics_hero_and
     for label in ('Request Health', 'Traffic & Trend', 'Bucket Activity', 'Evidence'):
         assert f"'{label}'" in performance_workspace
 
-    assert "page_key in ['overview', 'capacity', 'performance']" in controls
+    assert "page_key in ['overview', 'capacity', 'performance', 'forecast', 'top_consumers', 'alerts']" in controls
     assert "'capacity': 'quota'" in table_service
     assert "'performance': 'buckets'" in table_service
+    assert "'top_consumers': 'records'" in table_service
     assert "document.addEventListener('kaori:analytics-tab-visible'" in javascript
+
+
+def test_object_storage_forecast_consumers_and_alerts_use_shared_tab_workspace_contract() -> None:
+    index = read('app/templates/analytics/object_storage/index.html')
+    hero_posture = read('app/templates/analytics/object_storage/partials/_hero_posture.html')
+    forecast_workspace = read('app/templates/analytics/object_storage/partials/_forecast_workspace.html')
+    forecast_methodology = read('app/templates/analytics/object_storage/partials/_forecast_methodology.html')
+    consumer_workspace = read('app/templates/analytics/object_storage/partials/_top_consumers_workspace.html')
+    alerts_workspace = read('app/templates/analytics/object_storage/partials/_alerts_workspace.html')
+    alerts_lifecycle = read('app/templates/analytics/object_storage/partials/_alerts_lifecycle.html')
+
+    assert 'partials/_forecast_workspace.html' in index
+    assert 'partials/_top_consumers_workspace.html' in index
+    assert 'partials/_alerts_workspace.html' in index
+
+    assert 'data-analytics-tabset-id="object-storage-forecast-content"' in forecast_workspace
+    for label in ('Forecast Outlook', 'Usage History', 'Worker & Method', 'Evidence'):
+        assert f"'{label}'" in forecast_workspace
+    assert 'Linear baseline · planning signal only' in forecast_methodology
+    assert "'Forecast Posture'" in hero_posture
+    assert "'Forecast Outlook'" in hero_posture
+
+    assert 'data-analytics-tabset-id="object-storage-top-consumers-content"' in consumer_workspace
+    for label in ('Storage Leaders', 'Request Activity', 'Consumer Records', 'Evidence'):
+        assert f"'{label}'" in consumer_workspace
+    assert "'Consumer Posture'" in hero_posture
+    assert "'Usage Concentration'" in hero_posture
+
+    assert 'data-analytics-tabset-id="object-storage-alerts-content"' in alerts_workspace
+    for label in ('Signal Overview', 'Signal Detail', 'Alert Lifecycle', 'Evidence'):
+        assert f"'{label}'" in alerts_workspace
+    assert "'Signal Posture'" in hero_posture
+    assert "'Operational Signals'" in hero_posture
+    assert 'Signals are not Alertmanager records' in alerts_lifecycle
+
+    for retired in ('_summary.html', '_top_consumers_analysis.html', '_alerts.html'):
+        assert not (ROOT / 'app/templates/analytics/object_storage/partials' / retired).exists()
 
 
 def test_object_storage_consumer_profile_staleness_is_explicit_and_direct_cutover() -> None:
@@ -447,6 +498,7 @@ def test_object_storage_forecast_is_worker_materialized_on_forecasting_queue() -
     assert 'materialization_target_label' in materialization_template
     assert 'selected_job.eligible_cluster_count' not in materialization_template
     assert 'Forecast Worker Materialization' in worker_status
-    assert 'forecast_materialization.usable' in index
+    forecast_workspace = read('app/templates/analytics/object_storage/partials/_forecast_workspace.html')
+    assert 'forecast_materialization.usable' in forecast_workspace
     assert (ROOT / 'app/models/object_storage_analytics.py').exists()
     assert (ROOT / 'migrations/versions/20260814_object_storage_forecast_snapshots.py').exists()

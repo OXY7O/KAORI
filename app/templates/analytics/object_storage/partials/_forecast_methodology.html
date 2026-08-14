@@ -1,0 +1,15 @@
+<section class="{{ analysis_surface.snapshot_shell_classes() }}">
+    <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+        <div class="flex min-w-0 items-start gap-3">
+            <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="ruler" class="h-5 w-5"></i></span>
+            <div class="min-w-0">
+                <h2 class="text-lg font-semibold text-content-primary">Forecast Methodology &amp; Decision Boundary</h2>
+                <p class="mt-1 text-sm leading-6 text-content-secondary">Keep the current linear baseline transparent so planning decisions are not mistaken for deterministic capacity commitments.</p>
+            </div>
+        </div>
+    </header>
+    <div class="{{ analysis_surface.interpretation_grid_classes() }}">
+        {{ analysis_surface.interpretation_callout('Methodology', 'Linear baseline · planning signal only', 'KAORI calculates slope from committed operational usage history and projects it forward. The model does not currently infer seasonality or future workload changes.', icon='chart-spline', role='insight') }}
+        {{ analysis_surface.interpretation_callout('Decision Boundary', 'Validate context before capacity action', 'Review lifecycle policies, retention changes, replication changes, planned migrations, and workload seasonality before executing storage expansion or reclamation.', icon='shield-check', role='evidence') }}
+    </div>
+</section>

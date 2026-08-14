@@ -130,6 +130,8 @@ def build_bucket_analysis(rows: list[dict[str, Any]], total_usage: float | None)
         return max(values, key=lambda item: float(item[key] or 0)) if values else None
 
     quota_known = [row for row in rows if row['quota_bytes'] is not None]
+    request_evidence_count = sum(row.get('request_rate') is not None for row in rows)
+    error_evidence_count = sum(row.get('error_ratio') is not None for row in rows)
     quota_pressure = [
         row for row in quota_known if row['quota_utilization'] is not None and row['quota_utilization'] >= 85
     ]
@@ -156,8 +158,17 @@ def build_bucket_analysis(rows: list[dict[str, Any]], total_usage: float | None)
         'top_request_rate': leader('request_rate'),
         'top_error_rate': leader('error_rate'),
         'top_error_ratio': leader('error_ratio'),
-        'request_evidence_count': sum(row.get('request_rate') is not None for row in rows),
-        'error_evidence_count': sum(row.get('error_ratio') is not None for row in rows),
+        'request_evidence_count': request_evidence_count,
+        'error_evidence_count': error_evidence_count,
+        'request_evidence_coverage_display': format_percent(
+            request_evidence_count / len(rows) * 100.0 if rows else None
+        ),
+        'error_evidence_coverage_display': format_percent(
+            error_evidence_count / len(rows) * 100.0 if rows else None
+        ),
+        'quota_evidence_coverage_display': format_percent(
+            len(quota_known) / len(rows) * 100.0 if rows else None
+        ),
         'top_usage_share': top_usage_share,
         'top_usage_share_display': format_percent(top_usage_share),
         'concentration_label': concentration['label'],

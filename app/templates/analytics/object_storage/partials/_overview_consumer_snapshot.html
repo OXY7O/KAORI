@@ -1,0 +1,50 @@
+{% set consumer = metrics.bucket_analysis|default({}, true) %}
+{% set top_usage = consumer.top_usage|default(none) %}
+{% set top_objects = consumer.top_objects|default(none) %}
+<section class="{{ analysis_surface.snapshot_shell_classes() }}">
+    <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div class="flex min-w-0 items-start gap-3">
+                <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="layers-3" class="h-5 w-5"></i></span>
+                <div class="min-w-0">
+                    <h2 class="text-lg font-semibold text-content-primary">Consumer Concentration Snapshot</h2>
+                    <p class="mt-1 text-sm leading-6 text-content-secondary">Surface the dominant storage consumers and evidence coverage without turning Overview into a detailed bucket inventory.</p>
+                </div>
+            </div>
+            {{ table_label.status_label(consumer.concentration_label|default('Unknown'), consumer.concentration_tone|default('unknown')) }}
+        </div>
+    </header>
+    <div class="grid gap-px bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4">
+        <article class="bg-surface-card p-5">
+            <p class="{{ analysis_surface.metric_label_classes() }}">Largest Usage Consumer</p>
+            <p class="mt-2 truncate text-base font-semibold text-content-primary">{{ top_usage.name if top_usage else 'No Evidence' }}</p>
+            <p class="mt-1 text-sm font-semibold tabular-nums text-content-secondary">{{ top_usage.usage_display if top_usage else 'N/A' }}</p>
+        </article>
+        <article class="bg-surface-card p-5">
+            <p class="{{ analysis_surface.metric_label_classes() }}">Largest Usage Share</p>
+            <p class="mt-2 text-xl font-semibold tabular-nums text-content-primary">{{ consumer.top_usage_share_display|default('N/A') }}</p>
+            <p class="mt-1 text-xs leading-5 text-content-muted">Share of known system usage held by the largest bucket.</p>
+        </article>
+        <article class="bg-surface-card p-5">
+            <p class="{{ analysis_surface.metric_label_classes() }}">Highest Object Population</p>
+            <p class="mt-2 truncate text-base font-semibold text-content-primary">{{ top_objects.name if top_objects else 'No Evidence' }}</p>
+            <p class="mt-1 text-sm font-semibold tabular-nums text-content-secondary">{{ top_objects.objects_display if top_objects else 'N/A' }}</p>
+        </article>
+        <article class="bg-surface-card p-5">
+            <p class="{{ analysis_surface.metric_label_classes() }}">Quota Evidence Coverage</p>
+            <p class="mt-2 text-xl font-semibold tabular-nums text-content-primary">{{ consumer.quota_evidence_coverage_display|default('N/A') }}</p>
+            <p class="mt-1 text-xs leading-5 text-content-muted">{{ consumer.quota_known_count|default(0) }} of {{ consumer.bucket_count|default(0) }} buckets expose known quota evidence.</p>
+        </article>
+    </div>
+    <div class="{{ analysis_surface.interpretation_grid_classes() }}">
+        {{ analysis_surface.interpretation_callout('Consumer Reading', consumer.concentration_label|default('Unknown'), consumer.top_usage_share_display|default('N/A') ~ ' of known usage belongs to the largest bucket. Use Top Consumers for ranking detail and ownership triage.', icon='scan-search', role='status', tone=consumer.concentration_tone|default('unknown')) }}
+        {{ analysis_surface.interpretation_callout('Drill-down', 'Keep detailed bucket records out of Overview', 'Open Top Consumers when you need ranked storage, object, request, or error evidence. Overview intentionally keeps only concentration signals.', icon='arrow-up-right', role='insight') }}
+    </div>
+    <div class="border-t border-outline-subtle bg-surface-hover px-5 py-3 text-right sm:px-6">
+        <a href="{{ url_for('analytics.object_storage_top_consumers', system_id=system.id, time_range=selected_time_range) }}"
+           class="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary transition hover:border-kaori-primary/30 hover:bg-kaori-soft hover:text-kaori-primary">
+            Open Top Consumers
+            <i data-lucide="arrow-right" class="h-4 w-4"></i>
+        </a>
+    </div>
+</section>

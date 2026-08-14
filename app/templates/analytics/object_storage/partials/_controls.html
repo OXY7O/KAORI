@@ -28,7 +28,7 @@
               hx-trigger="change delay:120ms"
               data-analytics-preserve-tab
               class="grid gap-4 sm:grid-cols-2">
-            {% if page_key in ['overview', 'capacity', 'performance'] %}
+            {% if page_key in ['overview', 'capacity', 'performance', 'forecast', 'top_consumers', 'alerts'] %}
                 <input type="hidden" name="tab" value="">
             {% endif %}
             <label class="block" for="object-storage-system-filter">
@@ -109,7 +109,7 @@
                         {{ table_label.status_label(forecast_materialization.label, forecast_materialization.tone) }}
                     </div>
                 </article>
-            {% else %}
+            {% elif page_key == 'alerts' %}
                 <article class="{{ analysis_surface.readiness_shell_classes() }} p-4">
                     <div class="flex items-start justify-between gap-3">
                         <div class="flex min-w-0 items-start gap-3">
@@ -122,6 +122,21 @@
                             </div>
                         </div>
                         {{ table_label.status_label(alertmanager.label, alertmanager.tone) }}
+                    </div>
+                </article>
+            {% else %}
+                <article class="{{ analysis_surface.readiness_shell_classes() }} p-4">
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="flex min-w-0 items-start gap-3">
+                            <span class="{{ analysis_surface.semantic_icon_classes(metrics_readiness.tone) }}">
+                                <i data-lucide="list-checks" class="h-4 w-4"></i>
+                            </span>
+                            <div class="min-w-0">
+                                <p class="text-sm font-semibold text-content-primary">Metrics Contract</p>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">{{ metrics_readiness.profile_label }}</p>
+                            </div>
+                        </div>
+                        {{ table_label.status_label(metrics_readiness.label, metrics_readiness.tone) }}
                     </div>
                 </article>
             {% endif %}

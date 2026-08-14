@@ -16,7 +16,7 @@
             <div class="flex min-w-0 items-start gap-3">
                 <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="layout-dashboard" class="h-5 w-5"></i></span>
                 <div class="min-w-0">
-                    <h2 class="text-lg font-semibold text-content-primary">Object Storage Overview Workspace</h2>
+                    <h2 class="text-lg font-semibold text-content-primary">Analytics Overview Workspace</h2>
                     <p class="mt-1 text-sm leading-6 text-content-secondary">Review one operational domain at a time, then open the owning analysis workspace when deeper evidence is required.</p>
                 </div>
             </div>
@@ -26,7 +26,7 @@
             </div>
         </div>
     </header>
-    {{ content_tabs.render_buttons('object-storage-overview-content', overview_tabs, 'Object Storage Overview Workspace', embedded=true, data_namespace='analytics', active_key='capacity', show_badges=false, nowrap=true) }}
+    {{ content_tabs.render_buttons('object-storage-overview-content', overview_tabs, 'Analytics Overview Workspace', embedded=true, data_namespace='analytics', active_key='capacity', show_badges=false, nowrap=true) }}
     <div class="p-4 sm:p-5">
         <div id="object-storage-overview-content-panel-capacity"
              role="tabpanel"
@@ -50,7 +50,7 @@
              data-analytics-tab-panel="consumers"
              hidden
              class="space-y-4">
-            {% include "analytics/object_storage/partials/_bucket_table.html" %}
+            {% include "analytics/object_storage/partials/_overview_consumer_snapshot.html" %}
         </div>
         <div id="object-storage-overview-content-panel-forecast"
              role="tabpanel"

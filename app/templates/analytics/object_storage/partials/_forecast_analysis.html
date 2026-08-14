@@ -17,8 +17,7 @@
         <article class="bg-surface-card p-5"><p class="{{ analysis_surface.metric_label_classes() }}">Projected 30d</p><p class="mt-2 text-xl font-semibold tabular-nums text-content-primary">{{ metrics.forecast_display.projected_30d }}</p><p class="mt-1 text-xs text-content-muted">Linear planning projection.</p></article>
         <article class="bg-surface-card p-5"><p class="{{ analysis_surface.metric_label_classes() }}">Capacity ETA</p><p class="mt-2 text-xl font-semibold tabular-nums text-content-primary">{{ metrics.forecast_display.days_to_capacity }}</p><p class="mt-1 text-xs text-content-muted">Only when growth is positive.</p></article>
     </div>
-    <div class="{{ analysis_surface.interpretation_grid_classes() }}">
+    <div class="border-t border-outline-subtle">
         {{ analysis_surface.interpretation_callout('Operational Reading', metrics.forecast_posture.headline, metrics.forecast_posture.detail, icon='calendar-clock', role='status', tone=metrics.forecast_posture.tone) }}
-        {{ analysis_surface.interpretation_callout('Methodology', 'Linear baseline · not a capacity commitment', 'KAORI calculates slope from the selected operational usage history and projects it forward. Validate seasonality, retention changes, lifecycle policies, and planned workloads before executing capacity changes.', icon='ruler', role='insight') }}
     </div>
 </section>

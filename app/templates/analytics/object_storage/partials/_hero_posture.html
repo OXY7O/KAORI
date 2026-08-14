@@ -45,6 +45,53 @@
         url_for('object_storage_inventory.overview'),
         'database'
     ) }}
+{% elif page_key == 'forecast' %}
+    {% set posture = metrics.forecast_posture|default({}) %}
+    {% set forecast_status = posture.status|default(forecast_materialization.label, true) %}
+    {% set forecast_tone = posture.tone|default(forecast_materialization.tone, true) %}
+    {{ page_hero.context_card_body(
+        'Forecast Posture',
+        'Forecast Outlook',
+        forecast_status,
+        forecast_tone,
+        [
+            ('calendar-range', 'Projected 30d', metrics.forecast_display.projected_30d|default('N/A'), 'Worker-materialized linear projection'),
+            ('timer', 'Capacity ETA', metrics.forecast_display.days_to_capacity|default('N/A'), 'Only when positive growth is observed')
+        ],
+        'Review Forecast Worker',
+        url_for('jobs.configuration', job_key='object_storage.forecast.materialize'),
+        'cpu'
+    ) }}
+{% elif page_key == 'top_consumers' %}
+    {% set consumer = metrics.bucket_analysis|default({}) %}
+    {{ page_hero.context_card_body(
+        'Consumer Posture',
+        'Usage Concentration',
+        consumer.concentration_label|default('Unknown'),
+        consumer.concentration_tone|default('unknown'),
+        [
+            ('layers-3', 'Largest Share', consumer.top_usage_share_display|default('N/A'), 'Largest bucket share of known usage'),
+            ('container', 'Buckets', consumer.bucket_count|default(0), 'Buckets evaluated in current scope')
+        ],
+        'Manage Object Storage',
+        url_for('object_storage_inventory.overview'),
+        'database'
+    ) }}
+{% elif page_key == 'alerts' %}
+    {% set signal = metrics.signal_posture|default({}) %}
+    {{ page_hero.context_card_body(
+        'Signal Posture',
+        'Operational Signals',
+        signal.status|default('Unknown'),
+        signal.tone|default('unknown'),
+        [
+            ('shield-alert', 'Critical', signal.critical_count|default(0), 'Critical metric-derived signals'),
+            ('triangle-alert', 'Warning', signal.warning_count|default(0), 'Warning metric-derived signals')
+        ],
+        'Review Metrics Source',
+        url_for('integrations.prometheus'),
+        'activity'
+    ) }}
 {% else %}
     {{ page_hero.context_card_body(
         'Operational Posture',

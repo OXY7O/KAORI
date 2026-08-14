@@ -18,32 +18,16 @@
             {% if page_key == 'overview' %}
                 {% include "analytics/object_storage/partials/_overview_analysis.html" %}
                 {% include "analytics/object_storage/partials/_overview_workspace.html" %}
-            {% else %}
-                {% if page_key == 'capacity' %}
-                    {% include "analytics/object_storage/partials/_capacity_workspace.html" %}
-                {% elif page_key == 'performance' %}
-                    {% include "analytics/object_storage/partials/_performance_workspace.html" %}
-                {% elif page_key == 'forecast' %}
-                    {% include "analytics/object_storage/partials/_summary.html" %}
-                    {% include "analytics/object_storage/partials/_forecast_worker_status.html" %}
-                    {% if forecast_materialization.usable %}
-                        {% include "analytics/object_storage/partials/_forecast_analysis.html" %}
-                        {% include "analytics/object_storage/partials/_trend.html" %}
-                    {% endif %}
-                {% elif page_key == 'top_consumers' %}
-                    {% include "analytics/object_storage/partials/_summary.html" %}
-                    {% include "analytics/object_storage/partials/_top_consumers_analysis.html" %}
-                    {% include "analytics/object_storage/partials/_bucket_table.html" %}
-                {% elif page_key == 'alerts' %}
-                    {% include "analytics/object_storage/partials/_summary.html" %}
-                    {% include "analytics/object_storage/partials/_alerts.html" %}
-                {% endif %}
-                {% if page_key not in ['capacity', 'performance'] %}
-                    {% include "analytics/object_storage/partials/_metrics_readiness.html" %}
-                {% endif %}
-            {% endif %}
-            {% if page_key not in ['overview', 'capacity', 'performance'] %}
-                {% include "analytics/object_storage/partials/_evidence_boundary.html" %}
+            {% elif page_key == 'capacity' %}
+                {% include "analytics/object_storage/partials/_capacity_workspace.html" %}
+            {% elif page_key == 'performance' %}
+                {% include "analytics/object_storage/partials/_performance_workspace.html" %}
+            {% elif page_key == 'forecast' %}
+                {% include "analytics/object_storage/partials/_forecast_workspace.html" %}
+            {% elif page_key == 'top_consumers' %}
+                {% include "analytics/object_storage/partials/_top_consumers_workspace.html" %}
+            {% elif page_key == 'alerts' %}
+                {% include "analytics/object_storage/partials/_alerts_workspace.html" %}
             {% endif %}
         {% endif %}
     </div>

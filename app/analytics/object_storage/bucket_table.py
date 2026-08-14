@@ -7,18 +7,17 @@ from app.models.object_storage import ObjectStorageSystem
 
 def _page_endpoint(page_key: str) -> str:
     return {
-        'overview': 'analytics.object_storage_overview',
         'capacity': 'analytics.object_storage_capacity',
         'performance': 'analytics.object_storage_performance',
         'top_consumers': 'analytics.object_storage_top_consumers',
-    }.get(page_key, 'analytics.object_storage_overview')
+    }.get(page_key, 'analytics.object_storage_top_consumers')
 
 
 def _workspace_tab(page_key: str) -> str | None:
     return {
-        'overview': 'consumers',
         'capacity': 'quota',
         'performance': 'buckets',
+        'top_consumers': 'records',
     }.get(page_key)
 
 

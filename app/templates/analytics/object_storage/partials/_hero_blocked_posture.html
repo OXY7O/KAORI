@@ -2,9 +2,28 @@
 {% set blocked_step = dependency_blocker.stage|int %}
 {% set completed_step = blocked_step - 1 %}
 {% set blocker_status = dependency_blocker.badge|replace('Consumer ', '') %}
+{% if page_key == 'capacity' %}
+    {% set posture_label = 'Capacity Posture' %}
+    {% set readiness_label = 'Capacity Readiness' %}
+{% elif page_key == 'performance' %}
+    {% set posture_label = 'Performance Posture' %}
+    {% set readiness_label = 'Performance Readiness' %}
+{% elif page_key == 'forecast' %}
+    {% set posture_label = 'Forecast Posture' %}
+    {% set readiness_label = 'Forecast Readiness' %}
+{% elif page_key == 'top_consumers' %}
+    {% set posture_label = 'Consumer Posture' %}
+    {% set readiness_label = 'Consumer Readiness' %}
+{% elif page_key == 'alerts' %}
+    {% set posture_label = 'Signal Posture' %}
+    {% set readiness_label = 'Signal Readiness' %}
+{% else %}
+    {% set posture_label = 'Operational Posture' %}
+    {% set readiness_label = 'Analytics Readiness' %}
+{% endif %}
 {{ page_hero.context_card_body(
-    'Operational Posture',
-    'Analytics Readiness',
+    posture_label,
+    readiness_label,
     blocker_status,
     dependency_blocker.tone,
     [

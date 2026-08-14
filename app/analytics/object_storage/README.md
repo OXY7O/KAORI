@@ -113,12 +113,12 @@ adapters and the domain service must stay provider-neutral.
 
 The current Object Storage Analytics workspace exposes distinct operational semantics instead of reusing one generic summary for every route:
 
-- **Overview** consolidates capacity, request-path, growth, and bucket-concentration posture.
+- **Analytics Overview** consolidates capacity, request-path, forecast, and consumer-concentration posture. Detailed bucket records stay in the owning drill-down workspaces instead of the Overview.
 - **Capacity & Usage** separates physical usable headroom, usage growth, bucket quota pressure, and concentration inside Summary, Usage Trend, Quota & Buckets, and Evidence tabs.
 - **Performance** separates request health, traffic/trend, bucket activity, and evidence into the shared Analytics tab workspace pattern. Request demand stays distinct from reliability, queue/inflight pressure, node availability, ingress/egress throughput, and request/error history; increasing demand is descriptive, while error, waiting, and availability evidence drive request-path posture.
-- **Top Consumers** ranks usage, object density, request demand, and error pressure independently.
-- **Forecast** uses the current linear baseline only as a planning boundary and makes its methodology explicit.
-- **Alerts & Anomalies** continues to provide metric-derived signals while Alertmanager lifecycle correlation remains optional.
+- **Top Consumers** separates Storage Leaders, Request Activity, detailed Consumer Records, and Evidence. Ranking detail remains outside the Overview.
+- **Forecast** separates Forecast Outlook, committed Usage History, Worker & Method, and Evidence. The linear baseline remains a planning boundary rather than a capacity commitment.
+- **Alerts & Anomalies** separates Signal Overview, Signal Detail, optional Alert Lifecycle, and Evidence. Metric-derived signals are not presented as Alertmanager lifecycle records.
 
 Inventory reconciliation is intentionally non-authoritative: differences within the
 selected thresholds are review evidence because Inventory and operational metrics have
@@ -132,8 +132,8 @@ Object Storage Analytics follows the same operational interaction contract as Ku
 - scope changes use the shared KAORI HTMX loading bar and report the runtime state as `Checking Runtime` while the request is in progress;
 - missing configuration, unvalidated required metrics, incomplete capability, disconnection, authentication failure, and total runtime-query failure are explicit blocking states;
 - partial runtime-query failure is a degraded state, not a false healthy state;
-- the Overview prioritizes operational KPI/posture, trend, consumer evidence, and drill-down workspaces before contract-readiness detail;
-- bucket records use the shared Analytics record-pagination owner at `templates/analytics/components/_record_pagination.html`, with search, 5-row default pagination, 5/10/25/50 page sizes, HTMX partial refresh, and a header loading indicator.
+- the Overview prioritizes operational KPI/posture, trend, concise consumer concentration, and drill-down workspaces before contract-readiness detail;
+- bucket records use the shared Analytics record-pagination owner at `templates/analytics/components/_record_pagination.html`, with search, Apply Filter + Reset Filter actions, 5-row default pagination, 5/10/25/50 page sizes, HTMX partial refresh, and a header loading indicator.
 
 The status words describe different evidence layers intentionally: `Ready` is persisted metric-contract validation, `Operational` is successful current runtime query execution, `Degraded` is partial current query success, and `Disconnected` is current transport failure. These terms must not be used interchangeably.
 

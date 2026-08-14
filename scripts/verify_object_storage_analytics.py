@@ -30,7 +30,10 @@ def main() -> int:
     binding_validator = read('app/integrations/prometheus/binding_validators/object_storage.py')
     menu = read('app/templates/components/navigation/analytics_menu.html')
     template = read('app/templates/analytics/object_storage/index.html')
-    alert_template = read('app/templates/analytics/object_storage/partials/_alerts.html')
+    alerts_summary = read('app/templates/analytics/object_storage/partials/_alerts_summary.html')
+    alerts_signals = read('app/templates/analytics/object_storage/partials/_alerts_signal_records.html')
+    alerts_lifecycle = read('app/templates/analytics/object_storage/partials/_alerts_lifecycle.html')
+    alerts_workspace = read('app/templates/analytics/object_storage/partials/_alerts_workspace.html')
     boundary = read('app/templates/analytics/object_storage/partials/_evidence_boundary.html')
     readiness = read('app/templates/analytics/object_storage/partials/_metrics_readiness.html')
     controls = read('app/templates/analytics/object_storage/partials/_controls.html')
@@ -45,6 +48,7 @@ def main() -> int:
     overview_capacity = read('app/templates/analytics/object_storage/partials/_overview_capacity_snapshot.html')
     overview_performance = read('app/templates/analytics/object_storage/partials/_overview_performance_snapshot.html')
     overview_forecast = read('app/templates/analytics/object_storage/partials/_overview_forecast_snapshot.html')
+    overview_consumer = read('app/templates/analytics/object_storage/partials/_overview_consumer_snapshot.html')
     record_pagination = read('app/templates/analytics/components/_record_pagination.html')
     overview_analysis = read('app/templates/analytics/object_storage/partials/_overview_analysis.html')
     capacity_analysis = read('app/templates/analytics/object_storage/partials/_capacity_analysis.html')
@@ -54,7 +58,11 @@ def main() -> int:
     performance_workspace = read('app/templates/analytics/object_storage/partials/_performance_workspace.html')
     performance_traffic = read('app/templates/analytics/object_storage/partials/_performance_traffic.html')
     forecast_analysis = read('app/templates/analytics/object_storage/partials/_forecast_analysis.html')
-    top_consumers_analysis = read('app/templates/analytics/object_storage/partials/_top_consumers_analysis.html')
+    forecast_workspace = read('app/templates/analytics/object_storage/partials/_forecast_workspace.html')
+    forecast_methodology = read('app/templates/analytics/object_storage/partials/_forecast_methodology.html')
+    top_consumers_workspace = read('app/templates/analytics/object_storage/partials/_top_consumers_workspace.html')
+    top_consumers_storage = read('app/templates/analytics/object_storage/partials/_top_consumers_storage.html')
+    top_consumers_activity = read('app/templates/analytics/object_storage/partials/_top_consumers_activity.html')
     reconciliation = read('app/templates/analytics/object_storage/partials/_reconciliation.html')
     trend = read('app/templates/analytics/object_storage/partials/_trend.html')
     javascript = read('app/static/js/analytics/object_storage.js')
@@ -139,9 +147,11 @@ def main() -> int:
 
     assert 'Alertmanager is optional for this release' in service
     assert 'Alertmanager lifecycle integration remains optional' in service
-    assert 'Alertmanager' in alert_template
-    assert 'Critical Signals' in alert_template
-    assert 'Signal Reading' in alert_template
+    assert 'Alertmanager' in alerts_lifecycle
+    assert 'Critical Signals' in alerts_summary
+    assert 'Signal Reading' in alerts_summary
+    assert 'Threshold-derived signals · not a statistical anomaly model' in alerts_summary
+    assert 'Metric-Derived Signal Detail' in alerts_signals
     assert 'Deferred' in boundary
     assert 'Committed Inventory' in boundary
     assert 'metrics_source.provider_label' in boundary
@@ -190,7 +200,8 @@ def main() -> int:
     assert 'row.error_source' in bucket_table_template
     assert "include_capacity_detail=page_key != 'performance'" in service
     assert 'Forecast Operating Boundary' in forecast_analysis
-    assert 'Top Consumer Snapshot' in top_consumers_analysis
+    assert 'Storage Consumer Leaders' in top_consumers_storage
+    assert 'Request Activity Leaders' in top_consumers_activity
     assert 'Inventory &amp; Operational Reconciliation' in reconciliation
     assert 'data-object-storage-secondary-trend-points' in trend
     assert "label: 'Error Rate'" in javascript
@@ -217,9 +228,10 @@ def main() -> int:
     assert 'metrics_query_blocker' in runtime
     assert 'build_bucket_table_view' in bucket_table_service
     assert "default=5" in bucket_table_service
-    assert "'overview': 'consumers'" in bucket_table_service
+    assert "'overview': 'consumers'" not in bucket_table_service
     assert "'capacity': 'quota'" in bucket_table_service
     assert "'performance': 'buckets'" in bucket_table_service
+    assert "'top_consumers': 'records'" in bucket_table_service
     assert "{5, 10, 25, 50}" in bucket_table_service
     assert 'components/loading_bar.html' in controls
     assert 'object-storage-analytics-refresh-indicator' in controls
@@ -236,7 +248,7 @@ def main() -> int:
     assert 'metrics_source.detail' not in hero
     assert "'Current Step'" in hero_blocked
     assert "'Progress'" in hero_blocked
-    assert "'Object Storage Overview'" in service
+    assert "'Analytics Overview'" in service
     assert "'Operational Posture'" in hero_posture
     assert "'Analytics Status'" in hero_posture
     assert 'components/content_tabs.html' in overview_workspace
@@ -269,19 +281,56 @@ def main() -> int:
     assert '_bucket_table.html' in performance_workspace
     assert '_metrics_readiness.html' in performance_workspace
     assert '_evidence_boundary.html' in performance_workspace
-    assert "page_key in ['overview', 'capacity', 'performance']" in controls
+    assert "page_key in ['overview', 'capacity', 'performance', 'forecast', 'top_consumers', 'alerts']" in controls
     assert "document.addEventListener('kaori:analytics-tab-visible'" in javascript
     for label in ('Capacity', 'Performance', 'Consumers', 'Forecast', 'Evidence'):
         assert f"'{label}'" in overview_workspace
     assert 'Capacity Snapshot' in overview_capacity
     assert 'Request Path Snapshot' in overview_performance
     assert 'Forecast Snapshot' in overview_forecast
+    assert 'Consumer Concentration Snapshot' in overview_consumer
+    assert '_overview_consumer_snapshot.html' in overview_workspace
+    assert '_bucket_table.html' not in overview_workspace
     assert 'partials/_overview_workspaces.html' not in template
     assert not (ROOT / 'app/templates/analytics/object_storage/partials/_overview_workspaces.html').exists()
     assert 'analyticsTabStorageKey' in analytics_controls
     assert "js/analytics/controls.js" in layout
     assert not (ROOT / 'app/static/js/analytics/kubernetes/controls.js').exists()
     assert 'Canonical Inventory-aligned full-page + HTMX pagination' in record_pagination
+    assert 'Reset Filter' in bucket_table_template
+    assert 'rotate-ccw' in bucket_table_template
+    assert 'Bucket Consumption Evidence' not in bucket_table_template
+
+    assert 'data-analytics-tabset-id="object-storage-forecast-content"' in forecast_workspace
+    for label in ('Forecast Outlook', 'Usage History', 'Worker & Method', 'Evidence'):
+        assert f"'{label}'" in forecast_workspace
+    assert '_forecast_worker_status.html' in forecast_workspace
+    assert '_forecast_methodology.html' in forecast_workspace
+    assert 'Linear baseline · planning signal only' in forecast_methodology
+    assert "'Forecast Posture'" in hero_posture
+    assert "'Forecast Outlook'" in hero_posture
+
+    assert 'data-analytics-tabset-id="object-storage-top-consumers-content"' in top_consumers_workspace
+    for label in ('Storage Leaders', 'Request Activity', 'Consumer Records', 'Evidence'):
+        assert f"'{label}'" in top_consumers_workspace
+    assert '_top_consumers_storage.html' in top_consumers_workspace
+    assert '_top_consumers_activity.html' in top_consumers_workspace
+    assert '_bucket_table.html' in top_consumers_workspace
+    assert "'Consumer Posture'" in hero_posture
+    assert "'Usage Concentration'" in hero_posture
+
+    assert 'data-analytics-tabset-id="object-storage-alerts-content"' in alerts_workspace
+    for label in ('Signal Overview', 'Signal Detail', 'Alert Lifecycle', 'Evidence'):
+        assert f"'{label}'" in alerts_workspace
+    assert '_alerts_summary.html' in alerts_workspace
+    assert '_alerts_signal_records.html' in alerts_workspace
+    assert '_alerts_lifecycle.html' in alerts_workspace
+    assert "'Signal Posture'" in hero_posture
+    assert "'Operational Signals'" in hero_posture
+    assert 'Signals are not Alertmanager records' in alerts_lifecycle
+
+    for retired in ('_summary.html', '_top_consumers_analysis.html', '_alerts.html'):
+        assert not (ROOT / 'app/templates/analytics/object_storage/partials' / retired).exists()
 
     assert 'Consumer Validation Stale' in adapter
     assert 'object-storage-metrics-v1' in adapter
@@ -293,7 +342,7 @@ def main() -> int:
     assert 'object_storage.forecast.materialize' in forecast_job_adapter
     assert 'FORECASTING_CELERY_QUEUE' in forecast_job_adapter
     assert 'Forecast Worker Materialization' in forecast_worker_status
-    assert 'forecast_materialization.usable' in template
+    assert 'forecast_materialization.usable' in forecast_workspace
     assert 'eligible_target_count' in materialization_template
     assert 'selected_job.eligible_cluster_count' not in materialization_template
     assert (ROOT / 'app/models/object_storage_analytics.py').exists()

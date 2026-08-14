@@ -2,14 +2,10 @@
     <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div class="flex min-w-0 items-start gap-3">
-                <span class="{{ analysis_surface.snapshot_header_icon_classes() }}">
-                    <i data-lucide="triangle-alert" class="h-5 w-5"></i>
-                </span>
-                <div>
-                    <h2 class="text-lg font-semibold text-content-primary">Metric-Derived Signals</h2>
-                    <p class="mt-1 text-sm leading-6 text-content-muted">
-                        Evaluate capacity, request errors, queue pressure, and storage-node availability from the active operational metrics source. Alertmanager lifecycle evidence remains optional.
-                    </p>
+                <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="radar" class="h-5 w-5"></i></span>
+                <div class="min-w-0">
+                    <h2 class="text-lg font-semibold text-content-primary">Operational Signal Overview</h2>
+                    <p class="mt-1 text-sm leading-6 text-content-secondary">Summarize metric-derived capacity, reliability, queue, and node signals without presenting them as Alertmanager lifecycle records.</p>
                 </div>
             </div>
             {{ table_label.status_label(metrics.signal_posture.status, metrics.signal_posture.tone) }}
@@ -37,35 +33,8 @@
             <p class="mt-1 text-xs leading-5 text-content-muted">Insufficient metric evidence.</p>
         </article>
     </div>
-    <div class="divide-y divide-outline-subtle border-t border-outline-subtle">
-        {% for signal in metrics.signals %}
-            <article class="flex items-start gap-3 px-5 py-4 sm:px-6">
-                <span class="{{ analysis_surface.semantic_icon_classes(signal.severity) }}">
-                    <i data-lucide="{{ 'circle-check' if signal.severity == 'normal' else 'circle-help' if signal.severity == 'unknown' else 'triangle-alert' }}"
-                       class="h-4 w-4"></i>
-                </span>
-                <div>
-                    <p class="text-sm font-semibold text-content-primary">{{ signal.title }}</p>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">{{ signal.detail }}</p>
-                </div>
-            </article>
-        {% endfor %}
-    </div>
-    <div class="{{ analysis_surface.interpretation_grid_classes() }} border-t border-outline-subtle">
-        {{ analysis_surface.interpretation_callout(
-            'Signal Reading',
-            metrics.signal_posture.status,
-            metrics.signal_posture.detail,
-            icon='scan-search',
-            role='status',
-            tone=metrics.signal_posture.tone
-        ) }}
-        {{ analysis_surface.interpretation_callout(
-            'Lifecycle Boundary',
-            'Alertmanager ' ~ alertmanager.label,
-            alertmanager.description,
-            icon='bell-ring',
-            role='insight'
-        ) }}
+    <div class="{{ analysis_surface.interpretation_grid_classes() }}">
+        {{ analysis_surface.interpretation_callout('Signal Reading', metrics.signal_posture.status, metrics.signal_posture.detail, icon='scan-search', role='status', tone=metrics.signal_posture.tone) }}
+        {{ analysis_surface.interpretation_callout('Anomaly Boundary', 'Threshold-derived signals · not a statistical anomaly model', 'This release evaluates explicit operating boundaries for capacity, request errors, queue pressure, and node availability. It does not claim a separate learned or statistical anomaly score.', icon='radar', role='evidence') }}
     </div>
 </section>

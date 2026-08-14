@@ -1,0 +1,40 @@
+{% set consumer = metrics.bucket_analysis|default({}, true) %}
+{% set top_request = consumer.top_request_rate|default(none) %}
+{% set top_error = consumer.top_error_ratio|default(none) %}
+<section class="{{ analysis_surface.snapshot_shell_classes() }}">
+    <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+        <div class="flex min-w-0 items-start gap-3">
+            <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="activity" class="h-5 w-5"></i></span>
+            <div class="min-w-0">
+                <h2 class="text-lg font-semibold text-content-primary">Request Activity Leaders</h2>
+                <p class="mt-1 text-sm leading-6 text-content-secondary">Separate highest request demand from highest error ratio so throughput leaders do not hide reliability hotspots.</p>
+            </div>
+        </div>
+    </header>
+    <div class="grid gap-px bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4">
+        <article class="bg-surface-card p-5">
+            <p class="{{ analysis_surface.metric_label_classes() }}">Highest Request Rate</p>
+            <p class="mt-2 truncate text-base font-semibold text-content-primary">{{ top_request.name if top_request else 'No Evidence' }}</p>
+            <p class="mt-1 text-sm font-semibold tabular-nums text-content-secondary">{{ top_request.request_rate_display if top_request else 'N/A' }}</p>
+        </article>
+        <article class="bg-surface-card p-5">
+            <p class="{{ analysis_surface.metric_label_classes() }}">Request Evidence Coverage</p>
+            <p class="mt-2 text-xl font-semibold tabular-nums text-content-primary">{{ consumer.request_evidence_coverage_display|default('N/A') }}</p>
+            <p class="mt-1 text-xs leading-5 text-content-muted">{{ consumer.request_evidence_count|default(0) }} of {{ consumer.bucket_count|default(0) }} buckets.</p>
+        </article>
+        <article class="bg-surface-card p-5">
+            <p class="{{ analysis_surface.metric_label_classes() }}">Highest Error Ratio</p>
+            <p class="mt-2 truncate text-base font-semibold text-content-primary">{{ top_error.name if top_error else 'No Evidence' }}</p>
+            <p class="mt-1 text-sm font-semibold tabular-nums text-content-secondary">{{ top_error.error_ratio_display if top_error else 'N/A' }}</p>
+        </article>
+        <article class="bg-surface-card p-5">
+            <p class="{{ analysis_surface.metric_label_classes() }}">Error Evidence Coverage</p>
+            <p class="mt-2 text-xl font-semibold tabular-nums text-content-primary">{{ consumer.error_evidence_coverage_display|default('N/A') }}</p>
+            <p class="mt-1 text-xs leading-5 text-content-muted">{{ consumer.error_evidence_count|default(0) }} of {{ consumer.bucket_count|default(0) }} buckets.</p>
+        </article>
+    </div>
+    <div class="{{ analysis_surface.interpretation_grid_classes() }}">
+        {{ analysis_surface.interpretation_callout('Demand Reading', top_request.name if top_request else 'Request Evidence Unavailable', (top_request.request_rate_display if top_request else 'N/A') ~ ' is the highest observed bucket request rate in scope.', icon='scan-search', role='status', tone='info' if top_request else 'unknown') }}
+        {{ analysis_surface.interpretation_callout('Reliability Boundary', top_error.name if top_error else 'Error Evidence Unavailable', 'Error ratio is a triage signal, not root cause. Use Performance for request-path context before assigning remediation.', icon='shield-check', role='insight') }}
+    </div>
+</section>

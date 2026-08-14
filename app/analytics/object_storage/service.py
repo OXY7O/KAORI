@@ -54,7 +54,7 @@ class PageDefinition:
 
 PAGES: dict[str, PageDefinition] = {
     'overview': PageDefinition(
-        'Object Storage Overview',
+        'Analytics Overview',
         'Review consolidated capacity, request health, consumer concentration, forecast, and evidence posture.',
         'layout-dashboard',
         'Object Storage Analytics',
@@ -591,7 +591,7 @@ def get_object_storage_analytics_context(page_key: str, query_args: Any) -> dict
         history_window = '30d' if page_key == 'overview' else context['selected_forecast_history_window']
         _attach_forecast_materialization(context, system=system, history_window=history_window)
 
-    if page_key in {'overview', 'capacity', 'performance', 'top_consumers'}:
+    if page_key in {'capacity', 'performance', 'top_consumers'}:
         context['bucket_table'] = build_bucket_table_view(
             context['metrics'].get('bucket_rows') or [],
             query_args,
@@ -603,8 +603,8 @@ def get_object_storage_analytics_context(page_key: str, query_args: Any) -> dict
 
 
 def get_object_storage_bucket_table_context(page_key: str, query_args: Any) -> dict[str, Any]:
-    if page_key not in {'overview', 'capacity', 'performance', 'top_consumers'}:
-        page_key = 'overview'
+    if page_key not in {'capacity', 'performance', 'top_consumers'}:
+        page_key = 'top_consumers'
     context, system, time_range = _base_context(page_key, query_args)
     if system is None:
         context['dependency_blocker'] = system_required_blocker()
