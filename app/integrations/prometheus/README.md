@@ -56,7 +56,7 @@ metrics, labels, and consumer PromQL contracts are validated through each
 Prometheus is the mutation owner for its consumer bindings. `Bindings & Consumers` uses
 one shared `Add Binding` modal backed by the canonical managed-asset registry. Current
 eligible asset families are Kubernetes clusters and object-storage systems; the selected
-asset type resolves `kubernetes-metrics-v1` or `minio-metrics-2024-v1` automatically.
+asset type resolves `kubernetes-metrics-v1` or the provider-neutral `object-storage-metrics-v1` automatically. Object Storage validation then resolves a provider-qualified metric adapter such as MinIO Metrics v2.
 Asset-owner pages show the resulting Prometheus source read-only and do not create or
 remove the binding themselves.
 

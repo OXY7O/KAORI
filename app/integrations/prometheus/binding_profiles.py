@@ -2,8 +2,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from threading import RLock
+from typing import Literal
 
 from app.integrations.prometheus.scope import KUBERNETES_CLUSTER_SCOPE
+
+ValidationStrategy = Literal['probe', 'custom']
 
 
 @dataclass(frozen=True, slots=True)
@@ -20,6 +23,7 @@ class BindingValidationProfile:
     probes: tuple[BindingProbe, ...]
     no_match_message: str
     consumer_family: str = 'metrics'
+    validation_strategy: ValidationStrategy = 'probe'
 
 
 _PROFILES: dict[str, BindingValidationProfile] = {}
@@ -37,8 +41,10 @@ def register_binding_validation_profile(
         raise ValueError('Prometheus binding validation profile requires an asset_type.')
     if not profile_key:
         raise ValueError('Prometheus binding validation profile requires a profile_key.')
-    if not profile.probes:
+    if profile.validation_strategy == 'probe' and not profile.probes:
         raise ValueError(f'Prometheus binding validation profile {asset_type!r} requires at least one probe.')
+    if profile.validation_strategy == 'custom' and profile.probes:
+        raise ValueError(f'Custom Prometheus binding validation profile {asset_type!r} must not declare generic probes.')
     with _LOCK:
         if asset_type in _PROFILES and not replace:
             raise ValueError(f'Prometheus binding validation profile {asset_type!r} is already registered.')
@@ -66,6 +72,21 @@ register_binding_validation_profile(
         no_match_message=(
             'The selector was accepted, but no scoped kube-state-metrics identity series matched. '
             'Verify the selector label/value on kube_node_info, kube_namespace_status_phase, or kube_pod_info.'
+        ),
+    )
+)
+
+register_binding_validation_profile(
+    BindingValidationProfile(
+        asset_type='object_storage_system',
+        profile_key='object-storage-metrics-v1',
+        label='Object Storage Metrics v1',
+        probes=(),
+        validation_strategy='custom',
+        no_match_message=(
+            'The selector was accepted, but no qualified Object Storage metric identity matched. '
+            'Verify that the selected system provider has a registered Prometheus metric adapter and that '
+            'the binding selector isolates that deployment.'
         ),
     )
 )

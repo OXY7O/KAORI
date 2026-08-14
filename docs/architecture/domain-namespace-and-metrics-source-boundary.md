@@ -94,6 +94,44 @@ Object Storage + OTel  → provider_otlp.py
 Adding one of those adapters must not require changes to the Object Storage
 Analytics service or presentation contract.
 
+## Metrics readiness and validation ownership
+
+Metrics contract discovery belongs to the **source-owned binding validation**
+workflow. Object Storage Analytics must not issue discovery probes while
+rendering a page.
+
+```text
+Prometheus Full Validation
+        ↓
+object-storage-metrics-v1 consumer profile
+        ↓
+provider-qualified validation adapter
+        ↓
+MinIO v2 metric family + label + query audit
+        ↓
+IntegrationBinding.validation_evidence
+        ↓
+MetricsSource.readiness
+        ↓
+Object Storage Analytics readiness presentation
+```
+
+The generic Object Storage consumer profile does not mean every Object Storage
+provider shares MinIO metrics. Validation adapters are pair-qualified in the
+same way as runtime metrics-source adapters. A future Ceph + Prometheus profile
+must register its own validator rather than extending a MinIO conditional.
+
+Readiness evidence and runtime health are separate facts. Persisted readiness
+records the last proven metric contract. Runtime query failures describe current
+reachability. A network outage must not erase the last validated contract, and
+a successful historic validation must not hide a current transport failure.
+
+Readiness tiers are explicit:
+
+- **required** — minimum canonical metrics for usable Object Storage Analytics;
+- **recommended** — enriches health, performance, and consumer analysis;
+- **optional** — absence is supported and does not block the required contract.
+
 ## Interactive failure policy
 
 Interactive Analytics must fail fast when an operational metrics source is down.

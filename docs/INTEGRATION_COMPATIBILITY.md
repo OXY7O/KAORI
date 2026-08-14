@@ -56,7 +56,8 @@ For Prometheus this means:
 Prometheus General
   ├── Core: prometheus-core-v1
   ├── Kubernetes binding: kubernetes-metrics-v1
-  └── MinIO binding: minio-metrics-2024-v1
+  └── Object Storage binding: object-storage-metrics-v1
+        └── MinIO + Prometheus validator: MinIO Metrics v2
 ```
 
 A missing Kubernetes metric may degrade only the Kubernetes binding while the
@@ -187,7 +188,7 @@ Automatic mode contacts a direct Prometheus endpoint. `detected_version` and `co
 
 Manual mode contacts Thanos Query. `detected_version` and `compatibility_profile` therefore represent Thanos, while `source_prometheus_major` records the administrator-selected Prometheus source-major compatibility contract. The Thanos endpoint version must never be treated as a Prometheus runtime version.
 
-Consumer metric contracts are binding-scoped. `kubernetes_cluster` bindings use `kubernetes-metrics-v1`; `object_storage_system` bindings use `minio-metrics-2024-v1`. A missing Kubernetes metric can degrade the Kubernetes binding without degrading a healthy general Prometheus provider or an unrelated MinIO binding.
+Consumer metric contracts are binding-scoped. `kubernetes_cluster` bindings use `kubernetes-metrics-v1`; `object_storage_system` bindings use the provider-neutral `object-storage-metrics-v1`. Provider-specific metric evidence is resolved by a qualified validator (currently MinIO Metrics v2 for MinIO + Prometheus). A missing Kubernetes or MinIO metric can affect only the relevant consumer binding without degrading a healthy general Prometheus provider or unrelated bindings.
 
 ### Alertmanager compatibility
 

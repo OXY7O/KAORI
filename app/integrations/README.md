@@ -151,9 +151,13 @@ Compatibility profile and consumer profile are different contracts:
 
 Prometheus is the canonical example. `prometheus-core-v1` owns provider Core
 Validation. `prometheus/binding_profiles.py` selects the consumer profile by
-asset type: Kubernetes registers `kubernetes-metrics-v1`; MinIO registers
-`minio-metrics-2024-v1`. One Prometheus provider can therefore serve both assets
-with independent selectors, evidence, and binding readiness.
+asset type: Kubernetes registers `kubernetes-metrics-v1`; Object Storage
+registers the provider-neutral `object-storage-metrics-v1`. Consumer validators
+then resolve provider-qualified evidence contracts: the current Object Storage
+validator resolves MinIO to the `minio-v2` metrics profile. One Prometheus
+provider can therefore serve multiple asset families with independent selectors,
+evidence, and binding readiness without assuming that all Object Storage
+providers expose MinIO metrics.
 
 Alertmanager follows the same boundary. Provider Core Validation proves only the
 Alertmanager API contract. `alertmanager/binding_profiles.py` resolves
@@ -190,4 +194,4 @@ Prometheus and Alertmanager own binding mutation for their respective source fam
 
 Prometheus and Alertmanager are source-owned mutation workspaces. Their binding registries expose Consumer Asset, provider identity selector, Consumer Profile, Resolver Preference, Binding Validation, Effective Resolution, and Actions with canonical pagination/loading behavior. Resolver preference is `Primary → Secondary → Fallback`, with lower numeric priority winning within the same role.
 
-A saved binding starts in `Validation Required`. Selector changes clear stale binding evidence and return the record to `Validation Required`; a successful `binding.validate` operation grants binding eligibility. Provider Full Validation does not implicitly validate consumer bindings. Kubernetes and Object Storage inventory/lifecycle pages show the relationship read-only and link operators back to the source workspace for mutation.
+A saved binding starts in `Validation Required`. Selector changes clear stale binding evidence and return the record to `Validation Required`; a successful `binding.validate` operation grants binding eligibility. Provider Full Validation does not implicitly validate consumer bindings. Object Storage binding validation additionally persists canonical metric-family, label-schema, and executable-query readiness so Analytics can distinguish contract gaps from current runtime reachability. Kubernetes and Object Storage inventory/lifecycle pages show the relationship read-only and link operators back to the source workspace for mutation.

@@ -74,6 +74,16 @@ follow the same pattern: MinIO API and Prometheus metrics providers bind to the
 same `object_storage_system:<asset-id>` scope.
 
 
+### Object Storage metrics validation boundary
+
+Prometheus binding validation registers one provider-neutral Object Storage
+consumer profile (`object-storage-metrics-v1`). The validation implementation
+then resolves a provider-qualified adapter. MinIO currently maps to the
+`minio-v2` audit contract, which validates scoped metric families, label schema,
+and executable canonical queries before persisting `metrics_readiness` evidence
+on the binding. This is deliberately separate from interactive Analytics runtime
+queries and from provider-core Prometheus readiness.
+
 ### Analytics metrics-source boundary
 
 Object Storage Analytics does not depend directly on Prometheus. It resolves a
@@ -171,8 +181,10 @@ One Prometheus provider may serve multiple managed-asset types. Provider Full
 Validation establishes only endpoint compatibility and `prometheus-core-v1`.
 `IntegrationBinding.validation_profile` selects the asset contract and
 `IntegrationBinding.validation_evidence` stores its scoped metric/PromQL evidence.
-Current canonical profiles are `kubernetes-metrics-v1` for
-`kubernetes_cluster` and `minio-metrics-2024-v1` for `object_storage_system`.
+Current canonical consumer profiles are `kubernetes-metrics-v1` for
+`kubernetes_cluster` and provider-neutral `object-storage-metrics-v1` for
+`object_storage_system`. Object Storage validation then resolves a
+provider-qualified adapter such as MinIO Metrics v2.
 The Prometheus resolver evaluates consumer eligibility from binding evidence, not
 from provider-wide Kubernetes capability state.
 

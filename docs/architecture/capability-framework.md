@@ -136,7 +136,8 @@ Provider core runtime (`prometheus-core-v1`)
         ↓
 IntegrationBinding
         ├── Kubernetes cluster → `kubernetes-metrics-v1`
-        └── Object storage system → `minio-metrics-2024-v1`
+        └── Object storage system → `object-storage-metrics-v1`
+                └── provider-qualified validator (MinIO Metrics v2 today)
 ```
 
 Runtime presentation models must be self-contained. Templates render `refresh_url`,

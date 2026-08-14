@@ -18,6 +18,8 @@ def main() -> int:
     profiles = read('app/integrations/prometheus/binding_profiles.py')
     minio = read('app/integrations/minio/__init__.py')
     binding_validation = read('app/integrations/prometheus/binding_validation.py')
+    kubernetes_validator = read('app/integrations/prometheus/binding_validators/kubernetes.py')
+    object_storage_validator = read('app/integrations/prometheus/binding_validators/object_storage.py')
     resolver = read('app/prometheus/resolver.py')
     model = read('app/models/integration.py')
     migration = read('migrations/versions/20260812_prometheus_consumer_validation_profiles.py')
@@ -44,8 +46,13 @@ def main() -> int:
     assert "PROFILE_KEY = 'prometheus-core-v1'" in core
 
     assert "profile_key='kubernetes-metrics-v1'" in profiles
-    assert "profile_key='minio-metrics-2024-v1'" in minio
-    assert 'PromQLProfileAuditor(client).audit' in binding_validation
+    assert "profile_key='object-storage-metrics-v1'" in profiles
+    assert "profile_key='minio-metrics-2024-v1'" not in minio
+    assert 'register_binding_validation_profile' not in minio
+    assert 'get_binding_validator(binding.asset_type)' in binding_validation
+    assert 'PromQLProfileAuditor(client).audit' in kubernetes_validator
+    assert 'ObjectStoragePrometheusProfileAuditor' in object_storage_validator
+    assert '_VALIDATION_ADAPTERS' in object_storage_validator
     assert 'binding.validation_evidence' in binding_validation
 
     assert 'validation_profile:' in model

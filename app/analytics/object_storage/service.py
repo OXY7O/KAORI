@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+from collections import defaultdict
 from dataclasses import dataclass
+from datetime import datetime
 from typing import Any
 
 from sqlalchemy.orm import selectinload
@@ -15,7 +17,12 @@ from app.analytics.object_storage.presentation import (
     utilization_tone,
 )
 from app.analytics.object_storage.sources import resolve_object_storage_metrics_source
-from app.analytics.shared.metrics import MetricsSource, MetricsSourceError
+from app.analytics.shared.metrics import (
+    MetricReadinessState,
+    MetricsReadinessSnapshot,
+    MetricsSource,
+    MetricsSourceError,
+)
 from app.analytics.shared.params import get_allowed_time_ranges, get_selected_time_range
 from app.models.integration import IntegrationBinding, IntegrationInstance
 from app.models.object_storage import ObjectStorageSystem
@@ -408,6 +415,82 @@ def _build_metrics(
     return payload
 
 
+def _metrics_readiness_view(snapshot: MetricsReadinessSnapshot) -> dict[str, Any]:
+    state_labels = {
+        MetricReadinessState.READY: ('Ready', 'normal'),
+        MetricReadinessState.PARTIAL: ('Partial Evidence', 'warning'),
+        MetricReadinessState.BLOCKED: ('Blocked', 'critical'),
+        MetricReadinessState.NO_DATA: ('No Data', 'warning'),
+        MetricReadinessState.UNSUPPORTED: ('Unsupported', 'unknown'),
+        MetricReadinessState.NOT_VALIDATED: ('Validation Required', 'info'),
+    }
+    label, tone = state_labels.get(snapshot.state, ('Validation Required', 'info'))
+    counts = {state.value: snapshot.count(state) for state in MetricReadinessState}
+    required_items = [item for item in snapshot.items if item.tier == 'required']
+    domain_items: dict[str, list[Any]] = defaultdict(list)
+    for item in snapshot.items:
+        domain_items[item.domain].append(item)
+    domains: list[dict[str, Any]] = []
+    for domain, items in domain_items.items():
+        ready_count = sum(item.state == MetricReadinessState.READY for item in items)
+        required = [item for item in items if item.tier == 'required']
+        required_ready = sum(item.state == MetricReadinessState.READY for item in required)
+        domain_state = 'ready' if ready_count == len(items) else 'partial'
+        domains.append(
+            {
+                'label': domain,
+                'status': domain_state,
+                'status_label': 'Ready' if domain_state == 'ready' else 'Partial',
+                'tone': 'normal' if domain_state == 'ready' else 'warning',
+                'ready_count': ready_count,
+                'total_count': len(items),
+                'required_ready_count': required_ready,
+                'required_total_count': len(required),
+            }
+        )
+    checked_at: datetime | None = None
+    if snapshot.checked_at:
+        try:
+            checked_at = datetime.fromisoformat(snapshot.checked_at)
+        except ValueError:
+            checked_at = None
+    return {
+        'profile': snapshot.profile,
+        'profile_label': snapshot.profile_label,
+        'status': snapshot.state.value,
+        'label': label,
+        'tone': tone,
+        'checked_at': checked_at,
+        'total_count': snapshot.total_count,
+        'ready_count': counts[MetricReadinessState.READY.value],
+        'no_data_count': counts[MetricReadinessState.NO_DATA.value],
+        'unsupported_count': counts[MetricReadinessState.UNSUPPORTED.value],
+        'blocked_count': counts[MetricReadinessState.BLOCKED.value],
+        'required_ready_count': sum(item.state == MetricReadinessState.READY for item in required_items),
+        'required_total_count': len(required_items),
+        'domains': domains,
+    }
+
+
+def _waiting_metrics_readiness() -> dict[str, Any]:
+    return {
+        'profile': 'not-validated',
+        'profile_label': 'Operational Metrics Contract',
+        'status': 'not_validated',
+        'label': 'Validation Required',
+        'tone': 'info',
+        'checked_at': None,
+        'total_count': 0,
+        'ready_count': 0,
+        'no_data_count': 0,
+        'unsupported_count': 0,
+        'blocked_count': 0,
+        'required_ready_count': 0,
+        'required_total_count': 0,
+        'domains': [],
+    }
+
+
 def _waiting_metrics_source() -> dict[str, Any]:
     return {
         'configured': False,
@@ -434,6 +517,7 @@ def get_object_storage_analytics_context(page_key: str, query_args: Any) -> dict
         'allowed_time_ranges': get_allowed_time_ranges(),
         'dependency_blocker': None,
         'metrics_source': _waiting_metrics_source(),
+        'metrics_readiness': _waiting_metrics_readiness(),
         'alertmanager': (
             _alertmanager_binding(system.id)
             if system is not None
@@ -477,6 +561,7 @@ def get_object_storage_analytics_context(page_key: str, query_args: Any) -> dict
         return context
 
     identity = source.identity
+    context['metrics_readiness'] = _metrics_readiness_view(source.readiness)
     context['metrics_source'] = {
         'configured': True,
         'provider': identity.provider,

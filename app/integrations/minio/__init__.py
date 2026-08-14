@@ -4,14 +4,8 @@ from app.integrations.minio.adapter import runtime_adapter
 from app.integrations.minio.capabilities import (
     CAPABILITY_KEYS,
     COMPATIBILITY_PROFILES,
-    OBJECT_STORAGE_SYSTEM_SCOPE,
 )
 from app.integrations.minio.presentation import build_runtime_overview_rows
-from app.integrations.prometheus.binding_profiles import (
-    BindingProbe,
-    BindingValidationProfile,
-    register_binding_validation_profile,
-)
 from app.integrations.registry import IntegrationModule, canonical_model_loader, model_loader, registry
 from app.models.minio import MinioInstance
 
@@ -29,23 +23,6 @@ def _record_failure(instance: MinioInstance, error: Exception) -> None:
     instance.object_storage_system.status = 'failed'
     instance.object_storage_system.last_check = now
 
-
-register_binding_validation_profile(
-    BindingValidationProfile(
-        asset_type=OBJECT_STORAGE_SYSTEM_SCOPE,
-        profile_key='minio-metrics-2024-v1',
-        label='MinIO Metrics 2024 v1',
-        probes=(
-            BindingProbe('minio_software_version_info', 'MinIO software identity'),
-            BindingProbe('minio_cluster_usage_total_bytes', 'MinIO cluster usage'),
-            BindingProbe('minio_bucket_usage_total_bytes', 'MinIO bucket usage'),
-        ),
-        no_match_message=(
-            'The selector was accepted, but no scoped MinIO v2 metrics matched. Verify the Prometheus scrape target, '
-            'selector label/value, and MinIO /minio/v2/metrics/* endpoints.'
-        ),
-    )
-)
 
 integration_module = IntegrationModule(
     provider_type='minio',

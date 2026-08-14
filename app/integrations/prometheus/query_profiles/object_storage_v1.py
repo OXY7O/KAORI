@@ -4,6 +4,7 @@ from app.integrations.prometheus.query_profiles.types import QueryDefinition
 
 PROFILE_KEY = 'object-storage-minio-v2'
 PROFILE_VERSION = 1
+PROFILE_LABEL = 'MinIO Metrics v2'
 
 QUERIES: dict[str, QueryDefinition] = {
     'object_storage.capacity.total_bytes': QueryDefinition(
@@ -40,6 +41,7 @@ QUERIES: dict[str, QueryDefinition] = {
         key='object_storage.health.offline_nodes',
         expression='max(minio_cluster_nodes_offline_total)',
         domain='object_storage_health',
+        readiness_tier='recommended',
         required_metrics=('minio_cluster_nodes_offline_total',),
     ),
     'object_storage.requests.rate': QueryDefinition(
@@ -60,18 +62,21 @@ QUERIES: dict[str, QueryDefinition] = {
         key='object_storage.requests.inflight',
         expression='sum(minio_s3_requests_inflight_total)',
         domain='object_storage_performance',
+        readiness_tier='recommended',
         required_metrics=('minio_s3_requests_inflight_total',),
     ),
     'object_storage.requests.waiting': QueryDefinition(
         key='object_storage.requests.waiting',
         expression='sum(minio_s3_requests_waiting_total)',
         domain='object_storage_performance',
+        readiness_tier='recommended',
         required_metrics=('minio_s3_requests_waiting_total',),
     ),
     'object_storage.traffic.received_bps': QueryDefinition(
         key='object_storage.traffic.received_bps',
         expression='sum(rate(minio_s3_traffic_received_bytes[5m]))',
         domain='object_storage_performance',
+        readiness_tier='recommended',
         required_metrics=('minio_s3_traffic_received_bytes',),
         required_history='5m',
     ),
@@ -79,6 +84,7 @@ QUERIES: dict[str, QueryDefinition] = {
         key='object_storage.traffic.sent_bps',
         expression='sum(rate(minio_s3_traffic_sent_bytes[5m]))',
         domain='object_storage_performance',
+        readiness_tier='recommended',
         required_metrics=('minio_s3_traffic_sent_bytes',),
         required_history='5m',
     ),
@@ -86,6 +92,7 @@ QUERIES: dict[str, QueryDefinition] = {
         key='object_storage.bucket.usage',
         expression='topk(50, max by (bucket) (minio_bucket_usage_total_bytes))',
         domain='object_storage_consumers',
+        readiness_tier='recommended',
         required_metrics=('minio_bucket_usage_total_bytes',),
         required_labels=(('minio_bucket_usage_total_bytes', ('bucket',)),),
     ),
@@ -93,6 +100,7 @@ QUERIES: dict[str, QueryDefinition] = {
         key='object_storage.bucket.objects',
         expression='topk(50, max by (bucket) (minio_bucket_usage_object_total))',
         domain='object_storage_consumers',
+        readiness_tier='recommended',
         required_metrics=('minio_bucket_usage_object_total',),
         required_labels=(('minio_bucket_usage_object_total', ('bucket',)),),
     ),
@@ -100,6 +108,7 @@ QUERIES: dict[str, QueryDefinition] = {
         key='object_storage.bucket.quota',
         expression='max by (bucket) (minio_bucket_quota_total_bytes)',
         domain='object_storage_consumers',
+        readiness_tier='optional',
         required_metrics=('minio_bucket_quota_total_bytes',),
         required_labels=(('minio_bucket_quota_total_bytes', ('bucket',)),),
     ),
@@ -107,6 +116,7 @@ QUERIES: dict[str, QueryDefinition] = {
         key='object_storage.bucket.request_rate',
         expression='topk(50, sum by (bucket) (rate(minio_bucket_requests_total[5m])))',
         domain='object_storage_consumers',
+        readiness_tier='recommended',
         required_metrics=('minio_bucket_requests_total',),
         required_labels=(('minio_bucket_requests_total', ('bucket',)),),
         required_history='5m',
@@ -118,6 +128,7 @@ QUERIES: dict[str, QueryDefinition] = {
             '+ sum by (bucket) (rate(minio_bucket_requests_5xx_errors_total[5m])))'
         ),
         domain='object_storage_consumers',
+        readiness_tier='recommended',
         required_metrics=(
             'minio_bucket_requests_4xx_errors_total',
             'minio_bucket_requests_5xx_errors_total',
@@ -140,3 +151,10 @@ def get_object_storage_query(key: str) -> QueryDefinition:
 
 def get_object_storage_query_expression(key: str) -> str:
     return get_object_storage_query(key).expression
+
+
+def list_object_storage_queries(*, domain: str | None = None) -> tuple[QueryDefinition, ...]:
+    values = QUERIES.values()
+    if domain:
+        values = (item for item in values if item.domain == domain)
+    return tuple(values)

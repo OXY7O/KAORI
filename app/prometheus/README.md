@@ -47,9 +47,11 @@ consumer-neutral and validates endpoint identity, compatibility, instant/range
 query execution, series discovery, and label discovery through
 `prometheus-core-v1`. It must not require Kubernetes or MinIO metrics.
 
-Metric-family requirements belong to `IntegrationBinding`. A Kubernetes cluster
-uses the `kubernetes-metrics-v1` consumer profile; a MinIO object-storage asset
-uses `minio-metrics-2024-v1`. Binding validation persists profile-specific
+Metric-family requirements belong to `IntegrationBinding`. A Kubernetes cluster uses the `kubernetes-metrics-v1` consumer profile; an
+object-storage system uses the provider-neutral `object-storage-metrics-v1`
+consumer profile. Object Storage then resolves a provider-qualified validator
+(currently MinIO Metrics v2) so provider-specific metric contracts do not leak
+into the generic binding registry. Binding validation persists profile-specific
 evidence on the binding, allowing one Prometheus source to serve multiple asset
 types without contaminating provider readiness.
 

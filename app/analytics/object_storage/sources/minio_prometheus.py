@@ -5,6 +5,9 @@ from typing import Any
 
 from app.analytics.shared.metrics import (
     MetricPoint,
+    MetricReadinessItem,
+    MetricReadinessState,
+    MetricsReadinessSnapshot,
     MetricsSourceError,
     MetricsSourceFailureKind,
     MetricsSourceIdentity,
@@ -89,6 +92,48 @@ def _matrix_points(payload: dict[str, Any]) -> list[MetricPoint]:
     return points
 
 
+def _readiness_state(value: object) -> MetricReadinessState:
+    normalized = str(value or '').strip().lower()
+    try:
+        return MetricReadinessState(normalized)
+    except ValueError:
+        return MetricReadinessState.NOT_VALIDATED
+
+
+def _readiness_from_evidence(evidence: dict[str, Any] | None) -> MetricsReadinessSnapshot:
+    payload = (evidence or {}).get('metrics_readiness') if isinstance(evidence, dict) else None
+    if not isinstance(payload, dict):
+        return MetricsReadinessSnapshot(
+            profile='not-validated',
+            profile_label='Metrics Contract Not Validated',
+            state=MetricReadinessState.NOT_VALIDATED,
+            checked_at=None,
+            items=(),
+        )
+
+    items: list[MetricReadinessItem] = []
+    for raw in payload.get('items') or ():
+        if not isinstance(raw, dict):
+            continue
+        items.append(
+            MetricReadinessItem(
+                key=str(raw.get('key') or ''),
+                label=str(raw.get('label') or raw.get('key') or 'Metric'),
+                domain=str(raw.get('domain_label') or raw.get('domain') or 'Operational Metrics'),
+                tier=str(raw.get('tier') or 'required'),
+                state=_readiness_state(raw.get('status')),
+                detail=str(raw.get('detail') or ''),
+            )
+        )
+    return MetricsReadinessSnapshot(
+        profile=str(payload.get('profile') or 'unknown'),
+        profile_label=str(payload.get('profile_label') or 'Operational Metrics'),
+        state=_readiness_state(payload.get('status')),
+        checked_at=str(payload.get('checked_at')) if payload.get('checked_at') else None,
+        items=tuple(items),
+    )
+
+
 def _translate_error(exc: PrometheusError) -> MetricsSourceError:
     if isinstance(exc, PrometheusConnectionError):
         kind = MetricsSourceFailureKind.TRANSPORT
@@ -142,6 +187,10 @@ class MinioPrometheusMetricsSource:
             instance_name=self._consumer.config.name,
             detail=' · '.join(detail_parts),
         )
+
+    @property
+    def readiness(self) -> MetricsReadinessSnapshot:
+        return _readiness_from_evidence(self._consumer.binding.validation_evidence)
 
     def scalar(self, metric_key: str) -> float | None:
         try:

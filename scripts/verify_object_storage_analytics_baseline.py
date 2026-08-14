@@ -17,10 +17,15 @@ def main() -> int:
     resolver = read('app/analytics/object_storage/sources/resolver.py')
     contracts = read('app/analytics/shared/metrics/contracts.py')
     profile = read('app/integrations/prometheus/query_profiles/object_storage_v1.py')
+    audit = read('app/integrations/prometheus/query_profiles/object_storage_audit.py')
+    binding_profiles = read('app/integrations/prometheus/binding_profiles.py')
+    binding_validation = read('app/integrations/prometheus/binding_validation.py')
+    binding_validator = read('app/integrations/prometheus/binding_validators/object_storage.py')
     menu = read('app/templates/components/navigation/analytics_menu.html')
     template = read('app/templates/analytics/object_storage/index.html')
     alert_template = read('app/templates/analytics/object_storage/partials/_alerts.html')
     boundary = read('app/templates/analytics/object_storage/partials/_evidence_boundary.html')
+    readiness = read('app/templates/analytics/object_storage/partials/_metrics_readiness.html')
 
     assert 'resolve_object_storage_metrics_source' in service
     assert 'MetricsSource' in service
@@ -33,6 +38,8 @@ def main() -> int:
     assert 'source_wide_failure' in service
 
     assert 'class MetricsSource(Protocol)' in contracts
+    assert 'class MetricsReadinessSnapshot' in contracts
+    assert 'def readiness(self) -> MetricsReadinessSnapshot' in contracts
     assert '_SOURCE_ADAPTERS' in resolver
     assert "metrics_provider='prometheus'" in resolver
     assert "asset_profile='minio-v2'" in resolver
@@ -40,6 +47,7 @@ def main() -> int:
     assert "scope_type='object_storage_system'" in adapter
     assert 'PrometheusConsumer.for_asset' in adapter
     assert 'retry_count=0' in adapter
+    assert 'def readiness(self) -> MetricsReadinessSnapshot' in adapter
 
     forbidden = ('MinioClient', 'MinioInstance', 'secret_key', 'access_key', 'boto3', 'minio.client')
     for token in forbidden:
@@ -57,6 +65,26 @@ def main() -> int:
         assert f'def {endpoint}' in routes
         assert "@permission_required('analytics.view')" in routes
         assert f'analytics.{endpoint}' in menu
+
+
+    assert "profile_key='object-storage-metrics-v1'" in binding_profiles
+    assert "validation_strategy='custom'" in binding_profiles
+    assert "register_binding_validator('object_storage_system'" in read(
+        'app/integrations/prometheus/binding_validators/__init__.py'
+    )
+    assert 'ObjectStoragePrometheusProfileAuditor' in binding_validator
+    assert 'return system.minio_connection is not None' in binding_validator
+    assert "'metrics_readiness': audit" in binding_validator
+    assert '_VALIDATION_ADAPTERS' in binding_validator
+    assert "asset_profile='minio-v2'" in binding_validator
+    assert 'get_binding_validator(binding.asset_type)' in binding_validation
+    assert "profile.profile_key == 'kubernetes-metrics-v1'" not in binding_validation
+    assert 'class ObjectStoragePrometheusProfileAuditor' in audit
+    assert 'self.client.series(metrics)' in audit
+    assert 'self.client.query(definition.expression)' in audit
+    assert "readiness_tier='optional'" in profile
+    assert 'Operational Metrics Readiness' in readiness
+    assert 'Persisted validation evidence' in readiness
 
     for metric in (
         'minio_cluster_capacity_usable_total_bytes',

@@ -67,6 +67,7 @@
             </section>
         {% else %}
             {% include "analytics/object_storage/partials/_controls.html" %}
+            {% include "analytics/object_storage/partials/_metrics_readiness.html" %}
             {% include "analytics/object_storage/partials/_summary.html" %}
             {% if page_key in ['overview', 'capacity', 'performance', 'forecast'] %}
                 {% include "analytics/object_storage/partials/_trend.html" %}

@@ -27,13 +27,24 @@ def test_consumer_validation_profiles_are_asset_scoped() -> None:
     profiles = read('app/integrations/prometheus/binding_profiles.py')
     minio = read('app/integrations/minio/__init__.py')
     binding_validation = read('app/integrations/prometheus/binding_validation.py')
+    kubernetes_validator = read('app/integrations/prometheus/binding_validators/kubernetes.py')
+    object_storage_validator = read('app/integrations/prometheus/binding_validators/object_storage.py')
     resolver = read('app/prometheus/resolver.py')
 
     assert "profile_key='kubernetes-metrics-v1'" in profiles
-    assert "profile_key='minio-metrics-2024-v1'" in minio
+    assert "profile_key='object-storage-metrics-v1'" in profiles
+    assert "profile_key='minio-metrics-2024-v1'" not in minio
+    assert 'register_binding_validation_profile' not in minio
     assert 'get_binding_validation_profile(binding.asset_type)' in binding_validation
+    assert 'get_binding_validator(binding.asset_type)' in binding_validation
     assert 'binding.validation_evidence' in binding_validation
-    assert 'PromQLProfileAuditor(client).audit' in binding_validation
+    assert '_validation_failure_evidence' in binding_validation
+    assert "previous_payload.get('profile_key') == profile.profile_key" in binding_validation
+    assert "'last_validation_attempt'" in binding_validation
+    assert 'PromQLProfileAuditor(client).audit' not in binding_validation
+    assert 'PromQLProfileAuditor(client).audit' in kubernetes_validator
+    assert 'ObjectStoragePrometheusProfileAuditor' in object_storage_validator
+    assert '_VALIDATION_ADAPTERS' in object_storage_validator
     assert 'binding.validation_evidence or {}' in resolver
 
 

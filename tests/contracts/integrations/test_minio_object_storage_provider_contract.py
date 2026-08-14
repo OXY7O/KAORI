@@ -62,19 +62,21 @@ def test_minio_api_plane_uses_s3_sdk_and_encrypted_credentials() -> None:
 def test_minio_prometheus_metrics_plane_reuses_canonical_asset_binding() -> None:
     service = read('app/minio/service.py')
     registration = read('app/integrations/minio/__init__.py')
-    prometheus_profiles = read('app/integrations/minio/__init__.py')
+    prometheus_profiles = read('app/integrations/prometheus/binding_profiles.py')
+    object_storage_validator = read('app/integrations/prometheus/binding_validators/object_storage.py')
     consumer_assets = read('app/integrations/consumer_assets.py')
 
     assert 'create_source_binding' not in service
     assert "asset_type='object_storage_system'" in consumer_assets
-    assert "profile_key='minio-metrics-2024-v1'" in prometheus_profiles
+    assert "profile_key='object-storage-metrics-v1'" in prometheus_profiles
+    assert "asset_profile='minio-v2'" in object_storage_validator
+    assert 'ObjectStoragePrometheusProfileAuditor' in object_storage_validator
     assert 'minio_prometheus' not in service.lower()
 
-    assert 'BindingValidationProfile(' in registration
-    assert 'asset_type=OBJECT_STORAGE_SYSTEM_SCOPE' in registration
-    assert "BindingProbe('minio_software_version_info'" in registration
-    assert "BindingProbe('minio_cluster_usage_total_bytes'" in registration
-    assert "BindingProbe('minio_bucket_usage_total_bytes'" in registration
+    assert 'BindingValidationProfile(' not in registration
+    assert 'BindingProbe(' not in registration
+    assert 'register_binding_validation_profile' not in registration
+    assert 'minio-metrics-2024-v1' not in registration
 
 
 def test_minio_owner_relationship_is_not_a_consumer_self_binding() -> None:

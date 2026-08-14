@@ -88,3 +88,44 @@ def test_prometheus_transport_capability_ownership_is_provider_core() -> None:
     assert 'provider_payload = instance.capabilities or {}' in resolver
     assert 'binding_payload = binding.validation_evidence or {}' in resolver
     assert 'observed = _available_technical_capabilities(binding, instance)' in resolver
+
+
+def test_object_storage_metrics_readiness_is_validation_owned_and_provider_qualified() -> None:
+    contracts = read('app/analytics/shared/metrics/contracts.py')
+    adapter = read('app/analytics/object_storage/sources/minio_prometheus.py')
+    binding_profiles = read('app/integrations/prometheus/binding_profiles.py')
+    binding_validation = read('app/integrations/prometheus/binding_validation.py')
+    validator_registry = read('app/integrations/prometheus/binding_validators/__init__.py')
+    object_storage_validator = read('app/integrations/prometheus/binding_validators/object_storage.py')
+    audit = read('app/integrations/prometheus/query_profiles/object_storage_audit.py')
+    readiness_template = read('app/templates/analytics/object_storage/partials/_metrics_readiness.html')
+
+    assert 'class MetricsReadinessSnapshot' in contracts
+    assert 'def readiness(self) -> MetricsReadinessSnapshot' in contracts
+    assert 'def readiness(self) -> MetricsReadinessSnapshot' in adapter
+    assert "profile_key='object-storage-metrics-v1'" in binding_profiles
+    assert "validation_strategy='custom'" in binding_profiles
+    assert "register_binding_validator('object_storage_system'" in validator_registry
+    assert 'ObjectStoragePrometheusProfileAuditor' in object_storage_validator
+    assert 'return system.minio_connection is not None' in object_storage_validator
+    assert "'metrics_readiness': audit" in object_storage_validator
+    assert '_VALIDATION_ADAPTERS' in object_storage_validator
+    assert "asset_profile='minio-v2'" in object_storage_validator
+    assert 'get_binding_validator(binding.asset_type)' in binding_validation
+    assert "profile.profile_key == 'kubernetes-metrics-v1'" not in binding_validation
+    assert 'class ObjectStoragePrometheusProfileAuditor' in audit
+    assert 'self.client.series(metrics)' in audit
+    assert 'self.client.query(definition.expression)' in audit
+    assert 'Operational Metrics Readiness' in readiness_template
+    assert 'Runtime reachability is evaluated separately' in readiness_template
+
+
+def test_object_storage_query_profile_classifies_required_recommended_and_optional_evidence() -> None:
+    profile = read('app/integrations/prometheus/query_profiles/object_storage_v1.py')
+    types = read('app/integrations/prometheus/query_profiles/types.py')
+
+    assert "QueryReadinessTier = Literal['required', 'recommended', 'optional']" in types
+    assert "readiness_tier: QueryReadinessTier = 'required'" in types
+    assert "readiness_tier='recommended'" in profile
+    assert "readiness_tier='optional'" in profile
+    assert 'minio_bucket_quota_total_bytes' in profile

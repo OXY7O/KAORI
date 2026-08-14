@@ -14,6 +14,8 @@ PYTHON_FILES = (
     'app/integrations/minio/capabilities.py',
     'app/integrations/minio/client.py',
     'app/integrations/minio/compatibility.py',
+    'app/integrations/prometheus/binding_profiles.py',
+    'app/integrations/prometheus/binding_validators/object_storage.py',
     'app/minio/contracts.py',
     'app/minio/forms.py',
     'app/minio/presentation.py',
@@ -45,6 +47,8 @@ def main() -> None:
     migration = read('migrations/versions/20260812_minio_object_storage_provider.py')
     owner_binding_cleanup = read('migrations/versions/20260812_remove_minio_owner_self_binding.py')
     registration = read('app/integrations/minio/__init__.py')
+    prometheus_profiles = read('app/integrations/prometheus/binding_profiles.py')
+    object_storage_validator = read('app/integrations/prometheus/binding_validators/object_storage.py')
     capabilities = read('app/integrations/minio/capabilities.py')
     compatibility = read('app/integrations/minio/compatibility.py')
     client = read('app/integrations/minio/client.py')
@@ -98,13 +102,30 @@ def main() -> None:
     require("navigation_endpoint_prefixes=('minio.',)" in registration, 'MinIO navigation ownership is missing')
     require("'binding.create'" not in registration, 'MinIO provider must not create a self consumer binding')
     require("'binding.validate'" not in registration, 'MinIO Core Validation must not validate an owner self-binding')
-    require('asset_type=OBJECT_STORAGE_SYSTEM_SCOPE' in registration, 'MinIO Prometheus profile must be asset-scoped')
-    for metric in (
-        'minio_software_version_info',
-        'minio_cluster_usage_total_bytes',
-        'minio_bucket_usage_total_bytes',
-    ):
-        require(metric in registration, f'MinIO Prometheus probe missing: {metric}')
+    require(
+        "asset_type='object_storage_system'" in prometheus_profiles,
+        'Object Storage Prometheus consumer profile must be asset-scoped',
+    )
+    require(
+        "profile_key='object-storage-metrics-v1'" in prometheus_profiles,
+        'Object Storage Prometheus consumer profile missing',
+    )
+    require(
+        "asset_profile='minio-v2'" in object_storage_validator,
+        'MinIO + Prometheus provider-qualified validation adapter missing',
+    )
+    require(
+        'ObjectStoragePrometheusProfileAuditor' in object_storage_validator,
+        'MinIO Prometheus readiness auditor missing',
+    )
+    require(
+        'register_binding_validation_profile' not in registration,
+        'MinIO provider must not own a Prometheus consumer-profile registration',
+    )
+    require(
+        'BindingProbe(' not in registration,
+        'MinIO provider must not embed Prometheus metric probes',
+    )
 
     require(
         "SUPPORTED_RELEASE = 'RELEASE.2024-08-03T04-33-23Z'" in compatibility,

@@ -1,5 +1,5 @@
 {
-  "broad_exception_limit": 195,
+  "broad_exception_limit": 194,
   "defaults": {
     "arguments": 8,
     "branch_points": 30,
