@@ -20,16 +20,9 @@
                 {% include "analytics/object_storage/partials/_overview_workspace.html" %}
             {% else %}
                 {% if page_key == 'capacity' %}
-                    {% include "analytics/object_storage/partials/_capacity_analysis.html" %}
-                    {% include "analytics/object_storage/partials/_trend.html" %}
-                    {% include "analytics/object_storage/partials/_capacity_pressure.html" %}
-                    {% include "analytics/object_storage/partials/_bucket_table.html" %}
-                    {% include "analytics/object_storage/partials/_reconciliation.html" %}
+                    {% include "analytics/object_storage/partials/_capacity_workspace.html" %}
                 {% elif page_key == 'performance' %}
-                    {% include "analytics/object_storage/partials/_performance_analysis.html" %}
-                    {% include "analytics/object_storage/partials/_performance_traffic.html" %}
-                    {% include "analytics/object_storage/partials/_trend.html" %}
-                    {% include "analytics/object_storage/partials/_bucket_table.html" %}
+                    {% include "analytics/object_storage/partials/_performance_workspace.html" %}
                 {% elif page_key == 'forecast' %}
                     {% include "analytics/object_storage/partials/_summary.html" %}
                     {% include "analytics/object_storage/partials/_forecast_worker_status.html" %}
@@ -45,9 +38,11 @@
                     {% include "analytics/object_storage/partials/_summary.html" %}
                     {% include "analytics/object_storage/partials/_alerts.html" %}
                 {% endif %}
-                {% include "analytics/object_storage/partials/_metrics_readiness.html" %}
+                {% if page_key not in ['capacity', 'performance'] %}
+                    {% include "analytics/object_storage/partials/_metrics_readiness.html" %}
+                {% endif %}
             {% endif %}
-            {% if page_key != 'overview' %}
+            {% if page_key not in ['overview', 'capacity', 'performance'] %}
                 {% include "analytics/object_storage/partials/_evidence_boundary.html" %}
             {% endif %}
         {% endif %}

@@ -60,13 +60,13 @@ PAGES: dict[str, PageDefinition] = {
         'Object Storage Analytics',
     ),
     'capacity': PageDefinition(
-        'Capacity & Usage',
+        'Object Storage Capacity & Usage',
         'Review usable capacity, consumption, bucket pressure, and growth.',
         'database',
         'Object Storage Analytics',
     ),
     'performance': PageDefinition(
-        'Performance',
+        'Object Storage Performance',
         'Review S3 request activity, errors, queue pressure, and traffic.',
         'activity',
         'Object Storage Analytics',

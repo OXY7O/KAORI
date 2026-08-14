@@ -19,7 +19,7 @@
             {% endcall %}
         </div>
         <aside class="{{ page_hero.aside_classes() }}"
-               aria-label="Object Storage Analytics Operational Posture">
+               aria-label="{{ page.title }} Operational Posture">
             {% if dependency_blocker %}
                 {% include "analytics/object_storage/partials/_hero_blocked_posture.html" %}
             {% else %}

@@ -48,8 +48,10 @@ def main() -> int:
     record_pagination = read('app/templates/analytics/components/_record_pagination.html')
     overview_analysis = read('app/templates/analytics/object_storage/partials/_overview_analysis.html')
     capacity_analysis = read('app/templates/analytics/object_storage/partials/_capacity_analysis.html')
+    capacity_workspace = read('app/templates/analytics/object_storage/partials/_capacity_workspace.html')
     capacity_pressure = read('app/templates/analytics/object_storage/partials/_capacity_pressure.html')
     performance_analysis = read('app/templates/analytics/object_storage/partials/_performance_analysis.html')
+    performance_workspace = read('app/templates/analytics/object_storage/partials/_performance_workspace.html')
     performance_traffic = read('app/templates/analytics/object_storage/partials/_performance_traffic.html')
     forecast_analysis = read('app/templates/analytics/object_storage/partials/_forecast_analysis.html')
     top_consumers_analysis = read('app/templates/analytics/object_storage/partials/_top_consumers_analysis.html')
@@ -215,7 +217,9 @@ def main() -> int:
     assert 'metrics_query_blocker' in runtime
     assert 'build_bucket_table_view' in bucket_table_service
     assert "default=5" in bucket_table_service
-    assert "{'tab': 'consumers'} if page_key == 'overview' else {}" in bucket_table_service
+    assert "'overview': 'consumers'" in bucket_table_service
+    assert "'capacity': 'quota'" in bucket_table_service
+    assert "'performance': 'buckets'" in bucket_table_service
     assert "{5, 10, 25, 50}" in bucket_table_service
     assert 'components/loading_bar.html' in controls
     assert 'object-storage-analytics-refresh-indicator' in controls
@@ -238,6 +242,35 @@ def main() -> int:
     assert 'components/content_tabs.html' in overview_workspace
     assert 'data-analytics-tabset' in overview_workspace
     assert 'data-analytics-preserve-tab' in controls
+    assert "'Object Storage Capacity & Usage'" in service
+    assert "'Object Storage Performance'" in service
+    assert "'Capacity Posture'" in hero_posture
+    assert "'Capacity Status'" in hero_posture
+    assert "'Performance Posture'" in hero_posture
+    assert "'Request Health'" in hero_posture
+    assert 'data-analytics-tabset-id="object-storage-capacity-content"' in capacity_workspace
+    assert 'Capacity &amp; Usage Workspace' in capacity_workspace
+    for label in ('Summary', 'Usage Trend', 'Quota & Buckets', 'Evidence'):
+        assert f"'{label}'" in capacity_workspace
+    assert '_capacity_analysis.html' in capacity_workspace
+    assert '_trend.html' in capacity_workspace
+    assert '_capacity_pressure.html' in capacity_workspace
+    assert '_bucket_table.html' in capacity_workspace
+    assert '_reconciliation.html' in capacity_workspace
+    assert '_metrics_readiness.html' in capacity_workspace
+    assert '_evidence_boundary.html' in capacity_workspace
+    assert 'data-analytics-tabset-id="object-storage-performance-content"' in performance_workspace
+    assert 'Performance Analysis Workspace' in performance_workspace
+    for label in ('Request Health', 'Traffic & Trend', 'Bucket Activity', 'Evidence'):
+        assert f"'{label}'" in performance_workspace
+    assert '_performance_analysis.html' in performance_workspace
+    assert '_performance_traffic.html' in performance_workspace
+    assert '_trend.html' in performance_workspace
+    assert '_bucket_table.html' in performance_workspace
+    assert '_metrics_readiness.html' in performance_workspace
+    assert '_evidence_boundary.html' in performance_workspace
+    assert "page_key in ['overview', 'capacity', 'performance']" in controls
+    assert "document.addEventListener('kaori:analytics-tab-visible'" in javascript
     for label in ('Capacity', 'Performance', 'Consumers', 'Forecast', 'Evidence'):
         assert f"'{label}'" in overview_workspace
     assert 'Capacity Snapshot' in overview_capacity

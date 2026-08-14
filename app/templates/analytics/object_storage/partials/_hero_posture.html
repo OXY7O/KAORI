@@ -1,16 +1,45 @@
 {% import "components/page_hero.html" as page_hero %}
-{% set posture = metrics.operational_posture|default({}) %}
-{% set posture_status = posture.status|default(metrics_source.label|default('Unknown')) %}
-{% set posture_tone = posture.tone|default(metrics_source.tone|default('unknown')) %}
 {% if page_key == 'overview' %}
+    {% set posture = metrics.operational_posture|default({}) %}
     {{ page_hero.context_card_body(
         'Operational Posture',
         'Analytics Status',
-        posture_status,
-        posture_tone,
+        posture.status|default('Unknown'),
+        posture.tone|default('unknown'),
         [
             ('gauge', 'Capacity Use', metrics.utilization_display|default('N/A'), 'Current physical utilization'),
             ('circle-alert', 'Error Ratio', metrics.error_ratio_display|default('N/A'), 'Current request error ratio')
+        ],
+        'Manage Object Storage',
+        url_for('object_storage_inventory.overview'),
+        'database'
+    ) }}
+{% elif page_key == 'capacity' %}
+    {% set posture = metrics.capacity_posture|default({}) %}
+    {{ page_hero.context_card_body(
+        'Capacity Posture',
+        'Capacity Status',
+        posture.status|default('Unknown'),
+        posture.tone|default('unknown'),
+        [
+            ('gauge', 'Utilization', metrics.utilization_display|default('N/A'), 'Physical capacity utilization'),
+            ('circle-gauge', 'Headroom', metrics.capacity_free_display|default('N/A'), 'Remaining physical capacity')
+        ],
+        'Manage Object Storage',
+        url_for('object_storage_inventory.overview'),
+        'database'
+    ) }}
+{% elif page_key == 'performance' %}
+    {% set posture = metrics.performance_posture|default({}) %}
+    {% set performance = metrics.performance|default({}) %}
+    {{ page_hero.context_card_body(
+        'Performance Posture',
+        'Request Health',
+        posture.status|default('Unknown'),
+        posture.tone|default('unknown'),
+        [
+            ('circle-alert', 'Error Ratio', performance.error_ratio_display|default('N/A'), 'Current request reliability signal'),
+            ('activity', 'Request Rate', performance.request_rate_display|default('N/A'), 'Current S3 request demand')
         ],
         'Manage Object Storage',
         url_for('object_storage_inventory.overview'),

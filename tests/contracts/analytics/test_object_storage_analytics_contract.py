@@ -165,11 +165,12 @@ def test_object_storage_analysis_semantics_are_provider_neutral_and_page_specifi
     assert 'MinIO' not in analysis
     assert 'object_storage/partials/_overview_analysis.html' in index
     assert 'object_storage/partials/_overview_workspace.html' in index
-    assert 'object_storage/partials/_capacity_analysis.html' in index
-    assert 'object_storage/partials/_performance_analysis.html' in index
+    assert 'object_storage/partials/_capacity_workspace.html' in index
+    assert 'object_storage/partials/_performance_workspace.html' in index
     assert 'object_storage/partials/_forecast_analysis.html' in index
     assert 'object_storage/partials/_top_consumers_analysis.html' in index
-    assert 'object_storage/partials/_reconciliation.html' in index
+    capacity_workspace = read('app/templates/analytics/object_storage/partials/_capacity_workspace.html')
+    assert 'object_storage/partials/_reconciliation.html' in capacity_workspace
 
 
 def test_object_storage_analysis_distinguishes_operational_domains_and_provenance() -> None:
@@ -302,7 +303,9 @@ def test_object_storage_bucket_records_use_shared_kaori_table_contract() -> None
     assert 'components/analytics/_table_label_primitives.html' not in table
     assert 'object-storage-bucket-table-loading-indicator' in table
     assert "default=5" in table_service
-    assert "{'tab': 'consumers'} if page_key == 'overview' else {}" in table_service
+    assert "'overview': 'consumers'" in table_service
+    assert "'capacity': 'quota'" in table_service
+    assert "'performance': 'buckets'" in table_service
     assert "{5, 10, 25, 50}" in table_service
     assert 'Canonical Inventory-aligned full-page + HTMX pagination' in pagination
 
@@ -355,6 +358,41 @@ def test_object_storage_overview_matches_kubernetes_overview_hero_and_tab_contra
     assert "js/analytics/kubernetes/controls.js" not in layout
     assert (ROOT / 'app/static/js/analytics/controls.js').exists()
     assert not (ROOT / 'app/static/js/analytics/kubernetes/controls.js').exists()
+
+
+def test_object_storage_capacity_and_performance_match_shared_analytics_hero_and_tab_contract() -> None:
+    service = read('app/analytics/object_storage/service.py')
+    index = read('app/templates/analytics/object_storage/index.html')
+    hero_posture = read('app/templates/analytics/object_storage/partials/_hero_posture.html')
+    controls = read('app/templates/analytics/object_storage/partials/_controls.html')
+    capacity_workspace = read('app/templates/analytics/object_storage/partials/_capacity_workspace.html')
+    performance_workspace = read('app/templates/analytics/object_storage/partials/_performance_workspace.html')
+    table_service = read('app/analytics/object_storage/bucket_table.py')
+    javascript = read('app/static/js/analytics/object_storage.js')
+
+    assert "'Object Storage Capacity & Usage'" in service
+    assert "'Object Storage Performance'" in service
+    assert "'Capacity Posture'" in hero_posture
+    assert "'Capacity Status'" in hero_posture
+    assert "'Performance Posture'" in hero_posture
+    assert "'Request Health'" in hero_posture
+    assert "'Utilization'" in hero_posture
+    assert "'Headroom'" in hero_posture
+    assert "'Request Rate'" in hero_posture
+
+    assert 'partials/_capacity_workspace.html' in index
+    assert 'partials/_performance_workspace.html' in index
+    assert 'data-analytics-tabset-id="object-storage-capacity-content"' in capacity_workspace
+    assert 'data-analytics-tabset-id="object-storage-performance-content"' in performance_workspace
+    for label in ('Summary', 'Usage Trend', 'Quota & Buckets', 'Evidence'):
+        assert f"'{label}'" in capacity_workspace
+    for label in ('Request Health', 'Traffic & Trend', 'Bucket Activity', 'Evidence'):
+        assert f"'{label}'" in performance_workspace
+
+    assert "page_key in ['overview', 'capacity', 'performance']" in controls
+    assert "'capacity': 'quota'" in table_service
+    assert "'performance': 'buckets'" in table_service
+    assert "document.addEventListener('kaori:analytics-tab-visible'" in javascript
 
 
 def test_object_storage_consumer_profile_staleness_is_explicit_and_direct_cutover() -> None:

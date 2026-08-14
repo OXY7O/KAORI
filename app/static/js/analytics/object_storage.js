@@ -128,6 +128,7 @@
     }
 
     document.addEventListener('DOMContentLoaded', () => render(document))
+    document.addEventListener('kaori:analytics-tab-visible', (event) => render(event.target))
     document.body.addEventListener('htmx:afterSwap', (event) => render(event.target))
     document.body.addEventListener('htmx:beforeSwap', destroyChart)
 })()

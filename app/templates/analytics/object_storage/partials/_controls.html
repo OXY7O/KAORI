@@ -28,7 +28,7 @@
               hx-trigger="change delay:120ms"
               data-analytics-preserve-tab
               class="grid gap-4 sm:grid-cols-2">
-            {% if page_key == 'overview' %}
+            {% if page_key in ['overview', 'capacity', 'performance'] %}
                 <input type="hidden" name="tab" value="">
             {% endif %}
             <label class="block" for="object-storage-system-filter">

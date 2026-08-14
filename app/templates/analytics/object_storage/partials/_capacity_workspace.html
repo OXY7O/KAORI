@@ -1,0 +1,65 @@
+{% import "components/content_tabs.html" as content_tabs %}
+{% set capacity_tabs = [
+    ('summary', 'Summary', 'database'),
+    ('trend', 'Usage Trend', 'chart-no-axes-combined'),
+    ('quota', 'Quota & Buckets', 'gauge'),
+    ('evidence', 'Evidence', 'list-checks')
+] %}
+<section id="object-storage-capacity-workspace"
+         data-analytics-tabset
+         data-analytics-tabset-id="object-storage-capacity-content"
+         data-default-tab="summary"
+         class="{{ analysis_surface.snapshot_shell_classes() }}">
+    <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+        <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+            <div class="flex min-w-0 items-start gap-3">
+                <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="server-cog" class="h-5 w-5"></i></span>
+                <div class="min-w-0">
+                    <h2 class="text-lg font-semibold text-content-primary">Capacity &amp; Usage Workspace</h2>
+                    <p class="mt-1 text-sm leading-6 text-content-secondary">Review physical headroom, observed usage direction, bucket quota pressure, and supporting evidence one domain at a time.</p>
+                </div>
+            </div>
+            <div class="flex flex-wrap items-center gap-2">
+                {{ table_label.metadata_label(system.name|default('Selected System'), 'server', size='compact') }}
+                {{ table_label.metadata_label(selected_time_range|upper ~ ' Window', 'clock-3', size='compact') }}
+            </div>
+        </div>
+    </header>
+    {{ content_tabs.render_buttons('object-storage-capacity-content', capacity_tabs, 'Capacity & Usage Workspace', embedded=true, data_namespace='analytics', active_key='summary', show_badges=false, nowrap=true) }}
+    <div class="p-4 sm:p-5">
+        <div id="object-storage-capacity-content-panel-summary"
+             role="tabpanel"
+             aria-labelledby="object-storage-capacity-content-tab-summary"
+             data-analytics-tab-panel="summary"
+             class="space-y-4">
+            {% include "analytics/object_storage/partials/_capacity_analysis.html" %}
+        </div>
+        <div id="object-storage-capacity-content-panel-trend"
+             role="tabpanel"
+             aria-labelledby="object-storage-capacity-content-tab-trend"
+             data-analytics-tab-panel="trend"
+             hidden
+             class="space-y-4">
+            {% include "analytics/object_storage/partials/_trend.html" %}
+        </div>
+        <div id="object-storage-capacity-content-panel-quota"
+             role="tabpanel"
+             aria-labelledby="object-storage-capacity-content-tab-quota"
+             data-analytics-tab-panel="quota"
+             hidden
+             class="space-y-4">
+            {% include "analytics/object_storage/partials/_capacity_pressure.html" %}
+            {% include "analytics/object_storage/partials/_bucket_table.html" %}
+        </div>
+        <div id="object-storage-capacity-content-panel-evidence"
+             role="tabpanel"
+             aria-labelledby="object-storage-capacity-content-tab-evidence"
+             data-analytics-tab-panel="evidence"
+             hidden
+             class="space-y-4">
+            {% include "analytics/object_storage/partials/_reconciliation.html" %}
+            {% include "analytics/object_storage/partials/_metrics_readiness.html" %}
+            {% include "analytics/object_storage/partials/_evidence_boundary.html" %}
+        </div>
+    </div>
+</section>

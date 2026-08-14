@@ -14,6 +14,14 @@ def _page_endpoint(page_key: str) -> str:
     }.get(page_key, 'analytics.object_storage_overview')
 
 
+def _workspace_tab(page_key: str) -> str | None:
+    return {
+        'overview': 'consumers',
+        'capacity': 'quota',
+        'performance': 'buckets',
+    }.get(page_key)
+
+
 def _positive_int(value: object, *, default: int) -> int:
     try:
         parsed = int(str(value or '').strip())
@@ -47,6 +55,17 @@ def build_bucket_table_view(
     page_rows = filtered[start_index : start_index + per_page]
     start_item = start_index + 1 if total_items else 0
     end_item = min(start_index + per_page, total_items) if total_items else 0
+    query_params: dict[str, object] = {
+        'system_id': str(system.id),
+        'time_range': time_range,
+        'page_key': page_key,
+        'bucket_q': search,
+        'bucket_per_page': per_page,
+    }
+    workspace_tab = _workspace_tab(page_key)
+    if workspace_tab is not None:
+        query_params['tab'] = workspace_tab
+
     return {
         'rows': page_rows,
         'search': search,
@@ -59,13 +78,6 @@ def build_bucket_table_view(
             'start_item': start_item,
             'end_item': end_item,
         },
-        'query_params': {
-            'system_id': str(system.id),
-            'time_range': time_range,
-            'page_key': page_key,
-            'bucket_q': search,
-            'bucket_per_page': per_page,
-            **({'tab': 'consumers'} if page_key == 'overview' else {}),
-        },
+        'query_params': query_params,
         'page_endpoint': _page_endpoint(page_key),
     }

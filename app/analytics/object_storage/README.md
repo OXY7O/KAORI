@@ -114,8 +114,8 @@ adapters and the domain service must stay provider-neutral.
 The current Object Storage Analytics workspace exposes distinct operational semantics instead of reusing one generic summary for every route:
 
 - **Overview** consolidates capacity, request-path, growth, and bucket-concentration posture.
-- **Capacity & Usage** separates physical usable headroom, usage growth, bucket quota pressure, and concentration.
-- **Performance** separates request demand from reliability, queue/inflight pressure, node availability, ingress/egress throughput, request/error history, and bucket request-path evidence. Increasing demand is descriptive; only error, waiting, and availability evidence drive request-path posture.
+- **Capacity & Usage** separates physical usable headroom, usage growth, bucket quota pressure, and concentration inside Summary, Usage Trend, Quota & Buckets, and Evidence tabs.
+- **Performance** separates request health, traffic/trend, bucket activity, and evidence into the shared Analytics tab workspace pattern. Request demand stays distinct from reliability, queue/inflight pressure, node availability, ingress/egress throughput, and request/error history; increasing demand is descriptive, while error, waiting, and availability evidence drive request-path posture.
 - **Top Consumers** ranks usage, object density, request demand, and error pressure independently.
 - **Forecast** uses the current linear baseline only as a planning boundary and makes its methodology explicit.
 - **Alerts & Anomalies** continues to provide metric-derived signals while Alertmanager lifecycle correlation remains optional.
