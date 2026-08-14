@@ -25,8 +25,9 @@ capabilities to continue development behind explicit Reserved Plan/fail-closed b
 
 ### Alert Intelligence
 
-- Active for the validated Kubernetes alert-evidence enrichment boundary.
-- Prometheus remains detector; Alertmanager remains grouping/routing/notification owner.
+- Active for validated Kubernetes and Object Storage alert-evidence enrichment boundaries.
+- Automatic source resolution prefers Alertmanager and falls back to Prometheus `ALERTS` when the selected asset contract allows it.
+- Alertmanager remains grouping, inhibition, silence, routing, and raw receiver-delivery owner; KAORI adds interpretation, committed recommendation context, and enriched Notification Channel delivery.
 - Server/HCI enrichment remains Reserved Plan until provider contracts are complete.
 
 ### Automation Control
@@ -61,3 +62,12 @@ contracts, and E2E/integration evidence as applicable.
 - No page-local inline JavaScript/event handlers.
 - No arbitrary typography/raw palette drift.
 - Dark mode and accessibility semantics remain part of the locked baseline.
+
+### Notification Channels
+
+- Telegram is the first available outbound Intelligence provider.
+- Credentials remain encrypted and are never rendered back to clients.
+- Automatic delivery requires an enabled channel with a successful test.
+- The initial dispatcher sends first-seen active alert episodes only; resolved-event notification is not yet available.
+- Alertmanager remains the raw alert routing and receiver authority; KAORI delivers enriched Intelligence context.
+- Additional channel providers remain future extensions of the same provider-neutral contract.

@@ -7,6 +7,7 @@ def register_blueprints(app: Flask) -> None:
     """Import and register KAORI web domains after extensions are initialized."""
     from app.access import bp as access_bp
     from app.alertmanager.routes import alertmanager_bp
+    from app.alert_intelligence.routes import alert_intelligence_bp
     from app.analytics.routes import analytics_bp
     from app.auth.routes import auth_bp
     from app.automation_control.routes import automation_control_bp
@@ -21,6 +22,7 @@ def register_blueprints(app: Flask) -> None:
     from app.kubernetes_operations.routes import kubernetes_operations_bp
     from app.minio.routes import minio_bp
     from app.notifications.routes import notifications_bp
+    from app.notification_channels.routes import notification_channels_bp
     from app.platform_operations import bp as platform_operations_bp
     from app.prometheus.routes import prometheus_bp
     from app.reports.routes import reports_bp
@@ -38,6 +40,8 @@ def register_blueprints(app: Flask) -> None:
         inventory_bp,
         object_storage_inventory_bp,
         notifications_bp,
+        notification_channels_bp,
+        alert_intelligence_bp,
         analytics_bp,
         governance_bp,
         kubernetes_operations_bp,

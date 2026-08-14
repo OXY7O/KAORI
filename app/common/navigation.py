@@ -56,7 +56,7 @@ _ENDPOINT_LABELS: dict[str, str] = {
     # Intelligence
     'intelligence.index': 'Recommendations',
     'intelligence.recommendations': 'Recommendations',
-    'intelligence.alert_intelligence': 'Alert Intelligence',
+    'alert_intelligence.index': 'Alert Intelligence',
     'intelligence.catalog': 'Catalog',
     'automation_control.index': 'Automation Control',
     # Reports

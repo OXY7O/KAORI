@@ -34,15 +34,32 @@ def test_automation_control_remains_fail_closed_while_reserved_plan_work_is_inco
     assert 'AUTOMATION_CONTROL_MUTATIONS_ENABLED' not in default_config
 
 
-def test_alert_intelligence_keeps_unimplemented_provider_paths_reserved():
-    service = read('app/intelligence/service.py')
-    payload = service.split('def get_alert_intelligence_payload()', 1)[1]
+def test_alert_intelligence_uses_supported_multi_domain_alert_sources():
+    module = read('app/alert_intelligence/service.py')
+    workspace = read('app/templates/intelligence/partials/_alert_intelligence_workspace.html')
 
-    assert "'title': 'Server Signal Enrichment'" in payload
-    assert "'title': 'HCI Signal Enrichment'" in payload
-    assert payload.count("'status': 'Reserved Plan'") >= 3
-    assert "'output': 'Reserved decision candidate'" in payload
-    assert "'Automated mutation while control gates remain disabled'" in payload
+    assert 'load_alerts_by_source' in module
+    assert 'load_alert_stream' in module
+    assert 'get_active_recommendation_findings' in module
+    assert "'kubernetes'" in module
+    assert "'object_storage'" in module
+    assert 'Alertmanager is preferred' in workspace
+    assert 'Prometheus ALERTS' in workspace
+    assert 'This is contextual correlation, not a claim that every finding was caused by every alert.' in workspace
+
+
+def test_notification_channels_add_telegram_without_replacing_alertmanager_authority():
+    routes = read('app/notification_channels/routes.py')
+    model = read('app/models/notification_channel.py')
+    provider = read('app/notification_channels/providers/telegram.py')
+    page = read('app/templates/intelligence/notification_channels/index.html')
+
+    assert "@permission_required('settings.manage_integrations')" in routes
+    assert 'EncryptedText()' in model
+    assert "_TELEGRAM_API = 'https://api.telegram.org'" in provider
+    assert '/sendMessage' in provider
+    assert 'type="password"' in page
+    assert 'Alertmanager receiver delivery remains a separate authority' in page
 
 
 def test_intelligence_baseline_lock_is_registered_in_quality_gate():

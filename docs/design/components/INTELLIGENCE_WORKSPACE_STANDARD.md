@@ -2,7 +2,7 @@
 
 ## Scope
 
-This standard covers Recommendations, Rule Catalog, Alert Intelligence, and Automation Control.
+This standard covers Recommendations, Rule Catalog, Alert Intelligence, Notification Channels, and Automation Control.
 
 ## Hero
 
@@ -57,3 +57,11 @@ scaffolding exists.
 - The catalog may filter by provider coverage, but a provider filter does not imply that the rule condition itself is provider-specific.
 - Rule definitions use a generic `evidence_boundary` contract. Prometheus, Alertmanager, provider APIs, committed inventory, and worker-materialized artifacts are evidence sources; no single backend owns the catalog schema.
 - Object Storage metric-signal definitions must stay aligned with the thresholds used by Object Storage Analytics. Threshold changes require coordinated updates to analysis behavior, catalog definition, recommendation semantics where applicable, and contract tests.
+
+## Alert Intelligence and outbound notification ownership
+
+Alert Intelligence is a read-oriented, asset-scoped interpretation workspace. Kubernetes and Object Storage consume their existing alert-source contracts: Automatic mode prefers Alertmanager and may fall back to Prometheus `ALERTS`. Provider alert lifecycle, KAORI recommendations, and catalog rules must remain distinguishable; contextual correlation must never be presented as causal attribution without evidence.
+
+Notification Channels is a separate governed mutation boundary under `/intelligence/notification-channels`. Channel configuration requires integration-management permission because it stores external delivery credentials. Telegram is the first provider adapter. Bot credentials must use KAORI encrypted credential storage, must never be rendered back into HTML or logs, and a successful test delivery is required before an enabled channel is eligible for automatic Alert Intelligence delivery. Alertmanager remains responsible for raw alert grouping, inhibition, silences, routing, and receiver delivery; KAORI channels deliver enriched Intelligence context and do not replace Alertmanager receiver configuration.
+
+The provider contract must remain extensible so future Slack, Teams, email, or webhook adapters can be added without changing Alert Intelligence semantics. The initial dispatcher sends first-seen active alert episodes that match channel policy and deduplicates them per channel/event identity. Resolved-event delivery is not part of the initial Telegram contract and must not be implied by UI status or delivery history.

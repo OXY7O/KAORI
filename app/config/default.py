@@ -5,6 +5,8 @@ from pathlib import Path
 from celery.schedules import crontab
 from dotenv import dotenv_values
 
+from app.notification_channels.config import build_notification_beat_schedule
+
 BASE_DIR = Path(__file__).resolve().parents[2]
 
 
@@ -160,6 +162,7 @@ def _build_maintenance_beat_schedule() -> dict[str, dict[str, object]]:
                 or 'integration-runtime'
             },
         }
+    schedule.update(build_notification_beat_schedule())
     if _env_bool('JOB_RECOVERY_ENABLED', True):
         schedule['job-execution-recovery'] = {
             'task': 'app.jobs.tasks.reconcile_stale_jobs',
@@ -298,21 +301,17 @@ class Config:
         'CLUSTER_SYNC_LOCK_TTL_SECONDS',
         10800,
     )
-
     CLUSTER_SYNC_COMPLETED_TTL_SECONDS = _env_int(
         'CLUSTER_SYNC_COMPLETED_TTL_SECONDS',
         300,
     )
-
     OBJECT_STORAGE_INVENTORY_USAGE_STATS_MODE = _object_storage_usage_stats_mode()
-
     TLS_CERTIFICATE_RENEWAL_WINDOW_DAYS = _bounded_env_int(
         'TLS_CERTIFICATE_RENEWAL_WINDOW_DAYS',
         30,
         1,
         365,
     )
-
     TLS_CERTIFICATE_CRITICAL_WINDOW_DAYS = _bounded_env_int(
         'TLS_CERTIFICATE_CRITICAL_WINDOW_DAYS',
         7,
@@ -324,10 +323,8 @@ class Config:
         'CELERY_TIMEZONE',
         'UTC',
     )
-
     RETENTION_CELERY_QUEUE = _retention_queue_name()
     RETENTION_RETRY_DELAY_SECONDS = _bounded_env_int('RETENTION_RETRY_DELAY_SECONDS', 60, 1, 3600)
-
     INTEGRATION_VALIDATION_CELERY_QUEUE = (
         _env_str('INTEGRATION_VALIDATION_CELERY_QUEUE', 'integration-validation').strip() or 'integration-validation'
     )
@@ -336,7 +333,6 @@ class Config:
         'INTEGRATION_VALIDATION_LOCK_TTL_SECONDS',
         7200,
     )
-
     INTEGRATION_RUNTIME_CELERY_QUEUE = (
         _env_str('INTEGRATION_RUNTIME_CELERY_QUEUE', 'integration-runtime').strip() or 'integration-runtime'
     )
@@ -426,6 +422,7 @@ class Config:
         'timezone': CELERY_TIMEZONE,
         'enable_utc': True,
         'imports': (
+            'app.alert_delivery.tasks',
             'app.analytics.kubernetes.tasks',
             'app.analytics.object_storage.tasks',
             'app.cluster.tasks',
@@ -480,6 +477,9 @@ class Config:
                 'queue': INTEGRATION_RUNTIME_CELERY_QUEUE,
             },
             'app.jobs.tasks.reconcile_stale_jobs': {
+                'queue': JOB_MAINTENANCE_CELERY_QUEUE,
+            },
+            'app.alert_delivery.tasks.dispatch_alert_intelligence_notifications': {
                 'queue': JOB_MAINTENANCE_CELERY_QUEUE,
             },
             'app.reports.schedules.tasks.run_report_schedule_job': {

@@ -2,9 +2,7 @@ from __future__ import annotations
 
 from flask import Blueprint, abort, redirect, render_template, request, url_for
 from flask.typing import ResponseReturnValue
-
 from app.intelligence.service import (
-    get_alert_intelligence_payload,
     get_catalog_rule,
     get_recommendation_finding,
     get_recommendations_payload,
@@ -82,10 +80,3 @@ def catalog_rule_details(rule_key: str) -> ResponseReturnValue:
         'intelligence/partials/_catalog_detail_content.html',
         item=rule,
     )
-
-
-@intelligence_bp.route('/alert-intelligence')
-@permission_required('intelligence.view')
-def alert_intelligence() -> ResponseReturnValue:
-    payload = get_alert_intelligence_payload()
-    return render_template('intelligence/alert_intelligence.html', payload=payload)

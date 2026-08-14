@@ -10,7 +10,10 @@ maintaining duplicate page-specific recommendation logic.
 - `recommendation_engine.py`: rule evaluation and recommendation construction.
 - `service.py`: public use cases, filtering, and recommendation orchestration.
 - `workflow.py`: immutable decision approval and rejection transitions.
-- `routes.py`: domain-owned HTTP/HTMX surfaces for Recommendations, Alert Intelligence, and Rule Catalog.
+- `routes.py`: read-only domain-owned HTTP/HTMX surfaces for Recommendations and Rule Catalog.
+- `../alert_intelligence/`: multi-domain active-alert normalization, scoped recommendation context, and provider-authority presentation.
+- `../notification_channels/`: governed outbound delivery boundary for enriched Intelligence notifications; Telegram is the first provider implementation.
+- `../alert_delivery/`: background dispatch orchestration for eligible notification channels.
 
 Rules must identify source, domain, impacted assets, evidence, and remediation.
 Imported and internal rules share one catalog contract. Do not embed page-specific
@@ -61,8 +64,8 @@ Locked current-state contracts:
   first validated Object Storage provider. Current forecast recommendations also consume current worker-materialized Object Storage forecast snapshots.
 - **Rule Catalog** exposes canonical definitions. Rules that do not yet have a validated
   provider/evaluator path remain **Reserved Plan**.
-- **Alert Intelligence** exposes the validated Kubernetes evidence/enrichment boundary;
-  Server and HCI enrichment remain **Reserved Plan**.
+- **Alert Intelligence** is active for Kubernetes and Object Storage. Automatic alert-source selection prefers Alertmanager and falls back to Prometheus `ALERTS`; committed Recommendations and Rule Catalog definitions provide contextual enrichment without asserting causal correlation. Server and HCI enrichment remain **Reserved Plan**.
+- **Notification Channels** is an outbound Intelligence delivery boundary. Telegram is the first supported provider; credentials are encrypted, test delivery is required before automatic delivery, and Alertmanager remains the raw alert routing/receiver authority.
 - **Automation Control** is an application-layer orchestration surface. Its mutation
   routes remain fail-closed behind `AUTOMATION_CONTROL_MUTATIONS_ENABLED`, which must
   remain unset/default-false in this baseline. The approved pre-feature-completion posture
@@ -79,8 +82,8 @@ enabled.
 Object Storage recommendations reuse the central Intelligence catalog and finding lifecycle; they do
 not introduce a MinIO-specific Intelligence workspace. Current active MinIO-backed evaluators consume
 only committed `ObjectStorageSystem` / `ObjectStorageBucket` evidence for bucket quota pressure, public
-exposure review, and missing encryption configuration. Intelligence does not issue live MinIO,
-Prometheus, or Alertmanager queries. Provider identity is attached to each finding as evidence while the
+exposure review, and missing encryption configuration. The recommendation evaluator does not issue live
+MinIO, Prometheus, or Alertmanager queries. Provider identity is attached to each finding as evidence while the
 canonical rule domain remains `object_storage`.
 
 Reusable recommendation callers must scope findings with canonical `domain` + `asset_key`. Kubernetes
@@ -97,3 +100,16 @@ rule namespace. Metric-signal catalog entries mirror the current Object Storage 
 request-error, waiting-request, and offline-node boundaries. The catalog schema uses a generic
 `evidence_boundary` field so Prometheus, Alertmanager, provider APIs, committed inventory, and worker
 artifacts can coexist without making one backend the Intelligence schema owner.
+
+## Alert Intelligence notification delivery
+
+Notification Channels is implemented as a provider-neutral outbound delivery layer. Telegram is the first adapter. Channel credentials are stored through `EncryptedText`; the generic persistence contract stores encrypted provider credential payload, destination, provider configuration, severity policy, and domain scope without Telegram-specific database columns.
+
+Automatic Alert Intelligence notification polling runs on the existing maintenance worker queue. Current environment controls are:
+
+- `ALERT_INTELLIGENCE_NOTIFICATION_ENABLED` (default `true`)
+- `ALERT_INTELLIGENCE_NOTIFICATION_INTERVAL_MINUTES` (default `1`, bounded `1..60`)
+- `NOTIFICATION_DELIVERY_TIMEOUT_SECONDS` (default `10`, bounded `1..60`)
+- `NOTIFICATION_DELIVERY_MAX_ATTEMPTS` (default `3`, bounded `1..10`)
+
+An enabled channel is not eligible for automatic delivery until Test Delivery succeeds. Active-alert events are deduplicated per channel and alert episode; failed deliveries can retry up to the configured attempt ceiling. Alertmanager remains the authoritative raw routing/receiver layer. KAORI Notification Channels deliver enriched Alert Intelligence context only.

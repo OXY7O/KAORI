@@ -30,6 +30,7 @@ from app.models.kubernetes import KubernetesConnection
 from app.models.lifecycle import DataLifecyclePolicy
 from app.models.minio import MinioInstance
 from app.models.notification import Notification
+from app.models.notification_channel import NotificationChannel, NotificationDelivery
 from app.models.object_storage import ObjectStorageBucket, ObjectStorageSystem
 from app.models.object_storage_analytics import ObjectStorageForecastSnapshot
 from app.models.prometheus import PrometheusInstance
@@ -86,6 +87,8 @@ __all__ = [
     'NamespaceInventory',
     'NodeInventory',
     'Notification',
+    'NotificationChannel',
+    'NotificationDelivery',
     'TLSCertificateCollectionState',
     'TLSCertificateInventory',
     'TLSCertificateUpdateEvent',

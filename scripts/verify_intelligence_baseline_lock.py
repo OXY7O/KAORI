@@ -41,6 +41,14 @@ def main() -> int:
     rule_presentation = read('app/intelligence/rule_presentation.py')
     recommendation_engine = read('app/intelligence/recommendation_engine.py')
     object_storage_recommendations = read('app/intelligence/object_storage_recommendations.py')
+    alert_intelligence = read('app/alert_intelligence/service.py')
+    alert_routes = read('app/alert_intelligence/routes.py')
+    notification_routes = read('app/notification_channels/routes.py')
+    notification_service = read('app/notification_channels/service.py')
+    notification_model = read('app/models/notification_channel.py')
+    telegram_provider = read('app/notification_channels/providers/telegram.py')
+    notification_page = read('app/templates/intelligence/notification_channels/index.html')
+    alert_workspace = read('app/templates/intelligence/partials/_alert_intelligence_workspace.html')
     automation_routes = read('app/automation_control/routes.py')
     automation_presentation = read('app/automation_control/presentation.py')
     readme = read('app/intelligence/README.md')
@@ -69,7 +77,6 @@ def main() -> int:
         "@intelligence_bp.get('/recommendations/<path:recommendation_key>/details')",
         "@intelligence_bp.route('/catalog')",
         "@intelligence_bp.get('/catalog/<path:rule_key>/details')",
-        "@intelligence_bp.route('/alert-intelligence')",
     ):
         position = intelligence_routes.index(route_signature)
         permission_position = intelligence_routes.index("@permission_required('intelligence.view')", position)
@@ -85,6 +92,20 @@ def main() -> int:
         'Intelligence read domain must not own mutation routes',
         errors,
     )
+
+    for route_signature in (
+        "@alert_intelligence_bp.get('')",
+        "@alert_intelligence_bp.get('/records')",
+    ):
+        position = alert_routes.index(route_signature)
+        permission_position = alert_routes.index("@permission_required('intelligence.view')", position)
+        function_position = alert_routes.index('def ', position)
+        require(
+            position < permission_position < function_position,
+            f'Alert Intelligence view permission boundary missing after {route_signature}',
+            errors,
+        )
+    require('@alert_intelligence_bp.post' not in alert_routes, 'Alert Intelligence read capability must not own mutation routes', errors)
 
     for required in (
         "@automation_control_bp.route('/automation-control')",
@@ -117,17 +138,81 @@ def main() -> int:
         errors,
     )
 
-    alert_payload_start = intelligence_service.index('def get_alert_intelligence_payload(')
-    alert_payload = intelligence_service[alert_payload_start:]
+    require(
+        'def get_alert_intelligence_payload(' not in intelligence_service,
+        'Alert Intelligence payload ownership must not return to the generic Intelligence service',
+        errors,
+    )
     for required in (
-        "'title': 'Server Signal Enrichment'",
-        "'status': 'Reserved Plan'",
-        "'title': 'HCI Signal Enrichment'",
-        "'title': 'Govern Handoff'",
-        "'output': 'Reserved decision candidate'",
-        "'Automated mutation while control gates remain disabled'",
+        'load_alerts_by_source',
+        'load_alert_stream',
+        'get_active_recommendation_findings',
+        'notification_channel_summary',
+        'recent_delivery_summary',
+        "'kubernetes'",
+        "'object_storage'",
+        "'auto'",
+        "'alertmanager'",
+        "'prometheus'",
     ):
-        require(required in alert_payload, f'Alert Intelligence Reserved Plan boundary missing: {required}', errors)
+        require(required in alert_intelligence, f'Alert Intelligence multi-domain contract missing: {required}', errors)
+    for required in (
+        'Alert Overview',
+        'Alert Records',
+        'Correlation',
+        'Notification Delivery',
+        'Evidence',
+        'Alertmanager is preferred',
+        'Prometheus ALERTS',
+    ):
+        require(required in alert_workspace, f'Alert Intelligence workspace contract missing: {required}', errors)
+    require(
+        'This is contextual correlation, not a claim that every finding was caused by every alert.' in alert_workspace,
+        'Alert Intelligence must keep contextual correlation distinct from causal attribution',
+        errors,
+    )
+
+    for route_signature in (
+        "@notification_channels_bp.get('/')",
+    ):
+        position = notification_routes.index(route_signature)
+        permission_position = notification_routes.index("@permission_required('intelligence.view')", position)
+        function_position = notification_routes.index('def ', position)
+        require(position < permission_position < function_position, 'Notification Channels read permission is missing', errors)
+    for route_signature in (
+        "@notification_channels_bp.post('/')",
+        "@notification_channels_bp.post('/<int:channel_id>/update')",
+        "@notification_channels_bp.post('/<int:channel_id>/test')",
+        "@notification_channels_bp.post('/<int:channel_id>/delete')",
+    ):
+        position = notification_routes.index(route_signature)
+        permission_position = notification_routes.index("@permission_required('settings.manage_integrations')", position)
+        function_position = notification_routes.index('def ', position)
+        require(
+            position < permission_position < function_position,
+            f'Notification Channels mutation permission missing after {route_signature}',
+            errors,
+        )
+    for required in (
+        'EncryptedText()',
+        'credential_payload: Mapped[str | None] = mapped_column(EncryptedText()',
+        "event_types=['alert_intelligence.active_alert']",
+        "UniqueConstraint('channel_id', 'event_key'",
+    ):
+        source = notification_model if required != "event_types=['alert_intelligence.active_alert']" else notification_service
+        require(required in source, f'Notification channel persistence contract missing: {required}', errors)
+    for required in (
+        "_TELEGRAM_API = 'https://api.telegram.org'",
+        '/sendMessage',
+        "method='POST'",
+        "'chat_id': chat_id",
+    ):
+        require(required in telegram_provider, f'Telegram provider contract missing: {required}', errors)
+    require('bot_token' not in telegram_provider.split('except HTTPError', 1)[1], 'Telegram errors must not disclose bot tokens', errors)
+    require('type="password"' in notification_page, 'Telegram credential field must remain password-only', errors)
+    require('value="{{ form_channel.bot_token' not in notification_page, 'Telegram bot token must never be rendered back to HTML', errors)
+    require('Alertmanager receiver delivery remains a separate authority' in notification_page, 'Notification Channels must preserve Alertmanager authority boundary', errors)
+    require('first-seen' in notification_service.lower(), 'Notification delivery must document first-seen deduplication semantics', errors)
 
     recommendations_page = read('app/templates/intelligence/recommendations.html')
     catalog_page = read('app/templates/intelligence/rule_catalog.html')
@@ -143,8 +228,11 @@ def main() -> int:
         (automation_page, 'Automation Control'),
     ):
         require('components/page_hero.html' in page, f'{label} must use shared Hero ownership', errors)
+        shared_workspace_owned = 'intelligence/components/_workspace.html' in page
+        if label == 'Alert Intelligence':
+            shared_workspace_owned = shared_workspace_owned or 'intelligence/components/_workspace.html' in alert_workspace
         require(
-            'intelligence/components/_workspace.html' in page,
+            shared_workspace_owned,
             f'{label} must use shared Intelligence workspace',
             errors,
         )

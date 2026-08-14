@@ -137,14 +137,15 @@ SURFACES: tuple[ReleaseSurface, ...] = (
         navigation_source='app/templates/components/navigation/intelligence_menu.html',
         navigation_endpoints=(
             'intelligence.recommendations',
-            'intelligence.alert_intelligence',
+            'alert_intelligence.index',
+            'notification_channels.index',
             'intelligence.catalog',
             'automation_control.index',
         ),
-        blueprint_vars=('intelligence_bp', 'automation_control_bp'),
+        blueprint_vars=('intelligence_bp', 'alert_intelligence_bp', 'notification_channels_bp', 'automation_control_bp'),
         verifiers=('scripts/verify_intelligence_baseline_lock.py',),
         contract_paths=('tests/contracts/intelligence',),
-        notes='Automation mutations and reserved Server/HCI capability remain deferred and fail-closed.',
+        notes='Alert Intelligence supports Kubernetes/Object Storage; Telegram is the first governed notification provider. Automation mutations and Server/HCI capability remain deferred and fail-closed.',
     ),
     ReleaseSurface(
         key='reports',
