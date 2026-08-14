@@ -9,12 +9,21 @@ from werkzeug.datastructures import MultiDict
 from app.common.inventory_generation import filter_current_generation
 from app.extensions.db import db
 from app.intelligence.catalog import INTELLIGENCE_CATALOG
+from app.intelligence.finding_presentation import (
+    build_affected_items,
+    build_fix_steps,
+    compact_recommendation_summary,
+    finding_scope_details,
+    format_affected_summary,
+)
+from app.intelligence.object_storage_recommendations import build_object_storage_recommendation_findings
 
 PER_PAGE_OPTIONS = [5, 10, 25, 50]
 
 DOMAIN_OPTIONS = [
     {'value': '', 'label': 'All Asset Domains'},
     {'value': 'kubernetes', 'label': 'Kubernetes'},
+    {'value': 'object_storage', 'label': 'Object Storage'},
     {'value': 'server', 'label': 'Server'},
     {'value': 'hci', 'label': 'HCI'},
 ]
@@ -48,6 +57,8 @@ SOURCE_KIND_OPTIONS = [
     {'value': 'pod', 'label': 'Pod'},
     {'value': 'persistent_volume', 'label': 'Persistent Volume'},
     {'value': 'tls_secret', 'label': 'TLS Secret'},
+    {'value': 'object_storage_system', 'label': 'Object Storage System'},
+    {'value': 'object_storage_bucket', 'label': 'Object Storage Bucket'},
     {'value': 'vm', 'label': 'VM'},
     {'value': 'datastore', 'label': 'Datastore'},
     {'value': 'hci_cluster', 'label': 'HCI Cluster'},
@@ -64,6 +75,8 @@ SIGNAL_SOURCE_OPTIONS = [
     {'value': '', 'label': 'All Signal Sources'},
     {'value': 'kubernetes_api', 'label': 'Kubernetes API'},
     {'value': 'kaori_kubernetes_analysis', 'label': 'KAORI Kubernetes Analysis'},
+    {'value': 'object_storage_inventory', 'label': 'Object Storage Inventory'},
+    {'value': 'kaori_object_storage_analysis', 'label': 'KAORI Object Storage Analysis'},
     {'value': 'alertmanager', 'label': 'Alertmanager'},
     {'value': 'prometheus_metrics', 'label': 'Prometheus Metrics'},
     {'value': 'server_inventory', 'label': 'Server Node Exporter'},
@@ -73,10 +86,6 @@ SIGNAL_SOURCE_OPTIONS = [
 
 def _clean(value: str | None) -> str:
     return (value or '').strip()
-
-
-def _as_dict(value: Any) -> dict[str, Any]:
-    return value if isinstance(value, dict) else {}
 
 
 def _to_int(value: str | None, default: int) -> int:
@@ -90,36 +99,13 @@ def _format_label(value: str) -> str:
     return value.replace('_', ' ').title()
 
 
-def _compact_recommendation_summary(value: Any, *, limit: int = 180) -> str:
-    text = ' '.join(str(value or '').split())
-    if not text:
-        return 'Evidence-backed operational guidance is available in View Details.'
-
-    for marker in (' Examples:', ' Example:', ' Examples include:'):
-        if marker in text:
-            text = text.split(marker, 1)[0].rstrip(' .') + '.'
-            break
-
-    if len(text) <= limit:
-        return text
-
-    first_sentence = text.split('. ', 1)[0].strip()
-    if 48 <= len(first_sentence) <= limit:
-        return first_sentence.rstrip('.') + '.'
-
-    words: list[str] = []
-    length = 0
-    for word in text.split():
-        projected = length + len(word) + (1 if words else 0)
-        if projected > limit:
-            break
-        words.append(word)
-        length = projected
-    return ' '.join(words).rstrip(' ,;:-') + '.'
-
-
 def _domain_label(value: str) -> str:
-    return {'kubernetes': 'Kubernetes', 'server': 'Server', 'hci': 'HCI'}.get(value, _format_label(value))
+    return {
+        'kubernetes': 'Kubernetes',
+        'object_storage': 'Object Storage',
+        'server': 'Server',
+        'hci': 'HCI',
+    }.get(value, _format_label(value))
 
 
 def _status_label(value: str) -> str:
@@ -134,6 +120,8 @@ def _signal_label(value: str) -> str:
     return {
         'kubernetes_api': 'Kubernetes API',
         'kaori_kubernetes_analysis': 'KAORI Kubernetes Analysis',
+        'object_storage_inventory': 'Object Storage Inventory',
+        'kaori_object_storage_analysis': 'KAORI Object Storage Analysis',
         'alertmanager': 'Alertmanager',
         'prometheus_metrics': 'Prometheus Metrics',
         'server_inventory': 'Server Node Exporter',
@@ -262,13 +250,10 @@ def _base_payload(args: MultiDict[str, str], *, page_mode: str) -> dict[str, Any
 
     if page_mode != 'catalog':
         for item in items:
-            evidence = _as_dict(item.get('evidence'))
-            namespace = _clean(str(evidence.get('namespace') or ''))
-            affected_count = evidence.get('affected_pods') or evidence.get('affected_count') or evidence.get('count')
-            source_label = str(item.get('source_kind_label') or 'Resource')
-            item['scope_title'] = namespace if namespace and namespace != 'cluster scope' else 'Cluster Scope'
-            item['scope_supporting'] = f'{affected_count} {source_label} item(s)' if affected_count else source_label
-            item['list_summary'] = _compact_recommendation_summary(item.get('summary'))
+            scope_title, scope_supporting = finding_scope_details(item)
+            item['scope_title'] = scope_title
+            item['scope_supporting'] = scope_supporting
+            item['list_summary'] = compact_recommendation_summary(item.get('summary'))
 
     return {
         'page_mode': page_mode,
@@ -318,34 +303,40 @@ def _build_recommendation_findings(catalog: list[dict[str, Any]]) -> list[dict[s
     findings.extend(_build_node_readiness_findings(rules))
     findings.extend(_build_storage_binding_findings(rules))
     findings.extend(_build_tls_certificate_findings(rules))
+    findings.extend(build_object_storage_recommendation_findings(rules))
 
     findings = [_normalize_rule(finding) for finding in findings]
     for finding in findings:
-        finding.setdefault('affected_summary', _format_affected_summary(finding))
-        finding.setdefault('affected_items', _build_affected_items(finding))
-        finding.setdefault('fix_steps', _build_fix_steps(finding))
+        finding.setdefault('affected_summary', format_affected_summary(finding))
+        finding.setdefault('affected_items', build_affected_items(finding))
+        finding.setdefault('fix_steps', build_fix_steps(finding))
     findings.sort(key=lambda item: (_severity_rank(str(item.get('severity'))), str(item.get('title', ''))))
     return findings
 
 
 def get_active_recommendation_findings(
     *,
-    selected_cluster_id: str | None = None,
+    domain: str | None = None,
+    asset_key: str | None = None,
     limit: int | None = None,
 ) -> list[dict[str, Any]]:
     """Return active catalog-backed findings for reusable product surfaces.
 
-    This is the shared source used by Intelligence > Recommendations and the
-    Dashboard Recommended Actions section. When a cluster is selected, only
-    findings whose evidence belongs to that cluster are returned.
+    Intelligence owns the multi-domain finding set. Callers scope it explicitly
+    by canonical domain and asset key instead of relying on Kubernetes-specific
+    filtering arguments.
     """
 
     catalog = [_normalize_rule(rule) for rule in INTELLIGENCE_CATALOG]
     findings = _build_recommendation_findings(catalog)
 
-    selected_cluster = _clean(selected_cluster_id)
-    if selected_cluster:
-        findings = [finding for finding in findings if _finding_cluster_id(finding) == selected_cluster]
+    selected_domain = _clean(domain)
+    if selected_domain:
+        findings = [finding for finding in findings if _clean(str(finding.get('domain'))) == selected_domain]
+
+    selected_asset = _clean(asset_key)
+    if selected_asset:
+        findings = [finding for finding in findings if _finding_asset_key(finding) == selected_asset]
 
     if limit is not None:
         findings = findings[: max(int(limit), 0)]
@@ -353,11 +344,18 @@ def get_active_recommendation_findings(
     return findings
 
 
-def _finding_cluster_id(finding: dict[str, Any]) -> str:
+def _finding_asset_key(finding: dict[str, Any]) -> str:
     evidence = finding.get('evidence')
     if not isinstance(evidence, dict):
         return ''
-    return _clean(str(evidence.get('cluster_id') or ''))
+    return _clean(
+        str(
+            evidence.get('asset_key')
+            or evidence.get('cluster_id')
+            or evidence.get('object_storage_system_id')
+            or ''
+        )
+    )
 
 
 def _clone_rule_as_finding(
@@ -380,130 +378,10 @@ def _clone_rule_as_finding(
     output['impact'] = impact or str(rule.get('impact') or '')
     output['status'] = 'available'
     output['evidence'] = evidence or {}
-    output.setdefault('affected_summary', _format_affected_summary(output))
-    output.setdefault('affected_items', _build_affected_items(output))
-    output.setdefault('fix_steps', _build_fix_steps(output))
+    output.setdefault('affected_summary', format_affected_summary(output))
+    output.setdefault('affected_items', build_affected_items(output))
+    output.setdefault('fix_steps', build_fix_steps(output))
     return output
-
-
-def _format_affected_summary(item: dict[str, Any]) -> str:
-    evidence = _as_dict(item.get('evidence'))
-    affected_count = evidence.get('affected_pods') or evidence.get('affected_count') or evidence.get('count')
-    namespace = str(evidence.get('namespace') or '').strip()
-    cluster_id = str(evidence.get('cluster_id') or '').strip()
-    source_kind = str(item.get('source_kind_label') or item.get('source_kind') or 'Resource')
-
-    if affected_count:
-        location_parts = []
-        if namespace and namespace != 'cluster scope':
-            location_parts.append(f'namespace {namespace}')
-        if cluster_id:
-            location_parts.append(f'cluster {cluster_id}')
-        location = ' in ' + ' / '.join(location_parts) if location_parts else ''
-        return f'{affected_count} {source_kind.lower()} item(s){location} matched this recommendation rule.'
-
-    domain = str(item.get('domain_label') or item.get('domain') or 'asset')
-    return f'{source_kind} item in {domain} scope matched this recommendation rule.'
-
-
-def _build_affected_items(item: dict[str, Any]) -> list[dict[str, str]]:
-    evidence = _as_dict(item.get('evidence'))
-    source_kind = str(item.get('source_kind_label') or item.get('source_kind') or 'Resource')
-    output: list[dict[str, str]] = [
-        {'label': 'Asset', 'value': str(item.get('domain_label') or item.get('domain') or '-')},
-        {'label': 'Resource', 'value': source_kind},
-    ]
-
-    cluster_id = str(evidence.get('cluster_id') or '').strip()
-    namespace = str(evidence.get('namespace') or '').strip()
-    count = evidence.get('affected_pods') or evidence.get('affected_count') or evidence.get('count')
-    phase = str(evidence.get('phase') or '').strip()
-    status = str(evidence.get('status') or '').strip()
-    secret_name = str(evidence.get('secret_name') or evidence.get('example_secret') or '').strip()
-    days_remaining = evidence.get('days_remaining') or evidence.get('min_days_remaining')
-    issuer = str(evidence.get('issuer') or '').strip()
-
-    if cluster_id:
-        output.append({'label': 'Cluster', 'value': cluster_id})
-    if namespace:
-        output.append({'label': 'Namespace', 'value': namespace})
-    if count:
-        output.append({'label': 'Affected', 'value': str(count)})
-    if phase:
-        output.append({'label': 'Phase', 'value': phase})
-    if status:
-        output.append({'label': 'Status', 'value': status})
-    if secret_name:
-        output.append({'label': 'TLS Secret', 'value': secret_name})
-    if days_remaining is not None:
-        output.append({'label': 'Days Remaining', 'value': str(days_remaining)})
-    if issuer:
-        output.append({'label': 'Issuer', 'value': issuer})
-
-    return output[:8]
-
-
-def _build_fix_steps(item: dict[str, Any]) -> list[str]:
-    source_kind = str(item.get('source_kind') or '')
-    category = str(item.get('category') or '')
-    action = str(item.get('recommended_action') or '').strip()
-
-    if source_kind == 'pod':
-        steps = [
-            'Review the committed Pod finding, affected namespace, workload ownership, restart count, phase, and related inventory evidence.',
-            'Open Pod Inventory or the related workload page and validate live events, image pull state, probes, scheduling constraints, restarts, and node placement.',
-            'Apply the approved manifest or configuration correction, then restart or safely roll out the affected workload.',
-            'Resync Pod inventory and confirm the workload is healthy and this recommendation no longer appears.',
-        ]
-    elif source_kind == 'node':
-        steps = [
-            'Review the committed Node finding, pressure conditions, schedulability, capacity, and affected workload context.',
-            'Open Node Inventory and validate kubelet, container runtime, disk pressure, memory pressure, network reachability, and recent node events.',
-            'Recover the node or cordon and drain it safely before applying the required infrastructure correction.',
-            'Resync Node inventory and confirm healthy conditions, schedulable capacity, and recommendation clearance.',
-        ]
-    elif source_kind == 'persistent_volume':
-        steps = [
-            'Review the committed PVC/PV finding, namespace, storage class, binding state, capacity, and affected workload dependency.',
-            'Open Storage Analysis and validate PVC/PV events, provisioner health, access modes, quota, and current attachment or mount state.',
-            'Correct binding or provisioning, expand capacity, or remove the blocking storage condition using the approved change path.',
-            'Resync storage inventory and confirm the claim is healthy and this recommendation no longer appears.',
-        ]
-    elif source_kind == 'tls_secret':
-        steps = [
-            'Review the committed TLS Secret finding, issuer, SAN coverage, expiry, namespace ownership, and Ingress usage mapping.',
-            'Open Kubernetes Governance > TLS Secret and validate the replacement certificate, private key match, selected existing Secret targets, and HTMX preview.',
-            'Upload the renewed tls.crt and tls.key, then update only the approved existing Kubernetes TLS Secret targets.',
-            'Resync TLS inventory, validate the affected Ingress endpoint certificate chain, and confirm the recommendation is cleared.',
-        ]
-    elif source_kind == 'workload':
-        steps = [
-            'Review the committed workload finding, controller type, namespace, rollout state, replica health, and affected container context.',
-            'Open Workload Analysis and validate requests, limits, rollout conditions, images, probes, events, and namespace policy constraints.',
-            'Patch the approved workload manifest and complete a controlled rollout of the affected workload.',
-            'Resync workload inventory and confirm healthy rollout state and recommendation clearance.',
-        ]
-    elif category == 'capacity':
-        steps = [
-            'Review the committed capacity finding, selected scope, utilization trend, saturation point, and top-consumer evidence.',
-            'Validate the current Prometheus source, time range, workload demand, quotas, limits, and infrastructure allocation before changing capacity.',
-            'Apply the approved capacity, quota, limit, or infrastructure allocation change.',
-            'Refresh analytics and generated report context, then confirm the risk state and recommendation are cleared.',
-        ]
-    else:
-        steps = [
-            'Review the committed recommendation evidence, affected scope, resource identifiers, and rule condition.',
-            'Open the related inventory, analytics, governance, or integration page and validate the current live resource state and ownership.',
-            action or 'Apply the recommended remediation through the approved operational change path.',
-            'Resync the relevant KAORI data source and confirm the condition is resolved and the recommendation no longer appears.',
-        ]
-
-    deduped: list[str] = []
-    for step in steps:
-        normalized = str(step or '').strip()
-        if normalized and normalized not in deduped:
-            deduped.append(normalized)
-    return deduped[:4]
 
 
 def _build_latest_image_findings(rules: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
@@ -869,13 +747,10 @@ def get_recommendation_finding(recommendation_key: str) -> dict[str, Any] | None
         if _clean(str(finding.get('rule_key'))) != resolved_key:
             continue
 
-        evidence = _as_dict(finding.get('evidence'))
-        namespace = _clean(str(evidence.get('namespace') or ''))
-        affected_count = evidence.get('affected_pods') or evidence.get('affected_count') or evidence.get('count')
-        source_label = str(finding.get('source_kind_label') or 'Resource')
-        finding['scope_title'] = namespace if namespace and namespace != 'cluster scope' else 'Cluster Scope'
-        finding['scope_supporting'] = f'{affected_count} {source_label} item(s)' if affected_count else source_label
-        finding['list_summary'] = _compact_recommendation_summary(finding.get('summary'))
+        scope_title, scope_supporting = finding_scope_details(finding)
+        finding['scope_title'] = scope_title
+        finding['scope_supporting'] = scope_supporting
+        finding['list_summary'] = compact_recommendation_summary(finding.get('summary'))
         return finding
 
     return None
@@ -905,14 +780,31 @@ def get_recommendations_payload(args: MultiDict[str, str], *, page_mode: str = '
             }
         )
     else:
+        selected_domain = _clean(payload['filters'].get('domain'))
+        scope_label = _domain_label(selected_domain) if selected_domain else 'Multi-Domain'
         posture_tone = 'critical' if critical else ('warning' if warning else 'normal')
-        posture_label = 'Critical' if critical else ('Review' if warning else 'Normal')
+        if critical:
+            posture_label = 'Critical'
+        elif warning:
+            posture_label = 'Review'
+        elif findings:
+            posture_label = 'Active'
+        else:
+            posture_label = 'No Active Findings'
+        active_domains = {str(item.get('domain') or '') for item in findings if item.get('domain')}
         payload.update(
             {
                 'page_title': 'Recommendations',
-                'summary': {'actionable': len(findings), 'critical': critical, 'warning': warning},
+                'scope_label': scope_label,
+                'summary': {
+                    'actionable': len(findings),
+                    'critical': critical,
+                    'warning': warning,
+                    'domains': len(active_domains),
+                    'object_storage': sum(1 for item in findings if item.get('domain') == 'object_storage'),
+                },
                 'posture': {
-                    'title': 'Recommendation Readiness',
+                    'title': 'Recommendation Posture',
                     'label': posture_label,
                     'tone': posture_tone,
                 },

@@ -45,6 +45,9 @@
                             {{ table_label.metadata_label(item.domain_label, 'boxes') }}
                             {{ table_label.metadata_label(item.category_label, 'tag') }}
                             {{ table_label.metadata_label(item.source_kind_label, 'box') }}
+                            {% if item.evidence and item.evidence.provider_label %}
+                                {{ table_label.metadata_label(item.evidence.provider_label, 'database') }}
+                            {% endif %}
                         </div>
                     </div>
                 </div>
@@ -55,7 +58,7 @@
              class="grid grid-cols-2 gap-px bg-outline-subtle">
             <article class="min-w-0 bg-surface-card px-4 py-3">
                 <p class="text-xs font-medium leading-5 text-content-muted">Affected Scope</p>
-                <p class="mt-0.5 break-words text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]">{{ item.scope_title|default('Cluster Scope', true) }}</p>
+                <p class="mt-0.5 break-words text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]">{{ item.scope_title|default('Asset Scope', true) }}</p>
             </article>
             <article class="min-w-0 bg-surface-card px-4 py-3">
                 <p class="text-xs font-medium leading-5 text-content-muted">Resource Type</p>

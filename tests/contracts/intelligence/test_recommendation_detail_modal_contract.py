@@ -50,9 +50,9 @@ def test_shared_resource_detail_host_supports_drawer_without_main_layout_lock():
 
 
 def test_generated_fix_steps_follow_review_validate_apply_verify_sequence():
-    service = Path('app/intelligence/service.py').read_text()
-    review = service.index("'Review the committed TLS Secret finding")
-    validate = service.index("'Open Kubernetes Governance > TLS Secret")
-    apply_change = service.index("'Upload the renewed tls.crt")
-    verify = service.index("'Resync TLS inventory, validate the affected Ingress endpoint")
+    presentation = Path('app/intelligence/finding_presentation.py').read_text()
+    review = presentation.index("'Review the committed TLS Secret finding")
+    validate = presentation.index("'Open Kubernetes Governance > TLS Secret")
+    apply_change = presentation.index("'Upload the renewed tls.crt")
+    verify = presentation.index("'Resync TLS inventory, validate the affected Ingress endpoint")
     assert review < validate < apply_change < verify

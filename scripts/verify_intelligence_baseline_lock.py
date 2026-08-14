@@ -37,6 +37,8 @@ def main() -> int:
 
     intelligence_routes = read('app/intelligence/routes.py')
     intelligence_service = read('app/intelligence/service.py')
+    recommendation_engine = read('app/intelligence/recommendation_engine.py')
+    object_storage_recommendations = read('app/intelligence/object_storage_recommendations.py')
     automation_routes = read('app/automation_control/routes.py')
     automation_presentation = read('app/automation_control/presentation.py')
     readme = read('app/intelligence/README.md')
@@ -144,6 +146,29 @@ def main() -> int:
             f'{label} must use shared Intelligence workspace',
             errors,
         )
+
+    for required in (
+        "{'value': 'object_storage', 'label': 'Object Storage'}",
+        "{'value': 'object_storage_bucket', 'label': 'Object Storage Bucket'}",
+        "{'value': 'object_storage_inventory', 'label': 'Object Storage Inventory'}",
+        'build_object_storage_recommendation_findings(rules)',
+    ):
+        require(required in intelligence_service, f'Object Storage recommendation boundary missing: {required}', errors)
+    require(
+        "domain='kubernetes'" in recommendation_engine and 'asset_key=selected_cluster_id' in recommendation_engine,
+        'Kubernetes Dashboard recommendation scope must remain explicitly Kubernetes-only',
+        errors,
+    )
+    require(
+        "provider_key != 'minio'" in object_storage_recommendations,
+        'Object Storage recommendation evaluator must stay provider-qualified for current MinIO support',
+        errors,
+    )
+    require(
+        'payload.scope_label' in recommendations_page,
+        'Recommendations Hero must use multi-domain scope instead of a hard-coded Kubernetes label',
+        errors,
+    )
 
     require('resource_detail_modal.drawer_host(' in recommendations_page, 'Recommendations drawer host missing', errors)
     require(

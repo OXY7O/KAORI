@@ -1,12 +1,13 @@
 from pathlib import Path
 
 
-def test_recommendation_list_uses_service_owned_compact_summary():
+def test_recommendation_list_uses_presentation_owned_compact_summary():
     service = Path('app/intelligence/service.py').read_text()
+    presentation = Path('app/intelligence/finding_presentation.py').read_text()
     records = Path('app/templates/intelligence/partials/_recommendation_records.html').read_text()
-    assert 'def _compact_recommendation_summary' in service
-    assert "for marker in (' Examples:', ' Example:', ' Examples include:')" in service
-    assert "item['list_summary'] = _compact_recommendation_summary" in service
+    assert 'def compact_recommendation_summary' in presentation
+    assert "for marker in (' Examples:', ' Example:', ' Examples include:')" in presentation
+    assert "item['list_summary'] = compact_recommendation_summary" in service
     assert 'item.list_summary|default(item.summary, true)' in records
     assert 'line-clamp-2' in records
 

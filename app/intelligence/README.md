@@ -55,8 +55,10 @@ reserved mutations or unfinished provider paths.
 
 Locked current-state contracts:
 
-- **Recommendations** is an active, read-only evidence review surface backed by the
-  central Intelligence evaluator.
+- **Recommendations** is an active, read-only, multi-domain evidence review surface backed by the
+  central Intelligence evaluator. Kubernetes findings remain cluster-scoped for Kubernetes consumers;
+  Object Storage findings are evaluated from committed provider-neutral inventory, with MinIO as the
+  first validated Object Storage provider. Current forecast recommendations also consume current worker-materialized Object Storage forecast snapshots.
 - **Rule Catalog** exposes canonical definitions. Rules that do not yet have a validated
   provider/evaluator path remain **Reserved Plan**.
 - **Alert Intelligence** exposes the validated Kubernetes evidence/enrichment boundary;
@@ -70,3 +72,18 @@ Deferred work is allowed to evolve behind those boundaries. A future feature-com
 review must add the applicable Functional, Integration, Security, Rendering, and E2E
 evidence before reserved capabilities are promoted to Available or mutation execution is
 enabled.
+
+
+## Object Storage recommendation ownership
+
+Object Storage recommendations reuse the central Intelligence catalog and finding lifecycle; they do
+not introduce a MinIO-specific Intelligence workspace. Current active MinIO-backed evaluators consume
+only committed `ObjectStorageSystem` / `ObjectStorageBucket` evidence for bucket quota pressure, public
+exposure review, and missing encryption configuration. Intelligence does not issue live MinIO,
+Prometheus, or Alertmanager queries. Provider identity is attached to each finding as evidence while the
+canonical rule domain remains `object_storage`.
+
+Reusable recommendation callers must scope findings with canonical `domain` + `asset_key`. Kubernetes
+Dashboard explicitly requests `domain='kubernetes'`, preventing Object Storage findings from leaking
+into a Kubernetes-only surface. Future Object Storage Analytics recommendation tabs must consume the
+same Intelligence finding source rather than re-implementing these rule conditions.

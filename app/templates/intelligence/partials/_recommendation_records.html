@@ -35,12 +35,15 @@
                                         {{ table_label.metadata_label(item.domain_label, 'boxes') }}
                                         {{ table_label.metadata_label(item.category_label, 'tag') }}
                                         {{ table_label.metadata_label(item.source_kind_label, 'scan-search') }}
+                                        {% if item.evidence and item.evidence.provider_label %}
+                                            {{ table_label.metadata_label(item.evidence.provider_label, 'database') }}
+                                        {% endif %}
                                     </div>
                                 </div>
                             </div>
                         </td>
                         <td class="{{ table_ui.cell_classes() }}">
-                            <p class="break-words text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]">{{ item.scope_title|default('Cluster Scope', true) }}</p>
+                            <p class="break-words text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]">{{ item.scope_title|default('Asset Scope', true) }}</p>
                             <p class="mt-1 text-xs leading-5 text-content-muted">{{ item.scope_supporting|default(item.source_kind_label, true) }}</p>
                         </td>
                         <td class="{{ table_ui.cell_classes() }}">
@@ -81,7 +84,7 @@
                     <div>
                         <dt class="text-xs text-content-muted">Affected Scope</dt>
                         <dd class="mt-1 text-sm font-semibold text-content-primary">
-                            {{ item.scope_title|default('Cluster Scope', true) }}
+                            {{ item.scope_title|default('Asset Scope', true) }}
                         </dd>
                     </div>
                     <div>
@@ -98,7 +101,7 @@
 {% else %}
     <div class="px-4 py-10 text-center sm:px-5">
         <div class="rounded-xl border border-dashed border-outline-strong bg-surface-hover px-4 py-10">
-            <i data-lucide="circle-check" class="mx-auto h-7 w-7 text-status-normal"></i>
+            <i data-lucide="search-x" class="mx-auto h-7 w-7 text-kaori-primary"></i>
             <p class="mt-2 text-sm font-semibold text-content-primary">No Recommendations Match The Current Filters</p>
             <p class="mt-1 text-xs leading-5 text-content-muted">Adjust the filters or continue monitoring current inventory and signal evidence.</p>
         </div>

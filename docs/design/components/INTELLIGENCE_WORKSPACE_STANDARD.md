@@ -42,3 +42,10 @@ release-test contracts are complete. In particular, Automation Control must rema
 fail-closed by default, must not gain an environment-configured enablement switch during
 this baseline lock, and must not be re-labelled as Available solely because route or model
 scaffolding exists.
+## Multi-domain recommendation contract
+
+- Recommendations are owned by the central Intelligence evaluator and may contain findings from multiple asset domains.
+- Domain-specific consumers must request findings using canonical `domain` + `asset_key` scope; a Kubernetes-only surface must not consume unscoped Object Storage findings.
+- Object Storage rules remain canonical `object_storage` rules. Provider identity such as MinIO is finding evidence, not a separate Intelligence workspace or rule namespace unless the rule is genuinely provider-exclusive.
+- Active Object Storage recommendation evaluators consume committed evidence only. Intelligence must not issue live MinIO, Prometheus, or Alertmanager queries to construct recommendation findings.
+- A finding with no active match is not equivalent to runtime health. Recommendation posture uses `No Active Findings` rather than claiming infrastructure health.

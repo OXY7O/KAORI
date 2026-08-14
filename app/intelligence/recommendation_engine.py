@@ -20,10 +20,7 @@ def build_dashboard_recommendations(
 
     from app.intelligence.service import get_active_recommendation_findings
 
-    return get_active_recommendation_findings(
-        selected_cluster_id=selected_cluster_id,
-        limit=limit,
-    )
+    return get_active_recommendation_findings(domain='kubernetes', asset_key=selected_cluster_id, limit=limit)
 
 
 # ---------------------------------------------------------------------------
