@@ -48,10 +48,11 @@ def test_alert_intelligence_uses_supported_multi_domain_alert_sources():
     assert 'This is contextual correlation, not a claim that every finding was caused by every alert.' in workspace
 
 
-def test_notification_channels_add_telegram_without_replacing_alertmanager_authority():
+def test_notification_channels_support_governed_providers_without_replacing_alertmanager_authority():
     routes = read('app/notification_channels/routes.py')
     model = read('app/models/notification_channel.py')
     provider = read('app/notification_channels/providers/telegram.py')
+    registry = read('app/notification_channels/providers/__init__.py')
     page = read('app/templates/intelligence/notification_channels/index.html')
 
     assert "@permission_required('settings.manage_integrations')" in routes
@@ -59,7 +60,9 @@ def test_notification_channels_add_telegram_without_replacing_alertmanager_autho
     assert "_TELEGRAM_API = 'https://api.telegram.org'" in provider
     assert '/sendMessage' in provider
     assert 'type="password"' in page
-    assert 'Alertmanager receiver delivery remains a separate authority' in page
+    for provider_key in ("'telegram'", "'email'", "'microsoft_teams'"):
+        assert provider_key in registry
+    assert 'Alertmanager remains the raw alert routing authority' in page
 
 
 def test_intelligence_baseline_lock_is_registered_in_quality_gate():

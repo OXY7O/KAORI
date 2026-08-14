@@ -47,6 +47,10 @@ def main() -> int:
     notification_service = read('app/notification_channels/service.py')
     notification_model = read('app/models/notification_channel.py')
     telegram_provider = read('app/notification_channels/providers/telegram.py')
+    email_provider = read('app/notification_channels/providers/email.py')
+    teams_provider = read('app/notification_channels/providers/microsoft_teams.py')
+    notification_providers = read('app/notification_channels/providers/__init__.py')
+    notification_forms = read('app/notification_channels/forms.py')
     notification_page = read('app/templates/intelligence/notification_channels/index.html')
     alert_workspace = read('app/templates/intelligence/partials/_alert_intelligence_workspace.html')
     automation_routes = read('app/automation_control/routes.py')
@@ -209,9 +213,20 @@ def main() -> int:
     ):
         require(required in telegram_provider, f'Telegram provider contract missing: {required}', errors)
     require('bot_token' not in telegram_provider.split('except HTTPError', 1)[1], 'Telegram errors must not disclose bot tokens', errors)
-    require('type="password"' in notification_page, 'Telegram credential field must remain password-only', errors)
-    require('value="{{ form_channel.bot_token' not in notification_page, 'Telegram bot token must never be rendered back to HTML', errors)
-    require('Alertmanager receiver delivery remains a separate authority' in notification_page, 'Notification Channels must preserve Alertmanager authority boundary', errors)
+    for required in ('smtplib.SMTP', 'smtplib.SMTP_SSL', 'starttls(', 'send_message('):
+        require(required in email_provider, f'Email provider contract missing: {required}', errors)
+    for required in ("'text': _render_message(message)", "method='POST'", 'workflow_url'):
+        require(required in teams_provider, f'Microsoft Teams provider contract missing: {required}', errors)
+    for provider_key in ("'telegram'", "'email'", "'microsoft_teams'"):
+        require(provider_key in notification_providers, f'Notification provider registry missing: {provider_key}', errors)
+    require('_TEAMS_WORKFLOW_SUFFIXES' in notification_forms, 'Teams Workflow URL validation is missing', errors)
+    require("('.environment.api.powerplatform.com', '.logic.azure.com')" in notification_forms, 'Teams Workflow domains must be explicit', errors)
+    require('type="password"' in notification_page, 'Notification secret fields must remain password-only', errors)
+    for forbidden in ('form_channel.bot_token', 'form_channel.smtp_password', 'form_channel.teams_workflow_url'):
+        require(forbidden not in notification_page, f'Notification secret must never be rendered back to HTML: {forbidden}', errors)
+    require('Alertmanager remains the raw alert routing authority' in notification_page, 'Notification Channels must preserve Alertmanager authority boundary', errors)
+    for label in ('Telegram', 'Email', 'Microsoft Teams'):
+        require(label in notification_page, f'Notification Channels UI missing provider: {label}', errors)
     require('first-seen' in notification_service.lower(), 'Notification delivery must document first-seen deduplication semantics', errors)
 
     recommendations_page = read('app/templates/intelligence/recommendations.html')

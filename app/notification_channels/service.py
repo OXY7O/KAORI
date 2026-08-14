@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any
 
@@ -13,52 +12,20 @@ from app.notification_channels.config import (
     notification_delivery_max_attempts,
     notification_delivery_timeout_seconds,
 )
-from app.notification_channels.contracts import DeliveryResult, NotificationMessage
-from app.notification_channels.providers import get_notification_provider, provider_labels
+from app.notification_channels.contracts import (
+    DeliveryResult,
+    NotificationChannelFormInput,
+    NotificationMessage,
+)
+from app.notification_channels.providers import (
+    get_notification_provider,
+    provider_catalog,
+    provider_labels,
+)
 
 _PROVIDER_LABELS = provider_labels()
 _SEVERITY_RANK = {'info': 1, 'warning': 2, 'critical': 3}
 _DOMAIN_LABELS = {'kubernetes': 'Kubernetes', 'object_storage': 'Object Storage'}
-
-
-@dataclass(frozen=True, slots=True)
-class TelegramChannelFormInput:
-    name: str
-    provider_key: str
-    enabled: bool
-    bot_token: str
-    target_chat_id: str
-    minimum_severity: str
-    domains: tuple[str, ...]
-
-
-def parse_channel_form(form: Any) -> TelegramChannelFormInput:
-    provider_key = str(form.get('provider_key') or 'telegram').strip().lower()
-    minimum_severity = str(form.get('minimum_severity') or 'warning').strip().lower()
-    domains = tuple(value for value in form.getlist('domains') if value in _DOMAIN_LABELS)
-    return TelegramChannelFormInput(
-        name=str(form.get('name') or '').strip(),
-        provider_key=provider_key,
-        enabled=str(form.get('enabled') or '').lower() in {'1', 'true', 'yes', 'on'},
-        bot_token=str(form.get('bot_token') or '').strip(),
-        target_chat_id=str(form.get('target_chat_id') or '').strip(),
-        minimum_severity=minimum_severity if minimum_severity in _SEVERITY_RANK else 'warning',
-        domains=domains or ('kubernetes', 'object_storage'),
-    )
-
-
-def validate_channel_input(data: TelegramChannelFormInput, *, existing: NotificationChannel | None = None) -> list[str]:
-    errors: list[str] = []
-    if not data.name:
-        errors.append('Channel name is required.')
-    if data.provider_key != 'telegram':
-        errors.append('Telegram is the only supported notification provider in the current release.')
-    token_available = bool(data.bot_token or (existing is not None and _credential_map(existing).get('bot_token')))
-    if not token_available:
-        errors.append('Telegram bot token is required.')
-    if not data.target_chat_id:
-        errors.append('Telegram chat ID or @channel username is required.')
-    return errors
 
 
 def list_channels() -> list[dict[str, Any]]:
@@ -70,30 +37,14 @@ def get_channel(channel_id: int) -> NotificationChannel | None:
     return db.session.get(NotificationChannel, channel_id)
 
 
-def get_channel_form_view(channel: NotificationChannel | None) -> dict[str, Any] | None:
-    """Return editable channel metadata without exposing decrypted credentials."""
-    if channel is None:
-        return None
-    view = _channel_view(channel)
-    return {
-        'id': view['id'],
-        'name': view['name'],
-        'enabled': view['enabled'],
-        'target_chat_id': view['destination'] if view['destination'] != '-' else '',
-        'minimum_severity': view['minimum_severity'],
-        'domains': view['domains'],
-        'credential_configured': view['credential_configured'],
-    }
-
-
-def create_channel(data: TelegramChannelFormInput, *, user_id: int | None) -> NotificationChannel:
+def create_channel(data: NotificationChannelFormInput, *, user_id: int | None) -> NotificationChannel:
     channel = NotificationChannel(
         name=data.name,
         provider_key=data.provider_key,
         enabled=data.enabled,
-        credential_payload=_encode_credentials({'bot_token': data.bot_token}),
-        destination=data.target_chat_id,
-        provider_config={},
+        credential_payload=_encode_credentials(data.credentials),
+        destination=data.destination,
+        provider_config=dict(data.provider_config),
         minimum_severity=data.minimum_severity,
         domains=list(data.domains),
         event_types=['alert_intelligence.active_alert'],
@@ -108,29 +59,26 @@ def create_channel(data: TelegramChannelFormInput, *, user_id: int | None) -> No
 
 def update_channel(
     channel: NotificationChannel,
-    data: TelegramChannelFormInput,
+    data: NotificationChannelFormInput,
     *,
     user_id: int | None,
 ) -> NotificationChannel:
-    token_changed = bool(data.bot_token)
-    destination_changed = token_changed or data.target_chat_id != str(channel.destination or '')
+    configuration_changed = (
+        data.credential_changed
+        or data.destination != str(channel.destination or '')
+        or dict(data.provider_config) != dict(channel.provider_config or {})
+    )
     channel.name = data.name
-    channel.provider_key = data.provider_key
     channel.enabled = data.enabled
-    if token_changed:
-        channel.credential_payload = _encode_credentials({'bot_token': data.bot_token})
-    channel.destination = data.target_chat_id
+    if data.credential_changed:
+        channel.credential_payload = _encode_credentials(data.credentials)
+    channel.destination = data.destination
+    channel.provider_config = dict(data.provider_config)
     channel.minimum_severity = data.minimum_severity
     channel.domains = list(data.domains)
     channel.updated_by_user_id = user_id
-    if destination_changed:
-        channel.test_status = 'not_tested'
-        channel.test_message = 'Destination or credential changed. Validate the channel again.'
-        channel.last_tested_at = None
-        channel.last_delivery_status = 'never'
-        channel.last_delivery_message = None
-        channel.last_delivery_attempt_at = None
-        channel.last_delivery_at = None
+    if configuration_changed:
+        _reset_channel_validation(channel)
     db.session.commit()
     return channel
 
@@ -142,15 +90,15 @@ def delete_channel(channel: NotificationChannel) -> None:
 
 def test_channel(channel: NotificationChannel, *, base_url: str = '') -> DeliveryResult:
     if not channel.configured:
-        result = DeliveryResult(False, 'Telegram bot token and target chat must be configured before testing.')
+        result = DeliveryResult(False, f'{_provider_label(channel.provider_key)} configuration is incomplete.')
     else:
         result = _deliver(
             channel,
             NotificationMessage(
                 title=f'Notification Channel Test · {channel.name}',
                 body=(
-                    'KAORI successfully reached this Telegram destination. Alert Intelligence delivery '
-                    'can use this channel when it is enabled and its policy matches.'
+                    f'KAORI successfully reached this {_provider_label(channel.provider_key)} destination. '
+                    'Alert Intelligence delivery can use this channel when it is enabled and its policy matches.'
                 ),
                 severity='info',
                 action_url=f'{base_url.rstrip("/")}/intelligence/alert-intelligence' if base_url else None,
@@ -191,45 +139,70 @@ def notification_channel_summary() -> dict[str, Any]:
         'eligible': len(eligible),
         'operational': len(operational),
         'failed': len(delivery_failed) + len(validation_failed),
-        'provider_labels': sorted(
-            {_PROVIDER_LABELS.get(channel.provider_key, channel.provider_key) for channel in channels}
-        ),
+        'provider_labels': sorted({_provider_label(channel.provider_key) for channel in channels}),
     }
 
 
 def get_notification_channels_payload() -> dict[str, Any]:
     channels = list_channels()
     summary = notification_channel_summary()
+    provider_status = {
+        'telegram': ('Bot API', 'Bot token + chat or channel destination.'),
+        'email': ('SMTP', 'SMTP server + sender + one or more recipients.'),
+        'microsoft_teams': (
+            'Teams Workflows',
+            'Power Automate webhook URL + human-readable Teams destination label.',
+        ),
+    }
+    providers = []
+    for item in provider_catalog():
+        transport, configuration = provider_status[item['key']]
+        providers.append(
+            {
+                **item,
+                'status': 'Available',
+                'tone': 'normal',
+                'transport': transport,
+                'configuration': configuration,
+            }
+        )
     return {
         'summary': summary,
         'posture': {'label': summary['label'], 'tone': summary['tone']},
         'channels': channels,
-        'providers': [
-            {
-                'key': 'telegram',
-                'label': 'Telegram',
-                'status': 'Available',
-                'tone': 'normal',
-                'description': 'Send KAORI Alert Intelligence messages through the Telegram Bot API.',
-            },
-            {
-                'key': 'future',
-                'label': 'Additional Channels',
-                'status': 'Extensible',
-                'tone': 'info',
-                'description': (
-                    'The channel contract is provider-neutral so Slack, Teams, email, or webhook adapters '
-                    'can be added without changing Alert Intelligence.'
-                ),
-            },
-        ],
+        'providers': providers,
         'domain_options': [{'value': key, 'label': label} for key, label in _DOMAIN_LABELS.items()],
         'severity_options': [
             {'value': 'critical', 'label': 'Critical only'},
             {'value': 'warning', 'label': 'Warning and Critical'},
             {'value': 'info', 'label': 'Info, Warning, and Critical'},
         ],
+        'smtp_security_options': [
+            {'value': 'starttls', 'label': 'STARTTLS'},
+            {'value': 'tls', 'label': 'TLS / SMTPS'},
+            {'value': 'none', 'label': 'None / trusted relay'},
+        ],
+        'delivery_contract': {
+            'event': 'First-seen active alert episode',
+            'retry': f'Up to {notification_delivery_max_attempts()} attempts',
+            'deduplication': 'Per channel and alert episode identity',
+            'resolved': 'Not emitted in the current release',
+        },
     }
+
+
+def _reset_channel_validation(channel: NotificationChannel) -> None:
+    channel.test_status = 'not_tested'
+    channel.test_message = 'Destination, credentials, or transport configuration changed. Validate the channel again.'
+    channel.last_tested_at = None
+    channel.last_delivery_status = 'never'
+    channel.last_delivery_message = None
+    channel.last_delivery_attempt_at = None
+    channel.last_delivery_at = None
+
+
+def _provider_label(provider_key: str) -> str:
+    return _PROVIDER_LABELS.get(provider_key, provider_key.replace('_', ' ').title())
 
 
 def dispatch_alert_notification(
@@ -356,15 +329,22 @@ def _channel_view(channel: NotificationChannel) -> dict[str, Any]:
         tone = 'warning'
     else:
         tone = 'unknown'
+    adapter = get_notification_provider(channel.provider_key)
+    last_delivery_label, last_delivery_tone = {
+        'success': ('Delivered', 'normal'),
+        'failed': ('Failed', 'warning'),
+        'never': ('Not Delivered', 'unknown'),
+    }.get(channel.last_delivery_status, ('Unknown', 'unknown'))
     return {
         'id': channel.id,
         'name': channel.name,
         'provider_key': channel.provider_key,
-        'provider_label': _PROVIDER_LABELS.get(channel.provider_key, channel.provider_key.title()),
+        'provider_label': _provider_label(channel.provider_key),
+        'provider_icon': adapter.icon if adapter is not None else 'send',
         'enabled': channel.enabled,
         'configured': channel.configured,
         'destination': channel.destination or '-',
-        'target_chat_id': channel.destination or '-',
+        'destination_label': channel.destination or '-',
         'minimum_severity': channel.minimum_severity,
         'minimum_severity_label': _minimum_severity_label(channel.minimum_severity),
         'domains': list(channel.domains or []),
@@ -377,6 +357,8 @@ def _channel_view(channel: NotificationChannel) -> dict[str, Any]:
         'test_message': channel.test_message or '',
         'last_tested_at': channel.last_tested_at,
         'last_delivery_status': channel.last_delivery_status,
+        'last_delivery_label': last_delivery_label,
+        'last_delivery_tone': last_delivery_tone,
         'last_delivery_message': channel.last_delivery_message or '',
         'last_delivery_attempt_at': channel.last_delivery_attempt_at,
         'last_delivery_at': channel.last_delivery_at,
@@ -391,6 +373,7 @@ def _deliver(channel: NotificationChannel, message: NotificationMessage) -> Deli
     return adapter.sender(
         _credential_map(channel),
         str(channel.destination or ''),
+        dict(channel.provider_config or {}),
         message,
         notification_delivery_timeout_seconds(),
     )

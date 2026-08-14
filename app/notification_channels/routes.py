@@ -8,11 +8,13 @@ from app.notification_channels.service import (
     create_channel,
     delete_channel,
     get_channel,
-    get_channel_form_view,
     get_notification_channels_payload,
-    parse_channel_form,
     test_channel,
     update_channel,
+)
+from app.notification_channels.forms import (
+    get_channel_form_view,
+    parse_channel_form,
     validate_channel_input,
 )
 from app.notifications.service import record_operational_activity
@@ -68,7 +70,7 @@ def update(channel_id: int) -> ResponseReturnValue:
     channel = get_channel(channel_id)
     if channel is None:
         abort(404)
-    data = parse_channel_form(request.form)
+    data = parse_channel_form(request.form, existing=channel)
     errors = validate_channel_input(data, existing=channel)
     if errors:
         return redirect(url_for('notification_channels.index', edit=channel_id, feedback='; '.join(errors)))

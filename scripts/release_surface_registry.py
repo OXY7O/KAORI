@@ -145,7 +145,7 @@ SURFACES: tuple[ReleaseSurface, ...] = (
         blueprint_vars=('intelligence_bp', 'alert_intelligence_bp', 'notification_channels_bp', 'automation_control_bp'),
         verifiers=('scripts/verify_intelligence_baseline_lock.py',),
         contract_paths=('tests/contracts/intelligence',),
-        notes='Alert Intelligence supports Kubernetes/Object Storage; Telegram is the first governed notification provider. Automation mutations and Server/HCI capability remain deferred and fail-closed.',
+        notes='Alert Intelligence supports Kubernetes/Object Storage; Telegram, email, and Microsoft Teams are governed notification providers. Automation mutations and Server/HCI capability remain deferred and fail-closed.',
     ),
     ReleaseSurface(
         key='reports',

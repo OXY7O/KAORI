@@ -65,9 +65,9 @@ contracts, and E2E/integration evidence as applicable.
 
 ### Notification Channels
 
-- Telegram is the first available outbound Intelligence provider.
+- Telegram, SMTP email, and Microsoft Teams Workflows are available outbound Intelligence providers.
 - Credentials remain encrypted and are never rendered back to clients.
 - Automatic delivery requires an enabled channel with a successful test.
 - The initial dispatcher sends first-seen active alert episodes only; resolved-event notification is not yet available.
 - Alertmanager remains the raw alert routing and receiver authority; KAORI delivers enriched Intelligence context.
-- Additional channel providers remain future extensions of the same provider-neutral contract.
+- Additional channel providers remain future extensions of the same provider-neutral contract; current persistence is not provider-specific.
