@@ -12,6 +12,11 @@ REQUIRED = (
     'app/inventory/object_storage/presentation.py',
     'app/templates/components/navigation/object_storage_menu.html',
     'app/templates/inventory/object_storage/overview/index.html',
+    'app/templates/inventory/object_storage/components/_hero_blocked_context.html',
+    'app/templates/inventory/object_storage/components/_onboarding_banner.html',
+    'app/templates/inventory/object_storage/components/_snapshot_context.html',
+    'app/templates/inventory/object_storage/systems/partials/_snapshot_boundary.html',
+    'app/templates/inventory/object_storage/buckets/partials/_snapshot_boundary.html',
     'app/templates/inventory/object_storage/systems/partials/_table_content.html',
     'app/templates/inventory/object_storage/buckets/partials/_table_content.html',
     'tests/contracts/inventory/object_storage',
@@ -37,6 +42,12 @@ def main() -> int:
     routes = read('app/inventory/object_storage/routes.py')
     menu = read('app/templates/components/navigation/object_storage_menu.html')
     overview = read('app/templates/inventory/object_storage/overview/index.html')
+    systems_workspace = read('app/templates/inventory/object_storage/systems/partials/_page_workspace.html')
+    buckets_workspace = read('app/templates/inventory/object_storage/buckets/partials/_page_workspace.html')
+    systems_snapshot = read('app/templates/inventory/object_storage/systems/partials/_snapshot_boundary.html')
+    buckets_snapshot = read('app/templates/inventory/object_storage/buckets/partials/_snapshot_boundary.html')
+    blocker = read('app/templates/inventory/object_storage/components/_hero_blocked_context.html')
+    onboarding = read('app/templates/inventory/object_storage/components/_onboarding_banner.html')
     systems = read('app/templates/inventory/object_storage/systems/partials/_table_content.html')
     buckets = read('app/templates/inventory/object_storage/buckets/partials/_table_content.html')
     presentation = read('app/inventory/object_storage/presentation.py')
@@ -72,6 +83,30 @@ def main() -> int:
             errors.append(f'Object Storage Overview composition missing: {include}')
 
     for token in (
+        'overview.setup.is_blocked',
+        'inventory/object_storage/components/_onboarding_banner.html',
+    ):
+        if token not in overview:
+            errors.append(f'Object Storage setup-blocked Overview contract missing: {token}')
+
+    for source, label in ((systems_workspace, 'Systems'), (buckets_workspace, 'Buckets & Containers')):
+        for token in ('inventory.setup.is_blocked', '_snapshot_boundary.html', '_onboarding_banner.html'):
+            if token not in source:
+                errors.append(f'{label} setup/snapshot composition missing: {token}')
+
+    for source, label in ((systems_snapshot, 'Systems'), (buckets_snapshot, 'Buckets & Containers')):
+        if 'object_storage_snapshot.render(inventory.snapshot)' not in source:
+            errors.append(f'{label} Inventory Data Snapshot contract missing')
+
+    for token in ('Object Storage Setup Required', 'Registered Systems', 'Workspace State', 'Blocked'):
+        if token not in blocker:
+            errors.append(f'Object Storage blocked Hero contract missing: {token}')
+
+    for token in ("url_for('integrations.storage')", 'settings.manage_integrations', 'Register Your First Object Storage System'):
+        if token not in onboarding:
+            errors.append(f'Object Storage onboarding ownership contract missing: {token}')
+
+    for token in (
         'Inventory Assets',
         'Open Provider Integration',
         "width='2xl'",
@@ -96,6 +131,9 @@ def main() -> int:
         'ObjectStorageSystem.query',
         'ObjectStorageBucket.query',
         "'snapshot_source': 'Committed Snapshot'",
+        "'is_blocked': total_systems == 0",
+        "'snapshot': _overview_snapshot(all_rows)",
+        "'snapshot': _overview_snapshot(system_rows)",
     ):
         if token not in presentation:
             errors.append(f'Committed-snapshot presentation boundary missing: {token}')
@@ -106,7 +144,7 @@ def main() -> int:
             print(f'- {error}')
         return 1
 
-    print('PASS — KAORI Object Storage Inventory Final Lock v1')
+    print('PASS — KAORI Object Storage Inventory Final Lock v1.1')
     return 0
 
 

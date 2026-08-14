@@ -31,6 +31,17 @@ def _workspace_template(resource: str) -> str:
     return f'inventory/object_storage/{resource}/partials/_page_workspace.html'
 
 
+def _setup_blocked_htmx(inventory: dict[str, object]) -> ResponseReturnValue | None:
+    setup = inventory.get('setup')
+    if (
+        request.headers.get('HX-Request') == 'true'
+        and isinstance(setup, dict)
+        and setup.get('is_blocked') is True
+    ):
+        return render_template('inventory/object_storage/components/_onboarding_banner.html')
+    return None
+
+
 @object_storage_inventory_bp.get('/')
 @permission_required('inventory.view')
 def overview() -> ResponseReturnValue:
@@ -38,6 +49,9 @@ def overview() -> ResponseReturnValue:
         system_page=request.args.get('system_page', 1, type=int) or 1,
         system_per_page=request.args.get('system_per_page', 5, type=int) or 5,
     )
+    blocked_response = _setup_blocked_htmx(overview_context)
+    if blocked_response is not None:
+        return blocked_response
     if (
         request.headers.get('HX-Request') == 'true'
         and request.headers.get('HX-Target') == 'object-storage-inventory-summary-content'
@@ -61,6 +75,9 @@ def systems() -> ResponseReturnValue:
         per_page=request.args.get('per_page', 5, type=int) or 5,
     )
     inventory = build_systems(filters)
+    blocked_response = _setup_blocked_htmx(inventory)
+    if blocked_response is not None:
+        return blocked_response
     return render_template(
         _workspace_template('systems'),
         inventory=inventory,
@@ -93,6 +110,9 @@ def buckets() -> ResponseReturnValue:
         per_page=request.args.get('per_page', 5, type=int) or 5,
     )
     inventory = build_buckets(filters)
+    blocked_response = _setup_blocked_htmx(inventory)
+    if blocked_response is not None:
+        return blocked_response
     return render_template(
         _workspace_template('buckets'),
         inventory=inventory,

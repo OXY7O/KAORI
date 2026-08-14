@@ -55,10 +55,10 @@
                 {% else %}
                     <tr>
                         <td colspan="9" class="p-0">
-                            {% set empty_state_icon = "database-zap" %}
-                            {% set empty_state_label = "Storage Required" %}
-                            {% set empty_state_title = "No Object Storage Systems Found" %}
-                            {% set empty_state_description = "Adjust the active filters or register and validate a Storage integration before running Object Storage Inventory Sync." %}
+                            {% set empty_state_icon = "search-x" %}
+                            {% set empty_state_label = "No Matches" %}
+                            {% set empty_state_title = "No Object Storage Systems Match These Filters" %}
+                            {% set empty_state_description = "Adjust the active search or filters to review registered Object Storage systems." %}
                             {% set empty_state_min_height = "min-h-[190px]" %}
                             {% include "components/states/_empty_state.html" %}
                         </td>

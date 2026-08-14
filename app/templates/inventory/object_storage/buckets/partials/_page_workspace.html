@@ -1,5 +1,10 @@
 <div id="object-storage-buckets-workspace" class="space-y-6">
     {% include "inventory/object_storage/buckets/partials/_hero.html" %}
-    {% include "inventory/object_storage/buckets/partials/_summary_cards.html" %}
-    {% include "inventory/object_storage/buckets/partials/_table_card.html" %}
+    {% if inventory.setup.is_blocked %}
+        {% include "inventory/object_storage/components/_onboarding_banner.html" %}
+    {% else %}
+        {% include "inventory/object_storage/buckets/partials/_snapshot_boundary.html" %}
+        {% include "inventory/object_storage/buckets/partials/_summary_cards.html" %}
+        {% include "inventory/object_storage/buckets/partials/_table_card.html" %}
+    {% endif %}
 </div>

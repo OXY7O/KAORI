@@ -50,8 +50,10 @@ def test_bucket_inventory_is_committed_snapshot_not_live_page_discovery() -> Non
     assert 'commit_bucket_inventory(' not in adapter
     assert 'Job Execution owns this operation' in sync
     assert 'sync_object_storage_inventory' in sync
-    assert 'snapshot_context_bar.render' in overview
-    assert 'overview.snapshot.source_label' in overview
+    assert 'object_storage_snapshot.render(overview.snapshot)' in overview
+    snapshot_component = read('app/templates/inventory/object_storage/components/_snapshot_context.html')
+    assert 'snapshot_context_bar.render' in snapshot_component
+    assert 'source_label=snapshot.source_label' in snapshot_component
     assert 'No live provider query' in buckets
 
 

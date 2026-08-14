@@ -373,6 +373,14 @@ def _overview_snapshot(rows: list[dict[str, Any]]) -> dict[str, Any]:
     return _overview_snapshot_impl(rows)
 
 
+def _setup_state(total_systems: int) -> dict[str, Any]:
+    return {
+        'is_blocked': total_systems == 0,
+        'registered_systems': total_systems,
+        'state': 'setup_required' if total_systems == 0 else 'available',
+    }
+
+
 def _overview_asset_catalog(total_systems: int, total_buckets: int) -> list[dict[str, Any]]:
     return [
         {
@@ -521,6 +529,7 @@ def build_overview(*, system_page: int = 1, system_per_page: int = 5) -> dict[st
         'bucket_posture': bucket_posture,
         'fleet_readings': _overview_fleet_readings(bucket_posture),
         'provider_distribution': _overview_provider_distribution(rows),
+        'setup': _setup_state(total_systems),
         'snapshot': _overview_snapshot(rows),
         'systems': paged_rows,
         'systems_pagination': pagination,
@@ -557,6 +566,8 @@ def build_systems(filters: SystemFilters) -> dict[str, Any]:
         'ready_systems': sum(1 for row in rows if row['status_tone'] == 'normal'),
         'blocked_systems': sum(1 for row in rows if row['status_tone'] == 'critical'),
         'inventoried_systems': sum(1 for row in rows if row['last_inventory_at'] is not None),
+        'setup': _setup_state(len(all_rows)),
+        'snapshot': _overview_snapshot(all_rows),
         **options,
     }
 
@@ -722,6 +733,7 @@ def build_buckets(filters: BucketFilters) -> dict[str, Any]:
         'buckets': paged,
         'pagination': pagination,
         'total_assets': len(filtered),
+        'total_committed_assets': len(rows),
         'total_buckets': bucket_count,
         'total_containers': container_count,
         'systems_in_scope': len({row['system_id'] for row in filtered}),
@@ -734,6 +746,8 @@ def build_buckets(filters: BucketFilters) -> dict[str, Any]:
             (row['observed_at'] for row in filtered if row['observed_at'] is not None),
             default=None,
         ),
+        'setup': _setup_state(len(system_rows)),
+        'snapshot': _overview_snapshot(system_rows),
         'systems': [{'id': row['id'], 'name': row['name']} for row in system_rows if row['id'] in system_by_id],
         **_system_filter_options(system_rows),
     }

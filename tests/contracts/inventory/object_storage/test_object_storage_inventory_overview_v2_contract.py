@@ -24,7 +24,7 @@ def test_object_storage_overview_matches_final_inventory_composition() -> None:
     assert 'Quota Evidence' in hero
     assert 'Manage Storage' in hero
     assert "url_for('integrations.storage')" in hero
-    assert 'snapshot_context_bar.render' in snapshot
+    assert 'object_storage_snapshot.render(overview.snapshot)' in snapshot
     assert 'Fleet Inventory Posture' in fleet
     assert 'operational_callout.render' in fleet
     assert 'Inventory Asset Catalog' in catalog

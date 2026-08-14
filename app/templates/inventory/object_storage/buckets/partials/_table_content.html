@@ -65,10 +65,17 @@
                 {% else %}
                     <tr>
                         <td colspan="9" class="p-0">
-                            {% set empty_state_icon = "boxes" %}
-                            {% set empty_state_label = "Inventory Required" %}
-                            {% set empty_state_title = "No Buckets or Containers Found" %}
-                            {% set empty_state_description = "Adjust the active filters or run Object Storage Inventory Sync from Job Configuration after the provider is Ready." %}
+                            {% if inventory.total_committed_assets == 0 %}
+                                {% set empty_state_icon = "database-zap" %}
+                                {% set empty_state_label = "Collection Pending" %}
+                                {% set empty_state_title = "No Buckets or Containers Collected Yet" %}
+                                {% set empty_state_description = "Run Object Storage Inventory Sync from Job Configuration after the registered provider is Ready." %}
+                            {% else %}
+                                {% set empty_state_icon = "search-x" %}
+                                {% set empty_state_label = "No Matches" %}
+                                {% set empty_state_title = "No Buckets or Containers Match These Filters" %}
+                                {% set empty_state_description = "Adjust the active search or filters to review committed bucket and container inventory." %}
+                            {% endif %}
                             {% set empty_state_min_height = "min-h-[190px]" %}
                             {% include "components/states/_empty_state.html" %}
                         </td>

@@ -94,7 +94,7 @@ def test_inventory_pages_and_minio_lifecycle_read_only_committed_job_snapshot() 
     bucket_detail = read('app/templates/inventory/object_storage/buckets/partials/_bucket_detail_content.html')
     bucket_table = read('app/templates/inventory/object_storage/buckets/partials/_table_content.html')
     assert 'Object Storage Inventory Sync snapshot' in bucket_detail
-    assert 'run Object Storage Inventory Sync from Job Configuration' in bucket_table
+    assert 'Object Storage Inventory Sync from Job Configuration' in bucket_table
     assert 'Full Validation snapshot' not in bucket_detail
 
 

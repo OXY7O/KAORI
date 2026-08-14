@@ -33,16 +33,16 @@ def system_required_blocker() -> ObjectStorageDependencyBlocker:
     return {
         'kind': 'system_required',
         'stage': 1,
-        'badge': 'System Required',
+        'badge': 'Storage Setup Required',
         'tone': 'warning',
-        'title': 'Object Storage System Required',
+        'title': 'Object Storage Setup Required',
         'description': (
-            'Register and collect Object Storage Inventory before opening operational analytics.'
+            'Register and validate a Storage integration, then run Object Storage Inventory Sync before opening operational analytics.'
         ),
         'diagnostic_detail': None,
         'icon': 'database-zap',
-        'action_label': 'Open Object Storage Inventory',
-        'action_endpoint': 'object_storage_inventory.overview',
+        'action_label': 'Open Storage Integrations',
+        'action_endpoint': 'integrations.storage',
     }
 
 

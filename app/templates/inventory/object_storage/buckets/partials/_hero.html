@@ -6,12 +6,22 @@
                 <h1 class="{{ page_hero.title_classes() }}">Buckets &amp; Containers</h1>
                 <p class="mt-2 {{ page_hero.description_classes() }}">Review provider-neutral object-storage namespaces from committed inventory snapshots.</p>
                 <div class="{{ page_hero.metadata_row_classes() }}">
-                    {{ page_hero.meta_label('boxes', inventory.total_assets ~ ' Assets in Scope') }}
-                    {{ page_hero.meta_label('server', inventory.systems_in_scope ~ ' Systems') }}
-                    {{ page_hero.meta_label('database-zap', inventory.providers_in_scope ~ ' Providers') }}
+                    {% if inventory.setup.is_blocked %}
+                        {{ page_hero.meta_label('database-backup', 'Committed Inventory') }}
+                        {{ page_hero.meta_label('lock-keyhole', 'Object Storage Setup Required') }}
+                    {% else %}
+                        {{ page_hero.meta_label('boxes', inventory.total_assets ~ ' Assets in Scope') }}
+                        {{ page_hero.meta_label('server', inventory.systems_in_scope ~ ' Systems') }}
+                        {{ page_hero.meta_label('database-zap', inventory.providers_in_scope ~ ' Providers') }}
+                    {% endif %}
                 </div>
             {% endcall %}
         </div>
+        {% if inventory.setup.is_blocked %}
+            {% set storage_blocked_scope = 'Inventory Readiness' %}
+            {% set storage_blocked_info = 'Register a Storage integration before KAORI can collect committed bucket and container inventory.' %}
+            {% include 'inventory/object_storage/components/_hero_blocked_context.html' %}
+        {% else %}
         {{ page_hero.context_card('Object Storage Asset Posture',
                 'Inventory Posture',
                 'Committed Namespace Coverage',
@@ -25,5 +35,6 @@
         url_for('object_storage_inventory.systems'),
         'server'
         ) }}
+        {% endif %}
     </div>
 </section>
