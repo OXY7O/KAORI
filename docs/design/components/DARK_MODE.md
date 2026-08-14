@@ -224,7 +224,7 @@ Dark card hover behavior:
 - shadow remains restrained;
 - an ordinary/repeated card must not become Violet.
 
-Large catalog grouping panels use `surface-card`; their internal brand/domain panel may use the controlled deep-Violet surface through `.kaori-brand-domain-panel`. `Related Page Card` uses the same shared surface because it is explicit contextual navigation rather than an ordinary content card.
+Large catalog grouping panels use `surface-card`. On the Welcome product landing page only, the capability-group anchor uses the exact shared Hero surface through `.kaori-hero-shell`, including the canonical dark Hero gradient, so category orientation and page identity stay visually consistent. This Welcome-only exception must remain smaller and action-free and must not be copied into ordinary content. `Related Page Card` continues to use the controlled deep-Violet `.kaori-brand-domain-panel` because it is explicit contextual navigation rather than an ordinary content card.
 
 ## Semantic status colors
 

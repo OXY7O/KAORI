@@ -22,25 +22,46 @@ from app.automation_control.notifications import (
 )
 from app.automation_control.presentation import build_automation_control_context, upsert_deployment_policy
 from app.automation_control.tasks import dispatch_automation_decision_notification
+from app.common.automation_execution import execution_enabled
 from app.extensions.db import db
-from app.integrations.resolver_bootstrap import get_resolver_registry
-from app.intelligence.workflow import approve_decision, reject_decision
+from app.integrations.resolver_bootstrap import build_resolver_contract_registry, get_resolver_registry
+from app.intelligence.workflow import (
+    approve_decision,
+    issue_persisted_execution_token,
+    reject_decision,
+)
 from app.knowledge.candidate_review import dismiss_candidate, promote_candidate
-from app.knowledge.matching import create_alert_binding
+from app.knowledge.matching import create_alert_binding, set_alert_binding_status
 from app.knowledge.service import (
+    activate_system_runbook,
+    assert_binding_uses_allowed_runbook,
+    assert_custom_runbook_authoring_enabled,
+    assert_revision_mutation_allowed,
     create_revision,
     create_runbook,
     publish_revision,
     withdraw_revision,
 )
 from app.models.cluster import Cluster
-from app.models.intelligence import IntelligenceDecision, IntelligenceDecisionCandidate, IntelligenceExecutionJournal
-from app.models.knowledge import KnowledgeRunbook, KnowledgeRunbookRevision
-from app.models.resolver import ResolverOperationalControl, ResolverProductionReadinessRecord
+from app.models.intelligence import IntelligenceDecision, IntelligenceDecisionCandidate
+from app.models.knowledge import (
+    KnowledgeRunbook,
+    KnowledgeRunbookAlertBinding,
+    KnowledgeRunbookRevision,
+)
+from app.models.resolver import ResolverProductionReadinessRecord
 from app.notifications.service import queue_transient_feedback
 from app.rbac.decorators import permission_required
-from app.resolver.operations import requeue_dead_letter, update_control
-from app.resolver.production_readiness import REQUIRED_CHECKS, advance_rollout_stage, record_validation
+from app.resolver.operations import assert_decision_execution_allowed, update_control
+from app.resolver.orchestration import enqueue_execution_delivery
+from app.resolver.production_readiness import (
+    REQUIRED_CHECKS,
+    advance_rollout_stage,
+    assert_deployment_policy_allows,
+    assert_production_execution_ready,
+    record_validation,
+)
+from app.resolver.tasks import execute_authorized_resolution
 
 automation_control_bp = Blueprint(
     'automation_control',
@@ -56,20 +77,40 @@ def index() -> ResponseReturnValue:
     return render_template('intelligence/automation_control.html', payload=payload)
 
 
+@automation_control_bp.post('/automation-control/system-runbooks/<string:runbook_key>/activate')
+@permission_required('knowledge.runbooks.publish')
+def activate_automation_system_runbook(runbook_key: str) -> ResponseReturnValue:
+    return _handle_governance_mutation(
+        workspace='runbooks',
+        success_title='System Runbook activated',
+        success_message='KAORI activated the validated source-controlled runbook revision for binding.',
+        operation=lambda: activate_system_runbook(
+            runbook_key=runbook_key,
+            actor_user_id=_actor_user_id(),
+            actor_permissions=_actor_permissions('knowledge.runbooks.manage', 'knowledge.runbooks.publish'),
+            resolver_registry=build_resolver_contract_registry(),
+        ),
+    )
+
+
 @automation_control_bp.post('/automation-control/runbooks')
 @permission_required('knowledge.runbooks.manage')
 def create_automation_runbook() -> ResponseReturnValue:
-    return _handle_mutation(
-        workspace='runbooks',
-        success_title='Runbook created',
-        success_message='KAORI created the stable runbook identity.',
-        operation=lambda: create_runbook(
+    def operation() -> object:
+        assert_custom_runbook_authoring_enabled(current_app.config)
+        return create_runbook(
             runbook_key=request.form.get('runbook_key', ''),
             title=request.form.get('title', ''),
             description=_optional_text(request.form.get('description')),
             actor_user_id=_actor_user_id(),
             actor_permissions=_actor_permissions('knowledge.runbooks.manage'),
-        ),
+        )
+
+    return _handle_governance_mutation(
+        workspace='runbooks',
+        success_title='Runbook created',
+        success_message='KAORI created the custom runbook identity.',
+        operation=operation,
     )
 
 
@@ -78,13 +119,14 @@ def create_automation_runbook() -> ResponseReturnValue:
 @permission_required('knowledge.runbooks.manage')
 def create_automation_revision(runbook_id: int | None = None) -> ResponseReturnValue:
     def operation() -> object:
+        assert_custom_runbook_authoring_enabled(current_app.config)
         selected_runbook_id = runbook_id or _positive_int(request.form.get('runbook_id'), 'Runbook')
         runbook = db.session.get(KnowledgeRunbook, selected_runbook_id)
         if runbook is None:
             raise ValueError('Selected runbook no longer exists.')
         parameter_schema = _json_object(request.form.get('parameter_schema_json'), 'Parameter schema')
         steps = _json_list(request.form.get('steps_json'), 'Runbook steps')
-        rollback = _optional_json_object(request.form.get('rollback_json'), 'Rollback definition')
+        rollback = _optional_json_object(request.form.get('rollback_json'), 'Recovery / rollback definition')
         return create_revision(
             runbook,
             version=request.form.get('version', ''),
@@ -102,7 +144,7 @@ def create_automation_revision(runbook_id: int | None = None) -> ResponseReturnV
             actor_permissions=_actor_permissions('knowledge.runbooks.manage'),
         )
 
-    return _handle_mutation(
+    return _handle_governance_mutation(
         workspace='runbooks',
         success_title='Runbook revision created',
         success_message='KAORI saved the immutable draft revision for review.',
@@ -117,6 +159,7 @@ def publish_automation_revision(revision_id: int) -> ResponseReturnValue:
         revision = db.session.get(KnowledgeRunbookRevision, revision_id)
         if revision is None:
             raise ValueError('Selected runbook revision no longer exists.')
+        assert_revision_mutation_allowed(revision, config=current_app.config, operation='published')
         registry = get_resolver_registry(current_app)
         descriptor = registry.describe(revision.action_key)
         compatibility_profile = _optional_text(request.form.get('compatibility_profile'))
@@ -131,7 +174,7 @@ def publish_automation_revision(revision_id: int) -> ResponseReturnValue:
             compatibility_profile=compatibility_profile,
         )
 
-    return _handle_mutation(
+    return _handle_governance_mutation(
         workspace='runbooks',
         success_title='Runbook revision published',
         success_message='KAORI published the validated immutable runbook revision.',
@@ -146,13 +189,14 @@ def withdraw_automation_revision(revision_id: int) -> ResponseReturnValue:
         revision = db.session.get(KnowledgeRunbookRevision, revision_id)
         if revision is None:
             raise ValueError('Selected runbook revision no longer exists.')
+        assert_revision_mutation_allowed(revision, config=current_app.config, operation='withdrawn')
         return withdraw_revision(
             revision,
             actor_user_id=_actor_user_id(),
             actor_permissions=_actor_permissions('knowledge.runbooks.publish'),
         )
 
-    return _handle_mutation(
+    return _handle_governance_mutation(
         workspace='runbooks',
         success_title='Runbook revision withdrawn',
         success_message='KAORI removed the revision from active alert matching.',
@@ -168,6 +212,7 @@ def create_automation_binding() -> ResponseReturnValue:
         revision = db.session.get(KnowledgeRunbookRevision, revision_id)
         if revision is None:
             raise ValueError('Selected published revision no longer exists.')
+        assert_binding_uses_allowed_runbook(revision, config=current_app.config)
         return create_alert_binding(
             revision,
             binding_key=request.form.get('binding_key', ''),
@@ -182,10 +227,32 @@ def create_automation_binding() -> ResponseReturnValue:
             actor_permissions=_actor_permissions('knowledge.runbooks.manage'),
         )
 
-    return _handle_mutation(
+    return _handle_governance_mutation(
         workspace='runbooks',
         success_title='Alert binding created',
         success_message='KAORI bound the alert selector to a published runbook revision.',
+        operation=operation,
+    )
+
+
+@automation_control_bp.post('/automation-control/bindings/<int:binding_id>/status')
+@permission_required('knowledge.runbooks.manage')
+def update_automation_binding_status(binding_id: int) -> ResponseReturnValue:
+    def operation() -> object:
+        binding = db.session.get(KnowledgeRunbookAlertBinding, binding_id)
+        if binding is None:
+            raise ValueError('Selected runbook binding no longer exists.')
+        return set_alert_binding_status(
+            binding,
+            lifecycle_status=request.form.get('lifecycle_status', ''),
+            actor_user_id=_actor_user_id(),
+            actor_permissions=_actor_permissions('knowledge.runbooks.manage'),
+        )
+
+    return _handle_governance_mutation(
+        workspace='runbooks',
+        success_title='Binding status updated',
+        success_message='KAORI updated candidate matching availability for the selected binding.',
         operation=operation,
     )
 
@@ -197,23 +264,12 @@ def promote_automation_candidate(candidate_id: int) -> ResponseReturnValue:
         candidate = db.session.get(IntelligenceDecisionCandidate, candidate_id)
         if candidate is None:
             raise ValueError('Selected decision candidate no longer exists.')
-        global_control = ResolverOperationalControl.query.filter_by(cluster_id=None).one_or_none()
-        cluster_control = ResolverOperationalControl.query.filter_by(cluster_id=candidate.cluster_id).one_or_none()
-        maintenance_mode = bool(
-            (global_control and global_control.global_kill_switch)
-            or (cluster_control and cluster_control.maintenance_mode)
-        )
         decision = promote_candidate(
             candidate,
             rule_version=request.form.get('rule_version', 'automation-control-v1'),
             actor_user_id=_actor_user_id(),
-            actor_permissions=_actor_permissions(
-                'intelligence.decisions.create',
-                'intelligence.decisions.execute',
-            ),
+            actor_permissions=_actor_permissions('intelligence.decisions.create'),
             reason=_optional_text(request.form.get('reason')),
-            maintenance_mode=maintenance_mode,
-            actor_can_execute=_actor_has_permission('intelligence.decisions.execute'),
         )
         if decision.workflow_status == 'pending_approval':
             _queue_decision_notification(decision.id, APPROVAL_REQUIRED_EVENT)
@@ -261,10 +317,60 @@ def reject_automation_decision(decision_id: int) -> ResponseReturnValue:
     return _decision_outcome(decision_id, outcome='rejected')
 
 
+@automation_control_bp.post('/automation-control/decisions/<int:decision_id>/execute')
+@permission_required('intelligence.decisions.execute')
+def execute_automation_decision(decision_id: int) -> ResponseReturnValue:
+    def operation() -> object:
+        decision = db.session.get(IntelligenceDecision, decision_id)
+        if decision is None:
+            raise ValueError('Selected decision no longer exists.')
+        cluster_id = str(decision.cluster_id or '').strip()
+        if not cluster_id:
+            raise ValueError('Resolver execution requires a cluster-scoped decision.')
+        cluster = db.session.get(Cluster, cluster_id)
+        if cluster is None:
+            raise ValueError('Resolver target cluster does not exist.')
+        registry = get_resolver_registry(current_app)
+        registry.describe(decision.action_key)
+        assert_deployment_policy_allows(
+            cluster_id=cluster_id,
+            namespace=decision.namespace,
+            action_key=decision.action_key,
+            registry_fingerprint=str(current_app.config.get('RESOLVER_REGISTRY_FINGERPRINT') or ''),
+        )
+        assert_production_execution_ready(
+            cluster_id=cluster_id,
+            action_key=decision.action_key,
+            cluster_environment=cluster.environment,
+        )
+        assert_decision_execution_allowed(decision)
+        signing_key = str(current_app.config.get('RESOLVER_TOKEN_SIGNING_KEY') or '')
+        token, journal = issue_persisted_execution_token(
+            decision,
+            secret_key=signing_key,
+            actor_user_id=_actor_user_id(),
+            actor_permissions=_actor_permissions('intelligence.decisions.execute'),
+        )
+        enqueue_execution_delivery(
+            journal,
+            task=execute_authorized_resolution,
+            token=token,
+            actor_user_id=_actor_user_id(),
+        )
+        return journal
+
+    return _handle_execution_action(
+        workspace='operations',
+        success_title='Execution queued',
+        success_message='KAORI authorized the immutable decision and queued the canonical resolver job.',
+        operation=operation,
+    )
+
+
 @automation_control_bp.post('/automation-control/deployment-policies')
 @permission_required('intelligence.decisions.execute')
 def update_automation_deployment_policy() -> ResponseReturnValue:
-    return _handle_mutation(
+    return _handle_governance_mutation(
         workspace='operations',
         success_title='Deployment policy updated',
         success_message='KAORI updated the scoped resolver deployment policy.',
@@ -301,29 +407,10 @@ def update_automation_operational_control() -> ResponseReturnValue:
         db.session.commit()
         return record
 
-    return _handle_mutation(
+    return _handle_governance_mutation(
         workspace='operations',
         success_title='Operational control updated',
         success_message='KAORI applied the resolver safety posture to the selected scope.',
-        operation=operation,
-    )
-
-
-@automation_control_bp.post('/automation-control/journals/<int:journal_id>/requeue')
-@permission_required('intelligence.decisions.execute')
-def requeue_automation_journal(journal_id: int) -> ResponseReturnValue:
-    def operation() -> object:
-        journal = db.session.get(IntelligenceExecutionJournal, journal_id)
-        if journal is None:
-            raise ValueError('Selected execution journal no longer exists.')
-        requeue_dead_letter(journal, actor_user_id=_actor_user_id())
-        db.session.commit()
-        return journal
-
-    return _handle_mutation(
-        workspace='operations',
-        success_title='Dead letter requeued',
-        success_message='KAORI moved the execution journal back to retry wait.',
         operation=operation,
     )
 
@@ -347,7 +434,7 @@ def record_automation_readiness() -> ResponseReturnValue:
         db.session.commit()
         return record
 
-    return _handle_mutation(
+    return _handle_governance_mutation(
         workspace='readiness',
         success_title='Readiness evidence recorded',
         success_message='KAORI stored the complete production-readiness evidence snapshot.',
@@ -370,7 +457,7 @@ def advance_automation_readiness(record_id: int) -> ResponseReturnValue:
         db.session.commit()
         return record
 
-    return _handle_mutation(
+    return _handle_governance_mutation(
         workspace='readiness',
         success_title='Rollout stage updated',
         success_message='KAORI advanced the resolver action through the controlled rollout sequence.',
@@ -428,27 +515,48 @@ def _handle_governance_action(
     )
 
 
-def _handle_mutation(
+def _handle_governance_mutation(
     *,
     workspace: str,
     success_title: str,
     success_message: str,
     operation: Callable[[], object],
 ) -> ResponseReturnValue:
-    if not current_app.config.get('AUTOMATION_CONTROL_MUTATIONS_ENABLED', False):
+    """Persist control-plane governance without crossing the infrastructure execution boundary."""
+    return _handle_control_operation(
+        workspace=workspace,
+        success_title=success_title,
+        success_message=success_message,
+        failure_title='Automation Control update failed',
+        failure_message='KAORI did not apply the requested governance configuration.',
+        operation=operation,
+    )
+
+
+def _handle_execution_action(
+    *,
+    workspace: str,
+    success_title: str,
+    success_message: str,
+    operation: Callable[[], object],
+) -> ResponseReturnValue:
+    if not execution_enabled():
         queue_transient_feedback(
             status='warning',
-            title='Automation Mutation Disabled',
-            message='KAORI did not apply the requested control-plane change.',
-            detail='Automation Control is operating in governance-only mode. Resolver execution and execution-control state changes remain disabled until the feature-complete enablement review passes.',
+            title='Infrastructure Execution Disabled',
+            message='KAORI did not cross the resolver execution boundary.',
+            detail=(
+                'Governance configuration remains available. Set AUTOMATION_EXECUTION_ENABLED only after '
+                'the production-readiness blockers are clear.'
+            ),
         )
         return redirect(url_for('automation_control.index', workspace=workspace))
     return _handle_control_operation(
         workspace=workspace,
         success_title=success_title,
         success_message=success_message,
-        failure_title='Automation Control update failed',
-        failure_message='KAORI did not apply the requested change.',
+        failure_title='Automation execution failed',
+        failure_message='KAORI did not queue the requested resolver execution.',
         operation=operation,
     )
 

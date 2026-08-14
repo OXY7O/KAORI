@@ -36,11 +36,12 @@ capabilities to continue development behind explicit Reserved Plan/fail-closed b
 - Read surface requires `intelligence.view`.
 - Candidate promotion/dismissal and decision approval/rejection are active governance operations; they are not infrastructure mutation.
 - Approval-required, decision-approved, and decision-rejected events are asynchronously delivered through Notification Channels after the governance transaction commits.
-- Resolver/execution-control mutation routes may exist for continued implementation, but the default is fail-closed.
-- `AUTOMATION_CONTROL_MUTATIONS_ENABLED` must resolve false when absent.
-- Environment-level enablement of that guard is deliberately deferred until the feature-complete review.
-- Disabled execution-control mutation attempts return **Automation Mutation Disabled** feedback and must not cross the gated callback boundary.
-- The current posture is **Governance Only**. `Reserved Plan` is not used for implemented Automation Control governance/read/evidence surfaces.
+- Governance configuration is operational independently from infrastructure execution: runbooks/bindings, deployment policy, safety controls, readiness evidence, and rollout stages can be prepared while execution remains disabled.
+- `AUTOMATION_EXECUTION_ENABLED` must default to false and is explicitly exposed as the single infrastructure execution enablement switch.
+- Disabled execution attempts return **Infrastructure Execution Disabled** feedback and must not cross the resolver execution boundary. Authorization and workers re-check the same fail-closed boundary.
+- Active alert evidence is materialized independently from outbound notification delivery into deduplicated decision candidates.
+- Approval-required decisions enforce maker-checker separation. Dead-letter executions are immutable; consumed one-time authorizations are never replayed.
+- The current default posture is **Governance Only**. `Reserved Plan` is not used for implemented Automation Control governance/read/evidence surfaces.
 - Internal exception text must not be exposed to the user.
 
 ## Deferred / non-locking feature work
@@ -49,11 +50,11 @@ The following may remain incomplete without invalidating this baseline lock:
 
 - Server recommendation/evidence providers.
 - HCI recommendation/evidence providers.
-- Automation decision execution, resolver mutation, dead-letter requeue, deployment policy
-  mutation, operational control mutation, and readiness-stage mutation.
+- Additional resolver action types beyond the controlled Kubernetes Deployment restart pilot.
+- Additional provider-specific recovery automation beyond the current manual compensating-recovery evidence contract.
 - Additional external signal/provider enrichments.
 
-Those state-changing capabilities must stay visibly disabled/fail-closed until a later feature-complete review supplies provider validation, behavior tests, security regression, rendering contracts, and E2E/integration evidence as applicable. Implemented Automation Control read/evidence surfaces use factual Governance Only wording rather than Reserved Plan.
+Deferred provider/action capabilities must remain visibly Reserved Plan or fail-closed until their own feature-complete review supplies provider validation, behavior tests, security regression, rendering contracts, and E2E/integration evidence as applicable. The implemented Automation Control control plane uses factual Governance Only wording when the infrastructure execution switch is disabled.
 
 ## Non-negotiable KAORI UI boundary
 

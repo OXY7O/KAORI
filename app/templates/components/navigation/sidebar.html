@@ -25,11 +25,12 @@
     or current_user.has_permission('reports.manage_storage')
 ) %}
 {% set can_integrations = current_user.is_authenticated and current_user.has_permission('settings.manage_integrations') %}
-{% set can_platform_operations = current_user.is_authenticated and (
+{% set can_operations_center = current_user.is_authenticated and (
     current_user.has_permission('jobs.view')
     or current_user.has_permission('platform_operations.view_data_lifecycle')
     or current_user.has_permission('kubernetes_secrets.manage_reveal')
 ) %}
+{% set can_platform_operations = can_operations_center or can_integrations %}
 <aside id="app-sidebar"
        class="kaori-sidebar relative flex h-full min-h-0 w-[250px] shrink-0 flex-col overflow-hidden rounded-2xl border border-brand-outline bg-surface-sidebar text-white shadow-2xl shadow-black/25 transition-[width] duration-200 [.sidebar-collapsed_&]:w-[78px]">
     <div class="pointer-events-none absolute -left-24 -top-32 h-72 w-72 rounded-full bg-kaori-primary/20 blur-3xl"
@@ -108,16 +109,17 @@
                 </div>
             </div>
         {% endif %}
-        {% if can_integrations %}
-            <div class="sidebar-nav-section">
-                <div class="sidebar-expanded-only mb-1.5 px-3 sidebar-section-label text-xs font-extrabold uppercase tracking-widest">Platform Extensions</div>
-                <div class="space-y-1">{% include "components/navigation/integrations_menu.html" %}</div>
-            </div>
-        {% endif %}
         {% if can_platform_operations %}
             <div class="sidebar-nav-section">
                 <div class="sidebar-expanded-only mb-1.5 px-3 sidebar-section-label text-xs font-extrabold uppercase tracking-widest">Platform Operations</div>
-                <div class="space-y-1">{% include "components/navigation/platform_operations_menu.html" %}</div>
+                <div class="space-y-1">
+                    {% if can_operations_center %}
+                        {% include "components/navigation/platform_operations_menu.html" %}
+                    {% endif %}
+                    {% if can_integrations %}
+                        {% include "components/navigation/integrations_menu.html" %}
+                    {% endif %}
+                </div>
             </div>
         {% endif %}
         <div class="sidebar-nav-section">

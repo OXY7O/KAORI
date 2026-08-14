@@ -58,6 +58,7 @@ def main() -> int:
 
     root_routes = read('app/kubernetes_operations/routes.py')
     operation_flow = read('app/kubernetes_operations/operation_flow.py')
+    cluster_required_template = read('app/templates/kubernetes_operations/cluster_required.html')
     shared_ui = read('app/templates/components/kubernetes_operation_ui.html')
     form_context = read('app/templates/components/form_with_context_rail.html')
     quality_gate = read('scripts/quality_gate.sh')
@@ -76,6 +77,14 @@ def main() -> int:
         'Cluster readiness must be owned by the post-authorization operation decorator, not the root blueprint.',
         errors,
     )
+    require(
+        "components/cluster/_hero_blocked_context.html" in cluster_required_template
+        and 'Operations Readiness' in cluster_required_template
+        and 'Cluster Setup Required' in cluster_required_template,
+        'Kubernetes Operations cluster prerequisite must use the canonical setup-blocked Hero context.',
+        errors,
+    )
+
     for token in (
         'def cluster_required[',
         'has_registered_clusters()',

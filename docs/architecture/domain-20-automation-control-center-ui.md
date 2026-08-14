@@ -14,28 +14,43 @@ Ownership boundary: `app/automation_control/` remains an application orchestrati
 
 | Workspace | Operator question | Current capability |
 |---|---|---|
-| Overview | What is the automation control posture right now? | Decision pipeline, pending work, execution activity, mutation state, safety controls, production readiness, notification delivery, and the controlled pilot boundary. |
-| Runbooks & Bindings | Which evidence can map to which governed procedure? | Stable runbooks, immutable revisions, approval policy, rollback evidence, resolver action identity, and deterministic alert/rule bindings. |
+| Overview | What is the automation control posture right now? | Decision pipeline, pending work, execution activity, execution state, safety controls, production readiness, notification delivery, and the controlled pilot boundary. |
+| Runbooks & Bindings | Which tested procedure can this evidence use? | Source-controlled System Runbook Catalog, validated immutable revisions, resolver/verification/recovery contracts, activation state, and environment-specific alert/rule bindings. |
 | Decision Review | What is awaiting accountable review? | Non-executable candidates, immutable decisions, policy outcome, approval requirement, evidence hash, scope, and expiry. |
 | Execution Control | What can execute and what is happening now? | Resolver registry, deployment policies, safety controls, execution journals, retry state, and dead letters. |
-| Production Readiness | What still blocks controlled execution? | Mutation gate, registry coverage, deployment policy, readiness evidence, Notification Channel coverage, and ordered rollout stage. |
+| Production Readiness | What still blocks controlled execution? | Execution gate, registry coverage, deployment policy, readiness evidence, Notification Channel coverage, and ordered rollout stage. |
 
 The old Domain 1–20 Foundation Map is no longer an operator surface. Architecture implementation history remains documented elsewhere; Automation Overview now reports operational control state.
 
-## Current mutation boundary
+## Current execution boundary
 
-`AUTOMATION_CONTROL_MUTATIONS_ENABLED` resolves false when absent and is deliberately not exposed through `.env.example` or `.env.production.example` during the current baseline lock.
+`AUTOMATION_EXECUTION_ENABLED` defaults to false and is exposed in the environment templates as the single infrastructure execution enablement switch. It controls authorization/dispatch/provider mutation, not control-plane governance preparation.
 
 When disabled:
 
 - read/evidence workspaces remain available;
-- candidate promotion/dismissal and decision approval/rejection remain available as accountable governance operations;
-- resolver execution and execution-control mutations fail closed before the gated callback is invoked;
-- feedback for those gated paths is **Automation Mutation Disabled**;
-- the page posture is **Governance Only**;
-- runbook authoring changes, deployment-policy changes, safety-control changes, dead-letter requeue, readiness-stage changes, and infrastructure mutations are not applied.
+- validated System Runbooks may be activated from the source-controlled catalog and environment bindings remain RBAC/audit governed;
+- custom runbook authoring remains locked behind `CUSTOM_RUNBOOK_AUTHORING_ENABLED=false` and is not a supported production capability;
+- candidate promotion/dismissal and decision approval/rejection remain accountable governance operations;
+- deployment-policy, safety-control, readiness-evidence, and rollout-stage configuration remain writable so the control plane can become ready before execution is enabled;
+- resolver authorization and dispatch fail closed with **Infrastructure Execution Disabled** feedback;
+- the application authorization service and resolver worker re-check the gate independently; and
+- the page posture is **Governance Only / Execution Disabled**.
 
-This state is not labelled `Reserved Plan`: the governance capability exists and decision lifecycle state is operational; infrastructure and execution-control mutation remain intentionally disabled.
+Dead-letter executions are immutable. Because execution authorization is one-time and the raw token is intentionally not persisted, KAORI never replays a consumed journal. A new attempt begins from fresh evidence and a new candidate/decision lifecycle.
+
+
+## System Runbook Catalog
+
+Runbook authoring is intentionally asymmetric in the current supported release. KAORI ships tested **System Runbooks** as source-controlled contracts; operators select and activate those contracts instead of editing action JSON in the UI. The initial catalog contains only:
+
+```text
+kubernetes.deployment.restart
+```
+
+The catalog definition pins the runbook version, resolver action, approval policy, required evidence, required capabilities, compatibility profile, parameter schema, resolver step, post-action verification semantics, and compensating-recovery metadata. Activation validates against a **resolver contract registry** built from adapters shipped in the current KAORI build; it does not require the action to be enabled in the runtime execution registry. This keeps Governance Only preparation independent from `RESOLVER_ENABLED_ACTIONS`. Activation then materializes the definition into the Knowledge persistence model and publishes it after contract validation succeeds. Re-activation is idempotent when the stored immutable revision hash matches. A same-version content mismatch is treated as **Catalog Drift** and fails closed.
+
+System revisions cannot be manually published, withdrawn, or edited through Automation Control. Environment-specific binding and deployment/readiness policy remain operator-owned. Bindings can be enabled or disabled without deletion so candidate generation can be paused while retaining audit evidence. Existing legacy custom records remain visible for audit but cannot receive new bindings while custom authoring is disabled. Production validation rejects `CUSTOM_RUNBOOK_AUTHORING_ENABLED=true` until custom authoring is promoted through simulation, maturity, regression, and security evidence.
 
 ## Governed lifecycle
 
@@ -67,12 +82,12 @@ kubernetes.deployment.restart
 
 Registration alone does not make the action executable. The pilot requires:
 
-1. immutable runbook revision and deterministic binding;
+1. activated source-controlled System Runbook revision and deterministic environment binding;
 2. explicit decision policy and approval when required;
 3. active cluster/namespace deployment policy;
 4. current resolver-registry fingerprint;
 5. server-side dry-run evidence;
-6. rollback definition;
+6. explicit recovery/compensating-action evidence;
 7. global/cluster safety-control admission;
 8. complete production-readiness checks;
 9. execution journal and Activity Audit evidence;
@@ -91,13 +106,13 @@ Notification Channels remains Integrations-owned. Automation Control declares de
 - `automation.execution_failed`
 - `automation.verification_failed`
 
-The three decision-governance events are active in the current Governance Only baseline. They are queued only after the persisted governance transaction commits and are delivered by the maintenance worker through every validated channel that explicitly allows the event/domain. Provider delivery retries are deduplicated by channel and event identity. Execution/verification events remain reserved until those lifecycle stages are activated. No provider credential or transport code belongs in Automation Control.
+Decision-governance events are queued only after the persisted governance transaction commits. Execution lifecycle producers emit started, verified-completed, execution-failed, and verification-failed events from the resolver lifecycle. Matching validated Notification Channels deliver asynchronously; provider delivery retries are deduplicated by channel and event identity. Notification failure never rewrites the recorded governance or execution outcome. No provider credential or transport code belongs in Automation Control.
 
 ## Production-readiness semantics
 
 Readiness is not one boolean. The UI reports these independently:
 
-- Mutation Gate
+- Execution Gate
 - Resolver Registry
 - Active Deployment Policies
 - Readiness Evidence
@@ -118,22 +133,25 @@ Stage skipping remains prohibited.
 | Capability | Required permission |
 |---|---|
 | View workspace | `intelligence.view` |
-| Create runbook/revision/binding | `knowledge.runbooks.manage` |
-| Publish or withdraw revision | `knowledge.runbooks.publish` |
+| Activate validated System Runbook | `knowledge.runbooks.publish` |
+| Create environment binding | `knowledge.runbooks.manage` |
+| Custom runbook authoring | Not production-supported; `CUSTOM_RUNBOOK_AUTHORING_ENABLED=false` |
 | Promote or dismiss candidate | `intelligence.decisions.create` |
 | Approve or reject decision | `intelligence.decisions.approve` |
 | Manage policy/control/readiness/dead letters | `intelligence.decisions.execute` |
 
-Permissions do not bypass the global mutation gate.
+Permissions do not bypass the infrastructure execution gate or any deployment/readiness/safety admission control.
 
 ## Quality contract
 
 `scripts/verify_automation_control.py` locks:
 
-- default fail-closed mutation behavior;
-- no environment-configured mutation enablement;
+- default fail-closed infrastructure execution behavior;
+- explicit `AUTOMATION_EXECUTION_ENABLED=false` default-deny enablement;
+- source-controlled System Runbook Catalog ownership with `CUSTOM_RUNBOOK_AUTHORING_ENABLED=false`;
+- fail-closed catalog drift detection for immutable System Runbook versions;
 - operational Overview ownership rather than Foundation Map ownership;
-- factual Governance Only / Mutation Disabled wording;
+- factual Governance Only / Execution Disabled wording;
 - Decision Review vs Execution Control separation;
 - Production Readiness evidence boundaries;
 - automation Notification Channel allowed-use keys; and

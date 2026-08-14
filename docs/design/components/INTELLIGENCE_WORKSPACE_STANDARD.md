@@ -29,11 +29,11 @@ MVP, placeholder, preview-only, and coming-soon labels are prohibited.
 
 Automation Control is the governed bridge from Intelligence evidence to a future controlled execution path. Its workspaces are **Overview**, **Runbooks & Bindings**, **Decision Review**, **Execution Control**, and **Production Readiness**. Overview reports factual decision, execution, safety, readiness, and notification-delivery posture; it must not regress to an implementation-domain map.
 
-Infrastructure mutation is disabled by default. The runtime guard key is `AUTOMATION_CONTROL_MUTATIONS_ENABLED`; missing configuration resolves to false, and the key must not be exposed through environment templates during the current baseline lock. Candidate promotion/dismissal and decision approval/rejection are governance operations and remain available in **Governance Only** mode. Resolver execution and other execution-control mutations are rejected with **Automation Mutation Disabled** feedback before the gated callback is invoked. `Governance Only` therefore means decision governance is operational while infrastructure mutation remains fail-closed.
+Infrastructure execution is disabled by default through `AUTOMATION_EXECUTION_ENABLED=false`. Governance configuration remains available in **Governance Only** mode: operators may activate validated source-controlled System Runbooks, maintain deterministic environment bindings, review candidates, approve/reject immutable decisions, configure deployment policies and safety controls, record readiness evidence, and advance ordered rollout stages without crossing the resolver boundary. System Runbook activation validates the adapter contract shipped by the build independently from runtime `RESOLVER_ENABLED_ACTIONS`, so catalog preparation never requires enabling execution registration. Custom runbook authoring remains locked through `CUSTOM_RUNBOOK_AUTHORING_ENABLED=false` until its simulation, maturity, regression, and security contracts are production-ready. Authorization and resolver workers independently re-check the execution gate; disabled execution returns **Infrastructure Execution Disabled** feedback. `Governance Only` therefore means the control plane can be made ready while provider mutation remains fail-closed.
 
-Decision candidates are non-executable. Promotion creates an immutable decision snapshot; approval or rejection is a distinct accountable outcome. Approval-required, decision-approved, and decision-rejected notifications are queued only after the governance transaction commits and are delivered asynchronously through matching Notification Channels. Notification delivery failure never rolls back or rewrites the recorded decision outcome. Persisted decisions remain separate from execution journals. Execution Control owns resolver registry, deployment policies, safety controls, orchestration journals, and dead letters. Production Readiness reports mutation state, resolver registration, scoped deployment policy, readiness evidence, Notification Channel coverage, and ordered rollout stages independently.
+Decision candidates are non-executable. Promotion creates an immutable decision snapshot; approval or rejection is a distinct accountable outcome, and approval-required decisions enforce maker-checker separation. Approval and execution lifecycle notifications are queued asynchronously through matching Notification Channels; delivery failure never rewrites the recorded decision or execution outcome. Persisted decisions remain separate from execution journals. Execution Control owns resolver registry, deployment policies, safety controls, orchestration journals, post-action verification, and immutable dead letters. Production Readiness reports execution state, resolver registration, scoped deployment policy, readiness evidence, Notification Channel coverage, and ordered rollout stages independently.
 
-The intended first controlled execution pilot remains `kubernetes.deployment.restart`. Registration alone does not make it executable: approval, namespace allowlist, registry parity, server-side dry-run, rollback, post-action verification, audit, notification delivery, and staged production-readiness evidence remain mandatory.
+The intended first controlled execution pilot remains `kubernetes.deployment.restart`. Registration alone does not make it executable: approval, namespace allowlist, registry parity, server-side dry-run, post-action rollout verification, audit, notification delivery, recovery evidence, and staged production-readiness evidence remain mandatory. Deployment restart is not transactionally reversible, so KAORI records compensating/manual recovery evidence rather than claiming an automatic rollback.
 
 ## Baseline lock semantics
 
@@ -44,10 +44,11 @@ boundaries, shared UI ownership, and explicit Reserved Plan states are stable. I
 feature-complete.
 
 A capability must remain `Reserved Plan` until its provider, validation, behavioral, and
-release-test contracts are complete. In particular, Automation Control must remain
-fail-closed by default, must not gain an environment-configured enablement switch during
-this baseline lock, and must not be re-labelled as Available solely because route or model
-scaffolding exists.
+release-test contracts are complete. Automation Control keeps infrastructure execution
+fail-closed by default through an explicit environment-controlled execution switch, while
+governance preparation stays operational. Enabling that switch does not bypass deployment
+policy, readiness, safety, authorization, dry-run, worker revalidation, or verification gates,
+and route/model scaffolding alone must never be interpreted as execution readiness.
 ## Multi-domain recommendation contract
 
 - Recommendations are owned by the central Intelligence evaluator and may contain findings from multiple asset domains.

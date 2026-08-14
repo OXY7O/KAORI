@@ -61,5 +61,6 @@
   },
   "css.lint.unknownAtRules": "ignore",
   "prettier.requireConfig": true,
-  "prettier.resolveGlobalModules": false
+  "prettier.resolveGlobalModules": false,
+  "snyk.advanced.autoSelectOrganization": true
 }

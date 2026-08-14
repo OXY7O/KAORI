@@ -5,7 +5,7 @@ def read(path: str) -> str:
     return Path(path).read_text()
 
 
-def test_automation_control_uses_factual_governance_only_state_while_mutations_are_disabled():
+def test_automation_control_uses_factual_governance_only_state_while_execution_is_disabled():
     main = read('app/templates/intelligence/automation_control.html')
     partials = [
         read('app/templates/intelligence/partials/automation_control/_overview.html'),
@@ -16,19 +16,25 @@ def test_automation_control_uses_factual_governance_only_state_while_mutations_a
     ]
 
     assert 'Governance Only' in main
-    assert 'Mutation Disabled' in main
+    assert 'Execution Disabled' in main
     for content in partials:
         assert 'reserved_plan(' not in content
         assert 'Reserved Plan' not in content
         assert 'fieldset disabled' not in content
 
 
-def test_runbook_workspace_exposes_execution_eligibility_without_fake_authoring_forms():
+def test_runbook_workspace_uses_validated_system_catalog_and_environment_bindings():
     runbooks = read('app/templates/intelligence/partials/automation_control/_runbooks.html')
     assert 'Runbook & Binding Posture' in runbooks
-    assert 'Runbook Library' in runbooks
-    assert 'Revision Execution Eligibility' in runbooks
+    assert 'System Runbook Catalog' in runbooks
+    assert 'Activate System Runbook' in runbooks
+    assert 'Binding Configuration' in runbooks
+    assert 'Activated Runbook Library' in runbooks
     assert 'Alert & Rule Bindings' in runbooks
-    assert 'Advanced JSON' not in runbooks
+    assert 'Custom Authoring Locked' in runbooks
+    assert 'Create Binding' in runbooks
+    assert 'Create Runbook' not in runbooks
+    assert 'Create Revision' not in runbooks
+    assert 'Publish Revision' not in runbooks
     assert '<details' not in runbooks
     assert '<fieldset' not in runbooks

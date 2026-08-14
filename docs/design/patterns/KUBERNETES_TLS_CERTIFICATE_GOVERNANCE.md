@@ -16,6 +16,10 @@ Detail Style 2 — Full Workspace Modal
 
 This is the first canonical **Governance Resource Registry** implementation.
 
+## Cluster setup blocker
+
+Governance Overview and TLS Certificate Governance use the same Kubernetes setup-blocked Hero right-panel contract as Dashboard, Inventory, and Kubernetes Operations. When no cluster is registered, the Hero remains visible, the right panel switches to `Governance Readiness / Cluster Setup Required`, and the detailed cluster-registration guidance stays in the onboarding banner below it. TLS snapshot, posture, registry, and mutation handoff evidence are not presented as zero-valued operational evidence while setup is blocked.
+
 ## Evidence authorities
 
 | Evidence | Authority |

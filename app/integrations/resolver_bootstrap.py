@@ -14,6 +14,8 @@ from app.resolver.registry import ResolverRegistry
 EXTENSION_KEY = 'kaori_resolver_registry'
 FINGERPRINT_KEY = 'kaori_resolver_registry_fingerprint'
 ACTION_DEPLOYMENT_RESTART = 'kubernetes.deployment.restart'
+SUPPORTED_RESOLVER_ACTIONS = frozenset({ACTION_DEPLOYMENT_RESTART})
+CATALOG_VALIDATION_NAMESPACE = '__kaori_catalog_validation__'
 
 
 @dataclass(frozen=True, slots=True)
@@ -51,6 +53,7 @@ def registry_fingerprint(registry: ResolverRegistry) -> str:
                 'capability_keys': list(descriptor.capability_keys),
                 'compatibility_profiles': list(descriptor.compatibility_profiles),
                 'rollback_required': descriptor.rollback_required,
+                'verification_required': descriptor.verification_required,
             }
         )
     payload = json.dumps(descriptors, sort_keys=True, separators=(',', ':')).encode('utf-8')
@@ -59,7 +62,7 @@ def registry_fingerprint(registry: ResolverRegistry) -> str:
 
 def build_resolver_registry(settings: ResolverBootstrapSettings) -> ResolverRegistry:
     registry = ResolverRegistry()
-    unknown = set(settings.enabled_actions) - {ACTION_DEPLOYMENT_RESTART}
+    unknown = set(settings.enabled_actions) - SUPPORTED_RESOLVER_ACTIONS
     if unknown:
         raise ResolverError(f'Unknown enabled resolver actions: {", ".join(sorted(unknown))}.')
     if ACTION_DEPLOYMENT_RESTART in settings.enabled_actions:
@@ -72,6 +75,25 @@ def build_resolver_registry(settings: ResolverBootstrapSettings) -> ResolverRegi
                 )
             )
         )
+    return registry
+
+
+def build_resolver_contract_registry() -> ResolverRegistry:
+    """Build a validation-only registry for source-controlled runbook publication.
+
+    This registry proves that the adapter contract exists in the current KAORI build without
+    registering the action for execution. The sentinel namespace prevents it from being a useful
+    execution registry even if a caller accidentally retains it.
+    """
+
+    registry = ResolverRegistry()
+    registry.register(
+        KubernetesDeploymentRestartAdapter(
+            namespace_guardrail=NamespaceGuardrail(
+                allowed_namespaces=frozenset({CATALOG_VALIDATION_NAMESPACE}),
+            )
+        )
+    )
     return registry
 
 

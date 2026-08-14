@@ -1,4 +1,6 @@
 # KAORI Intelligence Baseline Lock Audit — 2026-08-11
+> **Historical note (2026-08-14):** The Automation Control gate findings below describe the 2026-08-11 baseline and are superseded by the completed control-plane split: governance preparation is writable while `AUTOMATION_EXECUTION_ENABLED=false` independently keeps infrastructure execution fail-closed.
+
 
 ## Decision
 

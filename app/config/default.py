@@ -105,6 +105,20 @@ def _build_maintenance_beat_schedule() -> dict[str, dict[str, object]]:
                 'queue': (_env_str('JOB_MAINTENANCE_CELERY_QUEUE', 'maintenance').strip() or 'maintenance'),
             },
         }
+    if _env_bool('AUTOMATION_CANDIDATE_MATERIALIZATION_ENABLED', True):
+        schedule['automation-candidate-materialization'] = {
+            'task': 'app.automation_control.tasks.materialize_automation_candidates',
+            'schedule': crontab(
+                minute=f'*/{_bounded_env_int("AUTOMATION_CANDIDATE_MATERIALIZATION_INTERVAL_MINUTES", 1, 1, 60)}'
+            ),
+            'options': {'queue': (_env_str('JOB_MAINTENANCE_CELERY_QUEUE', 'maintenance').strip() or 'maintenance')},
+        }
+    if _env_bool('AUTOMATION_LIFECYCLE_RECONCILIATION_ENABLED', True):
+        schedule['automation-lifecycle-reconciliation'] = {
+            'task': 'app.automation_control.tasks.reconcile_automation_lifecycle',
+            'schedule': crontab(minute='*'),
+            'options': {'queue': (_env_str('JOB_MAINTENANCE_CELERY_QUEUE', 'maintenance').strip() or 'maintenance')},
+        }
     if _env_bool('RESOLVER_MAINTENANCE_ENABLED', True):
         schedule['resolver-lease-recovery'] = {
             'task': 'app.resolver.tasks.reconcile_stale_execution_leases',
@@ -281,6 +295,13 @@ class Config:
     )
     ANALYTICS_SOURCE_LOCK_TIMEOUT_SECONDS = _bounded_env_int('ANALYTICS_SOURCE_LOCK_TIMEOUT_SECONDS', 900, 5, 1800)
     JOB_MAINTENANCE_CELERY_QUEUE = _env_str('JOB_MAINTENANCE_CELERY_QUEUE', 'maintenance').strip() or 'maintenance'
+    AUTOMATION_EXECUTION_ENABLED = _env_bool('AUTOMATION_EXECUTION_ENABLED', False)
+    CUSTOM_RUNBOOK_AUTHORING_ENABLED = _env_bool('CUSTOM_RUNBOOK_AUTHORING_ENABLED', False)
+    AUTOMATION_CANDIDATE_MATERIALIZATION_ENABLED = _env_bool('AUTOMATION_CANDIDATE_MATERIALIZATION_ENABLED', True)
+    AUTOMATION_CANDIDATE_MATERIALIZATION_INTERVAL_MINUTES = _bounded_env_int(
+        'AUTOMATION_CANDIDATE_MATERIALIZATION_INTERVAL_MINUTES', 1, 1, 60
+    )
+    AUTOMATION_LIFECYCLE_RECONCILIATION_ENABLED = _env_bool('AUTOMATION_LIFECYCLE_RECONCILIATION_ENABLED', True)
     RESOLVER_EXECUTION_CELERY_QUEUE = (
         _env_str('RESOLVER_EXECUTION_CELERY_QUEUE', 'resolver-execution').strip() or 'resolver-execution'
     )
@@ -391,6 +412,15 @@ class Config:
             'app.automation_control.tasks.dispatch_automation_decision_notification': {
                 'queue': JOB_MAINTENANCE_CELERY_QUEUE,
             },
+            'app.resolver.tasks.dispatch_resolver_execution_notification': {
+                'queue': JOB_MAINTENANCE_CELERY_QUEUE,
+            },
+            'app.automation_control.tasks.materialize_automation_candidates': {
+                'queue': JOB_MAINTENANCE_CELERY_QUEUE,
+            },
+            'app.automation_control.tasks.reconcile_automation_lifecycle': {
+                'queue': JOB_MAINTENANCE_CELERY_QUEUE,
+            },
             'app.reports.schedules.tasks.run_report_schedule_job': {
                 'queue': REPORTS_CELERY_QUEUE,
             },
@@ -402,6 +432,9 @@ class Config:
             },
             'app.resolver.tasks.execute_authorized_resolution': {
                 'queue': RESOLVER_EXECUTION_CELERY_QUEUE,
+            },
+            'app.resolver.tasks.verify_authorized_resolution': {
+                'queue': RESOLVER_MAINTENANCE_CELERY_QUEUE,
             },
             'app.resolver.tasks.reconcile_stale_execution_leases': {
                 'queue': RESOLVER_MAINTENANCE_CELERY_QUEUE,

@@ -20,6 +20,19 @@ def main() -> int:
     routes = read('app/automation_control/routes.py')
     presentation = read('app/automation_control/presentation.py')
     overview_logic = read('app/automation_control/overview.py')
+    candidates = read('app/automation_control/candidates.py')
+    automation_tasks = read('app/automation_control/tasks.py')
+    workflow = read('app/intelligence/workflow.py')
+    resolver_tasks = read('app/resolver/tasks.py')
+    resolver_service = read('app/resolver/service.py')
+    resolver_operations = read('app/resolver/operations.py')
+    resolver_orchestration = read('app/resolver/orchestration.py')
+    resolver_registry = read('app/resolver/registry.py')
+    resolver_adapter = read('app/integrations/kubernetes/resolver_adapter.py')
+    enablement = read('app/common/automation_execution.py')
+    config = read('app/config/default.py')
+    env_example = read('.env.example')
+    env_production = read('.env.production.example')
     main_template = read('app/templates/intelligence/automation_control.html')
     overview = read('app/templates/intelligence/partials/automation_control/_overview.html')
     runbooks = read('app/templates/intelligence/partials/automation_control/_runbooks.html')
@@ -28,122 +41,111 @@ def main() -> int:
     readiness = read('app/templates/intelligence/partials/automation_control/_readiness.html')
     notification_forms = read('app/notification_channels/forms.py')
     notification_service = read('app/notification_channels/service.py')
-    notification_module = read('app/automation_control/notifications.py')
-    notification_tasks = read('app/automation_control/tasks.py')
-    celery_config = read('app/config/default.py')
-    default_config = read('app/config/default.py')
-    env_example = read('.env.example')
-    env_production = read('.env.production.example')
+    decision_notifications = read('app/automation_control/notifications.py')
+    execution_notifications = read('app/resolver/notifications.py')
+    system_runbook_catalog = read('app/knowledge/system_catalog.py')
+    knowledge_service = read('app/knowledge/service.py')
+    knowledge_matching = read('app/knowledge/matching.py')
+    resolver_bootstrap = read('app/integrations/resolver_bootstrap.py')
 
-    for required in (
-        "@automation_control_bp.route('/automation-control')",
-        "current_app.config.get('AUTOMATION_CONTROL_MUTATIONS_ENABLED', False)",
-        "title='Automation Mutation Disabled'",
-        'Governance Only',
-    ):
-        source = routes if required != 'Governance Only' else main_template
-        require(required in source, f'Automation Control fail-closed contract missing: {required}', errors)
-
-    gate = routes.split('def _handle_mutation(', 1)[1].split('def _handle_control_operation(', 1)[0]
-    require(gate.index("current_app.config.get('AUTOMATION_CONTROL_MUTATIONS_ENABLED', False)") < gate.index('_handle_control_operation('), 'Automation mutation callback can cross the execution boundary before the global gate', errors)
+    # Default-deny execution boundary is explicit and independent from governance writes.
+    for source in (config, env_example, env_production):
+        require('AUTOMATION_EXECUTION_ENABLED' in source, 'Execution enablement must be explicitly configurable', errors)
+        require('CUSTOM_RUNBOOK_AUTHORING_ENABLED' in source, 'Custom runbook authoring lock must be explicit', errors)
+    require("AUTOMATION_EXECUTION_ENABLED = _env_bool('AUTOMATION_EXECUTION_ENABLED', False)" in config, 'Execution must default false', errors)
+    require("CUSTOM_RUNBOOK_AUTHORING_ENABLED = _env_bool('CUSTOM_RUNBOOK_AUTHORING_ENABLED', False)" in config, 'Custom runbook authoring must default false', errors)
+    combined = '\n'.join((routes, presentation, config, env_example, env_production))
+    require('AUTOMATION_CONTROL_MUTATIONS_ENABLED' not in combined, 'Legacy all-mutations gate must not return', errors)
+    require('def _handle_governance_mutation(' in routes, 'Governance write boundary is missing', errors)
+    require('def _handle_execution_action(' in routes and 'execution_enabled()' in routes, 'Execution route gate is missing', errors)
+    require('assert_execution_enabled()' in workflow, 'Execution authorization must enforce the hard gate', errors)
+    require('assert_execution_enabled()' in resolver_tasks, 'Resolver worker must enforce the hard gate again', errors)
     require('detail=str(exc)' not in routes, 'Automation Control must not expose raw exception detail', errors)
-    require('AUTOMATION_CONTROL_MUTATIONS_ENABLED' not in default_config, 'Automation mutation enablement must not be promoted into default config yet', errors)
-    require('AUTOMATION_CONTROL_MUTATIONS_ENABLED' not in env_example, 'Automation mutation enablement must not be exposed in development env template yet', errors)
-    require('AUTOMATION_CONTROL_MUTATIONS_ENABLED' not in env_production, 'Automation mutation enablement must not be exposed in production env template yet', errors)
 
-    require('DOMAIN_DEFINITIONS' not in presentation, 'Legacy Domain 1–20 Foundation Map ownership must be removed from Automation Control presentation', errors)
-    require('build_automation_overview' in presentation, 'Automation Overview must use the canonical posture builder', errors)
-    for required in (
-        'Decision & Execution Pipeline',
-        'Automation Guardrails',
-        'Recent Decision Activity',
-        'Execution Activity',
-    ):
-        require(required in overview, f'Automation Overview workspace missing: {required}', errors)
-    require('Foundation Map' not in overview, 'Automation Overview must not regress to the implementation-foundation map', errors)
+    # Evidence -> candidate -> decision -> approval -> authorization -> canonical job.
+    require('match_alert_to_runbook' in candidates and 'persist_candidate' in candidates, 'Candidate producer must connect normalized alert evidence to persisted candidates', errors)
+    require('materialize_active_alert_candidates' in automation_tasks, 'Candidate materialization task is missing', errors)
+    require('automation-candidate-materialization' in config, 'Candidate materializer must be scheduled', errors)
+    require('minimum_outcome=PolicyOutcome(revision.approval_policy)' in read('app/knowledge/candidate_review.py'), 'Promotion policy must derive from immutable runbook policy', errors)
+    require('actor_can_execute' not in read('app/knowledge/candidate_review.py'), 'Reviewer execute permission must not determine decision policy', errors)
+    require('maker-checker separation' in workflow, 'Approval-required decisions must enforce maker-checker separation', errors)
+    require("'/automation-control/decisions/<int:decision_id>/execute'" in routes, 'Approved decision execution handoff route is missing', errors)
+    require('issue_persisted_execution_token' in routes and 'enqueue_execution_delivery' in routes, 'Execution handoff must issue one-time authorization and canonical job', errors)
+    require('build_idempotency_key' in workflow and 'already has an execution authorization' in workflow, 'One immutable decision must not issue duplicate execution authorizations', errors)
 
-    require("('overview', 'Overview', 'layout-dashboard')" in presentation, 'Automation workspace tab must use Overview label', errors)
-    require("('operations', 'Execution Control', 'server-cog')" in presentation, 'Resolver Operations must be presented as Execution Control', errors)
+    # Admission: application preflight + worker revalidation + operational controls.
+    require('assert_deployment_policy_allows' in routes and 'assert_production_execution_ready' in routes, 'Application execution eligibility preflight is incomplete', errors)
+    require('assert_decision_execution_allowed(decision)' in routes, 'Application safety-control preflight is missing', errors)
+    require('assert_deployment_policy_allows' in resolver_tasks and 'assert_production_execution_ready' in resolver_tasks, 'Worker production admission must be authoritative', errors)
+    require('global_control.maintenance_mode' in resolver_operations, 'Global maintenance must block execution', errors)
+    require('worker_lost_after_token_consumed' in resolver_orchestration, 'Worker loss after token consumption must never replay mutation', errors)
+    require("journal.status = 'canceled'" in resolver_orchestration and "journal.orchestration_status = 'dead_letter'" in resolver_orchestration, 'Failed or expired one-time authorization must terminalize safely', errors)
+    require('requeue_dead_letter' not in routes, 'Consumed one-time execution journals must not expose unsafe manual replay', errors)
 
-    for required in (
-        'Runbook & Binding Posture',
-        'Revision Execution Eligibility',
-        'Alert & Rule Bindings',
-        'Advisory Only',
-        'Approval Required',
-        'Policy Eligible',
-    ):
-        source = runbooks if required not in {'Advisory Only', 'Approval Required', 'Policy Eligible'} else presentation
-        require(required in source, f'Runbook governance contract missing: {required}', errors)
+    # Dry-run, execution, post-action verification and recovery semantics.
+    require("'dry_run':" in resolver_service, 'Server-side dry-run evidence must be persisted', errors)
+    require('def verify_resolver_execution(' in resolver_service, 'Post-action verification service is missing', errors)
+    require("name='app.resolver.tasks.verify_authorized_resolution'" in resolver_tasks, 'Post-action verification task is missing', errors)
+    require('def verify(' in resolver_adapter and 'ProgressDeadlineExceeded' in resolver_adapter, 'Kubernetes adapter must verify rollout health', errors)
+    require('manual_compensating_recovery' in resolver_adapter, 'Non-reversible restart must record compensating-recovery evidence', errors)
+    require('rollback_required = False' in resolver_adapter, 'Deployment restart must not claim automatic rollback', errors)
+    require('post-action verification' in resolver_registry.lower(), 'Resolver registry must require verification-capable adapters', errors)
 
-    require('Execution Journal' not in decisions, 'Execution journals must not be owned by Decision Review', errors)
-    for required in ('Decision Contract', 'Candidate Review Queue', 'Persisted Decisions', 'Governance Workflow Enabled', 'Approval Notification Delivery'):
-        require(required in decisions, f'Decision Review contract missing: {required}', errors)
-
-    for required in (
-        'Execution Posture',
-        'Resolver Registry',
-        'Safety Controls',
-        'Deployment Policies',
-        'Execution Journal',
-        'Dead-Letter Review',
-        'Infrastructure Mutation Boundary',
-    ):
-        require(required in operations, f'Execution Control contract missing: {required}', errors)
-
-    for required in (
-        'Production Enablement Gate',
-        'Controlled Rollout Sequence',
-        'Readiness Evidence Contract',
-        'Readiness Records',
-    ):
-        require(required in readiness, f'Production Readiness contract missing: {required}', errors)
-
-    for forbidden in ('reserved_plan(', 'Reserved Plan'):
-        automation_templates = '\n'.join((overview, runbooks, decisions, operations, readiness, main_template))
-        require(forbidden not in automation_templates, f'Automation Control must use factual current-state wording instead of {forbidden}', errors)
-
-    decision_events = (
+    # TTL reconciliation and lifecycle notification producers.
+    require('expire_stale_candidates' in automation_tasks and 'expire_stale_decisions' in automation_tasks, 'Candidate/decision TTL reconciler is incomplete', errors)
+    require('expire_stale_execution_authorizations' in automation_tasks, 'Unused execution authorization TTL reconciliation is missing', errors)
+    require('automation-lifecycle-reconciliation' in config, 'Lifecycle reconciler must be scheduled', errors)
+    events = (
         'automation.approval_required',
         'automation.decision_approved',
         'automation.decision_rejected',
-    )
-    execution_events = (
         'automation.execution_started',
         'automation.execution_completed',
         'automation.execution_failed',
         'automation.verification_failed',
     )
-    for event_type in (*decision_events, *execution_events):
-        require(event_type in notification_forms, f'Notification Channel allowed-use contract missing {event_type}', errors)
-        require(event_type in notification_service, f'Notification Channel label contract missing {event_type}', errors)
-    for event_type in decision_events:
-        require(event_type in notification_module, f'Automation decision notification builder missing {event_type}', errors)
-    for event_type in execution_events:
-        require(event_type in overview_logic, f'Automation execution-notification readiness contract missing {event_type}', errors)
-    require('DECISION_NOTIFICATION_EVENTS' in overview_logic, 'Automation notification readiness must consume the active decision-event contract', errors)
-    require('dispatch_matching_notification_event' in notification_service, 'Automation lifecycle delivery must use the generic matching-channel dispatcher', errors)
-    require('dispatch_automation_decision_notification' in notification_tasks, 'Automation approval lifecycle requires an asynchronous notification task', errors)
-    require("'app.automation_control.tasks'" in celery_config, 'Automation notification task module must be registered with Celery', errors)
-    require("'app.automation_control.tasks.dispatch_automation_decision_notification'" in celery_config, 'Automation notification task must be routed to a consumed queue', errors)
+    for event_type in events:
+        require(event_type in notification_forms, f'Notification Channel contract missing {event_type}', errors)
+        require(event_type in notification_service, f'Notification label contract missing {event_type}', errors)
+        require(event_type in decision_notifications + execution_notifications, f'Automation lifecycle producer contract missing {event_type}', errors)
+    require('dispatch_resolver_execution_notification' in resolver_tasks, 'Execution lifecycle notification task is missing', errors)
 
-    governance = routes.split('def _handle_governance_action(', 1)[1].split('def _handle_mutation(', 1)[0]
-    require('AUTOMATION_CONTROL_MUTATIONS_ENABLED' not in governance, 'Decision governance actions must not depend on the infrastructure mutation gate', errors)
-    require("return _handle_governance_action(" in routes, 'Decision review routes must use the governance-action boundary', errors)
-    require(routes.count('except Exception:') == 1, 'Automation Control write handling must use one shared exception boundary instead of duplicating broad handlers', errors)
-    require("_queue_decision_notification(decision.id, APPROVAL_REQUIRED_EVENT)" in routes, 'Candidate promotion must queue approval-required notification after decision persistence', errors)
-    require("_queue_decision_notification(decision.id, DECISION_APPROVED_EVENT)" in routes, 'Decision approval must queue the approved lifecycle notification', errors)
-    require("_queue_decision_notification(decision.id, DECISION_REJECTED_EVENT)" in routes, 'Decision rejection must queue the rejected lifecycle notification', errors)
+    # KAORI operational UI owns every transition; no hidden endpoint-only governance.
+    require('Governance Only' in main_template and 'Execution Disabled' in main_template, 'Default UI posture must be factual', errors)
+    for required in ('Decision & Execution Pipeline', 'Automation Guardrails', 'Execution Activity'):
+        require(required in overview, f'Overview contract missing: {required}', errors)
+    for required in ('System Runbook Catalog', 'Activate System Runbook', 'Binding Configuration', 'Create Binding', 'Custom Authoring Locked'):
+        require(required in runbooks, f'System Runbook Catalog UI missing: {required}', errors)
+    for forbidden in ('Create Runbook', 'Create Revision', 'Publish Revision'):
+        require(forbidden not in runbooks, f'Manual runbook authoring must not be exposed in the supported UI: {forbidden}', errors)
+    require('kubernetes.deployment.restart' in system_runbook_catalog, 'Validated Deployment restart System Runbook is missing', errors)
+    require("validation_status='system_tested'" in system_runbook_catalog, 'System Runbook must declare tested catalog posture', errors)
+    require('post-action rollout verification' in system_runbook_catalog.lower(), 'System Runbook must document verification contract', errors)
+    require('manual_compensating_recovery' in system_runbook_catalog, 'System Runbook must preserve recovery semantics', errors)
+    require('activate_system_runbook' in routes and 'activate_system_runbook' in knowledge_service, 'System Runbook activation flow is missing', errors)
+    require('build_resolver_contract_registry' in routes and 'build_resolver_contract_registry' in resolver_bootstrap, 'System Runbook activation must validate against a build contract registry independent from execution registration', errors)
+    require('CATALOG_VALIDATION_NAMESPACE' in resolver_bootstrap, 'Resolver contract registry must remain validation-only and fail-closed for execution use', errors)
+    require('catalog drift detected' in knowledge_service.lower(), 'System Runbook activation must fail closed on immutable catalog drift', errors)
+    require('assert_custom_runbook_authoring_enabled' in routes, 'Legacy custom authoring endpoints must remain guarded', errors)
+    require('assert_binding_uses_allowed_runbook' in routes, 'Bindings must reject custom runbooks while custom authoring is locked', errors)
+    require('update_automation_binding_status' in routes and 'set_alert_binding_status' in knowledge_matching, 'Binding lifecycle must support governed enable/disable without deletion', errors)
+    require('Disable Binding' in runbooks and 'Enable Binding' in runbooks, 'Binding lifecycle controls are missing from the Runbook workspace', errors)
+    for required in ('Candidate Review Queue', 'Persisted Decisions', 'Maker-Checker', 'Queue Execution'):
+        require(required in decisions, f'Decision workflow UI missing: {required}', errors)
+    for required in ('Governance Configuration', 'Deployment Policies', 'Safety Controls', 'Execution Journal', 'Post-action Verification', 'Dead-Letter Review'):
+        require(required in operations, f'Execution Control UI missing: {required}', errors)
+    for required in ('Production Enablement Gate', 'Readiness Configuration', 'Record Evidence', 'Controlled Rollout Sequence', 'Apply Stage'):
+        require(required in readiness, f'Production Readiness UI missing: {required}', errors)
 
-    require("action_key = 'kubernetes.deployment.restart'" in overview_logic, 'Controlled execution pilot must remain the allowlisted Kubernetes Deployment restart action', errors)
-    require('Contract Required' in overview_logic, 'Verification must remain a distinct required contract', errors)
+    require("action_key = 'kubernetes.deployment.restart'" in overview_logic, 'First controlled execution pilot must remain Kubernetes Deployment restart', errors)
+    require('DOMAIN_DEFINITIONS' not in presentation, 'Legacy foundation-map ownership must not return', errors)
 
     if errors:
         print('FAIL — KAORI Automation Control')
         for error in errors:
             print(f'- {error}')
         return 1
-    print('PASS — KAORI Automation Control')
+    print('PASS — KAORI Automation Control · end-to-end governed lifecycle')
     return 0
 
 

@@ -9,17 +9,17 @@ The Welcome page is a role-aware product landing page. It helps users choose an 
 ```text
 Canonical Hero
 Catalog Header and Search
-Inline Access and Result Metadata
+Visible Result Metadata
 Capability Groups
 Shared Empty State
 ```
 
 ## Catalog header
 
-- use one metadata label: `Available Workspaces`;
+- use one metadata label: `Workspace Catalog`;
 - use one section title: `Choose a Workspace`;
 - keep the description to one sentence;
-- place role access and visible result count as inline metadata;
+- keep only the visible result count as inline metadata; role/access identity belongs to the Hero;
 - do not add a separate tinted summary strip;
 - search uses the standard 40 px form control and `rounded-lg` geometry.
 
@@ -27,7 +27,7 @@ Shared Empty State
 
 `components/welcome_capability_group.html` owns the Welcome-specific group layout.
 
-A capability group may use one dark Violet anchor panel because Welcome is a product landing page. This exception is limited to category orientation and must not become a second hero.
+A capability group uses the exact shared Hero surface (`.kaori-hero-shell`) for its Violet anchor, including the canonical dark-mode Hero gradient. This is a deliberate Welcome-only orientation pattern: the surface is visually identical to the Hero but remains smaller, content-light, and action-free so it does not compete with the page Hero.
 
 The anchor contains:
 
@@ -92,3 +92,8 @@ tests/migrations/test_retire_welcome_view_permission.py
 
 The canonical quality gate runs the Welcome verifier directly, executes permanent behavioral/security/rendering evidence, and runs E2E smoke as a separate test phase. `welcome.view` is retired because authenticated session admission is the actual Welcome boundary.
 
+
+
+## Workspace ownership refinement
+
+Integrations remains a standalone Welcome workspace because it is an independent root menu. It is grouped with **Platform Operations** under the `Act / Infrastructure Operations` capability area, while provider/domain navigation remains inside the Integrations workspace. The Platform Operations card must not inherit `settings.manage_integrations`; each workspace is discovered only through its own authorization boundary.

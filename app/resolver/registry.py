@@ -11,6 +11,7 @@ class ResolverDescriptor:
     capability_keys: tuple[str, ...]
     compatibility_profiles: tuple[str, ...]
     rollback_required: bool
+    verification_required: bool
 
 
 class ResolverRegistry:
@@ -27,6 +28,8 @@ class ResolverRegistry:
             raise ResolverError(f'Resolver action is already registered: {action_key}.')
         if not callable(getattr(adapter, 'dry_run', None)) or not callable(getattr(adapter, 'execute', None)):
             raise ResolverError('Resolver adapter must implement dry_run and execute.')
+        if not callable(getattr(adapter, 'verify', None)):
+            raise ResolverError('Resolver adapter must implement post-action verification.')
         self._adapters[action_key] = adapter
 
     def resolve(self, action_key: str) -> ResolverAdapter:
@@ -42,6 +45,7 @@ class ResolverRegistry:
             capability_keys=tuple(sorted(set(getattr(adapter, 'capability_keys', ()) or ()))),
             compatibility_profiles=tuple(sorted(set(getattr(adapter, 'compatibility_profiles', ()) or ()))),
             rollback_required=bool(getattr(adapter, 'rollback_required', False)),
+            verification_required=True,
         )
 
     def registered_actions(self) -> tuple[str, ...]:

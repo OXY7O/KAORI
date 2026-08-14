@@ -7,10 +7,13 @@ from flask import current_app
 
 from app.automation_control.notifications import DECISION_NOTIFICATION_EVENTS
 from app.automation_control.overview import build_automation_overview
+from app.common.automation_execution import execution_enabled
 from app.common.pagination import PER_PAGE_OPTIONS, build_pagination_window
 from app.common.presentation import present_key_label, present_user_datetime
 from app.extensions.db import db
-from app.integrations.resolver_bootstrap import get_resolver_registry
+from app.integrations.resolver_bootstrap import SUPPORTED_RESOLVER_ACTIONS, get_resolver_registry
+from app.knowledge.service import custom_runbook_authoring_enabled
+from app.knowledge.system_catalog import is_system_runbook_key, list_system_runbooks
 from app.models.audit import AuditEvent
 from app.models.cluster import Cluster
 from app.models.intelligence import (
@@ -45,9 +48,9 @@ def build_automation_control_context(query_args: Mapping[str, Any]) -> dict[str,
     cluster_names = {str(cluster.id): cluster.name for cluster in clusters}
     registry_rows, registry_fingerprint = _registry_rows()
 
-    mutations_enabled = bool(current_app.config.get('AUTOMATION_CONTROL_MUTATIONS_ENABLED', False))
+    infrastructure_execution_enabled = execution_enabled()
     overview_state = build_automation_overview(
-        mutations_enabled=mutations_enabled,
+        execution_enabled=infrastructure_execution_enabled,
         registry_rows=registry_rows,
     )
     counts = {
@@ -68,7 +71,7 @@ def build_automation_control_context(query_args: Mapping[str, Any]) -> dict[str,
         'workspaces': workspace_rows,
         'workspace_tabs': _workspace_tabs(),
         'active_workspace': next(item for item in workspace_rows if item['active']),
-        'mutations_enabled': mutations_enabled,
+        'execution_enabled': infrastructure_execution_enabled,
         'posture': overview_state['posture'],
         'overview_state': overview_state,
         'counts': counts,
@@ -80,6 +83,8 @@ def build_automation_control_context(query_args: Mapping[str, Any]) -> dict[str,
         'stage_order': STAGE_ORDER,
         'per_page_options': PER_PAGE_OPTIONS,
         'global_control': ResolverOperationalControl.query.filter_by(cluster_id=None).one_or_none(),
+        'system_runbook_catalog': [],
+        'custom_runbook_authoring_enabled': custom_runbook_authoring_enabled(current_app.config),
         'runbook_rows': [],
         'revision_rows': [],
         'binding_rows': [],
@@ -99,6 +104,7 @@ def build_automation_control_context(query_args: Mapping[str, Any]) -> dict[str,
     if workspace == 'overview':
         payload.update(_overview_activity(cluster_names))
     elif workspace == 'runbooks':
+        payload['system_runbook_catalog'] = _system_runbook_catalog_rows(registry_rows)
         query = KnowledgeRunbook.query.order_by(KnowledgeRunbook.updated_at.desc(), KnowledgeRunbook.id.desc())
         records, pagination = _paginate_query(query, page=page, per_page=per_page)
         payload['runbook_rows'] = [_runbook_row(record) for record in records]
@@ -118,12 +124,15 @@ def build_automation_control_context(query_args: Mapping[str, Any]) -> dict[str,
             .limit(10)
             .all()
         ]
-        payload['published_revisions'] = (
-            KnowledgeRunbookRevision.query.filter_by(publication_status='published')
+        published_query = (
+            KnowledgeRunbookRevision.query.join(KnowledgeRunbook)
+            .filter(KnowledgeRunbookRevision.publication_status == 'published')
             .order_by(KnowledgeRunbookRevision.published_at.desc(), KnowledgeRunbookRevision.id.desc())
-            .all()
         )
-        payload['all_runbooks'] = KnowledgeRunbook.query.order_by(KnowledgeRunbook.title.asc()).all()
+        if not payload['custom_runbook_authoring_enabled']:
+            system_keys = [item.runbook_key for item in list_system_runbooks()]
+            published_query = published_query.filter(KnowledgeRunbook.runbook_key.in_(system_keys))
+        payload['published_revisions'] = published_query.all()
         payload['pagination'] = pagination
         payload['resource_label'] = 'runbooks'
     elif workspace == 'decisions':
@@ -315,6 +324,7 @@ def _registry_rows() -> tuple[list[dict[str, Any]], str]:
                 'capabilities': list(descriptor.capability_keys),
                 'profiles': list(descriptor.compatibility_profiles),
                 'rollback_required': descriptor.rollback_required,
+                'verification_required': descriptor.verification_required,
             }
         )
     return rows, str(current_app.config.get('RESOLVER_REGISTRY_FINGERPRINT') or '')
@@ -335,6 +345,76 @@ def _paginate_sequence(rows: Sequence[Any], *, page: Any, per_page: Any) -> tupl
 
 
 
+def _system_runbook_catalog_rows(registry_rows: Sequence[Mapping[str, Any]]) -> list[dict[str, Any]]:
+    registry_actions = {str(row.get('action_key') or '') for row in registry_rows}
+    rows: list[dict[str, Any]] = []
+    for definition in list_system_runbooks():
+        runbook = KnowledgeRunbook.query.filter_by(runbook_key=definition.runbook_key).one_or_none()
+        revision = None
+        binding_count = 0
+        if runbook is not None:
+            revision = KnowledgeRunbookRevision.query.filter_by(
+                runbook_id=runbook.id,
+                version=definition.version,
+            ).one_or_none()
+            if revision is not None:
+                binding_count = KnowledgeRunbookAlertBinding.query.filter_by(
+                    runbook_revision_id=revision.id,
+                    lifecycle_status='active',
+                ).count()
+
+        resolver_available = definition.action_key in SUPPORTED_RESOLVER_ACTIONS
+        execution_registered = definition.action_key in registry_actions
+        catalog_drift = bool(revision is not None and revision.content_hash != definition.content_hash)
+        activated = bool(
+            revision is not None
+            and revision.publication_status == 'published'
+            and not catalog_drift
+        )
+        if catalog_drift:
+            status = 'Catalog Drift'
+            tone = 'critical'
+        elif activated:
+            status = 'Active'
+            tone = 'normal'
+        elif not resolver_available:
+            status = 'Resolver Unavailable'
+            tone = 'warning'
+        else:
+            status = 'Available'
+            tone = 'info'
+
+        rows.append(
+            {
+                'key': definition.runbook_key,
+                'title': definition.title,
+                'description': definition.description,
+                'domain': definition.domain,
+                'asset_kind': definition.asset_kind,
+                'version': definition.version,
+                'action_key': definition.action_key,
+                'approval_policy': definition.approval_policy,
+                'maturity': definition.maturity,
+                'validation_status': definition.validation_status,
+                'verification_summary': definition.verification_summary,
+                'recovery_summary': definition.recovery_summary,
+                'required_evidence': list(definition.required_evidence),
+                'required_capabilities': list(definition.required_capabilities),
+                'compatibility_profiles': list(definition.compatibility_profiles),
+                'default_evidence_mapping': dict(definition.default_evidence_mapping),
+                'content_hash': definition.content_hash,
+                'resolver_available': resolver_available,
+                'execution_registered': execution_registered,
+                'activated': activated,
+                'catalog_drift': catalog_drift,
+                'binding_count': binding_count,
+                'status': status,
+                'tone': tone,
+            }
+        )
+    return rows
+
+
 def _runbook_row(record: KnowledgeRunbook) -> dict[str, Any]:
     revisions = list(record.revisions or [])
     published = [item for item in revisions if item.publication_status == 'published']
@@ -353,6 +433,7 @@ def _runbook_row(record: KnowledgeRunbook) -> dict[str, Any]:
         'key': record.runbook_key,
         'title': record.title,
         'description': record.description or 'No description recorded.',
+        'source': 'system' if is_system_runbook_key(record.runbook_key) else 'custom',
         'status': record.lifecycle_status,
         'revision_count': len(revisions),
         'published_count': len(published),
@@ -435,6 +516,7 @@ def _decision_row(record: IntelligenceDecision, cluster_names: Mapping[str, str]
         'policy': record.policy_outcome,
         'policy_reason': record.policy_reason,
         'approval_required': record.approval_required,
+        'created_by_user_id': record.created_by_user_id,
         'approval_outcome': approval.outcome if approval else None,
         'approval_reason': approval.reason if approval and approval.reason else '-',
         'approval_actor': approval.actor.display_label if approval and approval.actor else '-',
@@ -488,6 +570,8 @@ def _channel_posture(options: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
 
 def _journal_row(record: IntelligenceExecutionJournal, cluster_names: Mapping[str, str]) -> dict[str, Any]:
     decision = record.decision
+    verification = dict((record.result_json or {}).get('verification') or {})
+    dry_run = dict((record.result_json or {}).get('dry_run') or {})
     return {
         'id': record.id,
         'public_id': record.public_id,
@@ -496,6 +580,10 @@ def _journal_row(record: IntelligenceExecutionJournal, cluster_names: Mapping[st
         'namespace': decision.namespace or 'All namespaces',
         'status': record.status,
         'orchestration_status': record.orchestration_status,
+        'verification_status': str(verification.get('status') or 'not_started'),
+        'verification_summary': str(verification.get('summary') or '-'),
+        'dry_run_allowed': dry_run.get('allowed'),
+        'recovery_mode': str((dry_run.get('rollback_plan') or {}).get('mode') or '-'),
         'attempts': f'{record.attempt_count}/{record.max_attempts}',
         'error': record.error_message or record.last_error_code or '-',
         'updated_at': present_user_datetime(record.updated_at),

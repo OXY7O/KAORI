@@ -12,15 +12,24 @@ def test_sidebar_controller_uses_valid_statement_separators() -> None:
 
 
 def test_sidebar_toggle_icons_are_supported_by_bundled_lucide() -> None:
-    navbar = (ROOT / 'app/templates/components/navigation/navbar.html').read_text()
-    license_text = (ROOT / 'app/static/vendor/lucide/LICENSE.txt').read_text()
+    navbar = (ROOT / 'app/templates/components/navigation/navbar.html').read_text(encoding='utf-8')
+    lucide_bundle = (ROOT / 'app/static/vendor/lucide/lucide.min.js').read_text(encoding='utf-8')
 
     assert 'data-lucide="chevrons-left"' in navbar
     assert 'data-lucide="chevrons-right"' in navbar
-    assert 'chevrons-left' in license_text
-    assert 'chevrons-right' in license_text
+    assert 'ChevronsLeft' in lucide_bundle
+    assert 'ChevronsRight' in lucide_bundle
     assert 'panel-left-close' not in navbar
     assert 'panel-left-open' not in navbar
+
+
+def test_bundled_lucide_license_is_committed() -> None:
+    license_path = ROOT / 'app/static/vendor/lucide/LICENSE.txt'
+
+    assert license_path.is_file(), 'Vendored Lucide runtime must ship its LICENSE.txt file.'
+    license_text = license_path.read_text(encoding='utf-8')
+    assert 'ISC License' in license_text
+    assert 'Lucide Icons and Contributors' in license_text
 
 
 def test_welcome_uses_the_canonical_catalog_components() -> None:
@@ -31,9 +40,9 @@ def test_welcome_uses_the_canonical_catalog_components() -> None:
     assert 'components/welcome_capability_group.html' in template
     assert 'components/workspace_link_card.html' in template
     assert 'components/states/_empty_state.html' in template
-    assert "table_label.metadata_label('Available Workspaces', 'layout-grid')" in template
+    assert "table_label.metadata_label('Workspace Catalog', 'layout-grid')" in template
     assert 'placeholder="Search Workspaces"' in template
-    assert '{{ current_user.role_display_name }} Access' in template
+    assert '{{ current_user.role_display_name }} Access' not in template
     assert 'data-workspace-result-count>{{ shortcut_count }} Workspaces</strong>' in template
     assert 'Choose a Workspace' in template
     assert 'No Permitted Workspace Matches This Search' in template
@@ -70,7 +79,7 @@ def test_workspace_link_card_owns_destination_card_geometry() -> None:
 def test_welcome_capability_group_is_a_restrained_landing_pattern() -> None:
     component = (ROOT / 'app/templates/components/welcome_capability_group.html').read_text()
 
-    assert 'kaori-brand-domain-panel' in component
+    assert 'kaori-hero-shell' in component
     assert 'bg-kaori-primary-dark' not in component
     assert 'data-group-result-count' in component
     assert 'text-lg font-semibold' in component
@@ -98,8 +107,8 @@ def test_welcome_catalog_matches_current_primary_navigation_domains() -> None:
         'Kubernetes Analytics',
         'Intelligence',
         'Integrations',
-        'Kubernetes Operations',
         'Platform Operations',
+        'Kubernetes Operations',
         'Kubernetes Governance',
         'Reports',
         'Access',
@@ -111,3 +120,7 @@ def test_welcome_catalog_matches_current_primary_navigation_domains() -> None:
     assert "'title': 'Kubernetes Cluster'" not in shortcuts
     assert "('jobs.view', 'platform_operations.overview.index')" in shortcuts
     assert "('jobs.configure', 'platform_operations.overview.index')" in shortcuts
+    assert "('settings.manage_integrations', 'integrations.overview')" in shortcuts
+    assert "'title': 'Integrations'" in shortcuts
+    platform_block = shortcuts.split("'title': 'Platform Operations'", 1)[1].split("'title': 'Kubernetes Operations'", 1)[0]
+    assert "settings.manage_integrations" not in platform_block

@@ -56,6 +56,33 @@ def test_every_inventory_workspace_shows_committed_snapshot_freshness() -> None:
     assert 'Snapshot Source</p>' not in shared
 
 
+def test_inventory_snapshot_is_hidden_when_cluster_onboarding_blocks_the_workspace() -> None:
+    pages = (
+        'overview',
+        'nodes',
+        'namespaces',
+        'workloads',
+        'pods',
+        'services',
+        'ingresses',
+        'storage',
+        'configuration',
+        'topology',
+    )
+    for page in pages:
+        path = INVENTORY_TEMPLATES / page / 'index.html'
+        source = read(path)
+        if page in {'nodes', 'namespaces', 'configuration', 'workloads', 'pods', 'services', 'ingresses', 'storage'}:
+            source = read(INVENTORY_TEMPLATES / page / 'partials' / '_page_workspace.html')
+
+        blocker = source.index('{% if cluster_onboarding.is_blocked %}')
+        blocker_else = source.index('{% else %}', blocker)
+        snapshot = source.index('inventory/kubernetes/components/_data_freshness.html')
+        blocker_end = source.index('{% endif %}', snapshot)
+
+        assert blocker < blocker_else < snapshot < blocker_end, page
+
+
 def test_inventory_freshness_uses_committed_cluster_inventory_snapshots() -> None:
     overview = read(ROOT / 'app' / 'inventory' / 'kubernetes' / 'overview.py')
     routes = read(ROOT / 'app' / 'inventory' / 'kubernetes' / 'routes.py')

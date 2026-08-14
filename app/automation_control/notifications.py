@@ -103,6 +103,7 @@ def build_decision_notification_event(
     )
 
 
+
 def _decision_domain(decision: IntelligenceDecision) -> str:
     action_key = str(decision.action_key or '').strip().lower()
     if action_key.startswith('object_storage.'):
@@ -137,6 +138,12 @@ def _scope_label(decision: IntelligenceDecision) -> str:
     cluster = str(decision.cluster_id or 'global')
     namespace = str(decision.namespace or 'all namespaces')
     return f'{cluster} / {namespace}'
+
+
+def _execution_action_url(base_url: str) -> str:
+    path = '/intelligence/automation-control?workspace=operations'
+    normalized = str(base_url or '').strip().rstrip('/')
+    return f'{normalized}{path}' if normalized else path
 
 
 def _action_url(base_url: str) -> str:

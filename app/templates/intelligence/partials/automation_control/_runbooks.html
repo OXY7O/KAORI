@@ -3,83 +3,179 @@
 {% import "intelligence/components/_workspace.html" as intelligence_ui %}
 {% import "intelligence/components/_pagination.html" as intelligence_pagination %}
 
+{% set can_manage_runbooks = current_user.has_permission('knowledge.runbooks.manage') %}
+{% set can_publish_runbooks = current_user.has_permission('knowledge.runbooks.publish') %}
+{% set catalog_active = payload.system_runbook_catalog | selectattr('activated') | list | length %}
+
 {% call intelligence_ui.section(
     'Runbook & Binding Posture',
-    'Published runbooks define immutable operational procedures. Alert bindings determine when evidence may become a review candidate; neither object is executable by itself.',
+    'KAORI System Runbooks are source-controlled, validated operational contracts. Users activate tested runbooks and configure environment-specific bindings; infrastructure execution remains independently gated.',
     'book-open-check'
     ) %}
     <div class="grid gap-px bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4">
-        {{ intelligence_ui.metric('library', 'Runbooks', payload.counts.runbooks, 'Stable runbook identities', 'info') }}
-        {{ intelligence_ui.metric('file-check-2', 'Published Revisions', payload.counts.published_revisions, 'Immutable validated revisions', 'normal' if payload.counts.published_revisions else 'warning') }}
-        {{ intelligence_ui.metric('link', 'Active Bindings', payload.overview_state.counts.active_bindings, 'Deterministic evidence selectors', 'normal' if payload.overview_state.counts.active_bindings else 'warning') }}
+        {{ intelligence_ui.metric('library', 'System Catalog', payload.system_runbook_catalog|length, 'Validated runbooks shipped by KAORI', 'info') }}
+        {{ intelligence_ui.metric('badge-check', 'Activated', catalog_active, 'Published system revisions available for binding', 'normal' if catalog_active else 'warning') }}
+        {{ intelligence_ui.metric('link', 'Active Bindings', payload.overview_state.counts.active_bindings, 'Environment-specific evidence selectors', 'normal' if payload.overview_state.counts.active_bindings else 'warning') }}
         {{ intelligence_ui.metric('server-cog', 'Resolver Actions', payload.overview_state.counts.registered_actions, 'Allowlisted actions in the active registry', 'info') }}
     </div>
     <div class="border-t border-outline-subtle p-4 sm:p-5">
         {{ operational_callout.render(
-            'Authoring Boundary',
-            'Runbook creation, revision publication, and binding changes are currently blocked by the Automation Control mutation gate. Existing knowledge evidence remains fully readable.',
-            icon='lock-keyhole',
-            tone='unknown',
+            'System Catalog Boundary',
+            'System Runbook content, action contracts, verification rules, and recovery semantics are owned by KAORI source code and cannot be edited from the UI. Operators only activate a validated catalog revision and bind it to approved alert/rule evidence and environment scope.',
+            icon='shield-check',
+            tone='normal',
             variant='semantic'
         ) }}
     </div>
 {% endcall %}
 
 {% call intelligence_ui.section(
-    'Runbook Library',
-    'Primary runbook identities with current revision coverage and deterministic alert-binding coverage.',
+    'System Runbook Catalog',
+    'Choose only KAORI-tested operational procedures whose resolver and verification contracts are supported by this build. Runtime execution registration remains a separate production gate.',
     'library'
     ) %}
     <div class="grid gap-3 p-4 sm:p-5">
-        {% for row in payload.runbook_rows %}
-            {% set runbook_tone = 'normal' if row.status == 'active' and row.published_count else ('warning' if row.status == 'active' else 'unknown') %}
-            {% call intelligence_ui.record(row.title, row.description, icon='book-open-check', status_text=row.status|replace('_',' ')|title, status_tone=runbook_tone) %}
-                <dl class="mt-4 grid gap-3 rounded-lg border border-outline-subtle bg-surface-hover p-3 sm:grid-cols-2 xl:grid-cols-5">
+        {% for row in payload.system_runbook_catalog %}
+            {% call intelligence_ui.record(row.title, row.description, icon='book-key', status_text=row.status, status_tone=row.tone) %}
+                <div class="mt-3 flex flex-wrap gap-2">
+                    {{ table_label.metadata_label('System Managed', 'shield-check') }}
+                    {{ table_label.metadata_label(row.maturity|replace('_',' ')|title, 'badge-check') }}
+                    {{ table_label.metadata_label(row.validation_status|replace('_',' ')|title, 'flask-conical') }}
+                    {{ table_label.metadata_label('v' ~ row.version, 'git-branch') }}
+                    {{ table_label.metadata_label('Human Approval', 'user-check') }}
+                    {{ table_label.metadata_label('Execution Registered' if row.execution_registered else 'Execution Resolver Disabled', 'server-cog' if row.execution_registered else 'server-off') }}
+                </div>
+
+                <dl class="mt-4 grid gap-3 rounded-lg border border-outline-subtle bg-surface-hover p-3 sm:grid-cols-2 xl:grid-cols-3">
                     {{ intelligence_ui.field('Runbook Key', row.key, true) }}
-                    {{ intelligence_ui.field('Revisions', row.revision_count) }}
-                    {{ intelligence_ui.field('Published', row.published_count) }}
+                    {{ intelligence_ui.field('Domain / Asset', row.domain|title ~ ' / ' ~ row.asset_kind|title) }}
+                    {{ intelligence_ui.field('Resolver Action', row.action_key, true) }}
+                    {{ intelligence_ui.field('Required Evidence', row.required_evidence|join(', ')) }}
+                    {{ intelligence_ui.field('Compatibility', row.compatibility_profiles|join(', ')) }}
                     {{ intelligence_ui.field('Active Bindings', row.binding_count) }}
-                    {{ intelligence_ui.field('Latest Published', row.latest_published_version) }}
                 </dl>
-                <p class="mt-3 text-xs leading-5 text-content-muted">Updated {{ row.updated_at }}</p>
+
+                <div class="mt-3 grid gap-3 xl:grid-cols-2">
+                    {{ operational_callout.render(
+                        'Verification Contract',
+                        row.verification_summary,
+                        icon='circle-check-big',
+                        tone='normal',
+                        variant='semantic'
+                    ) }}
+                    {{ operational_callout.render(
+                        'Recovery Contract',
+                        row.recovery_summary,
+                        icon='life-buoy',
+                        tone='unknown',
+                        variant='semantic'
+                    ) }}
+                </div>
+
+                <div class="mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-outline-subtle pt-3">
+                    <p class="text-xs leading-5 text-content-muted">Catalog contract <span class="font-mono text-content-secondary">{{ row.content_hash[:12] }}</span> · source controlled</p>
+                    {% if row.catalog_drift %}
+                        <span class="inline-flex min-h-8 items-center gap-2 rounded-md border border-semantic-critical/30 bg-semantic-critical/10 px-3 text-xs font-semibold text-semantic-critical"><i data-lucide="triangle-alert" class="h-3.5 w-3.5"></i>Activation blocked until catalog drift is resolved</span>
+                    {% elif row.activated %}
+                        <span class="inline-flex min-h-8 items-center gap-2 rounded-md border border-semantic-success/30 bg-semantic-success/10 px-3 text-xs font-semibold text-semantic-success"><i data-lucide="circle-check" class="h-3.5 w-3.5"></i>Active in Runbook Library</span>
+                    {% elif can_publish_runbooks and row.resolver_available %}
+                        <form method="post" action="{{ url_for('automation_control.activate_automation_system_runbook', runbook_key=row.key) }}">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-3 text-xs font-semibold text-white transition hover:bg-kaori-primary-hover focus-visible:ring-2 focus-visible:ring-outline-focus"><i data-lucide="badge-check" class="h-3.5 w-3.5"></i>Activate System Runbook</button>
+                        </form>
+                    {% elif not row.resolver_available %}
+                        <span class="inline-flex min-h-8 items-center gap-2 rounded-md border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-muted"><i data-lucide="server-off" class="h-3.5 w-3.5"></i>Resolver unavailable in this deployment</span>
+                    {% else %}
+                        <span class="text-xs font-medium text-content-muted">Publish permission is required to activate this System Runbook.</span>
+                    {% endif %}
+                </div>
             {% endcall %}
         {% else %}
-            {{ intelligence_ui.empty_state('No Runbooks Available', 'No governed runbook identity has been recorded.', 'book-open-check') }}
+            {{ intelligence_ui.empty_state('No System Runbooks Available', 'This KAORI build does not expose a validated System Runbook contract.', 'library') }}
         {% endfor %}
     </div>
-    {% set query_params = {"workspace": "runbooks"} %}
-    {{ intelligence_pagination.render(payload, 'automation_control.index', query_params, resource_label='Runbooks', per_page_options=payload.per_page_options) }}
 {% endcall %}
+
+{% call intelligence_ui.section(
+    'Custom Authoring Locked',
+    'Custom runbook creation is intentionally withheld until KAORI runbook simulation, maturity scoring, authoring validation, and regression testing are mature enough to protect the same execution guarantees as System Runbooks.',
+    'lock-keyhole'
+    ) %}
+    <div class="p-4 sm:p-5">
+        {{ operational_callout.render(
+            'System Catalog Only',
+            'For this release, use tested System Runbooks and configure bindings, deployment policy, readiness, and approval controls. Existing legacy custom records remain visible for audit but cannot be newly authored or bound while custom authoring is disabled.',
+            icon='shield-alert',
+            tone='unknown',
+            variant='semantic'
+        ) }}
+    </div>
+{% endcall %}
+
+{% if can_manage_runbooks %}
+{% call intelligence_ui.section(
+    'Binding Configuration',
+    'Bind a published System Runbook revision to authoritative alert/rule evidence and an explicit environment scope. A binding creates review candidates only; it never executes the resolver directly.',
+    'link'
+    ) %}
+    <form method="post" action="{{ url_for('automation_control.create_automation_binding') }}" class="grid gap-4 p-4 sm:p-5">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="grid gap-3 lg:grid-cols-2">
+            <label class="block"><span class="text-xs font-semibold text-content-secondary">System Runbook Revision</span><select name="revision_id" required class="mt-1 min-h-9 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary"><option value="">Select an activated System Runbook</option>{% for item in payload.published_revisions %}<option value="{{ item.id }}">{{ item.runbook.title }} · {{ item.version }}</option>{% endfor %}</select></label>
+            <label class="block"><span class="text-xs font-semibold text-content-secondary">Binding Key</span><input name="binding_key" required placeholder="k8s-deployment-restart-stg" class="mt-1 min-h-9 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary outline-none focus:ring-2 focus:ring-outline-focus"></label>
+        </div>
+        <div class="grid gap-3 lg:grid-cols-2">
+            <label class="block"><span class="text-xs font-semibold text-content-secondary">Alertname</span><input name="alertname" placeholder="Optional exact Alertmanager/Prometheus alertname" class="mt-1 min-h-9 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary"></label>
+            <label class="block"><span class="text-xs font-semibold text-content-secondary">Rule Key</span><input name="rule_key" placeholder="Preferred canonical Rule Catalog key when available" class="mt-1 min-h-9 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary"></label>
+        </div>
+        <div class="grid gap-3 lg:grid-cols-2">
+            <label class="block"><span class="text-xs font-semibold text-content-secondary">Cluster Scope</span><select name="cluster_id" class="mt-1 min-h-9 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary"><option value="">All clusters</option>{% for cluster in payload.clusters %}<option value="{{ cluster.id }}">{{ cluster.name }}</option>{% endfor %}</select></label>
+            <label class="block"><span class="text-xs font-semibold text-content-secondary">Namespace</span><input name="namespace" placeholder="Optional exact namespace" class="mt-1 min-h-9 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary"></label>
+        </div>
+        <div class="grid gap-3 lg:grid-cols-2">
+            <label class="block"><span class="text-xs font-semibold text-content-secondary">Required Labels JSON</span><textarea name="required_labels_json" rows="3" class="mt-1 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 font-mono text-xs text-content-primary">{}</textarea></label>
+            <label class="block"><span class="text-xs font-semibold text-content-secondary">Evidence Mapping JSON</span><textarea name="evidence_mapping_json" rows="3" class="mt-1 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 font-mono text-xs text-content-primary">{% if payload.system_runbook_catalog %}{{ payload.system_runbook_catalog[0].default_evidence_mapping | tojson }}{% else %}{}{% endif %}</textarea></label>
+        </div>
+        <div class="flex flex-wrap items-end justify-between gap-3">
+            <label class="block min-w-40"><span class="text-xs font-semibold text-content-secondary">Priority</span><input type="number" min="1" name="priority" value="100" class="mt-1 min-h-9 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary"></label>
+            <button type="submit" {% if not payload.published_revisions %}disabled aria-disabled="true"{% endif %} class="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-3 text-xs font-semibold text-white transition hover:bg-kaori-primary-hover disabled:cursor-not-allowed disabled:opacity-50"><i data-lucide="link" class="h-3.5 w-3.5"></i>Create Binding</button>
+        </div>
+    </form>
+{% endcall %}
+{% endif %}
 
 <section class="grid gap-4 xl:grid-cols-2">
     {% call intelligence_ui.section(
-        'Revision Execution Eligibility',
-        'Approval policy describes how a published revision may participate in a future decision. Policy Eligible does not mean automatic execution.',
-        'file-check-2'
+        'Activated Runbook Library',
+        'Materialized runbook identities retained in KAORI. System records are source-controlled; legacy custom records are audit-only while custom authoring is locked.',
+        'book-open-check'
         ) %}
         <div class="grid gap-3 p-4 sm:p-5">
-            {% for row in payload.revision_rows %}
-                {% call intelligence_ui.record(row.runbook_key ~ ' · ' ~ row.version, row.action_key, icon='file-check-2', status_text=row.execution_mode, status_tone=row.execution_tone) %}
+            {% for row in payload.runbook_rows %}
+                {% set runbook_tone = 'normal' if row.status == 'active' and row.published_count else ('warning' if row.status == 'active' else 'unknown') %}
+                {% call intelligence_ui.record(row.title, row.description, icon='book-open-check', status_text=row.status|replace('_',' ')|title, status_tone=runbook_tone) %}
                     <div class="mt-3 flex flex-wrap gap-2">
-                        {{ table_label.metadata_label(row.status|replace('_',' ')|title, 'file-check-2') }}
-                        {{ table_label.metadata_label(row.resolver_key, 'server-cog') }}
-                        {{ table_label.metadata_label('Rollback Defined' if row.rollback_defined else 'Rollback Not Defined', 'undo-2') }}
+                        {{ table_label.metadata_label('System Managed' if row.source == 'system' else 'Legacy Custom · Read Only', 'shield-check' if row.source == 'system' else 'archive') }}
                     </div>
-                    <dl class="mt-3 grid gap-3 sm:grid-cols-2">
-                        {{ intelligence_ui.field('Approval Policy', row.approval_policy|replace('_',' ')|title) }}
-                        {{ intelligence_ui.field('Publication Validation', 'Passed' if row.validation_valid else ('Failed' if row.validation_valid is sameas false else 'Not Recorded')) }}
-                        {{ intelligence_ui.field('Created', row.created_at) }}
+                    <dl class="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                        {{ intelligence_ui.field('Runbook Key', row.key, true) }}
+                        {{ intelligence_ui.field('Published', row.published_count) }}
+                        {{ intelligence_ui.field('Active Bindings', row.binding_count) }}
+                        {{ intelligence_ui.field('Latest Version', row.latest_published_version) }}
                     </dl>
+                    <p class="mt-3 text-xs leading-5 text-content-muted">Updated {{ row.updated_at }}</p>
                 {% endcall %}
             {% else %}
-                {{ intelligence_ui.empty_state('No Runbook Revisions', 'No immutable runbook revision evidence has been recorded.', 'file-check-2') }}
+                {{ intelligence_ui.empty_state('No Activated Runbooks', 'Activate a validated System Runbook from the catalog before configuring evidence bindings.', 'book-open-check') }}
             {% endfor %}
         </div>
+        {% set query_params = {"workspace": "runbooks"} %}
+        {{ intelligence_pagination.render(payload, 'automation_control.index', query_params, resource_label='Runbooks', per_page_options=payload.per_page_options) }}
     {% endcall %}
 
     {% call intelligence_ui.section(
         'Alert & Rule Bindings',
-        'Bindings connect authoritative rule or alert selectors to a published revision. They produce review candidates, never direct resolver execution.',
+        'Bindings connect authoritative rule or alert selectors to a published System Runbook revision. They produce review candidates, never direct resolver execution.',
         'link'
         ) %}
         <div class="grid gap-3 p-4 sm:p-5">
@@ -90,9 +186,16 @@
                         {{ intelligence_ui.field('Scope', row.cluster_id ~ ' / ' ~ row.namespace) }}
                         {{ intelligence_ui.field('Priority', row.priority) }}
                     </dl>
+                    {% if can_manage_runbooks %}
+                        <form method="post" action="{{ url_for('automation_control.update_automation_binding_status', binding_id=row.id) }}" class="mt-3">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="lifecycle_status" value="{{ 'disabled' if row.status == 'active' else 'active' }}">
+                            <button type="submit" class="inline-flex min-h-9 items-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary transition hover:bg-kaori-soft hover:text-kaori-primary"><i data-lucide="{{ 'pause-circle' if row.status == 'active' else 'play-circle' }}" class="h-3.5 w-3.5"></i>{{ 'Disable Binding' if row.status == 'active' else 'Enable Binding' }}</button>
+                        </form>
+                    {% endif %}
                 {% endcall %}
             {% else %}
-                {{ intelligence_ui.empty_state('No Alert Bindings', 'No deterministic alert-to-runbook binding is currently recorded.', 'link') }}
+                {{ intelligence_ui.empty_state('No Alert Bindings', 'No deterministic alert-to-System-Runbook binding is currently recorded.', 'link') }}
             {% endfor %}
         </div>
     {% endcall %}

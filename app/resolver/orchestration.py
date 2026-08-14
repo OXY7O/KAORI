@@ -120,15 +120,18 @@ def enqueue_execution_delivery(
             max_attempts=journal.max_attempts,
         )
     except Exception as exc:
-        # The canonical dispatcher commits job admission before publishing to
-        # Celery. If publication fails, restore the journal to a retryable
-        # pre-delivery state instead of leaving an orphaned queued execution.
-        journal.orchestration_status = 'pending'
+        # Authorization is one-time and the raw token is never persisted. If
+        # canonical delivery fails, terminalize this journal rather than leaving
+        # an orphan that cannot be replayed safely. A fresh decision is required.
+        journal.status = 'canceled'
+        journal.orchestration_status = 'dead_letter'
         journal.celery_task_id = None
         journal.resolver_job_id = None
         journal.last_error_code = 'dispatch_failed'
         journal.error_message = str(exc)
         journal.next_retry_at = None
+        journal.completed_at = datetime.now(UTC)
+        _audit(journal, 'intelligence.execution.dispatch_failed')
         db.session.commit()
         raise
     journal.resolver_job_id = job.id
@@ -253,6 +256,31 @@ def record_preflight_failure(
     return may_retry
 
 
+def expire_stale_execution_authorizations(*, now: datetime | None = None) -> int:
+    """Terminalize unused one-time authorizations after their signed TTL expires."""
+    current = now or datetime.now(UTC)
+    rows = (
+        IntelligenceExecutionJournal.query.filter(
+            IntelligenceExecutionJournal.status == 'authorized',
+            IntelligenceExecutionJournal.expires_at <= current,
+            IntelligenceExecutionJournal.orchestration_status.in_(('pending', 'queued', 'retry_wait')),
+        )
+        .with_for_update(skip_locked=True)
+        .all()
+    )
+    for journal in rows:
+        journal.status = 'canceled'
+        journal.orchestration_status = 'dead_letter'
+        journal.last_error_code = 'authorization_expired'
+        journal.error_message = 'One-time execution authorization expired before safe token consumption.'
+        journal.next_retry_at = None
+        journal.completed_at = current
+        _release_lease(journal)
+        _audit(journal, 'intelligence.execution.authorization_expired')
+    db.session.commit()
+    return len(rows)
+
+
 def recover_stale_execution_leases(*, now: datetime | None = None) -> dict[str, int]:
     current = now or datetime.now(UTC)
     stale = (
@@ -267,15 +295,30 @@ def recover_stale_execution_leases(*, now: datetime | None = None) -> dict[str, 
     recovered = 0
     dead_lettered = 0
     for journal in stale:
-        journal.last_error_code = FailureClass.WORKER_LOST.value
-        journal.error_message = 'Execution lease expired before completion.'
-        if journal.attempt_count < journal.max_attempts:
+        token_consumed = journal.consumed_at is not None or journal.status != 'authorized'
+        if token_consumed:
+            # A consumed authorization is deliberately never replayed after worker loss.
+            # The mutation outcome may be indeterminate, so retain immutable evidence for review.
+            journal.last_error_code = 'worker_lost_after_token_consumed'
+            journal.error_message = (
+                'Execution worker was lost after the one-time authorization was consumed; automatic replay is blocked.'
+            )
+            journal.orchestration_status = 'dead_letter'
+            journal.completed_at = current
+            journal.next_retry_at = None
+            dead_lettered += 1
+        elif journal.attempt_count < journal.max_attempts:
+            journal.last_error_code = FailureClass.WORKER_LOST.value
+            journal.error_message = 'Execution lease expired before token consumption; delivery may be retried safely.'
             journal.orchestration_status = 'retry_wait'
             journal.next_retry_at = current
             recovered += 1
         else:
+            journal.last_error_code = FailureClass.WORKER_LOST.value
+            journal.error_message = 'Execution lease expired and exhausted its retry budget.'
             journal.orchestration_status = 'dead_letter'
             journal.completed_at = current
+            journal.next_retry_at = None
             dead_lettered += 1
         _release_lease(journal)
         _audit(journal, 'intelligence.execution.lease_recovered')

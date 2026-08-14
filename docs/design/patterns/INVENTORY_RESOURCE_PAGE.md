@@ -1,4 +1,4 @@
-# Inventory Resource Page Pattern v1.2
+# Inventory Resource Page Pattern v1.3
 
 **Status:** Locked reference pattern  
 **Scope:** Kubernetes Inventory Overview, Nodes, Namespaces, Configuration, Workloads, Pods, Services, Ingresses, Storage, and Topology
@@ -13,7 +13,8 @@ All generation-scoped reads use the **latest committed inventory generation**. `
 
 ```text
 Canonical Hero
-Snapshot Context Bar
+Cluster onboarding blocker when setup is incomplete
+Snapshot Context Bar when inventory scope is available
 Resource Posture
 Filter + Shared Inventory Table
 Pagination 5 / 10 / 25 / 50
@@ -49,6 +50,12 @@ render
 ```
 
 A Blueprint-level `before_request` must not short-circuit protected Inventory pages. An unauthorized direct HTMX request must receive the authorization result before KAORI probes cluster readiness or reads Inventory data. `clusters.sync` remains a separate mutation permission for synchronization.
+
+When the Kubernetes onboarding blocker is active, the page renders the canonical Hero plus onboarding blocker only. **Inventory Data Snapshot, posture summaries, tables, and topology workspace stay hidden** because they would imply an available committed inventory scope when no cluster is registered.
+
+The Hero itself remains structurally stable while blocked. Its right panel must use the shared Kubernetes setup-blocked context from `components/cluster/_hero_blocked_context.html` with `Inventory Readiness` as the domain label. The normal Inventory posture/context panel returns only after cluster setup is available.
+
+All resource template registry entries are rooted at `inventory/kubernetes/<resource>/...`. Route helpers must never fall back to the retired `inventory/<resource>/...` namespace; the canonical namespace is release-verified so full-page and HTMX rendering cannot drift apart.
 
 ## Table and pagination contract
 

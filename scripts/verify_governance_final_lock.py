@@ -124,8 +124,20 @@ def main() -> int:
         errors,
     )
     require(
+        "components/cluster/_hero_blocked_context.html" in overview
+        and 'Governance Readiness' in overview,
+        'Governance Overview must use the canonical Kubernetes setup-blocked Hero context.',
+        errors,
+    )
+    require(
         'page_hero.context_card(' in hero,
         'TLS Governance Hero must use the canonical status-oriented context card.',
+        errors,
+    )
+    require(
+        "components/cluster/_hero_blocked_context.html" in hero
+        and 'Governance Readiness' in hero,
+        'TLS Governance Hero must use the canonical Kubernetes setup-blocked Hero context.',
         errors,
     )
     for token in (

@@ -3,28 +3,37 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[3]
 
 
-def test_platform_operations_contains_overview_jobs_data_lifecycle_and_kubernetes_administration() -> None:
-    menu = (ROOT / 'app/templates/components/navigation/platform_operations_menu.html').read_text()
+def test_platform_operations_section_contains_operations_center_and_integrations_as_sibling_roots() -> None:
+    sidebar = (ROOT / 'app/templates/components/navigation/sidebar.html').read_text()
+    operations_menu = (ROOT / 'app/templates/components/navigation/platform_operations_menu.html').read_text()
+    integrations_menu = (ROOT / 'app/templates/components/navigation/integrations_menu.html').read_text()
     page = (ROOT / 'app/templates/jobs/index.html').read_text()
 
-    assert '<details' in menu
-    assert 'Operations Center' in menu
-    assert menu.count('Operations Center') >= 1
-    assert 'Overview' in menu
-    assert 'Jobs &amp; Executions' in menu
-    assert 'Data Lifecycle' in menu
-    assert 'Kubernetes Administration' in menu
-    assert "url_for('platform_operations.overview.index')" in menu
-    assert "url_for('jobs.executions')" in menu
-    assert "url_for('platform_operations.data_lifecycle.index')" in menu
-    assert "url_for('platform_operations.kubernetes.index')" in menu
-    assert 'Inventory Sync' not in menu
-    assert (
-        menu.index('Overview')
-        < menu.index('Jobs &amp; Executions')
-        < menu.index('Data Lifecycle')
-        < menu.index('Kubernetes Administration')
-    )
+    section = sidebar.split('>Platform Operations</div>', 1)[1].split('>Administration</div>', 1)[0]
+    assert 'components/navigation/platform_operations_menu.html' in section
+    assert 'components/navigation/integrations_menu.html' in section
+    assert section.index('platform_operations_menu.html') < section.index('integrations_menu.html')
+
+    assert '<details' in operations_menu
+    assert 'Operations Center' in operations_menu
+    assert 'Overview' in operations_menu
+    assert 'Jobs &amp; Executions' in operations_menu
+    assert 'Data Lifecycle' in operations_menu
+    assert 'Kubernetes Administration' in operations_menu
+    assert 'Integrations' not in operations_menu
+    assert 'Notification Channels' not in operations_menu
+    assert "url_for('platform_operations.overview.index')" in operations_menu
+    assert "url_for('jobs.executions')" in operations_menu
+    assert "url_for('platform_operations.data_lifecycle.index')" in operations_menu
+    assert "url_for('platform_operations.kubernetes.index')" in operations_menu
+    assert 'Inventory Sync' not in operations_menu
+
+    assert '<details' in integrations_menu
+    assert 'Integrations' in integrations_menu
+    assert "url_for('integrations.overview')" in integrations_menu
+    assert "url_for('notification_channels.index')" in integrations_menu
+    assert 'Notification Channels' in integrations_menu
+
     assert 'Job Configuration' in page
     assert "url_for('jobs.configuration')" in page
 

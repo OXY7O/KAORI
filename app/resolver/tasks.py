@@ -7,11 +7,16 @@ from uuid import uuid4
 
 from celery import shared_task
 from flask import current_app
+from sqlalchemy.exc import SQLAlchemyError
 
+from app.common.automation_execution import assert_execution_enabled
 from app.extensions.db import db
 from app.jobs.execution import JobExecutionContext
 from app.models.cluster import Cluster
 from app.models.intelligence import IntelligenceExecutionJournal
+from app.notification_channels.config import notification_delivery_max_attempts
+from app.resolver.contracts import VerificationStatus
+from app.resolver.notifications import EXECUTION_NOTIFICATION_EVENTS, dispatch_execution_notification
 from app.resolver.operations import (
     ResolverOperationalError,
     assert_execution_allowed,
@@ -34,7 +39,12 @@ from app.resolver.production_readiness import (
     assert_production_execution_ready,
 )
 from app.resolver.registry import ResolverRegistry
-from app.resolver.service import ResolverDispatchError, dispatch_resolver_execution
+from app.resolver.service import (
+    ResolverDispatchError,
+    dispatch_resolver_execution,
+    record_verification_failure,
+    verify_resolver_execution,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -43,6 +53,64 @@ class ResolverExecutionLease:
     registry: ResolverRegistry
     secret_key: str
     lease: Lease
+
+
+def _queue_execution_notification(execution_journal_id: int, event_type: str) -> None:
+    try:
+        dispatch_resolver_execution_notification.delay(execution_journal_id, event_type)
+    except (RuntimeError, ConnectionError, OSError):
+        current_app.logger.exception(
+            'Could not enqueue Automation Control execution notification %s for journal %s.',
+            event_type,
+            execution_journal_id,
+        )
+
+
+def _queue_verification(execution_journal_id: int) -> None:
+    try:
+        verify_authorized_resolution.apply_async(
+            kwargs={'execution_journal_id': execution_journal_id},
+            countdown=10,
+        )
+    except (RuntimeError, ConnectionError, OSError):
+        current_app.logger.exception(
+            'Could not enqueue post-action verification for execution journal %s.',
+            execution_journal_id,
+        )
+
+
+@shared_task(
+    bind=True,
+    name='app.resolver.tasks.dispatch_resolver_execution_notification',
+    acks_late=True,
+    reject_on_worker_lost=True,
+)
+def dispatch_resolver_execution_notification(
+    self, execution_journal_id: int, event_type: str
+) -> dict[str, object]:
+    """Deliver resolver execution lifecycle events through matching platform channels."""
+    if event_type not in EXECUTION_NOTIFICATION_EVENTS:
+        return {'status': 'skipped', 'reason': 'unsupported_event_type', 'event_type': event_type}
+    journal = db.session.get(IntelligenceExecutionJournal, execution_journal_id)
+    if journal is None:
+        return {
+            'status': 'skipped',
+            'reason': 'execution_journal_not_found',
+            'execution_journal_id': execution_journal_id,
+        }
+    base_url = str(current_app.config.get('KAORI_PUBLIC_BASE_URL') or '').strip()
+    max_attempts = notification_delivery_max_attempts()
+    try:
+        stats = dispatch_execution_notification(journal, event_type=event_type, base_url=base_url)
+    except (SQLAlchemyError, RuntimeError, OSError, ValueError) as exc:
+        if self.request.retries < max_attempts - 1:
+            countdown = min(30 * (self.request.retries + 1), 120)
+            raise self.retry(exc=exc, countdown=countdown, max_retries=max_attempts - 1) from exc
+        raise
+    if int(stats.get('failed', 0)) > 0 and self.request.retries < max_attempts - 1:
+        countdown = min(30 * (self.request.retries + 1), 120)
+        raise self.retry(countdown=countdown, max_retries=max_attempts - 1)
+    return {'status': 'completed', 'event_type': event_type, **stats}
 
 
 def _job_context(task_id: str, job_execution_id: int | None) -> JobExecutionContext | None:
@@ -67,6 +135,7 @@ def _prepare_execution(
     journal = db.session.get(IntelligenceExecutionJournal, execution_journal_id)
     if journal is None:
         raise RuntimeError('Execution journal does not exist.')
+    assert_execution_enabled()
     decision = journal.decision
     cluster_id = str(decision.cluster_id or '').strip()
     if not cluster_id:
@@ -135,6 +204,7 @@ def _raise_retryable_preflight(
         if execution is not None:
             execution.retrying(message='Resolver preflight will be retried.', error=exc)
         raise task.retry(exc=exc, countdown=30)
+    _queue_execution_notification(execution_journal_id, 'automation.execution_failed')
     if execution is not None:
         execution.fail(exc, error_code='resolver_preflight_failed')
     raise exc
@@ -150,6 +220,7 @@ def _raise_terminal_preflight(
         failure_class=FailureClass.TERMINAL,
         message=str(exc),
     )
+    _queue_execution_notification(execution_journal_id, 'automation.execution_failed')
     if execution is not None:
         execution.fail(exc, error_code='resolver_preflight_failed')
     raise exc
@@ -163,6 +234,7 @@ def _raise_lease_failure(
     journal = db.session.get(IntelligenceExecutionJournal, execution_journal_id)
     if journal is not None and journal.orchestration_status == 'dead_letter':
         db.session.commit()
+        _queue_execution_notification(execution_journal_id, 'automation.execution_failed')
     else:
         db.session.rollback()
     if execution is not None:
@@ -228,6 +300,8 @@ def _execute_with_lease(
         complete_execution_delivery(result, owner=state.owner)
         record_operational_success(result)
         db.session.commit()
+        if result.status == 'succeeded':
+            _queue_verification(result.id)
         response = {
             'execution_journal_id': result.public_id,
             'status': result.status,
@@ -248,6 +322,7 @@ def _execute_with_lease(
             failure_class=FailureClass.TERMINAL,
             exc=exc,
         )
+        _queue_execution_notification(execution_journal_id, 'automation.execution_failed')
         if execution is not None:
             execution.fail(exc, error_code='resolver_dispatch_rejected')
         raise
@@ -262,6 +337,7 @@ def _execute_with_lease(
             if execution is not None:
                 execution.retrying(message='Resolver execution will be retried.', error=exc)
             raise task.retry(exc=exc)
+        _queue_execution_notification(execution_journal_id, 'automation.execution_failed')
         if execution is not None:
             execution.fail(exc, error_code='resolver_operational_failure')
         raise
@@ -276,6 +352,7 @@ def _execute_with_lease(
             if execution is not None:
                 execution.retrying(message='Resolver execution will be retried.', error=exc)
             raise task.retry(exc=exc)
+        _queue_execution_notification(execution_journal_id, 'automation.execution_failed')
         if execution is not None:
             execution.fail(exc, error_code='resolver_execution_failed')
         raise
@@ -322,11 +399,9 @@ def execute_authorized_resolution(
     except RuntimeError as exc:
         _raise_terminal_preflight(execution, execution_journal_id, exc)
     except Exception as exc:
-        db.session.rollback()
-        if execution is not None:
-            execution.fail(exc, error_code='resolver_preflight_unexpected')
-        raise
+        _raise_terminal_preflight(execution, execution_journal_id, exc)
 
+    _queue_execution_notification(execution_journal_id, 'automation.execution_started')
     return _execute_with_lease(
         self,
         execution_journal_id=execution_journal_id,
@@ -335,6 +410,56 @@ def execute_authorized_resolution(
         state=state,
         execution=execution,
     )
+
+
+@shared_task(
+    bind=True,
+    name='app.resolver.tasks.verify_authorized_resolution',
+    acks_late=True,
+    reject_on_worker_lost=True,
+    max_retries=12,
+)
+def verify_authorized_resolution(self, *, execution_journal_id: int) -> dict[str, object]:
+    """Verify remediation health independently from Kubernetes API mutation success."""
+    journal = db.session.get(IntelligenceExecutionJournal, execution_journal_id)
+    if journal is None:
+        return {'status': 'skipped', 'reason': 'execution_journal_not_found'}
+    try:
+        registry = current_app.extensions.get('kaori_resolver_registry')
+        if not isinstance(registry, ResolverRegistry):
+            raise RuntimeError('Resolver registry has not been initialized for this verification worker.')
+        verification = verify_resolver_execution(journal, registry=registry)
+    except (RuntimeError, OSError, ConnectionError) as exc:
+        db.session.rollback()
+        if self.request.retries < self.max_retries:
+            raise self.retry(exc=exc, countdown=10) from exc
+        summary = 'Post-action verification could not complete because provider health evidence remained unavailable.'
+        record_verification_failure(
+            journal,
+            summary=summary,
+            error_code='verification_provider_unavailable',
+            evidence={'error_type': type(exc).__name__},
+        )
+        _queue_execution_notification(execution_journal_id, 'automation.verification_failed')
+        return {'status': 'failed', 'reason': 'verification_provider_unavailable'}
+
+    if verification.status is VerificationStatus.PENDING:
+        if self.request.retries >= self.max_retries:
+            summary = 'Post-action verification timed out before the workload became healthy.'
+            record_verification_failure(
+                journal,
+                summary=summary,
+                error_code='verification_timeout',
+                evidence=verification.evidence,
+            )
+            _queue_execution_notification(execution_journal_id, 'automation.verification_failed')
+            return {'status': 'failed', 'reason': 'verification_timeout'}
+        raise self.retry(countdown=10)
+    if verification.status is VerificationStatus.FAILED:
+        _queue_execution_notification(execution_journal_id, 'automation.verification_failed')
+        return {'status': 'failed', 'summary': verification.summary}
+    _queue_execution_notification(execution_journal_id, 'automation.execution_completed')
+    return {'status': 'verified', 'summary': verification.summary}
 
 
 @shared_task(

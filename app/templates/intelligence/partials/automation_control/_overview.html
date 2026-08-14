@@ -40,7 +40,7 @@
     ) %}
     <div class="grid gap-3 p-4 sm:grid-cols-2 xl:grid-cols-5 sm:p-5">
         {% set guardrails = [
-            ('lock-keyhole' if not control.mutation.enabled else 'unlock', 'Mutation State', control.mutation.label, control.mutation.tone, control.mutation.helper),
+            ('lock-keyhole' if not control.execution.enabled else 'unlock', 'Execution State', control.execution.label, control.execution.tone, control.execution.helper),
             ('shield-alert', 'Global Kill Switch', control.guardrails.kill_switch.label, control.guardrails.kill_switch.tone, control.guardrails.kill_switch.helper),
             ('construction', 'Maintenance Mode', control.guardrails.maintenance.label, control.guardrails.maintenance.tone, control.guardrails.maintenance.helper),
             ('clipboard-check', 'Production Readiness', control.guardrails.readiness.label, control.guardrails.readiness.tone, control.guardrails.readiness.helper),

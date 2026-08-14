@@ -6,6 +6,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 DASHBOARD_DIR = ROOT / 'app' / 'templates' / 'dashboards' / 'kubernetes'
 CONTENT = DASHBOARD_DIR / 'partials' / '_content.html'
+HERO = DASHBOARD_DIR / 'partials' / '_hero.html'
+BLOCKED_HERO = ROOT / 'app' / 'templates' / 'components' / 'cluster' / '_hero_blocked_context.html'
 SIGNAL_OVERVIEW = DASHBOARD_DIR / 'partials' / '_signal_overview.html'
 REPORTING_GUIDANCE = DASHBOARD_DIR / 'partials' / '_reporting_guidance.html'
 WORKSPACE_TABS = ROOT / 'app' / 'templates' / 'components' / 'workspace_tabs.html'
@@ -128,6 +130,8 @@ def _verify_route_authorization_order(routes: str) -> None:
 
 def verify() -> None:
     content = _read(CONTENT)
+    hero = _read(HERO)
+    blocked_hero = _read(BLOCKED_HERO)
     signal_overview = _read(SIGNAL_OVERVIEW)
     reporting_guidance = _read(REPORTING_GUIDANCE)
     workspace_tabs = _read(WORKSPACE_TABS)
@@ -154,6 +158,31 @@ def verify() -> None:
     rendering_test = _read(RENDERING_TEST)
     integration_test = _read(INTEGRATION_TEST)
     e2e_test = _read(E2E_TEST)
+
+    _require(
+        hero,
+        (
+            "cluster_blocked_scope = \"Dashboard Readiness\"",
+            "cluster_blocked_state_label = \"Dashboard State\"",
+            "components/cluster/_hero_blocked_context.html",
+            "page_hero.context_header('Dashboard Context', 'Operational Signal Scope', 'scan-search')",
+        ),
+        'dashboard hero readiness',
+    )
+    _require(
+        blocked_hero,
+        (
+            "'Connected Clusters', '0', 'No Kubernetes connection available'",
+            "blocked_state_label, 'Blocked', 'Cluster access is required'", 
+        ),
+        'shared Kubernetes blocked hero',
+    )
+
+    blocked_branch = hero.split('{% if cluster_onboarding.is_blocked %}', 1)[1].split('{% else %}', 1)[0]
+    if 'page_hero.context_panel_classes()' in blocked_branch:
+        raise AssertionError(
+            'dashboard hero readiness: blocked branch must not wrap the shared blocker in a second context panel'
+        )
 
     _require(
         content,

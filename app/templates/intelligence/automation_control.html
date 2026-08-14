@@ -18,7 +18,7 @@
                         <div class="{{ page_hero.metadata_row_classes() }}">
                             {{ page_hero.meta_label('user-check', 'Human-in-the-Loop') }}
                             {{ page_hero.meta_label('list-checks', 'Allowlisted Actions') }}
-                            {{ page_hero.meta_label('lock-keyhole' if not payload.mutations_enabled else 'unlock', 'Mutation Disabled' if not payload.mutations_enabled else 'Mutation Enabled') }}
+                            {{ page_hero.meta_label('lock-keyhole' if not payload.execution_enabled else 'unlock', 'Execution Disabled' if not payload.execution_enabled else 'Execution Enabled') }}
                         </div>
                     {% endcall %}
                 </div>
@@ -57,10 +57,10 @@
                     </div>
                 </div>
                 <span class="inline-flex shrink-0 items-center gap-2 rounded-lg border border-outline-subtle bg-surface-hover px-3 py-2 text-xs font-semibold text-content-secondary">
-                    <i data-lucide="{{ 'unlock' if payload.mutations_enabled else 'lock-keyhole' }}"
+                    <i data-lucide="{{ 'unlock' if payload.execution_enabled else 'lock-keyhole' }}"
                        class="h-3.5 w-3.5 text-kaori-primary"
                        aria-hidden="true"></i>
-                    {{ 'Controlled Mutation Enabled' if payload.mutations_enabled else 'Governance Only' }}
+                    {{ 'Controlled Execution Enabled' if payload.execution_enabled else 'Governance Only' }}
                 </span>
             </div>
         </section>

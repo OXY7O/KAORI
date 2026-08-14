@@ -115,7 +115,7 @@ def main() -> int:
 
     # Analytics: shared token scope, canonical guidance ownership, and obsolete local assets removed.
     for domain in ('overview', 'utilization', 'capacity', 'storage', 'workload', 'forecast', 'top_consumers', 'alerts'):
-        index = read(f'app/templates/analytics/{domain}/index.html')
+        index = read(f'app/templates/analytics/kubernetes/{domain}/index.html')
         require(
             'kaori-analytics-page' in index, f'Analytics {domain} must use the shared analytics token scope.', errors
         )

@@ -88,8 +88,24 @@ def main() -> int:
     if credential_key and credential_key in previous_credential_keys:
         errors.append('INTEGRATION_CREDENTIAL_PREVIOUS_KEYS must not include the active key.')
 
+    if _is_true('CUSTOM_RUNBOOK_AUTHORING_ENABLED', False):
+        errors.append(
+            'CUSTOM_RUNBOOK_AUTHORING_ENABLED must remain false in production until KAORI promotes custom '
+            'authoring to a tested capability.'
+        )
+
+    automation_execution_enabled = _is_true('AUTOMATION_EXECUTION_ENABLED', False)
+    if automation_execution_enabled and not _is_true('AUTOMATION_LIFECYCLE_RECONCILIATION_ENABLED', True):
+        errors.append(
+            'AUTOMATION_LIFECYCLE_RECONCILIATION_ENABLED must remain true when infrastructure execution is enabled.'
+        )
+
     resolver_actions = {value.strip() for value in _value('RESOLVER_ENABLED_ACTIONS').split(',') if value.strip()}
     supported_resolver_actions = {'kubernetes.deployment.restart'}
+    if automation_execution_enabled and not resolver_actions:
+        errors.append(
+            'AUTOMATION_EXECUTION_ENABLED=true requires at least one explicitly allowlisted RESOLVER_ENABLED_ACTIONS entry.'
+        )
     unknown_resolver_actions = sorted(resolver_actions - supported_resolver_actions)
     if unknown_resolver_actions:
         errors.append(

@@ -87,7 +87,7 @@ Use functional token names rather than literal color names.
 
 ## Dark mode
 
-KAORI dark mode follows **neutral-first surfaces with controlled Violet**. The surface order is `page → shell → card → elevated`; Bright Violet is reserved for focus, primary interaction, selected state, and small identity accents. Large repeated surfaces remain neutral. A sparse explicit workspace/domain handoff may use the shared deep-Violet `.kaori-brand-domain-panel` (for example `Related Page Card`); page-local Violet surfaces are not allowed.
+KAORI dark mode follows **neutral-first surfaces with controlled Violet**. The surface order is `page → shell → card → elevated`; Bright Violet is reserved for focus, primary interaction, selected state, and small identity accents. Large repeated surfaces remain neutral. A sparse explicit workspace/domain handoff may use the shared deep-Violet `.kaori-brand-domain-panel` (for example `Related Page Card`). The Welcome capability anchor is the one product-landing exception that reuses the exact `.kaori-hero-shell` surface, including dark mode, to keep the catalog visually tied to the Hero. Page-local Violet surfaces are not allowed.
 
 The exact palette, Hero exception, sidebar treatment, prohibited patterns, and enforcement procedure are owned by `docs/design/components/DARK_MODE.md`. Page and module documentation may not redefine dark tokens.
 

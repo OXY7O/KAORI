@@ -16,6 +16,8 @@ from app.resolver.contracts import (
     ResolverError,
     ResolverResult,
     ResolverResultStatus,
+    VerificationResult,
+    VerificationStatus,
 )
 
 ACTION_KEY = 'kubernetes.deployment.restart'
@@ -83,7 +85,18 @@ class KubernetesApiMutationGateway:
     def read_deployment(self, namespace: str, name: str) -> Mapping[str, Any]:
         deployment = self._client.apps_api().read_namespaced_deployment(name=name, namespace=namespace)
         metadata = getattr(deployment, 'metadata', None)
+        spec = getattr(deployment, 'spec', None)
+        status = getattr(deployment, 'status', None)
         annotations = dict(getattr(metadata, 'annotations', None) or {})
+        conditions = [
+            {
+                'type': str(getattr(condition, 'type', '') or ''),
+                'status': str(getattr(condition, 'status', '') or ''),
+                'reason': str(getattr(condition, 'reason', '') or ''),
+                'message': str(getattr(condition, 'message', '') or ''),
+            }
+            for condition in (getattr(status, 'conditions', None) or [])
+        ]
         return MappingProxyType(
             {
                 'name': name,
@@ -91,7 +104,13 @@ class KubernetesApiMutationGateway:
                 'uid': str(getattr(metadata, 'uid', '') or ''),
                 'resource_version': str(getattr(metadata, 'resource_version', '') or ''),
                 'generation': int(getattr(metadata, 'generation', 0) or 0),
-                'observed_generation': int(getattr(getattr(deployment, 'status', None), 'observed_generation', 0) or 0),
+                'observed_generation': int(getattr(status, 'observed_generation', 0) or 0),
+                'desired_replicas': int(getattr(spec, 'replicas', 1) or 0),
+                'updated_replicas': int(getattr(status, 'updated_replicas', 0) or 0),
+                'ready_replicas': int(getattr(status, 'ready_replicas', 0) or 0),
+                'available_replicas': int(getattr(status, 'available_replicas', 0) or 0),
+                'unavailable_replicas': int(getattr(status, 'unavailable_replicas', 0) or 0),
+                'conditions': conditions,
                 'annotations': annotations,
             }
         )
@@ -126,7 +145,7 @@ class KubernetesDeploymentRestartAdapter:
     action_key = ACTION_KEY
     capability_keys = (CAPABILITY_KEY,)
     compatibility_profiles = (COMPATIBILITY_PROFILE,)
-    rollback_required = True
+    rollback_required = False
 
     def __init__(
         self,
@@ -173,10 +192,15 @@ class KubernetesDeploymentRestartAdapter:
             'previous_restart_annotation': previous_annotation,
         }
         rollback = {
-            'action_key': 'kubernetes.deployment.restore_restart_annotation',
+            'mode': 'manual_compensating_recovery',
+            'automatic': False,
             'target': {'cluster_id': cluster_id, 'namespace': namespace, 'name': deployment_name, 'uid': uid},
             'previous_restart_annotation': previous_annotation,
             'snapshot_hash': _snapshot_hash(snapshot),
+            'guidance': (
+                'Deployment restart is not transactionally reversible. Use the pre-change snapshot and workload '
+                'health evidence for accountable compensating recovery or escalation.'
+            ),
         }
         return DryRunResult(
             True,
@@ -238,6 +262,69 @@ class KubernetesDeploymentRestartAdapter:
             },
             rollback_reference=_rollback_reference(dry_run.rollback_plan),
             retryable=False,
+        )
+
+    def verify(self, context: ResolverContext, result: ResolverResult) -> VerificationResult:
+        if result.status not in {ResolverResultStatus.SUCCEEDED, ResolverResultStatus.NOOP}:
+            return VerificationResult(
+                VerificationStatus.FAILED,
+                'Execution did not succeed, so remediation verification cannot pass.',
+            )
+        cluster_id, namespace, deployment_name = self._target(context)
+        self._guardrail.assert_allowed(namespace)
+        deployment = dict(self._gateway_factory(cluster_id).read_deployment(namespace, deployment_name))
+        expected_uid = str(result.result.get('uid') or '')
+        actual_uid = str(deployment.get('uid') or '')
+        if expected_uid and actual_uid != expected_uid:
+            return VerificationResult(
+                VerificationStatus.FAILED,
+                'Deployment identity changed after the authorized restart.',
+                evidence=deployment,
+            )
+
+        target_generation = _safe_int(result.result.get('generation'))
+        observed_generation = _safe_int(deployment.get('observed_generation'))
+        desired = _safe_int(deployment.get('desired_replicas'), default=1)
+        updated = _safe_int(deployment.get('updated_replicas'))
+        ready = _safe_int(deployment.get('ready_replicas'))
+        available = _safe_int(deployment.get('available_replicas'))
+        unavailable = _safe_int(deployment.get('unavailable_replicas'))
+        evidence = {
+            'target': f'{namespace}/{deployment_name}',
+            'uid': actual_uid,
+            'target_generation': target_generation,
+            'observed_generation': observed_generation,
+            'desired_replicas': desired,
+            'updated_replicas': updated,
+            'ready_replicas': ready,
+            'available_replicas': available,
+            'unavailable_replicas': unavailable,
+            'conditions': list(deployment.get('conditions') or []),
+        }
+        for condition in evidence['conditions']:
+            if (
+                str(condition.get('type') or '') == 'Progressing'
+                and str(condition.get('status') or '').lower() == 'false'
+                and str(condition.get('reason') or '') == 'ProgressDeadlineExceeded'
+            ):
+                return VerificationResult(
+                    VerificationStatus.FAILED,
+                    'Deployment rollout exceeded its progress deadline after restart.',
+                    evidence=evidence,
+                )
+
+        generation_observed = target_generation <= 0 or observed_generation >= target_generation
+        replicas_healthy = updated >= desired and ready >= desired and available >= desired and unavailable == 0
+        if generation_observed and replicas_healthy:
+            return VerificationResult(
+                VerificationStatus.VERIFIED,
+                f'Deployment rollout verified healthy for {namespace}/{deployment_name}.',
+                evidence=evidence,
+            )
+        return VerificationResult(
+            VerificationStatus.PENDING,
+            f'Deployment rollout is still converging for {namespace}/{deployment_name}.',
+            evidence=evidence,
         )
 
     def _target(self, context: ResolverContext) -> tuple[str, str, str]:

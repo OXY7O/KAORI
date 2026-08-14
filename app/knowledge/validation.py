@@ -162,6 +162,8 @@ def validate_publication(
             errors.append('Registered resolver does not implement the mandatory dry-run contract.')
         if not callable(getattr(adapter, 'execute', None)):
             errors.append('Registered resolver does not implement the execution contract.')
+        if not callable(getattr(adapter, 'verify', None)):
+            errors.append('Registered resolver does not implement the mandatory post-action verification contract.')
         adapter_capabilities = set(getattr(adapter, 'capability_keys', ()) or ())
         unsupported = sorted(set(required_capabilities) - adapter_capabilities)
         if unsupported:

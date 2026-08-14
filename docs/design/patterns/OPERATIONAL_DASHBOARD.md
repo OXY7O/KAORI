@@ -66,6 +66,10 @@ The Hero establishes identity and readiness. The Operational Signal Overview own
 - UI copy must use `snapshot`, `committed`, `available`, or `detailed signals`; it must not imply that the page performs live provider queries.
 - Reporting guidance must remain format-neutral because Analytics supports PDF/CSV and Inventory supports XLSX/CSV.
 
+## Cluster setup blocker
+
+The Kubernetes Operations Dashboard is the canonical visual reference for cluster setup blocking. Its Hero right panel is implemented through `components/cluster/_hero_blocked_context.html` and is shared by Kubernetes Inventory, Operations, and Governance. Blocked pages preserve Hero geometry, show readiness rather than normal posture evidence, and place the registration CTA in the onboarding banner below the Hero.
+
 ## Request authorization contract
 
 - Dashboard page and lazy-section views require `dashboard.view`.

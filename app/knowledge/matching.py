@@ -74,6 +74,31 @@ def create_alert_binding(
     return record
 
 
+def set_alert_binding_status(
+    binding: KnowledgeRunbookAlertBinding,
+    *,
+    lifecycle_status: str,
+    actor_user_id: int | None,
+    actor_permissions: Collection[str],
+) -> KnowledgeRunbookAlertBinding:
+    if MANAGE_PERMISSION not in actor_permissions:
+        raise RunbookMatchError(f'Missing required permission: {MANAGE_PERMISSION}.')
+    if lifecycle_status not in {'active', 'disabled'}:
+        raise RunbookMatchError('Binding status must be active or disabled.')
+    if binding.lifecycle_status == lifecycle_status:
+        return binding
+    binding.lifecycle_status = lifecycle_status
+    action = 'knowledge.runbook_binding.enabled' if lifecycle_status == 'active' else 'knowledge.runbook_binding.disabled'
+    _audit(
+        actor_user_id,
+        binding.binding_key,
+        action,
+        f'KAORI runbook binding {lifecycle_status}.',
+    )
+    db.session.commit()
+    return binding
+
+
 def match_alert_to_runbook(
     alert: Mapping[str, Any],
     bindings: Sequence[KnowledgeRunbookAlertBinding],
@@ -109,7 +134,7 @@ def match_alert_to_runbook(
         action_key=revision.action_key,
         resolver_key=revision.resolver_key,
         approval_policy=revision.approval_policy,
-        rule_key=_text(alert.get('rule_key')),
+        rule_key=_text(alert.get('rule_key') or labels.get('alertname') or binding.rule_key or binding.alertname),
         alert_fingerprint=_text(alert.get('fingerprint') or labels.get('fingerprint')),
         cluster_id=_text(evidence.get('cluster_id')),
         namespace=_text(evidence.get('namespace')),

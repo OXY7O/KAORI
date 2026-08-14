@@ -106,24 +106,21 @@ def main() -> int:
     for required in (
         "@automation_control_bp.route('/automation-control')",
         "@permission_required('intelligence.view')",
-        "current_app.config.get('AUTOMATION_CONTROL_MUTATIONS_ENABLED', False)",
-        "title='Automation Mutation Disabled'",
-        "message='KAORI did not apply the requested control-plane change.'",
+        "def _handle_governance_mutation(",
+        "def _handle_execution_action(",
+        "title='Infrastructure Execution Disabled'",
     ):
         require(required in automation_routes, f'Automation Control baseline boundary missing: {required}', errors)
 
-    mutation_gate = _function_body(automation_routes, '_handle_mutation', '_handle_control_operation')
-    gate_position = mutation_gate.index("current_app.config.get('AUTOMATION_CONTROL_MUTATIONS_ENABLED', False)")
-    operation_position = mutation_gate.index('_handle_control_operation(')
-    require(gate_position < operation_position, 'Automation execution-control callback can cross the fail-closed gate', errors)
+    governance_gate = _function_body(automation_routes, '_handle_governance_mutation', '_handle_execution_action')
+    execution_gate = _function_body(automation_routes, '_handle_execution_action', '_handle_control_operation')
+    require('execution_enabled()' not in governance_gate, 'Governance configuration must remain available while execution is disabled', errors)
+    require('execution_enabled()' in execution_gate, 'Infrastructure execution route must enforce the fail-closed execution gate', errors)
     require('detail=str(exc)' not in automation_routes, 'Automation Control must not disclose exception text', errors)
-    governance_gate = _function_body(automation_routes, '_handle_governance_action', '_handle_mutation')
-    require('AUTOMATION_CONTROL_MUTATIONS_ENABLED' not in governance_gate, 'Decision governance must remain available while infrastructure mutation is disabled', errors)
     require('Governance Workflow Enabled' in read('app/templates/intelligence/partials/automation_control/_decisions.html'), 'Decision Review must expose active governance workflow semantics', errors)
     require(
-        "mutations_enabled = bool(current_app.config.get('AUTOMATION_CONTROL_MUTATIONS_ENABLED', False))"
-        in automation_presentation,
-        'Automation Control presentation must expose default-safe mutation state',
+        "infrastructure_execution_enabled = execution_enabled()" in automation_presentation,
+        'Automation Control presentation must expose default-safe execution state',
         errors,
     )
     require(
@@ -132,11 +129,16 @@ def main() -> int:
         errors,
     )
     require(
-        'AUTOMATION_CONTROL_MUTATIONS_ENABLED' not in default_config,
-        'Automation Control environment enablement must remain deferred during baseline lock',
+        "AUTOMATION_EXECUTION_ENABLED = _env_bool('AUTOMATION_EXECUTION_ENABLED', False)" in default_config,
+        'Automation Control execution must remain explicitly default-deny',
         errors,
     )
-    require('Governance Only' in automation_overview, 'Automation Control must communicate factual governance-only posture while mutations are disabled', errors)
+    require(
+        'AUTOMATION_CONTROL_MUTATIONS_ENABLED' not in automation_routes + automation_presentation + default_config,
+        'Legacy all-mutations gate must not return',
+        errors,
+    )
+    require('Governance Only' in automation_overview, 'Automation Control must communicate factual governance-only posture while execution is disabled', errors)
     require('DOMAIN_DEFINITIONS' not in automation_presentation, 'Legacy Automation Control Foundation Map must not return', errors)
 
     require(
@@ -255,13 +257,13 @@ def main() -> int:
         errors,
     )
     require('data-detail-row' in catalog_records, 'Rule Catalog adjacent detail-row ownership missing', errors)
-    require('Governance Only' in automation_page, 'Automation Control must communicate governance-only posture while mutations are disabled', errors)
+    require('Governance Only' in automation_page, 'Automation Control must communicate governance-only posture while execution is disabled', errors)
 
     for required in (
         'baseline-locked',
         'not declared feature-complete',
         '**Reserved Plan**',
-        'intentionally not exposed as an environment-configured release toggle',
+        '`AUTOMATION_EXECUTION_ENABLED=false`',
     ):
         require(required in readme, f'Intelligence README baseline-lock contract missing: {required}', errors)
     require(

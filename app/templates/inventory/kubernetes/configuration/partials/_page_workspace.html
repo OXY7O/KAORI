@@ -1,9 +1,9 @@
 <div id="configuration-page-workspace" class="space-y-6">
     {% include "inventory/kubernetes/configuration/partials/_hero.html" %}
-    {% include "inventory/kubernetes/components/_data_freshness.html" %}
     {% if cluster_onboarding.is_blocked %}
         {% include "components/cluster/_onboarding_banner.html" %}
     {% else %}
+        {% include "inventory/kubernetes/components/_data_freshness.html" %}
         {% include "inventory/kubernetes/configuration/partials/_summary_cards.html" %}
         {% include "inventory/kubernetes/configuration/partials/_table_card.html" %}
     {% endif %}

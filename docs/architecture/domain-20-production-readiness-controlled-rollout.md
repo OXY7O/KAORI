@@ -6,7 +6,7 @@ Domain 20 closes the remediation foundation with auditable evidence and staged r
 
 ## Required evidence
 
-Every cluster/action pair must prove architecture boundaries, functional and contract tests, migration upgrade/downgrade, web/worker registry parity, Kubernetes RBAC, API-server dry-run, duplicate-delivery safety, worker-loss recovery, optimistic-lock conflict handling, kill switch, maintenance mode, circuit breaker, rollback drill, and Activity Audit coverage.
+Every cluster/action pair must prove architecture boundaries, functional and contract tests, migration upgrade/downgrade, web/worker registry parity, Kubernetes RBAC, API-server dry-run, duplicate-delivery safety, worker-loss recovery, optimistic-lock conflict handling, kill switch, maintenance mode, circuit breaker, recovery/compensating-action drill, and Activity Audit coverage.
 
 Evidence is canonicalized and hashed. Changing any result invalidates prior approval.
 
@@ -51,7 +51,7 @@ operational gates are evaluated.
 
 ## Threat and failure model
 
-The acceptance bundle must test stale resourceVersion, service-account denial, registry mismatch, replayed authorization, duplicate Celery delivery, worker loss after lease, post-condition failure, database interruption, alert storm, open circuit, and rollback evidence preservation.
+The acceptance bundle must test stale resourceVersion, service-account denial, registry mismatch, replayed authorization, duplicate Celery delivery, worker loss after lease, post-condition failure, database interruption, alert storm, open circuit, and recovery/compensating-action evidence preservation.
 
 ## Rollback drill
 

@@ -44,3 +44,28 @@ def test_topology_cluster_identity_uses_eager_loaded_database_relationship_not_r
     assert 'joinedload(Cluster.kubernetes_connection)' in repository
     assert 'cluster.kubernetes_connection.server' in builder
     assert 'app.integrations.kubernetes.resolver' not in builder
+
+
+def test_inventory_resource_template_registry_uses_the_canonical_kubernetes_namespace() -> None:
+    routes = read('app/inventory/kubernetes/routes.py')
+    resources = ('nodes', 'namespaces', 'configuration', 'workloads', 'pods', 'services', 'ingresses', 'storage')
+
+    assert "f'inventory/kubernetes/{resource}/index.html'" in routes
+    assert "f'inventory/kubernetes/{resource}/partials/_page_workspace.html'" in routes
+    assert "f'inventory/kubernetes/{resource}/partials/_table_card.html'" in routes
+    assert "f'inventory/kubernetes/{resource}/partials/_table_content.html'" in routes
+    assert "f'inventory/{resource}/index.html'" not in routes
+
+    for resource in resources:
+        base = ROOT / 'app/templates/inventory/kubernetes' / resource
+        assert (base / 'index.html').is_file(), resource
+        assert (base / 'partials/_page_workspace.html').is_file(), resource
+        assert (base / 'partials/_table_card.html').is_file(), resource
+        assert (base / 'partials/_table_content.html').is_file(), resource
+
+
+def test_storage_inventory_populates_the_shared_scope_label_used_by_its_hero() -> None:
+    routes = read('app/inventory/kubernetes/routes.py')
+    storage_block = routes[routes.index('def storage():'):routes.index('def storage_details(')]
+
+    assert "inventory['scope_label'] = _inventory_scope_label(clusters, cluster_id)" in storage_block

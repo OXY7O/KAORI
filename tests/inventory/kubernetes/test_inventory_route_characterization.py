@@ -150,3 +150,16 @@ def test_inventory_sync_keeps_clusters_sync_as_separate_mutation_permission() ->
     decorator_source = ast.unparse(sync.decorator_list[1])
 
     assert decorator_source == "permission_required('clusters.sync')"
+
+
+def test_inventory_resource_template_registry_targets_existing_kubernetes_templates() -> None:
+    routes = Path(inventory_routes.__file__).read_text(encoding='utf-8')
+    template_root = Path(inventory_routes.__file__).resolve().parents[2] / 'templates' / 'inventory' / 'kubernetes'
+    resources = ('nodes', 'namespaces', 'configuration', 'workloads', 'pods', 'services', 'ingresses', 'storage')
+
+    assert "f'inventory/kubernetes/{resource}/index.html'" in routes
+    for resource in resources:
+        assert (template_root / resource / 'index.html').is_file(), resource
+        assert (template_root / resource / 'partials' / '_page_workspace.html').is_file(), resource
+        assert (template_root / resource / 'partials' / '_table_card.html').is_file(), resource
+        assert (template_root / resource / 'partials' / '_table_content.html').is_file(), resource

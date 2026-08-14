@@ -18,24 +18,28 @@ def test_intelligence_baseline_lock_distinguishes_safe_current_state_from_featur
     assert 'HCI recommendation/evidence providers.' in lock
 
 
-def test_automation_control_remains_fail_closed_while_reserved_plan_work_is_incomplete():
+def test_automation_control_keeps_infrastructure_execution_fail_closed_without_blocking_governance():
     routes = read('app/automation_control/routes.py')
     presentation = read('app/automation_control/presentation.py')
     default_config = read('app/config/default.py')
+    enablement = read('app/common/automation_execution.py')
+    workflow = read('app/intelligence/workflow.py')
+    resolver_tasks = read('app/resolver/tasks.py')
 
-    mutation_gate = routes.split('def _handle_mutation(', 1)[1].split('def _handle_control_operation(', 1)[0]
-    assert "current_app.config.get('AUTOMATION_CONTROL_MUTATIONS_ENABLED', False)" in mutation_gate
-    gate_position = mutation_gate.index("current_app.config.get('AUTOMATION_CONTROL_MUTATIONS_ENABLED', False)")
-    operation_position = mutation_gate.index('_handle_control_operation(')
-    assert gate_position < operation_position
-    assert "title='Automation Mutation Disabled'" in mutation_gate
+    governance = routes.split('def _handle_governance_mutation(', 1)[1].split('def _handle_execution_action(', 1)[0]
+    execution = routes.split('def _handle_execution_action(', 1)[1].split('def _handle_control_operation(', 1)[0]
+    assert 'execution_enabled()' not in governance
+    assert 'execution_enabled()' in execution
+    assert "title='Infrastructure Execution Disabled'" in execution
+    assert "AUTOMATION_EXECUTION_ENABLED = _env_bool('AUTOMATION_EXECUTION_ENABLED', False)" in default_config
+    assert 'assert_execution_enabled()' in workflow
+    assert 'assert_execution_enabled()' in resolver_tasks
+    assert 'AUTOMATION_EXECUTION_ENABLED' in enablement
+    assert 'AUTOMATION_CONTROL_MUTATIONS_ENABLED' not in routes + presentation + default_config
     assert 'detail=str(exc)' not in routes
     assert "'posture': overview_state['posture']" in presentation
     assert 'Governance Only' in read('app/automation_control/overview.py')
     assert 'DOMAIN_DEFINITIONS' not in presentation
-    assert 'AUTOMATION_CONTROL_MUTATIONS_ENABLED' not in default_config
-    governance_gate = routes.split('def _handle_governance_action(', 1)[1].split('def _handle_mutation(', 1)[0]
-    assert 'AUTOMATION_CONTROL_MUTATIONS_ENABLED' not in governance_gate
 
 
 def test_alert_intelligence_uses_supported_multi_domain_alert_sources():

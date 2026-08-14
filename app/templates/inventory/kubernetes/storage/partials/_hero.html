@@ -4,7 +4,7 @@
         <div class="{{ page_hero.content_classes() }}">
             {% call page_hero.intro('database', 'Kubernetes Storage Inventory', 'hard-drive') %}
                 <h1 class="{{ page_hero.title_classes() }}">Storage Inventory</h1>
-                <p class="mt-2 {{ page_hero.description_classes() }}">Review storage provisioning, capacity, access, binding, and lifecycle evidence.</p>
+                <p class="mt-2 {{ page_hero.description_classes() }}">Review committed storage assets, capacity, binding, access, provisioning, and lifecycle posture.</p>
                 <div class="{{ page_hero.metadata_row_classes() }}">
                     {{ page_hero.meta_label('database', inventory.total_storage ~ ' Storage Objects in Scope') }}
                     {{ page_hero.meta_label('scan-search', inventory.scope_label) }}
@@ -12,18 +12,28 @@
                 </div>
             {% endcall %}
         </div>
-        {{ page_hero.context_card('Binding & Provisioning Posture',
-                'Storage Posture',
-                'Storage Lifecycle',
-                inventory.overall_posture,
-                inventory.overall_posture_tone,
-                [
-                ('link-2', 'Bound', inventory.bound_resource_count, 'Claims and volumes') ,
-        ('triangle-alert', 'Active Signals', inventory.exception_count, 'Lifecycle or evidence')
-        ],
-        'Manage Clusters',
-        url_for('integrations.kubernetes'),
-        'server-cog'
-        ) }}
+        {% if cluster_onboarding.is_blocked %}
+            <aside class="{{ page_hero.aside_classes() }}"
+                   aria-label="Kubernetes inventory availability">
+                {% set cluster_blocked_scope = "Inventory Readiness" %}
+                {% set cluster_blocked_title = "Cluster Setup Required" %}
+                {% set cluster_blocked_info = "Add a Kubernetes cluster to activate committed storage inventory evidence." %}
+                {% include 'components/cluster/_hero_blocked_context.html' %}
+            </aside>
+        {% else %}
+            {{ page_hero.context_card('Binding & Provisioning Posture',
+                            'Storage Posture',
+                            'Storage Lifecycle',
+                            inventory.overall_posture,
+                            inventory.overall_posture_tone,
+                            [
+                            ('link-2', 'Bound', inventory.bound_resource_count, 'Claims and volumes') ,
+                    ('triangle-alert', 'Active Signals', inventory.exception_count, 'Lifecycle or evidence')
+                    ],
+                    'Manage Clusters',
+                    url_for('integrations.kubernetes'),
+                    'server-cog'
+                    ) }}
+        {% endif %}
     </div>
 </section>

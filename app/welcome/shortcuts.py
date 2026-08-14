@@ -36,7 +36,7 @@ WELCOME_WORKSPACE_GROUP_DEFINITIONS: tuple[dict[str, str], ...] = (
         'eyebrow': 'Act',
         'title': 'Infrastructure Operations',
         'description': (
-            'Open controlled workflows for integration management, synchronization, '
+            'Open controlled workflows for provider connectivity, shared platform controls, '
             'configuration, and infrastructure-changing activities.'
         ),
         'icon': 'workflow',
@@ -55,8 +55,8 @@ WELCOME_WORKSPACE_GROUP_DEFINITIONS: tuple[dict[str, str], ...] = (
         'eyebrow': 'Administer',
         'title': 'Platform Administration',
         'description': (
-            'Manage personal settings, access control, audit visibility, integrations, '
-            'and platform configuration within assigned authority.'
+            'Manage personal settings, access control, audit visibility, and platform '
+            'configuration within assigned authority.'
         ),
         'icon': 'settings-2',
     },
@@ -67,8 +67,7 @@ WELCOME_SHORTCUT_DEFINITIONS: tuple[dict[str, Any], ...] = (
         'title': 'Dashboards',
         'label': 'Operational Overview',
         'description': (
-            'Review cluster posture, capacity risk, alerts, top consumers, '
-            'reporting readiness, and prioritized actions.'
+            'Review operational posture, capacity risk, alerts, top consumers, and prioritized actions.'
         ),
         'icon': 'layout-dashboard',
         'scope': 'Compute',
@@ -99,9 +98,9 @@ WELCOME_SHORTCUT_DEFINITIONS: tuple[dict[str, Any], ...] = (
     },
     {
         'title': 'Intelligence',
-        'label': 'Decision Support',
+        'label': 'Operational Intelligence',
         'description': (
-            'Identify operational findings, understand affected assets, and follow prioritized remediation guidance.'
+            'Review recommendations, alert intelligence, rules, and governed automation for prioritized remediation.'
         ),
         'icon': 'brain-circuit',
         'scope': 'Cross-domain',
@@ -110,20 +109,22 @@ WELCOME_SHORTCUT_DEFINITIONS: tuple[dict[str, Any], ...] = (
     },
     {
         'title': 'Integrations',
-        'label': 'Integration & Sync',
+        'label': 'Integration & Connectivity',
         'description': (
-            'Manage Kubernetes, Prometheus, and Alertmanager integrations, connection readiness, bindings, and runtime status.'
+            'Manage infrastructure, observability, and platform providers with connection readiness, '
+            'bindings, notification channels, and runtime status.'
         ),
-        'icon': 'server-cog',
-        'scope': 'Compute',
+        'icon': 'blocks',
+        'scope': 'Platform',
         'group': 'operations',
-        'targets': (('clusters.view', 'integrations.kubernetes'),),
+        'targets': (('settings.manage_integrations', 'integrations.overview'),),
     },
     {
         'title': 'Platform Operations',
-        'label': 'Execution & Administration',
+        'label': 'Execution & Lifecycle Controls',
         'description': (
-            'Monitor background executions, govern data lifecycle, and manage advanced Kubernetes administration controls.'
+            'Manage shared execution services, job operations, data lifecycle, and protected '
+            'platform administration controls.'
         ),
         'icon': 'workflow',
         'scope': 'Platform',

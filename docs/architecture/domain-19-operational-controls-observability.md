@@ -21,7 +21,7 @@ Domain 19 adds fail-closed operational controls around the end-to-end remediatio
 
 ## Observability
 
-`resolver_metrics_snapshot()` exposes queued, running, retry-wait, dead-letter, and stale-running counts. Control changes, circuit opening, and dead-letter requeue actions create Activity Audit events.
+`resolver_metrics_snapshot()` exposes queued, running, retry-wait, dead-letter, and stale-running counts. Control changes, circuit opening, and dead-letter transitions create Activity Audit events. Dead letters are immutable and are not replayed with consumed authorization.
 
 ## Deployment
 
@@ -29,7 +29,7 @@ Run the migration, create the global control record, keep the kill switch off on
 
 ## Validation
 
-Run functional and contract tests, architecture checks, and query the operational-control and execution-journal tables. Simulate maintenance mode, concurrency saturation, repeated failures, and dead-letter requeue.
+Run functional and contract tests, architecture checks, and query the operational-control and execution-journal tables. Simulate maintenance mode, concurrency saturation, repeated failures, dead-letter transition, and fresh-decision recovery after a terminal execution.
 
 ## Rollback
 

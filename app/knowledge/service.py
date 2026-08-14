@@ -7,6 +7,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 from app.extensions.db import db
+from app.knowledge.system_catalog import get_system_runbook, is_system_runbook_key
 from app.knowledge.validation import validate_publication
 from app.models.audit import AuditEvent
 from app.models.knowledge import KnowledgeRunbook, KnowledgeRunbookRevision
@@ -19,6 +20,19 @@ PUBLISH_PERMISSION = 'knowledge.runbooks.publish'
 
 class KnowledgeError(ValueError):
     """Raised when a runbook lifecycle or integrity rule is violated."""
+
+
+def custom_runbook_authoring_enabled(config: Mapping[str, Any]) -> bool:
+    """Custom runbook authoring remains intentionally disabled until KAORI matures the authoring contract."""
+
+    return bool(config.get('CUSTOM_RUNBOOK_AUTHORING_ENABLED', False))
+
+
+def assert_custom_runbook_authoring_enabled(config: Mapping[str, Any]) -> None:
+    if not custom_runbook_authoring_enabled(config):
+        raise KnowledgeError(
+            'Custom runbook authoring is not available yet. Use a validated KAORI System Runbook from the catalog.'
+        )
 
 
 def _canonical_hash(payload: Mapping[str, Any]) -> str:
@@ -193,6 +207,136 @@ def withdraw_revision(
     )
     db.session.commit()
     return revision
+
+
+def activate_system_runbook(
+    *,
+    runbook_key: str,
+    actor_user_id: int | None,
+    actor_permissions: Collection[str],
+    resolver_registry: ResolverRegistry,
+) -> KnowledgeRunbookRevision:
+    """Materialize and publish one source-controlled system runbook idempotently."""
+
+    _require(actor_permissions, MANAGE_PERMISSION)
+    _require(actor_permissions, PUBLISH_PERMISSION)
+    definition = get_system_runbook(runbook_key)
+    if definition is None:
+        raise KnowledgeError('Unknown KAORI System Runbook catalog key.')
+
+    descriptor = resolver_registry.describe(definition.action_key)
+    runbook = KnowledgeRunbook.query.filter_by(runbook_key=definition.runbook_key).first()
+    if runbook is None:
+        runbook = create_runbook(
+            runbook_key=definition.runbook_key,
+            title=definition.title,
+            description=definition.description,
+            actor_user_id=actor_user_id,
+            actor_permissions=actor_permissions,
+        )
+    elif runbook.lifecycle_status != 'active':
+        raise KnowledgeError('System Runbook must be active before catalog activation.')
+
+    # System identity metadata follows the source-controlled catalog. Executable content remains immutable per version.
+    metadata_changed = runbook.title != definition.title or runbook.description != definition.description
+    if metadata_changed:
+        runbook.title = definition.title
+        runbook.description = definition.description
+        _audit(
+            actor_user_id,
+            definition.runbook_key,
+            'knowledge.system_runbook.metadata_synchronized',
+            'KAORI synchronized System Runbook catalog metadata.',
+            {'version': definition.version},
+        )
+        db.session.commit()
+
+    revision = KnowledgeRunbookRevision.query.filter_by(
+        runbook_id=runbook.id,
+        version=definition.version,
+    ).one_or_none()
+    if revision is not None:
+        if revision.content_hash != definition.content_hash:
+            raise KnowledgeError(
+                'System Runbook catalog drift detected for this version. The stored immutable revision does not match '
+                'the KAORI source-controlled contract.'
+            )
+        if revision.publication_status == 'published':
+            return revision
+        if revision.publication_status == 'withdrawn':
+            raise KnowledgeError(
+                'System Runbook revision was withdrawn and cannot be silently republished. Upgrade the catalog version '
+                'or restore the database through the governed change path.'
+            )
+    else:
+        revision = create_revision(
+            runbook,
+            version=definition.version,
+            action_key=definition.action_key,
+            resolver_key=definition.resolver_key,
+            approval_policy=definition.approval_policy,
+            required_evidence=definition.required_evidence,
+            required_capabilities=definition.required_capabilities,
+            compatibility_profiles=definition.compatibility_profiles,
+            change_level=definition.change_level,
+            parameter_schema=definition.parameter_schema,
+            steps=definition.steps,
+            rollback=definition.recovery,
+            actor_user_id=actor_user_id,
+            actor_permissions=actor_permissions,
+        )
+
+    compatibility_profile = (
+        descriptor.compatibility_profiles[0] if len(descriptor.compatibility_profiles) == 1 else None
+    )
+    published = publish_revision(
+        revision,
+        actor_user_id=actor_user_id,
+        actor_permissions=actor_permissions,
+        resolver_registry=resolver_registry,
+        available_capabilities=descriptor.capability_keys,
+        compatibility_profile=compatibility_profile,
+    )
+    _audit(
+        actor_user_id,
+        published.public_id,
+        'knowledge.system_runbook.activated',
+        'KAORI System Runbook activated from the validated catalog.',
+        {
+            'runbook_key': definition.runbook_key,
+            'version': definition.version,
+            'content_hash': definition.content_hash,
+        },
+    )
+    db.session.commit()
+    return published
+
+
+def assert_binding_uses_allowed_runbook(
+    revision: KnowledgeRunbookRevision,
+    *,
+    config: Mapping[str, Any],
+) -> None:
+    if custom_runbook_authoring_enabled(config):
+        return
+    if not is_system_runbook_key(revision.runbook.runbook_key):
+        raise KnowledgeError(
+            'Custom runbook bindings are not available yet. Select a published KAORI System Runbook revision.'
+        )
+
+
+def assert_revision_mutation_allowed(
+    revision: KnowledgeRunbookRevision,
+    *,
+    config: Mapping[str, Any],
+    operation: str,
+) -> None:
+    if is_system_runbook_key(revision.runbook.runbook_key):
+        raise KnowledgeError(
+            f'System Runbook revisions are source-controlled and cannot be {operation} manually. '
+            'Use the System Runbook Catalog and environment binding/policy controls instead.'
+        )
+    assert_custom_runbook_authoring_enabled(config)
 
 
 def resolve_published_revision(*, runbook_key: str, version: str | None = None) -> KnowledgeRunbookRevision:

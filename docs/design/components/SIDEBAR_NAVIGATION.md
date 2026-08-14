@@ -76,7 +76,7 @@ The sidebar may use deliberate uppercase and tracking for short section labels s
 MAIN
 KUBERNETES
 INSIGHTS & REPORTING
-PLATFORM EXTENSIONS
+PLATFORM OPERATIONS
 ADMINISTRATION
 ```
 
@@ -127,7 +127,7 @@ Contract:
 
 ## Parent Menu
 
-Parent navigation represents a primary functional domain such as Inventory, Analytics, Reports, Integrations, or Settings.
+Parent navigation represents a primary functional domain such as Inventory, Analytics, Reports, Platform Operations, or Settings.
 
 ### Geometry
 
@@ -439,3 +439,8 @@ Before accepting a sidebar change, verify:
 - submenu guide and spacing remain visible;
 - icon, hover, focus, disclosure, and endpoint ownership states work;
 - no global content typography migration has altered sidebar hierarchy.
+
+
+## Platform Operations ownership
+
+Integrations is grouped under the **Platform Operations** sidebar section rather than a standalone `Platform Extensions` section. It remains an independent root menu alongside **Operations Center**; `Notification Channels` and provider/domain-specific destinations remain children of the Integrations root. The section therefore expresses shared platform ownership without merging the two workspaces or expanding provider-specific roots across the application shell.

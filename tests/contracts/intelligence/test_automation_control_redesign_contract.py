@@ -43,7 +43,7 @@ def test_production_readiness_separates_enablement_gates():
     readiness = read('app/templates/intelligence/partials/automation_control/_readiness.html')
     for label in (
         'Production Enablement Gate',
-        'Mutation Gate',
+        'Execution Gate',
         'Resolver Registry',
         'Active Deployment Policies',
         'Readiness Evidence',
@@ -69,18 +69,22 @@ def test_notification_channels_can_be_reserved_for_automation_lifecycle_events()
         assert event_type in service
 
 
-def test_decision_governance_is_enabled_while_infrastructure_mutation_remains_gated():
+def test_governance_configuration_is_enabled_while_infrastructure_execution_remains_gated():
     routes = read('app/automation_control/routes.py')
+    enablement = read('app/common/automation_execution.py')
     decisions = read('app/templates/intelligence/partials/automation_control/_decisions.html')
 
-    governance = routes.split('def _handle_governance_action(', 1)[1].split('def _handle_mutation(', 1)[0]
-    mutation = routes.split('def _handle_mutation(', 1)[1].split('def _handle_control_operation(', 1)[0]
-    assert 'AUTOMATION_CONTROL_MUTATIONS_ENABLED' not in governance
-    assert 'AUTOMATION_CONTROL_MUTATIONS_ENABLED' in mutation
+    governance = routes.split('def _handle_governance_mutation(', 1)[1].split('def _handle_execution_action(', 1)[0]
+    execution = routes.split('def _handle_execution_action(', 1)[1].split('def _handle_control_operation(', 1)[0]
+    assert 'execution_enabled()' not in governance
+    assert 'execution_enabled()' in execution
+    assert 'AUTOMATION_EXECUTION_ENABLED' in enablement
+    assert 'AUTOMATION_CONTROL_MUTATIONS_ENABLED' not in routes
     assert 'Governance Workflow Enabled' in decisions
     assert 'Promote to Decision' in decisions
     assert 'Approve Decision' in decisions
     assert 'Reject Decision' in decisions
+    assert 'Execution Handoff' in decisions
     assert 'Approval Notification Delivery' in decisions
 
 

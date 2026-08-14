@@ -3,10 +3,10 @@
 {% block dashboard_content %}
     <div class="space-y-6">
         {% include "inventory/kubernetes/topology/partials/_hero.html" %}
-        {% include "inventory/kubernetes/components/_data_freshness.html" %}
         {% if cluster_onboarding.is_blocked %}
             {% include "components/cluster/_onboarding_banner.html" %}
         {% else %}
+            {% include "inventory/kubernetes/components/_data_freshness.html" %}
             {% include "inventory/kubernetes/topology/partials/_workspace.html" %}
         {% endif %}
     </div>

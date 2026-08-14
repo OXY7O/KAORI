@@ -1,7 +1,7 @@
 {% import "components/table_label.html" as table_label %}
 {% macro render(workspace) -%}
     <a href="{{ workspace.href }}"
-       class="kaori-workspace-card group flex min-h-60 flex-col rounded-xl border border-outline-default bg-surface-card p-5 shadow-sm transition duration-200 hover:border-outline-focus hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-offset-2 focus-visible:ring-offset-surface-card"
+       class="kaori-workspace-card group flex min-h-56 flex-col rounded-xl border border-outline-default bg-surface-card p-5 shadow-sm transition duration-200 hover:border-outline-focus hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-offset-2 focus-visible:ring-offset-surface-card"
        aria-label="Open {{ workspace.title }} Workspace"
        data-workspace-card
        data-search-text="{{ workspace.search_text }}">
@@ -15,7 +15,7 @@
         <div class="mt-5 flex-1">
             <p class="text-xs font-semibold text-kaori-primary">{{ workspace.label }}</p>
             <h4 class="mt-2 text-base font-semibold leading-6 text-content-primary">{{ workspace.title }}</h4>
-            <p class="mt-2 text-xs leading-5 text-content-muted">{{ workspace.description }}</p>
+            <p class="mt-2 text-sm leading-6 text-content-muted">{{ workspace.description }}</p>
         </div>
         <div class="mt-5 flex items-center justify-between gap-3 border-t border-outline-subtle pt-4">
             <span class="text-sm font-semibold text-kaori-primary">Open Workspace</span>

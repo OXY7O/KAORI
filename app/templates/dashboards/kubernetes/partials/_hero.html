@@ -14,16 +14,16 @@
                 </div>
             {% endcall %}
         </div>
-        <div class="{{ page_hero.aside_classes() }}">
-            <div class="{{ page_hero.context_panel_classes() }}">
-                {% if cluster_onboarding.is_blocked %}
-                    {{ page_hero.context_header('Dashboard Readiness', 'Cluster Setup Required', 'lock-keyhole') }}
-                    <div class="{{ page_hero.context_panel_metrics_classes() }}">
-                        {{ page_hero.context_metric('boxes', 'Connected Clusters', '0', 'No Kubernetes connection available') }}
-                        {{ page_hero.context_metric('circle-dot-dashed', 'Dashboard State', 'Blocked', 'Cluster access is required', 'text-sm font-semibold leading-5') }}
-                    </div>
-                    {{ page_hero.context_info('triangle-alert', 'Add a Kubernetes cluster to activate operational signals.') }}
-                {% else %}
+        <aside class="{{ page_hero.aside_classes() }}"
+               aria-label="Kubernetes dashboard context">
+            {% if cluster_onboarding.is_blocked %}
+                {% set cluster_blocked_scope = "Dashboard Readiness" %}
+                {% set cluster_blocked_title = "Cluster Setup Required" %}
+                {% set cluster_blocked_state_label = "Dashboard State" %}
+                {% set cluster_blocked_info = "Add a Kubernetes cluster to activate operational signals." %}
+                {% include 'components/cluster/_hero_blocked_context.html' %}
+            {% else %}
+                <div class="{{ page_hero.context_panel_classes() }}">
                     {{ page_hero.context_header('Dashboard Context', 'Operational Signal Scope', 'scan-search') }}
                     <div class="{{ page_hero.context_panel_metrics_classes() }}">
                         {{ page_hero.context_metric('scan-search', 'Active Scope', 'Selected Cluster' if dashboard.selected_cluster_id else 'All Clusters', 'Applied across dashboard signals', 'text-sm font-semibold leading-5') }}
@@ -34,8 +34,8 @@
                         <i data-lucide="plug-zap" class="h-4 w-4" aria-hidden="true"></i>
                         <span>Kubernetes Integrations</span>
                     </a>
-                {% endif %}
-            </div>
-        </div>
+                </div>
+            {% endif %}
+        </aside>
     </div>
 </section>

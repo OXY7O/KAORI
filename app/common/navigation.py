@@ -234,7 +234,10 @@ def build_navigation_breadcrumb(
             'integrations.storage': 'Storage',
             'notification_channels.index': 'Notification Channels',
         }.get(endpoint, 'Overview')
-        items = [BreadcrumbItem('Integrations', 'plug'), BreadcrumbItem(leaf)]
+        items = [
+            BreadcrumbItem('Integrations', 'plug'),
+            BreadcrumbItem(leaf),
+        ]
     elif endpoint.startswith('access.overview.'):
         items = [BreadcrumbItem('Access', 'users-round'), BreadcrumbItem('Overview')]
     elif endpoint in {'users.providers', 'users.create_provider', 'users.edit_provider', 'users.validate_provider'}:

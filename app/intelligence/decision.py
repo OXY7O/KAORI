@@ -109,9 +109,8 @@ def evaluate_policy(
     *,
     severity: str,
     action_key: str,
-    maintenance_mode: bool = False,
-    actor_can_execute: bool = False,
     blocked_actions: frozenset[str] = frozenset(),
+    minimum_outcome: PolicyOutcome = PolicyOutcome.ALLOWED,
 ) -> DecisionPolicy:
     normalized_severity = (severity or 'info').strip().lower()
     normalized_action = action_key.strip()
@@ -120,17 +119,23 @@ def evaluate_policy(
         return DecisionPolicy(PolicyOutcome.BLOCKED, 'Decision has no executable action.', False)
     if normalized_action in blocked_actions:
         return DecisionPolicy(PolicyOutcome.BLOCKED, 'Action is blocked by operational policy.', False)
-    if maintenance_mode:
-        return DecisionPolicy(PolicyOutcome.BLOCKED, 'KAORI maintenance mode blocks execution.', False)
-    if not actor_can_execute:
-        return DecisionPolicy(PolicyOutcome.BLOCKED, 'Actor lacks execution permission.', False)
-    if normalized_severity in {'critical', 'warning'}:
-        return DecisionPolicy(
-            PolicyOutcome.NEEDS_APPROVAL,
-            f'{normalized_severity.title()} remediation requires explicit approval.',
-            True,
+    severity_outcome = (
+        PolicyOutcome.NEEDS_APPROVAL
+        if normalized_severity in {'critical', 'warning'}
+        else PolicyOutcome.ALLOWED
+    )
+    rank = {PolicyOutcome.ALLOWED: 0, PolicyOutcome.NEEDS_APPROVAL: 1, PolicyOutcome.BLOCKED: 2}
+    outcome = minimum_outcome if rank[minimum_outcome] > rank[severity_outcome] else severity_outcome
+    if outcome is PolicyOutcome.BLOCKED:
+        return DecisionPolicy(PolicyOutcome.BLOCKED, 'Runbook policy blocks execution.', False)
+    if outcome is PolicyOutcome.NEEDS_APPROVAL:
+        reason = (
+            f'{normalized_severity.title()} remediation requires explicit approval.'
+            if severity_outcome is PolicyOutcome.NEEDS_APPROVAL
+            else 'Published runbook policy requires explicit approval.'
         )
-    return DecisionPolicy(PolicyOutcome.ALLOWED, 'Policy allows execution without additional approval.', False)
+        return DecisionPolicy(PolicyOutcome.NEEDS_APPROVAL, reason, True)
+    return DecisionPolicy(PolicyOutcome.ALLOWED, 'Published policy allows execution without additional approval.', False)
 
 
 def create_decision_snapshot(
@@ -145,9 +150,8 @@ def create_decision_snapshot(
     runbook_content_hash: str | None = None,
     ttl: timedelta = timedelta(minutes=15),
     now: datetime | None = None,
-    maintenance_mode: bool = False,
-    actor_can_execute: bool = False,
     blocked_actions: frozenset[str] = frozenset(),
+    minimum_outcome: PolicyOutcome = PolicyOutcome.ALLOWED,
 ) -> DecisionSnapshot:
     created_at = now or datetime.now(UTC)
     if created_at.tzinfo is None:
@@ -170,9 +174,8 @@ def create_decision_snapshot(
     policy = evaluate_policy(
         severity=severity,
         action_key=action_key,
-        maintenance_mode=maintenance_mode,
-        actor_can_execute=actor_can_execute,
         blocked_actions=blocked_actions,
+        minimum_outcome=minimum_outcome,
     )
 
     return DecisionSnapshot(

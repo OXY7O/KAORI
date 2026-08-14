@@ -224,6 +224,39 @@ Recommended copy budget:
 
 The component does not compensate for verbose copy. Long explanations and evidence boundaries belong below the hero.
 
+## Kubernetes setup-blocked context
+
+Kubernetes workspaces that cannot operate before at least one cluster is registered use one shared Hero right-panel blocker:
+
+```text
+app/templates/components/cluster/_hero_blocked_context.html
+```
+
+The canonical visual semantics are inherited from the Kubernetes Operations Dashboard blocker:
+
+```text
+<Domain> Readiness
+Cluster Setup Required
+
+Connected Clusters   0
+Workspace State      Blocked
+
+Short domain-specific activation guidance
+```
+
+This pattern is shared by Kubernetes Dashboard, Inventory, Operations, and Governance. The Hero geometry remains unchanged while blocked; the right panel switches from normal posture/context evidence to setup readiness. Detailed explanation and the cluster-registration CTA remain in the onboarding banner below the Hero.
+
+Rules:
+
+- use `_hero_blocked_context.html`; do not recreate the blocker panel per page;
+- the shared blocker already owns the canonical `context_panel`; callers must not wrap it in another `context_panel_classes()` container;
+- set `cluster_blocked_scope`, `cluster_blocked_title`, and `cluster_blocked_info`; `cluster_blocked_state_label` is optional when a domain must preserve a more specific state label such as `Dashboard State`;
+- use `Cluster Setup Required` for the blocker title;
+- do not render normal right-panel posture metrics as if zero values were committed evidence;
+- keep the main Hero visible and stable;
+- hide data snapshots, KPI/posture cards, tables, topology explorers, and mutation workspaces when the page has no valid cluster scope;
+- authorization must complete before the setup blocker is exposed.
+
 ## Dynamic and HTMX behavior
 
 The hero is a stable page anchor. Filtering, pagination, polling, runtime refresh, inventory synchronization, validation, and background jobs must not replace or collapse it.

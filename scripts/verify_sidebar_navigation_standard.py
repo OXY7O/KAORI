@@ -29,7 +29,6 @@ EXPECTED_SECTION_ORDER = (
     'Kubernetes',
     'Storage',
     'Insights &amp; Reporting',
-    'Platform Extensions',
     'Platform Operations',
     'Administration',
 )
@@ -43,8 +42,8 @@ EXPECTED_INCLUDE_ORDER = (
     'analytics_menu.html',
     'intelligence_menu.html',
     'reports_menu.html',
-    'integrations_menu.html',
     'platform_operations_menu.html',
+    'integrations_menu.html',
     'access_management_menu.html',
     'settings_menu.html',
 )

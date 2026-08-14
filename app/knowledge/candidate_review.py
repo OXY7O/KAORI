@@ -101,8 +101,6 @@ def promote_candidate(
     reason: str | None = None,
     now: datetime | None = None,
     decision_ttl: timedelta = timedelta(minutes=15),
-    maintenance_mode: bool = False,
-    actor_can_execute: bool = False,
     blocked_actions: frozenset[str] = frozenset(),
 ) -> IntelligenceDecision:
     _require(actor_permissions, CREATE_PERMISSION)
@@ -135,9 +133,8 @@ def promote_candidate(
         runbook_content_hash=revision.content_hash,
         ttl=decision_ttl,
         now=checked_at,
-        maintenance_mode=maintenance_mode,
-        actor_can_execute=actor_can_execute,
         blocked_actions=blocked_actions,
+        minimum_outcome=PolicyOutcome(revision.approval_policy),
     )
     _assert_policy_consistent(revision.approval_policy, snapshot.policy.outcome)
     decision = persist_decision(snapshot, actor_user_id=actor_user_id, actor_permissions=actor_permissions)

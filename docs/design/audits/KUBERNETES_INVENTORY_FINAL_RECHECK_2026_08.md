@@ -14,6 +14,12 @@ The final recheck found and corrected three release-relevant residuals:
 2. **Legacy/dead surface:** unused `format_byte_count`, `format_gib`, `_split_inventory_values`, and the empty/stale Inventory partial README are retired.
 3. **Topology ownership:** API Server display metadata now comes from the eagerly loaded canonical `Cluster.kubernetes_connection` relationship. The read side no longer invokes the Kubernetes integration resolver for presentation metadata.
 4. **Post-lock modal alignment refinement:** Full Workspace Modal lifecycle/readiness/collection labels now use one shared header-state row aligned with the title/description text column. This removes the detached label placement below the leading resource icon without changing modal content or status semantics.
+5. **Canonical template routing:** the shared resource-template registry had regressed to `inventory/<resource>/...` while committed templates live under `inventory/kubernetes/<resource>/...`, causing full-page `TemplateNotFound` failures such as `/inventory/nodes`. The registry and release contracts now validate the canonical namespace for every resource page and HTMX partial.
+6. **Blocker-safe evidence visibility:** `Inventory Data Snapshot` is now rendered only after the cluster onboarding blocker clears. Overview, Topology, and every resource workspace show Hero + onboarding guidance while blocked; snapshot/posture/table content remains hidden.
+7. **Storage scope parity:** Storage Inventory now populates the same `scope_label` Hero evidence used by the other resource pages.
+8. **Rendering-test ownership:** Inventory rendering coverage now points to `app/templates/inventory/kubernetes`, preventing a stale test namespace from silently missing the committed template tree.
+9. **Shared setup-blocked Hero:** Inventory Overview, all resource pages, and Topology now inherit the Kubernetes Operations Dashboard blocker pattern through `components/cluster/_hero_blocked_context.html`. Hero geometry remains stable while normal posture evidence is replaced by `Inventory Readiness / Cluster Setup Required`.
+10. **Hero purpose copy refinement:** resource Hero descriptions now give slightly richer committed-inventory context while remaining inside the global 7–12 word target.
 
 ## KAORI UI standard applicability
 
@@ -90,6 +96,6 @@ L7 End-to-End Smoke
 
 ## Release verdict
 
-**TARGETED FIX — LOCK REMAINS; BROWSER VALIDATION PENDING**
+**TARGETED FIX — LOCK REMAINS; DEVCONTAINER RUNTIME VALIDATION REQUIRED**
 
 Source-level verifier, architecture, rendering, security, and contract evidence must be green, followed by authoritative devcontainer Ruff/Ruff Format/djLint/Pyright/Prettier, Functional/Integration/E2E execution, browser smoke, and the full release gate. Once those pass, Inventory becomes **PASS — LOCKED** without reopening its visual design.

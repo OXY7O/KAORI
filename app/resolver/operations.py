@@ -7,7 +7,7 @@ from sqlalchemy import func
 
 from app.extensions.db import db
 from app.models.audit import AuditEvent
-from app.models.intelligence import IntelligenceExecutionJournal
+from app.models.intelligence import IntelligenceDecision, IntelligenceExecutionJournal
 from app.models.resolver import ResolverOperationalControl
 
 
@@ -72,15 +72,33 @@ def update_control(
 def assert_execution_allowed(
     journal: IntelligenceExecutionJournal, *, now: datetime | None = None
 ) -> ResolverReadiness:
+    return assert_decision_execution_allowed(
+        journal.decision,
+        exclude_journal_id=journal.id,
+        now=now,
+    )
+
+
+def assert_decision_execution_allowed(
+    decision: IntelligenceDecision,
+    *,
+    exclude_journal_id: int | None = None,
+    now: datetime | None = None,
+) -> ResolverReadiness:
+    """Evaluate global/cluster operational controls before authorization and again in the worker."""
     current = now or datetime.now(UTC)
-    cluster_id = journal.decision.cluster_id
+    cluster_id = decision.cluster_id
     global_control = ResolverOperationalControl.query.filter_by(cluster_id=None).one_or_none()
     cluster_control = ResolverOperationalControl.query.filter_by(cluster_id=cluster_id).one_or_none()
     reasons: list[str] = []
-    global_enabled = not bool(global_control and global_control.global_kill_switch)
+    global_enabled = not bool(
+        global_control and (global_control.global_kill_switch or global_control.maintenance_mode)
+    )
     cluster_enabled = not bool(cluster_control and cluster_control.maintenance_mode)
-    if not global_enabled:
+    if global_control and global_control.global_kill_switch:
         reasons.append('Global resolver kill switch is active.')
+    if global_control and global_control.maintenance_mode:
+        reasons.append('Global resolver maintenance mode is active.')
     if not cluster_enabled:
         reasons.append('Resolver maintenance mode is active for this cluster.')
     control = cluster_control or global_control
@@ -89,7 +107,7 @@ def assert_execution_allowed(
         IntelligenceExecutionJournal.query.join(IntelligenceExecutionJournal.decision)
         .filter(
             IntelligenceExecutionJournal.orchestration_status == 'running',
-            IntelligenceExecutionJournal.id != journal.id,
+            *([IntelligenceExecutionJournal.id != exclude_journal_id] if exclude_journal_id is not None else []),
             IntelligenceExecutionJournal.decision.has(cluster_id=cluster_id),
         )
         .count()
@@ -102,7 +120,7 @@ def assert_execution_allowed(
     if control:
         since = current - timedelta(minutes=1)
         recent = IntelligenceExecutionJournal.query.filter(
-            IntelligenceExecutionJournal.id != journal.id,
+            *([IntelligenceExecutionJournal.id != exclude_journal_id] if exclude_journal_id is not None else []),
             IntelligenceExecutionJournal.created_at >= since,
             IntelligenceExecutionJournal.decision.has(cluster_id=cluster_id),
         ).count()
@@ -171,18 +189,6 @@ def resolver_metrics_snapshot(*, now: datetime | None = None) -> dict[str, int]:
             IntelligenceExecutionJournal.last_heartbeat_at < stale_before,
         ).count(),
     }
-
-
-def requeue_dead_letter(journal: IntelligenceExecutionJournal, *, actor_user_id: int | None) -> None:
-    if journal.orchestration_status != 'dead_letter':
-        raise ResolverOperationalError('Only dead-letter execution journals may be requeued.')
-    journal.orchestration_status = 'retry_wait'
-    journal.next_retry_at = datetime.now(UTC)
-    journal.completed_at = None
-    journal.last_error_code = None
-    journal.error_message = None
-    _audit_journal(journal, 'resolver.dead_letter.requeued', {'actor_user_id': actor_user_id})
-    db.session.flush()
 
 
 def _audit_control(record: ResolverOperationalControl, actor_user_id: int | None) -> None:

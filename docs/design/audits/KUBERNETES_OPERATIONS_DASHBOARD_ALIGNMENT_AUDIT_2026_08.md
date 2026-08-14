@@ -60,3 +60,16 @@ The existing visual design is approved and should be preserved. The Kubernetes O
 ## Final Recheck v3 — layered release audit
 
 The locked visual baseline remains unchanged. The release audit removed residual internal compatibility/dead surface (`get_dashboard_overview(**_)`, unused KPI `tone`, orphan `build_hero_integration_meta()`, duplicate unused Dashboard `format_gib()`), renamed misleading internal `live_cluster` state to `selected_cluster`, and corrected Top Consumers empty-copy to committed-snapshot semantics. The Dashboard now carries explicit Unit, Functional, Integration, Security, Rendering/UI, and E2E smoke evidence in addition to static and contract gates. Cluster Health remains bounded by pagination before per-cluster snapshot reads.
+
+## Final Recheck v4 — Welcome/navigation regression follow-up
+
+The Dashboard visual and operational baseline remains locked with no redesign. The follow-up review reconfirmed:
+
+1. Recommended Actions are projections of the central Intelligence recommendation engine and route back to Intelligence rather than bypassing governance with direct execution actions.
+2. Data Freshness explicitly separates committed Inventory, Metrics, Alert, and Report artifact evidence and does not imply request-time provider access.
+3. Capacity, alert, forecast, and top-consumer sections remain independently lazy-loaded so one unavailable committed snapshot does not collapse the complete dashboard shell.
+4. Top Consumers remains intentionally bounded to the top three CPU and memory signals on the Dashboard; deeper analysis belongs to Kubernetes Analytics.
+5. The Dashboard package still owns no direct Kubernetes, Prometheus, Alertmanager, object-storage, or other provider network client.
+
+No Dashboard source change is required from this recheck. A separate frontend asset-packaging regression discovered during the same release pass was corrected by restoring the vendored Lucide license artifact and making icon-support and license-compliance assertions independent.
+

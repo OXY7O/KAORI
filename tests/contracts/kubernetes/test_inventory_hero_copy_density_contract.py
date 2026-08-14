@@ -7,43 +7,43 @@ ROOT = Path(__file__).resolve().parents[3]
 
 HERO_EXPECTATIONS = {
     'overview': (
-        'Review committed Kubernetes assets and fleet inventory signals.',
+        'Review committed Kubernetes assets, fleet coverage, and inventory signals across registered clusters.',
         'Fleet Posture',
     ),
     'nodes': (
-        'Review node readiness, capacity, runtime, and scheduling evidence.',
+        'Review committed node readiness, capacity, runtime, scheduling posture, and platform characteristics.',
         'Node Readiness',
     ),
     'namespaces': (
-        'Review namespace lifecycle, controls, security, and object composition.',
+        'Review committed namespaces, lifecycle controls, security posture, resource policies, and composition.',
         'Lifecycle Posture',
     ),
     'workloads': (
-        'Review workload state, delivery, placement, and Pod template evidence.',
+        'Review committed workloads, runtime state, delivery strategy, replica posture, and placement.',
         'Runtime Posture',
     ),
     'pods': (
-        'Review Pod readiness, placement, ownership, and container runtime evidence.',
+        'Review committed Pods, readiness, placement, ownership, runtime conditions, and container images.',
         'Runtime Posture',
     ),
     'services': (
-        'Review Service access, ports, backend registration, and selected Pods.',
+        'Review committed Services, exposure, ports, selectors, backend registration, and endpoints.',
         'Backend Registration',
     ),
     'ingresses': (
-        'Review Ingress publication, TLS references, routes, and backend Services.',
+        'Review committed Ingress routes, hosts, TLS coverage, backend mappings, and publication.',
         'Routing Posture',
     ),
     'storage': (
-        'Review storage provisioning, capacity, access, binding, and lifecycle evidence.',
+        'Review committed storage assets, capacity, binding, access, provisioning, and lifecycle posture.',
         'Storage Lifecycle',
     ),
     'configuration': (
-        'Review ConfigMap and Secret keys, mutation, collection, and Pod references.',
+        'Review committed ConfigMaps and Secrets, key metadata, references, and mutation evidence.',
         'Protected Metadata',
     ),
     'topology': (
-        'Explore ownership, placement, and dependencies from committed inventory.',
+        'Explore committed Kubernetes ownership, placement, relationships, and dependencies across inventory resources.',
         'Graph Coverage',
     ),
 }

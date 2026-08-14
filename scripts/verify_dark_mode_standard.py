@@ -192,7 +192,7 @@ def verify() -> None:
     if 'bg-kaori-primary text-white shadow-lg shadow-kaori-primary/20' in navigation_source:
         raise AssertionError('sidebar: legacy CTA-like active parent treatment remains')
 
-    _require_tokens(welcome_group, ('kaori-brand-domain-panel',), 'Welcome capability group')
+    _require_tokens(welcome_group, ('kaori-hero-shell',), 'Welcome capability group')
     _require_tokens(
         related_page_card,
         (

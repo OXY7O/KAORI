@@ -25,11 +25,12 @@ REQUIRED_CHECKS = (
     'kill_switch',
     'maintenance_mode',
     'circuit_breaker',
-    'rollback_drill',
+    'recovery_drill',
     'activity_audit',
 )
 
 STAGE_ORDER = ('disabled', 'shadow', 'non_production', 'canary', 'production')
+LEGACY_CHECK_ALIASES = {'rollback_drill': 'recovery_drill'}
 
 
 class ProductionReadinessError(RuntimeError):
@@ -75,13 +76,19 @@ def canonical_evidence_hash(results: Mapping[str, object]) -> str:
 
 
 def assess_readiness(*, results: Mapping[str, object], rollout_stage: str = 'disabled') -> ReadinessAssessment:
-    unknown = sorted(set(results) - set(REQUIRED_CHECKS))
+    normalized = dict(results)
+    for legacy_key, canonical_key in LEGACY_CHECK_ALIASES.items():
+        if legacy_key in normalized and canonical_key not in normalized:
+            normalized[canonical_key] = normalized[legacy_key]
+        normalized.pop(legacy_key, None)
+    unknown = sorted(set(normalized) - set(REQUIRED_CHECKS))
     if unknown:
         raise ProductionReadinessError(f'Unknown production readiness checks: {", ".join(unknown)}.')
-    failed = tuple(name for name in REQUIRED_CHECKS if results.get(name) is not True)
+    failed = tuple(name for name in REQUIRED_CHECKS if normalized.get(name) is not True)
     return ReadinessAssessment(
         ready=not failed,
         failed_checks=failed,
+        # Preserve the stored evidence hash for legacy rollback_drill records.
         evidence_hash=canonical_evidence_hash(results),
         rollout_stage=rollout_stage,
     )

@@ -7,6 +7,7 @@ from typing import Any
 
 from sqlalchemy.exc import IntegrityError
 
+from app.common.automation_execution import assert_execution_enabled, build_idempotency_key
 from app.extensions.db import db
 from app.intelligence.decision import (
     DecisionError,
@@ -155,6 +156,15 @@ def _record_approval(
     _require_permission(actor_permissions, APPROVE_PERMISSION)
     checked_at = now or _now()
     _assert_active(record, checked_at)
+    if (
+        record.approval_required
+        and actor_user_id is not None
+        and record.created_by_user_id is not None
+        and actor_user_id == record.created_by_user_id
+    ):
+        raise DecisionWorkflowError(
+            'Approval-required decisions enforce maker-checker separation; the decision creator cannot approve or reject their own decision.'
+        )
     if record.workflow_status not in {'pending_approval', 'ready'}:
         raise DecisionWorkflowError(f'Decision cannot be {outcome} from {record.workflow_status}.')
 
@@ -190,6 +200,7 @@ def issue_persisted_execution_token(
     actor_permissions: Collection[str],
     now: datetime | None = None,
 ) -> tuple[str, IntelligenceExecutionJournal]:
+    assert_execution_enabled()
     _require_permission(actor_permissions, EXECUTE_PERMISSION)
     issued_at = now or _now()
     _assert_active(record, issued_at)
@@ -213,20 +224,31 @@ def issue_persisted_execution_token(
     journal.token_nonce_hash = _nonce_hash(authorization.nonce)
     journal.action_key = authorization.action_key
     journal.evidence_hash = authorization.evidence_hash
+    journal.idempotency_key = build_idempotency_key(
+        decision_id=record.public_id,
+        action_key=authorization.action_key,
+        evidence_hash=authorization.evidence_hash,
+    )
     journal.status = 'authorized'
     journal.requested_by_user_id = actor_user_id
     journal.issued_at = authorization.issued_at
     journal.expires_at = authorization.expires_at
     db.session.add(journal)
-    db.session.flush()
-    _audit(
-        actor_user_id=actor_user_id,
-        target_id=record.public_id,
-        action='intelligence.execution.authorized',
-        summary='One-time execution authorization issued.',
-        metadata={'journal_public_id': journal.public_id, 'evidence_hash': journal.evidence_hash},
-    )
-    db.session.commit()
+    try:
+        db.session.flush()
+        _audit(
+            actor_user_id=actor_user_id,
+            target_id=record.public_id,
+            action='intelligence.execution.authorized',
+            summary='One-time execution authorization issued.',
+            metadata={'journal_public_id': journal.public_id, 'evidence_hash': journal.evidence_hash},
+        )
+        db.session.commit()
+    except IntegrityError as exc:
+        db.session.rollback()
+        raise DecisionWorkflowError(
+            'This immutable decision already has an execution authorization; fresh evidence and a new decision are required.'
+        ) from exc
     return token, journal
 
 
@@ -283,6 +305,25 @@ def consume_execution_token(
     db.session.commit()
     return journal
 
+
+
+def expire_stale_decisions(*, now: datetime | None = None) -> int:
+    checked_at = now or _now()
+    rows = IntelligenceDecision.query.filter(
+        IntelligenceDecision.workflow_status.in_(('ready', 'pending_approval', 'approved')),
+        IntelligenceDecision.expires_at <= checked_at,
+    ).all()
+    for row in rows:
+        row.workflow_status = 'expired'
+        _audit(
+            actor_user_id=None,
+            target_id=row.public_id,
+            action='intelligence.decision.expired',
+            summary='KAORI decision expired before execution dispatch.',
+            metadata={'evidence_hash': row.evidence_hash},
+        )
+    db.session.commit()
+    return len(rows)
 
 def snapshot_from_record(record: IntelligenceDecision) -> DecisionSnapshot:
     payload = record.snapshot_json

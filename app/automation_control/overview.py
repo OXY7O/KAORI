@@ -17,20 +17,11 @@ from app.models.resolver import (
     ResolverOperationalControl,
     ResolverProductionReadinessRecord,
 )
+from app.resolver.notifications import EXECUTION_NOTIFICATION_EVENTS
 from app.resolver.production_readiness import ProductionReadinessError, assess_readiness
 
-EXECUTION_NOTIFICATION_EVENTS = frozenset(
-    {
-        'automation.execution_started',
-        'automation.execution_completed',
-        'automation.execution_failed',
-        'automation.verification_failed',
-    }
-)
-AUTOMATION_NOTIFICATION_EVENTS = frozenset((*DECISION_NOTIFICATION_EVENTS, *EXECUTION_NOTIFICATION_EVENTS))
 
-
-def build_automation_overview(*, mutations_enabled: bool, registry_rows: Sequence[dict[str, Any]]) -> dict[str, Any]:
+def build_automation_overview(*, execution_enabled: bool, registry_rows: Sequence[dict[str, Any]]) -> dict[str, Any]:
     global_control = ResolverOperationalControl.query.filter_by(cluster_id=None).one_or_none()
     readiness_records = ResolverProductionReadinessRecord.query.order_by(
         ResolverProductionReadinessRecord.updated_at.desc(),
@@ -56,6 +47,14 @@ def build_automation_overview(*, mutations_enabled: bool, registry_rows: Sequenc
             IntelligenceExecutionJournal.status == 'failed',
         )
     ).count()
+    verification_states = [
+        str(((row.result_json or {}).get('verification') or {}).get('status') or '')
+        for row in IntelligenceExecutionJournal.query.filter_by(status='succeeded').all()
+    ]
+    verification_verified = sum(state == 'verified' for state in verification_states)
+    verification_pending = sum(state == 'pending' for state in verification_states)
+    verification_failed = sum(state == 'failed' for state in verification_states)
+    failures += verification_failed
     active_policies = ResolverDeploymentPolicy.query.filter_by(lifecycle_status='active').count()
     published_runbooks = KnowledgeRunbookRevision.query.filter_by(publication_status='published').count()
     active_bindings = KnowledgeRunbookAlertBinding.query.filter_by(lifecycle_status='active').count()
@@ -65,23 +64,41 @@ def build_automation_overview(*, mutations_enabled: bool, registry_rows: Sequenc
     maintenance = bool(global_control and global_control.maintenance_mode)
     readiness = _readiness_posture(readiness_complete, readiness_production, readiness_total)
     posture = _control_posture(
-        mutations_enabled=mutations_enabled,
+        execution_enabled=execution_enabled,
         kill_switch=kill_switch,
         maintenance=maintenance,
         readiness_production=readiness_production,
         readiness_total=readiness_total,
     )
 
+    counts = {
+        'pending_candidates': pending_candidates,
+        'awaiting_approval': awaiting_approval,
+        'approved_waiting': approved_waiting,
+        'running': running,
+        'failures': failures,
+        'verification_verified': verification_verified,
+        'verification_pending': verification_pending,
+        'verification_failed': verification_failed,
+        'active_policies': active_policies,
+        'published_runbooks': published_runbooks,
+        'active_bindings': active_bindings,
+        'registered_actions': len(registry_rows),
+        'readiness_complete': readiness_complete,
+        'readiness_production': readiness_production,
+        'readiness_total': readiness_total,
+    }
+
     return {
         'posture': posture,
-        'mutation': {
-            'enabled': mutations_enabled,
-            'label': 'Enabled' if mutations_enabled else 'Disabled',
-            'tone': 'warning' if mutations_enabled else 'unknown',
+        'execution': {
+            'enabled': execution_enabled,
+            'label': 'Enabled' if execution_enabled else 'Disabled',
+            'tone': 'warning' if execution_enabled else 'unknown',
             'helper': (
-                'Infrastructure mutation paths may pass the global gate.'
-                if mutations_enabled
-                else 'Decision, evidence, and safety surfaces remain read-only.'
+                'Infrastructure execution may proceed only after every downstream admission gate passes.'
+                if execution_enabled
+                else 'Governance preparation remains writable while infrastructure execution stays fail-closed.'
             ),
         },
         'guardrails': {
@@ -98,29 +115,8 @@ def build_automation_overview(*, mutations_enabled: bool, registry_rows: Sequenc
             'readiness': readiness,
             'notifications': notification,
         },
-        'counts': {
-            'pending_candidates': pending_candidates,
-            'awaiting_approval': awaiting_approval,
-            'approved_waiting': approved_waiting,
-            'running': running,
-            'failures': failures,
-            'active_policies': active_policies,
-            'published_runbooks': published_runbooks,
-            'active_bindings': active_bindings,
-            'registered_actions': len(registry_rows),
-            'readiness_complete': readiness_complete,
-            'readiness_production': readiness_production,
-            'readiness_total': readiness_total,
-        },
-        'pipeline': _pipeline_rows(
-            published_runbooks=published_runbooks,
-            active_bindings=active_bindings,
-            pending_candidates=pending_candidates,
-            awaiting_approval=awaiting_approval,
-            approved_waiting=approved_waiting,
-            mutations_enabled=mutations_enabled,
-            running=running,
-        ),
+        'counts': counts,
+        'pipeline': _pipeline_rows(counts=counts, execution_enabled=execution_enabled),
         'pilot': _pilot_posture(registry_rows),
     }
 
@@ -172,7 +168,7 @@ def _readiness_posture(complete: int, production: int, total: int) -> dict[str, 
 
 def _control_posture(
     *,
-    mutations_enabled: bool,
+    execution_enabled: bool,
     kill_switch: bool,
     maintenance: bool,
     readiness_production: int,
@@ -190,22 +186,22 @@ def _control_posture(
             'tone': 'maintenance',
             'helper': 'Resolver maintenance mode blocks new execution.',
         }
-    if not mutations_enabled:
+    if not execution_enabled:
         return {
             'label': 'Governance Only',
             'tone': 'info',
-            'helper': 'KAORI exposes decision and safety evidence while infrastructure mutation remains disabled.',
+            'helper': 'KAORI exposes decision, readiness, and safety evidence while infrastructure execution remains disabled.',
         }
     if readiness_total == 0 or readiness_production < readiness_total:
         return {
             'label': 'Execution Gated',
             'tone': 'warning',
-            'helper': 'Mutation is enabled, but production-readiness evidence is incomplete.',
+            'helper': 'Execution is enabled, but production-readiness evidence is incomplete.',
         }
     return {
         'label': 'Controlled Execution',
         'tone': 'normal',
-        'helper': 'Global mutation gate and recorded readiness currently allow controlled execution paths.',
+        'helper': 'The execution gate and recorded readiness currently allow controlled resolver paths.',
     }
 
 
@@ -214,47 +210,58 @@ def _notification_readiness() -> dict[str, str | int]:
         NotificationChannel.enabled.is_(True),
         NotificationChannel.test_status == 'success',
     ).all()
-    eligible = [
+    required = set((*DECISION_NOTIFICATION_EVENTS, *EXECUTION_NOTIFICATION_EVENTS))
+    covered: set[str] = set()
+    for channel in channels:
+        covered.update(required.intersection(set(channel.event_types or [])))
+    missing = sorted(required - covered)
+    operational = [
         channel
         for channel in channels
-        if set(DECISION_NOTIFICATION_EVENTS).intersection(set(channel.event_types or []))
+        if channel.last_delivery_status == 'success' and required.intersection(set(channel.event_types or []))
     ]
-    operational = [channel for channel in eligible if channel.last_delivery_status == 'success']
-    if operational:
+    if not missing and operational:
         return {
             'label': 'Operational',
             'tone': 'normal',
-            'helper': f'{len(operational)} automation delivery channel(s) have a successful delivery record.',
-            'eligible': len(eligible),
+            'helper': (
+                f'All {len(required)} Automation Control lifecycle events are covered; '
+                f'{len(operational)} channel(s) have successful delivery evidence.'
+            ),
+            'eligible': len(channels),
             'operational': len(operational),
         }
-    if eligible:
+    if not missing:
         return {
             'label': 'Ready',
             'tone': 'info',
-            'helper': f'{len(eligible)} validated channel(s) allow Automation Control events.',
-            'eligible': len(eligible),
+            'helper': f'All {len(required)} Automation Control lifecycle events are covered by validated channels.',
+            'eligible': len(channels),
             'operational': 0,
         }
     return {
-        'label': 'Not Configured',
-        'tone': 'unknown',
-        'helper': 'No validated Notification Channel currently allows Automation Control events.',
-        'eligible': 0,
-        'operational': 0,
+        'label': 'Coverage Incomplete' if channels else 'Not Configured',
+        'tone': 'warning' if channels else 'unknown',
+        'helper': (
+            f'{len(missing)} lifecycle event(s) still lack a validated Notification Channel: {", ".join(missing)}.'
+            if channels
+            else 'No validated Notification Channel currently covers Automation Control lifecycle events.'
+        ),
+        'eligible': len(channels),
+        'operational': len(operational),
     }
 
 
-def _pipeline_rows(
-    *,
-    published_runbooks: int,
-    active_bindings: int,
-    pending_candidates: int,
-    awaiting_approval: int,
-    approved_waiting: int,
-    mutations_enabled: bool,
-    running: int,
-) -> list[dict[str, str]]:
+def _pipeline_rows(*, counts: dict[str, int], execution_enabled: bool) -> list[dict[str, str]]:
+    published_runbooks = counts['published_runbooks']
+    active_bindings = counts['active_bindings']
+    pending_candidates = counts['pending_candidates']
+    awaiting_approval = counts['awaiting_approval']
+    approved_waiting = counts['approved_waiting']
+    running = counts['running']
+    verification_verified = counts['verification_verified']
+    verification_pending = counts['verification_pending']
+    verification_failed = counts['verification_failed']
     return [
         {
             'number': '1',
@@ -297,8 +304,8 @@ def _pipeline_rows(
             'key': 'execution',
             'label': 'Controlled Execution',
             'icon': 'server-cog',
-            'status': f'{running} Active' if running else ('Enabled' if mutations_enabled else 'Mutation Disabled'),
-            'tone': 'warning' if running or mutations_enabled else 'unknown',
+            'status': f'{running} Active' if running else ('Enabled' if execution_enabled else 'Execution Disabled'),
+            'tone': 'warning' if running or execution_enabled else 'unknown',
             'description': 'Only registered, allowlisted resolver actions may cross the execution boundary after all gates pass.',
         },
         {
@@ -306,22 +313,25 @@ def _pipeline_rows(
             'key': 'verification',
             'label': 'Verification',
             'icon': 'circle-check',
-            'status': 'Contract Required',
-            'tone': 'unknown',
-            'description': 'API execution success is not remediation success; post-action verification remains a separate required outcome.',
+            'status': (
+                f'{verification_failed} Failed'
+                if verification_failed
+                else (f'{verification_pending} Pending' if verification_pending else f'{verification_verified} Verified')
+            ),
+            'tone': 'critical' if verification_failed else ('warning' if verification_pending else 'normal'),
+            'description': 'API mutation success is not remediation success; workload health is verified as a separate auditable outcome.',
         },
     ]
-
 
 def _pilot_posture(registry_rows: Sequence[dict[str, Any]]) -> dict[str, str]:
     action_key = 'kubernetes.deployment.restart'
     registered = any(str(row.get('action_key') or '') == action_key for row in registry_rows)
     return {
         'action_key': action_key,
-        'label': 'Registered · Mutation Disabled' if registered else 'Not Registered',
+        'label': 'Registered · Execution Default-Deny' if registered else 'Not Registered',
         'tone': 'info' if registered else 'unknown',
         'helper': (
-            'Kubernetes Deployment restart remains the intended first controlled execution pilot; approval, allowlist, dry-run, verification, and rollback evidence remain mandatory.'
+            'Kubernetes Deployment restart remains the intended first controlled execution pilot; approval, allowlist, dry-run, post-action verification, and recovery evidence remain mandatory.'
             if registered
             else 'The intended Kubernetes Deployment restart pilot is not present in the active resolver registry.'
         ),

@@ -8,7 +8,7 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[1]
 
 EXPECTED_HERO_DESCRIPTION = (
-    'Operate and govern infrastructure with unified visibility, workflows, analytics, reporting, and administration.'
+    'Operate and govern infrastructure through unified visibility, intelligence, controlled workflows, automation, reporting, and administration.'
 )
 EXPECTED_GROUP_KEYS = ('visibility', 'operations', 'assurance', 'platform')
 UNIVERSAL_TARGET = ('Settings', None, 'settings.account')
@@ -166,6 +166,8 @@ def _verify_catalog_contract(errors: list[str]) -> None:
     governance = next((item for item in shortcut_definitions if item.get('title') == 'Kubernetes Governance'), None)
     reports = next((item for item in shortcut_definitions if item.get('title') == 'Reports'), None)
     intelligence = next((item for item in shortcut_definitions if item.get('title') == 'Intelligence'), None)
+    integrations = next((item for item in shortcut_definitions if item.get('title') == 'Integrations'), None)
+    platform_operations = next((item for item in shortcut_definitions if item.get('title') == 'Platform Operations'), None)
     require(
         governance is not None and governance.get('scope') == 'Compute', 'Kubernetes Governance scope must be Compute.', errors
     )
@@ -177,6 +179,19 @@ def _verify_catalog_contract(errors: list[str]) -> None:
     require(
         intelligence is not None and intelligence.get('scope') == 'Cross-domain',
         'Intelligence must retain Cross-domain scope while the domain remains available.',
+        errors,
+    )
+    require(
+        integrations is not None
+        and integrations.get('group') == 'operations'
+        and integrations.get('targets') == (('settings.manage_integrations', 'integrations.overview'),),
+        'Integrations must remain an independent Act workspace with its own authorization boundary.',
+        errors,
+    )
+    require(
+        platform_operations is not None
+        and all(permission_key != 'settings.manage_integrations' for permission_key, _ in platform_operations.get('targets', ())),
+        'Platform Operations must not absorb Integrations authorization or routing.',
         errors,
     )
 

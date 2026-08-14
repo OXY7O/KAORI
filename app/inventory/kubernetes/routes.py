@@ -84,10 +84,10 @@ logger = logging.getLogger(__name__)
 
 _INVENTORY_PARTIAL_TEMPLATES = {
     resource: {
-        'index': f'inventory/{resource}/index.html',
-        'workspace': f'inventory/{resource}/partials/_page_workspace.html',
-        'card': f'inventory/{resource}/partials/_table_card.html',
-        'content': f'inventory/{resource}/partials/_table_content.html',
+        'index': f'inventory/kubernetes/{resource}/index.html',
+        'workspace': f'inventory/kubernetes/{resource}/partials/_page_workspace.html',
+        'card': f'inventory/kubernetes/{resource}/partials/_table_card.html',
+        'content': f'inventory/kubernetes/{resource}/partials/_table_content.html',
     }
     for resource in ('nodes', 'namespaces', 'configuration', 'workloads', 'pods', 'services', 'ingresses', 'storage')
 }
@@ -763,6 +763,7 @@ def storage():
     inventory['storage_filter_statuses'] = [
         {'value': value, 'label': storage_status_filter_label(value)} for value in storage_statuses
     ]
+    inventory['scope_label'] = _inventory_scope_label(clusters, cluster_id)
 
     return render_template(
         _inventory_template('storage'),

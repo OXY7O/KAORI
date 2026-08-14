@@ -5,7 +5,7 @@ from pathlib import Path
 from jinja2 import Environment
 
 ROOT = Path(__file__).resolve().parents[3]
-TEMPLATES = ROOT / 'app/templates/inventory'
+TEMPLATES = ROOT / 'app/templates/inventory/kubernetes'
 RESOURCE_NAMES = ('nodes', 'namespaces', 'configuration', 'workloads', 'pods', 'services', 'ingresses', 'storage')
 DETAIL_PARTIALS = {
     'nodes': '_node_detail_content.html',

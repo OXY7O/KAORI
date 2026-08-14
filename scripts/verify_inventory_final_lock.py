@@ -148,8 +148,37 @@ def main() -> int:
         errors,
     )
 
+    require(
+        "f'inventory/kubernetes/{resource}/index.html'" in routes_source
+        and "f'inventory/kubernetes/{resource}/partials/_page_workspace.html'" in routes_source
+        and "f'inventory/kubernetes/{resource}/partials/_table_card.html'" in routes_source
+        and "f'inventory/kubernetes/{resource}/partials/_table_content.html'" in routes_source,
+        'Inventory resource template registry must use the canonical inventory/kubernetes namespace.',
+        errors,
+    )
+    require(
+        "f'inventory/{resource}/index.html'" not in routes_source,
+        'Inventory resource template registry must not use the retired root Inventory namespace.',
+        errors,
+    )
+    storage_function = functions.get('storage')
+    if storage_function is not None:
+        storage_source = ast.get_source_segment(routes_source, storage_function) or ''
+        require(
+            "inventory['scope_label'] = _inventory_scope_label(clusters, cluster_id)" in storage_source,
+            'Storage Inventory must populate the shared scope label used by its Hero.',
+            errors,
+        )
+
     overview_hero = read('app/templates/inventory/kubernetes/overview/partials/_hero.html')
     topology_hero = read('app/templates/inventory/kubernetes/topology/partials/_hero.html')
+    blocked_hero = read('app/templates/components/cluster/_hero_blocked_context.html')
+    require(
+        "page_hero.context_metric('boxes', 'Connected Clusters', '0', 'No Kubernetes connection available')" in blocked_hero
+        and "page_hero.context_metric('circle-dot-dashed', blocked_state_label, 'Blocked', 'Cluster access is required'" in blocked_hero,
+        'Inventory must inherit the canonical Kubernetes setup-blocked Hero context.',
+        errors,
+    )
     require(
         'page_hero.context_card(' in overview_hero,
         'Inventory Overview must use canonical status-oriented Hero context.',
@@ -160,12 +189,44 @@ def main() -> int:
         'Topology Hero must use the canonical Status Badge Box.',
         errors,
     )
+    for page_name, hero_source in (('overview', overview_hero), ('topology', topology_hero)):
+        require(
+            "components/cluster/_hero_blocked_context.html" in hero_source and 'Inventory Readiness' in hero_source,
+            f'{page_name} Hero must use the shared Kubernetes setup-blocked context.',
+            errors,
+        )
+    overview_page = read('app/templates/inventory/kubernetes/overview/index.html')
+    topology_page = read('app/templates/inventory/kubernetes/topology/index.html')
+    for page_name, page_source in (('overview', overview_page), ('topology', topology_page)):
+        blocker = page_source.find('{% if cluster_onboarding.is_blocked %}')
+        blocker_else = page_source.find('{% else %}', blocker)
+        snapshot = page_source.find('inventory/kubernetes/components/_data_freshness.html')
+        require(
+            blocker >= 0 and blocker < blocker_else < snapshot,
+            f'{page_name} must hide Inventory Data Snapshot behind the onboarding blocker.',
+            errors,
+        )
+
     for resource in RESOURCE_NAMES:
         hero = read(f'app/templates/inventory/kubernetes/{resource}/partials/_hero.html')
         table = read(f'app/templates/inventory/kubernetes/{resource}/partials/_table_content.html')
+        workspace = read(f'app/templates/inventory/kubernetes/{resource}/partials/_page_workspace.html')
+        blocker = workspace.find('{% if cluster_onboarding.is_blocked %}')
+        blocker_else = workspace.find('{% else %}', blocker)
+        snapshot = workspace.find('inventory/kubernetes/components/_data_freshness.html')
+        require(
+            blocker >= 0 and blocker < blocker_else < snapshot,
+            f'{resource} must hide Inventory Data Snapshot behind the onboarding blocker.',
+            errors,
+        )
         require(
             'page_hero.context_card(' in hero,
             f'{resource} Hero must use the canonical Status Badge Box context card.',
+            errors,
+        )
+        require(
+            "components/cluster/_hero_blocked_context.html" in hero and 'Inventory Readiness' in hero,
+            f'{resource} Hero must use the shared Kubernetes setup-blocked context.',
             errors,
         )
         require('components/table.html' in table, f'{resource} must use the shared table component.', errors)
@@ -208,8 +269,8 @@ def main() -> int:
     standard = read('docs/design/patterns/INVENTORY_RESOURCE_PAGE.md')
     audit = read('docs/design/audits/KUBERNETES_INVENTORY_FINAL_RECHECK_2026_08.md')
     require(
-        '# Inventory Resource Page Pattern v1.2' in standard,
-        'Inventory Resource Page standard must be v1.2.',
+        '# Inventory Resource Page Pattern v1.3' in standard,
+        'Inventory Resource Page standard must be v1.3.',
         errors,
     )
     for phrase in (
@@ -256,7 +317,7 @@ def main() -> int:
 
     print(
         'KAORI Kubernetes Inventory Final Lock v1 passed: AuthZ-first HTMX blocking, committed-snapshot reads, '
-        'canonical Hero/table/modal/pagination composition, topology DB ownership, zero residual helpers, and L0–L7 '
+        'canonical template routing, blocker-safe Snapshot visibility, Hero/table/modal/pagination composition, topology DB ownership, zero residual helpers, and L0–L7 '
         'release evidence are aligned.'
     )
     return 0

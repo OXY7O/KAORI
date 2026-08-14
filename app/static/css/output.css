@@ -900,6 +900,9 @@
   .min-h-48 {
     min-height: calc(var(--spacing) * 48);
   }
+  .min-h-52 {
+    min-height: calc(var(--spacing) * 52);
+  }
   .min-h-56 {
     min-height: calc(var(--spacing) * 56);
   }
@@ -1466,6 +1469,9 @@
   }
   .min-w-\[1120px\] {
     min-width: 1120px;
+  }
+  .min-w-\[1180px\] {
+    min-width: 1180px;
   }
   .min-w-full {
     min-width: 100%;
@@ -2043,16 +2049,16 @@
   .border-status-critical-border {
     border-color: var(--kaori-status-critical-border);
   }
+  .border-status-critical\/20 {
+    border-color: var(--kaori-status-critical);
+    @supports (color: color-mix(in lab, red, red)) {
+      border-color: color-mix(in oklab, var(--kaori-status-critical) 20%, transparent);
+    }
+  }
   .border-status-critical\/30 {
     border-color: var(--kaori-status-critical);
     @supports (color: color-mix(in lab, red, red)) {
       border-color: color-mix(in oklab, var(--kaori-status-critical) 30%, transparent);
-    }
-  }
-  .border-status-critical\/40 {
-    border-color: var(--kaori-status-critical);
-    @supports (color: color-mix(in lab, red, red)) {
-      border-color: color-mix(in oklab, var(--kaori-status-critical) 40%, transparent);
     }
   }
   .border-status-info-border {
@@ -3096,12 +3102,6 @@
   .ring-status-critical-border {
     --tw-ring-color: var(--kaori-status-critical-border);
   }
-  .ring-status-critical\/10 {
-    --tw-ring-color: var(--kaori-status-critical);
-    @supports (color: color-mix(in lab, red, red)) {
-      --tw-ring-color: color-mix(in oklab, var(--kaori-status-critical) 10%, transparent);
-    }
-  }
   .ring-status-normal-border {
     --tw-ring-color: var(--kaori-status-normal-border);
   }
@@ -3961,6 +3961,14 @@
   .focus\:border-kaori-primary {
     &:focus {
       border-color: var(--kaori-brand-primary);
+    }
+  }
+  .focus\:border-kaori-primary\/50 {
+    &:focus {
+      border-color: var(--kaori-brand-primary);
+      @supports (color: color-mix(in lab, red, red)) {
+        border-color: color-mix(in oklab, var(--kaori-brand-primary) 50%, transparent);
+      }
     }
   }
   .focus\:border-outline-focus {
@@ -5133,11 +5141,6 @@
       height: calc(100dvh - 3rem);
     }
   }
-  .lg\:h-full {
-    @media (width >= 64rem) {
-      height: 100%;
-    }
-  }
   .lg\:h-px {
     @media (width >= 64rem) {
       height: 1px;
@@ -5338,6 +5341,11 @@
       grid-template-columns: minmax(0,1.35fr) minmax(300px,0.65fr);
     }
   }
+  .lg\:grid-cols-\[minmax\(0\,1\.35fr\)_minmax\(320px\,0\.65fr\)\] {
+    @media (width >= 64rem) {
+      grid-template-columns: minmax(0,1.35fr) minmax(320px,0.65fr);
+    }
+  }
   .lg\:grid-cols-\[minmax\(0\,1\.45fr\)_minmax\(18rem\,0\.55fr\)\] {
     @media (width >= 64rem) {
       grid-template-columns: minmax(0,1.45fr) minmax(18rem,0.55fr);
@@ -5356,6 +5364,11 @@
   .lg\:grid-cols-\[minmax\(0\,1fr\)_23rem\] {
     @media (width >= 64rem) {
       grid-template-columns: minmax(0,1fr) 23rem;
+    }
+  }
+  .lg\:grid-cols-\[minmax\(0\,1fr\)_180px_180px_auto\] {
+    @media (width >= 64rem) {
+      grid-template-columns: minmax(0,1fr) 180px 180px auto;
     }
   }
   .lg\:grid-cols-\[minmax\(0\,1fr\)_minmax\(0\,0\.8fr\)\] {
@@ -5662,6 +5675,11 @@
       position: sticky;
     }
   }
+  .xl\:top-4 {
+    @media (width >= 80rem) {
+      top: calc(var(--spacing) * 4);
+    }
+  }
   .xl\:top-5 {
     @media (width >= 80rem) {
       top: calc(var(--spacing) * 5);
@@ -5670,6 +5688,21 @@
   .xl\:top-6 {
     @media (width >= 80rem) {
       top: calc(var(--spacing) * 6);
+    }
+  }
+  .xl\:right-0 {
+    @media (width >= 80rem) {
+      right: 0;
+    }
+  }
+  .xl\:bottom-auto {
+    @media (width >= 80rem) {
+      bottom: auto;
+    }
+  }
+  .xl\:left-9 {
+    @media (width >= 80rem) {
+      left: calc(var(--spacing) * 9);
     }
   }
   .xl\:col-span-1 {
@@ -5735,6 +5768,16 @@
   .xl\:h-full {
     @media (width >= 80rem) {
       height: 100%;
+    }
+  }
+  .xl\:h-px {
+    @media (width >= 80rem) {
+      height: 1px;
+    }
+  }
+  .xl\:w-auto {
+    @media (width >= 80rem) {
+      width: auto;
     }
   }
   .xl\:shrink-0 {
