@@ -15,6 +15,7 @@ REQUIRED = (
     'app/templates/inventory/object_storage/components/_hero_blocked_context.html',
     'app/templates/inventory/object_storage/components/_onboarding_banner.html',
     'app/templates/inventory/object_storage/components/_snapshot_context.html',
+    'migrations/versions/20260814_object_storage_rbac_split.py',
     'app/templates/inventory/object_storage/systems/partials/_snapshot_boundary.html',
     'app/templates/inventory/object_storage/buckets/partials/_snapshot_boundary.html',
     'app/templates/inventory/object_storage/systems/partials/_table_content.html',
@@ -62,7 +63,7 @@ def main() -> int:
 
     for token in (
         "url_prefix='/storage/object-storage'",
-        "@permission_required('inventory.view')",
+        "@permission_required('object_storage_inventory.view')",
         'build_overview(',
         'build_systems(',
         'build_buckets(',
@@ -101,6 +102,15 @@ def main() -> int:
     for token in ('Object Storage Setup Required', 'Registered Systems', 'Workspace State', 'Blocked'):
         if token not in blocker:
             errors.append(f'Object Storage blocked Hero contract missing: {token}')
+
+    for relative in (
+        'app/templates/inventory/object_storage/overview/partials/_hero.html',
+        'app/templates/inventory/object_storage/systems/partials/_hero.html',
+        'app/templates/inventory/object_storage/buckets/partials/_hero.html',
+    ):
+        hero_source = read(relative)
+        if 'page_hero.aside_classes()' not in hero_source:
+            errors.append(f'Object Storage blocked Hero must retain canonical aside geometry: {relative}')
 
     for token in ("url_for('integrations.storage')", 'settings.manage_integrations', 'Register Your First Object Storage System'):
         if token not in onboarding:
@@ -144,7 +154,7 @@ def main() -> int:
             print(f'- {error}')
         return 1
 
-    print('PASS — KAORI Object Storage Inventory Final Lock v1.1')
+    print('PASS — KAORI Object Storage Inventory Final Lock v1.2')
     return 0
 
 

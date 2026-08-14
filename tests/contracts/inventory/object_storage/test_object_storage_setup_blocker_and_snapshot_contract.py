@@ -27,6 +27,7 @@ def test_object_storage_overview_hides_inventory_evidence_while_setup_is_blocked
     assert "Committed Inventory" in hero
     assert "Object Storage Setup Required" in hero
     assert "inventory/object_storage/components/_hero_blocked_context.html" in hero
+    assert 'page_hero.aside_classes()' in hero
 
 
 def test_systems_and_buckets_use_setup_blocker_and_inventory_data_snapshot() -> None:
@@ -41,6 +42,7 @@ def test_systems_and_buckets_use_setup_blocker_and_inventory_data_snapshot() -> 
         assert "Committed Inventory" in hero
         assert "Object Storage Setup Required" in hero
         assert "inventory/object_storage/components/_hero_blocked_context.html" in hero
+        assert 'page_hero.aside_classes()' in hero
 
 
 def test_object_storage_setup_banner_is_integration_owned_and_permission_aware() -> None:

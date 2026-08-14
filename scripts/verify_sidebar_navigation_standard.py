@@ -170,6 +170,20 @@ def verify() -> None:
     sources = {filename: _read(NAVIGATION_DIR / filename) for filename in MENU_TEMPLATES}
     sources['sidebar.html'] = sidebar
 
+    for token in (
+        "has_permission('inventory.view')",
+        "has_permission('object_storage_inventory.view')",
+        "has_permission('analytics.view')",
+        "has_permission('object_storage_analytics.view')",
+    ):
+        if token not in sidebar:
+            raise AssertionError(f'sidebar.html: missing domain-specific visibility guard {token}')
+    analytics_menu = sources['analytics_menu.html']
+    if '{% if can_kubernetes_analytics %}' not in analytics_menu:
+        raise AssertionError('analytics_menu.html: Kubernetes Analytics must use its dedicated visibility branch')
+    if '{% if can_object_storage_analytics %}' not in analytics_menu:
+        raise AssertionError('analytics_menu.html: Object Storage Analytics must use its dedicated visibility branch')
+
     parent_count = 0
     submenu_count = 0
     for filename, source in sources.items():

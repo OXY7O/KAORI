@@ -81,3 +81,14 @@ RBAC routes do not use Flask flash messages. Mutation outcomes are recorded thro
 `seed_default_rbac()` is a governed command/bootstrap operation, not an HTTP read-path side effect. Access pages must never call it from GET routes or presentation builders. Permission Catalog compares `DEFAULT_PERMISSIONS` with the persisted registry and reports drift without mutating it.
 
 `flask seed-rbac` may create missing canonical permissions, synchronize canonical metadata, converge protected default roles, and normalize default-role mappings. Database-only permission rows are not silently deleted by Permission Catalog; operators must review role usage before any controlled cleanup migration.
+
+## Object Storage domain split
+
+Object Storage visibility does not inherit the Kubernetes read permissions. Canonical read contracts are:
+
+- `inventory.view` — Kubernetes Inventory only;
+- `object_storage_inventory.view` — committed Object Storage Inventory;
+- `analytics.view` — Kubernetes Analytics only;
+- `object_storage_analytics.view` — Object Storage Analytics.
+
+`storage.sync` depends on `object_storage_inventory.view` and `jobs.execute`. The 2026-08-14 RBAC split migration preserves existing role access by copying legacy `inventory.view` and `analytics.view` role assignments to the new Object Storage permissions before routes begin enforcing them.

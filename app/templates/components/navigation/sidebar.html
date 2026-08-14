@@ -1,6 +1,8 @@
 {% set can_dashboard = current_user.is_authenticated and current_user.has_permission('dashboard.view') %}
-{% set can_inventory = current_user.is_authenticated and current_user.has_permission('inventory.view') %}
-{% set can_analytics = current_user.is_authenticated and current_user.has_permission('analytics.view') %}
+{% set can_kubernetes_inventory = current_user.is_authenticated and current_user.has_permission('inventory.view') %}
+{% set can_object_storage_inventory = current_user.is_authenticated and current_user.has_permission('object_storage_inventory.view') %}
+{% set can_kubernetes_analytics = current_user.is_authenticated and current_user.has_permission('analytics.view') %}
+{% set can_object_storage_analytics = current_user.is_authenticated and current_user.has_permission('object_storage_analytics.view') %}
 {% set can_intelligence = current_user.is_authenticated and current_user.has_permission('intelligence.view') %}
 {% set can_operations = current_user.is_authenticated and (
     current_user.has_permission('kubernetes_secrets.view')
@@ -71,11 +73,11 @@
                 </div>
             </div>
         {% endif %}
-        {% if can_inventory or can_operations or can_governance %}
+        {% if can_kubernetes_inventory or can_operations or can_governance %}
             <div class="sidebar-nav-section">
                 <div class="sidebar-expanded-only mb-1.5 px-3 sidebar-section-label text-xs font-extrabold uppercase tracking-widest">Kubernetes</div>
                 <div class="space-y-1">
-                    {% if can_inventory %}
+                    {% if can_kubernetes_inventory %}
                         {% include "components/navigation/inventory_menu.html" %}
                     {% endif %}
                     {% if can_operations %}
@@ -87,17 +89,17 @@
                 </div>
             </div>
         {% endif %}
-        {% if can_inventory %}
+        {% if can_object_storage_inventory %}
             <div class="sidebar-nav-section">
                 <div class="sidebar-expanded-only mb-1.5 px-3 sidebar-section-label text-xs font-extrabold uppercase tracking-widest">Storage</div>
                 <div class="space-y-1">{% include "components/navigation/object_storage_menu.html" %}</div>
             </div>
         {% endif %}
-        {% if can_analytics or can_intelligence or can_reports %}
+        {% if can_kubernetes_analytics or can_object_storage_analytics or can_intelligence or can_reports %}
             <div class="sidebar-nav-section">
                 <div class="sidebar-expanded-only mb-1.5 px-3 sidebar-section-label text-xs font-extrabold uppercase tracking-widest">Insights &amp; Reporting</div>
                 <div class="space-y-1">
-                    {% if can_analytics %}
+                    {% if can_kubernetes_analytics or can_object_storage_analytics %}
                         {% include "components/navigation/analytics_menu.html" %}
                     {% endif %}
                     {% if can_intelligence %}

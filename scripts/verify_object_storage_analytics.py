@@ -119,7 +119,7 @@ def main() -> int:
         'object_storage_alert_table',
     ):
         assert f'def {endpoint}' in routes
-        assert "@permission_required('analytics.view')" in routes
+        assert "@permission_required('object_storage_analytics.view')" in routes
         if endpoint not in {'object_storage_bucket_table', 'object_storage_alert_table'}:
             assert f'analytics.{endpoint}' in menu
 

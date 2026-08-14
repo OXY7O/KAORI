@@ -108,7 +108,7 @@ def test_object_storage_manual_execution_has_domain_permission_and_migration() -
     assert "'operator': {" in defaults and "'editor': {" in defaults
     role_defaults = defaults.split('DEFAULT_ROLE_PERMISSIONS = {', 1)[1]
     assert role_defaults.count("        'storage.sync',") == 2
-    assert "'storage.sync': {'inventory.view', 'jobs.execute'}" in service
+    assert "'storage.sync': {'object_storage_inventory.view', 'jobs.execute'}" in service
     assert "revision = '20260813_obj_storage_jobs'" in migration
     assert "down_revision = '20260812_obj_storage_inv'" in migration
     assert "ROLE_NAMES = ('operator', 'editor', 'admin')" in migration

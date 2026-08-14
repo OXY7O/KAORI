@@ -218,12 +218,22 @@ def main() -> int:
             errors,
         )
 
-    permission_guards = sum(
-        read(str(path.relative_to(ROOT))).count("@permission_required('analytics.view')") for path in ROUTE_FILES
+    kubernetes_route_files = tuple(path for path in ROUTE_FILES if 'object_storage' not in str(path))
+    kubernetes_permission_guards = sum(
+        read(str(path.relative_to(ROOT))).count("@permission_required('analytics.view')")
+        for path in kubernetes_route_files
+    )
+    object_storage_permission_guards = read('app/analytics/object_storage/routes.py').count(
+        "@permission_required('object_storage_analytics.view')"
     )
     require(
-        permission_guards >= 19,
-        'Expected every Analytics full/fragment route to retain analytics.view authorization.',
+        kubernetes_permission_guards >= 19,
+        'Expected every Kubernetes Analytics full/fragment route to retain analytics.view authorization.',
+        errors,
+    )
+    require(
+        object_storage_permission_guards == 8,
+        'Expected every Object Storage Analytics full/fragment route to retain object_storage_analytics.view authorization.',
         errors,
     )
     route_source = '\n'.join(read(str(path.relative_to(ROOT))) for path in ROUTE_FILES)

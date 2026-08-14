@@ -18,37 +18,37 @@ def _render(page_key: str) -> ResponseReturnValue:
     )
 
 
-@permission_required('analytics.view')
+@permission_required('object_storage_analytics.view')
 def object_storage_overview() -> ResponseReturnValue:
     return _render('overview')
 
 
-@permission_required('analytics.view')
+@permission_required('object_storage_analytics.view')
 def object_storage_capacity() -> ResponseReturnValue:
     return _render('capacity')
 
 
-@permission_required('analytics.view')
+@permission_required('object_storage_analytics.view')
 def object_storage_performance() -> ResponseReturnValue:
     return _render('performance')
 
 
-@permission_required('analytics.view')
+@permission_required('object_storage_analytics.view')
 def object_storage_forecast() -> ResponseReturnValue:
     return _render('forecast')
 
 
-@permission_required('analytics.view')
+@permission_required('object_storage_analytics.view')
 def object_storage_top_consumers() -> ResponseReturnValue:
     return _render('top_consumers')
 
 
-@permission_required('analytics.view')
+@permission_required('object_storage_analytics.view')
 def object_storage_alerts() -> ResponseReturnValue:
     return _render('alerts')
 
 
-@permission_required('analytics.view')
+@permission_required('object_storage_analytics.view')
 def object_storage_bucket_table() -> ResponseReturnValue:
     page_key = str(request.args.get('page_key') or 'overview').strip()
     return render_template(
@@ -57,7 +57,7 @@ def object_storage_bucket_table() -> ResponseReturnValue:
     )
 
 
-@permission_required('analytics.view')
+@permission_required('object_storage_analytics.view')
 def object_storage_alert_table() -> ResponseReturnValue:
     return render_template(
         'analytics/object_storage/partials/_alert_records.html',

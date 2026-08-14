@@ -16,7 +16,7 @@ ROLE_SLUG_PATTERN = re.compile(r'[^a-z0-9_]+')
 PERMISSION_DEPENDENCIES: dict[str, set[str]] = {
     'clusters.manage': {'clusters.view'},
     'clusters.sync': {'clusters.view', 'jobs.execute'},
-    'storage.sync': {'inventory.view', 'jobs.execute'},
+    'storage.sync': {'object_storage_inventory.view', 'jobs.execute'},
     'kubernetes_configmaps.create': {'kubernetes_configmaps.view'},
     'kubernetes_configmaps.update': {'kubernetes_configmaps.view'},
     'kubernetes_configmaps.delete': {'kubernetes_configmaps.view'},

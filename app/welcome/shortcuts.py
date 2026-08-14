@@ -86,6 +86,17 @@ WELCOME_SHORTCUT_DEFINITIONS: tuple[dict[str, Any], ...] = (
         'targets': (('inventory.view', 'inventory.overview'),),
     },
     {
+        'title': 'Object Storage Inventory',
+        'label': 'Storage Asset Visibility',
+        'description': (
+            'Review committed object-storage systems, buckets, containers, coverage, and inventory posture across registered providers.'
+        ),
+        'icon': 'database',
+        'scope': 'Storage',
+        'group': 'visibility',
+        'targets': (('object_storage_inventory.view', 'object_storage_inventory.overview'),),
+    },
+    {
         'title': 'Kubernetes Analytics',
         'label': 'Operational Analytics',
         'description': (
@@ -95,6 +106,17 @@ WELCOME_SHORTCUT_DEFINITIONS: tuple[dict[str, Any], ...] = (
         'scope': 'Compute',
         'group': 'visibility',
         'targets': (('analytics.view', 'analytics.overview'),),
+    },
+    {
+        'title': 'Object Storage Analytics',
+        'label': 'Storage Analytics',
+        'description': (
+            'Analyze object-storage capacity, performance, forecasts, top consumers, and alert signals across registered systems.'
+        ),
+        'icon': 'chart-no-axes-combined',
+        'scope': 'Storage',
+        'group': 'visibility',
+        'targets': (('object_storage_analytics.view', 'analytics.object_storage_overview'),),
     },
     {
         'title': 'Intelligence',

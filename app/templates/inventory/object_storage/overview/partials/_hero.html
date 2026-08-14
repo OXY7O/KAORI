@@ -18,9 +18,12 @@
             {% endcall %}
         </div>
         {% if overview.setup.is_blocked %}
-            {% set storage_blocked_scope = 'Inventory Readiness' %}
-            {% set storage_blocked_info = 'Register a Storage integration to activate committed system, bucket, and container inventory.' %}
-            {% include 'inventory/object_storage/components/_hero_blocked_context.html' %}
+            <aside class="{{ page_hero.aside_classes() }}"
+                   aria-label="Object Storage inventory availability">
+                {% set storage_blocked_scope = 'Inventory Readiness' %}
+                {% set storage_blocked_info = 'Register a Storage integration to activate committed system, bucket, and container inventory.' %}
+                {% include 'inventory/object_storage/components/_hero_blocked_context.html' %}
+            </aside>
         {% else %}
             {{ page_hero.context_card('Object Storage Inventory Posture',
                     'Inventory Posture',

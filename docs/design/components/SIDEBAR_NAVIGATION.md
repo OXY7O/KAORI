@@ -444,3 +444,16 @@ Before accepting a sidebar change, verify:
 ## Platform Operations ownership
 
 Integrations is grouped under the **Platform Operations** sidebar section rather than a standalone `Platform Extensions` section. It remains an independent root menu alongside **Operations Center**; `Notification Channels` and provider/domain-specific destinations remain children of the Integrations root. The section therefore expresses shared platform ownership without merging the two workspaces or expanding provider-specific roots across the application shell.
+
+## Asset-domain authorization ownership
+
+Sidebar section membership does not imply shared authorization. Kubernetes and Object Storage read surfaces use independent visibility permissions:
+
+```text
+Kubernetes Inventory      inventory.view
+Object Storage Inventory  object_storage_inventory.view
+Kubernetes Analytics      analytics.view
+Object Storage Analytics  object_storage_analytics.view
+```
+
+`analytics_menu.html` may render both analytics parents inside the same `Insights & Reporting` section, but each parent is independently permission-gated. The `Storage` section is rendered only when `object_storage_inventory.view` is granted. Template visibility remains secondary to the server-side route decorator.

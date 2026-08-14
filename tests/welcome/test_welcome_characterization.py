@@ -99,3 +99,19 @@ def test_workspace_catalog_deduplicates_multi_permission_workspace_and_keeps_gro
     assert platform_operations[0]['href'] == '/endpoint/platform_operations.overview.index'
     assert operations_group['shortcut_count'] == 1
     assert [shortcut['title'] for shortcut in operations_group['shortcuts']] == ['Platform Operations']
+
+
+def test_object_storage_workspaces_are_discoverable_independently_from_kubernetes(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    module = _load_shortcuts(
+        monkeypatch,
+        {'object_storage_inventory.view', 'object_storage_analytics.view'},
+    )
+
+    shortcuts = _flatten(module.build_welcome_workspace_groups())
+    titles = [shortcut['title'] for shortcut in shortcuts]
+
+    assert titles == ['Object Storage Inventory', 'Object Storage Analytics', 'Settings']
+    assert 'Kubernetes Inventory' not in titles
+    assert 'Kubernetes Analytics' not in titles

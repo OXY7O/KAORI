@@ -28,7 +28,7 @@ def test_object_storage_inventory_is_registered_as_read_only_inventory_domain() 
 
     assert 'object_storage_inventory_bp' in blueprints
     assert "url_prefix='/storage/object-storage'" in routes
-    assert routes.count("@permission_required('inventory.view')") >= 5
+    assert routes.count("@permission_required('object_storage_inventory.view')") >= 5
     assert "@object_storage_inventory_bp.get('/')" in routes
     assert "@object_storage_inventory_bp.get('/systems')" in routes
     assert "@object_storage_inventory_bp.get('/buckets')" in routes
@@ -98,3 +98,20 @@ def test_object_storage_bucket_migration_follows_minio_provider_branch() -> None
     assert "'object_storage_buckets'" in migration
     assert "'inventory_observed_at'" in migration
     assert "'uq_object_storage_bucket_system_name'" in migration
+
+
+def test_object_storage_inventory_uses_dedicated_rbac_and_preserves_existing_role_access() -> None:
+    defaults = read('app/rbac/defaults.py')
+    service = read('app/rbac/service.py')
+    migration = read('migrations/versions/20260814_object_storage_rbac_split.py')
+    sidebar = read('app/templates/components/navigation/sidebar.html')
+
+    assert "'object_storage_inventory.view'" in defaults
+    assert "'storage_inventory'" in defaults
+    assert "'storage.sync': {'object_storage_inventory.view', 'jobs.execute'}" in service
+    assert "revision = '20260814_obj_storage_rbac'" in migration
+    assert "down_revision = '20260814_report_notify_channels'" in migration
+    assert "'inventory.view'" in migration
+    assert '_copy_role_assignments' in migration
+    assert "has_permission('object_storage_inventory.view')" in sidebar
+    assert "has_permission('inventory.view')" in sidebar

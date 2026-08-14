@@ -104,7 +104,9 @@ def test_welcome_catalog_matches_current_primary_navigation_domains() -> None:
     expected_titles = (
         'Dashboards',
         'Kubernetes Inventory',
+        'Object Storage Inventory',
         'Kubernetes Analytics',
+        'Object Storage Analytics',
         'Intelligence',
         'Integrations',
         'Platform Operations',
@@ -124,3 +126,13 @@ def test_welcome_catalog_matches_current_primary_navigation_domains() -> None:
     assert "'title': 'Integrations'" in shortcuts
     platform_block = shortcuts.split("'title': 'Platform Operations'", 1)[1].split("'title': 'Kubernetes Operations'", 1)[0]
     assert "settings.manage_integrations" not in platform_block
+
+
+def test_welcome_object_storage_cards_use_dedicated_permissions() -> None:
+    shortcuts = (ROOT / 'app/welcome/shortcuts.py').read_text(encoding='utf-8')
+
+    assert "'title': 'Object Storage Inventory'" in shortcuts
+    assert "('object_storage_inventory.view', 'object_storage_inventory.overview')" in shortcuts
+    assert "'title': 'Object Storage Analytics'" in shortcuts
+    assert "('object_storage_analytics.view', 'analytics.object_storage_overview')" in shortcuts
+    assert "'scope': 'Storage'" in shortcuts

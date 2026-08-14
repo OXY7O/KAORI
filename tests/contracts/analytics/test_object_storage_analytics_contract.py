@@ -62,6 +62,23 @@ def test_object_storage_analytics_exposes_kubernetes_style_surface_set() -> None
         assert f'analytics.{endpoint}' in menu
 
 
+
+def test_object_storage_analytics_uses_dedicated_rbac_and_sidebar_visibility() -> None:
+    routes = read('app/analytics/object_storage/routes.py')
+    defaults = read('app/rbac/defaults.py')
+    sidebar = read('app/templates/components/navigation/sidebar.html')
+    menu = read('app/templates/components/navigation/analytics_menu.html')
+    migration = read('migrations/versions/20260814_object_storage_rbac_split.py')
+
+    assert routes.count("@permission_required('object_storage_analytics.view')") == 8
+    assert "'object_storage_analytics.view'" in defaults
+    assert "'storage_analytics'" in defaults
+    assert "has_permission('object_storage_analytics.view')" in sidebar
+    assert '{% if can_object_storage_analytics %}' in menu
+    assert '{% if can_kubernetes_analytics %}' in menu
+    assert "'analytics.view'" in migration
+    assert '_copy_role_assignments' in migration
+
 def test_object_storage_alert_sources_are_alertmanager_first_with_prometheus_fallback() -> None:
     source = read('app/analytics/object_storage/alert_sources.py')
     boundary = read('app/templates/analytics/object_storage/partials/_evidence_boundary.html')

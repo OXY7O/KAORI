@@ -75,3 +75,17 @@ def test_welcome_browser_filter_has_no_capability_network_discovery() -> None:
         assert network_api not in script
     assert "querySelectorAll('[data-workspace-card]')" in script
     assert 'card.hidden = !matches' in script
+
+
+def test_storage_workspace_metadata_requires_storage_specific_permissions(monkeypatch: pytest.MonkeyPatch) -> None:
+    module = _load_shortcuts(monkeypatch, {'inventory.view', 'analytics.view'})
+    titles = {shortcut['title'] for shortcut in _flatten(module.build_welcome_workspace_groups())}
+    assert 'Object Storage Inventory' not in titles
+    assert 'Object Storage Analytics' not in titles
+
+    module = _load_shortcuts(monkeypatch, {'object_storage_inventory.view', 'object_storage_analytics.view'})
+    titles = {shortcut['title'] for shortcut in _flatten(module.build_welcome_workspace_groups())}
+    assert 'Object Storage Inventory' in titles
+    assert 'Object Storage Analytics' in titles
+    assert 'Kubernetes Inventory' not in titles
+    assert 'Kubernetes Analytics' not in titles

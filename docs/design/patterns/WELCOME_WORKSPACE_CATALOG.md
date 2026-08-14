@@ -97,3 +97,16 @@ The canonical quality gate runs the Welcome verifier directly, executes permanen
 ## Workspace ownership refinement
 
 Integrations remains a standalone Welcome workspace because it is an independent root menu. It is grouped with **Platform Operations** under the `Act / Infrastructure Operations` capability area, while provider/domain navigation remains inside the Integrations workspace. The Platform Operations card must not inherit `settings.manage_integrations`; each workspace is discovered only through its own authorization boundary.
+
+## Cross-domain visibility workspaces
+
+Inventory and Analytics cards are permission-owned by their asset domain. Kubernetes permissions must not implicitly reveal Object Storage workspaces.
+
+```text
+Kubernetes Inventory      → inventory.view
+Object Storage Inventory  → object_storage_inventory.view
+Kubernetes Analytics      → analytics.view
+Object Storage Analytics  → object_storage_analytics.view
+```
+
+Object Storage Inventory and Analytics use the `Storage` scope and live in `Understand / Visibility & Operational Insight`. They remain separate workspaces because committed inventory and operational analytics have different evidence boundaries and authorization contracts.

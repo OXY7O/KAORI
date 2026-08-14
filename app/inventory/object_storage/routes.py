@@ -43,7 +43,7 @@ def _setup_blocked_htmx(inventory: dict[str, object]) -> ResponseReturnValue | N
 
 
 @object_storage_inventory_bp.get('/')
-@permission_required('inventory.view')
+@permission_required('object_storage_inventory.view')
 def overview() -> ResponseReturnValue:
     overview_context = build_overview(
         system_page=request.args.get('system_page', 1, type=int) or 1,
@@ -64,7 +64,7 @@ def overview() -> ResponseReturnValue:
 
 
 @object_storage_inventory_bp.get('/systems')
-@permission_required('inventory.view')
+@permission_required('object_storage_inventory.view')
 def systems() -> ResponseReturnValue:
     filters = SystemFilters(
         search=request.args.get('search', '', type=str),
@@ -89,7 +89,7 @@ def systems() -> ResponseReturnValue:
 
 
 @object_storage_inventory_bp.get('/systems/<string:system_id>/details')
-@permission_required('inventory.view')
+@permission_required('object_storage_inventory.view')
 def system_details(system_id: str) -> ResponseReturnValue:
     system = build_system_detail(system_id)
     if system is None:
@@ -98,7 +98,7 @@ def system_details(system_id: str) -> ResponseReturnValue:
 
 
 @object_storage_inventory_bp.get('/buckets')
-@permission_required('inventory.view')
+@permission_required('object_storage_inventory.view')
 def buckets() -> ResponseReturnValue:
     filters = BucketFilters(
         search=request.args.get('search', '', type=str),
@@ -125,7 +125,7 @@ def buckets() -> ResponseReturnValue:
 
 
 @object_storage_inventory_bp.get('/buckets/<int:bucket_id>/details')
-@permission_required('inventory.view')
+@permission_required('object_storage_inventory.view')
 def bucket_details(bucket_id: int) -> ResponseReturnValue:
     bucket = build_bucket_detail(bucket_id)
     if bucket is None:

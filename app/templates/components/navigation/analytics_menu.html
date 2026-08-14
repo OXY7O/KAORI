@@ -1,5 +1,6 @@
 {% set object_storage_analytics_active = request.endpoint and request.endpoint.startswith('analytics.object_storage_') %}
 {% set kubernetes_analytics_active = request.endpoint and request.endpoint.startswith('analytics.') and not object_storage_analytics_active %}
+{% if can_kubernetes_analytics %}
 <details class="sidebar-menu space-y-1"
          {% if kubernetes_analytics_active %}open{% endif %}>
     <!-- Analytics Parent -->
@@ -69,6 +70,8 @@
     </div>
 </details>
 
+{% endif %}
+{% if can_object_storage_analytics %}
 <details class="sidebar-menu space-y-1"
          {% if object_storage_analytics_active %}open{% endif %}>
     <summary class="{{ 'sidebar-parent-active' if object_storage_analytics_active else 'sidebar-item-idle' }} sidebar-parent-link group flex cursor-pointer select-none items-center justify-between min-h-11 rounded-lg px-2.5 py-2 text-base font-semibold leading-6 transition [.sidebar-collapsed_&]:justify-center [.sidebar-collapsed_&]:px-2"
@@ -93,3 +96,4 @@
         <a href="{{ url_for('analytics.object_storage_alerts') }}" class="{{ 'bg-white/[0.08] text-kaori-accent' if request.endpoint == 'analytics.object_storage_alerts' else 'sidebar-item-idle' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm leading-5 transition"><span class="h-1.5 w-1.5 rounded-full {{ 'bg-kaori-accent' if request.endpoint == 'analytics.object_storage_alerts' else 'bg-white/20 group-hover:bg-white/[0.45]' }}"></span><i data-lucide="triangle-alert" class="h-3.5 w-3.5"></i><span class="truncate whitespace-nowrap">Alerts &amp; Anomalies</span></a>
     </div>
 </details>
+{% endif %}
