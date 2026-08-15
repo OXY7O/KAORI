@@ -46,3 +46,13 @@ The final polish locks these decisions:
 ## Definition Registry boundary
 
 System-owned report contracts and worker definitions remain Definition Registry data. Static contracts must validate canonical YAML plus the Python adapter/registry boundary rather than requiring definition literals to be copied back into Python modules.
+
+## Final visual refinement
+
+The final composition removes the narrow Artifact-versus-wide-Content split. Artifact output is a compact full-width contract row, Report Content owns its own full-width section, and Review & Queue uses four equal request-summary dimensions: Report, Scope, Output, and Content. This keeps the sequential 01–05 workflow while avoiding nested cards, narrow explanatory panels, and unused horizontal space.
+
+The Artifact Contract presents the Output Format selector beside an inline Selected Output Contract. The output contract uses a left accent rule rather than an additional card surface, so the operator can read the canonical default and allowed formats without creating a box-within-box hierarchy.
+
+## Migration graph alignment
+
+`20260815_report_asset_scope` is rebased onto `20260814_obj_storage_rbac`, the current preceding head in the cumulative KAORI migration graph. This is intentional because the report asset-scope revision had not been applied: `flask db upgrade` stopped on the multiple-head condition before executing the revision. Reparenting the unapplied revision restores a single linear head without introducing a permanent merge-only migration.

@@ -42,6 +42,7 @@ def test_report_and_schedule_models_persist_generic_asset_scope_with_backfill_mi
     assert "_add_scope_columns('reports')" in migration
     assert "_add_scope_columns('report_schedules')" in migration
     assert "scope_asset_type='kubernetes_cluster'" in migration
+    assert "down_revision = '20260814_obj_storage_rbac'" in migration
     assert 'OBJECT_STORAGE_SYSTEM_ASSET_TYPE' in scope
     assert 'resolve_report_scope' in scope
 

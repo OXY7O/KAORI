@@ -6,7 +6,7 @@ import sqlalchemy as sa
 from alembic import op
 
 revision = '20260815_report_asset_scope'
-down_revision = '20260814_report_notify_channels'
+down_revision = '20260814_obj_storage_rbac'
 branch_labels = None
 depends_on = None
 

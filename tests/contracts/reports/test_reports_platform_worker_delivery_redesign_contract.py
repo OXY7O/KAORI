@@ -259,10 +259,12 @@ def test_generate_report_uses_the_canonical_family_format_and_scope_contract() -
     assert 'filter_current_generation(query, model)' in inventory_payload
     assert 'query = query.filter(model.cluster_id == cluster_id)' in inventory_payload
 
-    assert "('kubernetes', 'Kubernetes')" in generate_template
-    assert "('object_storage', 'Object Storage')" in generate_template
-    assert "('analytics', 'Analytics')" in generate_template
-    assert "('inventory', 'Inventory')" in generate_template
+    assert 'payload.report_type_groups' in generate_template
+    assert 'data-report-contract-group="{{ group.key }}"' in generate_template
+    assert "'report_type_groups': _get_report_type_groups()" in generate_service
+    assert 'def _get_report_type_groups()' in generate_service
+    assert "('kubernetes', 'Kubernetes')" not in generate_template
+    assert "('object_storage', 'Object Storage')" not in generate_template
     assert 'data-report-family-filter=' not in generate_template
     assert 'data-report-type-card=' not in generate_template
     assert "'value': 'snapshot'" in generate_service

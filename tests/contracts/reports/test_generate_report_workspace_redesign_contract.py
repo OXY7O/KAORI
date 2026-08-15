@@ -52,23 +52,26 @@ def test_generate_report_uses_two_primary_configuration_zones_and_compact_review
         'data-generate-step="report"',
         'data-generate-step="scope"',
         'data-generate-step="artifact"',
+        'data-generate-step="content"',
         'data-generate-step="summary"',
     ):
         assert marker in source
 
     assert 'Report Contract' in source
     assert 'Infrastructure Scope' in source
+    assert 'Artifact Contract' in source
     assert 'Report Content' in source
     assert 'Review & Queue' in source
     assert 'Review the request summary before it is queued for artifact generation.' in source
     assert 'aria-label="Request readiness"' in source
-    review_header = source.split('data-generate-section-header="review-queue"', 1)[1].split('<div class="mt-3 grid', 1)[
-        0
-    ]
-    assert 'preview-eligibility-status' not in review_header
+    assert source.index('data-report-request-summary="true"') < source.index('preview-eligibility-status')
     assert 'Create & Queue Report' in source
     assert "table_label.status_indicator_label(payload.worker_context.label" not in source
     assert 'xl:grid-cols-2 xl:divide-x xl:divide-outline-default' in source
+    assert 'lg:grid-cols-[minmax(0,18rem)_minmax(0,1fr)]' in source
+    assert 'lg:grid-cols-[15rem_minmax(0,1fr)]' not in source
+    assert 'data-report-request-summary="true"' in source
+    assert 'xl:grid-cols-4' in source
     assert '01 Choose Report' not in source
     assert '02 Define Scope' not in source
     assert '03 Configure Artifact' not in source
@@ -193,7 +196,7 @@ def test_generate_report_typography_and_summary_are_visually_hierarchical() -> N
     for heading in (
         'Report Contract',
         'Infrastructure Scope',
-        'Artifact',
+        'Artifact Contract',
         'Report Content',
         'Review & Queue',
     ):
