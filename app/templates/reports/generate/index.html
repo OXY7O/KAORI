@@ -131,7 +131,7 @@
                         </span>
                         <div class="min-w-0">
                             <h2 class="text-base font-bold text-content-primary">Configure Report Request</h2>
-                            <p class="mt-1 text-xs leading-5 text-content-muted">Choose the report contract, bind its Kubernetes scope, then define the artifact before queueing.</p>
+                            <p class="mt-1 text-xs leading-5 text-content-muted">Choose a published report contract, bind its infrastructure scope, then define output and content before queueing.</p>
                         </div>
                     </div>
                     {{ table_label.metadata_label('Single Cluster Artifact', 'crosshair') }}
@@ -303,6 +303,20 @@
                                 <p class="text-xs font-semibold text-content-secondary">Supported Formats</p>
                                 <p id="output-format-contract"
                                    class="mt-1 text-xs leading-5 text-content-muted">{{ payload.selected_report_type.allowed_formats|join(" · ") |upper }}</p>
+                            </div>
+                            <div class="mt-4 rounded-xl border border-outline-subtle bg-surface-subtle px-3 py-3"
+                                 data-report-format-policy="true">
+                                <p class="text-xs font-bold text-content-primary">Format Policy</p>
+                                <div class="mt-2 divide-y divide-outline-subtle border-y border-outline-subtle">
+                                    <div class="flex items-center justify-between gap-3 py-2">
+                                        <span class="text-xs font-semibold text-content-secondary">Analytics</span>
+                                        <span class="text-right text-xs font-bold text-content-primary">PDF default · CSV data export</span>
+                                    </div>
+                                    <div class="flex items-center justify-between gap-3 py-2">
+                                        <span class="text-xs font-semibold text-content-secondary">Inventory</span>
+                                        <span class="text-right text-xs font-bold text-content-primary">XLSX default · CSV flat export</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         <div class="min-w-0 lg:border-l lg:border-outline-subtle lg:pl-6">
