@@ -53,9 +53,7 @@ def test_kubernetes_reports_require_one_selected_cluster() -> None:
 
 
 def test_object_storage_reports_require_object_storage_scope_without_cluster() -> None:
-    object_storage_specs = [
-        spec for spec in REPORT_TYPE_SPECS if spec.scope_asset_type == 'object_storage_system'
-    ]
+    object_storage_specs = [spec for spec in REPORT_TYPE_SPECS if spec.scope_asset_type == 'object_storage_system']
     assert {spec.value for spec in object_storage_specs} == {
         'object_storage_inventory',
         'object_storage_analysis',

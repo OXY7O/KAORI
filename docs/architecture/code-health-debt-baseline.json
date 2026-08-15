@@ -121,7 +121,6 @@
     "app/reports/export/html_pdf/storage_analysis.py::build_storage_analysis_presentation": 472,
     "app/reports/export/html_pdf/top_consumers_analysis.py::build_top_consumers_analysis_presentation": 236,
     "app/reports/export/html_pdf/workload_analysis.py::build_workload_analysis_presentation": 174,
-    "app/reports/generated/service.py::get_report_detail_recommended_actions": 165,
     "app/reports/storage/service.py::build_report_cleanup_dry_run": 167,
     "app/reports/storage/service.py::get_report_storage_backend_status": 194,
     "app/retention/service.py::_execute_archive": 166
@@ -144,7 +143,7 @@
     "app/reports/export/html_pdf/storage_analysis.py": 1221,
     "app/reports/export/html_pdf/workload_analysis.py": 1000,
     "app/reports/generate/service.py": 961,
-    "app/reports/generated/service.py": 2275,
+    "app/reports/generated/service.py": 1688,
     "app/reports/overview/service.py": 1075,
     "app/reports/schedules/service.py": 1197,
     "app/reports/storage/service.py": 1417,

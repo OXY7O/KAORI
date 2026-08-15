@@ -10,6 +10,7 @@ from flask.typing import ResponseReturnValue
 from flask_login import current_user
 from werkzeug.exceptions import HTTPException
 
+from app.auth.session import safe_next_url
 from app.notifications.service import record_operational_activity
 from app.rbac.decorators import permission_required
 from app.reports.generated.service import (
@@ -26,6 +27,13 @@ logger = logging.getLogger(__name__)
 
 def _current_user_id() -> int:
     return int(getattr(current_user, 'id', 0) or 0)
+
+
+def _generated_registry_return_url(value: object) -> str:
+    candidate = safe_next_url(value)
+    if candidate == '/reports/generated' or (candidate and candidate.startswith('/reports/generated?')):
+        return candidate
+    return url_for('reports.generated_reports')
 
 
 def _record_archive_feedback(
@@ -69,8 +77,10 @@ def generated_reports() -> ResponseReturnValue:
 
 @permission_required('reports.view')
 def generated_report_detail(report_id: int) -> ResponseReturnValue:
+    registry_return_url = _generated_registry_return_url(request.args.get('next'))
     try:
         payload = get_report_detail_payload(report_id)
+        payload['registry_return_url'] = registry_return_url
     except HTTPException:
         raise
     except Exception:
@@ -79,7 +89,11 @@ def generated_report_detail(report_id: int) -> ResponseReturnValue:
             page_title='Report Detail',
             description='Review report metadata and artifact availability.',
             reason='KAORI could not load this report detail. The report record remains protected while storage connectivity is reviewed.',
-            retry_url=url_for('reports.generated_report_detail', report_id=report_id),
+            retry_url=url_for(
+                'reports.generated_report_detail',
+                report_id=report_id,
+                next=registry_return_url,
+            ),
         )
     return render_template('reports/generated/detail.html', payload=payload)
 

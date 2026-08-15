@@ -93,7 +93,7 @@ def test_generated_detail_polls_only_while_report_or_latest_attempt_is_active() 
 
 def test_generated_detail_does_not_build_unrendered_legacy_context() -> None:
     service = read('app/reports/generated/service.py')
-    payload_body = service.split('def get_report_detail_payload(', 1)[1].split('\n\ndef get_hero_posture', 1)[0]
+    payload_body = service.split('def get_report_detail_payload(', 1)[1].split('\n\ndef get_summary_cards', 1)[0]
 
     for unused_key in ('status_context', 'export_readiness', 'storage_context', 'recommended_actions'):
         assert f"'{unused_key}':" not in payload_body
@@ -130,3 +130,55 @@ def test_generated_storage_notice_follows_full_backend_readiness_not_connectivit
         ]
     )
     assert 'storage-dependent operations follow' in service
+
+
+def test_generated_detail_preserves_filtered_registry_return_context() -> None:
+    routes = read('app/reports/generated/routes.py')
+    page = read('app/templates/reports/generated/index.html')
+    detail = read('app/templates/reports/generated/detail.html')
+
+    assert 'def _generated_registry_return_url(value: object) -> str:' in routes
+    assert 'candidate = safe_next_url(value)' in routes
+    assert "candidate == '/reports/generated'" in routes
+    assert "candidate.startswith('/reports/generated?')" in routes
+    assert "payload['registry_return_url'] = registry_return_url" in routes
+
+    assert "registry_return_url = request.full_path.rstrip('?')" in page
+    assert "report_id=report.id, next=registry_return_url" in page
+    assert 'else payload.registry_return_url' in detail
+    assert 'next=payload.registry_return_url' in detail
+    assert '<a href="{{ payload.registry_return_url }}"' in detail
+
+
+def test_generated_registry_bulk_archive_selection_has_operator_guardrails() -> None:
+    page = read('app/templates/reports/generated/index.html')
+
+    assert 'selectedCount: 0' in page
+    assert 'selectableCount: 0' in page
+    assert 'syncSelection(root)' in page
+    assert ':disabled="selectedCount === 0"' in page
+    assert 'x-text="selectedCount"' in page
+    assert ':disabled="selectableCount === 0"' in page
+    assert '@change="syncSelection($root)"' in page
+    assert '$el.indeterminate = selectedCount > 0 && selectedCount < selectableCount' in page
+
+
+def test_generated_service_removed_unrendered_legacy_presentation_debt() -> None:
+    service = read('app/reports/generated/service.py')
+    baseline = read('docs/architecture/code-health-debt-baseline.json')
+
+    for function_name in (
+        'get_hero_posture',
+        'get_lifecycle_status',
+        'get_storage_context',
+        'get_recommended_actions',
+        'get_report_detail_status_context',
+        'get_report_detail_export_readiness',
+        'get_report_detail_recommended_actions',
+        '_count_missing_artifacts',
+        '_report_file_exists',
+    ):
+        assert f'def {function_name}(' not in service
+
+    assert 'app/reports/generated/service.py::get_report_detail_recommended_actions' not in baseline
+    assert '"app/reports/generated/service.py": 1688' in baseline

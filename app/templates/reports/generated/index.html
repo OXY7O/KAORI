@@ -6,6 +6,9 @@
 {% import "components/loading_bar.html" as loading_bar %}
 {% block title %}Generated Reports{% endblock title %}
 {% block dashboard_content %}
+    {% set can_generate_reports = current_user.has_permission('reports.generate') %}
+    {% set can_manage_storage = current_user.has_permission('reports.manage_storage') %}
+    {% set registry_return_url = request.full_path.rstrip('?') %}
     {% set ready_count = payload.summary_cards[1].value|int %}
     {% set pending_count = payload.summary_cards[2].value|int %}
     {% set failed_count = payload.summary_cards[3].value|int %}
@@ -13,6 +16,9 @@
     {% set hero_status = 'Needs Review' if failed_count > 0 else ('Degraded' if not storage_ready else 'Operational') %}
     {% set hero_tone = 'warning' if failed_count > 0 or not storage_ready else 'normal' %}
     {% set second_metric = ('triangle-alert', 'Needs Review', failed_count, 'Failed generation') if failed_count > 0 else ('clock-3', 'In Progress', pending_count, 'Requested, Queued, or Generating') %}
+    {% set hero_action_label = 'Generate Report' if can_generate_reports else 'Reports Overview' %}
+    {% set hero_action_href = url_for('reports.generate_report') if can_generate_reports else url_for('reports.overview') %}
+    {% set hero_action_icon = 'plus' if can_generate_reports else 'layout-dashboard' %}
     <div class="space-y-6">
         <section class="{{ page_hero.shell_classes() }}">
             <div class="{{ page_hero.layout_classes() }}">
@@ -35,12 +41,12 @@
                                 hero_status,
                                 hero_tone,
                                 [
-                                ('file-check-2', 'Ready', ready_count, 'Available artifacts') ,
+                                ('file-check-2', 'Ready', ready_count, 'Records in Ready state'),
                 second_metric
                 ],
-                'Generate Report',
-                url_for('reports.generate_report'),
-                'plus'
+                hero_action_label,
+                hero_action_href,
+                hero_action_icon
                 ) }}
             </div>
         </section>
@@ -60,11 +66,13 @@
                             <p class="mt-1 text-xs leading-5 text-status-warning-text">{{ payload.storage_notice }}</p>
                         </div>
                     </div>
-                    <a href="{{ url_for('reports.storage') }}"
-                       class="{{ table_ui.action_classes() }} shrink-0">
-                        <i data-lucide="hard-drive" class="h-4 w-4" aria-hidden="true"></i>
-                        Open Storage
-                    </a>
+                    {% if can_manage_storage %}
+                        <a href="{{ url_for('reports.storage') }}"
+                           class="{{ table_ui.action_classes() }} shrink-0">
+                            <i data-lucide="hard-drive" class="h-4 w-4" aria-hidden="true"></i>
+                            Open Storage
+                        </a>
+                    {% endif %}
                 </div>
             </section>
         {% endif %}
@@ -89,7 +97,7 @@
             <div class="grid divide-y divide-outline-subtle sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-4">
                 {% set posture_cards = [
                                     ('files', 'Total Reports', payload.summary_cards[0].value, 'All Generated Report Records'),
-                                    ('circle-check-big', 'Ready', payload.summary_cards[1].value, 'Verified Artifacts Available'),
+                                    ('circle-check-big', 'Ready', payload.summary_cards[1].value, 'Ready Lifecycle Records'),
                                     ('clock-3', 'In Progress', payload.summary_cards[2].value, 'Requested, Queued, or Generating'),
                                     ('triangle-alert', 'Needs Review', payload.summary_cards[3].value, 'Failed Generation Requiring Review')
                                 ] %}
@@ -119,8 +127,10 @@
         </section>
         <section id="generated-report-registry"
                  data-generated-report-registry="true"
+                 x-data="{ selectedCount: 0, selectableCount: 0, syncSelection(root) { const items = Array.from(root.querySelectorAll('.generated-report-checkbox:not(:disabled)')); this.selectableCount = items.length; this.selectedCount = items.filter((item) => item.checked).length; } }"
+                 x-init="$nextTick(() => syncSelection($root))"
                  hx-sync="this:abort"
-                 {% if payload.has_pending_reports %} hx-get="{{ url_for('reports.generated_reports', cluster_id=payload.selected_filters.cluster_id, report_type=payload.selected_filters.report_type, status=payload.selected_filters.status, output_format=payload.selected_filters.output_format, period=payload.selected_filters.period, search=payload.selected_filters.search, per_page=payload.selected_filters.per_page, page=payload.pagination.page) }}" hx-trigger="every {{ payload.poll_interval_seconds }}s" hx-target="this" hx-select="#generated-report-registry" hx-swap="outerHTML" {% endif %}
+                 {% if payload.has_pending_reports %} hx-get="{{ url_for('reports.generated_reports', scope=payload.selected_filters.scope, report_type=payload.selected_filters.report_type, status=payload.selected_filters.status, output_format=payload.selected_filters.output_format, period=payload.selected_filters.period, search=payload.selected_filters.search, per_page=payload.selected_filters.per_page, page=payload.pagination.page) }}" hx-trigger="every {{ payload.poll_interval_seconds }}s" hx-target="this" hx-select="#generated-report-registry" hx-swap="outerHTML" hx-on::before-request="if (event.detail.elt === this && this.querySelector('.generated-report-checkbox:checked')) event.preventDefault()" {% endif %}
                  class="{{ table_ui.block_classes() }}">
             <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
                 <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
@@ -140,23 +150,35 @@
                             </p>
                         </div>
                     </div>
-                    <div class="flex flex-wrap items-center gap-2">
-                        <form id="bulk-archive-reports-form"
-                              method="POST"
-                              action="{{ url_for('reports.bulk_archive_generated_reports') }}">
-                            {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
-                            <input type="hidden" name="next" value="{{ request.full_path }}">
-                            <button type="submit" class="{{ table_ui.action_classes() }}">
-                                <i data-lucide="archive" class="h-4 w-4" aria-hidden="true"></i>
-                                Archive Selected
-                            </button>
-                        </form>
-                        <a href="{{ url_for('reports.generate_report') }}"
-                           class="{{ table_ui.action_classes() }}">
-                            <i data-lucide="plus" class="h-4 w-4" aria-hidden="true"></i>
-                            Generate Report
-                        </a>
-                    </div>
+                    {% if can_manage_storage or can_generate_reports %}
+                        <div class="flex flex-wrap items-center gap-2">
+                            {% if can_manage_storage %}
+                                <form id="bulk-archive-reports-form"
+                                      method="POST"
+                                      action="{{ url_for('reports.bulk_archive_generated_reports') }}">
+                                    {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+                                    <input type="hidden" name="next" value="{{ request.full_path }}">
+                                    <button type="submit"
+                                            class="{{ table_ui.action_classes() }}"
+                                            :disabled="selectedCount === 0"
+                                            aria-label="Archive selected generated reports">
+                                        <i data-lucide="archive" class="h-4 w-4" aria-hidden="true"></i>
+                                        <span>Archive Selected</span>
+                                        <span x-show="selectedCount > 0" x-cloak>
+                                            (<span x-text="selectedCount"></span>)
+                                        </span>
+                                    </button>
+                                </form>
+                            {% endif %}
+                            {% if can_generate_reports %}
+                                <a href="{{ url_for('reports.generate_report') }}"
+                                   class="{{ table_ui.action_classes() }}">
+                                    <i data-lucide="plus" class="h-4 w-4" aria-hidden="true"></i>
+                                    Generate Report
+                                </a>
+                            {% endif %}
+                        </div>
+                    {% endif %}
                 </div>
                 {{ loading_bar.render('generated-report-loading', label='Refreshing Generated Reports') }}
             </header>
@@ -176,17 +198,17 @@
                         <input type="search"
                                name="search"
                                value="{{ payload.selected_filters.search }}"
-                               placeholder="Search report name..."
+                               placeholder="Search report or scope..."
                                class="{{ table_ui.filter_input_classes() }} pl-9">
                     </div>
                 </label>
                 <label class="block min-w-0">
-                    <span class="{{ table_ui.filter_label_classes() }}">Kubernetes Cluster</span>
-                    <select name="cluster_id"
+                    <span class="{{ table_ui.filter_label_classes() }}">Infrastructure Asset</span>
+                    <select name="scope"
                             class="mt-1.5 {{ table_ui.filter_select_classes() }}">
-                        {% for option in payload.filter_options.clusters %}
+                        {% for option in payload.filter_options.scopes %}
                             <option value="{{ option.value }}"
-                                    {% if payload.selected_filters.cluster_id == option.value %}selected{% endif %}>{{ option.label }}</option>
+                                    {% if payload.selected_filters.scope == option.value %}selected{% endif %}>{{ option.label }}</option>
                         {% endfor %}
                     </select>
                 </label>
@@ -234,14 +256,17 @@
                        data-generated-registry-table="true">
                     <thead class="{{ table_ui.head_classes() }}">
                         <tr>
-                            <th class="w-10 px-5 py-3 text-left">
-                                <input type="checkbox"
-                                       x-data="{ checked: false }"
-                                       x-model="checked"
-                                       @change="document.querySelectorAll('.generated-report-checkbox:not(:disabled)').forEach((item) => { item.checked = checked; })"
-                                       aria-label="Select all archiveable reports"
-                                       class="h-4 w-4 rounded border-outline-default text-kaori-primary focus:ring-kaori-accent/40">
-                            </th>
+                            {% if can_manage_storage %}
+                                <th class="w-10 px-5 py-3 text-left">
+                                    <input type="checkbox"
+                                           :checked="selectableCount > 0 && selectedCount === selectableCount"
+                                           x-effect="$el.indeterminate = selectedCount > 0 && selectedCount < selectableCount"
+                                           @change="$root.querySelectorAll('.generated-report-checkbox:not(:disabled)').forEach((item) => { item.checked = $event.target.checked; }); syncSelection($root)"
+                                           :disabled="selectableCount === 0"
+                                           aria-label="Select all archiveable reports"
+                                           class="h-4 w-4 rounded border-outline-default text-kaori-primary focus:ring-kaori-accent/40">
+                                </th>
+                            {% endif %}
                             <th class="{{ table_ui.header_cell_classes() }}">Report</th>
                             <th class="{{ table_ui.header_cell_classes() }}">Scope</th>
                             <th class="{{ table_ui.header_cell_classes() }}">Artifact</th>
@@ -255,15 +280,18 @@
                             {% for report in payload.reports %}
                                 <tr class="{{ table_ui.row_classes() }} {% if report.is_focused %}bg-kaori-soft/50{% endif %}"
                                     {% if report.is_focused %}data-focused-report="true"{% endif %}>
-                                    <td class="px-5 py-4 align-top">
-                                        <input type="checkbox"
-                                               name="report_ids"
-                                               value="{{ report.id }}"
-                                               form="bulk-archive-reports-form"
-                                               {% if not report.can_archive_report %}disabled{% endif %}
-                                               aria-label="Select {{ report.name }}"
-                                               class="generated-report-checkbox h-4 w-4 rounded border-outline-default text-kaori-primary focus:ring-kaori-accent/40 disabled:cursor-not-allowed disabled:opacity-40">
-                                    </td>
+                                    {% if can_manage_storage %}
+                                        <td class="px-5 py-4 align-top">
+                                            <input type="checkbox"
+                                                   name="report_ids"
+                                                   value="{{ report.id }}"
+                                                   form="bulk-archive-reports-form"
+                                                   {% if not report.can_archive_report %}disabled{% endif %}
+                                                   aria-label="Select {{ report.name }}"
+                                                   @change="syncSelection($root)"
+                                                   class="generated-report-checkbox h-4 w-4 rounded border-outline-default text-kaori-primary focus:ring-kaori-accent/40 disabled:cursor-not-allowed disabled:opacity-40">
+                                        </td>
+                                    {% endif %}
                                     <td class="{{ table_ui.cell_classes() }} align-top">
                                         <div class="flex min-w-[16rem] items-start gap-3"
                                              data-generated-report-identity="true">
@@ -284,7 +312,8 @@
                                     </td>
                                     <td class="{{ table_ui.cell_classes() }} align-top">
                                         <div class="min-w-[12rem]">
-                                            <p class="text-sm font-semibold leading-5 text-content-primary">{{ report.scope }}</p>
+                                            <p class="text-xs font-semibold leading-5 text-content-muted">{{ report.scope_label }}</p>
+                                            <p class="mt-0.5 text-sm font-semibold leading-5 text-content-primary">{{ report.scope }}</p>
                                             <p class="mt-1 text-xs leading-5 text-content-muted">{{ report.secondary_scope }}</p>
                                         </div>
                                     </td>
@@ -319,7 +348,7 @@
                                                     <span class="sr-only">Download</span>
                                                 </a>
                                             {% endif %}
-                                            <a href="{{ url_for('reports.generated_report_detail', report_id=report.id) }}"
+                                            <a href="{{ url_for('reports.generated_report_detail', report_id=report.id, next=registry_return_url) }}"
                                                class="{{ table_ui.action_classes() }}">
                                                 View
                                                 <i data-lucide="arrow-up-right" class="h-4 w-4" aria-hidden="true"></i>
@@ -330,7 +359,7 @@
                             {% endfor %}
                         {% else %}
                             <tr>
-                                <td colspan="7" class="px-6 py-14 text-center">
+                                <td colspan="{{ 7 if can_manage_storage else 6 }}" class="px-6 py-14 text-center">
                                     <div class="mx-auto max-w-md">
                                         <span class="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"
                                               aria-hidden="true">
@@ -338,11 +367,13 @@
                                         </span>
                                         <h3 class="mt-4 text-base font-semibold text-content-primary">No Generated Reports Found</h3>
                                         <p class="mt-2 text-sm leading-6 text-content-muted">Adjust the filters or create a governed report request.</p>
-                                        <a href="{{ url_for('reports.generate_report') }}"
-                                           class="mt-4 {{ table_ui.action_classes() }}">
-                                            <i data-lucide="plus" class="h-4 w-4" aria-hidden="true"></i>
-                                            Generate Report
-                                        </a>
+                                        {% if can_generate_reports %}
+                                            <a href="{{ url_for('reports.generate_report') }}"
+                                               class="mt-4 {{ table_ui.action_classes() }}">
+                                                <i data-lucide="plus" class="h-4 w-4" aria-hidden="true"></i>
+                                                Generate Report
+                                            </a>
+                                        {% endif %}
                                     </div>
                                 </td>
                             </tr>
@@ -351,7 +382,7 @@
                 </table>
             </div>
             {% set registry_query = {
-                            'cluster_id': payload.selected_filters.cluster_id,
+                            'scope': payload.selected_filters.scope,
                             'report_type': payload.selected_filters.report_type,
                             'status': payload.selected_filters.status,
                             'output_format': payload.selected_filters.output_format,

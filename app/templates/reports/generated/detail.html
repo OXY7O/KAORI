@@ -15,7 +15,7 @@
     {% set retained_ready_artifact = payload.report.raw_status == 'ready' and payload.report.can_download_artifact %}
     {% set hero_storage_action = payload.artifact_access_notice and can_manage_storage %}
     {% set hero_action_label = 'Download ' ~ payload.report.artifact_label if payload.report.can_download_artifact else ('Open Storage' if hero_storage_action else 'Back to Registry') %}
-    {% set hero_action_href = url_for('reports.download_report_artifact', report_id=payload.report.id) if payload.report.can_download_artifact else (payload.artifact_access_notice.action_href if hero_storage_action else url_for('reports.generated_reports')) %}
+    {% set hero_action_href = url_for('reports.download_report_artifact', report_id=payload.report.id) if payload.report.can_download_artifact else (payload.artifact_access_notice.action_href if hero_storage_action else payload.registry_return_url) %}
     {% set hero_action_icon = 'download' if payload.report.can_download_artifact else ('hard-drive' if hero_storage_action else 'arrow-left') %}
     {% set primary_action_classes = "inline-flex min-h-9 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-dark focus:outline-none focus:ring-2 focus:ring-kaori-primary/20 disabled:cursor-not-allowed disabled:bg-kaori-soft disabled:text-content-muted" %}
     {% set storage_reference_modal_id = 'generated-report-storage-reference-' ~ payload.report.id %}
@@ -23,7 +23,7 @@
          data-generated-report-detail="operational-dossier-v5"
          data-generated-detail-polish="professional-v1"
          {% if payload.poll_interval_seconds %}
-             hx-get="{{ url_for('reports.generated_report_detail', report_id=payload.report.id) }}"
+             hx-get="{{ url_for('reports.generated_report_detail', report_id=payload.report.id, next=payload.registry_return_url) }}"
              hx-trigger="every {{ payload.poll_interval_seconds }}s"
              hx-select="[data-generated-report-detail]"
              hx-target="this"
@@ -425,7 +425,7 @@
                          id="report-actions"
                          data-generated-detail-report-actions="true">
                         {% if payload.job_execution %}{{ table_label.status_indicator_label(payload.job_execution.status_label, payload.job_execution.status_tone) }}{% endif %}
-                        <a href="{{ url_for('reports.generated_reports') }}"
+                        <a href="{{ payload.registry_return_url }}"
                            class="{{ table_ui.action_classes() }}">
                             <i data-lucide="arrow-left" class="h-4 w-4" aria-hidden="true"></i>
                             Back to Registry
