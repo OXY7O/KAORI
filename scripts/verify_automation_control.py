@@ -112,7 +112,7 @@ def main() -> int:
 
     # KAORI operational UI owns every transition; no hidden endpoint-only governance.
     require('Governance Only' in main_template and 'Execution Disabled' in main_template, 'Default UI posture must be factual', errors)
-    for required in ('Decision & Execution Pipeline', 'Automation Guardrails', 'Execution Activity'):
+    for required in ('Control Path', 'Safety & Readiness', 'Current Activity'):
         require(required in overview, f'Overview contract missing: {required}', errors)
     for required in ('System Runbook Catalog', 'Activate System Runbook', 'Binding Configuration', 'Create Binding', 'Custom Authoring Locked'):
         require(required in runbooks, f'System Runbook Catalog UI missing: {required}', errors)

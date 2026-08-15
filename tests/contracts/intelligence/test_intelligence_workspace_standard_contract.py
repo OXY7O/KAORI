@@ -41,11 +41,14 @@ def test_automation_workspace_uses_integrated_tabs_and_operational_overview():
     template = read('app/templates/intelligence/automation_control.html')
     overview = read('app/templates/intelligence/partials/automation_control/_overview.html')
     presentation = read('app/automation_control/presentation.py')
-    assert 'link_tabs(' in template
-    assert 'Decision & Execution Pipeline' in overview
-    assert 'Automation Guardrails' in overview
+    assert 'components/content_tabs.html' in template
+    assert 'content_tabs.render_links(' in template
+    assert 'intelligence_ui.link_tabs(' not in template
+    assert 'Control Path' in overview
+    assert 'Safety & Readiness' in overview
+    assert 'Current Activity' in overview
     assert 'Foundation Map' not in overview
-    assert "('operations', 'Execution Control', 'server-cog')" in presentation
+    assert "('operations', 'Execution', 'server-cog')" in presentation
     assert 'overflow-x-auto' not in overview
 
 

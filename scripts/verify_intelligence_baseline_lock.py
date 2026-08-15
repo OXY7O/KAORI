@@ -145,6 +145,9 @@ def main() -> int:
         errors,
     )
     require('Governance Only' in automation_overview, 'Automation Control must communicate factual governance-only posture while execution is disabled', errors)
+    automation_page = read('app/templates/intelligence/automation_control.html')
+    require('components/content_tabs.html' in automation_page and 'content_tabs.render_links(' in automation_page, 'Automation Control must use shared KAORI Content Tabs', errors)
+    require('intelligence_ui.link_tabs(' not in automation_page, 'Automation Control must not keep the legacy underline tab treatment', errors)
     require('DOMAIN_DEFINITIONS' not in automation_presentation, 'Legacy Automation Control Foundation Map must not return', errors)
 
     intelligence_overview = read('app/intelligence/overview.py')

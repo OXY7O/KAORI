@@ -1,11 +1,13 @@
 {% extends "layouts/app.html" %}
 {% import "components/page_hero.html" as page_hero %}
+{% import "components/content_tabs.html" as content_tabs %}
+{% import "components/table_label.html" as table_label %}
 {% import "intelligence/components/_workspace.html" as intelligence_ui %}
 {% block title %}Automation Control{% endblock title %}
 {% block dashboard_content %}
     {% set control = payload.overview_state %}
     {% set hero_metrics = [
-            ('badge-check', 'Awaiting Approval', payload.counts.awaiting_approval, 'Immutable decisions requiring accountable review'),
+            ('badge-check', 'Awaiting Approval', payload.counts.awaiting_approval, 'Accountable review required'),
             ('activity', 'Active Executions', payload.counts.running, 'Queued, running, or retry-wait journals')
         ] %}
     <div class="space-y-6">
@@ -14,7 +16,7 @@
                 <div class="{{ page_hero.content_classes() }}">
                     {% call page_hero.intro('workflow', 'Governed Automation', 'shield-check') %}
                         <h1 class="{{ page_hero.title_classes() }}">Automation Control</h1>
-                        <p class="mt-2 {{ page_hero.description_classes() }}">Review runbook matches, decision evidence, execution safety, and production-readiness gates before any infrastructure mutation is allowed.</p>
+                        <p class="mt-2 {{ page_hero.description_classes() }}">Review runbook matches, accountable decisions, execution safety, verification, and production-readiness gates before infrastructure mutation is admitted.</p>
                         <div class="{{ page_hero.metadata_row_classes() }}">
                             {{ page_hero.meta_label('user-check', 'Human-in-the-Loop') }}
                             {{ page_hero.meta_label('list-checks', 'Allowlisted Actions') }}
@@ -36,45 +38,88 @@
             </div>
         </section>
 
-        <section class="grid gap-px overflow-hidden rounded-xl border border-outline-default bg-outline-subtle shadow-sm sm:grid-cols-2 xl:grid-cols-4">
-            {{ intelligence_ui.metric('clipboard-clock', 'Decision Candidates', payload.counts.pending_candidates, 'Awaiting operator review', 'warning' if payload.counts.pending_candidates else 'normal') }}
-            {{ intelligence_ui.metric('badge-check', 'Awaiting Approval', payload.counts.awaiting_approval, 'Approval-required immutable decisions', 'warning' if payload.counts.awaiting_approval else 'normal') }}
-            {{ intelligence_ui.metric('activity', 'Running Executions', payload.counts.running, 'Queued, running, or retry-wait journals', 'warning' if payload.counts.running else 'normal') }}
-            {{ intelligence_ui.metric('triangle-alert', 'Execution Failures', payload.counts.failures, 'Failed or dead-letter execution evidence', 'critical' if payload.counts.failures else 'normal') }}
-        </section>
-
         <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card">
-            {{ intelligence_ui.link_tabs(payload.workspace_tabs, payload.workspace, 'Automation Control Workspaces') }}
-            <div class="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
-                <div class="flex min-w-0 items-start gap-3">
-                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
-                          aria-hidden="true">
-                        <i data-lucide="{{ payload.active_workspace.icon }}" class="h-4 w-4"></i>
-                    </span>
-                    <div class="min-w-0">
-                        <h2 class="text-sm font-semibold leading-5 text-content-primary">{{ payload.active_workspace.label }}</h2>
-                        <p class="mt-1 text-xs leading-5 text-content-muted">{{ payload.active_workspace.description }}</p>
+            <header class="border-b border-outline-subtle px-4 py-4 sm:px-5">
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div class="flex min-w-0 items-start gap-3">
+                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
+                            <i data-lucide="gauge" class="h-4 w-4"></i>
+                        </span>
+                        <div class="min-w-0">
+                            <h2 class="text-sm font-semibold leading-5 text-content-primary">Automation Control Summary</h2>
+                            <p class="mt-1 max-w-4xl text-xs leading-5 text-content-muted">Current governance queue, execution activity, and failure posture across the controlled automation lifecycle.</p>
+                        </div>
+                    </div>
+                    <div class="flex shrink-0 flex-wrap gap-2">
+                        {{ table_label.status_label(control.posture.label, control.posture.tone, size='compact') }}
+                        {{ table_label.metadata_label('Human Approval', 'user-check') }}
+                        {{ table_label.metadata_label('System Runbooks', 'library') }}
                     </div>
                 </div>
-                <span class="inline-flex shrink-0 items-center gap-2 rounded-lg border border-outline-subtle bg-surface-hover px-3 py-2 text-xs font-semibold text-content-secondary">
-                    <i data-lucide="{{ 'unlock' if payload.execution_enabled else 'lock-keyhole' }}"
-                       class="h-3.5 w-3.5 text-kaori-primary"
-                       aria-hidden="true"></i>
-                    {{ 'Controlled Execution Enabled' if payload.execution_enabled else 'Governance Only' }}
-                </span>
+            </header>
+            <div class="grid gap-px bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4">
+                {{ intelligence_ui.metric('clipboard-clock', 'Decision Candidates', payload.counts.pending_candidates, 'Awaiting operator review', 'warning' if payload.counts.pending_candidates else 'normal') }}
+                {{ intelligence_ui.metric('badge-check', 'Awaiting Approval', payload.counts.awaiting_approval, 'Accountable approval queue', 'warning' if payload.counts.awaiting_approval else 'normal') }}
+                {{ intelligence_ui.metric('activity', 'Active Executions', payload.counts.running, 'Queued, running, or retry-wait', 'warning' if payload.counts.running else 'normal') }}
+                {{ intelligence_ui.metric('triangle-alert', 'Execution Failures', payload.counts.failures, 'Failed or dead-letter evidence', 'critical' if payload.counts.failures else 'normal') }}
             </div>
         </section>
 
-        {% if payload.workspace == 'overview' %}
-            {% include 'intelligence/partials/automation_control/_overview.html' %}
-        {% elif payload.workspace == 'runbooks' %}
-            {% include 'intelligence/partials/automation_control/_runbooks.html' %}
-        {% elif payload.workspace == 'decisions' %}
-            {% include 'intelligence/partials/automation_control/_decisions.html' %}
-        {% elif payload.workspace == 'operations' %}
-            {% include 'intelligence/partials/automation_control/_operations.html' %}
-        {% else %}
-            {% include 'intelligence/partials/automation_control/_readiness.html' %}
-        {% endif %}
+        <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card">
+            <header class="px-4 py-4 sm:px-5">
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div class="flex min-w-0 items-start gap-3">
+                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
+                            <i data-lucide="workflow" class="h-4 w-4"></i>
+                        </span>
+                        <div class="min-w-0">
+                            <h2 class="text-sm font-semibold leading-5 text-content-primary">Automation Control Workspace</h2>
+                            <p class="mt-1 max-w-4xl text-xs leading-5 text-content-muted">Move between governed runbooks, accountable decisions, execution evidence, and production-readiness controls without mixing ownership boundaries.</p>
+                        </div>
+                    </div>
+                    <div class="shrink-0">{{ table_label.status_label('Controlled Execution' if payload.execution_enabled else 'Governance Only', 'normal' if payload.execution_enabled else 'info', size='compact') }}</div>
+                </div>
+            </header>
+
+            {{ content_tabs.render_links(
+                'automation-control-workspaces',
+                payload.workspace_tabs,
+                payload.workspace,
+                'Automation Control Workspaces',
+                embedded=true,
+                data_namespace='automation-control',
+                nowrap=true
+            ) }}
+
+            <div class="flex flex-col gap-3 border-b border-outline-subtle bg-surface-page px-4 py-4 sm:flex-row sm:items-start sm:justify-between sm:px-5">
+                <div class="flex min-w-0 items-start gap-3">
+                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
+                        <i data-lucide="{{ payload.active_workspace.icon }}" class="h-4 w-4"></i>
+                    </span>
+                    <div class="min-w-0">
+                        <h3 class="text-sm font-semibold leading-5 text-content-primary">{{ payload.active_workspace.label }}</h3>
+                        <p class="mt-1 max-w-4xl text-xs leading-5 text-content-muted">{{ payload.active_workspace.description }}</p>
+                    </div>
+                </div>
+                <div class="flex shrink-0 items-center gap-2 text-xs font-semibold text-content-secondary">
+                    <i data-lucide="{{ 'unlock' if payload.execution_enabled else 'lock-keyhole' }}" class="h-3.5 w-3.5 text-kaori-primary" aria-hidden="true"></i>
+                    {{ 'Execution gate enabled' if payload.execution_enabled else 'Execution gate disabled' }}
+                </div>
+            </div>
+
+            <div data-automation-control-active-workspace="{{ payload.workspace }}">
+                {% if payload.workspace == 'overview' %}
+                    {% include 'intelligence/partials/automation_control/_overview.html' %}
+                {% elif payload.workspace == 'runbooks' %}
+                    {% include 'intelligence/partials/automation_control/_runbooks.html' %}
+                {% elif payload.workspace == 'decisions' %}
+                    {% include 'intelligence/partials/automation_control/_decisions.html' %}
+                {% elif payload.workspace == 'operations' %}
+                    {% include 'intelligence/partials/automation_control/_operations.html' %}
+                {% else %}
+                    {% include 'intelligence/partials/automation_control/_readiness.html' %}
+                {% endif %}
+            </div>
+        </section>
     </div>
 {% endblock dashboard_content %}

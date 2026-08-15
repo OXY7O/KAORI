@@ -1,9 +1,10 @@
 {% import "components/operational_callout.html" as operational_callout %}
 {% import "components/table_label.html" as table_label %}
 {% import "intelligence/components/_workspace.html" as intelligence_ui %}
+{% import "intelligence/partials/automation_control/_components.html" as automation_ui %}
 {% import "intelligence/components/_pagination.html" as intelligence_pagination %}
 
-{% call intelligence_ui.section(
+{% call automation_ui.section(
     'Execution Posture',
     'Execution Control separates resolver registration, deployment policy, safety controls, orchestration state, and terminal failure evidence.',
     'server-cog',
@@ -30,7 +31,7 @@
 
 {% set can_manage_execution = current_user.has_permission('intelligence.decisions.execute') %}
 {% if can_manage_execution %}
-{% call intelligence_ui.section(
+{% call automation_ui.section(
     'Governance Configuration',
     'Prepare deployment allowlists and resolver safety controls without crossing the execution boundary. These settings are revalidated again by the worker at execution time.',
     'sliders-horizontal'
@@ -70,7 +71,7 @@
 
 
 <section class="grid gap-4 xl:grid-cols-2">
-    {% call intelligence_ui.section(
+    {% call automation_ui.panel(
         'Resolver Registry',
         'Only actions registered in the active process registry are eligible for deployment policy or future execution.',
         'list-tree',
@@ -92,7 +93,7 @@
         </div>
     {% endcall %}
 
-    {% call intelligence_ui.section(
+    {% call automation_ui.panel(
         'Safety Controls',
         'Global and cluster-specific kill switch, maintenance, concurrency, rate-limit, and circuit-breaker evidence.',
         'shield-alert'
@@ -116,7 +117,7 @@
     {% endcall %}
 </section>
 
-{% call intelligence_ui.section(
+{% call automation_ui.section(
     'Deployment Policies',
     'Scoped allowlists bind registered resolver actions to Kubernetes clusters and explicit namespaces. A stored policy is not an execution request.',
     'shield-check',
@@ -140,7 +141,7 @@
     {{ intelligence_pagination.render(payload, 'automation_control.index', query_params, resource_label='Deployment Policies', per_page_options=payload.per_page_options) }}
 {% endcall %}
 
-{% call intelligence_ui.section(
+{% call automation_ui.section(
     'Execution Journal',
     'Authorization, queue, lease, retry, resolver result, and terminal orchestration state remain auditable as separate execution evidence.',
     'scroll-text'
@@ -169,7 +170,7 @@
     </div>
 {% endcall %}
 
-{% call intelligence_ui.section(
+{% call automation_ui.section(
     'Dead-Letter Review',
     'Terminal orchestration failures remain immutable for diagnosis. KAORI does not replay a consumed one-time authorization; retry requires fresh evidence, a new candidate/decision, and any required approval.',
     'triangle-alert',

@@ -1,13 +1,14 @@
 {% import "components/operational_callout.html" as operational_callout %}
 {% import "components/table_label.html" as table_label %}
 {% import "intelligence/components/_workspace.html" as intelligence_ui %}
+{% import "intelligence/partials/automation_control/_components.html" as automation_ui %}
 {% import "intelligence/components/_pagination.html" as intelligence_pagination %}
 
 {% set can_manage_runbooks = current_user.has_permission('knowledge.runbooks.manage') %}
 {% set can_publish_runbooks = current_user.has_permission('knowledge.runbooks.publish') %}
 {% set catalog_active = payload.system_runbook_catalog | selectattr('activated') | list | length %}
 
-{% call intelligence_ui.section(
+{% call automation_ui.section(
     'Runbook & Binding Posture',
     'KAORI System Runbooks are source-controlled, validated operational contracts. Users activate tested runbooks and configure environment-specific bindings; infrastructure execution remains independently gated.',
     'book-open-check'
@@ -29,7 +30,7 @@
     </div>
 {% endcall %}
 
-{% call intelligence_ui.section(
+{% call automation_ui.section(
     'System Runbook Catalog',
     'Choose only KAORI-tested operational procedures whose resolver and verification contracts are supported by this build. Runtime execution registration remains a separate production gate.',
     'library'
@@ -96,7 +97,7 @@
     </div>
 {% endcall %}
 
-{% call intelligence_ui.section(
+{% call automation_ui.section(
     'Custom Authoring Locked',
     'Custom runbook creation is intentionally withheld until KAORI runbook simulation, maturity scoring, authoring validation, and regression testing are mature enough to protect the same execution guarantees as System Runbooks.',
     'lock-keyhole'
@@ -113,7 +114,7 @@
 {% endcall %}
 
 {% if can_manage_runbooks %}
-{% call intelligence_ui.section(
+{% call automation_ui.section(
     'Binding Configuration',
     'Bind a published System Runbook revision to authoritative alert/rule evidence and an explicit environment scope. A binding creates review candidates only; it never executes the resolver directly.',
     'link'
@@ -145,7 +146,7 @@
 {% endif %}
 
 <section class="grid gap-4 xl:grid-cols-2">
-    {% call intelligence_ui.section(
+    {% call automation_ui.panel(
         'Activated Runbook Library',
         'Materialized runbook identities retained in KAORI. System records are source-controlled; legacy custom records are audit-only while custom authoring is locked.',
         'book-open-check'
@@ -173,7 +174,7 @@
         {{ intelligence_pagination.render(payload, 'automation_control.index', query_params, resource_label='Runbooks', per_page_options=payload.per_page_options) }}
     {% endcall %}
 
-    {% call intelligence_ui.section(
+    {% call automation_ui.panel(
         'Alert & Rule Bindings',
         'Bindings connect authoritative rule or alert selectors to a published System Runbook revision. They produce review candidates, never direct resolver execution.',
         'link'

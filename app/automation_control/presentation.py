@@ -270,18 +270,18 @@ def upsert_deployment_policy(
     return record
 
 
-def _workspace_tabs() -> list[dict[str, str]]:
+def _workspace_tabs() -> list[tuple[str, str, str, str]]:
     definitions = (
         ('overview', 'Overview', 'layout-dashboard'),
-        ('runbooks', 'Runbooks & Bindings', 'book-open-check'),
-        ('decisions', 'Decision Review', 'clipboard-check'),
-        ('operations', 'Execution Control', 'server-cog'),
-        ('readiness', 'Production Readiness', 'shield-check'),
+        ('runbooks', 'Runbooks', 'book-open-check'),
+        ('decisions', 'Decisions', 'clipboard-check'),
+        ('operations', 'Execution', 'server-cog'),
+        ('readiness', 'Readiness', 'shield-check'),
     )
     from flask import url_for
 
     return [
-        {'key': key, 'label': label, 'icon': icon, 'href': url_for('automation_control.index', workspace=key)}
+        (key, label, icon, url_for('automation_control.index', workspace=key))
         for key, label, icon in definitions
     ]
 

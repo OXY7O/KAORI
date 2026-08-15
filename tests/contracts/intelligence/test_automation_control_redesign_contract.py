@@ -11,10 +11,9 @@ def test_automation_overview_is_operational_control_cockpit_not_foundation_map()
     posture = read('app/automation_control/overview.py')
 
     for label in (
-        'Decision & Execution Pipeline',
-        'Automation Guardrails',
-        'Recent Decision Activity',
-        'Execution Activity',
+        'Control Path',
+        'Safety & Readiness',
+        'Current Activity',
     ):
         assert label in overview
     assert 'Foundation Map' not in overview
@@ -36,7 +35,7 @@ def test_decision_and_execution_ownership_are_separate():
     assert 'Execution Posture' in operations
     assert 'Execution Journal' in operations
     assert 'Dead-Letter Review' in operations
-    assert "('operations', 'Execution Control', 'server-cog')" in presentation
+    assert "('operations', 'Execution', 'server-cog')" in presentation
 
 
 def test_production_readiness_separates_enablement_gates():
