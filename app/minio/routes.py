@@ -79,6 +79,10 @@ def index() -> ResponseReturnValue:
     context['notification_context'] = get_navigation_notification_context(user_id=int(current_user.id))
     if request.headers.get('HX-Request') == 'true':
         target = request.headers.get('HX-Target')
+        if target == 'minio-integration-coverage':
+            return render_template('minio/partials/_coverage.html', **context)
+        if target == 'minio-connection-registry':
+            return render_template('minio/partials/_registry.html', **context)
         if target == 'minio-coverage-content':
             return render_template('minio/partials/_coverage_content.html', **context)
         if target == 'minio-registry-content':

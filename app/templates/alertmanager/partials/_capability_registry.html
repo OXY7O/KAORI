@@ -2,6 +2,7 @@
 {% import "components/pagination.html" as pagination_ui %}
 {% import "components/table_label.html" as table_label %}
 {% import "components/loading_bar.html" as loading_bar %}
+{% import "components/table_registry.html" as registry_ui %}
 {% import "integrations/components/_workspace.html" as integration_ui %}
 {% import "integrations/components/_record_detail_modal.html" as record_detail_modal %}
 {% import "integrations/components/_provider_capability_detail.html" as provider_capability_detail %}
@@ -30,7 +31,22 @@
                     <p class="mt-1 max-w-4xl text-sm leading-6 text-content-secondary">Review core Alertmanager API capability, contract category, requirement, and validation state. Detailed evidence stays behind View More.</p>
                 </div>
             </div>
-            {{ table_label.metadata_label(registry.total_contracts ~ " Capability Contracts") }}
+            <div class="flex flex-wrap items-center gap-2">
+                {{ table_label.metadata_label(registry.total_contracts ~ " Capability Contracts") }}
+                {% if filters.query or filters.requirement != 'all' or filters.status != 'all' %}
+                    {% set capability_clear_href = url_for(detail_endpoint, instance_id=instance.id, tab='validation', page=1, per_page=pagination.per_page) %}
+                    {% set capability_clear_url = url_for(registry_endpoint, instance_id=instance.id, page=1, per_page=pagination.per_page) %}
+                    {{ registry_ui.clear_filters_action(
+                        capability_clear_href,
+                        table_ui.action_classes(),
+                        hx_get=capability_clear_url,
+                        target='#' ~ target_id,
+                        indicator='#' ~ loading_id,
+                        swap='outerHTML',
+                        marker=target_id
+                    ) }}
+                {% endif %}
+            </div>
         </div>
         <div data-kaori-capability-loading-region>
             {{ loading_bar.render(loading_id, label="Refreshing Capability Registry") }}

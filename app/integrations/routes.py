@@ -457,8 +457,13 @@ def prometheus() -> ResponseReturnValue:
         coverage_per_page=request.args.get('coverage_per_page', 5, type=int) or 5,
     )
     if request.headers.get('HX-Request') == 'true':
-        if request.headers.get('HX-Target') == 'prometheus-coverage-content':
+        target = request.headers.get('HX-Target')
+        if target == 'integration-coverage':
+            return render_template('integrations/partials/_coverage_card.html', **context)
+        if target == 'prometheus-coverage-content':
             return render_template('integrations/partials/_coverage_content.html', **context)
+        if target == 'prometheus-inventory-card':
+            return render_template('integrations/prometheus/partials/_instance_inventory.html', **context)
         return render_template('integrations/prometheus/partials/_inventory_content.html', **context)
     return render_template('integrations/prometheus.html', **context)
 
@@ -481,8 +486,13 @@ def alertmanager() -> ResponseReturnValue:
         coverage_per_page=request.args.get('coverage_per_page', 5, type=int) or 5,
     )
     if request.headers.get('HX-Request') == 'true':
-        if request.headers.get('HX-Target') == 'alertmanager-coverage-content':
+        target = request.headers.get('HX-Target')
+        if target == 'integration-coverage':
+            return render_template('integrations/partials/_coverage_card.html', **context)
+        if target == 'alertmanager-coverage-content':
             return render_template('integrations/partials/_coverage_content.html', **context)
+        if target == 'alertmanager-inventory-card':
+            return render_template('integrations/alertmanager/partials/_inventory_card.html', **context)
         return render_template('integrations/alertmanager/partials/_inventory_content.html', **context)
     return render_template('integrations/alertmanager.html', **context)
 

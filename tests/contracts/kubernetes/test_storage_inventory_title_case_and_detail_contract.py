@@ -11,7 +11,7 @@ SERVICE = ROOT / 'app/inventory/kubernetes/resources/storage.py'
 SEMANTICS = ROOT / 'app/inventory/kubernetes/resources/storage_semantics.py'
 PERSISTENCE = ROOT / 'app/inventory/kubernetes/persistence.py'
 PAYLOAD = ROOT / 'app/reports/export/payloads/inventory.py'
-XLSX = ROOT / 'app/reports/export/xlsx/standard.py'
+XLSX = ROOT / 'app/reports/export/xlsx/profiles_kubernetes.py'
 
 
 def read(path: Path) -> str:

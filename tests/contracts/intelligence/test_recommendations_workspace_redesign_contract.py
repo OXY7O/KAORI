@@ -17,7 +17,7 @@ def test_recommendations_filters_refresh_only_results_without_apply_button():
     assert 'input changed delay:350ms' in filters
     assert 'change from:select' in filters
     assert 'Apply Filters' not in filters
-    assert 'Reset' in filters
+    assert 'clear_filters_action' in filters
 
 
 def test_recommendations_use_drawer_details_not_inline_expandables():

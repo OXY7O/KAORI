@@ -1,6 +1,7 @@
 {% import "components/loading_bar.html" as loading_bar %}
 {% import "components/table_label.html" as table_label %}
 {% import "components/table_primitives.html" as table_ui %}
+{% import "components/table_registry.html" as registry_ui %}
 {% import "analytics/components/_record_pagination.html" as record_pagination %}
 <section id="object-storage-alert-records"
          class="{{ analysis_surface.evidence_shell_classes() if analysis_surface is defined else table_ui.block_classes() }}">
@@ -71,15 +72,16 @@
                         <button type="submit" class="{{ table_ui.action_classes() }} h-10 px-4">
                             <i data-lucide="search" class="h-4 w-4"></i>Apply Filter
                         </button>
-                        <a href="{{ url_for('analytics.object_storage_alerts', system_id=system.id, source=selected_alert_source, alert_per_page=alert_table.pagination.per_page, tab='records') }}"
-                           hx-get="{{ url_for('analytics.object_storage_alert_table', system_id=system.id, source=selected_alert_source, alert_per_page=alert_table.pagination.per_page, tab='records') }}"
-                           hx-target="#object-storage-alert-records"
-                           hx-swap="outerHTML"
-                           hx-sync="#object-storage-alert-records:replace"
-                           hx-indicator="#object-storage-alert-records-loading"
-                           class="{{ table_ui.action_classes() }} h-10 px-4">
-                            <i data-lucide="rotate-ccw" class="h-4 w-4"></i>Reset Filter
-                        </a>
+                        {% if alert_table.search or alert_table.severity != 'all' or alert_table.state != 'all' %}
+                            {{ registry_ui.clear_filters_action(
+                                url_for('analytics.object_storage_alerts', system_id=system.id, source=selected_alert_source, alert_per_page=alert_table.pagination.per_page, tab='records'),
+                                table_ui.action_classes() ~ ' h-10 px-4',
+                                hx_get=url_for('analytics.object_storage_alert_table', system_id=system.id, source=selected_alert_source, alert_per_page=alert_table.pagination.per_page, tab='records'),
+                                target='#object-storage-alert-records',
+                                indicator='#object-storage-alert-records-loading',
+                                sync='#object-storage-alert-records:replace'
+                            ) }}
+                        {% endif %}
                     </div>
                 </div>
             </form>

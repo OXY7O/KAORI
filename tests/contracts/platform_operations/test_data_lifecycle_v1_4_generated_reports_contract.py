@@ -26,7 +26,7 @@ def test_generated_report_cleanup_is_age_based_and_protects_active_generation() 
     assert "Report.status == 'failed'" in adapter
     assert "_ACTIVE_JOB_STATUSES = ('queued', 'running', 'retrying', 'cancel_requested')" in adapter
     assert 'Report.job_execution_id.notin_(active_jobs)' in adapter
-    assert "Report.file_path.is_not(None)" in adapter
+    assert 'Report.file_path.is_not(None)' in adapter
     assert "'failed_retention_days'" in adapter
     assert "'archived_retention_days'" in adapter
     assert 'if report.status in _ARTIFACT_REPORT_STATUSES and report.file_path:' in adapter
@@ -47,7 +47,7 @@ def test_generated_report_archive_copies_and_verifies_binary_evidence_before_cle
     assert "object_key = f'{object_prefix}/{artifact.id}/artifacts/{relative_path}'" in service
     assert '_verify_supplemental_artifacts(backend=backend, artifact=artifact)' in service
     assert "'supplemental_artifacts': _supplemental_artifacts(artifact)" in service
-    assert "for supplemental in _supplemental_artifacts(artifact):" in service
+    assert 'for supplemental in _supplemental_artifacts(artifact):' in service
 
 
 def test_generated_report_policy_is_bounded_and_scheduled_separately() -> None:
@@ -79,9 +79,7 @@ def test_generated_report_policy_is_bounded_and_scheduled_separately() -> None:
     assert 'REPORT_CLEANUP_MODE' not in config
     assert 'REPORT_CLEANUP_SCOPE' not in config
     assert 'schedule_enabled=False' in migration
-    assert (
-        "GENERATED_REPORT_RETENTION_ENABLED = _env_bool('GENERATED_REPORT_RETENTION_ENABLED', False)" in config
-    )
+    assert "GENERATED_REPORT_RETENTION_ENABLED = _env_bool('GENERATED_REPORT_RETENTION_ENABLED', False)" in config
     assert 'return replace(policy, batch_size=max(100, min(policy.batch_size, 2500)))' in read(
         'app/retention/domains/generated_report.py'
     )
@@ -101,7 +99,7 @@ def test_data_lifecycle_ui_explains_generated_report_evidence_and_status_windows
     assert 'Generated Report Evidence Protection' in workspace
     assert 'failed_retention_days' in workspace
     assert 'archived_retention_days' in workspace
-    assert "max=\"{{ 2500 if selected.name == 'generated_report' else 25000 }}\"" in workspace
+    assert 'max="{{ 2500 if selected.name == \'generated_report\' else 25000 }}"' in workspace
     assert 'verify SHA-256 before the source artifact or database row can be cleaned' in workspace
     assert 'generated_report_ui.GENERATED_REPORT_COVERAGE_NOTE' in presentation
 
@@ -134,9 +132,7 @@ def test_generated_report_archives_surface_binary_evidence_in_archive_history() 
     history = read('app/templates/platform_operations/data_lifecycle/partials/_history.html')
     presentation = read('app/retention/presentation.py')
 
-    assert (
-        "'supplemental_count': len(metadata.get('supplemental_artifacts') or [])" in presentation
-    )
+    assert "'supplemental_count': len(metadata.get('supplemental_artifacts') or [])" in presentation
     assert 'retained evidence' in history
     assert "kind='manifest'" in history
 

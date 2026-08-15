@@ -13,7 +13,7 @@ MODEL = ROOT / 'app/models/inventory.py'
 PERSISTENCE = ROOT / 'app/inventory/kubernetes/persistence.py'
 ROUTES = ROOT / 'app/inventory/kubernetes/routes.py'
 PAYLOAD = ROOT / 'app/reports/export/payloads/inventory.py'
-XLSX = ROOT / 'app/reports/export/xlsx/standard.py'
+XLSX = ROOT / 'app/reports/export/xlsx/profiles_kubernetes.py'
 MIGRATION = ROOT / 'migrations/versions/20260805_config_inventory_v2.py'
 
 

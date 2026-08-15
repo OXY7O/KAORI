@@ -1,6 +1,7 @@
 {% import "components/table.html" as table_ui %}
 {% import "components/pagination.html" as pagination_ui %}
 {% import "components/loading_bar.html" as loading_bar %}
+{% import "components/table_registry.html" as registry_ui %}
 {% import "components/table_label.html" as table_label %}
 {% import "integrations/components/_workspace.html" as integration_ui %}
 {% import "integrations/components/_record_detail_modal.html" as record_detail_modal %}
@@ -25,7 +26,22 @@
                     <p class="mt-1 max-w-4xl text-sm leading-6 text-content-secondary">Review MinIO S3 API capability, contract profile, requirement, and validation state. Detailed evidence stays behind View More.</p>
                 </div>
             </div>
-            {{ table_label.metadata_label(registry.total_contracts ~ " Capability Contracts") }}
+            <div class="flex flex-wrap items-center gap-2">
+                {{ table_label.metadata_label(registry.total_contracts ~ " Capability Contracts") }}
+                {% if filters.query or filters.requirement or filters.status %}
+                    {% set capability_clear_href = url_for('minio.instance_detail', instance_id=instance.id, capability_page=1, capability_per_page=pagination.per_page) ~ '#validation' %}
+                    {% set capability_clear_url = url_for('minio.capability_registry', instance_id=instance.id, capability_page=1, capability_per_page=pagination.per_page) %}
+                    {{ registry_ui.clear_filters_action(
+                        capability_clear_href,
+                        table_ui.action_classes(),
+                        hx_get=capability_clear_url,
+                        target='#minio-capability-registry',
+                        indicator='#minio-capability-loading',
+                        swap='outerHTML',
+                        marker='minio-capability-registry'
+                    ) }}
+                {% endif %}
+            </div>
         </div>
         <div data-kaori-capability-loading-region>
             {{ loading_bar.render("minio-capability-loading", label="Refreshing MinIO Capability Registry") }}

@@ -1,5 +1,6 @@
 {% import "components/pagination.html" as pagination_ui %}
 {% import "components/table.html" as table_ui %}
+{% import "components/table_registry.html" as registry_ui %}
 {% import "components/loading_bar.html" as loading_bar %}
 {% import "components/action_button.html" as action_button %}
 {% import "integrations/components/_record_actions.html" as record_actions %}
@@ -14,6 +15,9 @@
 {% set selected_history_trigger = runtime_history_filters.trigger_type|default('', true) %}
 {% set selected_history_health = runtime_history_filters.health_status|default('', true) %}
 {% set selected_history_readiness = runtime_history_filters.readiness|default('', true) %}
+{% set runtime_history_clear_args = runtime_history_route_args_value.copy() %}
+{% set _ = runtime_history_clear_args.update({'tab': runtime_history_tab_name, 'per_page': runtime_history.pagination.per_page, 'page': 1}) %}
+{% set runtime_history_clear_url = url_for(runtime_history_detail_endpoint_name, **runtime_history_clear_args) %}
 <section id="{{ runtime_history_id }}"
          {% if runtime_history_oob|default(false) %}hx-swap-oob="outerHTML"{% endif %}
          class="relative overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm"
@@ -31,6 +35,15 @@
                 </div>
             </div>
             <div class="flex flex-wrap items-center gap-2">
+                {% if runtime_history_filters_enabled|default(false) and (selected_history_trigger or selected_history_health or selected_history_readiness) %}
+                    {{ registry_ui.clear_filters_action(
+                        runtime_history_clear_url,
+                        action_button.classes(),
+                        hx_get=runtime_history_url ~ '?page=1&per_page=' ~ runtime_history.pagination.per_page,
+                        target='#' ~ runtime_history_id,
+                        indicator='#' ~ runtime_history_loading_id
+                    ) }}
+                {% endif %}
                 {% if current_user.has_permission('platform_operations.view_data_lifecycle') %}
                     <a href="{{ url_for('platform_operations.data_lifecycle.index', tab='policies', domain='runtime_observation') }}"
                        class="{{ action_button.classes() }}">

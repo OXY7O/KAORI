@@ -5,6 +5,7 @@
   This component owns reusable behavior shared by registry/table consumers:
   - filter changes always reset page to 1 while preserving Rows,
   - Rows changes always reset page to 1 while preserving active filters,
+  - Clear Filters appears only for active filters, resets page to 1, and preserves Rows,
   - pagination preserves filters and Rows,
   - operator HTMX requests use one latest-request-wins synchronization policy,
   - every request targets/selects/swaps the owning registry consistently.
@@ -30,23 +31,36 @@
         {{ caller() }}
     </form>
 {%- endmacro %}
-{% macro clear_filters_link(endpoint, registry_id, loading_id, per_page, classes, label='Clear Filters', query_params=none, page_param='page', per_page_param='per_page') -%}
-    {% set clear_query = query_params.copy() if query_params else {} %}
-    {% set _ = clear_query.update({page_param: 1, per_page_param: per_page}) %}
-    {% set clear_url = url_for(endpoint, **clear_query) %}
-    <a href="{{ clear_url }}"
-       hx-get="{{ clear_url }}"
-       hx-target="#{{ registry_id }}"
-       hx-select="#{{ registry_id }}"
-       hx-swap="outerHTML"
-       hx-push-url="true"
-       hx-indicator="#{{ loading_id }}"
-       hx-sync="closest section:replace"
-       data-kaori-canonical-registry-clear="{{ registry_id }}"
+{% macro clear_filters_action(href, classes, label='Clear Filters', hx_get='', target='', indicator='', select='', swap='outerHTML', push_url='', sync='', marker='') -%}
+    <a href="{{ href }}"
+       {% if hx_get %}hx-get="{{ hx_get }}"{% endif %}
+       {% if target %}hx-target="{{ target }}"{% endif %}
+       {% if select %}hx-select="{{ select }}"{% endif %}
+       {% if swap %}hx-swap="{{ swap }}"{% endif %}
+       {% if push_url %}hx-push-url="{{ push_url }}"{% endif %}
+       {% if indicator %}hx-indicator="{{ indicator }}"{% endif %}
+       {% if sync %}hx-sync="{{ sync }}"{% endif %}
+       {% if marker %}data-kaori-canonical-registry-clear="{{ marker }}"{% endif %}
        class="{{ classes }}">
         <i data-lucide="x" class="h-4 w-4" aria-hidden="true"></i>
         {{ label }}
     </a>
+{%- endmacro %}
+{% macro clear_filters_link(endpoint, registry_id, loading_id, per_page, classes, label='Clear Filters', query_params=none, page_param='page', per_page_param='per_page') -%}
+    {% set clear_query = query_params.copy() if query_params else {} %}
+    {% set _ = clear_query.update({page_param: 1, per_page_param: per_page}) %}
+    {% set clear_url = url_for(endpoint, **clear_query) %}
+    {{ clear_filters_action(clear_url,
+                            classes,
+                            label=label,
+                            hx_get=clear_url,
+                            target='#' ~ registry_id,
+                            indicator='#' ~ loading_id,
+                            select='#' ~ registry_id,
+                            swap='outerHTML',
+                            push_url='true',
+                            sync='closest section:replace',
+                            marker=registry_id) }}
 {%- endmacro %}
 {% macro footer(endpoint, registry_id, loading_id, pagination, query_params, per_page_options, resource_label='Records', rows_aria_label='Records per page', control_name='registry', page_param='page', per_page_param='per_page') -%}
     {% set canonical_query = query_params.copy() if query_params else {} %}

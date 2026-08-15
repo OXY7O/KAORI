@@ -1,4 +1,5 @@
 {% import "components/table.html" as table_ui %}
+{% import "components/table_registry.html" as registry_ui %}
 <section class="{{ table_ui.block_classes() }}">
     {{ table_ui.inventory_block_header('server',
         'Object Storage Systems',
@@ -9,6 +10,17 @@
     'Manage Inventory Jobs'
     ) }}
     <div class="{{ table_ui.inventory_filter_bar_classes() }}">
+        {% if selected_provider or selected_environment or selected_status or search %}
+            <div class="mb-3 flex justify-end">
+                {{ registry_ui.clear_filters_action(
+                    url_for('object_storage_inventory.systems', per_page=inventory.pagination.per_page),
+                    table_ui.action_classes(),
+                    hx_get=url_for('object_storage_inventory.systems', per_page=inventory.pagination.per_page, partial_mode='page_workspace'),
+                    target='#object-storage-systems-workspace',
+                    indicator='#object-storage-systems-loading'
+                ) }}
+            </div>
+        {% endif %}
         <form hx-get="{{ url_for('object_storage_inventory.systems') }}"
               hx-target="#object-storage-systems-workspace"
               hx-swap="outerHTML"

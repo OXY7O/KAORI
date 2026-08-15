@@ -1,4 +1,5 @@
 {% import "components/table.html" as table_ui %}
+{% import "components/table_registry.html" as registry_ui %}
 <section class="{{ table_ui.block_classes() }}">
     {{ table_ui.inventory_block_header('server-cog',
         'Node Inventory',
@@ -9,6 +10,17 @@
     'Open Cluster Integrations'
     ) }}
     <div class="{{ table_ui.inventory_filter_bar_classes() }}">
+        {% if selected_cluster_id or selected_role or selected_status or search %}
+            <div class="mb-3 flex justify-end">
+                {{ registry_ui.clear_filters_action(
+                    url_for('inventory.nodes', per_page=pagination.per_page),
+                    table_ui.action_classes(),
+                    hx_get=url_for('inventory.nodes', per_page=pagination.per_page, partial_mode='page_workspace'),
+                    target='#nodes-page-workspace',
+                    indicator='#nodes-table-loading'
+                ) }}
+            </div>
+        {% endif %}
         <form hx-get="{{ url_for('inventory.nodes') }}"
               hx-target="#nodes-page-workspace"
               hx-swap="outerHTML"

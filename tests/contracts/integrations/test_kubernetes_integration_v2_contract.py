@@ -423,7 +423,11 @@ def test_kubernetes_integration_overview_uses_controlled_kaori_icon_palette() ->
         'palette_icon("server-cog", connection_icon_tone)' in registry
         or "palette_icon('server-cog', connection_icon_tone)" in registry
     )
-    assert "registry_header(title, description, icon, loading_id, title_id=None, tone='brand')" in provider_registry
+    assert (
+        "registry_header(title, description, icon, loading_id, title_id=None, tone='brand', action_html='')"
+        in provider_registry
+    )
+    assert '{{ action_html }}' in provider_registry
 
 
 def test_kubernetes_integration_uses_canonical_compact_label_roles() -> None:

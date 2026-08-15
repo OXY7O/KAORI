@@ -1,4 +1,5 @@
 {% import "components/table.html" as table_ui %}
+{% import "components/table_registry.html" as registry_ui %}
 {% import "components/loading_bar.html" as loading_bar %}
 <section id="activity-register-workspace"
          class="{{ table_ui.block_classes() }}">
@@ -11,7 +12,19 @@
                     <p class="{{ table_ui.block_description_classes() }}">Filter system-wide evidence by category, outcome, actor, and retained time range.</p>
                 </div>
             </div>
-            <span class="inline-flex min-h-7 items-center rounded-md border border-outline-subtle bg-surface-hover px-2.5 text-xs font-semibold text-content-secondary">{{ pagination.total }} Matching {{ 'Activity' if pagination.total == 1 else 'Activities' }}</span>
+            <div class="flex flex-wrap items-center gap-2">
+                <span class="inline-flex min-h-7 items-center rounded-md border border-outline-subtle bg-surface-hover px-2.5 text-xs font-semibold text-content-secondary">{{ pagination.total }} Matching {{ 'Activity' if pagination.total == 1 else 'Activities' }}</span>
+                {% if filters.search or filters.category != 'all' or filters.status != 'all' or filters.user_id or filters.time_range != '30d' %}
+                    {{ registry_ui.clear_filters_action(
+                        url_for('notifications.activity_log', per_page=pagination.per_page, time_range='30d'),
+                        table_ui.action_classes(),
+                        hx_get=url_for('notifications.activity_log', per_page=pagination.per_page, time_range='30d'),
+                        target='#activity-register-workspace',
+                        indicator='#operational-activity-loading',
+                        push_url='true'
+                    ) }}
+                {% endif %}
+            </div>
         </div>
         {{ loading_bar.render('operational-activity-loading', label='Refreshing Activity Register') }}
     </header>

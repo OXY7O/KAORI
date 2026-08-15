@@ -31,7 +31,12 @@ def test_coverage_pagination_uses_coverage_parameter_names() -> None:
 def test_provider_routes_return_the_owning_partial_for_htmx() -> None:
     routes = read('app/integrations/routes.py')
 
-    assert "request.headers.get('HX-Target') == 'prometheus-coverage-content'" in routes
+    assert "target = request.headers.get('HX-Target')" in routes
+    assert "if target == 'integration-coverage':" in routes
+    assert "'integrations/partials/_coverage_card.html'" in routes
+    assert "if target == 'prometheus-coverage-content':" in routes
+    assert "if target == 'prometheus-inventory-card':" in routes
     assert "'integrations/prometheus/partials/_inventory_content.html'" in routes
-    assert "request.headers.get('HX-Target') == 'alertmanager-coverage-content'" in routes
+    assert "if target == 'alertmanager-coverage-content':" in routes
+    assert "if target == 'alertmanager-inventory-card':" in routes
     assert "'integrations/alertmanager/partials/_inventory_content.html'" in routes

@@ -1,4 +1,5 @@
 {% import "components/table.html" as table_ui %}
+{% import "components/table_registry.html" as registry_ui %}
 <section class="{{ table_ui.block_classes() }}">
     {{ table_ui.inventory_block_header('boxes',
         'Buckets & Containers',
@@ -9,6 +10,17 @@
     'Manage Inventory Jobs'
     ) }}
     <div class="{{ table_ui.inventory_filter_bar_classes() }}">
+        {% if selected_system_id or selected_provider or selected_native_type or search %}
+            <div class="mb-3 flex justify-end">
+                {{ registry_ui.clear_filters_action(
+                    url_for('object_storage_inventory.buckets', per_page=inventory.pagination.per_page),
+                    table_ui.action_classes(),
+                    hx_get=url_for('object_storage_inventory.buckets', per_page=inventory.pagination.per_page, partial_mode='page_workspace'),
+                    target='#object-storage-buckets-workspace',
+                    indicator='#object-storage-buckets-loading'
+                ) }}
+            </div>
+        {% endif %}
         <form hx-get="{{ url_for('object_storage_inventory.buckets') }}"
               hx-target="#object-storage-buckets-workspace"
               hx-swap="outerHTML"

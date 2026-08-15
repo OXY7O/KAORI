@@ -65,6 +65,8 @@ Requirements include:
 - default Rows = 5;
 - Rows options = 5 / 10 / 25 / 50;
 - stable filter and pagination state;
+- every canonical filtered table exposes **Clear Filters** only while search/filter state is active; clearing resets the table to page 1, preserves the current Rows selection, and keeps the owning HTMX target/loading contract;
+- use the label **Clear Filters** and the shared `components/table_registry.html` interaction instead of page-local `Reset Filter(s)` controls;
 - canonical compact rectangular status/metadata labels;
 - status never communicated by color alone;
 - table loading, empty, and error states remain inside the table surface.

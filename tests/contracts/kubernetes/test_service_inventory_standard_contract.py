@@ -95,7 +95,7 @@ def test_service_detail_distinguishes_not_reported_not_configured_and_not_applic
 
 def test_service_export_uses_canonical_backend_and_endpoint_fields() -> None:
     payload = read('app/reports/export/payloads/inventory.py')
-    standard = read('app/reports/export/xlsx/standard.py')
+    standard = read('app/reports/export/xlsx/profiles_kubernetes.py')
 
     assert 'registration = service_backend_registration(' in payload
     assert "details.get('load_balancer_ingress')" in payload

@@ -171,11 +171,12 @@
                     <div class="flex flex-wrap items-center gap-2">
                         {{ table_label.metadata_label(payload.pagination.total_items ~ ' Templates', 'layout-template') }}
                         {% if payload.active_filter_count > 0 %}
-                            {{ registry_ui.clear_filters_link('reports.report_templates',
-                                                        'templates-registry',
-                                                        'templates-registry-loading',
-                                                        payload.pagination.per_page,
-                                                        table_ui.action_classes() 
+                            {{ registry_ui.clear_filters_link(
+                                'reports.report_templates',
+                                'templates-registry',
+                                'templates-registry-loading',
+                                payload.pagination.per_page,
+                                table_ui.action_classes()
                             ) }}
                         {% endif %}
                     </div>
@@ -189,7 +190,7 @@
                 'templates-registry',
                 'templates-registry-loading',
                 payload.pagination.per_page,
-                'grid grid-cols-1 gap-3 border-b border-outline-subtle bg-surface-hover px-5 py-4 sm:grid-cols-2 xl:grid-cols-6 sm:px-6',
+                'grid grid-cols-1 gap-3 border-b border-outline-subtle bg-surface-hover px-5 py-4 sm:grid-cols-2 xl:grid-cols-7 sm:px-6',
                 marker_name='data-template-filters',
                 marker_value='true'
                 ) %}
@@ -213,6 +214,16 @@
                         {% for option in payload.filter_options.families %}
                             <option value="{{ option.value }}"
                                     {% if payload.selected_filters.family == option.value %}selected{% endif %}>{{ option.label }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+                <label class="block min-w-0">
+                    <span class="text-xs font-semibold text-content-muted">Domain</span>
+                    <select name="domain"
+                            class="mt-1.5 min-h-9 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary outline-none focus:border-kaori-primary focus:ring-2 focus:ring-kaori-primary/20">
+                        {% for option in payload.filter_options.domains %}
+                            <option value="{{ option.value }}"
+                                    {% if payload.selected_filters.domain == option.value %}selected{% endif %}>{{ option.label }}</option>
                         {% endfor %}
                     </select>
                 </label>
@@ -258,16 +269,17 @@
                 </label>
             {% endcall %}
             <div class="overflow-x-auto">
-                <table class="w-full min-w-[1120px] table-fixed text-left">
+                <table class="w-full min-w-[1240px] table-fixed text-left">
                     <thead class="border-b border-outline-subtle bg-surface-hover text-xs font-semibold uppercase tracking-wide text-content-muted">
                         <tr>
-                            <th class="w-[28%] px-5 py-3 sm:px-6">Template</th>
-                            <th class="w-[10%] px-4 py-3">Family</th>
-                            <th class="w-[18%] px-4 py-3">Report Type</th>
-                            <th class="w-[11%] px-4 py-3">Output</th>
-                            <th class="w-[11%] px-4 py-3">Sections</th>
-                            <th class="w-[14%] px-4 py-3">Ownership</th>
-                            <th class="w-[8%] px-5 py-3 text-right sm:px-6">Action</th>
+                            <th class="w-[24%] px-5 py-3 sm:px-6">Template</th>
+                            <th class="w-[10%] px-4 py-3">Domain</th>
+                            <th class="w-[9%] px-4 py-3">Family</th>
+                            <th class="w-[17%] px-4 py-3">Report Type</th>
+                            <th class="w-[10%] px-4 py-3">Output</th>
+                            <th class="w-[10%] px-4 py-3">Sections</th>
+                            <th class="w-[13%] px-4 py-3">Ownership</th>
+                            <th class="w-[7%] px-5 py-3 text-right sm:px-6">Action</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-outline-subtle">
@@ -287,6 +299,7 @@
                                         </div>
                                     </div>
                                 </td>
+                                <td class="px-4 py-4 align-top">{{ table_label.metadata_label(template.domain_label, 'boxes') }}</td>
                                 <td class="px-4 py-4 align-top">{{ table_label.metadata_label(template.family_label, 'layers-3') }}</td>
                                 <td class="px-4 py-4 align-top">
                                     <p class="text-sm font-semibold text-content-primary">{{ template.report_type_label }}</p>
@@ -328,6 +341,12 @@
                                         <div class="rounded-2xl border border-outline-subtle bg-surface-card p-4">
                                             <p class="text-xs font-semibold text-content-muted">Template Identity</p>
                                             <dl class="mt-3 divide-y divide-outline-subtle">
+                                                <div class="flex items-start justify-between gap-4 py-2.5">
+                                                    <dt class="text-xs text-content-muted">Domain</dt>
+                                                    <dd class="max-w-[65%] text-right text-sm font-bold text-content-primary">
+                                                        {{ template.domain_label }}
+                                                    </dd>
+                                                </div>
                                                 <div class="flex items-start justify-between gap-4 py-2.5">
                                                     <dt class="text-xs text-content-muted">Family</dt>
                                                     <dd class="text-right text-sm font-bold text-content-primary">
@@ -418,11 +437,18 @@
                                         </div>
                                     </section>
                                     <div class="flex flex-wrap items-center justify-end gap-2 border-t border-outline-subtle pt-4">
-                                        <a href="{{ template.generate_href }}"
-                                           class="{{ table_ui.action_classes() }}"><i data-lucide="file-plus-2" class="h-4 w-4" aria-hidden="true"></i>Generate Report</a>
+                                        {% if template.can_generate %}
+                                            <a href="{{ template.generate_href }}"
+                                               class="{{ table_ui.action_classes() }}"><i data-lucide="file-plus-2" class="h-4 w-4" aria-hidden="true"></i>Generate Report</a>
+                                        {% else %}
+                                            <span class="{{ table_ui.action_classes() }} cursor-not-allowed opacity-60"
+                                                  aria-disabled="true"
+                                                  title="Activate this custom template before using it to generate a report."><i data-lucide="pause" class="h-4 w-4" aria-hidden="true"></i>Activate to Generate</span>
+                                        {% endif %}
                                         {% if template.source == 'system' %}
                                             <form method="POST" action="{{ template.duplicate_href }}">
                                                 {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+                                                <input type="hidden" name="next" value="{{ payload.registry_return_url }}">
                                                 <button type="submit"
                                                         data-operation-submit
                                                         data-loading-label="Creating Custom Template..."
@@ -433,6 +459,7 @@
                                                class="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-xs font-semibold text-white transition hover:bg-kaori-primary-dark"><i data-lucide="pencil" class="h-4 w-4" aria-hidden="true"></i>Edit Template</a>
                                             <form method="POST" action="{{ template.duplicate_href }}">
                                                 {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+                                                <input type="hidden" name="next" value="{{ payload.registry_return_url }}">
                                                 <button type="submit"
                                                         data-operation-submit
                                                         data-loading-label="Duplicating Template..."
@@ -465,6 +492,7 @@
                                               action="{{ template.delete_href }}"
                                               class="flex justify-end">
                                             {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+                                            <input type="hidden" name="next" value="{{ payload.registry_return_url }}">
                                             <button type="submit"
                                                     data-operation-submit
                                                     data-loading-label="Deleting Template..."
@@ -475,7 +503,7 @@
                             {% endif %}
                         {% else %}
                             <tr>
-                                <td colspan="7" class="px-6 py-14 text-center">
+                                <td colspan="8" class="px-6 py-14 text-center">
                                     <div class="mx-auto flex h-10 w-10 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary">
                                         <i data-lucide="search-x" class="h-5 w-5" aria-hidden="true"></i>
                                     </div>
@@ -511,6 +539,7 @@
                   data-template-form
                   class="space-y-5">
                 {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+                <input type="hidden" name="next" value="{{ payload.registry_return_url }}">
                 <section class="grid gap-4 sm:grid-cols-2">
                     <label class="block sm:col-span-2">
                         <span class="text-xs font-semibold text-content-muted">Template Name</span>

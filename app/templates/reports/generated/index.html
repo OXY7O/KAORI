@@ -156,8 +156,17 @@
                             </p>
                         </div>
                     </div>
-                    {% if can_manage_storage or can_generate_reports %}
+                    {% if payload.active_filter_count > 0 or can_manage_storage or can_generate_reports %}
                         <div class="flex flex-wrap items-center gap-2">
+                            {% if payload.active_filter_count > 0 %}
+                                {{ registry_ui.clear_filters_link('reports.generated_reports',
+                                                    'generated-report-registry',
+                                                    'generated-report-loading',
+                                                    payload.pagination.per_page,
+                                                    table_ui.action_classes(),
+                                                    query_params={'period': '30d'}
+                                ) }}
+                            {% endif %}
                             {% if can_manage_storage %}
                                 <form id="bulk-archive-reports-form"
                                       method="POST"

@@ -1,4 +1,5 @@
 {% import "components/table.html" as table_ui %}
+{% import "components/table_registry.html" as registry_ui %}
 {% set resolved_endpoint = endpoint_name|default('intelligence.recommendations') %}
 {% set resolved_scope = filter_scope|default('recommendation') %}
 {% set resolved_title = filter_title|default('Recommendation Filters') %}
@@ -28,17 +29,18 @@
             <p class="text-sm font-semibold leading-5 text-content-primary">{{ resolved_title }}</p>
             <p class="mt-1 text-xs leading-5 text-content-muted">{{ resolved_description }}</p>
         </div>
-        <a href="{{ url_for(resolved_endpoint) }}"
-           hx-get="{{ url_for(resolved_endpoint) }}"
-           hx-target="{{ resolved_workspace_target }}"
-           hx-swap="outerHTML show:none focus-scroll:false"
-           hx-push-url="true"
-           hx-sync="{{ resolved_workspace_target }}:replace"
-           hx-indicator="{{ resolved_indicator }}"
-           class="inline-flex min-h-9 shrink-0 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary transition-colors hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
-            <i data-lucide="rotate-ccw" class="h-3.5 w-3.5" aria-hidden="true"></i>
-            Reset Filters
-        </a>
+        {% if payload.active_filter_count|default(0) > 0 %}
+            {{ registry_ui.clear_filters_action(
+                url_for(resolved_endpoint, per_page=payload.pagination.per_page),
+                table_ui.action_classes(),
+                hx_get=url_for(resolved_endpoint, per_page=payload.pagination.per_page),
+                target=resolved_workspace_target,
+                indicator=resolved_indicator,
+                swap='outerHTML show:none focus-scroll:false',
+                push_url='true',
+                sync=resolved_workspace_target ~ ':replace'
+            ) }}
+        {% endif %}
     </div>
     <div class="grid gap-3 sm:grid-cols-2 {{ 'lg:grid-cols-12' if filter_compact_two_rows|default(false) else 'xl:grid-cols-4' }}">
         <label class="block {{ 'lg:col-span-4' if filter_compact_two_rows|default(false) else 'xl:col-span-2' }}">

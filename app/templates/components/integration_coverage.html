@@ -1,15 +1,39 @@
 {% import "components/integration_coverage_content.html" as coverage_content %}
 {% import "integrations/components/_provider_registry.html" as provider_registry %}
 {% import "integrations/components/_workspace.html" as integration_ui %}
+{% import "components/table_registry.html" as registry_ui %}
+{% import "components/table.html" as table_ui %}
 {% macro render(provider, rows, stats, pagination, selected_query='', selected_readiness='', selected_compatibility='', selected_deployment_type='', registry_per_page=5, selected_coverage_query='', selected_coverage_environment='', selected_coverage_status='', coverage_environment_options=(), coverage_status_options=()) -%}
     <section id="integration-coverage"
              class="{{ integration_ui.section_shell_classes() }}"
              aria-labelledby="integration-coverage-title">
+        {% set coverage_filters_active = selected_coverage_query or selected_coverage_environment or selected_coverage_status %}
+        {% set coverage_clear_url = url_for(provider.registry_endpoint,
+            tab='coverage',
+            q=selected_query,
+            readiness=selected_readiness,
+            compatibility=selected_compatibility,
+            deployment_type=selected_deployment_type,
+            page=1,
+            per_page=registry_per_page,
+            coverage_page=1,
+            coverage_per_page=pagination.per_page) %}
+        {% set coverage_clear_action = registry_ui.clear_filters_action(
+            coverage_clear_url,
+            table_ui.action_classes(),
+            hx_get=coverage_clear_url,
+            target='#integration-coverage',
+            indicator='#' ~ provider.key ~ '-coverage-loading',
+            push_url='true',
+            swap='outerHTML',
+            marker=provider.key ~ '-coverage'
+        ) if coverage_filters_active else '' %}
         {{ provider_registry.registry_header(provider.label ~ ' Integration Coverage',
                 'Bind operational scopes to existing ' ~ provider.label ~ ' sources.',
                 'route',
                 provider.key ~ '-coverage-loading',
-                title_id='integration-coverage-title') }}
+                title_id='integration-coverage-title',
+                action_html=coverage_clear_action) }}
         <div class="{{ integration_ui.filter_region_classes() }}">
             <form id="{{ provider.key }}-coverage-filter-form"
                   method="get"

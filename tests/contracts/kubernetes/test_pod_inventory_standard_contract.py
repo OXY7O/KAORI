@@ -74,7 +74,7 @@ def test_pod_tables_are_accessible_and_export_is_evidence_aware() -> None:
     table = read('app/templates/inventory/kubernetes/pods/partials/_table_content.html')
     detail = read('app/templates/inventory/kubernetes/pods/partials/_pod_detail_content.html')
     export_payload = read('app/reports/export/payloads/inventory.py')
-    export_standard = read('app/reports/export/xlsx/standard.py')
+    export_standard = read('app/reports/export/xlsx/profiles_kubernetes.py')
 
     assert '<caption class="sr-only">' in table
     assert table.count('scope="col"') == 6

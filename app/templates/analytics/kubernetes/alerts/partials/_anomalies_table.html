@@ -2,6 +2,8 @@
 {% import "analytics/components/_record_pagination.html" as record_pagination %}
 {% import "components/loading_bar.html" as loading_bar %}
 {% import "components/table_label.html" as table_label %}
+{% import "components/table_registry.html" as registry_ui %}
+{% import "components/table.html" as table_ui %}
 {% call evidence_list.shell('Anomaly Candidates') %}
     <div id="anomalies-table-container">
         <header class="border-b border-outline-subtle px-4 py-4 sm:px-5">
@@ -10,7 +12,35 @@
                     <h3 class="text-base font-semibold text-content-primary">Anomaly Candidates</h3>
                     <p class="mt-1 text-sm leading-6 text-content-muted">Prometheus-derived restart and readiness deviations requiring validation before incident escalation.</p>
                 </div>
-                {{ table_label.status_label((anomalies_pagination.total_items|default(0) ) ~ ' Candidates', 'warning' if anomalies_pagination.total_items|default(0) else 'normal', size='compact') }}
+                <div class="flex flex-wrap items-center gap-2">
+                    {{ table_label.status_label((anomalies_pagination.total_items|default(0) ) ~ ' Candidates', 'warning' if anomalies_pagination.total_items|default(0) else 'normal', size='compact') }}
+                    {% if selected_severity != 'all' or selected_status != 'all' or selected_namespace or selected_search %}
+                        {% set local_clear_query = {
+                            'cluster_id': selected_cluster_id,
+                            'source': selected_source,
+                            'severity': 'all',
+                            'status': 'all',
+                            'namespace': '',
+                            'search': '',
+                            'tab': 'anomalies',
+                            'alerts_page': 1,
+                            'anomalies_page': 1,
+                            'alerts_per_page': selected_alerts_per_page,
+                            'anomalies_per_page': selected_anomalies_per_page
+                        } %}
+                        {% set local_clear_href = url_for('analytics.alerts', **local_clear_query) %}
+                        {% set local_clear_url = url_for('analytics.alerts_anomalies_table', **local_clear_query) %}
+                        {{ registry_ui.clear_filters_action(
+                            local_clear_href,
+                            table_ui.action_classes(),
+                            hx_get=local_clear_url,
+                            target='#anomalies-table-container',
+                            indicator='#anomalies-table-loading-indicator',
+                            swap='outerHTML',
+                            marker='anomalies-table-container'
+                        ) }}
+                    {% endif %}
+                </div>
             </div>
             {{ loading_bar.render('anomalies-table-loading-indicator', label='Refreshing Anomaly Candidates') }}
         </header>

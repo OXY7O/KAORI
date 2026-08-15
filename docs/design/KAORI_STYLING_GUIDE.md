@@ -625,6 +625,8 @@ Required rules:
 
 Inventory scope-changing filters must refresh the owning `*-page-workspace` with `outerHTML` so Hero context, snapshot evidence, summary posture, dependent options, and rows remain synchronized. Page-size and pagination controls refresh only `*-table-content` with `innerHTML`; their requests carry the active filters and `partial_mode=table_content`. Do not retain `*-inventory-scope` wrapper partials after a page adopts the canonical workspace contract. Filter forms listen to their own bubbled `change` events and scoped search input events; do not use a global `change from:select` trigger that can capture the separate Rows selector.
 
+Canonical filtered tables also expose **Clear Filters** only when at least one user filter/search value differs from its default. Clear resets the filtered result to page 1, preserves the selected Rows/per-page value, refreshes the same owning HTMX region with the same loading indicator, and removes filter query state from the pushed URL where that registry owns URL state. Use `components/table_registry.html`; do not introduce `Reset Filter` / `Reset Filters` page-local variants.
+
 ## 21. Pod Runtime and Container Evidence
 
 Pod Inventory follows `patterns/KUBERNETES_POD_INVENTORY.md`.

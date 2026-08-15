@@ -1,5 +1,4 @@
 {% extends "layouts/app.html" %}
-{% import "components/integration_coverage.html" as integration_coverage %}
 {% import "components/integration_workspace_tabs.html" as integration_tabs %}
 {% import "integrations/components/_provider_frontpage.html" as provider_front %}
 {% block title %}Prometheus Integrations · KAORI{% endblock title %}
@@ -29,20 +28,7 @@
                 "Scraping, recording rules, retention, federation, and historical storage remain managed by Prometheus.") }}
         {% call(tab_name) integration_tabs.render("prometheus", active_tab, coverage_stats.total, stats.total) %}
             {% if tab_name == "coverage" %}
-                {{ integration_coverage.render(provider,
-                                coverage_rows,
-                                coverage_stats,
-                                coverage_pagination,
-                                selected_query=selected_query,
-                                selected_readiness=selected_readiness,
-                                selected_compatibility=selected_compatibility,
-                                selected_deployment_type="",
-                                registry_per_page=pagination.per_page,
-                                selected_coverage_query=selected_coverage_query,
-                                selected_coverage_environment=selected_coverage_environment,
-                                selected_coverage_status=selected_coverage_status,
-                                coverage_environment_options=coverage_environment_options,
-                                coverage_status_options=coverage_status_options) }}
+                {% include "integrations/partials/_coverage_card.html" %}
             {% else %}
                 {% include "integrations/prometheus/partials/_instance_inventory.html" %}
             {% endif %}

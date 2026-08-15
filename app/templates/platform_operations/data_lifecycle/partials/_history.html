@@ -2,6 +2,7 @@
 {% import "components/pagination.html" as pagination_ui %}
 {% import "components/table_label.html" as table_label %}
 {% import "components/loading_bar.html" as loading_bar %}
+{% import "components/table_registry.html" as registry_ui %}
 {% set filters = lifecycle.history_filters %}
 {% set pager = lifecycle.history_pagination %}
 <section id="data-lifecycle-history" class="{{ table_ui.block_classes() }}">
@@ -18,6 +19,19 @@
                 {% if current_user.has_permission('jobs.view') %}
                     <a href="{{ url_for('jobs.executions') }}"
                        class="{{ table_ui.action_classes() }}"><i data-lucide="list-checks" class="h-4 w-4"></i>Jobs &amp; Executions</a>
+                {% endif %}
+                {% if filters.domain != 'all' or filters.status != 'all' or filters.trigger_type != 'all' or filters.operation_mode != 'all' or filters.storage_backend != 'all' or filters.search %}
+                    {% set history_clear_url = url_for('platform_operations.data_lifecycle.index', tab='history', archive_page=1, archive_per_page=pager.per_page) %}
+                    {{ registry_ui.clear_filters_action(
+                        history_clear_url,
+                        table_ui.action_classes(),
+                        hx_get=history_clear_url,
+                        target='#data-lifecycle-history',
+                        indicator='#data-lifecycle-history-loading',
+                        push_url='true',
+                        swap='outerHTML',
+                        marker='data-lifecycle-history'
+                    ) }}
                 {% endif %}
                 <a href="{{ url_for('platform_operations.data_lifecycle.index', tab='history', archive_domain=filters.domain, archive_status=filters.status, archive_trigger=filters.trigger_type, archive_mode=filters.operation_mode, archive_storage=filters.storage_backend, archive_search=filters.search, archive_page=pager.page, archive_per_page=pager.per_page) }}"
                    hx-get="{{ url_for('platform_operations.data_lifecycle.index', tab='history', archive_domain=filters.domain, archive_status=filters.status, archive_trigger=filters.trigger_type, archive_mode=filters.operation_mode, archive_storage=filters.storage_backend, archive_search=filters.search, archive_page=pager.page, archive_per_page=pager.per_page) }}"

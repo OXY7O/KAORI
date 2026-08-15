@@ -1,4 +1,5 @@
 {% import "components/table.html" as table_ui %}
+{% import "components/table_registry.html" as registry_ui %}
 {% import "components/table_label.html" as table_label %}
 {% import "components/loading_bar.html" as loading_bar %}
 {% import "components/pagination.html" as pagination_ui %}
@@ -13,7 +14,20 @@
                     <p class="{{ table_ui.block_description_classes() }}">Review role type, lifecycle state, assignments, permission coverage, and governed actions.</p>
                 </div>
             </div>
-            {{ table_label.metadata_label(summary.matching ~ ' Matching ' ~ ('Role' if summary.matching == 1 else 'Roles') , 'list-filter') }}
+            <div class="flex flex-wrap items-center gap-2">
+                {{ table_label.metadata_label(summary.matching ~ ' Matching ' ~ ('Role' if summary.matching == 1 else 'Roles') , 'list-filter') }}
+                {% if filters.search or filters.role_type != 'all' or filters.state != 'all' %}
+                    {{ registry_ui.clear_filters_action(
+                        url_for('access.roles.index', per_page=filters.per_page),
+                        table_ui.action_classes(),
+                        hx_get=url_for('access.roles.index', per_page=filters.per_page),
+                        target='#role-registry',
+                        indicator='#role-registry-loading',
+                        push_url='true',
+                        sync='#role-registry:replace'
+                    ) }}
+                {% endif %}
+            </div>
         </div>
         {{ loading_bar.render('role-registry-loading', label='Refreshing Role Registry') }}
     </header>

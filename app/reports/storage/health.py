@@ -271,15 +271,11 @@ def build_storage_retention_policy() -> dict[str, Any]:
     return {
         'status': 'Lifecycle Managed' if lifecycle_enabled else 'Lifecycle Paused',
         'mode': (
-            str(stored.operation_mode).replace('_', ' ').title()
-            if stored is not None
-            else 'Archive Then Cleanup'
+            str(stored.operation_mode).replace('_', ' ').title() if stored is not None else 'Archive Then Cleanup'
         ),
         'auto_cleanup_enabled': lifecycle_enabled and schedule_enabled,
         'manual_cleanup_enabled': lifecycle_enabled,
-        'orphan_detection_enabled': parse_bool_config(
-            current_app.config.get('REPORT_ORPHAN_DETECTION_ENABLED', True)
-        ),
+        'orphan_detection_enabled': parse_bool_config(current_app.config.get('REPORT_ORPHAN_DETECTION_ENABLED', True)),
         'orphan_cleanup_enabled': False,
         'destructive_actions_enabled': lifecycle_enabled,
         'retention_days': retention_days,

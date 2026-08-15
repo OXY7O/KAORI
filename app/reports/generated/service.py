@@ -143,6 +143,7 @@ def get_generated_reports_payload(
         'summary_cards': summary_cards,
         'filter_options': get_filter_options(),
         'selected_filters': selected_filters,
+        'active_filter_count': get_active_filter_count(selected_filters),
         'reports': reports,
         'pagination': get_pagination(
             selected_filters,
@@ -389,6 +390,12 @@ def get_selected_filters(
         'page': str(positive_int(query_args.get('page'), 1)),
         'per_page': str(normalize_per_page(query_args.get('per_page'))),
     }
+
+
+def get_active_filter_count(selected_filters: Mapping[str, str]) -> int:
+    filter_keys = {'scope', 'report_type', 'status', 'output_format', 'search'}
+    active_count = sum(1 for key in filter_keys if str(selected_filters.get(key, '') or '').strip())
+    return active_count + int(str(selected_filters.get('period', '30d') or '30d') != '30d')
 
 
 def get_reports(

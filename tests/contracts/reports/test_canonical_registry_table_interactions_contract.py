@@ -49,6 +49,7 @@ def test_report_registries_consume_shared_controls_instead_of_copying_htmx_contr
 
     assert "control_name='generated-reports'" in generated
     assert "control_name='report-templates'" in templates
+    assert 'registry_ui.clear_filters_link(' in generated
     assert 'registry_ui.clear_filters_link(' in templates
 
 

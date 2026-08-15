@@ -1,6 +1,7 @@
 {% import "components/table.html" as table_ui %}
 {% import "components/pagination.html" as pagination_ui %}
 {% import "components/loading_bar.html" as loading_bar %}
+{% import "components/table_registry.html" as registry_ui %}
 {% import "components/table_label.html" as table_label %}
 {% import "integrations/components/_workspace.html" as integration_ui %}
 {% import "integrations/components/_record_detail_modal.html" as record_detail_modal %}
@@ -28,7 +29,22 @@
                     <p class="mt-1 max-w-4xl text-sm leading-6 text-content-secondary">Review capability identity, Kubernetes resource, active API contract, requirement level, and validation state. Detailed decision and verification evidence remains behind View More.</p>
                 </div>
             </div>
-            {{ table_label.metadata_label(registry.total_contracts ~ ' Capability Contracts') }}
+            <div class="flex flex-wrap items-center gap-2">
+                {{ table_label.metadata_label(registry.total_contracts ~ ' Capability Contracts') }}
+                {% if filters.query or filters.requirement or filters.status %}
+                    {% set capability_clear_href = url_for('integrations.kubernetes_detail', cluster_id=cluster.id, tab='validation', capability_page=1, capability_per_page=pagination.per_page) %}
+                    {% set capability_clear_url = url_for('integrations.kubernetes_capability_registry', cluster_id=cluster.id, capability_page=1, capability_per_page=pagination.per_page) %}
+                    {{ registry_ui.clear_filters_action(
+                        capability_clear_href,
+                        table_ui.action_classes(),
+                        hx_get=capability_clear_url,
+                        target='#kubernetes-capability-registry',
+                        indicator='#kubernetes-capability-loading',
+                        swap='outerHTML',
+                        marker='kubernetes-capability-registry'
+                    ) }}
+                {% endif %}
+            </div>
         </div>
         <div data-kaori-capability-loading-region>
             {{ loading_bar.render('kubernetes-capability-loading', label='Refreshing Capability Registry') }}

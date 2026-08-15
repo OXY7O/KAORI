@@ -1,6 +1,7 @@
 {% import "components/loading_bar.html" as loading_bar %}
 {% import "components/table_label.html" as table_label %}
 {% import "components/table_primitives.html" as table_ui %}
+{% import "components/table_registry.html" as registry_ui %}
 {% import "components/progress_bar.html" as progress_bar %}
 {% import "analytics/components/_record_pagination.html" as record_pagination %}
 <section id="object-storage-bucket-table-panel"
@@ -59,16 +60,16 @@
                         <i data-lucide="search" class="h-4 w-4"></i>
                         Apply Filter
                     </button>
-                    <a href="{{ url_for(bucket_table.page_endpoint, system_id=system.id, time_range=selected_time_range, bucket_per_page=bucket_table.pagination.per_page, tab=bucket_table.query_params.tab|default(none)) }}"
-                       hx-get="{{ url_for('analytics.object_storage_bucket_table', system_id=system.id, time_range=selected_time_range, page_key=page_key, bucket_per_page=bucket_table.pagination.per_page, tab=bucket_table.query_params.tab|default(none)) }}"
-                       hx-target="#object-storage-bucket-table-panel"
-                       hx-swap="outerHTML"
-                       hx-sync="#object-storage-bucket-table-panel:replace"
-                       hx-indicator="#object-storage-bucket-table-loading-indicator"
-                       class="{{ table_ui.action_classes() }} h-10 px-4">
-                        <i data-lucide="rotate-ccw" class="h-4 w-4"></i>
-                        Reset Filter
-                    </a>
+                    {% if bucket_table.search %}
+                        {{ registry_ui.clear_filters_action(
+                            url_for(bucket_table.page_endpoint, system_id=system.id, time_range=selected_time_range, bucket_per_page=bucket_table.pagination.per_page, tab=bucket_table.query_params.tab|default(none)),
+                            table_ui.action_classes() ~ ' h-10 px-4',
+                            hx_get=url_for('analytics.object_storage_bucket_table', system_id=system.id, time_range=selected_time_range, page_key=page_key, bucket_per_page=bucket_table.pagination.per_page, tab=bucket_table.query_params.tab|default(none)),
+                            target='#object-storage-bucket-table-panel',
+                            indicator='#object-storage-bucket-table-loading-indicator',
+                            sync='#object-storage-bucket-table-panel:replace'
+                        ) }}
+                    {% endif %}
                 </div>
             </div>
         </form>

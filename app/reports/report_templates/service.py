@@ -64,6 +64,12 @@ def get_report_templates_payload(
     ]
     pagination = build_templates_pagination(args, selected_filters, len(filtered_templates))
     templates = filtered_templates[pagination['offset'] : pagination['offset'] + pagination['per_page']]
+    registry_return_url = build_template_registry_url(selected_filters, pagination)
+    for template in templates:
+        if template['source'] == 'custom':
+            template['edit_href'] = build_template_registry_url(
+                selected_filters, pagination, edit_template_id=int(template['database_id'])
+            )
     edit_template = get_edit_template_context(args) if args is not None else None
 
     return {
@@ -76,6 +82,7 @@ def get_report_templates_payload(
         'filter_options': get_filter_options(),
         'selected_filters': selected_filters,
         'active_filter_count': count_active_filters(selected_filters),
+        'registry_return_url': registry_return_url,
         'templates': templates,
         'template_count': len(templates),
         'pagination': pagination,
@@ -125,6 +132,9 @@ def build_system_template_item(template: dict[str, Any]) -> dict[str, Any]:
         'database_id': None,
         'family': str(template.get('family') or get_report_family(template_id)),
         'family_label': get_report_family_label(str(template.get('family') or get_report_family(template_id))),
+        'domain_label': REPORT_DOMAIN_LABELS.get(
+            str(template.get('report_domain') or DEFAULT_REPORT_DOMAIN), 'Unknown Domain'
+        ),
         'sections': get_section_labels(sections),
         'section_values': sections,
         'section_count': len(sections),
@@ -147,6 +157,7 @@ def build_system_template_item(template: dict[str, Any]) -> dict[str, Any]:
         'can_edit': False,
         'can_delete': False,
         'can_duplicate': True,
+        'can_generate': True,
     }
 
 
@@ -167,6 +178,7 @@ def build_custom_template_item(template: ReportTemplate) -> dict[str, Any]:
         'report_type_label': report_type_label,
         'family': family,
         'family_label': get_report_family_label(family),
+        'domain_label': REPORT_DOMAIN_LABELS.get(template.report_domain or DEFAULT_REPORT_DOMAIN, 'Unknown Domain'),
         'description': template.description or 'Custom report template.',
         'status': status,
         'output_format': template.output_format.upper(),
@@ -193,6 +205,7 @@ def build_custom_template_item(template: ReportTemplate) -> dict[str, Any]:
         'can_edit': True,
         'can_delete': True,
         'can_duplicate': True,
+        'can_generate': status == 'active',
     }
 
 
@@ -228,6 +241,7 @@ def get_edit_template_context(args: MultiDict[str, str]) -> dict[str, Any] | Non
 def template_matches_filters(template: dict[str, Any], filters: dict[str, str]) -> bool:
     report_type = filters.get('report_type', '')
     family = filters.get('family', '')
+    domain = filters.get('domain', '')
     ownership = filters.get('ownership', '')
     status = filters.get('status', '')
     output_format = filters.get('output_format', '')
@@ -236,6 +250,8 @@ def template_matches_filters(template: dict[str, Any], filters: dict[str, str]) 
     if report_type and template.get('report_type') != report_type:
         return False
     if family and template.get('family') != family:
+        return False
+    if domain and template.get('report_domain') != domain:
         return False
     if ownership and template.get('ownership') != ownership:
         return False
@@ -249,6 +265,7 @@ def template_matches_filters(template: dict[str, Any], filters: dict[str, str]) 
             [
                 str(template.get('name', '')),
                 str(template.get('family_label', '')),
+                str(template.get('domain_label', '')),
                 str(template.get('report_type_label', '')),
                 str(template.get('description', '')),
                 str(template.get('created_by_label', '')),
@@ -494,7 +511,19 @@ def get_filter_options() -> dict[str, list[dict[str, str]]]:
             {'value': str(option['value']), 'label': str(option['label']).replace(' Report', '')}
         )
 
+    published_domains = sorted(
+        {str(item.get('report_domain') or DEFAULT_REPORT_DOMAIN) for item in SYSTEM_TEMPLATE_ITEMS},
+        key=lambda value: REPORT_DOMAIN_LABELS.get(value, value),
+    )
+
     return {
+        'domains': [
+            {'value': '', 'label': 'All Domains'},
+            *[
+                {'value': value, 'label': REPORT_DOMAIN_LABELS.get(value, value.replace('_', ' ').title())}
+                for value in published_domains
+            ],
+        ],
         'families': [
             {'value': '', 'label': 'All Families'},
             {'value': REPORT_FAMILY_ANALYTICS, 'label': 'Analytics'},
@@ -521,6 +550,7 @@ def get_filter_options() -> dict[str, list[dict[str, str]]]:
 
 def get_selected_filters(args: MultiDict[str, str] | None) -> dict[str, str]:
     defaults = {
+        'domain': '',
         'family': '',
         'report_type': '',
         'ownership': '',
@@ -532,6 +562,7 @@ def get_selected_filters(args: MultiDict[str, str] | None) -> dict[str, str]:
         return defaults
 
     filters = {
+        'domain': args.get('domain', '').strip(),
         'family': args.get('family', '').strip(),
         'report_type': args.get('report_type', '').strip(),
         'ownership': args.get('ownership', '').strip(),
@@ -539,6 +570,9 @@ def get_selected_filters(args: MultiDict[str, str] | None) -> dict[str, str]:
         'output_format': args.get('output_format', '').strip().lower(),
         'search': args.get('search', '').strip(),
     }
+    allowed_domains = {str(item.get('report_domain') or DEFAULT_REPORT_DOMAIN) for item in SYSTEM_TEMPLATE_ITEMS}
+    if filters['domain'] not in allowed_domains:
+        filters['domain'] = ''
     if filters['family'] not in {REPORT_FAMILY_ANALYTICS, REPORT_FAMILY_INVENTORY}:
         filters['family'] = ''
     if filters['report_type'] not in get_allowed_report_types():
@@ -551,6 +585,19 @@ def get_selected_filters(args: MultiDict[str, str] | None) -> dict[str, str]:
     if filters['output_format'] not in allowed_formats:
         filters['output_format'] = ''
     return filters
+
+
+def build_template_registry_url(
+    selected_filters: dict[str, str],
+    pagination: dict[str, Any],
+    *,
+    edit_template_id: int | None = None,
+) -> str:
+    query: dict[str, Any] = {key: value for key, value in selected_filters.items() if value}
+    query.update({'page': pagination['page'], 'per_page': pagination['per_page']})
+    if edit_template_id is not None:
+        query['edit_template_id'] = edit_template_id
+    return url_for('reports.report_templates', **query)
 
 
 def build_templates_pagination(

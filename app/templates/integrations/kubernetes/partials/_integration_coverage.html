@@ -1,15 +1,38 @@
 {% import "components/table.html" as table_ui %}
+{% import "components/table_registry.html" as registry_ui %}
 {% import "integrations/components/_provider_registry.html" as provider_registry %}
 {% import "integrations/components/_workspace.html" as integration_ui %}
 {% from "integrations/components/_semantic_status.html" import integration_status %}
 <section id="kubernetes-integration-coverage"
          class="{{ integration_ui.section_shell_classes() }}"
          aria-labelledby="kubernetes-coverage-title">
+    {% set coverage_filters_active = selected_coverage_query or selected_coverage_environment or selected_coverage_status %}
+    {% set coverage_clear_url = url_for('integrations.kubernetes',
+        tab='coverage',
+        q=selected_query,
+        environment=selected_environment,
+        readiness=selected_readiness,
+        coverage=selected_coverage,
+        page=1,
+        per_page=pagination.per_page,
+        coverage_page=1,
+        coverage_per_page=coverage_pagination.per_page) %}
+    {% set coverage_clear_action = registry_ui.clear_filters_action(
+        coverage_clear_url,
+        table_ui.action_classes(),
+        hx_get=coverage_clear_url,
+        target='#kubernetes-integration-coverage',
+        indicator='#kubernetes-coverage-loading',
+        push_url='true',
+        swap='outerHTML',
+        marker='kubernetes-coverage'
+    ) if coverage_filters_active else '' %}
     {{ provider_registry.registry_header("Kubernetes Integration Coverage",
         "Review direct Kubernetes API authority and the independent metrics and alert consumers associated with each cluster.",
         "route",
         "kubernetes-coverage-loading",
-        title_id="kubernetes-coverage-title") }}
+        title_id="kubernetes-coverage-title",
+        action_html=coverage_clear_action) }}
     <div class="{{ integration_ui.filter_region_classes() }}">
         <form id="kubernetes-coverage-filter-form"
               method="get"

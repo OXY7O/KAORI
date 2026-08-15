@@ -1,4 +1,5 @@
 {% import "components/table.html" as table_ui %}
+{% import "components/table_registry.html" as registry_ui %}
 {% import "components/table_label.html" as table_label %}
 {% import "components/loading_bar.html" as loading_bar %}
 {% import "components/details/_expandable_row.html" as expandable %}
@@ -16,12 +17,24 @@
                     <p class="{{ table_ui.block_description_classes() }}">Review configuration, enablement, identity links, and provider-owned actions.</p>
                 </div>
             </div>
-            <span class="inline-flex min-h-8 shrink-0 items-center gap-1.5 self-start rounded-md border border-outline-default bg-surface-subtle px-3 text-xs font-semibold text-content-secondary lg:self-auto">
-                <i data-lucide="scan-search"
-                   class="h-3.5 w-3.5 text-kaori-primary"
-                   aria-hidden="true"></i>
-                {{ summary.matching }} Matching {{ 'Provider' if summary.matching == 1 else 'Providers' }}
-            </span>
+            <div class="flex flex-wrap items-center gap-2">
+                <span class="inline-flex min-h-8 shrink-0 items-center gap-1.5 rounded-md border border-outline-default bg-surface-subtle px-3 text-xs font-semibold text-content-secondary">
+                    <i data-lucide="scan-search"
+                       class="h-3.5 w-3.5 text-kaori-primary"
+                       aria-hidden="true"></i>
+                    {{ summary.matching }} Matching {{ 'Provider' if summary.matching == 1 else 'Providers' }}
+                </span>
+                {% if filters.search or filters.provider_type != 'all' or filters.state != 'all' %}
+                    {{ registry_ui.clear_filters_action(
+                        url_for('users.providers', per_page=pagination.per_page),
+                        table_ui.action_classes(),
+                        hx_get=url_for('users.providers', per_page=pagination.per_page),
+                        target='#identity-provider-registry',
+                        indicator='#identity-provider-registry-loading',
+                        push_url='true'
+                    ) }}
+                {% endif %}
+            </div>
         </div>
         {{ loading_bar.render('identity-provider-registry-loading', label='Refreshing Provider Registry') }}
     </header>

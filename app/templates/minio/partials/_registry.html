@@ -1,13 +1,36 @@
+{% import "components/table.html" as table_ui %}
 {% import "integrations/components/_provider_registry.html" as provider_registry %}
 {% import "integrations/components/_workspace.html" as integration_ui %}
+{% import "components/table_registry.html" as registry_ui %}
 <section id="minio-connection-registry"
          class="{{ integration_ui.section_shell_classes() }}"
          aria-labelledby="minio-registry-title">
+    {% set registry_filters_active = selected_query or selected_environment or selected_readiness or selected_compatibility %}
+    {% set registry_clear_url = url_for('minio.index',
+        tab='registry',
+        page=1,
+        per_page=pagination.per_page,
+        coverage_page=1,
+        coverage_per_page=coverage_pagination.per_page,
+        coverage_q=selected_coverage_query,
+        coverage_environment=selected_coverage_environment,
+        coverage_status=selected_coverage_status) %}
+    {% set registry_clear_action = registry_ui.clear_filters_action(
+        registry_clear_url,
+        table_ui.action_classes(),
+        hx_get=registry_clear_url,
+        target='#minio-connection-registry',
+        indicator='#minio-registry-loading',
+        push_url='true',
+        swap='outerHTML',
+        marker='minio-registry'
+    ) if registry_filters_active else '' %}
     {{ provider_registry.registry_header("MinIO Connection Registry",
         "Manage reusable MinIO API connections and review their consumer binding coverage.",
         "database-zap",
         "minio-registry-loading",
-        title_id="minio-registry-title") }}
+        title_id="minio-registry-title",
+        action_html=registry_clear_action) }}
     <div class="{{ integration_ui.filter_region_classes() }}">
         <form id="minio-registry-filter-form"
               method="get"

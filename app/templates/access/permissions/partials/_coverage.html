@@ -1,5 +1,6 @@
 {% import "components/loading_bar.html" as loading_bar %}
 {% import "components/table.html" as table_ui %}
+{% import "components/table_registry.html" as registry_ui %}
 {% import "components/table_label.html" as table_label %}
 {% import "components/pagination.html" as pagination_ui %}
 <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
@@ -11,7 +12,19 @@
                 <p class="{{ table_ui.block_description_classes() }}">Compare effective permission inclusion across default and custom roles.</p>
             </div>
         </div>
-        {{ table_label.metadata_label(matching_count ~ ' Matching ' ~ ('Permission' if matching_count == 1 else 'Permissions') , 'key-round') }}
+        <div class="flex flex-wrap items-center gap-2">
+            {{ table_label.metadata_label(matching_count ~ ' Matching ' ~ ('Permission' if matching_count == 1 else 'Permissions') , 'key-round') }}
+            {% if filters.search or filters.module != 'all' or filters.role_type != 'all' or filters.role_state != 'all' %}
+                {{ registry_ui.clear_filters_action(
+                    url_for('access.permissions.index', view='coverage', per_page=filters.per_page),
+                    table_ui.action_classes(),
+                    hx_get=url_for('access.permissions.index', view='coverage', per_page=filters.per_page),
+                    target='#permission-workspace',
+                    indicator='#permission-coverage-loading',
+                    push_url='true'
+                ) }}
+            {% endif %}
+        </div>
     </div>
     {{ loading_bar.render('permission-coverage-loading', label='Refreshing Role Coverage') }}
 </header>

@@ -86,7 +86,7 @@ def test_alert_record_filters_are_tab_local_auto_refresh_and_keep_reset() -> Non
     assert 'id="alert-intelligence-filter-form"' in alerts
     assert 'hx-trigger="input changed delay:350ms' in alerts
     assert 'change from:select' in alerts
-    assert 'Reset Filters' in alerts
+    assert 'clear_filters_action' in alerts
     assert '>Apply<' not in alerts
     assert 'source=payload.source' in alerts
 

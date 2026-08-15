@@ -1,11 +1,34 @@
 {% import "integrations/components/_provider_registry.html" as provider_registry %}
 {% import "integrations/components/_workspace.html" as integration_ui %}
+{% import "components/table_registry.html" as registry_ui %}
+{% import "components/table.html" as table_ui %}
 <section id="alertmanager-inventory-card"
          class="{{ integration_ui.section_shell_classes() }}">
+    {% set registry_filters_active = selected_query or selected_readiness or selected_compatibility or selected_deployment_type %}
+    {% set registry_clear_url = url_for('integrations.alertmanager',
+        tab='registry',
+        page=1,
+        per_page=pagination.per_page,
+        coverage_page=1,
+        coverage_per_page=coverage_pagination.per_page,
+        coverage_q=selected_coverage_query,
+        coverage_environment=selected_coverage_environment,
+        coverage_status=selected_coverage_status) %}
+    {% set registry_clear_action = registry_ui.clear_filters_action(
+        registry_clear_url,
+        table_ui.action_classes(),
+        hx_get=registry_clear_url,
+        target='#alertmanager-inventory-card',
+        indicator='#alertmanager-inventory-loading',
+        push_url='true',
+        swap='outerHTML',
+        marker='alertmanager-inventory'
+    ) if registry_filters_active else '' %}
     {{ provider_registry.registry_header('Alertmanager Connection Registry',
         'Manage reusable Alertmanager connections and their downstream consumer bindings.',
         'database-zap',
-        'alertmanager-inventory-loading') }}
+        'alertmanager-inventory-loading',
+        action_html=registry_clear_action) }}
     <div class="{{ integration_ui.filter_region_classes() }}"
          data-kaori-one-line-filters>
         <form id="alertmanager-inventory-filter-form"

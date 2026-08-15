@@ -1,14 +1,36 @@
 {% import "components/table.html" as table_ui %}
+{% import "components/table_registry.html" as registry_ui %}
 {% import "integrations/components/_provider_registry.html" as provider_registry %}
 {% import "integrations/components/_workspace.html" as integration_ui %}
 {% from "integrations/components/_semantic_status.html" import integration_status %}
 <section id="kubernetes-connection-registry"
          class="{{ integration_ui.section_shell_classes() }}"
          data-kaori-kubernetes-registry-icon-palette>
+    {% set registry_filters_active = selected_query or selected_environment or selected_readiness or selected_coverage %}
+    {% set registry_clear_url = url_for('integrations.kubernetes',
+        tab='registry',
+        page=1,
+        per_page=pagination.per_page,
+        coverage_page=1,
+        coverage_per_page=coverage_pagination.per_page,
+        coverage_q=selected_coverage_query,
+        coverage_environment=selected_coverage_environment,
+        coverage_status=selected_coverage_status) %}
+    {% set registry_clear_action = registry_ui.clear_filters_action(
+        registry_clear_url,
+        table_ui.action_classes(),
+        hx_get=registry_clear_url,
+        target='#kubernetes-connection-registry',
+        indicator='#kubernetes-registry-loading',
+        push_url='true',
+        swap='outerHTML',
+        marker='kubernetes-registry'
+    ) if registry_filters_active else '' %}
     {{ provider_registry.registry_header("Kubernetes Connection Registry",
         "Manage reusable Kubernetes API connections and their downstream consumer bindings.",
         "database-zap",
-        "kubernetes-registry-loading") }}
+        "kubernetes-registry-loading",
+        action_html=registry_clear_action) }}
     <div class="{{ integration_ui.filter_region_classes() }}"
          data-kaori-one-line-filters>
         <form method="get"

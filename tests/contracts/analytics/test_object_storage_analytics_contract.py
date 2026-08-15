@@ -365,8 +365,8 @@ def test_object_storage_bucket_records_use_shared_kaori_table_contract() -> None
     assert "'top_consumers': 'records'" in table_service
     assert "{5, 10, 25, 50}" in table_service
     assert 'Canonical Inventory-aligned full-page + HTMX pagination' in pagination
-    assert 'Reset Filter' in table
-    assert 'rotate-ccw' in table
+    assert 'clear_filters_action' in table
+    assert 'data-lucide="x"' in read('app/templates/components/table_registry.html')
     assert 'Bucket Consumption Evidence' not in table
 
 
@@ -497,7 +497,7 @@ def test_object_storage_forecast_consumers_and_alerts_use_shared_tab_workspace_c
     assert "'Active Alert State'" in hero_posture
     assert '_alert_records.html' in alerts_workspace
     assert '_alerts_source_evidence.html' in alerts_workspace
-    assert 'Reset Filter' in alert_records
+    assert 'clear_filters_action' in alert_records
     assert 'Prometheus Fallback' in alert_source_evidence
     assert not (ROOT / 'app/templates/analytics/object_storage/partials/_alerts_lifecycle.html').exists()
 
