@@ -22,40 +22,36 @@
         <div class="grid divide-y divide-outline-subtle lg:grid-cols-2 lg:divide-x lg:divide-y-0">
             <section class="p-4 sm:p-5">
                 {{ intelligence_ui.subsection('Evaluation Logic', 'What the rule evaluates, why it matters, and how the evidence boundary is interpreted.', 'scan-search') }}
-                <div class="mt-4 grid gap-3">
-                    <article class="rounded-lg border border-outline-subtle bg-surface-hover p-4">
-                        <div class="flex items-start gap-3">
-                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
-                                <i data-lucide="binary" class="h-4 w-4"></i>
-                            </span>
-                            <div class="min-w-0">
-                                <p class="text-xs font-semibold leading-5 text-content-secondary">Condition</p>
-                                <p class="mt-1 text-sm leading-6 text-content-primary">{{ item.condition_summary }}</p>
-                            </div>
+                <div class="mt-4 overflow-hidden rounded-lg border border-outline-subtle bg-surface-hover">
+                    <div class="flex items-start gap-3 px-4 py-4">
+                        <span class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
+                            <i data-lucide="binary" class="h-4 w-4"></i>
+                        </span>
+                        <div class="min-w-0">
+                            <p class="text-xs font-semibold leading-5 text-content-secondary">Condition</p>
+                            <p class="mt-1 text-sm leading-6 text-content-primary">{{ item.condition_summary }}</p>
                         </div>
-                    </article>
-                    <article class="rounded-lg border border-outline-subtle bg-surface-hover p-4">
-                        <div class="flex items-start gap-3">
-                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-status-warning-soft text-status-warning" aria-hidden="true">
-                                <i data-lucide="shield-alert" class="h-4 w-4"></i>
-                            </span>
-                            <div class="min-w-0">
-                                <p class="text-xs font-semibold leading-5 text-content-secondary">Operational Impact</p>
-                                <p class="mt-1 text-sm leading-6 text-content-primary">{{ item.impact }}</p>
-                            </div>
+                    </div>
+                    <div class="border-t border-outline-subtle"></div>
+                    <div class="flex items-start gap-3 px-4 py-4">
+                        <span class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-status-warning-soft text-status-warning" aria-hidden="true">
+                            <i data-lucide="shield-alert" class="h-4 w-4"></i>
+                        </span>
+                        <div class="min-w-0">
+                            <p class="text-xs font-semibold leading-5 text-content-secondary">Operational Impact</p>
+                            <p class="mt-1 text-sm leading-6 text-content-primary">{{ item.impact }}</p>
                         </div>
-                    </article>
-                    <article class="rounded-lg border border-outline-subtle bg-surface-hover p-4">
-                        <div class="flex items-start gap-3">
-                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-status-info-soft text-status-info" aria-hidden="true">
-                                <i data-lucide="waypoints" class="h-4 w-4"></i>
-                            </span>
-                            <div class="min-w-0">
-                                <p class="text-xs font-semibold leading-5 text-content-secondary">Signal Boundary</p>
-                                <p class="mt-1 text-sm leading-6 text-content-primary">{{ item.evidence_boundary }}</p>
-                            </div>
+                    </div>
+                    <div class="border-t border-outline-subtle"></div>
+                    <div class="flex items-start gap-3 px-4 py-4">
+                        <span class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-status-info-soft text-status-info" aria-hidden="true">
+                            <i data-lucide="waypoints" class="h-4 w-4"></i>
+                        </span>
+                        <div class="min-w-0">
+                            <p class="text-xs font-semibold leading-5 text-content-secondary">Signal Boundary</p>
+                            <p class="mt-1 text-sm leading-6 text-content-primary">{{ item.evidence_boundary }}</p>
                         </div>
-                    </article>
+                    </div>
                 </div>
             </section>
             <section class="p-4 sm:p-5">

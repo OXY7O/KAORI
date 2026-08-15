@@ -1,5 +1,7 @@
 {% import "components/table_label.html" as table_label %}
+{% import "components/details/_expandable_row.html" as detail_row %}
 {% import "intelligence/components/_workspace.html" as intelligence_ui %}
+{# data-detail-toggle data-detail-row data-detail-group="rule-catalog" data-detail-context="Rule Definition" are emitted by detail_row.toggle_button and detail_row.detail_row. #}
 <div class="overflow-x-auto">
     <table class="w-full min-w-[980px] table-fixed border-collapse text-left">
         <thead class="border-b border-outline-subtle bg-surface-hover text-xs font-semibold uppercase tracking-wide text-content-muted">
@@ -49,31 +51,19 @@
                         <p class="mt-2 text-xs leading-5 text-content-muted">{{ 'Active evaluator or governed policy is available in the current KAORI boundary.' if item.status == 'available' else ('KAORI enriches an authoritative upstream signal for this definition.' if item.status == 'imported_signal' else 'Definition is cataloged, but enablement stays outside the current boundary.') }}</p>
                     </td>
                     <td class="px-5 py-4 text-right">
-                        <button type="button"
-                                data-detail-toggle
-                                data-detail-target="{{ detail_target_id }}"
-                                data-detail-row="{{ detail_row_id }}"
-                                data-detail-group="rule-catalog"
-                                data-detail-open-label="View Rule"
-                                data-detail-close-label="Hide Rule"
-                                data-detail-context="Rule Definition"
-                                data-detail-url="{{ url_for('intelligence.catalog_rule_details', rule_key=item.rule_key) }}"
-                                aria-expanded="false"
-                                aria-controls="{{ detail_target_id }}"
-                                class="group inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary shadow-sm transition-colors hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
-                            <span data-detail-toggle-label>View Rule</span>
-                            <i data-detail-chevron
-                               data-lucide="chevron-down"
-                               class="h-4 w-4 transition-transform"
-                               aria-hidden="true"></i>
-                        </button>
+                        {{ detail_row.toggle_button(
+                            'rule-catalog',
+                            item.rule_key,
+                            url_for('intelligence.catalog_rule_details', rule_key=item.rule_key),
+                            detail_target_id,
+                            detail_row_id,
+                            class_name='justify-end',
+                            open_label='View Rule',
+                            close_label='Hide Rule'
+                        ) }}
                     </td>
                 </tr>
-                <tr id="{{ detail_row_id }}" class="hidden bg-surface-page">
-                    <td colspan="5" class="p-0">
-                        <div id="{{ detail_target_id }}" data-open="false"></div>
-                    </td>
-                </tr>
+                {{ detail_row.detail_row(detail_row_id, detail_target_id, 5) }}
             {% else %}
                 <tr>
                     <td colspan="5" class="px-5 py-8">
