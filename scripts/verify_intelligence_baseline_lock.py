@@ -202,6 +202,10 @@ def main() -> int:
     alert_page = read('app/templates/intelligence/alert_intelligence.html')
     automation_page = read('app/templates/intelligence/automation_control.html')
     recommendation_records = read('app/templates/intelligence/partials/_recommendation_records.html')
+    recommendation_workspace = read('app/templates/intelligence/partials/_recommendations_workspace.html')
+    recommendation_filters = read('app/templates/intelligence/partials/_filters.html')
+    recommendation_results = read('app/templates/intelligence/partials/_recommendations_results.html')
+    recommendation_info = read('app/templates/intelligence/partials/_recommendation_workspace_info.html')
     catalog_records = read('app/templates/intelligence/partials/_catalog_records.html')
 
     for page, label in (
@@ -272,6 +276,28 @@ def main() -> int:
         errors,
     )
     require('3 Asset Domains' not in catalog_page, 'Rule Catalog Hero must not hard-code stale domain count', errors)
+
+    for required in (
+        '{% set filter_compact_two_rows = true %}',
+    ):
+        require(required in recommendation_workspace, 'Recommendations compact two-row filter mode missing', errors)
+    require(
+        "'lg:grid-cols-12' if filter_compact_two_rows" in recommendation_filters,
+        'Recommendations compact filter grid contract missing',
+        errors,
+    )
+    require(
+        recommendation_results.index('_recommendation_workspace_info.html')
+        < recommendation_results.index('_recommendation_records.html'),
+        'Recommendation Workspace Context must render before recommendation records',
+        errors,
+    )
+    for required in (
+        'Recommendation Workspace Context',
+        'Committed Evidence',
+        'live validation and remediation remain',
+    ):
+        require(required in recommendation_info, f'Recommendation context block missing: {required}', errors)
 
     require('resource_detail_modal.drawer_host(' in recommendations_page, 'Recommendations drawer host missing', errors)
     require(

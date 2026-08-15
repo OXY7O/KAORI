@@ -68,6 +68,17 @@ def _base_payload(args: MultiDict[str, str], *, page_mode: str) -> dict[str, Any
     start_item = start_index + 1 if total_items else 0
     end_item = min(end_index, total_items) if total_items else 0
     item_label = 'catalog rules' if page_mode == 'catalog' else 'recommendations'
+    visible_filter_keys = (
+        'q',
+        'domain',
+        'provider',
+        'severity',
+        'category',
+        'source_kind',
+        'logic_type',
+        'signal_source',
+    )
+    active_filter_count = sum(1 for key in visible_filter_keys if clean(filters.get(key)))
 
     if page_mode != 'catalog':
         for item in items:
@@ -93,6 +104,11 @@ def _base_payload(args: MultiDict[str, str], *, page_mode: str) -> dict[str, Any
         'items': items,
         'catalog': catalog,
         'recommendation_findings': source_items if page_mode != 'catalog' else [],
+        'result_context': {
+            'matching_items': total_items,
+            'source_items': len(source_items),
+            'active_filters': active_filter_count,
+        },
         'pagination': {
             'page': page,
             'per_page': per_page,

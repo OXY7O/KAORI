@@ -1,0 +1,77 @@
+from pathlib import Path
+
+
+ROOT = Path('.')
+
+
+def read(path: str) -> str:
+    return (ROOT / path).read_text()
+
+
+def test_recommendation_filters_use_two_desktop_rows_without_changing_catalog_layout() -> None:
+    workspace = read('app/templates/intelligence/partials/_recommendations_workspace.html')
+    filters = read('app/templates/intelligence/partials/_filters.html')
+    catalog = read('app/templates/intelligence/partials/_catalog_workspace.html')
+
+    assert '{% set filter_compact_two_rows = true %}' in workspace
+    assert "'lg:grid-cols-12' if filter_compact_two_rows" in filters
+    assert "'lg:col-span-4' if filter_compact_two_rows" in filters
+    assert "'lg:col-span-2' if filter_compact_two_rows" in filters
+    assert "'lg:col-span-3' if filter_compact_two_rows" in filters
+    assert filters.index('>Signal Source</span>') < filters.index('>Severity</span>')
+    assert 'filter_compact_two_rows' not in catalog
+
+
+def test_recommendation_workspace_context_precedes_records_and_tracks_result_state() -> None:
+    results = read('app/templates/intelligence/partials/_recommendations_results.html')
+    info = read('app/templates/intelligence/partials/_recommendation_workspace_info.html')
+    service = read('app/intelligence/service.py')
+
+    assert results.index('_recommendation_workspace_info.html') < results.index('_recommendation_records.html')
+    assert 'Recommendation Workspace Context' in info
+    assert 'operational_callout.render' in info
+    assert 'Committed Evidence' in info
+    assert 'live validation and remediation remain' in info
+    assert "'result_context':" in service
+    assert "'matching_items': total_items" in service
+    assert "'source_items': len(source_items)" in service
+    assert "'active_filters': active_filter_count" in service
+
+
+def test_recommendations_remain_committed_evidence_read_side_and_governed_action_boundary() -> None:
+    service = read('app/intelligence/service.py')
+    object_storage = read('app/intelligence/object_storage_recommendations.py')
+    records = read('app/templates/intelligence/partials/_recommendation_records.html')
+    detail = read('app/templates/intelligence/partials/_recommendation_detail_content.html')
+
+    forbidden = (
+        'PrometheusConsumer(',
+        'MinioClient(',
+        'requests.get(',
+        'requests.post(',
+        'httpx.',
+        'kubernetes.client',
+    )
+    for token in forbidden:
+        assert token not in service
+        assert token not in object_storage
+
+    assert 'resource_detail_modal.detail_button' in records
+    assert 'automation_control.' not in records
+    assert 'automation_control.' not in detail
+    assert 'Validate Live State' in detail
+    assert 'Apply Remediation' in detail
+    assert 'Verify & Close' in detail
+
+
+def test_recommendation_workspace_keeps_htmx_filter_and_pagination_ownership() -> None:
+    filters = read('app/templates/intelligence/partials/_filters.html')
+    results = read('app/templates/intelligence/partials/_recommendations_results.html')
+    routes = read('app/intelligence/routes.py')
+
+    assert 'hx-target="{{ resolved_results_target }}"' in filters
+    assert 'hx-push-url="true"' in filters
+    assert 'hx-sync="{{ resolved_results_target }}:replace"' in filters
+    assert "target='#recommendations-results-content'" in results
+    assert "target == 'recommendations-results-content'" in routes
+    assert "@permission_required('intelligence.view')" in routes

@@ -39,12 +39,12 @@
             Reset Filters
         </a>
     </div>
-    <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <label class="block xl:col-span-2">
+    <div class="grid gap-3 sm:grid-cols-2 {{ 'lg:grid-cols-12' if filter_compact_two_rows|default(false) else 'xl:grid-cols-4' }}">
+        <label class="block {{ 'lg:col-span-4' if filter_compact_two_rows|default(false) else 'xl:col-span-2' }}">
             <span class="{{ table_ui.filter_label_classes() }}">Search</span>
             {{ table_ui.search_field('q', payload.filters.q, resolved_search_placeholder) }}
         </label>
-        <label class="block">
+        <label class="block {{ 'lg:col-span-2' if filter_compact_two_rows|default(false) else '' }}">
             <span class="{{ table_ui.filter_label_classes() }}">Domain</span>
             <select name="domain" class="{{ table_ui.filter_select_classes() }}">
                 {% for option in payload.filter_options.domains %}
@@ -53,7 +53,7 @@
                 {% endfor %}
             </select>
         </label>
-        <label class="block">
+        <label class="block {{ 'lg:col-span-3' if filter_compact_two_rows|default(false) else '' }}">
             <span class="{{ table_ui.filter_label_classes() }}">Provider Coverage</span>
             <select name="provider" class="{{ table_ui.filter_select_classes() }}">
                 {% for option in payload.filter_options.providers %}
@@ -62,7 +62,18 @@
                 {% endfor %}
             </select>
         </label>
-        <label class="block">
+        {% if filter_compact_two_rows|default(false) %}
+            <label class="block lg:col-span-3">
+                <span class="{{ table_ui.filter_label_classes() }}">Signal Source</span>
+                <select name="signal_source" class="{{ table_ui.filter_select_classes() }}">
+                    {% for option in payload.filter_options.signal_sources %}
+                        <option value="{{ option.value }}"
+                                {% if payload.filters.signal_source == option.value %}selected{% endif %}>{{ option.label }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+        {% endif %}
+        <label class="block {{ 'lg:col-span-3' if filter_compact_two_rows|default(false) else '' }}">
             <span class="{{ table_ui.filter_label_classes() }}">Severity</span>
             <select name="severity" class="{{ table_ui.filter_select_classes() }}">
                 {% for option in payload.filter_options.severities %}
@@ -71,7 +82,7 @@
                 {% endfor %}
             </select>
         </label>
-        <label class="block">
+        <label class="block {{ 'lg:col-span-3' if filter_compact_two_rows|default(false) else '' }}">
             <span class="{{ table_ui.filter_label_classes() }}">Category</span>
             <select name="category" class="{{ table_ui.filter_select_classes() }}">
                 {% for option in payload.filter_options.categories %}
@@ -80,7 +91,7 @@
                 {% endfor %}
             </select>
         </label>
-        <label class="block">
+        <label class="block {{ 'lg:col-span-3' if filter_compact_two_rows|default(false) else '' }}">
             <span class="{{ table_ui.filter_label_classes() }}">Resource Type</span>
             <select name="source_kind" class="{{ table_ui.filter_select_classes() }}">
                 {% for option in payload.filter_options.source_kinds %}
@@ -89,7 +100,7 @@
                 {% endfor %}
             </select>
         </label>
-        <label class="block">
+        <label class="block {{ 'lg:col-span-3' if filter_compact_two_rows|default(false) else '' }}">
             <span class="{{ table_ui.filter_label_classes() }}">Rule Type</span>
             <select name="logic_type" class="{{ table_ui.filter_select_classes() }}">
                 {% for option in payload.filter_options.logic_types %}
@@ -98,14 +109,16 @@
                 {% endfor %}
             </select>
         </label>
-        <label class="block">
-            <span class="{{ table_ui.filter_label_classes() }}">Signal Source</span>
-            <select name="signal_source" class="{{ table_ui.filter_select_classes() }}">
-                {% for option in payload.filter_options.signal_sources %}
-                    <option value="{{ option.value }}"
-                            {% if payload.filters.signal_source == option.value %}selected{% endif %}>{{ option.label }}</option>
-                {% endfor %}
-            </select>
-        </label>
+        {% if not filter_compact_two_rows|default(false) %}
+            <label class="block">
+                <span class="{{ table_ui.filter_label_classes() }}">Signal Source</span>
+                <select name="signal_source" class="{{ table_ui.filter_select_classes() }}">
+                    {% for option in payload.filter_options.signal_sources %}
+                        <option value="{{ option.value }}"
+                                {% if payload.filters.signal_source == option.value %}selected{% endif %}>{{ option.label }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+        {% endif %}
     </div>
 </form>

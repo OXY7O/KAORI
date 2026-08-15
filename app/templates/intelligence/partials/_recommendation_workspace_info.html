@@ -1,0 +1,21 @@
+{% import "components/operational_callout.html" as operational_callout %}
+{% import "components/table_label.html" as table_label %}
+{% set matching_items = payload.result_context.matching_items|default(payload.pagination.total_items, true) %}
+{% set source_items = payload.result_context.source_items|default(payload.summary.actionable, true) %}
+{% set active_filters = payload.result_context.active_filters|default(0, true) %}
+<div class="px-4 pt-4 sm:px-5">
+    {% call operational_callout.render(
+        'Recommendation Workspace Context',
+        'Showing ' ~ matching_items ~ ' of ' ~ source_items ~ ' active findings for the current scope. Recommendations are evidence-backed findings; live validation and remediation remain in their owning operational or governed automation workspace.',
+        icon='info',
+        tone='info',
+        variant='neutral'
+        ) %}
+        <div class="flex flex-wrap gap-1.5">
+            {{ table_label.metadata_label(payload.scope_label) }}
+            {{ table_label.metadata_label(matching_items ~ ' Matching') }}
+            {{ table_label.metadata_label((active_filters ~ ' Active Filters') if active_filters else 'No Active Filters') }}
+            {{ table_label.metadata_label('Committed Evidence') }}
+        </div>
+    {% endcall %}
+</div>

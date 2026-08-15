@@ -1,3 +1,4 @@
+{% include 'intelligence/partials/_recommendation_workspace_info.html' %}
 {% include 'intelligence/partials/_recommendation_records.html' %}
 {% set query_params = payload.filters.copy() %}
 {% set _ = query_params.update({'per_page': payload.pagination.per_page}) %}
