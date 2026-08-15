@@ -38,7 +38,7 @@
                         <div class="{{ page_hero.metadata_row_classes() }}">
                             {{ page_hero.meta_label('layers-3', payload.selected_cluster_label) }}
                             {{ page_hero.meta_label('hard-drive', 'S3 Artifact Storage' if payload.storage_context.backend == 's3' else 'Local Artifact Storage') }}
-                            {{ page_hero.meta_label('workflow', 'Governed Artifact Lifecycle') }}
+                            {{ page_hero.meta_label('network', payload.report_type_coverage.domain_count ~ ' Reporting Domains') }}
                         </div>
                     {% endcall %}
                 </div>

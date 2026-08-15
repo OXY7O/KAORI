@@ -11,7 +11,7 @@ from app.extensions.db import db
 from app.models.report import Report, ReportSchedule, ReportTemplate
 from app.notification_channels.service import notification_channel_summary
 from app.reports.catalog import (
-    PLANNED_REPORT_COVERAGE_DOMAINS,
+    REPORT_COVERAGE_DOMAINS,
     REPORT_FAMILY_ANALYTICS,
     REPORT_FAMILY_INVENTORY,
     REPORT_TYPE_OPTIONS,
@@ -59,16 +59,16 @@ def get_reports_overview_payload() -> dict[str, Any]:
     report_counts = get_report_counts()
     storage_context = get_storage_context()
     report_type_coverage = get_report_type_coverage()
-    notification_delivery = get_notification_delivery_context()
     worker_context = get_queue_readiness(get_reports_queue_name())
-    pipeline_status = get_pipeline_status(storage_context, notification_delivery, worker_context)
-    current_status = get_current_status(report_counts, storage_context, report_type_coverage, worker_context)
 
+    # Reports Overview intentionally loads only the state rendered by the active landing page.
+    # Legacy pipeline/context builders remain available for rolling-deployment compatibility,
+    # but they no longer trigger extra notification/provider work on every overview request.
     return {
         'page_title': 'Reports Overview',
         'page_subtitle': (
-            'Generate, schedule, retain, and audit governed reporting artifacts across connected '
-            'infrastructure scopes with clear readiness, storage, and lifecycle context.'
+            'Review reporting readiness, retained artifacts, automation, and published contract coverage '
+            'across Kubernetes, Object Storage, and planned infrastructure domains.'
         ),
         'selected_cluster_label': 'All Infrastructure Scopes',
         'report_engine_status': worker_context['label'],
@@ -81,17 +81,6 @@ def get_reports_overview_payload() -> dict[str, Any]:
         'report_type_coverage': report_type_coverage,
         'reporting_coverage': get_reporting_coverage_summary(),
         'report_type_summary': get_report_type_summary(report_type_coverage),
-        'report_architecture_context': get_report_architecture_context(),
-        'pipeline_status': pipeline_status,
-        'pipeline_summary': get_pipeline_summary(pipeline_status),
-        'reporting_context': get_reporting_context(storage_context, notification_delivery),
-        'current_status': current_status,
-        'current_status_summary': get_current_status_summary(current_status),
-        'reporting_operating_model': get_reporting_operating_model(
-            report_counts, storage_context, report_type_coverage, notification_delivery
-        ),
-        'data_collection_status': get_data_collection_status(storage_context, notification_delivery),
-        'related_information': get_related_information(),
         'storage_context': storage_context,
         'worker_context': worker_context,
     }
@@ -253,7 +242,7 @@ def get_reporting_coverage_summary() -> list[dict[str, Any]]:
         REPORT_FAMILY_INVENTORY: {
             'key': REPORT_FAMILY_INVENTORY,
             'label': 'Inventory Reports',
-            'description': 'Point-in-time Kubernetes asset evidence.',
+            'description': 'Point-in-time infrastructure asset evidence.',
             'icon': 'boxes',
             'formats': ['XLSX', 'CSV'],
             'items': [],
@@ -386,12 +375,12 @@ def get_report_type_coverage() -> dict[str, Any]:
                 'name': str(option.get('label', report_type)),
                 'description': str(option.get('description', 'Operational report type.')),
                 'icon': str(option.get('icon', 'file-text')),
-                'status': 'Available' if is_ready else 'Reserved',
+                'status': 'Published' if is_ready else 'Reserved',
                 'tone': 'normal' if is_ready else 'unknown',
             }
         )
 
-    planned_domains = [
+    defined_domains = [
         {
             'key': domain.key,
             'label': domain.label,
@@ -410,33 +399,43 @@ def get_report_type_coverage() -> dict[str, Any]:
                 for item in domain.items
             ],
             'available_count': 0,
+            'published_count': 0,
+            'candidate_count': len(domain.items),
             'total_count': len(domain.items),
         }
-        for domain in PLANNED_REPORT_COVERAGE_DOMAINS
+        for domain in REPORT_COVERAGE_DOMAINS
     ]
 
+    kubernetes_published = sum(1 for item in kubernetes_items if item['status'] == 'Published')
     domains = [
         {
             'key': 'kubernetes',
             'label': 'Kubernetes Reports',
             'description': (
-                'Available report contracts backed by Kubernetes inventory, Prometheus metrics, '
+                'Published report contracts backed by Kubernetes inventory, Prometheus metrics, '
                 'and Alertmanager context.'
             ),
             'icon': 'boxes',
-            'status': 'Available',
+            'status': 'Published',
             'tone': 'normal',
             'items': kubernetes_items,
-            'available_count': sum(1 for item in kubernetes_items if item['status'] == 'Available'),
+            'available_count': kubernetes_published,
+            'published_count': kubernetes_published,
+            'candidate_count': 0,
             'total_count': len(kubernetes_items),
         },
-        *planned_domains,
+        *defined_domains,
     ]
 
+    published_count = sum(int(domain['published_count']) for domain in domains)
+    candidate_count = sum(int(domain['candidate_count']) for domain in domains)
     return {
         'domains': domains,
-        'available_count': sum(domain['available_count'] for domain in domains),
-        'total_count': sum(domain['total_count'] for domain in domains),
+        'available_count': published_count,
+        'published_count': published_count,
+        'candidate_count': candidate_count,
+        'domain_count': len(domains),
+        'total_count': published_count + candidate_count,
     }
 
 
@@ -496,11 +495,15 @@ def get_storage_context() -> dict[str, Any]:
 def get_report_type_summary(report_type_coverage: dict[str, Any]) -> dict[str, str]:
     available = int(report_type_coverage.get('available_count', 0))
     total = int(report_type_coverage.get('total_count', 0))
+    candidate = int(report_type_coverage.get('candidate_count', max(total - available, 0)))
     return {
         'available': str(available),
         'total': str(total),
-        'label': f'{available} Available Types',
-        'description': f'{total} report contracts across connected and planned infrastructure domains.',
+        'label': f'{available} Published Contracts',
+        'description': (
+            f'{candidate} candidate contract(s) remain unpublished across evidence-ready, planned, '
+            'or reserved infrastructure domains.'
+        ),
     }
 
 

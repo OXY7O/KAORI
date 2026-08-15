@@ -20,6 +20,7 @@ _TONE_MAP = {
 
 _DOMAIN_ICONS = {
     'kubernetes': 'boxes',
+    'object_storage': 'database',
     'server': 'server-cog',
     'hci': 'network',
 }
@@ -93,7 +94,7 @@ def normalize_reports_overview_payload(payload: Mapping[str, Any] | None) -> dic
     normalized.setdefault('page_title', 'Reports Overview')
     normalized.setdefault(
         'page_subtitle',
-        'Generate, schedule, retain, and audit governed reporting artifacts across connected infrastructure scopes with clear readiness, storage, and lifecycle context.',
+        'Review reporting readiness, retained artifacts, automation, and published contract coverage across Kubernetes, Object Storage, and planned infrastructure domains.',
     )
     normalized.setdefault('selected_cluster_label', 'All Infrastructure Scopes')
     normalized.setdefault('report_engine_status', 'Ready')
@@ -320,10 +321,15 @@ def _normalize_report_type_coverage(raw: Any) -> dict[str, Any]:
             domain.setdefault('icon', _DOMAIN_ICONS.get(str(key), 'file-text'))
             domains.append(_normalize_domain(domain))
 
+    published_count = sum(int(domain.get('published_count', domain.get('available_count', 0))) for domain in domains)
+    candidate_count = sum(int(domain.get('candidate_count', 0)) for domain in domains)
     return {
         'domains': domains,
-        'available_count': sum(int(domain.get('available_count', 0)) for domain in domains),
-        'total_count': sum(int(domain.get('total_count', 0)) for domain in domains),
+        'available_count': published_count,
+        'published_count': published_count,
+        'candidate_count': candidate_count,
+        'domain_count': len(domains),
+        'total_count': published_count + candidate_count,
     }
 
 
@@ -346,9 +352,11 @@ def _normalize_domain(raw: Mapping[str, Any]) -> dict[str, Any]:
             }
         )
 
-    available_count = int(raw.get('available_count', 0) or 0)
-    total_count = int(raw.get('total_count', len(items)) or len(items))
-    status = str(raw.get('status') or ('Available' if available_count else 'Reserved'))
+    available_count = int(raw.get('available_count', raw.get('published_count', 0)) or 0)
+    published_count = int(raw.get('published_count', available_count) or available_count)
+    candidate_count = int(raw.get('candidate_count', max(len(items) - published_count, 0)) or 0)
+    total_count = int(raw.get('total_count', published_count + candidate_count) or (published_count + candidate_count))
+    status = str(raw.get('status') or ('Published' if published_count else 'Reserved'))
 
     return {
         **dict(raw),
@@ -360,18 +368,20 @@ def _normalize_domain(raw: Mapping[str, Any]) -> dict[str, Any]:
         'tone': _status_tone(status, raw.get('tone')),
         'items': items,
         'available_count': available_count,
+        'published_count': published_count,
+        'candidate_count': candidate_count,
         'total_count': total_count,
     }
 
 
 def _build_report_type_summary(coverage: Mapping[str, Any]) -> dict[str, str]:
-    available = int(coverage.get('available_count', 0) or 0)
-    total = int(coverage.get('total_count', 0) or 0)
+    published = int(coverage.get('published_count', coverage.get('available_count', 0)) or 0)
+    candidate = int(coverage.get('candidate_count', 0) or 0)
     return {
-        'available': str(available),
-        'total': str(total),
-        'label': f'{available} Available Types',
-        'description': f'{total} report contracts across connected and planned infrastructure domains.',
+        'available': str(published),
+        'total': str(published + candidate),
+        'label': f'{published} Published Contracts',
+        'description': f'{candidate} candidate contract(s) remain unpublished across non-published reporting domains.',
     }
 
 
@@ -511,13 +521,13 @@ def _normalize_data_collection_status(raw: Any) -> list[dict[str, Any]]:
 
 def _status_tone(status: str, tone: Any) -> str:
     normalized_status = status.strip().lower()
-    if normalized_status in {'ready', 'available', 'selected', 'healthy'}:
+    if normalized_status in {'ready', 'available', 'published', 'selected', 'healthy'}:
         return 'normal'
     if normalized_status in {'failed', 'critical', 'unavailable'}:
         return 'critical'
     if normalized_status in {'review', 'needs review', 'warning', 'path review'}:
         return 'warning'
-    if normalized_status in {'planned', 'coming soon'}:
+    if normalized_status in {'evidence ready', 'planned', 'coming soon'}:
         return 'info'
     if normalized_status in {'reserved', 'unknown', 'not configured'}:
         return 'unknown'

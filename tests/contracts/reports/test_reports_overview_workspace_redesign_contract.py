@@ -46,7 +46,8 @@ def test_reports_overview_hero_keeps_health_in_canonical_context_card() -> None:
 
     assert 'payload.selected_cluster_label' in source
     assert "'S3 Artifact Storage'" in source
-    assert "'Governed Artifact Lifecycle'" in source
+    assert "' Reporting Domains'" in source
+    assert 'payload.report_type_coverage.domain_count' in source
     assert "'Reporting Posture'" in source
     assert "'Artifact Readiness'" in source
     assert "('circle-check', 'Ready', ready_card.value, 'Available artifacts')" in source
@@ -91,16 +92,21 @@ def test_estate_capability_merges_artifact_mix_reuse_and_contracts() -> None:
     presentation = read(PRESENTATION)
 
     assert 'data-reports-overview-block="estate-capability"' in source
-    assert 'Artifact Estate &amp; Report Capability' in source
+    assert 'Report Coverage &amp; Artifact Estate' in source
+    assert 'Reporting Domain Coverage' in source
     assert 'Artifact Estate' in source
     assert 'Contracts &amp; Automation' in source
+    assert 'payload.report_type_coverage.domains' in source
+    assert 'data-report-domain-coverage="true"' in source
+    assert 'Publication Boundary' in source
+    assert 'Evidence Ready means KAORI already has committed inventory or analytics evidence' in source
     assert 'payload.artifact_statistics[2]' in source
     assert 'payload.artifact_portfolio.families' in source
     assert 'data-artifact-family-tip' not in source
     assert 'payload.artifact_portfolio.formats' in source
     assert 'data-output-contract="true"' in source
     assert 'Output Contract' in source
-    assert 'Analytics contracts expose PDF or CSV' in source
+    assert 'Published Analytics contracts expose PDF or CSV' in source
     assert 'Contracts &amp; Automation' in source
     assert 'payload.automation_summary.active_schedules' in source
     assert 'payload.reporting_coverage' in source

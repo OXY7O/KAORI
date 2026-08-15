@@ -17,8 +17,8 @@ def test_reports_overview_identity_and_hero_copy_are_explicit() -> None:
     assert "'page_title': 'Reports Overview'" in service
     assert "normalized.setdefault('page_title', 'Reports Overview')" in presentation
     assert '{% block title %}Reports Overview{% endblock title %}' in page
-    assert 'reporting artifacts across connected' in service
-    assert 'infrastructure scopes with clear readiness, storage, and lifecycle context.' in service
+    assert 'published contract coverage' in service
+    assert 'across Kubernetes, Object Storage, and planned infrastructure domains.' in service
 
 
 def test_report_workspace_hero_descriptions_keep_consistent_operational_depth() -> None:
@@ -33,7 +33,7 @@ def test_report_workspace_hero_descriptions_keep_consistent_operational_depth() 
     }
 
     expected_fragments = {
-        'overview': 'infrastructure scopes with clear readiness, storage, and lifecycle context',
+        'overview': 'across Kubernetes, Object Storage, and planned infrastructure domains.',
         'generate': 'selected scope, reusable sections, and an approved output contract',
         'generated': 'worker execution, retained artifact delivery, and lifecycle review',
         'generated_detail': 'selected scope, retained artifact, execution evidence, and delivery readiness',
@@ -52,12 +52,12 @@ def test_reports_overview_uses_operational_reading_and_contract_boundary_not_gen
     assert 'Operational Reading' in posture
     assert 'Performance Tip' not in posture
     assert 'Completion Rate measures resolved requests only' in posture
-    assert 'Artifact Estate &amp; Report Capability' in estate
+    assert 'Report Coverage &amp; Artifact Estate' in estate
     assert 'Contracts &amp; Automation' in estate
     assert 'Output Contract' in estate
     assert 'Format Tip' not in estate
-    assert 'Analytics contracts expose PDF or CSV' in estate
-    assert 'Inventory contracts expose XLSX or CSV' in estate
+    assert 'Published Analytics contracts expose PDF or CSV' in estate
+    assert 'published Inventory contracts expose XLSX or CSV' in estate
 
 
 def test_planned_report_coverage_is_definition_owned_not_embedded_in_overview_service() -> None:
@@ -67,8 +67,45 @@ def test_planned_report_coverage_is_definition_owned_not_embedded_in_overview_se
 
     assert document['schema_version'] == 1
     assert document['kind'] == 'report_coverage_catalog'
-    assert {item['key'] for item in document['domains']} == {'server', 'hci'}
+    assert {item['key'] for item in document['domains']} == {'object_storage', 'server', 'hci'}
+    object_storage = next(item for item in document['domains'] if item['key'] == 'object_storage')
+    assert object_storage['status'] == 'Evidence Ready'
+    assert object_storage['tone'] == 'info'
+    assert len(object_storage['items']) == 5
     assert 'SERVER_REPORT_TYPE_COVERAGE' not in service
     assert 'HCI_REPORT_TYPE_COVERAGE' not in service
-    assert 'PLANNED_REPORT_COVERAGE_DOMAINS' in service
+    assert 'REPORT_COVERAGE_DOMAINS' in service
     assert "load_definition_document('reports/coverage.yaml'" in catalog
+
+
+def test_reports_overview_surfaces_object_storage_without_overclaiming_generate_support() -> None:
+    service = read('app/reports/overview/service.py')
+    estate = read('app/templates/reports/overview/partials/_reporting_estate_capability.html')
+    coverage = yaml.safe_load(read('app/definitions/catalogs/reports/coverage.yaml'))
+
+    object_storage = next(item for item in coverage['domains'] if item['key'] == 'object_storage')
+    assert object_storage['status'] == 'Evidence Ready'
+    assert 'canonical report contracts are not yet published' in object_storage['description']
+    assert 'Object Storage Inventory Report' in {item['name'] for item in object_storage['items']}
+    assert 'Object Storage Forecast Report' in {item['name'] for item in object_storage['items']}
+    assert "'status': 'Published'" in service
+    assert "'published_count': 0" in service
+    assert 'Reporting Domain Coverage' in estate
+    assert 'Only Published contracts are selectable in Generate.' in estate
+    assert 'Evidence Ready means KAORI already has committed inventory or analytics evidence' in estate
+
+
+def test_reports_overview_does_not_execute_legacy_unrendered_context_builders() -> None:
+    service = read('app/reports/overview/service.py')
+    payload_body = service.split('def get_reports_overview_payload()', 1)[1].split(
+        '\n\ndef get_report_architecture_context', 1
+    )[0]
+
+    assert 'get_notification_delivery_context()' not in payload_body
+    assert 'get_pipeline_status(' not in payload_body
+    assert 'get_current_status(' not in payload_body
+    assert 'get_reporting_context(' not in payload_body
+    assert 'get_reporting_operating_model(' not in payload_body
+    assert 'get_data_collection_status(' not in payload_body
+    assert "'report_type_coverage': report_type_coverage" in payload_body
+    assert "'reporting_operations': get_reporting_operations" in payload_body

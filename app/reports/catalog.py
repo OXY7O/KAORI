@@ -136,7 +136,7 @@ def _load_report_coverage_catalog() -> tuple[ReportCoverageDomainSpec, ...]:
         )
         status = require_str(raw_domain, 'status', path)
         tone = require_str(raw_domain, 'tone', path)
-        if status not in {'Planned', 'Reserved'}:
+        if status not in {'Evidence Ready', 'Planned', 'Reserved'}:
             raise DefinitionError(f'{path}.status is unsupported: {status!r}.')
         if tone not in {'info', 'unknown'}:
             raise DefinitionError(f'{path}.tone is unsupported: {tone!r}.')
@@ -155,7 +155,9 @@ def _load_report_coverage_catalog() -> tuple[ReportCoverageDomainSpec, ...]:
 
 
 OUTPUT_FORMAT_SPECS, REPORT_TYPE_SPECS = _load_report_catalog()
-PLANNED_REPORT_COVERAGE_DOMAINS = _load_report_coverage_catalog()
+REPORT_COVERAGE_DOMAINS = _load_report_coverage_catalog()
+# Backward-compatible alias for callers that still use the pre-v1.2 name.
+PLANNED_REPORT_COVERAGE_DOMAINS = REPORT_COVERAGE_DOMAINS
 
 _REPORT_TYPE_BY_VALUE = {item.value: item for item in REPORT_TYPE_SPECS}
 

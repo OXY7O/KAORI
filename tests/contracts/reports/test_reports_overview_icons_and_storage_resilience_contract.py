@@ -25,7 +25,7 @@ def test_overview_two_large_blocks_keep_visible_operational_icons() -> None:
     assert "'icon': 'calendar-range'" in service
     assert "'icon': 'chart-no-axes-combined'" in service
     assert 'Reporting Operational Posture' in posture
-    assert 'Artifact Estate &amp; Report Capability' in estate
+    assert 'Report Coverage &amp; Artifact Estate' in estate
 
 
 def test_report_detail_storage_probe_is_failure_tolerant() -> None:

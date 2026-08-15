@@ -128,9 +128,17 @@ def main() -> int:
                 raise ValueError(f"report {report['value']} has invalid format contract")
 
         report_coverage = docs['reports/coverage.yaml']
-        unique(report_coverage['domains'], 'key', 'planned report domains')
+        coverage_domains = unique(report_coverage['domains'], 'key', 'report coverage domains')
+        allowed_coverage_statuses = {'Evidence Ready', 'Planned', 'Reserved'}
         for domain in report_coverage['domains']:
+            if domain.get('status') not in allowed_coverage_statuses:
+                raise ValueError(f"report coverage {domain['key']} has unsupported status")
             unique(domain.get('items') or [], 'name', f"report coverage {domain['key']} items")
+        if 'object_storage' not in coverage_domains:
+            raise ValueError('Object Storage report coverage domain is missing')
+        object_storage = next(domain for domain in report_coverage['domains'] if domain['key'] == 'object_storage')
+        if object_storage.get('status') != 'Evidence Ready':
+            raise ValueError('Object Storage report coverage must remain Evidence Ready until contracts are published')
 
         notifications = docs['notifications/event_categories.yaml']
         category_keys = set(notifications['categories'])
@@ -202,7 +210,7 @@ def main() -> int:
         'PASS — KAORI Definition Registry v1.1 · '
         f"{len(rules)} rules · {len(permission_keys)} permissions · {len(jobs)} jobs · "
         f"{len(datasets)} analytics datasets · {len(reports['report_types'])} report types · "
-        f"{len(report_coverage['domains'])} planned report domains · "
+        f"{len(report_coverage['domains'])} non-published report coverage domains · "
         f"{len(domain_keys)} integration domains · {sum(integration_provider_counts.values())} provider capabilities · "
         f"{len(compatibility_profiles)} compatibility profiles"
     )
