@@ -2,9 +2,16 @@
 {% import "components/table_label.html" as table_label %}
 {% call intelligence_ui.section(
     'Notification Delivery',
-    'Review KAORI enriched alert delivery posture without conflating it with Alertmanager receiver ownership.',
+    'Review KAORI enriched alert delivery posture and scoped delivery evidence without conflating it with Alertmanager receiver ownership.',
     'send'
 ) %}
+    <div class="border-b border-outline-subtle bg-surface-card p-4 sm:p-5">
+        <dl class="grid gap-4 sm:grid-cols-3">
+            {{ intelligence_ui.field('Delivery Status', payload.notification.label, supporting='Shared Notification Channel posture') }}
+            {{ intelligence_ui.field('Operational Channels', payload.notification.operational, supporting=(payload.notification.eligible|string) ~ ' eligible channel(s)') }}
+            {{ intelligence_ui.field('Recent Deliveries', payload.recent_deliveries|length, supporting='Scoped to the selected domain and asset') }}
+        </dl>
+    </div>
     <div class="grid gap-px bg-outline-subtle lg:grid-cols-2">
         <section class="bg-surface-card p-4 sm:p-5">
             {{ intelligence_ui.subsection(

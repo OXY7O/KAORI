@@ -17,6 +17,7 @@ _VALID_DOMAINS = {'kubernetes', 'object_storage'}
 _VALID_SOURCES = {'auto', 'alertmanager', 'prometheus'}
 _VALID_SEVERITIES = {'all', 'critical', 'warning', 'info', 'unknown', 'none'}
 _VALID_STATES = {'all', 'firing', 'pending', 'active', 'resolved'}
+_VALID_TABS = {'alerts', 'correlation', 'delivery', 'evidence'}
 _DOMAIN_LABELS = {'kubernetes': 'Kubernetes', 'object_storage': 'Object Storage'}
 
 
@@ -28,6 +29,7 @@ def get_alert_intelligence_payload(args: MultiDict[str, str]) -> dict[str, Any]:
     selected_asset_key = _selected_asset_key(args, assets)
     selected_asset = _resolve_asset(domain, selected_asset_key, clusters=clusters, systems=systems)
     source = _choice(args.get('source'), _VALID_SOURCES, 'auto')
+    tab = _choice(args.get('tab'), _VALID_TABS, 'alerts')
     rows, source_status = _load_rows(domain, selected_asset, source=source)
     severity = _choice(args.get('severity'), _VALID_SEVERITIES, 'all')
     state = _choice(args.get('state'), _VALID_STATES, 'all')
@@ -60,6 +62,7 @@ def get_alert_intelligence_payload(args: MultiDict[str, str]) -> dict[str, Any]:
         'selected_asset_name': selected_asset_name,
         'selected_asset_available': selected_asset is not None,
         'source': source,
+        'tab': tab,
         'source_options': [
             {'value': 'auto', 'label': 'Automatic · Alertmanager Preferred'},
             {'value': 'alertmanager', 'label': 'Alertmanager'},

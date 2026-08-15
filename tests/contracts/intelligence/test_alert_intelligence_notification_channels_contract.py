@@ -9,7 +9,7 @@ def read(relative: str) -> str:
 
 def test_alert_intelligence_is_asset_scoped_multi_domain_and_keeps_source_authority_explicit():
     module = read('app/alert_intelligence/service.py')
-    workspace = read('app/templates/intelligence/partials/_alert_intelligence_workspace.html')
+    alerts = read('app/templates/intelligence/partials/_alert_intelligence_alerts.html')
     correlation = read('app/templates/intelligence/partials/_alert_intelligence_correlation.html')
 
     assert 'load_alerts_by_source' in module
@@ -17,8 +17,8 @@ def test_alert_intelligence_is_asset_scoped_multi_domain_and_keeps_source_author
     assert "_VALID_DOMAINS = {'kubernetes', 'object_storage'}" in module
     assert "_VALID_SOURCES = {'auto', 'alertmanager', 'prometheus'}" in module
     assert 'get_active_recommendation_findings' in module
-    assert 'Alertmanager is preferred in Automatic mode' in workspace
-    assert 'Prometheus ALERTS remains the fallback evidence path' in workspace
+    assert 'Alertmanager is preferred in Automatic mode' in alerts
+    assert 'Prometheus ALERTS remains the fallback evidence path' in alerts
     assert 'contextual correlation, not a claim that every finding was caused by every alert' in correlation
 
 

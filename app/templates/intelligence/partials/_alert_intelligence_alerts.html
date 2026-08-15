@@ -1,0 +1,28 @@
+{% import "intelligence/components/_workspace.html" as intelligence_ui %}
+{% import "components/operational_callout.html" as operational_callout %}
+{% call intelligence_ui.section(
+    'Alert Records',
+    'Review normalized provider alert records for the selected asset while keeping source resolution and lifecycle authority visible beside the evidence.',
+    'triangle-alert'
+) %}
+    <div class="border-b border-outline-subtle bg-surface-card p-4 sm:p-5">
+        {{ intelligence_ui.subsection(
+            'Alert Source Context',
+            'Alertmanager is preferred in Automatic mode; Prometheus ALERTS remains the fallback evidence path.',
+            'radio-tower'
+        ) }}
+        <dl class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {{ intelligence_ui.field('Policy', payload.source|title, supporting='Configured source selection') }}
+            {{ intelligence_ui.field('Resolved Source', payload.source_status.resolved_label, supporting='Provider evidence used for this request') }}
+            {{ intelligence_ui.field('Runtime', payload.source_status.label, supporting='Current source connectivity posture') }}
+            {{ intelligence_ui.field('Lifecycle Authority', 'Alertmanager', supporting='Grouping, silences, inhibition, routing, receivers') }}
+        </dl>
+        {% if payload.source_status.fallback_used %}
+            <div class="mt-4">{{ operational_callout.render('Fallback Evidence Active', payload.source_status.fallback_reason, 'git-branch', 'warning') }}</div>
+        {% endif %}
+        {% if payload.source_status.error %}
+            <div class="mt-4">{{ operational_callout.render('Alert Evidence Unavailable', payload.source_status.error, 'triangle-alert', 'critical') }}</div>
+        {% endif %}
+    </div>
+    {% include "intelligence/partials/_alert_intelligence_records.html" %}
+{% endcall %}

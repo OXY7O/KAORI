@@ -57,7 +57,13 @@
 
     {% include 'intelligence/partials/_alert_intelligence_summary.html' %}
     {% include 'intelligence/partials/_alert_intelligence_workspace.html' %}
-    {% include 'intelligence/partials/_alert_intelligence_correlation.html' %}
-    {% include 'intelligence/partials/_alert_intelligence_delivery.html' %}
-    {% include 'intelligence/partials/_alert_intelligence_evidence.html' %}
+    {% if payload.tab == 'correlation' %}
+        {% include 'intelligence/partials/_alert_intelligence_correlation.html' %}
+    {% elif payload.tab == 'delivery' %}
+        {% include 'intelligence/partials/_alert_intelligence_delivery.html' %}
+    {% elif payload.tab == 'evidence' %}
+        {% include 'intelligence/partials/_alert_intelligence_evidence.html' %}
+    {% else %}
+        {% include 'intelligence/partials/_alert_intelligence_alerts.html' %}
+    {% endif %}
 </div>

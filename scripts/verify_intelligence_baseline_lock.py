@@ -44,6 +44,7 @@ def main() -> int:
     alert_intelligence = read('app/alert_intelligence/service.py')
     alert_routes = read('app/alert_intelligence/routes.py')
     alert_workspace = read('app/templates/intelligence/partials/_alert_intelligence_workspace.html')
+    alert_alerts = read('app/templates/intelligence/partials/_alert_intelligence_alerts.html')
     alert_page_partial = read('app/templates/intelligence/partials/_alert_intelligence_page.html')
     alert_summary = read('app/templates/intelligence/partials/_alert_intelligence_summary.html')
     alert_correlation = read('app/templates/intelligence/partials/_alert_intelligence_correlation.html')
@@ -187,11 +188,12 @@ def main() -> int:
     ):
         require(required in alert_intelligence, f'Alert Intelligence multi-domain contract missing: {required}', errors)
     alert_surface = '\n'.join(
-        (alert_workspace, alert_summary, alert_correlation, alert_delivery, alert_evidence)
+        (alert_workspace, alert_alerts, alert_summary, alert_correlation, alert_delivery, alert_evidence)
     )
     for required in (
         'Alert Intelligence Summary',
-        'Alert Records Workspace',
+        'Alert Intelligence Workspace',
+        'Alert Records',
         'Correlation & Guidance',
         'Notification Delivery',
         'Evidence & Ownership Boundaries',
@@ -204,11 +206,16 @@ def main() -> int:
         'Alert Intelligence must keep contextual correlation distinct from causal attribution',
         errors,
     )
-    require('link_tabs(' not in alert_surface, 'Alert Intelligence must not return to tab-driven navigation', errors)
+    require('link_tabs(' in alert_workspace, 'Alert Intelligence must use section-owned tab navigation for long-form content', errors)
     require('>Apply<' not in alert_workspace and 'Apply\n' not in alert_workspace, 'Alert filters must not require an Apply button', errors)
     require('hx-trigger="input changed delay:350ms' in alert_workspace, 'Alert filters must auto-refresh on search and select changes', errors)
+    require('Alert Source Context' in alert_alerts, 'Alert Records tab must retain source context', errors)
+    require('Active Recommendations' in alert_correlation and 'Catalog Rules' in alert_correlation, 'Correlation tab context is incomplete', errors)
+    require('Delivery Status' in alert_delivery and 'Recent Deliveries' in alert_delivery, 'Notification Delivery tab context is incomplete', errors)
+    require('Detection' in alert_evidence and 'Execution' in alert_evidence, 'Evidence tab ownership context is incomplete', errors)
     require('Reset Filters' in alert_workspace, 'Alert Intelligence must retain the standard Reset Filters action', errors)
-    require("_VALID_TABS" not in alert_intelligence and "'tab':" not in alert_intelligence, 'Alert Intelligence service must not retain page-tab state', errors)
+    require("_VALID_TABS = {'alerts', 'correlation', 'delivery', 'evidence'}" in alert_intelligence, 'Alert Intelligence tab contract is missing', errors)
+    require("tab = _choice(args.get('tab'), _VALID_TABS, 'alerts')" in alert_intelligence, 'Alert Intelligence must normalize tab state server-side', errors)
 
     recommendations_page = read('app/templates/intelligence/recommendations.html')
     catalog_page = read('app/templates/intelligence/rule_catalog.html')

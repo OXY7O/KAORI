@@ -2,9 +2,16 @@
 {% set correlation_note = 'This is contextual correlation, not a claim that every finding was caused by every alert.' %}
 {% call intelligence_ui.section(
     'Correlation & Guidance',
-    'Compare committed recommendation findings and canonical rule guidance with the selected provider alert scope.',
+    'Compare committed recommendation findings and canonical rule guidance with the selected provider alert scope without implying unsupported causality.',
     'git-merge'
 ) %}
+    <div class="border-b border-outline-subtle bg-surface-card p-4 sm:p-5">
+        <dl class="grid gap-4 sm:grid-cols-3">
+            {{ intelligence_ui.field('Active Recommendations', payload.recommendations|length, supporting='Committed findings for the selected asset') }}
+            {{ intelligence_ui.field('Catalog Rules', payload.catalog_rules|length, supporting='Definitions visible to Alert Intelligence') }}
+            {{ intelligence_ui.field('Relationship', 'Contextual Only', supporting='Correlation is not causal attribution') }}
+        </dl>
+    </div>
     <div class="grid gap-px bg-outline-subtle lg:grid-cols-2">
         <section class="bg-surface-card p-4 sm:p-5">
             {{ intelligence_ui.subsection(
