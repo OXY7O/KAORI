@@ -63,11 +63,11 @@ Rendering failures are logged with technical evidence and returned to users as s
 
 Reports Overview is the operational landing workspace for the Reports domain. It is full-width and does not use a secondary right sidebar. The hierarchy is fixed to:
 
-1. Reporting Posture: the canonical KAORI hero owns artifact readiness and two compact operational metrics.
-2. Reporting Operations: Reports worker/queue readiness, active schedules, and artifact storage readiness.
-3. Reporting Statistics: monthly request activity, completion rate, artifact footprint, and reusable custom templates.
-4. Reporting Portfolio: generated artifact family mix, output-format distribution, and automation/reuse posture.
-5. Reporting Capability: compact Analytics (PDF/CSV) and Inventory (XLSX/CSV) contract families derived from `REPORT_TYPE_SPECS`.
+1. Reporting Posture: the canonical KAORI hero owns page identity, infrastructure scope, artifact readiness, and two compact operational metrics.
+2. Reporting Operational Posture: Reports worker/queue readiness, active schedules, artifact storage health, current generation demand, and resolved completion quality.
+3. Artifact Estate & Report Capability: retained artifact footprint, output-format distribution, reusable automation, and canonical Analytics/Inventory report families.
+
+Generic helper callouts are avoided on the Overview. Operational interpretation uses `Operational Reading`, while export guidance is expressed as an `Output Contract` boundary. Planned Server/VM and HCI coverage is definition-owned in `app/definitions/catalogs/reports/coverage.yaml`; the Overview service must not embed future report catalogs as Python literals.
 
 The Overview deliberately does not repeat the Generated Reports artifact registry. Artifact browsing, row-level status, file size, and report-detail actions remain owned by `Reports -> Generated Reports`.
 

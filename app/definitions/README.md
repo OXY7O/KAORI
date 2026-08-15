@@ -22,3 +22,7 @@ Integration contracts are also source-controlled under `catalogs/integrations/`:
 - Object Storage/MinIO API capabilities and qualified release profiles.
 
 Integration adapters retain network validation, query execution, credential handling, and provider-specific algorithms.
+
+Reports definitions are split by authority:
+- `catalogs/reports/catalog.yaml` owns executable report types and output-format contracts.
+- `catalogs/reports/coverage.yaml` owns planned/reserved report-family coverage shown by Reports Overview and never grants execution eligibility.

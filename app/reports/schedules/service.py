@@ -132,7 +132,7 @@ def get_report_schedules_payload(
 
     return {
         'page_title': 'Report Schedules',
-        'page_subtitle': ('Automate governed report generation and delivery through recurring report contracts.'),
+        'page_subtitle': ('Automate governed report generation and delivery through recurring, timezone-aware contracts with retained execution evidence.'),
         'status_label': f'Reports Worker {worker_context["label"]}',
         'status_description': worker_context['description'],
         'summary_cards': get_summary_cards(

@@ -102,6 +102,7 @@ def test_previous_payload_is_normalized_to_redesigned_contract() -> None:
 
     payload = module.normalize_reports_overview_payload(previous_payload)
 
+    assert payload['page_title'] == 'Reports Overview'
     assert payload['report_type_summary']['available'] == '1'
     assert payload['report_type_coverage']['available_count'] == 1
     assert payload['report_type_coverage']['domains'][0]['tone'] == 'normal'

@@ -64,15 +64,21 @@ def test_object_storage_analytics_exposes_kubernetes_style_surface_set() -> None
 
 
 def test_object_storage_analytics_uses_dedicated_rbac_and_sidebar_visibility() -> None:
+    import yaml
+
     routes = read('app/analytics/object_storage/routes.py')
+    access = yaml.safe_load(read('app/definitions/catalogs/rbac/access.yaml'))
     defaults = read('app/rbac/defaults.py')
     sidebar = read('app/templates/components/navigation/sidebar.html')
     menu = read('app/templates/components/navigation/analytics_menu.html')
     migration = read('migrations/versions/20260814_object_storage_rbac_split.py')
 
+    permissions = {item['key']: item for item in access['permissions']}
+    object_storage_permission = permissions['object_storage_analytics.view']
+
     assert routes.count("@permission_required('object_storage_analytics.view')") == 8
-    assert "'object_storage_analytics.view'" in defaults
-    assert "'storage_analytics'" in defaults
+    assert object_storage_permission['module'] == 'storage_analytics'
+    assert "load_definition_document('rbac/access.yaml'" in defaults
     assert "has_permission('object_storage_analytics.view')" in sidebar
     assert '{% if can_object_storage_analytics %}' in menu
     assert '{% if can_kubernetes_analytics %}' in menu
@@ -526,25 +532,32 @@ def test_prometheus_full_validation_refreshes_enabled_consumer_bindings() -> Non
 
 
 def test_object_storage_forecast_is_worker_materialized_on_forecasting_queue() -> None:
+    import yaml
+
     service = read('app/analytics/object_storage/service.py')
     materialization = read('app/analytics/object_storage/materialization.py')
     task = read('app/analytics/object_storage/tasks.py')
     adapter = read('app/analytics/object_storage/job_adapter.py')
     definition = read('app/jobs/definitions/object_storage_forecast_refresh.py')
+    jobs = yaml.safe_load(read('app/definitions/catalogs/jobs/registered_jobs.yaml'))
     registry = read('app/jobs/registry.py')
     config = read('app/config/default.py')
     materialization_template = read('app/templates/jobs/configuration/definitions/_materialization_job.html')
     index = read('app/templates/analytics/object_storage/index.html')
     worker_status = read('app/templates/analytics/object_storage/partials/_forecast_worker_status.html')
 
+    job = next(item for item in jobs['jobs'] if item['key'] == 'object_storage.forecast.materialize')
+
     assert 'linear_forecast' not in service
     assert 'ObjectStorageForecastSnapshot' in materialization
     assert "execution_mode='background'" in materialization
     assert 'materialize_object_storage_forecasts' in task
     assert 'dispatch_object_storage_forecast_materialization' in adapter
-    assert "JOB_KEY = 'object_storage.forecast.materialize'" in definition
-    assert "queue_name='forecasting'" in definition
-    assert 'OBJECT_STORAGE_FORECAST_REFRESH_DEFINITION' in registry
+    assert "get_job_definition('object_storage.forecast.materialize')" in definition
+    assert job['queue_name'] == 'forecasting'
+    assert job['workload_class'] == 'forecasting'
+    assert job['dispatcher_path'] == 'app.analytics.object_storage.job_adapter:dispatch_object_storage_forecast_materialization'
+    assert '_JOB_DEFINITIONS: tuple[JobDefinition, ...] = load_job_definitions()' in registry
     assert "'app.analytics.object_storage.tasks.materialize_object_storage_forecasts'" in config
     assert 'FORECASTING_CELERY_QUEUE' in config
     assert 'eligible_target_count' in materialization_template

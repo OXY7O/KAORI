@@ -124,7 +124,7 @@ def get_generated_reports_payload(
 
     return {
         'page_title': 'Generated Reports',
-        'page_subtitle': ('Review generated report records, artifact availability, and lifecycle actions.'),
+        'page_subtitle': ('Review generated report records, artifact availability, execution state, and lifecycle actions across retained reporting evidence.'),
         'summary_cards': summary_cards,
         'filter_options': get_filter_options(),
         'selected_filters': selected_filters,
@@ -175,7 +175,7 @@ def get_report_detail_payload(
 
     return {
         'page_title': 'Report Detail',
-        'page_subtitle': 'Review report request metadata, selected sections, lifecycle status, and export readiness.',
+        'page_subtitle': 'Review report request metadata, selected sections, lifecycle status, retained artifact evidence, and export readiness from one record.',
         'report': report_detail,
         'job_execution': present_job_execution(job) if job else None,
         'status_context': get_report_detail_status_context(

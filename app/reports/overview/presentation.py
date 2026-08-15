@@ -90,10 +90,10 @@ def normalize_reports_overview_payload(payload: Mapping[str, Any] | None) -> dic
     if not normalized.get('related_information'):
         normalized['related_information'] = [dict(item) for item in _RELATED_INFORMATION]
 
-    normalized.setdefault('page_title', 'Reports')
+    normalized.setdefault('page_title', 'Reports Overview')
     normalized.setdefault(
         'page_subtitle',
-        'Generate, schedule, retain, and audit governed reporting artifacts.',
+        'Generate, schedule, retain, and audit governed reporting artifacts across connected infrastructure scopes with clear readiness, storage, and lifecycle context.',
     )
     normalized.setdefault('selected_cluster_label', 'All Infrastructure Scopes')
     normalized.setdefault('report_engine_status', 'Ready')

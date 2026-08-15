@@ -89,6 +89,15 @@ def ordered_domain_definitions() -> tuple[IntegrationDomainDefinition, ...]:
     return tuple(sorted(DOMAINS.values(), key=lambda item: (item.order, item.key)))
 
 
+def ordered_capability_definitions() -> tuple[IntegrationCapabilityDefinition, ...]:
+    return tuple(
+        sorted(
+            CAPABILITIES.values(),
+            key=lambda item: (get_domain_definition(item.domain_key).order, item.order, item.key),
+        )
+    )
+
+
 def capability_definitions_for_domain(domain_key: str) -> tuple[IntegrationCapabilityDefinition, ...]:
     normalized = str(domain_key or '').strip().lower()
     return tuple(

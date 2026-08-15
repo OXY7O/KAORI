@@ -12,7 +12,7 @@
             <div class="min-w-0">
                 <h2 id="reporting-operational-posture-title"
                     class="text-base font-bold text-content-primary">Reporting Operational Posture</h2>
-                <p class="mt-1 text-xs leading-5 text-content-muted">Worker, schedule, storage, and generation health in one operational view.</p>
+                <p class="mt-1 text-xs leading-5 text-content-muted">Review worker readiness, recurring automation, storage health, and generation quality before creating or retrieving artifacts.</p>
             </div>
         </div>
         {% if payload.storage_context.degraded %}
@@ -74,7 +74,7 @@
                 <div>
                     <h3 id="generation-performance-title"
                         class="text-sm font-bold text-content-primary">Generation Performance</h3>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">Current reporting demand and resolved generation quality.</p>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Current reporting demand and the quality of requests that have reached a terminal generation state.</p>
                 </div>
                 <i data-lucide="chart-no-axes-combined"
                    class="h-4 w-4 shrink-0 text-kaori-primary"
@@ -95,16 +95,16 @@
                 {% endfor %}
             </div>
             <div class="mt-4 rounded-xl border border-kaori-primary/20 bg-kaori-soft/55 px-4 py-3"
-                 data-reporting-performance-tip="true">
+                 data-reporting-performance-reading="true">
                 <div class="flex items-start gap-3">
                     <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary shadow-sm ring-1 ring-kaori-primary/10"
                           aria-hidden="true">
-                        <i data-lucide="lightbulb" class="h-4 w-4"></i>
+                        <i data-lucide="activity" class="h-4 w-4"></i>
                     </span>
                     <div class="min-w-0">
-                        <p class="text-xs font-bold text-content-primary">Performance Tip</p>
+                        <p class="text-xs font-bold text-content-primary">Operational Reading</p>
                         <p class="mt-1 text-xs leading-5 text-content-secondary">
-                            Track request volume as reporting demand, then use completion rate to confirm resolved generation quality remains healthy.
+                            Completion Rate measures resolved requests only. Active requests remain In Progress until worker execution reaches a terminal state.
                         </p>
                     </div>
                 </div>

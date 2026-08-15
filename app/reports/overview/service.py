@@ -10,8 +10,10 @@ from app.common.celery_queue_health import get_queue_readiness
 from app.extensions.db import db
 from app.models.report import Report, ReportSchedule, ReportTemplate
 from app.reports.catalog import (
+    PLANNED_REPORT_COVERAGE_DOMAINS,
     REPORT_FAMILY_ANALYTICS,
     REPORT_FAMILY_INVENTORY,
+    REPORT_TYPE_OPTIONS,
     REPORT_TYPE_SPECS,
 )
 from app.notification_channels.service import notification_channel_summary
@@ -22,7 +24,6 @@ from app.reports.export.constants import (
     REPORT_DOMAIN_LABELS,
     SOURCE_KIND_LABELS,
 )
-from app.reports.generate.service import REPORT_TYPE_OPTIONS
 from app.reports.jobs.queue import get_reports_queue_name
 from app.reports.storage.health import (
     build_local_storage_health,
@@ -54,73 +55,6 @@ ARCHIVED_REPORT_STATUSES = [
 IMPLEMENTED_REPORT_TYPES = frozenset(spec.value for spec in REPORT_TYPE_SPECS)
 
 
-SERVER_REPORT_TYPE_COVERAGE = [
-    {
-        'name': 'Server Inventory Report',
-        'description': (
-            'Physical and virtual server inventory, ownership, operating system, lifecycle, and placement summary.'
-        ),
-        'icon': 'server',
-    },
-    {
-        'name': 'Server Utilization Report',
-        'description': 'CPU, memory, filesystem, and load behavior from server inventory and Node Exporter metrics.',
-        'icon': 'activity',
-    },
-    {
-        'name': 'Server Capacity Report',
-        'description': (
-            'Allocated versus consumed compute, memory, and storage with capacity risk and growth indicators.'
-        ),
-        'icon': 'gauge',
-    },
-    {
-        'name': 'VM Inventory Report',
-        'description': (
-            'Virtual machine catalog, ownership, power state, operating system, CPU, memory, '
-            'disk, and placement summary.'
-        ),
-        'icon': 'monitor-cog',
-    },
-    {
-        'name': 'VM Placement & Risk Report',
-        'description': (
-            'Placement quality, affinity context, availability readiness, and concentration risk across host groups.'
-        ),
-        'icon': 'git-fork',
-    },
-]
-
-HCI_REPORT_TYPE_COVERAGE = [
-    {
-        'name': 'HCI Cluster Health Report',
-        'description': (
-            'Cluster posture, host availability, storage pool status, replication signals, and operational risk.'
-        ),
-        'icon': 'network',
-    },
-    {
-        'name': 'HCI Host Utilization Report',
-        'description': (
-            'Hypervisor host usage, contention indicators, consolidation opportunity, and noisy-neighbor signals.'
-        ),
-        'icon': 'server-cog',
-    },
-    {
-        'name': 'Datastore & Volume Report',
-        'description': (
-            'Datastore utilization, free capacity, thin provisioning exposure, and storage pressure overview.'
-        ),
-        'icon': 'database',
-    },
-    {
-        'name': 'HCI VM Placement Report',
-        'description': 'VM distribution, affinity, resilience, and placement risk from the connected HCI provider API.',
-        'icon': 'waypoints',
-    },
-]
-
-
 def get_reports_overview_payload() -> dict[str, Any]:
     report_counts = get_report_counts()
     storage_context = get_storage_context()
@@ -131,8 +65,11 @@ def get_reports_overview_payload() -> dict[str, Any]:
     current_status = get_current_status(report_counts, storage_context, report_type_coverage, worker_context)
 
     return {
-        'page_title': 'Reports',
-        'page_subtitle': 'Generate, schedule, retain, and audit governed reporting artifacts.',
+        'page_title': 'Reports Overview',
+        'page_subtitle': (
+            'Generate, schedule, retain, and audit governed reporting artifacts across connected '
+            'infrastructure scopes with clear readiness, storage, and lifecycle context.'
+        ),
         'selected_cluster_label': 'All Infrastructure Scopes',
         'report_engine_status': worker_context['label'],
         'storage_status': storage_context['display_status'],
@@ -454,8 +391,29 @@ def get_report_type_coverage() -> dict[str, Any]:
             }
         )
 
-    server_items = [{**item, 'status': 'Planned', 'tone': 'info'} for item in SERVER_REPORT_TYPE_COVERAGE]
-    hci_items = [{**item, 'status': 'Reserved', 'tone': 'unknown'} for item in HCI_REPORT_TYPE_COVERAGE]
+    planned_domains = [
+        {
+            'key': domain.key,
+            'label': domain.label,
+            'description': domain.description,
+            'icon': domain.icon,
+            'status': domain.status,
+            'tone': domain.tone,
+            'items': [
+                {
+                    'name': item.name,
+                    'description': item.description,
+                    'icon': item.icon,
+                    'status': domain.status,
+                    'tone': domain.tone,
+                }
+                for item in domain.items
+            ],
+            'available_count': 0,
+            'total_count': len(domain.items),
+        }
+        for domain in PLANNED_REPORT_COVERAGE_DOMAINS
+    ]
 
     domains = [
         {
@@ -472,32 +430,7 @@ def get_report_type_coverage() -> dict[str, Any]:
             'available_count': sum(1 for item in kubernetes_items if item['status'] == 'Available'),
             'total_count': len(kubernetes_items),
         },
-        {
-            'key': 'server',
-            'label': 'Server & VM Reports',
-            'description': (
-                'Planned report contracts for physical servers, virtual machines, and Node Exporter signals.'
-            ),
-            'icon': 'server-cog',
-            'status': 'Planned',
-            'tone': 'info',
-            'items': server_items,
-            'available_count': 0,
-            'total_count': len(server_items),
-        },
-        {
-            'key': 'hci',
-            'label': 'HCI Reports',
-            'description': (
-                'Reserved report contracts for HCI clusters, hosts, datastores, and VM placement from provider APIs.'
-            ),
-            'icon': 'network',
-            'status': 'Reserved',
-            'tone': 'unknown',
-            'items': hci_items,
-            'available_count': 0,
-            'total_count': len(hci_items),
-        },
+        *planned_domains,
     ]
 
     return {

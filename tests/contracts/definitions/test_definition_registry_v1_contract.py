@@ -20,6 +20,7 @@ def test_definition_registry_has_versioned_yaml_for_growing_system_catalogs():
         'jobs/registered_jobs.yaml': 'registered_jobs',
         'analytics/kubernetes_datasets.yaml': 'kubernetes_analytics_datasets',
         'reports/catalog.yaml': 'report_catalog',
+        'reports/coverage.yaml': 'report_coverage_catalog',
         'notifications/event_categories.yaml': 'notification_event_categories',
         'integrations/taxonomy.yaml': 'integration_taxonomy',
         'integrations/compatibility.yaml': 'integration_compatibility',
@@ -114,3 +115,10 @@ def test_integration_definitions_are_taxonomy_provider_and_profile_driven():
         for product in object_storage['products']
         for profile in product['compatibility_profiles']
     )
+
+
+def test_integration_taxonomy_exposes_ordered_runtime_collections():
+    source = Path('app/integrations/taxonomy.py').read_text()
+    assert 'def ordered_domain_definitions()' in source
+    assert 'def ordered_capability_definitions()' in source
+    assert 'get_domain_definition(item.domain_key).order' in source

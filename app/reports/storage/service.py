@@ -761,7 +761,7 @@ def get_report_storage_payload(*, workspace: str | None = None) -> dict[str, Any
 
     return {
         'page_title': 'Reports Storage',
-        'page_subtitle': 'Review report artifact storage, integrity, and retention readiness.',
+        'page_subtitle': 'Review report artifact storage, integrity, retention readiness, and backend health before generation or retrieval operations.',
         'active_backend': backend_name,
         'workspace': normalize_storage_workspace(workspace),
         'backend_status': backend_status,

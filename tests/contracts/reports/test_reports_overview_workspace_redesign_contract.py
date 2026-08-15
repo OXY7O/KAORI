@@ -18,6 +18,7 @@ def test_reports_overview_uses_canonical_hero_and_two_block_body() -> None:
 
     assert 'data-reports-overview-layout="operational-full-width"' in source
     assert 'Operational Reporting' in source
+    assert 'Reports Overview' in source
     assert 'page_hero.shell_classes()' in source
     assert 'page_hero.layout_classes()' in source
     assert 'page_hero.content_classes()' in source
@@ -68,9 +69,9 @@ def test_operational_posture_merges_runtime_and_generation_statistics() -> None:
     assert 'Generation Performance' in source
     assert 'payload.reporting_operations' in source
     assert 'payload.artifact_statistics[:2]' in source
-    assert 'data-reporting-performance-tip="true"' in source
-    assert 'Performance Tip' in source
-    assert 'Track request volume as reporting demand' in source
+    assert 'data-reporting-performance-reading="true"' in source
+    assert 'Operational Reading' in source
+    assert 'Completion Rate measures resolved requests only' in source
     assert 'table_label.status_indicator_label' in source
 
     for label in ('Generation Queue', 'Active Schedules', 'Artifact Storage'):
@@ -90,16 +91,17 @@ def test_estate_capability_merges_artifact_mix_reuse_and_contracts() -> None:
     presentation = read(PRESENTATION)
 
     assert 'data-reports-overview-block="estate-capability"' in source
-    assert 'Reporting Estate &amp; Capability' in source
+    assert 'Artifact Estate &amp; Report Capability' in source
     assert 'Artifact Estate' in source
-    assert 'Reuse &amp; Capability' in source
+    assert 'Contracts &amp; Automation' in source
     assert 'payload.artifact_statistics[2]' in source
     assert 'payload.artifact_portfolio.families' in source
     assert 'data-artifact-family-tip' not in source
     assert 'payload.artifact_portfolio.formats' in source
-    assert 'data-output-format-tip="true"' in source
-    assert 'Format Tip' in source
-    assert 'Use PDF for governed operational documents' in source
+    assert 'data-output-contract="true"' in source
+    assert 'Output Contract' in source
+    assert 'Analytics contracts expose PDF or CSV' in source
+    assert 'Contracts &amp; Automation' in source
     assert 'payload.automation_summary.active_schedules' in source
     assert 'payload.reporting_coverage' in source
     assert 'group.contract_count' in source

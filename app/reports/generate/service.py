@@ -448,7 +448,7 @@ def get_generate_report_payload(
 
     return {
         'page_title': 'Generate Report',
-        'page_subtitle': ('Build a governed report from connected data, selected scope, and reusable sections.'),
+        'page_subtitle': ('Build a governed report from connected data, selected scope, reusable sections, and an approved output contract.'),
         'clusters': cluster_options,
         'has_clusters': bool(cluster_options),
         'namespace_options_by_cluster': namespace_options_by_cluster,

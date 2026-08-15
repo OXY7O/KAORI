@@ -4,7 +4,14 @@ from dataclasses import dataclass
 from typing import Any
 
 from app.definitions.loader import DefinitionError, load_definition_document
-from app.definitions.validation import require_bool, require_list, require_mapping, require_str, string_tuple, unique_by
+from app.definitions.validation import (
+    require_bool,
+    require_list,
+    require_mapping,
+    require_str,
+    string_tuple,
+    unique_by,
+)
 
 REPORT_FAMILY_ANALYTICS = 'analytics'
 REPORT_FAMILY_INVENTORY = 'inventory'
@@ -20,6 +27,24 @@ class OutputFormatSpec:
     label: str
     extension: str
     mimetype: str
+
+
+@dataclass(frozen=True, slots=True)
+class ReportCoverageItemSpec:
+    name: str
+    description: str
+    icon: str
+
+
+@dataclass(frozen=True, slots=True)
+class ReportCoverageDomainSpec:
+    key: str
+    label: str
+    description: str
+    icon: str
+    status: str
+    tone: str
+    items: tuple[ReportCoverageItemSpec, ...]
 
 
 @dataclass(frozen=True, slots=True)
@@ -86,7 +111,51 @@ def _load_report_catalog() -> tuple[dict[str, OutputFormatSpec], tuple[ReportTyp
     return formats, tuple(reports)
 
 
+def _load_report_coverage_catalog() -> tuple[ReportCoverageDomainSpec, ...]:
+    document = load_definition_document('reports/coverage.yaml', expected_kind='report_coverage_catalog')
+    raw_domains = [
+        require_mapping(item, f'domains[{index}]')
+        for index, item in enumerate(require_list(document.get('domains'), 'domains'))
+    ]
+    unique_by(raw_domains, 'key', 'domains')
+    domains: list[ReportCoverageDomainSpec] = []
+    for index, raw_domain in enumerate(raw_domains):
+        path = f'domains[{index}]'
+        raw_items = [
+            require_mapping(item, f'{path}.items[{item_index}]')
+            for item_index, item in enumerate(require_list(raw_domain.get('items'), f'{path}.items'))
+        ]
+        unique_by(raw_items, 'name', f'{path}.items')
+        items = tuple(
+            ReportCoverageItemSpec(
+                name=require_str(item, 'name', f'{path}.items[{item_index}]'),
+                description=require_str(item, 'description', f'{path}.items[{item_index}]'),
+                icon=require_str(item, 'icon', f'{path}.items[{item_index}]'),
+            )
+            for item_index, item in enumerate(raw_items)
+        )
+        status = require_str(raw_domain, 'status', path)
+        tone = require_str(raw_domain, 'tone', path)
+        if status not in {'Planned', 'Reserved'}:
+            raise DefinitionError(f'{path}.status is unsupported: {status!r}.')
+        if tone not in {'info', 'unknown'}:
+            raise DefinitionError(f'{path}.tone is unsupported: {tone!r}.')
+        domains.append(
+            ReportCoverageDomainSpec(
+                key=require_str(raw_domain, 'key', path),
+                label=require_str(raw_domain, 'label', path),
+                description=require_str(raw_domain, 'description', path),
+                icon=require_str(raw_domain, 'icon', path),
+                status=status,
+                tone=tone,
+                items=items,
+            )
+        )
+    return tuple(domains)
+
+
 OUTPUT_FORMAT_SPECS, REPORT_TYPE_SPECS = _load_report_catalog()
+PLANNED_REPORT_COVERAGE_DOMAINS = _load_report_coverage_catalog()
 
 _REPORT_TYPE_BY_VALUE = {item.value: item for item in REPORT_TYPE_SPECS}
 

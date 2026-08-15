@@ -18,6 +18,7 @@ EXPECTED = {
     'jobs/registered_jobs.yaml': 'registered_jobs',
     'analytics/kubernetes_datasets.yaml': 'kubernetes_analytics_datasets',
     'reports/catalog.yaml': 'report_catalog',
+    'reports/coverage.yaml': 'report_coverage_catalog',
     'notifications/event_categories.yaml': 'notification_event_categories',
     'integrations/taxonomy.yaml': 'integration_taxonomy',
     'integrations/compatibility.yaml': 'integration_compatibility',
@@ -126,6 +127,11 @@ def main() -> int:
             if report.get('default_format') not in allowed or not allowed <= formats:
                 raise ValueError(f"report {report['value']} has invalid format contract")
 
+        report_coverage = docs['reports/coverage.yaml']
+        unique(report_coverage['domains'], 'key', 'planned report domains')
+        for domain in report_coverage['domains']:
+            unique(domain.get('items') or [], 'name', f"report coverage {domain['key']} items")
+
         notifications = docs['notifications/event_categories.yaml']
         category_keys = set(notifications['categories'])
         if notifications.get('default_category') not in category_keys:
@@ -196,6 +202,7 @@ def main() -> int:
         'PASS — KAORI Definition Registry v1.1 · '
         f"{len(rules)} rules · {len(permission_keys)} permissions · {len(jobs)} jobs · "
         f"{len(datasets)} analytics datasets · {len(reports['report_types'])} report types · "
+        f"{len(report_coverage['domains'])} planned report domains · "
         f"{len(domain_keys)} integration domains · {sum(integration_provider_counts.values())} provider capabilities · "
         f"{len(compatibility_profiles)} compatibility profiles"
     )
