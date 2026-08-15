@@ -8,7 +8,7 @@ def read(path: str) -> str:
     return (ROOT / path).read_text()
 
 
-def test_recommendation_filters_use_two_desktop_rows_without_changing_catalog_layout() -> None:
+def test_recommendation_and_catalog_filters_use_shared_two_desktop_rows() -> None:
     workspace = read('app/templates/intelligence/partials/_recommendations_workspace.html')
     filters = read('app/templates/intelligence/partials/_filters.html')
     catalog = read('app/templates/intelligence/partials/_catalog_workspace.html')
@@ -19,7 +19,7 @@ def test_recommendation_filters_use_two_desktop_rows_without_changing_catalog_la
     assert "'lg:col-span-2' if filter_compact_two_rows" in filters
     assert "'lg:col-span-3' if filter_compact_two_rows" in filters
     assert filters.index('>Signal Source</span>') < filters.index('>Severity</span>')
-    assert 'filter_compact_two_rows' not in catalog
+    assert '{% set filter_compact_two_rows = true %}' in catalog
 
 
 def test_recommendation_summary_is_a_standalone_filter_aware_section_above_workspace() -> None:

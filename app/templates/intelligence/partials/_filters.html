@@ -17,6 +17,7 @@
       hx-indicator="{{ resolved_indicator }}"
       hx-sync="{{ resolved_results_target }}:replace"
       hx-trigger="input changed delay:350ms from:input[name='q'], change from:select"
+      autocomplete="off"
       class="border-b border-outline-subtle bg-surface-hover px-4 py-4 sm:px-5">
     <input type="hidden" name="page" value="1">
     <input type="hidden"
@@ -39,148 +40,86 @@
             Reset Filters
         </a>
     </div>
-    {% if filter_compact_two_rows|default(false) %}
-        <div class="grid gap-3 lg:grid-cols-12">
-            <label class="block lg:col-span-4">
-                <span class="{{ table_ui.filter_label_classes() }}">Search</span>
-                {{ table_ui.search_field('q', payload.filters.q, resolved_search_placeholder) }}
-            </label>
-            <label class="block lg:col-span-2">
-                <span class="{{ table_ui.filter_label_classes() }}">Domain</span>
-                <select name="domain" class="{{ table_ui.filter_select_classes() }}">
-                    {% for option in payload.filter_options.domains %}
-                        <option value="{{ option.value }}"
-                                {% if payload.filters.domain == option.value %}selected{% endif %}>{{ option.label }}</option>
-                    {% endfor %}
-                </select>
-            </label>
-            <label class="block lg:col-span-3">
-                <span class="{{ table_ui.filter_label_classes() }}">Provider Coverage</span>
-                <select name="provider" class="{{ table_ui.filter_select_classes() }}">
-                    {% for option in payload.filter_options.providers %}
-                        <option value="{{ option.value }}"
-                                {% if payload.filters.provider == option.value %}selected{% endif %}>{{ option.label }}</option>
-                    {% endfor %}
-                </select>
-            </label>
+    <div class="grid gap-3 sm:grid-cols-2 {{ 'lg:grid-cols-12' if filter_compact_two_rows|default(false) else 'xl:grid-cols-4' }}">
+        <label class="block {{ 'lg:col-span-4' if filter_compact_two_rows|default(false) else 'xl:col-span-2' }}">
+            <span class="{{ table_ui.filter_label_classes() }}">Search</span>
+            {{ table_ui.search_field('q', payload.filters.q, resolved_search_placeholder) }}
+        </label>
+        <label class="block {{ 'lg:col-span-2' if filter_compact_two_rows|default(false) else '' }}">
+            <span class="{{ table_ui.filter_label_classes() }}">Domain</span>
+            <select name="domain" autocomplete="off" class="{{ table_ui.filter_select_classes() }}">
+                {% for option in payload.filter_options.domains %}
+                    <option value="{{ option.value }}"
+                            {% if payload.filters.domain == option.value %}selected{% endif %}>{{ option.label }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <label class="block {{ 'lg:col-span-3' if filter_compact_two_rows|default(false) else '' }}">
+            <span class="{{ table_ui.filter_label_classes() }}">Provider Coverage</span>
+            <select name="provider" autocomplete="off" class="{{ table_ui.filter_select_classes() }}">
+                {% for option in payload.filter_options.providers %}
+                    <option value="{{ option.value }}"
+                            {% if payload.filters.provider == option.value %}selected{% endif %}>{{ option.label }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        {% if filter_compact_two_rows|default(false) %}
             <label class="block lg:col-span-3">
                 <span class="{{ table_ui.filter_label_classes() }}">Signal Source</span>
-                <select name="signal_source" class="{{ table_ui.filter_select_classes() }}">
+                <select name="signal_source" autocomplete="off" class="{{ table_ui.filter_select_classes() }}">
                     {% for option in payload.filter_options.signal_sources %}
                         <option value="{{ option.value }}"
                                 {% if payload.filters.signal_source == option.value %}selected{% endif %}>{{ option.label }}</option>
                     {% endfor %}
                 </select>
             </label>
-        </div>
-        <div class="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            <label class="block">
-                <span class="{{ table_ui.filter_label_classes() }}">Severity</span>
-                <select name="severity" class="{{ table_ui.filter_select_classes() }}">
-                    {% for option in payload.filter_options.severities %}
-                        <option value="{{ option.value }}"
-                                {% if payload.filters.severity == option.value %}selected{% endif %}>{{ option.label }}</option>
-                    {% endfor %}
-                </select>
-            </label>
-            <label class="block">
-                <span class="{{ table_ui.filter_label_classes() }}">Category</span>
-                <select name="category" class="{{ table_ui.filter_select_classes() }}">
-                    {% for option in payload.filter_options.categories %}
-                        <option value="{{ option.value }}"
-                                {% if payload.filters.category == option.value %}selected{% endif %}>{{ option.label }}</option>
-                    {% endfor %}
-                </select>
-            </label>
-            <label class="block">
-                <span class="{{ table_ui.filter_label_classes() }}">Resource Type</span>
-                <select name="source_kind" class="{{ table_ui.filter_select_classes() }}">
-                    {% for option in payload.filter_options.source_kinds %}
-                        <option value="{{ option.value }}"
-                                {% if payload.filters.source_kind == option.value %}selected{% endif %}>{{ option.label }}</option>
-                    {% endfor %}
-                </select>
-            </label>
-            <label class="block">
-                <span class="{{ table_ui.filter_label_classes() }}">Rule Type</span>
-                <select name="logic_type" class="{{ table_ui.filter_select_classes() }}">
-                    {% for option in payload.filter_options.logic_types %}
-                        <option value="{{ option.value }}"
-                                {% if payload.filters.logic_type == option.value %}selected{% endif %}>{{ option.label }}</option>
-                    {% endfor %}
-                </select>
-            </label>
-        </div>
-    {% else %}
-        <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            <label class="block xl:col-span-2">
-                <span class="{{ table_ui.filter_label_classes() }}">Search</span>
-                {{ table_ui.search_field('q', payload.filters.q, resolved_search_placeholder) }}
-            </label>
-            <label class="block">
-                <span class="{{ table_ui.filter_label_classes() }}">Domain</span>
-                <select name="domain" class="{{ table_ui.filter_select_classes() }}">
-                    {% for option in payload.filter_options.domains %}
-                        <option value="{{ option.value }}"
-                                {% if payload.filters.domain == option.value %}selected{% endif %}>{{ option.label }}</option>
-                    {% endfor %}
-                </select>
-            </label>
-            <label class="block">
-                <span class="{{ table_ui.filter_label_classes() }}">Provider Coverage</span>
-                <select name="provider" class="{{ table_ui.filter_select_classes() }}">
-                    {% for option in payload.filter_options.providers %}
-                        <option value="{{ option.value }}"
-                                {% if payload.filters.provider == option.value %}selected{% endif %}>{{ option.label }}</option>
-                    {% endfor %}
-                </select>
-            </label>
-            <label class="block">
-                <span class="{{ table_ui.filter_label_classes() }}">Severity</span>
-                <select name="severity" class="{{ table_ui.filter_select_classes() }}">
-                    {% for option in payload.filter_options.severities %}
-                        <option value="{{ option.value }}"
-                                {% if payload.filters.severity == option.value %}selected{% endif %}>{{ option.label }}</option>
-                    {% endfor %}
-                </select>
-            </label>
-            <label class="block">
-                <span class="{{ table_ui.filter_label_classes() }}">Category</span>
-                <select name="category" class="{{ table_ui.filter_select_classes() }}">
-                    {% for option in payload.filter_options.categories %}
-                        <option value="{{ option.value }}"
-                                {% if payload.filters.category == option.value %}selected{% endif %}>{{ option.label }}</option>
-                    {% endfor %}
-                </select>
-            </label>
-            <label class="block">
-                <span class="{{ table_ui.filter_label_classes() }}">Resource Type</span>
-                <select name="source_kind" class="{{ table_ui.filter_select_classes() }}">
-                    {% for option in payload.filter_options.source_kinds %}
-                        <option value="{{ option.value }}"
-                                {% if payload.filters.source_kind == option.value %}selected{% endif %}>{{ option.label }}</option>
-                    {% endfor %}
-                </select>
-            </label>
-            <label class="block">
-                <span class="{{ table_ui.filter_label_classes() }}">Rule Type</span>
-                <select name="logic_type" class="{{ table_ui.filter_select_classes() }}">
-                    {% for option in payload.filter_options.logic_types %}
-                        <option value="{{ option.value }}"
-                                {% if payload.filters.logic_type == option.value %}selected{% endif %}>{{ option.label }}</option>
-                    {% endfor %}
-                </select>
-            </label>
+        {% endif %}
+        <label class="block {{ 'lg:col-span-3' if filter_compact_two_rows|default(false) else '' }}">
+            <span class="{{ table_ui.filter_label_classes() }}">Severity</span>
+            <select name="severity" autocomplete="off" class="{{ table_ui.filter_select_classes() }}">
+                {% for option in payload.filter_options.severities %}
+                    <option value="{{ option.value }}"
+                            {% if payload.filters.severity == option.value %}selected{% endif %}>{{ option.label }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <label class="block {{ 'lg:col-span-3' if filter_compact_two_rows|default(false) else '' }}">
+            <span class="{{ table_ui.filter_label_classes() }}">Category</span>
+            <select name="category" autocomplete="off" class="{{ table_ui.filter_select_classes() }}">
+                {% for option in payload.filter_options.categories %}
+                    <option value="{{ option.value }}"
+                            {% if payload.filters.category == option.value %}selected{% endif %}>{{ option.label }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <label class="block {{ 'lg:col-span-3' if filter_compact_two_rows|default(false) else '' }}">
+            <span class="{{ table_ui.filter_label_classes() }}">Resource Type</span>
+            <select name="source_kind" autocomplete="off" class="{{ table_ui.filter_select_classes() }}">
+                {% for option in payload.filter_options.source_kinds %}
+                    <option value="{{ option.value }}"
+                            {% if payload.filters.source_kind == option.value %}selected{% endif %}>{{ option.label }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <label class="block {{ 'lg:col-span-3' if filter_compact_two_rows|default(false) else '' }}">
+            <span class="{{ table_ui.filter_label_classes() }}">Rule Type</span>
+            <select name="logic_type" autocomplete="off" class="{{ table_ui.filter_select_classes() }}">
+                {% for option in payload.filter_options.logic_types %}
+                    <option value="{{ option.value }}"
+                            {% if payload.filters.logic_type == option.value %}selected{% endif %}>{{ option.label }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        {% if not filter_compact_two_rows|default(false) %}
             <label class="block">
                 <span class="{{ table_ui.filter_label_classes() }}">Signal Source</span>
-                <select name="signal_source" class="{{ table_ui.filter_select_classes() }}">
+                <select name="signal_source" autocomplete="off" class="{{ table_ui.filter_select_classes() }}">
                     {% for option in payload.filter_options.signal_sources %}
                         <option value="{{ option.value }}"
                                 {% if payload.filters.signal_source == option.value %}selected{% endif %}>{{ option.label }}</option>
                     {% endfor %}
                 </select>
             </label>
-        </div>
-    {% endif %}
+        {% endif %}
     </div>
 </form>
