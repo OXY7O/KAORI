@@ -3,17 +3,42 @@
 {% set matching_items = payload.result_context.matching_items|default(payload.pagination.total_items, true) %}
 {% set source_items = payload.result_context.source_items|default(payload.summary.actionable, true) %}
 {% set active_filters = payload.result_context.active_filters|default(0, true) %}
+{% set kubernetes_items = payload.result_context.kubernetes_items|default(0, true) %}
+{% set object_storage_items = payload.result_context.object_storage_items|default(0, true) %}
+{% set critical_items = payload.result_context.critical_items|default(0, true) %}
+{% set warning_items = payload.result_context.warning_items|default(0, true) %}
 <div class="px-4 pt-4 sm:px-5">
     {% call operational_callout.render(
-        'Recommendation Workspace Context',
-        'Showing ' ~ matching_items ~ ' of ' ~ source_items ~ ' active findings for the current scope. Recommendations are evidence-backed findings; live validation and remediation remain in their owning operational or governed automation workspace.',
-        icon='info',
+        'Recommendation Summary',
+        'Committed findings within the current filter scope. Domain and priority counts reflect all matching findings, not only the current page.',
+        icon='chart-no-axes-column-increasing',
         tone='info',
         variant='neutral'
         ) %}
-        <div class="flex flex-wrap gap-1.5">
+        <div class="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+            <div class="rounded-lg border border-outline-subtle bg-surface-card px-3 py-2.5">
+                <p class="text-xs font-semibold leading-4 text-content-secondary">Matching Findings</p>
+                <p class="mt-1 text-xl font-semibold leading-6 text-content-primary">{{ matching_items }}</p>
+                <p class="mt-1 text-xs leading-4 text-content-muted">{{ source_items }} active finding(s) before filters</p>
+            </div>
+            <div class="rounded-lg border border-outline-subtle bg-surface-card px-3 py-2.5">
+                <p class="text-xs font-semibold leading-4 text-content-secondary">Kubernetes</p>
+                <p class="mt-1 text-xl font-semibold leading-6 text-content-primary">{{ kubernetes_items }}</p>
+                <p class="mt-1 text-xs leading-4 text-content-muted">Committed Kubernetes finding(s)</p>
+            </div>
+            <div class="rounded-lg border border-outline-subtle bg-surface-card px-3 py-2.5">
+                <p class="text-xs font-semibold leading-4 text-content-secondary">Object Storage</p>
+                <p class="mt-1 text-xl font-semibold leading-6 text-content-primary">{{ object_storage_items }}</p>
+                <p class="mt-1 text-xs leading-4 text-content-muted">Committed Object Storage finding(s)</p>
+            </div>
+            <div class="rounded-lg border border-outline-subtle bg-surface-card px-3 py-2.5">
+                <p class="text-xs font-semibold leading-4 text-content-secondary">Priority</p>
+                <p class="mt-1 text-sm font-semibold leading-5 text-content-primary">{{ critical_items }} Critical · {{ warning_items }} Warning</p>
+                <p class="mt-1 text-xs leading-4 text-content-muted">Priority across matching findings</p>
+            </div>
+        </div>
+        <div class="mt-3 flex flex-wrap gap-1.5">
             {{ table_label.metadata_label(payload.scope_label) }}
-            {{ table_label.metadata_label(matching_items ~ ' Matching') }}
             {{ table_label.metadata_label((active_filters ~ ' Active Filters') if active_filters else 'No Active Filters') }}
             {{ table_label.metadata_label('Committed Evidence') }}
         </div>

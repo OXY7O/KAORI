@@ -108,6 +108,10 @@ def _base_payload(args: MultiDict[str, str], *, page_mode: str) -> dict[str, Any
             'matching_items': total_items,
             'source_items': len(source_items),
             'active_filters': active_filter_count,
+            'kubernetes_items': sum(1 for item in filtered if item.get('domain') == 'kubernetes'),
+            'object_storage_items': sum(1 for item in filtered if item.get('domain') == 'object_storage'),
+            'critical_items': sum(1 for item in filtered if item.get('severity') == 'critical'),
+            'warning_items': sum(1 for item in filtered if item.get('severity') == 'warning'),
         },
         'pagination': {
             'page': page,

@@ -22,20 +22,27 @@ def test_recommendation_filters_use_two_desktop_rows_without_changing_catalog_la
     assert 'filter_compact_two_rows' not in catalog
 
 
-def test_recommendation_workspace_context_precedes_records_and_tracks_result_state() -> None:
+def test_recommendation_summary_precedes_records_and_tracks_cross_domain_result_state() -> None:
     results = read('app/templates/intelligence/partials/_recommendations_results.html')
     info = read('app/templates/intelligence/partials/_recommendation_workspace_info.html')
     service = read('app/intelligence/service.py')
 
     assert results.index('_recommendation_workspace_info.html') < results.index('_recommendation_records.html')
-    assert 'Recommendation Workspace Context' in info
+    assert 'Recommendation Summary' in info
     assert 'operational_callout.render' in info
+    assert 'Matching Findings' in info
+    assert 'Kubernetes' in info
+    assert 'Object Storage' in info
+    assert 'Critical' in info
     assert 'Committed Evidence' in info
-    assert 'live validation and remediation remain' in info
     assert "'result_context':" in service
     assert "'matching_items': total_items" in service
     assert "'source_items': len(source_items)" in service
     assert "'active_filters': active_filter_count" in service
+    assert "'kubernetes_items': sum(1 for item in filtered if item.get('domain') == 'kubernetes')" in service
+    assert "'object_storage_items': sum(1 for item in filtered if item.get('domain') == 'object_storage')" in service
+    assert "'critical_items': sum(1 for item in filtered if item.get('severity') == 'critical')" in service
+    assert "'warning_items': sum(1 for item in filtered if item.get('severity') == 'warning')" in service
 
 
 def test_recommendations_remain_committed_evidence_read_side_and_governed_action_boundary() -> None:
@@ -75,3 +82,10 @@ def test_recommendation_workspace_keeps_htmx_filter_and_pagination_ownership() -
     assert "target='#recommendations-results-content'" in results
     assert "target == 'recommendations-results-content'" in routes
     assert "@permission_required('intelligence.view')" in routes
+
+
+def test_recommendation_filters_disable_browser_autofill_state_restoration() -> None:
+    filters = read('app/templates/intelligence/partials/_filters.html')
+
+    assert 'autocomplete="off"' in filters
+    assert filters.count('autocomplete="off"') >= 8

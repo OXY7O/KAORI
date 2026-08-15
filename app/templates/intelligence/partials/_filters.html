@@ -17,6 +17,7 @@
       hx-indicator="{{ resolved_indicator }}"
       hx-sync="{{ resolved_results_target }}:replace"
       hx-trigger="input changed delay:350ms from:input[name='q'], change from:select"
+      autocomplete="off"
       class="border-b border-outline-subtle bg-surface-hover px-4 py-4 sm:px-5">
     <input type="hidden" name="page" value="1">
     <input type="hidden"
@@ -46,7 +47,7 @@
         </label>
         <label class="block {{ 'lg:col-span-2' if filter_compact_two_rows|default(false) else '' }}">
             <span class="{{ table_ui.filter_label_classes() }}">Domain</span>
-            <select name="domain" class="{{ table_ui.filter_select_classes() }}">
+            <select name="domain" autocomplete="off" class="{{ table_ui.filter_select_classes() }}">
                 {% for option in payload.filter_options.domains %}
                     <option value="{{ option.value }}"
                             {% if payload.filters.domain == option.value %}selected{% endif %}>{{ option.label }}</option>
@@ -55,7 +56,7 @@
         </label>
         <label class="block {{ 'lg:col-span-3' if filter_compact_two_rows|default(false) else '' }}">
             <span class="{{ table_ui.filter_label_classes() }}">Provider Coverage</span>
-            <select name="provider" class="{{ table_ui.filter_select_classes() }}">
+            <select name="provider" autocomplete="off" class="{{ table_ui.filter_select_classes() }}">
                 {% for option in payload.filter_options.providers %}
                     <option value="{{ option.value }}"
                             {% if payload.filters.provider == option.value %}selected{% endif %}>{{ option.label }}</option>
@@ -65,7 +66,7 @@
         {% if filter_compact_two_rows|default(false) %}
             <label class="block lg:col-span-3">
                 <span class="{{ table_ui.filter_label_classes() }}">Signal Source</span>
-                <select name="signal_source" class="{{ table_ui.filter_select_classes() }}">
+                <select name="signal_source" autocomplete="off" class="{{ table_ui.filter_select_classes() }}">
                     {% for option in payload.filter_options.signal_sources %}
                         <option value="{{ option.value }}"
                                 {% if payload.filters.signal_source == option.value %}selected{% endif %}>{{ option.label }}</option>
@@ -75,7 +76,7 @@
         {% endif %}
         <label class="block {{ 'lg:col-span-3' if filter_compact_two_rows|default(false) else '' }}">
             <span class="{{ table_ui.filter_label_classes() }}">Severity</span>
-            <select name="severity" class="{{ table_ui.filter_select_classes() }}">
+            <select name="severity" autocomplete="off" class="{{ table_ui.filter_select_classes() }}">
                 {% for option in payload.filter_options.severities %}
                     <option value="{{ option.value }}"
                             {% if payload.filters.severity == option.value %}selected{% endif %}>{{ option.label }}</option>
@@ -84,7 +85,7 @@
         </label>
         <label class="block {{ 'lg:col-span-3' if filter_compact_two_rows|default(false) else '' }}">
             <span class="{{ table_ui.filter_label_classes() }}">Category</span>
-            <select name="category" class="{{ table_ui.filter_select_classes() }}">
+            <select name="category" autocomplete="off" class="{{ table_ui.filter_select_classes() }}">
                 {% for option in payload.filter_options.categories %}
                     <option value="{{ option.value }}"
                             {% if payload.filters.category == option.value %}selected{% endif %}>{{ option.label }}</option>
@@ -93,7 +94,7 @@
         </label>
         <label class="block {{ 'lg:col-span-3' if filter_compact_two_rows|default(false) else '' }}">
             <span class="{{ table_ui.filter_label_classes() }}">Resource Type</span>
-            <select name="source_kind" class="{{ table_ui.filter_select_classes() }}">
+            <select name="source_kind" autocomplete="off" class="{{ table_ui.filter_select_classes() }}">
                 {% for option in payload.filter_options.source_kinds %}
                     <option value="{{ option.value }}"
                             {% if payload.filters.source_kind == option.value %}selected{% endif %}>{{ option.label }}</option>
@@ -102,7 +103,7 @@
         </label>
         <label class="block {{ 'lg:col-span-3' if filter_compact_two_rows|default(false) else '' }}">
             <span class="{{ table_ui.filter_label_classes() }}">Rule Type</span>
-            <select name="logic_type" class="{{ table_ui.filter_select_classes() }}">
+            <select name="logic_type" autocomplete="off" class="{{ table_ui.filter_select_classes() }}">
                 {% for option in payload.filter_options.logic_types %}
                     <option value="{{ option.value }}"
                             {% if payload.filters.logic_type == option.value %}selected{% endif %}>{{ option.label }}</option>
@@ -112,7 +113,7 @@
         {% if not filter_compact_two_rows|default(false) %}
             <label class="block">
                 <span class="{{ table_ui.filter_label_classes() }}">Signal Source</span>
-                <select name="signal_source" class="{{ table_ui.filter_select_classes() }}">
+                <select name="signal_source" autocomplete="off" class="{{ table_ui.filter_select_classes() }}">
                     {% for option in payload.filter_options.signal_sources %}
                         <option value="{{ option.value }}"
                                 {% if payload.filters.signal_source == option.value %}selected{% endif %}>{{ option.label }}</option>

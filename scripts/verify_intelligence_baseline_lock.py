@@ -289,15 +289,17 @@ def main() -> int:
     require(
         recommendation_results.index('_recommendation_workspace_info.html')
         < recommendation_results.index('_recommendation_records.html'),
-        'Recommendation Workspace Context must render before recommendation records',
+        'Recommendation Summary must render before recommendation records',
         errors,
     )
     for required in (
-        'Recommendation Workspace Context',
+        'Recommendation Summary',
+        'Matching Findings',
+        'Kubernetes',
+        'Object Storage',
         'Committed Evidence',
-        'live validation and remediation remain',
     ):
-        require(required in recommendation_info, f'Recommendation context block missing: {required}', errors)
+        require(required in recommendation_info, f'Recommendation summary block missing: {required}', errors)
 
     require('resource_detail_modal.drawer_host(' in recommendations_page, 'Recommendations drawer host missing', errors)
     require(

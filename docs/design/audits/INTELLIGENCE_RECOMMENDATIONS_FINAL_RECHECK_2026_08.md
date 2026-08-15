@@ -22,8 +22,8 @@ The filter surface is reduced to two desktop rows for faster scanning:
 1. Search / Domain / Provider Coverage / Signal Source.
 2. Severity / Category / Resource Type / Rule Type.
 
-A Recommendation Workspace Context callout is rendered immediately before the records. It reports matching findings, active filter state, current scope, and the committed-evidence boundary so operators can distinguish filtered results from the total active finding population.
+A Recommendation Summary block is rendered immediately before the records. It reports matching findings, Kubernetes and Object Storage finding counts, critical/warning priority counts, active filter state, and the committed-evidence boundary. The summary is filter-aware and represents all matching findings, not only the current page.
 
 ## Result
 
-No page redesign is required. The existing Hero, recommendation table/cards, pagination, and side-drawer detail system remain valid. The audit change is limited to filter density, explicit result context, and regression contracts around the evidence and execution boundaries.
+No page redesign is required. The existing Hero, recommendation table/cards, pagination, and side-drawer detail system remain valid. The audit change is limited to filter density, a filter-aware cross-domain recommendation summary, browser form-state hardening, and regression contracts around the evidence and execution boundaries.

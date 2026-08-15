@@ -51,4 +51,6 @@ Recommendations use a two-row desktop filter layout. The first row owns Search, 
 
 The result region begins with a compact information block before the recommendation records. It communicates the current matching count, active finding population, selected scope, active-filter count, and committed-evidence boundary. The block must refresh with the result region so its numbers always match the filters and pagination source state.
 
+The result region includes a filter-aware **Recommendation Summary** before the records. It reports matching findings, Kubernetes and Object Storage distribution, critical/warning counts, active filter state, and the committed-evidence boundary. Counts cover the full filtered result set rather than only the current pagination page.
+
 Recommendations remain evidence-backed findings. The workspace may describe live-validation and remediation steps, but it must not expose a direct infrastructure execution control; live validation remains with the owning operational workspace and governed execution remains with Automation Control.
