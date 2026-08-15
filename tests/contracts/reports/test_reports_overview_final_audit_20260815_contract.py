@@ -56,8 +56,11 @@ def test_reports_overview_uses_operational_reading_and_contract_boundary_not_gen
     assert 'Contracts &amp; Automation' in estate
     assert 'Output Contract' in estate
     assert 'Format Tip' not in estate
-    assert 'Published Analytics contracts expose PDF or CSV' in estate
-    assert 'published Inventory contracts expose XLSX or CSV' in estate
+    assert 'Published formats remain family-owned' in estate
+    assert 'Analytics Reports' in estate and 'PDF · CSV' in estate
+    assert 'Inventory Reports' in estate and 'XLSX · CSV' in estate
+    assert 'Candidate Domains' in estate and 'Contract + renderer required' in estate
+    assert 'text-[' not in estate
 
 
 def test_planned_report_coverage_is_definition_owned_not_embedded_in_overview_service() -> None:

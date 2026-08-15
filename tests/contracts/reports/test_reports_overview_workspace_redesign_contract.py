@@ -100,13 +100,22 @@ def test_estate_capability_merges_artifact_mix_reuse_and_contracts() -> None:
     assert 'data-report-domain-coverage="true"' in source
     assert 'Publication Boundary' in source
     assert 'Evidence Ready means KAORI already has committed inventory or analytics evidence' in source
+    assert 'payload.summary_cards[0]' in source
     assert 'payload.artifact_statistics[2]' in source
+    assert 'data-artifact-estate-snapshot="true"' in source
+    assert 'Retained Artifacts' in source
+    assert 'data-artifact-estate-distribution="true"' in source
     assert 'payload.artifact_portfolio.families' in source
     assert 'data-artifact-family-tip' not in source
     assert 'payload.artifact_portfolio.formats' in source
     assert 'data-output-contract="true"' in source
     assert 'Output Contract' in source
-    assert 'Published Analytics contracts expose PDF or CSV' in source
+    assert 'Analytics Reports' in source
+    assert 'PDF · CSV' in source
+    assert 'Inventory Reports' in source
+    assert 'XLSX · CSV' in source
+    assert 'Candidate Domains' in source
+    assert 'Contract + renderer required' in source
     assert 'Contracts &amp; Automation' in source
     assert 'payload.automation_summary.active_schedules' in source
     assert 'payload.reporting_coverage' in source
@@ -115,6 +124,7 @@ def test_estate_capability_merges_artifact_mix_reuse_and_contracts() -> None:
     assert 'Templates' in source
     assert "url_for('reports.report_templates')" in source
     assert "url_for('reports.templates')" not in source
+    assert 'text-[' not in source
 
     for label in ('Artifact Footprint', 'Custom Templates'):
         assert label in service

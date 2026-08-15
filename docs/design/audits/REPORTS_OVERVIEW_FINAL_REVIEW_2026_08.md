@@ -115,3 +115,17 @@ NO executable Generate contract yet
 ```
 
 This prevents product coverage from bypassing the governed report publication boundary.
+
+## Artifact Estate visual refinement
+
+The first multi-domain pass made Reporting Domain Coverage substantially denser than the Artifact Estate column. When the retained estate was empty, the right side collapsed into a footprint value, two short family rows, three isolated format tiles, and a large unused vertical area. That imbalance made the block look unfinished even though the data contract was correct.
+
+Artifact Estate now uses one consistent vertical hierarchy:
+
+1. **Estate Snapshot** — retained artifact count and stored footprint share one equal-width surface.
+2. **Estate Distribution** — Artifact Families and Output Formats use parallel bordered lists rather than unrelated tile styles.
+3. **Output Contract** — family-owned output formats and the candidate-domain publication gate are shown as explicit contract rows at the bottom of the column.
+
+The column is a full-height flex surface, so the Output Contract remains anchored to the lower rhythm when Reporting Domain Coverage is taller. This preserves visual balance without inventing additional statistics or changing report runtime semantics.
+
+The refinement also removes page-local arbitrary `text-[11px]` utilities. Reports Overview now uses the canonical KAORI typography scale and therefore does not require an exception in the UI style-debt baseline.
