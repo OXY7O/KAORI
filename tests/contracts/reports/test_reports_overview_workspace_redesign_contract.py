@@ -106,6 +106,7 @@ def test_estate_capability_merges_artifact_mix_reuse_and_contracts() -> None:
     assert 'Retained Artifacts' in source
     assert 'data-artifact-estate-distribution="true"' in source
     assert 'payload.artifact_portfolio.families' in source
+    assert 'Retained Artifact Mix' in source
     assert 'data-artifact-family-tip' not in source
     assert 'payload.artifact_portfolio.formats' in source
     assert 'data-output-contract="true"' in source
@@ -119,6 +120,10 @@ def test_estate_capability_merges_artifact_mix_reuse_and_contracts() -> None:
     assert 'Contracts &amp; Automation' in source
     assert 'payload.automation_summary.active_schedules' in source
     assert 'payload.reporting_coverage' in source
+    assert 'data-contract-family-summary="true"' in source
+    assert 'Published Contract Families' in source
+    assert 'data-contract-automation-boundary="true"' in source
+    assert 'Automation Boundary' in source
     assert 'group.contract_count' in source
     assert 'Generated Reports' in source
     assert 'Templates' in source
