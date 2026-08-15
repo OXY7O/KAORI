@@ -11,7 +11,7 @@
     min-w-0 xl:col-span-5 xl:self-stretch xl:[&>*]:h-full
 {%- endmacro %}
 {% macro context_panel_classes() -%}
-    kaori-hero-panel flex h-full min-h-[13rem] flex-col rounded-xl border p-4 backdrop-blur-md
+    kaori-hero-panel flex h-full min-h-[13rem] flex-col gap-3 rounded-xl border p-4 backdrop-blur-md
 {%- endmacro %}
 {% macro context_status_badge(label, tone='info') -%}
     {% set status_icon = 'circle-check' if tone == 'normal' else ('triangle-alert' if tone == 'warning' else ('circle-x' if tone == 'critical' else ('circle-help' if tone == 'unknown' else 'circle-dot'))) %}
@@ -129,10 +129,10 @@
     </div>
 {%- endmacro %}
 {% macro context_actions_classes(columns=2) -%}
-    mt-auto grid gap-2 pt-3 {{ 'grid-cols-2' if columns == 2 else 'grid-cols-1' }}
+    mt-auto grid min-h-10 gap-2 {{ 'grid-cols-2' if columns == 2 else 'grid-cols-1' }}
 {%- endmacro %}
 {% macro context_info_classes() -%}
-    kaori-hero-tile mt-3 flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-medium leading-5 text-brand-foreground-muted
+    kaori-hero-tile mt-auto flex min-h-10 items-center gap-2 rounded-lg border px-3 py-2 text-xs font-medium leading-5 text-brand-foreground-muted
 {%- endmacro %}
 {% macro context_info(icon, text) -%}
     <div class="{{ context_info_classes() }}">
@@ -143,7 +143,7 @@
     </div>
 {%- endmacro %}
 {% macro context_panel_metrics_classes() -%}
-    mt-3 grid grid-cols-2 gap-2
+    grid grid-cols-2 auto-rows-fr gap-2
 {%- endmacro %}
 {% macro context_metric(icon, label, value, description=None, value_classes=None) -%}
     <div class="{{ context_metric_card_classes() }}">

@@ -1,4 +1,4 @@
-# KAORI Hero Component Standard v1.4
+# KAORI Hero Component Standard v1.5
 
 This document is the authoritative implementation contract for authenticated KAORI page heroes.
 
@@ -85,10 +85,12 @@ The following values mirror the active Tailwind implementation and are locked by
 | Grid gap | `gap-5` | 20 px |
 | Desktop layout | `xl:grid-cols-12` | content 7 / context 5 |
 | Context panel | `.kaori-hero-panel min-h-[13rem] rounded-xl p-4` | 208 px minimum, 12 px radius, 16 px padding |
-| Metric grid | `grid-cols-2 gap-2` | two columns, 8 px gap |
+| Context row rhythm | `gap-3` | 12 px between header, metric row, and footer slot |
+| Metric grid | `grid-cols-2 auto-rows-fr gap-2` | two equal-height columns, 8 px horizontal gap |
+| Footer slot | `mt-auto min-h-10` | bottom-aligned 40 px minimum for info, one action, or two actions |
 | Context action | `h-10` | 40 px |
 
-Minimum height protects alignment while allowing natural wrapping. If a hero grows repeatedly beyond the baseline, reduce the copy or move content below the hero. Do not create a page-local height variant.
+The right panel uses one canonical three-row rhythm: header, metric row, and footer slot. The footer may contain one information strip, one full-width action, or two half-width actions; all three variants must land on the same bottom baseline and retain the same 12 px row rhythm. Do not add page-local `mt-*`, `pt-*`, or height compensation around these shared rows. Minimum height protects alignment while allowing natural wrapping. If a hero grows repeatedly beyond the baseline, reduce the copy or move content below the hero. Do not create a page-local height variant.
 
 ## Technical typography
 
@@ -196,6 +198,8 @@ The canonical context action is:
 class="{{ page_hero.context_single_action_classes() }}"
 ```
 
+The bottom region is a canonical footer slot. `context_info(...)`, `context_single_action_classes()`, and `context_actions_classes(...)` all bottom-align through the shared 40 px footer contract. Do not add local spacing around them.
+
 For two coordinated actions in a manual panel, use:
 
 ```jinja
@@ -224,41 +228,6 @@ Recommended copy budget:
 
 The component does not compensate for verbose copy. Long explanations and evidence boundaries belong below the hero.
 
-## Kubernetes setup-blocked context
-
-Kubernetes workspaces that cannot operate before at least one cluster is registered use one shared Hero right-panel blocker:
-
-```text
-app/templates/components/cluster/_hero_blocked_context.html
-```
-
-The canonical visual semantics are inherited from the Kubernetes Operations Dashboard blocker:
-
-```text
-<Domain> Readiness
-Cluster Setup Required
-
-Connected Clusters   0
-Workspace State      Blocked
-
-Short domain-specific activation guidance
-```
-
-This pattern is shared by Kubernetes Dashboard, Inventory, Operations, and Governance. The Hero geometry remains unchanged while blocked; the right panel switches from normal posture/context evidence to setup readiness. Detailed explanation and the cluster-registration CTA remain in the onboarding banner below the Hero.
-
-Rules:
-
-- use `_hero_blocked_context.html`; do not recreate the blocker panel per page;
-- the shared blocker already owns the canonical `context_panel`; callers must not wrap it in another `context_panel_classes()` container;
-- set `cluster_blocked_scope`, `cluster_blocked_title`, and `cluster_blocked_info`; `cluster_blocked_state_label` is optional when a domain must preserve a more specific state label such as `Dashboard State`;
-- use `Cluster Setup Required` for the blocker title;
-- do not render normal right-panel posture metrics as if zero values were committed evidence;
-- blocked Hero metadata on the left must also avoid zero-valued asset counters when no source scope exists; use capability/setup metadata instead;
-- keep the main Hero visible and stable;
-- keep the page title and purpose description unchanged; `Setup Required` belongs to readiness context, never the `<h1>` identity;
-- hide data snapshots, KPI/posture cards, tables, topology explorers, and mutation workspaces when the page has no valid cluster scope;
-- authorization must complete before the setup blocker is exposed.
-
 ## Dynamic and HTMX behavior
 
 The hero is a stable page anchor. Filtering, pagination, polling, runtime refresh, inventory synchronization, validation, and background jobs must not replace or collapse it.
@@ -277,7 +246,7 @@ A lazy right-side context partial may update only its owned context region while
 
 ## Empty and blocked states
 
-The hero remains visible when no records exist or a dependency is blocked. **Blocked state never replaces page identity.** The page `<h1>`, document title, and concise purpose description remain the same destination the user opened; readiness changes belong in the right Hero context and the blocker/CTA below it. This rule applies across Kubernetes Dashboard, Inventory, Analytics, Governance, Operations, Object Storage Inventory, and Object Storage Analytics.
+The hero remains visible when no records exist or a dependency is blocked.
 
 Use factual metadata such as:
 

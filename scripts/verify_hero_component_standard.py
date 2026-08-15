@@ -72,6 +72,7 @@ IMPLEMENTATION_TOKENS = (
     'lg:p-6',
     'min-h-[13rem]',
     'lg:min-h-[14.5rem]',
+    'flex h-full min-h-[13rem] flex-col gap-3',
     'xl:grid-cols-12',
     'xl:col-span-7',
     'xl:col-span-5',
@@ -86,6 +87,9 @@ IMPLEMENTATION_TOKENS = (
     'min-h-8 items-center gap-2 rounded-md',
     'text-lg font-semibold leading-6',
     'text-xs font-semibold leading-5',
+    'grid grid-cols-2 auto-rows-fr gap-2',
+    'mt-auto flex min-h-10 items-center gap-2',
+    'mt-auto grid min-h-10 gap-2',
     'h-10 cursor-pointer',
     'macro context_icon_box(icon)',
     'macro context_action_icon_box(icon, href, aria_label, title=None)',
@@ -96,11 +100,12 @@ IMPLEMENTATION_TOKENS = (
 )
 
 DOCUMENTATION_TOKENS = (
-    '# KAORI Hero Component Standard v1.4',
+    '# KAORI Hero Component Standard v1.5',
     'app/templates/components/page_hero.html',
     'scripts/verify_hero_component_standard.py',
     'tests/contracts/design/test_hero_component_standard_contract.py',
     '248 px / 280 px minimum',
+    'same 12 px row rhythm',
     '16 px, regular, 28 px line height',
     'Action Icon Box',
     'Context Icon Box',
@@ -255,7 +260,7 @@ def verify() -> None:
     print(
         'KAORI Hero component standard passed: '
         f'{len(shell_templates)} Hero shells, {context_card_templates} context-card consumers, '
-        f'and {lazy_context_templates} lazy context bodies match v1.4; implementation, documentation, '
+        f'and {lazy_context_templates} lazy context bodies match v1.5; implementation, documentation, '
         'domain extension, dark-mode ownership, removed APIs, and quality-gate ownership are synchronized.'
     )
 

@@ -25,7 +25,7 @@ def test_hero_documentation_has_one_global_contract_and_one_domain_extension() -
     global_standard = (components / 'HERO.md').read_text(encoding='utf-8')
     analytics_extension = (components / 'ANALYTICS_HERO.md').read_text(encoding='utf-8')
 
-    assert 'KAORI Hero Component Standard v1.4' in global_standard
+    assert 'KAORI Hero Component Standard v1.5' in global_standard
     assert '16 px, regular, 28 px line height' in global_standard
     assert 'Action Icon Box' in global_standard
     assert 'Context Icon Box' in global_standard
@@ -60,3 +60,14 @@ def test_hero_right_header_accessories_have_three_canonical_variants() -> None:
     assert "macro context_header_status(eyebrow_label, title, status_label, status_tone='info')" in source
     assert 'aria-label="{{ aria_label }}"' in source
     assert 'context_status_badge(status_label, status_tone)' in source
+
+def test_hero_context_panel_footer_variants_share_one_precise_row_rhythm() -> None:
+    source = (ROOT / 'app' / 'templates' / 'components' / 'page_hero.html').read_text(encoding='utf-8')
+
+    assert 'flex h-full min-h-[13rem] flex-col gap-3' in source
+    assert 'grid grid-cols-2 auto-rows-fr gap-2' in source
+    assert 'kaori-hero-tile mt-auto flex min-h-10 items-center gap-2' in source
+    assert "mt-auto grid min-h-10 gap-2 {{ 'grid-cols-2' if columns == 2 else 'grid-cols-1' }}" in source
+    assert 'mt-3 grid grid-cols-2 gap-2' not in source
+    assert 'mt-auto grid gap-2 pt-3' not in source
+
