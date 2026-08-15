@@ -20,12 +20,10 @@ from app.reports.catalog import (
     get_allowed_output_formats,
     get_default_output_format,
     get_report_type_spec,
-)
-from app.reports.scope import KUBERNETES_CLUSTER_ASSET_TYPE, OBJECT_STORAGE_SYSTEM_ASSET_TYPE
-from app.reports.catalog import (
     normalize_report_type as normalize_catalog_report_type,
 )
 from app.reports.jobs.queue import get_reports_queue_name
+from app.reports.scope import KUBERNETES_CLUSTER_ASSET_TYPE, OBJECT_STORAGE_SYSTEM_ASSET_TYPE
 from app.reports.storage.service import get_configured_storage_backend_name, get_report_storage_backend_status
 
 PERIOD_OPTIONS: list[dict[str, str]] = [

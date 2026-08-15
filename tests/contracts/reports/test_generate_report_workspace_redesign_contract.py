@@ -68,7 +68,10 @@ def test_generate_report_uses_two_primary_configuration_zones_and_compact_review
     assert 'Create & Queue Report' in source
     assert "table_label.status_indicator_label(payload.worker_context.label" not in source
     assert 'xl:grid-cols-2 xl:divide-x xl:divide-outline-default' in source
-    assert 'lg:grid-cols-[minmax(0,18rem)_minmax(0,1fr)]' in source
+    assert 'grid lg:grid-cols-12' in source
+    assert 'lg:col-span-4' in source
+    assert 'lg:col-span-5' in source
+    assert 'lg:col-span-3' in source
     assert 'lg:grid-cols-[15rem_minmax(0,1fr)]' not in source
     assert 'data-report-request-summary="true"' in source
     assert 'xl:grid-cols-4' in source
@@ -130,8 +133,10 @@ def test_output_format_uses_compact_native_select_and_contract_filtering() -> No
     assert 'option.hidden = !isAllowed;' in source
     assert "option.value !== 'snapshot'" in source
     assert "option.value === 'snapshot'" in source
-    assert 'Selected Output Contract' in source
+    assert 'Selected Artifact' in source
+    assert 'Publication Contract' in source
     assert 'data-report-output-contract="true"' in source
+    assert 'id="output-format-selected"' in source
     assert 'id="output-format-default"' in source
     assert 'id="output-format-purpose"' in source
     assert 'id="output-format-contract"' in source
@@ -211,8 +216,10 @@ def test_generate_report_typography_and_summary_are_visually_hierarchical() -> N
     assert 'Select a specific cluster to load namespace options.' not in source
     assert 'Cluster selection loads namespace options.' not in source
     assert 'id="namespace-select-help"' not in source
-    assert 'Selected Output Contract' in source
+    assert 'Selected Artifact' in source
+    assert 'Publication Contract' in source
     assert 'data-report-output-contract="true"' in source
+    assert 'id="output-format-selected"' in source
     assert 'id="output-format-default"' in source
     assert 'id="output-format-purpose"' in source
     assert 'id="output-format-contract"' in source

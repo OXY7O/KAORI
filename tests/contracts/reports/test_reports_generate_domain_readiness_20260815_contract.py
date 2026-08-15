@@ -33,12 +33,14 @@ def test_generate_exposes_selected_output_contract_without_repeating_global_fami
     page = read('app/templates/reports/generate/index.html')
 
     assert 'data-report-output-contract="true"' in page
-    assert 'Selected Output Contract' in page
+    assert 'Selected Artifact' in page
+    assert 'Publication Contract' in page
+    assert 'id="output-format-selected"' in page
     assert 'id="output-format-default"' in page
     assert 'id="output-format-purpose"' in page
-    assert 'Allowed Formats' in page
-    assert 'XLSX preserves the governed workbook structure' in page
-    assert 'PDF preserves the governed analytical document' in page
+    assert '>Allowed</span>' in page
+    assert 'Governed workbook preserving inventory structure and tabular review.' in page
+    assert 'Governed analytical publication for review, evidence, and operational communication.' in page
     assert 'Format Policy' not in page
     assert 'PDF only' not in page
     assert 'XLSX only' not in page

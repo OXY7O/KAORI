@@ -10,7 +10,7 @@ Generate remains a published-contract workspace. A report type is exposed only a
 - Inventory reports: XLSX is the governed workbook default; CSV remains available for flat export and automation.
 - Analytics does not add XLSX by default because it duplicates the CSV machine-readable contract without meaningful additional governance value.
 
-The Generate workspace no longer repeats the global Analytics/Inventory format policy beside every request. The Artifact step renders one **Selected Output Contract** for the active report type: canonical default, allowed formats, and the purpose of each export path.
+The Generate workspace no longer repeats the global Analytics/Inventory format policy beside every request. The Artifact step uses one unified three-part contract surface: Output Format, Selected Artifact behavior, and Publication Contract. The selected-format explanation follows the operator's actual format choice, while Default and Allowed remain canonical report-contract metadata.
 
 ## Published Object Storage contracts
 
@@ -23,7 +23,7 @@ Object Storage reports bind one registered Object Storage System. Kubernetes rep
 
 ## Generate hierarchy
 
-Hero → Report Contract → Infrastructure Scope → Artifact / Selected Output Contract → Report Content → Review & Queue.
+Hero → Report Contract → Infrastructure Scope → Artifact Contract → Report Content → Review & Queue.
 
 The scope control is contract-owned:
 
@@ -51,7 +51,13 @@ System-owned report contracts and worker definitions remain Definition Registry 
 
 The final composition removes the narrow Artifact-versus-wide-Content split. Artifact output is a compact full-width contract row, Report Content owns its own full-width section, and Review & Queue uses four equal request-summary dimensions: Report, Scope, Output, and Content. This keeps the sequential 01–05 workflow while avoiding nested cards, narrow explanatory panels, and unused horizontal space.
 
-The Artifact Contract presents the Output Format selector beside an inline Selected Output Contract. The output contract uses a left accent rule rather than an additional card surface, so the operator can read the canonical default and allowed formats without creating a box-within-box hierarchy.
+The Artifact Contract now uses one unified bordered surface with three desktop columns:
+
+1. **Output Format** — the operator selects one allowed format.
+2. **Selected Artifact** — explains the behavior of the format actually selected (PDF publication, XLSX workbook, or CSV export).
+3. **Publication Contract** — shows the canonical Default and Allowed formats for the report type.
+
+This removes the previous long horizontal explanation and floating right-side badges. Selected-format behavior and contract metadata no longer compete for the same line.
 
 ## Migration graph alignment
 

@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import ast
+from pathlib import Path
 
 import yaml
-from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
 REPORT_TEMPLATES = ROOT / 'app' / 'templates' / 'reports'

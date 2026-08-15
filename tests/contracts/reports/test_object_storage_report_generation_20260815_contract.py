@@ -61,9 +61,10 @@ def test_generate_uses_dynamic_infrastructure_asset_scope_for_kubernetes_and_obj
     assert 'data-report-scope-panel="object_storage_system"' in page
     assert 'id="object-storage-system-select"' in page
     assert 'payload.report_type_groups' in page
-    assert 'Selected Output Contract' in page
-    assert 'XLSX preserves the governed workbook structure' in page
-    assert 'PDF preserves the governed analytical document' in page
+    assert 'Selected Artifact' in page
+    assert 'Publication Contract' in page
+    assert 'Governed workbook preserving inventory structure and tabular review.' in page
+    assert 'Governed analytical publication for review, evidence, and operational communication.' in page
 
 
 def test_object_storage_inventory_export_reads_committed_snapshot_and_supports_xlsx_csv() -> None:
