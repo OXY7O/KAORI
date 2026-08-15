@@ -48,3 +48,11 @@ def test_rule_catalog_detail_uses_stacked_evaluation_logic_not_three_cards():
     assert 'Recommended Action' in details
     assert 'overflow-hidden rounded-lg border border-outline-subtle bg-surface-hover' in details
     assert details.count('<article class="rounded-lg border border-outline-subtle bg-surface-hover p-4">') == 0
+
+
+def test_rule_catalog_hero_is_provider_neutral():
+    page = read('app/templates/intelligence/rule_catalog.html')
+    assert 'Canonical Definitions' in page
+    assert "'Asset Domains', payload.summary.domains" in page
+    assert 'MinIO-Covered Rules' not in page
+    assert 'payload.summary.minio' not in page

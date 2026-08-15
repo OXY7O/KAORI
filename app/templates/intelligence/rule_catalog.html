@@ -4,8 +4,8 @@
 {% block title %}Rule Catalog{% endblock title %}
 {% block dashboard_content %}
     {% set hero_metrics = [
-            ('circle-check', 'Available', payload.summary.available, 'Executable definitions'),
-            ('database', 'Object Storage', payload.summary.object_storage, 'MinIO-covered rules')
+            ('circle-check', 'Available', payload.summary.available, 'Active definitions'),
+            ('boxes', 'Asset Domains', payload.summary.domains, 'Canonical domains')
         ] %}
     <div class="space-y-6">
         <section class="{{ page_hero.shell_classes() }}">
@@ -17,7 +17,7 @@
                         <div class="{{ page_hero.metadata_row_classes() }}">
                             {{ page_hero.meta_label('list-checks', payload.catalog|length ~ ' Rules') }}
                             {{ page_hero.meta_label('boxes', payload.summary.domains ~ ' Asset Domains') }}
-                            {{ page_hero.meta_label('database', payload.summary.minio ~ ' MinIO-Covered Rules') }}
+                            {{ page_hero.meta_label('book-open-check', 'Canonical Definitions') }}
                         </div>
                     {% endcall %}
                 </div>
