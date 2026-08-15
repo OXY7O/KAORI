@@ -107,7 +107,7 @@ def test_configuration_inventory_derives_key_count_without_synthetic_payload_col
 
 
 def test_dashboard_materialization_and_recovery_use_canonical_domain_boundaries() -> None:
-    catalog = read('app/analytics/kubernetes/materialization/catalog.py')
+    catalog = read('app/definitions/catalogs/analytics/kubernetes_datasets.yaml')
     analytics_adapter = read('app/analytics/kubernetes/job_adapter.py')
     dashboard_service = read('app/dashboards/kubernetes/service.py')
     dashboard_snapshots = read('app/dashboards/kubernetes/snapshots.py')
@@ -115,7 +115,7 @@ def test_dashboard_materialization_and_recovery_use_canonical_domain_boundaries(
     notifications = read('app/notifications/queries.py')
     shared_presentation = read('app/common/job_execution_presentation.py')
 
-    assert "builder_path='app.analytics.kubernetes.materialization.dashboard_alerts:build_dashboard_alerts_context'" in catalog
+    assert 'builder_path: app.analytics.kubernetes.materialization.dashboard_alerts:build_dashboard_alerts_context' in catalog
     assert 'from app.analytics.kubernetes.materialization.dashboard_alerts import build_dashboard_alerts_context' not in catalog
     assert 'app.dashboards' not in catalog
     assert 'app.dashboards' not in analytics_adapter

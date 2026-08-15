@@ -5,10 +5,13 @@ import json
 from dataclasses import dataclass
 from typing import Any
 
+from app.definitions.loader import DefinitionError, load_definition_document
+from app.definitions.validation import require_list, require_mapping, require_str, string_tuple, unique_by
+
 
 @dataclass(frozen=True)
 class SystemRunbookDefinition:
-    """Source-controlled KAORI runbook contract exposed through System Runbook Catalog."""
+    """Validated source-controlled KAORI runbook contract."""
 
     runbook_key: str
     title: str
@@ -59,58 +62,60 @@ class SystemRunbookDefinition:
         return hashlib.sha256(encoded).hexdigest()
 
 
-SYSTEM_RUNBOOK_CATALOG: tuple[SystemRunbookDefinition, ...] = (
-    SystemRunbookDefinition(
-        runbook_key='kubernetes.deployment.restart',
-        title='Restart Kubernetes Deployment',
-        description=(
-            'Controlled Kubernetes Deployment restart using the KAORI resolver, immutable authorization, '
-            'server-side dry-run, and post-action rollout verification.'
-        ),
-        domain='kubernetes',
-        asset_kind='deployment',
-        version='1.0.0',
-        action_key='kubernetes.deployment.restart',
-        resolver_key='kubernetes.deployment.restart',
-        approval_policy='needs_approval',
-        maturity='validated',
-        validation_status='system_tested',
-        verification_summary=(
-            'KAORI waits for observed generation and desired replicas to converge before marking remediation verified.'
-        ),
-        recovery_summary=(
-            'Restart is not transactionally reversible. KAORI records a manual compensating-recovery snapshot and '
-            'escalates verification failure.'
-        ),
-        required_evidence=('deployment_name',),
-        required_capabilities=('kubernetes.deployments.patch',),
-        compatibility_profiles=('kubernetes-v1',),
-        change_level='major',
-        parameter_schema={
-            'type': 'object',
-            'properties': {
-                'deployment_name': {'type': 'string'},
-                'resource_version': {'type': 'string'},
-            },
-            'required': ['deployment_name'],
-            'additionalProperties': False,
-        },
-        steps=(
-            {
-                'type': 'resolver_action',
-                'action': 'kubernetes.deployment.restart',
-            },
-        ),
-        recovery={
-            'mode': 'manual_compensating_recovery',
-            'owner': 'platform-operations',
-            'escalate_on_verification_failure': True,
-        },
-        default_evidence_mapping={'deployment_name': 'deployment'},
-    ),
-)
+def _load_system_runbooks() -> tuple[SystemRunbookDefinition, ...]:
+    document = load_definition_document('knowledge/system_runbooks.yaml', expected_kind='system_runbooks')
+    raw_items = [
+        require_mapping(item, f'runbooks[{index}]')
+        for index, item in enumerate(require_list(document.get('runbooks'), 'runbooks'))
+    ]
+    unique_by(raw_items, 'runbook_key', 'runbooks')
+    output: list[SystemRunbookDefinition] = []
+    for index, raw in enumerate(raw_items):
+        path = f'runbooks[{index}]'
+        parameter_schema = require_mapping(raw.get('parameter_schema'), f'{path}.parameter_schema')
+        raw_steps = require_list(raw.get('steps'), f'{path}.steps')
+        steps = tuple(
+            dict(require_mapping(step, f'{path}.steps[{step_index}]'))
+            for step_index, step in enumerate(raw_steps)
+        )
+        recovery_raw = raw.get('recovery')
+        recovery = dict(require_mapping(recovery_raw, f'{path}.recovery')) if recovery_raw is not None else None
+        evidence_mapping_raw = require_mapping(
+            raw.get('default_evidence_mapping', {}),
+            f'{path}.default_evidence_mapping',
+        )
+        evidence_mapping: dict[str, str] = {}
+        for key, value in evidence_mapping_raw.items():
+            if not isinstance(key, str) or not isinstance(value, str) or not key.strip() or not value.strip():
+                raise DefinitionError(f'{path}.default_evidence_mapping requires non-empty string keys and values.')
+            evidence_mapping[key.strip()] = value.strip()
+        output.append(SystemRunbookDefinition(
+            runbook_key=require_str(raw, 'runbook_key', path),
+            title=require_str(raw, 'title', path),
+            description=require_str(raw, 'description', path),
+            domain=require_str(raw, 'domain', path),
+            asset_kind=require_str(raw, 'asset_kind', path),
+            version=require_str(raw, 'version', path),
+            action_key=require_str(raw, 'action_key', path),
+            resolver_key=require_str(raw, 'resolver_key', path),
+            approval_policy=require_str(raw, 'approval_policy', path),
+            maturity=require_str(raw, 'maturity', path),
+            validation_status=require_str(raw, 'validation_status', path),
+            verification_summary=require_str(raw, 'verification_summary', path),
+            recovery_summary=require_str(raw, 'recovery_summary', path),
+            required_evidence=string_tuple(raw.get('required_evidence'), f'{path}.required_evidence'),
+            required_capabilities=string_tuple(raw.get('required_capabilities'), f'{path}.required_capabilities'),
+            compatibility_profiles=string_tuple(raw.get('compatibility_profiles'), f'{path}.compatibility_profiles'),
+            change_level=require_str(raw, 'change_level', path),
+            parameter_schema=dict(parameter_schema),
+            steps=steps,
+            recovery=recovery,
+            default_evidence_mapping=evidence_mapping,
+        ))
+    return tuple(output)
 
 
+SYSTEM_RUNBOOK_CATALOG = _load_system_runbooks()
 SYSTEM_RUNBOOK_KEYS = frozenset(item.runbook_key for item in SYSTEM_RUNBOOK_CATALOG)
 
 

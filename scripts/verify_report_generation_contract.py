@@ -2,10 +2,12 @@
 from __future__ import annotations
 
 import ast
+
+import yaml
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-CATALOG_PATH = ROOT / 'app' / 'reports' / 'catalog.py'
+CATALOG_PATH = ROOT / 'app' / 'definitions' / 'catalogs' / 'reports' / 'catalog.yaml'
 ARTIFACT_PATH = ROOT / 'app' / 'reports' / 'export' / 'artifacts.py'
 ANALYTICS_COLLECTOR_PATH = ROOT / 'app' / 'reports' / 'export' / 'html_pdf' / 'collectors.py'
 INVENTORY_PROFILE_PATH = ROOT / 'app' / 'reports' / 'export' / 'xlsx' / 'standard.py'
@@ -44,25 +46,16 @@ def _name(node: ast.AST | None) -> str | None:
 
 
 def _catalog_specs() -> dict[str, dict[str, object]]:
-    specs: dict[str, dict[str, object]] = {}
-    for node in ast.walk(_parse(CATALOG_PATH)):
-        if not isinstance(node, ast.Call) or _name(node.func) != 'ReportTypeSpec':
-            continue
-        values = {keyword.arg: keyword.value for keyword in node.keywords if keyword.arg}
-        report_type = _literal_string(values.get('value'))
-        if not report_type:
-            continue
-        specs[report_type] = {
-            'family': _name(values.get('family')),
-            'default_format': _name(values.get('default_format')),
-            'allowed_formats': _name(values.get('allowed_formats')),
-            'requires_cluster': (
-                values.get('requires_cluster').value
-                if isinstance(values.get('requires_cluster'), ast.Constant)
-                else True
-            ),
+    document = yaml.safe_load(_read(CATALOG_PATH))
+    return {
+        str(spec['value']): {
+            'family': str(spec['family']),
+            'default_format': str(spec['default_format']),
+            'allowed_formats': tuple(spec.get('allowed_formats') or ()),
+            'requires_cluster': bool(spec.get('requires_cluster', True)),
         }
-    return specs
+        for spec in document['report_types']
+    }
 
 
 def _dictionary_string_keys(path: Path, variable_name: str) -> set[str]:
@@ -84,28 +77,23 @@ def _check_catalog(errors: list[str]) -> tuple[set[str], set[str]]:
         errors.append('Central report catalog contains no ReportTypeSpec entries.')
         return set(), set()
 
-    analytics = {key for key, value in specs.items() if value['family'] == 'REPORT_FAMILY_ANALYTICS'}
-    inventory = {key for key, value in specs.items() if value['family'] == 'REPORT_FAMILY_INVENTORY'}
+    analytics = {key for key, value in specs.items() if value['family'] == 'analytics'}
+    inventory = {key for key, value in specs.items() if value['family'] == 'inventory'}
     for report_type, spec in specs.items():
         if spec['requires_cluster'] is not True:
             errors.append(f'{report_type} does not require a selected cluster.')
         family = spec['family']
         allowed = spec['allowed_formats']
         default = spec['default_format']
-        if family == 'REPORT_FAMILY_ANALYTICS':
-            if allowed != '_ANALYTICS_FORMATS' or default != 'FORMAT_PDF':
+        if family == 'analytics':
+            if set(allowed) != ANALYTICS_FORMATS or default != 'pdf':
                 errors.append(f'{report_type} does not use the Analytics PDF/CSV contract.')
-        elif family == 'REPORT_FAMILY_INVENTORY':
-            if allowed != '_INVENTORY_FORMATS' or default != 'FORMAT_XLSX':
+        elif family == 'inventory':
+            if set(allowed) != INVENTORY_FORMATS or default != 'xlsx':
                 errors.append(f'{report_type} does not use the Inventory XLSX/CSV contract.')
         else:
             errors.append(f'{report_type} has an unknown report family: {family!r}.')
 
-    catalog_source = _read(CATALOG_PATH)
-    if '_ANALYTICS_FORMATS = (FORMAT_PDF, FORMAT_CSV)' not in catalog_source:
-        errors.append('Analytics format tuple is not exactly PDF and CSV.')
-    if '_INVENTORY_FORMATS = (FORMAT_XLSX, FORMAT_CSV)' not in catalog_source:
-        errors.append('Inventory format tuple is not exactly XLSX and CSV.')
     return analytics, inventory
 
 

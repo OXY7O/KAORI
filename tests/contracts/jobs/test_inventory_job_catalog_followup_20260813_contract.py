@@ -17,11 +17,13 @@ def test_job_catalog_uses_page_scroll_instead_of_nested_scroll() -> None:
 
 def test_kubernetes_inventory_job_is_named_explicitly() -> None:
     labels = read('app/common/job_execution_contract.py')
+    job_catalog = read('app/definitions/catalogs/jobs/registered_jobs.yaml')
     template = read('app/templates/jobs/configuration/definitions/inventory_sync.html')
     configuration = read('app/jobs/configuration.py')
 
     assert "KUBERNETES_INVENTORY_SYNC_OPERATION = 'sync_kubernetes_inventory'" in labels
-    assert "KUBERNETES_INVENTORY_SYNC_OPERATION: 'Kubernetes Inventory Sync'" in labels
+    assert 'operation: sync_kubernetes_inventory' in job_catalog
+    assert 'name: Kubernetes Inventory Sync' in job_catalog
     assert 'Kubernetes Inventory Sync Policy' in template
     assert 'Automatic Kubernetes Inventory Sync' in template
     assert "'manual_action_label': 'Sync Kubernetes Inventory'" in configuration

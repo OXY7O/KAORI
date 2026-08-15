@@ -62,12 +62,6 @@ def test_precomputed_ranges_are_compact_and_not_forced_into_seven_columns() -> N
 
 
 def test_job_definitions_provide_job_specific_execution_history_descriptions() -> None:
-    for relative in (
-        'app/jobs/definitions/inventory_sync.py',
-        'app/jobs/definitions/tls_certificate_sync.py',
-        'app/jobs/definitions/analytics_refresh.py',
-        'app/jobs/definitions/forecast_refresh.py',
-    ):
-        content = _read(relative)
-        assert 'execution_summary=' in content
-        assert 'recent_execution_summary=' in content
+    content = _read('app/definitions/catalogs/jobs/registered_jobs.yaml')
+    assert content.count('execution_summary:') >= 7
+    assert content.count('recent_execution_summary:') >= 7

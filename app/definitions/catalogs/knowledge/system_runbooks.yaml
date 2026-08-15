@@ -1,0 +1,44 @@
+schema_version: 1
+kind: system_runbooks
+runbooks:
+- runbook_key: kubernetes.deployment.restart
+  title: Restart Kubernetes Deployment
+  description: Controlled Kubernetes Deployment restart using the KAORI resolver, immutable authorization, server-side dry-run,
+    and post-action rollout verification.
+  domain: kubernetes
+  asset_kind: deployment
+  version: 1.0.0
+  action_key: kubernetes.deployment.restart
+  resolver_key: kubernetes.deployment.restart
+  approval_policy: needs_approval
+  maturity: validated
+  validation_status: system_tested
+  verification_summary: KAORI waits for observed generation and desired replicas to converge before marking remediation verified.
+  recovery_summary: Restart is not transactionally reversible. KAORI records a manual compensating-recovery snapshot and escalates
+    verification failure.
+  required_evidence:
+  - deployment_name
+  required_capabilities:
+  - kubernetes.deployments.patch
+  compatibility_profiles:
+  - kubernetes-v1
+  change_level: major
+  parameter_schema:
+    type: object
+    properties:
+      deployment_name:
+        type: string
+      resource_version:
+        type: string
+    required:
+    - deployment_name
+    additionalProperties: false
+  steps:
+  - type: resolver_action
+    action: kubernetes.deployment.restart
+  recovery:
+    mode: manual_compensating_recovery
+    owner: platform-operations
+    escalate_on_verification_failure: true
+  default_evidence_mapping:
+    deployment_name: deployment

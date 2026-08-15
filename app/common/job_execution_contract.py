@@ -5,15 +5,20 @@ OBJECT_STORAGE_INVENTORY_SYNC_OPERATION = 'sync_object_storage_inventory'
 OBJECT_STORAGE_FORECAST_MATERIALIZE_OPERATION = 'materialize_object_storage_forecast'
 SYNC_ALL_INVENTORY_ACTION = 'sync_all_inventory'
 
-_REGISTERED_OPERATION_LABELS = {
-    KUBERNETES_INVENTORY_SYNC_OPERATION: 'Kubernetes Inventory Sync',
-    OBJECT_STORAGE_INVENTORY_SYNC_OPERATION: 'Object Storage Inventory Sync',
-    OBJECT_STORAGE_FORECAST_MATERIALIZE_OPERATION: 'Object Storage Forecast Data Refresh',
-    'dispatch_due_reports': 'Report Schedule Dispatcher',
-    'tls_certificate_sync': 'TLS Certificate Sync',
-    'materialize_analytics': 'Analytics Data Refresh',
-    'materialize_forecast': 'Forecast Data Refresh',
-}
+from app.definitions.loader import load_definition_document
+from app.definitions.validation import require_list, require_mapping, require_str
+
+
+def _registered_operation_labels() -> dict[str, str]:
+    document = load_definition_document('jobs/registered_jobs.yaml', expected_kind='registered_jobs')
+    return {
+        require_str(require_mapping(item, f'jobs[{index}]'), 'operation', f'jobs[{index}]'):
+        require_str(require_mapping(item, f'jobs[{index}]'), 'name', f'jobs[{index}]')
+        for index, item in enumerate(require_list(document.get('jobs'), 'jobs'))
+    }
+
+
+_REGISTERED_OPERATION_LABELS = _registered_operation_labels()
 
 
 def registered_job_operation_label(operation: str) -> str:

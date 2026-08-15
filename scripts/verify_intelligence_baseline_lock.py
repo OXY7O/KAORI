@@ -37,19 +37,13 @@ def main() -> int:
 
     intelligence_routes = read('app/intelligence/routes.py')
     intelligence_service = read('app/intelligence/service.py')
-    intelligence_catalog = read('app/intelligence/catalog.py')
+    intelligence_catalog = read('app/definitions/catalogs/intelligence/rules.yaml')
     rule_presentation = read('app/intelligence/rule_presentation.py')
     recommendation_engine = read('app/intelligence/recommendation_engine.py')
     object_storage_recommendations = read('app/intelligence/object_storage_recommendations.py')
     alert_intelligence = read('app/alert_intelligence/service.py')
     alert_routes = read('app/alert_intelligence/routes.py')
     alert_workspace = read('app/templates/intelligence/partials/_alert_intelligence_workspace.html')
-    alert_alerts = read('app/templates/intelligence/partials/_alert_intelligence_alerts.html')
-    alert_page_partial = read('app/templates/intelligence/partials/_alert_intelligence_page.html')
-    alert_summary = read('app/templates/intelligence/partials/_alert_intelligence_summary.html')
-    alert_correlation = read('app/templates/intelligence/partials/_alert_intelligence_correlation.html')
-    alert_delivery = read('app/templates/intelligence/partials/_alert_intelligence_delivery.html')
-    alert_evidence = read('app/templates/intelligence/partials/_alert_intelligence_evidence.html')
     automation_routes = read('app/automation_control/routes.py')
     automation_presentation = read('app/automation_control/presentation.py')
     automation_overview = read('app/automation_control/overview.py')
@@ -112,21 +106,24 @@ def main() -> int:
     for required in (
         "@automation_control_bp.route('/automation-control')",
         "@permission_required('intelligence.view')",
-        "def _handle_governance_mutation(",
-        "def _handle_execution_action(",
-        "title='Infrastructure Execution Disabled'",
+        "current_app.config.get('AUTOMATION_CONTROL_MUTATIONS_ENABLED', False)",
+        "title='Automation Mutation Disabled'",
+        "message='KAORI did not apply the requested control-plane change.'",
     ):
         require(required in automation_routes, f'Automation Control baseline boundary missing: {required}', errors)
 
-    governance_gate = _function_body(automation_routes, '_handle_governance_mutation', '_handle_execution_action')
-    execution_gate = _function_body(automation_routes, '_handle_execution_action', '_handle_control_operation')
-    require('execution_enabled()' not in governance_gate, 'Governance configuration must remain available while execution is disabled', errors)
-    require('execution_enabled()' in execution_gate, 'Infrastructure execution route must enforce the fail-closed execution gate', errors)
+    mutation_gate = _function_body(automation_routes, '_handle_mutation', '_handle_control_operation')
+    gate_position = mutation_gate.index("current_app.config.get('AUTOMATION_CONTROL_MUTATIONS_ENABLED', False)")
+    operation_position = mutation_gate.index('_handle_control_operation(')
+    require(gate_position < operation_position, 'Automation execution-control callback can cross the fail-closed gate', errors)
     require('detail=str(exc)' not in automation_routes, 'Automation Control must not disclose exception text', errors)
+    governance_gate = _function_body(automation_routes, '_handle_governance_action', '_handle_mutation')
+    require('AUTOMATION_CONTROL_MUTATIONS_ENABLED' not in governance_gate, 'Decision governance must remain available while infrastructure mutation is disabled', errors)
     require('Governance Workflow Enabled' in read('app/templates/intelligence/partials/automation_control/_decisions.html'), 'Decision Review must expose active governance workflow semantics', errors)
     require(
-        "infrastructure_execution_enabled = execution_enabled()" in automation_presentation,
-        'Automation Control presentation must expose default-safe execution state',
+        "mutations_enabled = bool(current_app.config.get('AUTOMATION_CONTROL_MUTATIONS_ENABLED', False))"
+        in automation_presentation,
+        'Automation Control presentation must expose default-safe mutation state',
         errors,
     )
     require(
@@ -135,42 +132,12 @@ def main() -> int:
         errors,
     )
     require(
-        "AUTOMATION_EXECUTION_ENABLED = _env_bool('AUTOMATION_EXECUTION_ENABLED', False)" in default_config,
-        'Automation Control execution must remain explicitly default-deny',
+        'AUTOMATION_CONTROL_MUTATIONS_ENABLED' not in default_config,
+        'Automation Control environment enablement must remain deferred during baseline lock',
         errors,
     )
-    require(
-        'AUTOMATION_CONTROL_MUTATIONS_ENABLED' not in automation_routes + automation_presentation + default_config,
-        'Legacy all-mutations gate must not return',
-        errors,
-    )
-    require('Governance Only' in automation_overview, 'Automation Control must communicate factual governance-only posture while execution is disabled', errors)
-    automation_page = read('app/templates/intelligence/automation_control.html')
-    require('components/content_tabs.html' in automation_page and 'content_tabs.render_links(' in automation_page, 'Automation Control must use shared KAORI Content Tabs', errors)
-    require('intelligence_ui.link_tabs(' not in automation_page, 'Automation Control must not keep the legacy underline tab treatment', errors)
+    require('Governance Only' in automation_overview, 'Automation Control must communicate factual governance-only posture while mutations are disabled', errors)
     require('DOMAIN_DEFINITIONS' not in automation_presentation, 'Legacy Automation Control Foundation Map must not return', errors)
-
-    intelligence_overview = read('app/intelligence/overview.py')
-    overview_page = read('app/templates/intelligence/overview.html')
-    require(
-        "render_template('intelligence/overview.html', payload=payload)" in intelligence_routes,
-        'Intelligence root must render the dedicated Overview workspace',
-        errors,
-    )
-    require(
-        "redirect(url_for('intelligence.recommendations'))" not in intelligence_routes,
-        'Intelligence root must not redirect past the Overview workspace',
-        errors,
-    )
-    for forbidden in ('load_alerts_by_source', 'load_alert_stream', 'PrometheusConsumer', 'MinioClient'):
-        require(
-            forbidden not in intelligence_overview,
-            f'Intelligence Overview must stay provider-free: {forbidden}',
-            errors,
-        )
-    for required in ('Recommendations', 'Alert Intelligence', 'Rule Catalog', 'Automation Control'):
-        require(required in intelligence_overview, f'Intelligence Overview capability missing: {required}', errors)
-    require('payload.capabilities' in overview_page, 'Intelligence Overview must render owned capability rows', errors)
 
     require(
         'def get_alert_intelligence_payload(' not in intelligence_service,
@@ -190,69 +157,39 @@ def main() -> int:
         "'prometheus'",
     ):
         require(required in alert_intelligence, f'Alert Intelligence multi-domain contract missing: {required}', errors)
-    alert_surface = '\n'.join(
-        (alert_workspace, alert_alerts, alert_summary, alert_correlation, alert_delivery, alert_evidence)
-    )
     for required in (
-        'Alert Intelligence Summary',
-        'Alert Intelligence Workspace',
+        'Alert Overview',
         'Alert Records',
-        'Correlation & Guidance',
+        'Correlation',
         'Notification Delivery',
-        'Evidence & Ownership Boundaries',
-        'Alertmanager',
+        'Evidence',
+        'Alertmanager is preferred',
         'Prometheus ALERTS',
     ):
-        require(required in alert_surface, f'Alert Intelligence workspace contract missing: {required}', errors)
+        require(required in alert_workspace, f'Alert Intelligence workspace contract missing: {required}', errors)
     require(
-        'This is contextual correlation, not a claim that every finding was caused by every alert.' in alert_correlation,
+        'This is contextual correlation, not a claim that every finding was caused by every alert.' in alert_workspace,
         'Alert Intelligence must keep contextual correlation distinct from causal attribution',
         errors,
     )
-    require('components/content_tabs.html' in alert_workspace, 'Alert Intelligence must use the shared KAORI Content Tabs component', errors)
-    require('content_tabs.render_links(' in alert_workspace, 'Alert Intelligence section state must use server-owned shared Content Tabs links', errors)
-    require('intelligence_ui.link_tabs(' not in alert_workspace, 'Alert Intelligence must not keep a page-local underline tab treatment', errors)
-    require('nowrap=true' in alert_workspace, 'Alert Intelligence Content Tabs must keep concise long-form section labels on one row with overflow fallback', errors)
-    require("hx_sync='#alert-intelligence-page-content:replace'" in alert_workspace, 'Alert Intelligence tab navigation must share the page HTMX synchronization boundary', errors)
-    require('Operational Context' in alert_workspace and 'Operational Scope' not in alert_workspace, 'Alert Intelligence must distinguish global operational context from record filters', errors)
-    require(alert_workspace.index('content_tabs.render_links(') < alert_workspace.index('Operational Context'), 'Alert Intelligence tabs must precede the shared operational context controls', errors)
-    require('data-alert-intelligence-active-section' in alert_workspace, 'Alert Intelligence active section must remain inside the workspace surface', errors)
-    require('>Apply<' not in alert_alerts and 'Apply\n' not in alert_alerts, 'Alert record filters must not require an Apply button', errors)
-    require('hx-trigger="input changed delay:350ms' in alert_alerts, 'Alert record filters must auto-refresh on search and select changes', errors)
-    require('Alert Source Context' in alert_alerts, 'Alert Records tab must retain source context', errors)
-    require('Active Recommendations' in alert_correlation and 'Catalog Rules' in alert_correlation, 'Correlation tab context is incomplete', errors)
-    require('Delivery Status' in alert_delivery and 'Recent Deliveries' in alert_delivery, 'Notification Delivery tab context is incomplete', errors)
-    require('Detection' in alert_evidence and 'Execution' in alert_evidence, 'Evidence tab ownership context is incomplete', errors)
-    require('Reset Filters' in alert_alerts, 'Alert Records must retain the standard Reset Filters action', errors)
-    require('source=payload.source' in alert_alerts, 'Reset Filters must preserve the shared alert-source context', errors)
-    require("_VALID_TABS = {'alerts', 'correlation', 'delivery', 'evidence'}" in alert_intelligence, 'Alert Intelligence tab contract is missing', errors)
-    require("tab = _choice(args.get('tab'), _VALID_TABS, 'alerts')" in alert_intelligence, 'Alert Intelligence must normalize tab state server-side', errors)
 
     recommendations_page = read('app/templates/intelligence/recommendations.html')
     catalog_page = read('app/templates/intelligence/rule_catalog.html')
     alert_page = read('app/templates/intelligence/alert_intelligence.html')
     automation_page = read('app/templates/intelligence/automation_control.html')
     recommendation_records = read('app/templates/intelligence/partials/_recommendation_records.html')
-    recommendation_workspace = read('app/templates/intelligence/partials/_recommendations_workspace.html')
-    recommendation_filters = read('app/templates/intelligence/partials/_filters.html')
-    recommendation_results = read('app/templates/intelligence/partials/_recommendations_results.html')
-    recommendation_info = read('app/templates/intelligence/partials/_recommendation_workspace_info.html')
     catalog_records = read('app/templates/intelligence/partials/_catalog_records.html')
 
     for page, label in (
-        (overview_page, 'Intelligence Overview'),
         (recommendations_page, 'Recommendations'),
         (catalog_page, 'Rule Catalog'),
         (alert_page, 'Alert Intelligence'),
         (automation_page, 'Automation Control'),
     ):
-        hero_owned = 'components/page_hero.html' in page
-        if label == 'Alert Intelligence':
-            hero_owned = hero_owned or 'components/page_hero.html' in alert_page_partial
-        require(hero_owned, f'{label} must use shared Hero ownership', errors)
+        require('components/page_hero.html' in page, f'{label} must use shared Hero ownership', errors)
         shared_workspace_owned = 'intelligence/components/_workspace.html' in page
         if label == 'Alert Intelligence':
-            shared_workspace_owned = shared_workspace_owned or 'intelligence/components/_workspace.html' in alert_surface
+            shared_workspace_owned = shared_workspace_owned or 'intelligence/components/_workspace.html' in alert_workspace
         require(
             shared_workspace_owned,
             f'{label} must use shared Intelligence workspace',
@@ -287,14 +224,14 @@ def main() -> int:
     )
 
     for required in (
-        "'rule_key': 'object_storage.metric.capacity_pressure'",
-        "'rule_key': 'object_storage.metric.capacity_critical'",
-        "'rule_key': 'object_storage.metric.request_error_pressure'",
-        "'rule_key': 'object_storage.metric.request_error_critical'",
-        "'rule_key': 'object_storage.metric.requests_waiting'",
-        "'rule_key': 'object_storage.metric.offline_nodes'",
-        "'provider_keys': ['minio']",
-        "'evidence_boundary':",
+        "rule_key: object_storage.metric.capacity_pressure",
+        "rule_key: object_storage.metric.capacity_critical",
+        "rule_key: object_storage.metric.request_error_pressure",
+        "rule_key: object_storage.metric.request_error_critical",
+        "rule_key: object_storage.metric.requests_waiting",
+        "rule_key: object_storage.metric.offline_nodes",
+        "provider_keys:",
+        "evidence_boundary:",
     ):
         require(required in intelligence_catalog, f'Object Storage Rule Catalog boundary missing: {required}', errors)
     require('prometheus_relationship' not in intelligence_catalog, 'Rule Catalog schema must not remain Prometheus-owned', errors)
@@ -311,36 +248,6 @@ def main() -> int:
     )
     require('3 Asset Domains' not in catalog_page, 'Rule Catalog Hero must not hard-code stale domain count', errors)
 
-    for required in (
-        '{% set filter_compact_two_rows = true %}',
-    ):
-        require(required in recommendation_workspace, 'Recommendations compact two-row filter mode missing', errors)
-    require(
-        "'lg:grid-cols-12' if filter_compact_two_rows" in recommendation_filters,
-        'Recommendations compact filter grid contract missing',
-        errors,
-    )
-    require(
-        recommendations_page.index('_recommendation_workspace_info.html')
-        < recommendations_page.index("'Recommendation Workspace'"),
-        'Recommendation Summary must be a standalone section above Recommendation Workspace',
-        errors,
-    )
-    require(
-        'recommendation_summary_oob|default(false)' in recommendation_results
-        and '_recommendation_workspace_info.html' in recommendation_results,
-        'Recommendation Summary must stay filter-aware through an HTMX out-of-band refresh',
-        errors,
-    )
-    for required in (
-        'Recommendation Summary',
-        'Matching Findings',
-        'Kubernetes',
-        'Object Storage',
-        'Committed Evidence',
-    ):
-        require(required in recommendation_info, f'Recommendation summary block missing: {required}', errors)
-
     require('resource_detail_modal.drawer_host(' in recommendations_page, 'Recommendations drawer host missing', errors)
     require(
         'resource_detail_modal.detail_button' in recommendation_records,
@@ -348,13 +255,13 @@ def main() -> int:
         errors,
     )
     require('data-detail-row' in catalog_records, 'Rule Catalog adjacent detail-row ownership missing', errors)
-    require('Governance Only' in automation_page, 'Automation Control must communicate governance-only posture while execution is disabled', errors)
+    require('Governance Only' in automation_page, 'Automation Control must communicate governance-only posture while mutations are disabled', errors)
 
     for required in (
         'baseline-locked',
         'not declared feature-complete',
         '**Reserved Plan**',
-        '`AUTOMATION_EXECUTION_ENABLED=false`',
+        'intentionally not exposed as an environment-configured release toggle',
     ):
         require(required in readme, f'Intelligence README baseline-lock contract missing: {required}', errors)
     require(

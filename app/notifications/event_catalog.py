@@ -2,16 +2,23 @@ from __future__ import annotations
 
 from typing import Any
 
+from app.definitions.loader import DefinitionError, load_definition_document
+from app.definitions.validation import require_list, require_mapping, require_str, string_tuple
+
+_EVENT_CATEGORY_DEFINITION = load_definition_document(
+    'notifications/event_categories.yaml',
+    expected_kind='notification_event_categories',
+)
+_CATEGORY_DEFINITIONS = require_mapping(_EVENT_CATEGORY_DEFINITION.get('categories'), 'categories')
 CATEGORY_LABELS = {
-    'configmap_management': 'ConfigMap Management',
-    'tls_certificate': 'TLS Certificate',
-    'secret_management': 'Secret Management',
-    'integrations': 'Integrations',
-    'platform_operations': 'Platform Operations',
-    'access': 'Access',
-    'settings': 'Settings',
-    'operations': 'Operations',
+    str(key): require_str(require_mapping(value, f'categories.{key}'), 'label', f'categories.{key}')
+    for key, value in _CATEGORY_DEFINITIONS.items()
 }
+CATEGORY_ICONS = {
+    str(key): require_str(require_mapping(value, f'categories.{key}'), 'icon', f'categories.{key}')
+    for key, value in _CATEGORY_DEFINITIONS.items()
+}
+
 
 _EVENT_TOKEN_OVERRIDES = {
     'api': 'API',
@@ -39,17 +46,6 @@ def _display_event_label(value: str) -> str:
     return ' '.join(words)
 
 
-CATEGORY_ICONS = {
-    'configmap_management': 'file-cog',
-    'tls_certificate': 'shield-check',
-    'secret_management': 'key-round',
-    'integrations': 'plug-zap',
-    'platform_operations': 'workflow',
-    'access': 'users-round',
-    'settings': 'settings-2',
-    'operations': 'history',
-}
-
 
 def event_label(event_type: str) -> str:
     """Return a human-readable label while keeping the stored event key unchanged."""
@@ -61,52 +57,23 @@ def event_label(event_type: str) -> str:
 
 
 def event_category_key(event_type: str) -> str:
-    """Map persisted event keys into the canonical Notification Center categories."""
+    """Map persisted event keys through the source-controlled category registry."""
 
     normalized = (event_type or '').strip().lower()
-
-    if normalized.startswith('kubernetes_configmap_'):
-        return 'configmap_management'
-    if normalized.startswith('governance_tls_') or normalized.startswith('kubernetes_tls_secret_'):
-        return 'tls_certificate'
-    if normalized.startswith(
-        (
-            'kubernetes_secret_reveal_cluster_readiness_',
-            'kubernetes_secret_reveal_namespace_policy_',
-            'data_lifecycle_',
-            'job_',
-            'report_',
-            'generated_report_',
-            'generated_reports_',
-        )
-    ):
-        return 'platform_operations'
-    if normalized.startswith('kubernetes_secret_'):
-        return 'secret_management'
-    if (
-        normalized.startswith(
-            (
-                'prometheus_',
-                'alertmanager_',
-                'cluster_',
-                'kubernetes_capability_',
-                'kubernetes_runtime_',
-                'integration_',
-            )
-        )
-        or normalized == 'kubernetes_inventory_sync'
-    ):
-        return 'integrations'
-    if (
-        normalized.startswith(('rbac_', 'identity_provider_', 'external_identity_', 'user_'))
-        or normalized == 'authentication'
-    ):
-        if normalized == 'user_preference':
-            return 'settings'
-        return 'access'
-    if normalized == 'account_security' or normalized.startswith('settings_'):
-        return 'settings'
-    return 'operations'
+    routes = require_list(_EVENT_CATEGORY_DEFINITION.get('routes'), 'routes')
+    for index, raw_route in enumerate(routes):
+        route = require_mapping(raw_route, f'routes[{index}]')
+        category = require_str(route, 'category', f'routes[{index}]')
+        if category not in CATEGORY_LABELS:
+            raise DefinitionError(f'routes[{index}] references unknown category: {category!r}.')
+        exact = string_tuple(route.get('exact'), f'routes[{index}].exact')
+        prefixes = string_tuple(route.get('prefixes'), f'routes[{index}].prefixes')
+        if normalized in exact or any(normalized.startswith(prefix) for prefix in prefixes):
+            return category
+    default_category = require_str(_EVENT_CATEGORY_DEFINITION, 'default_category', 'document')
+    if default_category not in CATEGORY_LABELS:
+        raise DefinitionError(f'default_category references unknown category: {default_category!r}.')
+    return default_category
 
 
 def event_category(event_type: str) -> dict[str, str]:

@@ -169,7 +169,7 @@ def test_intelligence_recommendations_use_shared_server_side_pagination() -> Non
 
 
 def test_recommendation_titles_and_workspace_labels_are_title_case() -> None:
-    catalog = read('app/intelligence/catalog.py')
+    catalog = read('app/definitions/catalogs/intelligence/rules.yaml')
     template = read('app/templates/intelligence/recommendations.html')
 
     for title in (
@@ -199,7 +199,6 @@ def test_recommendation_titles_and_workspace_labels_are_title_case() -> None:
 def test_kubernetes_recommendation_title_literals_follow_title_case() -> None:
     source_files = (
         'app/intelligence/recommendation_engine.py',
-        'app/intelligence/catalog.py',
         'app/analytics/kubernetes/capacity/service.py',
         'app/analytics/kubernetes/top_consumers/service.py',
         'app/analytics/kubernetes/workload/service.py',
@@ -230,6 +229,11 @@ def test_kubernetes_recommendation_title_literals_follow_title_case() -> None:
         'without',
     }
     titles: list[tuple[str, int, str]] = []
+
+    import yaml
+    rule_catalog = yaml.safe_load(read('app/definitions/catalogs/intelligence/rules.yaml'))
+    for index, rule in enumerate(rule_catalog['rules'], start=1):
+        titles.append(('app/definitions/catalogs/intelligence/rules.yaml', index, str(rule['title'])))
 
     for relative in source_files:
         tree = ast.parse(read(relative))

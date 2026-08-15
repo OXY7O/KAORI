@@ -4,14 +4,14 @@ ROOT = Path(__file__).resolve().parents[3]
 
 
 def test_tls_sync_is_registered_and_routed_to_inventory_worker() -> None:
-    definition = (ROOT / 'app/jobs/definitions/tls_certificate_sync.py').read_text()
+    definition = (ROOT / 'app/definitions/catalogs/jobs/registered_jobs.yaml').read_text()
     registry = (ROOT / 'app/jobs/registry.py').read_text()
     config = (ROOT / 'app/config/default.py').read_text()
 
-    assert "JOB_KEY = 'governance.tls_certificates.sync'" in definition
-    assert 'key=JOB_KEY' in definition
-    assert "queue_name='inventory'" in definition
-    assert 'TLS_CERTIFICATE_SYNC_DEFINITION' in registry
+    assert 'key: governance.tls_certificates.sync' in definition
+    assert 'operation: tls_certificate_sync' in definition
+    assert 'queue_name: inventory' in definition
+    assert 'load_job_definitions()' in registry
     assert "'app.governance.tls_certificates.tasks'" in config
     assert "'app.governance.tls_certificates.tasks.sync_tls_certificates'" in config
     assert "'queue': 'inventory'" in config

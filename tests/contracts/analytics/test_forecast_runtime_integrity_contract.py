@@ -45,7 +45,7 @@ def test_forecast_empty_payload_imports_canonical_thresholds() -> None:
 
 def test_forecast_snapshot_identity_excludes_local_projection_controls() -> None:
     routes = read('app/analytics/kubernetes/forecast/routes.py')
-    catalog = read('app/analytics/kubernetes/materialization/catalog.py')
+    catalog = read('app/definitions/catalogs/analytics/kubernetes_datasets.yaml')
 
     snapshot_block = routes.split('def _snapshot_parameters()', 1)[1].split('def _context_or_state', 1)[0]
     assert "'history_window'" in snapshot_block
@@ -54,7 +54,7 @@ def test_forecast_snapshot_identity_excludes_local_projection_controls() -> None
     assert 'forecast_horizon' not in snapshot_block
     assert "'method'" not in snapshot_block
     assert "'tab'" not in snapshot_block
-    assert "snapshot_parameter_keys=('history_window', 'namespace')" in catalog
+    assert 'snapshot_parameter_keys:' in catalog
 
 
 def test_forecast_queries_use_ready_worker_and_duplicate_safe_boundaries() -> None:

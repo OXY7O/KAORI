@@ -1,25 +1,9 @@
 from __future__ import annotations
 
-from app.jobs.definitions import (
-    ANALYTICS_REFRESH_DEFINITION,
-    FORECAST_REFRESH_DEFINITION,
-    INVENTORY_SYNC_DEFINITION,
-    OBJECT_STORAGE_INVENTORY_SYNC_DEFINITION,
-    OBJECT_STORAGE_FORECAST_REFRESH_DEFINITION,
-    REPORT_SCHEDULE_DEFINITION,
-    TLS_CERTIFICATE_SYNC_DEFINITION,
-    JobDefinition,
-)
+from app.jobs.definition_catalog import load_job_definitions
+from app.jobs.definition_types import JobDefinition
 
-_JOB_DEFINITIONS: tuple[JobDefinition, ...] = (
-    INVENTORY_SYNC_DEFINITION,
-    OBJECT_STORAGE_INVENTORY_SYNC_DEFINITION,
-    OBJECT_STORAGE_FORECAST_REFRESH_DEFINITION,
-    REPORT_SCHEDULE_DEFINITION,
-    TLS_CERTIFICATE_SYNC_DEFINITION,
-    ANALYTICS_REFRESH_DEFINITION,
-    FORECAST_REFRESH_DEFINITION,
-)
+_JOB_DEFINITIONS: tuple[JobDefinition, ...] = load_job_definitions()
 _JOB_DEFINITION_BY_KEY = {definition.key: definition for definition in _JOB_DEFINITIONS}
 _JOB_DEFINITION_BY_OPERATION = {definition.operation: definition for definition in _JOB_DEFINITIONS}
 

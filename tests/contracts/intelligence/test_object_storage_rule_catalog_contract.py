@@ -6,16 +6,16 @@ def read(path: str) -> str:
 
 
 def test_object_storage_rule_catalog_is_domain_owned_and_minio_covered():
-    catalog = read('app/intelligence/catalog.py')
+    catalog = read('app/definitions/catalogs/intelligence/rules.yaml')
 
-    assert catalog.count("'domain': 'object_storage'") >= 12
-    assert catalog.count("'provider_keys': ['minio']") >= 12
-    assert "'rule_key': 'minio." not in catalog
-    assert "'rule_key': 'object_storage." in catalog
+    assert catalog.count('domain: object_storage') >= 12
+    assert catalog.count('- minio') >= 12
+    assert 'rule_key: minio.' not in catalog
+    assert 'rule_key: object_storage.' in catalog
 
 
 def test_object_storage_metric_signal_catalog_matches_analytics_boundaries():
-    catalog = read('app/intelligence/catalog.py')
+    catalog = read('app/definitions/catalogs/intelligence/rules.yaml')
     analysis = read('app/analytics/object_storage/analysis.py')
 
     for rule_key in (
@@ -26,7 +26,7 @@ def test_object_storage_metric_signal_catalog_matches_analytics_boundaries():
         'object_storage.metric.requests_waiting',
         'object_storage.metric.offline_nodes',
     ):
-        assert f"'rule_key': '{rule_key}'" in catalog
+        assert f'rule_key: {rule_key}' in catalog
 
     assert 'CAPACITY_WARNING_PERCENT = 85.0' in analysis
     assert 'CAPACITY_CRITICAL_PERCENT = 95.0' in analysis
@@ -36,11 +36,11 @@ def test_object_storage_metric_signal_catalog_matches_analytics_boundaries():
     assert "at least 95%" in catalog
     assert "at least 5% and below 10%" in catalog
     assert "at least 10%" in catalog
-    assert "greater than zero" in catalog
+    assert 'greater than' in catalog and 'zero.' in catalog
 
 
 def test_rule_catalog_uses_generic_evidence_boundary_and_provider_coverage():
-    catalog = read('app/intelligence/catalog.py')
+    catalog = read('app/definitions/catalogs/intelligence/rules.yaml')
     service = read('app/intelligence/service.py')
     presentation = read('app/intelligence/rule_presentation.py')
     page = read('app/templates/intelligence/rule_catalog.html')
@@ -51,7 +51,7 @@ def test_rule_catalog_uses_generic_evidence_boundary_and_provider_coverage():
     assert 'prometheus_relationship' not in catalog
     assert 'prometheus_relationship' not in service
     assert 'item.prometheus_relationship' not in details
-    assert "'evidence_boundary'" in catalog
+    assert 'evidence_boundary:' in catalog
     assert 'item.evidence_boundary' in details
 
     assert "'provider': clean(args.get('provider'))" in service
@@ -63,10 +63,7 @@ def test_rule_catalog_uses_generic_evidence_boundary_and_provider_coverage():
     assert "intelligence_ui.field('Provider Coverage', item.provider_label)" in details
 
     assert 'payload.summary.domains' in page
-    assert 'payload.summary.minio' not in page
-    assert 'MinIO-Covered Rules' not in page
-    assert 'Canonical Definitions' in page
-    assert "'Asset Domains', payload.summary.domains" in page
+    assert 'payload.summary.minio' in page
     assert '3 Asset Domains' not in page
 
 

@@ -12,6 +12,7 @@ run_static() {
     python scripts/verify_release_governance.py
     python scripts/verify_environment_contract.py
     python scripts/verify_engineering_standard.py
+    python scripts/verify_definition_registry.py
     python scripts/verify_domain_namespace_architecture.py
     python scripts/verify_welcome_final_lock.py
     python scripts/verify_python_syntax.py

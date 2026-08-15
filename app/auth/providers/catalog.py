@@ -3,6 +3,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import StrEnum
 
+from app.definitions.loader import load_definition_document
+from app.definitions.validation import require_bool, require_list, require_mapping, require_str, unique_by
+
 
 class AuthProviderFamily(StrEnum):
     DATABASE = 'database'
@@ -32,39 +35,28 @@ class AuthProviderDefinition:
     supports_jit: bool = False
 
 
-_PROVIDER_DEFINITIONS: tuple[AuthProviderDefinition, ...] = (
-    AuthProviderDefinition(
-        provider_type=AuthProviderType.DATABASE,
-        family=AuthProviderFamily.DATABASE,
-        label='Local Database',
-        flow=AuthFlow.CREDENTIALS,
-        configurable=False,
-    ),
-    AuthProviderDefinition(
-        provider_type=AuthProviderType.LDAP,
-        family=AuthProviderFamily.LDAP,
-        label='LDAP / Active Directory',
-        flow=AuthFlow.CREDENTIALS,
-        configurable=True,
-    ),
-    AuthProviderDefinition(
-        provider_type=AuthProviderType.GOOGLE_OIDC,
-        family=AuthProviderFamily.SSO,
-        label='Google OpenID Connect',
-        flow=AuthFlow.BROWSER,
-        configurable=True,
-        supports_jit=True,
-    ),
-    AuthProviderDefinition(
-        provider_type=AuthProviderType.GITHUB_OAUTH,
-        family=AuthProviderFamily.SSO,
-        label='GitHub OAuth',
-        flow=AuthFlow.BROWSER,
-        configurable=True,
-        supports_jit=True,
-    ),
-)
+def _load_provider_definitions() -> tuple[AuthProviderDefinition, ...]:
+    document = load_definition_document('auth/providers.yaml', expected_kind='auth_providers')
+    raw_items = [
+        require_mapping(item, f'providers[{index}]')
+        for index, item in enumerate(require_list(document.get('providers'), 'providers'))
+    ]
+    unique_by(raw_items, 'provider_type', 'providers')
+    output: list[AuthProviderDefinition] = []
+    for index, raw in enumerate(raw_items):
+        path = f'providers[{index}]'
+        output.append(AuthProviderDefinition(
+            provider_type=AuthProviderType(require_str(raw, 'provider_type', path)),
+            family=AuthProviderFamily(require_str(raw, 'family', path)),
+            label=require_str(raw, 'label', path),
+            flow=AuthFlow(require_str(raw, 'flow', path)),
+            configurable=require_bool(raw, 'configurable', path),
+            supports_jit=require_bool(raw, 'supports_jit', path, default=False),
+        ))
+    return tuple(output)
 
+
+_PROVIDER_DEFINITIONS = _load_provider_definitions()
 _PROVIDER_BY_TYPE = {definition.provider_type.value: definition for definition in _PROVIDER_DEFINITIONS}
 
 
@@ -103,7 +95,9 @@ def provider_label(provider_type: str | AuthProviderType | None) -> str:
 def provider_types_for_family(family: str | AuthProviderFamily) -> tuple[str, ...]:
     normalized = AuthProviderFamily(str(family).strip().lower())
     return tuple(
-        definition.provider_type.value for definition in _PROVIDER_DEFINITIONS if definition.family == normalized
+        definition.provider_type.value
+        for definition in _PROVIDER_DEFINITIONS
+        if definition.family == normalized
     )
 
 
@@ -117,7 +111,9 @@ def configurable_provider_choices() -> list[tuple[str, str]]:
 
 def browser_sso_provider_types() -> tuple[str, ...]:
     return tuple(
-        definition.provider_type.value for definition in _PROVIDER_DEFINITIONS if definition.flow == AuthFlow.BROWSER
+        definition.provider_type.value
+        for definition in _PROVIDER_DEFINITIONS
+        if definition.flow == AuthFlow.BROWSER
     )
 
 

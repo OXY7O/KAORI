@@ -1,366 +1,51 @@
 from __future__ import annotations
 
-DEFAULT_PERMISSIONS = [
-    ('dashboard.view', 'k8s_dashboard', 'view', 'View the Kubernetes operations dashboard.'),
-    ('clusters.view', 'k8s_cluster', 'view', 'View Kubernetes cluster records and connection status.'),
-    ('clusters.manage', 'k8s_cluster', 'manage', 'Create, edit, and delete Kubernetes cluster records.'),
-    ('clusters.sync', 'k8s_cluster', 'sync', 'Run Kubernetes cluster connectivity and inventory sync actions.'),
-    ('inventory.view', 'k8s_inventory', 'view', 'View Kubernetes inventory pages.'),
-    (
-        'object_storage_inventory.view',
-        'storage_inventory',
-        'view',
-        'View committed Object Storage systems, buckets, containers, and inventory evidence.',
-    ),
-    (
-        'storage.sync',
-        'storage_inventory',
-        'sync',
-        'Run object-storage inventory synchronization through canonical Job Execution.',
-    ),
-    (
-        'kubernetes_configmaps.view',
-        'k8s_operations',
-        'view_configmap_management',
-        'View Kubernetes ConfigMap Management and live non-secret configuration values.',
-    ),
-    ('kubernetes_configmaps.create', 'k8s_operations', 'create_configmap', 'Create validated Kubernetes ConfigMaps.'),
-    (
-        'kubernetes_configmaps.update',
-        'k8s_operations',
-        'update_configmap',
-        'Read and update Kubernetes ConfigMaps with diff preview and dry-run.',
-    ),
-    (
-        'kubernetes_configmaps.delete',
-        'k8s_operations',
-        'delete_configmap',
-        'Delete Kubernetes ConfigMaps after impact review and explicit confirmation.',
-    ),
-    (
-        'kubernetes_secrets.view',
-        'k8s_operations',
-        'view_secret_management',
-        'View Kubernetes Secret Management operations.',
-    ),
-    (
-        'kubernetes_secrets.create',
-        'k8s_operations',
-        'create_secret',
-        'Create validated Kubernetes Secrets through guided workflows.',
-    ),
-    (
-        'kubernetes_secrets.replace',
-        'k8s_operations',
-        'replace_secret_data',
-        'Replace selected data keys in existing non-TLS Kubernetes Secrets without reading current values.',
-    ),
-    (
-        'kubernetes_secrets.delete',
-        'k8s_operations',
-        'delete_secret',
-        'Delete live Kubernetes Secrets after impact review, dry-run validation, and exact-name confirmation.',
-    ),
-    (
-        'kubernetes_secrets.reveal',
-        'k8s_operations',
-        'reveal_secret_value',
-        'Request and perform protected one-time reveal of an approved Kubernetes Secret key.',
-    ),
-    (
-        'kubernetes_secrets.approve_reveal',
-        'k8s_operations',
-        'approve_secret_reveal',
-        'Approve or deny protected Kubernetes Secret reveal requests from another user.',
-    ),
-    (
-        'kubernetes_secrets.manage_reveal',
-        'platform_operations',
-        'manage_secret_reveal',
-        'Configure cluster readiness and namespace-level Protected Secret Reveal policies.',
-    ),
-    (
-        'kubernetes_secrets.rotate_tls',
-        'k8s_operations',
-        'rotate_tls_secret',
-        'Validate and rotate an existing Kubernetes TLS Secret.',
-    ),
-    (
-        'kubernetes_secrets.bulk_rotate_tls',
-        'k8s_operations',
-        'bulk_rotate_tls_secret',
-        'Validate and rotate multiple Kubernetes TLS Secrets.',
-    ),
-    ('analytics.view', 'k8s_analytics', 'view', 'View Kubernetes analytics, capacity, trend, and alert pages.'),
-    (
-        'object_storage_analytics.view',
-        'storage_analytics',
-        'view',
-        'View Object Storage capacity, performance, forecast, consumer, and alert analytics.',
-    ),
-    ('governance.view', 'governance', 'view', 'View Kubernetes governance workspace and navigation.'),
-    (
-        'tls_certificates.view',
-        'governance',
-        'view_tls_certificates',
-        'View Kubernetes TLS certificate inventory, expiry, issuer, and usage mapping.',
-    ),
-    (
-        'tls_certificates.sync',
-        'governance',
-        'sync_tls_certificates',
-        'Refresh TLS certificate metadata from Kubernetes TLS Secrets.',
-    ),
-    (
-        'intelligence.view',
-        'intelligence',
-        'view',
-        'View recommendation, alert intelligence, and intelligence catalog navigation.',
-    ),
-    (
-        'knowledge.runbooks.view',
-        'knowledge',
-        'view_runbooks',
-        'View KAORI runbooks and published revisions.',
-    ),
-    (
-        'knowledge.runbooks.manage',
-        'knowledge',
-        'manage_runbooks',
-        'Create and edit draft KAORI runbook revisions.',
-    ),
-    (
-        'knowledge.runbooks.publish',
-        'knowledge',
-        'publish_runbooks',
-        'Publish, withdraw, and deprecate KAORI runbook revisions.',
-    ),
-    (
-        'intelligence.decisions.view',
-        'intelligence',
-        'view_decisions',
-        'View persisted KAORI decisions, approval outcomes, and execution journals.',
-    ),
-    (
-        'intelligence.decisions.create',
-        'intelligence',
-        'create_decisions',
-        'Create immutable KAORI decision snapshots from current recommendation evidence.',
-    ),
-    (
-        'intelligence.decisions.approve',
-        'intelligence',
-        'approve_decisions',
-        'Approve or reject KAORI decisions that require explicit authorization.',
-    ),
-    (
-        'intelligence.decisions.execute',
-        'intelligence',
-        'execute_decisions',
-        'Issue and consume one-time execution authorization for approved KAORI decisions.',
-    ),
-    ('reports.view', 'reports', 'view', 'View generated reports and reporting overview.'),
-    ('reports.generate', 'reports', 'generate', 'Generate and export operational reports.'),
-    ('reports.manage_templates', 'reports', 'manage_templates', 'Manage report templates.'),
-    ('reports.manage_schedules', 'reports', 'manage_schedules', 'Manage report schedules.'),
-    ('reports.manage_storage', 'reports', 'manage_storage', 'Manage report storage verification and cleanup.'),
-    (
-        'jobs.view',
-        'platform_operations',
-        'view_jobs',
-        'View KAORI background jobs, queue activity, progress, and execution outcomes.',
-    ),
-    (
-        'jobs.cancel',
-        'platform_operations',
-        'cancel_jobs',
-        'Request cancellation for eligible queued, analytics, and forecasting jobs.',
-    ),
-    (
-        'jobs.execute',
-        'platform_operations',
-        'execute_jobs',
-        'Run supported KAORI jobs manually within the permissions of their owning domain.',
-    ),
-    (
-        'jobs.configure',
-        'platform_operations',
-        'configure_jobs',
-        'Configure automatic schedules and execution policies for registered KAORI jobs.',
-    ),
-    ('settings.view', 'settings', 'view', 'View settings pages.'),
-    (
-        'settings.manage_integrations',
-        'integrations',
-        'manage_integrations',
-        'Manage Prometheus, Alertmanager, and reporting integrations.',
-    ),
-    (
-        'settings.view_operational_activity',
-        'access',
-        'view_operational_activity',
-        'View cross-user operational activity and background action audit records.',
-    ),
-    (
-        'platform_operations.view_data_lifecycle',
-        'platform_operations',
-        'view_data_lifecycle',
-        'View retention policies, archive storage posture, and lifecycle archive history.',
-    ),
-    (
-        'platform_operations.export_data_lifecycle',
-        'platform_operations',
-        'export_data_lifecycle',
-        'Download verified data lifecycle archives and manifests.',
-    ),
-    (
-        'platform_operations.manage_data_lifecycle',
-        'platform_operations',
-        'manage_data_lifecycle',
-        'Configure policies and run, verify, or maintain lifecycle archives across data domains.',
-    ),
-    ('users.view', 'access', 'view_users', 'View user accounts and access assignments.'),
-    ('users.manage', 'access', 'manage_users', 'Create and update user accounts.'),
-    ('users.reset_password', 'access', 'reset_user_password', 'Reset passwords for database-managed user accounts.'),
-    ('users.activate', 'access', 'activate_users', 'Activate or deactivate local application access.'),
-    ('users.delete', 'access', 'delete_users', 'Soft delete user accounts.'),
-    ('roles.view', 'access', 'view_roles', 'View roles and permission assignments.'),
-    ('roles.manage', 'access', 'manage_roles', 'Create and update custom roles.'),
-    ('system.view', 'system', 'view', 'View system information.'),
-    ('system.manage', 'system', 'manage', 'Manage system-level settings.'),
-]
+from app.definitions.loader import DefinitionError, load_definition_document
+from app.definitions.validation import require_list, require_mapping, require_str, string_tuple, unique_by
 
-DEFAULT_ROLE_DEFINITIONS = {
-    'viewer': {
-        'display_name': 'Viewer',
-        'description': 'Broad read-only infrastructure visibility across dashboard, cluster inventory, analytics, governance, intelligence, ConfigMaps, and reports.',
-    },
-    'operator': {
-        'display_name': 'Operator',
-        'description': 'Daily infrastructure operations including sync, report generation, ConfigMap changes, TLS inventory refresh, and controlled TLS Secret rotation.',
-    },
-    'editor': {
-        'display_name': 'Editor',
-        'description': 'Infrastructure configuration access for clusters, integrations, Secrets, bulk TLS rotation, report templates, schedules, and storage operations.',
-    },
-    'admin': {
-        'display_name': 'Admin',
-        'description': 'Application administration across users, roles, integrations, operations, retention, and protected settings, excluding direct Secret reveal.',
-    },
-    'auditor': {
-        'display_name': 'Auditor',
-        'description': 'Read-only infrastructure, user, role, system, audit, and archive-export visibility without operational write access.',
-    },
-}
 
-DEFAULT_ROLE_PERMISSIONS = {
-    'viewer': {
-        'dashboard.view',
-        'clusters.view',
-        'inventory.view',
-        'object_storage_inventory.view',
-        'analytics.view',
-        'object_storage_analytics.view',
-        'governance.view',
-        'tls_certificates.view',
-        'kubernetes_configmaps.view',
-        'intelligence.view',
-        'knowledge.runbooks.view',
-        'intelligence.decisions.view',
-        'reports.view',
-        'settings.view',
-    },
-    'operator': {
-        'dashboard.view',
-        'clusters.view',
-        'clusters.sync',
-        'inventory.view',
-        'object_storage_inventory.view',
-        'storage.sync',
-        'analytics.view',
-        'object_storage_analytics.view',
-        'governance.view',
-        'tls_certificates.view',
-        'tls_certificates.sync',
-        'kubernetes_configmaps.view',
-        'kubernetes_configmaps.create',
-        'kubernetes_configmaps.update',
-        'kubernetes_secrets.view',
-        'kubernetes_secrets.rotate_tls',
-        'intelligence.view',
-        'knowledge.runbooks.view',
-        'intelligence.decisions.view',
-        'intelligence.decisions.create',
-        'knowledge.runbooks.manage',
-        'reports.view',
-        'reports.generate',
-        'jobs.view',
-        'jobs.execute',
-        'settings.view',
-    },
-    'editor': {
-        'dashboard.view',
-        'clusters.view',
-        'clusters.manage',
-        'clusters.sync',
-        'inventory.view',
-        'object_storage_inventory.view',
-        'storage.sync',
-        'analytics.view',
-        'object_storage_analytics.view',
-        'governance.view',
-        'tls_certificates.view',
-        'tls_certificates.sync',
-        'kubernetes_configmaps.view',
-        'kubernetes_configmaps.create',
-        'kubernetes_configmaps.update',
-        'kubernetes_secrets.view',
-        'kubernetes_secrets.create',
-        'kubernetes_secrets.replace',
-        'kubernetes_secrets.rotate_tls',
-        'kubernetes_secrets.bulk_rotate_tls',
-        'intelligence.view',
-        'knowledge.runbooks.view',
-        'intelligence.decisions.view',
-        'intelligence.decisions.create',
-        'intelligence.decisions.approve',
-        'intelligence.decisions.execute',
-        'knowledge.runbooks.manage',
-        'knowledge.runbooks.publish',
-        'reports.view',
-        'reports.generate',
-        'reports.manage_templates',
-        'reports.manage_schedules',
-        'reports.manage_storage',
-        'jobs.view',
-        'jobs.cancel',
-        'jobs.execute',
-        'jobs.configure',
-        'settings.view',
-        'settings.manage_integrations',
-    },
-    'admin': {permission[0] for permission in DEFAULT_PERMISSIONS if permission[0] != 'kubernetes_secrets.reveal'},
-    'auditor': {
-        'dashboard.view',
-        'clusters.view',
-        'inventory.view',
-        'object_storage_inventory.view',
-        'analytics.view',
-        'object_storage_analytics.view',
-        'governance.view',
-        'tls_certificates.view',
-        'kubernetes_configmaps.view',
-        'intelligence.view',
-        'knowledge.runbooks.view',
-        'intelligence.decisions.view',
-        'reports.view',
-        'jobs.view',
-        'settings.view',
-        'settings.view_operational_activity',
-        'platform_operations.view_data_lifecycle',
-        'platform_operations.export_data_lifecycle',
-        'users.view',
-        'roles.view',
-        'system.view',
-    },
-}
+def _load_access_defaults() -> tuple[
+    list[tuple[str, str, str, str]],
+    dict[str, dict[str, str]],
+    dict[str, set[str]],
+]:
+    document = load_definition_document('rbac/access.yaml', expected_kind='rbac_access')
+    raw_permissions = [
+        require_mapping(item, f'permissions[{index}]')
+        for index, item in enumerate(require_list(document.get('permissions'), 'permissions'))
+    ]
+    unique_by(raw_permissions, 'key', 'permissions')
+    permissions = [
+        (
+            require_str(item, 'key', f'permissions[{index}]'),
+            require_str(item, 'module', f'permissions[{index}]'),
+            require_str(item, 'action', f'permissions[{index}]'),
+            require_str(item, 'description', f'permissions[{index}]'),
+        )
+        for index, item in enumerate(raw_permissions)
+    ]
+    permission_keys = {item[0] for item in permissions}
+
+    raw_roles = [
+        require_mapping(item, f'system_roles[{index}]')
+        for index, item in enumerate(require_list(document.get('system_roles'), 'system_roles'))
+    ]
+    unique_by(raw_roles, 'key', 'system_roles')
+    role_definitions: dict[str, dict[str, str]] = {}
+    role_permissions: dict[str, set[str]] = {}
+    for index, item in enumerate(raw_roles):
+        path = f'system_roles[{index}]'
+        key = require_str(item, 'key', path)
+        role_definitions[key] = {
+            'display_name': require_str(item, 'display_name', path),
+            'description': require_str(item, 'description', path),
+        }
+        grants = set(string_tuple(item.get('permissions'), f'{path}.permissions'))
+        unknown = sorted(grants - permission_keys)
+        if unknown:
+            raise DefinitionError(f'{path} references unknown permissions: {", ".join(unknown)}.')
+        role_permissions[key] = grants
+    return permissions, role_definitions, role_permissions
+
+
+DEFAULT_PERMISSIONS, DEFAULT_ROLE_DEFINITIONS, DEFAULT_ROLE_PERMISSIONS = _load_access_defaults()

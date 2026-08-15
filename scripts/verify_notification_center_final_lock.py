@@ -43,7 +43,8 @@ def main() -> int:
     framed_tabs = read('app/templates/components/framed_workspace_tabs.html')
     routes = read('app/notifications/routes.py')
     queries = read('app/notifications/queries.py')
-    catalog = read('app/notifications/event_catalog.py')
+    catalog = read('app/definitions/catalogs/notifications/event_categories.yaml')
+    catalog_code = read('app/notifications/event_catalog.py')
     presentation = read('app/notifications/presentation.py')
     navigation = read('app/common/navigation.py')
     quality_gate = read('scripts/quality_gate.sh')
@@ -131,20 +132,24 @@ def main() -> int:
             errors.append(f'Notification Center query/filter contract missing: {required}')
 
     for required in (
-        "'configmap_management': 'ConfigMap Management'",
-        "'tls_certificate': 'TLS Certificate'",
-        "'secret_management': 'Secret Management'",
-        "'integrations': 'Integrations'",
-        "'platform_operations': 'Platform Operations'",
-        "'access': 'Access'",
-        "'settings': 'Settings'",
+        "label: ConfigMap Management",
+        "label: TLS Certificate",
+        "label: Secret Management",
+        "label: Integrations",
+        "label: Platform Operations",
+        "label: Access",
+        "label: Settings",
+    ):
+        if required not in catalog:
+            errors.append(f'Notification category contract missing: {required}')
+    for required in (
         "'configmap': 'ConfigMap'",
         "'tls': 'TLS'",
         "'rbac': 'RBAC'",
         "'k8s': 'Kubernetes'",
     ):
-        if required not in catalog:
-            errors.append(f'Notification category/Title Case contract missing: {required}')
+        if required not in catalog_code:
+            errors.append(f'Notification Title Case token contract missing: {required}')
 
     if 'standardize_activity_title(' not in presentation:
         errors.append('Notification titles must use the Title Case display normalizer')

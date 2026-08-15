@@ -8,18 +8,18 @@ def read(path: str) -> str:
 
 
 def test_object_storage_inventory_is_a_registered_periodic_job() -> None:
-    definition = read('app/jobs/definitions/object_storage_inventory_sync.py')
+    definition = read('app/definitions/catalogs/jobs/registered_jobs.yaml')
     registry = read('app/jobs/registry.py')
     template = read('app/templates/jobs/configuration/definitions/object_storage_inventory_sync.html')
     scheduler = read('app/jobs/scheduler.py')
 
-    assert "JOB_KEY = 'object_storage.inventory.sync'" in definition
-    assert "domain='Object Storage Inventory'" in definition
-    assert "queue_name='inventory'" in definition
-    assert "domain_execute_permission='storage.sync'" in definition
-    assert 'default_enabled=True' in definition
-    assert 'default_interval_minutes=60' in definition
-    assert 'OBJECT_STORAGE_INVENTORY_SYNC_DEFINITION' in registry
+    assert 'key: object_storage.inventory.sync' in definition
+    assert 'domain: Object Storage Inventory' in definition
+    assert 'queue_name: inventory' in definition
+    assert 'domain_execute_permission: storage.sync' in definition
+    assert 'default_enabled: true' in definition
+    assert 'default_interval_minutes: 60' in definition
+    assert 'load_job_definitions()' in registry
     assert 'Automatic Object Storage Inventory Sync' in template
     assert 'Object Storage Inventory Sync Policy' in template
     assert 'dispatch_registered_job(' in scheduler
@@ -94,21 +94,24 @@ def test_inventory_pages_and_minio_lifecycle_read_only_committed_job_snapshot() 
     bucket_detail = read('app/templates/inventory/object_storage/buckets/partials/_bucket_detail_content.html')
     bucket_table = read('app/templates/inventory/object_storage/buckets/partials/_table_content.html')
     assert 'Object Storage Inventory Sync snapshot' in bucket_detail
-    assert 'Object Storage Inventory Sync from Job Configuration' in bucket_table
+    assert 'run Object Storage Inventory Sync from Job Configuration' in bucket_table
     assert 'Full Validation snapshot' not in bucket_detail
 
 
 def test_object_storage_manual_execution_has_domain_permission_and_migration() -> None:
-    defaults = read('app/rbac/defaults.py')
+    defaults = read('app/definitions/catalogs/rbac/access.yaml')
     service = read('app/rbac/service.py')
     migration = read('migrations/versions/20260813_object_storage_inventory_jobs.py')
     jobs_readme = read('app/jobs/README.md')
 
-    assert "'storage.sync'" in defaults
-    assert "'operator': {" in defaults and "'editor': {" in defaults
-    role_defaults = defaults.split('DEFAULT_ROLE_PERMISSIONS = {', 1)[1]
-    assert role_defaults.count("        'storage.sync',") == 2
-    assert "'storage.sync': {'object_storage_inventory.view', 'jobs.execute'}" in service
+    assert 'key: storage.sync' in defaults
+    assert '- key: operator' in defaults and '- key: editor' in defaults
+    import yaml
+    access = yaml.safe_load(defaults)
+    role_grants = {role['key']: set(role['permissions']) for role in access['system_roles']}
+    assert 'storage.sync' in role_grants['operator']
+    assert 'storage.sync' in role_grants['editor']
+    assert "'storage.sync': {'inventory.view', 'jobs.execute'}" in service
     assert "revision = '20260813_obj_storage_jobs'" in migration
     assert "down_revision = '20260812_obj_storage_inv'" in migration
     assert "ROLE_NAMES = ('operator', 'editor', 'admin')" in migration

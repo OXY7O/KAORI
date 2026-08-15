@@ -67,14 +67,13 @@ def test_job_catalog_status_refreshes_out_of_band() -> None:
 
 
 def test_registered_job_descriptions_are_compact() -> None:
-    expected = {
-        'app/jobs/definitions/inventory_sync.py': 'Refresh Kubernetes inventory across eligible clusters.',
-        'app/jobs/definitions/analytics_refresh.py': 'Refresh shared Kubernetes analytics snapshots.',
-        'app/jobs/definitions/report_schedule.py': 'Dispatch due report schedules through the Reports worker.',
-        'app/jobs/definitions/forecast_refresh.py': 'Generate persistent capacity forecasts',
-        'app/jobs/definitions/tls_certificate_sync.py': 'Refresh TLS Secret inventory',
-    }
-    for relative, phrase in expected.items():
-        content = _read(relative)
+    content = _read('app/definitions/catalogs/jobs/registered_jobs.yaml')
+    for phrase in (
+        'Refresh Kubernetes inventory across eligible clusters.',
+        'Refresh shared Kubernetes analytics snapshots.',
+        'Dispatch due report schedules through the Reports worker.',
+        'Generate persistent capacity forecasts',
+        'Refresh TLS Secret inventory',
+    ):
         assert phrase in content
-        assert max(len(line) for line in content.splitlines()) < 130
+    assert max(len(line) for line in content.splitlines()) < 130

@@ -1,11 +1,13 @@
-from app.jobs.definitions.analytics_refresh import ANALYTICS_REFRESH_DEFINITION
-from app.jobs.definitions.base import JobDefinition, RegisteredJobDispatchResult
-from app.jobs.definitions.forecast_refresh import FORECAST_REFRESH_DEFINITION
-from app.jobs.definitions.inventory_sync import INVENTORY_SYNC_DEFINITION
-from app.jobs.definitions.object_storage_inventory_sync import OBJECT_STORAGE_INVENTORY_SYNC_DEFINITION
-from app.jobs.definitions.object_storage_forecast_refresh import OBJECT_STORAGE_FORECAST_REFRESH_DEFINITION
-from app.jobs.definitions.report_schedule import REPORT_SCHEDULE_DEFINITION
-from app.jobs.definitions.tls_certificate_sync import TLS_CERTIFICATE_SYNC_DEFINITION
+from app.jobs.definition_types import JobDefinition, RegisteredJobDispatchResult
+from app.jobs.registry import get_job_definition
+
+INVENTORY_SYNC_DEFINITION = get_job_definition('kubernetes.inventory.sync')
+OBJECT_STORAGE_INVENTORY_SYNC_DEFINITION = get_job_definition('object_storage.inventory.sync')
+OBJECT_STORAGE_FORECAST_REFRESH_DEFINITION = get_job_definition('object_storage.forecast.materialize')
+REPORT_SCHEDULE_DEFINITION = get_job_definition('reports.schedule.dispatch')
+TLS_CERTIFICATE_SYNC_DEFINITION = get_job_definition('governance.tls_certificates.sync')
+ANALYTICS_REFRESH_DEFINITION = get_job_definition('analytics.materialize')
+FORECAST_REFRESH_DEFINITION = get_job_definition('analytics.forecast.materialize')
 
 __all__ = [
     'ANALYTICS_REFRESH_DEFINITION',

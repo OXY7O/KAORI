@@ -104,7 +104,8 @@ def test_notification_center_history_uses_kaori_table_contract() -> None:
 
 def test_notification_center_title_case_and_category_contract() -> None:
     presentation = read('app/notifications/presentation.py')
-    catalog = read('app/notifications/event_catalog.py')
+    catalog = read('app/definitions/catalogs/notifications/event_categories.yaml')
+    catalog_py = read('app/notifications/event_catalog.py')
     content = read('app/templates/notifications/partials/_center_page_content.html')
 
     assert 'standardize_activity_title(' in presentation
@@ -113,13 +114,23 @@ def test_notification_center_title_case_and_category_contract() -> None:
         "'tls': 'TLS'",
         "'rbac': 'RBAC'",
         "'k8s': 'Kubernetes'",
-        "'configmap_management': 'ConfigMap Management'",
-        "'tls_certificate': 'TLS Certificate'",
-        "'secret_management': 'Secret Management'",
-        "'integrations': 'Integrations'",
-        "'platform_operations': 'Platform Operations'",
-        "'access': 'Access'",
-        "'settings': 'Settings'",
+    ):
+        assert token in catalog_py
+    for token in (
+        'configmap_management:',
+        'label: ConfigMap Management',
+        'tls_certificate:',
+        'label: TLS Certificate',
+        'secret_management:',
+        'label: Secret Management',
+        'integrations:',
+        'label: Integrations',
+        'platform_operations:',
+        'label: Platform Operations',
+        'access:',
+        'label: Access',
+        'settings:',
+        'label: Settings',
     ):
         assert token in catalog
     assert '{{ notification.category_label }}' in content

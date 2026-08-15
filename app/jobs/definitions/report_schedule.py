@@ -1,33 +1,3 @@
-from app.common.job_execution_contract import registered_job_operation_label
-from app.jobs.definitions.base import JobDefinition
+from app.jobs.registry import get_job_definition
 
-REPORT_SCHEDULE_DEFINITION = JobDefinition(
-    key='reports.schedule.dispatch',
-    name=registered_job_operation_label('dispatch_due_reports'),
-    domain='Reports',
-    description='Dispatch due report schedules through the Reports worker.',
-    icon='file-clock',
-    queue_name='reports',
-    workload_class='standard',
-    job_type='report_schedule',
-    operation='dispatch_due_reports',
-    scope_type='report_schedule',
-    scope_key='due',
-    configure_permission='jobs.configure',
-    execute_permission='jobs.execute',
-    domain_execute_permission='reports.manage_schedules',
-    dispatcher_path='app.reports.schedules.job_adapter:dispatch_report_schedule_job',
-    context_builder_path='app.reports.schedules.job_adapter:build_report_schedule_context',
-    configuration_template='jobs/configuration/definitions/report_schedule.html',
-    default_enabled=True,
-    default_interval_minutes=5,
-    minimum_interval_minutes=1,
-    maximum_interval_minutes=60,
-    safety_summary=(
-        'Each schedule creates a normal report record, stores its artifact through the configured '
-        'backend, and records delivery results.'
-    ),
-    execution_summary='Process due report schedules or run the dispatcher manually through the dedicated Reports queue.',
-    recent_execution_summary='Latest scheduled and manual report dispatcher executions.',
-    default_configuration={'batch_limit': 20},
-)
+REPORT_SCHEDULE_DEFINITION = get_job_definition('reports.schedule.dispatch')

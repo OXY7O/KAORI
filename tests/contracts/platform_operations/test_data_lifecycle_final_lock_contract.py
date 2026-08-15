@@ -73,7 +73,7 @@ def test_data_lifecycle_navigation_and_breadcrumb_are_platform_owned() -> None:
 
 
 def test_data_lifecycle_rbac_cutover_preserves_permission_rows_in_place() -> None:
-    defaults = read('app/rbac/defaults.py')
+    defaults = read('app/definitions/catalogs/rbac/access.yaml')
     migration = read('migrations/versions/20260808_data_lifecycle_platform_operations.py')
 
     for key in (

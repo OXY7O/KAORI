@@ -140,7 +140,7 @@ def test_generated_registry_surfaces_storage_outage_without_breaking_list() -> N
 
 
 def test_report_schedule_dispatcher_uses_canonical_worker_job() -> None:
-    definition = read(ROOT / 'app' / 'jobs' / 'definitions' / 'report_schedule.py')
+    definition = read(ROOT / 'app' / 'definitions' / 'catalogs' / 'jobs' / 'registered_jobs.yaml')
     registry = read(ROOT / 'app' / 'jobs' / 'registry.py')
     adapter = read(ROOT / 'app' / 'reports' / 'schedules' / 'job_adapter.py')
     task = read(ROOT / 'app' / 'reports' / 'schedules' / 'tasks.py')
@@ -150,9 +150,9 @@ def test_report_schedule_dispatcher_uses_canonical_worker_job() -> None:
     devcontainer = read(ROOT / '.devcontainer' / 'devcontainer.json')
     queue_contract = read(ROOT / 'app' / 'reports' / 'jobs' / 'queue.py')
 
-    assert "key='reports.schedule.dispatch'" in definition
-    assert "queue_name='reports'" in definition
-    assert 'REPORT_SCHEDULE_DEFINITION' in registry
+    assert 'key: reports.schedule.dispatch' in definition
+    assert 'queue_name: reports' in definition
+    assert 'load_job_definitions()' in registry
     assert 'enqueue_canonical_job(' in adapter
     assert "name='app.reports.schedules.tasks.run_report_schedule_job'" in task
     assert "'app.reports.schedules.tasks'" in config
@@ -206,7 +206,8 @@ def test_report_user_interfaces_do_not_expose_mvp_copy() -> None:
 
 
 def test_generate_report_uses_the_canonical_family_format_and_scope_contract() -> None:
-    catalog = read(ROOT / 'app' / 'reports' / 'catalog.py')
+    catalog = read(ROOT / 'app' / 'definitions' / 'catalogs' / 'reports' / 'catalog.yaml')
+    catalog_code = read(ROOT / 'app' / 'reports' / 'catalog.py')
     generate_service = read(ROOT / 'app' / 'reports' / 'generate' / 'service.py')
     generate_template = read(REPORT_TEMPLATES / 'generate' / 'index.html')
     analytics_collectors = read(ROOT / 'app' / 'reports' / 'export' / 'html_pdf' / 'collectors.py')
@@ -229,12 +230,12 @@ def test_generate_report_uses_the_canonical_family_format_and_scope_contract() -
     )
 
     for report_type in inventory_report_types:
-        assert f"value='{report_type}'" in catalog
+        assert f'value: {report_type}' in catalog
 
-    assert '_ANALYTICS_FORMATS = (FORMAT_PDF, FORMAT_CSV)' in catalog
-    assert '_INVENTORY_FORMATS = (FORMAT_XLSX, FORMAT_CSV)' in catalog
-    assert 'requires_cluster: bool = True' in catalog
-    assert 'Cross-cluster report generation is disabled.' in catalog
+    assert 'family: analytics' in catalog and '- pdf' in catalog and '- csv' in catalog
+    assert 'family: inventory' in catalog and '- xlsx' in catalog and '- csv' in catalog
+    assert 'requires_cluster: bool = True' in catalog_code
+    assert 'Cross-cluster report generation is disabled.' in catalog_code
 
     assert 'FORMAT_PDF: render_weasyprint_pdf' in artifact_registry
     assert 'FORMAT_XLSX: render_inventory_xlsx' in artifact_registry

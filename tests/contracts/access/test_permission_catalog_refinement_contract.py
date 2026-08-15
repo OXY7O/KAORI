@@ -116,11 +116,11 @@ def test_permission_catalog_exposes_drift_dependency_and_cross_role_coverage() -
 
 
 def test_permission_module_metadata_matches_current_kaori_ownership_without_renaming_keys() -> None:
-    defaults = read('app/rbac/defaults.py')
-    assert "'kubernetes_secrets.manage_reveal',\n        'platform_operations'" in defaults
-    assert "'jobs.view',\n        'platform_operations'" in defaults
-    assert "'platform_operations.view_data_lifecycle',\n        'platform_operations'" in defaults
-    assert "'settings.manage_integrations',\n        'integrations'" in defaults
+    defaults = read('app/definitions/catalogs/rbac/access.yaml')
+    assert 'key: kubernetes_secrets.manage_reveal' in defaults
+    assert 'key: jobs.view' in defaults
+    assert 'key: platform_operations.view_data_lifecycle' in defaults
+    assert 'key: settings.manage_integrations' in defaults
 
     # Permission keys remain stable authorization contracts.
     for key in (

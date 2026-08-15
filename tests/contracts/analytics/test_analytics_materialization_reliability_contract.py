@@ -57,18 +57,19 @@ def test_provider_scoped_lock_serializes_shared_heavy_sources() -> None:
 
 
 def test_materialization_prioritizes_current_datasets_and_scales_task_budget() -> None:
-    catalog = _read('app/analytics/kubernetes/materialization/catalog.py')
+    catalog = _read('app/definitions/catalogs/analytics/kubernetes_datasets.yaml')
+    catalog_code = _read('app/analytics/kubernetes/materialization/catalog.py')
     adapter = _read('app/analytics/kubernetes/job_adapter.py')
     tasks = _read('app/analytics/kubernetes/tasks.py')
     config = _read('app/config/default.py')
 
-    assert 'execution_priority: int = 100' in catalog
-    assert "key='analytics.utilization.summary'" in catalog
-    assert 'execution_priority=30' in catalog
-    assert "key='analytics.utilization.trend'" in catalog
-    assert 'execution_priority=90' in catalog
+    assert 'execution_priority: 100' in catalog
+    assert 'key: analytics.utilization.summary' in catalog
+    assert 'execution_priority: 30' in catalog
+    assert 'key: analytics.utilization.trend' in catalog
+    assert 'execution_priority: 90' in catalog
     assert 'work_items.sort(key=_work_item_sort_key)' in adapter
-    assert 'def dataset_task_budget_seconds' in catalog
+    assert 'def dataset_task_budget_seconds' in catalog_code
     assert 'dataset_task_budget_seconds(' in adapter
     assert 'dataset_task_budget_seconds(dataset_key, parameters)' in tasks
     assert 'estimated_duration_seconds' in adapter
@@ -139,11 +140,11 @@ def test_pending_ui_uses_determinate_progress_and_clear_remediation() -> None:
 
 
 def test_default_analytics_policy_refreshes_current_snapshots_before_they_age_out() -> None:
-    definition = _read('app/jobs/definitions/analytics_refresh.py')
+    definition = _read('app/definitions/catalogs/jobs/registered_jobs.yaml')
     env_example = _read('.env.example')
 
-    assert 'default_interval_minutes=15' in definition
-    assert "'freshness_minutes': 15" in definition
+    assert 'default_interval_minutes: 15' in definition
+    assert 'freshness_minutes: 15' in definition
     assert 'PROMETHEUS_ANALYTICS_QUERY_RETRIES=2' in env_example
     assert 'ANALYTICS_SOURCE_LOCK_TIMEOUT_SECONDS=900' in env_example
     assert 'ANALYTICS_TASK_MAX_SOFT_TIME_LIMIT_SECONDS=7200' in env_example

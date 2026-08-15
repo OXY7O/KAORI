@@ -5,6 +5,9 @@ from dataclasses import dataclass
 from importlib import import_module
 from typing import Any, cast
 
+from app.definitions.loader import DefinitionError, load_definition_document
+from app.definitions.validation import require_int, require_list, require_mapping, require_str, string_tuple, unique_by
+
 ContextBuilder = Callable[[Mapping[str, Any]], dict[str, Any]]
 
 
@@ -62,186 +65,53 @@ class AnalyticsDataset:
         return _resolve_builder(self.builder_path)
 
 
-ANALYTICS_DATASETS: tuple[AnalyticsDataset, ...] = (
-    AnalyticsDataset(
-        key='dashboard.kubernetes.alerts',
-        label='Kubernetes Dashboard Alerts',
-        builder_path='app.analytics.kubernetes.materialization.dashboard_alerts:build_dashboard_alerts_context',
-        default_parameters=({},),
-        freshness_minutes=5,
-        stale_grace_minutes=30,
-        required_binding_capabilities=('metrics', 'alert_metrics'),
-        source_kind='alert',
-        execution_priority=10,
-        task_budget_seconds=60,
-    ),
-    AnalyticsDataset(
-        key='analytics.alerts',
-        label='Alerts and Anomalies',
-        builder_path='app.analytics.kubernetes.alerts.application:get_alerts_materialization_context',
-        default_parameters=({'source': 'auto'},),
-        freshness_minutes=5,
-        stale_grace_minutes=30,
-        snapshot_parameter_keys=('source',),
-        required_binding_capabilities=('metrics', 'alert_metrics'),
-        source_kind='alert',
-        execution_priority=20,
-        task_budget_seconds=90,
-    ),
-    AnalyticsDataset(
-        key='analytics.utilization.summary',
-        label='Utilization Summary',
-        builder_path='app.analytics.kubernetes.utilization.materialization:get_utilization_summary_context',
-        default_parameters=({},),
-        freshness_minutes=10,
-        stale_grace_minutes=120,
-        required_binding_capabilities=('metrics', 'utilization'),
-        required_capabilities=(
-            'instant_query',
-            'range_query',
-            'kubernetes_identity',
-            'utilization_metrics',
-            'node_filesystem_identity',
+def _dataset_from_definition(raw: Mapping[str, Any], path: str) -> AnalyticsDataset:
+    default_parameters_raw = require_list(raw.get('default_parameters', []), f'{path}.default_parameters')
+    default_parameters: list[dict[str, str]] = []
+    for index, item in enumerate(default_parameters_raw):
+        mapping = require_mapping(item, f'{path}.default_parameters[{index}]')
+        default_parameters.append({str(key): str(value) for key, value in mapping.items()})
+    source_kind = str(raw.get('source_kind') or 'prometheus').strip()
+    if source_kind not in {'prometheus', 'alert'}:
+        raise DefinitionError(f'{path}.source_kind is unsupported: {source_kind!r}.')
+    return AnalyticsDataset(
+        key=require_str(raw, 'key', path),
+        label=require_str(raw, 'label', path),
+        builder_path=require_str(raw, 'builder_path', path),
+        default_parameters=tuple(default_parameters),
+        freshness_minutes=require_int(raw, 'freshness_minutes', path),
+        stale_grace_minutes=require_int(raw, 'stale_grace_minutes', path),
+        snapshot_parameter_keys=string_tuple(raw.get('snapshot_parameter_keys'), f'{path}.snapshot_parameter_keys'),
+        required_binding_capabilities=string_tuple(
+            raw.get('required_binding_capabilities'),
+            f'{path}.required_binding_capabilities',
         ),
-        execution_priority=30,
-        task_budget_seconds=120,
-    ),
-    AnalyticsDataset(
-        key='analytics.utilization.trend',
-        label='Utilization Trend',
-        builder_path='app.analytics.kubernetes.utilization.materialization:get_utilization_trend_context',
-        default_parameters=tuple({'trend_hours': value} for value in ('1', '6', '12', '24', '168', '720', '1440')),
-        freshness_minutes=15,
-        stale_grace_minutes=720,
-        snapshot_parameter_keys=('trend_hours', 'trend_node'),
-        required_binding_capabilities=('metrics', 'utilization'),
-        required_capabilities=(
-            'instant_query',
-            'range_query',
-            'kubernetes_identity',
-            'utilization_metrics',
-            'node_filesystem_identity',
-        ),
-        execution_priority=90,
-        task_budget_seconds=300,
-    ),
-    AnalyticsDataset(
-        key='analytics.utilization.node',
-        label='Utilization Node Detail',
-        builder_path='app.analytics.kubernetes.utilization.materialization:get_utilization_node_context',
-        default_parameters=(),
-        freshness_minutes=10,
-        stale_grace_minutes=120,
-        snapshot_parameter_keys=('node',),
-        required_binding_capabilities=('metrics', 'utilization'),
-        required_capabilities=(
-            'instant_query',
-            'range_query',
-            'kubernetes_identity',
-            'utilization_metrics',
-            'node_filesystem_identity',
-        ),
-        execution_priority=35,
-        task_budget_seconds=180,
-    ),
-    AnalyticsDataset(
-        key='analytics.capacity',
-        label='Capacity Analysis',
-        builder_path='app.analytics.kubernetes.capacity.service:get_capacity_page_context',
-        default_parameters=tuple({'time_range': value} for value in ('1h', '6h', '12h', '24h', '7d', '30d', '60d')),
-        freshness_minutes=20,
-        stale_grace_minutes=1440,
-        snapshot_parameter_keys=('time_range',),
-        required_binding_capabilities=('metrics', 'capacity'),
-        required_capabilities=(
-            'instant_query',
-            'range_query',
-            'kubernetes_identity',
-            'capacity_metrics',
-            'resource_requests_limits',
-        ),
-        execution_priority=40,
-        task_budget_seconds=240,
-    ),
-    AnalyticsDataset(
-        key='analytics.storage',
-        label='Storage Analysis',
-        builder_path='app.analytics.kubernetes.storage.service:get_storage_analysis_context',
-        default_parameters=({},),
-        freshness_minutes=20,
-        stale_grace_minutes=1440,
-        required_binding_capabilities=('metrics', 'storage'),
-        required_capabilities=(
-            'instant_query',
-            'kubernetes_identity',
-            'pvc_usage',
-            'node_filesystem_identity',
-        ),
-        execution_priority=50,
-        task_budget_seconds=180,
-    ),
-    AnalyticsDataset(
-        key='analytics.workload',
-        label='Workload Analysis',
-        builder_path='app.analytics.kubernetes.workload.service:get_workload_analysis_context',
-        default_parameters=tuple({'time_range': value} for value in ('1h', '6h', '12h', '24h', '7d', '30d', '60d')),
-        freshness_minutes=20,
-        stale_grace_minutes=1440,
-        snapshot_parameter_keys=('time_range',),
-        required_binding_capabilities=('metrics', 'workload'),
-        required_capabilities=(
-            'instant_query',
-            'range_query',
-            'kubernetes_identity',
-            'workload_metrics',
-            'resource_requests_limits',
-        ),
-        execution_priority=60,
-        task_budget_seconds=300,
-    ),
-    AnalyticsDataset(
-        key='analytics.top_consumers',
-        label='Top Consumers',
-        builder_path='app.analytics.kubernetes.top_consumers.service:get_top_consumers_context',
-        default_parameters=({},),
-        freshness_minutes=15,
-        stale_grace_minutes=720,
-        snapshot_parameter_keys=('namespace',),
-        required_binding_capabilities=('metrics', 'top_consumers'),
-        required_capabilities=(
-            'instant_query',
-            'kubernetes_identity',
-            'workload_metrics',
-            'resource_requests_limits',
-            'capacity_metrics',
-            'pvc_usage',
-        ),
-        execution_priority=70,
-        task_budget_seconds=240,
-    ),
-)
+        required_capabilities=string_tuple(raw.get('required_capabilities'), f'{path}.required_capabilities'),
+        source_kind=source_kind,
+        execution_priority=require_int(raw, 'execution_priority', path, default=100),
+        task_budget_seconds=require_int(raw, 'task_budget_seconds', path, default=180),
+    )
 
-FORECAST_DATASET = AnalyticsDataset(
-    key='analytics.forecast',
-    label='Capacity Forecast',
-    builder_path='app.analytics.kubernetes.forecast.service:get_forecast_analysis_context',
-    default_parameters=tuple({'history_window': history_window} for history_window in ('7d', '30d', '90d')),
-    freshness_minutes=120,
-    stale_grace_minutes=4320,
-    snapshot_parameter_keys=('history_window', 'namespace'),
-    required_binding_capabilities=('metrics', 'forecast'),
-    required_capabilities=(
-        'instant_query',
-        'range_query',
-        'long_term_history',
-        'kubernetes_identity',
-        'workload_metrics',
-        'capacity_metrics',
-        'pvc_usage',
-    ),
-    execution_priority=100,
-    task_budget_seconds=600,
-)
+
+def _load_dataset_catalog() -> tuple[tuple[AnalyticsDataset, ...], AnalyticsDataset]:
+    document = load_definition_document(
+        'analytics/kubernetes_datasets.yaml',
+        expected_kind='kubernetes_analytics_datasets',
+    )
+    raw_datasets = [
+        require_mapping(item, f'datasets[{index}]')
+        for index, item in enumerate(require_list(document.get('datasets'), 'datasets'))
+    ]
+    unique_by(raw_datasets, 'key', 'datasets')
+    datasets = tuple(_dataset_from_definition(raw, f'datasets[{index}]') for index, raw in enumerate(raw_datasets))
+    forecast_raw = require_mapping(document.get('forecast_dataset'), 'forecast_dataset')
+    forecast = _dataset_from_definition(forecast_raw, 'forecast_dataset')
+    if forecast.key in {item.key for item in datasets}:
+        raise DefinitionError(f'Duplicate analytics dataset key: {forecast.key!r}.')
+    return datasets, forecast
+
+
+ANALYTICS_DATASETS, FORECAST_DATASET = _load_dataset_catalog()
 
 _DATASET_BY_KEY = {item.key: item for item in (*ANALYTICS_DATASETS, FORECAST_DATASET)}
 

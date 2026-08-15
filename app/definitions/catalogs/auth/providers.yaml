@@ -1,0 +1,27 @@
+schema_version: 1
+kind: auth_providers
+providers:
+- provider_type: database
+  family: database
+  label: Local Database
+  flow: credentials
+  configurable: false
+  supports_jit: false
+- provider_type: ldap
+  family: ldap
+  label: LDAP / Active Directory
+  flow: credentials
+  configurable: true
+  supports_jit: false
+- provider_type: google_oidc
+  family: sso
+  label: Google OpenID Connect
+  flow: browser
+  configurable: true
+  supports_jit: true
+- provider_type: github_oauth
+  family: sso
+  label: GitHub OAuth
+  flow: browser
+  configurable: true
+  supports_jit: true

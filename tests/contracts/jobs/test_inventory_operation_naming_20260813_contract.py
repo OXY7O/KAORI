@@ -9,22 +9,20 @@ def read(path: str) -> str:
 
 def test_inventory_operations_use_explicit_domain_names() -> None:
     contract = read('app/common/job_execution_contract.py')
-    kubernetes_definition = read('app/jobs/definitions/inventory_sync.py')
-    object_storage_definition = read('app/jobs/definitions/object_storage_inventory_sync.py')
+    job_catalog = read('app/definitions/catalogs/jobs/registered_jobs.yaml')
 
     assert "KUBERNETES_INVENTORY_SYNC_OPERATION = 'sync_kubernetes_inventory'" in contract
     assert "OBJECT_STORAGE_INVENTORY_SYNC_OPERATION = 'sync_object_storage_inventory'" in contract
     assert "SYNC_ALL_INVENTORY_ACTION = 'sync_all_inventory'" in contract
-    assert 'operation=KUBERNETES_INVENTORY_SYNC_OPERATION' in kubernetes_definition
-    assert 'operation=OBJECT_STORAGE_INVENTORY_SYNC_OPERATION' in object_storage_definition
+    assert 'operation: sync_kubernetes_inventory' in job_catalog
+    assert 'operation: sync_object_storage_inventory' in job_catalog
 
 
 def test_inventory_job_keys_remain_stable_while_operations_are_renamed() -> None:
-    kubernetes_definition = read('app/jobs/definitions/inventory_sync.py')
-    object_storage_definition = read('app/jobs/definitions/object_storage_inventory_sync.py')
+    job_catalog = read('app/definitions/catalogs/jobs/registered_jobs.yaml')
 
-    assert "JOB_KEY = 'kubernetes.inventory.sync'" in kubernetes_definition
-    assert "JOB_KEY = 'object_storage.inventory.sync'" in object_storage_definition
+    assert 'key: kubernetes.inventory.sync' in job_catalog
+    assert 'key: object_storage.inventory.sync' in job_catalog
 
 
 def test_inventory_runtime_queries_use_canonical_operation_constants() -> None:

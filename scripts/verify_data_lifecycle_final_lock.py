@@ -275,7 +275,7 @@ def main() -> int:
     if "endpoint.startswith('platform_operations.data_lifecycle.')" not in breadcrumb:
         errors.append('Data Lifecycle breadcrumb must resolve under Platform Operations')
 
-    defaults = read('app/rbac/defaults.py')
+    defaults = read('app/definitions/catalogs/rbac/access.yaml')
     dependencies = read('app/rbac/service.py')
     for key in (
         'platform_operations.view_data_lifecycle',

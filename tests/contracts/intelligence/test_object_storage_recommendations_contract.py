@@ -29,7 +29,7 @@ def test_recommendations_support_object_storage_without_minio_specific_workspace
 
 
 def test_object_storage_recommendations_are_catalog_backed_and_provider_evidenced():
-    catalog = read('app/intelligence/catalog.py')
+    catalog = read('app/definitions/catalogs/intelligence/rules.yaml')
     evaluator = read('app/intelligence/object_storage_recommendations.py')
     records = read('app/templates/intelligence/partials/_recommendation_records.html')
     details = read('app/templates/intelligence/partials/_recommendation_detail_content.html')
@@ -42,9 +42,9 @@ def test_object_storage_recommendations_are_catalog_backed_and_provider_evidence
         'object_storage.forecast.capacity_exhaustion_review',
         'object_storage.forecast.capacity_exhaustion_critical',
     ):
-        assert f"'rule_key': '{rule_key}'" in catalog
+        assert f'rule_key: {rule_key}' in catalog
 
-    assert "'domain': 'object_storage'" in catalog
+    assert 'domain: object_storage' in catalog
     assert "'provider_label': provider_label" in evaluator
     assert 'item.evidence.provider_label' in records
     assert 'item.evidence.provider_label' in details

@@ -3,7 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
-from app.reports.export.constants import ANALYTICS_OVERVIEW_SECTION_KEYS
+from app.definitions.loader import DefinitionError, load_definition_document
+from app.definitions.validation import require_bool, require_list, require_mapping, require_str, string_tuple, unique_by
 
 REPORT_FAMILY_ANALYTICS = 'analytics'
 REPORT_FAMILY_INVENTORY = 'inventory'
@@ -35,291 +36,57 @@ class ReportTypeSpec:
     requires_cluster: bool = True
 
 
-OUTPUT_FORMAT_SPECS: dict[str, OutputFormatSpec] = {
-    FORMAT_PDF: OutputFormatSpec(
-        value=FORMAT_PDF,
-        label='PDF',
-        extension='.pdf',
-        mimetype='application/pdf',
-    ),
-    FORMAT_XLSX: OutputFormatSpec(
-        value=FORMAT_XLSX,
-        label='Excel Workbook (.xlsx)',
-        extension='.xlsx',
-        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    ),
-    FORMAT_CSV: OutputFormatSpec(
-        value=FORMAT_CSV,
-        label='CSV (.csv)',
-        extension='.csv',
-        mimetype='text/csv',
-    ),
-}
+def _load_report_catalog() -> tuple[dict[str, OutputFormatSpec], tuple[ReportTypeSpec, ...]]:
+    document = load_definition_document('reports/catalog.yaml', expected_kind='report_catalog')
+    raw_formats = [
+        require_mapping(item, f'output_formats[{index}]')
+        for index, item in enumerate(require_list(document.get('output_formats'), 'output_formats'))
+    ]
+    unique_by(raw_formats, 'value', 'output_formats')
+    formats: dict[str, OutputFormatSpec] = {}
+    for index, raw in enumerate(raw_formats):
+        path = f'output_formats[{index}]'
+        spec = OutputFormatSpec(
+            value=require_str(raw, 'value', path),
+            label=require_str(raw, 'label', path),
+            extension=require_str(raw, 'extension', path),
+            mimetype=require_str(raw, 'mimetype', path),
+        )
+        formats[spec.value] = spec
 
-_ANALYTICS_FORMATS = (FORMAT_PDF, FORMAT_CSV)
-_INVENTORY_FORMATS = (FORMAT_XLSX, FORMAT_CSV)
-_INVENTORY_SECTIONS = (
-    'inventory_assets',
-    'inventory_metadata',
-    'inventory_field_dictionary',
-)
+    raw_reports = [
+        require_mapping(item, f'report_types[{index}]')
+        for index, item in enumerate(require_list(document.get('report_types'), 'report_types'))
+    ]
+    unique_by(raw_reports, 'value', 'report_types')
+    reports: list[ReportTypeSpec] = []
+    for index, raw in enumerate(raw_reports):
+        path = f'report_types[{index}]'
+        family = require_str(raw, 'family', path)
+        if family not in {REPORT_FAMILY_ANALYTICS, REPORT_FAMILY_INVENTORY}:
+            raise DefinitionError(f'{path}.family is unsupported: {family!r}.')
+        default_format = require_str(raw, 'default_format', path)
+        allowed_formats = string_tuple(raw.get('allowed_formats'), f'{path}.allowed_formats')
+        if default_format not in formats or any(item not in formats for item in allowed_formats):
+            raise DefinitionError(f'{path} references unknown output format.')
+        if default_format not in allowed_formats:
+            raise DefinitionError(f'{path}.default_format must be included in allowed_formats.')
+        reports.append(ReportTypeSpec(
+            value=require_str(raw, 'value', path),
+            label=require_str(raw, 'label', path),
+            description=require_str(raw, 'description', path),
+            icon=require_str(raw, 'icon', path),
+            family=family,
+            default_format=default_format,
+            allowed_formats=allowed_formats,
+            default_sections=string_tuple(raw.get('default_sections'), f'{path}.default_sections'),
+            period_mode=require_str(raw, 'period_mode', path),
+            requires_cluster=require_bool(raw, 'requires_cluster', path, default=True),
+        ))
+    return formats, tuple(reports)
 
-REPORT_TYPE_SPECS: tuple[ReportTypeSpec, ...] = (
-    ReportTypeSpec(
-        value='analytics_overview',
-        label='Analytics Overview Report',
-        description='High-level analytics summary across utilization, capacity, forecast, and alerts.',
-        icon='layout-dashboard',
-        family=REPORT_FAMILY_ANALYTICS,
-        default_format=FORMAT_PDF,
-        allowed_formats=_ANALYTICS_FORMATS,
-        default_sections=tuple(ANALYTICS_OVERVIEW_SECTION_KEYS),
-        period_mode='range',
-    ),
-    ReportTypeSpec(
-        value='resource_utilization',
-        label='Resource Utilization Report',
-        description='CPU, memory, storage, pod utilization, and node resource detail.',
-        icon='activity',
-        family=REPORT_FAMILY_ANALYTICS,
-        default_format=FORMAT_PDF,
-        allowed_formats=_ANALYTICS_FORMATS,
-        default_sections=(
-            'executive_summary',
-            'cpu_utilization',
-            'memory_utilization',
-            'storage_utilization',
-            'pod_utilization',
-            'node_resource_detail',
-            'operational_recommendations',
-        ),
-        period_mode='range',
-    ),
-    ReportTypeSpec(
-        value='capacity_analysis',
-        label='Capacity Analysis Report',
-        description='Worker capacity, allocation, headroom, and pressure risk.',
-        icon='database',
-        family=REPORT_FAMILY_ANALYTICS,
-        default_format=FORMAT_PDF,
-        allowed_formats=_ANALYTICS_FORMATS,
-        default_sections=(
-            'executive_summary',
-            'worker_capacity_summary',
-            'resource_allocation_headroom',
-            'capacity_pressure_risk',
-            'operational_recommendations',
-        ),
-        period_mode='range',
-    ),
-    ReportTypeSpec(
-        value='storage_analysis',
-        label='Storage Analysis Report',
-        description='Filesystem, persistent volume, PVC, capacity, usage, and free space summary.',
-        icon='hard-drive',
-        family=REPORT_FAMILY_ANALYTICS,
-        default_format=FORMAT_PDF,
-        allowed_formats=_ANALYTICS_FORMATS,
-        default_sections=(
-            'executive_summary',
-            'filesystem_summary',
-            'persistent_volume_summary',
-            'persistent_volume_claims',
-            'storage_risk',
-            'operational_recommendations',
-        ),
-        period_mode='range',
-    ),
-    ReportTypeSpec(
-        value='workload_analysis',
-        label='Workload Analysis Report',
-        description='Workload resource requests, limits, mapping, and namespace resource behavior.',
-        icon='boxes',
-        family=REPORT_FAMILY_ANALYTICS,
-        default_format=FORMAT_PDF,
-        allowed_formats=_ANALYTICS_FORMATS,
-        default_sections=(
-            'executive_summary',
-            'tenant_quota_summary',
-            'request_limit_coverage',
-            'workload_resource_mapping',
-            'governance_findings',
-            'operational_recommendations',
-        ),
-        period_mode='range',
-    ),
-    ReportTypeSpec(
-        value='resource_forecast',
-        label='Resource Forecast Report',
-        description='Forecast CPU, memory, storage, and pod growth using historical metrics.',
-        icon='line-chart',
-        family=REPORT_FAMILY_ANALYTICS,
-        default_format=FORMAT_PDF,
-        allowed_formats=_ANALYTICS_FORMATS,
-        default_sections=(
-            'executive_summary',
-            'forecast_summary',
-            'cpu_forecast',
-            'memory_forecast',
-            'storage_forecast',
-            'pod_forecast',
-            'capacity_projection',
-            'operational_recommendations',
-        ),
-        period_mode='range',
-    ),
-    ReportTypeSpec(
-        value='top_consumers',
-        label='Top Consumers Report',
-        description='Top namespaces, workloads, and pods consuming cluster resources.',
-        icon='users',
-        family=REPORT_FAMILY_ANALYTICS,
-        default_format=FORMAT_PDF,
-        allowed_formats=_ANALYTICS_FORMATS,
-        default_sections=(
-            'executive_summary',
-            'top_namespace_consumers',
-            'top_workload_consumers',
-            'top_pod_consumers',
-            'resource_hotspots',
-            'operational_recommendations',
-        ),
-        period_mode='range',
-    ),
-    ReportTypeSpec(
-        value='alerts_anomalies',
-        label='Alerts & Anomalies Report',
-        description='Alert visibility, anomaly context, source health, routing, ownership, incident readiness, and recommendation notes.',
-        icon='triangle-alert',
-        family=REPORT_FAMILY_ANALYTICS,
-        default_format=FORMAT_PDF,
-        allowed_formats=_ANALYTICS_FORMATS,
-        default_sections=(
-            'executive_summary',
-            'active_alerts',
-            'alert_severity_summary',
-            'source_health',
-            'routing_grouping',
-            'silence_inhibition',
-            'ownership_runbook',
-            'incident_readiness',
-            'anomaly_context',
-            'affected_resources',
-            'operational_recommendations',
-        ),
-        period_mode='range',
-    ),
-    ReportTypeSpec(
-        value='inventory_overview',
-        label='Inventory Overview',
-        description='Committed Kubernetes asset totals by inventory category.',
-        icon='layout-dashboard',
-        family=REPORT_FAMILY_INVENTORY,
-        default_format=FORMAT_XLSX,
-        allowed_formats=_INVENTORY_FORMATS,
-        default_sections=_INVENTORY_SECTIONS,
-        period_mode='snapshot',
-    ),
-    ReportTypeSpec(
-        value='node_inventory',
-        label='Nodes Inventory',
-        description='Node identities, readiness, platform, capacity, addressing, and collection evidence.',
-        icon='server-cog',
-        family=REPORT_FAMILY_INVENTORY,
-        default_format=FORMAT_XLSX,
-        allowed_formats=_INVENTORY_FORMATS,
-        default_sections=_INVENTORY_SECTIONS,
-        period_mode='snapshot',
-    ),
-    ReportTypeSpec(
-        value='namespace_inventory',
-        label='Namespaces Inventory',
-        description='Namespace identities, lifecycle state, controls, and service-account posture.',
-        icon='folder-tree',
-        family=REPORT_FAMILY_INVENTORY,
-        default_format=FORMAT_XLSX,
-        allowed_formats=_INVENTORY_FORMATS,
-        default_sections=_INVENTORY_SECTIONS,
-        period_mode='snapshot',
-    ),
-    ReportTypeSpec(
-        value='workload_inventory',
-        label='Workloads Inventory',
-        description='Workload identities, readiness, replica state, runtime status, and update strategy.',
-        icon='boxes',
-        family=REPORT_FAMILY_INVENTORY,
-        default_format=FORMAT_XLSX,
-        allowed_formats=_INVENTORY_FORMATS,
-        default_sections=_INVENTORY_SECTIONS,
-        period_mode='snapshot',
-    ),
-    ReportTypeSpec(
-        value='pod_inventory',
-        label='Pods Inventory',
-        description='Pod identities, ownership, phase, readiness, placement, restarts, and attached evidence.',
-        icon='box',
-        family=REPORT_FAMILY_INVENTORY,
-        default_format=FORMAT_XLSX,
-        allowed_formats=_INVENTORY_FORMATS,
-        default_sections=_INVENTORY_SECTIONS,
-        period_mode='snapshot',
-    ),
-    ReportTypeSpec(
-        value='service_inventory',
-        label='Services Inventory',
-        description='Service identities, types, addresses, ports, selectors, and exposure fields.',
-        icon='waypoints',
-        family=REPORT_FAMILY_INVENTORY,
-        default_format=FORMAT_XLSX,
-        allowed_formats=_INVENTORY_FORMATS,
-        default_sections=_INVENTORY_SECTIONS,
-        period_mode='snapshot',
-    ),
-    ReportTypeSpec(
-        value='ingress_inventory',
-        label='Ingresses Inventory',
-        description='Ingress identities, class, hosts, addresses, backend counts, and TLS references.',
-        icon='route',
-        family=REPORT_FAMILY_INVENTORY,
-        default_format=FORMAT_XLSX,
-        allowed_formats=_INVENTORY_FORMATS,
-        default_sections=_INVENTORY_SECTIONS,
-        period_mode='snapshot',
-    ),
-    ReportTypeSpec(
-        value='configuration_inventory',
-        label='Configuration Inventory',
-        description='ConfigMap and Secret metadata, key names, immutability, and payload size without values.',
-        icon='file-key-2',
-        family=REPORT_FAMILY_INVENTORY,
-        default_format=FORMAT_XLSX,
-        allowed_formats=_INVENTORY_FORMATS,
-        default_sections=_INVENTORY_SECTIONS,
-        period_mode='snapshot',
-    ),
-    ReportTypeSpec(
-        value='storage_inventory',
-        label='Storage Inventory',
-        description='StorageClass, persistent-volume, and persistent-volume-claim identities and lifecycle fields.',
-        icon='database-zap',
-        family=REPORT_FAMILY_INVENTORY,
-        default_format=FORMAT_XLSX,
-        allowed_formats=_INVENTORY_FORMATS,
-        default_sections=_INVENTORY_SECTIONS,
-        period_mode='snapshot',
-    ),
-    ReportTypeSpec(
-        value='tls_inventory',
-        label='TLS Certificate Inventory',
-        description='Certificate validity, usage references, hostname coverage, and collection evidence without private keys.',
-        icon='shield-check',
-        family=REPORT_FAMILY_INVENTORY,
-        default_format=FORMAT_XLSX,
-        allowed_formats=_INVENTORY_FORMATS,
-        default_sections=_INVENTORY_SECTIONS,
-        period_mode='snapshot',
-    ),
-)
+
+OUTPUT_FORMAT_SPECS, REPORT_TYPE_SPECS = _load_report_catalog()
 
 _REPORT_TYPE_BY_VALUE = {item.value: item for item in REPORT_TYPE_SPECS}
 

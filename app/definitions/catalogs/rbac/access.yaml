@@ -1,0 +1,413 @@
+schema_version: 1
+kind: rbac_access
+permissions:
+- key: dashboard.view
+  module: k8s_dashboard
+  action: view
+  description: View the Kubernetes operations dashboard.
+- key: clusters.view
+  module: k8s_cluster
+  action: view
+  description: View Kubernetes cluster records and connection status.
+- key: clusters.manage
+  module: k8s_cluster
+  action: manage
+  description: Create, edit, and delete Kubernetes cluster records.
+- key: clusters.sync
+  module: k8s_cluster
+  action: sync
+  description: Run Kubernetes cluster connectivity and inventory sync actions.
+- key: inventory.view
+  module: k8s_inventory
+  action: view
+  description: View Kubernetes inventory pages.
+- key: object_storage_inventory.view
+  module: storage_inventory
+  action: view
+  description: View committed Object Storage systems, buckets, containers, and inventory evidence.
+- key: storage.sync
+  module: storage_inventory
+  action: sync
+  description: Run object-storage inventory synchronization through canonical Job Execution.
+- key: kubernetes_configmaps.view
+  module: k8s_operations
+  action: view_configmap_management
+  description: View Kubernetes ConfigMap Management and live non-secret configuration values.
+- key: kubernetes_configmaps.create
+  module: k8s_operations
+  action: create_configmap
+  description: Create validated Kubernetes ConfigMaps.
+- key: kubernetes_configmaps.update
+  module: k8s_operations
+  action: update_configmap
+  description: Read and update Kubernetes ConfigMaps with diff preview and dry-run.
+- key: kubernetes_configmaps.delete
+  module: k8s_operations
+  action: delete_configmap
+  description: Delete Kubernetes ConfigMaps after impact review and explicit confirmation.
+- key: kubernetes_secrets.view
+  module: k8s_operations
+  action: view_secret_management
+  description: View Kubernetes Secret Management operations.
+- key: kubernetes_secrets.create
+  module: k8s_operations
+  action: create_secret
+  description: Create validated Kubernetes Secrets through guided workflows.
+- key: kubernetes_secrets.replace
+  module: k8s_operations
+  action: replace_secret_data
+  description: Replace selected data keys in existing non-TLS Kubernetes Secrets without reading current values.
+- key: kubernetes_secrets.delete
+  module: k8s_operations
+  action: delete_secret
+  description: Delete live Kubernetes Secrets after impact review, dry-run validation, and exact-name confirmation.
+- key: kubernetes_secrets.reveal
+  module: k8s_operations
+  action: reveal_secret_value
+  description: Request and perform protected one-time reveal of an approved Kubernetes Secret key.
+- key: kubernetes_secrets.approve_reveal
+  module: k8s_operations
+  action: approve_secret_reveal
+  description: Approve or deny protected Kubernetes Secret reveal requests from another user.
+- key: kubernetes_secrets.manage_reveal
+  module: platform_operations
+  action: manage_secret_reveal
+  description: Configure cluster readiness and namespace-level Protected Secret Reveal policies.
+- key: kubernetes_secrets.rotate_tls
+  module: k8s_operations
+  action: rotate_tls_secret
+  description: Validate and rotate an existing Kubernetes TLS Secret.
+- key: kubernetes_secrets.bulk_rotate_tls
+  module: k8s_operations
+  action: bulk_rotate_tls_secret
+  description: Validate and rotate multiple Kubernetes TLS Secrets.
+- key: analytics.view
+  module: k8s_analytics
+  action: view
+  description: View Kubernetes analytics, capacity, trend, and alert pages.
+- key: object_storage_analytics.view
+  module: storage_analytics
+  action: view
+  description: View Object Storage capacity, performance, forecast, consumer, and alert analytics.
+- key: governance.view
+  module: governance
+  action: view
+  description: View Kubernetes governance workspace and navigation.
+- key: tls_certificates.view
+  module: governance
+  action: view_tls_certificates
+  description: View Kubernetes TLS certificate inventory, expiry, issuer, and usage mapping.
+- key: tls_certificates.sync
+  module: governance
+  action: sync_tls_certificates
+  description: Refresh TLS certificate metadata from Kubernetes TLS Secrets.
+- key: intelligence.view
+  module: intelligence
+  action: view
+  description: View recommendation, alert intelligence, and intelligence catalog navigation.
+- key: knowledge.runbooks.view
+  module: knowledge
+  action: view_runbooks
+  description: View KAORI runbooks and published revisions.
+- key: knowledge.runbooks.manage
+  module: knowledge
+  action: manage_runbooks
+  description: Create and edit draft KAORI runbook revisions.
+- key: knowledge.runbooks.publish
+  module: knowledge
+  action: publish_runbooks
+  description: Publish, withdraw, and deprecate KAORI runbook revisions.
+- key: intelligence.decisions.view
+  module: intelligence
+  action: view_decisions
+  description: View persisted KAORI decisions, approval outcomes, and execution journals.
+- key: intelligence.decisions.create
+  module: intelligence
+  action: create_decisions
+  description: Create immutable KAORI decision snapshots from current recommendation evidence.
+- key: intelligence.decisions.approve
+  module: intelligence
+  action: approve_decisions
+  description: Approve or reject KAORI decisions that require explicit authorization.
+- key: intelligence.decisions.execute
+  module: intelligence
+  action: execute_decisions
+  description: Issue and consume one-time execution authorization for approved KAORI decisions.
+- key: reports.view
+  module: reports
+  action: view
+  description: View generated reports and reporting overview.
+- key: reports.generate
+  module: reports
+  action: generate
+  description: Generate and export operational reports.
+- key: reports.manage_templates
+  module: reports
+  action: manage_templates
+  description: Manage report templates.
+- key: reports.manage_schedules
+  module: reports
+  action: manage_schedules
+  description: Manage report schedules.
+- key: reports.manage_storage
+  module: reports
+  action: manage_storage
+  description: Manage report storage verification and cleanup.
+- key: jobs.view
+  module: platform_operations
+  action: view_jobs
+  description: View KAORI background jobs, queue activity, progress, and execution outcomes.
+- key: jobs.cancel
+  module: platform_operations
+  action: cancel_jobs
+  description: Request cancellation for eligible queued, analytics, and forecasting jobs.
+- key: jobs.execute
+  module: platform_operations
+  action: execute_jobs
+  description: Run supported KAORI jobs manually within the permissions of their owning domain.
+- key: jobs.configure
+  module: platform_operations
+  action: configure_jobs
+  description: Configure automatic schedules and execution policies for registered KAORI jobs.
+- key: settings.view
+  module: settings
+  action: view
+  description: View settings pages.
+- key: settings.manage_integrations
+  module: integrations
+  action: manage_integrations
+  description: Manage Prometheus, Alertmanager, and reporting integrations.
+- key: settings.view_operational_activity
+  module: access
+  action: view_operational_activity
+  description: View cross-user operational activity and background action audit records.
+- key: platform_operations.view_data_lifecycle
+  module: platform_operations
+  action: view_data_lifecycle
+  description: View retention policies, archive storage posture, and lifecycle archive history.
+- key: platform_operations.export_data_lifecycle
+  module: platform_operations
+  action: export_data_lifecycle
+  description: Download verified data lifecycle archives and manifests.
+- key: platform_operations.manage_data_lifecycle
+  module: platform_operations
+  action: manage_data_lifecycle
+  description: Configure policies and run, verify, or maintain lifecycle archives across data domains.
+- key: users.view
+  module: access
+  action: view_users
+  description: View user accounts and access assignments.
+- key: users.manage
+  module: access
+  action: manage_users
+  description: Create and update user accounts.
+- key: users.reset_password
+  module: access
+  action: reset_user_password
+  description: Reset passwords for database-managed user accounts.
+- key: users.activate
+  module: access
+  action: activate_users
+  description: Activate or deactivate local application access.
+- key: users.delete
+  module: access
+  action: delete_users
+  description: Soft delete user accounts.
+- key: roles.view
+  module: access
+  action: view_roles
+  description: View roles and permission assignments.
+- key: roles.manage
+  module: access
+  action: manage_roles
+  description: Create and update custom roles.
+- key: system.view
+  module: system
+  action: view
+  description: View system information.
+- key: system.manage
+  module: system
+  action: manage
+  description: Manage system-level settings.
+system_roles:
+- key: viewer
+  display_name: Viewer
+  description: Broad read-only infrastructure visibility across dashboard, cluster inventory, analytics, governance, intelligence,
+    ConfigMaps, and reports.
+  permissions:
+  - analytics.view
+  - clusters.view
+  - dashboard.view
+  - governance.view
+  - intelligence.decisions.view
+  - intelligence.view
+  - inventory.view
+  - knowledge.runbooks.view
+  - kubernetes_configmaps.view
+  - object_storage_analytics.view
+  - object_storage_inventory.view
+  - reports.view
+  - settings.view
+  - tls_certificates.view
+- key: operator
+  display_name: Operator
+  description: Daily infrastructure operations including sync, report generation, ConfigMap changes, TLS inventory refresh,
+    and controlled TLS Secret rotation.
+  permissions:
+  - analytics.view
+  - clusters.sync
+  - clusters.view
+  - dashboard.view
+  - governance.view
+  - intelligence.decisions.create
+  - intelligence.decisions.view
+  - intelligence.view
+  - inventory.view
+  - jobs.execute
+  - jobs.view
+  - knowledge.runbooks.manage
+  - knowledge.runbooks.view
+  - kubernetes_configmaps.create
+  - kubernetes_configmaps.update
+  - kubernetes_configmaps.view
+  - kubernetes_secrets.rotate_tls
+  - kubernetes_secrets.view
+  - object_storage_analytics.view
+  - object_storage_inventory.view
+  - reports.generate
+  - reports.view
+  - settings.view
+  - storage.sync
+  - tls_certificates.sync
+  - tls_certificates.view
+- key: editor
+  display_name: Editor
+  description: Infrastructure configuration access for clusters, integrations, Secrets, bulk TLS rotation, report templates,
+    schedules, and storage operations.
+  permissions:
+  - analytics.view
+  - clusters.manage
+  - clusters.sync
+  - clusters.view
+  - dashboard.view
+  - governance.view
+  - intelligence.decisions.approve
+  - intelligence.decisions.create
+  - intelligence.decisions.execute
+  - intelligence.decisions.view
+  - intelligence.view
+  - inventory.view
+  - jobs.cancel
+  - jobs.configure
+  - jobs.execute
+  - jobs.view
+  - knowledge.runbooks.manage
+  - knowledge.runbooks.publish
+  - knowledge.runbooks.view
+  - kubernetes_configmaps.create
+  - kubernetes_configmaps.update
+  - kubernetes_configmaps.view
+  - kubernetes_secrets.bulk_rotate_tls
+  - kubernetes_secrets.create
+  - kubernetes_secrets.replace
+  - kubernetes_secrets.rotate_tls
+  - kubernetes_secrets.view
+  - object_storage_analytics.view
+  - object_storage_inventory.view
+  - reports.generate
+  - reports.manage_schedules
+  - reports.manage_storage
+  - reports.manage_templates
+  - reports.view
+  - settings.manage_integrations
+  - settings.view
+  - storage.sync
+  - tls_certificates.sync
+  - tls_certificates.view
+- key: admin
+  display_name: Admin
+  description: Application administration across users, roles, integrations, operations, retention, and protected settings,
+    excluding direct Secret reveal.
+  permissions:
+  - analytics.view
+  - clusters.manage
+  - clusters.sync
+  - clusters.view
+  - dashboard.view
+  - governance.view
+  - intelligence.decisions.approve
+  - intelligence.decisions.create
+  - intelligence.decisions.execute
+  - intelligence.decisions.view
+  - intelligence.view
+  - inventory.view
+  - jobs.cancel
+  - jobs.configure
+  - jobs.execute
+  - jobs.view
+  - knowledge.runbooks.manage
+  - knowledge.runbooks.publish
+  - knowledge.runbooks.view
+  - kubernetes_configmaps.create
+  - kubernetes_configmaps.delete
+  - kubernetes_configmaps.update
+  - kubernetes_configmaps.view
+  - kubernetes_secrets.approve_reveal
+  - kubernetes_secrets.bulk_rotate_tls
+  - kubernetes_secrets.create
+  - kubernetes_secrets.delete
+  - kubernetes_secrets.manage_reveal
+  - kubernetes_secrets.replace
+  - kubernetes_secrets.rotate_tls
+  - kubernetes_secrets.view
+  - object_storage_analytics.view
+  - object_storage_inventory.view
+  - platform_operations.export_data_lifecycle
+  - platform_operations.manage_data_lifecycle
+  - platform_operations.view_data_lifecycle
+  - reports.generate
+  - reports.manage_schedules
+  - reports.manage_storage
+  - reports.manage_templates
+  - reports.view
+  - roles.manage
+  - roles.view
+  - settings.manage_integrations
+  - settings.view
+  - settings.view_operational_activity
+  - storage.sync
+  - system.manage
+  - system.view
+  - tls_certificates.sync
+  - tls_certificates.view
+  - users.activate
+  - users.delete
+  - users.manage
+  - users.reset_password
+  - users.view
+- key: auditor
+  display_name: Auditor
+  description: Read-only infrastructure, user, role, system, audit, and archive-export visibility without operational write
+    access.
+  permissions:
+  - analytics.view
+  - clusters.view
+  - dashboard.view
+  - governance.view
+  - intelligence.decisions.view
+  - intelligence.view
+  - inventory.view
+  - jobs.view
+  - knowledge.runbooks.view
+  - kubernetes_configmaps.view
+  - object_storage_analytics.view
+  - object_storage_inventory.view
+  - platform_operations.export_data_lifecycle
+  - platform_operations.view_data_lifecycle
+  - reports.view
+  - roles.view
+  - settings.view
+  - settings.view_operational_activity
+  - system.view
+  - tls_certificates.view
+  - users.view
