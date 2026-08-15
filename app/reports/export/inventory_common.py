@@ -12,6 +12,7 @@ from app.reports.catalog import (
     validate_report_instance,
 )
 from app.reports.export.payloads.inventory import get_report_kubernetes_inventory_payload
+from app.reports.export.payloads.object_storage_inventory import get_report_object_storage_inventory_payload
 from app.reports.export.payloads.tls_inventory import get_report_tls_inventory_payload
 from app.reports.export.tabular import TabularExportMetadata, build_record_reference
 from app.reports.export.xlsx.standard import (
@@ -19,7 +20,7 @@ from app.reports.export.xlsx.standard import (
     get_inventory_workbook_profile,
 )
 from app.reports.reference import build_report_reference
-from app.reports.storage.naming import get_report_cluster_name
+from app.reports.scope import OBJECT_STORAGE_SYSTEM_ASSET_TYPE, resolve_report_scope
 
 
 @dataclass(frozen=True, slots=True)
@@ -35,6 +36,8 @@ class InventoryExportContext:
     data_cutoff: datetime | str | None
     source_label: str = 'Kubernetes Committed Inventory'
     classification: str = 'Internal'
+    scope_label: str = 'Kubernetes Cluster'
+    scope_asset_type: str = 'kubernetes_cluster'
 
     def tabular_metadata(self, *, format_standard: str) -> TabularExportMetadata:
         report_spec = get_report_type_spec(self.report_type)
@@ -114,6 +117,8 @@ PERIOD_LABELS = {
 
 def collect_inventory_payload(report: Report) -> dict[str, Any]:
     validate_report_instance(report)
+    if report.report_type == 'object_storage_inventory':
+        return get_report_object_storage_inventory_payload(report)
     if report.report_type == 'tls_inventory':
         return get_report_tls_inventory_payload(report)
     return get_report_kubernetes_inventory_payload(report)
@@ -126,21 +131,29 @@ def build_inventory_export_context(
     generated_at: datetime | None = None,
 ) -> InventoryExportContext:
     validate_report_instance(report)
-    cluster_scope = get_report_cluster_name(report)
-    if not cluster_scope:
-        raise ValueError('The selected cluster no longer exists or cannot be resolved.')
+    scope = resolve_report_scope(report)
+    if scope is None:
+        raise ValueError('The selected report asset no longer exists or cannot be resolved.')
 
     generated_at = generated_at or datetime.now(UTC)
+    object_storage_scope = scope.asset_type == OBJECT_STORAGE_SYSTEM_ASSET_TYPE
     return InventoryExportContext(
         report_id=build_report_reference(report, generated_at=generated_at),
         report_name=report.name,
         report_type=report.report_type,
         generated_at=generated_at,
         generated_by=generated_by_label(report),
-        cluster_scope=cluster_scope,
-        namespace_scope=report.namespace or 'All Namespaces',
+        cluster_scope=scope.label,
+        namespace_scope='Not Applicable' if object_storage_scope else (report.namespace or 'All Namespaces'),
         period_label=PERIOD_LABELS.get(report.period, report.period or 'Current Inventory Snapshot'),
         data_cutoff=payload.get('data_cutoff') or payload.get('collected_at') or generated_at,
+        source_label=(
+            str(payload.get('source_label') or 'Object Storage Committed Inventory')
+            if object_storage_scope
+            else 'Kubernetes Committed Inventory'
+        ),
+        scope_label=scope.scope_label,
+        scope_asset_type=scope.asset_type,
     )
 
 

@@ -76,9 +76,9 @@ def test_planned_report_coverage_is_definition_owned_not_embedded_in_overview_se
     assert document['kind'] == 'report_coverage_catalog'
     assert {item['key'] for item in document['domains']} == {'object_storage', 'server', 'hci'}
     object_storage = next(item for item in document['domains'] if item['key'] == 'object_storage')
-    assert object_storage['status'] == 'Evidence Ready'
-    assert object_storage['tone'] == 'info'
-    assert len(object_storage['items']) == 5
+    assert object_storage['status'] == 'Published'
+    assert object_storage['tone'] == 'normal'
+    assert len(object_storage['items']) == 3
     assert 'SERVER_REPORT_TYPE_COVERAGE' not in service
     assert 'HCI_REPORT_TYPE_COVERAGE' not in service
     assert 'REPORT_COVERAGE_DOMAINS' in service
@@ -91,15 +91,15 @@ def test_reports_overview_surfaces_object_storage_without_overclaiming_generate_
     coverage = yaml.safe_load(read('app/definitions/catalogs/reports/coverage.yaml'))
 
     object_storage = next(item for item in coverage['domains'] if item['key'] == 'object_storage')
-    assert object_storage['status'] == 'Evidence Ready'
-    assert 'canonical report contracts are not yet published' in object_storage['description']
-    assert 'Object Storage Inventory Report' in {item['name'] for item in object_storage['items']}
+    assert object_storage['status'] == 'Published'
+    assert 'Two canonical Object Storage report contracts are published' in object_storage['description']
+    assert 'Object Storage Inventory Report' not in {item['name'] for item in object_storage['items']}
     assert 'Object Storage Forecast Report' in {item['name'] for item in object_storage['items']}
     assert "'status': 'Published'" in service
-    assert "'published_count': 0" in service
+    assert "'published_count': len(published_items)" in service
     assert 'Reporting Domain Coverage' in estate
     assert 'Only Published contracts are selectable in Generate.' in estate
-    assert 'Evidence Ready means KAORI already has committed inventory or analytics evidence' in estate
+    assert 'Published means both a canonical report contract and renderer are registered' in estate
 
 
 def test_reports_overview_does_not_execute_legacy_unrendered_context_builders() -> None:

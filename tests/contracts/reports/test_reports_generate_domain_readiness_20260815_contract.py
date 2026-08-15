@@ -7,16 +7,22 @@ def read(relative: str) -> str:
     return (ROOT / relative).read_text(encoding='utf-8')
 
 
-def test_generate_keeps_only_published_scope_contracts_until_object_storage_scope_is_implemented() -> None:
+def test_generate_publishes_object_storage_scope_contracts_only_after_generic_scope_is_implemented() -> None:
     page = read('app/templates/reports/generate/index.html')
-    catalog = read('app/definitions/catalogs/reports/coverage.yaml')
+    catalog = read('app/definitions/catalogs/reports/catalog.yaml')
+    service = read('app/reports/generate/service.py')
 
-    assert 'Single Cluster Scope' in page
-    assert 'Kubernetes Scope' in page
-    assert 'Object Storage Inventory Report' in catalog
-    assert 'Object Storage Capacity Analysis Report' in catalog
-    assert 'Object Storage Inventory Report' not in page
-    assert 'Object Storage Capacity Analysis Report' not in page
+    assert 'Infrastructure Asset Scope' in page
+    assert 'Infrastructure Scope' in page
+    assert 'id="object-storage-system-select"' in page
+    assert 'data-report-scope-panel="object_storage_system"' in page
+    assert "('object_storage', 'Object Storage')" in page
+    assert 'value: object_storage_inventory' in catalog
+    assert 'value: object_storage_analysis' in catalog
+    assert 'default_format: xlsx' in catalog
+    assert 'default_format: pdf' in catalog
+    assert "'object_storage_system_id':" in service
+    assert 'ObjectStorageSystem' in service
 
 
 def test_generate_exposes_canonical_family_format_policy() -> None:

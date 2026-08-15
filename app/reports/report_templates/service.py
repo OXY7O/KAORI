@@ -28,7 +28,6 @@ from app.reports.export.constants import (
     DEFAULT_REPORT_SOURCE_KIND,
     REPORT_DOMAIN_DESCRIPTIONS,
     REPORT_DOMAIN_LABELS,
-    SOURCE_KIND_LABELS,
 )
 from app.reports.generate.service import SECTION_OPTIONS
 
@@ -40,8 +39,8 @@ SYSTEM_TEMPLATE_ITEMS: list[dict[str, Any]] = [
         'report_type_label': spec.label.removesuffix(' Report'),
         'description': spec.description,
         'status': 'system',
-        'report_domain': DEFAULT_REPORT_DOMAIN,
-        'source_kind': DEFAULT_REPORT_SOURCE_KIND,
+        'report_domain': spec.domain,
+        'source_kind': spec.source_kind,
         'output_format': spec.default_format.upper(),
         'allowed_formats': [value.upper() for value in spec.allowed_formats],
         'icon': spec.icon,
@@ -142,7 +141,7 @@ def build_system_template_item(template: dict[str, Any]) -> dict[str, Any]:
         'delete_href': '',
         'customization_status': 'Read-only system template',
         'updated_label': 'System baseline',
-        'created_by_label': 'KAORI Kubernetes Reports',
+        'created_by_label': 'KAORI System Reports',
         'can_edit': False,
         'can_delete': False,
         'can_duplicate': True,
@@ -389,8 +388,9 @@ def apply_template_state(template: ReportTemplate, form_state: dict[str, Any]) -
     template.name = form_state['name']
     template.description = form_state['description'] or None
     template.report_type = form_state['report_type']
-    template.report_domain = DEFAULT_REPORT_DOMAIN
-    template.source_kind = DEFAULT_REPORT_SOURCE_KIND
+    spec = get_report_type_spec(template.report_type)
+    template.report_domain = spec.domain
+    template.source_kind = spec.source_kind
     template.status = form_state['status']
     template.output_format = form_state['output_format']
     template.sections = form_state['sections']
@@ -575,13 +575,13 @@ def count_active_filters(selected_filters: dict[str, str]) -> int:
 
 def get_report_architecture_context() -> dict[str, Any]:
     return {
-        'current_domain_label': REPORT_DOMAIN_LABELS.get(DEFAULT_REPORT_DOMAIN, 'KAORI Kubernetes Reports'),
-        'current_source_label': SOURCE_KIND_LABELS.get(DEFAULT_REPORT_SOURCE_KIND, 'Kubernetes'),
+        'current_domain_label': 'KAORI Published Reports',
+        'current_source_label': 'Kubernetes + Object Storage',
         'server_label': REPORT_DOMAIN_LABELS.get('server', 'KAORI Server Reports'),
         'hci_label': REPORT_DOMAIN_LABELS.get('hci', 'KAORI HCI Reports'),
         'server_description': REPORT_DOMAIN_DESCRIPTIONS.get('server', ''),
         'hci_description': REPORT_DOMAIN_DESCRIPTIONS.get('hci', ''),
-        'status': 'KAORI Kubernetes Reports ready · KAORI Server Reports and KAORI HCI Reports integration scope',
+        'status': 'Kubernetes and Object Storage report contracts ready · Server and HCI coverage remains planned',
     }
 
 
@@ -598,7 +598,7 @@ def get_renderer_readiness() -> list[dict[str, str]]:
     return [
         {
             'label': 'System template catalog',
-            'description': 'Default templates are available for the implemented KAORI Kubernetes Reports report families.',
+            'description': 'Default templates are available for published Kubernetes and Object Storage report contracts.',
             'status': 'Ready',
             'tone': 'green',
             'icon': 'check-circle-2',

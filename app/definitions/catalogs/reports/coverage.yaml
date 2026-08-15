@@ -3,17 +3,11 @@ kind: report_coverage_catalog
 domains:
   - key: object_storage
     label: Object Storage Reports
-    description: Committed Object Storage inventory and analytics evidence are available; canonical report contracts are not yet published to the Generate workflow.
+    description: Two canonical Object Storage report contracts are published; additional focused analytics contracts remain evidence-ready candidates.
     icon: database
-    status: Evidence Ready
-    tone: info
+    status: Published
+    tone: normal
     items:
-      - name: Object Storage Inventory Report
-        description: Provider-neutral systems, buckets or containers, capacity, protection posture, ownership, and committed inventory evidence.
-        icon: database-backup
-      - name: Object Storage Capacity Analysis Report
-        description: Capacity, usage, free headroom, quota posture, and provider-aware storage pressure from qualified Object Storage metrics.
-        icon: gauge
       - name: Object Storage Forecast Report
         description: Worker-materialized growth projection, threshold timing, evidence freshness, and projected capacity boundaries.
         icon: chart-spline

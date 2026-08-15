@@ -18,7 +18,7 @@ Reports orchestrates report configuration, selected-cluster validation, source c
 
 - Analytics: PDF or CSV; PDF is the default.
 - Inventory: XLSX or CSV; XLSX is the default.
-- Every report and schedule requires one selected Kubernetes cluster.
+- Every report and schedule requires one canonical infrastructure asset scope. Kubernetes reports use one selected cluster with optional namespace; Object Storage reports use one registered Object Storage system.
 - Cross-cluster and default-cluster fallback behavior is prohibited.
 - Generic artifact routes and lifecycle fields are format-neutral.
 
@@ -36,7 +36,7 @@ All report workspaces use the KAORI Violet Infrastructure design system: solid v
 
 Artifact presentation is also standardized:
 
-- Analytics PDF uses the shared Analytics publication component and stylesheet.
+- Analytics PDF uses the shared Analytics publication component/style system with domain-specific publication templates where required.
 - Inventory XLSX uses the reusable three-sheet workbook contract.
 - Analytics and Inventory CSV use one canonical CSV standard and shared source models.
 
@@ -65,7 +65,7 @@ Reports Overview is the operational landing workspace for the Reports domain. It
 
 1. Reporting Posture: the canonical KAORI hero owns page identity, infrastructure scope, artifact readiness, and two compact operational metrics.
 2. Reporting Operational Posture: Reports worker/queue readiness, active schedules, artifact storage health, current generation demand, and resolved completion quality.
-3. Artifact Estate & Report Capability: retained artifact footprint, output-format distribution, reusable automation, and canonical Analytics/Inventory report families.
+3. Report Coverage & Artifact Estate: publication coverage by infrastructure domain, retained artifact footprint/mix, output-contract boundaries, and reusable automation.
 
 Generic helper callouts are avoided on the Overview. Operational interpretation uses `Operational Reading`, while export guidance is expressed as an `Output Contract` boundary. Planned Server/VM and HCI coverage is definition-owned in `app/definitions/catalogs/reports/coverage.yaml`; the Overview service must not embed future report catalogs as Python literals.
 

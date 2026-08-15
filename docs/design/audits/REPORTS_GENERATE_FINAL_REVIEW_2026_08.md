@@ -2,7 +2,7 @@
 
 ## Decision
 
-Generate remains a published-contract workspace. A report type is not exposed until its scope contract, collector/exporter, renderer, and persistence boundary are available.
+Generate remains a published-contract workspace. A report type is exposed only after its scope contract, collector/exporter, renderer, persistence boundary, and worker handoff are available.
 
 ## Format policy
 
@@ -10,19 +10,22 @@ Generate remains a published-contract workspace. A report type is not exposed un
 - Inventory reports: XLSX is the governed workbook default; CSV remains available for flat export and automation.
 - Analytics does not add XLSX by default because it duplicates the CSV machine-readable contract without meaningful additional governance value.
 
-## Object Storage gap
+## Published Object Storage contracts
 
-Object Storage evidence is ready, but Generate still persists Kubernetes scope through `cluster_id` and optional namespace. Publishing Object Storage report types before a provider-neutral asset-scope contract would create a false executable surface.
+The provider-neutral report asset scope is now implemented end to end. Generate publishes the first two Object Storage report contracts:
 
-The first Object Storage report contracts should be:
+1. Object Storage Inventory Report — XLSX default, CSV alternative.
+2. Object Storage Analysis Report — PDF default, CSV alternative.
 
-1. Object Storage Inventory Report — XLSX + CSV.
-2. Object Storage Analysis Report — PDF + CSV.
-
-Before publication, add a provider-neutral report scope that can identify an Object Storage System and update request persistence, schedules, collectors, exporters, generated-report presentation, and report-reference metadata.
+Object Storage reports bind one registered Object Storage System. Kubernetes reports continue to bind one Kubernetes Cluster with an optional Namespace. Both are persisted through the canonical `scope_asset_type` / `scope_asset_id` boundary while legacy `cluster_id` / `namespace` remain available for backward compatibility.
 
 ## Generate hierarchy
 
 Hero → Report Contract → Infrastructure Scope → Artifact / Format Policy → Report Content → Review & Queue.
 
-The workspace must remain compact and must not expose evidence-ready candidate reports as selectable Generate contracts.
+The scope control is contract-owned:
+
+- Kubernetes report → Kubernetes Cluster + optional Namespace.
+- Object Storage report → Object Storage System.
+
+Only published contracts are selectable. Remaining Object Storage Forecast, Top Consumers, and Alerts & Anomalies coverage stays non-executable until each focused contract is separately published.

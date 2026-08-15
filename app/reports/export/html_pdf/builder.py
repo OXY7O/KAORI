@@ -40,6 +40,7 @@ from app.reports.export.html_pdf.storage_analysis import build_storage_analysis_
 from app.reports.export.html_pdf.top_consumers_analysis import build_top_consumers_analysis_presentation
 from app.reports.export.html_pdf.workload_analysis import build_workload_analysis_presentation
 from app.reports.reference import build_report_reference
+from app.reports.scope import OBJECT_STORAGE_SYSTEM_ASSET_TYPE, resolve_report_scope
 
 _SECTION_SOURCE_PATHS: dict[str, tuple[str, ...]] = {
     'analytics_summary': ('health_summary', 'summary'),
@@ -84,6 +85,14 @@ _SECTION_SOURCE_PATHS: dict[str, tuple[str, ...]] = {
     'incident_readiness': ('incident_readiness',),
     'anomaly_context': ('anomalies',),
     'affected_resources': ('alerts', 'anomalies'),
+    'object_storage_capacity_usage': ('capacity_usage', 'summary'),
+    'object_storage_bucket_distribution': ('bucket_rows',),
+    'object_storage_quota_headroom': ('bucket_analysis', 'capacity_usage'),
+    'object_storage_performance': ('performance',),
+    'object_storage_forecast': ('forecast_display', 'forecast_materialization'),
+    'object_storage_top_consumers': ('top_consumers',),
+    'object_storage_risk_findings': ('risk_findings', 'signals', 'signal_posture', 'operational_posture', 'alert_posture'),
+    'methodology_evidence_boundary': ('evidence_boundary',),
 }
 
 _SECTION_DESCRIPTIONS: dict[str, str] = {
@@ -96,6 +105,14 @@ _SECTION_DESCRIPTIONS: dict[str, str] = {
     'forecast_summary': 'Projected resource growth, threshold exposure, and historical signal quality for the selected horizon.',
     'alert_severity_summary': 'Distribution of active alert signals by operational severity.',
     'source_health': 'Connectivity and readiness posture of the alert and analytics source integrations.',
+    'object_storage_capacity_usage': 'Committed capacity, usage, utilization, and remaining headroom for the selected Object Storage system.',
+    'object_storage_bucket_distribution': 'Bucket and container distribution derived from the latest committed Object Storage inventory snapshot.',
+    'object_storage_quota_headroom': 'Quota evidence, quota utilization, and remaining headroom for governed Object Storage capacity review.',
+    'object_storage_performance': 'Validated request, error, traffic, waiting, and node availability evidence for the selected reporting period.',
+    'object_storage_forecast': 'Worker-materialized Object Storage forecast evidence and its current publication readiness.',
+    'object_storage_top_consumers': 'Highest retained Object Storage consumers in the selected committed inventory boundary.',
+    'object_storage_risk_findings': 'Operational signals, alert posture, and risk conditions requiring accountable review.',
+    'methodology_evidence_boundary': 'Authoritative source ownership, data cut-off, and limitations used to build this governed publication.',
 }
 
 
@@ -129,7 +146,7 @@ def build_report_document(
         or 'KAORI Automation'
     )
     cluster_scope = _cluster_scope(report, payload)
-    namespace_scope = sanitize_text(getattr(report, 'namespace', None), fallback='All Namespaces')
+    namespace_scope = _secondary_scope(report)
     internal_report_id = str(getattr(report, 'id', '-'))
     report_id = build_report_reference(report, generated_at=generated_at)
     report_name = sanitize_text(getattr(report, 'name', None), fallback='KAORI Operational Report')
@@ -142,20 +159,31 @@ def build_report_document(
     template_name = 'reports/pdf/analytics_unavailable.html'
     presentation: dict[str, Any] = {}
     if payload.get('_error'):
-        presentation = _build_unavailable_presentation(
-            report,
-            payload,
-            report_reference=report_id,
-            report_name=report_name,
-            report_type_label=report_type_label,
-            cluster_scope=cluster_scope,
-            namespace_scope=namespace_scope,
-            period_label=period_label,
-            data_cutoff=data_cutoff,
-            generated_at=generated_at_label,
-            generated_by=generated_by_label,
-            classification=classification,
-        )
+        if report.report_type == 'object_storage_analysis':
+            template_name = 'reports/pdf/object_storage_analysis.html'
+            presentation = {
+                'report_id': report_id,
+                'classification': classification,
+                'page_count': 1 + len(sections),
+                'scope_value': cluster_scope,
+                'source_label': 'Object Storage Evidence Unavailable',
+                'metrics_contract': 'Generation Limited',
+            }
+        else:
+            presentation = _build_unavailable_presentation(
+                report,
+                payload,
+                report_reference=report_id,
+                report_name=report_name,
+                report_type_label=report_type_label,
+                cluster_scope=cluster_scope,
+                namespace_scope=namespace_scope,
+                period_label=period_label,
+                data_cutoff=data_cutoff,
+                generated_at=generated_at_label,
+                generated_by=generated_by_label,
+                classification=classification,
+            )
     elif report.report_type == 'analytics_overview':
         template_name = 'reports/pdf/analytics_overview.html'
         presentation = build_analytics_overview_presentation(
@@ -278,6 +306,24 @@ def build_report_document(
             generated_by=generated_by_label,
             classification=classification,
         )
+    elif report.report_type == 'object_storage_analysis':
+        template_name = 'reports/pdf/object_storage_analysis.html'
+        metrics_source = payload.get('metrics_source') if isinstance(payload.get('metrics_source'), Mapping) else {}
+        metrics_readiness = payload.get('metrics_readiness') if isinstance(payload.get('metrics_readiness'), Mapping) else {}
+        presentation = {
+            'report_id': report_id,
+            'classification': classification,
+            'page_count': 1 + len(sections),
+            'scope_value': cluster_scope,
+            'source_label': sanitize_text(
+                metrics_source.get('provider_label') or metrics_source.get('label'),
+                fallback='Object Storage Evidence',
+            ),
+            'metrics_contract': sanitize_text(
+                metrics_readiness.get('label') or metrics_readiness.get('status'),
+                fallback='Evidence Boundary Recorded',
+            ),
+        }
 
     return ReportDocument(
         report_id=report_id,
@@ -305,7 +351,7 @@ def build_report_document(
             'Report content follows the section order saved by the existing KAORI Template System.',
             'Data is collected before rendering. The HTML template and WeasyPrint renderer do not query external systems directly.',
             'Unavailable sources are shown as report limitations and are excluded from conclusions that require live evidence.',
-            'Critical operational decisions should be verified against live cluster data and the related JobExecution evidence.',
+            'Critical operational decisions should be verified against live infrastructure evidence and the related JobExecution record.',
         ),
         template_label=f'{report_type_label} Template',
         template_name=template_name,
@@ -354,7 +400,13 @@ def _build_section(report: Any, payload: Mapping[str, Any], section_key: str, nu
     findings = (
         findings_from_value(value)
         if not tables
-        or section_key in {'risk_overview', 'capacity_pressure_risk', 'governance_findings', 'resource_hotspots'}
+        or section_key in {
+            'risk_overview',
+            'capacity_pressure_risk',
+            'governance_findings',
+            'resource_hotspots',
+            'object_storage_risk_findings',
+        }
         else ()
     )
 
@@ -396,15 +448,32 @@ def _build_section(report: Any, payload: Mapping[str, Any], section_key: str, nu
 
 
 def _build_executive_summary(report: Any, payload: Mapping[str, Any], number: int) -> ReportSection:
+    scope_asset_type = str(getattr(report, 'scope_asset_type', '') or '')
     metrics: list[ReportMetric] = [
-        ReportMetric('Cluster Scope', _cluster_scope(report, payload), tone='info'),
-        ReportMetric('Namespace Scope', sanitize_text(getattr(report, 'namespace', None), fallback='All Namespaces')),
+        ReportMetric(
+            'Object Storage System' if scope_asset_type == OBJECT_STORAGE_SYSTEM_ASSET_TYPE else 'Cluster Scope',
+            _cluster_scope(report, payload),
+            tone='info',
+        ),
         ReportMetric('Reporting Period', _report_period_label(report)),
     ]
+    if scope_asset_type != OBJECT_STORAGE_SYSTEM_ASSET_TYPE:
+        metrics.insert(
+            1,
+            ReportMetric(
+                'Namespace Scope',
+                sanitize_text(getattr(report, 'namespace', None), fallback='All Namespaces'),
+            ),
+        )
 
-    cluster = payload.get('cluster') or payload.get('selected_cluster')
-    if isinstance(cluster, Mapping):
-        environment = cluster.get('environment')
+    selected_asset = (
+        payload.get('selected_system')
+        or payload.get('system')
+        or payload.get('cluster')
+        or payload.get('selected_cluster')
+    )
+    if isinstance(selected_asset, Mapping):
+        environment = selected_asset.get('environment')
         if environment:
             metrics.append(ReportMetric('Environment', sanitize_text(environment), tone='info'))
 
@@ -501,19 +570,38 @@ def _report_period_label(report: Any) -> str:
 
 
 def _cluster_scope(report: Any, payload: Mapping[str, Any]) -> str:
-    cluster = payload.get('cluster') or payload.get('selected_cluster')
-    if isinstance(cluster, Mapping):
-        name = cluster.get('name')
-        identifier = cluster.get('id')
+    selected_asset = (
+        payload.get('selected_system')
+        or payload.get('system')
+        or payload.get('cluster')
+        or payload.get('selected_cluster')
+    )
+    if isinstance(selected_asset, Mapping):
+        name = selected_asset.get('name')
+        identifier = selected_asset.get('id')
         if name:
             return sanitize_text(name)
         if identifier:
             return sanitize_text(identifier)
-    return sanitize_text(getattr(report, 'cluster_id', None), fallback='Selected Cluster Unavailable')
+
+    snapshot = getattr(report, 'scope_asset_label_snapshot', None)
+    if snapshot:
+        return sanitize_text(snapshot)
+    scope = resolve_report_scope(report)
+    if scope is not None:
+        return sanitize_text(scope.label)
+    return sanitize_text(getattr(report, 'cluster_id', None), fallback='Selected Asset Unavailable')
+
+
+def _secondary_scope(report: Any) -> str:
+    scope_asset_type = str(getattr(report, 'scope_asset_type', '') or '')
+    if scope_asset_type == OBJECT_STORAGE_SYSTEM_ASSET_TYPE:
+        return 'System Scope'
+    return sanitize_text(getattr(report, 'namespace', None), fallback='All Namespaces')
 
 
 def _derive_data_cutoff(payload: Mapping[str, Any], generated_at: datetime) -> str:
-    for key in ('generated_at', 'last_analyzed_at', 'collected_at', 'updated_at'):
+    for key in ('data_cutoff', 'last_analyzed_at', 'collected_at', 'updated_at', 'generated_at'):
         value = payload.get(key)
         if value:
             return sanitize_text(value)
@@ -573,13 +661,13 @@ def _build_unavailable_presentation(
             'steps': (
                 'Review integration readiness and the related JobExecution record.',
                 'Restore the required source, permission, or worker dependency.',
-                'Regenerate the report for the same selected cluster and reporting period.',
+                'Regenerate the report for the same selected infrastructure asset and reporting period.',
                 'Validate the regenerated artifact before operational use.',
             ),
             'controls': (
                 ('Renderer', 'WeasyPrint HTML/PDF'),
-                ('Source Boundary', cluster_scope),
-                ('Namespace Boundary', namespace_scope),
+                ('Asset Boundary', cluster_scope),
+                ('Secondary Scope', namespace_scope),
                 ('Reporting Period', period_label),
                 ('Data Cut-off', data_cutoff),
                 ('Output', 'PDF'),

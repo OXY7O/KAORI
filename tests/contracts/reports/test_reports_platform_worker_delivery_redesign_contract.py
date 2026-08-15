@@ -37,7 +37,7 @@ def test_reports_pages_use_standard_heroes_and_compact_summary_strips() -> None:
     assert 'page_hero.layout_classes()' in generate
     assert 'page_hero.content_classes()' in generate
     assert 'page_hero.context_card(' in generate
-    assert 'Single Cluster Scope' in generate
+    assert 'Infrastructure Asset Scope' in generate
     assert 'Catalog-Driven Contract' in generate
     assert 'Queued Artifact Generation' in generate
     assert 'data-generate-report-workspace="compact-operator-workspace"' in generate
@@ -140,7 +140,7 @@ def test_generated_registry_surfaces_storage_outage_without_breaking_list() -> N
 
 
 def test_report_schedule_dispatcher_uses_canonical_worker_job() -> None:
-    definition = read(ROOT / 'app' / 'definitions' / 'catalogs' / 'jobs' / 'registered_jobs.yaml')
+    definition = read(ROOT / 'app' / 'jobs' / 'definitions' / 'report_schedule.py')
     registry = read(ROOT / 'app' / 'jobs' / 'registry.py')
     adapter = read(ROOT / 'app' / 'reports' / 'schedules' / 'job_adapter.py')
     task = read(ROOT / 'app' / 'reports' / 'schedules' / 'tasks.py')
@@ -150,9 +150,9 @@ def test_report_schedule_dispatcher_uses_canonical_worker_job() -> None:
     devcontainer = read(ROOT / '.devcontainer' / 'devcontainer.json')
     queue_contract = read(ROOT / 'app' / 'reports' / 'jobs' / 'queue.py')
 
-    assert 'key: reports.schedule.dispatch' in definition
-    assert 'queue_name: reports' in definition
-    assert 'load_job_definitions()' in registry
+    assert "key='reports.schedule.dispatch'" in definition
+    assert "queue_name='reports'" in definition
+    assert 'REPORT_SCHEDULE_DEFINITION' in registry
     assert 'enqueue_canonical_job(' in adapter
     assert "name='app.reports.schedules.tasks.run_report_schedule_job'" in task
     assert "'app.reports.schedules.tasks'" in config
@@ -206,8 +206,8 @@ def test_report_user_interfaces_do_not_expose_mvp_copy() -> None:
 
 
 def test_generate_report_uses_the_canonical_family_format_and_scope_contract() -> None:
-    catalog = read(ROOT / 'app' / 'definitions' / 'catalogs' / 'reports' / 'catalog.yaml')
-    catalog_code = read(ROOT / 'app' / 'reports' / 'catalog.py')
+    catalog = read(ROOT / 'app' / 'reports' / 'catalog.py')
+    catalog_definitions = read(ROOT / 'app' / 'definitions' / 'catalogs' / 'reports' / 'catalog.yaml')
     generate_service = read(ROOT / 'app' / 'reports' / 'generate' / 'service.py')
     generate_template = read(REPORT_TEMPLATES / 'generate' / 'index.html')
     analytics_collectors = read(ROOT / 'app' / 'reports' / 'export' / 'html_pdf' / 'collectors.py')
@@ -230,12 +230,15 @@ def test_generate_report_uses_the_canonical_family_format_and_scope_contract() -
     )
 
     for report_type in inventory_report_types:
-        assert f'value: {report_type}' in catalog
+        assert f'- value: {report_type}' in catalog_definitions
 
-    assert 'family: analytics' in catalog and '- pdf' in catalog and '- csv' in catalog
-    assert 'family: inventory' in catalog and '- xlsx' in catalog and '- csv' in catalog
-    assert 'requires_cluster: bool = True' in catalog_code
-    assert 'Cross-cluster report generation is disabled.' in catalog_code
+    assert '- value: object_storage_inventory' in catalog_definitions
+    assert '- value: object_storage_analysis' in catalog_definitions
+    assert 'allowed_formats:' in catalog_definitions
+    assert '- pdf' in catalog_definitions and '- csv' in catalog_definitions
+    assert '- xlsx' in catalog_definitions
+    assert 'requires_cluster: bool = True' in catalog
+    assert 'Cross-cluster report generation is disabled.' in catalog
 
     assert 'FORMAT_PDF: render_weasyprint_pdf' in artifact_registry
     assert 'FORMAT_XLSX: render_inventory_xlsx' in artifact_registry
@@ -246,12 +249,15 @@ def test_generate_report_uses_the_canonical_family_format_and_scope_contract() -
     assert 'filter_current_generation(query, model)' in inventory_payload
     assert 'query = query.filter(model.cluster_id == cluster_id)' in inventory_payload
 
-    assert "('analytics', 'Kubernetes Analytics')" in generate_template
-    assert "('inventory', 'Kubernetes Inventory')" in generate_template
+    assert "('kubernetes', 'Kubernetes')" in generate_template
+    assert "('object_storage', 'Object Storage')" in generate_template
+    assert "('analytics', 'Analytics')" in generate_template
+    assert "('inventory', 'Inventory')" in generate_template
     assert 'data-report-family-filter=' not in generate_template
     assert 'data-report-type-card=' not in generate_template
     assert "'value': 'snapshot'" in generate_service
-    assert 'A selected Kubernetes cluster is required for every report artifact.' in generate_service
+    assert 'A selected Kubernetes cluster is required for this report artifact.' in generate_service
+    assert 'A selected Object Storage system is required for this report artifact.' in generate_service
     assert "reportType.family === 'inventory'" in generate_template
     assert 'allowed_formats' in generate_template
     assert 'Artifact Storage Needs Review' in generate_template

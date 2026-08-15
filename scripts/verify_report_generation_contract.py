@@ -2,12 +2,13 @@
 from __future__ import annotations
 
 import ast
-
-import yaml
 from pathlib import Path
 
+import yaml
+
 ROOT = Path(__file__).resolve().parents[1]
-CATALOG_PATH = ROOT / 'app' / 'definitions' / 'catalogs' / 'reports' / 'catalog.yaml'
+CATALOG_PATH = ROOT / 'app' / 'reports' / 'catalog.py'
+CATALOG_DEFINITION_PATH = ROOT / 'app' / 'definitions' / 'catalogs' / 'reports' / 'catalog.yaml'
 ARTIFACT_PATH = ROOT / 'app' / 'reports' / 'export' / 'artifacts.py'
 ANALYTICS_COLLECTOR_PATH = ROOT / 'app' / 'reports' / 'export' / 'html_pdf' / 'collectors.py'
 INVENTORY_PROFILE_PATH = ROOT / 'app' / 'reports' / 'export' / 'xlsx' / 'standard.py'
@@ -17,6 +18,7 @@ AUDIT_PATH = ROOT / 'docs' / 'reviews' / 'report-generation-audit-2026-08-03.md'
 
 ANALYTICS_FORMATS = {'pdf', 'csv'}
 INVENTORY_FORMATS = {'xlsx', 'csv'}
+SUPPORTED_SCOPE_ASSET_TYPES = {'kubernetes_cluster', 'object_storage_system'}
 FORBIDDEN_TOKENS = (
     'generate_report_pdf',
     'download_report_pdf',
@@ -35,27 +37,26 @@ def _parse(path: Path) -> ast.Module:
     return ast.parse(_read(path), filename=str(path))
 
 
-def _literal_string(node: ast.AST | None) -> str | None:
-    if isinstance(node, ast.Constant) and isinstance(node.value, str):
-        return node.value
-    return None
-
-
 def _name(node: ast.AST | None) -> str | None:
     return node.id if isinstance(node, ast.Name) else None
 
 
 def _catalog_specs() -> dict[str, dict[str, object]]:
-    document = yaml.safe_load(_read(CATALOG_PATH))
-    return {
-        str(spec['value']): {
-            'family': str(spec['family']),
-            'default_format': str(spec['default_format']),
-            'allowed_formats': tuple(spec.get('allowed_formats') or ()),
-            'requires_cluster': bool(spec.get('requires_cluster', True)),
+    document = yaml.safe_load(_read(CATALOG_DEFINITION_PATH))
+    specs: dict[str, dict[str, object]] = {}
+    for item in document.get('report_types') or []:
+        report_type = str(item.get('value') or '').strip()
+        if not report_type:
+            continue
+        specs[report_type] = {
+            'family': str(item.get('family') or ''),
+            'default_format': str(item.get('default_format') or ''),
+            'allowed_formats': tuple(str(value) for value in item.get('allowed_formats') or []),
+            'requires_cluster': bool(item.get('requires_cluster', True)),
+            'domain': str(item.get('domain') or 'kubernetes'),
+            'scope_asset_type': str(item.get('scope_asset_type') or 'kubernetes_cluster'),
         }
-        for spec in document['report_types']
-    }
+    return specs
 
 
 def _dictionary_string_keys(path: Path, variable_name: str) -> set[str]:
@@ -74,26 +75,38 @@ def _dictionary_string_keys(path: Path, variable_name: str) -> set[str]:
 def _check_catalog(errors: list[str]) -> tuple[set[str], set[str]]:
     specs = _catalog_specs()
     if not specs:
-        errors.append('Central report catalog contains no ReportTypeSpec entries.')
+        errors.append('Definition Registry report catalog contains no report type entries.')
         return set(), set()
 
     analytics = {key for key, value in specs.items() if value['family'] == 'analytics'}
     inventory = {key for key, value in specs.items() if value['family'] == 'inventory'}
     for report_type, spec in specs.items():
-        if spec['requires_cluster'] is not True:
-            errors.append(f'{report_type} does not require a selected cluster.')
         family = spec['family']
-        allowed = spec['allowed_formats']
+        allowed = set(spec['allowed_formats'])
         default = spec['default_format']
+        scope_asset_type = str(spec['scope_asset_type'])
+
+        if scope_asset_type not in SUPPORTED_SCOPE_ASSET_TYPES:
+            errors.append(f'{report_type} uses unsupported report scope asset type {scope_asset_type!r}.')
+        if scope_asset_type == 'kubernetes_cluster' and spec['requires_cluster'] is not True:
+            errors.append(f'{report_type} is Kubernetes-scoped but does not require one selected cluster.')
+        if scope_asset_type == 'object_storage_system' and spec['requires_cluster'] is not False:
+            errors.append(f'{report_type} is Object Storage-scoped but still requires a Kubernetes cluster.')
+
         if family == 'analytics':
-            if set(allowed) != ANALYTICS_FORMATS or default != 'pdf':
+            if allowed != ANALYTICS_FORMATS or default != 'pdf':
                 errors.append(f'{report_type} does not use the Analytics PDF/CSV contract.')
         elif family == 'inventory':
-            if set(allowed) != INVENTORY_FORMATS or default != 'xlsx':
+            if allowed != INVENTORY_FORMATS or default != 'xlsx':
                 errors.append(f'{report_type} does not use the Inventory XLSX/CSV contract.')
         else:
             errors.append(f'{report_type} has an unknown report family: {family!r}.')
 
+    catalog_source = _read(CATALOG_PATH)
+    if "load_definition_document('reports/catalog.yaml'" not in catalog_source:
+        errors.append('Runtime report catalog does not load reports/catalog.yaml from the Definition Registry.')
+    if 'scope_asset_type' not in catalog_source:
+        errors.append('Runtime report catalog does not expose generic asset scope metadata.')
     return analytics, inventory
 
 
@@ -147,10 +160,13 @@ def _check_renderer_coverage(
             )
 
 
-def _check_selected_cluster_and_legacy(errors: list[str]) -> None:
+def _check_asset_scope_and_legacy(errors: list[str]) -> None:
     model_source = _read(MODEL_PATH)
     if "default='pdf'" in model_source:
         errors.append('A universal PDF model default still exists; output must be family-specific.')
+    for field in ('scope_asset_type', 'scope_asset_id', 'scope_asset_label_snapshot'):
+        if field not in model_source:
+            errors.append(f'Report persistence is missing generic scope field {field}.')
 
     active_roots = (
         ROOT / 'app' / 'reports',
@@ -172,20 +188,16 @@ def _check_selected_cluster_and_legacy(errors: list[str]) -> None:
                 if token in source:
                     errors.append(f'{path.relative_to(ROOT)} contains forbidden legacy token {token!r}.')
 
-    required_guard_files = (
+    required_scope_files = (
         ROOT / 'app' / 'reports' / 'generate' / 'service.py',
         ROOT / 'app' / 'reports' / 'schedules' / 'service.py',
-        ROOT / 'app' / 'reports' / 'export' / 'payloads' / 'common.py',
+        ROOT / 'app' / 'reports' / 'jobs' / 'contract.py',
         ROOT / 'app' / 'reports' / 'storage' / 'naming.py',
     )
-    for path in required_guard_files:
+    for path in required_scope_files:
         source = _read(path)
-        if (
-            'selected cluster' not in source.lower()
-            and 'require_selected_cluster' not in source
-            and 'validate_report_contract' not in source
-        ):
-            errors.append(f'{path.relative_to(ROOT)} has no visible selected-cluster guard.')
+        if 'scope_asset' not in source and 'resolve_report_scope' not in source:
+            errors.append(f'{path.relative_to(ROOT)} has no visible generic report asset-scope contract.')
 
 
 def _check_documentation(errors: list[str]) -> None:
@@ -194,7 +206,7 @@ def _check_documentation(errors: list[str]) -> None:
             errors.append(f'Required report documentation is missing: {path.relative_to(ROOT)}.')
             continue
         source = _read(path).lower()
-        for phrase in ('selected cluster', 'analytics', 'inventory', 'csv'):
+        for phrase in ('analytics', 'inventory', 'csv'):
             if phrase not in source:
                 errors.append(f'{path.relative_to(ROOT)} does not document {phrase!r}.')
 
@@ -203,7 +215,7 @@ def main() -> int:
     errors: list[str] = []
     analytics, inventory = _check_catalog(errors)
     _check_renderer_coverage(errors, analytics, inventory)
-    _check_selected_cluster_and_legacy(errors)
+    _check_asset_scope_and_legacy(errors)
     _check_documentation(errors)
 
     if errors:
@@ -213,8 +225,8 @@ def main() -> int:
 
     print(
         'KAORI report generation contract passed: Analytics supports PDF/CSV, Inventory supports '
-        'XLSX/CSV, every report requires one selected cluster, renderer/profile coverage matches '
-        'the central catalog, and legacy generation paths are absent.'
+        'XLSX/CSV, published contracts use one canonical infrastructure asset scope, renderer/profile '
+        'coverage matches the Definition Registry, and legacy generation paths are absent.'
     )
     return 0
 

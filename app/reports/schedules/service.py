@@ -19,9 +19,15 @@ from app.common.celery_queue_health import get_queue_readiness
 from app.common.pagination import PER_PAGE_OPTIONS, paginate_select, paginate_sequence
 from app.extensions.db import db
 from app.models.cluster import Cluster
+from app.models.object_storage import ObjectStorageSystem
 from app.models.report import Report, ReportSchedule, ReportScheduleRun
 from app.models.user import User
-from app.reports.catalog import ReportContractError, get_report_type_label, validate_report_contract
+from app.reports.catalog import (
+    ReportContractError,
+    get_report_type_label,
+    get_report_type_spec,
+    validate_report_contract,
+)
 from app.reports.export.constants import DEFAULT_REPORT_DOMAIN, DEFAULT_REPORT_SOURCE_KIND
 from app.reports.generate.service import (
     OUTPUT_FORMAT_OPTIONS,
@@ -37,6 +43,11 @@ from app.reports.jobs.service import ReportJobEnqueueError, enqueue_report_gener
 from app.reports.notifications import get_report_notification_channel_options
 from app.reports.schedules.delivery import get_recommended_actions, get_scheduler_context
 from app.reports.schedules.failures import mark_schedule_dispatch_failed
+from app.reports.scope import (
+    KUBERNETES_CLUSTER_ASSET_TYPE,
+    OBJECT_STORAGE_SYSTEM_ASSET_TYPE,
+    resolve_report_scope,
+)
 from app.reports.storage.service import get_configured_storage_backend_name, get_report_storage_backend_status
 
 CADENCE_OPTIONS: list[dict[str, str]] = [
@@ -101,6 +112,7 @@ def get_report_schedules_payload(
         all_schedules,
     )
     cluster_options = _get_cluster_options()
+    object_storage_system_options = _get_object_storage_system_options()
     storage_context = _get_storage_context()
     worker_context = get_queue_readiness(get_reports_queue_name())
     selected_filters = _get_selected_filters(query_args)
@@ -129,6 +141,13 @@ def get_report_schedules_payload(
     allowed_formats_by_report_type = {
         item['value']: list(item.get('allowed_formats') or []) for item in REPORT_TYPE_OPTIONS
     }
+    scope_asset_type_by_report_type = {
+        item['value']: str(item.get('scope_asset_type') or KUBERNETES_CLUSTER_ASSET_TYPE)
+        for item in REPORT_TYPE_OPTIONS
+    }
+    report_domain_by_report_type = {
+        item['value']: str(item.get('domain') or DEFAULT_REPORT_DOMAIN) for item in REPORT_TYPE_OPTIONS
+    }
 
     return {
         'page_title': 'Report Schedules',
@@ -154,6 +173,7 @@ def get_report_schedules_payload(
             'runs' if str(query_args.get('workspace', '') or '').strip().lower() == 'runs' else 'registry'
         ),
         'clusters': cluster_options,
+        'object_storage_systems': object_storage_system_options,
         'report_type_options': REPORT_TYPE_OPTIONS,
         'period_options': _title_case_period_options(),
         'output_format_options': OUTPUT_FORMAT_OPTIONS,
@@ -162,6 +182,8 @@ def get_report_schedules_payload(
         'default_sections_by_report_type': _get_default_sections_by_report_type(),
         'report_family_by_report_type': report_family_by_report_type,
         'allowed_formats_by_report_type': allowed_formats_by_report_type,
+        'scope_asset_type_by_report_type': scope_asset_type_by_report_type,
+        'report_domain_by_report_type': report_domain_by_report_type,
         'cadence_options': CADENCE_OPTIONS,
         'day_of_week_options': DAY_OF_WEEK_OPTIONS,
         'day_of_month_options': list(range(1, 29)),
@@ -175,7 +197,7 @@ def get_report_schedules_payload(
         'automation_posture': get_automation_posture(storage_context, worker_context),
         'scheduler_context': get_scheduler_context(storage_context, worker_context),
         'recommended_actions': get_recommended_actions(),
-        'delivery_channel_options': get_report_notification_channel_options(domain=DEFAULT_REPORT_DOMAIN),
+        'delivery_channel_options': _get_delivery_channel_options(),
         'filter_options': _get_schedule_filter_options(all_schedules, cluster_options),
         'selected_filters': selected_filters,
         'pagination': pagination,
@@ -239,6 +261,7 @@ def build_default_schedule_form_state() -> dict[str, Any]:
         'description': '',
         'cluster_id': '',
         'namespace': '',
+        'object_storage_system_id': '',
         'report_type': report_type,
         'period': '30d',
         'output_format': get_report_primary_output_format(report_type),
@@ -431,6 +454,8 @@ def execute_schedule(
             report_type=schedule.report_type,
             output_format=schedule.output_format,
             cluster_id=schedule.cluster_id,
+            scope_asset_type=schedule.scope_asset_type,
+            scope_asset_id=schedule.scope_asset_id,
         )
     except ReportContractError as exc:
         run.status = 'failed'
@@ -514,9 +539,10 @@ def validate_schedule_form_state(form_state: dict[str, Any]) -> list[str]:
 
     selected_channel_ids = set(form_state.get('notification_channel_ids') or [])
     if selected_channel_ids:
+        report_domain = get_report_type_spec(form_state['report_type']).domain
         options = {
             int(item['channel_id']): item
-            for item in get_report_notification_channel_options(domain=DEFAULT_REPORT_DOMAIN)
+            for item in get_report_notification_channel_options(domain=report_domain)
         }
         for channel_id in sorted(selected_channel_ids):
             option = options.get(channel_id)
@@ -621,10 +647,24 @@ def _apply_form_state_to_schedule(schedule: ReportSchedule, form_state: dict[str
     schedule.name = form_state['name']
     schedule.description = form_state['description'] or None
     schedule.report_type = form_state['report_type']
-    schedule.report_domain = DEFAULT_REPORT_DOMAIN
-    schedule.source_kind = DEFAULT_REPORT_SOURCE_KIND
-    schedule.cluster_id = form_state['cluster_id'] or None
-    schedule.namespace = form_state['namespace'] or None
+    spec = get_report_type_spec(schedule.report_type)
+    schedule.report_domain = spec.domain
+    schedule.source_kind = spec.source_kind
+    schedule.scope_asset_type = spec.scope_asset_type
+    if spec.scope_asset_type == OBJECT_STORAGE_SYSTEM_ASSET_TYPE:
+        system_id = str(form_state.get('object_storage_system_id') or '').strip()
+        system = db.session.get(ObjectStorageSystem, system_id) if system_id else None
+        schedule.scope_asset_id = system_id or None
+        schedule.scope_asset_label_snapshot = system.name if system is not None else None
+        schedule.cluster_id = None
+        schedule.namespace = None
+    else:
+        cluster_id = str(form_state.get('cluster_id') or '').strip()
+        cluster = db.session.get(Cluster, cluster_id) if cluster_id else None
+        schedule.scope_asset_id = cluster_id or None
+        schedule.scope_asset_label_snapshot = cluster.name if cluster is not None else None
+        schedule.cluster_id = cluster_id or None
+        schedule.namespace = form_state['namespace'] or None
     schedule.period = form_state['period']
     schedule.output_format = form_state['output_format']
     schedule.sections = list(form_state['sections'])
@@ -660,6 +700,9 @@ def _create_report_from_schedule(schedule: ReportSchedule) -> Report:
     report.source_kind = schedule.source_kind
     report.cluster_id = schedule.cluster_id
     report.namespace = schedule.namespace
+    report.scope_asset_type = schedule.scope_asset_type
+    report.scope_asset_id = schedule.scope_asset_id
+    report.scope_asset_label_snapshot = schedule.scope_asset_label_snapshot
     report.period = schedule.period
     report.output_format = schedule.output_format
     report.status = 'requested'
@@ -834,7 +877,7 @@ def _get_schedule_filter_options(
     schedules: list[dict[str, Any]],
     cluster_options: list[dict[str, str]],
 ) -> dict[str, list[dict[str, str]]]:
-    delivery_catalog = get_report_notification_channel_options(domain=DEFAULT_REPORT_DOMAIN)
+    delivery_catalog = _get_delivery_channel_options()
     return {
         'statuses': [
             {'value': '', 'label': 'All Statuses'},
@@ -896,7 +939,10 @@ def _get_schedule_rows() -> list[dict[str, Any]]:
         select(ReportSchedule).order_by(ReportSchedule.created_at.desc(), ReportSchedule.id.desc())
     ).all()
     cluster_map = _get_cluster_map([item.cluster_id for item in schedules if item.cluster_id])
-    delivery_label_map = {int(item['channel_id']): f"{item['label']} · {item['provider']}" for item in get_report_notification_channel_options(domain=DEFAULT_REPORT_DOMAIN)}
+    delivery_label_map = {
+        int(item['channel_id']): f"{item['label']} · {item['provider']}"
+        for item in _get_delivery_channel_options()
+    }
 
     return [_serialize_schedule(item, cluster_map, delivery_label_map) for item in schedules]
 
@@ -925,6 +971,12 @@ def _serialize_schedule(
     status_icon = 'play-circle' if schedule.is_enabled else 'pause-circle'
     delivery_channels = schedule.notification_channel_ids_as_list()
     delivery_labels = [delivery_label_map.get(item, f'Channel {item}') for item in delivery_channels]
+    scope = resolve_report_scope(schedule)
+    scope_label = (
+        'Object Storage System'
+        if schedule.scope_asset_type == OBJECT_STORAGE_SYSTEM_ASSET_TYPE
+        else 'Kubernetes Cluster'
+    )
     return {
         'id': schedule.id,
         'name': schedule.name,
@@ -934,8 +986,12 @@ def _serialize_schedule(
         'report_icon': str(report_spec.get('icon') or 'file-text'),
         'report_family': str(report_spec.get('family') or 'analytics'),
         'cluster_id': schedule.cluster_id or '',
-        'cluster': cluster_map.get(schedule.cluster_id or '', 'Cluster Selection Required'),
-        'namespace': schedule.namespace or 'All Namespaces',
+        'cluster': cluster_map.get(schedule.cluster_id or '', 'Not Applicable'),
+        'object_storage_system_id': schedule.scope_asset_id if schedule.scope_asset_type == OBJECT_STORAGE_SYSTEM_ASSET_TYPE else '',
+        'scope_asset_type': schedule.scope_asset_type or KUBERNETES_CLUSTER_ASSET_TYPE,
+        'scope': scope.label if scope is not None else (schedule.scope_asset_label_snapshot or 'Asset Selection Required'),
+        'scope_label': scope_label,
+        'namespace': schedule.namespace or ('Not Applicable' if schedule.scope_asset_type == OBJECT_STORAGE_SYSTEM_ASSET_TYPE else 'All Namespaces'),
         'period': _format_period_label(schedule.period),
         'period_value': schedule.period,
         'output_format': str(schedule.output_format or '').upper(),
@@ -1055,6 +1111,7 @@ def _schedule_edit_state(schedule: ReportSchedule) -> dict[str, Any]:
         'description': schedule.description or '',
         'cluster_id': schedule.cluster_id or '',
         'namespace': schedule.namespace or '',
+        'object_storage_system_id': schedule.scope_asset_id if schedule.scope_asset_type == OBJECT_STORAGE_SYSTEM_ASSET_TYPE else '',
         'report_type': schedule.report_type,
         'period': schedule.period,
         'output_format': schedule.output_format,
@@ -1067,6 +1124,32 @@ def _schedule_edit_state(schedule: ReportSchedule) -> dict[str, Any]:
         'is_enabled': '1' if schedule.is_enabled else '0',
         'notification_channel_ids': schedule.notification_channel_ids_as_list(),
     }
+
+
+def _get_delivery_channel_options() -> list[dict[str, Any]]:
+    by_channel: dict[int, dict[str, Any]] = {}
+    for domain in ('kubernetes', 'object_storage'):
+        for option in get_report_notification_channel_options(domain=domain):
+            channel_id = int(option['channel_id'])
+            existing = by_channel.setdefault(
+                channel_id,
+                {**option, 'domains': [], 'selectable': False},
+            )
+            if bool(option.get('supports_domain')):
+                existing['domains'].append(domain)
+            existing['selectable'] = bool(existing['selectable'] or option.get('selectable'))
+    return list(by_channel.values())
+
+
+def _get_object_storage_system_options() -> list[dict[str, str]]:
+    systems = db.session.scalars(select(ObjectStorageSystem).order_by(ObjectStorageSystem.name.asc())).all()
+    return [
+        {
+            'value': item.id,
+            'label': f"{item.name} · {item.environment or 'Unspecified Environment'}",
+        }
+        for item in systems
+    ]
 
 
 def _get_cluster_options() -> list[dict[str, str]]:

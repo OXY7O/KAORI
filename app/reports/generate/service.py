@@ -10,6 +10,7 @@ from app.common.inventory_generation import filter_current_generation
 from app.extensions.db import db
 from app.models.cluster import Cluster
 from app.models.inventory import NamespaceInventory
+from app.models.object_storage import ObjectStorageSystem
 from app.models.report import Report
 from app.models.user import User
 from app.reports.catalog import (
@@ -20,10 +21,10 @@ from app.reports.catalog import (
     get_default_output_format,
     get_report_type_spec,
 )
+from app.reports.scope import KUBERNETES_CLUSTER_ASSET_TYPE, OBJECT_STORAGE_SYSTEM_ASSET_TYPE
 from app.reports.catalog import (
     normalize_report_type as normalize_catalog_report_type,
 )
-from app.reports.export.constants import DEFAULT_REPORT_DOMAIN, DEFAULT_REPORT_SOURCE_KIND
 from app.reports.jobs.queue import get_reports_queue_name
 from app.reports.storage.service import get_configured_storage_backend_name, get_report_storage_backend_status
 
@@ -343,6 +344,56 @@ SECTION_OPTIONS: list[dict[str, str]] = [
         'description': 'High-level risk posture across analytics signals.',
     },
     {
+        'value': 'object_storage_capacity_usage',
+        'label': 'Capacity & Usage',
+        'description': 'Usable capacity, committed usage, utilization, and free headroom for the selected Object Storage system.',
+    },
+    {
+        'value': 'object_storage_bucket_distribution',
+        'label': 'Bucket / Container Distribution',
+        'description': 'Bucket or container usage distribution and concentration across the selected Object Storage system.',
+    },
+    {
+        'value': 'object_storage_quota_headroom',
+        'label': 'Quota & Headroom',
+        'description': 'Quota evidence coverage, pressure, and remaining headroom for committed Object Storage namespaces.',
+    },
+    {
+        'value': 'object_storage_performance',
+        'label': 'Request Performance',
+        'description': 'Request rate, error pressure, waiting requests, traffic, and storage-node availability signals.',
+    },
+    {
+        'value': 'object_storage_forecast',
+        'label': 'Capacity Forecast',
+        'description': 'Worker-materialized growth projection, projected usage, and estimated capacity threshold timing.',
+    },
+    {
+        'value': 'object_storage_top_consumers',
+        'label': 'Top Consumers',
+        'description': 'Highest-consuming buckets or containers with usage, quota, object, and request evidence.',
+    },
+    {
+        'value': 'object_storage_risk_findings',
+        'label': 'Risk & Findings',
+        'description': 'Capacity, request-path, quota, concentration, and source-readiness findings requiring review.',
+    },
+    {
+        'value': 'object_storage_inventory_assets',
+        'label': 'Object Storage Inventory Data',
+        'description': 'Committed Object Storage system and bucket or container asset evidence.',
+    },
+    {
+        'value': 'object_storage_inventory_metadata',
+        'label': 'Workbook Metadata',
+        'description': 'Object Storage scope, evidence cut-off, ownership, and workbook-standard metadata.',
+    },
+    {
+        'value': 'object_storage_inventory_field_dictionary',
+        'label': 'Field Dictionary',
+        'description': 'Object Storage inventory column definitions, data types, sources, and missing-value rules.',
+    },
+    {
         'value': 'inventory_assets',
         'label': 'Inventory Data',
         'description': 'Primary Excel table containing committed asset identities and fields.',
@@ -444,13 +495,18 @@ def get_generate_report_payload(
         form_state['report_type'],
     )
     cluster_options = _get_cluster_options()
+    object_storage_system_options = _get_object_storage_system_options()
     namespace_options_by_cluster = _get_namespace_options_by_cluster()
+    scope_ready = _scope_is_ready(form_state, selected_report_type)
 
     return {
         'page_title': 'Generate Report',
         'page_subtitle': ('Build a governed report from connected data, selected scope, reusable sections, and an approved output contract.'),
         'clusters': cluster_options,
         'has_clusters': bool(cluster_options),
+        'object_storage_systems': object_storage_system_options,
+        'has_object_storage_systems': bool(object_storage_system_options),
+        'scope_ready': scope_ready,
         'namespace_options_by_cluster': namespace_options_by_cluster,
         'selected_namespace_options': namespace_options_by_cluster.get(
             str(form_state.get('cluster_id') or ''),
@@ -504,9 +560,9 @@ def create_report_request(
             None,
         )
 
-    cluster_id = _parse_cluster_id(
-        form_state['cluster_id'],
-    )
+    report_spec = get_report_type_spec(form_state['report_type'])
+    cluster_id = _parse_cluster_id(form_state['cluster_id']) if report_spec.requires_cluster else None
+    object_storage_system_id = (form_state.get('object_storage_system_id') or '').strip()
 
     report_name = form_state['name'].strip()
 
@@ -515,15 +571,24 @@ def create_report_request(
             form_state,
         )
 
-    namespace = form_state['namespace'].strip() or None
+    namespace = form_state['namespace'].strip() or None if report_spec.requires_cluster else None
 
     report = Report()
     report.name = report_name
     report.report_type = form_state['report_type']
-    report.report_domain = DEFAULT_REPORT_DOMAIN
-    report.source_kind = DEFAULT_REPORT_SOURCE_KIND
+    report.report_domain = report_spec.domain
+    report.source_kind = report_spec.source_kind
     report.cluster_id = cluster_id
     report.namespace = namespace
+    report.scope_asset_type = report_spec.scope_asset_type
+    if report_spec.scope_asset_type == OBJECT_STORAGE_SYSTEM_ASSET_TYPE:
+        system = db.session.get(ObjectStorageSystem, object_storage_system_id)
+        report.scope_asset_id = object_storage_system_id
+        report.scope_asset_label_snapshot = system.name if system is not None else object_storage_system_id
+    else:
+        cluster = db.session.get(Cluster, cluster_id) if cluster_id else None
+        report.scope_asset_id = cluster_id
+        report.scope_asset_label_snapshot = cluster.name if cluster is not None else cluster_id
     report.period = form_state['period']
     report.output_format = form_state['output_format']
     report.status = 'requested'
@@ -565,6 +630,7 @@ def build_default_form_state(
         'name': '',
         'cluster_id': '',
         'namespace': '',
+        'object_storage_system_id': '',
         'report_type': normalized_report_type,
         'period': _get_default_period(normalized_report_type),
         'output_format': get_report_primary_output_format(normalized_report_type),
@@ -608,10 +674,20 @@ def _get_report_type_context(
                 'family': str(item['family']),
                 'primary_format': str(item['primary_format']),
                 'allowed_formats': list(item['allowed_formats']),
-                'requires_cluster': report_requires_selected_cluster(
-                    item['value'],
+                'domain': str(item.get('domain') or 'kubernetes'),
+                'source_kind': str(item.get('source_kind') or item.get('domain') or 'kubernetes'),
+                'scope_asset_type': str(item.get('scope_asset_type') or KUBERNETES_CLUSTER_ASSET_TYPE),
+                'requires_cluster': report_requires_selected_cluster(item['value']),
+                'scope_label': (
+                    'Object Storage System'
+                    if item.get('scope_asset_type') == OBJECT_STORAGE_SYSTEM_ASSET_TYPE
+                    else 'Kubernetes Cluster'
                 ),
-                'cluster_scope_label': 'Selected Cluster Required',
+                'cluster_scope_label': (
+                    'Object Storage System Required'
+                    if item.get('scope_asset_type') == OBJECT_STORAGE_SYSTEM_ASSET_TYPE
+                    else 'Selected Cluster Required'
+                ),
             }
 
     fallback = REPORT_TYPE_OPTIONS[0]
@@ -627,10 +703,20 @@ def _get_report_type_context(
         'family': str(fallback['family']),
         'primary_format': str(fallback['primary_format']),
         'allowed_formats': list(fallback['allowed_formats']),
-        'requires_cluster': report_requires_selected_cluster(
-            fallback['value'],
+        'domain': str(fallback.get('domain') or 'kubernetes'),
+        'source_kind': str(fallback.get('source_kind') or fallback.get('domain') or 'kubernetes'),
+        'scope_asset_type': str(fallback.get('scope_asset_type') or KUBERNETES_CLUSTER_ASSET_TYPE),
+        'requires_cluster': report_requires_selected_cluster(fallback['value']),
+        'scope_label': (
+            'Object Storage System'
+            if fallback.get('scope_asset_type') == OBJECT_STORAGE_SYSTEM_ASSET_TYPE
+            else 'Kubernetes Cluster'
         ),
-        'cluster_scope_label': 'Selected Cluster Required',
+        'cluster_scope_label': (
+            'Object Storage System Required'
+            if fallback.get('scope_asset_type') == OBJECT_STORAGE_SYSTEM_ASSET_TYPE
+            else 'Selected Cluster Required'
+        ),
     }
 
 
@@ -722,6 +808,10 @@ def get_form_state_from_form(
             'namespace',
             '',
         ),
+        'object_storage_system_id': form.get(
+            'object_storage_system_id',
+            '',
+        ),
         'report_type': report_type,
         'period': period,
         'output_format': str(
@@ -752,27 +842,19 @@ def validate_form_state(
             'Please select a valid report type.',
         )
 
-    cluster_count = (
-        db.session.scalar(
-            select(func.count(Cluster.id)),
-        )
-        or 0
-    )
-
-    if cluster_count == 0:
-        errors.append(
-            'Add at least one Kubernetes cluster before creating reports or report schedules.',
-        )
-
-    if (
-        report_requires_selected_cluster(
-            form_state['report_type'],
-        )
-        and not form_state['cluster_id']
-    ):
-        errors.append(
-            'A selected Kubernetes cluster is required for every report artifact.',
-        )
+    report_spec = get_report_type_spec(form_state['report_type'])
+    if report_spec.scope_asset_type == KUBERNETES_CLUSTER_ASSET_TYPE:
+        cluster_count = db.session.scalar(select(func.count(Cluster.id))) or 0
+        if cluster_count == 0:
+            errors.append('Add at least one Kubernetes cluster before creating Kubernetes reports or schedules.')
+        if report_spec.requires_cluster and not form_state['cluster_id']:
+            errors.append('A selected Kubernetes cluster is required for this report artifact.')
+    elif report_spec.scope_asset_type == OBJECT_STORAGE_SYSTEM_ASSET_TYPE:
+        system_count = db.session.scalar(select(func.count(ObjectStorageSystem.id))) or 0
+        if system_count == 0:
+            errors.append('Add at least one Object Storage system before creating Object Storage reports or schedules.')
+        if not str(form_state.get('object_storage_system_id') or '').strip():
+            errors.append('A selected Object Storage system is required for this report artifact.')
 
     if form_state['period'] not in allowed_periods:
         errors.append(
@@ -820,38 +902,32 @@ def validate_form_state(
         )
 
     cluster_exists = None
-    if form_state['cluster_id']:
-        cluster_exists = db.session.scalar(
-            select(
-                Cluster.id,
-            ).where(
-                Cluster.id == form_state['cluster_id'],
-            )
-        )
-
+    if report_spec.scope_asset_type == KUBERNETES_CLUSTER_ASSET_TYPE and form_state['cluster_id']:
+        cluster_exists = db.session.scalar(select(Cluster.id).where(Cluster.id == form_state['cluster_id']))
         if cluster_exists is None:
-            errors.append(
-                'Please select a valid cluster.',
-            )
+            errors.append('Please select a valid cluster.')
 
     namespace = (form_state.get('namespace') or '').strip()
-    if namespace and not form_state['cluster_id']:
-        errors.append(
-            'Select a Kubernetes cluster before choosing a namespace.',
-        )
-    elif namespace and cluster_exists is not None:
-        namespace_query = filter_current_generation(
-            NamespaceInventory.query,
-            NamespaceInventory,
-        ).filter(
-            NamespaceInventory.cluster_id == form_state['cluster_id'],
-            NamespaceInventory.namespace == namespace,
-        )
-
-        if namespace_query.with_entities(NamespaceInventory.id).first() is None:
-            errors.append(
-                'Please select a namespace available in the current inventory snapshot for this cluster.',
+    if report_spec.scope_asset_type == KUBERNETES_CLUSTER_ASSET_TYPE:
+        if namespace and not form_state['cluster_id']:
+            errors.append('Select a Kubernetes cluster before choosing a namespace.')
+        elif namespace and cluster_exists is not None:
+            namespace_query = filter_current_generation(
+                NamespaceInventory.query,
+                NamespaceInventory,
+            ).filter(
+                NamespaceInventory.cluster_id == form_state['cluster_id'],
+                NamespaceInventory.namespace == namespace,
             )
+            if namespace_query.with_entities(NamespaceInventory.id).first() is None:
+                errors.append('Please select a namespace available in the current inventory snapshot for this cluster.')
+    elif namespace:
+        errors.append('Namespace scope is available only for Kubernetes reports.')
+
+    if report_spec.scope_asset_type == OBJECT_STORAGE_SYSTEM_ASSET_TYPE:
+        system_id = str(form_state.get('object_storage_system_id') or '').strip()
+        if system_id and db.session.get(ObjectStorageSystem, system_id) is None:
+            errors.append('Please select a valid Object Storage system.')
 
     return errors
 
@@ -902,6 +978,27 @@ def _get_cluster_options() -> list[dict[str, str]]:
         )
 
     return options
+
+
+def _get_object_storage_system_options() -> list[dict[str, str]]:
+    systems = db.session.execute(
+        select(ObjectStorageSystem).order_by(ObjectStorageSystem.name.asc())
+    ).scalars().all()
+    return [
+        {
+            'value': str(system.id),
+            'label': system.name,
+            'environment': system.environment,
+            'status': system.status,
+        }
+        for system in systems
+    ]
+
+
+def _scope_is_ready(form_state: dict[str, Any], report_context: dict[str, Any]) -> bool:
+    if report_context.get('scope_asset_type') == OBJECT_STORAGE_SYSTEM_ASSET_TYPE:
+        return bool(str(form_state.get('object_storage_system_id') or '').strip())
+    return bool(str(form_state.get('cluster_id') or '').strip())
 
 
 def _get_namespace_options_by_cluster() -> dict[str, list[str]]:

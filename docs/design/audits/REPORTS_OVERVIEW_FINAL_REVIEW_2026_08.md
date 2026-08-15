@@ -16,12 +16,12 @@ The active hierarchy is intentionally limited to three layers:
 
 Object Storage Inventory and Object Storage Analytics already provide committed and qualified evidence, but the Reports Overview rendered only Analytics/Inventory report families. The service built infrastructure-domain coverage separately and the active page never displayed it.
 
-Object Storage is now a first-class reporting domain with the status **Evidence Ready**. This is deliberately not `Published` or `Available`: KAORI has committed Object Storage inventory/analytics evidence, but no canonical Object Storage report contract/renderer has been admitted to the Generate workflow yet.
+Object Storage is now a first-class reporting domain with the status **Published**. Two canonical contracts are admitted to Generate: Object Storage Inventory (XLSX/CSV) and Object Storage Analysis (PDF/CSV). Focused Forecast, Top Consumers, and Alerts & Anomalies reports remain candidate coverage.
 
 The reporting-domain states are now explicit:
 
 - Kubernetes — **Published**
-- Object Storage — **Evidence Ready**
+- Object Storage — **Published**
 - Server & VM — **Planned**
 - HCI — **Reserved**
 
@@ -39,11 +39,11 @@ The page now presents both dimensions separately:
 Planned/reserved coverage definitions are product definitions, not Generate contracts. The Overview now uses these terms consistently:
 
 - **Published** — selectable by the governed Generate workflow.
-- **Evidence Ready** — qualified evidence exists, but no report contract/renderer is published.
+- **Evidence Ready** — qualified evidence exists, but no report contract/renderer is published; this state remains valid for future domains that have evidence before publication.
 - **Planned** — intended future coverage; not executable.
 - **Reserved** — namespace/product boundary retained without an active delivery commitment.
 
-The active published-contract count therefore excludes Object Storage candidate definitions, Server/VM plans, and HCI reservations.
+The active published-contract count includes the two published Object Storage contracts and excludes the three remaining Object Storage candidate definitions, Server/VM plans, and HCI reservations.
 
 ### 4. Overview performed unnecessary legacy work
 
@@ -76,17 +76,22 @@ Object Storage has two distinct meanings in Reports and must remain explicit:
 
 They are not the same capability. Reports Overview keeps them in separate visual and data boundaries.
 
-## Candidate Object Storage report coverage
+## Object Storage report coverage
 
-The Definition Registry now records candidate Object Storage report coverage without making it executable:
+The Definition Registry separates published Object Storage contracts from focused candidate coverage.
 
-- Object Storage Inventory Report
-- Object Storage Capacity Analysis Report
-- Object Storage Forecast Report
-- Object Storage Top Consumers Report
-- Object Storage Alerts & Anomalies Report
+Published:
 
-Publishing any of these later requires a canonical report type, allowed output contract, renderer/export implementation, authorization/scope contract, tests, and Generate integration. Adding a YAML candidate alone must never make a report executable.
+- Object Storage Inventory Report — XLSX + CSV.
+- Object Storage Analysis Report — PDF + CSV.
+
+Remaining candidates:
+
+- Object Storage Forecast Report.
+- Object Storage Top Consumers Report.
+- Object Storage Alerts & Anomalies Report.
+
+Publishing any candidate later still requires a canonical report type, allowed output contract, renderer/export implementation, authorization/scope contract, tests, and Generate integration. A YAML coverage candidate alone must never make a report executable.
 
 ## Ownership boundary
 
@@ -100,21 +105,23 @@ Publishing any of these later requires a canonical report type, allowed output c
 
 ## Definition boundary
 
-Executable report types and output formats remain in `reports/catalog.yaml`. Non-published domain coverage belongs in `reports/coverage.yaml`. The Reports catalog validates status/tone and exposes definition objects to the service; Jinja never reads YAML directly.
+Executable report types and output formats remain in `reports/catalog.yaml`. Domain coverage and remaining candidates belong in `reports/coverage.yaml`. The Reports catalog validates status/tone and exposes definition objects to the service; Jinja never reads YAML directly.
 
-The current Object Storage state is therefore intentionally:
+The current Object Storage state is:
 
 ```text
 Object Storage evidence
         ↓
-Inventory + Analytics ready
+Generic Object Storage System report scope
         ↓
-Report coverage definition: Evidence Ready
+Inventory + Analysis collectors/renderers
         ↓
-NO executable Generate contract yet
+2 published Generate contracts
+        +
+3 non-executable focused candidates
 ```
 
-This prevents product coverage from bypassing the governed report publication boundary.
+This preserves the governed publication boundary while allowing Object Storage reports to execute end to end.
 
 ## Artifact Estate visual refinement
 

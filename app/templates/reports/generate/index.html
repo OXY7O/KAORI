@@ -16,7 +16,7 @@
 {%- endmacro %}
 {% block title %}Generate Report{% endblock title %}
 {% block dashboard_content %}
-    {% set initial_scope_ready = payload.has_clusters and payload.form_state.cluster_id %}
+    {% set initial_scope_ready = payload.scope_ready %}
     {% set initial_sections_ready = payload.form_state.sections|length > 0 %}
     {% set initial_request_ready = initial_scope_ready and initial_sections_ready and payload.generation_allowed %}
     {% set hero_status_label = 'Ready' if initial_request_ready else ('Storage Degraded' if not payload.generation_allowed else 'Action Required') %}
@@ -29,7 +29,7 @@
                         <h1 class="{{ page_hero.title_classes() }}">{{ payload.page_title }}</h1>
                         <p class="mt-2 {{ page_hero.description_classes() }}">{{ payload.page_subtitle }}</p>
                         <div class="{{ page_hero.metadata_row_classes() }}">
-                            {{ page_hero.meta_label('crosshair', 'Single Cluster Scope') }}
+                            {{ page_hero.meta_label('crosshair', 'Infrastructure Asset Scope') }}
                             {{ page_hero.meta_label('book-open-check', 'Catalog-Driven Contract') }}
                             {{ page_hero.meta_label('file-clock', 'Queued Artifact Generation') }}
                         </div>
@@ -134,7 +134,7 @@
                             <p class="mt-1 text-xs leading-5 text-content-muted">Choose a published report contract, bind its infrastructure scope, then define output and content before queueing.</p>
                         </div>
                     </div>
-                    {{ table_label.metadata_label('Single Cluster Artifact', 'crosshair') }}
+                    {{ table_label.metadata_label('Infrastructure Scoped Artifact', 'crosshair') }}
                 </header>
                 <div class="grid border-b border-outline-default xl:grid-cols-2 xl:divide-x xl:divide-outline-default">
                     <section id="report-configuration"
@@ -154,13 +154,18 @@
                                 <select name="report_type"
                                         id="report-type-select"
                                         class="mt-1.5 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2.5 text-sm font-semibold text-content-primary shadow-sm focus:border-kaori-primary focus:outline-none focus:ring-2 focus:ring-kaori-primary/20">
-                                    {% for family_key, family_label in [('analytics', 'Kubernetes Analytics'), ('inventory', 'Kubernetes Inventory')] %}
-                                        <optgroup label="{{ family_label }}">
-                                            {% for option in payload.report_type_options if option.family == family_key %}
-                                                <option value="{{ option.value }}"
-                                                        {% if payload.form_state.report_type == option.value %}selected{% endif %}>{{ option.label }}</option>
-                                            {% endfor %}
-                                        </optgroup>
+                                    {% for domain_key, domain_label in [('kubernetes', 'Kubernetes'), ('object_storage', 'Object Storage')] %}
+                                        {% for family_key, family_label in [('analytics', 'Analytics'), ('inventory', 'Inventory')] %}
+                                            {% set grouped_options = payload.report_type_options|selectattr('domain', 'equalto', domain_key)|selectattr('family', 'equalto', family_key)|list %}
+                                            {% if grouped_options %}
+                                                <optgroup label="{{ domain_label }} · {{ family_label }}">
+                                                    {% for option in grouped_options %}
+                                                        <option value="{{ option.value }}"
+                                                                {% if payload.form_state.report_type == option.value %}selected{% endif %}>{{ option.label }}</option>
+                                                    {% endfor %}
+                                                </optgroup>
+                                            {% endif %}
+                                        {% endfor %}
                                     {% endfor %}
                                 </select>
                             </label>
@@ -184,7 +189,7 @@
                                     <p id="selected-report-label"
                                        class="text-sm font-bold text-content-primary">{{ payload.selected_report_type.label }}</p>
                                     <span id="selected-report-scope"
-                                          class="inline-flex min-h-6 items-center rounded-md border border-kaori-primary/20 bg-kaori-soft px-2 text-xs font-semibold text-kaori-primary">Single Cluster</span>
+                                          class="inline-flex min-h-6 items-center rounded-md border border-kaori-primary/20 bg-kaori-soft px-2 text-xs font-semibold text-kaori-primary">{{ payload.selected_report_type.scope_label }}</span>
                                     <span id="selected-report-count"
                                           class="inline-flex min-h-6 items-center rounded-md border border-outline-subtle bg-surface-hover px-2 text-xs font-semibold text-content-secondary">{{ payload.selected_report_type.section_count }} Sections</span>
                                 </div>
@@ -195,34 +200,31 @@
                     </section>
                     <section class="min-w-0 px-5 py-5 sm:px-6" data-generate-step="scope">
                         <div class="mb-4 flex items-start gap-3"
-                             data-generate-section-header="kubernetes-scope">
+                             data-generate-section-header="infrastructure-scope">
                             {{ workflow_number("02") }}
                             <div class="min-w-0">
-                                <h3 class="text-base font-bold text-content-primary">Kubernetes Scope</h3>
-                                <p class="mt-1 text-xs leading-5 text-content-muted">Every report is bound to one cluster. Namespace narrows the selected cluster when required.</p>
+                                <h3 id="scope-step-title" class="text-base font-bold text-content-primary">Infrastructure Scope</h3>
+                                <p id="scope-step-description" class="mt-1 text-xs leading-5 text-content-muted">Bind this report to the infrastructure asset required by its published contract.</p>
                             </div>
                         </div>
-                        <div class="grid gap-4 sm:grid-cols-2">
+                        <div id="kubernetes-scope-fields"
+                             class="grid gap-4 sm:grid-cols-2 {% if payload.selected_report_type.scope_asset_type != 'kubernetes_cluster' %}hidden{% endif %}"
+                             data-report-scope-panel="kubernetes_cluster">
                             <label class="block sm:col-span-2">
                                 <span class="text-sm font-semibold text-content-primary">Cluster <span class="text-status-critical-text">*</span></span>
                                 <select name="cluster_id"
                                         id="cluster-select"
                                         class="mt-1.5 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2.5 text-sm text-content-secondary shadow-sm focus:border-kaori-primary focus:outline-none focus:ring-2 focus:ring-kaori-primary/20">
-                                    <option value=""
-                                            disabled
-                                            {% if not payload.form_state.cluster_id %}selected{% endif %}>Select Cluster</option>
+                                    <option value="" {% if not payload.form_state.cluster_id %}selected{% endif %}>Select Cluster</option>
                                     {% for cluster in payload.clusters %}
-                                        <option value="{{ cluster.value }}"
-                                                {% if payload.form_state.cluster_id == cluster.value %}selected{% endif %}>{{ cluster.label }}</option>
+                                        <option value="{{ cluster.value }}" {% if payload.form_state.cluster_id == cluster.value %}selected{% endif %}>{{ cluster.label }}</option>
                                     {% endfor %}
                                 </select>
                             </label>
                             <div class="min-w-0" data-scope-filter="namespace">
                                 <div class="flex min-h-5 items-center justify-between gap-2">
-                                    <label for="namespace-select"
-                                           class="text-sm font-semibold text-content-primary">Namespace</label>
-                                    <span id="namespace-option-count"
-                                          class="text-xs font-medium text-content-muted {% if not payload.form_state.cluster_id %}hidden{% endif %}">
+                                    <label for="namespace-select" class="text-sm font-semibold text-content-primary">Namespace</label>
+                                    <span id="namespace-option-count" class="text-xs font-medium text-content-muted {% if not payload.form_state.cluster_id %}hidden{% endif %}">
                                         {% if payload.form_state.cluster_id %}{{ payload.selected_namespace_options|length }} available{% endif %}
                                     </span>
                                 </div>
@@ -232,44 +234,51 @@
                                         class="mt-1.5 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2.5 text-sm text-content-secondary shadow-sm disabled:cursor-not-allowed disabled:bg-surface-hover disabled:text-content-muted focus:border-kaori-primary focus:outline-none focus:ring-2 focus:ring-kaori-primary/20">
                                     <option value="">All Namespaces</option>
                                     {% for namespace in payload.selected_namespace_options %}
-                                        <option value="{{ namespace }}"
-                                                {% if payload.form_state.namespace == namespace %}selected{% endif %}>{{ namespace }}</option>
+                                        <option value="{{ namespace }}" {% if payload.form_state.namespace == namespace %}selected{% endif %}>{{ namespace }}</option>
                                     {% endfor %}
                                 </select>
                             </div>
-                            <div class="min-w-0" data-scope-filter="period">
-                                <div class="flex min-h-5 items-center justify-between gap-2">
-                                    <label for="period-select"
-                                           class="text-sm font-semibold text-content-primary">Period</label>
-                                    <span id="period-mode-label" class="text-xs font-medium text-content-muted">
-                                        {% if payload.selected_report_type.family == 'inventory' %}
-                                            Snapshot
-                                        {% else %}
-                                            Time Range
-                                        {% endif %}
-                                    </span>
-                                </div>
-                                <select name="period"
-                                        id="period-select"
+                        </div>
+                        <div id="object-storage-scope-fields"
+                             class="{% if payload.selected_report_type.scope_asset_type != 'object_storage_system' %}hidden{% endif %}"
+                             data-report-scope-panel="object_storage_system">
+                            <label class="block">
+                                <span class="text-sm font-semibold text-content-primary">Object Storage System <span class="text-status-critical-text">*</span></span>
+                                <select name="object_storage_system_id"
+                                        id="object-storage-system-select"
                                         class="mt-1.5 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2.5 text-sm text-content-secondary shadow-sm focus:border-kaori-primary focus:outline-none focus:ring-2 focus:ring-kaori-primary/20">
-                                    {% for option in payload.period_options %}
-                                        {% set period_allowed = (payload.selected_report_type.family == 'inventory' and option.value == 'snapshot') or (payload.selected_report_type.family != 'inventory' and option.value != 'snapshot') %}
-                                        <option value="{{ option.value }}"
-                                                {% if payload.form_state.period == option.value %}selected{% endif %}
-                                                {% if not period_allowed %}hidden{% endif %}>{{ option.label }}</option>
+                                    <option value="" {% if not payload.form_state.object_storage_system_id %}selected{% endif %}>Select Object Storage System</option>
+                                    {% for system in payload.object_storage_systems %}
+                                        <option value="{{ system.value }}" {% if payload.form_state.object_storage_system_id == system.value %}selected{% endif %}>{{ system.label }} · {{ system.environment }}</option>
                                     {% endfor %}
                                 </select>
+                            </label>
+                        </div>
+                        <div class="mt-4" data-scope-filter="period">
+                            <div class="flex min-h-5 items-center justify-between gap-2">
+                                <label for="period-select" class="text-sm font-semibold text-content-primary">Period</label>
+                                <span id="period-mode-label" class="text-xs font-medium text-content-muted">
+                                    {% if payload.selected_report_type.family == 'inventory' %}Snapshot{% else %}Time Range{% endif %}
+                                </span>
                             </div>
+                            <select name="period"
+                                    id="period-select"
+                                    class="mt-1.5 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2.5 text-sm text-content-secondary shadow-sm focus:border-kaori-primary focus:outline-none focus:ring-2 focus:ring-kaori-primary/20">
+                                {% for option in payload.period_options %}
+                                    {% set period_allowed = (payload.selected_report_type.family == 'inventory' and option.value == 'snapshot') or (payload.selected_report_type.family != 'inventory' and option.value != 'snapshot') %}
+                                    <option value="{{ option.value }}" {% if payload.form_state.period == option.value %}selected{% endif %} {% if not period_allowed %}hidden{% endif %}>{{ option.label }}</option>
+                                {% endfor %}
+                            </select>
                         </div>
                         <div class="mt-4 flex items-start gap-3 rounded-xl border border-kaori-primary/20 bg-kaori-soft/45 px-4 py-3"
                              role="note"
                              data-generate-scope-tip="true">
                             <span class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary ring-1 ring-kaori-primary/15">
-                                <i data-lucide="lightbulb" class="h-4 w-4" aria-hidden="true"></i>
+                                <i data-lucide="crosshair" class="h-4 w-4" aria-hidden="true"></i>
                             </span>
                             <div class="min-w-0">
-                                <p class="text-sm font-semibold text-content-primary">Scope Tip</p>
-                                <p class="mt-0.5 text-xs leading-5 text-content-muted">Choose a cluster to unlock namespace selection. Keep <span class="font-semibold text-content-secondary">All Namespaces</span> for a cluster-wide report.</p>
+                                <p class="text-sm font-semibold text-content-primary">Scope Contract</p>
+                                <p id="scope-tip-copy" class="mt-0.5 text-xs leading-5 text-content-muted">Kubernetes reports use one selected cluster; Object Storage reports use one registered Object Storage system.</p>
                             </div>
                         </div>
                     </section>
@@ -404,8 +413,14 @@
                                 <div class="min-w-0 border-l-2 border-outline-default pl-3">
                                     <p class="text-xs font-semibold text-content-muted">Scope</p>
                                     <p id="preview-cluster"
-                                       class="mt-1 truncate text-sm font-semibold text-content-primary">{{ payload.form_state.cluster_id or 'Select Cluster' }}</p>
-                                    <p class="mt-0.5 truncate text-xs text-content-muted"><span id="preview-namespace">{{ payload.form_state.namespace or 'All Namespaces' }}</span><span aria-hidden="true">·</span><span id="preview-period">{{ payload.form_state.period }}</span></p>
+                                       class="mt-1 truncate text-sm font-semibold text-content-primary">
+                                        {% if payload.selected_report_type.scope_asset_type == 'object_storage_system' %}
+                                            {{ payload.form_state.object_storage_system_id or 'Select Object Storage System' }}
+                                        {% else %}
+                                            {{ payload.form_state.cluster_id or 'Select Cluster' }}
+                                        {% endif %}
+                                    </p>
+                                    <p class="mt-0.5 truncate text-xs text-content-muted"><span id="preview-namespace">{{ 'System Scope' if payload.selected_report_type.scope_asset_type == 'object_storage_system' else (payload.form_state.namespace or 'All Namespaces') }}</span><span aria-hidden="true">·</span><span id="preview-period">{{ payload.form_state.period }}</span></p>
                                 </div>
                                 <div class="min-w-0 border-l-2 border-outline-default pl-3">
                                     <p class="text-xs font-semibold text-content-muted">Artifact</p>
@@ -433,7 +448,7 @@
                                    data-lucide="{{ 'check' if initial_scope_ready else 'triangle-alert' }}"
                                    class="h-3 w-3 shrink-0"
                                    aria-hidden="true"></i>
-                                <span data-readiness-status-label>{{ 'Scope Ready' if initial_scope_ready else 'Select Cluster' }}</span>
+                                <span data-readiness-status-label>{{ 'Scope Ready' if initial_scope_ready else ('Select Object Storage System' if payload.selected_report_type.scope_asset_type == 'object_storage_system' else 'Select Cluster') }}</span>
                             </span>
                             <span id="readiness-sections-status"
                                   class="inline-flex min-h-6 items-center gap-1 rounded-md border px-2 py-0.5 text-xs font-semibold leading-4 {% if initial_sections_ready %}border-status-normal-border bg-status-normal-soft text-status-normal-text{% else %}border-status-warning-border bg-status-warning-soft text-status-warning-text{% endif %}">
@@ -455,7 +470,7 @@
                                class="mt-0.5 h-4 w-4 shrink-0"
                                aria-hidden="true"></i>
                             <div class="min-w-0">
-                                <p id="readiness-summary-text">{{ 'Scope and artifact requirements are valid. The request is ready to queue.' if initial_request_ready else ('Artifact storage is unavailable. Restore storage connectivity before creating a report.' if not payload.generation_allowed else 'Complete the required cluster or section selection before queueing.') }}</p>
+                                <p id="readiness-summary-text">{{ 'Scope and artifact requirements are valid. The request is ready to queue.' if initial_request_ready else ('Artifact storage is unavailable. Restore storage connectivity before creating a report.' if not payload.generation_allowed else 'Complete the required infrastructure scope or section selection before queueing.') }}</p>
                             </div>
                         </div>
                         <div class="flex shrink-0 items-center gap-3">
@@ -495,7 +510,9 @@
                 const reportTypeOptions = {{ payload.report_type_options|tojson }};
                 const singleClusterRequiredTypes = {{ payload.single_cluster_required_report_types|tojson }};
                 const namespaceOptionsByCluster = {{ payload.namespace_options_by_cluster|tojson }};
+                const objectStorageSystems = {{ payload.object_storage_systems|tojson }};
                 const hasRegisteredClusters = {{ payload.has_clusters|tojson }};
+                const hasObjectStorageSystems = {{ payload.has_object_storage_systems|tojson }};
                 const initialSelectedSections = {{ payload.form_state.sections|tojson }};
                 const initialNamespace = {{ payload.form_state.namespace|tojson }};
 
@@ -506,6 +523,10 @@
                 const outputFormatContract = document.getElementById('output-format-contract');
                 const clusterSelect = document.getElementById('cluster-select');
                 const namespaceSelect = document.getElementById('namespace-select');
+                const objectStorageSystemSelect = document.getElementById('object-storage-system-select');
+                const kubernetesScopeFields = document.getElementById('kubernetes-scope-fields');
+                const objectStorageScopeFields = document.getElementById('object-storage-scope-fields');
+                const scopeTipCopy = document.getElementById('scope-tip-copy');
                 const namespaceOptionCount = document.getElementById('namespace-option-count');
                 const reportNameInput = document.getElementById('report-name-input');
                 const generateButton = document.getElementById('generate-report-button');
@@ -928,9 +949,10 @@
                 function syncReportTypeSummary() {
                     const reportType = getReportTypeOption();
                     const selectedSections = getSelectedSections();
-                    const requiresSpecificCluster = singleClusterRequiredTypes.includes(reportTypeSelect.value);
                     const sectionLabel = selectedSections.length === 1 ? 'Section' : 'Sections';
-                    const scopeLabel = 'Single Cluster';
+                    const scopeLabel = reportType.scope_asset_type === 'object_storage_system'
+                        ? 'Object Storage System'
+                        : 'Kubernetes Cluster';
 
                     if (selectedReportLabel) {
                         selectedReportLabel.textContent = reportType.label;
@@ -1011,56 +1033,84 @@
                 }
 
                 function syncClusterGuard() {
-                    const requiresSpecificCluster = singleClusterRequiredTypes.includes(reportTypeSelect.value);
-                    const isAllClusters = !clusterSelect.value;
+                    const reportType = getReportTypeOption();
+                    const scopeType = reportType && reportType.scope_asset_type
+                        ? reportType.scope_asset_type
+                        : 'kubernetes_cluster';
+                    const objectStorageScope = scopeType === 'object_storage_system';
                     const hasSelectedSections = getSelectedSections().length > 0;
-                    const shouldBlockCluster = requiresSpecificCluster && isAllClusters;
-                    const shouldBlock = !hasRegisteredClusters || shouldBlockCluster || !hasSelectedSections || !storageGenerationReady;
-                    const clusterLabel = clusterSelect.options[clusterSelect.selectedIndex]
+                    const clusterReady = hasRegisteredClusters && Boolean(clusterSelect.value);
+                    const objectStorageReady = hasObjectStorageSystems && objectStorageSystemSelect && Boolean(objectStorageSystemSelect.value);
+                    const scopeReady = objectStorageScope ? objectStorageReady : clusterReady;
+                    const shouldBlock = !scopeReady || !hasSelectedSections || !storageGenerationReady;
+
+                    setElementVisibility(kubernetesScopeFields, !objectStorageScope);
+                    setElementVisibility(objectStorageScopeFields, objectStorageScope);
+                    if (clusterSelect) {
+                        clusterSelect.disabled = objectStorageScope;
+                    }
+                    if (namespaceSelect) {
+                        namespaceSelect.disabled = objectStorageScope || !clusterSelect.value;
+                    }
+                    if (objectStorageSystemSelect) {
+                        objectStorageSystemSelect.disabled = !objectStorageScope;
+                    }
+
+                    const clusterLabel = clusterSelect && clusterSelect.options[clusterSelect.selectedIndex]
                         ? clusterSelect.options[clusterSelect.selectedIndex].text.trim()
                         : 'Select Cluster';
+                    const systemLabel = objectStorageSystemSelect && objectStorageSystemSelect.options[objectStorageSystemSelect.selectedIndex]
+                        ? objectStorageSystemSelect.options[objectStorageSystemSelect.selectedIndex].text.trim()
+                        : 'Select Object Storage System';
                     const namespaceValue = namespaceSelect && namespaceSelect.value
                         ? namespaceSelect.options[namespaceSelect.selectedIndex].text.trim()
                         : 'All Namespaces';
 
-                    setReadinessItemTone(
-                        readinessScopeIcon,
-                        readinessScopeStatus,
-                        hasRegisteredClusters && !shouldBlockCluster,
-                    );
+                    setReadinessItemTone(readinessScopeIcon, readinessScopeStatus, scopeReady);
                     setReadinessStatusLabel(
                         readinessScopeStatus,
-                        !hasRegisteredClusters
-                            ? 'Setup Required'
-                            : (shouldBlockCluster ? 'Select Cluster' : 'Ready'),
+                        scopeReady
+                            ? 'Scope Ready'
+                            : (objectStorageScope ? 'Select Object Storage System' : 'Select Cluster'),
                     );
 
                     if (readinessScopeDescription) {
-                        readinessScopeDescription.textContent = !hasRegisteredClusters
-                            ? 'Register at least one Kubernetes cluster before creating report requests.'
-                            : (shouldBlockCluster
+                        readinessScopeDescription.textContent = objectStorageScope
+                            ? (hasObjectStorageSystems
+                                ? 'Select one registered Object Storage system for this report.'
+                                : 'Register at least one Object Storage system before creating Object Storage reports.')
+                            : (hasRegisteredClusters
                                 ? 'Select one validated Kubernetes cluster for this report.'
-                                : 'The report is bound to the selected cluster scope.');
+                                : 'Register at least one Kubernetes cluster before creating Kubernetes reports.');
                     }
 
+                    if (scopeTipCopy) {
+                        scopeTipCopy.textContent = objectStorageScope
+                            ? 'This report is bound to one registered Object Storage system; Kubernetes cluster and namespace fields are not part of the contract.'
+                            : 'This report is bound to one Kubernetes cluster; namespace optionally narrows the selected cluster.';
+                    }
+                    if (selectedReportScope) {
+                        selectedReportScope.textContent = objectStorageScope ? 'Object Storage System' : 'Kubernetes Cluster';
+                    }
+                    if (previewReportScopeRequirement) {
+                        previewReportScopeRequirement.textContent = objectStorageScope
+                            ? 'Object Storage System Required'
+                            : 'Selected Cluster Required';
+                    }
                     if (previewCluster) {
-                        previewCluster.textContent = clusterLabel;
+                        previewCluster.textContent = objectStorageScope ? systemLabel : clusterLabel;
                     }
-
                     if (previewNamespace) {
-                        previewNamespace.textContent = namespaceValue;
+                        previewNamespace.textContent = objectStorageScope ? 'System Scope' : namespaceValue;
                     }
 
                     syncOverallReadiness(!shouldBlock);
-
                     if (window.lucide) {
                         window.lucide.createIcons();
                     }
-
                     if (!generateButton) {
                         return;
                     }
-
                     generateButton.disabled = shouldBlock;
                     generateButton.className = shouldBlock
                         ? 'inline-flex min-h-9 cursor-not-allowed items-center justify-center gap-2 rounded-lg bg-kaori-soft px-5 text-sm font-semibold text-content-muted transition focus:outline-none focus:ring-2 focus:ring-kaori-primary/20'
@@ -1080,6 +1130,10 @@
                     updateNamespaceOptions('');
                     syncClusterGuard();
                 });
+
+                if (objectStorageSystemSelect) {
+                    objectStorageSystemSelect.addEventListener('change', syncClusterGuard);
+                }
 
                 if (outputFormatSelect) {
                     outputFormatSelect.addEventListener('change', syncOutputFormatMode);

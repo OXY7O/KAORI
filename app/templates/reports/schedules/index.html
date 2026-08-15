@@ -19,7 +19,7 @@
                 <span class="{{ table_ui.block_icon_classes() }}" aria-hidden="true"><i data-lucide="badge-info" class="h-4 w-4"></i></span>
                 <div>
                     <h3 class="text-sm font-bold text-content-primary">Schedule Identity & Scope</h3>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">Name the automation and bind it to one Kubernetes evidence scope.</p>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Name the automation and bind it to the infrastructure asset required by the selected report contract.</p>
                 </div>
             </div>
             <div class="mt-4 grid gap-4 sm:grid-cols-2">
@@ -36,27 +36,38 @@
                 <label class="block sm:col-span-2">
                     <span class="text-xs font-semibold text-content-muted">Description</span><textarea name="description" rows="2" maxlength="1000" placeholder="Describe the recurring reporting purpose." class="mt-1.5 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary outline-none focus:border-kaori-primary focus:ring-2 focus:ring-kaori-primary/20">{{ form_state.description }}</textarea>
                 </label>
-                <label class="block">
-                    <span class="text-xs font-semibold text-content-muted">Cluster</span>
-                    <select name="cluster_id"
-                            required
+                <div class="contents" data-schedule-kubernetes-scope>
+                    <label class="block">
+                        <span class="text-xs font-semibold text-content-muted">Kubernetes Cluster</span>
+                        <select name="cluster_id"
+                                data-schedule-cluster
+                                class="mt-1.5 min-h-9 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary outline-none focus:border-kaori-primary focus:ring-2 focus:ring-kaori-primary/20">
+                            <option value="" disabled {% if not form_state.cluster_id %}selected{% endif %}>Select Cluster</option>
+                            {% for option in payload.clusters %}
+                                <option value="{{ option.value }}" {% if form_state.cluster_id == option.value %}selected{% endif %}>{{ option.label }}</option>
+                            {% endfor %}
+                        </select>
+                    </label>
+                    <label class="block">
+                        <span class="text-xs font-semibold text-content-muted">Namespace</span>
+                        <input type="text"
+                               name="namespace"
+                               data-schedule-namespace
+                               value="{{ form_state.namespace }}"
+                               placeholder="All Namespaces"
+                               class="mt-1.5 min-h-9 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary outline-none focus:border-kaori-primary focus:ring-2 focus:ring-kaori-primary/20">
+                    </label>
+                </div>
+                <label class="hidden sm:col-span-2" data-schedule-object-storage-scope>
+                    <span class="text-xs font-semibold text-content-muted">Object Storage System</span>
+                    <select name="object_storage_system_id"
+                            data-schedule-object-storage-system
                             class="mt-1.5 min-h-9 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary outline-none focus:border-kaori-primary focus:ring-2 focus:ring-kaori-primary/20">
-                        <option value=""
-                                disabled
-                                {% if not form_state.cluster_id %}selected{% endif %}>Select Cluster</option>
-                        {% for option in payload.clusters %}
-                            <option value="{{ option.value }}"
-                                    {% if form_state.cluster_id == option.value %}selected{% endif %}>{{ option.label }}</option>
+                        <option value="" disabled {% if not form_state.object_storage_system_id %}selected{% endif %}>Select Object Storage System</option>
+                        {% for option in payload.object_storage_systems %}
+                            <option value="{{ option.value }}" {% if form_state.object_storage_system_id == option.value %}selected{% endif %}>{{ option.label }}</option>
                         {% endfor %}
                     </select>
-                </label>
-                <label class="block">
-                    <span class="text-xs font-semibold text-content-muted">Namespace</span>
-                    <input type="text"
-                           name="namespace"
-                           value="{{ form_state.namespace }}"
-                           placeholder="All Namespaces"
-                           class="mt-1.5 min-h-9 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary outline-none focus:border-kaori-primary focus:ring-2 focus:ring-kaori-primary/20">
                 </label>
             </div>
         </section>
@@ -76,6 +87,7 @@
                             class="mt-1.5 min-h-9 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary outline-none focus:border-kaori-primary focus:ring-2 focus:ring-kaori-primary/20">
                         {% for option in payload.report_type_options %}
                             <option value="{{ option.value }}"
+                                    data-scope-asset-type="{{ option.scope_asset_type }}"
                                     {% if form_state.report_type == option.value %}selected{% endif %}>{{ option.label }}</option>
                         {% endfor %}
                     </select>
@@ -243,6 +255,8 @@
                         <input type="checkbox"
                                name="notification_channel_ids"
                                value="{{ channel.value }}"
+                               data-schedule-channel-domains="{{ channel.domains | join(',') }}"
+                               data-schedule-channel-selectable="{{ 'true' if channel.selectable else 'false' }}"
                                {% if channel.channel_id in form_state.notification_channel_ids %}checked{% endif %}
                                {% if not channel.selectable %}disabled{% endif %}
                                class="mt-0.5 h-4 w-4 rounded border-outline-default text-kaori-primary focus:ring-kaori-primary/20">
@@ -285,6 +299,8 @@
          data-schedule-default-sections="{{ payload.default_sections_by_report_type | tojson | forceescape }}"
          data-schedule-allowed-formats="{{ payload.allowed_formats_by_report_type | tojson | forceescape }}"
          data-schedule-family-by-type="{{ payload.report_family_by_report_type | tojson | forceescape }}"
+         data-schedule-scope-by-type="{{ payload.scope_asset_type_by_report_type | tojson | forceescape }}"
+         data-schedule-domain-by-type="{{ payload.report_domain_by_report_type | tojson | forceescape }}"
          data-schedule-open-dialog="{{ 'true' if schedule_form_is_edit or payload.open_create_dialog else 'false' }}">
         <section class="{{ page_hero.shell_classes() }}">
             <div class="{{ page_hero.layout_classes() }}">
@@ -566,7 +582,7 @@
                                 </select>
                             </label>
                             <label class="block">
-                                <span class="{{ table_ui.filter_label_classes() }}">Cluster</span>
+                                <span class="{{ table_ui.filter_label_classes() }}">Kubernetes Cluster</span>
                                 <select name="cluster" class="mt-1.5 {{ table_ui.filter_select_classes() }}">
                                     {% for option in payload.filter_options.clusters %}
                                         <option value="{{ option.value }}"
@@ -613,7 +629,7 @@
                                                 </div>
                                             </td>
                                             <td class="{{ table_ui.cell_classes() }}">
-                                                <p class="text-sm font-semibold text-content-primary">{{ schedule.cluster }}</p>
+                                                <p class="text-sm font-semibold text-content-primary">{{ schedule.scope }}</p>
                                                 <p class="mt-0.5 text-xs text-content-muted">{{ schedule.namespace }}</p>
                                             </td>
                                             <td class="{{ table_ui.cell_classes() }}">
@@ -679,7 +695,7 @@
                                         </div>
                                         <div>
                                             <p class="text-xs font-semibold text-content-muted">Scope</p>
-                                            <p class="mt-1 text-sm font-bold text-content-primary">{{ schedule.cluster }}</p>
+                                            <p class="mt-1 text-sm font-bold text-content-primary">{{ schedule.scope }}</p>
                                             <p class="mt-0.5 text-xs text-content-muted">{{ schedule.namespace }}</p>
                                         </div>
                                         <div>

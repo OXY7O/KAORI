@@ -17,6 +17,8 @@
         const defaults = parseConfig(workspace.dataset.scheduleDefaultSections)
         const allowedFormats = parseConfig(workspace.dataset.scheduleAllowedFormats)
         const familyByType = parseConfig(workspace.dataset.scheduleFamilyByType)
+        const scopeByType = parseConfig(workspace.dataset.scheduleScopeByType)
+        const domainByType = parseConfig(workspace.dataset.scheduleDomainByType)
 
         workspace.querySelectorAll('[data-schedule-form]').forEach((form) => {
             if (form.dataset.initialized === 'true') return
@@ -29,6 +31,11 @@
             const weeklyField = form.querySelector('[data-schedule-weekly-field]')
             const monthlyField = form.querySelector('[data-schedule-monthly-field]')
             const sectionError = form.querySelector('[data-schedule-section-error]')
+            const kubernetesScope = form.querySelector('[data-schedule-kubernetes-scope]')
+            const objectStorageScope = form.querySelector('[data-schedule-object-storage-scope]')
+            const clusterSelect = form.querySelector('[data-schedule-cluster]')
+            const namespaceInput = form.querySelector('[data-schedule-namespace]')
+            const objectStorageSelect = form.querySelector('[data-schedule-object-storage-system]')
 
             const syncTiming = () => {
                 const value = cadence?.value || 'weekly'
@@ -40,6 +47,22 @@
                 const selectedType = reportType?.value || ''
                 const formats = allowedFormats[selectedType] || []
                 const family = familyByType[selectedType] || 'analytics'
+                const scopeAssetType = scopeByType[selectedType] || 'kubernetes_cluster'
+                const reportDomain = domainByType[selectedType] || 'kubernetes'
+                const usesObjectStorage = scopeAssetType === 'object_storage_system'
+
+                kubernetesScope?.classList.toggle('hidden', usesObjectStorage)
+                objectStorageScope?.classList.toggle('hidden', !usesObjectStorage)
+                if (clusterSelect) clusterSelect.disabled = usesObjectStorage
+                if (namespaceInput) namespaceInput.disabled = usesObjectStorage
+                if (objectStorageSelect) objectStorageSelect.disabled = !usesObjectStorage
+                form.querySelectorAll('[data-schedule-channel-domains]').forEach((input) => {
+                    const domains = String(input.dataset.scheduleChannelDomains || '').split(',').filter(Boolean)
+                    const baseSelectable = input.dataset.scheduleChannelSelectable === 'true'
+                    const eligible = baseSelectable && domains.includes(reportDomain)
+                    input.disabled = !eligible
+                    if (!eligible) input.checked = false
+                })
 
                 Array.from(outputFormat?.options || []).forEach((option) => {
                     option.hidden = !formats.includes(option.value)

@@ -303,3 +303,46 @@ report_types:
   - inventory_metadata
   - inventory_field_dictionary
   period_mode: snapshot
+- value: object_storage_inventory
+  label: Object Storage Inventory Report
+  description: Provider-neutral Object Storage systems, buckets or containers, committed usage, quota, protection, and lifecycle evidence.
+  icon: database-backup
+  family: inventory
+  default_format: xlsx
+  allowed_formats:
+  - xlsx
+  - csv
+  default_sections:
+  - object_storage_inventory_assets
+  - object_storage_inventory_metadata
+  - object_storage_inventory_field_dictionary
+  period_mode: snapshot
+  requires_cluster: false
+  domain: object_storage
+  source_kind: object_storage
+  scope_asset_type: object_storage_system
+- value: object_storage_analysis
+  label: Object Storage Analysis Report
+  description: Capacity, usage, quota headroom, request performance, forecast, consumer concentration, and operational risk for one Object Storage system.
+  icon: chart-no-axes-combined
+  family: analytics
+  default_format: pdf
+  allowed_formats:
+  - pdf
+  - csv
+  default_sections:
+  - executive_summary
+  - object_storage_capacity_usage
+  - object_storage_bucket_distribution
+  - object_storage_quota_headroom
+  - object_storage_performance
+  - object_storage_forecast
+  - object_storage_top_consumers
+  - object_storage_risk_findings
+  - operational_recommendations
+  - methodology_evidence_boundary
+  period_mode: range
+  requires_cluster: false
+  domain: object_storage
+  source_kind: object_storage
+  scope_asset_type: object_storage_system

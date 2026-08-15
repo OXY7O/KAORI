@@ -4,11 +4,10 @@ import re
 from datetime import UTC, datetime
 from uuid import uuid4
 
-from app.extensions.db import db
-from app.models.cluster import Cluster
 from app.models.report import Report
-from app.reports.catalog import OUTPUT_FORMAT_SPECS, require_selected_cluster
+from app.reports.catalog import OUTPUT_FORMAT_SPECS
 from app.reports.reference import report_reference_filename
+from app.reports.scope import resolve_report_scope
 
 PERIOD_SLUGS = {
     '24h': 'last-24-hours',
@@ -57,55 +56,22 @@ def get_report_source_kind_slug(
     )
 
 
-def get_report_cluster_slug(
-    report: Report,
-) -> str:
-    require_selected_cluster(report)
-    cluster_name = get_report_cluster_name(
-        report,
-    )
-
-    return slugify_storage_part(
-        cluster_name or report.cluster_id,
-        fallback='unknown-cluster',
-    )
+def get_report_scope_slug(report: Report) -> str:
+    scope = resolve_report_scope(report)
+    if scope is None:
+        return 'unknown-asset'
+    return slugify_storage_part(scope.label or scope.asset_id, fallback='unknown-asset')
 
 
-def get_report_cluster_name(
-    report: Report,
-) -> str | None:
-    cluster = getattr(
-        report,
-        'cluster',
-        None,
-    )
+def get_report_cluster_slug(report: Report) -> str:
+    """Backward-compatible alias for the canonical primary asset scope slug."""
+    return get_report_scope_slug(report)
 
-    if cluster is not None:
-        name = getattr(
-            cluster,
-            'name',
-            None,
-        )
 
-        if name:
-            return str(
-                name,
-            )
-
-    if not report.cluster_id:
-        return None
-
-    db_cluster = db.session.get(
-        Cluster,
-        report.cluster_id,
-    )
-
-    if db_cluster is None:
-        return None
-
-    return str(
-        db_cluster.name,
-    )
+def get_report_cluster_name(report: Report) -> str | None:
+    """Backward-compatible alias for callers that still render a cluster label."""
+    scope = resolve_report_scope(report)
+    return scope.label if scope is not None else None
 
 
 def get_report_type_slug(
@@ -120,6 +86,9 @@ def get_report_type_slug(
 def get_report_namespace_slug(
     report: Report,
 ) -> str:
+    scope = resolve_report_scope(report)
+    if scope is not None and scope.asset_type == 'object_storage_system':
+        return 'system-scope'
     return slugify_storage_part(
         report.namespace or 'all-namespaces',
         fallback='all-namespaces',

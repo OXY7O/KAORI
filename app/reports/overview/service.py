@@ -364,68 +364,85 @@ def get_automation_summary(
 
 
 def get_report_type_coverage() -> dict[str, Any]:
-    kubernetes_items: list[dict[str, str]] = []
-
+    published_by_domain: dict[str, list[dict[str, str]]] = {}
     for option in REPORT_TYPE_OPTIONS:
         report_type = str(option.get('value', ''))
-        is_ready = report_type in IMPLEMENTED_REPORT_TYPES
-
-        kubernetes_items.append(
+        if report_type not in IMPLEMENTED_REPORT_TYPES:
+            continue
+        domain_key = str(option.get('domain') or 'kubernetes')
+        published_by_domain.setdefault(domain_key, []).append(
             {
                 'name': str(option.get('label', report_type)),
                 'description': str(option.get('description', 'Operational report type.')),
                 'icon': str(option.get('icon', 'file-text')),
-                'status': 'Published' if is_ready else 'Reserved',
-                'tone': 'normal' if is_ready else 'unknown',
+                'status': 'Published',
+                'tone': 'normal',
             }
         )
 
-    defined_domains = [
-        {
-            'key': domain.key,
-            'label': domain.label,
-            'description': domain.description,
-            'icon': domain.icon,
-            'status': domain.status,
-            'tone': domain.tone,
-            'items': [
+    coverage_by_domain = {domain.key: domain for domain in REPORT_COVERAGE_DOMAINS}
+    domain_order = ['kubernetes', 'object_storage', 'server', 'hci']
+    domains: list[dict[str, Any]] = []
+
+    for domain_key in domain_order:
+        published_items = list(published_by_domain.get(domain_key, ()))
+        coverage = coverage_by_domain.get(domain_key)
+        published_names = {item['name'] for item in published_items}
+        candidate_items: list[dict[str, str]] = []
+        if coverage is not None:
+            candidate_items = [
                 {
                     'name': item.name,
                     'description': item.description,
                     'icon': item.icon,
-                    'status': domain.status,
-                    'tone': domain.tone,
+                    'status': 'Candidate' if published_items else coverage.status,
+                    'tone': 'info' if published_items else coverage.tone,
                 }
-                for item in domain.items
-            ],
-            'available_count': 0,
-            'published_count': 0,
-            'candidate_count': len(domain.items),
-            'total_count': len(domain.items),
-        }
-        for domain in REPORT_COVERAGE_DOMAINS
-    ]
+                for item in coverage.items
+                if item.name not in published_names
+            ]
 
-    kubernetes_published = sum(1 for item in kubernetes_items if item['status'] == 'Published')
-    domains = [
-        {
-            'key': 'kubernetes',
-            'label': 'Kubernetes Reports',
-            'description': (
+        if domain_key == 'kubernetes':
+            label = 'Kubernetes Reports'
+            description = (
                 'Published report contracts backed by Kubernetes inventory, Prometheus metrics, '
                 'and Alertmanager context.'
-            ),
-            'icon': 'boxes',
-            'status': 'Published',
-            'tone': 'normal',
-            'items': kubernetes_items,
-            'available_count': kubernetes_published,
-            'published_count': kubernetes_published,
-            'candidate_count': 0,
-            'total_count': len(kubernetes_items),
-        },
-        *defined_domains,
-    ]
+            )
+            icon = 'boxes'
+        elif coverage is not None:
+            label = coverage.label
+            description = coverage.description
+            icon = coverage.icon
+        else:
+            label = REPORT_DOMAIN_LABELS.get(domain_key, domain_key.replace('_', ' ').title())
+            description = REPORT_DOMAIN_DESCRIPTIONS.get(domain_key, '')
+            icon = 'file-text'
+
+        if published_items:
+            status = 'Published'
+            tone = 'normal'
+        elif coverage is not None:
+            status = coverage.status
+            tone = coverage.tone
+        else:
+            status = 'Reserved'
+            tone = 'unknown'
+
+        domains.append(
+            {
+                'key': domain_key,
+                'label': label,
+                'description': description,
+                'icon': icon,
+                'status': status,
+                'tone': tone,
+                'items': [*published_items, *candidate_items],
+                'available_count': len(published_items),
+                'published_count': len(published_items),
+                'candidate_count': len(candidate_items),
+                'total_count': len(published_items) + len(candidate_items),
+            }
+        )
 
     published_count = sum(int(domain['published_count']) for domain in domains)
     candidate_count = sum(int(domain['candidate_count']) for domain in domains)

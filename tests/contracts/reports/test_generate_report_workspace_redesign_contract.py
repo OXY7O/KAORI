@@ -19,7 +19,7 @@ def test_generate_report_uses_canonical_hero_and_compact_operator_workspace() ->
     assert 'page_hero.layout_classes()' in source
     assert 'page_hero.content_classes()' in source
     assert 'page_hero.context_card(' in source
-    assert 'Single Cluster Scope' in source
+    assert 'Infrastructure Asset Scope' in source
     assert 'Catalog-Driven Contract' in source
     assert 'Queued Artifact Generation' in source
     assert 'data-generate-report-workspace="compact-operator-workspace"' in source
@@ -34,8 +34,10 @@ def test_report_selection_is_compact_catalog_select_not_card_wall() -> None:
     source = read(TEMPLATE)
 
     assert 'id="report-type-select"' in source
-    assert "('analytics', 'Kubernetes Analytics')" in source
-    assert "('inventory', 'Kubernetes Inventory')" in source
+    assert "('kubernetes', 'Kubernetes')" in source
+    assert "('object_storage', 'Object Storage')" in source
+    assert "('analytics', 'Analytics')" in source
+    assert "('inventory', 'Inventory')" in source
     assert 'id="selected-template-summary"' in source
     assert 'data-report-type-card=' not in source
     assert 'data-report-family-filter=' not in source
@@ -56,7 +58,7 @@ def test_generate_report_uses_two_primary_configuration_zones_and_compact_review
         assert marker in source
 
     assert 'Report Contract' in source
-    assert 'Kubernetes Scope' in source
+    assert 'Infrastructure Scope' in source
     assert 'Report Content' in source
     assert 'Review & Queue' in source
     assert 'Review the request summary before it is queued for artifact generation.' in source
@@ -185,7 +187,7 @@ def test_generate_report_typography_and_summary_are_visually_hierarchical() -> N
 
     for heading in (
         'Report Contract',
-        'Kubernetes Scope',
+        'Infrastructure Scope',
         'Artifact',
         'Report Content',
         'Review & Queue',
@@ -214,8 +216,8 @@ def test_scope_filters_are_symmetric_and_use_guidance_instead_of_inline_warning(
     assert 'id="period-mode-label"' in source
     assert "periodModeLabel.textContent = isInventoryReport ? 'Snapshot' : 'Time Range';" in source
     assert 'data-generate-scope-tip="true"' in source
-    assert 'Scope Tip' in source
-    assert 'Choose a cluster to unlock namespace selection.' in source
+    assert 'Scope Contract' in source
+    assert 'Kubernetes reports use one selected cluster; Object Storage reports use one registered Object Storage system.' in source
     assert 'All Namespaces' in source
     assert 'Select a cluster before queueing.' not in source
     assert 'id="cluster-guard"' not in source
@@ -228,7 +230,7 @@ def test_generate_report_uses_numbered_workflow_hierarchy_without_progress_rail(
 
     expected = {
         'report-contract': '01',
-        'kubernetes-scope': '02',
+        'infrastructure-scope': '02',
         'artifact': '03',
         'report-content': '04',
         'review-queue': '05',

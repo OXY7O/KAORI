@@ -59,6 +59,23 @@ class Report(db.Model):
         index=True,
     )
 
+    scope_asset_type: Mapped[str | None] = mapped_column(
+        db.String(50),
+        nullable=True,
+        index=True,
+    )
+
+    scope_asset_id: Mapped[str | None] = mapped_column(
+        db.String(64),
+        nullable=True,
+        index=True,
+    )
+
+    scope_asset_label_snapshot: Mapped[str | None] = mapped_column(
+        db.String(255),
+        nullable=True,
+    )
+
     period: Mapped[str] = mapped_column(
         db.String(50),
         nullable=False,
@@ -156,6 +173,9 @@ class Report(db.Model):
             'source_kind': self.source_kind,
             'cluster_id': self.cluster_id,
             'namespace': self.namespace,
+            'scope_asset_type': self.scope_asset_type,
+            'scope_asset_id': self.scope_asset_id,
+            'scope_asset_label_snapshot': self.scope_asset_label_snapshot,
             'period': self.period,
             'output_format': self.output_format,
             'status': self.status,
@@ -346,6 +366,23 @@ class ReportSchedule(db.Model):
         index=True,
     )
 
+    scope_asset_type: Mapped[str | None] = mapped_column(
+        db.String(50),
+        nullable=True,
+        index=True,
+    )
+
+    scope_asset_id: Mapped[str | None] = mapped_column(
+        db.String(64),
+        nullable=True,
+        index=True,
+    )
+
+    scope_asset_label_snapshot: Mapped[str | None] = mapped_column(
+        db.String(255),
+        nullable=True,
+    )
+
     period: Mapped[str] = mapped_column(
         db.String(50),
         nullable=False,
@@ -493,6 +530,9 @@ class ReportSchedule(db.Model):
             'source_kind': self.source_kind,
             'cluster_id': self.cluster_id,
             'namespace': self.namespace,
+            'scope_asset_type': self.scope_asset_type,
+            'scope_asset_id': self.scope_asset_id,
+            'scope_asset_label_snapshot': self.scope_asset_label_snapshot,
             'period': self.period,
             'output_format': self.output_format,
             'sections': self.sections_as_list(),

@@ -27,6 +27,7 @@ from app.models.user import User
 from app.reports.catalog import REPORT_TYPE_SPECS
 from app.reports.export.artifacts import get_report_artifact_format
 from app.reports.generate.service import REPORT_TYPE_OPTIONS
+from app.reports.scope import OBJECT_STORAGE_SYSTEM_ASSET_TYPE, resolve_report_scope
 from app.reports.storage.service import (
     get_configured_storage_backend_name,
     get_report_storage_backend_status,
@@ -863,6 +864,19 @@ def _serialize_report(
         active_backend_status.get('write_available', False)
     )
     can_download_artifact = report.status in ['ready', 'archived'] and bool(report.file_path) and file_exists
+    scope = resolve_report_scope(report)
+    scope_asset_type = str(getattr(report, 'scope_asset_type', '') or '')
+    scope_label = 'Object Storage System' if scope_asset_type == OBJECT_STORAGE_SYSTEM_ASSET_TYPE else 'Kubernetes Cluster'
+    scope_value = (
+        scope.label
+        if scope is not None
+        else (getattr(report, 'scope_asset_label_snapshot', None) or 'Asset Selection Missing')
+    )
+    secondary_scope = (
+        'Not Applicable'
+        if scope_asset_type == OBJECT_STORAGE_SYSTEM_ASSET_TYPE
+        else (report.namespace or 'All Namespaces')
+    )
 
     return {
         'id': report.id,
@@ -885,7 +899,12 @@ def _serialize_report(
         if report.cluster_id
         else 'Cluster Selection Missing',
         'cluster_id': report.cluster_id or '',
-        'namespace': report.namespace or 'All Namespaces',
+        'namespace': secondary_scope,
+        'scope': scope_value,
+        'scope_label': scope_label,
+        'scope_asset_type': scope_asset_type or 'kubernetes_cluster',
+        'scope_asset_id': getattr(report, 'scope_asset_id', None) or report.cluster_id or '',
+        'secondary_scope': secondary_scope,
         'period': _format_period(
             report.period,
         ),
@@ -1029,7 +1048,7 @@ def _serialize_report_detail(
 
     return {
         **report_item,
-        'namespace': report.namespace or 'All Namespaces',
+        'namespace': report_item['secondary_scope'],
         'raw_status': report.status,
         'raw_report_type': report.report_type,
         'report_domain': _format_report_domain(getattr(report, 'report_domain', 'kubernetes')),

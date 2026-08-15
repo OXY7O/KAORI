@@ -99,7 +99,7 @@ def test_estate_capability_merges_artifact_mix_reuse_and_contracts() -> None:
     assert 'payload.report_type_coverage.domains' in source
     assert 'data-report-domain-coverage="true"' in source
     assert 'Publication Boundary' in source
-    assert 'Evidence Ready means KAORI already has committed inventory or analytics evidence' in source
+    assert 'Published means both a canonical report contract and renderer are registered' in source
     assert 'payload.summary_cards[0]' in source
     assert 'payload.artifact_statistics[2]' in source
     assert 'data-artifact-estate-snapshot="true"' in source

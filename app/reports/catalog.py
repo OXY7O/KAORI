@@ -58,6 +58,9 @@ class ReportTypeSpec:
     allowed_formats: tuple[str, ...]
     default_sections: tuple[str, ...]
     period_mode: str
+    domain: str = 'kubernetes'
+    source_kind: str = 'kubernetes'
+    scope_asset_type: str = 'kubernetes_cluster'
     requires_cluster: bool = True
 
 
@@ -106,6 +109,9 @@ def _load_report_catalog() -> tuple[dict[str, OutputFormatSpec], tuple[ReportTyp
             allowed_formats=allowed_formats,
             default_sections=string_tuple(raw.get('default_sections'), f'{path}.default_sections'),
             period_mode=require_str(raw, 'period_mode', path),
+            domain=str(raw.get('domain') or 'kubernetes').strip(),
+            source_kind=str(raw.get('source_kind') or raw.get('domain') or 'kubernetes').strip(),
+            scope_asset_type=str(raw.get('scope_asset_type') or 'kubernetes_cluster').strip(),
             requires_cluster=require_bool(raw, 'requires_cluster', path, default=True),
         ))
     return formats, tuple(reports)
@@ -136,9 +142,9 @@ def _load_report_coverage_catalog() -> tuple[ReportCoverageDomainSpec, ...]:
         )
         status = require_str(raw_domain, 'status', path)
         tone = require_str(raw_domain, 'tone', path)
-        if status not in {'Evidence Ready', 'Planned', 'Reserved'}:
+        if status not in {'Published', 'Evidence Ready', 'Planned', 'Reserved'}:
             raise DefinitionError(f'{path}.status is unsupported: {status!r}.')
-        if tone not in {'info', 'unknown'}:
+        if tone not in {'normal', 'info', 'unknown'}:
             raise DefinitionError(f'{path}.tone is unsupported: {tone!r}.')
         domains.append(
             ReportCoverageDomainSpec(
@@ -176,6 +182,9 @@ REPORT_TYPE_OPTIONS: list[dict[str, Any]] = [
         'allowed_formats': list(spec.allowed_formats),
         'default_sections': list(spec.default_sections),
         'period_mode': spec.period_mode,
+        'domain': spec.domain,
+        'source_kind': spec.source_kind,
+        'scope_asset_type': spec.scope_asset_type,
         'requires_cluster': spec.requires_cluster,
     }
     for spec in REPORT_TYPE_SPECS
@@ -220,14 +229,26 @@ def validate_report_contract(
     report_type: str,
     output_format: str,
     cluster_id: str | None,
+    scope_asset_type: str | None = None,
+    scope_asset_id: str | None = None,
 ) -> None:
     spec = get_report_type_spec(report_type)
     normalized_format = str(output_format or '').strip().lower()
+    normalized_scope_type = str(scope_asset_type or '').strip()
+    normalized_scope_id = str(scope_asset_id or '').strip()
 
     if spec.requires_cluster and not str(cluster_id or '').strip():
         raise ReportContractError(
             'A selected Kubernetes cluster is required. Cross-cluster report generation is disabled.'
         )
+    if spec.scope_asset_type == 'object_storage_system':
+        if normalized_scope_type and normalized_scope_type != spec.scope_asset_type:
+            raise ReportContractError('The selected report requires an Object Storage System scope.')
+        if not normalized_scope_id:
+            raise ReportContractError('A selected Object Storage system is required for this report.')
+    elif normalized_scope_type and normalized_scope_type != spec.scope_asset_type:
+        raise ReportContractError(f'{spec.label} requires {spec.scope_asset_type} scope.')
+
     if normalized_format not in spec.allowed_formats:
         allowed = ', '.join(value.upper() for value in spec.allowed_formats)
         raise ReportContractError(f'{spec.label} supports only {allowed} output.')
@@ -242,9 +263,21 @@ def require_selected_cluster(report: Any) -> str:
     return cluster_id
 
 
+def require_object_storage_system(report: Any) -> str:
+    spec = get_report_type_spec(str(getattr(report, 'report_type', '') or ''))
+    if spec.scope_asset_type != 'object_storage_system':
+        raise ReportContractError(f'{spec.label} is not scoped to Object Storage.')
+    scope_id = str(getattr(report, 'scope_asset_id', '') or '').strip()
+    if not scope_id:
+        raise ReportContractError('A selected Object Storage system is required for this report.')
+    return scope_id
+
+
 def validate_report_instance(report: Any) -> None:
     validate_report_contract(
         report_type=str(getattr(report, 'report_type', '') or ''),
         output_format=str(getattr(report, 'output_format', '') or ''),
         cluster_id=getattr(report, 'cluster_id', None),
+        scope_asset_type=getattr(report, 'scope_asset_type', None),
+        scope_asset_id=getattr(report, 'scope_asset_id', None),
     )

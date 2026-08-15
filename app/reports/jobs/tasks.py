@@ -160,6 +160,9 @@ def generate_report_job(
                 'file_path': report.file_path,
                 'file_size_bytes': report.file_size_bytes,
                 'selected_cluster_id': report.cluster_id,
+                'scope_asset_type': report.scope_asset_type,
+                'scope_asset_id': report.scope_asset_id,
+                'scope_asset_label': report.scope_asset_label_snapshot,
                 'period': report.period,
             },
         )

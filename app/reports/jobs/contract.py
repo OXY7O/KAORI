@@ -5,7 +5,8 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from app.models.report import Report
-from app.reports.catalog import get_report_type_spec
+from app.reports.catalog import get_report_type_spec, validate_report_instance
+from app.reports.scope import resolve_report_scope
 
 JOB_CONTRACT_VERSION = 'kaori-report-job-v1.0'
 ANALYTICS_PERIODS = {
@@ -23,7 +24,10 @@ class ReportJobParameters:
     report_type: str
     report_family: str
     execution_mode: str
-    selected_cluster_id: str
+    selected_cluster_id: str | None
+    scope_asset_type: str
+    scope_asset_id: str
+    scope_asset_label: str
     namespace: str | None
     output_format: str
     sections: list[str]
@@ -50,8 +54,10 @@ def build_report_job_parameters(
 ) -> ReportJobParameters:
     if not report.id:
         raise ValueError('The report must be persisted before a job contract can be built.')
-    if not report.cluster_id:
-        raise ValueError('Report jobs require one selected cluster.')
+    validate_report_instance(report)
+    scope = resolve_report_scope(report)
+    if scope is None:
+        raise ValueError('Report jobs require one selected infrastructure asset.')
 
     spec = get_report_type_spec(report.report_type)
     family = str(spec.family)
@@ -84,7 +90,10 @@ def build_report_job_parameters(
         report_type=report.report_type,
         report_family=family,
         execution_mode=execution_mode,
-        selected_cluster_id=str(report.cluster_id),
+        selected_cluster_id=str(report.cluster_id) if report.cluster_id else None,
+        scope_asset_type=scope.asset_type,
+        scope_asset_id=scope.asset_id,
+        scope_asset_label=scope.label,
         namespace=report.namespace,
         output_format=report.output_format,
         sections=report.sections_as_list(),

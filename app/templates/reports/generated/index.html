@@ -23,7 +23,7 @@
                             Track report requests from queue admission through worker execution, retained artifact delivery, and lifecycle review.
                         </p>
                         <div class="{{ page_hero.metadata_row_classes() }}">
-                            {{ page_hero.meta_label('server', 'Single-Cluster Artifacts') }}
+                            {{ page_hero.meta_label('server', 'Infrastructure-Scoped Artifacts') }}
                             {{ page_hero.meta_label('hard-drive', 'Governed Storage') }}
                             {{ page_hero.meta_label('workflow', 'Worker-Owned Generation') }}
                         </div>
@@ -181,7 +181,7 @@
                     </div>
                 </label>
                 <label class="block min-w-0">
-                    <span class="{{ table_ui.filter_label_classes() }}">Cluster</span>
+                    <span class="{{ table_ui.filter_label_classes() }}">Kubernetes Cluster</span>
                     <select name="cluster_id"
                             class="mt-1.5 {{ table_ui.filter_select_classes() }}">
                         {% for option in payload.filter_options.clusters %}
@@ -284,8 +284,8 @@
                                     </td>
                                     <td class="{{ table_ui.cell_classes() }} align-top">
                                         <div class="min-w-[12rem]">
-                                            <p class="text-sm font-semibold leading-5 text-content-primary">{{ report.cluster }}</p>
-                                            <p class="mt-1 text-xs leading-5 text-content-muted">{{ report.namespace }}</p>
+                                            <p class="text-sm font-semibold leading-5 text-content-primary">{{ report.scope }}</p>
+                                            <p class="mt-1 text-xs leading-5 text-content-muted">{{ report.secondary_scope }}</p>
                                         </div>
                                     </td>
                                     <td class="{{ table_ui.cell_classes() }} align-top">

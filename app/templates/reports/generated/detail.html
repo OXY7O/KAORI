@@ -29,7 +29,7 @@
                         </p>
                         <div class="{{ page_hero.metadata_row_classes() }}">
                             {{ page_hero.meta_label(payload.report.report_icon, payload.report.report_type) }}
-                            {{ page_hero.meta_label('boxes', payload.report.cluster) }}
+                            {{ page_hero.meta_label('boxes', payload.report.scope) }}
                             {{ page_hero.meta_label('calendar-range', payload.report.period) }}
                         </div>
                     {% endcall %}
@@ -170,15 +170,15 @@
                                 </dd>
                             </div>
                             <div class="border-t border-outline-subtle py-3">
-                                <dt class="text-xs font-semibold text-content-muted">Cluster</dt>
+                                <dt class="text-xs font-semibold text-content-muted">{{ payload.report.scope_label }}</dt>
                                 <dd class="mt-1.5 break-words text-sm font-bold text-content-primary">
-                                    {{ payload.report.cluster }}
+                                    {{ payload.report.scope }}
                                 </dd>
                             </div>
                             <div class="border-t border-outline-subtle py-3">
-                                <dt class="text-xs font-semibold text-content-muted">Namespace</dt>
+                                <dt class="text-xs font-semibold text-content-muted">Secondary Scope</dt>
                                 <dd class="mt-1.5 break-words text-sm font-bold text-content-primary">
-                                    {{ payload.report.namespace }}
+                                    {{ payload.report.secondary_scope }}
                                 </dd>
                             </div>
                             <div class="border-t border-outline-subtle py-3">
@@ -209,7 +209,7 @@
                             </span>
                             <div class="min-w-0">
                                 <p class="text-xs font-bold text-content-primary">Governed Evidence Scope</p>
-                                <p class="mt-1 text-xs leading-5 text-content-muted">Regeneration reuses this persisted cluster, namespace, period, and section coverage without silently broadening the evidence boundary.</p>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">Regeneration reuses this persisted infrastructure asset, secondary scope, period, and section coverage without silently broadening the evidence boundary.</p>
                             </div>
                         </div>
                     </div>
@@ -591,15 +591,15 @@
                                 <dl class="mt-3 grid gap-px bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4"
                                     data-generated-definition-scope="true">
                                     <div class="min-w-0 bg-surface-card px-4 py-3.5 sm:px-5">
-                                        <dt class="text-xs font-semibold text-content-muted">Cluster</dt>
+                                        <dt class="text-xs font-semibold text-content-muted">{{ payload.report.scope_label }}</dt>
                                         <dd class="mt-1.5 break-words text-sm font-bold text-content-primary">
-                                            {{ payload.report.cluster }}
+                                            {{ payload.report.scope }}
                                         </dd>
                                     </div>
                                     <div class="min-w-0 bg-surface-card px-4 py-3.5 sm:px-5">
-                                        <dt class="text-xs font-semibold text-content-muted">Namespace</dt>
+                                        <dt class="text-xs font-semibold text-content-muted">Secondary Scope</dt>
                                         <dd class="mt-1.5 break-words text-sm font-bold text-content-primary">
-                                            {{ payload.report.namespace }}
+                                            {{ payload.report.secondary_scope }}
                                         </dd>
                                     </div>
                                     <div class="min-w-0 bg-surface-card px-4 py-3.5 sm:px-5">
@@ -625,7 +625,7 @@
                                     </span>
                                     <div class="min-w-0">
                                         <p class="text-xs font-bold text-content-primary">Governed Evidence Scope</p>
-                                        <p class="mt-1 text-xs leading-5 text-content-muted">Regeneration reuses the persisted scope and does not silently broaden the cluster, namespace, period, or selected sections.</p>
+                                        <p class="mt-1 text-xs leading-5 text-content-muted">Regeneration reuses the persisted scope and does not silently broaden the infrastructure asset, secondary scope, period, or selected sections.</p>
                                     </div>
                                 </div>
                             </section>
