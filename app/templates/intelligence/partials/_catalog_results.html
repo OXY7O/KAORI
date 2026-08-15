@@ -1,3 +1,4 @@
+{% include 'intelligence/partials/_catalog_summary.html' %}
 {% include 'intelligence/partials/_catalog_records.html' %}
 {% set query_params = payload.filters.copy() %}
 {% set _ = query_params.update({'per_page': payload.pagination.per_page}) %}

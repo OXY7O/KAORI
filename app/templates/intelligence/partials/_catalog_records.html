@@ -4,10 +4,10 @@
     <table class="w-full min-w-[980px] table-fixed border-collapse text-left">
         <thead class="border-b border-outline-subtle bg-surface-hover text-xs font-semibold uppercase tracking-wide text-content-muted">
             <tr>
-                <th class="w-[34%] px-5 py-3">Rule Definition</th>
-                <th class="w-[17%] px-4 py-3">Domain & Resource</th>
-                <th class="w-[23%] px-4 py-3">Signal Contract</th>
-                <th class="w-[14%] px-4 py-3">Availability</th>
+                <th class="w-[32%] px-5 py-3">Rule Definition</th>
+                <th class="w-[18%] px-4 py-3">Domain & Resource</th>
+                <th class="w-[20%] px-4 py-3">Signal Contract</th>
+                <th class="w-[18%] px-4 py-3">Availability</th>
                 <th class="w-[12%] px-5 py-3 text-right">Details</th>
             </tr>
         </thead>
@@ -24,7 +24,7 @@
                             </span>
                             <div class="min-w-0">
                                 <p class="break-words text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]">{{ item.title }}</p>
-                                <p class="mt-1 line-clamp-2 break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]">{{ item.summary }}</p>
+                                <p class="mt-1 line-clamp-2 break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]">{{ item.table_summary or item.summary }}</p>
                                 <p class="mt-2 break-all font-mono text-xs font-medium leading-5 text-content-secondary">{{ item.rule_key }}</p>
                             </div>
                         </div>
@@ -46,7 +46,7 @@
                     </td>
                     <td class="px-4 py-4">
                         {{ table_label.status_label(item.status_label, item.status_tone, size='compact') }}
-                        <p class="mt-2 text-xs leading-5 text-content-muted">{{ 'Evaluator or signal policy is active in the current KAORI boundary.' if item.status == 'available' else ('Signal is imported from an authoritative source and enriched by KAORI.' if item.status == 'imported_signal' else 'Definition is visible, but execution is not enabled.') }}</p>
+                        <p class="mt-2 text-xs leading-5 text-content-muted">{{ 'Active evaluator or governed policy is available in the current KAORI boundary.' if item.status == 'available' else ('KAORI enriches an authoritative upstream signal for this definition.' if item.status == 'imported_signal' else 'Definition is cataloged, but enablement stays outside the current boundary.') }}</p>
                     </td>
                     <td class="px-5 py-4 text-right">
                         <button type="button"

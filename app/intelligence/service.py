@@ -68,26 +68,18 @@ def _base_payload(args: MultiDict[str, str], *, page_mode: str) -> dict[str, Any
     start_item = start_index + 1 if total_items else 0
     end_item = min(end_index, total_items) if total_items else 0
     item_label = 'catalog rules' if page_mode == 'catalog' else 'recommendations'
-    visible_filter_keys = (
-        'q',
-        'domain',
-        'provider',
-        'severity',
-        'category',
-        'source_kind',
-        'logic_type',
-        'signal_source',
-    )
-    active_filter_count = sum(1 for key in visible_filter_keys if clean(filters.get(key)))
 
-    if page_mode != 'catalog':
+    if page_mode == 'catalog':
+        for item in items:
+            item['table_summary'] = _truncate_words(item.get('summary'))
+    else:
         for item in items:
             scope_title, scope_supporting = finding_scope_details(item)
             item['scope_title'] = scope_title
             item['scope_supporting'] = scope_supporting
             item['list_summary'] = compact_recommendation_summary(item.get('summary'))
 
-    return {
+    payload = {
         'page_mode': page_mode,
         'filters': filters,
         'filter_options': {
@@ -104,15 +96,6 @@ def _base_payload(args: MultiDict[str, str], *, page_mode: str) -> dict[str, Any
         'items': items,
         'catalog': catalog,
         'recommendation_findings': source_items if page_mode != 'catalog' else [],
-        'result_context': {
-            'matching_items': total_items,
-            'source_items': len(source_items),
-            'active_filters': active_filter_count,
-            'kubernetes_items': sum(1 for item in filtered if item.get('domain') == 'kubernetes'),
-            'object_storage_items': sum(1 for item in filtered if item.get('domain') == 'object_storage'),
-            'critical_items': sum(1 for item in filtered if item.get('severity') == 'critical'),
-            'warning_items': sum(1 for item in filtered if item.get('severity') == 'warning'),
-        },
         'pagination': {
             'page': page,
             'per_page': per_page,
@@ -127,6 +110,19 @@ def _base_payload(args: MultiDict[str, str], *, page_mode: str) -> dict[str, Any
             'label': f'Showing {start_item} - {end_item} of {total_items} {item_label}',
         },
     }
+
+    if page_mode == 'catalog':
+        payload['result_context'] = {
+            'matching_items': total_items,
+            'available_items': sum(1 for rule in filtered if rule.get('status') == 'available'),
+            'reserved_items': sum(1 for rule in filtered if rule.get('status') == 'reserved'),
+            'imported_items': sum(1 for rule in filtered if rule.get('status') == 'imported_signal'),
+            'active_filters': _count_active_filters(
+                filters,
+                ('q', 'domain', 'provider', 'severity', 'category', 'source_kind', 'logic_type', 'signal_source'),
+            ),
+        }
+    return payload
 
 
 def _build_recommendation_findings(catalog: list[dict[str, Any]]) -> list[dict[str, Any]]:
