@@ -5,7 +5,7 @@ from datetime import UTC, datetime
 from uuid import uuid4
 
 from app.models.report import Report
-from app.reports.catalog import OUTPUT_FORMAT_SPECS
+from app.reports.catalog import OUTPUT_FORMAT_SPECS, ReportContractError, get_report_type_spec
 from app.reports.reference import report_reference_filename
 from app.reports.scope import resolve_report_scope
 
@@ -59,7 +59,14 @@ def get_report_source_kind_slug(
 def get_report_scope_slug(report: Report) -> str:
     scope = resolve_report_scope(report)
     if scope is None:
-        return 'unknown-asset'
+        spec = get_report_type_spec(str(getattr(report, 'report_type', '') or ''))
+        if spec.requires_cluster:
+            raise ReportContractError(
+                'A selected Kubernetes cluster is required. Cross-cluster report generation is disabled.'
+            )
+        if spec.scope_asset_type == 'object_storage_system':
+            raise ReportContractError('A selected Object Storage system is required for this report.')
+        raise ReportContractError(f'{spec.label} requires a selected infrastructure asset scope.')
     return slugify_storage_part(scope.label or scope.asset_id, fallback='unknown-asset')
 
 

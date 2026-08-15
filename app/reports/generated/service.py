@@ -7,6 +7,7 @@ from typing import Any
 from flask import abort
 from sqlalchemy import (
     Select,
+    and_,
     func,
     or_,
     select,
@@ -22,12 +23,17 @@ from app.common.pagination import (
 from app.extensions.db import db
 from app.models.cluster import Cluster
 from app.models.job import JobExecution
+from app.models.object_storage import ObjectStorageSystem
 from app.models.report import Report
 from app.models.user import User
 from app.reports.catalog import REPORT_TYPE_SPECS
 from app.reports.export.artifacts import get_report_artifact_format
 from app.reports.generate.service import REPORT_TYPE_OPTIONS
-from app.reports.scope import OBJECT_STORAGE_SYSTEM_ASSET_TYPE, resolve_report_scope
+from app.reports.scope import (
+    KUBERNETES_CLUSTER_ASSET_TYPE,
+    OBJECT_STORAGE_SYSTEM_ASSET_TYPE,
+    resolve_report_scope,
+)
 from app.reports.storage.service import (
     get_configured_storage_backend_name,
     get_report_storage_backend_status,
@@ -86,6 +92,12 @@ PENDING_STATUSES = [
     'generating',
 ]
 
+ARCHIVABLE_STATUSES = (
+    'requested',
+    'failed',
+    'ready',
+)
+
 
 def get_generated_reports_payload(
     query_args: Mapping[str, str] | None = None,
@@ -105,14 +117,14 @@ def get_generated_reports_payload(
         item['is_focused'] = bool(focus_report_id and item['id'] == focus_report_id)
 
     summary_cards = get_summary_cards()
-    has_pending_reports = _count_reports_by_status(PENDING_STATUSES) > 0
+    has_pending_reports = _has_pending_reports_for_filters(selected_filters)
     unavailable_artifacts = sum(
         1 for item in reports if item.get('file_path') and not bool(item.get('storage_reachable', True))
     )
-    if not bool(backend_status.get('reachable', False)):
+    if not bool(backend_status.get('available', False)):
         storage_notice = str(backend_status.get('description') or '').strip() or (
-            'Report storage is temporarily unavailable. Report records remain available; download actions stay paused '
-            'until connectivity returns.'
+            'Report storage needs review. Report records remain available while storage-dependent operations follow '
+            'the active backend readiness state.'
         )
     elif unavailable_artifacts:
         storage_notice = (
@@ -125,7 +137,9 @@ def get_generated_reports_payload(
 
     return {
         'page_title': 'Generated Reports',
-        'page_subtitle': ('Review generated report records, artifact availability, execution state, and lifecycle actions across retained reporting evidence.'),
+        'page_subtitle': (
+            'Review generated report records, artifact availability, execution state, and lifecycle actions across retained reporting evidence.'
+        ),
         'summary_cards': summary_cards,
         'filter_options': get_filter_options(),
         'selected_filters': selected_filters,
@@ -173,30 +187,19 @@ def get_report_detail_payload(
     )
     artifact_access = report_detail['artifact_access']
     job = db.session.get(JobExecution, report.job_execution_id) if report.job_execution_id else None
+    job_execution = present_job_execution(job) if job else None
+    should_poll = report.status in PENDING_STATUSES or bool(job_execution and job_execution['is_active'])
 
     return {
         'page_title': 'Report Detail',
         'page_subtitle': 'Review report request metadata, selected sections, lifecycle status, retained artifact evidence, and export readiness from one record.',
         'report': report_detail,
-        'job_execution': present_job_execution(job) if job else None,
-        'status_context': get_report_detail_status_context(
-            report.status,
-        ),
-        'export_readiness': get_report_detail_export_readiness(
-            report,
-            artifact_access,
-        ),
-        'storage_context': get_storage_context(
-            artifact_access,
-        ),
-        'recommended_actions': get_report_detail_recommended_actions(
-            report,
-            artifact_access,
-        ),
+        'job_execution': job_execution,
         'artifact_access_notice': get_report_artifact_access_notice(
             report,
             artifact_access,
         ),
+        'poll_interval_seconds': 8 if should_poll else None,
     }
 
 
@@ -270,7 +273,7 @@ def get_summary_cards() -> list[dict[str, str]]:
             'value': str(
                 ready_reports,
             ),
-            'caption': 'Reports available for download',
+            'caption': 'Reports in Ready lifecycle state',
             'icon': 'check-circle-2',
             'tone': 'green',
         },
@@ -297,7 +300,7 @@ def get_summary_cards() -> list[dict[str, str]]:
 
 def get_filter_options() -> dict[str, list[dict[str, str]]]:
     return {
-        'clusters': _get_cluster_options(),
+        'scopes': _get_scope_options(),
         'report_types': [
             {
                 'value': '',
@@ -400,11 +403,13 @@ def get_selected_filters(
     if query_args is None:
         query_args = {}
 
+    scope = str(query_args.get('scope', '') or '').strip()
+    legacy_cluster_id = str(query_args.get('cluster_id', '') or '').strip()
+    if not scope and legacy_cluster_id:
+        scope = f'{KUBERNETES_CLUSTER_ASSET_TYPE}:{legacy_cluster_id}'
+
     return {
-        'cluster_id': query_args.get(
-            'cluster_id',
-            '',
-        ),
+        'scope': scope,
         'report_type': query_args.get(
             'report_type',
             '',
@@ -499,6 +504,17 @@ def get_reports(
         )
         for report in report_items
     ], total_items
+
+
+def _has_pending_reports_for_filters(selected_filters: dict[str, str]) -> bool:
+    selected_status = selected_filters.get('status', '')
+    if selected_status and selected_status not in PENDING_STATUSES:
+        return False
+
+    pending_filters = dict(selected_filters)
+    pending_filters['status'] = selected_status if selected_status in PENDING_STATUSES else ''
+    statement = _apply_filters(select(Report), pending_filters).where(Report.status.in_(PENDING_STATUSES)).limit(1)
+    return db.session.execute(statement).first() is not None
 
 
 def get_pagination(
@@ -693,13 +709,7 @@ def bulk_archive_report_records(
                 Report,
             ).where(
                 Report.id.in_(normalized_ids),
-                Report.status.in_(
-                    [
-                        'requested',
-                        'failed',
-                        'ready',
-                    ]
-                ),
+                Report.status.in_(ARCHIVABLE_STATUSES),
             )
         )
         .scalars()
@@ -726,10 +736,7 @@ def _apply_filters(
     statement: Select[tuple[Report]],
     selected_filters: dict[str, str],
 ) -> Select[tuple[Report]]:
-    cluster_id = selected_filters.get(
-        'cluster_id',
-        '',
-    )
+    scope = selected_filters.get('scope', '')
     report_type = selected_filters.get(
         'report_type',
         '',
@@ -751,10 +758,27 @@ def _apply_filters(
         '',
     ).strip()
 
-    if cluster_id:
-        statement = statement.where(
-            Report.cluster_id == cluster_id,
-        )
+    if scope:
+        asset_type, separator, asset_id = scope.partition(':')
+        if separator and asset_id:
+            if asset_type == KUBERNETES_CLUSTER_ASSET_TYPE:
+                statement = statement.where(
+                    or_(
+                        and_(
+                            Report.scope_asset_type == KUBERNETES_CLUSTER_ASSET_TYPE,
+                            Report.scope_asset_id == asset_id,
+                        ),
+                        and_(
+                            Report.scope_asset_type.is_(None),
+                            Report.cluster_id == asset_id,
+                        ),
+                    )
+                )
+            else:
+                statement = statement.where(
+                    Report.scope_asset_type == asset_type,
+                    Report.scope_asset_id == asset_id,
+                )
 
     if report_type:
         statement = statement.where(
@@ -788,6 +812,9 @@ def _apply_filters(
                     f'%{search}%',
                 ),
                 Report.namespace.ilike(
+                    f'%{search}%',
+                ),
+                Report.scope_asset_label_snapshot.ilike(
                     f'%{search}%',
                 ),
             )
@@ -866,14 +893,16 @@ def _serialize_report(
     can_download_artifact = report.status in ['ready', 'archived'] and bool(report.file_path) and file_exists
     scope = resolve_report_scope(report)
     scope_asset_type = str(getattr(report, 'scope_asset_type', '') or '')
-    scope_label = 'Object Storage System' if scope_asset_type == OBJECT_STORAGE_SYSTEM_ASSET_TYPE else 'Kubernetes Cluster'
+    scope_label = (
+        'Object Storage System' if scope_asset_type == OBJECT_STORAGE_SYSTEM_ASSET_TYPE else 'Kubernetes Cluster'
+    )
     scope_value = (
         scope.label
         if scope is not None
         else (getattr(report, 'scope_asset_label_snapshot', None) or 'Asset Selection Missing')
     )
     secondary_scope = (
-        'Not Applicable'
+        'System Scope'
         if scope_asset_type == OBJECT_STORAGE_SYSTEM_ASSET_TYPE
         else (report.namespace or 'All Namespaces')
     )
@@ -952,13 +981,8 @@ def _serialize_report(
         'generate_artifact_label': (
             f'Regenerate {artifact_format.label}' if report.status == 'ready' else f'Generate {artifact_format.label}'
         ),
-        'can_archive_report': report.status
-        in [
-            'requested',
-            'failed',
-            'ready',
-        ],
-        'can_restore_report': report.status == 'archived',
+        'can_archive_report': report.status in ARCHIVABLE_STATUSES,
+        'can_restore_report': report.status == 'archived' and bool(artifact_access['reachable']) and file_exists,
         'can_download_artifact': can_download_artifact,
     }
 
@@ -1075,13 +1099,8 @@ def _serialize_report_detail(
             report.updated_at,
         ),
         'can_generate_artifact': report_item['can_generate_artifact'],
-        'can_archive_report': report.status
-        in [
-            'requested',
-            'failed',
-            'ready',
-        ],
-        'can_restore_report': report.status == 'archived',
+        'can_archive_report': report.status in ARCHIVABLE_STATUSES,
+        'can_restore_report': report_item['can_restore_report'],
         'can_download_artifact': report_item['can_download_artifact'],
     }
 
@@ -1503,11 +1522,11 @@ def archive_report_record(
     if report is None:
         return False, 'Report not found.'
 
-    if report.status == 'generating':
-        return False, 'Report is currently generating and cannot be archived.'
-
     if report.status == 'archived':
         return True, 'Report is already archived.'
+
+    if report.status not in ARCHIVABLE_STATUSES:
+        return False, f'{STATUS_LABELS.get(report.status, report.status.title())} reports cannot be archived.'
 
     report.status = 'archived'
     db.session.commit()
@@ -1530,12 +1549,20 @@ def restore_archived_report_record(
         return False, 'Only archived reports can be restored.'
 
     if not report.file_path:
-        return False, 'Archived report has no storage metadata. Regenerate the artifact instead.'
+        return (
+            False,
+            'Archived report has no storage metadata. Recover the retained storage reference before restoring this historical record.',
+        )
 
-    if not _report_file_exists(
-        report.file_path,
-    ):
-        return False, 'Archived report artifact is missing in configured storage. Regenerate the artifact instead.'
+    artifact_access = _probe_report_file(report.file_path)
+    if not bool(artifact_access.get('reachable', True)):
+        return False, 'Archived report storage is temporarily unavailable. Restore connectivity and retry.'
+
+    if not bool(artifact_access.get('exists', False)):
+        return (
+            False,
+            'Archived report artifact is missing in configured storage. Recover the retained artifact before restoring this historical record.',
+        )
 
     report.status = 'ready'
     db.session.commit()
@@ -2004,7 +2031,7 @@ def _get_file_state(
     }
 
 
-def _get_cluster_options() -> list[dict[str, str]]:
+def _get_scope_options() -> list[dict[str, str]]:
     clusters = (
         db.session.execute(
             select(
@@ -2016,21 +2043,38 @@ def _get_cluster_options() -> list[dict[str, str]]:
         .scalars()
         .all()
     )
+    object_storage_systems = (
+        db.session.execute(
+            select(
+                ObjectStorageSystem,
+            ).order_by(
+                ObjectStorageSystem.name.asc(),
+            )
+        )
+        .scalars()
+        .all()
+    )
 
     options = [
         {
             'value': '',
-            'label': 'Any Cluster',
+            'label': 'All Infrastructure Assets',
         },
     ]
 
     for cluster in clusters:
         options.append(
             {
-                'value': str(
-                    cluster.id,
-                ),
-                'label': cluster.name,
+                'value': f'{KUBERNETES_CLUSTER_ASSET_TYPE}:{cluster.id}',
+                'label': f'Kubernetes · {cluster.name}',
+            }
+        )
+
+    for system in object_storage_systems:
+        options.append(
+            {
+                'value': f'{OBJECT_STORAGE_SYSTEM_ASSET_TYPE}:{system.id}',
+                'label': f'Object Storage · {system.name}',
             }
         )
 

@@ -32,6 +32,7 @@ EXPECTED_REPORT_TYPES = {
     'ingress_inventory',
     'configuration_inventory',
     'storage_inventory',
+    'object_storage_inventory',
     'tls_inventory',
 }
 
@@ -84,7 +85,7 @@ def _context(report_type: str) -> InventoryExportContext:
     )
 
 
-def test_inventory_workbook_profiles_are_exactly_the_ten_supported_reports() -> None:
+def test_inventory_workbook_profiles_cover_every_supported_inventory_report() -> None:
     assert set(INVENTORY_WORKBOOK_PROFILES) == EXPECTED_REPORT_TYPES
 
 

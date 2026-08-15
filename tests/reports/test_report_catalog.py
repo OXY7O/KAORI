@@ -35,17 +35,49 @@ def test_report_family_format_matrix_is_exact() -> None:
         assert get_default_output_format(report_type) == FORMAT_XLSX
 
 
-def test_every_report_type_requires_one_selected_cluster() -> None:
-    all_report_types = {spec.value for spec in REPORT_TYPE_SPECS}
-    assert REQUIRES_SELECTED_CLUSTER_REPORT_TYPES == all_report_types
+def test_kubernetes_reports_require_one_selected_cluster() -> None:
+    kubernetes_report_types = {
+        spec.value for spec in REPORT_TYPE_SPECS if spec.scope_asset_type == 'kubernetes_cluster'
+    }
+    assert REQUIRES_SELECTED_CLUSTER_REPORT_TYPES == kubernetes_report_types
 
     for spec in REPORT_TYPE_SPECS:
+        if spec.scope_asset_type != 'kubernetes_cluster':
+            continue
         with pytest.raises(ReportContractError, match='selected Kubernetes cluster'):
             validate_report_contract(
                 report_type=spec.value,
                 output_format=spec.default_format,
                 cluster_id=None,
             )
+
+
+def test_object_storage_reports_require_object_storage_scope_without_cluster() -> None:
+    object_storage_specs = [
+        spec for spec in REPORT_TYPE_SPECS if spec.scope_asset_type == 'object_storage_system'
+    ]
+    assert {spec.value for spec in object_storage_specs} == {
+        'object_storage_inventory',
+        'object_storage_analysis',
+    }
+
+    for spec in object_storage_specs:
+        with pytest.raises(ReportContractError, match='selected Object Storage system'):
+            validate_report_contract(
+                report_type=spec.value,
+                output_format=spec.default_format,
+                cluster_id=None,
+                scope_asset_type='object_storage_system',
+                scope_asset_id=None,
+            )
+
+        validate_report_contract(
+            report_type=spec.value,
+            output_format=spec.default_format,
+            cluster_id=None,
+            scope_asset_type='object_storage_system',
+            scope_asset_id='object-storage-1',
+        )
 
 
 def test_unsupported_family_format_combinations_are_rejected() -> None:

@@ -3,6 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
+from flask import has_app_context
+
 from app.extensions.db import db
 from app.models.cluster import Cluster
 from app.models.object_storage import ObjectStorageSystem
@@ -33,6 +35,18 @@ class ReportScope:
         return self.namespace or 'All Namespaces'
 
 
+def _related_asset_label(record: Any, attribute: str) -> str:
+    related = getattr(record, attribute, None)
+    return str(getattr(related, 'name', '') or '').strip()
+
+
+def _lookup_asset_label(model: Any, asset_id: str) -> str:
+    if not has_app_context():
+        return ''
+    asset = db.session.get(model, asset_id)
+    return str(getattr(asset, 'name', '') or '').strip()
+
+
 def resolve_report_scope(record: Any) -> ReportScope | None:
     asset_type = str(getattr(record, 'scope_asset_type', '') or '').strip()
     asset_id = str(getattr(record, 'scope_asset_id', '') or '').strip()
@@ -49,8 +63,12 @@ def resolve_report_scope(record: Any) -> ReportScope | None:
     if asset_type == KUBERNETES_CLUSTER_ASSET_TYPE:
         if not asset_id:
             return None
-        cluster = None if snapshot else db.session.get(Cluster, asset_id)
-        label = snapshot or (str(cluster.name) if cluster is not None else asset_id)
+        label = (
+            snapshot
+            or _related_asset_label(record, 'cluster')
+            or _lookup_asset_label(Cluster, asset_id)
+            or asset_id
+        )
         return ReportScope(
             asset_type=asset_type,
             asset_id=asset_id,
@@ -63,8 +81,12 @@ def resolve_report_scope(record: Any) -> ReportScope | None:
     if asset_type == OBJECT_STORAGE_SYSTEM_ASSET_TYPE:
         if not asset_id:
             return None
-        system = None if snapshot else db.session.get(ObjectStorageSystem, asset_id)
-        label = snapshot or (str(system.name) if system is not None else asset_id)
+        label = (
+            snapshot
+            or _related_asset_label(record, 'object_storage_system')
+            or _lookup_asset_label(ObjectStorageSystem, asset_id)
+            or asset_id
+        )
         return ReportScope(
             asset_type=asset_type,
             asset_id=asset_id,

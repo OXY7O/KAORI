@@ -6,19 +6,30 @@
 {% import "integrations/components/_record_detail_modal.html" as record_detail_modal %}
 {% block title %}Generated Report Detail{% endblock title %}
 {% block dashboard_content %}
+    {% set can_generate_reports = current_user.has_permission('reports.generate') %}
+    {% set can_manage_storage = current_user.has_permission('reports.manage_storage') %}
     {% set report_status_tone = 'normal' if payload.report.raw_status == 'ready' else ('critical' if payload.report.raw_status == 'failed' else ('warning' if payload.report.raw_status == 'archived' else 'pending')) %}
     {% set file_tone = 'normal' if payload.report.file_state.tone == 'green' else ('critical' if payload.report.file_state.tone == 'red' else ('warning' if payload.report.file_state.tone == 'amber' else 'unknown')) %}
     {% set attempt_active = payload.job_execution and payload.job_execution.is_active %}
     {% set attempt_failed = payload.job_execution and payload.job_execution.status_tone == 'critical' %}
     {% set retained_ready_artifact = payload.report.raw_status == 'ready' and payload.report.can_download_artifact %}
-    {% set hero_action_label = 'Download ' ~ payload.report.artifact_label if payload.report.can_download_artifact else ('Open Storage' if payload.artifact_access_notice else 'Back to Registry') %}
-    {% set hero_action_href = url_for('reports.download_report_artifact', report_id=payload.report.id) if payload.report.can_download_artifact else (payload.artifact_access_notice.action_href if payload.artifact_access_notice else url_for('reports.generated_reports')) %}
-    {% set hero_action_icon = 'download' if payload.report.can_download_artifact else ('hard-drive' if payload.artifact_access_notice else 'arrow-left') %}
+    {% set hero_storage_action = payload.artifact_access_notice and can_manage_storage %}
+    {% set hero_action_label = 'Download ' ~ payload.report.artifact_label if payload.report.can_download_artifact else ('Open Storage' if hero_storage_action else 'Back to Registry') %}
+    {% set hero_action_href = url_for('reports.download_report_artifact', report_id=payload.report.id) if payload.report.can_download_artifact else (payload.artifact_access_notice.action_href if hero_storage_action else url_for('reports.generated_reports')) %}
+    {% set hero_action_icon = 'download' if payload.report.can_download_artifact else ('hard-drive' if hero_storage_action else 'arrow-left') %}
     {% set primary_action_classes = "inline-flex min-h-9 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-dark focus:outline-none focus:ring-2 focus:ring-kaori-primary/20 disabled:cursor-not-allowed disabled:bg-kaori-soft disabled:text-content-muted" %}
     {% set storage_reference_modal_id = 'generated-report-storage-reference-' ~ payload.report.id %}
     <div class="space-y-5"
          data-generated-report-detail="operational-dossier-v5"
-         data-generated-detail-polish="professional-v1">
+         data-generated-detail-polish="professional-v1"
+         {% if payload.poll_interval_seconds %}
+             hx-get="{{ url_for('reports.generated_report_detail', report_id=payload.report.id) }}"
+             hx-trigger="every {{ payload.poll_interval_seconds }}s"
+             hx-select="[data-generated-report-detail]"
+             hx-target="this"
+             hx-swap="outerHTML"
+             hx-on::before-request="if (event.detail.elt === this && this.querySelector('dialog[open]')) event.preventDefault()"
+         {% endif %}>
         <section class="{{ page_hero.shell_classes() }}">
             <div class="{{ page_hero.layout_classes() }}">
                 <div class="{{ page_hero.content_classes() }}">
@@ -107,11 +118,13 @@
                             <p class="mt-1 text-xs leading-5 text-content-secondary">{{ payload.artifact_access_notice.description }}</p>
                         </div>
                     </div>
-                    <a href="{{ payload.artifact_access_notice.action_href }}"
-                       class="{{ table_ui.action_classes() }} shrink-0">
-                        <i data-lucide="settings-2" class="h-4 w-4" aria-hidden="true"></i>
-                        {{ payload.artifact_access_notice.action_label }}
-                    </a>
+                    {% if can_manage_storage %}
+                        <a href="{{ payload.artifact_access_notice.action_href }}"
+                           class="{{ table_ui.action_classes() }} shrink-0">
+                            <i data-lucide="settings-2" class="h-4 w-4" aria-hidden="true"></i>
+                            {{ payload.artifact_access_notice.action_label }}
+                        </a>
+                    {% endif %}
                 </div>
             </section>
         {% elif payload.report.raw_status == 'ready' and payload.report.file_path and not payload.report.file_exists %}
@@ -127,6 +140,30 @@
                         <h2 class="text-sm font-bold text-status-critical-text">Generated Artifact Missing</h2>
                         <p class="mt-1 text-xs leading-5 text-content-secondary">The report is Ready, but its referenced artifact could not be found. Regenerate the artifact or review report storage.</p>
                     </div>
+                </div>
+            </section>
+        {% elif payload.report.raw_status == 'archived' and not payload.report.can_restore_report %}
+            <section class="rounded-2xl border border-status-warning-border bg-status-warning-soft px-5 py-4 shadow-sm"
+                     role="status"
+                     data-generated-detail-archived-artifact-missing="true">
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div class="flex min-w-0 items-start gap-3">
+                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-card text-status-warning-text"
+                              aria-hidden="true">
+                            <i data-lucide="archive-x" class="h-4 w-4"></i>
+                        </span>
+                        <div>
+                            <h2 class="text-sm font-bold text-status-warning-text">Archived Artifact Missing</h2>
+                            <p class="mt-1 text-xs leading-5 text-content-secondary">This historical report record is retained, but its archived artifact or storage reference is not currently restorable. Recover the retained evidence before restoring this record; create a new report if fresh evidence is required.</p>
+                        </div>
+                    </div>
+                    {% if can_manage_storage %}
+                        <a href="{{ url_for('reports.storage') }}"
+                           class="{{ table_ui.action_classes() }} shrink-0">
+                            <i data-lucide="hard-drive" class="h-4 w-4" aria-hidden="true"></i>
+                            Open Storage
+                        </a>
+                    {% endif %}
                 </div>
             </section>
         {% endif %}
@@ -401,7 +438,7 @@
                                 Download {{ payload.report.artifact_label }}
                             </a>
                         {% endif %}
-                        {% if payload.report.can_generate_artifact %}
+                        {% if can_generate_reports and payload.report.can_generate_artifact %}
                             <form method="POST"
                                   action="{{ url_for('reports.generate_report_output', report_id=payload.report.id) }}">
                                 {% if csrf_token is defined %}
@@ -417,7 +454,7 @@
                                 </button>
                             </form>
                         {% endif %}
-                        {% if payload.report.can_archive_report %}
+                        {% if can_manage_storage and payload.report.can_archive_report %}
                             <form method="POST"
                                   action="{{ url_for('reports.archive_generated_report', report_id=payload.report.id) }}">
                                 {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
@@ -430,7 +467,7 @@
                                 </button>
                             </form>
                         {% endif %}
-                        {% if payload.report.can_restore_report %}
+                        {% if can_manage_storage and payload.report.can_restore_report %}
                             <form method="POST"
                                   action="{{ url_for('reports.restore_generated_report', report_id=payload.report.id) }}">
                                 {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
