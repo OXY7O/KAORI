@@ -204,20 +204,11 @@ def get_report_detail_payload(
 
 
 def get_summary_cards() -> list[dict[str, str]]:
-    total_reports = _count_reports()
-    ready_reports = _count_reports_by_status(
-        [
-            'ready',
-        ]
-    )
-    pending_reports = _count_reports_by_status(
-        PENDING_STATUSES,
-    )
-    failed_reports = _count_reports_by_status(
-        [
-            'failed',
-        ]
-    )
+    status_counts = _get_report_status_counts()
+    total_reports = sum(status_counts.values())
+    ready_reports = status_counts.get('ready', 0)
+    pending_reports = sum(status_counts.get(status, 0) for status in PENDING_STATUSES)
+    failed_reports = status_counts.get('failed', 0)
 
     return [
         {
@@ -1566,36 +1557,14 @@ def _get_user_status_tone(
     return 'emerald'
 
 
-def _count_reports() -> int:
-    return (
-        db.session.scalar(
-            select(
-                func.count(
-                    Report.id,
-                )
-            )
-        )
-        or 0
-    )
-
-
-def _count_reports_by_status(
-    statuses: list[str],
-) -> int:
-    return (
-        db.session.scalar(
-            select(
-                func.count(
-                    Report.id,
-                )
-            ).where(
-                Report.status.in_(
-                    statuses,
-                )
-            )
-        )
-        or 0
-    )
+def _get_report_status_counts() -> dict[str, int]:
+    rows = db.session.execute(
+        select(
+            Report.status,
+            func.count(Report.id),
+        ).group_by(Report.status)
+    ).all()
+    return {str(status): int(count or 0) for status, count in rows}
 
 
 def _format_report_domain(

@@ -537,6 +537,7 @@ def get_notification_delivery_context() -> dict[str, Any]:
         'description': 'Reusable Telegram, email, and Microsoft Teams destinations are managed under Integrations.',
     }
 
+
 def get_pipeline_status(
     storage_context: dict[str, Any],
     notification_delivery: dict[str, Any] | None = None,

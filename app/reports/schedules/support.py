@@ -21,7 +21,7 @@ def get_object_storage_system_options() -> list[dict[str, str]]:
     return [
         {
             'value': item.id,
-            'label': f"{item.name} · {item.environment or 'Unspecified Environment'}",
+            'label': f'{item.name} · {item.environment or "Unspecified Environment"}',
         }
         for item in systems
     ]

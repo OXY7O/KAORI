@@ -196,11 +196,21 @@ def test_generated_artifact_actions_preserve_registry_context_end_to_end() -> No
     assert routes.count('action_url=detail_url') >= 2
     assert 'return redirect(registry_return_url)' in routes
     assert routes.count('return redirect(detail_url)') >= 2
-    assert "safe_next_url(value)" in export_routes
+    assert 'safe_next_url(value)' in export_routes
     assert "request.form.get('next')" in export_routes
     assert "request.args.get('next')" in export_routes
-    assert "detail_url = _generated_detail_url(report_id, registry_return_url)" in export_routes
+    assert 'detail_url = _generated_detail_url(report_id, registry_return_url)' in export_routes
 
-    assert "report_id=report.id, next=registry_return_url" in page
-    assert "report_id=payload.report.id, next=payload.registry_return_url" in detail
+    assert 'report_id=report.id, next=registry_return_url' in page
+    assert 'report_id=payload.report.id, next=payload.registry_return_url' in detail
     assert detail.count('name="next" value="{{ payload.registry_return_url }}"') >= 3
+
+
+def test_generated_registry_summary_counts_are_aggregated_for_polling_scale() -> None:
+    service = read('app/reports/generated/service.py')
+
+    assert 'status_counts = _get_report_status_counts()' in service
+    assert 'def _get_report_status_counts() -> dict[str, int]:' in service
+    assert '.group_by(Report.status)' in service
+    assert '_count_reports_by_status' not in service
+    assert 'def _count_reports()' not in service

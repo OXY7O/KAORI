@@ -40,29 +40,27 @@ from app.reports.jobs.service import ReportJobEnqueueError, enqueue_report_gener
 from app.reports.notifications import get_report_notification_channel_options
 from app.reports.schedules.delivery import get_recommended_actions, get_scheduler_context
 from app.reports.schedules.failures import mark_schedule_dispatch_failed
-from app.reports.schedules.presentation import (
-    DAY_OF_WEEK_OPTIONS,
-    serialize_run as _serialize_run,
-    serialize_schedule as _serialize_schedule,
-    title_case_period_options as _title_case_period_options,
-)
+from app.reports.schedules.presentation import DAY_OF_WEEK_OPTIONS
+from app.reports.schedules.presentation import serialize_run as _serialize_run
+from app.reports.schedules.presentation import serialize_schedule as _serialize_schedule
+from app.reports.schedules.presentation import title_case_period_options as _title_case_period_options
+from app.reports.schedules.support import ensure_utc as _ensure_utc
+from app.reports.schedules.support import get_cluster_map as _get_cluster_map
+from app.reports.schedules.support import get_cluster_options as _get_cluster_options
+from app.reports.schedules.support import get_default_sections as _get_default_sections
+from app.reports.schedules.support import get_default_sections_by_report_type as _get_default_sections_by_report_type
+from app.reports.schedules.support import get_default_timezone as _get_default_timezone
+from app.reports.schedules.support import get_delivery_channel_options as _get_delivery_channel_options
+from app.reports.schedules.support import get_object_storage_system_options as _get_object_storage_system_options
+from app.reports.schedules.support import get_schedule_context_map as _get_schedule_context_map
 from app.reports.schedules.support import (
-    ensure_utc as _ensure_utc,
-    get_cluster_map as _get_cluster_map,
-    get_cluster_options as _get_cluster_options,
-    get_default_sections as _get_default_sections,
-    get_default_sections_by_report_type as _get_default_sections_by_report_type,
-    get_default_timezone as _get_default_timezone,
-    get_delivery_channel_options as _get_delivery_channel_options,
-    get_object_storage_system_options as _get_object_storage_system_options,
-    get_schedule_context_map as _get_schedule_context_map,
     get_section_options_by_report_type as _get_section_options_by_report_type_impl,
-    get_timezone as _get_timezone,
-    is_valid_run_time as _is_valid_run_time,
-    is_valid_timezone as _is_valid_timezone,
-    parse_optional_int as _parse_optional_int,
-    parse_run_time as _parse_run_time,
 )
+from app.reports.schedules.support import get_timezone as _get_timezone
+from app.reports.schedules.support import is_valid_run_time as _is_valid_run_time
+from app.reports.schedules.support import is_valid_timezone as _is_valid_timezone
+from app.reports.schedules.support import parse_optional_int as _parse_optional_int
+from app.reports.schedules.support import parse_run_time as _parse_run_time
 from app.reports.scope import (
     KUBERNETES_CLUSTER_ASSET_TYPE,
     OBJECT_STORAGE_SYSTEM_ASSET_TYPE,
@@ -159,7 +157,9 @@ def get_report_schedules_payload(
 
     return {
         'page_title': 'Report Schedules',
-        'page_subtitle': ('Automate governed report generation and delivery through recurring, timezone-aware contracts with retained execution evidence.'),
+        'page_subtitle': (
+            'Automate governed report generation and delivery through recurring, timezone-aware contracts with retained execution evidence.'
+        ),
         'status_label': f'Reports Worker {worker_context["label"]}',
         'status_description': worker_context['description'],
         'summary_cards': get_summary_cards(
@@ -551,8 +551,7 @@ def validate_schedule_form_state(form_state: dict[str, Any]) -> list[str]:
     if selected_channel_ids:
         report_domain = get_report_type_spec(form_state['report_type']).domain
         options = {
-            int(item['channel_id']): item
-            for item in get_report_notification_channel_options(domain=report_domain)
+            int(item['channel_id']): item for item in get_report_notification_channel_options(domain=report_domain)
         }
         for channel_id in sorted(selected_channel_ids):
             option = options.get(channel_id)
@@ -560,7 +559,7 @@ def validate_schedule_form_state(form_state: dict[str, Any]) -> list[str]:
                 errors.append(f'Notification channel {channel_id} no longer exists.')
             elif not option.get('selectable'):
                 errors.append(
-                    f"Notification channel {option['label']} must be enabled, tested, and allowed for Scheduled Reports."
+                    f'Notification channel {option["label"]} must be enabled, tested, and allowed for Scheduled Reports.'
                 )
 
     return errors
@@ -926,11 +925,11 @@ def _get_schedule_rows() -> list[dict[str, Any]]:
     ).all()
     cluster_map = _get_cluster_map([item.cluster_id for item in schedules if item.cluster_id])
     delivery_label_map = {
-        int(item['channel_id']): f"{item['label']} · {item['provider']}"
-        for item in _get_delivery_channel_options()
+        int(item['channel_id']): f'{item["label"]} · {item["provider"]}' for item in _get_delivery_channel_options()
     }
 
     return [_serialize_schedule(item, cluster_map, delivery_label_map) for item in schedules]
+
 
 def _get_recent_runs(limit: int = 8) -> list[dict[str, Any]]:
     runs = db.session.scalars(

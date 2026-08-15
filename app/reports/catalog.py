@@ -99,21 +99,23 @@ def _load_report_catalog() -> tuple[dict[str, OutputFormatSpec], tuple[ReportTyp
             raise DefinitionError(f'{path} references unknown output format.')
         if default_format not in allowed_formats:
             raise DefinitionError(f'{path}.default_format must be included in allowed_formats.')
-        reports.append(ReportTypeSpec(
-            value=require_str(raw, 'value', path),
-            label=require_str(raw, 'label', path),
-            description=require_str(raw, 'description', path),
-            icon=require_str(raw, 'icon', path),
-            family=family,
-            default_format=default_format,
-            allowed_formats=allowed_formats,
-            default_sections=string_tuple(raw.get('default_sections'), f'{path}.default_sections'),
-            period_mode=require_str(raw, 'period_mode', path),
-            domain=str(raw.get('domain') or 'kubernetes').strip(),
-            source_kind=str(raw.get('source_kind') or raw.get('domain') or 'kubernetes').strip(),
-            scope_asset_type=str(raw.get('scope_asset_type') or 'kubernetes_cluster').strip(),
-            requires_cluster=require_bool(raw, 'requires_cluster', path, default=True),
-        ))
+        reports.append(
+            ReportTypeSpec(
+                value=require_str(raw, 'value', path),
+                label=require_str(raw, 'label', path),
+                description=require_str(raw, 'description', path),
+                icon=require_str(raw, 'icon', path),
+                family=family,
+                default_format=default_format,
+                allowed_formats=allowed_formats,
+                default_sections=string_tuple(raw.get('default_sections'), f'{path}.default_sections'),
+                period_mode=require_str(raw, 'period_mode', path),
+                domain=str(raw.get('domain') or 'kubernetes').strip(),
+                source_kind=str(raw.get('source_kind') or raw.get('domain') or 'kubernetes').strip(),
+                scope_asset_type=str(raw.get('scope_asset_type') or 'kubernetes_cluster').strip(),
+                requires_cluster=require_bool(raw, 'requires_cluster', path, default=True),
+            )
+        )
     return formats, tuple(reports)
 
 

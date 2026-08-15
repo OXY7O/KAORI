@@ -14,8 +14,8 @@ from app.reports.export.constants import (
 from app.reports.export.formatting import format_period
 from app.reports.export.html_pdf.alerts_anomalies import build_alerts_anomalies_presentation
 from app.reports.export.html_pdf.analytics_overview import build_analytics_overview_presentation
-from app.reports.export.html_pdf.capacity_analysis import build_capacity_analysis_presentation
 from app.reports.export.html_pdf.builder_context import ReportDocumentContext, finalize_report_document
+from app.reports.export.html_pdf.capacity_analysis import build_capacity_analysis_presentation
 from app.reports.export.html_pdf.charts import build_alert_severity_chart, build_forecast_chart
 from app.reports.export.html_pdf.document import (
     ReportDocument,
@@ -90,7 +90,13 @@ _SECTION_SOURCE_PATHS: dict[str, tuple[str, ...]] = {
     'object_storage_performance': ('performance',),
     'object_storage_forecast': ('forecast_display', 'forecast_materialization'),
     'object_storage_top_consumers': ('top_consumers',),
-    'object_storage_risk_findings': ('risk_findings', 'signals', 'signal_posture', 'operational_posture', 'alert_posture'),
+    'object_storage_risk_findings': (
+        'risk_findings',
+        'signals',
+        'signal_posture',
+        'operational_posture',
+        'alert_posture',
+    ),
     'methodology_evidence_boundary': ('evidence_boundary',),
 }
 
@@ -381,7 +387,8 @@ def _build_section(report: Any, payload: Mapping[str, Any], section_key: str, nu
     findings = (
         findings_from_value(value)
         if not tables
-        or section_key in {
+        or section_key
+        in {
             'risk_overview',
             'capacity_pressure_risk',
             'governance_findings',

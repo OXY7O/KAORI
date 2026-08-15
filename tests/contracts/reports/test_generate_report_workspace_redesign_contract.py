@@ -66,7 +66,7 @@ def test_generate_report_uses_two_primary_configuration_zones_and_compact_review
     assert 'aria-label="Request readiness"' in source
     assert source.index('data-report-request-summary="true"') < source.index('preview-eligibility-status')
     assert 'Create & Queue Report' in source
-    assert "table_label.status_indicator_label(payload.worker_context.label" not in source
+    assert 'table_label.status_indicator_label(payload.worker_context.label' not in source
     assert 'xl:grid-cols-2 xl:divide-x xl:divide-outline-default' in source
     assert 'grid lg:grid-cols-12' in source
     assert 'lg:col-span-4' in source
@@ -235,7 +235,10 @@ def test_scope_filters_are_symmetric_and_use_guidance_instead_of_inline_warning(
     assert "periodModeLabel.textContent = isInventoryReport ? 'Snapshot' : 'Time Range';" in source
     assert 'data-generate-scope-tip="true"' in source
     assert 'Scope Contract' in source
-    assert 'Kubernetes reports use one selected cluster; Object Storage reports use one registered Object Storage system.' in source
+    assert (
+        'Kubernetes reports use one selected cluster; Object Storage reports use one registered Object Storage system.'
+        in source
+    )
     assert 'All Namespaces' in source
     assert 'Select a cluster before queueing.' not in source
     assert 'id="cluster-guard"' not in source

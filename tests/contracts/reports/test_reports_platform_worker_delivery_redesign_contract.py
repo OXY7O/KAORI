@@ -153,14 +153,10 @@ def test_report_schedule_dispatcher_uses_canonical_worker_job() -> None:
     devcontainer = read(ROOT / '.devcontainer' / 'devcontainer.json')
     queue_contract = read(ROOT / 'app' / 'reports' / 'jobs' / 'queue.py')
 
-    schedule_definition = next(
-        item for item in job_catalog['jobs'] if item['key'] == 'reports.schedule.dispatch'
-    )
+    schedule_definition = next(item for item in job_catalog['jobs'] if item['key'] == 'reports.schedule.dispatch')
     assert schedule_definition['queue_name'] == 'reports'
     assert schedule_definition['operation'] == 'dispatch_due_reports'
-    assert schedule_definition['dispatcher_path'] == (
-        'app.reports.schedules.job_adapter:dispatch_report_schedule_job'
-    )
+    assert schedule_definition['dispatcher_path'] == ('app.reports.schedules.job_adapter:dispatch_report_schedule_job')
     assert "get_job_definition('reports.schedule.dispatch')" in definition
     assert '_JOB_DEFINITIONS: tuple[JobDefinition, ...] = load_job_definitions()' in registry
     assert 'enqueue_canonical_job(' in adapter
@@ -203,6 +199,7 @@ def test_report_delivery_uses_platform_notification_channels_by_identity() -> No
     overview_service = read(ROOT / 'app' / 'reports' / 'overview' / 'service.py')
     assert "'name': 'Notification Channels'" in overview_service
     assert 'Telegram, email, and Microsoft Teams channels can be selected per report schedule.' in overview_service
+
 
 def test_report_user_interfaces_do_not_expose_mvp_copy() -> None:
     paths = [

@@ -115,8 +115,8 @@ def test_jobs_storage_naming_schedules_templates_and_generated_views_use_generic
     assert 'scope_asset_type: str' in job_contract
     assert 'scope_asset_id: str' in job_contract
     assert 'resolve_report_scope(report)' in job_contract
-    assert "scope_type=parameters.scope_asset_type" in job_service
-    assert "scope_key=parameters.scope_asset_id" in job_service
+    assert 'scope_type=parameters.scope_asset_type' in job_service
+    assert 'scope_key=parameters.scope_asset_id' in job_service
     assert 'def get_report_scope_slug' in naming
     assert 'resolve_report_scope(report)' in naming
 
@@ -150,7 +150,7 @@ def test_reports_overview_promotes_object_storage_to_published_without_losing_re
         'Object Storage Top Consumers Report',
         'Object Storage Alerts & Anomalies Report',
     }
-    assert "published_by_domain" in service
+    assert 'published_by_domain' in service
     assert "domain_order = ['kubernetes', 'object_storage', 'server', 'hci']" in service
     assert "'published_count': len(published_items)" in service
-    assert "Object Storage report coverage must be Published" in verifier
+    assert 'Object Storage report coverage must be Published' in verifier
