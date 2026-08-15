@@ -22,7 +22,6 @@ from app.models.cluster import Cluster
 from app.models.report import Report, ReportSchedule, ReportScheduleRun
 from app.models.user import User
 from app.reports.catalog import ReportContractError, get_report_type_label, validate_report_contract
-from app.reports.notifications import get_report_notification_channel_options
 from app.reports.export.constants import DEFAULT_REPORT_DOMAIN, DEFAULT_REPORT_SOURCE_KIND
 from app.reports.generate.service import (
     OUTPUT_FORMAT_OPTIONS,
@@ -35,6 +34,7 @@ from app.reports.generate.service import (
 )
 from app.reports.jobs.queue import get_reports_queue_name
 from app.reports.jobs.service import ReportJobEnqueueError, enqueue_report_generation
+from app.reports.notifications import get_report_notification_channel_options
 from app.reports.schedules.delivery import get_recommended_actions, get_scheduler_context
 from app.reports.schedules.failures import mark_schedule_dispatch_failed
 from app.reports.storage.service import get_configured_storage_backend_name, get_report_storage_backend_status

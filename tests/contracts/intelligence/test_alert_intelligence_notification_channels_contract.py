@@ -10,15 +10,19 @@ def read(relative: str) -> str:
 def test_alert_intelligence_is_asset_scoped_multi_domain_and_keeps_source_authority_explicit():
     module = read('app/alert_intelligence/service.py')
     workspace = read('app/templates/intelligence/partials/_alert_intelligence_workspace.html')
+    correlation = read('app/templates/intelligence/partials/_alert_intelligence_correlation.html')
 
     assert 'load_alerts_by_source' in module
     assert 'load_alert_stream' in module
     assert "_VALID_DOMAINS = {'kubernetes', 'object_storage'}" in module
     assert "_VALID_SOURCES = {'auto', 'alertmanager', 'prometheus'}" in module
     assert 'get_active_recommendation_findings' in module
-    assert 'Alertmanager is preferred in Automatic mode' in workspace
-    assert 'Prometheus ALERTS remains the fallback evidence path' in workspace
-    assert 'contextual correlation, not a claim that every finding was caused by every alert' in workspace
+    assert "'label': 'Automatic · Alertmanager Preferred'" in module
+    assert "'detection': 'Prometheus evaluates alert rules and exposes ALERTS state.'" in module
+    assert 'Alertmanager owns grouping, inhibition, routing, silences, receivers' in module
+    assert 'Alert Source' in workspace
+    assert 'payload.source_options' in workspace
+    assert 'contextual correlation, not a claim that every finding was caused by every alert' in correlation
 
 
 def test_notification_channel_persistence_is_provider_neutral_and_secrets_are_encrypted():

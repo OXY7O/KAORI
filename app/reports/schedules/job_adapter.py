@@ -12,8 +12,8 @@ from app.jobs.dispatcher import enqueue_canonical_job
 from app.jobs.policies.presentation import present_interval
 from app.models.job import JobExecution, JobPolicy
 from app.models.report import ReportSchedule
-from app.reports.notifications import get_report_notification_channel_options
 from app.reports.jobs.queue import get_reports_queue_name
+from app.reports.notifications import get_report_notification_channel_options
 from app.reports.schedules.tasks import run_report_schedule_job
 from app.reports.storage.service import get_report_storage_backend_status
 

@@ -12,8 +12,8 @@ from app.models.job import JobExecution
 from app.models.report import Report, ReportSchedule, ReportScheduleRun
 from app.notifications.feedback import OperationalDeliveryPolicy
 from app.notifications.service import record_operational_activity
-from app.reports.notifications import deliver_generated_report
 from app.reports.export.service import generate_report_artifact
+from app.reports.notifications import deliver_generated_report
 
 
 def _notify(job: JobExecution, report: Report, *, success: bool, message: str) -> None:
