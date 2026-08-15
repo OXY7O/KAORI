@@ -3,6 +3,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from threading import RLock
 
+from app.definitions.integration_registry import integration_provider_document
+from app.definitions.validation import require_list, require_mapping, require_str, string_tuple
+
 
 @dataclass(frozen=True, slots=True)
 class AlertConsumerProfile:
@@ -47,87 +50,25 @@ def registered_alert_consumer_profiles() -> tuple[AlertConsumerProfile, ...]:
     return tuple(_PROFILES[key] for key in sorted(_PROFILES))
 
 
-_COMMON_REQUIRED = ('alerts_v2', 'alert_labels', 'alertname_label')
-_COMMON_OPTIONAL = (
-    'severity_label',
-    'fingerprint',
-    'starts_at',
-    'receiver_metadata',
-    'summary_annotation',
-    'runbook_url',
-    'generator_url',
-)
+def _load_profiles() -> tuple[AlertConsumerProfile, ...]:
+    document = integration_provider_document('alertmanager')
+    profiles: list[AlertConsumerProfile] = []
+    for index, raw in enumerate(require_list(document.get('consumer_profiles'), 'alertmanager.consumer_profiles')):
+        item = require_mapping(raw, f'alertmanager.consumer_profiles[{index}]')
+        profiles.append(
+            AlertConsumerProfile(
+                asset_type=require_str(item, 'asset_type', f'alertmanager.consumer_profiles[{index}]'),
+                profile_key=require_str(item, 'profile_key', f'alertmanager.consumer_profiles[{index}]'),
+                label=require_str(item, 'label', f'alertmanager.consumer_profiles[{index}]'),
+                required_capabilities=string_tuple(item.get('required_capabilities'), f'alertmanager.consumer_profiles[{index}].required_capabilities'),
+                optional_capabilities=string_tuple(item.get('optional_capabilities'), f'alertmanager.consumer_profiles[{index}].optional_capabilities'),
+                no_match_message=require_str(item, 'no_match_message', f'alertmanager.consumer_profiles[{index}]'),
+                consumer_family=require_str(item, 'consumer_family', f'alertmanager.consumer_profiles[{index}]'),
+                selector_hint=require_str(item, 'selector_hint', f'alertmanager.consumer_profiles[{index}]'),
+            )
+        )
+    return tuple(profiles)
 
 
-for _profile in (
-    AlertConsumerProfile(
-        asset_type='kubernetes_cluster',
-        profile_key='kubernetes-alerts-v1',
-        label='Kubernetes Alerts v1',
-        required_capabilities=_COMMON_REQUIRED,
-        optional_capabilities=_COMMON_OPTIONAL,
-        no_match_message=(
-            'The selector is valid and no active Kubernetes alert currently matches it. '
-            'The binding may remain Ready while payload-label evidence waits for a representative alert.'
-        ),
-        selector_hint='Use a stable cluster identity label such as cluster=<managed-cluster-identity>.',
-    ),
-    AlertConsumerProfile(
-        asset_type='object_storage_system',
-        profile_key='object-storage-alerts-v1',
-        label='Object Storage Alerts v1',
-        required_capabilities=_COMMON_REQUIRED,
-        optional_capabilities=_COMMON_OPTIONAL,
-        no_match_message=(
-            'The selector is valid and no active Object Storage alert currently matches the managed asset. '
-            'The binding may remain Ready while payload-label evidence waits for a representative alert.'
-        ),
-        selector_hint='Use the stable Object Storage identity carried by alert rules, for example job, deployment, service, or provider-specific asset labels.',
-    ),
-    AlertConsumerProfile(
-        asset_type='server',
-        profile_key='infrastructure-alerts-v1',
-        label='Infrastructure Alerts v1',
-        required_capabilities=_COMMON_REQUIRED,
-        optional_capabilities=_COMMON_OPTIONAL,
-        no_match_message='No active infrastructure alert matched this asset selector.',
-        selector_hint='Use a stable host, instance, or asset identity label.',
-    ),
-    AlertConsumerProfile(
-        asset_type='server_group',
-        profile_key='infrastructure-group-alerts-v1',
-        label='Infrastructure Group Alerts v1',
-        required_capabilities=_COMMON_REQUIRED,
-        optional_capabilities=_COMMON_OPTIONAL,
-        no_match_message='No active infrastructure alert matched this asset-group selector.',
-        selector_hint='Use a stable group or service identity label shared by the intended assets.',
-    ),
-    AlertConsumerProfile(
-        asset_type='hci_environment',
-        profile_key='platform-alerts-v1',
-        label='Platform Alerts v1',
-        required_capabilities=_COMMON_REQUIRED,
-        optional_capabilities=_COMMON_OPTIONAL,
-        no_match_message='No active platform alert matched this environment selector.',
-        selector_hint='Use a stable environment or platform identity label.',
-    ),
-    AlertConsumerProfile(
-        asset_type='storage_service',
-        profile_key='storage-alerts-v1',
-        label='Storage Alerts v1',
-        required_capabilities=_COMMON_REQUIRED,
-        optional_capabilities=_COMMON_OPTIONAL,
-        no_match_message='No active storage alert matched this service selector.',
-        selector_hint='Use a stable storage service or deployment identity label.',
-    ),
-    AlertConsumerProfile(
-        asset_type='global',
-        profile_key='global-alerts-v1',
-        label='Global Alerts v1',
-        required_capabilities=('alerts_v2',),
-        optional_capabilities=(*_COMMON_REQUIRED[1:], *_COMMON_OPTIONAL),
-        no_match_message='The Alertmanager Alerts API is ready; no active alert is currently available for payload enrichment.',
-        selector_hint='Global bindings intentionally consume the unscoped alert stream.',
-    ),
-):
+for _profile in _load_profiles():
     register_alert_consumer_profile(_profile)

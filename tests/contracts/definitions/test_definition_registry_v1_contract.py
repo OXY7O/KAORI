@@ -21,6 +21,12 @@ def test_definition_registry_has_versioned_yaml_for_growing_system_catalogs():
         'analytics/kubernetes_datasets.yaml': 'kubernetes_analytics_datasets',
         'reports/catalog.yaml': 'report_catalog',
         'notifications/event_categories.yaml': 'notification_event_categories',
+        'integrations/taxonomy.yaml': 'integration_taxonomy',
+        'integrations/compatibility.yaml': 'integration_compatibility',
+        'integrations/kubernetes.yaml': 'integration_provider_contract',
+        'integrations/prometheus.yaml': 'integration_provider_contract',
+        'integrations/alertmanager.yaml': 'integration_provider_contract',
+        'integrations/object_storage.yaml': 'integration_provider_contract',
     }
     for relative, kind in expected.items():
         document = load(relative)
@@ -39,6 +45,15 @@ def test_runtime_modules_consume_registry_instead_of_embedding_catalog_growth():
         'app/analytics/kubernetes/materialization/catalog.py',
         'app/reports/catalog.py',
         'app/notifications/event_catalog.py',
+        'app/integrations/taxonomy.py',
+        'app/integrations/compatibility.py',
+        'app/integrations/kubernetes/capabilities.py',
+        'app/integrations/prometheus/capabilities.py',
+        'app/integrations/prometheus/binding_profiles.py',
+        'app/integrations/alertmanager/capabilities.py',
+        'app/integrations/alertmanager/binding_profiles.py',
+        'app/integrations/minio/capabilities.py',
+        'app/integrations/minio/compatibility.py',
     ]
     content = '\n'.join(Path(path).read_text() for path in modules)
     assert 'load_definition_document' in content
@@ -64,3 +79,38 @@ def test_rbac_and_jobs_reference_canonical_permissions():
         assert job['execute_permission'] in permission_keys
         if job.get('domain_execute_permission'):
             assert job['domain_execute_permission'] in permission_keys
+
+
+def test_integration_definitions_are_taxonomy_provider_and_profile_driven():
+    taxonomy = load('integrations/taxonomy.yaml')
+    compatibility = load('integrations/compatibility.yaml')
+    prometheus = load('integrations/prometheus.yaml')
+    alertmanager = load('integrations/alertmanager.yaml')
+    object_storage = load('integrations/object_storage.yaml')
+
+    domain_keys = {item['key'] for item in taxonomy['domains']}
+    assert domain_keys == {'orchestration', 'observability', 'storage'}
+    assert {item['asset_type'] for item in taxonomy['consumer_assets']} >= {
+        'kubernetes_cluster',
+        'object_storage_system',
+    }
+    assert {item['product'] for item in compatibility['profiles']} >= {
+        'kubernetes',
+        'prometheus',
+        'alertmanager',
+        'thanos',
+    }
+    assert {item['profile_key'] for item in prometheus['binding_profiles']} == {
+        'kubernetes-metrics-v1',
+        'object-storage-metrics-v1',
+    }
+    assert {item['profile_key'] for item in alertmanager['consumer_profiles']} >= {
+        'kubernetes-alerts-v1',
+        'object-storage-alerts-v1',
+        'global-alerts-v1',
+    }
+    assert any(
+        profile['key'] == 'minio-release-2024-08-03'
+        for product in object_storage['products']
+        for profile in product['compatibility_profiles']
+    )

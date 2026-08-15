@@ -66,10 +66,10 @@ def test_capacity_removes_unscoped_legacy_query_definitions() -> None:
 
 
 def test_capacity_capability_validation_includes_readiness_and_node_labels() -> None:
-    capabilities = read('app/integrations/prometheus/capabilities.py')
+    capabilities = read('app/definitions/catalogs/integrations/prometheus.yaml')
     audit = read('app/integrations/prometheus/query_profiles/audit.py')
 
-    capacity_block = capabilities.split("'capacity_metrics':", 1)[1].split("'resource_requests_limits':", 1)[0]
+    capacity_block = capabilities.split('key: capacity_metrics', 1)[1].split('key: resource_requests_limits', 1)[0]
     assert 'kube_node_status_condition' in capacity_block
     assert "'kube_node_status_condition': {'node', 'condition', 'status'}" in audit
     requirement_block = audit.split('_RESOURCE_COMMITMENT_LABEL_REQUIREMENTS = {', 1)[1].split('\n}\n', 1)[0]

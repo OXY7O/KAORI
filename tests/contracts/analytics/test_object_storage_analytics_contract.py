@@ -62,6 +62,23 @@ def test_object_storage_analytics_exposes_kubernetes_style_surface_set() -> None
         assert f'analytics.{endpoint}' in menu
 
 
+
+def test_object_storage_analytics_uses_dedicated_rbac_and_sidebar_visibility() -> None:
+    routes = read('app/analytics/object_storage/routes.py')
+    defaults = read('app/rbac/defaults.py')
+    sidebar = read('app/templates/components/navigation/sidebar.html')
+    menu = read('app/templates/components/navigation/analytics_menu.html')
+    migration = read('migrations/versions/20260814_object_storage_rbac_split.py')
+
+    assert routes.count("@permission_required('object_storage_analytics.view')") == 8
+    assert "'object_storage_analytics.view'" in defaults
+    assert "'storage_analytics'" in defaults
+    assert "has_permission('object_storage_analytics.view')" in sidebar
+    assert '{% if can_object_storage_analytics %}' in menu
+    assert '{% if can_kubernetes_analytics %}' in menu
+    assert "'analytics.view'" in migration
+    assert '_copy_role_assignments' in migration
+
 def test_object_storage_alert_sources_are_alertmanager_first_with_prometheus_fallback() -> None:
     source = read('app/analytics/object_storage/alert_sources.py')
     boundary = read('app/templates/analytics/object_storage/partials/_evidence_boundary.html')
@@ -103,7 +120,7 @@ def test_prometheus_transport_capability_ownership_is_provider_core() -> None:
 def test_object_storage_metrics_readiness_is_validation_owned_and_provider_qualified() -> None:
     contracts = read('app/analytics/shared/metrics/contracts.py')
     adapter = read('app/analytics/object_storage/sources/minio_prometheus.py')
-    binding_profiles = read('app/integrations/prometheus/binding_profiles.py')
+    binding_profile_catalog = read('app/definitions/catalogs/integrations/prometheus.yaml')
     binding_validation = read('app/integrations/prometheus/binding_validation.py')
     validator_registry = read('app/integrations/prometheus/binding_validators/__init__.py')
     object_storage_validator = read('app/integrations/prometheus/binding_validators/object_storage.py')
@@ -113,8 +130,8 @@ def test_object_storage_metrics_readiness_is_validation_owned_and_provider_quali
     assert 'class MetricsReadinessSnapshot' in contracts
     assert 'def readiness(self) -> MetricsReadinessSnapshot' in contracts
     assert 'def readiness(self) -> MetricsReadinessSnapshot' in adapter
-    assert "profile_key='object-storage-metrics-v1'" in binding_profiles
-    assert "validation_strategy='custom'" in binding_profiles
+    assert 'profile_key: object-storage-metrics-v1' in binding_profile_catalog
+    assert 'validation_strategy: custom' in binding_profile_catalog
     assert "register_binding_validator('object_storage_system'" in validator_registry
     assert 'ObjectStoragePrometheusProfileAuditor' in object_storage_validator
     assert 'return system.minio_connection is not None' in object_storage_validator
@@ -274,6 +291,7 @@ def test_object_storage_analytics_uses_explicit_runtime_states_and_blocking() ->
     dependencies = read('app/analytics/object_storage/dependencies.py')
     controls = read('app/templates/analytics/object_storage/partials/_controls.html')
     blocker = read('app/templates/analytics/object_storage/partials/_dependency_blocker.html')
+    dependency_notice = read('app/templates/analytics/object_storage/partials/_dependency_notice.html')
     index = read('app/templates/analytics/object_storage/index.html')
     hero = read('app/templates/analytics/object_storage/partials/_hero.html')
     hero_blocked = read('app/templates/analytics/object_storage/partials/_hero_blocked_posture.html')
@@ -294,11 +312,21 @@ def test_object_storage_analytics_uses_explicit_runtime_states_and_blocking() ->
     assert 'required_contract_ready' in runtime
     assert 'metrics_runtime_blocker' in runtime
     assert 'metrics_query_blocker' in runtime
+    assert "'inventory_required'" in dependencies
+    service = read('app/analytics/object_storage/service.py')
+    assert service.count('inventory_required_blocker(system)') >= 3
     assert 'object-storage-analytics-refresh-indicator' in controls
+    shared_blocker = read('app/templates/components/dependencies/_blocker.html')
     assert 'components/dependencies/_blocker.html' in blocker
-    assert 'dependency_steps' in blocker
-    assert 'Object Storage' in blocker
-    assert 'Metrics' in blocker
+    assert 'Object Storage → Metrics' in blocker
+    assert 'Object Storage → Metrics → Alert Evidence' in blocker
+    assert 'dependency_grid_classes = "lg:grid-cols-2"' in blocker
+    assert 'dependency_grid_classes = "lg:grid-cols-3"' in blocker
+    assert 'Analytics Readiness' in shared_blocker
+    assert 'Current Blocker' in shared_blocker
+    assert 'dependency_route_summary' in shared_blocker
+    assert 'dependency_step_count' in shared_blocker
+    assert 'dependency_blocker.diagnostic_detail' in dependency_notice
     blocker_index = index.index('{% if dependency_blocker %}')
     else_index = index.index('{% else %}', blocker_index)
     controls_index = index.index('partials/_controls.html')
@@ -306,6 +334,9 @@ def test_object_storage_analytics_uses_explicit_runtime_states_and_blocking() ->
     assert 'metrics_source.detail' not in hero
     assert "'Current Step'" in hero_blocked
     assert "'Progress'" in hero_blocked
+    assert "'Analytics Readiness'" in hero_blocked
+    assert "readiness_step_count = 3 if page_key == 'alerts' else 2" in hero_blocked
+    assert "blocker_status = 'Capability Incomplete'" in hero_blocked
 
 
 def test_object_storage_bucket_records_use_shared_kaori_table_contract() -> None:
@@ -352,6 +383,9 @@ def test_object_storage_overview_matches_kubernetes_overview_hero_and_tab_contra
     assert "'Analytics Readiness'" in hero_blocked
     assert "'Current Step'" in hero_blocked
     assert "'Progress'" in hero_blocked
+    assert "'Analytics Readiness'" in hero_blocked
+    assert "readiness_step_count = 3 if page_key == 'alerts' else 2" in hero_blocked
+    assert "blocker_status = 'Capability Incomplete'" in hero_blocked
 
     assert 'components/content_tabs.html' in workspace
     assert 'data-analytics-tabset' in workspace
@@ -496,7 +530,7 @@ def test_object_storage_forecast_is_worker_materialized_on_forecasting_queue() -
     materialization = read('app/analytics/object_storage/materialization.py')
     task = read('app/analytics/object_storage/tasks.py')
     adapter = read('app/analytics/object_storage/job_adapter.py')
-    definition = read('app/definitions/catalogs/jobs/registered_jobs.yaml')
+    definition = read('app/jobs/definitions/object_storage_forecast_refresh.py')
     registry = read('app/jobs/registry.py')
     config = read('app/config/default.py')
     materialization_template = read('app/templates/jobs/configuration/definitions/_materialization_job.html')
@@ -508,9 +542,9 @@ def test_object_storage_forecast_is_worker_materialized_on_forecasting_queue() -
     assert "execution_mode='background'" in materialization
     assert 'materialize_object_storage_forecasts' in task
     assert 'dispatch_object_storage_forecast_materialization' in adapter
-    assert 'key: object_storage.forecast.materialize' in definition
-    assert 'queue_name: forecasting' in definition
-    assert 'load_job_definitions()' in registry
+    assert "JOB_KEY = 'object_storage.forecast.materialize'" in definition
+    assert "queue_name='forecasting'" in definition
+    assert 'OBJECT_STORAGE_FORECAST_REFRESH_DEFINITION' in registry
     assert "'app.analytics.object_storage.tasks.materialize_object_storage_forecasts'" in config
     assert 'FORECASTING_CELERY_QUEUE' in config
     assert 'eligible_target_count' in materialization_template

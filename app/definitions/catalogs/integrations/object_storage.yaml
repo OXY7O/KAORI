@@ -1,0 +1,56 @@
+schema_version: 1
+kind: integration_provider_contract
+provider: object_storage
+capability_profile: minio-object-storage-api-v1
+object_storage_system_scope: object_storage_system
+prometheus_capability_scope:
+- object_storage.metrics.version
+- object_storage.metrics.cluster
+- object_storage.metrics.bucket
+- object_storage.metrics.runtime
+capabilities:
+- key: s3_api
+  label: S3 API
+  description: Reach the registered S3-compatible API endpoint.
+  required: true
+- key: bucket_discovery
+  label: Bucket Discovery
+  description: List buckets visible to the registered credential.
+  required: true
+- key: bucket_versioning_read
+  label: Versioning Read
+  description: Read bucket versioning configuration.
+  required: false
+- key: bucket_lifecycle_read
+  label: Lifecycle Read
+  description: Read bucket lifecycle configuration.
+  required: false
+- key: bucket_policy_read
+  label: Bucket Policy Read
+  description: Read bucket policy configuration.
+  required: false
+- key: bucket_encryption_read
+  label: Encryption Read
+  description: Read bucket encryption configuration.
+  required: false
+- key: bucket_object_lock_read
+  label: Object Lock Read
+  description: Read bucket object-lock configuration.
+  required: false
+products:
+- key: minio
+  label: MinIO
+  compatibility_profiles:
+  - key: minio-release-2024-08-03
+    product: minio
+    label: MinIO RELEASE.2024-08-03
+    minimum_release: RELEASE.2024-08-03T04-33-23Z
+    maximum_release: RELEASE.2024-08-03T04-33-23Z
+    support_level: current
+    notes: Qualified MinIO S3 API provider contract. Observability bindings remain independently validated.
+- key: astor
+  label: AStor
+  compatibility_profiles: []
+- key: s3_compatible
+  label: S3-Compatible
+  compatibility_profiles: []

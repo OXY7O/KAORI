@@ -30,7 +30,7 @@ Integrations
 ```
 
 `worker_domain` remains execution metadata and must not be reused as the UI or
-architecture taxonomy. `taxonomy.py` is the canonical domain/capability map.
+architecture taxonomy. `app/definitions/catalogs/integrations/taxonomy.yaml` is the canonical domain/capability map; `taxonomy.py` is its validated runtime adapter.
 
 
 ## Navigation projection
@@ -102,7 +102,8 @@ binding tables such as `minio_prometheus_bindings`.
 - `contracts/capabilities.py`: capability declarations and evidence contract.
 - `contracts/results.py`: provider-neutral runtime and operation results.
 - `contracts/exceptions.py`: stable orchestration exceptions.
-- `taxonomy.py`: stable integration domains and capabilities.
+- `app/definitions/catalogs/integrations/`: versioned provider, compatibility, consumer-profile, and taxonomy definitions.
+- `taxonomy.py`: validated runtime adapter for stable integration domains and capabilities.
 - `registry.py`: registration, taxonomy ownership, lookup, dispatch, model
   loading, detail routing, failure hooks, and queue map.
 - `binding_service.py`: provider-neutral source-to-asset binding entrypoint plus

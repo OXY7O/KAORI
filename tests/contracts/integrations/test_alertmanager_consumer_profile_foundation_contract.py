@@ -11,10 +11,14 @@ def test_alertmanager_provider_core_is_consumer_neutral() -> None:
     registration = read('app/integrations/alertmanager/__init__.py')
     validation = read('app/integrations/alertmanager/validation.py')
     capabilities = read('app/integrations/alertmanager/capabilities.py')
+    capability_catalog = read('app/definitions/catalogs/integrations/alertmanager.yaml')
     requirements = read('app/integrations/alertmanager/requirements.py')
 
     assert 'CORE_CAPABILITY_KEYS' in registration
-    assert "CORE_CAPABILITY_KEYS = ('status_v2', 'alerts_v2', 'silences_v2')" in capabilities
+    assert "integration_provider_document('alertmanager')" in capabilities
+    assert 'core_capability_keys:' in capability_catalog
+    for key in ('status_v2', 'alerts_v2', 'silences_v2'):
+        assert f'- {key}' in capability_catalog
     assert 'discover_payload_capabilities' not in validation
     assert 'Kubernetes' not in requirements
     assert 'MinIO' not in requirements
@@ -25,12 +29,14 @@ def test_alertmanager_provider_core_is_consumer_neutral() -> None:
 
 def test_alertmanager_consumer_profiles_are_asset_scoped() -> None:
     profiles = read('app/integrations/alertmanager/binding_profiles.py')
+    profile_catalog = read('app/definitions/catalogs/integrations/alertmanager.yaml')
     binding_validation = read('app/integrations/alertmanager/binding_validation.py')
     binding_management = read('app/integrations/alertmanager/binding_management.py')
 
-    assert "profile_key='kubernetes-alerts-v1'" in profiles
-    assert "profile_key='object-storage-alerts-v1'" in profiles
-    assert "asset_type='object_storage_system'" in profiles
+    assert "integration_provider_document('alertmanager')" in profiles
+    assert 'profile_key: kubernetes-alerts-v1' in profile_catalog
+    assert 'profile_key: object-storage-alerts-v1' in profile_catalog
+    assert 'asset_type: object_storage_system' in profile_catalog
     assert 'get_alert_consumer_profile(binding.asset_type)' in binding_validation
     assert 'discover_payload_capabilities' in binding_validation
     assert 'binding.validation_profile' in binding_validation
@@ -57,10 +63,12 @@ def test_alertmanager_supports_object_storage_consumers_without_special_binding_
     routes = read('app/alertmanager/routes.py')
     minio_service = read('app/minio/service.py')
     consumer_assets = read('app/integrations/consumer_assets.py')
+    taxonomy_catalog = read('app/definitions/catalogs/integrations/taxonomy.yaml')
 
     assert 'registered_consumer_asset_definitions' in forms
     assert 'object_storage_scope_key' in forms
-    assert "asset_type='object_storage_system'" in consumer_assets
+    assert 'integration_taxonomy_document()' in consumer_assets
+    assert 'asset_type: object_storage_system' in taxonomy_catalog
     assert 'ObjectStorageSystem' in consumer_assets
     assert 'get_consumer_asset_definition' in service
     assert 'resolve_consumer_asset' in service
@@ -102,11 +110,13 @@ def test_alertmanager_consumer_profile_contract_is_documented() -> None:
 
 def test_object_storage_alert_profile_direct_cutover_is_migration_guarded() -> None:
     profiles = read('app/integrations/alertmanager/binding_profiles.py')
+    profile_catalog = read('app/definitions/catalogs/integrations/alertmanager.yaml')
     resolver = read('app/alertmanager/resolver.py')
     migration = read('migrations/versions/20260814_object_storage_alert_profile.py')
 
-    assert "profile_key='object-storage-alerts-v1'" in profiles
-    assert 'minio-alerts-v1' not in profiles
+    assert 'profile_key: object-storage-alerts-v1' in profile_catalog
+    assert 'minio-alerts-v1' not in profile_catalog
+    assert "integration_provider_document('alertmanager')" in profiles
     assert 'get_alert_consumer_profile' in resolver
     assert 'profile_eligible' in resolver
     assert 'Consumer validation profile' in resolver

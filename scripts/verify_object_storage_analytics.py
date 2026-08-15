@@ -27,8 +27,8 @@ def main() -> int:
     contracts = read('app/analytics/shared/metrics/contracts.py')
     profile = read('app/integrations/prometheus/query_profiles/object_storage_v1.py')
     audit = read('app/integrations/prometheus/query_profiles/object_storage_audit.py')
-    binding_profiles = read('app/integrations/prometheus/binding_profiles.py')
-    alertmanager_profiles = read('app/integrations/alertmanager/binding_profiles.py')
+    prometheus_catalog = read('app/definitions/catalogs/integrations/prometheus.yaml')
+    alertmanager_catalog = read('app/definitions/catalogs/integrations/alertmanager.yaml')
     alertmanager_profile_migration = read('migrations/versions/20260814_object_storage_alert_profile.py')
     binding_validation = read('app/integrations/prometheus/binding_validation.py')
     binding_validator = read('app/integrations/prometheus/binding_validators/object_storage.py')
@@ -126,8 +126,8 @@ def main() -> int:
             assert f'analytics.{endpoint}' in menu
 
 
-    assert "profile_key='object-storage-metrics-v1'" in binding_profiles
-    assert "validation_strategy='custom'" in binding_profiles
+    assert 'profile_key: object-storage-metrics-v1' in prometheus_catalog
+    assert 'validation_strategy: custom' in prometheus_catalog
     assert "register_binding_validator('object_storage_system'" in read(
         'app/integrations/prometheus/binding_validators/__init__.py'
     )
@@ -160,8 +160,8 @@ def main() -> int:
     assert 'Automatic · Alertmanager Preferred' in controls
     assert 'Prometheus Fallback Active' in alert_sources
     assert 'Consumer Validation Stale' in alert_sources
-    assert "profile_key='object-storage-alerts-v1'" in alertmanager_profiles
-    assert 'minio-alerts-v1' not in alertmanager_profiles
+    assert 'profile_key: object-storage-alerts-v1' in alertmanager_catalog
+    assert 'minio-alerts-v1' not in alertmanager_catalog
     assert "validation_profile = 'object-storage-alerts-v1'" in alertmanager_profile_migration
     assert "validation_status = 'validation_required'" in alertmanager_profile_migration
     assert 'Active Alerts' in alerts_summary

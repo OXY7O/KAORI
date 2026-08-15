@@ -31,6 +31,7 @@ def test_minio_registry_contract_is_storage_object_storage() -> None:
     registry = read('app/integrations/registry.py')
     compatibility = read('app/integrations/minio/compatibility.py')
     capabilities = read('app/integrations/minio/capabilities.py')
+    provider_catalog = read('app/definitions/catalogs/integrations/object_storage.yaml')
 
     assert "'app.integrations.minio'" in registry
     assert "provider_type='minio'" in registration
@@ -38,9 +39,11 @@ def test_minio_registry_contract_is_storage_object_storage() -> None:
     assert "capability_key='object_storage'" in registration
     assert "workspace_endpoint='minio.index'" in registration
     assert "navigation_endpoint_prefixes=('minio.',)" in registration
-    assert "SUPPORTED_RELEASE = 'RELEASE.2024-08-03T04-33-23Z'" in compatibility
-    assert "PROFILE_KEY = 'minio-release-2024-08-03'" in compatibility
-    assert "CAPABILITY_PROFILE = 'minio-object-storage-api-v1'" in capabilities
+    assert "integration_provider_document('object_storage')" in compatibility
+    assert "integration_provider_document('object_storage')" in capabilities
+    assert 'minimum_release: RELEASE.2024-08-03T04-33-23Z' in provider_catalog
+    assert 'key: minio-release-2024-08-03' in provider_catalog
+    assert 'capability_profile: minio-object-storage-api-v1' in provider_catalog
 
 
 def test_minio_api_plane_uses_s3_sdk_and_encrypted_credentials() -> None:
@@ -63,12 +66,15 @@ def test_minio_prometheus_metrics_plane_reuses_canonical_asset_binding() -> None
     service = read('app/minio/service.py')
     registration = read('app/integrations/minio/__init__.py')
     prometheus_profiles = read('app/integrations/prometheus/binding_profiles.py')
+    prometheus_catalog = read('app/definitions/catalogs/integrations/prometheus.yaml')
     object_storage_validator = read('app/integrations/prometheus/binding_validators/object_storage.py')
     consumer_assets = read('app/integrations/consumer_assets.py')
+    taxonomy_catalog = read('app/definitions/catalogs/integrations/taxonomy.yaml')
 
     assert 'create_source_binding' not in service
-    assert "asset_type='object_storage_system'" in consumer_assets
-    assert "profile_key='object-storage-metrics-v1'" in prometheus_profiles
+    assert 'asset_type: object_storage_system' in taxonomy_catalog
+    assert 'profile_key: object-storage-metrics-v1' in prometheus_catalog
+    assert "integration_provider_document('prometheus')" in prometheus_profiles
     assert "asset_profile='minio-v2'" in object_storage_validator
     assert 'ObjectStoragePrometheusProfileAuditor' in object_storage_validator
     assert 'minio_prometheus' not in service.lower()

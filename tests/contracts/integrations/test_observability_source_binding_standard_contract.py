@@ -9,17 +9,19 @@ def read(path: str) -> str:
 
 def test_observability_binding_assets_are_registered_once_and_extensible() -> None:
     registry = read('app/integrations/consumer_assets.py')
+    taxonomy_catalog = read('app/definitions/catalogs/integrations/taxonomy.yaml')
     coverage = read('app/integrations/coverage.py')
 
     for marker in (
-        "asset_type='kubernetes_cluster'",
-        "asset_type='object_storage_system'",
         'registered_consumer_asset_definitions()',
         'build_consumer_asset_groups(',
         'A new managed asset (for example Vault) becomes bindable',
         'do not need a new product-specific binding form',
+        'integration_taxonomy_document()',
     ):
         assert marker in registry
+    assert 'asset_type: kubernetes_cluster' in taxonomy_catalog
+    assert 'asset_type: object_storage_system' in taxonomy_catalog
 
     assert 'registered_consumer_asset_definitions' in coverage
     assert "'scope_type': definition.asset_type" in coverage

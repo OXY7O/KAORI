@@ -19,6 +19,12 @@ EXPECTED = {
     'analytics/kubernetes_datasets.yaml': 'kubernetes_analytics_datasets',
     'reports/catalog.yaml': 'report_catalog',
     'notifications/event_categories.yaml': 'notification_event_categories',
+    'integrations/taxonomy.yaml': 'integration_taxonomy',
+    'integrations/compatibility.yaml': 'integration_compatibility',
+    'integrations/kubernetes.yaml': 'integration_provider_contract',
+    'integrations/prometheus.yaml': 'integration_provider_contract',
+    'integrations/alertmanager.yaml': 'integration_provider_contract',
+    'integrations/object_storage.yaml': 'integration_provider_contract',
 }
 
 
@@ -128,14 +134,70 @@ def main() -> int:
             if route.get('category') not in category_keys:
                 raise ValueError(f"notification route references unknown category {route.get('category')!r}")
 
+
+        taxonomy = docs['integrations/taxonomy.yaml']
+        domain_keys = unique(taxonomy['domains'], 'key', 'integration domains')
+        capability_ids: set[tuple[str, str]] = set()
+        for capability in taxonomy['capabilities']:
+            domain_key = str(capability.get('domain_key') or '').strip()
+            key = str(capability.get('key') or '').strip()
+            if domain_key not in domain_keys:
+                raise ValueError(f'integration capability {key!r} references unknown domain {domain_key!r}')
+            identity = (domain_key, key)
+            if identity in capability_ids:
+                raise ValueError(f'duplicate integration capability {domain_key}.{key}')
+            capability_ids.add(identity)
+
+        compatibility = docs['integrations/compatibility.yaml']
+        compatibility_profiles = unique(compatibility['profiles'], 'key', 'integration compatibility profiles')
+        if not compatibility.get('kubernetes_lifecycle_policy'):
+            raise ValueError('integration compatibility Kubernetes lifecycle policy is missing')
+
+        integration_provider_counts: dict[str, int] = {}
+        for relative, provider_key in (
+            ('integrations/kubernetes.yaml', 'kubernetes'),
+            ('integrations/prometheus.yaml', 'prometheus'),
+            ('integrations/alertmanager.yaml', 'alertmanager'),
+            ('integrations/object_storage.yaml', 'object_storage'),
+        ):
+            provider = docs[relative]
+            if provider.get('provider') != provider_key:
+                raise ValueError(f'{relative}: provider must be {provider_key!r}')
+            provider_capabilities = provider.get('capabilities') or []
+            unique(provider_capabilities, 'key', f'{provider_key} capabilities')
+            integration_provider_counts[provider_key] = len(provider_capabilities)
+
+        alertmanager = docs['integrations/alertmanager.yaml']
+        alert_capability_keys = {str(item['key']) for item in alertmanager['capabilities']}
+        profile_keys = unique(alertmanager['profiles'], 'key', 'Alertmanager provider profiles')
+        for profile in alertmanager['profiles']:
+            missing = set(profile.get('required_capabilities') or ()) - alert_capability_keys
+            if missing:
+                raise ValueError(f"Alertmanager profile {profile['key']} references unknown capabilities: {sorted(missing)}")
+        if set(alertmanager.get('compatibility_profiles') or ()) != profile_keys:
+            raise ValueError('Alertmanager compatibility profile keys must match provider profile definitions')
+
+        object_storage = docs['integrations/object_storage.yaml']
+        products = object_storage.get('products') or []
+        unique(products, 'key', 'object-storage product families')
+        object_profile_keys = {
+            str(profile['key'])
+            for product in products
+            for profile in product.get('compatibility_profiles') or ()
+        }
+        if not object_profile_keys:
+            raise ValueError('object-storage provider must define at least one qualified compatibility profile')
+
     except Exception as exc:
         print(f'FAIL — KAORI Definition Registry v1: {exc}', file=sys.stderr)
         return 1
 
     print(
-        'PASS — KAORI Definition Registry v1 · '
+        'PASS — KAORI Definition Registry v1.1 · '
         f"{len(rules)} rules · {len(permission_keys)} permissions · {len(jobs)} jobs · "
-        f"{len(datasets)} analytics datasets · {len(reports['report_types'])} report types"
+        f"{len(datasets)} analytics datasets · {len(reports['report_types'])} report types · "
+        f"{len(domain_keys)} integration domains · {sum(integration_provider_counts.values())} provider capabilities · "
+        f"{len(compatibility_profiles)} compatibility profiles"
     )
     return 0
 

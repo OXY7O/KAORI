@@ -1,4 +1,4 @@
-# KAORI Definition Registry v1
+# KAORI Definition Registry v1.1
 
 System-owned, human-reviewed definitions live as YAML under `app/definitions/catalogs/`.
 Application code must load them through domain adapters and validated Python models; routes,
@@ -11,3 +11,14 @@ Boundary:
 
 Every document requires `schema_version: 1` and a canonical `kind`. Duplicate YAML keys,
 duplicate canonical identifiers, unknown enum values, and broken cross-references fail closed.
+
+
+Integration contracts are also source-controlled under `catalogs/integrations/`:
+- domain/capability taxonomy and managed consumer-asset metadata,
+- generic product/version compatibility profiles and Kubernetes lifecycle policy,
+- Kubernetes provider capabilities,
+- Prometheus provider capabilities and consumer binding profiles,
+- Alertmanager provider capabilities, compatibility profiles, and consumer profiles,
+- Object Storage/MinIO API capabilities and qualified release profiles.
+
+Integration adapters retain network validation, query execution, credential handling, and provider-specific algorithms.

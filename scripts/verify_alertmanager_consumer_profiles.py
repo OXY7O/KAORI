@@ -13,6 +13,7 @@ def read(path: str) -> str:
 def main() -> int:
     registration = read('app/integrations/alertmanager/__init__.py')
     capabilities = read('app/integrations/alertmanager/capabilities.py')
+    capability_catalog = read('app/definitions/catalogs/integrations/alertmanager.yaml')
     requirements = read('app/integrations/alertmanager/requirements.py')
     validation = read('app/integrations/alertmanager/validation.py')
     profiles = read('app/integrations/alertmanager/binding_profiles.py')
@@ -22,6 +23,7 @@ def main() -> int:
     forms = read('app/alertmanager/forms.py')
     minio_service = read('app/minio/service.py')
     consumer_assets = read('app/integrations/consumer_assets.py')
+    taxonomy_catalog = read('app/definitions/catalogs/integrations/taxonomy.yaml')
     validation_template = read('app/templates/alertmanager/partials/_detail_validation_content.html')
     scope_template = read('app/templates/alertmanager/partials/_detail_scope.html')
     binding_template = read('app/templates/alertmanager/partials/_binding_registry.html')
@@ -37,14 +39,18 @@ def main() -> int:
     workspace_standard = read('docs/design/components/INTEGRATIONS_WORKSPACE_STANDARD.md')
 
     assert 'CORE_CAPABILITY_KEYS' in registration
-    assert "CORE_CAPABILITY_KEYS = ('status_v2', 'alerts_v2', 'silences_v2')" in capabilities
+    assert "integration_provider_document('alertmanager')" in capabilities
+    assert 'core_capability_keys:' in capability_catalog
+    for key in ('status_v2', 'alerts_v2', 'silences_v2'):
+        assert f'- {key}' in capability_catalog
     assert 'Kubernetes' not in requirements
     assert 'MinIO' not in requirements
     assert 'discover_payload_capabilities' not in validation
 
-    assert "profile_key='kubernetes-alerts-v1'" in profiles
-    assert "profile_key='object-storage-alerts-v1'" in profiles
-    assert "asset_type='object_storage_system'" in profiles
+    assert "integration_provider_document('alertmanager')" in profiles
+    assert 'profile_key: kubernetes-alerts-v1' in capability_catalog
+    assert 'profile_key: object-storage-alerts-v1' in capability_catalog
+    assert 'asset_type: object_storage_system' in capability_catalog
     assert 'discover_payload_capabilities' in binding_validation
     assert 'binding.validation_evidence' in binding_validation
     assert 'binding.validation_profile' in binding_validation
@@ -57,7 +63,8 @@ def main() -> int:
     assert 'instance.capabilities or {}' not in evaluator
 
     assert 'registered_consumer_asset_definitions' in forms
-    assert "asset_type='object_storage_system'" in consumer_assets
+    assert 'integration_taxonomy_document()' in consumer_assets
+    assert 'asset_type: object_storage_system' in taxonomy_catalog
     assert 'create_source_binding' not in minio_service
 
     assert 'Alertmanager Full Validation' in validation_template

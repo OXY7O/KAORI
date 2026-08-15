@@ -89,6 +89,7 @@ def test_minio_edit_secret_can_preserve_existing_credential() -> None:
 def test_minio_compatibility_is_product_specific_and_range_aware() -> None:
     compatibility = read('app/integrations/minio/compatibility.py')
     capabilities = read('app/integrations/minio/capabilities.py')
+    provider_catalog = read('app/definitions/catalogs/integrations/object_storage.yaml')
     client = read('app/integrations/minio/client.py')
     adapter = read('app/integrations/minio/adapter.py')
     configuration = read('app/templates/minio/partials/_detail_configuration.html')
@@ -99,13 +100,16 @@ def test_minio_compatibility_is_product_specific_and_range_aware() -> None:
         'SUPPORTED_RELEASE_MAX',
         'supported_range_label',
         'PRODUCT_PROFILE_CATALOG',
-        "'minio': MINIO_COMPATIBILITY_PROFILES",
-        "'astor': ()",
         'compatibility_policy_view',
+        "integration_provider_document('object_storage')",
     ):
         assert marker in compatibility
+    assert 'key: minio' in provider_catalog
+    assert 'key: astor' in provider_catalog
+    assert 'compatibility_profiles: []' in provider_catalog
 
-    assert 'COMPATIBILITY_PROFILE_KEYS' in capabilities
+    assert 'COMPATIBILITY_PROFILES' in capabilities
+    assert 'key: minio-release-2024-08-03' in provider_catalog
     assert "if 'astor' in normalized_header" in client
     assert 'evaluate_minio_release(instance.declared_release, product=result.product)' in adapter
     assert 'Supported Range · ' in configuration

@@ -1,0 +1,301 @@
+schema_version: 1
+kind: integration_provider_contract
+provider: alertmanager
+compatibility_profiles:
+- alertmanager-v0-25
+- alertmanager-v0-33
+binding_capability_keys:
+- alerts
+- alerts_v2
+- silences
+- silences_v2
+- routing
+- receivers
+- status_v2
+core_capability_keys:
+- status_v2
+- alerts_v2
+- silences_v2
+capabilities:
+- key: status_v2
+  label: Status API
+  category: api
+  description: Reads Alertmanager runtime, cluster, and build information.
+  required: true
+  probe: GET /api/v2/status
+  success_criteria: The endpoint returns HTTP 2xx with a JSON object containing readable status data.
+  configuration_guidance: Configure the Alertmanager base URL, authentication method, trusted TLS chain, and a timeout
+    that permits the status request to complete.
+  impact: Required for connection verification, version discovery, compatibility evaluation, and runtime observation.
+  remediation:
+  - Verify that the registered URL is the Alertmanager base URL and does not already include /api/v2.
+  - Allow the KAORI runtime to reach the endpoint and port through DNS, routing, firewall, proxy, and network policy
+    controls.
+  - Confirm the credential can read /api/v2/status and that the TLS certificate is trusted when verification is
+    enabled.
+- key: alerts_v2
+  label: Alerts API
+  category: api
+  description: Reads active alert records from Alertmanager API v2.
+  required: true
+  probe: GET /api/v2/alerts
+  success_criteria: The endpoint returns HTTP 2xx and a JSON array. An empty array is still a valid API response.
+  configuration_guidance: Expose the Alertmanager API v2 alerts path to KAORI and ensure the selected credential
+    or upstream proxy permits read access.
+  impact: Required for alert inventory, alert correlation, intelligence, and operational analytics that consume
+    active alerts.
+  remediation:
+  - Test /api/v2/alerts from the KAORI network path using the same authentication and TLS settings.
+  - Review reverse-proxy path rewriting and make sure /api/v2/alerts is not blocked or redirected to a login page.
+  - Confirm the response content type and payload are JSON rather than HTML or another proxy-generated response.
+- key: silences_v2
+  label: Silences API
+  category: api
+  description: Reads silence inventory and lifecycle metadata.
+  required: true
+  probe: GET /api/v2/silences
+  success_criteria: The endpoint returns HTTP 2xx and a JSON array. An empty array is still a valid API response.
+  configuration_guidance: Expose the Alertmanager API v2 silences path to KAORI and permit read access through the
+    configured authentication boundary.
+  impact: Required for silence visibility, governance, and correlation between alerts and suppression controls.
+  remediation:
+  - Test /api/v2/silences from the KAORI runtime using the registered connection settings.
+  - Review proxy allow-lists, authentication policy, and path rewriting for the silences endpoint.
+  - Confirm Alertmanager returns JSON and that no intermediary replaces the response with an error document.
+- key: alert_labels
+  label: Alert labels
+  category: metadata
+  description: Alert payload exposes a labels mapping.
+  required: true
+  probe: Inspect each object returned by GET /api/v2/alerts for a labels object.
+  success_criteria: At least one observed alert contains a labels mapping. No active alerts can make this evidence
+    temporarily unavailable.
+  configuration_guidance: Ensure alert-producing rules send standard labels and that proxies or transforms do not
+    strip the labels object.
+  impact: Required to classify, filter, correlate, and route alert records inside KAORI.
+  remediation:
+  - Confirm at least one representative alert is active during validation, then rerun Full Validation.
+  - Inspect the raw /api/v2/alerts payload and verify each alert includes a labels object.
+  - Correct upstream rule or payload transformation when labels are missing from active alert records.
+- key: alertname_label
+  label: Alert name label
+  category: metadata
+  description: Observed alerts include the alertname label.
+  required: true
+  probe: Inspect labels.alertname in GET /api/v2/alerts responses.
+  success_criteria: At least one observed alert contains a non-empty labels.alertname value.
+  configuration_guidance: Apply the conventional alertname label to alerting rules and preserve it through the notification
+    pipeline.
+  impact: Required for stable alert identity, grouping, correlation, and source-resolution consumers.
+  remediation:
+  - Inspect active alert payloads and confirm labels.alertname is present.
+  - Update alerting rules or transformation layers that remove or rename alertname.
+  - Trigger a representative test alert and rerun Full Validation to refresh evidence.
+- key: severity_label
+  label: Severity label
+  category: metadata
+  description: Observed alerts include a severity label.
+  required: false
+  probe: Inspect labels.severity in GET /api/v2/alerts responses.
+  success_criteria: At least one observed alert contains a non-empty labels.severity value.
+  configuration_guidance: Standardize severity values in alerting rules, such as info, warning, and critical, and
+    preserve them in downstream transformations.
+  impact: Improves prioritization, filtering, routing, notification policy, and intelligence quality.
+  remediation:
+  - Add a severity label to alerting rules that currently omit it.
+  - Use a controlled severity vocabulary and document its operational meaning.
+  - Trigger representative alerts for each severity and rerun Full Validation.
+- key: fingerprint
+  label: Fingerprint
+  category: metadata
+  description: Observed alerts include a stable fingerprint.
+  required: false
+  probe: Inspect the fingerprint field in GET /api/v2/alerts responses.
+  success_criteria: At least one observed alert exposes a non-empty fingerprint.
+  configuration_guidance: Use an Alertmanager API response that preserves fingerprint metadata and avoid transformations
+    that discard it.
+  impact: Improves deduplication, alert lifecycle correlation, and historical intelligence.
+  remediation:
+  - Inspect the raw alerts API response for fingerprint.
+  - Review proxy, adapter, or transformation logic that may remove the field.
+  - Rerun Full Validation while representative alerts are active.
+- key: starts_at
+  label: Start timestamp
+  category: metadata
+  description: Observed alerts include startsAt.
+  required: false
+  probe: Inspect startsAt in GET /api/v2/alerts responses.
+  success_criteria: At least one observed alert contains a parseable startsAt timestamp.
+  configuration_guidance: Preserve standard Alertmanager timestamp fields in the API payload.
+  impact: Supports duration, ordering, aging, and temporal correlation.
+  remediation:
+  - Inspect active alert payloads for startsAt.
+  - Correct upstream or proxy transformations that strip timestamp fields.
+  - Rerun validation with an active representative alert.
+- key: receiver_metadata
+  label: Receiver metadata
+  category: metadata
+  description: Observed alerts identify their receiver.
+  required: false
+  probe: Inspect receivers or receiver metadata exposed with active alerts.
+  success_criteria: At least one observed alert can be associated with a receiver.
+  configuration_guidance: Maintain receiver metadata in the Alertmanager response path and avoid transformations
+    that remove routing context.
+  impact: Improves routing analysis, ownership mapping, and notification diagnostics.
+  remediation:
+  - Confirm the alert is routed to a named receiver and inspect the API payload.
+  - Review routing configuration and adapter transformations for receiver metadata.
+  - Rerun validation after a representative routed alert is available.
+- key: summary_annotation
+  label: Summary annotation
+  category: metadata
+  description: Observed alerts include annotations.summary.
+  required: false
+  probe: Inspect annotations.summary in GET /api/v2/alerts responses.
+  success_criteria: At least one observed alert contains a non-empty annotations.summary value.
+  configuration_guidance: Add concise summary annotations to alerting rules and preserve annotations through integrations.
+  impact: Improves operator readability, notification content, and recommendation context.
+  remediation:
+  - Add annotations.summary to alerting rules that do not provide it.
+  - Trigger a representative alert and confirm the summary is visible in /api/v2/alerts.
+  - Rerun Full Validation to refresh capability evidence.
+- key: runbook_url
+  label: Runbook URL
+  category: metadata
+  description: Observed alerts expose a runbook link.
+  required: false
+  probe: Inspect annotations.runbook_url or the normalized runbook URL field in active alert payloads.
+  success_criteria: At least one observed alert contains a valid runbook URL.
+  configuration_guidance: Add a maintained runbook URL annotation to operationally significant alerts.
+  impact: Enables direct remediation guidance and runbook integration from KAORI.
+  remediation:
+  - Create or identify the operational runbook for the alert.
+  - Add the runbook URL to the alerting rule annotation using the organization standard.
+  - Trigger the alert and rerun Full Validation.
+- key: generator_url
+  label: Generator URL
+  category: metadata
+  description: Observed alerts expose their generator URL.
+  required: false
+  probe: Inspect generatorURL in GET /api/v2/alerts responses.
+  success_criteria: At least one observed alert contains a non-empty generatorURL.
+  configuration_guidance: Preserve generatorURL from the originating alert source through Alertmanager and any proxy
+    layer.
+  impact: Provides direct navigation to the originating rule, query, or monitoring context.
+  remediation:
+  - Inspect the raw alert payload for generatorURL.
+  - Review upstream alert generation and intermediary transformations.
+  - Rerun validation with an active alert from the expected source.
+- key: silence_matchers
+  label: Silence matchers
+  category: metadata
+  description: Observed silences expose matcher definitions.
+  required: false
+  probe: Inspect matchers in GET /api/v2/silences responses.
+  success_criteria: At least one observed silence contains readable matcher definitions. No silences can make this
+    evidence temporarily unavailable.
+  configuration_guidance: Use the standard API v2 silence payload and preserve matcher metadata through proxies
+    or adapters.
+  impact: Improves suppression analysis, governance, and alert-to-silence correlation.
+  remediation:
+  - Create a temporary controlled silence with representative matchers when validation evidence is required.
+  - Inspect /api/v2/silences and confirm the matchers array is present.
+  - Remove the temporary silence when complete and rerun Full Validation.
+profiles:
+- key: alertmanager-v0-25
+  version_constraint: '>=0.25,<0.27'
+  support_level: legacy
+  required_capabilities:
+  - status_v2
+  - alerts_v2
+  - silences_v2
+  known_limitations:
+  - Legacy runtime line; validate observed payload metadata before enabling advanced analytics.
+- key: alertmanager-v0-33
+  version_constraint: '>=0.27,<0.34'
+  support_level: current
+  required_capabilities:
+  - status_v2
+  - alerts_v2
+  - silences_v2
+  known_limitations: []
+consumer_profiles:
+- asset_type: kubernetes_cluster
+  profile_key: kubernetes-alerts-v1
+  label: Kubernetes Alerts v1
+  required_capabilities: &id001
+  - alerts_v2
+  - alert_labels
+  - alertname_label
+  optional_capabilities: &id002
+  - severity_label
+  - fingerprint
+  - starts_at
+  - receiver_metadata
+  - summary_annotation
+  - runbook_url
+  - generator_url
+  no_match_message: The selector is valid and no active Kubernetes alert currently matches it. The binding may remain
+    Ready while payload-label evidence waits for a representative alert.
+  consumer_family: alerts
+  selector_hint: Use a stable cluster identity label such as cluster=<managed-cluster-identity>.
+- asset_type: object_storage_system
+  profile_key: object-storage-alerts-v1
+  label: Object Storage Alerts v1
+  required_capabilities: *id001
+  optional_capabilities: *id002
+  no_match_message: The selector is valid and no active Object Storage alert currently matches the managed asset.
+    The binding may remain Ready while payload-label evidence waits for a representative alert.
+  consumer_family: alerts
+  selector_hint: Use the stable Object Storage identity carried by alert rules, for example job, deployment, service,
+    or provider-specific asset labels.
+- asset_type: server
+  profile_key: infrastructure-alerts-v1
+  label: Infrastructure Alerts v1
+  required_capabilities: *id001
+  optional_capabilities: *id002
+  no_match_message: No active infrastructure alert matched this asset selector.
+  consumer_family: alerts
+  selector_hint: Use a stable host, instance, or asset identity label.
+- asset_type: server_group
+  profile_key: infrastructure-group-alerts-v1
+  label: Infrastructure Group Alerts v1
+  required_capabilities: *id001
+  optional_capabilities: *id002
+  no_match_message: No active infrastructure alert matched this asset-group selector.
+  consumer_family: alerts
+  selector_hint: Use a stable group or service identity label shared by the intended assets.
+- asset_type: hci_environment
+  profile_key: platform-alerts-v1
+  label: Platform Alerts v1
+  required_capabilities: *id001
+  optional_capabilities: *id002
+  no_match_message: No active platform alert matched this environment selector.
+  consumer_family: alerts
+  selector_hint: Use a stable environment or platform identity label.
+- asset_type: storage_service
+  profile_key: storage-alerts-v1
+  label: Storage Alerts v1
+  required_capabilities: *id001
+  optional_capabilities: *id002
+  no_match_message: No active storage alert matched this service selector.
+  consumer_family: alerts
+  selector_hint: Use a stable storage service or deployment identity label.
+- asset_type: global
+  profile_key: global-alerts-v1
+  label: Global Alerts v1
+  required_capabilities:
+  - alerts_v2
+  optional_capabilities:
+  - alert_labels
+  - alertname_label
+  - severity_label
+  - fingerprint
+  - starts_at
+  - receiver_metadata
+  - summary_annotation
+  - runbook_url
+  - generator_url
+  no_match_message: The Alertmanager Alerts API is ready; no active alert is currently available for payload enrichment.
+  consumer_family: alerts
+  selector_hint: Global bindings intentionally consume the unscoped alert stream.

@@ -10,6 +10,7 @@ def read(relative: str) -> str:
 def test_registry_owns_domain_capability_and_provider_extension_metadata() -> None:
     registry = read('app/integrations/registry.py')
     taxonomy = read('app/integrations/taxonomy.py')
+    taxonomy_catalog = read('app/definitions/catalogs/integrations/taxonomy.yaml')
 
     for field in (
         'domain_key: str',
@@ -22,17 +23,18 @@ def test_registry_owns_domain_capability_and_provider_extension_metadata() -> No
     ):
         assert field in registry
 
-    for domain in ("key='orchestration'", "key='observability'", "key='storage'"):
-        assert domain in taxonomy
+    assert 'integration_taxonomy_document()' in taxonomy
+    for domain in ('key: orchestration', 'key: observability', 'key: storage'):
+        assert domain in taxonomy_catalog
     for capability in (
-        "key='cluster_orchestration'",
-        "key='metrics'",
-        "key='alerting'",
-        "key='object_storage'",
-        "key='file_storage'",
-        "key='block_storage'",
+        'key: cluster_orchestration',
+        'key: metrics',
+        'key: alerting',
+        'key: object_storage',
+        'key: file_storage',
+        'key: block_storage',
     ):
-        assert capability in taxonomy
+        assert capability in taxonomy_catalog
 
 
 def test_builtin_provider_registration_uses_canonical_taxonomy() -> None:
@@ -113,11 +115,14 @@ def test_validation_worker_dispatches_full_validation_through_registry() -> None
 
 def test_prometheus_binding_validation_is_asset_profile_driven() -> None:
     profiles = read('app/integrations/prometheus/binding_profiles.py')
+    profile_catalog = read('app/definitions/catalogs/integrations/prometheus.yaml')
     validation = read('app/integrations/prometheus/binding_validation.py')
 
     assert 'class BindingValidationProfile' in profiles
     assert 'def register_binding_validation_profile(' in profiles
-    assert 'asset_type=KUBERNETES_CLUSTER_SCOPE' in profiles
+    assert "integration_provider_document('prometheus')" in profiles
+    assert 'asset_type: kubernetes_cluster' in profile_catalog
+    assert 'profile_key: kubernetes-metrics-v1' in profile_catalog
     assert 'get_binding_validation_profile(binding.asset_type)' in validation
     assert "('kube_node_info', 'Kubernetes node identity')" not in validation
     assert 'No Prometheus consumer validation profile is registered for asset type' in validation

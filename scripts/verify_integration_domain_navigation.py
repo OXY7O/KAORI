@@ -14,6 +14,7 @@ def main() -> int:
     errors: list[str] = []
 
     taxonomy = read('app/integrations/taxonomy.py')
+    taxonomy_catalog = read('app/definitions/catalogs/integrations/taxonomy.yaml')
     registry = read('app/integrations/registry.py')
     navigation = read('app/integrations/navigation.py')
     sidebar = read('app/templates/components/navigation/integrations_menu.html')
@@ -25,22 +26,24 @@ def main() -> int:
     presentation = read('app/bootstrap/presentation.py')
 
     for endpoint in (
-        "workspace_endpoint='integrations.orchestration'",
-        "workspace_endpoint='integrations.observability'",
-        "workspace_endpoint='integrations.storage'",
+        'workspace_endpoint: integrations.orchestration',
+        'workspace_endpoint: integrations.observability',
+        'workspace_endpoint: integrations.storage',
     ):
-        if endpoint not in taxonomy:
-            errors.append(f'taxonomy missing domain workspace endpoint: {endpoint}')
+        if endpoint not in taxonomy_catalog:
+            errors.append(f'taxonomy YAML missing domain workspace endpoint: {endpoint}')
 
     for marker in (
         'asset_types: tuple[str, ...] = ()',
-        "asset_types=('kubernetes_cluster',)",
-        "asset_types=('object_storage_system',)",
         'def asset_types_for_domain(domain_key: str)',
         'def domain_key_for_asset_type(asset_type: str)',
+        'integration_taxonomy_document()',
     ):
         if marker not in taxonomy:
-            errors.append(f'taxonomy missing asset-ownership contract: {marker}')
+            errors.append(f'taxonomy adapter missing asset-ownership contract: {marker}')
+    for marker in ('- kubernetes_cluster', '- object_storage_system'):
+        if marker not in taxonomy_catalog:
+            errors.append(f'taxonomy YAML missing asset ownership: {marker}')
 
     if 'navigation_endpoint_prefixes: tuple[str, ...]' not in registry:
         errors.append('IntegrationModule is missing navigation endpoint ownership metadata')

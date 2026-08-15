@@ -1,0 +1,85 @@
+schema_version: 1
+kind: integration_compatibility
+kubernetes_lifecycle_policy:
+  supported_version_constraint: '>=1.20,<2.0'
+  current_min_version: '1.34'
+  current_max_version_exclusive: '1.37'
+  current_version_label: v1.34–v1.36
+  supported_version_label: v1.20–v1.x
+  legacy_min_version: '1.20'
+profiles:
+- key: kubernetes-api-v1
+  product: kubernetes
+  version_constraint: '>=1.20,<2.0'
+  support_level: supported
+  required_capabilities: []
+  notes: KAORI Kubernetes API contract v1. Live API discovery and feature-level RBAC determine readiness.
+  query_profile: null
+- key: prometheus-http-v2
+  product: prometheus
+  version_constraint: '>=2.40,<3.0'
+  support_level: legacy_supported
+  required_capabilities:
+  - instant_query
+  - range_query
+  notes: Prometheus HTTP API profile for runtime major 2.
+  query_profile: prometheus-core-v1
+- key: prometheus-http-v3
+  product: prometheus
+  version_constraint: '>=3.0,<4.0'
+  support_level: current
+  required_capabilities:
+  - instant_query
+  - range_query
+  notes: Prometheus HTTP API profile for runtime major 3.
+  query_profile: prometheus-core-v1
+- key: alertmanager-api-v2-legacy
+  product: alertmanager
+  version_constraint: '>=0.25,<0.27'
+  support_level: legacy
+  required_capabilities:
+  - status_v2
+  - alerts_v2
+  - silences_v2
+  notes: Legacy runtime line using Alertmanager API v2 only.
+  query_profile: null
+- key: alertmanager-api-v2-current
+  product: alertmanager
+  version_constraint: '>=0.27,<0.34'
+  support_level: current
+  required_capabilities:
+  - status_v2
+  - alerts_v2
+  - silences_v2
+  notes: Current Alertmanager API v2 profile.
+  query_profile: null
+- key: thanos-query-v0-39
+  product: thanos
+  version_constraint: '>=0.39,<0.40'
+  support_level: supported
+  required_capabilities:
+  - prometheus_api_v1
+  - instant_query
+  - range_query
+  notes: Supported Thanos Query 0.39 profile.
+  query_profile: prometheus-core-v1
+- key: thanos-query-v0-40
+  product: thanos
+  version_constraint: '>=0.40,<0.41'
+  support_level: supported
+  required_capabilities:
+  - prometheus_api_v1
+  - instant_query
+  - range_query
+  notes: Supported Thanos Query 0.40 profile.
+  query_profile: prometheus-core-v1
+- key: thanos-query-v0-41
+  product: thanos
+  version_constraint: '>=0.41,<0.42'
+  support_level: current
+  required_capabilities:
+  - prometheus_api_v1
+  - instant_query
+  - range_query
+  notes: Current Thanos Query profile.
+  query_profile: prometheus-core-v1

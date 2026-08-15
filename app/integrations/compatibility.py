@@ -7,6 +7,9 @@ from dataclasses import dataclass
 from packaging.specifiers import SpecifierSet
 from packaging.version import InvalidVersion, Version
 
+from app.definitions.integration_registry import integration_compatibility_document
+from app.definitions.validation import require_mapping, require_str, string_tuple
+
 
 @dataclass(frozen=True)
 class CompatibilityProfile:
@@ -36,92 +39,47 @@ class CompatibilityResult:
     missing_capabilities: tuple[str, ...] = ()
 
 
-KUBERNETES_SUPPORTED_VERSION_CONSTRAINT = '>=1.20,<2.0'
-KUBERNETES_CURRENT_MIN_VERSION = Version('1.34')
-KUBERNETES_CURRENT_MAX_VERSION_EXCLUSIVE = Version('1.37')
-KUBERNETES_CURRENT_VERSION_LABEL = 'v1.34–v1.36'
-KUBERNETES_SUPPORTED_VERSION_LABEL = 'v1.20–v1.x'
+def _load_compatibility_contract() -> tuple[dict[str, str], dict[str, tuple[CompatibilityProfile, ...]]]:
+    document = integration_compatibility_document()
+    raw_policy = require_mapping(document.get('kubernetes_lifecycle_policy'), 'kubernetes_lifecycle_policy')
+    policy = {
+        key: require_str(raw_policy, key, 'kubernetes_lifecycle_policy')
+        for key in (
+            'supported_version_constraint',
+            'legacy_min_version',
+            'current_min_version',
+            'current_max_version_exclusive',
+            'current_version_label',
+            'supported_version_label',
+        )
+    }
+    grouped: dict[str, list[CompatibilityProfile]] = {}
+    for index, raw in enumerate(document.get('profiles') or []):
+        item = require_mapping(raw, f'profiles[{index}]')
+        product = require_str(item, 'product', f'profiles[{index}]')
+        profile = CompatibilityProfile(
+            key=require_str(item, 'key', f'profiles[{index}]'),
+            product=product,
+            version_constraint=require_str(item, 'version_constraint', f'profiles[{index}]'),
+            support_level=require_str(item, 'support_level', f'profiles[{index}]'),
+            required_capabilities=string_tuple(
+                item.get('required_capabilities'),
+                f'profiles[{index}].required_capabilities',
+            ),
+            notes=require_str(item, 'notes', f'profiles[{index}]'),
+            query_profile=(str(item.get('query_profile')).strip() if item.get('query_profile') else None),
+        )
+        grouped.setdefault(product, []).append(profile)
+    return policy, {product: tuple(items) for product, items in grouped.items()}
 
 
-PROFILES: dict[str, tuple[CompatibilityProfile, ...]] = {
-    'kubernetes': (
-        CompatibilityProfile(
-            'kubernetes-api-v1',
-            'kubernetes',
-            KUBERNETES_SUPPORTED_VERSION_CONSTRAINT,
-            'supported',
-            (),
-            'KAORI Kubernetes API contract v1. Live API discovery and feature-level RBAC determine readiness.',
-        ),
-    ),
-    'prometheus': (
-        CompatibilityProfile(
-            'prometheus-http-v2',
-            'prometheus',
-            '>=2.40,<3.0',
-            'legacy_supported',
-            ('instant_query', 'range_query'),
-            'Prometheus HTTP API profile for runtime major 2.',
-            'prometheus-core-v1',
-        ),
-        CompatibilityProfile(
-            'prometheus-http-v3',
-            'prometheus',
-            '>=3.0,<4.0',
-            'current',
-            ('instant_query', 'range_query'),
-            'Prometheus HTTP API profile for runtime major 3.',
-            'prometheus-core-v1',
-        ),
-    ),
-    'alertmanager': (
-        CompatibilityProfile(
-            'alertmanager-api-v2-legacy',
-            'alertmanager',
-            '>=0.25,<0.27',
-            'legacy',
-            ('status_v2', 'alerts_v2', 'silences_v2'),
-            'Legacy runtime line using Alertmanager API v2 only.',
-        ),
-        CompatibilityProfile(
-            'alertmanager-api-v2-current',
-            'alertmanager',
-            '>=0.27,<0.34',
-            'current',
-            ('status_v2', 'alerts_v2', 'silences_v2'),
-            'Current Alertmanager API v2 profile.',
-        ),
-    ),
-    'thanos': (
-        CompatibilityProfile(
-            'thanos-query-v0-39',
-            'thanos',
-            '>=0.39,<0.40',
-            'supported',
-            ('prometheus_api_v1', 'instant_query', 'range_query'),
-            'Supported Thanos Query 0.39 profile.',
-            'prometheus-core-v1',
-        ),
-        CompatibilityProfile(
-            'thanos-query-v0-40',
-            'thanos',
-            '>=0.40,<0.41',
-            'supported',
-            ('prometheus_api_v1', 'instant_query', 'range_query'),
-            'Supported Thanos Query 0.40 profile.',
-            'prometheus-core-v1',
-        ),
-        CompatibilityProfile(
-            'thanos-query-v0-41',
-            'thanos',
-            '>=0.41,<0.42',
-            'current',
-            ('prometheus_api_v1', 'instant_query', 'range_query'),
-            'Current Thanos Query profile.',
-            'prometheus-core-v1',
-        ),
-    ),
-}
+_KUBERNETES_POLICY, PROFILES = _load_compatibility_contract()
+KUBERNETES_SUPPORTED_VERSION_CONSTRAINT = _KUBERNETES_POLICY['supported_version_constraint']
+KUBERNETES_LEGACY_MIN_VERSION = Version(_KUBERNETES_POLICY['legacy_min_version'])
+KUBERNETES_CURRENT_MIN_VERSION = Version(_KUBERNETES_POLICY['current_min_version'])
+KUBERNETES_CURRENT_MAX_VERSION_EXCLUSIVE = Version(_KUBERNETES_POLICY['current_max_version_exclusive'])
+KUBERNETES_CURRENT_VERSION_LABEL = _KUBERNETES_POLICY['current_version_label']
+KUBERNETES_SUPPORTED_VERSION_LABEL = _KUBERNETES_POLICY['supported_version_label']
 
 
 def kubernetes_lifecycle(version: str | None) -> str:
@@ -132,18 +90,13 @@ def kubernetes_lifecycle(version: str | None) -> str:
         return 'unknown'
     if KUBERNETES_CURRENT_MIN_VERSION <= parsed < KUBERNETES_CURRENT_MAX_VERSION_EXCLUSIVE:
         return 'current'
-    if Version('1.20') <= parsed < KUBERNETES_CURRENT_MIN_VERSION:
+    if KUBERNETES_LEGACY_MIN_VERSION <= parsed < KUBERNETES_CURRENT_MIN_VERSION:
         return 'legacy'
     return 'unknown'
 
 
 def kubernetes_lifecycle_policy(version: str | None) -> dict[str, str]:
-    """Return the KAORI version-lifecycle contract shown to operators.
-
-    The current band is an explicit KAORI support policy, not a claim about the
-    upstream Kubernetes support calendar. Keeping it centralized prevents runtime,
-    validation, and history views from presenting different accepted ranges.
-    """
+    """Return the source-controlled KAORI Kubernetes lifecycle contract."""
     detected = normalize_runtime_version(version or '') or 'unknown'
     lifecycle = kubernetes_lifecycle(detected)
     return {

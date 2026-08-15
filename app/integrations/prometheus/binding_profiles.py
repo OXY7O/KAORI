@@ -4,7 +4,8 @@ from dataclasses import dataclass
 from threading import RLock
 from typing import Literal
 
-from app.integrations.prometheus.scope import KUBERNETES_CLUSTER_SCOPE
+from app.definitions.integration_registry import integration_provider_document
+from app.definitions.validation import require_list, require_mapping, require_str
 
 ValidationStrategy = Literal['probe', 'custom']
 
@@ -59,34 +60,36 @@ def registered_binding_validation_profiles() -> tuple[BindingValidationProfile, 
     return tuple(_PROFILES[key] for key in sorted(_PROFILES))
 
 
-register_binding_validation_profile(
-    BindingValidationProfile(
-        asset_type=KUBERNETES_CLUSTER_SCOPE,
-        profile_key='kubernetes-metrics-v1',
-        label='Kubernetes Metrics v1',
-        probes=(
-            BindingProbe('kube_node_info', 'Kubernetes node identity'),
-            BindingProbe('kube_namespace_status_phase', 'Kubernetes namespace identity'),
-            BindingProbe('kube_pod_info', 'Kubernetes pod identity'),
-        ),
-        no_match_message=(
-            'The selector was accepted, but no scoped kube-state-metrics identity series matched. '
-            'Verify the selector label/value on kube_node_info, kube_namespace_status_phase, or kube_pod_info.'
-        ),
-    )
-)
+def _load_profiles() -> tuple[BindingValidationProfile, ...]:
+    document = integration_provider_document('prometheus')
+    profiles: list[BindingValidationProfile] = []
+    for profile_index, raw_profile in enumerate(require_list(document.get('binding_profiles'), 'prometheus.binding_profiles')):
+        item = require_mapping(raw_profile, f'prometheus.binding_profiles[{profile_index}]')
+        probes: list[BindingProbe] = []
+        for probe_index, raw_probe in enumerate(require_list(item.get('probes'), f'prometheus.binding_profiles[{profile_index}].probes')):
+            probe = require_mapping(raw_probe, f'prometheus.binding_profiles[{profile_index}].probes[{probe_index}]')
+            probes.append(
+                BindingProbe(
+                    metric=require_str(probe, 'metric', f'prometheus.binding_profiles[{profile_index}].probes[{probe_index}]'),
+                    label=require_str(probe, 'label', f'prometheus.binding_profiles[{profile_index}].probes[{probe_index}]'),
+                )
+            )
+        validation_strategy = require_str(item, 'validation_strategy', f'prometheus.binding_profiles[{profile_index}]')
+        if validation_strategy not in {'probe', 'custom'}:
+            raise ValueError(f'Unsupported Prometheus binding validation strategy: {validation_strategy!r}.')
+        profiles.append(
+            BindingValidationProfile(
+                asset_type=require_str(item, 'asset_type', f'prometheus.binding_profiles[{profile_index}]'),
+                profile_key=require_str(item, 'profile_key', f'prometheus.binding_profiles[{profile_index}]'),
+                label=require_str(item, 'label', f'prometheus.binding_profiles[{profile_index}]'),
+                probes=tuple(probes),
+                no_match_message=require_str(item, 'no_match_message', f'prometheus.binding_profiles[{profile_index}]'),
+                consumer_family=require_str(item, 'consumer_family', f'prometheus.binding_profiles[{profile_index}]'),
+                validation_strategy=validation_strategy,  # type: ignore[arg-type]
+            )
+        )
+    return tuple(profiles)
 
-register_binding_validation_profile(
-    BindingValidationProfile(
-        asset_type='object_storage_system',
-        profile_key='object-storage-metrics-v1',
-        label='Object Storage Metrics v1',
-        probes=(),
-        validation_strategy='custom',
-        no_match_message=(
-            'The selector was accepted, but no qualified Object Storage metric identity matched. '
-            'Verify that the selected system provider has a registered Prometheus metric adapter and that '
-            'the binding selector isolates that deployment.'
-        ),
-    )
-)
+
+for _profile in _load_profiles():
+    register_binding_validation_profile(_profile)

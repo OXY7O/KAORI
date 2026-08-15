@@ -48,9 +48,11 @@ def main() -> None:
     owner_binding_cleanup = read('migrations/versions/20260812_remove_minio_owner_self_binding.py')
     registration = read('app/integrations/minio/__init__.py')
     prometheus_profiles = read('app/integrations/prometheus/binding_profiles.py')
+    prometheus_catalog = read('app/definitions/catalogs/integrations/prometheus.yaml')
     object_storage_validator = read('app/integrations/prometheus/binding_validators/object_storage.py')
     capabilities = read('app/integrations/minio/capabilities.py')
     compatibility = read('app/integrations/minio/compatibility.py')
+    provider_catalog = read('app/definitions/catalogs/integrations/object_storage.yaml')
     client = read('app/integrations/minio/client.py')
     service = read('app/minio/service.py')
     registration_service = read('app/minio/registration.py')
@@ -103,11 +105,11 @@ def main() -> None:
     require("'binding.create'" not in registration, 'MinIO provider must not create a self consumer binding')
     require("'binding.validate'" not in registration, 'MinIO Core Validation must not validate an owner self-binding')
     require(
-        "asset_type='object_storage_system'" in prometheus_profiles,
+        'asset_type: object_storage_system' in prometheus_catalog,
         'Object Storage Prometheus consumer profile must be asset-scoped',
     )
     require(
-        "profile_key='object-storage-metrics-v1'" in prometheus_profiles,
+        'profile_key: object-storage-metrics-v1' in prometheus_catalog,
         'Object Storage Prometheus consumer profile missing',
     )
     require(
@@ -128,12 +130,17 @@ def main() -> None:
     )
 
     require(
-        "SUPPORTED_RELEASE = 'RELEASE.2024-08-03T04-33-23Z'" in compatibility,
+        "integration_provider_document('object_storage')" in compatibility,
+        'MinIO compatibility adapter must read the Definition Registry',
+    )
+    require(
+        'minimum_release: RELEASE.2024-08-03T04-33-23Z' in provider_catalog,
         'supported MinIO release contract drifted',
     )
-    require("PROFILE_KEY = 'minio-release-2024-08-03'" in compatibility, 'MinIO compatibility profile missing')
+    require('key: minio-release-2024-08-03' in provider_catalog, 'MinIO compatibility profile missing')
     require(
-        "CAPABILITY_PROFILE = 'minio-object-storage-api-v1'" in capabilities, 'MinIO API capability profile missing'
+        'capability_profile: minio-object-storage-api-v1' in provider_catalog,
+        'MinIO API capability profile missing',
     )
 
     require("boto3.client(\n        's3'" in client, 'MinIO API client must use the existing S3 SDK boundary')

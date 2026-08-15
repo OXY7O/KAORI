@@ -3,21 +3,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime
 
-_RELEASE_FORMAT = 'RELEASE.%Y-%m-%dT%H-%M-%SZ'
+from app.definitions.integration_registry import integration_provider_document
+from app.definitions.validation import require_list, require_mapping, require_str
 
-# KAORI support policy is intentionally explicit. The current MinIO provider has
-# one qualified release; keeping min/max separate makes the contract range-aware
-# without claiming support for releases that have not been validated yet.
-SUPPORTED_RELEASE = 'RELEASE.2024-08-03T04-33-23Z'
-SUPPORTED_RELEASE_MIN = SUPPORTED_RELEASE
-SUPPORTED_RELEASE_MAX = SUPPORTED_RELEASE
-SUPPORTED_RELEASE_RANGE_LABEL = (
-    f'{SUPPORTED_RELEASE_MIN} only'
-    if SUPPORTED_RELEASE_MIN == SUPPORTED_RELEASE_MAX
-    else f'{SUPPORTED_RELEASE_MIN} – {SUPPORTED_RELEASE_MAX}'
-)
-PROFILE_KEY = 'minio-release-2024-08-03'
-PROFILE_LABEL = 'MinIO RELEASE.2024-08-03'
+_RELEASE_FORMAT = 'RELEASE.%Y-%m-%dT%H-%M-%SZ'
 
 
 @dataclass(frozen=True, slots=True)
@@ -43,33 +32,6 @@ class MinioCompatibilityProfile:
         return parsed is not None and minimum is not None and maximum is not None and minimum <= parsed <= maximum
 
 
-MINIO_COMPATIBILITY_PROFILES = (
-    MinioCompatibilityProfile(
-        key=PROFILE_KEY,
-        product='minio',
-        label=PROFILE_LABEL,
-        minimum_release=SUPPORTED_RELEASE_MIN,
-        maximum_release=SUPPORTED_RELEASE_MAX,
-        support_level='current',
-        notes='Qualified MinIO S3 API provider contract. Observability bindings remain independently validated.',
-    ),
-)
-
-# Product families are separate qualification boundaries. AStor is recognized as
-# a distinct product family so it can receive its own release range later rather
-# than inheriting the MinIO range by accident.
-PRODUCT_PROFILE_CATALOG: dict[str, tuple[MinioCompatibilityProfile, ...]] = {
-    'minio': MINIO_COMPATIBILITY_PROFILES,
-    'astor': (),
-}
-PRODUCT_LABELS = {
-    'minio': 'MinIO',
-    'astor': 'AStor',
-    's3_compatible': 'S3-Compatible',
-}
-COMPATIBILITY_PROFILE_KEYS = tuple(profile.key for profiles in PRODUCT_PROFILE_CATALOG.values() for profile in profiles)
-
-
 @dataclass(frozen=True, slots=True)
 class MinioCompatibilityResult:
     status: str
@@ -80,6 +42,56 @@ class MinioCompatibilityResult:
     declared_release: str | None
     product: str
     supported_range: str
+
+
+def _load_compatibility_contract() -> tuple[
+    dict[str, tuple[MinioCompatibilityProfile, ...]],
+    dict[str, str],
+]:
+    document = integration_provider_document('object_storage')
+    catalog: dict[str, tuple[MinioCompatibilityProfile, ...]] = {}
+    labels: dict[str, str] = {}
+    for product_index, raw_product in enumerate(require_list(document.get('products'), 'object_storage.products')):
+        product = require_mapping(raw_product, f'object_storage.products[{product_index}]')
+        product_key = require_str(product, 'key', f'object_storage.products[{product_index}]')
+        labels[product_key] = require_str(product, 'label', f'object_storage.products[{product_index}]')
+        profiles: list[MinioCompatibilityProfile] = []
+        for profile_index, raw_profile in enumerate(
+            require_list(
+                product.get('compatibility_profiles'),
+                f'object_storage.products[{product_index}].compatibility_profiles',
+            )
+        ):
+            profile = require_mapping(
+                raw_profile,
+                f'object_storage.products[{product_index}].compatibility_profiles[{profile_index}]',
+            )
+            profiles.append(
+                MinioCompatibilityProfile(
+                    key=require_str(profile, 'key', f'object_storage.products[{product_index}].compatibility_profiles[{profile_index}]'),
+                    product=require_str(profile, 'product', f'object_storage.products[{product_index}].compatibility_profiles[{profile_index}]'),
+                    label=require_str(profile, 'label', f'object_storage.products[{product_index}].compatibility_profiles[{profile_index}]'),
+                    minimum_release=require_str(profile, 'minimum_release', f'object_storage.products[{product_index}].compatibility_profiles[{profile_index}]'),
+                    maximum_release=require_str(profile, 'maximum_release', f'object_storage.products[{product_index}].compatibility_profiles[{profile_index}]'),
+                    support_level=require_str(profile, 'support_level', f'object_storage.products[{product_index}].compatibility_profiles[{profile_index}]'),
+                    notes=require_str(profile, 'notes', f'object_storage.products[{product_index}].compatibility_profiles[{profile_index}]'),
+                )
+            )
+        catalog[product_key] = tuple(profiles)
+    return catalog, labels
+
+
+PRODUCT_PROFILE_CATALOG, PRODUCT_LABELS = _load_compatibility_contract()
+MINIO_COMPATIBILITY_PROFILES = PRODUCT_PROFILE_CATALOG.get('minio', ())
+COMPATIBILITY_PROFILE_KEYS = tuple(profile.key for profiles in PRODUCT_PROFILE_CATALOG.values() for profile in profiles)
+
+_PRIMARY_MINIO_PROFILE = MINIO_COMPATIBILITY_PROFILES[0] if MINIO_COMPATIBILITY_PROFILES else None
+SUPPORTED_RELEASE = _PRIMARY_MINIO_PROFILE.minimum_release if _PRIMARY_MINIO_PROFILE else ''
+SUPPORTED_RELEASE_MIN = _PRIMARY_MINIO_PROFILE.minimum_release if _PRIMARY_MINIO_PROFILE else ''
+SUPPORTED_RELEASE_MAX = _PRIMARY_MINIO_PROFILE.maximum_release if _PRIMARY_MINIO_PROFILE else ''
+SUPPORTED_RELEASE_RANGE_LABEL = _PRIMARY_MINIO_PROFILE.supported_range_label if _PRIMARY_MINIO_PROFILE else 'Qualification Required'
+PROFILE_KEY = _PRIMARY_MINIO_PROFILE.key if _PRIMARY_MINIO_PROFILE else 'Qualification Required'
+PROFILE_LABEL = _PRIMARY_MINIO_PROFILE.label if _PRIMARY_MINIO_PROFILE else 'Qualification Required'
 
 
 def compatibility_policy_view(product: str | None, release: str | None = None) -> dict[str, str]:

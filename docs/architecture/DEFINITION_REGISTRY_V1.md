@@ -1,4 +1,4 @@
-# KAORI Definition Registry v1
+# KAORI Definition Registry v1.1
 
 KAORI separates system-owned definitions from runtime state and executable code.
 
@@ -19,6 +19,10 @@ Templates, routes, provider adapters, and workers must never parse definition YA
 - Kubernetes Analytics materialization dataset metadata.
 - Report type and output-format catalog.
 - Notification Center category/routing metadata.
+- Integration domain/capability taxonomy and managed consumer-asset metadata.
+- Kubernetes, Prometheus, Alertmanager, and Object Storage provider capability catalogs.
+- Product/version compatibility profiles and Kubernetes lifecycle support policy.
+- Prometheus and Alertmanager consumer binding/validation profiles.
 
 ## Code/DB-owned
 
@@ -27,6 +31,7 @@ Templates, routes, provider adapters, and workers must never parse definition YA
 - Resolver implementations, dry-run, execution, verification and recovery enforcement.
 - Decision candidates, immutable decisions, approvals, execution authorization and journals.
 - Provider alert state, silences, inhibition and routing state.
+- Provider network probes, validation algorithms, query execution, credentials, and runtime health.
 - Job executions/policies, report records, analytics snapshots and inventory snapshots.
 - Transaction boundaries, security guardrails and secret handling.
 

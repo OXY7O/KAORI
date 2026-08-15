@@ -4,6 +4,8 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
 
+from app.definitions.integration_registry import integration_taxonomy_document
+from app.definitions.validation import require_list, require_mapping, require_str
 from app.extensions.db import db
 from app.models.cluster import Cluster
 from app.models.object_storage import ObjectStorageSystem
@@ -42,26 +44,37 @@ class ConsumerAssetGroup:
     assets: tuple[ConsumerAssetChoice, ...]
 
 
-_DEFINITIONS: tuple[ConsumerAssetDefinition, ...] = (
-    ConsumerAssetDefinition(
-        asset_type='kubernetes_cluster',
-        label='Kubernetes Cluster',
-        plural_label='Kubernetes Clusters',
-        icon='boxes',
-        selector_label='cluster',
-        selector_placeholder='k8s-production',
-        model=Cluster,
-    ),
-    ConsumerAssetDefinition(
-        asset_type='object_storage_system',
-        label='Object Storage System',
-        plural_label='Object Storage Systems',
-        icon='database',
-        selector_label='job',
-        selector_placeholder='minio-production',
-        model=ObjectStorageSystem,
-    ),
-)
+_MODEL_BY_KEY: dict[str, type[Any]] = {
+    'cluster': Cluster,
+    'object_storage_system': ObjectStorageSystem,
+}
+
+
+def _load_definitions() -> tuple[ConsumerAssetDefinition, ...]:
+    document = integration_taxonomy_document()
+    definitions: list[ConsumerAssetDefinition] = []
+    for index, raw in enumerate(require_list(document.get('consumer_assets'), 'consumer_assets')):
+        item = require_mapping(raw, f'consumer_assets[{index}]')
+        model_key = require_str(item, 'model_key', f'consumer_assets[{index}]')
+        try:
+            model = _MODEL_BY_KEY[model_key]
+        except KeyError as exc:
+            raise ValueError(f'Unknown consumer asset model_key: {model_key!r}.') from exc
+        definitions.append(
+            ConsumerAssetDefinition(
+                asset_type=require_str(item, 'asset_type', f'consumer_assets[{index}]'),
+                label=require_str(item, 'label', f'consumer_assets[{index}]'),
+                plural_label=require_str(item, 'plural_label', f'consumer_assets[{index}]'),
+                icon=require_str(item, 'icon', f'consumer_assets[{index}]'),
+                selector_label=require_str(item, 'selector_label', f'consumer_assets[{index}]'),
+                selector_placeholder=require_str(item, 'selector_placeholder', f'consumer_assets[{index}]'),
+                model=model,
+            )
+        )
+    return tuple(definitions)
+
+
+_DEFINITIONS = _load_definitions()
 _DEFINITIONS_BY_TYPE = {definition.asset_type: definition for definition in _DEFINITIONS}
 
 
@@ -94,11 +107,10 @@ def build_consumer_asset_groups(
 ) -> tuple[ConsumerAssetGroup, ...]:
     """Build the source-owned binding picker from the canonical asset registry.
 
-    A new managed asset (for example Vault) becomes bindable by registering its
-    asset definition here and a provider-specific consumer profile. Source pages
-    do not need a new product-specific binding form.
+    A new managed asset (for example Vault) becomes bindable by adding its
+    source-controlled taxonomy definition plus a model adapter and compatible
+    consumer profiles. Source pages do not need a new product-specific binding form.
     """
-
     groups: list[ConsumerAssetGroup] = []
     for definition in _DEFINITIONS:
         profile = profile_resolver(definition.asset_type)

@@ -104,11 +104,13 @@ def test_binding_runtime_contract_keeps_validation_required_transition_and_roles
 
 def test_consumer_asset_parity_and_source_owned_mutation_remain_locked() -> None:
     assets = read('app/integrations/consumer_assets.py')
+    taxonomy_catalog = read('app/definitions/catalogs/integrations/taxonomy.yaml')
     asset_table = read('app/templates/integrations/components/_asset_owner_observability_sources.html')
     standard = read('docs/design/components/INTEGRATIONS_WORKSPACE_STANDARD.md')
 
-    assert "asset_type='kubernetes_cluster'" in assets
-    assert "asset_type='object_storage_system'" in assets
+    assert 'integration_taxonomy_document()' in assets
+    assert 'asset_type: kubernetes_cluster' in taxonomy_catalog
+    assert 'asset_type: object_storage_system' in taxonomy_catalog
     for marker in ('Source Readiness', 'Binding Validation', 'Effective Resolution'):
         assert marker in asset_table
     assert 'Bindings & Consumers final-lock contract (2026-08-13)' in standard

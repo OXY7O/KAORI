@@ -13,6 +13,7 @@ def test_prometheus_provider_full_validation_is_consumer_neutral() -> None:
     runtime = read('app/integrations/prometheus/runtime.py')
     core = read('app/integrations/prometheus/core_validation.py')
     compatibility = read('app/integrations/compatibility.py')
+    compatibility_catalog = read('app/definitions/catalogs/integrations/compatibility.yaml')
 
     validate_body = runtime.split('def validate(self)', 1)[1].split('def audit_query_profile', 1)[0]
     assert 'validate_prometheus_core' in validate_body
@@ -20,19 +21,22 @@ def test_prometheus_provider_full_validation_is_consumer_neutral() -> None:
     assert 'kube_' not in core
     assert 'minio_' not in core
     assert "PROFILE_KEY = 'prometheus-core-v1'" in core
-    assert 'prometheus-core-v1' in compatibility
+    assert 'integration_compatibility_document()' in compatibility
+    assert 'query_profile: prometheus-core-v1' in compatibility_catalog
 
 
 def test_consumer_validation_profiles_are_asset_scoped() -> None:
     profiles = read('app/integrations/prometheus/binding_profiles.py')
+    profile_catalog = read('app/definitions/catalogs/integrations/prometheus.yaml')
     minio = read('app/integrations/minio/__init__.py')
     binding_validation = read('app/integrations/prometheus/binding_validation.py')
     kubernetes_validator = read('app/integrations/prometheus/binding_validators/kubernetes.py')
     object_storage_validator = read('app/integrations/prometheus/binding_validators/object_storage.py')
     resolver = read('app/prometheus/resolver.py')
 
-    assert "profile_key='kubernetes-metrics-v1'" in profiles
-    assert "profile_key='object-storage-metrics-v1'" in profiles
+    assert 'profile_key: kubernetes-metrics-v1' in profile_catalog
+    assert 'profile_key: object-storage-metrics-v1' in profile_catalog
+    assert "integration_provider_document('prometheus')" in profiles
     assert "profile_key='minio-metrics-2024-v1'" not in minio
     assert 'register_binding_validation_profile' not in minio
     assert 'get_binding_validation_profile(binding.asset_type)' in binding_validation

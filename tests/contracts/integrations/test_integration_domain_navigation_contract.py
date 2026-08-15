@@ -9,14 +9,16 @@ def read(relative: str) -> str:
 
 def test_taxonomy_owns_domain_workspace_routes_and_asset_ownership() -> None:
     taxonomy = read('app/integrations/taxonomy.py')
+    taxonomy_catalog = read('app/definitions/catalogs/integrations/taxonomy.yaml')
 
     assert 'workspace_endpoint: str' in taxonomy
     assert 'asset_types: tuple[str, ...] = ()' in taxonomy
-    assert "workspace_endpoint='integrations.orchestration'" in taxonomy
-    assert "workspace_endpoint='integrations.observability'" in taxonomy
-    assert "workspace_endpoint='integrations.storage'" in taxonomy
-    assert "asset_types=('kubernetes_cluster',)" in taxonomy
-    assert "asset_types=('object_storage_system',)" in taxonomy
+    assert 'workspace_endpoint: integrations.orchestration' in taxonomy_catalog
+    assert 'workspace_endpoint: integrations.observability' in taxonomy_catalog
+    assert 'workspace_endpoint: integrations.storage' in taxonomy_catalog
+    assert '- kubernetes_cluster' in taxonomy_catalog
+    assert '- object_storage_system' in taxonomy_catalog
+    assert 'integration_taxonomy_document()' in taxonomy
     assert 'def asset_types_for_domain(domain_key: str)' in taxonomy
     assert 'def domain_key_for_asset_type(asset_type: str)' in taxonomy
 
@@ -127,11 +129,13 @@ def test_domain_template_uses_shared_capability_registry_provider_registry_and_b
 
 def test_domain_binding_registry_is_cross_domain_and_asset_centric() -> None:
     taxonomy = read('app/integrations/taxonomy.py')
+    taxonomy_catalog = read('app/definitions/catalogs/integrations/taxonomy.yaml')
     domain_service = read('app/integrations/domain_service.py')
     template = read('app/templates/integrations/domain.html')
 
-    assert "asset_types=('kubernetes_cluster',)" in taxonomy
-    assert "asset_types=('object_storage_system',)" in taxonomy
+    assert 'integration_taxonomy_document()' in taxonomy
+    assert '- kubernetes_cluster' in taxonomy_catalog
+    assert '- object_storage_system' in taxonomy_catalog
     assert 'IntegrationInstance.provider_type.in_(provider_types)' in domain_service
     assert 'IntegrationBinding.asset_type.in_(owned_asset_types)' in domain_service
     assert 'or_(*clauses)' in domain_service

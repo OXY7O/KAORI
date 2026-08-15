@@ -2,6 +2,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from app.definitions.integration_registry import integration_taxonomy_document
+from app.definitions.validation import require_int, require_list, require_mapping, require_str, string_tuple
+
 
 @dataclass(frozen=True, slots=True)
 class IntegrationDomainDefinition:
@@ -23,80 +26,41 @@ class IntegrationCapabilityDefinition:
     asset_types: tuple[str, ...] = ()
 
 
-_DOMAIN_DEFINITIONS = (
-    IntegrationDomainDefinition(
-        key='orchestration',
-        label='Orchestration',
-        description='Cluster orchestration providers, control-plane connectivity, discovery, and runtime access.',
-        icon='boxes',
-        workspace_endpoint='integrations.orchestration',
-        order=10,
-    ),
-    IntegrationDomainDefinition(
-        key='observability',
-        label='Observability',
-        description='Metrics, alerting, runtime validation, and operational telemetry providers.',
-        icon='activity',
-        workspace_endpoint='integrations.observability',
-        order=20,
-    ),
-    IntegrationDomainDefinition(
-        key='storage',
-        label='Storage',
-        description='Object, file, and block storage providers used for operational visibility and data services.',
-        icon='database',
-        workspace_endpoint='integrations.storage',
-        order=30,
-    ),
-)
+def _load_taxonomy() -> tuple[
+    tuple[IntegrationDomainDefinition, ...],
+    tuple[IntegrationCapabilityDefinition, ...],
+]:
+    document = integration_taxonomy_document()
+    domains: list[IntegrationDomainDefinition] = []
+    for index, raw in enumerate(require_list(document.get('domains'), 'domains')):
+        item = require_mapping(raw, f'domains[{index}]')
+        domains.append(
+            IntegrationDomainDefinition(
+                key=require_str(item, 'key', f'domains[{index}]'),
+                label=require_str(item, 'label', f'domains[{index}]'),
+                description=require_str(item, 'description', f'domains[{index}]'),
+                icon=require_str(item, 'icon', f'domains[{index}]'),
+                workspace_endpoint=require_str(item, 'workspace_endpoint', f'domains[{index}]'),
+                order=require_int(item, 'order', f'domains[{index}]'),
+            )
+        )
+    capabilities: list[IntegrationCapabilityDefinition] = []
+    for index, raw in enumerate(require_list(document.get('capabilities'), 'capabilities')):
+        item = require_mapping(raw, f'capabilities[{index}]')
+        capabilities.append(
+            IntegrationCapabilityDefinition(
+                key=require_str(item, 'key', f'capabilities[{index}]'),
+                domain_key=require_str(item, 'domain_key', f'capabilities[{index}]'),
+                label=require_str(item, 'label', f'capabilities[{index}]'),
+                description=require_str(item, 'description', f'capabilities[{index}]'),
+                order=require_int(item, 'order', f'capabilities[{index}]'),
+                asset_types=string_tuple(item.get('asset_types'), f'capabilities[{index}].asset_types'),
+            )
+        )
+    return tuple(domains), tuple(capabilities)
 
-_CAPABILITY_DEFINITIONS = (
-    IntegrationCapabilityDefinition(
-        key='cluster_orchestration',
-        domain_key='orchestration',
-        label='Cluster Orchestration',
-        description='Cluster API connectivity, inventory discovery, and control-plane operations.',
-        order=10,
-        asset_types=('kubernetes_cluster',),
-    ),
-    IntegrationCapabilityDefinition(
-        key='metrics',
-        domain_key='observability',
-        label='Metrics',
-        description='Metrics query, historical telemetry, and capability validation.',
-        order=10,
-    ),
-    IntegrationCapabilityDefinition(
-        key='alerting',
-        domain_key='observability',
-        label='Alerting',
-        description='Alert retrieval, routing context, silence capability, and alert API validation.',
-        order=20,
-    ),
-    IntegrationCapabilityDefinition(
-        key='object_storage',
-        domain_key='storage',
-        label='Object Storage',
-        description='S3 and object-storage provider connectivity, inventory, analytics, and governance.',
-        order=10,
-        asset_types=('object_storage_system',),
-    ),
-    IntegrationCapabilityDefinition(
-        key='file_storage',
-        domain_key='storage',
-        label='File Storage',
-        description='Shared filesystem provider connectivity, inventory, and operational telemetry.',
-        order=20,
-    ),
-    IntegrationCapabilityDefinition(
-        key='block_storage',
-        domain_key='storage',
-        label='Block Storage',
-        description='Block-device provider connectivity, inventory, and operational telemetry.',
-        order=30,
-    ),
-)
 
+_DOMAIN_DEFINITIONS, _CAPABILITY_DEFINITIONS = _load_taxonomy()
 DOMAINS = {item.key: item for item in _DOMAIN_DEFINITIONS}
 CAPABILITIES = {(item.domain_key, item.key): item for item in _CAPABILITY_DEFINITIONS}
 

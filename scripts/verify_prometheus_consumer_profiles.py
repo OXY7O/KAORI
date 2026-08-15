@@ -13,9 +13,11 @@ def read(path: str) -> str:
 def main() -> int:
     routes = read('app/integrations/routes.py')
     compatibility = read('app/integrations/compatibility.py')
+    compatibility_catalog = read('app/definitions/catalogs/integrations/compatibility.yaml')
     runtime = read('app/integrations/prometheus/runtime.py')
     core = read('app/integrations/prometheus/core_validation.py')
     profiles = read('app/integrations/prometheus/binding_profiles.py')
+    profile_catalog = read('app/definitions/catalogs/integrations/prometheus.yaml')
     minio = read('app/integrations/minio/__init__.py')
     binding_validation = read('app/integrations/prometheus/binding_validation.py')
     kubernetes_validator = read('app/integrations/prometheus/binding_validators/kubernetes.py')
@@ -28,13 +30,15 @@ def main() -> int:
     binding_template = read('app/templates/prometheus/partials/_binding_registry.html')
     binding_modal = read('app/templates/integrations/components/_observability_binding_modal.html')
     consumer_assets = read('app/integrations/consumer_assets.py')
+    taxonomy_catalog = read('app/definitions/catalogs/integrations/taxonomy.yaml')
     kernel_readme = read('app/integrations/README.md')
     compatibility_doc = read('docs/INTEGRATION_COMPATIBILITY.md')
     module_map = read('docs/architecture/integration-module-map.md')
     workspace_standard = read('docs/design/components/INTEGRATIONS_WORKSPACE_STANDARD.md')
 
     assert 'from app.integrations.domain_service import build_integration_domain_page' in routes
-    assert 'prometheus-core-v1' in compatibility
+    assert 'integration_compatibility_document()' in compatibility
+    assert 'query_profile: prometheus-core-v1' in compatibility_catalog
 
     validate_body = runtime.split('def validate(self)', 1)[1].split('def audit_query_profile', 1)[0]
     assert 'validate_prometheus_core' in validate_body
@@ -45,8 +49,9 @@ def main() -> int:
     assert 'minio_' not in core
     assert "PROFILE_KEY = 'prometheus-core-v1'" in core
 
-    assert "profile_key='kubernetes-metrics-v1'" in profiles
-    assert "profile_key='object-storage-metrics-v1'" in profiles
+    assert "integration_provider_document('prometheus')" in profiles
+    assert 'profile_key: kubernetes-metrics-v1' in profile_catalog
+    assert 'profile_key: object-storage-metrics-v1' in profile_catalog
     assert "profile_key='minio-metrics-2024-v1'" not in minio
     assert 'register_binding_validation_profile' not in minio
     assert 'get_binding_validator(binding.asset_type)' in binding_validation
@@ -73,8 +78,9 @@ def main() -> int:
     assert 'data-kaori-consumer-readiness-boundary' in readiness_template
     assert 'Consumer Binding Registry' in binding_template
     assert 'data-kaori-observability-binding-modal' in binding_modal
-    assert "asset_type='kubernetes_cluster'" in consumer_assets
-    assert "asset_type='object_storage_system'" in consumer_assets
+    assert 'integration_taxonomy_document()' in consumer_assets
+    assert 'asset_type: kubernetes_cluster' in taxonomy_catalog
+    assert 'asset_type: object_storage_system' in taxonomy_catalog
     assert 'Validate Prometheus compatibility and core APIs.' in validation_template
     assert 'Consumer metrics remain binding-specific.' in validation_template
 

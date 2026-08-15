@@ -1,0 +1,212 @@
+schema_version: 1
+kind: integration_provider_contract
+provider: prometheus
+compatibility_profiles:
+- prometheus-v2
+- prometheus-v3
+provider_capability_keys:
+- instant_query
+- range_query
+- series_discovery
+- label_discovery
+binding_capability_keys:
+- metrics
+- capacity
+- utilization
+- storage
+- workload
+- forecast
+- top_consumers
+- alert_metrics
+capabilities:
+- key: instant_query
+  label: Instant Query API
+  required_by:
+  - All metrics consumers
+  impact: KAORI cannot retrieve current metrics.
+  source_owner: Prometheus or Thanos Query API
+  recommendation: Expose the Prometheus-compatible /api/v1/query endpoint through the exact URL configured in KAORI.
+  validation_query: vector(1)
+  expected_signals: []
+- key: range_query
+  label: Range Query API
+  required_by:
+  - Utilization
+  - Forecast
+  - Trends
+  impact: Historical charts and forecast inputs are unavailable.
+  source_owner: Prometheus or Thanos Query API
+  recommendation: Expose /api/v1/query_range and confirm that the reverse proxy permits range queries.
+  validation_query: count(up)
+  expected_signals: []
+- key: series_discovery
+  label: Series Discovery API
+  required_by:
+  - Consumer binding validation
+  - Metrics inventory
+  impact: KAORI cannot inspect metric-series identity for bound consumers.
+  source_owner: Prometheus or Thanos Query API
+  recommendation: Expose the Prometheus-compatible /api/v1/series endpoint through the exact URL configured in KAORI.
+  validation_query: up
+  expected_signals: []
+- key: label_discovery
+  label: Label Discovery API
+  required_by:
+  - Consumer binding validation
+  - Metrics identity
+  impact: KAORI cannot discover metric names or labels used to validate consumer bindings.
+  source_owner: Prometheus or Thanos Query API
+  recommendation: Expose the Prometheus-compatible label-values API through the exact URL configured in KAORI.
+  expected_signals: []
+  validation_query: null
+- key: kubernetes_identity
+  label: Kubernetes Identity Metrics
+  required_by:
+  - Overview
+  - Inventory correlation
+  impact: Metrics cannot be correlated reliably with Kubernetes objects.
+  source_owner: kube-state-metrics scrape pipeline
+  recommendation: Scrape kube-state-metrics and preserve namespace, pod, node, and workload identity labels.
+  expected_signals:
+  - kube_node_info
+  - kube_pod_info
+  - kube_namespace_status_phase
+  validation_query: null
+- key: utilization_metrics
+  label: Utilization Metrics
+  required_by:
+  - Utilization Analytics
+  - Kubernetes Dashboard
+  impact: CPU, memory, pod, readiness, and pressure utilization cannot be calculated reliably.
+  source_owner: kube-state-metrics, kubelet, cAdvisor, and Prometheus scrape pipeline
+  recommendation: Expose node capacity, container CPU and memory usage, pod status, node conditions, and canonical
+    node identity labels through the configured Prometheus or Thanos Query endpoint.
+  expected_signals:
+  - kube_node_status_capacity
+  - container_cpu_usage_seconds_total
+  - container_memory_working_set_bytes
+  - kube_pod_status_phase
+  - kube_node_status_condition
+  - kube_node_info
+  - kube_pod_info
+  validation_query: count(kube_node_status_capacity{resource="cpu"})
+- key: capacity_metrics
+  label: Worker Capacity Metrics
+  required_by:
+  - Capacity Analytics
+  - Forecast
+  impact: Worker allocatable capacity, current usage, and worker-only headroom cannot be calculated reliably.
+  source_owner: kube-state-metrics, container metrics, and node identity pipeline
+  recommendation: Expose allocatable node metrics, container CPU and memory usage, pod placement, and node-role
+    labels with canonical Kubernetes node identity.
+  expected_signals:
+  - kube_node_status_allocatable
+  - container_cpu_usage_seconds_total
+  - container_memory_working_set_bytes
+  - kube_node_role
+  - kube_node_status_condition
+  - kube_pod_info
+  validation_query: count(kube_node_status_allocatable{resource="cpu",unit="core"})
+- key: workload_metrics
+  label: Workload Identity and Governance Metrics
+  required_by:
+  - Workload Analytics
+  - Tenant Quota Analysis
+  - Workload Reports
+  impact: Tenant quota, workload ownership, QoS, placement, and right-sizing analysis cannot be calculated reliably.
+  source_owner: kube-state-metrics, kubelet, cAdvisor, and Prometheus scrape pipeline
+  recommendation: Expose namespace, ResourceQuota, pod ownership, QoS, pod placement, container requests/limits,
+    and container usage metrics with canonical namespace, pod, owner, node, resource, and unit labels.
+  expected_signals:
+  - kube_namespace_status_phase
+  - kube_resourcequota
+  - kube_pod_owner
+  - kube_pod_status_qos_class
+  - kube_pod_info
+  - kube_pod_container_resource_requests
+  - kube_pod_container_resource_limits
+  - container_cpu_usage_seconds_total
+  - container_memory_working_set_bytes
+  validation_query: count(kube_pod_owner)
+- key: resource_requests_limits
+  label: Resource Requests and Limits
+  required_by:
+  - Capacity
+  - Top Consumers
+  - Forecast
+  impact: Capacity pressure, overcommit, and request/limit analysis are incomplete.
+  source_owner: kube-state-metrics scrape pipeline
+  recommendation: Expose kube_pod_container_resource_requests and kube_pod_container_resource_limits with resource,
+    unit, namespace, pod, and node labels.
+  expected_signals:
+  - kube_pod_container_resource_requests
+  - kube_pod_container_resource_limits
+  validation_query: null
+- key: pvc_usage
+  label: PVC Usage Contract
+  required_by:
+  - Storage Analytics
+  - Storage Forecast
+  impact: PVC usage, available capacity, and storage forecast are unavailable.
+  source_owner: Kubelet metrics and Prometheus scrape configuration
+  recommendation: Enable kubelet volume statistics scraping and ensure the metrics are forwarded to the configured
+    Prometheus or Thanos Query endpoint.
+  expected_signals:
+  - kubelet_volume_stats_capacity_bytes
+  - kubelet_volume_stats_used_bytes
+  - kubelet_volume_stats_available_bytes
+  validation_query: count(kubelet_volume_stats_used_bytes)
+- key: node_filesystem_identity
+  label: Storage Filesystem Contract
+  required_by:
+  - Storage Analytics
+  impact: Storage Analytics cannot calculate node filesystem capacity and availability reliably.
+  source_owner: node_exporter relabeling or recording rules
+  recommendation: Run the validation query against the configured Prometheus or Thanos endpoint. When the metric
+    exists but the contract query returns no canonical node series, review query filters, recording rules, and label
+    transformation before changing the exporter.
+  expected_signals:
+  - node_filesystem_size_bytes{node!=""}
+  - node_filesystem_avail_bytes{node!=""}
+  validation_query: 'node_filesystem_size_bytes{mountpoint="/var",fstype!~"tmpfs|overlay"}
+
+    node_filesystem_avail_bytes{mountpoint="/var",fstype!~"tmpfs|overlay"}
+
+    node_filesystem_size_bytes{mountpoint="/",fstype!~"tmpfs|overlay"}
+
+    node_filesystem_avail_bytes{mountpoint="/",fstype!~"tmpfs|overlay"}'
+- key: long_term_history
+  label: Long-Term Metric History
+  required_by:
+  - Forecast
+  - Historical reports
+  impact: Long-range trend and forecast windows are degraded or unavailable.
+  source_owner: Prometheus retention or Thanos Store pipeline
+  recommendation: Increase Prometheus retention or ensure historical blocks are queryable through Thanos Query for
+    the required horizons.
+  validation_query: count(up)
+  expected_signals: []
+binding_profiles:
+- asset_type: kubernetes_cluster
+  profile_key: kubernetes-metrics-v1
+  label: Kubernetes Metrics v1
+  validation_strategy: probe
+  consumer_family: metrics
+  probes:
+  - metric: kube_node_info
+    label: Kubernetes node identity
+  - metric: kube_namespace_status_phase
+    label: Kubernetes namespace identity
+  - metric: kube_pod_info
+    label: Kubernetes pod identity
+  no_match_message: The selector was accepted, but no scoped kube-state-metrics identity series matched. Verify
+    the selector label/value on kube_node_info, kube_namespace_status_phase, or kube_pod_info.
+- asset_type: object_storage_system
+  profile_key: object-storage-metrics-v1
+  label: Object Storage Metrics v1
+  validation_strategy: custom
+  consumer_family: metrics
+  probes: []
+  no_match_message: The selector was accepted, but no qualified Object Storage metric identity matched. Verify that
+    the selected system provider has a registered Prometheus metric adapter and that the binding selector isolates
+    that deployment.
