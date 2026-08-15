@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from typing import Any
 
+from sqlalchemy import Index
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.extensions.db import db
@@ -16,6 +17,7 @@ def utc_now() -> datetime:
 
 class Report(db.Model):
     __tablename__ = 'reports'
+    __table_args__ = (Index('ix_reports_retention_boundary', 'status', 'updated_at', 'id'),)
 
     id: Mapped[int] = mapped_column(
         primary_key=True,

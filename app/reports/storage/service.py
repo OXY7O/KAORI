@@ -18,6 +18,7 @@ from app.reports.storage.health import (
     build_storage_artifact_summary,
     build_storage_retention_policy,
     build_storage_summary_cards,
+    get_generated_report_hot_retention_days,
 )
 from app.reports.storage.local import build_local_report_storage
 from app.reports.storage.s3 import build_s3_report_storage
@@ -811,10 +812,13 @@ def get_report_storage_payload(*, workspace: str | None = None) -> dict[str, Any
         },
         'integrity_result': None,
         'cleanup_dry_run': {
-            'mode': 'Read-only cleanup preview',
-            'description': ('Preview records that match retention rules without deleting artifacts or database rows.'),
+            'mode': 'Read-only storage preview',
+            'description': (
+                'Preview Ready and Archived artifact references against the main Ready hot-retention boundary. '
+                'Platform Operations → Data Lifecycle Preview remains authoritative for status-specific eligibility.'
+            ),
             'action_query': 'cleanup_dry_run=1',
-            'default_retention_days': get_cleanup_dry_run_retention_days(),
+            'default_retention_days': get_generated_report_hot_retention_days(),
             'max_items': 500,
         },
         'cleanup_dry_run_result': None,
@@ -823,7 +827,7 @@ def get_report_storage_payload(*, workspace: str | None = None) -> dict[str, Any
             'Secrets should be provided through environment variables or Kubernetes Secrets.',
             'The UI is read-only for configuration; it only displays status and can run a verification check.',
             'Existing report records keep their backend prefix, so local and S3 artifacts can coexist.',
-            'Retention cleanup remains a read-only preview unless destructive cleanup is explicitly enabled and governed.',  # noqa: E501
+            'Reports Storage only previews storage candidates; lifecycle archive and cleanup execution is owned by Data Lifecycle.',  # noqa: E501
         ],
         'recommended_actions': build_storage_recommended_actions(
             backend_name,
@@ -1181,30 +1185,11 @@ def scan_report_storage_integrity(
     }
 
 
-def get_cleanup_dry_run_retention_days() -> int:
-    configured_days = current_app.config.get(
-        'REPORT_RETENTION_DAYS',
-        90,
-    )
-
-    try:
-        retention_days = int(
-            configured_days,
-        )
-    except (TypeError, ValueError):
-        retention_days = 90
-
-    return max(
-        retention_days,
-        1,
-    )
-
-
 def build_report_cleanup_dry_run(
     retention_days: int | None = None,
     max_items: int = 500,
 ) -> dict[str, Any]:
-    effective_retention_days = retention_days or get_cleanup_dry_run_retention_days()
+    effective_retention_days = retention_days or get_generated_report_hot_retention_days()
     cutoff_at = datetime.now(
         UTC,
     ) - timedelta(

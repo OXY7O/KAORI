@@ -98,7 +98,7 @@
         </div>
     </form>
     <div class="overflow-x-auto">
-        <table class="{{ table_ui.table_classes('min-w-[1040px] table-fixed') }}">
+        <table class="{{ table_ui.table_classes('min-w-[1120px] table-fixed') }}">
             <thead class="{{ table_ui.head_classes() }}">
                 <tr>
                     <th class="{{ table_ui.header_cell_classes() }} w-[180px]">Archive</th>
@@ -108,7 +108,7 @@
                     <th class="{{ table_ui.header_cell_classes() }} w-[120px]">Storage</th>
                     <th class="{{ table_ui.header_cell_classes() }} w-[120px]">Status</th>
                     <th class="{{ table_ui.header_cell_classes() }} w-[130px]">Completed</th>
-                    <th class="{{ table_ui.header_cell_classes(true) }} w-[170px]">Action</th>
+                    <th class="{{ table_ui.header_cell_classes(true) }} w-[250px]">Action</th>
                 </tr>
             </thead>
             <tbody class="{{ table_ui.body_classes() }}">
@@ -127,6 +127,9 @@
                         <td class="{{ table_ui.cell_classes() }}">
                             <p class="text-xs font-medium text-content-primary">{{ archive.storage_label }}</p>
                             <p class="text-xs text-content-muted">{{ archive.size_label }}</p>
+                            {% if archive.supplemental_count %}
+                                <p class="text-xs text-content-muted">{{ archive.supplemental_count }} retained evidence {{ 'file' if archive.supplemental_count == 1 else 'files' }}</p>
+                            {% endif %}
                         </td>
                         <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_label(archive.status|replace('_',' ') |title, 'normal' if archive.status == 'ready' else ('critical' if archive.status == 'failed' else 'warning')) }}</td>
                         <td class="{{ table_ui.cell_classes() }}">
@@ -134,8 +137,12 @@
                         </td>
                         <td class="{{ table_ui.cell_classes(true) }}">
                             <div class="flex justify-end gap-2">
-                                {% if archive.is_downloadable and current_user.has_permission('platform_operations.export_data_lifecycle') %}<a href="{{ url_for('platform_operations.data_lifecycle.download', archive_id=archive.id) }}"
-   class="{{ table_ui.action_classes() }}"><i data-lucide="download" class="h-4 w-4"></i>Download</a>{% endif %}
+                                {% if archive.is_downloadable and current_user.has_permission('platform_operations.export_data_lifecycle') %}
+                                    <a href="{{ url_for('platform_operations.data_lifecycle.download', archive_id=archive.id) }}"
+                                       class="{{ table_ui.action_classes() }}"><i data-lucide="download" class="h-4 w-4"></i>Data</a>
+                                    <a href="{{ url_for('platform_operations.data_lifecycle.download', archive_id=archive.id, kind='manifest') }}"
+                                       class="{{ table_ui.action_classes() }}"><i data-lucide="file-json-2" class="h-4 w-4"></i>Manifest</a>
+                                {% endif %}
                                 {% if archive.is_verifiable and current_user.has_permission('platform_operations.manage_data_lifecycle') %}
                                     <form method="post"
                                           action="{{ url_for('platform_operations.data_lifecycle.verify', archive_id=archive.id) }}"

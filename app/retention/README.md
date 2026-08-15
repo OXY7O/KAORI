@@ -8,8 +8,9 @@ This package provides the shared archive-first lifecycle used by **Platform Oper
 - `job_execution`: terminal canonical worker executions and subscriber snapshots.
 - `runtime_observation`: append-only Recent Runtime Observations for Kubernetes, Prometheus/Thanos, Alertmanager, and future providers using the shared `IntegrationRuntimeObservation` model.
 - `analytics_snapshot`: reusable Analytics/Forecast materialization rows from `analytics_snapshots`; pending or still-serveable snapshots remain protected until stale grace and hot retention have both elapsed.
+- `generated_report`: terminal Generated Reports metadata from `reports`; Ready and Archived rows archive their binary PDF/XLSX/CSV evidence with SHA-256 verification before source cleanup, while active generation remains protected.
 
-Future domains such as generated reports and Intelligence execution evidence should be added as adapters rather than separate retention subsystems.
+Future domains such as Intelligence execution evidence should be added as adapters rather than separate retention subsystems.
 
 ## Safety invariants
 
@@ -24,7 +25,7 @@ Future domains such as generated reports and Intelligence execution evidence sho
 
 ## Scale and scheduling
 
-Celery Beat runs a lightweight dispatcher every 15 minutes. Persistent per-domain policies decide whether a domain is due and at what hour/minute. Due domains are fanned out as separate maintenance jobs, so Activity Audit, Job Execution, Runtime Observation, and Analytics Snapshot retention do not create one large database/storage burst.
+Celery Beat runs a lightweight dispatcher every 15 minutes. Persistent per-domain policies decide whether a domain is due and at what hour/minute. Due domains are fanned out as separate maintenance jobs, so Activity Audit, Job Execution, Runtime Observation, Analytics Snapshot, and Generated Report retention do not create one large database/storage burst.
 
 Transient connectivity failures receive one bounded automatic retry using `RETENTION_RETRY_DELAY_SECONDS` (default 60 seconds). Non-retryable or exhausted failures remain terminal and keep cleanup blocked. Production consumes the default `RETENTION_CELERY_QUEUE=maintenance` through the existing dedicated `maintenance-worker`; only a custom retention queue requires an additional queue consumer.
 
@@ -92,3 +93,9 @@ Restore/import remains an administrative capability and must include duplicate p
 ## Analytics snapshot lifecycle
 
 `analytics_snapshots` is managed by the `analytics_snapshot` lifecycle adapter. The adapter archives Capacity, Utilization, Storage, Workload, Top Consumers, Alerts, dashboard materialization, and Forecast rows from the shared snapshot table. Cleanup never removes `pending` rows or snapshots that are still within their stale-serve window. Eligibility is frozen only after the stale deadline is older than the hot-retention cutoff; cleanup re-checks the current row before deletion so a concurrent refresh is preserved and produces `cleanup_partial` instead of deleting fresh evidence. The default hot-retention boundary is 30 days, verified archive retention is 180 days, and the scheduled window is 04:15 in the configured Celery timezone.
+
+## Generated report lifecycle
+
+`reports` is managed by the `generated_report` lifecycle adapter. The policy is seeded **paused by default** so a deployment upgrade never starts deleting historical report evidence automatically. After an operator reviews archive storage, runs Preview, and explicitly enables the policy/schedule, the recommended baseline keeps Ready reports in the hot Generated registry for 90 days, Failed reports for 30 days, and manually Archived reports for 180 days. Verified lifecycle archives are retained for 365 days and run in bounded batches of 250 because a batch may transfer report binaries in addition to JSON metadata. The generated-report adapter hard-limits a batch to 2,500 records even if a larger shared lifecycle value is submitted. Requested, Queued, Generating, and reports attached to an active generation job are excluded. Ready and Archived rows must have a retained artifact reference; the lifecycle engine copies each PDF, XLSX, or CSV into the archive namespace and independently verifies its size and SHA-256 checksum before source artifact deletion or database cleanup can begin.
+
+The Generated Reports table remains a hot operational registry. Data Lifecycle owns age/status-based archive and cleanup; row count is never used as the deletion trigger. Reports Storage only mirrors the policy and provides storage-level candidate diagnostics.

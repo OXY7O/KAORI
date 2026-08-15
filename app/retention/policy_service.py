@@ -134,6 +134,8 @@ def _default_schedule_hour(domain: str) -> int:
         return max(0, min(int(current_app.config.get('RUNTIME_OBSERVATION_RETENTION_SCHEDULE_HOUR', 3)), 23))
     if domain == 'analytics_snapshot':
         return max(0, min(int(current_app.config.get('ANALYTICS_SNAPSHOT_RETENTION_SCHEDULE_HOUR', 4)), 23))
+    if domain == 'generated_report':
+        return max(0, min(int(current_app.config.get('GENERATED_REPORT_RETENTION_SCHEDULE_HOUR', 5)), 23))
     return max(0, min(int(current_app.config.get('JOB_EXECUTION_RETENTION_SCHEDULE_HOUR', 3)), 23))
 
 
@@ -144,4 +146,6 @@ def _default_schedule_minute(domain: str) -> int:
         return max(0, min(int(current_app.config.get('RUNTIME_OBSERVATION_RETENTION_SCHEDULE_MINUTE', 45)), 59))
     if domain == 'analytics_snapshot':
         return max(0, min(int(current_app.config.get('ANALYTICS_SNAPSHOT_RETENTION_SCHEDULE_MINUTE', 15)), 59))
+    if domain == 'generated_report':
+        return max(0, min(int(current_app.config.get('GENERATED_REPORT_RETENTION_SCHEDULE_MINUTE', 0)), 59))
     return max(0, min(int(current_app.config.get('JOB_EXECUTION_RETENTION_SCHEDULE_MINUTE', 0)), 59))

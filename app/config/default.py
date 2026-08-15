@@ -600,7 +600,8 @@ class Config:
     ARCHIVE_SCHEDULED_DOMAINS = tuple(
         item.strip().lower().replace('-', '_')
         for item in _env_str(
-            'ARCHIVE_SCHEDULED_DOMAINS', 'operational_activity,job_execution,runtime_observation,analytics_snapshot'
+            'ARCHIVE_SCHEDULED_DOMAINS',
+            'operational_activity,job_execution,runtime_observation,analytics_snapshot,generated_report',
         ).split(',')
         if item.strip()
     )
@@ -669,6 +670,27 @@ class Config:
         'ANALYTICS_SNAPSHOT_RETENTION_SCHEDULE_MINUTE', 15, 0, 59
     )
 
+    # Generated Report archive-first retention policy. Ready report metadata and
+    # binary artifacts are archived together before hot storage cleanup.
+    GENERATED_REPORT_RETENTION_ENABLED = _env_bool('GENERATED_REPORT_RETENTION_ENABLED', False)
+    GENERATED_REPORT_RETENTION_DAYS = _env_int(
+        'GENERATED_REPORT_RETENTION_DAYS',
+        _env_int('REPORT_RETENTION_DAYS', 90),
+    )
+    GENERATED_REPORT_ARCHIVE_RETENTION_DAYS = _env_int(
+        'GENERATED_REPORT_ARCHIVE_RETENTION_DAYS',
+        _env_int('REPORT_ARCHIVE_RETENTION_DAYS', 365),
+    )
+    GENERATED_REPORT_RETENTION_BATCH_SIZE = _env_int('GENERATED_REPORT_RETENTION_BATCH_SIZE', 250)
+    GENERATED_REPORT_FAILED_RETENTION_DAYS = _env_int('GENERATED_REPORT_FAILED_RETENTION_DAYS', 30)
+    GENERATED_REPORT_ARCHIVED_RETENTION_DAYS = _env_int('GENERATED_REPORT_ARCHIVED_RETENTION_DAYS', 180)
+    GENERATED_REPORT_RETENTION_SCHEDULE_HOUR = _bounded_env_int(
+        'GENERATED_REPORT_RETENTION_SCHEDULE_HOUR', 5, 0, 23
+    )
+    GENERATED_REPORT_RETENTION_SCHEDULE_MINUTE = _bounded_env_int(
+        'GENERATED_REPORT_RETENTION_SCHEDULE_MINUTE', 0, 0, 59
+    )
+
     REPORT_SCHEDULE_TIMEZONE = _env_str(
         'REPORT_SCHEDULE_TIMEZONE',
         'Asia/Jakarta',
@@ -734,12 +756,9 @@ class Config:
     REPORT_S3_MAX_ATTEMPTS = _bounded_env_int('REPORT_S3_MAX_ATTEMPTS', 1, 1, 5)
     REPORT_STORAGE_STATUS_CACHE_SECONDS = _bounded_env_int('REPORT_STORAGE_STATUS_CACHE_SECONDS', 15, 0, 300)
 
-    # Report artifact retention and cleanup policy. MVP2 defines the policy and
-    # exposes dry-run visibility in the UI; destructive deletion remains guarded
-    # unless REPORT_DESTRUCTIVE_CLEANUP_ENABLED is explicitly enabled later.
+    # Legacy report-retention age keys remain as compatibility fallbacks for
+    # deployments upgrading to the Generated Reports Data Lifecycle domain.
+    # Execution mode and destructive cleanup are owned only by Data Lifecycle.
     REPORT_RETENTION_DAYS = _env_int('REPORT_RETENTION_DAYS', 90)
     REPORT_ARCHIVE_RETENTION_DAYS = _env_int('REPORT_ARCHIVE_RETENTION_DAYS', 180)
-    REPORT_CLEANUP_MODE = _env_str('REPORT_CLEANUP_MODE', 'dry-run-only')
-    REPORT_CLEANUP_SCOPE = _env_str('REPORT_CLEANUP_SCOPE', 'ready-and-archived-artifacts')
     REPORT_ORPHAN_DETECTION_ENABLED = _env_bool('REPORT_ORPHAN_DETECTION_ENABLED', True)
-    REPORT_DESTRUCTIVE_CLEANUP_ENABLED = _env_bool('REPORT_DESTRUCTIVE_CLEANUP_ENABLED', False)

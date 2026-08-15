@@ -481,21 +481,30 @@
                         <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                             <div>
                                 <p class="text-xs font-semibold text-kaori-primary">Retention Governance</p>
-                                <h3 class="mt-1 text-base font-semibold text-content-primary">Artifact Retention & Cleanup Policy</h3>
-                                <p class="mt-1 max-w-3xl text-sm leading-6 text-content-muted">Retention identifies review candidates; deletion remains explicitly governed.</p>
+                                <h3 class="mt-1 text-base font-semibold text-content-primary">Generated Report Lifecycle Policy</h3>
+                                <p class="mt-1 max-w-3xl text-sm leading-6 text-content-muted">Reports Storage mirrors the canonical lifecycle policy; archive and cleanup execution is governed from Platform Operations → Data Lifecycle.</p>
                             </div>
-                            {{ table_label.status_indicator_label(payload.retention_policy.status, 'normal' if payload.retention_policy.auto_cleanup_enabled else 'warning') }}
+                            <div class="flex flex-wrap items-center gap-2">
+                                {{ table_label.status_indicator_label(payload.retention_policy.status, 'normal' if payload.retention_policy.auto_cleanup_enabled else 'warning') }}
+                                {% if current_user.has_permission('platform_operations.view_data_lifecycle') %}
+                                    <a href="{{ url_for('platform_operations.data_lifecycle.index', tab='policies', domain='generated_report') }}"
+                                       class="{{ table_ui.action_classes() }}">
+                                        <i data-lucide="archive-restore" class="h-4 w-4" aria-hidden="true"></i>
+                                        Open Data Lifecycle
+                                    </a>
+                                {% endif %}
+                            </div>
                         </div>
                         <dl class="mt-5 grid border-y border-outline-subtle sm:grid-cols-2 xl:grid-cols-4 xl:divide-x xl:divide-outline-subtle"
                             data-storage-retention-summary="policy-strip">
                             <div class="py-3 sm:pr-4 xl:px-4 xl:first:pl-0">
-                                <dt class="text-xs text-content-muted">Cleanup Mode</dt>
+                                <dt class="text-xs text-content-muted">Lifecycle Mode</dt>
                                 <dd class="mt-1 text-sm font-semibold text-content-primary">
                                     {{ payload.retention_policy.mode }}
                                 </dd>
                             </div>
                             <div class="border-t border-outline-subtle py-3 sm:border-t-0 sm:pl-4 xl:px-4">
-                                <dt class="text-xs text-content-muted">Retention</dt>
+                                <dt class="text-xs text-content-muted">Ready Hot Retention</dt>
                                 <dd class="mt-1 text-sm font-semibold text-content-primary">
                                     {{ payload.retention_policy.retention_days }} Days
                                 </dd>
@@ -535,10 +544,10 @@
                                     <i data-lucide="rotate-cw"
                                        class="h-4 w-4 text-kaori-primary"
                                        aria-hidden="true"></i>
-                                    <h4 class="text-sm font-semibold text-content-primary">Operational Boundary</h4>
+                                    <h4 class="text-sm font-semibold text-content-primary">Lifecycle Control Plane</h4>
                                 </div>
                                 <p class="mt-3 text-xs leading-5 text-content-muted">{{ payload.retention_policy.safe_regenerate_behavior }}</p>
-                                <p class="mt-4 text-xs font-semibold text-content-primary">Before Enabling Cleanup</p>
+                                <p class="mt-4 text-xs font-semibold text-content-primary">Operational Guidance</p>
                                 <div class="mt-2 space-y-2">
                                     {% for step in payload.retention_policy.next_steps %}
                                         <div class="flex items-start gap-2 text-xs leading-5 text-content-muted"><i data-lucide="chevron-right"
@@ -558,7 +567,7 @@
                                    aria-hidden="true"></i>
                                 <div class="min-w-0">
                                     <div class="flex flex-wrap items-center gap-2">
-                                        <h3 class="text-sm font-semibold text-content-primary">Cleanup Dry Run</h3>
+                                        <h3 class="text-sm font-semibold text-content-primary">Storage Candidate Preview</h3>
                                         {{ table_label.status_indicator_label('Read Only', 'info') }}
                                     </div>
                                     <p class="mt-1 max-w-3xl text-xs leading-5 text-content-muted">{{ payload.cleanup_dry_run.description }}</p>
@@ -568,11 +577,11 @@
                                 <a href="{{ url_for('reports.storage', cleanup_dry_run='1', workspace='retention') }}"
                                    class="inline-flex min-h-9 shrink-0 items-center justify-center gap-2 rounded-md border border-brand-outline bg-kaori-soft px-4 text-sm font-semibold text-kaori-primary transition hover:bg-surface-hover">
                                     <i data-lucide="scan-search" class="h-4 w-4" aria-hidden="true"></i>
-                                    Preview Cleanup Candidates
+                                    Preview Storage Candidates
                                 </a>
                             {% else %}
                                 <span aria-disabled="true"
-                                      class="inline-flex min-h-9 shrink-0 cursor-not-allowed items-center justify-center gap-2 rounded-md border border-outline-subtle bg-surface-card px-4 text-sm font-semibold text-content-muted opacity-70"><i data-lucide="pause-circle" class="h-4 w-4" aria-hidden="true"></i>Cleanup Preview Paused</span>
+                                      class="inline-flex min-h-9 shrink-0 cursor-not-allowed items-center justify-center gap-2 rounded-md border border-outline-subtle bg-surface-card px-4 text-sm font-semibold text-content-muted opacity-70"><i data-lucide="pause-circle" class="h-4 w-4" aria-hidden="true"></i>Lifecycle Preview Paused</span>
                             {% endif %}
                         </div>
                     </section>
@@ -582,7 +591,7 @@
                             <header class="border-b border-outline-subtle bg-surface-subtle px-5 py-4">
                                 <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                                     <div>
-                                        <h3 class="text-sm font-semibold text-content-primary">Cleanup Preview Result</h3>
+                                        <h3 class="text-sm font-semibold text-content-primary">Storage Candidate Preview Result</h3>
                                         <p class="mt-1 text-xs text-content-muted">{{ cleanup.candidate_count }} candidates · {{ cleanup.candidate_size }} total · {{ cleanup.missing_reference_count }} missing references · {{ cleanup.error_count }} errors.</p>
                                     </div>
                                     {{ table_label.status_indicator_label('Preview Complete', 'info') }}

@@ -26,6 +26,7 @@ def update_lifecycle_policy(*, domain_name: str, values: Mapping[str, Any], user
     fallback = domain.build_policy()
     try:
         settings = dict(fallback.settings or {})
+        batch_size = _int_value(values, 'batch_size', fallback.batch_size)
         if domain_name == 'job_execution':
             settings['workload_retention_days'] = {
                 'runtime': max(_int_value(values, 'runtime_retention_days', 30), 1),
@@ -36,6 +37,16 @@ def update_lifecycle_policy(*, domain_name: str, values: Mapping[str, Any], user
             }
             settings['failed_retention_days'] = max(_int_value(values, 'failed_retention_days', 90), 1)
             settings['preserve_result_references'] = True
+        elif domain_name == 'generated_report':
+            hot_days = max(_int_value(values, 'hot_retention_days', fallback.retention_days), 1)
+            settings['failed_retention_days'] = max(_int_value(values, 'failed_retention_days', 30), 1)
+            settings['archived_retention_days'] = max(
+                _int_value(values, 'archived_retention_days', max(hot_days, 180)),
+                hot_days,
+            )
+            settings['archive_binary_artifacts'] = True
+            settings['protect_active_generation'] = True
+            batch_size = max(100, min(batch_size, 2500))
 
         update_policy(
             domain=domain_name,
@@ -43,7 +54,7 @@ def update_lifecycle_policy(*, domain_name: str, values: Mapping[str, Any], user
             enabled=values.get('enabled') == 'on',
             hot_retention_days=_int_value(values, 'hot_retention_days', fallback.retention_days),
             archive_retention_days=_int_value(values, 'archive_retention_days', fallback.archive_retention_days),
-            batch_size=_int_value(values, 'batch_size', fallback.batch_size),
+            batch_size=batch_size,
             operation_mode=str(values.get('operation_mode') or 'archive_and_cleanup'),
             schedule_enabled=values.get('schedule_enabled') == 'on',
             schedule_hour=_int_value(values, 'schedule_hour', 2),

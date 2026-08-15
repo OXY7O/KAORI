@@ -1,6 +1,7 @@
 from collections.abc import Callable
 
 from app.retention.domains.analytics_snapshot import AnalyticsSnapshotArchiveDomain
+from app.retention.domains.generated_report import GeneratedReportArchiveDomain
 from app.retention.domains.job_execution import JobExecutionArchiveDomain
 from app.retention.domains.operational_activity import OperationalActivityArchiveDomain
 from app.retention.domains.runtime_observation import RuntimeObservationArchiveDomain
@@ -8,6 +9,7 @@ from app.retention.types import ArchiveDomain
 
 DOMAIN_FACTORIES: dict[str, Callable[[], ArchiveDomain]] = {
     'analytics_snapshot': AnalyticsSnapshotArchiveDomain,
+    'generated_report': GeneratedReportArchiveDomain,
     'operational_activity': OperationalActivityArchiveDomain,
     'job_execution': JobExecutionArchiveDomain,
     'runtime_observation': RuntimeObservationArchiveDomain,
@@ -26,6 +28,7 @@ def get_archive_domain(domain_name: str) -> ArchiveDomain:
 __all__ = [
     'DOMAIN_FACTORIES',
     'AnalyticsSnapshotArchiveDomain',
+    'GeneratedReportArchiveDomain',
     'OperationalActivityArchiveDomain',
     'JobExecutionArchiveDomain',
     'RuntimeObservationArchiveDomain',

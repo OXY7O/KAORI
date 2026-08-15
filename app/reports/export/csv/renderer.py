@@ -40,6 +40,7 @@ from app.reports.export.tabular import (
     serialize_tabular_value,
     tabular_value_type,
 )
+from app.reports.storage.health import get_generated_report_hot_retention_days
 
 
 @dataclass(frozen=True, slots=True)
@@ -84,7 +85,7 @@ def _render_analytics_csv(report: Report, output_path: Path) -> None:
         report,
         payload,
         classification=str(current_app.config.get('REPORT_PDF_CLASSIFICATION', 'Internal')),
-        retention_days=int(current_app.config.get('REPORT_RETENTION_DAYS', 90) or 90),
+        retention_days=get_generated_report_hot_retention_days(),
     )
     metadata = _analytics_metadata(report, document).as_dict()
     rows = [_analytics_row(metadata, record) for record in build_analytics_csv_records(document)]

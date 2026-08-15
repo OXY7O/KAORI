@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections.abc import Iterable, Iterator
 from dataclasses import dataclass
 from datetime import datetime
+from pathlib import Path
 from typing import Any, Protocol
 
 
@@ -27,6 +28,17 @@ class ArchiveBoundary:
     range_end: datetime | None
     protected_record_count: int = 0
     protected_cutoff_at: datetime | None = None
+
+
+@dataclass(frozen=True)
+class ArchiveSupplement:
+    """One binary or auxiliary artifact copied into a lifecycle archive bundle."""
+
+    record_id: Any
+    source_path: Path
+    relative_path: str
+    content_type: str = 'application/octet-stream'
+    metadata: dict[str, str] | None = None
 
 
 class PartialCleanupError(RuntimeError):

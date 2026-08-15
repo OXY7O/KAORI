@@ -207,8 +207,9 @@ def test_storage_integrity_and_retention_use_editorial_boundaries_not_card_grids
     assert 'data-storage-retention-summary="policy-strip"' in template
     assert 'data-storage-retention-governance="split-boundary"' in template
     assert 'data-storage-cleanup-action="inline-boundary"' in template
-    assert 'Retention identifies review candidates; deletion remains explicitly governed.' in template
-    assert 'Preview records that match retention rules without deleting artifacts or database rows.' in service
+    assert 'Reports Storage mirrors the canonical lifecycle policy' in template
+    assert 'Open Data Lifecycle' in template
+    assert 'Data Lifecycle Preview remains authoritative for status-specific eligibility.' in service
 
     # Regression guards against the previous card-heavy retention layout only.
     retention = template.split('data-storage-retention-layout="editorial-policy"', 1)[1]

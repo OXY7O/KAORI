@@ -29,7 +29,7 @@ from app.models.archive import (
 )
 from app.retention.domains import get_archive_domain
 from app.retention.lock import retention_lock
-from app.retention.types import ArchiveBoundary, PartialCleanupError, RetentionPolicy
+from app.retention.types import ArchiveBoundary, ArchiveSupplement, PartialCleanupError, RetentionPolicy
 from app.storage.service import (
     build_artifact_storage,
     build_artifact_storage_for_backend,
@@ -60,7 +60,7 @@ def preview_retention(domain_name: str) -> dict[str, Any]:
         'source_model': domain.source_model,
         'policy': policy,
         'boundary': boundary,
-        'estimated_uncompressed_bytes': _estimate_uncompressed_size(boundary.record_count),
+        'estimated_uncompressed_bytes': _estimate_archive_size(domain, boundary, policy),
     }
 
 
@@ -149,6 +149,7 @@ def verify_archive_artifact(archive_id: str) -> dict[str, Any]:
         expected_size=artifact.manifest_size_bytes,
         expected_checksum=artifact.manifest_checksum_sha256,
     )
+    _verify_supplemental_artifacts(backend=backend, artifact=artifact)
 
     artifact.verified_at = datetime.now(UTC)
     if artifact.status == ARCHIVE_STATUS_FAILED:
@@ -305,6 +306,10 @@ def purge_expired_archives(
                         artifact.storage_backend,
                         locator=_artifact_storage_locator(artifact),
                     )
+                    for supplemental in _supplemental_artifacts(artifact):
+                        object_key = str(supplemental.get('object_key') or '').strip()
+                        if object_key:
+                            backend.delete(object_key)
                     if artifact.data_object_key:
                         backend.delete(artifact.data_object_key)
                     if artifact.manifest_object_key:
@@ -399,6 +404,15 @@ def _execute_archive(
             expected_checksum=checksum,
         )
 
+        _archive_supplements_for_artifact(
+            artifact=artifact,
+            domain=domain,
+            boundary=boundary,
+            policy=policy,
+            backend=backend,
+            object_prefix=object_prefix,
+        )
+
         manifest = _build_manifest(
             artifact=artifact,
             boundary=boundary,
@@ -438,24 +452,14 @@ def _execute_archive(
 
         if cleanup:
             cleanup_started = True
-            artifact.status = ARCHIVE_STATUS_CLEANING
-            db.session.commit()
-            deleted_count = domain.cleanup_records(
-                _iter_archive_record_ids(verified_data_path),
-                policy,
+            artifact, deleted_count = _complete_archive_cleanup(
+                artifact_id=artifact_id,
+                artifact=artifact,
+                domain=domain,
+                policy=policy,
+                boundary=boundary,
+                verified_data_path=verified_data_path,
             )
-            artifact = _require_archive(artifact_id)
-            artifact.cleanup_deleted_count = deleted_count
-            artifact.cleanup_completed_at = datetime.now(UTC)
-            if deleted_count != boundary.record_count:
-                artifact.status = ARCHIVE_STATUS_CLEANUP_PARTIAL
-                artifact.error_message = (
-                    f'Archive contains {boundary.record_count} records, but cleanup removed {deleted_count}. '
-                    'The archive remains valid; review concurrent data changes before retrying cleanup.'
-                )
-            else:
-                artifact.status = ARCHIVE_STATUS_READY
-                artifact.error_message = None
         else:
             artifact.status = ARCHIVE_STATUS_READY
             artifact.error_message = None
@@ -492,6 +496,33 @@ def _execute_archive(
         raise
     finally:
         shutil.rmtree(work_dir, ignore_errors=True)
+
+
+def _complete_archive_cleanup(
+    *,
+    artifact_id: str,
+    artifact: ArchiveArtifact,
+    domain,
+    policy: RetentionPolicy,
+    boundary: ArchiveBoundary,
+    verified_data_path: Path,
+) -> tuple[ArchiveArtifact, int]:
+    artifact.status = ARCHIVE_STATUS_CLEANING
+    db.session.commit()
+    deleted_count = domain.cleanup_records(_iter_archive_record_ids(verified_data_path), policy)
+    artifact = _require_archive(artifact_id)
+    artifact.cleanup_deleted_count = deleted_count
+    artifact.cleanup_completed_at = datetime.now(UTC)
+    if deleted_count != boundary.record_count:
+        artifact.status = ARCHIVE_STATUS_CLEANUP_PARTIAL
+        artifact.error_message = (
+            f'Archive contains {boundary.record_count} records, but cleanup removed {deleted_count}. '
+            'The archive remains valid; review concurrent data changes before retrying cleanup.'
+        )
+    else:
+        artifact.status = ARCHIVE_STATUS_READY
+        artifact.error_message = None
+    return artifact, deleted_count
 
 
 def _write_jsonl_gzip(
@@ -579,6 +610,7 @@ def _build_manifest(
             'object_key': artifact.data_object_key,
             'storage_locator': _artifact_storage_locator(artifact),
         },
+        'supplemental_artifacts': _supplemental_artifacts(artifact),
         'retention_policy': _serialize_policy(policy),
         'cleanup_requested': cleanup_requested,
     }
@@ -632,6 +664,125 @@ def _isoformat(value: datetime | None) -> str | None:
     if value.tzinfo is None:
         value = value.replace(tzinfo=UTC)
     return value.astimezone(UTC).isoformat()
+
+
+def _estimate_archive_size(domain, boundary: ArchiveBoundary, policy: RetentionPolicy) -> int:
+    estimator = getattr(domain, 'estimate_uncompressed_bytes', None)
+    if callable(estimator):
+        return max(int(estimator(boundary, policy) or 0), 0)
+    return _estimate_uncompressed_size(boundary.record_count)
+
+
+def _archive_supplements_for_artifact(
+    *,
+    artifact: ArchiveArtifact,
+    domain,
+    boundary: ArchiveBoundary,
+    policy: RetentionPolicy,
+    backend,
+    object_prefix: str,
+) -> None:
+    supplemental_artifacts = _store_supplemental_artifacts(
+        artifact=artifact,
+        domain=domain,
+        boundary=boundary,
+        policy=policy,
+        backend=backend,
+        object_prefix=object_prefix,
+    )
+    if not supplemental_artifacts:
+        return
+    artifact.metadata_json = {
+        **(artifact.metadata_json or {}),
+        'supplemental_artifacts': supplemental_artifacts,
+        'supplemental_size_bytes': sum(int(item.get('size_bytes') or 0) for item in supplemental_artifacts),
+    }
+    db.session.commit()
+
+
+def _store_supplemental_artifacts(
+    *,
+    artifact: ArchiveArtifact,
+    domain,
+    boundary: ArchiveBoundary,
+    policy: RetentionPolicy,
+    backend,
+    object_prefix: str,
+) -> list[dict[str, Any]]:
+    provider = getattr(domain, 'iter_supplements', None)
+    if not callable(provider):
+        return []
+
+    archived: list[dict[str, Any]] = []
+    for item in provider(boundary, policy):
+        if not isinstance(item, ArchiveSupplement):
+            raise TypeError('Archive supplemental providers must yield ArchiveSupplement values.')
+        source_path = Path(item.source_path)
+        if not source_path.is_file():
+            raise RuntimeError(f'Supplemental archive source is unavailable: {source_path.name}.')
+
+        relative_path = _normalize_supplement_path(item.relative_path)
+        checksum = _sha256_file(source_path)
+        object_key = f'{object_prefix}/{artifact.id}/artifacts/{relative_path}'
+        stored = backend.save_file(
+            source_path,
+            object_key,
+            content_type=item.content_type,
+            metadata={
+                'sha256': checksum,
+                'archive-domain': str(domain.name),
+                'source-record-id': str(item.record_id),
+            },
+        )
+        _verify_stored_file(
+            backend=backend,
+            object_key=stored.object_key,
+            expected_size=stored.size_bytes,
+            expected_checksum=checksum,
+        )
+        archived.append(
+            {
+                'record_id': item.record_id,
+                'relative_path': relative_path,
+                'storage_backend': stored.backend,
+                'object_key': stored.object_key,
+                'uri': stored.uri,
+                'size_bytes': stored.size_bytes,
+                'content_type': item.content_type,
+                'checksum_sha256': checksum,
+                'metadata': dict(item.metadata or {}),
+            }
+        )
+    return archived
+
+
+def _verify_supplemental_artifacts(*, backend, artifact: ArchiveArtifact) -> None:
+    for item in _supplemental_artifacts(artifact):
+        object_key = str(item.get('object_key') or '').strip()
+        checksum = str(item.get('checksum_sha256') or '').strip()
+        size_bytes = item.get('size_bytes')
+        if not object_key or not checksum or size_bytes is None:
+            raise ArchiveVerificationError('Supplemental archive metadata is incomplete.')
+        _verify_stored_file(
+            backend=backend,
+            object_key=object_key,
+            expected_size=int(size_bytes),
+            expected_checksum=checksum,
+        )
+
+
+def _supplemental_artifacts(artifact: ArchiveArtifact) -> list[dict[str, Any]]:
+    metadata = artifact.metadata_json or {}
+    items = metadata.get('supplemental_artifacts') if isinstance(metadata, dict) else None
+    return [dict(item) for item in items if isinstance(item, dict)] if isinstance(items, list) else []
+
+
+def _normalize_supplement_path(value: str) -> str:
+    clean = str(value or '').strip().lstrip('/').replace('\\', '/')
+    parts = [part for part in clean.split('/') if part not in {'', '.', '..'}]
+    if not parts or any(part == '..' for part in clean.split('/')):
+        raise ValueError('Supplemental archive path is invalid.')
+    return '/'.join(parts)
 
 
 def _estimate_uncompressed_size(record_count: int) -> int:

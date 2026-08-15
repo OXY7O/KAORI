@@ -9,6 +9,7 @@ from flask import current_app
 from sqlalchemy import func, select
 
 from app.extensions.db import db
+from app.models.lifecycle import DataLifecyclePolicy
 from app.models.report import Report
 
 
@@ -219,88 +220,90 @@ def build_s3_storage_health() -> dict[str, Any]:
     }
 
 
-def build_storage_retention_policy() -> dict[str, Any]:
-    """Return the current retention and cleanup policy status.
+def get_generated_report_hot_retention_days() -> int:
+    stored = DataLifecyclePolicy.query.filter_by(domain='generated_report').first()
+    configured_days = (
+        stored.hot_retention_days
+        if stored is not None
+        else current_app.config.get(
+            'GENERATED_REPORT_RETENTION_DAYS',
+            current_app.config.get('REPORT_RETENTION_DAYS', 90),
+        )
+    )
+    try:
+        return max(int(configured_days), 1)
+    except (TypeError, ValueError):
+        return 90
 
-    KAORI defines the retention contract while keeping delete operations
-    guarded. The policy is visible in the UI and cleanup dry-run uses the same
-    retention age, but destructive deletion still requires an explicit
-    admin workflow.
-    """
-    retention_days = _safe_int_config(
-        'REPORT_RETENTION_DAYS',
-        90,
-    )
-    archive_retention_days = _safe_int_config(
-        'REPORT_ARCHIVE_RETENTION_DAYS',
-        180,
-    )
-    cleanup_mode = (
-        str(
-            current_app.config.get(
-                'REPORT_CLEANUP_MODE',
-                'dry-run-only',
-            )
-            or 'dry-run-only'
-        )
-        .strip()
-        .lower()
-    )
-    cleanup_scope = str(
-        current_app.config.get(
-            'REPORT_CLEANUP_SCOPE',
-            'ready-and-archived-artifacts',
-        )
-        or 'ready-and-archived-artifacts'
-    ).strip()
-    orphan_detection_enabled = parse_bool_config(
-        current_app.config.get(
-            'REPORT_ORPHAN_DETECTION_ENABLED',
-            True,
+
+def build_storage_retention_policy() -> dict[str, Any]:
+    """Describe the Generated Reports lifecycle policy owned by Data Lifecycle."""
+    stored = DataLifecyclePolicy.query.filter_by(domain='generated_report').first()
+    retention_days = (
+        max(int(stored.hot_retention_days), 1)
+        if stored is not None
+        else _safe_int_config(
+            'GENERATED_REPORT_RETENTION_DAYS',
+            _safe_int_config('REPORT_RETENTION_DAYS', 90),
         )
     )
-    destructive_actions_enabled = parse_bool_config(
-        current_app.config.get(
-            'REPORT_DESTRUCTIVE_CLEANUP_ENABLED',
-            False,
+    archive_retention_days = (
+        max(int(stored.archive_retention_days), 1)
+        if stored is not None
+        else _safe_int_config(
+            'GENERATED_REPORT_ARCHIVE_RETENTION_DAYS',
+            _safe_int_config('REPORT_ARCHIVE_RETENTION_DAYS', 365),
         )
     )
-    auto_cleanup_enabled = cleanup_mode == 'automatic' and destructive_actions_enabled
-    manual_cleanup_enabled = cleanup_mode in {'manual', 'automatic'} and destructive_actions_enabled
+    settings = dict(stored.settings_json or {}) if stored is not None else {}
+    failed_retention_days = max(int(settings.get('failed_retention_days') or 30), 1)
+    archived_retention_days = max(
+        int(settings.get('archived_retention_days') or max(retention_days, 180)),
+        retention_days,
+    )
+    lifecycle_enabled = (
+        bool(stored.enabled)
+        if stored is not None
+        else parse_bool_config(current_app.config.get('GENERATED_REPORT_RETENTION_ENABLED', False))
+    )
+    schedule_enabled = bool(stored.schedule_enabled) if stored is not None else False
 
     return {
-        'status': 'Defined',
-        'mode': 'Dry-run only' if not destructive_actions_enabled else cleanup_mode.replace('-', ' ').title(),
-        'auto_cleanup_enabled': auto_cleanup_enabled,
-        'manual_cleanup_enabled': manual_cleanup_enabled,
-        'orphan_detection_enabled': orphan_detection_enabled,
-        'orphan_cleanup_enabled': destructive_actions_enabled and orphan_detection_enabled,
-        'destructive_actions_enabled': destructive_actions_enabled,
-        'retention_days': f'{retention_days} days',
-        'retention_days_value': retention_days,
-        'archive_retention_days': f'{archive_retention_days} days',
-        'archive_retention_days_value': archive_retention_days,
-        'cleanup_scope': cleanup_scope,
-        'audit_status': 'Required before destructive cleanup'
-        if not destructive_actions_enabled
-        else 'Required for every cleanup run',
+        'status': 'Lifecycle Managed' if lifecycle_enabled else 'Lifecycle Paused',
+        'mode': (
+            str(stored.operation_mode).replace('_', ' ').title()
+            if stored is not None
+            else 'Archive Then Cleanup'
+        ),
+        'auto_cleanup_enabled': lifecycle_enabled and schedule_enabled,
+        'manual_cleanup_enabled': lifecycle_enabled,
+        'orphan_detection_enabled': parse_bool_config(
+            current_app.config.get('REPORT_ORPHAN_DETECTION_ENABLED', True)
+        ),
+        'orphan_cleanup_enabled': False,
+        'destructive_actions_enabled': lifecycle_enabled,
+        'retention_days': retention_days,
+        'archive_retention_days': archive_retention_days,
+        'cleanup_scope': 'Generated Reports lifecycle domain',
+        'audit_status': 'Archive verification required before cleanup',
         'safe_regenerate_behavior': (
-            'Regeneration creates a new artifact. Previous artifacts remain available until they exceed the defined retention window and an approved cleanup workflow is enabled.'  # noqa: E501
+            'Regeneration refreshes the report hot-retention age. Active generation is protected from lifecycle cleanup.'
         ),
         'description': (
-            'Retention is enforced as a read-only cleanup preview. Destructive local or S3 deletion remains guarded until approval, audit logging, and confirmation controls are enabled.'  # noqa: E501
+            'Platform Operations → Data Lifecycle is the canonical owner for Generated Reports retention. '
+            'Ready and Archived binary artifacts are copied and checksum-verified before source cleanup.'
         ),
         'policy_rules': [
-            f'Ready/generated artifacts are retention candidates after {retention_days} days.',
-            f'Archived artifacts are long-term evidence and are reviewed after {archive_retention_days} days.',
-            'Missing database references are reported by integrity scan before any cleanup decision.',
-            'S3-compatible and local artifacts use the same retention rule, but storage backend prefixes are preserved.',  # noqa: E501
-            'No file or object is deleted unless REPORT_DESTRUCTIVE_CLEANUP_ENABLED is explicitly enabled in configuration.',  # noqa: E501
+            f'Ready reports remain in the hot registry for {retention_days} days.',
+            f'Failed report metadata remains hot for {failed_retention_days} days.',
+            f'Manually Archived reports remain hot for {archived_retention_days} days.',
+            f'Verified lifecycle archives are retained for {archive_retention_days} days.',
+            'Requested, Queued, Generating, and active regeneration jobs are excluded from cleanup.',
         ],
         'next_steps': [
-            'Use Cleanup Dry Run to review candidate reports before enabling any delete action.',
-            'Confirm audit logging and admin-only approval before turning on destructive cleanup.',
-            'Keep archived reports longer than normal ready reports because they may be used as operational evidence.',
+            'Open Platform Operations → Data Lifecycle to preview or edit the Generated Reports policy.',
+            'Use Reports Storage integrity checks to investigate missing or unreachable source artifacts.',
+            'Keep archive storage independently backed up when Generated Reports are operational evidence.',
         ],
     }
 

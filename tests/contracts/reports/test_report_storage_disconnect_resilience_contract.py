@@ -42,7 +42,7 @@ def test_storage_page_stays_available_and_shows_reconnect_guidance() -> None:
     assert 'Retry Connection' in template
     assert "url_for('reports.storage', verify='1', workspace=payload.workspace)" in template
     assert 'Integrity Check Paused' in template
-    assert 'Cleanup Preview Paused' in template
+    assert 'Lifecycle Preview Paused' in template
     assert 'Traceback' not in template
     assert 'EndpointConnectionError' not in template
 
@@ -58,7 +58,11 @@ def test_generated_pages_use_safe_probe_and_pause_storage_actions() -> None:
     ]
     assert 'can_generate_artifact = report.status' in serialize_report
     assert "active_backend_status.get('write_available', False)" in serialize_report
-    assert 'Report records remain available; download actions stay paused' in service
+    assert "if not bool(backend_status.get('available', False)):" in service
+    assert 'storage-dependent operations follow ' in service
+    assert 'the active backend readiness state.' in service
+    assert 'download ' in service
+    assert 'actions stay paused until connectivity returns.' in service
     assert 'data-generated-storage-degraded="true"' in template
     assert 'payload.backend_status.title' in template
 

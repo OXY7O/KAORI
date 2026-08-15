@@ -120,8 +120,14 @@
             <footer class="flex flex-col gap-2 border-t border-outline-subtle bg-surface-subtle/60 px-5 py-3 text-xs text-content-muted sm:flex-row sm:items-center sm:justify-between">
                 <span>Registry posture is metadata-first; active generation refreshes silently without probing every stored object.</span>
                 <div class="flex flex-wrap items-center gap-2">
-                    {{ table_label.metadata_label('Rows 5 / 10 / 25 / 50', 'rows-3') }}
                     {{ table_label.metadata_label('Storage-Aware Downloads', 'hard-drive-download') }}
+                    {% if current_user.has_permission('platform_operations.view_data_lifecycle') %}
+                        <a href="{{ url_for('platform_operations.data_lifecycle.index', tab='policies', domain='generated_report') }}"
+                           class="inline-flex min-h-7 items-center gap-1.5 rounded-md border border-brand-outline bg-kaori-soft px-2.5 text-xs font-semibold text-kaori-primary transition hover:bg-surface-hover">
+                            <i data-lucide="archive-restore" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                            Data Lifecycle
+                        </a>
+                    {% endif %}
                 </div>
             </footer>
         </section>

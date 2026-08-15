@@ -22,6 +22,7 @@ from app.models.archive import (
     ArchiveArtifact,
 )
 from app.models.job import JobExecution
+from app.retention import generated_report_presentation as generated_report_ui
 from app.retention.domains import DOMAIN_FACTORIES, get_archive_domain
 from app.retention.policy_service import get_or_create_policy
 from app.retention.service import paginate_archives, preview_retention
@@ -289,6 +290,7 @@ def _domain_label(name: str) -> str:
         'job_execution': 'Job Executions',
         'runtime_observation': 'Runtime Observations',
         'analytics_snapshot': 'Analytics Snapshots',
+        'generated_report': generated_report_ui.GENERATED_REPORT_LABEL,
     }.get(name, name.replace('_', ' ').title())
 
 
@@ -298,6 +300,7 @@ def _domain_icon(name: str) -> str:
         'job_execution': 'workflow',
         'runtime_observation': 'activity',
         'analytics_snapshot': 'chart-no-axes-combined',
+        'generated_report': generated_report_ui.GENERATED_REPORT_ICON,
     }.get(name, 'database')
 
 
@@ -307,6 +310,7 @@ def _domain_description(name: str) -> str:
         'job_execution': 'Canonical queue, progress, results, and worker metadata.',
         'runtime_observation': 'Kubernetes, Prometheus, and Alertmanager runtime evidence.',
         'analytics_snapshot': 'Reusable analytics and forecast materialization snapshots.',
+        'generated_report': generated_report_ui.GENERATED_REPORT_DESCRIPTION,
     }.get(name, 'KAORI operational data domain.')
 
 
@@ -353,6 +357,7 @@ def _domain_coverage(name: str) -> tuple[dict[str, str], ...]:
                 'description': 'Recent Runtime Observations for Alertmanager integration targets.',
             },
         ),
+        'generated_report': generated_report_ui.GENERATED_REPORT_COVERAGE,
         'analytics_snapshot': (
             {
                 'icon': 'chart-spline',
@@ -379,6 +384,7 @@ def _domain_coverage_note(name: str) -> str | None:
         'job_execution': 'Execution payloads remain domain-owned; lifecycle archives canonical execution metadata and result references.',
         'runtime_observation': 'The policy is provider-neutral. Future integrations using IntegrationRuntimeObservation inherit the same lifecycle boundary.',
         'analytics_snapshot': 'Cleanup applies only after a snapshot is outside both its stale-serve window and the configured hot-retention boundary.',
+        'generated_report': generated_report_ui.GENERATED_REPORT_COVERAGE_NOTE,
     }.get(name)
 
 
@@ -388,6 +394,7 @@ def _domain_exclusion_note(name: str) -> str | None:
         'job_execution': 'Domain datasets referenced by a job are not deleted by the Job Executions retention policy.',
         'runtime_observation': 'Full provider configuration and credentials are not part of runtime-observation archives.',
         'analytics_snapshot': 'Pending or still-serveable snapshots are protected from archive cleanup.',
+        'generated_report': generated_report_ui.GENERATED_REPORT_EXCLUSION_NOTE,
     }.get(name)
 
 
@@ -515,8 +522,9 @@ def _serialize_archive(artifact: ArchiveArtifact) -> dict[str, Any]:
         'cleanup_deleted_count': artifact.cleanup_deleted_count,
         'storage_backend': artifact.storage_backend,
         'storage_label': _archive_storage_label(artifact.storage_backend, storage_locator),
-        'size_bytes': artifact.size_bytes,
-        'size_label': _format_size(artifact.size_bytes),
+        'size_bytes': int(artifact.size_bytes or 0) + int(metadata.get('supplemental_size_bytes') or 0),
+        'size_label': _format_size(int(artifact.size_bytes or 0) + int(metadata.get('supplemental_size_bytes') or 0)),
+        'supplemental_count': len(metadata.get('supplemental_artifacts') or []),
         'checksum_sha256': artifact.checksum_sha256,
         'checksum_short': artifact.checksum_sha256[:12] if artifact.checksum_sha256 else None,
         'range_start': artifact.range_start,
