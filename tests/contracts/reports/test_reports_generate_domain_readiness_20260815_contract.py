@@ -16,7 +16,11 @@ def test_generate_publishes_object_storage_scope_contracts_only_after_generic_sc
     assert 'Infrastructure Scope' in page
     assert 'id="object-storage-system-select"' in page
     assert 'data-report-scope-panel="object_storage_system"' in page
-    assert "('object_storage', 'Object Storage')" in page
+    assert 'payload.report_type_groups' in page
+    assert "'report_type_groups': _get_report_type_groups()" in service
+    assert 'def _get_report_type_groups()' in service
+    assert "('kubernetes', 'Kubernetes')" not in page
+    assert "('object_storage', 'Object Storage')" not in page
     assert 'value: object_storage_inventory' in catalog
     assert 'value: object_storage_analysis' in catalog
     assert 'default_format: xlsx' in catalog
@@ -25,11 +29,16 @@ def test_generate_publishes_object_storage_scope_contracts_only_after_generic_sc
     assert 'ObjectStorageSystem' in service
 
 
-def test_generate_exposes_canonical_family_format_policy() -> None:
+def test_generate_exposes_selected_output_contract_without_repeating_global_family_policy() -> None:
     page = read('app/templates/reports/generate/index.html')
 
-    assert 'data-report-format-policy="true"' in page
-    assert 'PDF default · CSV data export' in page
-    assert 'XLSX default · CSV flat export' in page
+    assert 'data-report-output-contract="true"' in page
+    assert 'Selected Output Contract' in page
+    assert 'id="output-format-default"' in page
+    assert 'id="output-format-purpose"' in page
+    assert 'Allowed Formats' in page
+    assert 'XLSX preserves the governed workbook structure' in page
+    assert 'PDF preserves the governed analytical document' in page
+    assert 'Format Policy' not in page
     assert 'PDF only' not in page
     assert 'XLSX only' not in page

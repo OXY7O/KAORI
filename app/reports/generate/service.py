@@ -513,6 +513,7 @@ def get_generate_report_payload(
             [],
         ),
         'report_type_options': REPORT_TYPE_OPTIONS,
+        'report_type_groups': _get_report_type_groups(),
         'period_options': PERIOD_OPTIONS,
         'output_format_options': OUTPUT_FORMAT_OPTIONS,
         'section_options': SECTION_OPTIONS,
@@ -652,6 +653,40 @@ def normalize_report_type(
     value: str | None,
 ) -> str:
     return normalize_catalog_report_type(value)
+
+
+def _get_report_type_groups() -> list[dict[str, Any]]:
+    domain_labels = {
+        'kubernetes': 'Kubernetes',
+        'object_storage': 'Object Storage',
+    }
+    family_labels = {
+        'analytics': 'Analytics',
+        'inventory': 'Inventory',
+    }
+    groups: list[dict[str, Any]] = []
+    group_indexes: dict[tuple[str, str], int] = {}
+
+    for item in REPORT_TYPE_OPTIONS:
+        domain = str(item.get('domain') or 'kubernetes')
+        family = str(item.get('family') or 'analytics')
+        group_key = (domain, family)
+        if group_key not in group_indexes:
+            domain_label = domain_labels.get(domain, domain.replace('_', ' ').title())
+            family_label = family_labels.get(family, family.replace('_', ' ').title())
+            group_indexes[group_key] = len(groups)
+            groups.append(
+                {
+                    'key': f'{domain}:{family}',
+                    'label': f'{domain_label} · {family_label}',
+                    'domain': domain,
+                    'family': family,
+                    'options': [],
+                }
+            )
+        groups[group_indexes[group_key]]['options'].append(item)
+
+    return groups
 
 
 def _get_report_type_context(

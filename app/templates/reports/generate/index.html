@@ -154,18 +154,13 @@
                                 <select name="report_type"
                                         id="report-type-select"
                                         class="mt-1.5 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2.5 text-sm font-semibold text-content-primary shadow-sm focus:border-kaori-primary focus:outline-none focus:ring-2 focus:ring-kaori-primary/20">
-                                    {% for domain_key, domain_label in [('kubernetes', 'Kubernetes'), ('object_storage', 'Object Storage')] %}
-                                        {% for family_key, family_label in [('analytics', 'Analytics'), ('inventory', 'Inventory')] %}
-                                            {% set grouped_options = payload.report_type_options|selectattr('domain', 'equalto', domain_key)|selectattr('family', 'equalto', family_key)|list %}
-                                            {% if grouped_options %}
-                                                <optgroup label="{{ domain_label }} · {{ family_label }}">
-                                                    {% for option in grouped_options %}
-                                                        <option value="{{ option.value }}"
-                                                                {% if payload.form_state.report_type == option.value %}selected{% endif %}>{{ option.label }}</option>
-                                                    {% endfor %}
-                                                </optgroup>
-                                            {% endif %}
-                                        {% endfor %}
+                                    {% for group in payload.report_type_groups %}
+                                        <optgroup label="{{ group.label }}" data-report-contract-group="{{ group.key }}">
+                                            {% for option in group.options %}
+                                                <option value="{{ option.value }}"
+                                                        {% if payload.form_state.report_type == option.value %}selected{% endif %}>{{ option.label }}</option>
+                                            {% endfor %}
+                                        </optgroup>
                                     {% endfor %}
                                 </select>
                             </label>
@@ -308,22 +303,27 @@
                                     {% endfor %}
                                 </select>
                             </label>
-                            <div class="mt-4 border-t border-outline-subtle pt-4">
-                                <p class="text-xs font-semibold text-content-secondary">Supported Formats</p>
-                                <p id="output-format-contract"
-                                   class="mt-1 text-xs leading-5 text-content-muted">{{ payload.selected_report_type.allowed_formats|join(" · ") |upper }}</p>
-                            </div>
-                            <div class="mt-4 rounded-xl border border-outline-subtle bg-surface-subtle px-3 py-3"
-                                 data-report-format-policy="true">
-                                <p class="text-xs font-bold text-content-primary">Format Policy</p>
-                                <div class="mt-2 divide-y divide-outline-subtle border-y border-outline-subtle">
-                                    <div class="flex items-center justify-between gap-3 py-2">
-                                        <span class="text-xs font-semibold text-content-secondary">Analytics</span>
-                                        <span class="text-right text-xs font-bold text-content-primary">PDF default · CSV data export</span>
-                                    </div>
-                                    <div class="flex items-center justify-between gap-3 py-2">
-                                        <span class="text-xs font-semibold text-content-secondary">Inventory</span>
-                                        <span class="text-right text-xs font-bold text-content-primary">XLSX default · CSV flat export</span>
+                            <div class="mt-4 rounded-xl border border-kaori-primary/20 bg-kaori-soft/45 px-4 py-3"
+                                 data-report-output-contract="true">
+                                <div class="flex items-start gap-3">
+                                    {{ context_icon_marker("file-check-2") }}
+                                    <div class="min-w-0 flex-1">
+                                        <div class="flex flex-wrap items-center justify-between gap-2">
+                                            <p class="text-xs font-bold text-content-primary">Selected Output Contract</p>
+                                            <span id="output-format-default"
+                                                  class="text-xs font-semibold text-kaori-primary">{{ payload.selected_report_type.primary_format|upper }} Default</span>
+                                        </div>
+                                        <p id="output-format-purpose" class="mt-1 text-xs leading-5 text-content-secondary">
+                                            {% if payload.selected_report_type.family == 'inventory' %}
+                                                XLSX preserves the governed workbook structure; CSV provides the flat machine-readable export.
+                                            {% else %}
+                                                PDF preserves the governed analytical document; CSV provides the machine-readable evidence export.
+                                            {% endif %}
+                                        </p>
+                                        <div class="mt-3 flex items-center justify-between gap-3 border-t border-kaori-primary/10 pt-2">
+                                            <span class="text-xs font-semibold text-content-muted">Allowed Formats</span>
+                                            <span id="output-format-contract" class="text-xs font-bold text-content-primary">{{ payload.selected_report_type.allowed_formats|join(" · ") |upper }}</span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -337,7 +337,7 @@
                                         <div class="flex flex-wrap items-center gap-2">
                                             <h3 class="text-base font-bold text-content-primary">Report Content</h3>
                                             <span id="selected-section-count-badge"
-                                                  class="inline-flex min-h-6 items-center rounded-md border border-kaori-primary/20 bg-kaori-soft px-2 text-xs font-semibold text-kaori-primary">{{ payload.form_state.sections|length }} Selected</span>
+                                                  class="inline-flex min-h-6 items-center rounded-md border border-kaori-primary/20 bg-kaori-soft px-2 text-xs font-semibold text-kaori-primary">{{ payload.form_state.sections|length }} {{ 'Locked' if payload.selected_report_type.family == 'inventory' else 'Selected' }}</span>
                                         </div>
                                         <p id="section-contract-note"
                                            class="mt-1 text-xs leading-5 text-content-muted">
@@ -426,7 +426,7 @@
                                     <p class="text-xs font-semibold text-content-muted">Artifact</p>
                                     <p id="preview-output-format"
                                        class="mt-1 text-sm font-semibold text-content-primary">{{ payload.form_state.output_format|upper }}</p>
-                                    <p id="preview-sections" class="mt-0.5 text-xs text-content-muted">{{ payload.form_state.sections|length }} Selected</p>
+                                    <p id="preview-sections" class="mt-0.5 text-xs text-content-muted">{{ payload.form_state.sections|length }} {{ 'Locked' if payload.selected_report_type.family == 'inventory' else 'Selected' }}</p>
                                 </div>
                             </div>
                             <p id="preview-report-description" class="sr-only">{{ payload.selected_report_type.description }}</p>
@@ -456,10 +456,9 @@
                                    data-lucide="{{ 'check' if initial_sections_ready else 'triangle-alert' }}"
                                    class="h-3 w-3 shrink-0"
                                    aria-hidden="true"></i>
-                                <span data-readiness-status-label>{{ payload.form_state.sections|length }} Sections</span>
+                                <span data-readiness-status-label>{{ 'Content Ready' if initial_sections_ready else 'Selection Required' }}</span>
                             </span>
                             {{ table_label.status_indicator_label(payload.storage_context.status, 'normal' if payload.generation_allowed else 'warning') }}
-                            {{ table_label.status_indicator_label(payload.worker_context.label, 'normal' if payload.worker_context.ready else 'warning') }}
                         </div>
                     </div>
                     <div class="mt-4 flex flex-col gap-3 border-t border-outline-subtle pt-4 sm:flex-row sm:items-center sm:justify-between">
@@ -521,6 +520,8 @@
                 const periodModeLabel = document.getElementById('period-mode-label');
                 const outputFormatSelect = document.getElementById('output-format-select');
                 const outputFormatContract = document.getElementById('output-format-contract');
+                const outputFormatDefault = document.getElementById('output-format-default');
+                const outputFormatPurpose = document.getElementById('output-format-purpose');
                 const clusterSelect = document.getElementById('cluster-select');
                 const namespaceSelect = document.getElementById('namespace-select');
                 const objectStorageSystemSelect = document.getElementById('object-storage-system-select');
@@ -736,8 +737,12 @@
                             return section.label;
                         });
 
+                    const reportType = getReportTypeOption();
+                    const inventoryContractLocked = reportType && reportType.family === 'inventory';
+                    const sectionStateLabel = inventoryContractLocked ? 'Locked' : 'Selected';
+
                     if (selectedSectionCountBadge) {
-                        selectedSectionCountBadge.textContent = selectedCount + ' Selected';
+                        selectedSectionCountBadge.textContent = selectedCount + ' ' + sectionStateLabel;
                     }
 
                     if (selectedReportCount) {
@@ -749,7 +754,7 @@
                     }
 
                     if (previewSections) {
-                        previewSections.textContent = selectedCount + ' Selected';
+                        previewSections.textContent = selectedCount + ' ' + sectionStateLabel;
                     }
 
                     if (previewIncludedSections) {
@@ -765,7 +770,7 @@
                     setReadinessItemTone(readinessSectionsIcon, readinessSectionsStatus, selectedCount > 0);
                     setReadinessStatusLabel(
                         readinessSectionsStatus,
-                        selectedCount > 0 ? selectedCount + ' Selected' : 'Selection Required',
+                        selectedCount > 0 ? 'Content Ready' : 'Selection Required',
                     );
 
                     if (readinessSectionsDescription) {
@@ -891,6 +896,18 @@
                         outputFormatContract.textContent = allowedFormats
                             .map(function (format) { return format.toUpperCase(); })
                             .join(' · ');
+                    }
+
+                    if (outputFormatDefault) {
+                        outputFormatDefault.textContent = primaryFormat
+                            ? primaryFormat.toUpperCase() + ' Default'
+                            : 'Contract Default';
+                    }
+
+                    if (outputFormatPurpose) {
+                        outputFormatPurpose.textContent = reportType && reportType.family === 'inventory'
+                            ? 'XLSX preserves the governed workbook structure; CSV provides the flat machine-readable export.'
+                            : 'PDF preserves the governed analytical document; CSV provides the machine-readable evidence export.';
                     }
 
                     if (previewOutputFormat && outputFormatSelect.options[outputFormatSelect.selectedIndex]) {

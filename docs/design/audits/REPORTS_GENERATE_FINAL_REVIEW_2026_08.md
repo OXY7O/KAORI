@@ -10,9 +10,11 @@ Generate remains a published-contract workspace. A report type is exposed only a
 - Inventory reports: XLSX is the governed workbook default; CSV remains available for flat export and automation.
 - Analytics does not add XLSX by default because it duplicates the CSV machine-readable contract without meaningful additional governance value.
 
+The Generate workspace no longer repeats the global Analytics/Inventory format policy beside every request. The Artifact step renders one **Selected Output Contract** for the active report type: canonical default, allowed formats, and the purpose of each export path.
+
 ## Published Object Storage contracts
 
-The provider-neutral report asset scope is now implemented end to end. Generate publishes the first two Object Storage report contracts:
+The provider-neutral report asset scope is implemented end to end. Generate publishes the first two Object Storage report contracts:
 
 1. Object Storage Inventory Report — XLSX default, CSV alternative.
 2. Object Storage Analysis Report — PDF default, CSV alternative.
@@ -21,7 +23,7 @@ Object Storage reports bind one registered Object Storage System. Kubernetes rep
 
 ## Generate hierarchy
 
-Hero → Report Contract → Infrastructure Scope → Artifact / Format Policy → Report Content → Review & Queue.
+Hero → Report Contract → Infrastructure Scope → Artifact / Selected Output Contract → Report Content → Review & Queue.
 
 The scope control is contract-owned:
 
@@ -29,3 +31,18 @@ The scope control is contract-owned:
 - Object Storage report → Object Storage System.
 
 Only published contracts are selectable. Remaining Object Storage Forecast, Top Consumers, and Alerts & Anomalies coverage stays non-executable until each focused contract is separately published.
+
+## Final UI and maintenance audit
+
+The final polish locks these decisions:
+
+- Report Type optgroups are generated from the canonical report catalog through `report_type_groups`; the Jinja template does not hardcode Kubernetes/Object Storage or Analytics/Inventory group loops.
+- Inventory content is displayed as **Locked**, not **Selected**, because workbook sections are contract-owned and cannot be modified by the operator.
+- Analytics content remains operator-selectable and uses **Selected** semantics.
+- Review & Queue treats worker availability as asynchronous execution context, not queue-admission eligibility. A disconnected worker is surfaced by the dedicated warning above the workspace; it is not duplicated as a blocking readiness badge.
+- Queue admission is governed by infrastructure scope, content validity, and artifact-storage write readiness. Worker recovery determines when an admitted request starts processing.
+- The selected report summary and final Review & Queue serve different purposes: the former confirms catalog identity while configuring; the latter confirms the concrete request that will be persisted and queued.
+
+## Definition Registry boundary
+
+System-owned report contracts and worker definitions remain Definition Registry data. Static contracts must validate canonical YAML plus the Python adapter/registry boundary rather than requiring definition literals to be copied back into Python modules.

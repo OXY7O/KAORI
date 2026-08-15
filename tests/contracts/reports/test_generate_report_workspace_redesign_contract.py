@@ -34,10 +34,9 @@ def test_report_selection_is_compact_catalog_select_not_card_wall() -> None:
     source = read(TEMPLATE)
 
     assert 'id="report-type-select"' in source
-    assert "('kubernetes', 'Kubernetes')" in source
-    assert "('object_storage', 'Object Storage')" in source
-    assert "('analytics', 'Analytics')" in source
-    assert "('inventory', 'Inventory')" in source
+    assert 'payload.report_type_groups' in source
+    assert 'data-report-contract-group="{{ group.key }}"' in source
+    assert '{% for option in group.options %}' in source
     assert 'id="selected-template-summary"' in source
     assert 'data-report-type-card=' not in source
     assert 'data-report-family-filter=' not in source
@@ -68,6 +67,7 @@ def test_generate_report_uses_two_primary_configuration_zones_and_compact_review
     ]
     assert 'preview-eligibility-status' not in review_header
     assert 'Create & Queue Report' in source
+    assert "table_label.status_indicator_label(payload.worker_context.label" not in source
     assert 'xl:grid-cols-2 xl:divide-x xl:divide-outline-default' in source
     assert '01 Choose Report' not in source
     assert '02 Define Scope' not in source
@@ -111,6 +111,8 @@ def test_inventory_sections_are_contract_locked_and_compact() -> None:
     assert 'marker.innerHTML = \'<i data-lucide="file-spreadsheet"' in source
     assert 'input.disabled = inventoryContractLocked' not in source
     assert 'setElementVisibility(selectionActions, !inventoryContractLocked);' in source
+    assert "sectionStateLabel = inventoryContractLocked ? 'Locked' : 'Selected'" in source
+    assert "selectedCount > 0 ? 'Content Ready' : 'Selection Required'" in source
 
 
 def test_output_format_uses_compact_native_select_and_contract_filtering() -> None:
@@ -125,7 +127,10 @@ def test_output_format_uses_compact_native_select_and_contract_filtering() -> No
     assert 'option.hidden = !isAllowed;' in source
     assert "option.value !== 'snapshot'" in source
     assert "option.value === 'snapshot'" in source
-    assert 'Supported Formats' in source
+    assert 'Selected Output Contract' in source
+    assert 'data-report-output-contract="true"' in source
+    assert 'id="output-format-default"' in source
+    assert 'id="output-format-purpose"' in source
     assert 'id="output-format-contract"' in source
     format_mapping = (
         'allowedFormats\n                            .map(function (format) { return format.toUpperCase(); })'
@@ -203,7 +208,10 @@ def test_generate_report_typography_and_summary_are_visually_hierarchical() -> N
     assert 'Select a specific cluster to load namespace options.' not in source
     assert 'Cluster selection loads namespace options.' not in source
     assert 'id="namespace-select-help"' not in source
-    assert 'Supported Formats' in source
+    assert 'Selected Output Contract' in source
+    assert 'data-report-output-contract="true"' in source
+    assert 'id="output-format-default"' in source
+    assert 'id="output-format-purpose"' in source
     assert 'id="output-format-contract"' in source
 
 

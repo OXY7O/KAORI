@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import ast
+
+import yaml
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -141,6 +143,7 @@ def test_generated_registry_surfaces_storage_outage_without_breaking_list() -> N
 
 def test_report_schedule_dispatcher_uses_canonical_worker_job() -> None:
     definition = read(ROOT / 'app' / 'jobs' / 'definitions' / 'report_schedule.py')
+    job_catalog = yaml.safe_load(read(ROOT / 'app' / 'definitions' / 'catalogs' / 'jobs' / 'registered_jobs.yaml'))
     registry = read(ROOT / 'app' / 'jobs' / 'registry.py')
     adapter = read(ROOT / 'app' / 'reports' / 'schedules' / 'job_adapter.py')
     task = read(ROOT / 'app' / 'reports' / 'schedules' / 'tasks.py')
@@ -150,9 +153,16 @@ def test_report_schedule_dispatcher_uses_canonical_worker_job() -> None:
     devcontainer = read(ROOT / '.devcontainer' / 'devcontainer.json')
     queue_contract = read(ROOT / 'app' / 'reports' / 'jobs' / 'queue.py')
 
-    assert "key='reports.schedule.dispatch'" in definition
-    assert "queue_name='reports'" in definition
-    assert 'REPORT_SCHEDULE_DEFINITION' in registry
+    schedule_definition = next(
+        item for item in job_catalog['jobs'] if item['key'] == 'reports.schedule.dispatch'
+    )
+    assert schedule_definition['queue_name'] == 'reports'
+    assert schedule_definition['operation'] == 'dispatch_due_reports'
+    assert schedule_definition['dispatcher_path'] == (
+        'app.reports.schedules.job_adapter:dispatch_report_schedule_job'
+    )
+    assert "get_job_definition('reports.schedule.dispatch')" in definition
+    assert '_JOB_DEFINITIONS: tuple[JobDefinition, ...] = load_job_definitions()' in registry
     assert 'enqueue_canonical_job(' in adapter
     assert "name='app.reports.schedules.tasks.run_report_schedule_job'" in task
     assert "'app.reports.schedules.tasks'" in config
