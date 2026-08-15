@@ -36,6 +36,19 @@ from app.intelligence.rule_presentation import (
     to_int,
 )
 
+
+def _count_active_filters(filters: dict[str, str], keys: tuple[str, ...] | None = None) -> int:
+    selected_keys = keys or tuple(filters.keys())
+    return sum(1 for key in selected_keys if clean(filters.get(key)))
+
+
+def _truncate_words(value: str | None, limit: int = 132) -> str:
+    text = ' '.join(str(value or '').split())
+    if len(text) <= limit:
+        return text
+    shortened = text[:limit].rsplit(' ', 1)[0].strip()
+    return f"{shortened or text[:limit].strip()}…"
+
 def _base_payload(args: MultiDict[str, str], *, page_mode: str) -> dict[str, Any]:
     filters = {
         'domain': clean(args.get('domain')),

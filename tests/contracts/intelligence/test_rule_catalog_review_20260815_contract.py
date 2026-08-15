@@ -23,6 +23,10 @@ def test_rule_catalog_uses_two_row_filter_layout_and_summary_box():
 
 def test_rule_catalog_rows_use_short_summary_and_detail_view_remains_full():
     service = read('app/intelligence/service.py')
+    assert 'def _truncate_words(' in service
+    assert 'def _count_active_filters(' in service
+    assert service.index('def _truncate_words(') < service.index('def _base_payload(')
+    assert service.index('def _count_active_filters(') < service.index('def _base_payload(')
     records = read('app/templates/intelligence/partials/_catalog_records.html')
     details = read('app/templates/intelligence/partials/_catalog_detail_content.html')
 
