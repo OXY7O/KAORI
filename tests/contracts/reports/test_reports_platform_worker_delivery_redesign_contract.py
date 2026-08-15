@@ -219,6 +219,7 @@ def test_generate_report_uses_the_canonical_family_format_and_scope_contract() -
     catalog = read(ROOT / 'app' / 'reports' / 'catalog.py')
     catalog_definitions = read(ROOT / 'app' / 'definitions' / 'catalogs' / 'reports' / 'catalog.yaml')
     generate_service = read(ROOT / 'app' / 'reports' / 'generate' / 'service.py')
+    generate_form_options = read(ROOT / 'app' / 'reports' / 'generate' / 'form_options.py')
     generate_template = read(REPORT_TEMPLATES / 'generate' / 'index.html')
     analytics_collectors = read(ROOT / 'app' / 'reports' / 'export' / 'html_pdf' / 'collectors.py')
     inventory_common = read(ROOT / 'app' / 'reports' / 'export' / 'inventory_common.py')
@@ -267,7 +268,7 @@ def test_generate_report_uses_the_canonical_family_format_and_scope_contract() -
     assert "('object_storage', 'Object Storage')" not in generate_template
     assert 'data-report-family-filter=' not in generate_template
     assert 'data-report-type-card=' not in generate_template
-    assert "'value': 'snapshot'" in generate_service
+    assert "'value': 'snapshot'" in generate_form_options
     assert 'A selected Kubernetes cluster is required for this report artifact.' in generate_service
     assert 'A selected Object Storage system is required for this report artifact.' in generate_service
     assert "reportType.family === 'inventory'" in generate_template

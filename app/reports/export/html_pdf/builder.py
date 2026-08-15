@@ -9,14 +9,13 @@ from app.reports.export.constants import (
     ANALYTICS_OVERVIEW_SECTION_KEYS,
     ANALYTICS_REPORT_RECOMMENDATIONS,
     DEFAULT_RECOMMENDATIONS,
-    REPORT_DOMAIN_LABELS,
     SECTION_LABELS,
-    SOURCE_KIND_LABELS,
 )
 from app.reports.export.formatting import format_period
 from app.reports.export.html_pdf.alerts_anomalies import build_alerts_anomalies_presentation
 from app.reports.export.html_pdf.analytics_overview import build_analytics_overview_presentation
 from app.reports.export.html_pdf.capacity_analysis import build_capacity_analysis_presentation
+from app.reports.export.html_pdf.builder_context import ReportDocumentContext, finalize_report_document
 from app.reports.export.html_pdf.charts import build_alert_severity_chart, build_forecast_chart
 from app.reports.export.html_pdf.document import (
     ReportDocument,
@@ -116,22 +115,13 @@ _SECTION_DESCRIPTIONS: dict[str, str] = {
 }
 
 
-def build_report_document(
-    report: Any,
-    payload: Mapping[str, Any],
-    *,
-    classification: str = 'Internal',
-    retention_days: int = 90,
-) -> ReportDocument:
+def _build_document_context(report: Any, payload: Mapping[str, Any]) -> ReportDocumentContext:
     generated_at = datetime.now(UTC)
     selected_sections = list(report.sections_as_list())
     if report.report_type == 'analytics_overview':
         selected_sections = list(ANALYTICS_OVERVIEW_SECTION_KEYS)
     if not selected_sections:
         selected_sections = ['executive_summary', 'operational_recommendations']
-
-    source_metrics = _build_source_metrics(report, payload)
-    overall_posture, overall_tone = _derive_overall_posture(payload)
 
     sections: list[ReportSection] = []
     if payload.get('_error'):
@@ -145,27 +135,47 @@ def build_report_document(
         or getattr(report, 'generated_by_username_snapshot', None)
         or 'KAORI Automation'
     )
-    cluster_scope = _cluster_scope(report, payload)
-    namespace_scope = _secondary_scope(report)
-    internal_report_id = str(getattr(report, 'id', '-'))
-    report_id = build_report_reference(report, generated_at=generated_at)
-    report_name = sanitize_text(getattr(report, 'name', None), fallback='KAORI Operational Report')
     report_type_spec = get_report_type_spec(report.report_type)
-    report_type_label = report_type_spec.label.removesuffix(' Report')
-    period_label = _report_period_label(report)
-    generated_at_label = generated_at.strftime('%d %b %Y %H:%M UTC')
-    data_cutoff = _derive_data_cutoff(payload, generated_at)
-    generated_by_label = sanitize_text(generated_by)
+    overall_posture, overall_tone = _derive_overall_posture(payload)
+    return ReportDocumentContext(
+        generated_at=generated_at,
+        selected_sections=selected_sections,
+        source_metrics=_build_source_metrics(report, payload),
+        overall_posture=overall_posture,
+        overall_tone=overall_tone,
+        sections=sections,
+        generated_by_label=sanitize_text(generated_by),
+        cluster_scope=_cluster_scope(report, payload),
+        namespace_scope=_secondary_scope(report),
+        internal_report_id=str(getattr(report, 'id', '-')),
+        report_id=build_report_reference(report, generated_at=generated_at),
+        report_name=sanitize_text(getattr(report, 'name', None), fallback='KAORI Operational Report'),
+        report_type_spec=report_type_spec,
+        report_type_label=report_type_spec.label.removesuffix(' Report'),
+        period_label=_report_period_label(report),
+        generated_at_label=generated_at.strftime('%d %b %Y %H:%M UTC'),
+        data_cutoff=_derive_data_cutoff(payload, generated_at),
+    )
+
+
+def build_report_document(
+    report: Any,
+    payload: Mapping[str, Any],
+    *,
+    classification: str = 'Internal',
+    retention_days: int = 90,
+) -> ReportDocument:
+    context = _build_document_context(report, payload)
     template_name = 'reports/pdf/analytics_unavailable.html'
     presentation: dict[str, Any] = {}
     if payload.get('_error'):
         if report.report_type == 'object_storage_analysis':
             template_name = 'reports/pdf/object_storage_analysis.html'
             presentation = {
-                'report_id': report_id,
+                'report_id': context.report_id,
                 'classification': classification,
-                'page_count': 1 + len(sections),
-                'scope_value': cluster_scope,
+                'page_count': 1 + len(context.sections),
+                'scope_value': context.cluster_scope,
                 'source_label': 'Object Storage Evidence Unavailable',
                 'metrics_contract': 'Generation Limited',
             }
@@ -173,15 +183,15 @@ def build_report_document(
             presentation = _build_unavailable_presentation(
                 report,
                 payload,
-                report_reference=report_id,
-                report_name=report_name,
-                report_type_label=report_type_label,
-                cluster_scope=cluster_scope,
-                namespace_scope=namespace_scope,
-                period_label=period_label,
-                data_cutoff=data_cutoff,
-                generated_at=generated_at_label,
-                generated_by=generated_by_label,
+                report_reference=context.report_id,
+                report_name=context.report_name,
+                report_type_label=context.report_type_label,
+                cluster_scope=context.cluster_scope,
+                namespace_scope=context.namespace_scope,
+                period_label=context.period_label,
+                data_cutoff=context.data_cutoff,
+                generated_at=context.generated_at_label,
+                generated_by=context.generated_by_label,
                 classification=classification,
             )
     elif report.report_type == 'analytics_overview':
@@ -189,31 +199,31 @@ def build_report_document(
         presentation = build_analytics_overview_presentation(
             report,
             payload,
-            report_id=report_id,
-            report_name=report_name,
-            cluster_scope=cluster_scope,
-            namespace_scope=namespace_scope,
-            period_label=period_label,
-            data_cutoff=data_cutoff,
-            generated_at=generated_at_label,
-            generated_by=generated_by_label,
+            report_id=context.report_id,
+            report_name=context.report_name,
+            cluster_scope=context.cluster_scope,
+            namespace_scope=context.namespace_scope,
+            period_label=context.period_label,
+            data_cutoff=context.data_cutoff,
+            generated_at=context.generated_at_label,
+            generated_by=context.generated_by_label,
             classification=classification,
-            overall_posture=overall_posture,
-            overall_tone=overall_tone,
+            overall_posture=context.overall_posture,
+            overall_tone=context.overall_tone,
         )
     elif report.report_type == 'resource_utilization':
         template_name = 'reports/pdf/resource_utilization.html'
         presentation = build_resource_utilization_presentation(
             report,
             payload,
-            report_id=report_id,
-            report_name=report_name,
-            cluster_scope=cluster_scope,
-            namespace_scope=namespace_scope,
-            period_label=period_label,
-            data_cutoff=data_cutoff,
-            generated_at=generated_at_label,
-            generated_by=generated_by_label,
+            report_id=context.report_id,
+            report_name=context.report_name,
+            cluster_scope=context.cluster_scope,
+            namespace_scope=context.namespace_scope,
+            period_label=context.period_label,
+            data_cutoff=context.data_cutoff,
+            generated_at=context.generated_at_label,
+            generated_by=context.generated_by_label,
             classification=classification,
         )
     elif report.report_type == 'capacity_analysis':
@@ -221,14 +231,14 @@ def build_report_document(
         presentation = build_capacity_analysis_presentation(
             report,
             payload,
-            report_id=report_id,
-            report_name=report_name,
-            cluster_scope=cluster_scope,
-            namespace_scope=namespace_scope,
-            period_label=period_label,
-            data_cutoff=data_cutoff,
-            generated_at=generated_at_label,
-            generated_by=generated_by_label,
+            report_id=context.report_id,
+            report_name=context.report_name,
+            cluster_scope=context.cluster_scope,
+            namespace_scope=context.namespace_scope,
+            period_label=context.period_label,
+            data_cutoff=context.data_cutoff,
+            generated_at=context.generated_at_label,
+            generated_by=context.generated_by_label,
             classification=classification,
         )
     elif report.report_type == 'storage_analysis':
@@ -236,14 +246,14 @@ def build_report_document(
         presentation = build_storage_analysis_presentation(
             report,
             payload,
-            report_id=report_id,
-            report_name=report_name,
-            cluster_scope=cluster_scope,
-            namespace_scope=namespace_scope,
-            period_label=period_label,
-            data_cutoff=data_cutoff,
-            generated_at=generated_at_label,
-            generated_by=generated_by_label,
+            report_id=context.report_id,
+            report_name=context.report_name,
+            cluster_scope=context.cluster_scope,
+            namespace_scope=context.namespace_scope,
+            period_label=context.period_label,
+            data_cutoff=context.data_cutoff,
+            generated_at=context.generated_at_label,
+            generated_by=context.generated_by_label,
             classification=classification,
         )
     elif report.report_type == 'resource_forecast':
@@ -251,14 +261,14 @@ def build_report_document(
         presentation = build_forecast_analysis_presentation(
             report,
             payload,
-            report_id=report_id,
-            report_name=report_name,
-            cluster_scope=cluster_scope,
-            namespace_scope=namespace_scope,
-            period_label=period_label,
-            data_cutoff=data_cutoff,
-            generated_at=generated_at_label,
-            generated_by=generated_by_label,
+            report_id=context.report_id,
+            report_name=context.report_name,
+            cluster_scope=context.cluster_scope,
+            namespace_scope=context.namespace_scope,
+            period_label=context.period_label,
+            data_cutoff=context.data_cutoff,
+            generated_at=context.generated_at_label,
+            generated_by=context.generated_by_label,
             classification=classification,
         )
     elif report.report_type == 'workload_analysis':
@@ -266,14 +276,14 @@ def build_report_document(
         presentation = build_workload_analysis_presentation(
             report,
             payload,
-            report_id=report_id,
-            report_name=report_name,
-            cluster_scope=cluster_scope,
-            namespace_scope=namespace_scope,
-            period_label=period_label,
-            data_cutoff=data_cutoff,
-            generated_at=generated_at_label,
-            generated_by=generated_by_label,
+            report_id=context.report_id,
+            report_name=context.report_name,
+            cluster_scope=context.cluster_scope,
+            namespace_scope=context.namespace_scope,
+            period_label=context.period_label,
+            data_cutoff=context.data_cutoff,
+            generated_at=context.generated_at_label,
+            generated_by=context.generated_by_label,
             classification=classification,
         )
     elif report.report_type == 'top_consumers':
@@ -281,14 +291,14 @@ def build_report_document(
         presentation = build_top_consumers_analysis_presentation(
             report,
             payload,
-            report_id=report_id,
-            report_name=report_name,
-            cluster_scope=cluster_scope,
-            namespace_scope=namespace_scope,
-            period_label=period_label,
-            data_cutoff=data_cutoff,
-            generated_at=generated_at_label,
-            generated_by=generated_by_label,
+            report_id=context.report_id,
+            report_name=context.report_name,
+            cluster_scope=context.cluster_scope,
+            namespace_scope=context.namespace_scope,
+            period_label=context.period_label,
+            data_cutoff=context.data_cutoff,
+            generated_at=context.generated_at_label,
+            generated_by=context.generated_by_label,
             classification=classification,
         )
     elif report.report_type == 'alerts_anomalies':
@@ -296,25 +306,27 @@ def build_report_document(
         presentation = build_alerts_anomalies_presentation(
             report,
             payload,
-            report_id=report_id,
-            report_name=report_name,
-            cluster_scope=cluster_scope,
-            namespace_scope=namespace_scope,
-            period_label=period_label,
-            data_cutoff=data_cutoff,
-            generated_at=generated_at_label,
-            generated_by=generated_by_label,
+            report_id=context.report_id,
+            report_name=context.report_name,
+            cluster_scope=context.cluster_scope,
+            namespace_scope=context.namespace_scope,
+            period_label=context.period_label,
+            data_cutoff=context.data_cutoff,
+            generated_at=context.generated_at_label,
+            generated_by=context.generated_by_label,
             classification=classification,
         )
     elif report.report_type == 'object_storage_analysis':
         template_name = 'reports/pdf/object_storage_analysis.html'
         metrics_source = payload.get('metrics_source') if isinstance(payload.get('metrics_source'), Mapping) else {}
-        metrics_readiness = payload.get('metrics_readiness') if isinstance(payload.get('metrics_readiness'), Mapping) else {}
+        metrics_readiness = (
+            payload.get('metrics_readiness') if isinstance(payload.get('metrics_readiness'), Mapping) else {}
+        )
         presentation = {
-            'report_id': report_id,
+            'report_id': context.report_id,
             'classification': classification,
-            'page_count': 1 + len(sections),
-            'scope_value': cluster_scope,
+            'page_count': 1 + len(context.sections),
+            'scope_value': context.cluster_scope,
             'source_label': sanitize_text(
                 metrics_source.get('provider_label') or metrics_source.get('label'),
                 fallback='Object Storage Evidence',
@@ -325,44 +337,13 @@ def build_report_document(
             ),
         }
 
-    return ReportDocument(
-        report_id=report_id,
-        report_name=report_name,
-        report_type_label=report_type_label,
-        report_description=report_type_spec.description,
-        report_domain_label=REPORT_DOMAIN_LABELS.get(
-            getattr(report, 'report_domain', ''),
-            'KAORI Kubernetes Reports',
-        ),
-        source_kind_label=SOURCE_KIND_LABELS.get(getattr(report, 'source_kind', ''), 'Kubernetes'),
-        cluster_scope=cluster_scope,
-        namespace_scope=namespace_scope,
-        period_label=period_label,
-        generated_at=generated_at_label,
-        data_cutoff=data_cutoff,
-        generated_by=generated_by_label,
-        classification=classification,
-        retention_label=f'{max(retention_days, 0)} Days' if retention_days > 0 else 'Policy Managed',
-        overall_posture=overall_posture,
-        overall_tone=overall_tone,
-        source_metrics=source_metrics,
-        sections=tuple(sections),
-        methodology_notes=(
-            'Report content follows the section order saved by the existing KAORI Template System.',
-            'Data is collected before rendering. The HTML template and WeasyPrint renderer do not query external systems directly.',
-            'Unavailable sources are shown as report limitations and are excluded from conclusions that require live evidence.',
-            'Critical operational decisions should be verified against live infrastructure evidence and the related JobExecution record.',
-        ),
-        template_label=f'{report_type_label} Template',
+    return finalize_report_document(
+        report,
+        context,
         template_name=template_name,
         presentation=presentation,
-        metadata={
-            'section_count': len(sections),
-            'internal_report_id': internal_report_id,
-            'report_reference': report_id,
-            'selected_section_keys': selected_sections,
-            'output_format': sanitize_text(getattr(report, 'output_format', None), fallback='Not Available').upper(),
-        },
+        classification=classification,
+        retention_days=retention_days,
     )
 
 

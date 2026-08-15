@@ -130,7 +130,7 @@
                  x-data="{ selectedCount: 0, selectableCount: 0, syncSelection(root) { const items = Array.from(root.querySelectorAll('.generated-report-checkbox:not(:disabled)')); this.selectableCount = items.length; this.selectedCount = items.filter((item) => item.checked).length; } }"
                  x-init="$nextTick(() => syncSelection($root))"
                  hx-sync="this:abort"
-                 {% if payload.has_pending_reports %} hx-get="{{ url_for('reports.generated_reports', scope=payload.selected_filters.scope, report_type=payload.selected_filters.report_type, status=payload.selected_filters.status, output_format=payload.selected_filters.output_format, period=payload.selected_filters.period, search=payload.selected_filters.search, per_page=payload.selected_filters.per_page, page=payload.pagination.page) }}" hx-trigger="every {{ payload.poll_interval_seconds }}s" hx-target="this" hx-select="#generated-report-registry" hx-swap="outerHTML" hx-on::before-request="if (event.detail.elt === this && this.querySelector('.generated-report-checkbox:checked')) event.preventDefault()" {% endif %}
+                 {% if payload.has_pending_reports %} hx-get="{{ url_for('reports.generated_reports', scope=payload.selected_filters.scope, report_type=payload.selected_filters.report_type, status=payload.selected_filters.status, output_format=payload.selected_filters.output_format, period=payload.selected_filters.period, focus=payload.selected_filters.focus, search=payload.selected_filters.search, per_page=payload.selected_filters.per_page, page=payload.pagination.page) }}" hx-trigger="every {{ payload.poll_interval_seconds }}s" hx-target="this" hx-select="#generated-report-registry" hx-swap="outerHTML" hx-on::before-request="if (event.detail.elt === this && this.querySelector('.generated-report-checkbox:checked')) event.preventDefault()" {% endif %}
                  class="{{ table_ui.block_classes() }}">
             <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
                 <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
@@ -157,7 +157,7 @@
                                       method="POST"
                                       action="{{ url_for('reports.bulk_archive_generated_reports') }}">
                                     {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
-                                    <input type="hidden" name="next" value="{{ request.full_path }}">
+                                    <input type="hidden" name="next" value="{{ registry_return_url }}">
                                     <button type="submit"
                                             class="{{ table_ui.action_classes() }}"
                                             :disabled="selectedCount === 0"
@@ -341,7 +341,7 @@
                                     <td class="{{ table_ui.cell_classes(action=true) }} align-top">
                                         <div class="flex justify-end gap-2">
                                             {% if report.can_download_artifact %}
-                                                <a href="{{ url_for('reports.download_report_artifact', report_id=report.id) }}"
+                                                <a href="{{ url_for('reports.download_report_artifact', report_id=report.id, next=registry_return_url) }}"
                                                    class="{{ table_ui.action_classes() }}"
                                                    title="Download {{ report.output_format }}">
                                                     <i data-lucide="download" class="h-4 w-4" aria-hidden="true"></i>

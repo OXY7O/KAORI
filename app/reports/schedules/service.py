@@ -9,7 +9,6 @@ from datetime import (
     timedelta,
 )
 from typing import Any
-from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from flask import current_app
 from sqlalchemy import func, or_, select
@@ -24,14 +23,12 @@ from app.models.report import Report, ReportSchedule, ReportScheduleRun
 from app.models.user import User
 from app.reports.catalog import (
     ReportContractError,
-    get_report_type_label,
     get_report_type_spec,
     validate_report_contract,
 )
 from app.reports.export.constants import DEFAULT_REPORT_DOMAIN, DEFAULT_REPORT_SOURCE_KIND
 from app.reports.generate.service import (
     OUTPUT_FORMAT_OPTIONS,
-    PERIOD_OPTIONS,
     REPORT_TYPE_OPTIONS,
     SECTION_OPTIONS,
     get_form_state_from_form,
@@ -43,10 +40,32 @@ from app.reports.jobs.service import ReportJobEnqueueError, enqueue_report_gener
 from app.reports.notifications import get_report_notification_channel_options
 from app.reports.schedules.delivery import get_recommended_actions, get_scheduler_context
 from app.reports.schedules.failures import mark_schedule_dispatch_failed
+from app.reports.schedules.presentation import (
+    DAY_OF_WEEK_OPTIONS,
+    serialize_run as _serialize_run,
+    serialize_schedule as _serialize_schedule,
+    title_case_period_options as _title_case_period_options,
+)
+from app.reports.schedules.support import (
+    ensure_utc as _ensure_utc,
+    get_cluster_map as _get_cluster_map,
+    get_cluster_options as _get_cluster_options,
+    get_default_sections as _get_default_sections,
+    get_default_sections_by_report_type as _get_default_sections_by_report_type,
+    get_default_timezone as _get_default_timezone,
+    get_delivery_channel_options as _get_delivery_channel_options,
+    get_object_storage_system_options as _get_object_storage_system_options,
+    get_schedule_context_map as _get_schedule_context_map,
+    get_section_options_by_report_type as _get_section_options_by_report_type_impl,
+    get_timezone as _get_timezone,
+    is_valid_run_time as _is_valid_run_time,
+    is_valid_timezone as _is_valid_timezone,
+    parse_optional_int as _parse_optional_int,
+    parse_run_time as _parse_run_time,
+)
 from app.reports.scope import (
     KUBERNETES_CLUSTER_ASSET_TYPE,
     OBJECT_STORAGE_SYSTEM_ASSET_TYPE,
-    resolve_report_scope,
 )
 from app.reports.storage.service import get_configured_storage_backend_name, get_report_storage_backend_status
 
@@ -68,17 +87,6 @@ CADENCE_OPTIONS: list[dict[str, str]] = [
     },
 ]
 
-DAY_OF_WEEK_OPTIONS: list[dict[str, Any]] = [
-    {'value': 0, 'label': 'Monday'},
-    {'value': 1, 'label': 'Tuesday'},
-    {'value': 2, 'label': 'Wednesday'},
-    {'value': 3, 'label': 'Thursday'},
-    {'value': 4, 'label': 'Friday'},
-    {'value': 5, 'label': 'Saturday'},
-    {'value': 6, 'label': 'Sunday'},
-]
-
-DEFAULT_TIMEZONE = 'Asia/Jakarta'
 
 RUN_PERIOD_OPTIONS: list[dict[str, str]] = [
     {'value': '24h', 'label': 'Last 24 Hours'},
@@ -178,7 +186,7 @@ def get_report_schedules_payload(
         'period_options': _title_case_period_options(),
         'output_format_options': OUTPUT_FORMAT_OPTIONS,
         'section_options': SECTION_OPTIONS,
-        'section_options_by_report_type': _get_section_options_by_report_type(),
+        'section_options_by_report_type': _get_section_options_by_report_type_impl(SECTION_OPTIONS),
         'default_sections_by_report_type': _get_default_sections_by_report_type(),
         'report_family_by_report_type': report_family_by_report_type,
         'allowed_formats_by_report_type': allowed_formats_by_report_type,
@@ -293,7 +301,9 @@ def get_form_state_from_schedule_form(
             'timezone': form.get('timezone', _get_default_timezone()).strip() or _get_default_timezone(),
             'is_enabled': '1' if form.get('is_enabled') in ['1', 'true', 'on', 'yes'] else '0',
             'notification_channel_ids': [
-                int(value) for value in form.getlist('notification_channel_ids') if str(value).isdigit() and int(value) > 0
+                int(value)
+                for value in form.getlist('notification_channel_ids')
+                if str(value).isdigit() and int(value) > 0
             ],
         }
     )
@@ -910,30 +920,6 @@ def _get_schedule_filter_options(
     }
 
 
-def _title_case_period_options() -> list[dict[str, str]]:
-    return [{**item, 'label': str(item['label']).title()} for item in PERIOD_OPTIONS]
-
-
-def _format_period_label(value: str | None) -> str:
-    normalized = str(value or '').strip()
-    for item in PERIOD_OPTIONS:
-        if item['value'] == normalized:
-            return str(item['label']).title()
-    return normalized.replace('_', ' ').title() or 'Not Available'
-
-
-def _format_cadence_detail(schedule: ReportSchedule) -> str:
-    if schedule.cadence == 'weekly':
-        day = next(
-            (item['label'] for item in DAY_OF_WEEK_OPTIONS if item['value'] == schedule.day_of_week),
-            'Monday',
-        )
-        return f'{day} at {schedule.run_time}'
-    if schedule.cadence == 'monthly':
-        return f'Day {schedule.day_of_month or 1} at {schedule.run_time}'
-    return f'Every Day at {schedule.run_time}'
-
-
 def _get_schedule_rows() -> list[dict[str, Any]]:
     schedules = db.session.scalars(
         select(ReportSchedule).order_by(ReportSchedule.created_at.desc(), ReportSchedule.id.desc())
@@ -946,7 +932,6 @@ def _get_schedule_rows() -> list[dict[str, Any]]:
 
     return [_serialize_schedule(item, cluster_map, delivery_label_map) for item in schedules]
 
-
 def _get_recent_runs(limit: int = 8) -> list[dict[str, Any]]:
     runs = db.session.scalars(
         select(ReportScheduleRun)
@@ -956,245 +941,6 @@ def _get_recent_runs(limit: int = 8) -> list[dict[str, Any]]:
     schedule_context_map = _get_schedule_context_map([item.schedule_id for item in runs if item.schedule_id])
 
     return [_serialize_run(item, schedule_context_map) for item in runs]
-
-
-def _serialize_schedule(
-    schedule: ReportSchedule,
-    cluster_map: dict[str, str],
-    delivery_label_map: dict[int, str],
-) -> dict[str, Any]:
-    report_spec = next(
-        (item for item in REPORT_TYPE_OPTIONS if item['value'] == schedule.report_type),
-        REPORT_TYPE_OPTIONS[0],
-    )
-    status_tone = 'normal' if schedule.is_enabled else 'unknown'
-    status_icon = 'play-circle' if schedule.is_enabled else 'pause-circle'
-    delivery_channels = schedule.notification_channel_ids_as_list()
-    delivery_labels = [delivery_label_map.get(item, f'Channel {item}') for item in delivery_channels]
-    scope = resolve_report_scope(schedule)
-    scope_label = (
-        'Object Storage System'
-        if schedule.scope_asset_type == OBJECT_STORAGE_SYSTEM_ASSET_TYPE
-        else 'Kubernetes Cluster'
-    )
-    return {
-        'id': schedule.id,
-        'name': schedule.name,
-        'description': schedule.description or 'No description provided.',
-        'report_type_value': schedule.report_type,
-        'report_type': get_report_type_label(schedule.report_type),
-        'report_icon': str(report_spec.get('icon') or 'file-text'),
-        'report_family': str(report_spec.get('family') or 'analytics'),
-        'cluster_id': schedule.cluster_id or '',
-        'cluster': cluster_map.get(schedule.cluster_id or '', 'Not Applicable'),
-        'object_storage_system_id': schedule.scope_asset_id if schedule.scope_asset_type == OBJECT_STORAGE_SYSTEM_ASSET_TYPE else '',
-        'scope_asset_type': schedule.scope_asset_type or KUBERNETES_CLUSTER_ASSET_TYPE,
-        'scope': scope.label if scope is not None else (schedule.scope_asset_label_snapshot or 'Asset Selection Required'),
-        'scope_label': scope_label,
-        'namespace': schedule.namespace or ('Not Applicable' if schedule.scope_asset_type == OBJECT_STORAGE_SYSTEM_ASSET_TYPE else 'All Namespaces'),
-        'period': _format_period_label(schedule.period),
-        'period_value': schedule.period,
-        'output_format': str(schedule.output_format or '').upper(),
-        'sections': schedule.sections_as_list(),
-        'sections_count': len(schedule.sections_as_list()),
-        'notification_channel_ids': delivery_channels,
-        'delivery_labels': delivery_labels,
-        'delivery_label': ', '.join(delivery_labels) if delivery_labels else 'No Notification',
-        'cadence': schedule.cadence.title(),
-        'cadence_value': schedule.cadence,
-        'cadence_detail': _format_cadence_detail(schedule),
-        'run_time': schedule.run_time,
-        'day_of_week': schedule.day_of_week,
-        'day_of_month': schedule.day_of_month,
-        'timezone': schedule.timezone,
-        'is_enabled': bool(schedule.is_enabled),
-        'status_meta': {
-            'label': 'Active' if schedule.is_enabled else 'Paused',
-            'tone': status_tone,
-            'icon': status_icon,
-        },
-        'next_run_at': _format_datetime(schedule.next_run_at, schedule.timezone),
-        'last_run_at': _format_datetime(schedule.last_run_at, schedule.timezone),
-        'last_status': schedule.last_status or 'never_run',
-        'last_status_label': (schedule.last_status or 'Never Run').replace('_', ' ').title(),
-        'last_report_id': schedule.last_report_id,
-        'created_by': schedule.created_by_display_name_snapshot or schedule.created_by_username_snapshot or 'System',
-        'edit_state': _schedule_edit_state(schedule),
-    }
-
-
-def _serialize_run(
-    run: ReportScheduleRun,
-    schedule_context_map: dict[int, dict[str, str]],
-) -> dict[str, Any]:
-    delivery_result = run.delivery_result or {}
-    requested = int(delivery_result.get('requested', 0) or 0)
-    successful = int(delivery_result.get('successful', 0) or 0)
-    failed = int(delivery_result.get('failed', 0) or 0)
-    skipped = int(delivery_result.get('skipped', 0) or 0)
-    if requested == 0:
-        delivery_label = 'No Delivery'
-        delivery_tone = 'unknown'
-    elif failed:
-        delivery_label = 'Delivery Failed' if successful == 0 else 'Partial Delivery'
-        delivery_tone = 'critical' if successful == 0 else 'warning'
-    elif successful:
-        delivery_label = 'Delivered'
-        delivery_tone = 'normal'
-    else:
-        delivery_label = 'Delivery Pending'
-        delivery_tone = 'pending'
-
-    duration = _format_run_duration(run.started_at, run.finished_at)
-    schedule_context = schedule_context_map.get(
-        run.schedule_id or 0,
-        {'name': 'Deleted Schedule', 'icon': 'calendar-clock'},
-    )
-    return {
-        'id': run.id,
-        'schedule_id': run.schedule_id,
-        'schedule_name': schedule_context['name'],
-        'schedule_icon': schedule_context['icon'],
-        'report_id': run.report_id,
-        'job_execution_id': run.job_execution_id,
-        'status': run.status,
-        'status_label': run.status.replace('_', ' ').title(),
-        'status_tone': 'normal' if run.status == 'success' else 'critical' if run.status == 'failed' else 'pending',
-        'result_summary': _get_run_result_summary(run),
-        'trigger_source': run.trigger_source.replace('_', ' ').title(),
-        'started_at': _format_datetime(run.started_at, _get_default_timezone()),
-        'finished_at': _format_datetime(run.finished_at, _get_default_timezone()),
-        'duration': duration,
-        'error_message': run.error_message,
-        'delivery_result': delivery_result,
-        'delivery_label': delivery_label,
-        'delivery_tone': delivery_tone,
-        'delivery_summary': f'{successful} Sent · {failed} Failed · {skipped} Skipped',
-    }
-
-
-def _get_run_result_summary(run: ReportScheduleRun) -> str:
-    status = str(run.status or '').strip().lower()
-    error_message = str(run.error_message or '').strip().casefold()
-
-    if status == 'failed':
-        if 'storage' in error_message:
-            return 'Storage unavailable · View details'
-        return 'Execution failed · View details'
-    if status == 'success':
-        return 'Execution completed successfully'
-    if status == 'queued':
-        return 'Waiting for worker execution'
-    if status in {'started', 'running'}:
-        return 'Execution in progress'
-    return 'Execution state recorded'
-
-
-def _format_run_duration(started_at: datetime | None, finished_at: datetime | None) -> str:
-    if started_at is None:
-        return 'Not Available'
-    if finished_at is None:
-        return 'In Progress'
-    seconds = max(int((_ensure_utc(finished_at) - _ensure_utc(started_at)).total_seconds()), 0)
-    if seconds < 60:
-        return f'{seconds}s'
-    minutes, remaining_seconds = divmod(seconds, 60)
-    if minutes < 60:
-        return f'{minutes}m {remaining_seconds}s' if remaining_seconds else f'{minutes}m'
-    hours, remaining_minutes = divmod(minutes, 60)
-    return f'{hours}h {remaining_minutes}m' if remaining_minutes else f'{hours}h'
-
-
-def _schedule_edit_state(schedule: ReportSchedule) -> dict[str, Any]:
-    return {
-        'name': schedule.name,
-        'description': schedule.description or '',
-        'cluster_id': schedule.cluster_id or '',
-        'namespace': schedule.namespace or '',
-        'object_storage_system_id': schedule.scope_asset_id if schedule.scope_asset_type == OBJECT_STORAGE_SYSTEM_ASSET_TYPE else '',
-        'report_type': schedule.report_type,
-        'period': schedule.period,
-        'output_format': schedule.output_format,
-        'sections': schedule.sections_as_list(),
-        'cadence': schedule.cadence,
-        'run_time': schedule.run_time,
-        'day_of_week': str(schedule.day_of_week if schedule.day_of_week is not None else 0),
-        'day_of_month': str(schedule.day_of_month if schedule.day_of_month is not None else 1),
-        'timezone': schedule.timezone,
-        'is_enabled': '1' if schedule.is_enabled else '0',
-        'notification_channel_ids': schedule.notification_channel_ids_as_list(),
-    }
-
-
-def _get_delivery_channel_options() -> list[dict[str, Any]]:
-    by_channel: dict[int, dict[str, Any]] = {}
-    for domain in ('kubernetes', 'object_storage'):
-        for option in get_report_notification_channel_options(domain=domain):
-            channel_id = int(option['channel_id'])
-            existing = by_channel.setdefault(
-                channel_id,
-                {**option, 'domains': [], 'selectable': False},
-            )
-            if bool(option.get('supports_domain')):
-                existing['domains'].append(domain)
-            existing['selectable'] = bool(existing['selectable'] or option.get('selectable'))
-    return list(by_channel.values())
-
-
-def _get_object_storage_system_options() -> list[dict[str, str]]:
-    systems = db.session.scalars(select(ObjectStorageSystem).order_by(ObjectStorageSystem.name.asc())).all()
-    return [
-        {
-            'value': item.id,
-            'label': f"{item.name} · {item.environment or 'Unspecified Environment'}",
-        }
-        for item in systems
-    ]
-
-
-def _get_cluster_options() -> list[dict[str, str]]:
-    clusters = db.session.scalars(select(Cluster).order_by(Cluster.name.asc())).all()
-    return [{'value': item.id, 'label': item.name} for item in clusters]
-
-
-def _get_cluster_map(cluster_ids: list[str]) -> dict[str, str]:
-    if not cluster_ids:
-        return {}
-    clusters = db.session.scalars(select(Cluster).where(Cluster.id.in_(cluster_ids))).all()
-    return {item.id: item.name for item in clusters}
-
-
-def _get_schedule_context_map(schedule_ids: list[int]) -> dict[int, dict[str, str]]:
-    if not schedule_ids:
-        return {}
-    schedules = db.session.scalars(select(ReportSchedule).where(ReportSchedule.id.in_(schedule_ids))).all()
-    report_icons = {str(item['value']): str(item.get('icon') or 'calendar-clock') for item in REPORT_TYPE_OPTIONS}
-    return {
-        item.id: {
-            'name': item.name,
-            'icon': report_icons.get(str(item.report_type), 'calendar-clock'),
-        }
-        for item in schedules
-    }
-
-
-def _get_default_sections(report_type: str) -> list[str]:
-    for item in REPORT_TYPE_OPTIONS:
-        if item['value'] == report_type:
-            return list(item['default_sections'])
-    return list(REPORT_TYPE_OPTIONS[0]['default_sections'])
-
-
-def _get_section_options_by_report_type() -> dict[str, list[dict[str, str]]]:
-    section_map = {item['value']: item for item in SECTION_OPTIONS}
-    return {
-        item['value']: [section_map[section] for section in item['default_sections'] if section in section_map]
-        for item in REPORT_TYPE_OPTIONS
-    }
-
-
-def _get_default_sections_by_report_type() -> dict[str, list[str]]:
-    return {item['value']: list(item['default_sections']) for item in REPORT_TYPE_OPTIONS}
 
 
 def _get_storage_context() -> dict[str, Any]:
@@ -1223,58 +969,3 @@ def _get_storage_context() -> dict[str, Any]:
             'checked_at': None,
             'source': 'fallback',
         }
-
-
-def _get_default_timezone() -> str:
-    return str(current_app.config.get('REPORT_SCHEDULE_TIMEZONE', DEFAULT_TIMEZONE) or DEFAULT_TIMEZONE)
-
-
-def _is_valid_run_time(value: str) -> bool:
-    try:
-        _parse_run_time(value)
-        return True
-    except ValueError:
-        return False
-
-
-def _parse_run_time(value: str) -> tuple[int, int]:
-    hour_raw, minute_raw = value.split(':', maxsplit=1)
-    hour = int(hour_raw)
-    minute = int(minute_raw)
-    if hour < 0 or hour > 23 or minute < 0 or minute > 59:
-        raise ValueError('Invalid run time')
-    return hour, minute
-
-
-def _parse_optional_int(value: Any) -> int | None:
-    if value in [None, '']:
-        return None
-    try:
-        return int(value)
-    except (TypeError, ValueError):
-        return None
-
-
-def _is_valid_timezone(value: str) -> bool:
-    try:
-        ZoneInfo(value)
-        return True
-    except ZoneInfoNotFoundError:
-        return False
-
-
-def _get_timezone(value: str) -> ZoneInfo:
-    try:
-        return ZoneInfo(value)
-    except ZoneInfoNotFoundError:
-        return ZoneInfo(DEFAULT_TIMEZONE)
-
-
-def _ensure_utc(value: datetime) -> datetime:
-    return value.replace(tzinfo=UTC) if value.tzinfo is None else value.astimezone(UTC)
-
-
-def _format_datetime(value: datetime | None, timezone: str) -> str:
-    if value is None:
-        return 'Never'
-    return value.astimezone(_get_timezone(timezone)).strftime('%Y-%m-%d %H:%M %Z')

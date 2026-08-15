@@ -62,6 +62,7 @@ def test_generated_registry_polling_is_filter_scoped_and_preserves_operator_sele
     assert 'hx-trigger="every {{ payload.poll_interval_seconds }}s"' in page
     assert 'event.detail.elt === this' in page
     assert "this.querySelector('.generated-report-checkbox:checked')" in page
+    assert 'focus=payload.selected_filters.focus' in page
     assert 'event.preventDefault()' in page
 
 
@@ -144,7 +145,7 @@ def test_generated_detail_preserves_filtered_registry_return_context() -> None:
     assert "payload['registry_return_url'] = registry_return_url" in routes
 
     assert "registry_return_url = request.full_path.rstrip('?')" in page
-    assert "report_id=report.id, next=registry_return_url" in page
+    assert 'report_id=report.id, next=registry_return_url' in page
     assert 'else payload.registry_return_url' in detail
     assert 'next=payload.registry_return_url' in detail
     assert '<a href="{{ payload.registry_return_url }}"' in detail
@@ -158,6 +159,7 @@ def test_generated_registry_bulk_archive_selection_has_operator_guardrails() -> 
     assert 'syncSelection(root)' in page
     assert ':disabled="selectedCount === 0"' in page
     assert 'x-text="selectedCount"' in page
+    assert 'name="next" value="{{ registry_return_url }}"' in page
     assert ':disabled="selectableCount === 0"' in page
     assert '@change="syncSelection($root)"' in page
     assert '$el.indeterminate = selectedCount > 0 && selectedCount < selectableCount' in page
@@ -182,3 +184,23 @@ def test_generated_service_removed_unrendered_legacy_presentation_debt() -> None
 
     assert 'app/reports/generated/service.py::get_report_detail_recommended_actions' not in baseline
     assert '"app/reports/generated/service.py": 1688' in baseline
+
+
+def test_generated_artifact_actions_preserve_registry_context_end_to_end() -> None:
+    routes = read('app/reports/generated/routes.py')
+    export_routes = read('app/reports/export/routes.py')
+    page = read('app/templates/reports/generated/index.html')
+    detail = read('app/templates/reports/generated/detail.html')
+
+    assert 'action_url=registry_return_url' in routes
+    assert routes.count('action_url=detail_url') >= 2
+    assert 'return redirect(registry_return_url)' in routes
+    assert routes.count('return redirect(detail_url)') >= 2
+    assert "safe_next_url(value)" in export_routes
+    assert "request.form.get('next')" in export_routes
+    assert "request.args.get('next')" in export_routes
+    assert "detail_url = _generated_detail_url(report_id, registry_return_url)" in export_routes
+
+    assert "report_id=report.id, next=registry_return_url" in page
+    assert "report_id=payload.report.id, next=payload.registry_return_url" in detail
+    assert detail.count('name="next" value="{{ payload.registry_return_url }}"') >= 3

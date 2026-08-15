@@ -70,7 +70,7 @@ def test_generate_uses_dynamic_infrastructure_asset_scope_for_kubernetes_and_obj
 def test_object_storage_inventory_export_reads_committed_snapshot_and_supports_xlsx_csv() -> None:
     payload = read('app/reports/export/payloads/object_storage_inventory.py')
     common = read('app/reports/export/inventory_common.py')
-    xlsx = read('app/reports/export/xlsx/standard.py')
+    xlsx = read('app/reports/export/xlsx/profiles_infrastructure.py')
 
     assert 'ObjectStorageSystem.query.options(selectinload(ObjectStorageSystem.buckets))' in payload
     assert 'provider API calls' in payload
@@ -78,8 +78,8 @@ def test_object_storage_inventory_export_reads_committed_snapshot_and_supports_x
     assert "report.report_type == 'object_storage_inventory'" in common
     assert "'object_storage_inventory': InventoryWorkbookProfile(" in xlsx
     assert "row_source='inventory_assets'" in xlsx
-    assert "column('size_bytes', 'Usage Bytes'" in xlsx
-    assert "column('quota_bytes', 'Quota Bytes'" in xlsx
+    assert "'size_bytes'" in xlsx and "'Usage Bytes'" in xlsx
+    assert "'quota_bytes'" in xlsx and "'Quota Bytes'" in xlsx
 
 
 def test_object_storage_analysis_combines_governed_evidence_for_pdf_and_csv() -> None:

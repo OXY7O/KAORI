@@ -30,6 +30,71 @@ def _source_status(context: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _mapping(value: Any) -> dict[str, Any]:
+    return value if isinstance(value, dict) else {}
+
+
+def _alert_rows(alerts: dict[str, Any]) -> list[Any]:
+    alert_table = _mapping(alerts.get('alert_table'))
+    rows = list(alert_table.get('rows') or [])
+    if rows:
+        return rows
+    return list(_mapping(alerts.get('alert_source')).get('rows') or [])
+
+
+def _capacity_usage(metrics: dict[str, Any]) -> dict[str, Any]:
+    existing = metrics.get('capacity_usage')
+    if isinstance(existing, dict):
+        return existing
+    return {
+        'capacity_total': metrics.get('capacity_total_display'),
+        'usage_total': metrics.get('usage_total_display'),
+        'capacity_free': metrics.get('capacity_free_display'),
+        'utilization': metrics.get('utilization_display'),
+        'headroom': metrics.get('headroom_percent_display'),
+        'capacity_posture': metrics.get('capacity_posture'),
+    }
+
+
+def _performance_payload(performance_metrics: dict[str, Any]) -> dict[str, Any]:
+    existing = performance_metrics.get('performance')
+    if isinstance(existing, dict) and existing:
+        return existing
+    return {
+        'request_rate': performance_metrics.get('request_rate_display', 'N/A'),
+        'error_ratio': performance_metrics.get('error_ratio_display', 'N/A'),
+        'waiting': performance_metrics.get('waiting_display', 'N/A'),
+        'offline_nodes': performance_metrics.get('offline_nodes_display', 'N/A'),
+        'traffic': performance_metrics.get('traffic_total_bps_display', 'N/A'),
+    }
+
+
+def _risk_findings(metrics: dict[str, Any], alert_rows: list[Any]) -> list[dict[str, Any]]:
+    return [
+        *[item for item in (metrics.get('signals') or []) if isinstance(item, dict)],
+        *[item for item in alert_rows if isinstance(item, dict)],
+    ]
+
+
+def _evidence_boundary(
+    system: ObjectStorageSystem,
+    overview: dict[str, Any],
+    alerts: dict[str, Any],
+) -> dict[str, Any]:
+    metrics_source = _mapping(overview.get('metrics_source'))
+    metrics_readiness = _mapping(overview.get('metrics_readiness'))
+    forecast_materialization = _mapping(overview.get('forecast_materialization'))
+    alert_source = _mapping(alerts.get('alert_source'))
+    return {
+        'inventory_source': 'Committed Object Storage inventory snapshot',
+        'metrics_source': str(metrics_source.get('provider_label') or 'Metrics Source'),
+        'inventory_cutoff': system.inventory_observed_at,
+        'metrics_contract': str(metrics_readiness.get('label') or 'Unknown'),
+        'forecast_state': str(forecast_materialization.get('label') or 'Unknown'),
+        'alert_source': str(alert_source.get('resolved_label') or 'Unavailable'),
+    }
+
+
 def get_report_object_storage_analysis_payload(report: Report) -> dict[str, Any]:
     """Collect one governed Object Storage analytics snapshot for PDF/CSV rendering."""
 
@@ -51,43 +116,12 @@ def get_report_object_storage_analysis_payload(report: Report) -> dict[str, Any]
     performance = get_object_storage_analytics_context('performance', args)
     alerts = get_object_storage_analytics_context('alerts', args)
 
-    metrics = overview.get('metrics') if isinstance(overview.get('metrics'), dict) else {}
-    performance_metrics = (
-        performance.get('metrics') if isinstance(performance.get('metrics'), dict) else {}
-    )
-    alert_rows = []
-    alert_table = alerts.get('alert_table')
-    if isinstance(alert_table, dict):
-        alert_rows = list(alert_table.get('rows') or [])
-    if not alert_rows:
-        alert_source = alerts.get('alert_source')
-        if isinstance(alert_source, dict):
-            alert_rows = list(alert_source.get('rows') or [])
-
+    metrics = _mapping(overview.get('metrics'))
+    performance_metrics = _mapping(performance.get('metrics'))
+    alert_rows = _alert_rows(alerts)
     bucket_rows = list(metrics.get('bucket_rows') or [])
-    top_consumers = bucket_rows[:10]
-    capacity_usage = metrics.get('capacity_usage') if isinstance(metrics.get('capacity_usage'), dict) else {
-        'capacity_total': metrics.get('capacity_total_display'),
-        'usage_total': metrics.get('usage_total_display'),
-        'capacity_free': metrics.get('capacity_free_display'),
-        'utilization': metrics.get('utilization_display'),
-        'headroom': metrics.get('headroom_percent_display'),
-        'capacity_posture': metrics.get('capacity_posture'),
-    }
-
-    risk_findings = [
-        *[item for item in (metrics.get('signals') or []) if isinstance(item, dict)],
-        *[item for item in alert_rows if isinstance(item, dict)],
-    ]
-
-    evidence_boundary = {
-        'inventory_source': 'Committed Object Storage inventory snapshot',
-        'metrics_source': str((overview.get('metrics_source') or {}).get('provider_label') or 'Metrics Source'),
-        'inventory_cutoff': system.inventory_observed_at,
-        'metrics_contract': str((overview.get('metrics_readiness') or {}).get('label') or 'Unknown'),
-        'forecast_state': str((overview.get('forecast_materialization') or {}).get('label') or 'Unknown'),
-        'alert_source': str((alerts.get('alert_source') or {}).get('resolved_label') or 'Unavailable'),
-    }
+    evidence_boundary = _evidence_boundary(system, overview, alerts)
+    now = datetime.now(UTC)
 
     return {
         'selected_system': {
@@ -110,21 +144,15 @@ def get_report_object_storage_analysis_payload(report: Report) -> dict[str, Any]
             'buckets': metrics.get('bucket_count_display', 'N/A'),
             'objects': metrics.get('object_count_display', 'N/A'),
         },
-        'capacity_usage': capacity_usage,
+        'capacity_usage': _capacity_usage(metrics),
         'bucket_rows': bucket_rows,
         'bucket_analysis': metrics.get('bucket_analysis') or {},
-        'performance': performance_metrics.get('performance') or {
-            'request_rate': performance_metrics.get('request_rate_display', 'N/A'),
-            'error_ratio': performance_metrics.get('error_ratio_display', 'N/A'),
-            'waiting': performance_metrics.get('waiting_display', 'N/A'),
-            'offline_nodes': performance_metrics.get('offline_nodes_display', 'N/A'),
-            'traffic': performance_metrics.get('traffic_total_bps_display', 'N/A'),
-        },
+        'performance': _performance_payload(performance_metrics),
         'forecast_display': metrics.get('forecast_display') or {},
         'forecast_materialization': overview.get('forecast_materialization') or {},
-        'top_consumers': top_consumers,
+        'top_consumers': bucket_rows[:10],
         'signals': metrics.get('signals') or [],
-        'risk_findings': risk_findings,
+        'risk_findings': _risk_findings(metrics, alert_rows),
         'signal_posture': metrics.get('signal_posture') or {},
         'operational_posture': metrics.get('operational_posture') or {},
         'alerts': alert_rows,
@@ -133,6 +161,6 @@ def get_report_object_storage_analysis_payload(report: Report) -> dict[str, Any]
         'metrics_source': overview.get('metrics_source') or {},
         'metrics_readiness': overview.get('metrics_readiness') or {},
         'evidence_boundary': evidence_boundary,
-        'data_cutoff': system.inventory_observed_at or datetime.now(UTC),
-        'generated_at': datetime.now(UTC),
+        'data_cutoff': system.inventory_observed_at or now,
+        'generated_at': now,
     }

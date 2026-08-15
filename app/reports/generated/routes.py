@@ -100,6 +100,7 @@ def generated_report_detail(report_id: int) -> ResponseReturnValue:
 
 @permission_required('reports.manage_storage')
 def bulk_archive_generated_reports() -> ResponseReturnValue:
+    registry_return_url = _generated_registry_return_url(request.form.get('next'))
     report_ids = [int(report_id) for report_id in request.form.getlist('report_ids') if report_id.isdigit()]
     success, message = bulk_archive_report_records(report_ids)
     _record_archive_feedback(
@@ -107,47 +108,48 @@ def bulk_archive_generated_reports() -> ResponseReturnValue:
         success=success,
         title='Generated reports archived' if success else 'Generated reports archive failed',
         message=message,
-        action_url=url_for('reports.generated_reports'),
+        action_url=registry_return_url,
         metadata={'requested_report_count': len(report_ids)},
     )
 
-    next_url = request.form.get('next', '')
-    if next_url.startswith('/reports/generated'):
-        return redirect(next_url)
-    return redirect(url_for('reports.generated_reports'))
+    return redirect(registry_return_url)
 
 
 @permission_required('reports.manage_storage')
 def archive_generated_report(report_id: int) -> ResponseReturnValue:
+    registry_return_url = _generated_registry_return_url(request.form.get('next'))
+    detail_url = url_for(
+        'reports.generated_report_detail',
+        report_id=report_id,
+        next=registry_return_url,
+    )
     success, message = archive_report_record(report_id)
     _record_archive_feedback(
         event_type='generated_report_archive',
         success=success,
         title='Generated report archived' if success else 'Generated report archive failed',
         message=message,
-        action_url=url_for('reports.generated_report_detail', report_id=report_id),
+        action_url=detail_url,
         metadata={'report_id': report_id},
     )
-
-    next_url = request.form.get('next', '')
-    if next_url.startswith('/reports/generated'):
-        return redirect(next_url)
-    return redirect(url_for('reports.generated_report_detail', report_id=report_id))
+    return redirect(detail_url)
 
 
 @permission_required('reports.manage_storage')
 def restore_generated_report(report_id: int) -> ResponseReturnValue:
+    registry_return_url = _generated_registry_return_url(request.form.get('next'))
+    detail_url = url_for(
+        'reports.generated_report_detail',
+        report_id=report_id,
+        next=registry_return_url,
+    )
     success, message = restore_archived_report_record(report_id)
     _record_archive_feedback(
         event_type='generated_report_restore',
         success=success,
         title='Generated report restored' if success else 'Generated report restore failed',
         message=message,
-        action_url=url_for('reports.generated_report_detail', report_id=report_id),
+        action_url=detail_url,
         metadata={'report_id': report_id},
     )
-
-    next_url = request.form.get('next', '')
-    if next_url.startswith('/reports/generated'):
-        return redirect(next_url)
-    return redirect(url_for('reports.generated_report_detail', report_id=report_id))
+    return redirect(detail_url)

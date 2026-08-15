@@ -10,6 +10,7 @@ from flask import (
 from flask.typing import ResponseReturnValue
 from flask_login import current_user
 
+from app.auth.session import safe_next_url
 from app.extensions.db import db
 from app.models.report import Report
 from app.notifications.service import queue_transient_feedback, record_operational_activity
@@ -21,13 +22,29 @@ from app.reports.jobs.service import ReportJobEnqueueError, enqueue_report_gener
 logger = logging.getLogger(__name__)
 
 
+def _generated_registry_return_url(value: object) -> str:
+    candidate = safe_next_url(value)
+    if candidate == '/reports/generated' or (candidate and candidate.startswith('/reports/generated?')):
+        return candidate
+    return url_for('reports.generated_reports')
+
+
+def _generated_detail_url(report_id: int, registry_return_url: str) -> str:
+    return url_for(
+        'reports.generated_report_detail',
+        report_id=report_id,
+        next=registry_return_url,
+    )
+
+
 @permission_required('reports.generate')
 def generate_report_output(report_id: int) -> ResponseReturnValue:
     report = db.session.get(Report, report_id)
     if report is None:
         abort(404)
 
-    detail_url = url_for('reports.generated_report_detail', report_id=report_id)
+    registry_return_url = _generated_registry_return_url(request.form.get('next'))
+    detail_url = _generated_detail_url(report_id, registry_return_url)
     artifact_format = get_report_artifact_format(report.output_format)
     if report.status not in {'requested', 'failed', 'ready'}:
         queue_transient_feedback(
@@ -90,9 +107,6 @@ def generate_report_output(report_id: int) -> ResponseReturnValue:
         queue_feedback=True,
     )
 
-    next_url = request.form.get('next', '')
-    if next_url.startswith('/reports/generated'):
-        return redirect(next_url)
     return redirect(detail_url)
 
 
@@ -105,7 +119,8 @@ def download_report_artifact(report_id: int) -> ResponseReturnValue:
     success, message, file_path = get_download_file_path(report_id)
 
     if not success or file_path is None:
-        detail_url = url_for('reports.generated_report_detail', report_id=report_id)
+        registry_return_url = _generated_registry_return_url(request.args.get('next'))
+        detail_url = _generated_detail_url(report_id, registry_return_url)
         queue_transient_feedback(
             status='error',
             title='Report Download Unavailable',

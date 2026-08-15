@@ -63,7 +63,9 @@ def resolve_report_scope(record: Any) -> ReportScope | None:
     if asset_type == KUBERNETES_CLUSTER_ASSET_TYPE:
         if not asset_id:
             return None
-        label = snapshot or _related_asset_label(record, 'cluster') or _lookup_asset_label(Cluster, asset_id) or asset_id
+        label = (
+            snapshot or _related_asset_label(record, 'cluster') or _lookup_asset_label(Cluster, asset_id) or asset_id
+        )
         return ReportScope(
             asset_type=asset_type,
             asset_id=asset_id,

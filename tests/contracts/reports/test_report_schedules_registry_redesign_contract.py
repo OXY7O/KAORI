@@ -6,6 +6,7 @@ ROOT = Path(__file__).resolve().parents[3]
 TEMPLATE = ROOT / 'app/templates/reports/schedules/index.html'
 SERVICE = ROOT / 'app/reports/schedules/service.py'
 ROUTES = ROOT / 'app/reports/schedules/routes.py'
+PRESENTATION = ROOT / 'app/reports/schedules/presentation.py'
 
 
 def read(path: Path) -> str:
@@ -115,6 +116,7 @@ def test_schedule_tables_and_actions_keep_kaori_contracts() -> None:
 def test_recent_schedule_runs_are_a_full_server_backed_lifecycle_registry() -> None:
     template = read(TEMPLATE)
     service = read(SERVICE)
+    presentation = read(PRESENTATION)
 
     for label in [
         'Recent Schedule Runs',
@@ -142,7 +144,7 @@ def test_recent_schedule_runs_are_a_full_server_backed_lifecycle_registry() -> N
     assert 'def _get_run_registry(' in service
     assert 'def _get_run_selected_filters(' in service
     assert 'def _get_run_filter_options(' in service
-    assert 'def _format_run_duration(' in service
+    assert 'def format_run_duration(' in presentation
     assert '.limit(limit)' in service  # compact summary sampling remains separate from registry paging
     assert 'payload.recent_runs %}' not in template
 
@@ -150,15 +152,19 @@ def test_recent_schedule_runs_are_a_full_server_backed_lifecycle_registry() -> N
 def test_schedule_run_rows_use_domain_icons_and_keep_verbose_errors_in_detail_only() -> None:
     template = read(TEMPLATE)
     service = read(SERVICE)
+    presentation = read(PRESENTATION)
 
     assert 'data-lucide="{{ run.schedule_icon }}"' in template
     assert '{{ run.result_summary }}' in template
     assert 'title="{{ run.error_message }}"' not in template
-    assert 'def _get_run_result_summary(' in service
-    assert "'Storage unavailable · View details'" in service
-    assert "'Execution failed · View details'" in service
-    assert "'result_summary': _get_run_result_summary(run)" in service
-    assert "'schedule_icon': schedule_context['icon']" in service
+    assert 'def get_run_result_summary(' in presentation
+    assert "'Storage unavailable · View details'" in presentation
+    assert "'Execution failed · View details'" in presentation
+    assert "'result_summary': get_run_result_summary(run)" in presentation
+    assert "'schedule_icon': schedule_context['icon']" in presentation
+    assert 'serialize_run as _serialize_run' in service
+    assert '__serialize_run' not in service
+    assert '[_serialize_run(item, schedule_context_map) for item in runs]' in service
     # Full retained execution error stays available in the run detail modal.
     assert '{{ run.error_message }}' in template
 
