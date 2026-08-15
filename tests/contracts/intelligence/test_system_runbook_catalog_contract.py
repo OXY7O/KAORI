@@ -6,15 +6,21 @@ def read(path: str) -> str:
 
 
 def test_system_runbook_catalog_is_source_controlled_and_starts_with_validated_restart():
-    catalog = read('app/knowledge/system_catalog.py')
-    assert "runbook_key='kubernetes.deployment.restart'" in catalog
-    assert "validation_status='system_tested'" in catalog
-    assert "maturity='validated'" in catalog
-    assert "approval_policy='needs_approval'" in catalog
-    assert "'kubernetes.deployments.patch'" in catalog
-    assert "'kubernetes-v1'" in catalog
-    assert 'manual_compensating_recovery' in catalog
+    catalog = read('app/definitions/catalogs/knowledge/system_runbooks.yaml')
+    adapter = read('app/knowledge/system_catalog.py')
+
+    assert 'schema_version: 1' in catalog
+    assert 'kind: system_runbooks' in catalog
+    assert 'runbook_key: kubernetes.deployment.restart' in catalog
+    assert 'validation_status: system_tested' in catalog
+    assert 'maturity: validated' in catalog
+    assert 'approval_policy: needs_approval' in catalog
+    assert '- kubernetes.deployments.patch' in catalog
+    assert '- kubernetes-v1' in catalog
+    assert 'mode: manual_compensating_recovery' in catalog
     assert 'post-action rollout verification' in catalog.lower()
+    assert "load_definition_document('knowledge/system_runbooks.yaml'" in adapter
+    assert 'SYSTEM_RUNBOOK_CATALOG = _load_system_runbooks()' in adapter
 
 
 def test_system_catalog_activation_is_idempotent_and_fails_closed_on_contract_drift():

@@ -94,7 +94,7 @@ def test_inventory_pages_and_minio_lifecycle_read_only_committed_job_snapshot() 
     bucket_detail = read('app/templates/inventory/object_storage/buckets/partials/_bucket_detail_content.html')
     bucket_table = read('app/templates/inventory/object_storage/buckets/partials/_table_content.html')
     assert 'Object Storage Inventory Sync snapshot' in bucket_detail
-    assert 'run Object Storage Inventory Sync from Job Configuration' in bucket_table
+    assert 'Object Storage Inventory Sync from Job Execution' in bucket_table
     assert 'Full Validation snapshot' not in bucket_detail
 
 
@@ -111,7 +111,7 @@ def test_object_storage_manual_execution_has_domain_permission_and_migration() -
     role_grants = {role['key']: set(role['permissions']) for role in access['system_roles']}
     assert 'storage.sync' in role_grants['operator']
     assert 'storage.sync' in role_grants['editor']
-    assert "'storage.sync': {'inventory.view', 'jobs.execute'}" in service
+    assert "'storage.sync': {'object_storage_inventory.view', 'jobs.execute'}" in service
     assert "revision = '20260813_obj_storage_jobs'" in migration
     assert "down_revision = '20260812_obj_storage_inv'" in migration
     assert "ROLE_NAMES = ('operator', 'editor', 'admin')" in migration

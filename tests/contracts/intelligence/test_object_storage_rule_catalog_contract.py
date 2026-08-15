@@ -63,7 +63,8 @@ def test_rule_catalog_uses_generic_evidence_boundary_and_provider_coverage():
     assert "intelligence_ui.field('Provider Coverage', item.provider_label)" in details
 
     assert 'payload.summary.domains' in page
-    assert 'payload.summary.minio' in page
+    assert 'payload.summary.minio' not in page
+    assert 'Canonical Definitions' in page
     assert '3 Asset Domains' not in page
 
 

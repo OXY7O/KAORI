@@ -102,12 +102,14 @@ def test_object_storage_bucket_migration_follows_minio_provider_branch() -> None
 
 def test_object_storage_inventory_uses_dedicated_rbac_and_preserves_existing_role_access() -> None:
     defaults = read('app/rbac/defaults.py')
+    access = read('app/definitions/catalogs/rbac/access.yaml')
     service = read('app/rbac/service.py')
     migration = read('migrations/versions/20260814_object_storage_rbac_split.py')
     sidebar = read('app/templates/components/navigation/sidebar.html')
 
-    assert "'object_storage_inventory.view'" in defaults
-    assert "'storage_inventory'" in defaults
+    assert 'key: object_storage_inventory.view' in access
+    assert 'module: storage_inventory' in access
+    assert "load_definition_document('rbac/access.yaml'" in defaults
     assert "'storage.sync': {'object_storage_inventory.view', 'jobs.execute'}" in service
     assert "revision = '20260814_obj_storage_rbac'" in migration
     assert "down_revision = '20260814_report_notify_channels'" in migration

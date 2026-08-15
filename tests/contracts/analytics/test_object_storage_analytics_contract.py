@@ -295,8 +295,10 @@ def test_object_storage_analytics_uses_explicit_runtime_states_and_blocking() ->
     assert 'metrics_runtime_blocker' in runtime
     assert 'metrics_query_blocker' in runtime
     assert 'object-storage-analytics-refresh-indicator' in controls
-    assert 'Object Storage Analytics Unavailable' in blocker
-    assert 'Analysis controls and metric-derived results stay hidden' in blocker
+    assert 'components/dependencies/_blocker.html' in blocker
+    assert 'dependency_steps' in blocker
+    assert 'Object Storage' in blocker
+    assert 'Metrics' in blocker
     blocker_index = index.index('{% if dependency_blocker %}')
     else_index = index.index('{% else %}', blocker_index)
     controls_index = index.index('partials/_controls.html')

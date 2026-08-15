@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from app.definitions.loader import DefinitionError, load_definition_document
+from app.definitions.loader import load_definition_document
 from app.definitions.validation import (
     optional_str,
     require_bool,

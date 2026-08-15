@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import Any
-
 from app.definitions.loader import DefinitionError, load_definition_document
 from app.definitions.validation import require_list, require_mapping, require_str, string_tuple, unique_by
 
