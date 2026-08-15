@@ -28,3 +28,7 @@ Server-owned Content Tabs: Overview, Runbooks, Decisions, Execution, Readiness.
 ## UI outcome
 
 The previous metric strip was replaced by a standalone summary box. The old page-local underline tabs were replaced by `components/content_tabs.html` in server-owned `render_links()` mode. Overview terminology was simplified to Control Path, Safety & Readiness, and Current Activity. Long-form tabs now share one workspace surface to reduce card nesting and improve reading hierarchy.
+
+## Control Path density refinement — 2026-08-15
+
+The six-stage control path is rendered as two semantic phases with three stages per row. Phase 1 owns evidence through candidate formation; Phase 2 owns approval through verification. This preserves the immutable lifecycle order while avoiding a six-column information wall on desktop.

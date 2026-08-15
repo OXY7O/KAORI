@@ -30,6 +30,14 @@ def test_automation_control_long_form_content_is_owned_by_one_workspace_surface(
     assert 'data-automation-control-active-workspace' in page
     assert 'border-t border-outline-subtle' in components
     assert 'Control Path' in overview
+    assert 'Phase 1' in overview
+    assert 'Evidence & Decision Formation' in overview
+    assert 'Phase 2' in overview
+    assert 'Approval, Execution & Verification' in overview
+    assert 'control.pipeline[:3]' in overview
+    assert 'control.pipeline[3:]' in overview
+    assert overview.count('lg:grid-cols-3') >= 2
+    assert 'xl:grid-cols-6' not in overview
     assert 'Safety & Readiness' in overview
     assert 'Current Activity' in overview
     assert 'Decision & Execution Pipeline' not in overview
