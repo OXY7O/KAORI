@@ -8,14 +8,14 @@ Alert Intelligence is aligned to the current KAORI Intelligence workspace standa
 
 1. Hero — permanent Alert Intelligence identity and provider posture.
 2. Alert Intelligence Summary — matching alerts, critical, warning, and committed recommendation context; remains visible across tabs.
-3. Alert Intelligence Workspace — shared Operational Scope for domain, asset, and alert-source policy.
-4. Section-owned tabs:
+3. Alert Intelligence Workspace — shared Content Tabs first, followed by a compact Operational Context for domain, asset, and alert-source policy.
+4. Active section content remains inside that same workspace surface:
    - **Alert Records** — record-only filters, source/runtime/lifecycle context, records, and canonical pagination.
    - **Correlation & Guidance** — active recommendation count, catalog-rule count, contextual-only boundary, detailed recommendations, and canonical rule guidance.
    - **Notification Delivery** — shared channel posture, operational-channel count, asset-scoped delivery journal, and Integrations handoff.
    - **Evidence & Ownership** — detection, lifecycle, interpretation, and execution authority with explicit KAORI/provider ownership details.
 
-The tabs are content-density controls, not separate operational scopes. Visual geometry is owned by `components/content_tabs.html`; selected section state remains URL/server-owned and does not use the Analytics client-side controller. Domain, asset, and source policy remain shared across every tab. Search, severity, and state filters exist only on Alert Records. There is no Apply button; all filters refresh automatically. Reset Filters remains available on Alert Records.
+The tabs are the primary navigation inside the workspace, not a control that follows a filter form. Visual geometry is owned by `components/content_tabs.html`; selected section state remains URL/server-owned and does not use the Analytics client-side controller. The compact **Operational Context** sits below the tabs because domain, asset, and source policy define the shared evidence context rather than filtering one table. Search, severity, and state are separate record filters that exist only inside Alert Records. There is no Apply button; all controls refresh automatically. Reset Filters remains available inside Alert Records and preserves the selected alert-source context. Active section content is rendered inside the same outer workspace surface instead of creating a second standalone section card below it.
 
 ## Authority boundary
 
@@ -31,8 +31,10 @@ The tabs are content-density controls, not separate operational scopes. Visual g
 - Replaced the long sequential page with four section-owned tabs while keeping the global Summary visible.
 - Replaced the page-local Intelligence underline tab treatment with the canonical shared KAORI Content Tabs component used by Analytics; Alert Intelligence uses `render_links()` because section state is server/URL-owned.
 - Extended shared server-owned Content Tabs with backward-compatible `nowrap` and `hx-sync` support so long labels remain one row on the 14-inch target and concurrent HTMX scope/tab requests share one synchronization boundary.
-- Kept shared domain/asset/source controls outside tab-specific semantics so switching sections never changes operational scope.
-- Kept Alert Records filters auto-refreshing and removed any Apply action; Reset Filters remains.
+- Moved canonical Content Tabs directly below the workspace header so section choice is visually primary.
+- Renamed the global controls to **Operational Context** and compacted them below the tabs so they read as shared evidence context rather than a filter panel.
+- Moved Alert Record search/severity/state controls into the Alert Records section itself; Reset Filters now preserves domain, asset, and alert-source context.
+- Rendered the active tab inside the same workspace surface instead of stacking a second full section card below the workspace shell.
 - Added informative tab context instead of label-only tabs: source/lifecycle context, recommendation/rule counts, delivery posture, and authority mapping.
 - Kept full-page scope refresh for domain/asset/source changes so Hero, Summary, and active-tab context cannot drift apart.
 - Kept record pagination local to the Alert Records table.

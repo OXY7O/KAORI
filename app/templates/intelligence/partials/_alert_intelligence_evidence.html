@@ -1,9 +1,12 @@
 {% import "intelligence/components/_workspace.html" as intelligence_ui %}
-{% call intelligence_ui.section(
-    'Evidence & Ownership Boundaries',
-    'Keep provider detection and lifecycle authority separate from KAORI interpretation, delivery enrichment, and governed automation.',
-    'shield-check'
-) %}
+<div data-alert-intelligence-panel="evidence">
+    <div class="border-b border-outline-subtle px-4 py-4 sm:px-5">
+        {{ intelligence_ui.subsection(
+            'Evidence & Ownership Boundaries',
+            'Keep provider detection and lifecycle authority separate from KAORI interpretation, delivery enrichment, and governed automation.',
+            'shield-check'
+        ) }}
+    </div>
     <div class="border-b border-outline-subtle bg-surface-card p-4 sm:p-5">
         <dl class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {{ intelligence_ui.field('Detection', 'Prometheus', supporting='Evaluates alert rules and exposes ALERTS state') }}
@@ -36,4 +39,4 @@
             </ul>
         </section>
     </div>
-{% endcall %}
+</div>
