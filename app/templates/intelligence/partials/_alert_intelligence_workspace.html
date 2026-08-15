@@ -1,124 +1,106 @@
 {% import "intelligence/components/_workspace.html" as intelligence_ui %}
-{% import "components/table_label.html" as table_label %}
 {% import "components/table_primitives.html" as table_ui %}
-{% set correlation_note = 'This is contextual correlation, not a claim that every finding was caused by every alert.' %}
-{% set base_query = {
-    'domain': payload.domain,
-    'asset': payload.selected_asset_key,
-    'source': payload.source,
-    'severity': payload.filters.severity,
-    'state': payload.filters.state,
-    'q': payload.filters.q,
-    'per_page': payload.pagination.per_page
-} %}
-{% set tabs = [
-    {
-        'key': 'overview',
-        'label': 'Alert Overview',
-        'icon': 'layout-dashboard',
-        'href': url_for('alert_intelligence.index', **dict(base_query, tab='overview'))
-    },
-    {
-        'key': 'records',
-        'label': 'Alert Records',
-        'icon': 'bell-ring',
-        'href': url_for('alert_intelligence.index', **dict(base_query, tab='records'))
-    },
-    {
-        'key': 'correlation',
-        'label': 'Correlation',
-        'icon': 'git-merge',
-        'href': url_for('alert_intelligence.index', **dict(base_query, tab='correlation'))
-    },
-    {
-        'key': 'delivery',
-        'label': 'Notification Delivery',
-        'icon': 'send',
-        'href': url_for('alert_intelligence.index', **dict(base_query, tab='delivery'))
-    },
-    {
-        'key': 'evidence',
-        'label': 'Evidence',
-        'icon': 'shield-check',
-        'href': url_for('alert_intelligence.index', **dict(base_query, tab='evidence'))
-    }
-] %}
+{% import "components/operational_callout.html" as operational_callout %}
 {% call intelligence_ui.section(
-    'Alert Intelligence Workspace',
-    'Review one governed asset scope at a time. Alertmanager is preferred in Automatic mode and '
-    ~ 'Prometheus ALERTS remains the fallback evidence path.',
+    'Alert Records Workspace',
+    'Scope and review provider alert evidence for one governed asset. Filters refresh automatically; Reset Filters returns record filters and source policy to their default state.',
     'triangle-alert',
     payload.source_status.label,
     'normal' if payload.source_status.connected else 'warning',
-    extra='shadow-sm',
     indicator_id='alert-intelligence-loading',
     loading_label='Refreshing Alert Intelligence'
 ) %}
-    <div id="alert-intelligence-workspace">
-        <form id="alert-intelligence-filter-form"
-              action="{{ url_for('alert_intelligence.index') }}"
-              method="get"
-              hx-get="{{ url_for('alert_intelligence.index') }}"
-              hx-target="#alert-intelligence-workspace"
-              hx-swap="outerHTML"
-              hx-push-url="true"
-              hx-indicator="#alert-intelligence-loading"
-              class="grid gap-3 border-b border-outline-subtle bg-surface-hover px-4 py-4
-                     sm:grid-cols-2 sm:px-5 xl:grid-cols-6">
-            <input type="hidden" name="tab" value="{{ payload.tab }}">
+    <form id="alert-intelligence-filter-form"
+          action="{{ url_for('alert_intelligence.index') }}"
+          method="get"
+          hx-get="{{ url_for('alert_intelligence.index') }}"
+          hx-target="#alert-intelligence-page-content"
+          hx-swap="outerHTML show:none focus-scroll:false"
+          hx-push-url="true"
+          hx-indicator="#alert-intelligence-loading"
+          hx-sync="#alert-intelligence-page-content:replace"
+          hx-trigger="input changed delay:350ms from:input[name='q'], change from:select"
+          autocomplete="off"
+          class="border-b border-outline-subtle bg-surface-hover px-4 py-4 sm:px-5">
+        <input type="hidden" name="page" value="1">
+        <input type="hidden" name="per_page" value="{{ payload.pagination.per_page }}">
+        <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div>
-                <label class="{{ table_ui.filter_label_classes() }}">Domain</label>
-                <select name="domain" class="{{ table_ui.filter_select_classes() }}">
+                <p class="text-sm font-semibold leading-5 text-content-primary">Alert Filters</p>
+                <p class="mt-1 text-xs leading-5 text-content-muted">
+                    Results refresh automatically when asset scope, source policy, search, severity, or state changes.
+                </p>
+            </div>
+            <a href="{{ url_for('alert_intelligence.index', domain=payload.domain, asset=payload.selected_asset_key) }}"
+               hx-get="{{ url_for('alert_intelligence.index', domain=payload.domain, asset=payload.selected_asset_key) }}"
+               hx-target="#alert-intelligence-page-content"
+               hx-swap="outerHTML show:none focus-scroll:false"
+               hx-push-url="true"
+               hx-sync="#alert-intelligence-page-content:replace"
+               hx-indicator="#alert-intelligence-loading"
+               class="inline-flex min-h-9 shrink-0 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary transition-colors hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                <i data-lucide="rotate-ccw" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                Reset Filters
+            </a>
+        </div>
+        <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-12">
+            <label class="block lg:col-span-3">
+                <span class="{{ table_ui.filter_label_classes() }}">Domain</span>
+                <select name="domain" autocomplete="off" class="{{ table_ui.filter_select_classes() }}">
                     {% for option in payload.domain_options %}
-                        <option value="{{ option.value }}"
-                                {% if payload.domain == option.value %}selected{% endif %}>
+                        <option value="{{ option.value }}" {% if payload.domain == option.value %}selected{% endif %}>
                             {{ option.label }} · {{ option.count }}
                         </option>
                     {% endfor %}
                 </select>
-            </div>
-            <div>
-                <label class="{{ table_ui.filter_label_classes() }}">Asset</label>
-                <select name="asset" class="{{ table_ui.filter_select_classes() }}">
+            </label>
+            <label class="block lg:col-span-5">
+                <span class="{{ table_ui.filter_label_classes() }}">Asset</span>
+                <select name="asset" autocomplete="off" class="{{ table_ui.filter_select_classes() }}">
                     {% for option in payload.assets %}
-                        <option value="{{ option.value }}"
-                                {% if payload.selected_asset_key == option.value %}selected{% endif %}>
+                        <option value="{{ option.value }}" {% if payload.selected_asset_key == option.value %}selected{% endif %}>
                             {{ option.label }} · {{ option.environment }}
                         </option>
+                    {% else %}
+                        <option value="">No managed asset available</option>
                     {% endfor %}
                 </select>
-            </div>
-            <div>
-                <label class="{{ table_ui.filter_label_classes() }}">Alert Source</label>
-                <select name="source" class="{{ table_ui.filter_select_classes() }}">
+            </label>
+            <label class="block lg:col-span-4">
+                <span class="{{ table_ui.filter_label_classes() }}">Alert Source</span>
+                <select name="source" autocomplete="off" class="{{ table_ui.filter_select_classes() }}">
                     {% for option in payload.source_options %}
-                        <option value="{{ option.value }}"
-                                {% if payload.source == option.value %}selected{% endif %}>
-                            {{ option.label }}
-                        </option>
+                        <option value="{{ option.value }}" {% if payload.source == option.value %}selected{% endif %}>{{ option.label }}</option>
                     {% endfor %}
                 </select>
-            </div>
-            <div>
-                <label class="{{ table_ui.filter_label_classes() }}">Severity</label>
-                <select name="severity" class="{{ table_ui.filter_select_classes() }}">
+            </label>
+            <label class="block lg:col-span-6">
+                <span class="{{ table_ui.filter_label_classes() }}">Search</span>
+                {{ table_ui.search_field(
+                    'q',
+                    payload.filters.q,
+                    'Search alert name, target, receiver, or summary',
+                    id='alert-intelligence-search'
+                ) }}
+            </label>
+            <label class="block lg:col-span-3">
+                <span class="{{ table_ui.filter_label_classes() }}">Severity</span>
+                <select name="severity" autocomplete="off" class="{{ table_ui.filter_select_classes() }}">
                     {% for value, label in [
                         ('all', 'All Severities'),
                         ('critical', 'Critical'),
                         ('warning', 'Warning'),
                         ('info', 'Info'),
-                        ('unknown', 'Unknown')
+                        ('unknown', 'Unknown'),
+                        ('none', 'No Severity')
                     ] %}
-                        <option value="{{ value }}"
-                                {% if payload.filters.severity == value %}selected{% endif %}>
-                            {{ label }}
-                        </option>
+                        <option value="{{ value }}" {% if payload.filters.severity == value %}selected{% endif %}>{{ label }}</option>
                     {% endfor %}
                 </select>
-            </div>
-            <div>
-                <label class="{{ table_ui.filter_label_classes() }}">State</label>
-                <select name="state" class="{{ table_ui.filter_select_classes() }}">
+            </label>
+            <label class="block lg:col-span-3">
+                <span class="{{ table_ui.filter_label_classes() }}">State</span>
+                <select name="state" autocomplete="off" class="{{ table_ui.filter_select_classes() }}">
                     {% for value, label in [
                         ('all', 'All States'),
                         ('firing', 'Firing'),
@@ -126,280 +108,32 @@
                         ('active', 'Active'),
                         ('resolved', 'Resolved')
                     ] %}
-                        <option value="{{ value }}"
-                                {% if payload.filters.state == value %}selected{% endif %}>
-                            {{ label }}
-                        </option>
+                        <option value="{{ value }}" {% if payload.filters.state == value %}selected{% endif %}>{{ label }}</option>
                     {% endfor %}
                 </select>
-            </div>
-            <div class="flex items-end gap-2">
-                <button type="submit"
-                        class="inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-md
-                               bg-kaori-primary px-3 text-xs font-semibold text-white
-                               hover:bg-kaori-primary-hover">
-                    <i data-lucide="filter" class="h-3.5 w-3.5"></i>
-                    Apply
-                </button>
-                <a href="{{ url_for(
-                    'alert_intelligence.index',
-                    domain=payload.domain,
-                    asset=payload.selected_asset_key,
-                    tab=payload.tab
-                ) }}"
-                   class="{{ table_ui.action_classes() }} h-10">
-                    Reset
-                </a>
-            </div>
-            <div class="sm:col-span-2 xl:col-span-6">
-                {{ table_ui.search_field(
-                    'q',
-                    payload.filters.q,
-                    'Search alert name, target, receiver, or summary',
-                    id='alert-intelligence-search'
-                ) }}
-            </div>
-        </form>
-        {{ intelligence_ui.link_tabs(tabs, payload.tab, 'Alert Intelligence Workspaces') }}
+            </label>
+        </div>
+    </form>
 
-        {% if payload.tab == 'overview' %}
-            <div class="grid gap-px bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4">
-                {{ intelligence_ui.metric(
-                    'bell-ring',
-                    'Active Alerts',
-                    payload.summary.active,
-                    payload.source_status.resolved_label ~ ' evidence',
-                    'info'
-                ) }}
-                {{ intelligence_ui.metric(
-                    'shield-alert',
-                    'Critical Alerts',
-                    payload.summary.critical,
-                    'Immediate triage',
-                    'critical' if payload.summary.critical else 'normal'
-                ) }}
-                {{ intelligence_ui.metric(
-                    'sparkles',
-                    'Recommendations',
-                    payload.summary.recommendations,
-                    'Committed guidance for this asset',
-                    'warning' if payload.summary.recommendations else 'normal'
-                ) }}
-                {{ intelligence_ui.metric(
-                    'send',
-                    'Notification Channels',
-                    payload.notification.operational,
-                    payload.notification.label,
-                    payload.notification.tone
-                ) }}
-            </div>
-            <div class="grid gap-px border-t border-outline-subtle bg-outline-subtle lg:grid-cols-2">
-                <section class="bg-surface-card p-4 sm:p-5">
-                    {{ intelligence_ui.subsection(
-                        'Selected Alert Stream',
-                        'Current provider evidence and fallback state.',
-                        'radio-tower'
-                    ) }}
-                    <dl class="mt-4 grid gap-4 sm:grid-cols-2">
-                        {{ intelligence_ui.field('Policy', payload.source|title) }}
-                        {{ intelligence_ui.field('Resolved Source', payload.source_status.resolved_label) }}
-                        {{ intelligence_ui.field('Runtime', payload.source_status.label) }}
-                        {{ intelligence_ui.field('Asset', payload.selected_asset_name) }}
-                    </dl>
-                    {% if payload.source_status.fallback_used %}
-                        <p class="mt-4 rounded-lg border border-status-warning/20 bg-status-warning-soft p-3
-                                  text-xs leading-5 text-status-warning-text">
-                            {{ payload.source_status.fallback_reason }}
-                        </p>
-                    {% endif %}
-                    {% if payload.source_status.error %}
-                        <p class="mt-4 rounded-lg border border-status-critical/20 bg-status-critical-soft p-3
-                                  text-xs leading-5 text-status-critical-text">
-                            {{ payload.source_status.error }}
-                        </p>
-                    {% endif %}
-                </section>
-                <section class="bg-surface-card p-4 sm:p-5">
-                    {{ intelligence_ui.subsection(
-                        'Intelligence Reading',
-                        'Keep raw alert lifecycle and KAORI interpretation separate.',
-                        'brain-circuit'
-                    ) }}
-                    <div class="mt-4 space-y-3 text-sm leading-6 text-content-secondary">
-                        <p>
-                            <span class="font-semibold text-content-primary">Provider alerts:</span>
-                            {{ payload.summary.active }} active
-                            record{{ '' if payload.summary.active == 1 else 's' }} are available for the
-                            selected scope.
-                        </p>
-                        <p>
-                            <span class="font-semibold text-content-primary">Guidance:</span>
-                            {{ payload.summary.recommendations }} active
-                            recommendation{{ '' if payload.summary.recommendations == 1 else 's' }} can provide
-                            committed operational context.
-                        </p>
-                        <p>
-                            <span class="font-semibold text-content-primary">Catalog:</span>
-                            {{ payload.summary.catalog_rules }} Alert Intelligence rule
-                            definition{{ '' if payload.summary.catalog_rules == 1 else 's' }} describe enrichment
-                            or signal boundaries for this domain.
-                        </p>
-                    </div>
-                </section>
-            </div>
-        {% elif payload.tab == 'records' %}
-            {% include "intelligence/partials/_alert_intelligence_records.html" %}
-        {% elif payload.tab == 'correlation' %}
-            <div class="grid gap-px bg-outline-subtle lg:grid-cols-2">
-                <section class="bg-surface-card p-4 sm:p-5">
-                    {{ intelligence_ui.subsection(
-                        'Active Recommendations',
-                        'Committed findings for the selected asset. ' ~ correlation_note,
-                        'sparkles'
-                    ) }}
-                    <div class="mt-4 space-y-3">
-                        {% for item in payload.recommendations %}
-                            {% call intelligence_ui.record(
-                                item.title,
-                                item.summary,
-                                'sparkles',
-                                status_text=item.priority,
-                                status_tone='critical' if item.severity == 'critical' else 'warning'
-                            ) %}
-                                <p class="mt-3 text-xs leading-5 text-content-muted">
-                                    {{ item.recommended_action }}
-                                </p>
-                            {% endcall %}
-                        {% else %}
-                            {{ intelligence_ui.empty_state(
-                                'No active recommendations',
-                                'No committed recommendation currently matches this asset scope.',
-                                'circle-check'
-                            ) }}
-                        {% endfor %}
-                    </div>
-                </section>
-                <section class="bg-surface-card p-4 sm:p-5">
-                    {{ intelligence_ui.subsection(
-                        'Catalog Enrichment Rules',
-                        'Definitions that can enrich or interpret alert evidence for this domain.',
-                        'list-checks'
-                    ) }}
-                    <div class="mt-4 space-y-3">
-                        {% for rule in payload.catalog_rules %}
-                            {% call intelligence_ui.record(
-                                rule.title,
-                                rule.summary,
-                                'list-checks',
-                                status_text=rule.priority,
-                                status_tone='critical' if rule.severity == 'critical' else 'warning'
-                            ) %}
-                                <p class="mt-3 text-xs leading-5 text-content-muted">
-                                    <span class="font-semibold text-content-primary">Boundary:</span>
-                                    {{ rule.evidence_boundary }}
-                                </p>
-                            {% endcall %}
-                        {% else %}
-                            {{ intelligence_ui.empty_state(
-                                'No Alert Intelligence catalog rules',
-                                'This domain has no catalog definitions currently visible in Alert Intelligence.',
-                                'list-checks'
-                            ) }}
-                        {% endfor %}
-                    </div>
-                </section>
-            </div>
-        {% elif payload.tab == 'delivery' %}
-            <div class="grid gap-px bg-outline-subtle lg:grid-cols-2">
-                <section class="bg-surface-card p-4 sm:p-5">
-                    {{ intelligence_ui.subsection(
-                        'KAORI Notification Delivery',
-                        'Enriched Intelligence messages are separate from Alertmanager receiver delivery.',
-                        'send'
-                    ) }}
-                    <dl class="mt-4 grid gap-4 sm:grid-cols-2">
-                        {{ intelligence_ui.field('Status', payload.notification.label) }}
-                        {{ intelligence_ui.field('Eligible Channels', payload.notification.eligible) }}
-                        {{ intelligence_ui.field('Operational Channels', payload.notification.operational) }}
-                        {{ intelligence_ui.field(
-                            'Providers',
-                            payload.notification.provider_labels|join(', ')
-                            if payload.notification.provider_labels else 'None'
-                        ) }}
-                    </dl>
-                    <a href="{{ url_for('notification_channels.index') }}"
-                       class="mt-5 inline-flex min-h-9 items-center justify-center gap-2 rounded-lg
-                              bg-kaori-primary px-3 text-xs font-semibold text-white
-                              hover:bg-kaori-primary-hover">
-                        <i data-lucide="send" class="h-3.5 w-3.5"></i>
-                        Manage Notification Channels
-                    </a>
-                </section>
-                <section class="bg-surface-card p-4 sm:p-5">
-                    {{ intelligence_ui.subsection(
-                        'Recent Delivery Journal',
-                        'First-seen active alert messages are deduplicated per channel and event identity.',
-                        'history'
-                    ) }}
-                    <div class="mt-4 space-y-3">
-                        {% for item in payload.recent_deliveries %}
-                            <div class="rounded-lg border border-outline-subtle bg-surface-hover p-3">
-                                <div class="flex items-center justify-between gap-3">
-                                    <p class="text-sm font-semibold text-content-primary">
-                                        {{ item.channel_name }}
-                                    </p>
-                                    {{ table_label.status_label(
-                                        item.status|title,
-                                        'normal' if item.status == 'sent'
-                                        else ('critical' if item.status == 'failed' else 'info'),
-                                        size='compact'
-                                    ) }}
-                                </div>
-                                <p class="mt-1 text-xs leading-5 text-content-muted">
-                                    {{ item.provider }} · {{ item.domain }} · {{ item.severity|title }}
-                                </p>
-                                {% if item.error_message %}
-                                    <p class="mt-1 text-xs leading-5 text-status-critical-text">
-                                        {{ item.error_message }}
-                                    </p>
-                                {% endif %}
-                            </div>
-                        {% else %}
-                            {{ intelligence_ui.empty_state(
-                                'No delivery journal yet',
-                                'Test a notification channel or allow the Alert Intelligence dispatcher to '
-                                ~ 'deliver a first-seen active alert.',
-                                'send'
-                            ) }}
-                        {% endfor %}
-                    </div>
-                </section>
-            </div>
-        {% else %}
-            <div class="grid gap-px bg-outline-subtle lg:grid-cols-2">
-                <section class="bg-surface-card p-4 sm:p-5">
-                    {{ intelligence_ui.subsection(
-                        'KAORI Owns',
-                        'Interpretation and enriched notification responsibilities.',
-                        'brain-circuit'
-                    ) }}
-                    <ul class="mt-4 space-y-3 text-sm leading-6 text-content-secondary">
-                        <li>{{ payload.ownership.intelligence }}</li>
-                        <li>{{ payload.ownership.automation }}</li>
-                    </ul>
-                </section>
-                <section class="bg-surface-card p-4 sm:p-5">
-                    {{ intelligence_ui.subsection(
-                        'External Alert Authority',
-                        'Detection and raw lifecycle remain owned by observability providers.',
-                        'shield-check'
-                    ) }}
-                    <ul class="mt-4 space-y-3 text-sm leading-6 text-content-secondary">
-                        <li>{{ payload.ownership.detection }}</li>
-                        <li>{{ payload.ownership.lifecycle }}</li>
-                    </ul>
-                </section>
-            </div>
+    <div class="border-b border-outline-subtle bg-surface-card p-4 sm:p-5">
+        {{ intelligence_ui.subsection(
+            'Alert Source Context',
+            'Alertmanager is preferred in Automatic mode; Prometheus ALERTS remains the fallback evidence path.',
+            'radio-tower'
+        ) }}
+        <dl class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {{ intelligence_ui.field('Policy', payload.source|title) }}
+            {{ intelligence_ui.field('Resolved Source', payload.source_status.resolved_label) }}
+            {{ intelligence_ui.field('Runtime', payload.source_status.label) }}
+            {{ intelligence_ui.field('Asset', payload.selected_asset_name) }}
+        </dl>
+        {% if payload.source_status.fallback_used %}
+            <div class="mt-4">{{ operational_callout.render('Fallback Evidence Active', payload.source_status.fallback_reason, 'git-branch', 'warning') }}</div>
+        {% endif %}
+        {% if payload.source_status.error %}
+            <div class="mt-4">{{ operational_callout.render('Alert Evidence Unavailable', payload.source_status.error, 'triangle-alert', 'critical') }}</div>
         {% endif %}
     </div>
+
+    {% include "intelligence/partials/_alert_intelligence_records.html" %}
 {% endcall %}

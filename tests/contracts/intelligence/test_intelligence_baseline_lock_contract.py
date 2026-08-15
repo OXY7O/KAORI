@@ -45,6 +45,7 @@ def test_automation_control_keeps_infrastructure_execution_fail_closed_without_b
 def test_alert_intelligence_uses_supported_multi_domain_alert_sources():
     module = read('app/alert_intelligence/service.py')
     workspace = read('app/templates/intelligence/partials/_alert_intelligence_workspace.html')
+    correlation = read('app/templates/intelligence/partials/_alert_intelligence_correlation.html')
 
     assert 'load_alerts_by_source' in module
     assert 'load_alert_stream' in module
@@ -53,7 +54,7 @@ def test_alert_intelligence_uses_supported_multi_domain_alert_sources():
     assert "'object_storage'" in module
     assert 'Alertmanager is preferred' in workspace
     assert 'Prometheus ALERTS' in workspace
-    assert 'This is contextual correlation, not a claim that every finding was caused by every alert.' in workspace
+    assert 'This is contextual correlation, not a claim that every finding was caused by every alert.' in correlation
 
 
 def test_intelligence_baseline_lock_is_registered_in_quality_gate():

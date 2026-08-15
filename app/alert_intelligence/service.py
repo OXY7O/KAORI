@@ -17,7 +17,6 @@ _VALID_DOMAINS = {'kubernetes', 'object_storage'}
 _VALID_SOURCES = {'auto', 'alertmanager', 'prometheus'}
 _VALID_SEVERITIES = {'all', 'critical', 'warning', 'info', 'unknown', 'none'}
 _VALID_STATES = {'all', 'firing', 'pending', 'active', 'resolved'}
-_VALID_TABS = {'overview', 'records', 'correlation', 'delivery', 'evidence'}
 _DOMAIN_LABELS = {'kubernetes': 'Kubernetes', 'object_storage': 'Object Storage'}
 
 
@@ -29,8 +28,6 @@ def get_alert_intelligence_payload(args: MultiDict[str, str]) -> dict[str, Any]:
     selected_asset_key = _selected_asset_key(args, assets)
     selected_asset = _resolve_asset(domain, selected_asset_key, clusters=clusters, systems=systems)
     source = _choice(args.get('source'), _VALID_SOURCES, 'auto')
-    tab = _choice(args.get('tab'), _VALID_TABS, 'overview')
-
     rows, source_status = _load_rows(domain, selected_asset, source=source)
     severity = _choice(args.get('severity'), _VALID_SEVERITIES, 'all')
     state = _choice(args.get('state'), _VALID_STATES, 'all')
@@ -63,7 +60,6 @@ def get_alert_intelligence_payload(args: MultiDict[str, str]) -> dict[str, Any]:
         'selected_asset_name': selected_asset_name,
         'selected_asset_available': selected_asset is not None,
         'source': source,
-        'tab': tab,
         'source_options': [
             {'value': 'auto', 'label': 'Automatic · Alertmanager Preferred'},
             {'value': 'alertmanager', 'label': 'Alertmanager'},
@@ -78,13 +74,31 @@ def get_alert_intelligence_payload(args: MultiDict[str, str]) -> dict[str, Any]:
             'recommendations': len(recommendations),
             'catalog_rules': len(catalog_rules),
         },
+        'result_context': {
+            'matching_items': len(filtered),
+            'source_items': len(rows),
+            'critical_items': sum(row.get('severity') == 'critical' for row in filtered),
+            'warning_items': sum(row.get('severity') == 'warning' for row in filtered),
+            'active_filters': sum(
+                (
+                    severity != 'all',
+                    state != 'all',
+                    bool(search),
+                )
+            ),
+        },
         'filters': {'severity': severity, 'state': state, 'q': search},
         'alerts': page_rows,
         'pagination': pagination,
         'recommendations': recommendations,
         'catalog_rules': catalog_rules,
         'notification': notification_summary,
-        'recent_deliveries': recent_delivery_summary(limit=6, event_types=('alert_intelligence.active_alert',)),
+        'recent_deliveries': recent_delivery_summary(
+            limit=6,
+            event_types=('alert_intelligence.active_alert',),
+            domain=domain,
+            asset_key=selected_asset_key or None,
+        ),
         'ownership': {
             'detection': 'Prometheus evaluates alert rules and exposes ALERTS state.',
             'lifecycle': (

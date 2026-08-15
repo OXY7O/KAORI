@@ -10,6 +10,7 @@ def read(relative: str) -> str:
 def test_alert_intelligence_is_asset_scoped_multi_domain_and_keeps_source_authority_explicit():
     module = read('app/alert_intelligence/service.py')
     workspace = read('app/templates/intelligence/partials/_alert_intelligence_workspace.html')
+    correlation = read('app/templates/intelligence/partials/_alert_intelligence_correlation.html')
 
     assert 'load_alerts_by_source' in module
     assert 'load_alert_stream' in module
@@ -18,7 +19,7 @@ def test_alert_intelligence_is_asset_scoped_multi_domain_and_keeps_source_author
     assert 'get_active_recommendation_findings' in module
     assert 'Alertmanager is preferred in Automatic mode' in workspace
     assert 'Prometheus ALERTS remains the fallback evidence path' in workspace
-    assert 'contextual correlation, not a claim that every finding was caused by every alert' in workspace
+    assert 'contextual correlation, not a claim that every finding was caused by every alert' in correlation
 
 
 def test_notification_channel_persistence_is_provider_neutral_and_secrets_are_encrypted():
@@ -60,3 +61,15 @@ def test_notification_dispatch_runs_on_existing_maintenance_queue_and_retries_fa
     assert 'notification_delivery_max_attempts()' in service
     assert "event_type='alert_intelligence.active_alert'" in service
     assert "delivery.status != 'failed' or delivery.attempt_count >= max_attempts" in service
+
+
+def test_alert_intelligence_delivery_journal_is_scoped_to_selected_asset():
+    alert_service = read('app/alert_intelligence/service.py')
+    notification_service = read('app/notification_channels/service.py')
+
+    assert "domain=domain" in alert_service
+    assert "asset_key=selected_asset_key or None" in alert_service
+    assert "domain: str | None = None" in notification_service
+    assert "asset_key: str | None = None" in notification_service
+    assert "NotificationDelivery.domain == domain" in notification_service
+    assert "NotificationDelivery.asset_key == asset_key" in notification_service

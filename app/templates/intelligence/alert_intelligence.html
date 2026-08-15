@@ -1,53 +1,5 @@
 {% extends "layouts/app.html" %}
-{% import "components/page_hero.html" as page_hero %}
 {% block title %}Alert Intelligence{% endblock title %}
 {% block dashboard_content %}
-    {% if payload.domain == 'object_storage' %}
-        {% set analytics_href = url_for(
-            'analytics.object_storage_alerts',
-            system=payload.selected_asset_key
-        ) %}
-    {% else %}
-        {% set analytics_href = url_for(
-            'analytics.alerts',
-            cluster_id=payload.selected_asset_key
-        ) %}
-    {% endif %}
-    {% set hero_metrics = [
-        ('bell-ring', 'Active Alerts', payload.summary.active, 'Current selected asset'),
-        ('sparkles', 'Recommendations', payload.summary.recommendations, 'Committed KAORI guidance')
-    ] %}
-    <div class="space-y-6">
-        <section class="{{ page_hero.shell_classes() }}">
-            <div class="{{ page_hero.layout_classes() }}">
-                <div class="{{ page_hero.content_classes() }}">
-                    {% call page_hero.intro('triangle-alert', 'Infrastructure Intelligence', 'radio-tower') %}
-                        <h1 class="{{ page_hero.title_classes() }}">Alert Intelligence</h1>
-                        <p class="mt-2 {{ page_hero.description_classes() }}">
-                            Correlate active provider alerts with asset identity, committed recommendations,
-                            catalog guidance, and KAORI notification delivery without replacing Alertmanager
-                            routing ownership.
-                        </p>
-                        <div class="{{ page_hero.metadata_row_classes() }}">
-                            {{ page_hero.meta_label('boxes', payload.domain_label) }}
-                            {{ page_hero.meta_label('box', payload.selected_asset_name) }}
-                            {{ page_hero.meta_label('radio-tower', payload.source_status.resolved_label) }}
-                        </div>
-                    {% endcall %}
-                </div>
-                {{ page_hero.context_card(
-                    'Alert intelligence posture',
-                    'Alert Intelligence Posture',
-                    'Current Posture',
-                    payload.posture.label,
-                    payload.posture.tone,
-                    hero_metrics,
-                    'Open Analytics Alerts',
-                    analytics_href,
-                    'triangle-alert'
-                ) }}
-            </div>
-        </section>
-        {% include 'intelligence/partials/_alert_intelligence_workspace.html' %}
-    </div>
+    {% include 'intelligence/partials/_alert_intelligence_page.html' %}
 {% endblock dashboard_content %}

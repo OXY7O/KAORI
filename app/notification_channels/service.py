@@ -492,10 +492,16 @@ def recent_delivery_summary(
     *,
     limit: int = 10,
     event_types: tuple[str, ...] | None = None,
+    domain: str | None = None,
+    asset_key: str | None = None,
 ) -> list[dict[str, Any]]:
     query = NotificationDelivery.query
     if event_types:
         query = query.filter(NotificationDelivery.event_type.in_(event_types))
+    if domain:
+        query = query.filter(NotificationDelivery.domain == domain)
+    if asset_key:
+        query = query.filter(NotificationDelivery.asset_key == asset_key)
     rows = query.order_by(NotificationDelivery.created_at.desc()).limit(max(limit, 1)).all()
     return [
         {

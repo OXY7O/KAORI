@@ -44,6 +44,11 @@ def main() -> int:
     alert_intelligence = read('app/alert_intelligence/service.py')
     alert_routes = read('app/alert_intelligence/routes.py')
     alert_workspace = read('app/templates/intelligence/partials/_alert_intelligence_workspace.html')
+    alert_page_partial = read('app/templates/intelligence/partials/_alert_intelligence_page.html')
+    alert_summary = read('app/templates/intelligence/partials/_alert_intelligence_summary.html')
+    alert_correlation = read('app/templates/intelligence/partials/_alert_intelligence_correlation.html')
+    alert_delivery = read('app/templates/intelligence/partials/_alert_intelligence_delivery.html')
+    alert_evidence = read('app/templates/intelligence/partials/_alert_intelligence_evidence.html')
     automation_routes = read('app/automation_control/routes.py')
     automation_presentation = read('app/automation_control/presentation.py')
     automation_overview = read('app/automation_control/overview.py')
@@ -181,21 +186,29 @@ def main() -> int:
         "'prometheus'",
     ):
         require(required in alert_intelligence, f'Alert Intelligence multi-domain contract missing: {required}', errors)
+    alert_surface = '\n'.join(
+        (alert_workspace, alert_summary, alert_correlation, alert_delivery, alert_evidence)
+    )
     for required in (
-        'Alert Overview',
-        'Alert Records',
-        'Correlation',
+        'Alert Intelligence Summary',
+        'Alert Records Workspace',
+        'Correlation & Guidance',
         'Notification Delivery',
-        'Evidence',
-        'Alertmanager is preferred',
+        'Evidence & Ownership Boundaries',
+        'Alertmanager',
         'Prometheus ALERTS',
     ):
-        require(required in alert_workspace, f'Alert Intelligence workspace contract missing: {required}', errors)
+        require(required in alert_surface, f'Alert Intelligence workspace contract missing: {required}', errors)
     require(
-        'This is contextual correlation, not a claim that every finding was caused by every alert.' in alert_workspace,
+        'This is contextual correlation, not a claim that every finding was caused by every alert.' in alert_correlation,
         'Alert Intelligence must keep contextual correlation distinct from causal attribution',
         errors,
     )
+    require('link_tabs(' not in alert_surface, 'Alert Intelligence must not return to tab-driven navigation', errors)
+    require('>Apply<' not in alert_workspace and 'Apply\n' not in alert_workspace, 'Alert filters must not require an Apply button', errors)
+    require('hx-trigger="input changed delay:350ms' in alert_workspace, 'Alert filters must auto-refresh on search and select changes', errors)
+    require('Reset Filters' in alert_workspace, 'Alert Intelligence must retain the standard Reset Filters action', errors)
+    require("_VALID_TABS" not in alert_intelligence and "'tab':" not in alert_intelligence, 'Alert Intelligence service must not retain page-tab state', errors)
 
     recommendations_page = read('app/templates/intelligence/recommendations.html')
     catalog_page = read('app/templates/intelligence/rule_catalog.html')
@@ -215,10 +228,13 @@ def main() -> int:
         (alert_page, 'Alert Intelligence'),
         (automation_page, 'Automation Control'),
     ):
-        require('components/page_hero.html' in page, f'{label} must use shared Hero ownership', errors)
+        hero_owned = 'components/page_hero.html' in page
+        if label == 'Alert Intelligence':
+            hero_owned = hero_owned or 'components/page_hero.html' in alert_page_partial
+        require(hero_owned, f'{label} must use shared Hero ownership', errors)
         shared_workspace_owned = 'intelligence/components/_workspace.html' in page
         if label == 'Alert Intelligence':
-            shared_workspace_owned = shared_workspace_owned or 'intelligence/components/_workspace.html' in alert_workspace
+            shared_workspace_owned = shared_workspace_owned or 'intelligence/components/_workspace.html' in alert_surface
         require(
             shared_workspace_owned,
             f'{label} must use shared Intelligence workspace',
