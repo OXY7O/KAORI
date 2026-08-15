@@ -23,7 +23,12 @@ def test_alert_intelligence_keeps_global_summary_and_tabbed_section_workspace() 
     assert 'Critical' in summary
     assert 'Warning' in summary
     assert 'Recommendations' in summary
-    assert "intelligence_ui.link_tabs(workspace_tabs, payload.tab, 'Alert Intelligence Sections')" in workspace
+    assert 'components/content_tabs.html' in workspace
+    assert 'content_tabs.render_links(' in workspace
+    assert "data_namespace='alert-intelligence'" in workspace
+    assert 'nowrap=true' in workspace
+    assert "hx_sync='#alert-intelligence-page-content:replace'" in workspace
+    assert 'intelligence_ui.link_tabs(' not in workspace
 
 
 def test_alert_intelligence_tabs_are_section_owned_and_informative() -> None:

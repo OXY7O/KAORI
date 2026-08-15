@@ -6,7 +6,11 @@
   within one workspace surface.
 
   render_buttons(): client-owned tab state; the consumer supplies the controller.
-  render_links(): server/URL-owned workspace state.
+  render_links(): server/URL-owned workspace state with optional HTMX navigation.
+
+  Both modes share one visual contract. Server-owned consumers may request
+  nowrap overflow and an HTMX synchronization boundary without duplicating
+  tab classes or adopting the Analytics client-side controller.
 #}
 {# djlint:off #}
 {% macro shell_classes(embedded=false, nowrap=false) -%}
@@ -57,11 +61,11 @@
     </div>
 {%- endmacro %}
 
-{% macro render_links(tabset_id, tabs, active_key, aria_label, embedded=false, data_namespace='content', hx_target=none, hx_select=none, hx_swap='outerHTML', hx_push_url='true', hx_indicator=none) -%}
-    <nav class="{{ shell_classes(embedded) }}"
+{% macro render_links(tabset_id, tabs, active_key, aria_label, embedded=false, data_namespace='content', hx_target=none, hx_select=none, hx_swap='outerHTML', hx_push_url='true', hx_indicator=none, nowrap=false, hx_sync=none) -%}
+    <nav class="{{ shell_classes(embedded, nowrap) }}"
          aria-label="{{ aria_label }}"
          data-kaori-tab-variant="content-tabs-server">
-        <div class="flex flex-wrap gap-2">
+        <div class="flex {{ 'min-w-max flex-nowrap' if nowrap else 'flex-wrap' }} gap-2">
             {% for tab in tabs %}
                 {% set tab_id = tab[0] %}
                 {% set tab_label = tab[1] %}
@@ -75,6 +79,7 @@
                    {% if hx_target %}hx-get="{{ tab_href }}" hx-target="{{ hx_target }}" hx-swap="{{ hx_swap }}" hx-push-url="{{ hx_push_url }}"{% endif %}
                    {% if hx_select %}hx-select="{{ hx_select }}"{% endif %}
                    {% if hx_indicator %}hx-indicator="{{ hx_indicator }}"{% endif %}
+                   {% if hx_sync %}hx-sync="{{ hx_sync }}"{% endif %}
                    class="{{ item_classes() }} {{ active_classes() if active_key == tab_id else inactive_classes() }}">
                     <i data-lucide="{{ tab_icon }}" class="h-4 w-4" aria-hidden="true"></i>
                     <span>{{ tab_label }}</span>

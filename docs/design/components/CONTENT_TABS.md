@@ -9,7 +9,7 @@ Content Tabs are the canonical compact tab treatment for switching several close
 - Review label: **Tab Style 4 — Content Tabs**
 - Semantic key: `content-tabs`
 - Component owner: `app/templates/components/content_tabs.html`
-- Primary references: Kubernetes Analytics Overview, Utilization, Capacity, Workload, Storage, Forecast, and Top Consumers.
+- Primary references: Kubernetes/Object Storage Analytics content workspaces and Alert Intelligence long-form sections.
 
 ## When to Use
 
@@ -34,8 +34,9 @@ The shared component owns:
 - neutral inactive treatment;
 - wrapping by default;
 - optional single-row `nowrap` mode with horizontal overflow as the narrow-viewport fallback.
+- the same geometry for client-owned buttons and server/URL-owned links.
 
-A dense Overview may use `nowrap=true` only when the labels have already been shortened to concise user-facing vocabulary. Horizontal overflow is the fallback, not a reason to expose internal identifiers or abbreviate labels into unclear acronyms.
+A dense tabset may use `nowrap=true` only when the labels have already been shortened to concise user-facing vocabulary. Horizontal overflow is the fallback, not a reason to expose internal identifiers or abbreviate labels into unclear acronyms.
 
 ## Badge Contract
 
@@ -45,7 +46,11 @@ Never pass an internal section key, snapshot key, DOM target, dataset identifier
 
 ## Runtime Ownership
 
-The component owns active/inactive visual class tokens. A page controller owns state and applies the class contract exposed by each rendered tab through:
+The component owns active/inactive visual class tokens. State ownership depends on the rendering mode.
+
+### Client-owned button mode
+
+`render_buttons()` is for a page controller that owns tab activation. The controller applies the class contract exposed by each rendered tab through:
 
 - `data-kaori-tab-active-classes`;
 - `data-kaori-tab-inactive-classes`.
@@ -63,13 +68,21 @@ The Analytics controller owns:
 - optional URL/session persistence;
 - one-time lazy HTMX activation through `kaori:analytics-tab-activated`.
 
+### Server-owned link mode
+
+`render_links()` is for URL/server-owned section state. It renders real navigation links with `aria-current="page"` for the selected section and may optionally carry shared HTMX navigation controls (`hx-target`, `hx-select`, `hx-swap`, `hx-push-url`, `hx-indicator`, and `hx-sync`). It must not adopt the Analytics button controller or duplicate its ARIA tab-widget behavior.
+
+Server-owned consumers may use `nowrap=true` for concise long-form section labels. This preserves the same Content Tabs geometry while allowing horizontal overflow on narrower viewports. Alert Intelligence is the reference server-owned Intelligence consumer.
+
 ## Progressive Fallback
 
-The server must render one valid active tab and panel before JavaScript executes. Non-default panels use the native `hidden` attribute. If the controller does not execute, the initial content remains readable rather than producing a blank workspace.
+For client-owned `render_buttons()`, the server must render one valid active tab and panel before JavaScript executes. Non-default panels use the native `hidden` attribute. If the controller does not execute, the initial content remains readable rather than producing a blank workspace.
+
+For server-owned `render_links()`, every section link retains a real `href`; HTMX is progressive enhancement only. If HTMX does not execute, normal navigation still resolves the selected server-rendered section.
 
 ## Accessibility
 
-Required semantics:
+Client-owned `render_buttons()` uses the ARIA tab-widget contract:
 
 - wrapper uses `role="tablist"`;
 - controls use `role="tab"`;
@@ -78,6 +91,8 @@ Required semantics:
 - inactive tabs have `aria-selected="false"` and `tabindex="-1"`;
 - panels use `role="tabpanel"` and `aria-labelledby`;
 - decorative icons are `aria-hidden="true"`.
+
+Server-owned `render_links()` uses navigation semantics instead: the wrapper is a labelled `<nav>`, the selected link uses `aria-current="page"`, and native link keyboard behavior is preserved. Do not add `role="tab"` to server-owned links.
 
 ## Analytics Overview Reference
 
@@ -91,6 +106,7 @@ Internal identifiers such as `resource-snapshot`, `capacity-snapshot`, or `top-c
 
 - Uses `components/content_tabs.html` directly.
 - No domain compatibility wrapper exists.
+- Chooses `render_buttons()` for client-owned state or `render_links()` for URL/server-owned state.
 - One state owner only.
 - Shared component owns active/inactive visual classes.
 - Internal identifiers are not visible badges.

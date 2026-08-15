@@ -22,6 +22,9 @@ def test_shared_content_tabs_preserve_analytics_geometry_and_offer_server_owned_
     assert 'render_buttons' in shared
     assert 'render_links' in shared
     assert 'data-kaori-tab-variant="content-tabs-server"' in shared
+    assert "shell_classes(embedded, nowrap)" in shared
+    assert "'min-w-max flex-nowrap' if nowrap else 'flex-wrap'" in shared
+    assert '{% if hx_sync %}hx-sync="{{ hx_sync }}"{% endif %}' in shared
     assert '{# djlint:off #}' in shared
     assert '{# djlint:on #}' in shared
     assert 'data-{{ data_namespace }}-tab-button="{{ tab_id }}"' in shared

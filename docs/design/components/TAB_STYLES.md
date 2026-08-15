@@ -64,13 +64,13 @@ Use Tab Style 3 for local view switching in a visualization, inspector, drawer, 
 |---|---|
 | Semantic key | `content-tabs` |
 | Component | `components/content_tabs.html` |
-| References | Kubernetes Analytics Overview and domain analysis workspaces |
+| References | Kubernetes/Object Storage Analytics and Alert Intelligence |
 | Content relationship | Several closely related content views inside one established workspace |
 | Surface | Compact rounded controls within or directly under the workspace header |
-| State | Consumer-owned; Analytics uses the native `analytics_controls.js` controller |
+| State | Consumer-owned buttons or server/URL-owned links; one owner per tabset |
 | Layout | Wrap by default; approved one-row overflow mode for dense compact navigation |
 
-Use Tab Style 4 for compact intra-workspace analysis navigation. The component owns visual active/inactive class tokens; the controller owns state. Internal dataset, snapshot, DOM-target, or loader identifiers must never be passed through as visible badges. Dense Overview navigation may use the documented no-wrap mode only with concise user-facing labels. The detailed contract lives in `CONTENT_TABS.md`.
+Use Tab Style 4 for compact intra-workspace content navigation. The component owns visual active/inactive class tokens. Client-owned tabsets use `render_buttons()` with their controller; URL/server-owned section navigation uses `render_links()` and native link semantics. Internal dataset, snapshot, DOM-target, or loader identifiers must never be passed through as visible badges. Dense navigation may use the documented no-wrap mode only with concise user-facing labels. The detailed contract lives in `CONTENT_TABS.md`.
 
 ## Future Styles
 

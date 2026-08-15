@@ -206,7 +206,11 @@ def main() -> int:
         'Alert Intelligence must keep contextual correlation distinct from causal attribution',
         errors,
     )
-    require('link_tabs(' in alert_workspace, 'Alert Intelligence must use section-owned tab navigation for long-form content', errors)
+    require('components/content_tabs.html' in alert_workspace, 'Alert Intelligence must use the shared KAORI Content Tabs component', errors)
+    require('content_tabs.render_links(' in alert_workspace, 'Alert Intelligence section state must use server-owned shared Content Tabs links', errors)
+    require('intelligence_ui.link_tabs(' not in alert_workspace, 'Alert Intelligence must not keep a page-local underline tab treatment', errors)
+    require('nowrap=true' in alert_workspace, 'Alert Intelligence Content Tabs must keep concise long-form section labels on one row with overflow fallback', errors)
+    require("hx_sync='#alert-intelligence-page-content:replace'" in alert_workspace, 'Alert Intelligence tab navigation must share the page HTMX synchronization boundary', errors)
     require('>Apply<' not in alert_workspace and 'Apply\n' not in alert_workspace, 'Alert filters must not require an Apply button', errors)
     require('hx-trigger="input changed delay:350ms' in alert_workspace, 'Alert filters must auto-refresh on search and select changes', errors)
     require('Alert Source Context' in alert_alerts, 'Alert Records tab must retain source context', errors)

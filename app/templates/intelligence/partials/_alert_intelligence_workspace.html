@@ -1,4 +1,5 @@
 {% import "intelligence/components/_workspace.html" as intelligence_ui %}
+{% import "components/content_tabs.html" as content_tabs %}
 {% import "components/table_primitives.html" as table_ui %}
 {% set tab_query = {
     'domain': payload.domain,
@@ -9,30 +10,30 @@
     'q': payload.filters.q
 } %}
 {% set workspace_tabs = [
-    {
-        'key': 'alerts',
-        'label': 'Alert Records',
-        'icon': 'triangle-alert',
-        'href': url_for('alert_intelligence.index', tab='alerts', **tab_query)
-    },
-    {
-        'key': 'correlation',
-        'label': 'Correlation & Guidance',
-        'icon': 'git-merge',
-        'href': url_for('alert_intelligence.index', tab='correlation', **tab_query)
-    },
-    {
-        'key': 'delivery',
-        'label': 'Notification Delivery',
-        'icon': 'send',
-        'href': url_for('alert_intelligence.index', tab='delivery', **tab_query)
-    },
-    {
-        'key': 'evidence',
-        'label': 'Evidence & Ownership',
-        'icon': 'shield-check',
-        'href': url_for('alert_intelligence.index', tab='evidence', **tab_query)
-    }
+    (
+        'alerts',
+        'Alert Records',
+        'triangle-alert',
+        url_for('alert_intelligence.index', tab='alerts', **tab_query)
+    ),
+    (
+        'correlation',
+        'Correlation & Guidance',
+        'git-merge',
+        url_for('alert_intelligence.index', tab='correlation', **tab_query)
+    ),
+    (
+        'delivery',
+        'Notification Delivery',
+        'send',
+        url_for('alert_intelligence.index', tab='delivery', **tab_query)
+    ),
+    (
+        'evidence',
+        'Evidence & Ownership',
+        'shield-check',
+        url_for('alert_intelligence.index', tab='evidence', **tab_query)
+    )
 ] %}
 {% call intelligence_ui.section(
     'Alert Intelligence Workspace',
@@ -170,5 +171,18 @@
         {% endif %}
     </form>
 
-    {{ intelligence_ui.link_tabs(workspace_tabs, payload.tab, 'Alert Intelligence Sections') }}
+    {{ content_tabs.render_links(
+        'alert-intelligence-sections',
+        workspace_tabs,
+        payload.tab,
+        'Alert Intelligence Sections',
+        embedded=true,
+        data_namespace='alert-intelligence',
+        hx_target='#alert-intelligence-page-content',
+        hx_swap='outerHTML show:none focus-scroll:false',
+        hx_push_url='true',
+        hx_indicator='#alert-intelligence-loading',
+        nowrap=true,
+        hx_sync='#alert-intelligence-page-content:replace'
+    ) }}
 {% endcall %}

@@ -2,7 +2,7 @@
 
 ## Decision
 
-Alert Intelligence is aligned to the current KAORI Intelligence workspace standard and uses section-owned tabs to control long-form content while preserving one asset-scoped operational context. Browser/runtime smoke in the full devcontainer remains the final visual confirmation.
+Alert Intelligence is aligned to the current KAORI Intelligence workspace standard and uses the shared KAORI Content Tabs in server-owned link mode to control long-form content while preserving one asset-scoped operational context. Browser/runtime smoke in the full devcontainer remains the final visual confirmation.
 
 ## Canonical page hierarchy
 
@@ -15,7 +15,7 @@ Alert Intelligence is aligned to the current KAORI Intelligence workspace standa
    - **Notification Delivery** — shared channel posture, operational-channel count, asset-scoped delivery journal, and Integrations handoff.
    - **Evidence & Ownership** — detection, lifecycle, interpretation, and execution authority with explicit KAORI/provider ownership details.
 
-The tabs are content-density controls, not separate operational scopes. Domain, asset, and source policy remain shared across every tab. Search, severity, and state filters exist only on Alert Records. There is no Apply button; all filters refresh automatically. Reset Filters remains available on Alert Records.
+The tabs are content-density controls, not separate operational scopes. Visual geometry is owned by `components/content_tabs.html`; selected section state remains URL/server-owned and does not use the Analytics client-side controller. Domain, asset, and source policy remain shared across every tab. Search, severity, and state filters exist only on Alert Records. There is no Apply button; all filters refresh automatically. Reset Filters remains available on Alert Records.
 
 ## Authority boundary
 
@@ -29,6 +29,8 @@ The tabs are content-density controls, not separate operational scopes. Domain, 
 ## Audit findings closed
 
 - Replaced the long sequential page with four section-owned tabs while keeping the global Summary visible.
+- Replaced the page-local Intelligence underline tab treatment with the canonical shared KAORI Content Tabs component used by Analytics; Alert Intelligence uses `render_links()` because section state is server/URL-owned.
+- Extended shared server-owned Content Tabs with backward-compatible `nowrap` and `hx-sync` support so long labels remain one row on the 14-inch target and concurrent HTMX scope/tab requests share one synchronization boundary.
 - Kept shared domain/asset/source controls outside tab-specific semantics so switching sections never changes operational scope.
 - Kept Alert Records filters auto-refreshing and removed any Apply action; Reset Filters remains.
 - Added informative tab context instead of label-only tabs: source/lifecycle context, recommendation/rule counts, delivery posture, and authority mapping.
