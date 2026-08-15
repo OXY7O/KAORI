@@ -47,10 +47,10 @@ The main KAORI scroll container reserves a stable scrollbar gutter. Opening or c
 
 Recommendations use a two-row desktop filter layout. The first row owns Search, Domain, Provider Coverage, and Signal Source. The second row owns Severity, Category, Resource Type, and Rule Type. Search receives the largest width because it accepts free-form operational evidence terms. The shared Rule Catalog filter partial keeps its existing layout until the Rule Catalog is reviewed separately.
 
-## Workspace Context Block
+## Recommendation Summary
 
-The result region begins with a compact information block before the recommendation records. It communicates the current matching count, active finding population, selected scope, active-filter count, and committed-evidence boundary. The block must refresh with the result region so its numbers always match the filters and pagination source state.
+**Recommendation Summary is a standalone KAORI section between the Hero and Recommendation Workspace.** It is not nested inside the filter/table workspace. The section reports matching findings, Kubernetes and Object Storage distribution, critical/warning counts, active-filter state, and the committed-evidence boundary. Counts cover the full filtered result set rather than only the current pagination page.
 
-The result region includes a filter-aware **Recommendation Summary** before the records. It reports matching findings, Kubernetes and Object Storage distribution, critical/warning counts, active filter state, and the committed-evidence boundary. Counts cover the full filtered result set rather than only the current pagination page.
+The Recommendation Workspace continues to own filters, records, and pagination. Filter and pagination requests replace only `#recommendations-results-content`; the standalone Summary is refreshed with an HTMX out-of-band swap so it remains synchronized without rerendering the filter form or collapsing the workspace hierarchy. Reset may replace the complete workspace while refreshing the standalone Summary through the same OOB contract.
 
 Recommendations remain evidence-backed findings. The workspace may describe live-validation and remediation steps, but it must not expose a direct infrastructure execution control; live validation remains with the owning operational workspace and governed execution remains with Automation Control.

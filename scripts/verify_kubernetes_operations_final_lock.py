@@ -80,7 +80,9 @@ def main() -> int:
     require(
         "components/cluster/_hero_blocked_context.html" in cluster_required_template
         and 'Operations Readiness' in cluster_required_template
-        and 'Kubernetes Cluster Setup Required' in cluster_required_template
+        and '{{ requested_page_title }}' in cluster_required_template
+        and '{{ requested_page_description }}' in cluster_required_template
+        and '>Kubernetes Cluster Setup Required</h1>' not in cluster_required_template
         and 'Cluster Setup Required' in cluster_required_template,
         'Kubernetes Operations cluster prerequisite must use the canonical setup-blocked Hero context.',
         errors,
@@ -88,11 +90,41 @@ def main() -> int:
 
     for token in (
         'def cluster_required[',
+        'page_title: str | None = None',
+        'page_description: str | None = None',
+        'requested_page_title=page_title or operation_label',
+        'requested_page_description=(',
         'has_registered_clusters()',
         "request.headers.get('HX-Request') == 'true'",
         "render_template('components/cluster/_onboarding_banner.html')",
     ):
         require(token in operation_flow, f'Operations cluster prerequisite is missing: {token}', errors)
+
+    primary_identity_tokens = {
+        'app/kubernetes_operations/configmaps/routes.py': (
+            "page_title='ConfigMap Management'",
+            "page_title='Create Kubernetes ConfigMap'",
+            "page_title='Update ConfigMap'",
+            "page_title='Delete ConfigMap'",
+        ),
+        'app/kubernetes_operations/secrets/crud_routes.py': (
+            "page_title='Secret Management'",
+            "page_title='Create Kubernetes Secret'",
+            "page_title='Replace Kubernetes Secret Data'",
+            "page_title='Delete Kubernetes Secret'",
+        ),
+        'app/kubernetes_operations/secrets/reveal_routes.py': (
+            "page_title='Protected Kubernetes Secret Reveal'",
+        ),
+        'app/kubernetes_operations/secrets/tls_routes.py': (
+            "page_title='Rotate TLS Secret'",
+            "page_title='Bulk TLS Secret Rotation'",
+        ),
+    }
+    for relative, tokens in primary_identity_tokens.items():
+        route_source = read(relative)
+        for token in tokens:
+            require(token in route_source, f'{relative} blocked page identity missing: {token}', errors)
 
     protected = 0
     for relative in ROUTE_FILES:

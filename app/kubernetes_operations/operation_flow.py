@@ -9,7 +9,12 @@ from flask import flash, redirect, render_template, request, url_for
 from app.cluster.onboarding import has_registered_clusters
 
 
-def cluster_required[ViewT: Callable[..., Any]](operation_label: str) -> Callable[[ViewT], ViewT]:
+def cluster_required[ViewT: Callable[..., Any]](
+    operation_label: str,
+    *,
+    page_title: str | None = None,
+    page_description: str | None = None,
+) -> Callable[[ViewT], ViewT]:
     """Run the Kubernetes cluster prerequisite only after route authorization."""
 
     def decorator(view: ViewT) -> ViewT:
@@ -27,6 +32,11 @@ def cluster_required[ViewT: Callable[..., Any]](operation_label: str) -> Callabl
                     render_template(
                         'kubernetes_operations/cluster_required.html',
                         requested_operation=operation_label,
+                        requested_page_title=page_title or operation_label,
+                        requested_page_description=(
+                            page_description
+                            or f'{operation_label} requires a registered Kubernetes cluster and canonical connection.'
+                        ),
                     ),
                     409,
                 )

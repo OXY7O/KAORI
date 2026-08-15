@@ -101,7 +101,7 @@ Authentication
 
 The canonical boundary is **AuthZ → cluster prerequisite → request validation → live provider**. The cluster prerequisite is implemented with `cluster_required()` inside the route permission boundary. A Blueprint `before_request` must not return cluster onboarding/readiness responses before authorization.
 
-For full-page GET requests that fail the cluster prerequisite, Kubernetes Operations renders the shared setup-blocked Hero context with `Operations Readiness`, followed by the canonical onboarding banner. The blocked Hero must use `components/cluster/_hero_blocked_context.html`; operation-specific forms and mutation controls are not rendered.
+For full-page GET requests that fail the cluster prerequisite, Kubernetes Operations renders the shared setup-blocked Hero context with `Operations Readiness`, followed by the canonical onboarding banner. The blocked Hero must use `components/cluster/_hero_blocked_context.html`; operation-specific forms and mutation controls are not rendered. The requested operation keeps its normal page identity and concise purpose copy (`ConfigMap Management`, `Create Kubernetes Secret`, `Protected Kubernetes Secret Reveal`, and so on); `Cluster Setup Required` is readiness state, not the page title.
 
 
 ## ConfigMap entry editing

@@ -22,19 +22,27 @@ def test_recommendation_filters_use_two_desktop_rows_without_changing_catalog_la
     assert 'filter_compact_two_rows' not in catalog
 
 
-def test_recommendation_summary_precedes_records_and_tracks_cross_domain_result_state() -> None:
+def test_recommendation_summary_is_a_standalone_filter_aware_section_above_workspace() -> None:
+    page = read('app/templates/intelligence/recommendations.html')
     results = read('app/templates/intelligence/partials/_recommendations_results.html')
     info = read('app/templates/intelligence/partials/_recommendation_workspace_info.html')
+    routes = read('app/intelligence/routes.py')
     service = read('app/intelligence/service.py')
 
-    assert results.index('_recommendation_workspace_info.html') < results.index('_recommendation_records.html')
+    assert page.index('_recommendation_workspace_info.html') < page.index("'Recommendation Workspace'")
     assert 'Recommendation Summary' in info
-    assert 'operational_callout.render' in info
+    assert 'intelligence_ui.section' in info
+    assert 'id="recommendation-summary-section"' in info
+    assert 'hx-swap-oob="outerHTML"' in info
+    assert 'operational_callout.render' not in info
     assert 'Matching Findings' in info
     assert 'Kubernetes' in info
     assert 'Object Storage' in info
     assert 'Critical' in info
     assert 'Committed Evidence' in info
+    assert 'recommendation_summary_oob|default(false)' in results
+    assert results.index('_recommendation_workspace_info.html') < results.index('_recommendation_records.html')
+    assert 'recommendation_summary_oob=True' in routes
     assert "'result_context':" in service
     assert "'matching_items': total_items" in service
     assert "'source_items': len(source_items)" in service

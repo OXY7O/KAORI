@@ -157,7 +157,11 @@ def _record_validation_activity(
 
 
 @permission_required('kubernetes_secrets.rotate_tls')
-@cluster_required('TLS Secret Rotation')
+@cluster_required(
+    'TLS Secret Rotation',
+    page_title='Rotate TLS Secret',
+    page_description='Validate certificate material before rotating one live TLS Secret.',
+)
 def tls_secret_rotate(certificate_id: int):
     record = get_tls_certificate_detail(certificate_id)
     if record is None:
@@ -275,7 +279,11 @@ def tls_secret_rotate_apply(certificate_id: int):
 
 
 @permission_required('kubernetes_secrets.bulk_rotate_tls')
-@cluster_required('TLS Secret Rotation')
+@cluster_required(
+    'TLS Secret Rotation',
+    page_title='Bulk TLS Secret Rotation',
+    page_description='Validate one certificate pair for explicitly selected TLS Secrets.',
+)
 def tls_secret_bulk_rotation_page():
     payload = get_tls_certificate_page(request.args)
     partial_mode = request.args.get('partial_mode')

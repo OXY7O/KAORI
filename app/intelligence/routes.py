@@ -38,7 +38,11 @@ def recommendations() -> ResponseReturnValue:
             if target == 'recommendations-results-content'
             else 'intelligence/partials/_recommendations_workspace.html'
         )
-        return render_template(template_name, payload=payload)
+        return render_template(
+            template_name,
+            payload=payload,
+            recommendation_summary_oob=True,
+        )
     return render_template('intelligence/recommendations.html', payload=payload)
 
 

@@ -287,9 +287,15 @@ def main() -> int:
         errors,
     )
     require(
-        recommendation_results.index('_recommendation_workspace_info.html')
-        < recommendation_results.index('_recommendation_records.html'),
-        'Recommendation Summary must render before recommendation records',
+        recommendations_page.index('_recommendation_workspace_info.html')
+        < recommendations_page.index("'Recommendation Workspace'"),
+        'Recommendation Summary must be a standalone section above Recommendation Workspace',
+        errors,
+    )
+    require(
+        'recommendation_summary_oob|default(false)' in recommendation_results
+        and '_recommendation_workspace_info.html' in recommendation_results,
+        'Recommendation Summary must stay filter-aware through an HTMX out-of-band refresh',
         errors,
     )
     for required in (

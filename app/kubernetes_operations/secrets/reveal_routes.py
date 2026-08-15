@@ -164,7 +164,11 @@ def _reveal_request_metadata(record: Any) -> dict[str, Any]:
 
 
 @any_permission_required('kubernetes_secrets.reveal', 'kubernetes_secrets.approve_reveal')
-@cluster_required('Protected Secret Reveal')
+@cluster_required(
+    'Protected Secret Reveal',
+    page_title='Protected Kubernetes Secret Reveal',
+    page_description='Reveal one approved Secret key through a protected one-time session.',
+)
 def reveal_secret_page():
     selected_cluster_id = request.args.get('cluster_id', '')
     selected_namespace = request.args.get('namespace', '')

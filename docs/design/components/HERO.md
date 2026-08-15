@@ -255,6 +255,7 @@ Rules:
 - do not render normal right-panel posture metrics as if zero values were committed evidence;
 - blocked Hero metadata on the left must also avoid zero-valued asset counters when no source scope exists; use capability/setup metadata instead;
 - keep the main Hero visible and stable;
+- keep the page title and purpose description unchanged; `Setup Required` belongs to readiness context, never the `<h1>` identity;
 - hide data snapshots, KPI/posture cards, tables, topology explorers, and mutation workspaces when the page has no valid cluster scope;
 - authorization must complete before the setup blocker is exposed.
 
@@ -276,7 +277,7 @@ A lazy right-side context partial may update only its owned context region while
 
 ## Empty and blocked states
 
-The hero remains visible when no records exist or a dependency is blocked.
+The hero remains visible when no records exist or a dependency is blocked. **Blocked state never replaces page identity.** The page `<h1>`, document title, and concise purpose description remain the same destination the user opened; readiness changes belong in the right Hero context and the blocker/CTA below it. This rule applies across Kubernetes Dashboard, Inventory, Analytics, Governance, Operations, Object Storage Inventory, and Object Storage Analytics.
 
 Use factual metadata such as:
 

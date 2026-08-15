@@ -25,6 +25,7 @@
                 {{ page_hero.context_card('Recommendation posture', 'Intelligence Posture', payload.posture.title, payload.posture.label, payload.posture.tone, hero_metrics, 'Open Rule Catalog', url_for('intelligence.catalog') , 'list-checks') }}
             </div>
         </section>
+        {% include 'intelligence/partials/_recommendation_workspace_info.html' %}
         {% call intelligence_ui.section(
             'Recommendation Workspace',
             'Filter and review evidence-backed operational guidance. Recommendations are findings; rule definitions remain in Rule Catalog.',
