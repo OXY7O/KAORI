@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import smtplib
 import ssl
+from collections.abc import Mapping
 from email.message import EmailMessage
 from email.utils import getaddresses, make_msgid
-from collections.abc import Mapping
 from typing import Any
 
 from app.notification_channels.contracts import DeliveryResult, NotificationMessage

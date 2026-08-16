@@ -255,7 +255,7 @@ def main() -> int:
     data_lifecycle_index = read('app/templates/platform_operations/data_lifecycle/index.html')
     if (
         'components/framed_workspace_tabs.html' not in data_lifecycle_index
-        or 'framed_workspace_tabs.render(' not in data_lifecycle_index
+        or 'framed_workspace_tabs.render_navigation(' not in data_lifecycle_index
     ):
         errors.append('Data Lifecycle must use shared Framed Workspace Tabs')
     if 'Planned Domains' in data_lifecycle_index:
@@ -319,7 +319,7 @@ def main() -> int:
         errors.append('Active Work polling must remain live even when no active execution is rendered')
     if "('Active Attention', job_stats.active_attention)" not in active_jobs:
         errors.append('Active Work must distinguish active intervention from recent terminal attention')
-    if "_status_oob.html" not in active_jobs or 'document.hidden' not in active_jobs:
+    if '_status_oob.html' not in active_jobs or 'document.hidden' not in active_jobs:
         errors.append('Active Work must share OOB summary refresh and pause polling while the browser is hidden')
     status_poller = read('app/templates/jobs/executions/partials/_status_poller.html')
     if "if selected_job_tab != 'active'" not in execution_workspace or 'document.hidden' not in status_poller:

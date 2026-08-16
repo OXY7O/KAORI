@@ -35,7 +35,8 @@ class AnalyticsSnapshotArchiveDomain:
         return resolve_policy(self.name, fallback)
 
     def inspect_boundary(self, policy: RetentionPolicy) -> ArchiveBoundary:
-        cutoff_at = datetime.now(UTC) - timedelta(days=policy.retention_days)
+        now = datetime.now(UTC)
+        cutoff_at = now - timedelta(days=policy.retention_days)
         record_count = 0
         protected_count = 0
         maximum_record_id: int | None = None
@@ -62,6 +63,7 @@ class AnalyticsSnapshotArchiveDomain:
                 range_end = updated_at if range_end is None else max(range_end, updated_at)
 
         return ArchiveBoundary(
+            selected_at=now,
             cutoff_at=cutoff_at,
             maximum_record_id=maximum_record_id,
             record_count=record_count,

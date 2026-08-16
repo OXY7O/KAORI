@@ -5,7 +5,12 @@ from typing import Any, Literal, cast, overload
 from kubernetes.client import AppsV1Api, BatchV1Api, CoreV1Api, V1JobList, V1PodList, V1ReplicaSetList
 from kubernetes.client.exceptions import ApiException
 
-from app.inventory.kubernetes.collectors.common import _isoformat_datetime, _model_value, _string_value, _toleration_display
+from app.inventory.kubernetes.collectors.common import (
+    _isoformat_datetime,
+    _model_value,
+    _string_value,
+    _toleration_display,
+)
 
 
 def _controller_reference(metadata) -> tuple[str | None, str | None]:

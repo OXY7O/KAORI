@@ -143,8 +143,7 @@ def _overview_posture(
             'label': 'No Managed Assets',
             'tone': 'unknown',
             'helper': (
-                'Rule and automation governance remain visible, but no managed infrastructure asset '
-                'is registered yet.'
+                'Rule and automation governance remain visible, but no managed infrastructure asset is registered yet.'
             ),
         }
     return {
@@ -228,11 +227,11 @@ def _capability_rows(
                 'and operator-response definitions.'
             ),
             'icon': 'list-checks',
-            'status': f"{summary['available_rules']} Available",
+            'status': f'{summary["available_rules"]} Available',
             'tone': 'normal' if summary['available_rules'] else 'unknown',
             'metric_label': 'Catalog Rules',
             'metric_value': summary['catalog_rules'],
-            'supporting': f"{summary['reserved_rules']} reserved plan",
+            'supporting': f'{summary["reserved_rules"]} reserved plan',
             'href_endpoint': 'intelligence.catalog',
             'action_label': 'Open Rule Catalog',
         },

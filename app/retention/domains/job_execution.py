@@ -57,6 +57,7 @@ class JobExecutionArchiveDomain:
             .one()
         )
         return ArchiveBoundary(
+            selected_at=now,
             cutoff_at=now - timedelta(days=policy.retention_days),
             maximum_record_id=int(max_id) if max_id is not None else None,
             record_count=int(count or 0),
@@ -68,11 +69,11 @@ class JobExecutionArchiveDomain:
         if boundary.maximum_record_id is None or boundary.record_count <= 0:
             return
         last_id = 0
-        now = datetime.now(UTC)
+        selection_now = boundary.selected_at
         while True:
             rows = (
                 JobExecution.query.filter(
-                    self._eligible_filter(policy, now=now),
+                    self._eligible_filter(policy, now=selection_now),
                     JobExecution.id <= boundary.maximum_record_id,
                     JobExecution.id > last_id,
                 )

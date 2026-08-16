@@ -3,7 +3,11 @@ from __future__ import annotations
 from flask import render_template, request
 
 from app.analytics.kubernetes.capacity.presentation import present_capacity_context
-from app.analytics.kubernetes.materialization.presentation import blocked_page_context, pending_page_context, snapshot_meta
+from app.analytics.kubernetes.materialization.presentation import (
+    blocked_page_context,
+    pending_page_context,
+    snapshot_meta,
+)
 from app.analytics.kubernetes.materialization.requests import resolve_materialized_request
 from app.rbac.decorators import permission_required
 

@@ -141,11 +141,7 @@ def _validation_failure_evidence(
     attempted_at: datetime,
 ) -> dict[str, Any]:
     previous_payload = previous if isinstance(previous, dict) else {}
-    payload = (
-        dict(previous_payload)
-        if previous_payload.get('profile_key') == profile.profile_key
-        else {}
-    )
+    payload = dict(previous_payload) if previous_payload.get('profile_key') == profile.profile_key else {}
     payload.update(
         {
             'profile_key': profile.profile_key,

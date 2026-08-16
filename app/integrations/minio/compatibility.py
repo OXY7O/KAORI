@@ -68,13 +68,41 @@ def _load_compatibility_contract() -> tuple[
             )
             profiles.append(
                 MinioCompatibilityProfile(
-                    key=require_str(profile, 'key', f'object_storage.products[{product_index}].compatibility_profiles[{profile_index}]'),
-                    product=require_str(profile, 'product', f'object_storage.products[{product_index}].compatibility_profiles[{profile_index}]'),
-                    label=require_str(profile, 'label', f'object_storage.products[{product_index}].compatibility_profiles[{profile_index}]'),
-                    minimum_release=require_str(profile, 'minimum_release', f'object_storage.products[{product_index}].compatibility_profiles[{profile_index}]'),
-                    maximum_release=require_str(profile, 'maximum_release', f'object_storage.products[{product_index}].compatibility_profiles[{profile_index}]'),
-                    support_level=require_str(profile, 'support_level', f'object_storage.products[{product_index}].compatibility_profiles[{profile_index}]'),
-                    notes=require_str(profile, 'notes', f'object_storage.products[{product_index}].compatibility_profiles[{profile_index}]'),
+                    key=require_str(
+                        profile,
+                        'key',
+                        f'object_storage.products[{product_index}].compatibility_profiles[{profile_index}]',
+                    ),
+                    product=require_str(
+                        profile,
+                        'product',
+                        f'object_storage.products[{product_index}].compatibility_profiles[{profile_index}]',
+                    ),
+                    label=require_str(
+                        profile,
+                        'label',
+                        f'object_storage.products[{product_index}].compatibility_profiles[{profile_index}]',
+                    ),
+                    minimum_release=require_str(
+                        profile,
+                        'minimum_release',
+                        f'object_storage.products[{product_index}].compatibility_profiles[{profile_index}]',
+                    ),
+                    maximum_release=require_str(
+                        profile,
+                        'maximum_release',
+                        f'object_storage.products[{product_index}].compatibility_profiles[{profile_index}]',
+                    ),
+                    support_level=require_str(
+                        profile,
+                        'support_level',
+                        f'object_storage.products[{product_index}].compatibility_profiles[{profile_index}]',
+                    ),
+                    notes=require_str(
+                        profile,
+                        'notes',
+                        f'object_storage.products[{product_index}].compatibility_profiles[{profile_index}]',
+                    ),
                 )
             )
         catalog[product_key] = tuple(profiles)
@@ -89,7 +117,9 @@ _PRIMARY_MINIO_PROFILE = MINIO_COMPATIBILITY_PROFILES[0] if MINIO_COMPATIBILITY_
 SUPPORTED_RELEASE = _PRIMARY_MINIO_PROFILE.minimum_release if _PRIMARY_MINIO_PROFILE else ''
 SUPPORTED_RELEASE_MIN = _PRIMARY_MINIO_PROFILE.minimum_release if _PRIMARY_MINIO_PROFILE else ''
 SUPPORTED_RELEASE_MAX = _PRIMARY_MINIO_PROFILE.maximum_release if _PRIMARY_MINIO_PROFILE else ''
-SUPPORTED_RELEASE_RANGE_LABEL = _PRIMARY_MINIO_PROFILE.supported_range_label if _PRIMARY_MINIO_PROFILE else 'Qualification Required'
+SUPPORTED_RELEASE_RANGE_LABEL = (
+    _PRIMARY_MINIO_PROFILE.supported_range_label if _PRIMARY_MINIO_PROFILE else 'Qualification Required'
+)
 PROFILE_KEY = _PRIMARY_MINIO_PROFILE.key if _PRIMARY_MINIO_PROFILE else 'Qualification Required'
 PROFILE_LABEL = _PRIMARY_MINIO_PROFILE.label if _PRIMARY_MINIO_PROFILE else 'Qualification Required'
 

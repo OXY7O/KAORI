@@ -91,9 +91,7 @@ def assert_decision_execution_allowed(
     global_control = ResolverOperationalControl.query.filter_by(cluster_id=None).one_or_none()
     cluster_control = ResolverOperationalControl.query.filter_by(cluster_id=cluster_id).one_or_none()
     reasons: list[str] = []
-    global_enabled = not bool(
-        global_control and (global_control.global_kill_switch or global_control.maintenance_mode)
-    )
+    global_enabled = not bool(global_control and (global_control.global_kill_switch or global_control.maintenance_mode))
     cluster_enabled = not bool(cluster_control and cluster_control.maintenance_mode)
     if global_control and global_control.global_kill_switch:
         reasons.append('Global resolver kill switch is active.')

@@ -75,8 +75,7 @@ def _load_system_runbooks() -> tuple[SystemRunbookDefinition, ...]:
         parameter_schema = require_mapping(raw.get('parameter_schema'), f'{path}.parameter_schema')
         raw_steps = require_list(raw.get('steps'), f'{path}.steps')
         steps = tuple(
-            dict(require_mapping(step, f'{path}.steps[{step_index}]'))
-            for step_index, step in enumerate(raw_steps)
+            dict(require_mapping(step, f'{path}.steps[{step_index}]')) for step_index, step in enumerate(raw_steps)
         )
         recovery_raw = raw.get('recovery')
         recovery = dict(require_mapping(recovery_raw, f'{path}.recovery')) if recovery_raw is not None else None
@@ -89,29 +88,33 @@ def _load_system_runbooks() -> tuple[SystemRunbookDefinition, ...]:
             if not isinstance(key, str) or not isinstance(value, str) or not key.strip() or not value.strip():
                 raise DefinitionError(f'{path}.default_evidence_mapping requires non-empty string keys and values.')
             evidence_mapping[key.strip()] = value.strip()
-        output.append(SystemRunbookDefinition(
-            runbook_key=require_str(raw, 'runbook_key', path),
-            title=require_str(raw, 'title', path),
-            description=require_str(raw, 'description', path),
-            domain=require_str(raw, 'domain', path),
-            asset_kind=require_str(raw, 'asset_kind', path),
-            version=require_str(raw, 'version', path),
-            action_key=require_str(raw, 'action_key', path),
-            resolver_key=require_str(raw, 'resolver_key', path),
-            approval_policy=require_str(raw, 'approval_policy', path),
-            maturity=require_str(raw, 'maturity', path),
-            validation_status=require_str(raw, 'validation_status', path),
-            verification_summary=require_str(raw, 'verification_summary', path),
-            recovery_summary=require_str(raw, 'recovery_summary', path),
-            required_evidence=string_tuple(raw.get('required_evidence'), f'{path}.required_evidence'),
-            required_capabilities=string_tuple(raw.get('required_capabilities'), f'{path}.required_capabilities'),
-            compatibility_profiles=string_tuple(raw.get('compatibility_profiles'), f'{path}.compatibility_profiles'),
-            change_level=require_str(raw, 'change_level', path),
-            parameter_schema=dict(parameter_schema),
-            steps=steps,
-            recovery=recovery,
-            default_evidence_mapping=evidence_mapping,
-        ))
+        output.append(
+            SystemRunbookDefinition(
+                runbook_key=require_str(raw, 'runbook_key', path),
+                title=require_str(raw, 'title', path),
+                description=require_str(raw, 'description', path),
+                domain=require_str(raw, 'domain', path),
+                asset_kind=require_str(raw, 'asset_kind', path),
+                version=require_str(raw, 'version', path),
+                action_key=require_str(raw, 'action_key', path),
+                resolver_key=require_str(raw, 'resolver_key', path),
+                approval_policy=require_str(raw, 'approval_policy', path),
+                maturity=require_str(raw, 'maturity', path),
+                validation_status=require_str(raw, 'validation_status', path),
+                verification_summary=require_str(raw, 'verification_summary', path),
+                recovery_summary=require_str(raw, 'recovery_summary', path),
+                required_evidence=string_tuple(raw.get('required_evidence'), f'{path}.required_evidence'),
+                required_capabilities=string_tuple(raw.get('required_capabilities'), f'{path}.required_capabilities'),
+                compatibility_profiles=string_tuple(
+                    raw.get('compatibility_profiles'), f'{path}.compatibility_profiles'
+                ),
+                change_level=require_str(raw, 'change_level', path),
+                parameter_schema=dict(parameter_schema),
+                steps=steps,
+                recovery=recovery,
+                default_evidence_mapping=evidence_mapping,
+            )
+        )
     return tuple(output)
 
 

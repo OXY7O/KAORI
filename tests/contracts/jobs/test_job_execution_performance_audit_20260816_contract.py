@@ -16,7 +16,7 @@ def test_parent_jobs_workspaces_are_server_owned_and_not_built_together() -> Non
     assert 'x-show="activeTab ===' not in page
     assert "if active_section == 'configuration':" in routes
     assert 'build_job_configuration_summary_context' in routes
-    assert 'build_job_execution_status_context(tab=\'active\')' in routes
+    assert "build_job_execution_status_context(tab='active')" in routes
 
 
 def test_execution_subworkspaces_are_demand_loaded() -> None:
@@ -57,13 +57,13 @@ def test_live_polling_is_bounded_and_configuration_has_no_idle_poller() -> None:
     assert 'hx-trigger="every 15s"' in active
     assert 'every 30s' in status
     assert "if selected_job_tab != 'active'" in workspace
-    assert "_status_oob.html" in active
+    assert '_status_oob.html' in active
     assert active.count('document.hidden') >= 1
     assert 'document.hidden' in status
     assert '{% if selected_job.active_job %}' in configuration
     assert 'hx-trigger="every 10s"' in configuration
     assert 'document.hidden' in configuration
-    terminal_refresh = "if active is None:\n        selected_context = _selected_job_context(definition, policy)"
+    terminal_refresh = 'if active is None:\n        selected_context = _selected_job_context(definition, policy)'
     assert terminal_refresh in configuration_service
     assert "'The canonical worker execution is still active.'" in configuration_service
 

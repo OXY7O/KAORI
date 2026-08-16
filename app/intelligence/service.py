@@ -47,7 +47,8 @@ def _truncate_words(value: str | None, limit: int = 132) -> str:
     if len(text) <= limit:
         return text
     shortened = text[:limit].rsplit(' ', 1)[0].strip()
-    return f"{shortened or text[:limit].strip()}…"
+    return f'{shortened or text[:limit].strip()}…'
+
 
 def _base_payload(args: MultiDict[str, str], *, page_mode: str) -> dict[str, Any]:
     filters = {
@@ -217,12 +218,7 @@ def _finding_asset_key(finding: dict[str, Any]) -> str:
     if not isinstance(evidence, dict):
         return ''
     return clean(
-        str(
-            evidence.get('asset_key')
-            or evidence.get('cluster_id')
-            or evidence.get('object_storage_system_id')
-            or ''
-        )
+        str(evidence.get('asset_key') or evidence.get('cluster_id') or evidence.get('object_storage_system_id') or '')
     )
 
 

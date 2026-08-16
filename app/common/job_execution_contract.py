@@ -1,19 +1,20 @@
 from __future__ import annotations
 
+from app.definitions.loader import load_definition_document
+from app.definitions.validation import require_list, require_mapping, require_str
+
 KUBERNETES_INVENTORY_SYNC_OPERATION = 'sync_kubernetes_inventory'
 OBJECT_STORAGE_INVENTORY_SYNC_OPERATION = 'sync_object_storage_inventory'
 OBJECT_STORAGE_FORECAST_MATERIALIZE_OPERATION = 'materialize_object_storage_forecast'
 SYNC_ALL_INVENTORY_ACTION = 'sync_all_inventory'
 
-from app.definitions.loader import load_definition_document
-from app.definitions.validation import require_list, require_mapping, require_str
-
 
 def _registered_operation_labels() -> dict[str, str]:
     document = load_definition_document('jobs/registered_jobs.yaml', expected_kind='registered_jobs')
     return {
-        require_str(require_mapping(item, f'jobs[{index}]'), 'operation', f'jobs[{index}]'):
-        require_str(require_mapping(item, f'jobs[{index}]'), 'name', f'jobs[{index}]')
+        require_str(require_mapping(item, f'jobs[{index}]'), 'operation', f'jobs[{index}]'): require_str(
+            require_mapping(item, f'jobs[{index}]'), 'name', f'jobs[{index}]'
+        )
         for index, item in enumerate(require_list(document.get('jobs'), 'jobs'))
     }
 

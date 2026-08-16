@@ -66,9 +66,7 @@ WELCOME_SHORTCUT_DEFINITIONS: tuple[dict[str, Any], ...] = (
     {
         'title': 'Dashboards',
         'label': 'Operational Overview',
-        'description': (
-            'Review operational posture, capacity risk, alerts, top consumers, and prioritized actions.'
-        ),
+        'description': ('Review operational posture, capacity risk, alerts, top consumers, and prioritized actions.'),
         'icon': 'layout-dashboard',
         'scope': 'Compute',
         'group': 'visibility',

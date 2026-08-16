@@ -45,14 +45,16 @@ def _load_provider_definitions() -> tuple[AuthProviderDefinition, ...]:
     output: list[AuthProviderDefinition] = []
     for index, raw in enumerate(raw_items):
         path = f'providers[{index}]'
-        output.append(AuthProviderDefinition(
-            provider_type=AuthProviderType(require_str(raw, 'provider_type', path)),
-            family=AuthProviderFamily(require_str(raw, 'family', path)),
-            label=require_str(raw, 'label', path),
-            flow=AuthFlow(require_str(raw, 'flow', path)),
-            configurable=require_bool(raw, 'configurable', path),
-            supports_jit=require_bool(raw, 'supports_jit', path, default=False),
-        ))
+        output.append(
+            AuthProviderDefinition(
+                provider_type=AuthProviderType(require_str(raw, 'provider_type', path)),
+                family=AuthProviderFamily(require_str(raw, 'family', path)),
+                label=require_str(raw, 'label', path),
+                flow=AuthFlow(require_str(raw, 'flow', path)),
+                configurable=require_bool(raw, 'configurable', path),
+                supports_jit=require_bool(raw, 'supports_jit', path, default=False),
+            )
+        )
     return tuple(output)
 
 
@@ -95,9 +97,7 @@ def provider_label(provider_type: str | AuthProviderType | None) -> str:
 def provider_types_for_family(family: str | AuthProviderFamily) -> tuple[str, ...]:
     normalized = AuthProviderFamily(str(family).strip().lower())
     return tuple(
-        definition.provider_type.value
-        for definition in _PROVIDER_DEFINITIONS
-        if definition.family == normalized
+        definition.provider_type.value for definition in _PROVIDER_DEFINITIONS if definition.family == normalized
     )
 
 
@@ -111,9 +111,7 @@ def configurable_provider_choices() -> list[tuple[str, str]]:
 
 def browser_sso_provider_types() -> tuple[str, ...]:
     return tuple(
-        definition.provider_type.value
-        for definition in _PROVIDER_DEFINITIONS
-        if definition.flow == AuthFlow.BROWSER
+        definition.provider_type.value for definition in _PROVIDER_DEFINITIONS if definition.flow == AuthFlow.BROWSER
     )
 
 

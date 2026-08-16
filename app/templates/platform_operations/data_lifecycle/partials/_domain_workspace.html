@@ -3,9 +3,10 @@
 {% import "components/loading_bar.html" as loading_bar %}
 {% set selected = lifecycle.domains|selectattr('name','equalto',lifecycle.selected_domain)|first %}
 {% set can_manage = current_user.has_permission('platform_operations.manage_data_lifecycle') %}
+{% set execution_blocked = (not selected.enabled) or lifecycle.active_lifecycle_jobs %}
 <section id="data-lifecycle-domain-workspace"
          class="{{ table_ui.block_classes() }}"
-         {% if lifecycle.active_lifecycle_jobs %}hx-get="{{ url_for('platform_operations.data_lifecycle.index', tab='policies', domain=lifecycle.selected_domain) }}" hx-trigger="every 4s" hx-target="this" hx-swap="outerHTML"{% endif %}>
+         {% if lifecycle.active_lifecycle_jobs %}hx-get="{{ url_for('platform_operations.data_lifecycle.index', tab='policies', domain=lifecycle.selected_domain) }}" hx-trigger="every 10s" hx-target="this" hx-swap="outerHTML" hx-on::before-request="if (document.hidden) event.preventDefault()"{% endif %}>
     <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div class="flex min-w-0 items-start gap-3">
@@ -84,6 +85,7 @@
                     <div>
                         <p class="text-sm font-semibold text-content-primary">Read-only Preview</p>
                         <p class="mt-1 text-sm leading-6 text-content-secondary">{{ lifecycle.preview.record_count }} records match the current boundary, covering {{ lifecycle.preview.range_start|user_datetime }} to {{ lifecycle.preview.range_end|user_datetime }}. Estimated uncompressed payload: {{ lifecycle.preview.estimated_size_label }}.</p>
+                        <p class="mt-1 text-xs text-content-muted">Boundary evaluated at {{ lifecycle.preview.selected_at|user_datetime }} and frozen by cutoff plus maximum source ID for archive execution.</p>
                         {% if lifecycle.preview.protected_record_count %}
                             <p class="mt-1 text-xs text-content-muted">{{ lifecycle.preview.protected_record_count }} protected records remain in hot storage.</p>
                         {% endif %}
@@ -236,7 +238,7 @@
                                value="{{ selected.schedule_minute }}">
                     </label>
                 </div>
-                <p class="text-xs leading-5 text-content-muted">Schedule uses {{ lifecycle.schedule_timezone }}. The dispatcher checks due policies every 15 minutes.</p>
+                <p class="text-xs leading-5 text-content-muted">Schedule uses {{ lifecycle.schedule_timezone }}. {% if lifecycle.scheduler_enabled %}The dispatcher checks due policies every 15 minutes.{% else %}<span class="font-semibold text-status-warning-text">The global Data Lifecycle dispatcher is disabled; saved schedules will not run automatically.</span>{% endif %}</p>
                 <div class="grid gap-3 rounded-xl border border-outline-default bg-surface-subtle p-4 sm:grid-cols-2 xl:grid-cols-4">
                     <div>
                         <p class="text-xs font-semibold text-content-primary">Retention Boundary</p>
@@ -278,6 +280,15 @@
                 </div>
             </fieldset>
         </form>
+        {% if not selected.enabled %}
+            <div class="rounded-lg border border-outline-default bg-status-warning-soft p-3 text-xs leading-5 text-content-secondary">
+                <span class="font-semibold text-status-warning-text">Policy paused.</span> Preview remains available, but archive execution is blocked until the policy is enabled and saved.
+            </div>
+        {% elif lifecycle.active_lifecycle_jobs %}
+            <div class="rounded-lg border border-outline-default bg-surface-subtle p-3 text-xs leading-5 text-content-secondary">
+                <span class="font-semibold text-content-primary">Lifecycle execution already active.</span> Wait for the canonical JobExecution to reach a terminal state before queuing another archive operation.
+            </div>
+        {% endif %}
         <div class="flex flex-wrap items-center gap-2 border-t border-outline-subtle pt-5">
             <a href="{{ url_for('platform_operations.data_lifecycle.preview', domain=selected.name, tab='policies') }}"
                hx-get="{{ url_for('platform_operations.data_lifecycle.preview', domain=selected.name, tab='policies') }}"
@@ -296,7 +307,7 @@
                     <input type="hidden" name="domain" value="{{ selected.name }}">
                     <input type="hidden" name="tab" value="policies">
                     <input type="hidden" name="mode" value="archive_only">
-                    <button class="{{ table_ui.action_classes() }}"><i data-lucide="archive" class="h-4 w-4"></i>Archive Only</button>
+                    <button class="{{ table_ui.action_classes() }} disabled:cursor-not-allowed disabled:opacity-50" {% if execution_blocked %}disabled{% endif %}><i data-lucide="archive" class="h-4 w-4"></i>Archive Only</button>
                 </form>
                 <form method="post"
                       action="{{ url_for('platform_operations.data_lifecycle.run') }}"
@@ -308,7 +319,7 @@
                     <input type="hidden" name="domain" value="{{ selected.name }}">
                     <input type="hidden" name="tab" value="policies">
                     <input type="hidden" name="mode" value="archive_and_cleanup">
-                    <button class="inline-flex min-h-8 items-center gap-1.5 rounded-md bg-kaori-primary px-3 text-xs font-semibold text-white hover:bg-kaori-primary-hover"><i data-lucide="archive-restore" class="h-4 w-4"></i>Archive & Cleanup</button>
+                    <button class="inline-flex min-h-8 items-center gap-1.5 rounded-md bg-kaori-primary px-3 text-xs font-semibold text-white hover:bg-kaori-primary-hover disabled:cursor-not-allowed disabled:opacity-50" {% if execution_blocked %}disabled{% endif %}><i data-lucide="archive-restore" class="h-4 w-4"></i>Archive & Cleanup</button>
                 </form>
             {% endif %}
         </div>

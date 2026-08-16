@@ -21,6 +21,7 @@ class RetentionPolicy:
 
 @dataclass(frozen=True)
 class ArchiveBoundary:
+    selected_at: datetime
     cutoff_at: datetime
     maximum_record_id: int | None
     record_count: int

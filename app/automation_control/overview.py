@@ -105,12 +105,16 @@ def build_automation_overview(*, execution_enabled: bool, registry_rows: Sequenc
             'kill_switch': {
                 'label': 'Active' if kill_switch else 'Clear',
                 'tone': 'critical' if kill_switch else 'normal',
-                'helper': 'Global resolver kill switch blocks new execution.' if kill_switch else 'No global kill switch is active.',
+                'helper': 'Global resolver kill switch blocks new execution.'
+                if kill_switch
+                else 'No global kill switch is active.',
             },
             'maintenance': {
                 'label': 'Maintenance' if maintenance else 'Normal',
                 'tone': 'maintenance' if maintenance else 'normal',
-                'helper': 'Resolver maintenance mode blocks execution.' if maintenance else 'Resolver maintenance mode is not active.',
+                'helper': 'Resolver maintenance mode blocks execution.'
+                if maintenance
+                else 'Resolver maintenance mode is not active.',
             },
             'readiness': readiness,
             'notifications': notification,
@@ -316,12 +320,15 @@ def _pipeline_rows(*, counts: dict[str, int], execution_enabled: bool) -> list[d
             'status': (
                 f'{verification_failed} Failed'
                 if verification_failed
-                else (f'{verification_pending} Pending' if verification_pending else f'{verification_verified} Verified')
+                else (
+                    f'{verification_pending} Pending' if verification_pending else f'{verification_verified} Verified'
+                )
             ),
             'tone': 'critical' if verification_failed else ('warning' if verification_pending else 'normal'),
             'description': 'API mutation success is not remediation success; workload health is verified as a separate auditable outcome.',
         },
     ]
+
 
 def _pilot_posture(registry_rows: Sequence[dict[str, Any]]) -> dict[str, str]:
     action_key = 'kubernetes.deployment.restart'

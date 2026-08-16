@@ -12,7 +12,11 @@ from flask import (
 )
 from flask.typing import ResponseReturnValue
 
-from app.analytics.kubernetes.materialization.presentation import blocked_page_context, pending_page_context, snapshot_meta
+from app.analytics.kubernetes.materialization.presentation import (
+    blocked_page_context,
+    pending_page_context,
+    snapshot_meta,
+)
 from app.analytics.kubernetes.materialization.requests import resolve_materialized_request
 from app.analytics.kubernetes.workload.presentation import present_workload_materialized_context
 from app.analytics.shared.params import get_selected_time_range

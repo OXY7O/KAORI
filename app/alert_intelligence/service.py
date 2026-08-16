@@ -160,9 +160,7 @@ def list_active_alert_events() -> list[dict[str, Any]]:
     return events
 
 
-def _selected_domain(
-    args: MultiDict[str, str], *, clusters: list[Cluster], systems: list[ObjectStorageSystem]
-) -> str:
+def _selected_domain(args: MultiDict[str, str], *, clusters: list[Cluster], systems: list[ObjectStorageSystem]) -> str:
     requested = str(args.get('domain') or '').strip().lower()
     if requested in _VALID_DOMAINS:
         return requested
@@ -173,9 +171,7 @@ def _selected_domain(
     return 'kubernetes'
 
 
-def _asset_options(
-    domain: str, *, clusters: list[Cluster], systems: list[ObjectStorageSystem]
-) -> list[dict[str, str]]:
+def _asset_options(domain: str, *, clusters: list[Cluster], systems: list[ObjectStorageSystem]) -> list[dict[str, str]]:
     records = clusters if domain == 'kubernetes' else systems
     return [
         {
@@ -285,9 +281,7 @@ def _normalize_source_status(status: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def _filter_rows(
-    rows: list[dict[str, Any]], *, severity: str, state: str, search: str
-) -> list[dict[str, Any]]:
+def _filter_rows(rows: list[dict[str, Any]], *, severity: str, state: str, search: str) -> list[dict[str, Any]]:
     filtered = rows
     if severity != 'all':
         filtered = [row for row in filtered if str(row.get('severity') or '').lower() == severity]

@@ -14,7 +14,7 @@ from app.notifications.service import (
     create_notification,
 )
 from app.retention.domains import get_archive_domain
-from app.retention.policy_service import get_or_create_policy, scheduled_domains
+from app.retention.policy_service import get_policy, scheduled_domains
 from app.retention.service import purge_expired_archives, run_retention_archive
 
 logger = logging.getLogger(__name__)
@@ -66,6 +66,7 @@ def run_domain_retention_task(
             retention_days=policy.archive_retention_days,
             dry_run=False,
         )
+        purge_partial = int(result['archive_purge'].get('failed_count') or 0) > 0
         if execution is not None:
             execution.checkpoint(
                 current=3,
@@ -79,6 +80,7 @@ def run_domain_retention_task(
                 result_summary=result,
                 result_type='archive_artifact',
                 result_reference=str(result.get('archive_id') or ''),
+                partial=purge_partial,
             )
         _notify_requester(
             user_id=requested_by_user_id,
@@ -142,11 +144,7 @@ def run_scheduled_retention_task(self) -> dict[str, Any]:
             item.strip().lower().replace('-', '_') for item in configured_domains.split(',') if item.strip()
         )
 
-    configured_domains = list(configured_domains)
-    for domain_name in configured_domains:
-        domain = get_archive_domain(domain_name)
-        get_or_create_policy(domain_name, domain.build_policy())
-    configured_domains = scheduled_domains(configured_domains)
+    configured_domains = scheduled_domains(list(configured_domains))
 
     results: dict[str, Any] = {}
     for domain_name in configured_domains:
@@ -156,7 +154,10 @@ def run_scheduled_retention_task(self) -> dict[str, Any]:
             if not policy.enabled:
                 results[domain_name] = {'status': 'disabled'}
                 continue
-            stored_policy = get_or_create_policy(domain_name, policy)
+            stored_policy = get_policy(domain_name)
+            if stored_policy is None:
+                results[domain_name] = {'status': 'policy_missing'}
+                continue
             cleanup = stored_policy.operation_mode == 'archive_and_cleanup'
             operation = stored_policy.operation_mode
             job, created = enqueue_canonical_job(
@@ -231,7 +232,11 @@ def _notify_requester(
             if cleanup
             else f'{record_count} records were archived without database cleanup.'
         )
-        status = 'warning' if result.get('status') == 'cleanup_partial' else 'success'
+        purge_failed_count = int((result.get('archive_purge') or {}).get('failed_count') or 0)
+        status = 'warning' if result.get('status') == 'cleanup_partial' or purge_failed_count else 'success'
+        if purge_failed_count:
+            title = f'{domain_label} lifecycle completed with archive purge attention'
+            message = f'{message} {purge_failed_count} expired archive artifact(s) still require purge retry.'
 
     _safe_create_notification(
         user_id=user_id,
@@ -244,6 +249,7 @@ def _notify_requester(
             'record_count': result.get('record_count', 0),
             'cleanup_deleted_count': result.get('cleanup_deleted_count', 0),
             'storage_backend': result.get('storage_backend'),
+            'archive_purge': result.get('archive_purge'),
         },
     )
 

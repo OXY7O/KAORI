@@ -9,7 +9,7 @@ from app.extensions.db import db
 from app.jobs.dispatcher import enqueue_canonical_job
 from app.notifications.service import record_operational_activity
 from app.retention.domains import get_archive_domain
-from app.retention.policy_service import update_policy
+from app.retention.policy_service import get_policy, update_policy
 from app.retention.service import get_archive_download_path, verify_archive_artifact
 from app.retention.tasks import run_domain_retention_task
 
@@ -95,10 +95,55 @@ def update_lifecycle_policy(*, domain_name: str, values: Mapping[str, Any], user
 
 
 def queue_lifecycle_execution(*, domain_name: str, mode: str, user_id: int) -> dict[str, Any]:
-    cleanup = mode == 'archive_and_cleanup'
+    normalized_mode = str(mode or '').strip().lower()
+    if normalized_mode not in {'archive_only', 'archive_and_cleanup'}:
+        return record_operational_activity(
+            user_id=user_id,
+            event_type='data_lifecycle_execution_rejected',
+            status='error',
+            title='Data lifecycle execution was not queued',
+            message='The requested lifecycle mode is not supported.',
+            detail='Choose Archive Only or Archive & Cleanup. No archive was created and no hot record was removed.',
+            action_url=url_for('platform_operations.data_lifecycle.index', domain=domain_name),
+            metadata={'domain': domain_name, 'mode': normalized_mode or 'missing'},
+        )
+
+    cleanup = normalized_mode == 'archive_and_cleanup'
     try:
         domain = get_archive_domain(domain_name)
+        stored_policy = get_policy(domain_name)
         policy = domain.build_policy()
+        if stored_policy is None or not policy.enabled:
+            reason = 'policy_missing' if stored_policy is None else 'policy_disabled'
+            title = (
+                'Data lifecycle policy is not persisted'
+                if stored_policy is None
+                else 'Data lifecycle policy is paused'
+            )
+            detail = (
+                'Save the policy before execution so KAORI has an authoritative persisted lifecycle contract.'
+                if stored_policy is None
+                else (
+                    'Preview remains available while the policy is paused. '
+                    'Enable and save the policy before execution.'
+                )
+            )
+            return record_operational_activity(
+                user_id=user_id,
+                event_type='data_lifecycle_execution_rejected',
+                status='warning',
+                title=title,
+                message=(
+                    f'{domain_name.replace("_", " ").title()} must have an enabled persisted policy '
+                    'before an archive job can be queued.'
+                ),
+                detail=detail,
+                action_url=url_for('platform_operations.data_lifecycle.index', domain=domain_name),
+                action_label='Review Data Lifecycle',
+                action_icon='archive-restore',
+                metadata={'domain': domain_name, 'mode': normalized_mode, 'reason': reason},
+            )
+
         job, created = enqueue_canonical_job(
             task=run_domain_retention_task,
             task_kwargs={
@@ -108,7 +153,7 @@ def queue_lifecycle_execution(*, domain_name: str, mode: str, user_id: int) -> d
                 'requested_by_user_id': user_id,
             },
             job_type='data_lifecycle',
-            operation=mode,
+            operation=normalized_mode,
             queue_name=str(current_app.config.get('RETENTION_CELERY_QUEUE', 'maintenance')),
             workload_class='maintenance',
             requested_by_user_id=user_id,
@@ -117,7 +162,7 @@ def queue_lifecycle_execution(*, domain_name: str, mode: str, user_id: int) -> d
             scope_key=domain_name,
             parameters={
                 'domain': domain_name,
-                'mode': mode,
+                'mode': normalized_mode,
                 'retention_days': policy.retention_days,
                 'archive_retention_days': policy.archive_retention_days,
             },
@@ -132,7 +177,10 @@ def queue_lifecycle_execution(*, domain_name: str, mode: str, user_id: int) -> d
             message=(
                 f'{domain_name.replace("_", " ").title()} archive processing was queued.'
                 if created
-                else f'{domain_name.replace("_", " ").title()} already has an active lifecycle job; this request was attached to it.'
+                else (
+                    f'{domain_name.replace("_", " ").title()} already has an active lifecycle job; '
+                    'this request was attached to it.'
+                )
             ),
             detail='KAORI writes and verifies the archive before cleanup can begin.',
             action_url=url_for('jobs.executions'),
@@ -140,7 +188,7 @@ def queue_lifecycle_execution(*, domain_name: str, mode: str, user_id: int) -> d
             action_icon='list-checks',
             metadata={
                 'domain': domain_name,
-                'mode': mode,
+                'mode': normalized_mode,
                 'job_execution_id': job.id,
                 'celery_task_id': job.celery_task_id,
                 'created': created,

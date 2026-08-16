@@ -25,7 +25,10 @@ def integration_taxonomy_document() -> dict[str, Any]:
         'integrations/taxonomy.yaml',
         expected_kind='integration_taxonomy',
     )
-    domains = [require_mapping(item, f'domains[{index}]') for index, item in enumerate(require_list(document.get('domains'), 'domains'))]
+    domains = [
+        require_mapping(item, f'domains[{index}]')
+        for index, item in enumerate(require_list(document.get('domains'), 'domains'))
+    ]
     capabilities = [
         require_mapping(item, f'capabilities[{index}]')
         for index, item in enumerate(require_list(document.get('capabilities'), 'capabilities'))
@@ -95,15 +98,15 @@ def integration_provider_document(provider: str) -> dict[str, Any]:
     )
     declared_provider = require_str(document, 'provider', relative_path)
     if declared_provider != provider_key:
-        raise DefinitionError(
-            f'{relative_path}.provider must be {provider_key!r}; got {declared_provider!r}.'
-        )
+        raise DefinitionError(f'{relative_path}.provider must be {provider_key!r}; got {declared_provider!r}.')
     capabilities = [
         require_mapping(item, f'{relative_path}.capabilities[{index}]')
         for index, item in enumerate(require_list(document.get('capabilities'), f'{relative_path}.capabilities'))
     ]
     unique_by(capabilities, 'key', f'{relative_path}.capabilities')
-    capability_keys = {require_str(item, 'key', f'{relative_path}.capabilities[{index}]') for index, item in enumerate(capabilities)}
+    capability_keys = {
+        require_str(item, 'key', f'{relative_path}.capabilities[{index}]') for index, item in enumerate(capabilities)
+    }
 
     if provider_key == 'alertmanager':
         profiles = [

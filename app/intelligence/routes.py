@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from flask import Blueprint, abort, render_template, request
 from flask.typing import ResponseReturnValue
+
 from app.intelligence.overview import get_intelligence_overview_payload
 from app.intelligence.service import (
     get_catalog_rule,

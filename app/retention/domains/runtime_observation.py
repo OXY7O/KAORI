@@ -35,7 +35,8 @@ class RuntimeObservationArchiveDomain:
         return resolve_policy(self.name, fallback)
 
     def inspect_boundary(self, policy: RetentionPolicy) -> ArchiveBoundary:
-        cutoff_at = datetime.now(UTC) - timedelta(days=policy.retention_days)
+        now = datetime.now(UTC)
+        cutoff_at = now - timedelta(days=policy.retention_days)
         count, max_id, range_start, range_end = (
             db.session.query(
                 func.count(IntegrationRuntimeObservation.id),
@@ -47,6 +48,7 @@ class RuntimeObservationArchiveDomain:
             .one()
         )
         return ArchiveBoundary(
+            selected_at=now,
             cutoff_at=cutoff_at,
             maximum_record_id=int(max_id) if max_id is not None else None,
             record_count=int(count or 0),

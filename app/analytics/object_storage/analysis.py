@@ -226,6 +226,7 @@ def forecast_posture(growth_per_day: float | None, days_to_capacity: float | Non
         'Continue monitoring slope changes and the highest-contributing buckets.',
     )
 
+
 def metric_risk_signals(
     *,
     utilization: float | None,

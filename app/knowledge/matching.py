@@ -88,7 +88,9 @@ def set_alert_binding_status(
     if binding.lifecycle_status == lifecycle_status:
         return binding
     binding.lifecycle_status = lifecycle_status
-    action = 'knowledge.runbook_binding.enabled' if lifecycle_status == 'active' else 'knowledge.runbook_binding.disabled'
+    action = (
+        'knowledge.runbook_binding.enabled' if lifecycle_status == 'active' else 'knowledge.runbook_binding.disabled'
+    )
     _audit(
         actor_user_id,
         binding.binding_key,

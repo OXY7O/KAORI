@@ -108,7 +108,11 @@ def metrics_readiness_view(snapshot: MetricsReadinessSnapshot) -> dict[str, Any]
     required_contract_ready = required_total_count > 0 and required_ready_count == required_total_count
 
     if snapshot.state == MetricReadinessState.NOT_VALIDATED:
-        label = 'Consumer Validation Stale' if snapshot.profile_label == 'Consumer Validation Stale' else 'Consumer Validation Required'
+        label = (
+            'Consumer Validation Stale'
+            if snapshot.profile_label == 'Consumer Validation Stale'
+            else 'Consumer Validation Required'
+        )
         tone = 'warning'
     elif required_contract_ready:
         if counts[MetricReadinessState.READY.value] == snapshot.total_count:
@@ -261,8 +265,8 @@ def source_setup(
             detail=(
                 str(readiness.get('detail') or '').strip()
                 or (
-                    f"{readiness['required_ready_count']} of {readiness['required_total_count']} required metrics are ready. "
-                    f"Consumer validation status: {readiness['label']}."
+                    f'{readiness["required_ready_count"]} of {readiness["required_total_count"]} required metrics are ready. '
+                    f'Consumer validation status: {readiness["label"]}.'
                 )
             ),
         )
@@ -289,7 +293,9 @@ def runtime_source_state(
         source_view['runtime_state'] = (
             'authentication_failed' if exc.kind == MetricsSourceFailureKind.AUTHENTICATION else 'disconnected'
         )
-        source_view['label'] = 'Authentication Failed' if exc.kind == MetricsSourceFailureKind.AUTHENTICATION else 'Disconnected'
+        source_view['label'] = (
+            'Authentication Failed' if exc.kind == MetricsSourceFailureKind.AUTHENTICATION else 'Disconnected'
+        )
         source_view['tone'] = 'critical'
         source_view['detail'] = str(exc)
         return metrics_runtime_blocker(system, exc)
@@ -313,6 +319,6 @@ def runtime_source_state(
     source_view['label'] = 'Operational'
     source_view['tone'] = 'normal'
     source_view['detail'] = (
-        f"{source_view.get('provider_label') or 'Metrics source'} runtime queries completed successfully."
+        f'{source_view.get("provider_label") or "Metrics source"} runtime queries completed successfully.'
     )
     return None

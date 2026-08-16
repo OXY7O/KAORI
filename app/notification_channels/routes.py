@@ -4,6 +4,11 @@ from flask import Blueprint, abort, current_app, redirect, render_template, requ
 from flask.typing import ResponseReturnValue
 from flask_login import current_user
 
+from app.notification_channels.forms import (
+    get_channel_form_view,
+    parse_channel_form,
+    validate_channel_input,
+)
 from app.notification_channels.service import (
     create_channel,
     delete_channel,
@@ -11,11 +16,6 @@ from app.notification_channels.service import (
     get_notification_channels_payload,
     test_channel,
     update_channel,
-)
-from app.notification_channels.forms import (
-    get_channel_form_view,
-    parse_channel_form,
-    validate_channel_input,
 )
 from app.notifications.service import record_operational_activity
 from app.rbac.decorators import permission_required
@@ -90,9 +90,7 @@ def test(channel_id: int) -> ResponseReturnValue:
     channel = get_channel(channel_id)
     if channel is None:
         abort(404)
-    base_url = str(
-        current_app.config.get('KAORI_PUBLIC_BASE_URL') or ''
-    )
+    base_url = str(current_app.config.get('KAORI_PUBLIC_BASE_URL') or '')
     result = test_channel(channel, base_url=base_url)
     _record_channel_activity(
         channel.id,

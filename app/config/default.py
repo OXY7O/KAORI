@@ -64,14 +64,7 @@ def _retention_queue_name() -> str:
 
 def _build_maintenance_beat_schedule() -> dict[str, dict[str, object]]:
     schedule: dict[str, dict[str, object]] = {}
-    if any(
-        (
-            _env_bool('ACTIVITY_RETENTION_SCHEDULE_ENABLED', True),
-            _env_bool('JOB_EXECUTION_RETENTION_ENABLED', True),
-            _env_bool('RUNTIME_OBSERVATION_RETENTION_ENABLED', True),
-            _env_bool('ANALYTICS_SNAPSHOT_RETENTION_ENABLED', True),
-        )
-    ):
+    if _env_bool('DATA_LIFECYCLE_SCHEDULER_ENABLED', True):
         schedule['data-lifecycle-dispatcher'] = {
             'task': 'app.retention.tasks.run_scheduled_retention',
             'schedule': crontab(minute='*/15'),
@@ -147,6 +140,7 @@ def _normalize_storage_backend(value: str | None) -> str:
 def _resolve_path(value: str | None, default: Path) -> str:
     path = Path((value or str(default)).strip())
     return str(path if path.is_absolute() else BASE_DIR / path)
+
 
 def _object_storage_usage_stats_mode() -> str:
     mode = _env_str('OBJECT_STORAGE_INVENTORY_USAGE_STATS_MODE', 'disabled').strip().lower()
@@ -597,6 +591,8 @@ class Config:
         BASE_DIR / 'instance' / 'archive-staging',
     )
     ARCHIVE_OBJECT_PREFIX = _env_str('ARCHIVE_OBJECT_PREFIX', 'archives').strip().strip('/')
+    ARCHIVE_PURGE_BATCH_SIZE = _bounded_env_int('ARCHIVE_PURGE_BATCH_SIZE', 250, 25, 2500)
+    DATA_LIFECYCLE_SCHEDULER_ENABLED = _env_bool('DATA_LIFECYCLE_SCHEDULER_ENABLED', True)
     ARCHIVE_SCHEDULED_DOMAINS = tuple(
         item.strip().lower().replace('-', '_')
         for item in _env_str(
@@ -684,9 +680,7 @@ class Config:
     GENERATED_REPORT_RETENTION_BATCH_SIZE = _env_int('GENERATED_REPORT_RETENTION_BATCH_SIZE', 250)
     GENERATED_REPORT_FAILED_RETENTION_DAYS = _env_int('GENERATED_REPORT_FAILED_RETENTION_DAYS', 30)
     GENERATED_REPORT_ARCHIVED_RETENTION_DAYS = _env_int('GENERATED_REPORT_ARCHIVED_RETENTION_DAYS', 180)
-    GENERATED_REPORT_RETENTION_SCHEDULE_HOUR = _bounded_env_int(
-        'GENERATED_REPORT_RETENTION_SCHEDULE_HOUR', 5, 0, 23
-    )
+    GENERATED_REPORT_RETENTION_SCHEDULE_HOUR = _bounded_env_int('GENERATED_REPORT_RETENTION_SCHEDULE_HOUR', 5, 0, 23)
     GENERATED_REPORT_RETENTION_SCHEDULE_MINUTE = _bounded_env_int(
         'GENERATED_REPORT_RETENTION_SCHEDULE_MINUTE', 0, 0, 59
     )

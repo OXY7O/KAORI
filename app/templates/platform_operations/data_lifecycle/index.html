@@ -4,8 +4,12 @@
 {% import "components/framed_workspace_tabs.html" as framed_workspace_tabs %}
 {% block title %}Data Lifecycle · KAORI{% endblock %}
 {% block dashboard_content %}
-    <div class="space-y-6"
-         x-data="{ tabs: ['policies', 'history', 'storage'], activeTab: '{{ lifecycle.active_tab }}', activeDomain: '{{ lifecycle.selected_domain }}', domainSearch: '', setTab(tab) { if (!this.tabs.includes(tab)) return; this.activeTab = tab; const url = new URL(window.location.href); url.searchParams.set('tab', tab); if (this.activeDomain) url.searchParams.set('domain', this.activeDomain); window.history.replaceState({}, '', url); }, moveTab(currentTab, direction, prefix = 'data-lifecycle') { const currentIndex = this.tabs.indexOf(currentTab); if (currentIndex < 0) return; let nextIndex = currentIndex; if (direction === 'home') nextIndex = 0; else if (direction === 'end') nextIndex = this.tabs.length - 1; else nextIndex = (currentIndex + direction + this.tabs.length) % this.tabs.length; const nextTab = this.tabs[nextIndex]; this.setTab(nextTab); this.$nextTick(() => document.getElementById(`${prefix}-tab-${nextTab}`)?.focus()); } }">
+    {% set lifecycle_tabs = [
+        ('policies', 'Retention Policies', 'sliders-horizontal', url_for('platform_operations.data_lifecycle.index', tab='policies', domain=lifecycle.selected_domain)),
+        ('history', 'Archive History', 'history', url_for('platform_operations.data_lifecycle.index', tab='history')),
+        ('storage', 'Archive Storage', 'hard-drive', url_for('platform_operations.data_lifecycle.index', tab='storage'))
+    ] %}
+    <div class="space-y-6">
         <section class="{{ page_hero.shell_classes() }}">
             <div class="{{ page_hero.layout_classes() }}">
                 <div class="{{ page_hero.content_classes() }}">
@@ -25,23 +29,29 @@
                         {{ page_hero.context_header('Lifecycle Control Plane', 'Archive-First Governance', 'archive-restore') }}
                         <div class="{{ page_hero.context_panel_metrics_classes() }}">
                             {{ page_hero.context_metric('database', 'Managed Domains', lifecycle.managed_domain_count, 'Registered archive adapters') }}
-                            {{ page_hero.context_metric('hard-drive', 'Archive Storage', lifecycle.storage.status_label, 'Shared verified destination') }}
+                            {{ page_hero.context_metric('triangle-alert', 'Archive Attention', lifecycle.failed_archive_total, 'Failed or purge-failed archive evidence') }}
                         </div>
                         {{ page_hero.context_info('shield-check', 'Cleanup begins only after archive and manifest verification.') }}
                     </div>
                 </aside>
             </div>
         </section>
-        <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
-            {# djlint:off #}
-            {{ framed_workspace_tabs.render([('policies', 'Retention Policies', 'sliders-horizontal'), ('history', 'Archive History', 'history'), ('storage', 'Archive Storage', 'hard-drive')], prefix='data-lifecycle', aria_label='Data Lifecycle Workspaces') }}
-            {# djlint:on #}
+        <section id="data-lifecycle-workspace-shell"
+                 class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
+            {{ framed_workspace_tabs.render_navigation(lifecycle_tabs,
+                                                       lifecycle.active_tab,
+                                                       prefix='data-lifecycle',
+                                                       aria_label='Data Lifecycle Workspaces',
+                                                       hx_target='#data-lifecycle-workspace-shell',
+                                                       hx_select='#data-lifecycle-workspace-shell') }}
             <div class="p-5 lg:p-6">
-                <div id="data-lifecycle-panel-policies"
-                     role="tabpanel"
-                     x-show="activeTab === 'policies'"
-                     x-cloak>
-                    <div class="grid gap-6 xl:grid-cols-12 xl:items-start">
+                {% if lifecycle.active_tab == 'history' %}
+                    {% include "platform_operations/data_lifecycle/partials/_history.html" %}
+                {% elif lifecycle.active_tab == 'storage' %}
+                    {% include "platform_operations/data_lifecycle/partials/_storage.html" %}
+                {% else %}
+                    <div class="grid gap-6 xl:grid-cols-12 xl:items-start"
+                         x-data="{ activeDomain: '{{ lifecycle.selected_domain }}', domainSearch: '' }">
                         <aside class="space-y-3 xl:col-span-4">
                             <div class="rounded-xl border border-outline-default bg-surface-card p-3">
                                 <label class="text-xs font-semibold text-content-secondary">Search Data Domains</label>
@@ -100,15 +110,7 @@
                             {% include "platform_operations/data_lifecycle/partials/_domain_workspace.html" %}
                         </main>
                     </div>
-                </div>
-                <div id="data-lifecycle-panel-history"
-                     role="tabpanel"
-                     x-show="activeTab === 'history'"
-                     x-cloak>{% include "platform_operations/data_lifecycle/partials/_history.html" %}</div>
-                <div id="data-lifecycle-panel-storage"
-                     role="tabpanel"
-                     x-show="activeTab === 'storage'"
-                     x-cloak>{% include "platform_operations/data_lifecycle/partials/_storage.html" %}</div>
+                {% endif %}
             </div>
         </section>
     </div>

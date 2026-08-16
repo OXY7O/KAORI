@@ -1,13 +1,9 @@
 from __future__ import annotations
 
-import os
-import socket
 from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
-from pathlib import Path
 from time import monotonic
 from typing import Any
-from urllib.parse import urlparse
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from flask import current_app
@@ -18,14 +14,22 @@ from app.models.archive import (
     ACTIVE_ARCHIVE_STATUSES,
     ARCHIVE_STATUS_CLEANUP_PARTIAL,
     ARCHIVE_STATUS_FAILED,
+    ARCHIVE_STATUS_PURGE_FAILED,
     ARCHIVE_STATUS_READY,
     ArchiveArtifact,
 )
 from app.models.job import JobExecution
+from app.models.lifecycle import DataLifecyclePolicy
 from app.retention import generated_report_presentation as generated_report_ui
 from app.retention.domains import DOMAIN_FACTORIES, get_archive_domain
-from app.retention.policy_service import get_or_create_policy
+from app.retention.policy_service import default_schedule_hour, default_schedule_minute, get_policy
 from app.retention.service import paginate_archives, preview_retention
+from app.retention.storage_presentation import (
+    archive_storage_label as _archive_storage_label,
+    artifact_matches_storage_profile as _artifact_matches_storage_profile,
+    build_storage_context as _build_storage_context,
+)
+from app.retention.types import RetentionPolicy
 from app.storage.service import StorageProfile, build_storage_profile
 
 _ARCHIVE_PER_PAGE_OPTIONS = (5, 10, 25, 50)
@@ -37,6 +41,7 @@ _ARCHIVE_STATUS_OPTIONS = (
     'ready',
     'cleanup_partial',
     'failed',
+    'purge_failed',
     'expired',
 )
 _ARCHIVE_TRIGGER_OPTIONS = ('manual', 'scheduled', 'cli')
@@ -49,49 +54,29 @@ def build_domain_retention_context(
     domain_name: str,
     *,
     include_preview: bool = False,
-    archive_page: int = 1,
-    archive_per_page: int = 5,
-    archive_status: str = 'all',
-    archive_trigger: str = 'all',
-    archive_mode: str = 'all',
-    archive_storage: str = 'all',
-    archive_search: str = '',
     feedback: dict[str, Any] | None = None,
     poll_once: bool = False,
+    policy: RetentionPolicy | None = None,
+    stored_policy: DataLifecyclePolicy | None = None,
 ) -> dict[str, Any]:
     domain = get_archive_domain(domain_name)
-    policy = domain.build_policy()
-    storage_profile = build_storage_profile('archive')
-    filters = _normalize_archive_filters(
-        status=archive_status,
-        trigger_type=archive_trigger,
-        operation_mode=archive_mode,
-        storage_backend=archive_storage,
-        search=archive_search,
+    effective_policy = policy or domain.build_policy()
+    stored = stored_policy if stored_policy is not None else get_policy(domain.name)
+    schedule_enabled, schedule_hour, schedule_minute, operation_mode = _policy_execution_settings(
+        domain.name,
+        effective_policy,
+        stored,
     )
-    normalized_per_page = archive_per_page if archive_per_page in _ARCHIVE_PER_PAGE_OPTIONS else 5
-    archive_pagination = paginate_archives(
-        domain_name=domain.name,
-        page=archive_page,
-        per_page=normalized_per_page,
-        status=filters['status'],
-        trigger_type=filters['trigger_type'],
-        operation_mode=filters['operation_mode'],
-        storage_backend=filters['storage_backend'],
-        search=filters['search'],
-    )
+    schedule_timezone = str(current_app.config.get('CELERY_TIMEZONE', 'UTC') or 'UTC')
+    scheduler_enabled = bool(current_app.config.get('DATA_LIFECYCLE_SCHEDULER_ENABLED', True))
     preview = preview_retention(domain.name) if include_preview else None
     archive_posture = _build_archive_posture(domain.name)
     worker = _cached_status('retention-worker', 12.0, _inspect_retention_worker)
-    storage = _build_storage_context(storage_profile, archive_posture.get('last_verified'))
-    stored_policy = get_or_create_policy(domain.name, policy)
-    schedule_enabled = bool(stored_policy.schedule_enabled)
-    schedule_hour = int(stored_policy.schedule_hour)
-    schedule_minute = int(stored_policy.schedule_minute)
-    schedule_timezone = str(current_app.config.get('CELERY_TIMEZONE', 'UTC') or 'UTC')
-
-    pagination_total = int(archive_pagination.total or 0)
-    pagination_pages = max(int(archive_pagination.pages or 0), 1)
+    active_lifecycle_jobs = JobExecution.query.filter(
+        JobExecution.job_type == 'data_lifecycle',
+        JobExecution.scope_key == domain.name,
+        JobExecution.status.in_(('queued', 'running', 'retrying', 'cancel_requested')),
+    ).count()
 
     return {
         'domain': domain.name,
@@ -101,51 +86,31 @@ def build_domain_retention_context(
         'coverage': _domain_coverage(domain.name),
         'coverage_note': _domain_coverage_note(domain.name),
         'exclusion_note': _domain_exclusion_note(domain.name),
-        'operation_mode': stored_policy.operation_mode,
-        'enabled': policy.enabled,
-        'retention_days': policy.retention_days,
-        'archive_retention_days': policy.archive_retention_days,
-        'batch_size': policy.batch_size,
-        'protect_unreviewed': policy.protect_unreviewed,
-        'protected_max_days': policy.protected_max_days,
+        'operation_mode': operation_mode,
+        'enabled': bool(stored.enabled) if stored is not None else False,
+        'retention_days': effective_policy.retention_days,
+        'archive_retention_days': effective_policy.archive_retention_days,
+        'batch_size': effective_policy.batch_size,
+        'protect_unreviewed': effective_policy.protect_unreviewed,
+        'protected_max_days': effective_policy.protected_max_days,
         'schedule_enabled': schedule_enabled,
         'schedule_hour': schedule_hour,
         'schedule_minute': schedule_minute,
         'schedule_timezone': schedule_timezone,
+        'scheduler_enabled': scheduler_enabled,
         'next_schedule_label': _next_schedule_label(
-            enabled=schedule_enabled,
+            enabled=schedule_enabled and scheduler_enabled,
             hour=schedule_hour,
             minute=schedule_minute,
             timezone_name=schedule_timezone,
         ),
         'queue_name': str(current_app.config.get('RETENTION_CELERY_QUEUE', 'maintenance') or 'maintenance'),
         'worker': worker,
-        'storage': storage,
         'archive_format': 'JSONL.GZ + manifest JSON',
         'preview': _serialize_preview(preview) if preview is not None else None,
-        'archives': [_serialize_archive(item) for item in archive_pagination.items],
-        'archive_filters': filters,
-        'archive_filter_options': {
-            'statuses': _ARCHIVE_STATUS_OPTIONS,
-            'triggers': _ARCHIVE_TRIGGER_OPTIONS,
-            'modes': _ARCHIVE_MODE_OPTIONS,
-            'storage_backends': _ARCHIVE_STORAGE_OPTIONS,
-        },
-        'archive_pagination': {
-            'page': archive_pagination.page,
-            'pages': pagination_pages,
-            'per_page': archive_pagination.per_page,
-            'total': pagination_total,
-            'start_item': ((archive_pagination.page - 1) * archive_pagination.per_page + 1) if pagination_total else 0,
-            'end_item': min(archive_pagination.page * archive_pagination.per_page, pagination_total),
-            'has_prev': archive_pagination.has_prev,
-            'has_next': archive_pagination.has_next,
-            'prev_num': archive_pagination.prev_num,
-            'next_num': archive_pagination.next_num,
-            'allowed_per_page': _ARCHIVE_PER_PAGE_OPTIONS,
-        },
         'posture': archive_posture,
         'has_active_archives': archive_posture['active_count'] > 0,
+        'active_lifecycle_jobs': int(active_lifecycle_jobs or 0),
         'feedback': feedback,
         'poll_once': bool(poll_once),
     }
@@ -173,115 +138,181 @@ def build_data_lifecycle_context(
 ) -> dict[str, Any]:
     supported = tuple(sorted(DOMAIN_FACTORIES))
     selected = selected_domain if selected_domain in supported else supported[0]
-    selected_context = build_domain_retention_context(
-        selected,
-        include_preview=include_preview,
-        archive_page=1,
-        archive_per_page=5,
-        feedback=feedback,
-        poll_once=poll_once,
-    )
-    domain_cards = []
+    active = active_tab if active_tab in {'policies', 'history', 'storage'} else 'policies'
+    stored_map = {
+        item.domain: item
+        for item in DataLifecyclePolicy.query.filter(DataLifecyclePolicy.domain.in_(supported)).all()
+    }
     posture_map = _build_domain_posture_summaries(supported)
-    selected_preview_count = (selected_context.get('preview') or {}).get('record_count')
-    for domain_name in supported:
-        domain = get_archive_domain(domain_name)
-        policy = domain.build_policy()
-        stored = get_or_create_policy(domain_name, policy)
-        posture = posture_map.get(domain_name, {'active_count': 0, 'failed_count': 0, 'total_archives': 0})
-        preview_count = selected_preview_count if domain_name == selected else None
-        domain_cards.append(
+    enabled_domain_count = sum(int(bool(stored_map[name].enabled)) for name in supported if name in stored_map)
+    context: dict[str, Any] = {
+        'active_tab': active,
+        'selected_domain': selected,
+        'managed_domain_count': len(supported),
+        'enabled_domain_count': enabled_domain_count,
+        'active_archive_total': sum(int(item['active_count']) for item in posture_map.values()),
+        'failed_archive_total': sum(int(item['failed_count']) for item in posture_map.values()),
+        'scheduler_enabled': bool(current_app.config.get('DATA_LIFECYCLE_SCHEDULER_ENABLED', True)),
+        'feedback': feedback,
+    }
+
+    if active == 'policies':
+        policies = {name: get_archive_domain(name).build_policy() for name in supported}
+        selected_context = build_domain_retention_context(
+            selected,
+            include_preview=include_preview,
+            feedback=feedback,
+            poll_once=poll_once,
+            policy=policies[selected],
+            stored_policy=stored_map.get(selected),
+        )
+        selected_preview_count = (selected_context.get('preview') or {}).get('record_count')
+        domain_cards = []
+        for name in supported:
+            policy = policies[name]
+            stored = stored_map.get(name)
+            schedule_enabled, schedule_hour, schedule_minute, operation_mode = _policy_execution_settings(
+                name,
+                policy,
+                stored,
+            )
+            posture = posture_map.get(name, {'active_count': 0, 'failed_count': 0, 'total_archives': 0})
+            domain_cards.append(
+                {
+                    'name': name,
+                    'label': _domain_label(name),
+                    'icon': _domain_icon(name),
+                    'description': _domain_description(name),
+                    'source_model': get_archive_domain(name).source_model,
+                    'coverage': _domain_coverage(name),
+                    'coverage_note': _domain_coverage_note(name),
+                    'enabled': bool(stored.enabled) if stored is not None else False,
+                    'hot_retention_days': policy.retention_days,
+                    'archive_retention_days': policy.archive_retention_days,
+                    'batch_size': policy.batch_size,
+                    'operation_mode': operation_mode,
+                    'schedule_enabled': schedule_enabled,
+                    'schedule_hour': schedule_hour,
+                    'schedule_minute': schedule_minute,
+                    'eligible_count': selected_preview_count if name == selected else None,
+                    'active_count': posture['active_count'],
+                    'failed_count': posture['failed_count'],
+                    'total_archives': posture['total_archives'],
+                    'settings': dict(policy.settings or {}),
+                }
+            )
+        selected_context.update(context)
+        selected_context['domains'] = domain_cards
+        return selected_context
+
+    if active == 'history':
+        history_filters = _normalize_archive_filters(
+            status=archive_status,
+            trigger_type=archive_trigger,
+            operation_mode=archive_mode,
+            storage_backend=archive_storage,
+            search=archive_search,
+        )
+        history_domain = archive_domain if archive_domain in supported else 'all'
+        history_pagination = paginate_archives(
+            domain_name=None if history_domain == 'all' else history_domain,
+            page=archive_page,
+            per_page=archive_per_page,
+            status=history_filters['status'],
+            trigger_type=history_filters['trigger_type'],
+            operation_mode=history_filters['operation_mode'],
+            storage_backend=history_filters['storage_backend'],
+            search=history_filters['search'],
+        )
+        total = int(history_pagination.total or 0)
+        context.update(
             {
-                'name': domain_name,
-                'label': _domain_label(domain_name),
-                'icon': _domain_icon(domain_name),
-                'description': _domain_description(domain_name),
-                'source_model': domain.source_model,
-                'coverage': _domain_coverage(domain_name),
-                'coverage_note': _domain_coverage_note(domain_name),
-                'enabled': stored.enabled,
-                'hot_retention_days': stored.hot_retention_days,
-                'archive_retention_days': stored.archive_retention_days,
-                'batch_size': stored.batch_size,
-                'operation_mode': stored.operation_mode,
-                'schedule_enabled': stored.schedule_enabled,
-                'schedule_hour': stored.schedule_hour,
-                'schedule_minute': stored.schedule_minute,
-                'eligible_count': preview_count,
-                'active_count': posture['active_count'],
-                'failed_count': posture['failed_count'],
-                'total_archives': posture['total_archives'],
-                'settings': dict(stored.settings_json or {}),
+                'history_archives': [
+                    _serialize_archive(item)
+                    | {
+                        'domain': item.domain,
+                        'domain_label': _domain_label(item.domain),
+                        'domain_icon': _domain_icon(item.domain),
+                    }
+                    for item in history_pagination.items
+                ],
+                'history_filters': history_filters | {'domain': history_domain},
+                'history_filter_options': {
+                    'domains': tuple({'value': name, 'label': _domain_label(name)} for name in supported),
+                    'statuses': _ARCHIVE_STATUS_OPTIONS,
+                    'triggers': _ARCHIVE_TRIGGER_OPTIONS,
+                    'modes': _ARCHIVE_MODE_OPTIONS,
+                    'storage_backends': _ARCHIVE_STORAGE_OPTIONS,
+                },
+                'history_pagination': {
+                    'page': history_pagination.page,
+                    'pages': max(int(history_pagination.pages or 0), 1),
+                    'per_page': history_pagination.per_page,
+                    'total': total,
+                    'start_item': ((history_pagination.page - 1) * history_pagination.per_page + 1) if total else 0,
+                    'end_item': min(history_pagination.page * history_pagination.per_page, total),
+                    'has_prev': history_pagination.has_prev,
+                    'has_next': history_pagination.has_next,
+                    'prev_num': history_pagination.prev_num,
+                    'next_num': history_pagination.next_num,
+                    'allowed_per_page': _ARCHIVE_PER_PAGE_OPTIONS,
+                },
             }
         )
+        return context
 
-    history_filters = _normalize_archive_filters(
-        status=archive_status,
-        trigger_type=archive_trigger,
-        operation_mode=archive_mode,
-        storage_backend=archive_storage,
-        search=archive_search,
-    )
-    history_domain = archive_domain if archive_domain in supported else 'all'
-    history_pagination = paginate_archives(
-        domain_name=None if history_domain == 'all' else history_domain,
-        page=archive_page,
-        per_page=archive_per_page,
-        status=history_filters['status'],
-        trigger_type=history_filters['trigger_type'],
-        operation_mode=history_filters['operation_mode'],
-        storage_backend=history_filters['storage_backend'],
-        search=history_filters['search'],
-    )
-    total = int(history_pagination.total or 0)
-    active_lifecycle_jobs = JobExecution.query.filter(
-        JobExecution.job_type == 'data_lifecycle',
-        JobExecution.scope_key == selected,
-        JobExecution.status.in_(('queued', 'running', 'retrying', 'cancel_requested')),
-    ).count()
-    selected_context.update(
+    storage_profile = build_storage_profile('archive')
+    last_verified = _latest_verified_archive_for_profile(storage_profile, supported)
+    context.update(
         {
-            'active_tab': active_tab if active_tab in {'policies', 'storage', 'history'} else 'policies',
-            'active_lifecycle_jobs': int(active_lifecycle_jobs or 0),
-            'selected_domain': selected,
-            'domains': domain_cards,
-            'managed_domain_count': len(domain_cards),
-            'enabled_domain_count': sum(1 for item in domain_cards if item['enabled']),
-            'eligible_total': selected_preview_count,
-            'active_archive_total': sum(int(item['active_count']) for item in domain_cards),
-            'history_archives': [
-                _serialize_archive(item)
-                | {
-                    'domain': item.domain,
-                    'domain_label': _domain_label(item.domain),
-                    'domain_icon': _domain_icon(item.domain),
-                }
-                for item in history_pagination.items
-            ],
-            'history_filters': history_filters | {'domain': history_domain},
-            'history_filter_options': {
-                'domains': supported,
-                'statuses': _ARCHIVE_STATUS_OPTIONS,
-                'triggers': _ARCHIVE_TRIGGER_OPTIONS,
-                'modes': _ARCHIVE_MODE_OPTIONS,
-                'storage_backends': _ARCHIVE_STORAGE_OPTIONS,
-            },
-            'history_pagination': {
-                'page': history_pagination.page,
-                'pages': max(int(history_pagination.pages or 0), 1),
-                'per_page': history_pagination.per_page,
-                'total': total,
-                'start_item': ((history_pagination.page - 1) * history_pagination.per_page + 1) if total else 0,
-                'end_item': min(history_pagination.page * history_pagination.per_page, total),
-                'has_prev': history_pagination.has_prev,
-                'has_next': history_pagination.has_next,
-                'prev_num': history_pagination.prev_num,
-                'next_num': history_pagination.next_num,
-                'allowed_per_page': _ARCHIVE_PER_PAGE_OPTIONS,
-            },
+            'storage': _build_storage_context(storage_profile, last_verified),
+            'worker': _cached_status('retention-worker', 12.0, _inspect_retention_worker),
+            'queue_name': str(current_app.config.get('RETENTION_CELERY_QUEUE', 'maintenance') or 'maintenance'),
+            'archive_format': 'JSONL.GZ + manifest JSON',
+            'purge_batch_size': max(
+                25,
+                min(int(current_app.config.get('ARCHIVE_PURGE_BATCH_SIZE', 250) or 250), 2500),
+            ),
         }
     )
-    return selected_context
+    return context
+
+
+def _policy_execution_settings(
+    domain_name: str,
+    policy: RetentionPolicy,
+    stored: DataLifecyclePolicy | None,
+) -> tuple[bool, int, int, str]:
+    if stored is not None:
+        return (
+            bool(stored.schedule_enabled),
+            int(stored.schedule_hour),
+            int(stored.schedule_minute),
+            str(stored.operation_mode or 'archive_and_cleanup'),
+        )
+    return (
+        False,
+        default_schedule_hour(domain_name),
+        default_schedule_minute(domain_name),
+        'archive_and_cleanup',
+    )
+
+
+def _latest_verified_archive_for_profile(
+    profile: StorageProfile,
+    domain_names: tuple[str, ...],
+) -> ArchiveArtifact | None:
+    candidates = (
+        ArchiveArtifact.query.filter(
+            ArchiveArtifact.domain.in_(domain_names),
+            ArchiveArtifact.storage_backend == profile.backend,
+            ArchiveArtifact.status.in_([ARCHIVE_STATUS_READY, ARCHIVE_STATUS_CLEANUP_PARTIAL]),
+            ArchiveArtifact.verified_at.is_not(None),
+        )
+        .order_by(ArchiveArtifact.verified_at.desc(), ArchiveArtifact.id.desc())
+        .yield_per(100)
+    )
+    return next((item for item in candidates if _artifact_matches_storage_profile(item, profile)), None)
 
 
 def _domain_label(name: str) -> str:
@@ -426,7 +457,12 @@ def _build_domain_posture_summaries(domain_names: tuple[str, ...]) -> dict[str, 
             ArchiveArtifact.domain,
             func.count(ArchiveArtifact.id),
             func.sum(case((ArchiveArtifact.status.in_(tuple(ACTIVE_ARCHIVE_STATUSES)), 1), else_=0)),
-            func.sum(case((ArchiveArtifact.status == ARCHIVE_STATUS_FAILED, 1), else_=0)),
+            func.sum(
+                case(
+                    (ArchiveArtifact.status.in_((ARCHIVE_STATUS_FAILED, ARCHIVE_STATUS_PURGE_FAILED)), 1),
+                    else_=0,
+                )
+            ),
         )
         .group_by(ArchiveArtifact.domain)
         .all()
@@ -458,21 +494,32 @@ def _build_archive_posture(domain_name: str) -> dict[str, Any]:
         )
         .first()
     )
-    active_count = domain_query.filter(ArchiveArtifact.status.in_(ACTIVE_ARCHIVE_STATUSES)).count()
-    failed_count = domain_query.filter(ArchiveArtifact.status == ARCHIVE_STATUS_FAILED).count()
-    total_archives = domain_query.count()
-    stored_bytes = (
-        domain_query.filter(ArchiveArtifact.status.in_([ARCHIVE_STATUS_READY, ARCHIVE_STATUS_CLEANUP_PARTIAL]))
-        .with_entities(func.coalesce(func.sum(ArchiveArtifact.size_bytes), 0))
-        .scalar()
-        or 0
-    )
+    aggregate = domain_query.with_entities(
+        func.count(ArchiveArtifact.id).label('total_archives'),
+        func.sum(case((ArchiveArtifact.status.in_(tuple(ACTIVE_ARCHIVE_STATUSES)), 1), else_=0)).label('active_count'),
+        func.sum(
+            case((ArchiveArtifact.status.in_((ARCHIVE_STATUS_FAILED, ARCHIVE_STATUS_PURGE_FAILED)), 1), else_=0)
+        ).label('failed_count'),
+        func.coalesce(
+            func.sum(
+                case(
+                    (
+                        ArchiveArtifact.status.in_([ARCHIVE_STATUS_READY, ARCHIVE_STATUS_CLEANUP_PARTIAL]),
+                        ArchiveArtifact.size_bytes,
+                    ),
+                    else_=0,
+                )
+            ),
+            0,
+        ).label('stored_bytes'),
+    ).one()
+    stored_bytes = int(aggregate.stored_bytes or 0)
 
     return {
-        'total_archives': total_archives,
-        'active_count': active_count,
-        'failed_count': failed_count,
-        'stored_bytes': int(stored_bytes),
+        'total_archives': int(aggregate.total_archives or 0),
+        'active_count': int(aggregate.active_count or 0),
+        'failed_count': int(aggregate.failed_count or 0),
+        'stored_bytes': stored_bytes,
         'stored_size_label': _format_size(int(stored_bytes)),
         'last_run': _serialize_last_run(last_run),
         'last_verified': last_verified,
@@ -499,6 +546,7 @@ def _serialize_preview(preview: dict[str, Any]) -> dict[str, Any]:
     boundary = preview['boundary']
     return {
         'record_count': boundary.record_count,
+        'selected_at': boundary.selected_at,
         'cutoff_at': boundary.cutoff_at,
         'range_start': boundary.range_start,
         'range_end': boundary.range_end,
@@ -538,119 +586,6 @@ def _serialize_archive(artifact: ArchiveArtifact) -> dict[str, Any]:
         'is_downloadable': artifact.is_downloadable,
         'is_verifiable': artifact.is_verifiable,
     }
-
-
-def _build_storage_context(
-    profile: StorageProfile,
-    last_verified: ArchiveArtifact | None,
-) -> dict[str, Any]:
-    provider = _storage_provider_label(profile.backend, profile.s3_endpoint_url)
-    verified_artifact = last_verified if _artifact_matches_storage_profile(last_verified, profile) else None
-    status = 'configured'
-    status_label = 'Configured'
-    status_tone = 'blue'
-    detail = 'Archive target is configured and will be verified during every lifecycle run.'
-
-    if profile.backend == 'local':
-        root = Path(profile.local_root)
-        try:
-            root.mkdir(parents=True, exist_ok=True)
-            writable = root.is_dir() and os.access(root, os.W_OK | os.X_OK)
-        except OSError:
-            writable = False
-        if writable:
-            status = 'ready'
-            status_label = 'Ready'
-            status_tone = 'emerald'
-            detail = 'The local archive directory is available to KAORI.'
-        else:
-            status = 'unavailable'
-            status_label = 'Unavailable'
-            status_tone = 'rose'
-            detail = 'The local archive directory is not available to KAORI.'
-    elif not profile.s3_bucket:
-        status = 'incomplete'
-        status_label = 'Incomplete'
-        status_tone = 'amber'
-        detail = 'An S3-compatible bucket is required before archive jobs can run.'
-    elif verified_artifact is not None and verified_artifact.storage_backend == 's3':
-        status = 'verified'
-        status_label = 'Verified'
-        status_tone = 'emerald'
-        detail = 'A previous archive was uploaded and checksum-verified on this S3-compatible backend.'
-    elif profile.s3_endpoint_url is not None:
-        endpoint_url: str = profile.s3_endpoint_url
-        endpoint_probe = _cached_status(
-            f'archive-storage:{endpoint_url}',
-            20.0,
-            lambda: _probe_storage_endpoint(endpoint_url),
-        )
-        if endpoint_probe['reachable']:
-            status = 'reachable'
-            status_label = 'Reachable'
-            status_tone = 'emerald'
-            detail = 'The configured S3-compatible endpoint is reachable from the KAORI web container.'
-        else:
-            status = 'unreachable'
-            status_label = 'Unreachable'
-            status_tone = 'rose'
-            detail = endpoint_probe['detail']
-
-    return {
-        'backend': profile.backend,
-        'provider_label': provider,
-        'status': status,
-        'status_label': status_label,
-        'status_tone': status_tone,
-        'detail': detail,
-        'location': _storage_location(profile),
-        'endpoint_label': _storage_endpoint_label(profile),
-        'bucket': profile.s3_bucket if profile.backend == 's3' else None,
-        'last_verified_at': verified_artifact.verified_at if verified_artifact else None,
-    }
-
-
-def _artifact_matches_storage_profile(
-    artifact: ArchiveArtifact | None,
-    profile: StorageProfile,
-) -> bool:
-    if artifact is None or artifact.storage_backend != profile.backend:
-        return False
-    metadata = artifact.metadata_json or {}
-    locator = metadata.get('storage_locator') if isinstance(metadata, dict) else None
-    if not isinstance(locator, dict):
-        return False
-    if profile.backend == 'local':
-        archived_root = str(locator.get('local_root') or '').strip()
-        return bool(archived_root) and Path(archived_root).resolve() == profile.local_root.resolve()
-    return (
-        str(locator.get('s3_bucket') or '').strip() == profile.s3_bucket
-        and str(locator.get('s3_endpoint_url') or '').strip().rstrip('/')
-        == str(profile.s3_endpoint_url or '').strip().rstrip('/')
-        and str(locator.get('s3_prefix') or '').strip().strip('/') == profile.s3_prefix
-    )
-
-
-def _probe_storage_endpoint(endpoint_url: str) -> dict[str, Any]:
-    parsed = urlparse(endpoint_url)
-    host = parsed.hostname
-    if not host:
-        return {
-            'reachable': False,
-            'detail': 'Archive storage configuration is invalid.',
-        }
-    port = parsed.port or (443 if parsed.scheme == 'https' else 80)
-    try:
-        with socket.create_connection((host, port), timeout=0.6):
-            return {
-                'reachable': True,
-                'detail': f'{host}:{port} accepted a TCP connection.',
-            }
-    except OSError:
-        return {
-            'reachable': False,
-            'detail': 'Archive storage is currently unavailable.',
-        }
 
 
 def _inspect_retention_worker() -> dict[str, Any]:
@@ -705,61 +640,6 @@ def _next_schedule_label(
     if candidate <= now:
         candidate += timedelta(days=1)
     return candidate.strftime('%d %b %Y %H:%M %Z')
-
-
-def _storage_provider_label(backend: str, endpoint_url: str | None) -> str:
-    if backend == 'local':
-        return 'Local filesystem'
-    endpoint = str(endpoint_url or '').strip().lower()
-    hostname = (urlparse(endpoint).hostname or '').lower() if endpoint else ''
-    if 'minio' in endpoint or hostname.startswith('minio') or ':9000' in endpoint or ':9001' in endpoint:
-        return 'MinIO'
-    if not endpoint or 'amazonaws.com' in endpoint:
-        return 'Amazon S3'
-    return 'S3-compatible'
-
-
-def _archive_storage_label(backend: str | None, locator: Any) -> str:
-    normalized_backend = str(backend or '').strip().lower()
-    if normalized_backend == 'local':
-        return 'Local filesystem'
-    if normalized_backend != 's3':
-        return normalized_backend.upper() if normalized_backend else '-'
-    endpoint = None
-    if isinstance(locator, dict):
-        endpoint = locator.get('s3_endpoint_url')
-    return _storage_provider_label('s3', str(endpoint) if endpoint else None)
-
-
-def _storage_endpoint_label(profile: StorageProfile) -> str | None:
-    if profile.backend == 'local':
-        return None
-    endpoint = str(profile.s3_endpoint_url or '').strip()
-    if not endpoint:
-        return 'AWS endpoint'
-    parsed = urlparse(endpoint)
-    return parsed.netloc or endpoint
-
-
-def _storage_location(profile: StorageProfile) -> str:
-    if profile.backend == 'local':
-        return str(profile.local_root)
-    prefix = f'/{profile.s3_prefix}' if profile.s3_prefix else ''
-    return f's3://{profile.s3_bucket}{prefix}'
-
-
-def _bool_config(key: str, default: bool) -> bool:
-    value = current_app.config.get(key, default)
-    if isinstance(value, bool):
-        return value
-    return str(value or '').strip().lower() in {'1', 'true', 'yes', 'y', 'on'}
-
-
-def _int_config(key: str, default: int) -> int:
-    try:
-        return int(current_app.config.get(key, default))
-    except (TypeError, ValueError):
-        return default
 
 
 def _archive_error_summary(message: str | None) -> str | None:

@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
-from typing import Any, Callable
+from typing import Any
 
 from app.notification_channels.contracts import DeliveryResult, NotificationMessage
 from app.notification_channels.providers.email import send_email_message

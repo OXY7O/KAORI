@@ -158,7 +158,8 @@ def build_fix_steps(item: dict[str, Any]) -> list[str]:
         steps = [
             'Review the committed Object Storage finding, provider, system, bucket ownership, and the captured quota or governance evidence.',
             'Open Object Storage Inventory and the related Object Storage Analytics workspace to validate the latest committed configuration and current operational context.',
-            action or 'Apply the approved bucket quota, access, encryption, lifecycle, or data-retention correction through the provider change path.',
+            action
+            or 'Apply the approved bucket quota, access, encryption, lifecycle, or data-retention correction through the provider change path.',
             'Resync Object Storage inventory and confirm the committed evidence no longer matches this recommendation rule.',
         ]
     elif source_kind == 'pod':

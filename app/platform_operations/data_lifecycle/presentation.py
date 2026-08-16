@@ -3,10 +3,17 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
-from app.models.archive import ACTIVE_ARCHIVE_STATUSES, ARCHIVE_STATUS_FAILED, ArchiveArtifact
+from sqlalchemy import case, func
+
+from app.models.archive import (
+    ACTIVE_ARCHIVE_STATUSES,
+    ARCHIVE_STATUS_FAILED,
+    ARCHIVE_STATUS_PURGE_FAILED,
+    ArchiveArtifact,
+)
 from app.models.job import JobExecution
 from app.models.lifecycle import DataLifecyclePolicy
-from app.retention.domains import DOMAIN_FACTORIES, get_archive_domain
+from app.retention.domains import DOMAIN_FACTORIES
 from app.retention.presentation import build_data_lifecycle_context
 
 
@@ -50,24 +57,28 @@ def build_data_lifecycle_overview_summary() -> dict[str, int]:
     stored = {
         item.domain: item for item in DataLifecyclePolicy.query.filter(DataLifecyclePolicy.domain.in_(supported)).all()
     }
-    enabled_domain_count = 0
-    for domain_name in supported:
-        policy = stored.get(domain_name)
-        if policy is not None:
-            enabled_domain_count += int(bool(policy.enabled))
-            continue
-        enabled_domain_count += int(bool(get_archive_domain(domain_name).build_policy().enabled))
+    enabled_domain_count = sum(int(bool(item.enabled)) for item in stored.values())
 
     cutoff = datetime.now(UTC) - timedelta(hours=24)
-    active_archive_total = ArchiveArtifact.query.filter(
-        ArchiveArtifact.domain.in_(supported),
-        ArchiveArtifact.status.in_(tuple(ACTIVE_ARCHIVE_STATUSES)),
-    ).count()
-    failed_archive_24h = ArchiveArtifact.query.filter(
-        ArchiveArtifact.domain.in_(supported),
-        ArchiveArtifact.status == ARCHIVE_STATUS_FAILED,
-        ArchiveArtifact.updated_at >= cutoff,
-    ).count()
+    archive_summary = (
+        ArchiveArtifact.query.filter(ArchiveArtifact.domain.in_(supported))
+        .with_entities(
+            func.sum(case((ArchiveArtifact.status.in_(tuple(ACTIVE_ARCHIVE_STATUSES)), 1), else_=0)).label('active'),
+            func.sum(
+                case(
+                    (
+                        ArchiveArtifact.status.in_((ARCHIVE_STATUS_FAILED, ARCHIVE_STATUS_PURGE_FAILED))
+                        & (ArchiveArtifact.updated_at >= cutoff),
+                        1,
+                    ),
+                    else_=0,
+                )
+            ).label('failed_24h'),
+        )
+        .one()
+    )
+    active_archive_total = int(archive_summary.active or 0)
+    failed_archive_24h = int(archive_summary.failed_24h or 0)
     active_job_total = JobExecution.query.filter(
         JobExecution.job_type == 'data_lifecycle',
         JobExecution.status.in_(('queued', 'running', 'retrying', 'cancel_requested')),
@@ -76,7 +87,7 @@ def build_data_lifecycle_overview_summary() -> dict[str, int]:
     return {
         'managed_domain_count': len(supported),
         'enabled_domain_count': int(enabled_domain_count),
-        'active_archive_total': int(active_archive_total or 0),
-        'failed_archive_24h': int(failed_archive_24h or 0),
+        'active_archive_total': active_archive_total,
+        'failed_archive_24h': failed_archive_24h,
         'active_job_total': int(active_job_total or 0),
     }

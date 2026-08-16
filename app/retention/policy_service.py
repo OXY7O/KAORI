@@ -32,6 +32,19 @@ def resolve_policy(domain: str, fallback: RetentionPolicy) -> RetentionPolicy:
     )
 
 
+def get_policy(domain: str) -> DataLifecyclePolicy | None:
+    """Return the persisted lifecycle policy without creating rows on read paths."""
+    return DataLifecyclePolicy.query.filter_by(domain=domain).first()
+
+
+def default_schedule_hour(domain: str) -> int:
+    return _default_schedule_hour(domain)
+
+
+def default_schedule_minute(domain: str) -> int:
+    return _default_schedule_minute(domain)
+
+
 def get_or_create_policy(domain: str, fallback: RetentionPolicy) -> DataLifecyclePolicy:
     stored = DataLifecyclePolicy.query.filter_by(domain=domain).first()
     if stored is not None:

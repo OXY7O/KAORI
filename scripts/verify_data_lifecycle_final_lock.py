@@ -102,10 +102,10 @@ def main() -> int:
     index = read('app/templates/platform_operations/data_lifecycle/index.html')
     for required in (
         'components/framed_workspace_tabs.html',
-        'framed_workspace_tabs.render(',
-        "('policies', 'Retention Policies', 'sliders-horizontal')",
-        "('history', 'Archive History', 'history')",
-        "('storage', 'Archive Storage', 'hard-drive')",
+        'framed_workspace_tabs.render_navigation(',
+        "('policies', 'Retention Policies', 'sliders-horizontal'",
+        "('history', 'Archive History', 'history'",
+        "('storage', 'Archive Storage', 'hard-drive'",
         'Execution Boundary',
         "url_for('jobs.executions')",
     ):
@@ -115,17 +115,22 @@ def main() -> int:
         if forbidden in index:
             errors.append(f'Data Lifecycle workspace contains obsolete presentation debt: {forbidden}')
     tab_tokens = (
-        "('policies', 'Retention Policies', 'sliders-horizontal')",
-        "('history', 'Archive History', 'history')",
-        "('storage', 'Archive Storage', 'hard-drive')",
+        "('policies', 'Retention Policies', 'sliders-horizontal'",
+        "('history', 'Archive History', 'history'",
+        "('storage', 'Archive Storage', 'hard-drive'",
     )
     tab_positions = [index.find(token) for token in tab_tokens]
-    if (
-        any(position < 0 for position in tab_positions)
-        or tab_positions != sorted(tab_positions)
-        or "tabs: ['policies', 'history', 'storage']" not in index
-    ):
+    if any(position < 0 for position in tab_positions) or tab_positions != sorted(tab_positions):
         errors.append('Data Lifecycle tab order must be Retention Policies → Archive History → Archive Storage')
+    for required in (
+        "lifecycle.active_tab == 'history'",
+        "lifecycle.active_tab == 'storage'",
+        "hx_target='#data-lifecycle-workspace-shell'",
+    ):
+        if required not in index:
+            errors.append(f'Data Lifecycle demand-loaded workspace contract missing: {required}')
+    if 'x-show="activeTab' in index:
+        errors.append('Data Lifecycle top-level workspaces must be server-owned and demand-loaded')
     if 'Only approved lifecycle domains are manageable.' not in index:
         errors.append('Data Lifecycle managed-domain helper copy drifted from the compact lock')
 
@@ -231,6 +236,8 @@ def main() -> int:
         'Verify Evidence',
         'Storage Interpretation',
         'Production uses the dedicated maintenance worker service.',
+        'Archive Purge Batch',
+        'Purge Failed',
     ):
         if required not in storage:
             errors.append(f'Archive Storage operational evidence contract missing: {required}')
@@ -336,11 +343,11 @@ def main() -> int:
         return 1
 
     print(
-        'KAORI Data Lifecycle Final Lock v1.3 passed: Platform Operations owns route, template, RBAC, navigation, '
-        'feedback and presentation boundaries; Settings is redirect-only; archive-first retention remains shared; '
-        'Jobs & Executions remains canonical runtime evidence; Lifecycle Coverage explicitly maps Activity Audit, persistent '
-        'Notification Center records, authentication audit, and provider-neutral Kubernetes/Prometheus/Alertmanager '
-        'runtime observations plus stale-serve-protected Analytics Snapshots; shared tabs, dark-mode-safe surfaces, Archive History pagination and compatibility migration are frozen.'
+        'KAORI Data Lifecycle Final Lock v1.5 passed: Platform Operations owns route, template, RBAC, navigation, '
+        'feedback and presentation boundaries; read paths are mutation-free; persisted policies fail closed; archive '
+        'selection is frozen; cleanup remains archive-and-checksum gated; purge work is bounded and retryable; Jobs & '
+        'Executions remains canonical runtime evidence; Archive History preserves operator context; and top-level '
+        'workspaces are server-owned and demand-loaded.'
     )
     return 0
 

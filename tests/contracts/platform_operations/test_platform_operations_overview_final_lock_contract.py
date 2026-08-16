@@ -132,10 +132,10 @@ def test_platform_operations_overview_final_lock_is_release_gated() -> None:
 def test_platform_operations_overview_does_not_collapse_unknown_or_disabled_posture_to_ready() -> None:
     presentation = read('app/platform_operations/overview/presentation.py')
 
-    assert "unknown_workspace_count" in presentation
-    assert "review_workspace_count = attention_workspace_count + unknown_workspace_count" in presentation
+    assert 'unknown_workspace_count' in presentation
+    assert 'review_workspace_count = attention_workspace_count + unknown_workspace_count' in presentation
     assert "overall_status_label, overall_status_tone = 'Configuration Review', 'unknown'" in presentation
-    assert "elif not global_enabled:" in presentation
+    assert 'elif not global_enabled:' in presentation
     assert "status_label, status_tone = 'Global Gate Disabled', 'warning'" in presentation
 
 

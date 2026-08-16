@@ -29,8 +29,18 @@ def _load_catalog() -> list[dict[str, object]]:
             raise DefinitionError(f'{path}.status is unsupported: {status!r}.')
         rule: dict[str, object] = dict(raw)
         for key in (
-            'rule_key', 'title', 'source_kind', 'category', 'priority', 'logic_type', 'signal_source',
-            'summary', 'condition_summary', 'recommended_action', 'impact', 'evidence_boundary',
+            'rule_key',
+            'title',
+            'source_kind',
+            'category',
+            'priority',
+            'logic_type',
+            'signal_source',
+            'summary',
+            'condition_summary',
+            'recommended_action',
+            'impact',
+            'evidence_boundary',
         ):
             require_str(raw, key, path)
         if 'supported_sources' in raw:

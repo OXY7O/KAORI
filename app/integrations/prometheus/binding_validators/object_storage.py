@@ -101,9 +101,7 @@ def validate_object_storage_binding(
         matched_signal = matched_identity[0]
         readiness_status = str(audit.get('status') or 'partial')
         if readiness_status == 'ready':
-            message = (
-                f'{profile.label} resolved {adapter.profile_label} and validated all required canonical metrics.'
-            )
+            message = f'{profile.label} resolved {adapter.profile_label} and validated all required canonical metrics.'
         else:
             message = (
                 f'{profile.label} resolved {adapter.profile_label} and collected partial canonical metric evidence. '

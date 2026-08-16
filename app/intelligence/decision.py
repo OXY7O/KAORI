@@ -120,9 +120,7 @@ def evaluate_policy(
     if normalized_action in blocked_actions:
         return DecisionPolicy(PolicyOutcome.BLOCKED, 'Action is blocked by operational policy.', False)
     severity_outcome = (
-        PolicyOutcome.NEEDS_APPROVAL
-        if normalized_severity in {'critical', 'warning'}
-        else PolicyOutcome.ALLOWED
+        PolicyOutcome.NEEDS_APPROVAL if normalized_severity in {'critical', 'warning'} else PolicyOutcome.ALLOWED
     )
     rank = {PolicyOutcome.ALLOWED: 0, PolicyOutcome.NEEDS_APPROVAL: 1, PolicyOutcome.BLOCKED: 2}
     outcome = minimum_outcome if rank[minimum_outcome] > rank[severity_outcome] else severity_outcome
@@ -135,7 +133,9 @@ def evaluate_policy(
             else 'Published runbook policy requires explicit approval.'
         )
         return DecisionPolicy(PolicyOutcome.NEEDS_APPROVAL, reason, True)
-    return DecisionPolicy(PolicyOutcome.ALLOWED, 'Published policy allows execution without additional approval.', False)
+    return DecisionPolicy(
+        PolicyOutcome.ALLOWED, 'Published policy allows execution without additional approval.', False
+    )
 
 
 def create_decision_snapshot(

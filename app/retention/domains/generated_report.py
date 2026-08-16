@@ -84,6 +84,7 @@ class GeneratedReportArchiveDomain:
         )
 
         return ArchiveBoundary(
+            selected_at=now,
             cutoff_at=cutoff_at,
             maximum_record_id=int(maximum_record_id) if maximum_record_id is not None else None,
             record_count=int(record_count or 0),
@@ -97,11 +98,11 @@ class GeneratedReportArchiveDomain:
             return
 
         last_id = 0
-        now = datetime.now(UTC)
+        selection_now = boundary.selected_at
         while True:
             rows = (
                 Report.query.filter(
-                    self._eligible_filter(policy, now=now),
+                    self._eligible_filter(policy, now=selection_now),
                     Report.id <= boundary.maximum_record_id,
                     Report.id > last_id,
                 )
@@ -126,12 +127,12 @@ class GeneratedReportArchiveDomain:
         if boundary.maximum_record_id is None or boundary.record_count <= 0:
             return
 
-        now = datetime.now(UTC)
+        selection_now = boundary.selected_at
         last_id = 0
         while True:
             rows = (
                 Report.query.filter(
-                    self._eligible_filter(policy, now=now),
+                    self._eligible_filter(policy, now=selection_now),
                     Report.id <= boundary.maximum_record_id,
                     Report.id > last_id,
                     Report.status.in_(_ARTIFACT_REPORT_STATUSES),
@@ -176,11 +177,11 @@ class GeneratedReportArchiveDomain:
     def estimate_uncompressed_bytes(self, boundary: ArchiveBoundary, policy: RetentionPolicy) -> int:
         if boundary.maximum_record_id is None or boundary.record_count <= 0:
             return 0
-        now = datetime.now(UTC)
+        selection_now = boundary.selected_at
         artifact_bytes = (
             db.session.query(func.coalesce(func.sum(Report.file_size_bytes), 0))
             .filter(
-                self._eligible_filter(policy, now=now),
+                self._eligible_filter(policy, now=selection_now),
                 Report.id <= boundary.maximum_record_id,
             )
             .scalar()

@@ -12,7 +12,11 @@ from flask import (
 )
 from flask.typing import ResponseReturnValue
 
-from app.analytics.kubernetes.materialization.presentation import blocked_page_context, pending_page_context, snapshot_meta
+from app.analytics.kubernetes.materialization.presentation import (
+    blocked_page_context,
+    pending_page_context,
+    snapshot_meta,
+)
 from app.analytics.kubernetes.materialization.requests import resolve_materialized_request
 from app.analytics.kubernetes.top_consumers.presentation import present_materialized_context
 from app.rbac.decorators import permission_required

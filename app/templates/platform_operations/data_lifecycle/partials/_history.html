@@ -58,8 +58,8 @@
             <select name="archive_domain" class="{{ table_ui.filter_select_classes() }}">
                 <option value="all">All Domains</option>
                 {% for domain in lifecycle.history_filter_options.domains %}
-                    <option value="{{ domain }}"
-                            {% if filters.domain == domain %}selected{% endif %}>{{ domain|replace('_', ' ') |title }}</option>
+                    <option value="{{ domain.value }}"
+                            {% if filters.domain == domain.value %}selected{% endif %}>{{ domain.label }}</option>
                 {% endfor %}
             </select>
         </div>
@@ -145,7 +145,7 @@
                                 <p class="text-xs text-content-muted">{{ archive.supplemental_count }} retained evidence {{ 'file' if archive.supplemental_count == 1 else 'files' }}</p>
                             {% endif %}
                         </td>
-                        <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_label(archive.status|replace('_',' ') |title, 'normal' if archive.status == 'ready' else ('critical' if archive.status == 'failed' else 'warning')) }}</td>
+                        <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_label(archive.status|replace('_',' ') |title, 'normal' if archive.status == 'ready' else ('critical' if archive.status in ['failed', 'purge_failed'] else ('disabled' if archive.status == 'expired' else 'warning'))) }}</td>
                         <td class="{{ table_ui.cell_classes() }}">
                             <p class="text-xs text-content-secondary">{{ archive.completed_at|user_datetime }}</p>
                         </td>
@@ -166,6 +166,14 @@
                                           hx-indicator="#data-lifecycle-history-loading">
                                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                         <input type="hidden" name="tab" value="history">
+                                        <input type="hidden" name="archive_domain" value="{{ filters.domain }}">
+                                        <input type="hidden" name="archive_status" value="{{ filters.status }}">
+                                        <input type="hidden" name="archive_trigger" value="{{ filters.trigger_type }}">
+                                        <input type="hidden" name="archive_mode" value="{{ filters.operation_mode }}">
+                                        <input type="hidden" name="archive_storage" value="{{ filters.storage_backend }}">
+                                        <input type="hidden" name="archive_search" value="{{ filters.search }}">
+                                        <input type="hidden" name="archive_page" value="{{ pager.page }}">
+                                        <input type="hidden" name="archive_per_page" value="{{ pager.per_page }}">
                                         <button class="{{ table_ui.action_classes() }}"><i data-lucide="shield-check" class="h-4 w-4"></i>Verify</button>
                                     </form>
                                 {% endif %}

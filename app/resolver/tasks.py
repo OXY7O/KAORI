@@ -85,9 +85,7 @@ def _queue_verification(execution_journal_id: int) -> None:
     acks_late=True,
     reject_on_worker_lost=True,
 )
-def dispatch_resolver_execution_notification(
-    self, execution_journal_id: int, event_type: str
-) -> dict[str, object]:
+def dispatch_resolver_execution_notification(self, execution_journal_id: int, event_type: str) -> dict[str, object]:
     """Deliver resolver execution lifecycle events through matching platform channels."""
     if event_type not in EXECUTION_NOTIFICATION_EVENTS:
         return {'status': 'skipped', 'reason': 'unsupported_event_type', 'event_type': event_type}

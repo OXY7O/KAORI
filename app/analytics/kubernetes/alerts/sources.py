@@ -6,7 +6,11 @@ from time import perf_counter
 
 from app.alertmanager.service import get_alertmanager_alerts, get_alertmanager_status
 from app.analytics.kubernetes.alerts.contracts import AlertLoadResult, AlertSourceStatus
-from app.analytics.kubernetes.alerts.records import deduplicate_alerts, normalize_alertmanager_item, normalize_prometheus_alert
+from app.analytics.kubernetes.alerts.records import (
+    deduplicate_alerts,
+    normalize_alertmanager_item,
+    normalize_prometheus_alert,
+)
 from app.analytics.kubernetes.alerts.source_messages import (
     friendly_alert_fallback_reason,
     friendly_alert_source_error,

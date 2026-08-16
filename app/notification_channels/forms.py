@@ -28,13 +28,12 @@ def parse_channel_form(
     *,
     existing: NotificationChannel | None = None,
 ) -> NotificationChannelFormInput:
-    provider_key = str(
-        form.get('provider_key') or (existing.provider_key if existing else 'telegram')
-    ).strip().lower()
+    provider_key = str(form.get('provider_key') or (existing.provider_key if existing else 'telegram')).strip().lower()
     minimum_severity = str(form.get('minimum_severity') or 'warning').strip().lower()
-    domains = tuple(
-        value for value in form.getlist('domains') if value in {'kubernetes', 'object_storage'}
-    ) or ('kubernetes', 'object_storage')
+    domains = tuple(value for value in form.getlist('domains') if value in {'kubernetes', 'object_storage'}) or (
+        'kubernetes',
+        'object_storage',
+    )
     event_types = tuple(value for value in form.getlist('event_types') if value in _SUPPORTED_EVENT_TYPES)
     destination, credentials, provider_config, credential_changed = _parse_provider_payload(
         provider_key, form, existing
@@ -46,9 +45,7 @@ def parse_channel_form(
         destination=destination,
         credentials=credentials,
         provider_config=provider_config,
-        minimum_severity=(
-            minimum_severity if minimum_severity in {'critical', 'warning', 'info'} else 'warning'
-        ),
+        minimum_severity=(minimum_severity if minimum_severity in {'critical', 'warning', 'info'} else 'warning'),
         domains=domains,
         event_types=event_types,
         credential_changed=credential_changed,
@@ -88,9 +85,7 @@ def _parse_email_payload(
     password = str(form.get('smtp_password') or '').strip()
     existing_username = str((existing.provider_config or {}).get('smtp_username') or '') if existing else ''
     clear_password = existing is not None and bool(existing_username) and not username
-    credentials = {
-        'password': '' if clear_password else (password or existing_credentials.get('password', ''))
-    }
+    credentials = {'password': '' if clear_password else (password or existing_credentials.get('password', ''))}
     provider_config = {
         'smtp_host': str(form.get('smtp_host') or '').strip(),
         'smtp_port': _positive_int(form.get('smtp_port'), default=587),
@@ -111,6 +106,7 @@ def _parse_teams_payload(
     destination = str(form.get('teams_destination') or '').strip()
     credentials = {'workflow_url': webhook_url or existing_credentials.get('workflow_url', '')}
     return destination, credentials, {'authentication_mode': 'anyone'}, bool(webhook_url)
+
 
 def validate_channel_input(
     data: NotificationChannelFormInput,

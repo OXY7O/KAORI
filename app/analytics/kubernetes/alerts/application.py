@@ -32,7 +32,11 @@ from app.analytics.kubernetes.alerts.ownership import build_ownership_summary
 from app.analytics.kubernetes.alerts.readiness import build_incident_readiness
 from app.analytics.kubernetes.alerts.records import filter_items
 from app.analytics.kubernetes.alerts.routing import build_routing_summary
-from app.analytics.kubernetes.alerts.selection import get_clusters_for_filter, get_namespace_options, get_selected_cluster
+from app.analytics.kubernetes.alerts.selection import (
+    get_clusters_for_filter,
+    get_namespace_options,
+    get_selected_cluster,
+)
 from app.analytics.kubernetes.alerts.signals import build_resource_links, build_selected_cluster_signal_overview
 from app.analytics.kubernetes.alerts.silences import build_silence_summary
 from app.analytics.kubernetes.alerts.sources import load_alerts_by_source

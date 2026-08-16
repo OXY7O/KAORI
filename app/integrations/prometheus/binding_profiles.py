@@ -45,7 +45,9 @@ def register_binding_validation_profile(
     if profile.validation_strategy == 'probe' and not profile.probes:
         raise ValueError(f'Prometheus binding validation profile {asset_type!r} requires at least one probe.')
     if profile.validation_strategy == 'custom' and profile.probes:
-        raise ValueError(f'Custom Prometheus binding validation profile {asset_type!r} must not declare generic probes.')
+        raise ValueError(
+            f'Custom Prometheus binding validation profile {asset_type!r} must not declare generic probes.'
+        )
     with _LOCK:
         if asset_type in _PROFILES and not replace:
             raise ValueError(f'Prometheus binding validation profile {asset_type!r} is already registered.')
@@ -63,15 +65,23 @@ def registered_binding_validation_profiles() -> tuple[BindingValidationProfile, 
 def _load_profiles() -> tuple[BindingValidationProfile, ...]:
     document = integration_provider_document('prometheus')
     profiles: list[BindingValidationProfile] = []
-    for profile_index, raw_profile in enumerate(require_list(document.get('binding_profiles'), 'prometheus.binding_profiles')):
+    for profile_index, raw_profile in enumerate(
+        require_list(document.get('binding_profiles'), 'prometheus.binding_profiles')
+    ):
         item = require_mapping(raw_profile, f'prometheus.binding_profiles[{profile_index}]')
         probes: list[BindingProbe] = []
-        for probe_index, raw_probe in enumerate(require_list(item.get('probes'), f'prometheus.binding_profiles[{profile_index}].probes')):
+        for probe_index, raw_probe in enumerate(
+            require_list(item.get('probes'), f'prometheus.binding_profiles[{profile_index}].probes')
+        ):
             probe = require_mapping(raw_probe, f'prometheus.binding_profiles[{profile_index}].probes[{probe_index}]')
             probes.append(
                 BindingProbe(
-                    metric=require_str(probe, 'metric', f'prometheus.binding_profiles[{profile_index}].probes[{probe_index}]'),
-                    label=require_str(probe, 'label', f'prometheus.binding_profiles[{profile_index}].probes[{probe_index}]'),
+                    metric=require_str(
+                        probe, 'metric', f'prometheus.binding_profiles[{profile_index}].probes[{probe_index}]'
+                    ),
+                    label=require_str(
+                        probe, 'label', f'prometheus.binding_profiles[{profile_index}].probes[{probe_index}]'
+                    ),
                 )
             )
         validation_strategy = require_str(item, 'validation_strategy', f'prometheus.binding_profiles[{profile_index}]')

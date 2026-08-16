@@ -51,7 +51,7 @@ def load_alert_stream(system: ObjectStorageSystem, *, selected_source: str) -> d
         prometheus['label'] = 'Prometheus Fallback Active'
         prometheus['tone'] = 'warning'
         prometheus['fallback_reason'] = (
-            f"Alertmanager was not usable: {alertmanager.get('detail') or alertmanager.get('label')}. "
+            f'Alertmanager was not usable: {alertmanager.get("detail") or alertmanager.get("label")}. '
             'Prometheus ALERTS evidence is being used for the current view.'
         )
         return prometheus
@@ -66,8 +66,8 @@ def load_alert_stream(system: ObjectStorageSystem, *, selected_source: str) -> d
             label='Alert Sources Unavailable' if configured else 'Alert Sources Not Configured',
             tone='critical' if configured else 'unknown',
             detail=(
-                f"Alertmanager: {alertmanager.get('detail') or alertmanager.get('label')}. "
-                f"Prometheus: {prometheus.get('detail') or prometheus.get('label')}."
+                f'Alertmanager: {alertmanager.get("detail") or alertmanager.get("label")}. '
+                f'Prometheus: {prometheus.get("detail") or prometheus.get("label")}.'
             ),
         ),
         rows=[],
@@ -132,10 +132,15 @@ def alertmanager_readiness(
         description = 'Alertmanager consumer binding is eligible and the latest runtime observation is connected.'
     elif runtime_failed:
         label, tone = 'Disconnected', 'critical'
-        description = selected.instance.last_error or 'Alertmanager consumer binding is eligible but the latest runtime observation is disconnected.'
+        description = (
+            selected.instance.last_error
+            or 'Alertmanager consumer binding is eligible but the latest runtime observation is disconnected.'
+        )
     else:
         label, tone = 'Ready · Runtime Unverified', 'info'
-        description = 'Alertmanager consumer binding is eligible. Runtime connectivity will be confirmed when alerts are loaded.'
+        description = (
+            'Alertmanager consumer binding is eligible. Runtime connectivity will be confirmed when alerts are loaded.'
+        )
     return {
         'configured': True,
         'connected': connected,
@@ -471,7 +476,9 @@ def _state(value: Any) -> str:
 
 
 def _source_label(source: str) -> str:
-    return {'alertmanager': 'Alertmanager', 'prometheus': 'Prometheus', 'none': 'Unavailable'}.get(source, source.title())
+    return {'alertmanager': 'Alertmanager', 'prometheus': 'Prometheus', 'none': 'Unavailable'}.get(
+        source, source.title()
+    )
 
 
 def _ineligible_label(reason: str) -> str:

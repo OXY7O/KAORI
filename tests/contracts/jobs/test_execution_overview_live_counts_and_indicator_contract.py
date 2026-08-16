@@ -23,7 +23,7 @@ def test_tab_counts_refresh_out_of_band_without_page_reload() -> None:
     for key in ('active', 'registry', 'queues'):
         assert f'id="execution-tab-count-{key}"' in status_oob
     assert 'hx-swap-oob="outerHTML"' in status_oob
-    assert "_status_oob.html" in status
+    assert '_status_oob.html' in status
     assert "fragment='status'" in poller
     assert 'every 30s' in poller
     assert 'class="hidden"' in poller

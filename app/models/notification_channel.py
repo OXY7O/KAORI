@@ -35,9 +35,7 @@ class NotificationChannel(db.Model):
     )
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    public_id: Mapped[str] = mapped_column(
-        db.String(64), nullable=False, unique=True, default=lambda: str(uuid4())
-    )
+    public_id: Mapped[str] = mapped_column(db.String(64), nullable=False, unique=True, default=lambda: str(uuid4()))
     name: Mapped[str] = mapped_column(db.String(160), nullable=False)
     provider_key: Mapped[str] = mapped_column(db.String(40), nullable=False, default='telegram')
     enabled: Mapped[bool] = mapped_column(db.Boolean, nullable=False, default=True)
@@ -144,6 +142,4 @@ class NotificationDelivery(db.Model):
         onupdate=lambda: datetime.now(UTC),
     )
 
-    channel: Mapped[NotificationChannel] = relationship(
-        'NotificationChannel', back_populates='deliveries'
-    )
+    channel: Mapped[NotificationChannel] = relationship('NotificationChannel', back_populates='deliveries')

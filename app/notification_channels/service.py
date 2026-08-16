@@ -185,10 +185,7 @@ def get_notification_channels_payload() -> dict[str, Any]:
         'channels': channels,
         'providers': providers,
         'domain_options': [{'value': key, 'label': label} for key, label in _DOMAIN_LABELS.items()],
-        'event_type_options': [
-            {'value': key, 'label': label}
-            for key, label in _EVENT_LABELS.items()
-        ],
+        'event_type_options': [{'value': key, 'label': label} for key, label in _EVENT_LABELS.items()],
         'severity_options': [
             {'value': 'critical', 'label': 'Critical only'},
             {'value': 'warning', 'label': 'Warning and Critical'},
@@ -286,6 +283,7 @@ def dispatch_alert_notification(
                 continue
         message = _alert_message(
             domain=domain,
+            asset_key=str(asset_key),
             asset_name=asset_name,
             alert=alert,
             recommendations=recommendations or [],
@@ -316,9 +314,7 @@ def dispatch_matching_notification_event(*, event: NotificationEvent) -> dict[st
     """Deliver one governed event to every validated channel that explicitly allows it."""
     channel_ids = [
         channel.id
-        for channel in NotificationChannel.query.filter_by(enabled=True)
-        .order_by(NotificationChannel.id.asc())
-        .all()
+        for channel in NotificationChannel.query.filter_by(enabled=True).order_by(NotificationChannel.id.asc()).all()
         if _channel_matches_event(channel, domain=event.domain, event_type=event.event_type)
     ]
     return dispatch_notification_event(channel_ids=channel_ids, event=event)
@@ -560,8 +556,7 @@ def _channel_view(channel: NotificationChannel) -> dict[str, Any]:
         'minimum_severity_label': _minimum_severity_label(channel.minimum_severity),
         'domains': list(channel.domains or []),
         'domain_labels': [
-            _DOMAIN_LABELS.get(value, value.replace('_', ' ').title())
-            for value in (channel.domains or [])
+            _DOMAIN_LABELS.get(value, value.replace('_', ' ').title()) for value in (channel.domains or [])
         ],
         'event_types': list(channel.event_types or []),
         'event_type_labels': [
@@ -634,6 +629,7 @@ def _event_key(*, domain: str, asset_key: str, alert: dict[str, Any]) -> str:
 def _alert_message(
     *,
     domain: str,
+    asset_key: str,
     asset_name: str,
     alert: dict[str, Any],
     recommendations: list[dict[str, Any]],

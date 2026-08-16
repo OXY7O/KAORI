@@ -33,11 +33,7 @@ def _workspace_template(resource: str) -> str:
 
 def _setup_blocked_htmx(inventory: dict[str, object]) -> ResponseReturnValue | None:
     setup = inventory.get('setup')
-    if (
-        request.headers.get('HX-Request') == 'true'
-        and isinstance(setup, dict)
-        and setup.get('is_blocked') is True
-    ):
+    if request.headers.get('HX-Request') == 'true' and isinstance(setup, dict) and setup.get('is_blocked') is True:
         return render_template('inventory/object_storage/components/_onboarding_banner.html')
     return None
 

@@ -3,7 +3,11 @@ from __future__ import annotations
 from dataclasses import fields
 from typing import Any, TypeGuard
 
-from app.analytics.kubernetes.top_consumers.contracts import RESOURCE_LABELS, RISK_RANK, TOP_CONSUMERS_PAYLOAD_SCHEMA_VERSION
+from app.analytics.kubernetes.top_consumers.contracts import (
+    RESOURCE_LABELS,
+    RISK_RANK,
+    TOP_CONSUMERS_PAYLOAD_SCHEMA_VERSION,
+)
 from app.analytics.kubernetes.top_consumers.evidence import ScalarEvidence, TopConsumersEvidence, VectorEvidence
 from app.analytics.kubernetes.top_consumers.rows import (
     build_compute_rows,

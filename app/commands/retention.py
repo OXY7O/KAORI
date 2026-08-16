@@ -32,6 +32,7 @@ def preview_command(domain: str) -> None:
     click.echo(f'Domain: {preview["domain"]}')
     click.echo(f'Source model: {preview["source_model"]}')
     click.echo(f'Retention window: {policy.retention_days} day(s)')
+    click.echo(f'Selection time: {boundary.selected_at.isoformat()}')
     click.echo(f'Cutoff: {boundary.cutoff_at.isoformat()}')
     click.echo(f'Eligible records: {boundary.record_count}')
     click.echo(f'Protected unread records: {boundary.protected_record_count}')

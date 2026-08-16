@@ -54,14 +54,10 @@ def load_definition_document(relative_path: str, *, expected_kind: str) -> dict[
         raise DefinitionError(f'Definition root must be a mapping: {relative_path}.')
     schema_version = document.get('schema_version')
     if schema_version != 1:
-        raise DefinitionError(
-            f'Unsupported schema_version for {relative_path}: {schema_version!r}; expected 1.'
-        )
+        raise DefinitionError(f'Unsupported schema_version for {relative_path}: {schema_version!r}; expected 1.')
     kind = str(document.get('kind') or '').strip()
     if kind != expected_kind:
-        raise DefinitionError(
-            f'Unexpected definition kind for {relative_path}: {kind!r}; expected {expected_kind!r}.'
-        )
+        raise DefinitionError(f'Unexpected definition kind for {relative_path}: {kind!r}; expected {expected_kind!r}.')
     return document
 
 

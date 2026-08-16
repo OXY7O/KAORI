@@ -198,9 +198,7 @@ def matches(rule: dict[str, Any], filters: dict[str, str]) -> bool:
         return True
 
     evidence = rule.get('evidence')
-    evidence_text = (
-        ' '.join(f'{key} {value}' for key, value in evidence.items()) if isinstance(evidence, dict) else ''
-    )
+    evidence_text = ' '.join(f'{key} {value}' for key, value in evidence.items()) if isinstance(evidence, dict) else ''
     fix_steps = rule.get('fix_steps')
     fix_steps_text = ' '.join(str(step) for step in fix_steps) if isinstance(fix_steps, list) else ''
     searchable_fields = [

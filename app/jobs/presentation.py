@@ -100,21 +100,18 @@ def _execution_summary(cutoff: datetime) -> dict[str, int]:
         JobExecution.workload_class.in_(('analytics', 'forecasting')),
     )
 
-    result = (
-        db.session.query(
-            func.count(JobExecution.id).label('total'),
-            func.sum(case((active_condition, 1), else_=0)).label('active'),
-            func.sum(case((JobExecution.status == 'queued', 1), else_=0)).label('queued'),
-            func.sum(case((JobExecution.status == 'running', 1), else_=0)).label('running'),
-            func.sum(case((heavy_condition, 1), else_=0)).label('heavy'),
-            func.sum(case((active_attention_condition, 1), else_=0)).label('active_attention'),
-            func.sum(case((recent_attention_condition, 1), else_=0)).label('recent_attention_24h'),
-            func.sum(case((failed_condition, 1), else_=0)).label('failed_24h'),
-            func.sum(case((completed_condition, 1), else_=0)).label('completed_24h'),
-            func.count(func.distinct(JobExecution.queue_name)).label('queues'),
-        )
-        .one()
-    )
+    result = db.session.query(
+        func.count(JobExecution.id).label('total'),
+        func.sum(case((active_condition, 1), else_=0)).label('active'),
+        func.sum(case((JobExecution.status == 'queued', 1), else_=0)).label('queued'),
+        func.sum(case((JobExecution.status == 'running', 1), else_=0)).label('running'),
+        func.sum(case((heavy_condition, 1), else_=0)).label('heavy'),
+        func.sum(case((active_attention_condition, 1), else_=0)).label('active_attention'),
+        func.sum(case((recent_attention_condition, 1), else_=0)).label('recent_attention_24h'),
+        func.sum(case((failed_condition, 1), else_=0)).label('failed_24h'),
+        func.sum(case((completed_condition, 1), else_=0)).label('completed_24h'),
+        func.count(func.distinct(JobExecution.queue_name)).label('queues'),
+    ).one()
     active_attention = int(result.active_attention or 0)
     recent_attention = int(result.recent_attention_24h or 0)
     return {

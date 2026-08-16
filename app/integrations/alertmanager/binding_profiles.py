@@ -60,8 +60,12 @@ def _load_profiles() -> tuple[AlertConsumerProfile, ...]:
                 asset_type=require_str(item, 'asset_type', f'alertmanager.consumer_profiles[{index}]'),
                 profile_key=require_str(item, 'profile_key', f'alertmanager.consumer_profiles[{index}]'),
                 label=require_str(item, 'label', f'alertmanager.consumer_profiles[{index}]'),
-                required_capabilities=string_tuple(item.get('required_capabilities'), f'alertmanager.consumer_profiles[{index}].required_capabilities'),
-                optional_capabilities=string_tuple(item.get('optional_capabilities'), f'alertmanager.consumer_profiles[{index}].optional_capabilities'),
+                required_capabilities=string_tuple(
+                    item.get('required_capabilities'), f'alertmanager.consumer_profiles[{index}].required_capabilities'
+                ),
+                optional_capabilities=string_tuple(
+                    item.get('optional_capabilities'), f'alertmanager.consumer_profiles[{index}].optional_capabilities'
+                ),
                 no_match_message=require_str(item, 'no_match_message', f'alertmanager.consumer_profiles[{index}]'),
                 consumer_family=require_str(item, 'consumer_family', f'alertmanager.consumer_profiles[{index}]'),
                 selector_hint=require_str(item, 'selector_hint', f'alertmanager.consumer_profiles[{index}]'),

@@ -48,7 +48,6 @@
     "app/resolver/service.py::dispatch_resolver_execution": 9,
     "app/retention/policy_service.py::update_policy": 13,
     "app/retention/presentation.py::build_data_lifecycle_context": 13,
-    "app/retention/presentation.py::build_domain_retention_context": 11,
     "app/storage/s3.py::S3ArtifactStorage.__init__": 12
   },
   "function_branch_limits": {
@@ -121,7 +120,6 @@
     "app/reports/export/html_pdf/storage_analysis.py::build_storage_analysis_presentation": 472,
     "app/reports/export/html_pdf/top_consumers_analysis.py::build_top_consumers_analysis_presentation": 236,
     "app/reports/export/html_pdf/workload_analysis.py::build_workload_analysis_presentation": 174,
-    "app/reports/storage/service.py::build_report_cleanup_dry_run": 167,
     "app/reports/storage/service.py::get_report_storage_backend_status": 194,
     "app/retention/service.py::_execute_archive": 166
   },
@@ -145,7 +143,7 @@
     "app/reports/generated/service.py": 1688,
     "app/reports/overview/service.py": 1075,
     "app/reports/schedules/service.py": 1000,
-    "app/reports/storage/service.py": 1417,
+    "app/reports/storage/service.py": 1000,
     "app/users/service.py": 853
   }
 }

@@ -76,6 +76,7 @@ class OperationalActivityArchiveDomain:
             ).count()
 
         return ArchiveBoundary(
+            selected_at=now,
             cutoff_at=cutoff_at,
             maximum_record_id=int(maximum_record_id) if maximum_record_id is not None else None,
             record_count=int(record_count or 0),

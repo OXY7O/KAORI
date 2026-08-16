@@ -83,7 +83,7 @@ def build_trend_view(
         'delta_percent_display': format_percent(summary.delta_percent),
         'growth_per_day': summary.growth_per_day,
         'growth_per_day_display': (
-            f"{formatter(summary.growth_per_day)} per day" if summary.growth_per_day is not None else 'N/A'
+            f'{formatter(summary.growth_per_day)} per day' if summary.growth_per_day is not None else 'N/A'
         ),
         'direction': summary.direction,
         'direction_label': label,
@@ -114,8 +114,10 @@ def build_comparison_view(
 
 
 def build_bucket_analysis(rows: list[dict[str, Any]], total_usage: float | None) -> dict[str, Any]:
-    denominator = total_usage if total_usage is not None and total_usage > 0 else sum(
-        float(row['usage_bytes'] or 0) for row in rows
+    denominator = (
+        total_usage
+        if total_usage is not None and total_usage > 0
+        else sum(float(row['usage_bytes'] or 0) for row in rows)
     )
     for row in rows:
         row['usage_share'] = (
@@ -163,12 +165,8 @@ def build_bucket_analysis(rows: list[dict[str, Any]], total_usage: float | None)
         'request_evidence_coverage_display': format_percent(
             request_evidence_count / len(rows) * 100.0 if rows else None
         ),
-        'error_evidence_coverage_display': format_percent(
-            error_evidence_count / len(rows) * 100.0 if rows else None
-        ),
-        'quota_evidence_coverage_display': format_percent(
-            len(quota_known) / len(rows) * 100.0 if rows else None
-        ),
+        'error_evidence_coverage_display': format_percent(error_evidence_count / len(rows) * 100.0 if rows else None),
+        'quota_evidence_coverage_display': format_percent(len(quota_known) / len(rows) * 100.0 if rows else None),
         'top_usage_share': top_usage_share,
         'top_usage_share_display': format_percent(top_usage_share),
         'concentration_label': concentration['label'],
@@ -192,9 +190,7 @@ def build_capacity_usage_view(
     critical_quota_count = int(bucket_analysis.get('critical_quota_count') or 0)
     warning_quota_count = max(0, quota_pressure_count - critical_quota_count)
     within_quota_count = max(0, quota_known_count - quota_pressure_count)
-    quota_coverage_percent = (
-        quota_known_count / bucket_count * 100.0 if bucket_count > 0 else None
-    )
+    quota_coverage_percent = quota_known_count / bucket_count * 100.0 if bucket_count > 0 else None
     if quota_known_count == 0:
         quota_status = 'No Quota Evidence'
         quota_tone = 'unknown'
@@ -399,6 +395,7 @@ def build_performance_view(evidence: PerformanceEvidence) -> dict[str, Any]:
         'evidence_available_count': evidence_available,
         'evidence_total_count': evidence_total,
     }
+
 
 def build_posture_view(posture: OperationalPosture) -> dict[str, str]:
     return {

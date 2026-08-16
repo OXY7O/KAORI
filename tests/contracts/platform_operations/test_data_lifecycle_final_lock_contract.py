@@ -42,7 +42,7 @@ def test_data_lifecycle_uses_shared_workspace_and_archive_history_contract() -> 
     history = read('app/templates/platform_operations/data_lifecycle/partials/_history.html')
 
     assert 'components/framed_workspace_tabs.html' in index
-    assert 'framed_workspace_tabs.render(' in index
+    assert 'framed_workspace_tabs.render_navigation(' in index
     assert 'role="tablist"' not in index
     assert 'Planned Domains' not in index
     assert 'bg-white' not in index

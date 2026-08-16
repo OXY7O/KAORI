@@ -23,11 +23,18 @@ from app.models.archive import (
     ARCHIVE_STATUS_EXPIRED,
     ARCHIVE_STATUS_FAILED,
     ARCHIVE_STATUS_PENDING,
+    ARCHIVE_STATUS_PURGE_FAILED,
     ARCHIVE_STATUS_READY,
     ARCHIVE_STATUS_VERIFYING,
     ArchiveArtifact,
 )
 from app.retention.domains import get_archive_domain
+from app.retention.archive_support import (
+    artifact_storage_locator as _artifact_storage_locator,
+    error_text as _error_text,
+    estimate_uncompressed_size as _estimate_uncompressed_size,
+    normalize_supplement_path as _normalize_supplement_path,
+)
 from app.retention.lock import retention_lock
 from app.retention.types import ArchiveBoundary, ArchiveSupplement, PartialCleanupError, RetentionPolicy
 from app.storage.service import (
@@ -39,11 +46,6 @@ from app.storage.service import (
 
 logger = logging.getLogger(__name__)
 
-
-def _artifact_storage_locator(artifact: ArchiveArtifact) -> dict[str, object]:
-    metadata = artifact.metadata_json or {}
-    locator = metadata.get('storage_locator')
-    return dict(locator) if isinstance(locator, dict) else {}
 
 
 class ArchiveVerificationError(RuntimeError):
@@ -106,6 +108,7 @@ def run_retention_archive(
         artifact.celery_task_id = celery_task_id
         artifact.metadata_json = {
             'policy': _serialize_policy(policy),
+            'selection_as_of': _isoformat(boundary.selected_at),
             'protected_record_count': boundary.protected_record_count,
             'protected_cutoff_at': _isoformat(boundary.protected_cutoff_at),
         }
@@ -270,7 +273,7 @@ def count_expired_archives(
     cutoff = datetime.now(UTC) - timedelta(days=max(retention_days, 1))
     return ArchiveArtifact.query.filter(
         ArchiveArtifact.domain == domain_name,
-        ArchiveArtifact.status.in_([ARCHIVE_STATUS_READY, ARCHIVE_STATUS_CLEANUP_PARTIAL]),
+        ArchiveArtifact.status.in_([ARCHIVE_STATUS_READY, ARCHIVE_STATUS_CLEANUP_PARTIAL, ARCHIVE_STATUS_PURGE_FAILED]),
         ArchiveArtifact.completed_at.is_not(None),
         ArchiveArtifact.completed_at < cutoff,
     ).count()
@@ -283,19 +286,28 @@ def purge_expired_archives(
     dry_run: bool = False,
 ) -> dict[str, Any]:
     cutoff = datetime.now(UTC) - timedelta(days=max(retention_days, 1))
+    candidate_query = ArchiveArtifact.query.filter(
+        ArchiveArtifact.domain == domain_name,
+        ArchiveArtifact.status.in_([ARCHIVE_STATUS_READY, ARCHIVE_STATUS_CLEANUP_PARTIAL, ARCHIVE_STATUS_PURGE_FAILED]),
+        ArchiveArtifact.completed_at.is_not(None),
+        ArchiveArtifact.completed_at < cutoff,
+    )
+    matched_count = candidate_query.count()
+    if dry_run:
+        return {
+            'matched_count': matched_count,
+            'attempted_count': 0,
+            'purged_count': 0,
+            'failed_count': 0,
+            'dry_run': True,
+        }
+
+    batch_size = max(25, min(int(current_app.config.get('ARCHIVE_PURGE_BATCH_SIZE', 250) or 250), 2500))
     candidates = (
-        ArchiveArtifact.query.filter(
-            ArchiveArtifact.domain == domain_name,
-            ArchiveArtifact.status.in_([ARCHIVE_STATUS_READY, ARCHIVE_STATUS_CLEANUP_PARTIAL]),
-            ArchiveArtifact.completed_at.is_not(None),
-            ArchiveArtifact.completed_at < cutoff,
-        )
-        .order_by(ArchiveArtifact.completed_at.asc())
+        candidate_query.order_by(ArchiveArtifact.completed_at.asc(), ArchiveArtifact.id.asc())
+        .limit(batch_size)
         .all()
     )
-    if dry_run:
-        return {'matched_count': len(candidates), 'purged_count': 0, 'dry_run': True}
-
     purged_count = 0
     with retention_lock(f'{domain_name}:archive-purge'):
         for artifact in candidates:
@@ -325,10 +337,17 @@ def purge_expired_archives(
                 logger.exception('Could not purge archive %s.', artifact.id)
                 failed_artifact = db.session.get(ArchiveArtifact, artifact.id)
                 if failed_artifact is not None:
+                    failed_artifact.status = ARCHIVE_STATUS_PURGE_FAILED
                     failed_artifact.error_message = _error_text(exc)
                     db.session.commit()
 
-    return {'matched_count': len(candidates), 'purged_count': purged_count, 'dry_run': False}
+    return {
+        'matched_count': matched_count,
+        'attempted_count': len(candidates),
+        'purged_count': purged_count,
+        'failed_count': len(candidates) - purged_count,
+        'dry_run': False,
+    }
 
 
 def _execute_archive(
@@ -589,6 +608,7 @@ def _build_manifest(
         'trigger_type': artifact.trigger_type,
         'operation_mode': artifact.operation_mode,
         'selection': {
+            'selected_at': _isoformat(boundary.selected_at),
             'cutoff_at': _isoformat(boundary.cutoff_at),
             'maximum_record_id': boundary.maximum_record_id,
             'range_start': _isoformat(boundary.range_start),
@@ -775,20 +795,3 @@ def _supplemental_artifacts(artifact: ArchiveArtifact) -> list[dict[str, Any]]:
     metadata = artifact.metadata_json or {}
     items = metadata.get('supplemental_artifacts') if isinstance(metadata, dict) else None
     return [dict(item) for item in items if isinstance(item, dict)] if isinstance(items, list) else []
-
-
-def _normalize_supplement_path(value: str) -> str:
-    clean = str(value or '').strip().lstrip('/').replace('\\', '/')
-    parts = [part for part in clean.split('/') if part not in {'', '.', '..'}]
-    if not parts or any(part == '..' for part in clean.split('/')):
-        raise ValueError('Supplemental archive path is invalid.')
-    return '/'.join(parts)
-
-
-def _estimate_uncompressed_size(record_count: int) -> int:
-    return max(record_count, 0) * 1200
-
-
-def _error_text(exc: Exception) -> str:
-    message = f'{type(exc).__name__}: {exc}'.strip()
-    return message[:4000]

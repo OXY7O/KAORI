@@ -15,7 +15,7 @@ Future domains such as Intelligence execution evidence should be added as adapte
 ## Safety invariants
 
 1. Cleanup never starts until data and manifest artifacts are uploaded and independently verified by size and SHA-256 checksum.
-2. Selection is frozen by cutoff and maximum source ID.
+2. Selection is frozen by one selection timestamp, cutoff, and maximum source ID.
 3. Cleanup receives the exact `source.record_id` values read back from the verified JSONL archive.
 4. Lifecycle executions are canonical `JobExecution` records and deduplicate per data domain.
 5. Archive object keys are immutable because they contain the archive UUID.
@@ -25,11 +25,13 @@ Future domains such as Intelligence execution evidence should be added as adapte
 
 ## Scale and scheduling
 
-Celery Beat runs a lightweight dispatcher every 15 minutes. Persistent per-domain policies decide whether a domain is due and at what hour/minute. Due domains are fanned out as separate maintenance jobs, so Activity Audit, Job Execution, Runtime Observation, Analytics Snapshot, and Generated Report retention do not create one large database/storage burst.
+Celery Beat runs one lightweight Data Lifecycle dispatcher every 15 minutes while `DATA_LIFECYCLE_SCHEDULER_ENABLED=true`. Persistent per-domain policy rows are authoritative for whether a domain is due and at what hour/minute; legacy per-domain environment defaults no longer decide whether the dispatcher itself exists. The operator workspace surfaces the global dispatcher state so a saved schedule is never presented as having a next automatic run while dispatch is globally disabled. Due domains are fanned out as separate maintenance jobs, so Activity Audit, Job Execution, Runtime Observation, Analytics Snapshot, and Generated Report retention do not create one large database/storage burst.
 
 Transient connectivity failures receive one bounded automatic retry using `RETENTION_RETRY_DELAY_SECONDS` (default 60 seconds). Non-retryable or exhausted failures remain terminal and keep cleanup blocked. Production consumes the default `RETENTION_CELERY_QUEUE=maintenance` through the existing dedicated `maintenance-worker`; only a custom retention queue requires an additional queue consumer.
 
-The Data Lifecycle UI does not count every eligible record on ordinary page loads. Operators request an exact read-only preview only when needed. Source queries use indexed retention boundaries and bounded batches.
+The Data Lifecycle UI does not count every eligible record on ordinary page loads. Operators request an exact read-only preview only when needed. Retention Policies, Archive History, and Archive Storage are server-owned demand-loaded workspaces, so history pagination, storage endpoint probing, and worker readiness are not all evaluated on every page request. Ordinary GET requests never create lifecycle policy rows. A missing persisted policy is fail-closed: it is shown disabled and cannot queue manual or scheduled archive execution until an operator saves an authoritative policy. Source queries use indexed retention boundaries and bounded batches.
+
+Archive selection stores one `selected_at` timestamp and reuses that exact time, cutoff, and maximum source ID while metadata, JSONL data, and supplemental evidence are written. This prevents rows from entering the archive merely because they crossed an age threshold while a long-running archive was already in progress. Expired archive deletion is separately bounded by `ARCHIVE_PURGE_BATCH_SIZE` (default 250, maximum 2,500). A partial purge is marked `purge_failed`, is no longer downloadable as a complete archive, and remains eligible for a later idempotent purge retry.
 
 ## Artifact format
 

@@ -101,7 +101,7 @@ def dispatch_object_storage_forecast_materialization(
                 status='current',
                 message='All configured Object Storage forecast snapshots are still current.',
             )
-        detail = f" {' | '.join(diagnostics[:3])}" if diagnostics else ''
+        detail = f' {" | ".join(diagnostics[:3])}' if diagnostics else ''
         return RegisteredJobDispatchResult(
             status='blocked',
             message=f'No Object Storage forecast work item is eligible.{detail}',
@@ -188,7 +188,9 @@ def build_object_storage_forecast_materialization_context(policy: JobPolicy) -> 
             'label': 'Blocked',
             'tone': 'warning',
             'icon': 'shield-alert',
-            'description': diagnostics[0] if diagnostics else 'No eligible Object Storage metrics binding is available.',
+            'description': diagnostics[0]
+            if diagnostics
+            else 'No eligible Object Storage metrics binding is available.',
         }
     return {
         'eligible_system_count': len(eligible),

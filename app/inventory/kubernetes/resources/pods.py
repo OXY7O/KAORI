@@ -9,7 +9,11 @@ from app.common.pagination import paginate_query
 from app.extensions.db import db
 from app.inventory.kubernetes.resources.common import format_age
 from app.inventory.kubernetes.resources.pod_detail import build_pod_detail
-from app.inventory.kubernetes.resources.pod_semantics import OPERATIONAL_STATE_TONES, pod_operational_state, pod_ready_values
+from app.inventory.kubernetes.resources.pod_semantics import (
+    OPERATIONAL_STATE_TONES,
+    pod_operational_state,
+    pod_ready_values,
+)
 from app.models import Cluster, PodInventory
 
 UNKNOWN_FILTER = '__unknown__'
