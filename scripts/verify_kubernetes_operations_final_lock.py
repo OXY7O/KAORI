@@ -78,7 +78,7 @@ def main() -> int:
         errors,
     )
     require(
-        "components/cluster/_hero_blocked_context.html" in cluster_required_template
+        'components/cluster/_hero_blocked_context.html' in cluster_required_template
         and 'Operations Readiness' in cluster_required_template
         and '{{ requested_page_title }}' in cluster_required_template
         and '{{ requested_page_description }}' in cluster_required_template

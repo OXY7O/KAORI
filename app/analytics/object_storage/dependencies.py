@@ -97,14 +97,20 @@ def metrics_validation_blocker(
     if status == MetricReadinessState.NOT_VALIDATED:
         stale = 'stale' in detail.lower()
         badge = 'Consumer Validation Stale' if stale else 'Consumer Validation Required'
-        title = 'Object Storage Metrics Binding Must Be Revalidated' if stale else 'Object Storage Metrics Binding Requires Validation'
+        title = (
+            'Object Storage Metrics Binding Must Be Revalidated'
+            if stale
+            else 'Object Storage Metrics Binding Requires Validation'
+        )
         icon = 'list-checks'
     else:
         badge = status_label
         title = 'Required Metrics Contract Incomplete'
         icon = 'shield-alert'
     return {
-        'kind': 'metrics_source_validation' if status == MetricReadinessState.NOT_VALIDATED else 'metrics_source_capability',
+        'kind': 'metrics_source_validation'
+        if status == MetricReadinessState.NOT_VALIDATED
+        else 'metrics_source_capability',
         'stage': 2,
         'badge': badge,
         'tone': 'warning',
@@ -157,7 +163,6 @@ def metrics_runtime_blocker(
     }
 
 
-
 def metrics_query_blocker(
     system: ObjectStorageSystem,
     *,
@@ -178,6 +183,7 @@ def metrics_query_blocker(
         'action_label': 'Review Observability Integrations',
         'action_endpoint': 'integrations.observability',
     }
+
 
 def resolver_error_blocker(
     system: ObjectStorageSystem,

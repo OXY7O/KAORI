@@ -132,13 +132,13 @@ def main() -> int:
             errors.append(f'Notification Center query/filter contract missing: {required}')
 
     for required in (
-        "label: ConfigMap Management",
-        "label: TLS Certificate",
-        "label: Secret Management",
-        "label: Integrations",
-        "label: Platform Operations",
-        "label: Access",
-        "label: Settings",
+        'label: ConfigMap Management',
+        'label: TLS Certificate',
+        'label: Secret Management',
+        'label: Integrations',
+        'label: Platform Operations',
+        'label: Access',
+        'label: Settings',
     ):
         if required not in catalog:
             errors.append(f'Notification category contract missing: {required}')

@@ -8,7 +8,7 @@ ROOT = Path(__file__).resolve().parents[1]
 ENV_ASSIGNMENT = re.compile(r'^\s*#?\s*([A-Z][A-Z0-9_]*)=')
 ACTIVE_ENV_ASSIGNMENT = re.compile(r'^([A-Z][A-Z0-9_]*)=')
 ENV_ACCESS = re.compile(
-    r"(?:os\.getenv|os\.environ\.get|environ\.get|_env_str|_env_int|_env_bool|"
+    r'(?:os\.getenv|os\.environ\.get|environ\.get|_env_str|_env_int|_env_bool|'
     r"_env_optional_str|_bounded_env_int|_bounded_int|_env_csv)\(\s*['\"]([A-Z][A-Z0-9_]*)['\"]"
 )
 COMPOSE_ENV = re.compile(r'\$\$?\{([A-Z][A-Z0-9_]*)(?::[-+?][^}]*)?\}')
@@ -73,11 +73,7 @@ def read(relative: str) -> str:
 
 
 def documented_env_keys(relative: str) -> set[str]:
-    return {
-        match.group(1)
-        for line in read(relative).splitlines()
-        if (match := ENV_ASSIGNMENT.match(line)) is not None
-    }
+    return {match.group(1) for line in read(relative).splitlines() if (match := ENV_ASSIGNMENT.match(line)) is not None}
 
 
 def active_env_keys(relative: str) -> list[str]:

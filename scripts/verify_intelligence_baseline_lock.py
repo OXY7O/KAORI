@@ -101,7 +101,11 @@ def main() -> int:
             f'Alert Intelligence view permission boundary missing after {route_signature}',
             errors,
         )
-    require('@alert_intelligence_bp.post' not in alert_routes, 'Alert Intelligence read capability must not own mutation routes', errors)
+    require(
+        '@alert_intelligence_bp.post' not in alert_routes,
+        'Alert Intelligence read capability must not own mutation routes',
+        errors,
+    )
 
     for required in (
         "@automation_control_bp.route('/automation-control')",
@@ -115,7 +119,11 @@ def main() -> int:
     mutation_gate = _function_body(automation_routes, '_handle_mutation', '_handle_control_operation')
     gate_position = mutation_gate.index("current_app.config.get('AUTOMATION_CONTROL_MUTATIONS_ENABLED', False)")
     operation_position = mutation_gate.index('_handle_control_operation(')
-    require(gate_position < operation_position, 'Automation execution-control callback can cross the fail-closed gate', errors)
+    require(
+        gate_position < operation_position,
+        'Automation execution-control callback can cross the fail-closed gate',
+        errors,
+    )
     require('detail=str(exc)' not in automation_routes, 'Automation Control must not disclose exception text', errors)
     governance_gate = _function_body(automation_routes, '_handle_governance_action', '_handle_mutation')
     require('AUTOMATION_CONTROL_MUTATIONS_ENABLED' not in governance_gate, 'Decision governance must remain available while infrastructure mutation is disabled', errors)
@@ -136,8 +144,16 @@ def main() -> int:
         'Automation Control environment enablement must remain deferred during baseline lock',
         errors,
     )
-    require('Governance Only' in automation_overview, 'Automation Control must communicate factual governance-only posture while mutations are disabled', errors)
-    require('DOMAIN_DEFINITIONS' not in automation_presentation, 'Legacy Automation Control Foundation Map must not return', errors)
+    require(
+        'Governance Only' in automation_overview,
+        'Automation Control must communicate factual governance-only posture while mutations are disabled',
+        errors,
+    )
+    require(
+        'DOMAIN_DEFINITIONS' not in automation_presentation,
+        'Legacy Automation Control Foundation Map must not return',
+        errors,
+    )
 
     require(
         'def get_alert_intelligence_payload(' not in intelligence_service,
@@ -189,7 +205,9 @@ def main() -> int:
         require('components/page_hero.html' in page, f'{label} must use shared Hero ownership', errors)
         shared_workspace_owned = 'intelligence/components/_workspace.html' in page
         if label == 'Alert Intelligence':
-            shared_workspace_owned = shared_workspace_owned or 'intelligence/components/_workspace.html' in alert_workspace
+            shared_workspace_owned = (
+                shared_workspace_owned or 'intelligence/components/_workspace.html' in alert_workspace
+            )
         require(
             shared_workspace_owned,
             f'{label} must use shared Intelligence workspace',
@@ -201,7 +219,9 @@ def main() -> int:
         "{'value': 'object_storage_bucket', 'label': 'Object Storage Bucket'}",
         "{'value': 'object_storage_inventory', 'label': 'Object Storage Inventory'}",
     ):
-        require(required in rule_presentation, f'Object Storage recommendation filter boundary missing: {required}', errors)
+        require(
+            required in rule_presentation, f'Object Storage recommendation filter boundary missing: {required}', errors
+        )
     require(
         'build_object_storage_recommendation_findings(rules)' in intelligence_service,
         'Object Storage recommendation evaluator boundary missing',
@@ -224,20 +244,20 @@ def main() -> int:
     )
 
     for required in (
-        "rule_key: object_storage.metric.capacity_pressure",
-        "rule_key: object_storage.metric.capacity_critical",
-        "rule_key: object_storage.metric.request_error_pressure",
-        "rule_key: object_storage.metric.request_error_critical",
-        "rule_key: object_storage.metric.requests_waiting",
-        "rule_key: object_storage.metric.offline_nodes",
-        "provider_keys:",
-        "evidence_boundary:",
+        'rule_key: object_storage.metric.capacity_pressure',
+        'rule_key: object_storage.metric.capacity_critical',
+        'rule_key: object_storage.metric.request_error_pressure',
+        'rule_key: object_storage.metric.request_error_critical',
+        'rule_key: object_storage.metric.requests_waiting',
+        'rule_key: object_storage.metric.offline_nodes',
+        'provider_keys:',
+        'evidence_boundary:',
     ):
         require(required in intelligence_catalog, f'Object Storage Rule Catalog boundary missing: {required}', errors)
     require('prometheus_relationship' not in intelligence_catalog, 'Rule Catalog schema must not remain Prometheus-owned', errors)
     require(
         "{'value': 'minio', 'label': 'MinIO'}" in rule_presentation
-        and "selected_provider not in provider_keys(rule)" in rule_presentation,
+        and 'selected_provider not in provider_keys(rule)' in rule_presentation,
         'Rule Catalog provider-coverage filter is missing',
         errors,
     )
@@ -255,7 +275,11 @@ def main() -> int:
         errors,
     )
     require('data-detail-row' in catalog_records, 'Rule Catalog adjacent detail-row ownership missing', errors)
-    require('Governance Only' in automation_page, 'Automation Control must communicate governance-only posture while mutations are disabled', errors)
+    require(
+        'Governance Only' in automation_page,
+        'Automation Control must communicate governance-only posture while mutations are disabled',
+        errors,
+    )
 
     for required in (
         'baseline-locked',

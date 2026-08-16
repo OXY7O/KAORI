@@ -120,7 +120,6 @@ def main() -> int:
     inventory_job_adapter = read('app/inventory/kubernetes/job_adapter.py')
     notifications_queries = read('app/notifications/queries.py')
     shared_job_presentation = read('app/common/job_execution_presentation.py')
-    shared_job_contract = read('app/common/job_execution_contract.py')
     shared_job_definitions = read('app/definitions/catalogs/jobs/registered_jobs.yaml')
     require(
         'from app.jobs.registry import get_job_definition' in runtime_recovery,

@@ -137,7 +137,8 @@ def main() -> int:
         errors,
     )
     require(
-        'id="ingresses-page-workspace"' in workspace and 'inventory/kubernetes/components/_data_freshness.html' in workspace,
+        'id="ingresses-page-workspace"' in workspace
+        and 'inventory/kubernetes/components/_data_freshness.html' in workspace,
         'Ingress workspace must own Hero and Snapshot Context.',
         errors,
     )

@@ -103,7 +103,6 @@ def build_decision_notification_event(
     )
 
 
-
 def _decision_domain(decision: IntelligenceDecision) -> str:
     action_key = str(decision.action_key or '').strip().lower()
     if action_key.startswith('object_storage.'):

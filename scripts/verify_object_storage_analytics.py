@@ -125,7 +125,6 @@ def main() -> int:
         if endpoint not in {'object_storage_bucket_table', 'object_storage_alert_table'}:
             assert f'analytics.{endpoint}' in menu
 
-
     assert 'profile_key: object-storage-metrics-v1' in prometheus_catalog
     assert 'validation_strategy: custom' in prometheus_catalog
     assert "register_binding_validator('object_storage_system'" in read(
@@ -229,7 +228,6 @@ def main() -> int:
     assert 'K8s Analytics' not in menu
     assert 'Kubernetes Analytics' in menu
 
-
     for label in (
         'Not Configured',
         'Consumer Validation Required',
@@ -250,12 +248,12 @@ def main() -> int:
     assert 'inventory_required_blocker(system)' in service
     assert service.count('inventory_required_blocker(system)') >= 3
     assert 'build_bucket_table_view' in bucket_table_service
-    assert "default=5" in bucket_table_service
+    assert 'default=5' in bucket_table_service
     assert "'overview': 'consumers'" not in bucket_table_service
     assert "'capacity': 'quota'" in bucket_table_service
     assert "'performance': 'buckets'" in bucket_table_service
     assert "'top_consumers': 'records'" in bucket_table_service
-    assert "{5, 10, 25, 50}" in bucket_table_service
+    assert '{5, 10, 25, 50}' in bucket_table_service
     assert 'components/loading_bar.html' in controls
     assert 'object-storage-analytics-refresh-indicator' in controls
     assert 'components/loading_bar.html' in bucket_table_template
@@ -338,7 +336,7 @@ def main() -> int:
     assert 'partials/_overview_workspaces.html' not in template
     assert not (ROOT / 'app/templates/analytics/object_storage/partials/_overview_workspaces.html').exists()
     assert 'analyticsTabStorageKey' in analytics_controls
-    assert "js/analytics/controls.js" in layout
+    assert 'js/analytics/controls.js' in layout
     assert not (ROOT / 'app/static/js/analytics/kubernetes/controls.js').exists()
     assert 'Canonical Inventory-aligned full-page + HTMX pagination' in record_pagination
     assert 'Reset Filter' in bucket_table_template

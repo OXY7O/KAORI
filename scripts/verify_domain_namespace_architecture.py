@@ -141,7 +141,9 @@ def main() -> int:
         if child.is_file() and child.name not in allowed_analytics_files:
             errors.append(f'analytics capability root contains domain implementation file: {child.relative_to(ROOT)}')
         if child.is_dir() and child.name not in allowed_analytics_dirs:
-            errors.append(f'analytics capability root contains non-canonical domain directory: {child.relative_to(ROOT)}')
+            errors.append(
+                f'analytics capability root contains non-canonical domain directory: {child.relative_to(ROOT)}'
+            )
 
     inventory_root = ROOT / 'app/inventory'
     allowed_inventory_files = {'__init__.py', 'README.md'}
@@ -150,7 +152,9 @@ def main() -> int:
         if child.is_file() and child.name not in allowed_inventory_files:
             errors.append(f'inventory capability root contains domain implementation file: {child.relative_to(ROOT)}')
         if child.is_dir() and child.name not in allowed_inventory_dirs:
-            errors.append(f'inventory capability root contains non-canonical domain directory: {child.relative_to(ROOT)}')
+            errors.append(
+                f'inventory capability root contains non-canonical domain directory: {child.relative_to(ROOT)}'
+            )
 
     for path in APP.rglob('*.py'):
         tree = ast.parse(path.read_text(encoding='utf-8'), filename=str(path))

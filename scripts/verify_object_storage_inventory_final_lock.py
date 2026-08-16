@@ -112,7 +112,11 @@ def main() -> int:
         if 'page_hero.aside_classes()' not in hero_source:
             errors.append(f'Object Storage blocked Hero must retain canonical aside geometry: {relative}')
 
-    for token in ("url_for('integrations.storage')", 'settings.manage_integrations', 'Register Your First Object Storage System'):
+    for token in (
+        "url_for('integrations.storage')",
+        'settings.manage_integrations',
+        'Register Your First Object Storage System',
+    ):
         if token not in onboarding:
             errors.append(f'Object Storage onboarding ownership contract missing: {token}')
 

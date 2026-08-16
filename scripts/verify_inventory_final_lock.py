@@ -104,8 +104,14 @@ def main() -> int:
 
     read_side = '\n'.join(
         [read('app/inventory/kubernetes/overview.py')]
-        + [path.read_text(encoding='utf-8') for path in sorted((ROOT / 'app/inventory/kubernetes/resources').rglob('*.py'))]
-        + [path.read_text(encoding='utf-8') for path in sorted((ROOT / 'app/inventory/kubernetes/topology').rglob('*.py'))]
+        + [
+            path.read_text(encoding='utf-8')
+            for path in sorted((ROOT / 'app/inventory/kubernetes/resources').rglob('*.py'))
+        ]
+        + [
+            path.read_text(encoding='utf-8')
+            for path in sorted((ROOT / 'app/inventory/kubernetes/topology').rglob('*.py'))
+        ]
     )
     for token in (
         'kubernetes.client',
@@ -174,8 +180,10 @@ def main() -> int:
     topology_hero = read('app/templates/inventory/kubernetes/topology/partials/_hero.html')
     blocked_hero = read('app/templates/components/cluster/_hero_blocked_context.html')
     require(
-        "page_hero.context_metric('boxes', 'Connected Clusters', '0', 'No Kubernetes connection available')" in blocked_hero
-        and "page_hero.context_metric('circle-dot-dashed', blocked_state_label, 'Blocked', 'Cluster access is required'" in blocked_hero,
+        "page_hero.context_metric('boxes', 'Connected Clusters', '0', 'No Kubernetes connection available')"
+        in blocked_hero
+        and "page_hero.context_metric('circle-dot-dashed', blocked_state_label, 'Blocked', 'Cluster access is required'"
+        in blocked_hero,
         'Inventory must inherit the canonical Kubernetes setup-blocked Hero context.',
         errors,
     )
@@ -191,7 +199,7 @@ def main() -> int:
     )
     for page_name, hero_source in (('overview', overview_hero), ('topology', topology_hero)):
         require(
-            "components/cluster/_hero_blocked_context.html" in hero_source and 'Inventory Readiness' in hero_source,
+            'components/cluster/_hero_blocked_context.html' in hero_source and 'Inventory Readiness' in hero_source,
             f'{page_name} Hero must use the shared Kubernetes setup-blocked context.',
             errors,
         )
@@ -230,7 +238,7 @@ def main() -> int:
             errors,
         )
         require(
-            "components/cluster/_hero_blocked_context.html" in hero and 'Inventory Readiness' in hero,
+            'components/cluster/_hero_blocked_context.html' in hero and 'Inventory Readiness' in hero,
             f'{resource} Hero must use the shared Kubernetes setup-blocked context.',
             errors,
         )

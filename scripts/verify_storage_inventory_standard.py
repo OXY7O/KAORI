@@ -127,7 +127,8 @@ def main() -> int:
         errors,
     )
     require(
-        'id="storage-page-workspace"' in workspace and 'inventory/kubernetes/components/_data_freshness.html' in workspace,
+        'id="storage-page-workspace"' in workspace
+        and 'inventory/kubernetes/components/_data_freshness.html' in workspace,
         'Storage workspace must own Hero and Snapshot Context.',
         errors,
     )

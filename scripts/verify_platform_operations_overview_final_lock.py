@@ -69,6 +69,7 @@ def main() -> int:
 
     for required in (
         'Operations Center',
+        'Platform Overview',
         'Platform Posture',
         'Workspace Posture',
         'Operating Boundaries',
@@ -86,6 +87,26 @@ def main() -> int:
     for forbidden in ('hx-post=', '<form', 'type="submit"', 'role="tablist"'):
         if forbidden in template:
             errors.append(f'Overview must remain navigation-only and use the compact v1.1 layout: {forbidden}')
+
+    for required in (
+        'review_workspace_count = attention_workspace_count + unknown_workspace_count',
+        "overall_status_label, overall_status_tone = 'Configuration Review', 'unknown'",
+        'elif not global_enabled:',
+        "'boundary_title': 'Execution Evidence'",
+        "'boundary_title': 'Lifecycle Governance'",
+        "'boundary_title': 'Protected Administration'",
+    ):
+        if required not in presentation:
+            errors.append(f'Overview semantic posture contract missing: {required}')
+    for required in (
+        '{% for workspace in platform_overview.workspaces %}',
+        '{{ workspace.boundary_title }}',
+        '{{ workspace.boundary_description }}',
+    ):
+        if required not in template:
+            errors.append(f'Overview permission-scoped boundary contract missing: {required}')
+    if 'Three platform controls, one shared operational model' in template:
+        errors.append('Operating Boundaries must not advertise inaccessible fixed workspace counts')
 
     if not (
         menu.index('Overview')

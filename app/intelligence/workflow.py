@@ -306,7 +306,6 @@ def consume_execution_token(
     return journal
 
 
-
 def expire_stale_decisions(*, now: datetime | None = None) -> int:
     checked_at = now or _now()
     rows = IntelligenceDecision.query.filter(
@@ -324,6 +323,7 @@ def expire_stale_decisions(*, now: datetime | None = None) -> int:
         )
     db.session.commit()
     return len(rows)
+
 
 def snapshot_from_record(record: IntelligenceDecision) -> DecisionSnapshot:
     payload = record.snapshot_json

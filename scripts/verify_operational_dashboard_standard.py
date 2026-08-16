@@ -162,9 +162,9 @@ def verify() -> None:
     _require(
         hero,
         (
-            "cluster_blocked_scope = \"Dashboard Readiness\"",
-            "cluster_blocked_state_label = \"Dashboard State\"",
-            "components/cluster/_hero_blocked_context.html",
+            'cluster_blocked_scope = "Dashboard Readiness"',
+            'cluster_blocked_state_label = "Dashboard State"',
+            'components/cluster/_hero_blocked_context.html',
             "page_hero.context_header('Dashboard Context', 'Operational Signal Scope', 'scan-search')",
         ),
         'dashboard hero readiness',
@@ -173,7 +173,7 @@ def verify() -> None:
         blocked_hero,
         (
             "'Connected Clusters', '0', 'No Kubernetes connection available'",
-            "blocked_state_label, 'Blocked', 'Cluster access is required'", 
+            "blocked_state_label, 'Blocked', 'Cluster access is required'",
         ),
         'shared Kubernetes blocked hero',
     )

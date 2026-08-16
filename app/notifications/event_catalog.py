@@ -46,7 +46,6 @@ def _display_event_label(value: str) -> str:
     return ' '.join(words)
 
 
-
 def event_label(event_type: str) -> str:
     """Return a human-readable label while keeping the stored event key unchanged."""
     normalized = event_type.strip()

@@ -170,6 +170,7 @@ def main() -> int:
         'components/table_label.html',
         'components/operational_section_card.html',
         'Operations Center',
+        'Platform Overview',
         'Platform Posture',
         'Workspace Posture',
         'Operating Boundaries',
@@ -196,6 +197,14 @@ def main() -> int:
     ):
         if required not in overview_presentation:
             errors.append(f'Platform Operations Overview domain projection missing: {required}')
+    for required in (
+        'review_workspace_count = attention_workspace_count + unknown_workspace_count',
+        "overall_status_label, overall_status_tone = 'Configuration Review', 'unknown'",
+        'elif not global_enabled:',
+    ):
+        if required not in overview_presentation:
+            errors.append(f'Platform Operations Overview semantic posture contract missing: {required}')
+
     for forbidden in (
         'inspect_celery_topology',
         'get_queue_readiness',

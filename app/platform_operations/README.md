@@ -16,6 +16,8 @@ Platform Operations Overview is the read-only landing page for the control plane
 
 Overview projections must stay lightweight: database-backed summaries are allowed, but live Kubernetes calls, Celery topology inspection, archive storage probes, retention previews, and other external validation belong to their owning workspaces.
 
+Overview status aggregation must not convert setup/unknown domain posture into `Ready`. Critical and warning states take precedence, then configuration review, active execution, and finally ready. Operating Boundaries are permission-scoped and must render from the same visible workspace projection rather than advertising inaccessible control planes.
+
 ## Data Lifecycle
 
 Data Lifecycle is the cross-domain operational control plane for retention policy, verified archive storage, safe cleanup, and archive evidence. It does not own worker execution state: manual and scheduled lifecycle work is recorded through canonical `JobExecution` and remains inspectable under Jobs & Executions. The legacy Settings route is redirect-only compatibility.

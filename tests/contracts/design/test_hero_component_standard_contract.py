@@ -71,4 +71,3 @@ def test_hero_context_panel_footer_variants_share_one_precise_row_rhythm() -> No
     assert "mt-auto grid min-h-10 gap-2 {{ 'grid-cols-2' if columns == 2 else 'grid-cols-1' }}" in source
     assert 'mt-3 grid grid-cols-2 gap-2' not in source
     assert 'mt-auto grid gap-2 pt-3' not in source
-

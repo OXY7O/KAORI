@@ -27,10 +27,10 @@ from app.analytics.object_storage.dependencies import (
 )
 from app.analytics.object_storage.materialization import forecast_snapshot_state, get_forecast_snapshot
 from app.analytics.object_storage.presentation import (
+    PerformanceEvidence,
     build_bucket_analysis,
     build_capacity_usage_view,
     build_comparison_view,
-    PerformanceEvidence,
     build_performance_view,
     build_posture_view,
     build_signal_posture,
@@ -106,6 +106,7 @@ FORECAST_HISTORY_WINDOWS = (
     {'value': '30d', 'label': 'Last 30 Days'},
     {'value': '90d', 'label': 'Last 90 Days'},
 )
+
 
 def _systems() -> list[ObjectStorageSystem]:
     return list(
@@ -363,14 +364,12 @@ def _apply_forecast_result(
     payload['forecast'] = forecast
     payload['forecast_display'] = {
         'growth_per_day': (
-            format_bytes(forecast['growth_per_day']) + '/day'
-            if forecast['growth_per_day'] is not None
-            else 'N/A'
+            format_bytes(forecast['growth_per_day']) + '/day' if forecast['growth_per_day'] is not None else 'N/A'
         ),
         'projected_7d': format_bytes(forecast['projected_7d']),
         'projected_30d': format_bytes(forecast['projected_30d']),
         'days_to_capacity': (
-            f"{forecast['days_to_capacity']:.1f} days" if forecast['days_to_capacity'] is not None else 'N/A'
+            f'{forecast["days_to_capacity"]:.1f} days' if forecast['days_to_capacity'] is not None else 'N/A'
         ),
     }
     payload['forecast_posture'] = build_posture_view(
@@ -555,8 +554,16 @@ def _base_context(page_key: str, query_args: Any) -> tuple[dict[str, Any], Objec
             }
         ),
         'alert_posture': {
-            'total': 0, 'critical': 0, 'warning': 0, 'info': 0, 'firing': 0, 'pending': 0,
-            'silenced': 0, 'inhibited': 0, 'status': 'Unknown', 'tone': 'unknown',
+            'total': 0,
+            'critical': 0,
+            'warning': 0,
+            'info': 0,
+            'firing': 0,
+            'pending': 0,
+            'silenced': 0,
+            'inhibited': 0,
+            'status': 'Unknown',
+            'tone': 'unknown',
             'detail': 'Select an Object Storage system.',
         },
         'alert_table': None,
@@ -660,7 +667,6 @@ def get_object_storage_analytics_context(page_key: str, query_args: Any) -> dict
     return context
 
 
-
 def get_object_storage_alert_table_context(query_args: Any) -> dict[str, Any]:
     context, system, _ = _base_context('alerts', query_args)
     if system is None:
@@ -680,6 +686,7 @@ def get_object_storage_alert_table_context(query_args: Any) -> dict[str, Any]:
         selected_source=context['selected_alert_source'],
     )
     return context
+
 
 def get_object_storage_bucket_table_context(page_key: str, query_args: Any) -> dict[str, Any]:
     if page_key not in {'capacity', 'performance', 'top_consumers'}:

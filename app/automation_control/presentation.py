@@ -171,7 +171,9 @@ def build_automation_control_context(query_args: Mapping[str, Any]) -> dict[str,
             _journal_row(record, cluster_names)
             for record in IntelligenceExecutionJournal.query.order_by(
                 IntelligenceExecutionJournal.updated_at.desc(), IntelligenceExecutionJournal.id.desc()
-            ).limit(10).all()
+            )
+            .limit(10)
+            .all()
         ]
         payload['dead_letter_rows'] = [
             _journal_row(record, cluster_names)
@@ -196,15 +198,25 @@ def build_automation_control_context(query_args: Mapping[str, Any]) -> dict[str,
 
 
 def _overview_activity(cluster_names: Mapping[str, str]) -> dict[str, Any]:
-    candidates = IntelligenceDecisionCandidate.query.order_by(
-        IntelligenceDecisionCandidate.created_at.desc(), IntelligenceDecisionCandidate.id.desc()
-    ).limit(5).all()
-    decisions = IntelligenceDecision.query.order_by(
-        IntelligenceDecision.created_at.desc(), IntelligenceDecision.id.desc()
-    ).limit(5).all()
-    journals = IntelligenceExecutionJournal.query.order_by(
-        IntelligenceExecutionJournal.updated_at.desc(), IntelligenceExecutionJournal.id.desc()
-    ).limit(5).all()
+    candidates = (
+        IntelligenceDecisionCandidate.query.order_by(
+            IntelligenceDecisionCandidate.created_at.desc(), IntelligenceDecisionCandidate.id.desc()
+        )
+        .limit(5)
+        .all()
+    )
+    decisions = (
+        IntelligenceDecision.query.order_by(IntelligenceDecision.created_at.desc(), IntelligenceDecision.id.desc())
+        .limit(5)
+        .all()
+    )
+    journals = (
+        IntelligenceExecutionJournal.query.order_by(
+            IntelligenceExecutionJournal.updated_at.desc(), IntelligenceExecutionJournal.id.desc()
+        )
+        .limit(5)
+        .all()
+    )
     return {
         'candidate_rows': [_candidate_row(record, cluster_names) for record in candidates],
         'decision_rows': [_decision_row(record, cluster_names) for record in decisions],
@@ -280,22 +292,29 @@ def _workspace_tabs() -> list[tuple[str, str, str, str]]:
     )
     from flask import url_for
 
-    return [
-        (key, label, icon, url_for('automation_control.index', workspace=key))
-        for key, label, icon in definitions
-    ]
+    return [(key, label, icon, url_for('automation_control.index', workspace=key)) for key, label, icon in definitions]
 
 
 def _workspace_rows(active: str) -> list[dict[str, str | bool]]:
     definitions = (
-        ('overview', 'Overview', 'layout-dashboard', 'Review decision flow, execution posture, safety controls, and delivery readiness.'),
+        (
+            'overview',
+            'Overview',
+            'layout-dashboard',
+            'Review decision flow, execution posture, safety controls, and delivery readiness.',
+        ),
         (
             'runbooks',
             'Runbooks & Bindings',
             'book-open-check',
             'Review immutable runbooks, alert bindings, resolver actions, and execution eligibility.',
         ),
-        ('decisions', 'Decision Review', 'clipboard-check', 'Review candidates, immutable decisions, approval requirements, scope, and expiry.'),
+        (
+            'decisions',
+            'Decision Review',
+            'clipboard-check',
+            'Review candidates, immutable decisions, approval requirements, scope, and expiry.',
+        ),
         (
             'operations',
             'Execution Control',
@@ -344,7 +363,6 @@ def _paginate_sequence(rows: Sequence[Any], *, page: Any, per_page: Any) -> tupl
     }
 
 
-
 def _system_runbook_catalog_rows(registry_rows: Sequence[Mapping[str, Any]]) -> list[dict[str, Any]]:
     registry_actions = {str(row.get('action_key') or '') for row in registry_rows}
     rows: list[dict[str, Any]] = []
@@ -366,11 +384,7 @@ def _system_runbook_catalog_rows(registry_rows: Sequence[Mapping[str, Any]]) -> 
         resolver_available = definition.action_key in SUPPORTED_RESOLVER_ACTIONS
         execution_registered = definition.action_key in registry_actions
         catalog_drift = bool(revision is not None and revision.content_hash != definition.content_hash)
-        activated = bool(
-            revision is not None
-            and revision.publication_status == 'published'
-            and not catalog_drift
-        )
+        activated = bool(revision is not None and revision.publication_status == 'published' and not catalog_drift)
         if catalog_drift:
             status = 'Catalog Drift'
             tone = 'critical'

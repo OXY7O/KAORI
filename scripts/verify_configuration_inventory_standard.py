@@ -113,7 +113,8 @@ def main() -> int:
         errors,
     )
     require(
-        'id="configuration-page-workspace"' in workspace and 'inventory/kubernetes/components/_data_freshness.html' in workspace,
+        'id="configuration-page-workspace"' in workspace
+        and 'inventory/kubernetes/components/_data_freshness.html' in workspace,
         'Configuration workspace must own Hero and Snapshot Context.',
         errors,
     )

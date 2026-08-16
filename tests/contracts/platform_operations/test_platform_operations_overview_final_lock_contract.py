@@ -127,3 +127,27 @@ def test_platform_operations_overview_final_lock_is_release_gated() -> None:
     assert 'PASS — KAORI Platform Operations Overview Final Lock v1.1' in read(
         'scripts/verify_platform_operations_overview_final_lock.py'
     )
+
+
+def test_platform_operations_overview_does_not_collapse_unknown_or_disabled_posture_to_ready() -> None:
+    presentation = read('app/platform_operations/overview/presentation.py')
+
+    assert "unknown_workspace_count" in presentation
+    assert "review_workspace_count = attention_workspace_count + unknown_workspace_count" in presentation
+    assert "overall_status_label, overall_status_tone = 'Configuration Review', 'unknown'" in presentation
+    assert "elif not global_enabled:" in presentation
+    assert "status_label, status_tone = 'Global Gate Disabled', 'warning'" in presentation
+
+
+def test_platform_operations_operating_boundaries_are_permission_scoped() -> None:
+    template = read('app/templates/platform_operations/overview/index.html')
+    presentation = read('app/platform_operations/overview/presentation.py')
+
+    assert '<h1 class="{{ page_hero.title_classes() }}">Platform Overview</h1>' in template
+    assert '{% for workspace in platform_overview.workspaces %}' in template
+    assert '{{ workspace.boundary_title }}' in template
+    assert '{{ workspace.boundary_description }}' in template
+    assert 'Three platform controls, one shared operational model' not in template
+    for title in ('Execution Evidence', 'Lifecycle Governance', 'Protected Administration'):
+        assert title in presentation
+        assert title not in template

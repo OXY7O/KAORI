@@ -62,7 +62,10 @@ def main() -> None:
         "if provider not in {'prometheus', 'alertmanager'}" not in binding_service,
         'binding service must not use a provider allow-list',
     )
-    require('def create_cluster_source_binding(' not in binding_service, 'Domain compatibility binding wrappers must remain removed')
+    require(
+        'def create_cluster_source_binding(' not in binding_service,
+        'Domain compatibility binding wrappers must remain removed',
+    )
     require('def cluster(self)' not in binding_service, 'Created binding results must not expose compatibility aliases')
 
     validation = read('app/integrations/validation/tasks.py')

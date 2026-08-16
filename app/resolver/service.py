@@ -95,7 +95,6 @@ def dispatch_resolver_execution(
     return journal
 
 
-
 def verify_resolver_execution(
     journal: IntelligenceExecutionJournal,
     *,
@@ -196,6 +195,7 @@ def _resolver_context(
         namespace=record.namespace,
         parameters=parameters,
     )
+
 
 def _find_authorized_journal(record: IntelligenceDecision) -> IntelligenceExecutionJournal:
     journal = (

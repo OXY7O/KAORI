@@ -80,7 +80,7 @@ def main() -> int:
         for role in access['system_roles']:
             unknown = sorted(set(role.get('permissions') or ()) - permission_keys)
             if unknown:
-                raise ValueError(f"role {role['key']} references unknown permissions: {', '.join(unknown)}")
+                raise ValueError(f'role {role["key"]} references unknown permissions: {", ".join(unknown)}')
 
         jobs = docs['jobs/registered_jobs.yaml']['jobs']
         unique(jobs, 'key', 'registered jobs')
@@ -89,17 +89,17 @@ def main() -> int:
             for field in ('configure_permission', 'execute_permission', 'domain_execute_permission'):
                 value = str(job.get(field) or '').strip()
                 if value and value not in permission_keys:
-                    raise ValueError(f"job {job['key']} references unknown permission {value!r}")
+                    raise ValueError(f'job {job["key"]} references unknown permission {value!r}')
             for field in ('dispatcher_path', 'context_builder_path'):
                 value = str(job.get(field) or '')
                 if ':' not in value:
-                    raise ValueError(f"job {job['key']} has invalid {field}")
+                    raise ValueError(f'job {job["key"]} has invalid {field}')
 
         runbooks = docs['knowledge/system_runbooks.yaml']['runbooks']
         unique(runbooks, 'runbook_key', 'system runbooks')
         for runbook in runbooks:
             if runbook.get('approval_policy') == 'allowed' and not runbook.get('recovery'):
-                raise ValueError(f"runbook {runbook['runbook_key']} cannot auto-allow without recovery metadata")
+                raise ValueError(f'runbook {runbook["runbook_key"]} cannot auto-allow without recovery metadata')
 
         readiness = docs['automation/production_readiness.yaml']
         checks = readiness.get('required_checks') or []
@@ -117,7 +117,7 @@ def main() -> int:
         unique(datasets, 'key', 'analytics datasets')
         for dataset in datasets:
             if ':' not in str(dataset.get('builder_path') or ''):
-                raise ValueError(f"dataset {dataset['key']} has invalid builder_path")
+                raise ValueError(f'dataset {dataset["key"]} has invalid builder_path')
 
         reports = docs['reports/catalog.yaml']
         formats = unique(reports['output_formats'], 'value', 'report formats')
@@ -125,20 +125,22 @@ def main() -> int:
         for report in reports['report_types']:
             allowed = set(report.get('allowed_formats') or ())
             if report.get('default_format') not in allowed or not allowed <= formats:
-                raise ValueError(f"report {report['value']} has invalid format contract")
+                raise ValueError(f'report {report["value"]} has invalid format contract')
 
         report_coverage = docs['reports/coverage.yaml']
         coverage_domains = unique(report_coverage['domains'], 'key', 'report coverage domains')
         allowed_coverage_statuses = {'Published', 'Evidence Ready', 'Planned', 'Reserved'}
         for domain in report_coverage['domains']:
             if domain.get('status') not in allowed_coverage_statuses:
-                raise ValueError(f"report coverage {domain['key']} has unsupported status")
-            unique(domain.get('items') or [], 'name', f"report coverage {domain['key']} items")
+                raise ValueError(f'report coverage {domain["key"]} has unsupported status')
+            unique(domain.get('items') or [], 'name', f'report coverage {domain["key"]} items')
         if 'object_storage' not in coverage_domains:
             raise ValueError('Object Storage report coverage domain is missing')
         object_storage = next(domain for domain in report_coverage['domains'] if domain['key'] == 'object_storage')
         if object_storage.get('status') != 'Published':
-            raise ValueError('Object Storage report coverage must be Published after canonical contracts are registered')
+            raise ValueError(
+                'Object Storage report coverage must be Published after canonical contracts are registered'
+            )
 
         notifications = docs['notifications/event_categories.yaml']
         category_keys = set(notifications['categories'])
@@ -146,8 +148,7 @@ def main() -> int:
             raise ValueError('notification default_category is unknown')
         for route in notifications['routes']:
             if route.get('category') not in category_keys:
-                raise ValueError(f"notification route references unknown category {route.get('category')!r}")
-
+                raise ValueError(f'notification route references unknown category {route.get("category")!r}')
 
         taxonomy = docs['integrations/taxonomy.yaml']
         domain_keys = unique(taxonomy['domains'], 'key', 'integration domains')
@@ -187,7 +188,9 @@ def main() -> int:
         for profile in alertmanager['profiles']:
             missing = set(profile.get('required_capabilities') or ()) - alert_capability_keys
             if missing:
-                raise ValueError(f"Alertmanager profile {profile['key']} references unknown capabilities: {sorted(missing)}")
+                raise ValueError(
+                    f'Alertmanager profile {profile["key"]} references unknown capabilities: {sorted(missing)}'
+                )
         if set(alertmanager.get('compatibility_profiles') or ()) != profile_keys:
             raise ValueError('Alertmanager compatibility profile keys must match provider profile definitions')
 
@@ -195,9 +198,7 @@ def main() -> int:
         products = object_storage.get('products') or []
         unique(products, 'key', 'object-storage product families')
         object_profile_keys = {
-            str(profile['key'])
-            for product in products
-            for profile in product.get('compatibility_profiles') or ()
+            str(profile['key']) for product in products for profile in product.get('compatibility_profiles') or ()
         }
         if not object_profile_keys:
             raise ValueError('object-storage provider must define at least one qualified compatibility profile')
@@ -208,11 +209,11 @@ def main() -> int:
 
     print(
         'PASS — KAORI Definition Registry v1.1 · '
-        f"{len(rules)} rules · {len(permission_keys)} permissions · {len(jobs)} jobs · "
-        f"{len(datasets)} analytics datasets · {len(reports['report_types'])} report types · "
-        f"{len(report_coverage['domains'])} report coverage domains · "
-        f"{len(domain_keys)} integration domains · {sum(integration_provider_counts.values())} provider capabilities · "
-        f"{len(compatibility_profiles)} compatibility profiles"
+        f'{len(rules)} rules · {len(permission_keys)} permissions · {len(jobs)} jobs · '
+        f'{len(datasets)} analytics datasets · {len(reports["report_types"])} report types · '
+        f'{len(report_coverage["domains"])} report coverage domains · '
+        f'{len(domain_keys)} integration domains · {sum(integration_provider_counts.values())} provider capabilities · '
+        f'{len(compatibility_profiles)} compatibility profiles'
     )
     return 0
 

@@ -2,10 +2,10 @@
 from __future__ import annotations
 
 import ast
-
-import yaml
 from pathlib import Path
 from typing import Any
+
+import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -169,7 +169,9 @@ def _verify_catalog_contract(errors: list[str]) -> None:
     reports = next((item for item in shortcut_definitions if item.get('title') == 'Reports'), None)
     intelligence = next((item for item in shortcut_definitions if item.get('title') == 'Intelligence'), None)
     require(
-        governance is not None and governance.get('scope') == 'Compute', 'Kubernetes Governance scope must be Compute.', errors
+        governance is not None and governance.get('scope') == 'Compute',
+        'Kubernetes Governance scope must be Compute.',
+        errors,
     )
     require(
         reports is not None and reports.get('scope') == 'Cross-domain',

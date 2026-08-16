@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 
+
 @dataclass(frozen=True, slots=True)
 class NotificationMessage:
     title: str
@@ -17,6 +18,7 @@ class DeliveryResult:
     success: bool
     message: str
     provider_message_id: str | None = None
+
 
 @dataclass(frozen=True, slots=True)
 class NotificationEvent:

@@ -126,7 +126,7 @@ def _quota_findings(
     return [
         _finding(
             rule,
-            finding_key=f"{rule['rule_key']}:{system.id}:{bucket.id}",
+            finding_key=f'{rule["rule_key"]}:{system.id}:{bucket.id}',
             title=f'{bucket.name} quota utilization is {_format_percent(quota_utilization)}',
             summary=(
                 f'Committed Object Storage inventory shows {bucket.name} using '
@@ -164,7 +164,7 @@ def _governance_findings(
             findings.append(
                 _finding(
                     rule,
-                    finding_key=f"{rule['rule_key']}:{system.id}:{bucket.id}",
+                    finding_key=f'{rule["rule_key"]}:{system.id}:{bucket.id}',
                     title=f'{bucket.name} has public exposure evidence',
                     summary=(
                         f'Committed Object Storage inventory reports public exposure for bucket {bucket.name} '
@@ -181,7 +181,7 @@ def _governance_findings(
             findings.append(
                 _finding(
                     rule,
-                    finding_key=f"{rule['rule_key']}:{system.id}:{bucket.id}",
+                    finding_key=f'{rule["rule_key"]}:{system.id}:{bucket.id}',
                     title=f'{bucket.name} has no configured encryption evidence',
                     summary=(
                         f'Committed Object Storage inventory reports encryption as not configured for bucket '
@@ -195,7 +195,6 @@ def _governance_findings(
             )
 
     return findings
-
 
 
 def _forecast_findings(
@@ -256,7 +255,7 @@ def _forecast_findings(
     return [
         _finding(
             rule,
-            finding_key=f"{rule_key}:{system.id}:30d",
+            finding_key=f'{rule_key}:{system.id}:30d',
             title=f'{system.name} capacity exhaustion is projected in {float(days_to_capacity):.1f} days',
             summary=(
                 f'The current 30-day Object Storage forecast for {system.name} projects positive growth of '
@@ -270,6 +269,7 @@ def _forecast_findings(
             evidence=evidence,
         )
     ]
+
 
 def build_object_storage_recommendation_findings(
     rules: dict[str, dict[str, Any]],

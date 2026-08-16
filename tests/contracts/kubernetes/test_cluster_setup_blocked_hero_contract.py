@@ -132,7 +132,6 @@ def test_governance_and_operations_blocked_copy_remains_domain_specific() -> Non
     assert '>Kubernetes Cluster Setup Required</h1>' not in operations
 
 
-
 def test_setup_blockers_preserve_page_identity_from_kubernetes_to_object_storage() -> None:
     dashboard = _read('app/templates/dashboards/kubernetes/partials/_hero.html')
     k8s_analytics = _read('app/templates/analytics/kubernetes/materialization/blocked.html')

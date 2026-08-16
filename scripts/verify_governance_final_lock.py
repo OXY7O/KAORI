@@ -124,8 +124,7 @@ def main() -> int:
         errors,
     )
     require(
-        "components/cluster/_hero_blocked_context.html" in overview
-        and 'Governance Readiness' in overview,
+        'components/cluster/_hero_blocked_context.html' in overview and 'Governance Readiness' in overview,
         'Governance Overview must use the canonical Kubernetes setup-blocked Hero context.',
         errors,
     )
@@ -140,8 +139,7 @@ def main() -> int:
         errors,
     )
     require(
-        "components/cluster/_hero_blocked_context.html" in hero
-        and 'Governance Readiness' in hero,
+        'components/cluster/_hero_blocked_context.html' in hero and 'Governance Readiness' in hero,
         'TLS Governance Hero must use the canonical Kubernetes setup-blocked Hero context.',
         errors,
     )

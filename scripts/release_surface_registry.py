@@ -184,7 +184,14 @@ SURFACES: tuple[ReleaseSurface, ...] = (
             'integrations.storage',
             'notification_channels.index',
         ),
-        blueprint_vars=('integrations_bp', 'notification_channels_bp', 'cluster_bp', 'prometheus_bp', 'alertmanager_bp', 'minio_bp'),
+        blueprint_vars=(
+            'integrations_bp',
+            'notification_channels_bp',
+            'cluster_bp',
+            'prometheus_bp',
+            'alertmanager_bp',
+            'minio_bp',
+        ),
         verifiers=(
             'scripts/verify_integration_provider_foundation.py',
             'scripts/verify_integration_domain_navigation.py',
