@@ -46,7 +46,10 @@ def test_alert_intelligence_workspace_places_tabs_before_compact_operational_con
     assert 'Operational Scope' not in workspace
     assert 'id="alert-intelligence-context-form"' in workspace
     assert 'hx-trigger="change from:select"' in workspace
-    assert 'Selected asset and alert source define the evidence context shared across every Alert Intelligence section.' in workspace
+    assert (
+        'Selected asset and alert source define the evidence context shared across every Alert Intelligence section.'
+        in workspace
+    )
     assert 'bg-surface-hover px-4 py-4 sm:px-5' not in workspace
 
 

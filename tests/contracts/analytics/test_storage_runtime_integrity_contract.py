@@ -74,7 +74,9 @@ def test_storage_templates_render_domain_status_without_local_threshold_logic() 
         assert '>= 90' not in source, path
         assert '>= 75' not in source, path
         assert 'pressure_tone(' not in source, path
-    assert 'table_label.status_label(posture.label' in read('app/templates/analytics/kubernetes/storage/partials/_overview.html')
+    assert 'table_label.status_label(posture.label' in read(
+        'app/templates/analytics/kubernetes/storage/partials/_overview.html'
+    )
 
 
 def test_pvc_ui_and_report_use_observed_capacity_as_pressure_denominator() -> None:

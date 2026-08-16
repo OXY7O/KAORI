@@ -32,10 +32,10 @@ def test_object_storage_metric_signal_catalog_matches_analytics_boundaries():
     assert 'CAPACITY_CRITICAL_PERCENT = 95.0' in analysis
     assert 'ERROR_WARNING_PERCENT = 5.0' in analysis
     assert 'ERROR_CRITICAL_PERCENT = 10.0' in analysis
-    assert "at least 85% and below 95%" in catalog
-    assert "at least 95%" in catalog
-    assert "at least 5% and below 10%" in catalog
-    assert "at least 10%" in catalog
+    assert 'at least 85% and below 95%' in catalog
+    assert 'at least 95%' in catalog
+    assert 'at least 5% and below 10%' in catalog
+    assert 'at least 10%' in catalog
     assert 'greater than' in catalog and 'zero.' in catalog
 
 
@@ -57,7 +57,7 @@ def test_rule_catalog_uses_generic_evidence_boundary_and_provider_coverage():
     assert "'provider': clean(args.get('provider'))" in service
     assert "'providers': PROVIDER_OPTIONS" in service
     assert "{'value': 'minio', 'label': 'MinIO'}" in presentation
-    assert "selected_provider not in provider_keys(rule)" in presentation
+    assert 'selected_provider not in provider_keys(rule)' in presentation
     assert 'Provider Coverage' in filters
     assert 'item.provider_label' in records
     assert "intelligence_ui.field('Provider Coverage', item.provider_label)" in details
@@ -73,6 +73,6 @@ def test_rule_catalog_provider_filter_matches_current_coverage_without_provider_
     standard = read('docs/design/components/INTELLIGENCE_WORKSPACE_STANDARD.md')
 
     assert "{'value': 'minio', 'label': 'MinIO'}" in presentation
-    assert "selected_provider not in provider_keys(rule)" in presentation
+    assert 'selected_provider not in provider_keys(rule)' in presentation
     assert 'Provider coverage is implementation evidence' in standard
     assert 'must not change the canonical rule namespace' in standard

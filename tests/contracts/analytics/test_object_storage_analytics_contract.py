@@ -62,7 +62,6 @@ def test_object_storage_analytics_exposes_kubernetes_style_surface_set() -> None
         assert f'analytics.{endpoint}' in menu
 
 
-
 def test_object_storage_analytics_uses_dedicated_rbac_and_sidebar_visibility() -> None:
     import yaml
 
@@ -85,6 +84,7 @@ def test_object_storage_analytics_uses_dedicated_rbac_and_sidebar_visibility() -
     assert "'analytics.view'" in migration
     assert '_copy_role_assignments' in migration
 
+
 def test_object_storage_alert_sources_are_alertmanager_first_with_prometheus_fallback() -> None:
     source = read('app/analytics/object_storage/alert_sources.py')
     boundary = read('app/templates/analytics/object_storage/partials/_evidence_boundary.html')
@@ -92,8 +92,8 @@ def test_object_storage_alert_sources_are_alertmanager_first_with_prometheus_fal
 
     assert "ALERT_SOURCE_OPTIONS = ('auto', 'alertmanager', 'prometheus')" in source
     assert "required_capabilities=('alerts_v2',)" in source
-    assert "scope_type=_OBJECT_STORAGE_SCOPE" in source
-    assert "Prometheus Fallback Active" in source
+    assert 'scope_type=_OBJECT_STORAGE_SCOPE' in source
+    assert 'Prometheus Fallback Active' in source
     assert 'apply_promql_scope' in source
     assert '_PROMETHEUS_ALERTS_QUERY' in source
     assert 'Automatic · Alertmanager Preferred' in controls
@@ -165,10 +165,10 @@ def test_object_storage_query_profile_classifies_required_recommended_and_option
 
 
 def test_object_storage_analysis_semantics_are_provider_neutral_and_page_specific() -> None:
+    index = read('app/templates/analytics/object_storage/index.html')
     analysis = read('app/analytics/object_storage/analysis.py')
     presentation = read('app/analytics/object_storage/presentation.py')
     service = read('app/analytics/object_storage/service.py')
-    index = read('app/templates/analytics/object_storage/index.html')
 
     for symbol in (
         'derive_headroom',
@@ -291,14 +291,13 @@ def test_kubernetes_navigation_uses_full_product_name_instead_of_k8s_abbreviatio
     assert 'Kubernetes Administration' in combined
 
 
-
 def test_object_storage_analytics_uses_explicit_runtime_states_and_blocking() -> None:
+    index = read('app/templates/analytics/object_storage/index.html')
     runtime = read('app/analytics/object_storage/runtime.py')
     dependencies = read('app/analytics/object_storage/dependencies.py')
     controls = read('app/templates/analytics/object_storage/partials/_controls.html')
     blocker = read('app/templates/analytics/object_storage/partials/_dependency_blocker.html')
     dependency_notice = read('app/templates/analytics/object_storage/partials/_dependency_notice.html')
-    index = read('app/templates/analytics/object_storage/index.html')
     hero = read('app/templates/analytics/object_storage/partials/_hero.html')
     hero_blocked = read('app/templates/analytics/object_storage/partials/_hero_blocked_posture.html')
 
@@ -358,12 +357,12 @@ def test_object_storage_bucket_records_use_shared_kaori_table_contract() -> None
     assert 'analytics/components/_record_pagination.html' in table
     assert 'components/analytics/_table_label_primitives.html' not in table
     assert 'object-storage-bucket-table-loading-indicator' in table
-    assert "default=5" in table_service
+    assert 'default=5' in table_service
     assert "'overview': 'consumers'" not in table_service
     assert "'capacity': 'quota'" in table_service
     assert "'performance': 'buckets'" in table_service
     assert "'top_consumers': 'records'" in table_service
-    assert "{5, 10, 25, 50}" in table_service
+    assert '{5, 10, 25, 50}' in table_service
     assert 'Canonical Inventory-aligned full-page + HTMX pagination' in pagination
     assert 'clear_filters_action' in table
     assert 'data-lucide="x"' in read('app/templates/components/table_registry.html')
@@ -371,8 +370,8 @@ def test_object_storage_bucket_records_use_shared_kaori_table_contract() -> None
 
 
 def test_object_storage_overview_matches_kubernetes_overview_hero_and_tab_contract() -> None:
-    service = read('app/analytics/object_storage/service.py')
     index = read('app/templates/analytics/object_storage/index.html')
+    service = read('app/analytics/object_storage/service.py')
     hero = read('app/templates/analytics/object_storage/partials/_hero.html')
     hero_posture = read('app/templates/analytics/object_storage/partials/_hero_posture.html')
     hero_blocked = read('app/templates/analytics/object_storage/partials/_hero_blocked_posture.html')
@@ -410,7 +409,9 @@ def test_object_storage_overview_matches_kubernetes_overview_hero_and_tab_contra
     ):
         assert partial in workspace
 
-    assert 'Consumer Concentration Snapshot' in read('app/templates/analytics/object_storage/partials/_overview_consumer_snapshot.html')
+    assert 'Consumer Concentration Snapshot' in read(
+        'app/templates/analytics/object_storage/partials/_overview_consumer_snapshot.html'
+    )
     assert '_bucket_table.html' not in workspace
 
     controls_index = index.index('partials/_controls.html')
@@ -420,15 +421,15 @@ def test_object_storage_overview_matches_kubernetes_overview_hero_and_tab_contra
     assert 'partials/_overview_workspaces.html' not in index
     assert not (ROOT / 'app/templates/analytics/object_storage/partials/_overview_workspaces.html').exists()
 
-    assert "js/analytics/controls.js" in layout
-    assert "js/analytics/kubernetes/controls.js" not in layout
+    assert 'js/analytics/controls.js' in layout
+    assert 'js/analytics/kubernetes/controls.js' not in layout
     assert (ROOT / 'app/static/js/analytics/controls.js').exists()
     assert not (ROOT / 'app/static/js/analytics/kubernetes/controls.js').exists()
 
 
 def test_object_storage_capacity_and_performance_match_shared_analytics_hero_and_tab_contract() -> None:
-    service = read('app/analytics/object_storage/service.py')
     index = read('app/templates/analytics/object_storage/index.html')
+    service = read('app/analytics/object_storage/service.py')
     hero_posture = read('app/templates/analytics/object_storage/partials/_hero_posture.html')
     controls = read('app/templates/analytics/object_storage/partials/_controls.html')
     capacity_workspace = read('app/templates/analytics/object_storage/partials/_capacity_workspace.html')
@@ -523,8 +524,8 @@ def test_prometheus_full_validation_refreshes_enabled_consumer_bindings() -> Non
     prometheus_readme = read('app/integrations/prometheus/README.md')
 
     assert "result_payload['binding_validation_summary'] = _refresh_provider_bindings(" in validation_tasks
-    assert "IntegrationBinding.query.filter_by(" in validation_tasks
-    assert "enabled=True" in validation_tasks
+    assert 'IntegrationBinding.query.filter_by(' in validation_tasks
+    assert 'enabled=True' in validation_tasks
     assert "'binding.validate'" in validation_tasks
     assert 'Provider Full Validation does not implicitly validate consumer bindings.' not in integrations_readme
     assert 'Provider Full Validation refreshes every enabled consumer binding' in integrations_readme
@@ -543,7 +544,6 @@ def test_object_storage_forecast_is_worker_materialized_on_forecasting_queue() -
     registry = read('app/jobs/registry.py')
     config = read('app/config/default.py')
     materialization_template = read('app/templates/jobs/configuration/definitions/_materialization_job.html')
-    index = read('app/templates/analytics/object_storage/index.html')
     worker_status = read('app/templates/analytics/object_storage/partials/_forecast_worker_status.html')
 
     job = next(item for item in jobs['jobs'] if item['key'] == 'object_storage.forecast.materialize')
@@ -556,7 +556,10 @@ def test_object_storage_forecast_is_worker_materialized_on_forecasting_queue() -
     assert "get_job_definition('object_storage.forecast.materialize')" in definition
     assert job['queue_name'] == 'forecasting'
     assert job['workload_class'] == 'forecasting'
-    assert job['dispatcher_path'] == 'app.analytics.object_storage.job_adapter:dispatch_object_storage_forecast_materialization'
+    assert (
+        job['dispatcher_path']
+        == 'app.analytics.object_storage.job_adapter:dispatch_object_storage_forecast_materialization'
+    )
     assert '_JOB_DEFINITIONS: tuple[JobDefinition, ...] = load_job_definitions()' in registry
     assert "'app.analytics.object_storage.tasks.materialize_object_storage_forecasts'" in config
     assert 'FORECASTING_CELERY_QUEUE' in config

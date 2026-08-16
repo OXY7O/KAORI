@@ -231,6 +231,7 @@ def test_kubernetes_recommendation_title_literals_follow_title_case() -> None:
     titles: list[tuple[str, int, str]] = []
 
     import yaml
+
     rule_catalog = yaml.safe_load(read('app/definitions/catalogs/intelligence/rules.yaml'))
     for index, rule in enumerate(rule_catalog['rules'], start=1):
         titles.append(('app/definitions/catalogs/intelligence/rules.yaml', index, str(rule['title'])))

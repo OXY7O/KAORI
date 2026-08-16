@@ -17,7 +17,7 @@ def test_clear_filters_is_owned_by_the_shared_registry_component() -> None:
     assert "label='Clear Filters'" in component
     assert 'data-kaori-canonical-registry-clear' in component
     assert 'data-lucide="x"' in component
-    assert "{page_param: 1, per_page_param: per_page}" in component
+    assert '{page_param: 1, per_page_param: per_page}' in component
     assert "sync='closest section:replace'" in component
 
 

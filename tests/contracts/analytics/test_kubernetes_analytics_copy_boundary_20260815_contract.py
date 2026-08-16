@@ -40,7 +40,9 @@ def test_object_storage_inventory_blocker_copy_stays_compact() -> None:
 
 
 def test_kubernetes_analytics_routes_remain_materialized_readers() -> None:
-    route_files = tuple(sorted((ROOT / 'app/analytics/kubernetes').glob('*/routes.py'))) + (ROOT / 'app/analytics/routes.py',)
+    route_files = tuple(sorted((ROOT / 'app/analytics/kubernetes').glob('*/routes.py'))) + (
+        ROOT / 'app/analytics/routes.py',
+    )
     combined = '\n'.join(path.read_text(encoding='utf-8') for path in route_files)
 
     assert combined.count("@permission_required('analytics.view')") >= 19

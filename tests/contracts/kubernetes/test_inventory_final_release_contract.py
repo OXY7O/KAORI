@@ -66,6 +66,6 @@ def test_inventory_resource_template_registry_uses_the_canonical_kubernetes_name
 
 def test_storage_inventory_populates_the_shared_scope_label_used_by_its_hero() -> None:
     routes = read('app/inventory/kubernetes/routes.py')
-    storage_block = routes[routes.index('def storage():'):routes.index('def storage_details(')]
+    storage_block = routes[routes.index('def storage():') : routes.index('def storage_details(')]
 
     assert "inventory['scope_label'] = _inventory_scope_label(clusters, cluster_id)" in storage_block

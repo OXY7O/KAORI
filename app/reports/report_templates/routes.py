@@ -147,9 +147,7 @@ def update_report_template(template_id: int) -> ResponseReturnValue:
 
 @permission_required('reports.manage_templates')
 def delete_report_template(template_id: int) -> ResponseReturnValue:
-    registry_return_url = _template_registry_url_without_edit(
-        _template_registry_return_url(request.form.get('next'))
-    )
+    registry_return_url = _template_registry_url_without_edit(_template_registry_return_url(request.form.get('next')))
     success, message = delete_custom_template(template_id)
     _record_template_feedback(
         event_type='report_template_delete',

@@ -122,4 +122,5 @@ def test_generated_registry_keeps_storage_outage_as_degraded_not_blocking() -> N
     assert 'Artifact Storage Needs Review' in template
     assert 'Open Storage' in template
     assert "'storage_notice': storage_notice" in service
-    assert 'Report records remain available; download actions stay paused' in service
+    assert 'Report records remain available' in service
+    assert 'actions stay paused until connectivity returns.' in service

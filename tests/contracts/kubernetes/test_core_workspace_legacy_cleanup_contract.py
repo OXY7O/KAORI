@@ -115,13 +115,22 @@ def test_dashboard_materialization_and_recovery_use_canonical_domain_boundaries(
     notifications = read('app/notifications/queries.py')
     shared_presentation = read('app/common/job_execution_presentation.py')
 
-    assert 'builder_path: app.analytics.kubernetes.materialization.dashboard_alerts:build_dashboard_alerts_context' in catalog
-    assert 'from app.analytics.kubernetes.materialization.dashboard_alerts import build_dashboard_alerts_context' not in catalog
+    assert (
+        'builder_path: app.analytics.kubernetes.materialization.dashboard_alerts:build_dashboard_alerts_context'
+        in catalog
+    )
+    assert (
+        'from app.analytics.kubernetes.materialization.dashboard_alerts import build_dashboard_alerts_context'
+        not in catalog
+    )
     assert 'app.dashboards' not in catalog
     assert 'app.dashboards' not in analytics_adapter
     assert 'from app.analytics.kubernetes.materialization.keys import (' in dashboard_service
     assert 'read_dashboard_snapshot(' in dashboard_service
-    assert 'from app.analytics.kubernetes.materialization.service import SnapshotResult, read_snapshot' in dashboard_snapshots
+    assert (
+        'from app.analytics.kubernetes.materialization.service import SnapshotResult, read_snapshot'
+        in dashboard_snapshots
+    )
     assert 'from app.jobs.registry import get_job_definition' in recovery
     assert 'from app.cluster.sync_jobs import' not in recovery
     assert 'from app.governance.tls_certificates.sync_jobs import' not in recovery

@@ -68,7 +68,6 @@ def test_minio_prometheus_metrics_plane_reuses_canonical_asset_binding() -> None
     prometheus_profiles = read('app/integrations/prometheus/binding_profiles.py')
     prometheus_catalog = read('app/definitions/catalogs/integrations/prometheus.yaml')
     object_storage_validator = read('app/integrations/prometheus/binding_validators/object_storage.py')
-    consumer_assets = read('app/integrations/consumer_assets.py')
     taxonomy_catalog = read('app/definitions/catalogs/integrations/taxonomy.yaml')
 
     assert 'create_source_binding' not in service

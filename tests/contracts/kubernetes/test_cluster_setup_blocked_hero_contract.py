@@ -13,8 +13,13 @@ def test_shared_cluster_blocked_hero_preserves_dashboard_semantics() -> None:
     shared = _read('app/templates/components/cluster/_hero_blocked_context.html')
 
     assert "page_hero.context_header(blocked_scope, blocked_title, 'lock-keyhole')" in shared
-    assert "page_hero.context_metric('boxes', 'Connected Clusters', '0', 'No Kubernetes connection available')" in shared
-    assert "page_hero.context_metric('circle-dot-dashed', blocked_state_label, 'Blocked', 'Cluster access is required'" in shared
+    assert (
+        "page_hero.context_metric('boxes', 'Connected Clusters', '0', 'No Kubernetes connection available')" in shared
+    )
+    assert (
+        "page_hero.context_metric('circle-dot-dashed', blocked_state_label, 'Blocked', 'Cluster access is required'"
+        in shared
+    )
     assert "cluster_blocked_state_label|default('Workspace State')" in shared
     assert "page_hero.context_info('triangle-alert', blocked_info)" in shared
 
@@ -28,7 +33,7 @@ def test_dashboard_operations_and_governance_share_the_blocked_hero_component() 
     }
     for relative, readiness_label in expected.items():
         source = _read(relative)
-        assert "components/cluster/_hero_blocked_context.html" in source, relative
+        assert 'components/cluster/_hero_blocked_context.html' in source, relative
         assert readiness_label in source, relative
         assert 'Cluster Setup Required' in source, relative
 
@@ -50,7 +55,7 @@ def test_every_inventory_hero_uses_the_shared_blocked_context() -> None:
         source = _read(f'app/templates/inventory/kubernetes/{resource}/partials/_hero.html')
         assert '{% if cluster_onboarding.is_blocked %}' in source, resource
         assert 'Inventory Readiness' in source, resource
-        assert "components/cluster/_hero_blocked_context.html" in source, resource
+        assert 'components/cluster/_hero_blocked_context.html' in source, resource
         assert '{% else %}' in source, resource
 
 
@@ -66,14 +71,16 @@ def test_dashboard_keeps_its_existing_blocked_state_label() -> None:
     source = _read('app/templates/dashboards/kubernetes/partials/_hero.html')
     assert 'cluster_blocked_state_label = "Dashboard State"' in source
 
+
 def test_dashboard_blocked_hero_does_not_double_wrap_the_shared_context_panel() -> None:
     source = _read('app/templates/dashboards/kubernetes/partials/_hero.html')
     blocked_branch = source.split('{% if cluster_onboarding.is_blocked %}', 1)[1].split('{% else %}', 1)[0]
     normal_branch = source.split('{% else %}', 1)[1].split('{% endif %}', 1)[0]
 
     assert 'page_hero.context_panel_classes()' not in blocked_branch
-    assert "components/cluster/_hero_blocked_context.html" in blocked_branch
+    assert 'components/cluster/_hero_blocked_context.html' in blocked_branch
     assert 'page_hero.context_panel_classes()' in normal_branch
+
 
 def test_inventory_blocked_hero_metadata_does_not_present_zero_counts_as_evidence() -> None:
     resources = (
@@ -113,8 +120,13 @@ def test_governance_and_operations_blocked_copy_remains_domain_specific() -> Non
 
     assert 'Governance Controls' in governance
     assert "meta_label('server-cog', 'Kubernetes Operations')" not in governance
-    assert 'Review certificate validity, host coverage, issuer posture, renewal windows, and rotation readiness.' in tls_hero
-    assert 'Review certificate validity, host coverage, issuer details, and committed collection evidence.' in tls_detail
+    assert (
+        'Review certificate validity, host coverage, issuer posture, renewal windows, and rotation readiness.'
+        in tls_hero
+    )
+    assert (
+        'Review certificate validity, host coverage, issuer details, and committed collection evidence.' in tls_detail
+    )
     assert '{{ requested_page_title }}' in operations
     assert '{{ requested_page_description }}' in operations
     assert '>Kubernetes Cluster Setup Required</h1>' not in operations

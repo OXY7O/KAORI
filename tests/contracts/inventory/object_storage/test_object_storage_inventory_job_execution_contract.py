@@ -107,6 +107,7 @@ def test_object_storage_manual_execution_has_domain_permission_and_migration() -
     assert 'key: storage.sync' in defaults
     assert '- key: operator' in defaults and '- key: editor' in defaults
     import yaml
+
     access = yaml.safe_load(defaults)
     role_grants = {role['key']: set(role['permissions']) for role in access['system_roles']}
     assert 'storage.sync' in role_grants['operator']

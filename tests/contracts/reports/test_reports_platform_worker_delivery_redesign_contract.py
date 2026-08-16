@@ -42,7 +42,8 @@ def test_reports_pages_use_standard_heroes_and_compact_summary_strips() -> None:
     assert 'Infrastructure Asset Scope' in generate
     assert 'Catalog-Driven Contract' in generate
     assert 'Queued Artifact Generation' in generate
-    assert 'data-generate-report-workspace="compact-operator-workspace"' in generate
+    assert 'data-generate-report-workspace="wizard"' in generate
+    assert 'data-generate-wizard="true"' in generate
     assert 'data-generate-step="report"' in generate
     assert 'data-generate-step="scope"' in generate
     assert 'data-generate-step="artifact"' in generate
@@ -57,7 +58,7 @@ def test_reports_pages_use_standard_heroes_and_compact_summary_strips() -> None:
     assert 'id="preview-report-name"' in generate
     assert 'syncPreviewReportName' in generate
     assert 'Ready to Queue' in generate
-    assert 'Create & Queue Report' in generate
+    assert 'Create &amp; Queue Report' in generate
     assert 'Report Type Guide' not in generate
     assert 'Generation Guide' not in generate
     assert 'Storage Context' not in generate

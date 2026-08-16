@@ -56,7 +56,10 @@ def test_kubernetes_dashboard_scopes_central_recommendations_explicitly():
 
     assert "domain='kubernetes'" in engine
     assert 'asset_key=selected_cluster_id' in engine
-    assert 'selected_cluster_id: str | None = None' not in service[service.index('def get_active_recommendation_findings('):]
+    assert (
+        'selected_cluster_id: str | None = None'
+        not in service[service.index('def get_active_recommendation_findings(') :]
+    )
     assert 'domain: str | None = None' in service
     assert 'asset_key: str | None = None' in service
 

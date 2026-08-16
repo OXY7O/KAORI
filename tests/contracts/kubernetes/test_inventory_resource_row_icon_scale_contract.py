@@ -13,9 +13,9 @@ NAMESPACED_RESOURCE_TABLES = (
 
 
 def _table(resource: str) -> str:
-    return (ROOT / 'app' / 'templates' / 'inventory' / 'kubernetes' / resource / 'partials' / '_table_content.html').read_text(
-        encoding='utf-8'
-    )
+    return (
+        ROOT / 'app' / 'templates' / 'inventory' / 'kubernetes' / resource / 'partials' / '_table_content.html'
+    ).read_text(encoding='utf-8')
 
 
 def test_namespaced_inventory_tables_use_shared_namespace_identity() -> None:

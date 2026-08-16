@@ -50,7 +50,9 @@ HERO_EXPECTATIONS = {
 
 
 def _read(resource: str) -> str:
-    return (ROOT / 'app' / 'templates' / 'inventory' / 'kubernetes' / resource / 'partials' / '_hero.html').read_text(encoding='utf-8')
+    return (ROOT / 'app' / 'templates' / 'inventory' / 'kubernetes' / resource / 'partials' / '_hero.html').read_text(
+        encoding='utf-8'
+    )
 
 
 def _normalized(source: str) -> str:

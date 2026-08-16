@@ -12,7 +12,7 @@ def read(path: Path) -> str:
     return path.read_text(encoding='utf-8')
 
 
-def test_generate_report_uses_canonical_hero_and_compact_operator_workspace() -> None:
+def test_generate_report_uses_canonical_hero_and_guided_wizard_workspace() -> None:
     source = read(TEMPLATE)
 
     assert 'page_hero.shell_classes()' in source
@@ -22,8 +22,10 @@ def test_generate_report_uses_canonical_hero_and_compact_operator_workspace() ->
     assert 'Infrastructure Asset Scope' in source
     assert 'Catalog-Driven Contract' in source
     assert 'Queued Artifact Generation' in source
-    assert 'data-generate-report-workspace="compact-operator-workspace"' in source
-    assert 'Configure Report Request' in source
+    assert 'data-generate-report-workspace="wizard"' in source
+    assert 'data-generate-wizard="true"' in source
+    assert 'Build Governed Report' in source
+    assert 'Nothing is saved or queued until the final Review &amp; Queue step.' in source
     assert 'data-report-builder-progress="true"' not in source
     assert 'Report Builder' not in source
     assert 'xl:grid-cols-[minmax(0,1fr)_360px]' not in source
@@ -45,7 +47,7 @@ def test_report_selection_is_compact_catalog_select_not_card_wall() -> None:
     assert 'Report Type Guide' not in source
 
 
-def test_generate_report_uses_two_primary_configuration_zones_and_compact_review() -> None:
+def test_generate_report_uses_five_step_guided_wizard_with_final_review() -> None:
     source = read(TEMPLATE)
 
     for marker in (
@@ -57,27 +59,31 @@ def test_generate_report_uses_two_primary_configuration_zones_and_compact_review
     ):
         assert marker in source
 
+    for step in range(1, 6):
+        assert f'data-wizard-panel="{step}"' in source
+
+    assert 'data-wizard-step-button="{{ step_number }}"' in source
+    assert 'aria-controls="generate-wizard-step-{{ step_number }}"' in source
+    assert 'data-generate-wizard-navigation="true"' in source
+    assert 'id="wizard-back-button"' in source
+    assert 'id="wizard-next-button"' in source
+    assert 'id="generate-report-button"' in source
     assert 'Report Contract' in source
     assert 'Infrastructure Scope' in source
     assert 'Artifact Contract' in source
     assert 'Report Content' in source
-    assert 'Review & Queue' in source
-    assert 'Review the request summary before it is queued for artifact generation.' in source
+    assert 'Review &amp; Queue' in source
+    assert 'Confirm the complete request contract.' in source
     assert 'aria-label="Request readiness"' in source
     assert source.index('data-report-request-summary="true"') < source.index('preview-eligibility-status')
-    assert 'Create & Queue Report' in source
-    assert 'table_label.status_indicator_label(payload.worker_context.label' not in source
-    assert 'xl:grid-cols-2 xl:divide-x xl:divide-outline-default' in source
-    assert 'grid lg:grid-cols-12' in source
-    assert 'lg:col-span-4' in source
-    assert 'lg:col-span-5' in source
-    assert 'lg:col-span-3' in source
-    assert 'lg:grid-cols-[15rem_minmax(0,1fr)]' not in source
-    assert 'data-report-request-summary="true"' in source
-    assert 'xl:grid-cols-4' in source
-    assert '01 Choose Report' not in source
-    assert '02 Define Scope' not in source
-    assert '03 Configure Artifact' not in source
+    assert 'Create &amp; Queue Report' in source
+    assert 'grid gap-5 lg:grid-cols-3' in source
+    assert 'What This Step Controls' in source
+    assert 'Publication Readiness' in source
+    assert 'Content Contract' in source
+    assert 'What Happens Next' in source
+    assert 'xl:grid-cols-2 xl:divide-x xl:divide-outline-default' not in source
+    assert 'data-report-builder-progress="true"' not in source
 
 
 def test_generate_report_removes_duplicate_guide_and_sidebar_content() -> None:
@@ -113,7 +119,7 @@ def test_inventory_sections_are_contract_locked_and_compact() -> None:
     assert 'Workbook structure is locked by the report contract.' in source
     assert '<input type="hidden" name="sections" value="{{ section.value }}">' in source
     assert "input.type = 'hidden';" in source
-    assert 'sm:grid-cols-3' in source
+    assert 'sm:grid-cols-2' in source
     assert 'marker.innerHTML = \'<i data-lucide="file-spreadsheet"' in source
     assert 'input.disabled = inventoryContractLocked' not in source
     assert 'setElementVisibility(selectionActions, !inventoryContractLocked);' in source
@@ -161,7 +167,7 @@ def test_generate_report_uses_semantic_status_tokens_and_preserves_storage_guard
     assert "if not bool(storage_status.get('write_available', False))" in service
 
 
-def test_compact_review_keeps_dynamic_contract_ids_for_runtime_sync() -> None:
+def test_wizard_keeps_dynamic_contract_ids_for_runtime_sync() -> None:
     source = read(TEMPLATE)
 
     for element_id in (
@@ -185,6 +191,10 @@ def test_compact_review_keeps_dynamic_contract_ids_for_runtime_sync() -> None:
         'readiness-sections-status',
         'preview-eligibility-status',
         'generate-report-button',
+        'wizard-back-button',
+        'wizard-next-button',
+        'wizard-footer-title',
+        'wizard-scope-validation',
     ):
         assert f'id="{element_id}"' in source
 
@@ -193,6 +203,9 @@ def test_compact_review_keeps_dynamic_contract_ids_for_runtime_sync() -> None:
     assert 'syncPeriodMode' in source
     assert 'syncClusterGuard' in source
     assert 'renderSectionList' in source
+    assert 'showWizardStep' in source
+    assert 'validateWizardStep' in source
+    assert 'syncWizardNavigation' in source
 
 
 def test_generate_report_typography_and_summary_are_visually_hierarchical() -> None:
@@ -203,7 +216,7 @@ def test_generate_report_typography_and_summary_are_visually_hierarchical() -> N
         'Infrastructure Scope',
         'Artifact Contract',
         'Report Content',
-        'Review & Queue',
+        'Review &amp; Queue',
     ):
         assert f'class="text-base font-bold text-content-primary">{heading}</h3>' in source
 
@@ -212,7 +225,7 @@ def test_generate_report_typography_and_summary_are_visually_hierarchical() -> N
     assert 'id="preview-report-type"' in source
     assert 'id="preview-cluster"' in source
     assert 'id="preview-output-format"' in source
-    assert 'sm:grid-cols-3' in source
+    assert 'grid gap-5 lg:grid-cols-3' in source
     assert 'Select a specific cluster to load namespace options.' not in source
     assert 'Cluster selection loads namespace options.' not in source
     assert 'id="namespace-select-help"' not in source
@@ -246,7 +259,7 @@ def test_scope_filters_are_symmetric_and_use_guidance_instead_of_inline_warning(
     assert 'setElementVisibility(clusterGuard, shouldBlockCluster);' not in source
 
 
-def test_generate_report_uses_numbered_workflow_hierarchy_without_progress_rail() -> None:
+def test_generate_report_uses_numbered_workflow_hierarchy_with_guided_stepper() -> None:
     source = read(TEMPLATE)
 
     expected = {
@@ -260,14 +273,48 @@ def test_generate_report_uses_numbered_workflow_hierarchy_without_progress_rail(
         assert f'data-generate-section-header="{section}"' in source
         assert re.search(rf"workflow_number\(['\"]{number}['\"]\)", source)
 
+    assert 'data-generate-wizard-navigation="true"' in source
+    assert 'data-wizard-step-state="{{ step_number }}"' in source
     assert 'data-selected-report-summary="true"' in source
     assert re.search(r"context_icon_marker\(['\"]file-check-2['\"]\)", source)
     assert 'data-generate-context-marker="{{ icon_name }}"' in source
-    assert "workflow_number('01', true)" not in source
-    assert 'Selected Report' in source
-    assert 'selectedReportIcon' not in source
-    assert 'id="selected-report-icon"' not in source
+    assert 'Selected Report Contract' in source
     assert 'data-report-builder-progress="true"' not in source
     macro = source.split('{% macro workflow_number', 1)[1].split('{%- endmacro %}', 1)[0]
     assert 'rounded-lg' in macro
     assert 'rounded-full' not in macro
+
+
+def test_wizard_navigation_does_not_persist_until_final_step() -> None:
+    source = read(TEMPLATE)
+
+    assert 'id="generate-report-form"' in source
+    assert 'method="POST"' in source
+    assert 'id="wizard-next-button"' in source
+    assert 'id="wizard-back-button"' in source
+    assert source.count('type="submit"') == 1
+    assert "generateForm.addEventListener('submit'" in source
+    assert 'if (currentWizardStep !== 5)' in source
+    assert 'event.preventDefault();' in source
+    assert 'highestVisitedWizardStep = Math.max' in source
+    assert 'Nothing has been saved yet.' in source
+
+
+def test_every_wizard_section_explains_its_operational_contract() -> None:
+    source = read(TEMPLATE)
+
+    for guidance in (
+        'What This Step Controls',
+        'Scope Contract',
+        'Publication Readiness',
+        'Content Contract',
+        'What Happens Next',
+    ):
+        assert guidance in source
+
+    assert 'The report type is the authoritative contract.' in source
+    assert 'Asset identity is retained.' in source
+    assert 'Queueing creates a governed report request first.' in source
+    assert 'Only sections published for the selected report type can be submitted.' in source
+    assert 'Ready artifacts follow the Generated Report Data Lifecycle retention policy.' in source
+    assert 'description.textContent = section.description;' in source

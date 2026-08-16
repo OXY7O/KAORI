@@ -46,7 +46,7 @@ def test_telegram_provider_uses_fixed_bot_api_and_template_never_echoes_token():
     assert "_TELEGRAM_API = 'https://api.telegram.org'" in provider
     assert "f'{_TELEGRAM_API}/bot{bot_token}/sendMessage'" in provider
     assert "method='POST'" in provider
-    assert "_TELEGRAM_TEXT_LIMIT = 4096" in provider
+    assert '_TELEGRAM_TEXT_LIMIT = 4096' in provider
     assert "'link_preview_options'" in provider
     assert 'type="password"' in page
     assert 'form_channel.bot_token' not in page

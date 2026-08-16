@@ -61,6 +61,7 @@ def test_hero_right_header_accessories_have_three_canonical_variants() -> None:
     assert 'aria-label="{{ aria_label }}"' in source
     assert 'context_status_badge(status_label, status_tone)' in source
 
+
 def test_hero_context_panel_footer_variants_share_one_precise_row_rhythm() -> None:
     source = (ROOT / 'app' / 'templates' / 'components' / 'page_hero.html').read_text(encoding='utf-8')
 

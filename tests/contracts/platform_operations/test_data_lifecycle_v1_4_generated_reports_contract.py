@@ -72,6 +72,8 @@ def test_generated_report_policy_is_bounded_and_scheduled_separately() -> None:
     assert "'generated_report'" in tasks
     assert "if domain == 'generated_report':" in policy
     assert "'ix_reports_retention_boundary'" in migration
+    assert "revision = '20260816_report_lifecycle'" in migration
+    assert '20260816_generated_report_lifecycle' not in migration
     assert "domain='generated_report'" in migration
     assert 'batch_size=250' in migration
     assert 'enabled=False' in migration

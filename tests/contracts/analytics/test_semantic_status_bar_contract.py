@@ -38,7 +38,9 @@ def test_status_related_analytics_bars_use_semantic_renderer():
 def test_composition_bars_remain_violet_and_capacity_status_bars_are_semantic():
     materialization = Path('app/templates/analytics/kubernetes/materialization/_pending.html').read_text()
     ranked = Path('app/templates/analytics/kubernetes/components/_ranked_evidence_panel.html').read_text()
-    consumers = Path('app/templates/analytics/kubernetes/top_consumers/partials/_consumer_detail_results.html').read_text()
+    consumers = Path(
+        'app/templates/analytics/kubernetes/top_consumers/partials/_consumer_detail_results.html'
+    ).read_text()
     capacity_paths = (
         'app/templates/analytics/kubernetes/capacity/partials/_overview.html',
         'app/templates/analytics/kubernetes/capacity/partials/_allocation.html',

@@ -101,4 +101,7 @@ def test_integration_docs_lock_provider_core_and_consumer_profile_boundary() -> 
     assert 'A missing Kubernetes metric may degrade only the Kubernetes binding' in compatibility
     assert 'Provider Core Validation is product/version/API scoped.' in module_map
     assert 'Provider Core Validation is asynchronous and authoritative only for' in workspace_standard
-    assert 'Consumer eligibility combines provider-owned execution capability evidence with asset-specific Binding Validation evidence.' in workspace_standard
+    assert (
+        'Consumer eligibility combines provider-owned execution capability evidence with asset-specific Binding Validation evidence.'
+        in workspace_standard
+    )

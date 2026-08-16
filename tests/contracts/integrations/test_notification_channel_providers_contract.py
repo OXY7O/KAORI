@@ -38,7 +38,13 @@ def test_microsoft_teams_uses_workflows_webhook_and_keeps_url_secret():
 
 def test_notification_channels_redesign_surfaces_delivery_governance():
     page = read('app/templates/integrations/notification_channels/index.html')
-    for label in ('Delivery Providers', 'Channel Configuration', 'Configured Channels', 'Delivery Contract', 'Delivery Ownership'):
+    for label in (
+        'Delivery Providers',
+        'Channel Configuration',
+        'Configured Channels',
+        'Delivery Contract',
+        'Delivery Ownership',
+    ):
         assert label in page
     for provider in ('Telegram', 'Email', 'Microsoft Teams'):
         assert provider in page

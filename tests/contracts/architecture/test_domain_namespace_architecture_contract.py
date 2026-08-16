@@ -55,6 +55,7 @@ def test_platform_operations_category_uses_distinct_workspace_name() -> None:
     assert 'Operations Center' in menu
     assert 'Operations Center' in overview
 
+
 def test_integration_binding_service_has_no_domain_compatibility_wrapper() -> None:
     binding_service = read('app/integrations/binding_service.py')
     routes = read('app/integrations/routes.py')

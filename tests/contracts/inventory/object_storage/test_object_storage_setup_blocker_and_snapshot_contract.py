@@ -4,12 +4,12 @@ ROOT = Path(__file__).resolve().parents[4]
 
 
 def read(path: str) -> str:
-    return (ROOT / path).read_text(encoding="utf-8")
+    return (ROOT / path).read_text(encoding='utf-8')
 
 
 def test_object_storage_inventory_has_canonical_setup_state() -> None:
-    presentation = read("app/inventory/object_storage/presentation.py")
-    assert "def _setup_state(total_systems: int)" in presentation
+    presentation = read('app/inventory/object_storage/presentation.py')
+    assert 'def _setup_state(total_systems: int)' in presentation
     assert "'is_blocked': total_systems == 0" in presentation
     assert "'setup': _setup_state(total_systems)" in presentation
     assert "'setup': _setup_state(len(all_rows))" in presentation
@@ -17,55 +17,55 @@ def test_object_storage_inventory_has_canonical_setup_state() -> None:
 
 
 def test_object_storage_overview_hides_inventory_evidence_while_setup_is_blocked() -> None:
-    index = read("app/templates/inventory/object_storage/overview/index.html")
-    hero = read("app/templates/inventory/object_storage/overview/partials/_hero.html")
-    assert "{% if overview.setup.is_blocked %}" in index
-    assert "inventory/object_storage/components/_onboarding_banner.html" in index
-    assert "_snapshot_boundary.html" in index
-    assert "_fleet_posture.html" in index
-    assert "_systems_snapshot.html" in index
-    assert "Committed Inventory" in hero
-    assert "Object Storage Setup Required" in hero
-    assert "inventory/object_storage/components/_hero_blocked_context.html" in hero
+    index = read('app/templates/inventory/object_storage/overview/index.html')
+    hero = read('app/templates/inventory/object_storage/overview/partials/_hero.html')
+    assert '{% if overview.setup.is_blocked %}' in index
+    assert 'inventory/object_storage/components/_onboarding_banner.html' in index
+    assert '_snapshot_boundary.html' in index
+    assert '_fleet_posture.html' in index
+    assert '_systems_snapshot.html' in index
+    assert 'Committed Inventory' in hero
+    assert 'Object Storage Setup Required' in hero
+    assert 'inventory/object_storage/components/_hero_blocked_context.html' in hero
     assert 'page_hero.aside_classes()' in hero
 
 
 def test_systems_and_buckets_use_setup_blocker_and_inventory_data_snapshot() -> None:
-    for resource in ("systems", "buckets"):
-        workspace = read(f"app/templates/inventory/object_storage/{resource}/partials/_page_workspace.html")
-        snapshot = read(f"app/templates/inventory/object_storage/{resource}/partials/_snapshot_boundary.html")
-        hero = read(f"app/templates/inventory/object_storage/{resource}/partials/_hero.html")
-        assert "inventory.setup.is_blocked" in workspace
-        assert "inventory/object_storage/components/_onboarding_banner.html" in workspace
-        assert f"inventory/object_storage/{resource}/partials/_snapshot_boundary.html" in workspace
-        assert "object_storage_snapshot.render(inventory.snapshot)" in snapshot
-        assert "Committed Inventory" in hero
-        assert "Object Storage Setup Required" in hero
-        assert "inventory/object_storage/components/_hero_blocked_context.html" in hero
+    for resource in ('systems', 'buckets'):
+        workspace = read(f'app/templates/inventory/object_storage/{resource}/partials/_page_workspace.html')
+        snapshot = read(f'app/templates/inventory/object_storage/{resource}/partials/_snapshot_boundary.html')
+        hero = read(f'app/templates/inventory/object_storage/{resource}/partials/_hero.html')
+        assert 'inventory.setup.is_blocked' in workspace
+        assert 'inventory/object_storage/components/_onboarding_banner.html' in workspace
+        assert f'inventory/object_storage/{resource}/partials/_snapshot_boundary.html' in workspace
+        assert 'object_storage_snapshot.render(inventory.snapshot)' in snapshot
+        assert 'Committed Inventory' in hero
+        assert 'Object Storage Setup Required' in hero
+        assert 'inventory/object_storage/components/_hero_blocked_context.html' in hero
         assert 'page_hero.aside_classes()' in hero
 
 
 def test_object_storage_setup_banner_is_integration_owned_and_permission_aware() -> None:
-    banner = read("app/templates/inventory/object_storage/components/_onboarding_banner.html")
-    blocker = read("app/templates/inventory/object_storage/components/_hero_blocked_context.html")
-    assert "Register Your First Object Storage System" in banner
+    banner = read('app/templates/inventory/object_storage/components/_onboarding_banner.html')
+    blocker = read('app/templates/inventory/object_storage/components/_hero_blocked_context.html')
+    assert 'Register Your First Object Storage System' in banner
     assert "url_for('integrations.storage')" in banner
     assert 'settings.manage_integrations' in banner
-    assert "Registered Systems" in blocker
-    assert "Workspace State" in blocker
-    assert "Blocked" in blocker
+    assert 'Registered Systems' in blocker
+    assert 'Workspace State' in blocker
+    assert 'Blocked' in blocker
 
 
 def test_direct_htmx_inventory_reads_fail_closed_to_setup_banner() -> None:
-    routes = read("app/inventory/object_storage/routes.py")
-    assert "def _setup_blocked_htmx" in routes
+    routes = read('app/inventory/object_storage/routes.py')
+    assert 'def _setup_blocked_htmx' in routes
     assert "request.headers.get('HX-Request') == 'true'" in routes
-    assert "inventory/object_storage/components/_onboarding_banner.html" in routes
-    assert routes.count("blocked_response = _setup_blocked_htmx(") == 3
+    assert 'inventory/object_storage/components/_onboarding_banner.html' in routes
+    assert routes.count('blocked_response = _setup_blocked_htmx(') == 3
 
 
 def test_object_storage_analytics_setup_blocker_routes_to_storage_integrations() -> None:
-    dependencies = read("app/analytics/object_storage/dependencies.py")
+    dependencies = read('app/analytics/object_storage/dependencies.py')
     assert "'badge': 'Storage Setup Required'" in dependencies
     assert "'title': 'Object Storage Setup Required'" in dependencies
     assert "'action_label': 'Open Storage Integrations'" in dependencies
@@ -73,9 +73,9 @@ def test_object_storage_analytics_setup_blocker_routes_to_storage_integrations()
 
 
 def test_ready_inventory_empty_states_distinguish_filters_from_collection_pending() -> None:
-    presentation = read("app/inventory/object_storage/presentation.py")
-    systems = read("app/templates/inventory/object_storage/systems/partials/_table_content.html")
-    buckets = read("app/templates/inventory/object_storage/buckets/partials/_table_content.html")
+    presentation = read('app/inventory/object_storage/presentation.py')
+    systems = read('app/templates/inventory/object_storage/systems/partials/_table_content.html')
+    buckets = read('app/templates/inventory/object_storage/buckets/partials/_table_content.html')
 
     assert "'total_committed_assets': len(rows)" in presentation
     assert 'No Object Storage Systems Match These Filters' in systems

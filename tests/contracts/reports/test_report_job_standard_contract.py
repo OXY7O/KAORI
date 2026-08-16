@@ -86,7 +86,7 @@ def test_generate_report_copy_matches_automatic_worker_dispatch() -> None:
 
     assert 'enqueue_report_generation(' in routes
     assert "trigger_type='manual'" in routes
-    assert 'Create & Queue Report' in template
+    assert 'Create &amp; Queue Report' in template
     assert 'Queued Artifact Generation' in template
     assert 'queued on the canonical Reports worker' in template
     assert 'generation starts separately from Generated Reports' not in template
