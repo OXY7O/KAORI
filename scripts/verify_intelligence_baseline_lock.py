@@ -126,8 +126,16 @@ def main() -> int:
     )
     require('detail=str(exc)' not in automation_routes, 'Automation Control must not disclose exception text', errors)
     governance_gate = _function_body(automation_routes, '_handle_governance_action', '_handle_mutation')
-    require('AUTOMATION_CONTROL_MUTATIONS_ENABLED' not in governance_gate, 'Decision governance must remain available while infrastructure mutation is disabled', errors)
-    require('Governance Workflow Enabled' in read('app/templates/intelligence/partials/automation_control/_decisions.html'), 'Decision Review must expose active governance workflow semantics', errors)
+    require(
+        'AUTOMATION_CONTROL_MUTATIONS_ENABLED' not in governance_gate,
+        'Decision governance must remain available while infrastructure mutation is disabled',
+        errors,
+    )
+    require(
+        'Governance Workflow Enabled' in read('app/templates/intelligence/partials/automation_control/_decisions.html'),
+        'Decision Review must expose active governance workflow semantics',
+        errors,
+    )
     require(
         "mutations_enabled = bool(current_app.config.get('AUTOMATION_CONTROL_MUTATIONS_ENABLED', False))"
         in automation_presentation,
@@ -254,7 +262,11 @@ def main() -> int:
         'evidence_boundary:',
     ):
         require(required in intelligence_catalog, f'Object Storage Rule Catalog boundary missing: {required}', errors)
-    require('prometheus_relationship' not in intelligence_catalog, 'Rule Catalog schema must not remain Prometheus-owned', errors)
+    require(
+        'prometheus_relationship' not in intelligence_catalog,
+        'Rule Catalog schema must not remain Prometheus-owned',
+        errors,
+    )
     require(
         "{'value': 'minio', 'label': 'MinIO'}" in rule_presentation
         and 'selected_provider not in provider_keys(rule)' in rule_presentation,

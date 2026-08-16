@@ -3,11 +3,13 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
-from sqlalchemy import or_
+from sqlalchemy import and_, case, func, or_
 
 from app.common.celery_queue_health import get_queue_readiness, inspect_celery_topology
 from app.common.job_execution_presentation import present_job_execution_row
+from app.common.pagination import paginate_query
 from app.common.presentation import present_user_datetime
+from app.extensions.db import db
 from app.jobs.service import job_can_cancel
 from app.models.job import JobExecution
 
@@ -74,40 +76,105 @@ def _queue_icon(queue_name: str) -> str:
     return 'workflow'
 
 
-def _attention_counts(query: Any, cutoff: datetime) -> tuple[int, int, int]:
-    active_attention = query.filter(JobExecution.status.in_(_ACTIVE_ATTENTION_STATUSES)).count()
-    recent_terminal_attention = query.filter(
+def _execution_summary(cutoff: datetime) -> dict[str, int]:
+    """Return the global execution counters from one aggregate SQL query."""
+    active_condition = JobExecution.status.in_(_ACTIVE_STATUSES)
+    active_attention_condition = JobExecution.status.in_(_ACTIVE_ATTENTION_STATUSES)
+    recent_attention_condition = and_(
         JobExecution.status.in_(_RECENT_ATTENTION_STATUSES),
         JobExecution.completed_at.isnot(None),
         JobExecution.completed_at >= cutoff,
-    ).count()
-    return (
-        active_attention,
-        recent_terminal_attention,
-        active_attention + recent_terminal_attention,
+    )
+    completed_condition = and_(
+        JobExecution.status.in_(_TERMINAL_STATUSES),
+        JobExecution.completed_at.isnot(None),
+        JobExecution.completed_at >= cutoff,
+    )
+    failed_condition = and_(
+        JobExecution.status == 'failed',
+        JobExecution.completed_at.isnot(None),
+        JobExecution.completed_at >= cutoff,
+    )
+    heavy_condition = and_(
+        active_condition,
+        JobExecution.workload_class.in_(('analytics', 'forecasting')),
     )
 
+    result = (
+        db.session.query(
+            func.count(JobExecution.id).label('total'),
+            func.sum(case((active_condition, 1), else_=0)).label('active'),
+            func.sum(case((JobExecution.status == 'queued', 1), else_=0)).label('queued'),
+            func.sum(case((JobExecution.status == 'running', 1), else_=0)).label('running'),
+            func.sum(case((heavy_condition, 1), else_=0)).label('heavy'),
+            func.sum(case((active_attention_condition, 1), else_=0)).label('active_attention'),
+            func.sum(case((recent_attention_condition, 1), else_=0)).label('recent_attention_24h'),
+            func.sum(case((failed_condition, 1), else_=0)).label('failed_24h'),
+            func.sum(case((completed_condition, 1), else_=0)).label('completed_24h'),
+            func.count(func.distinct(JobExecution.queue_name)).label('queues'),
+        )
+        .one()
+    )
+    active_attention = int(result.active_attention or 0)
+    recent_attention = int(result.recent_attention_24h or 0)
+    return {
+        'total': int(result.total or 0),
+        'active': int(result.active or 0),
+        'queued': int(result.queued or 0),
+        'running': int(result.running or 0),
+        'heavy': int(result.heavy or 0),
+        'active_attention': active_attention,
+        'recent_attention_24h': recent_attention,
+        'attention': active_attention + recent_attention,
+        'failed_24h': int(result.failed_24h or 0),
+        'completed_24h': int(result.completed_24h or 0),
+        'queues': int(result.queues or 0),
+    }
 
-def _queue_activity(queue_names: list[str], cutoff: datetime) -> list[dict[str, Any]]:
+
+def _queue_activity(cutoff: datetime) -> list[dict[str, Any]]:
+    """Build queue activity with one grouped DB query plus one shared Celery snapshot."""
+    active_condition = JobExecution.status.in_(_ACTIVE_STATUSES)
+    active_attention_condition = JobExecution.status.in_(_ACTIVE_ATTENTION_STATUSES)
+    recent_attention_condition = and_(
+        JobExecution.status.in_(_RECENT_ATTENTION_STATUSES),
+        JobExecution.completed_at.isnot(None),
+        JobExecution.completed_at >= cutoff,
+    )
+    completed_condition = and_(
+        JobExecution.status.in_(_TERMINAL_STATUSES),
+        JobExecution.completed_at.isnot(None),
+        JobExecution.completed_at >= cutoff,
+    )
+    failed_condition = and_(
+        JobExecution.status == 'failed',
+        JobExecution.completed_at.isnot(None),
+        JobExecution.completed_at >= cutoff,
+    )
+    aggregates = (
+        db.session.query(
+            JobExecution.queue_name.label('queue_name'),
+            func.sum(case((active_condition, 1), else_=0)).label('active'),
+            func.sum(case((JobExecution.status == 'queued', 1), else_=0)).label('queued'),
+            func.sum(case((JobExecution.status == 'running', 1), else_=0)).label('running'),
+            func.sum(case((active_attention_condition, 1), else_=0)).label('active_attention'),
+            func.sum(case((recent_attention_condition, 1), else_=0)).label('recent_attention_24h'),
+            func.sum(case((completed_condition, 1), else_=0)).label('completed_24h'),
+            func.sum(case((failed_condition, 1), else_=0)).label('failed_24h'),
+            func.max(JobExecution.updated_at).label('latest_activity'),
+        )
+        .group_by(JobExecution.queue_name)
+        .order_by(JobExecution.queue_name.asc())
+        .all()
+    )
+    topology = inspect_celery_topology() if aggregates else None
     rows: list[dict[str, Any]] = []
-    topology = inspect_celery_topology() if queue_names else None
-    for queue_name in queue_names:
-        query = JobExecution.query.filter(JobExecution.queue_name == queue_name)
-        active = query.filter(JobExecution.status.in_(_ACTIVE_STATUSES)).count()
-        queued = query.filter_by(status='queued').count()
-        running = query.filter_by(status='running').count()
-        active_attention, recent_attention_24h, attention = _attention_counts(query, cutoff)
-        completed_24h = query.filter(
-            JobExecution.status.in_(_TERMINAL_STATUSES),
-            JobExecution.completed_at.isnot(None),
-            JobExecution.completed_at >= cutoff,
-        ).count()
-        failed_24h = query.filter(
-            JobExecution.status == 'failed',
-            JobExecution.completed_at.isnot(None),
-            JobExecution.completed_at >= cutoff,
-        ).count()
-        latest = query.order_by(JobExecution.updated_at.desc(), JobExecution.id.desc()).first()
+    for aggregate in aggregates:
+        queue_name = str(aggregate.queue_name)
+        active = int(aggregate.active or 0)
+        active_attention = int(aggregate.active_attention or 0)
+        recent_attention = int(aggregate.recent_attention_24h or 0)
+        attention = active_attention + recent_attention
         readiness = get_queue_readiness(queue_name, topology=topology)
         readiness_tone = str(readiness.get('tone') or 'unknown')
         if readiness_tone == 'critical':
@@ -127,71 +194,21 @@ def _queue_activity(queue_names: list[str], cutoff: datetime) -> list[dict[str, 
                 'posture_label': posture_label,
                 'posture_tone': posture_tone,
                 'active': active,
-                'queued': queued,
-                'running': running,
+                'queued': int(aggregate.queued or 0),
+                'running': int(aggregate.running or 0),
                 'active_attention': active_attention,
-                'recent_attention_24h': recent_attention_24h,
+                'recent_attention_24h': recent_attention,
                 'attention': attention,
-                'completed_24h': completed_24h,
-                'failed_24h': failed_24h,
-                'latest_activity': present_user_datetime(latest.updated_at, empty='No activity')
-                if latest
-                else 'No activity',
+                'completed_24h': int(aggregate.completed_24h or 0),
+                'failed_24h': int(aggregate.failed_24h or 0),
+                'latest_activity': present_user_datetime(aggregate.latest_activity, empty='No activity'),
                 'worker_readiness': readiness,
             }
         )
     return rows
 
 
-def build_job_execution_status_context(*, tab: str = 'active') -> dict[str, Any]:
-    """Return lightweight counters for the live Execution Overview poller."""
-    selected_tab = tab if tab in _ALLOWED_TABS else _ALLOWED_TABS[0]
-    cutoff = datetime.now(UTC) - timedelta(hours=24)
-    active_count = JobExecution.query.filter(JobExecution.status.in_(_ACTIVE_STATUSES)).count()
-    running_count = JobExecution.query.filter_by(status='running').count()
-    active_attention_count, recent_attention_24h_count, attention_count = _attention_counts(
-        JobExecution.query,
-        cutoff,
-    )
-    completed_24h_count = JobExecution.query.filter(
-        JobExecution.status.in_(_TERMINAL_STATUSES),
-        JobExecution.completed_at.isnot(None),
-        JobExecution.completed_at >= cutoff,
-    ).count()
-    total_count = JobExecution.query.count()
-    queue_count = JobExecution.query.with_entities(JobExecution.queue_name).distinct().count()
-    return {
-        'job_stats': {
-            'total': total_count,
-            'active': active_count,
-            'running': running_count,
-            'active_attention': active_attention_count,
-            'recent_attention_24h': recent_attention_24h_count,
-            'attention': attention_count,
-            'completed_24h': completed_24h_count,
-            'queues': queue_count,
-        },
-        'selected_job_tab': selected_tab,
-        'job_last_refreshed_at': present_user_datetime(datetime.now(UTC), empty='Just now'),
-    }
-
-
-def build_job_execution_context(
-    *,
-    page: int = 1,
-    per_page: int = 5,
-    status: str = '',
-    workload: str = '',
-    queue: str = '',
-    search: str = '',
-    tab: str = 'active',
-    include_queue_activity: bool = True,
-) -> dict[str, Any]:
-    selected_per_page = per_page if per_page in ALLOWED_PER_PAGE else ALLOWED_PER_PAGE[0]
-    selected_page = max(page, 1)
-    selected_tab = tab if tab in _ALLOWED_TABS else _ALLOWED_TABS[0]
-    cutoff = datetime.now(UTC) - timedelta(hours=24)
-
+def _registry_query(*, status: str, workload: str, queue: str, search: str):
     query = JobExecution.query
     if status:
         query = query.filter(JobExecution.status == status)
@@ -212,79 +229,94 @@ def build_job_execution_context(
                 JobExecution.queue_name.ilike(value),
             )
         )
-    query = query.order_by(JobExecution.created_at.desc(), JobExecution.id.desc())
-    paginated = query.paginate(page=selected_page, per_page=selected_per_page, error_out=False)
-    total_items = int(paginated.total or 0)
-    total_pages = max(int(paginated.pages or 0), 1)
-    current_page = min(max(paginated.page, 1), total_pages)
-    items = [_row(job) for job in paginated.items]
+    return query.order_by(JobExecution.created_at.desc(), JobExecution.id.desc())
 
-    active_query = JobExecution.query.filter(JobExecution.status.in_(_ACTIVE_STATUSES))
-    active_jobs = [
-        _row(job)
-        for job in active_query.order_by(JobExecution.updated_at.desc(), JobExecution.id.desc()).limit(6).all()
-    ]
-    active_count = active_query.count()
-    queued_count = JobExecution.query.filter_by(status='queued').count()
-    running_count = JobExecution.query.filter_by(status='running').count()
-    heavy_count = active_query.filter(JobExecution.workload_class.in_(('analytics', 'forecasting'))).count()
-    active_attention_count, recent_attention_24h_count, attention_count = _attention_counts(
-        JobExecution.query,
-        cutoff,
-    )
-    failed_24h_count = JobExecution.query.filter(
-        JobExecution.status == 'failed',
-        JobExecution.completed_at.isnot(None),
-        JobExecution.completed_at >= cutoff,
-    ).count()
-    completed_24h_count = JobExecution.query.filter(
-        JobExecution.status.in_(_TERMINAL_STATUSES),
-        JobExecution.completed_at.isnot(None),
-        JobExecution.completed_at >= cutoff,
-    ).count()
-    total_count = JobExecution.query.count()
-    queue_options = [
-        row[0]
-        for row in JobExecution.query.with_entities(JobExecution.queue_name)
-        .distinct()
-        .order_by(JobExecution.queue_name.asc())
-        .all()
-    ]
-    queue_rows = _queue_activity(queue_options, cutoff) if include_queue_activity else []
 
-    start_item = ((current_page - 1) * selected_per_page) + 1 if total_items else 0
+def _empty_pagination(per_page: int) -> dict[str, Any]:
     return {
-        'job_rows': items,
+        'page': 1,
+        'per_page': per_page,
+        'total_items': 0,
+        'total_pages': 1,
+        'start_item': 0,
+        'end_item': 0,
+        'has_prev': False,
+        'has_next': False,
+        'prev_page': 0,
+        'next_page': 2,
+        'pages': [1],
+        'allowed_per_page': list(ALLOWED_PER_PAGE),
+    }
+
+
+def build_job_execution_status_context(*, tab: str = 'active') -> dict[str, Any]:
+    """Return lightweight counters for the live Execution Overview poller."""
+    selected_tab = tab if tab in _ALLOWED_TABS else _ALLOWED_TABS[0]
+    cutoff = datetime.now(UTC) - timedelta(hours=24)
+    return {
+        'job_stats': _execution_summary(cutoff),
+        'selected_job_tab': selected_tab,
+        'job_last_refreshed_at': present_user_datetime(datetime.now(UTC), empty='Just now'),
+    }
+
+
+def build_job_execution_context(
+    *,
+    page: int = 1,
+    per_page: int = 5,
+    status: str = '',
+    workload: str = '',
+    queue: str = '',
+    search: str = '',
+    tab: str = 'active',
+) -> dict[str, Any]:
+    """Build only the execution sub-workspace the operator is currently viewing."""
+    selected_per_page = per_page if per_page in ALLOWED_PER_PAGE else ALLOWED_PER_PAGE[0]
+    selected_page = max(page, 1)
+    selected_tab = tab if tab in _ALLOWED_TABS else _ALLOWED_TABS[0]
+    cutoff = datetime.now(UTC) - timedelta(hours=24)
+    job_stats = _execution_summary(cutoff)
+
+    job_rows: list[dict[str, Any]] = []
+    active_jobs: list[dict[str, Any]] = []
+    queue_rows: list[dict[str, Any]] = []
+    queue_options: list[str] = []
+    pagination = _empty_pagination(selected_per_page)
+
+    if selected_tab == 'active':
+        active_jobs = [
+            _row(job)
+            for job in JobExecution.query.filter(JobExecution.status.in_(_ACTIVE_STATUSES))
+            .order_by(JobExecution.updated_at.desc(), JobExecution.id.desc())
+            .limit(6)
+            .all()
+        ]
+    elif selected_tab == 'registry':
+        query = _registry_query(status=status, workload=workload, queue=queue, search=search)
+        paged_jobs, pagination = paginate_query(
+            query,
+            page=selected_page,
+            per_page=selected_per_page,
+            allowed_per_page=ALLOWED_PER_PAGE,
+        )
+        job_rows = [_row(job) for job in paged_jobs]
+        queue_options = [
+            str(row[0])
+            for row in JobExecution.query.with_entities(JobExecution.queue_name)
+            .distinct()
+            .order_by(JobExecution.queue_name.asc())
+            .all()
+        ]
+    elif selected_tab == 'queues':
+        queue_rows = _queue_activity(cutoff)
+
+    return {
+        'job_rows': job_rows,
         'active_job_rows': active_jobs,
-        'active_job_overflow': max(active_count - len(active_jobs), 0),
+        'active_job_overflow': max(job_stats['active'] - len(active_jobs), 0),
         'job_queue_rows': queue_rows,
-        'job_stats': {
-            'total': total_count,
-            'active': active_count,
-            'queued': queued_count,
-            'running': running_count,
-            'heavy': heavy_count,
-            'active_attention': active_attention_count,
-            'recent_attention_24h': recent_attention_24h_count,
-            'attention': attention_count,
-            'failed_24h': failed_24h_count,
-            'completed_24h': completed_24h_count,
-            'queues': len(queue_options),
-        },
-        'job_pagination': {
-            'page': current_page,
-            'per_page': selected_per_page,
-            'total_items': total_items,
-            'total_pages': total_pages,
-            'start_item': start_item,
-            'end_item': min(current_page * selected_per_page, total_items),
-            'has_prev': paginated.has_prev,
-            'has_next': paginated.has_next,
-            'prev_page': current_page - 1,
-            'next_page': current_page + 1,
-            'pages': list(range(1, total_pages + 1)),
-            'allowed_per_page': list(ALLOWED_PER_PAGE),
-        },
+        'job_stats': job_stats,
+        'job_pagination': pagination,
         'selected_job_status': status,
         'selected_job_workload': workload,
         'selected_job_queue': queue,

@@ -113,9 +113,7 @@ def main() -> int:
             "page_title='Replace Kubernetes Secret Data'",
             "page_title='Delete Kubernetes Secret'",
         ),
-        'app/kubernetes_operations/secrets/reveal_routes.py': (
-            "page_title='Protected Kubernetes Secret Reveal'",
-        ),
+        'app/kubernetes_operations/secrets/reveal_routes.py': ("page_title='Protected Kubernetes Secret Reveal'",),
         'app/kubernetes_operations/secrets/tls_routes.py': (
             "page_title='Rotate TLS Secret'",
             "page_title='Bulk TLS Secret Rotation'",

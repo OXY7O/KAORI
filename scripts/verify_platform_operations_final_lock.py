@@ -246,7 +246,10 @@ def main() -> int:
             errors.append(f'Framed Workspace Tabs lost keyboard contract: {keyboard}')
 
     jobs_index = read('app/templates/jobs/index.html')
-    if 'components/framed_workspace_tabs.html' not in jobs_index or 'framed_workspace_tabs.render(' not in jobs_index:
+    if (
+        'components/framed_workspace_tabs.html' not in jobs_index
+        or 'framed_workspace_tabs.render_navigation(' not in jobs_index
+    ):
         errors.append('Jobs & Executions parent workspace must use shared Framed Workspace Tabs')
 
     data_lifecycle_index = read('app/templates/platform_operations/data_lifecycle/index.html')
@@ -295,7 +298,7 @@ def main() -> int:
     shared_tabs = read('app/templates/components/workspace_tabs.html')
     if (
         'components/workspace_tabs.html' not in execution_workspace
-        or 'workspace_tabs.render(' not in execution_workspace
+        or 'workspace_tabs.render_navigation(' not in execution_workspace
     ):
         errors.append('Execution Workspace must use shared Integrated Workspace Tabs')
     if 'id="{{ prefix }}-tab-count-{{ tab_key }}"' not in shared_tabs:
@@ -304,24 +307,36 @@ def main() -> int:
         errors.append('Jobs must not depend on Integration-specific presentation components')
 
     status_refresh = read('app/templates/jobs/executions/partials/_status_refresh.html')
+    status_oob = read('app/templates/jobs/executions/partials/_status_oob.html')
+    if '_status_oob.html' not in status_refresh:
+        errors.append('Execution status refresh must compose the shared OOB counter fragment')
     for key in ('active', 'registry', 'queues'):
-        if f'id="execution-tab-count-{key}"' not in status_refresh:
+        if f'id="execution-tab-count-{key}"' not in status_oob:
             errors.append(f'Execution live OOB count missing: {key}')
 
     active_jobs = read('app/templates/jobs/executions/partials/_active_jobs.html')
-    if 'hx-trigger="every 5s"' not in active_jobs or '{% if active_job_rows %}hx-get=' in active_jobs:
+    if 'hx-trigger="every 15s"' not in active_jobs or '{% if active_job_rows %}hx-get=' in active_jobs:
         errors.append('Active Work polling must remain live even when no active execution is rendered')
     if "('Active Attention', job_stats.active_attention)" not in active_jobs:
         errors.append('Active Work must distinguish active intervention from recent terminal attention')
+    if "_status_oob.html" not in active_jobs or 'document.hidden' not in active_jobs:
+        errors.append('Active Work must share OOB summary refresh and pause polling while the browser is hidden')
+    status_poller = read('app/templates/jobs/executions/partials/_status_poller.html')
+    if "if selected_job_tab != 'active'" not in execution_workspace or 'document.hidden' not in status_poller:
+        errors.append(
+            'Execution summary polling must not overlap Active Work and must pause while the browser is hidden'
+        )
 
     job_presentation = read('app/jobs/presentation.py')
     for required in (
         "_ACTIVE_ATTENTION_STATUSES = ('retrying', 'cancel_requested')",
         "_RECENT_ATTENTION_STATUSES = ('failed', 'partially_succeeded', 'expired')",
         'JobExecution.completed_at >= cutoff',
-        'topology = inspect_celery_topology() if queue_names else None',
+        'def _execution_summary(',
+        "func.count(func.distinct(JobExecution.queue_name)).label('queues')",
+        'topology = inspect_celery_topology() if aggregates else None',
         'get_queue_readiness(queue_name, topology=topology)',
-        'include_queue_activity: bool = True',
+        '.group_by(JobExecution.queue_name)',
     ):
         if required not in job_presentation:
             errors.append(f'Jobs v1.1 operational semantics missing: {required}')
@@ -332,13 +347,11 @@ def main() -> int:
         'components/pagination.html',
         'components/table.html',
         'components/table_label.html',
-        'hx-trigger="submit, change from:select"',
-        'hx-trigger="change from:select"',
-        "pagination_ui.resource_name('Executions'",
-        '<option value="5"',
-        '<option value="10"',
-        '<option value="25"',
-        '<option value="50"',
+        'components/table_registry.html',
+        'table_registry.filter_form',
+        'table_registry.clear_filters_link',
+        'table_registry.footer',
+        'job_pagination.allowed_per_page',
         'expandable_row.toggle_button(',
         "url_for('jobs.execution_details'",
         'data-detail-content',
@@ -373,8 +386,15 @@ def main() -> int:
         errors.append('Jobs hero must present combined Operational Attention')
 
     job_routes = read('app/jobs/routes.py')
-    if "_execution_context(include_queue_activity=active_section == 'executions')" not in job_routes:
-        errors.append('Job Configuration must skip inactive Queue Activity topology inspection')
+    for required in (
+        "if active_section == 'configuration':",
+        'build_job_configuration_summary_context',
+        "tab_override=fragment if fragment in {'active', 'registry', 'queues'} else None",
+    ):
+        if required not in job_routes:
+            errors.append(f'Jobs demand-loading contract missing: {required}')
+    if 'include_queue_activity' in job_routes:
+        errors.append('Jobs must not rebuild inactive Queue Activity data')
     job_workspace = read('app/templates/jobs/configuration/_job_workspace.html')
     if 'sync_progress' in job_workspace or '_quick_sync_status.html' in job_workspace or 'sync_progress' in job_routes:
         errors.append('Job Configuration must not reintroduce Inventory Sync progress toasts')

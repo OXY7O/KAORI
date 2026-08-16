@@ -1,9 +1,13 @@
 {% import "components/table_label.html" as table_label %}
 {% import "components/workspace_tabs.html" as workspace_tabs %}
 {% import "components/operational_section_card.html" as operational_section %}
-<section id="job-execution-workspace"
-         class="space-y-5"
-         x-data="{ tabs: ['active', 'registry', 'queues'], activeTab: '{{ selected_job_tab }}', setTab(tab) { if (!this.tabs.includes(tab)) return; this.activeTab = tab; const url = new URL(window.location.href); url.searchParams.set('tab', tab); url.searchParams.set('execution_tab', tab); window.history.replaceState({}, '', url); }, moveTab(currentTab, direction, prefix = 'execution') { const currentIndex = this.tabs.indexOf(currentTab); if (currentIndex < 0) return; let nextIndex = currentIndex; if (direction === 'home') nextIndex = 0; else if (direction === 'end') nextIndex = this.tabs.length - 1; else nextIndex = (currentIndex + direction + this.tabs.length) % this.tabs.length; const nextTab = this.tabs[nextIndex]; this.setTab(nextTab); this.$nextTick(() => document.getElementById(`${prefix}-tab-${nextTab}`)?.focus()); } }">
+{% import "components/loading_bar.html" as loading_bar %}
+{% set execution_tabs = [
+    ('active', 'Active Work', 'activity', job_stats.active, url_for('jobs.executions', execution_tab='active')),
+    ('registry', 'Registry', 'list-checks', job_stats.total, url_for('jobs.executions', execution_tab='registry')),
+    ('queues', 'Queues', 'network', job_stats.queues, url_for('jobs.executions', execution_tab='queues'))
+] %}
+<section id="job-execution-workspace" class="space-y-5">
     <section class="{{ operational_section.shell_classes() }}"
              aria-labelledby="execution-overview-title">
         <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
@@ -82,33 +86,31 @@
                     <div>
                         <h2 id="execution-workspace-title"
                             class="text-base font-semibold text-content-primary">Execution Workspace</h2>
-                        <p class="mt-1 text-sm leading-6 text-content-secondary">Monitor active work, inspect execution evidence, and compare queue demand with worker readiness.</p>
+                        <p class="mt-1 text-sm leading-6 text-content-secondary">Only the selected execution view is loaded. Queue topology inspection runs only when the Queues view is opened.</p>
                     </div>
                 </div>
-                {{ workspace_tabs.render([('active', 'Active Work', 'activity', job_stats.active) , ('registry', 'Registry', 'list-checks', job_stats.total), ('queues', 'Queues', 'network', job_stats.queues)], prefix='execution', aria_label='Execution Workspace Sections') }}
             </div>
+            {{ workspace_tabs.render_navigation(execution_tabs,
+                                                selected_job_tab,
+                                                prefix='execution',
+                                                aria_label='Execution Workspace Sections',
+                                                hx_target='#job-execution-workspace',
+                                                hx_select='#job-execution-workspace',
+                                                hx_indicator='#execution-workspace-loading') }}
+            {{ loading_bar.render('execution-workspace-loading', label='Loading Execution Workspace') }}
         </header>
-        <div id="execution-panel-active"
-             x-show="activeTab === 'active'"
-             role="tabpanel"
-             x-cloak>
-            {% set embedded = true %}
-            {% include 'jobs/executions/partials/_active_jobs.html' %}
-        </div>
-        <div id="execution-panel-registry"
-             x-show="activeTab === 'registry'"
-             role="tabpanel"
-             x-cloak>
+        {% if selected_job_tab == 'registry' %}
             {% set embedded = true %}
             {% include 'jobs/executions/partials/_registry.html' %}
-        </div>
-        <div id="execution-panel-queues"
-             x-show="activeTab === 'queues'"
-             role="tabpanel"
-             x-cloak>
+        {% elif selected_job_tab == 'queues' %}
             {% set embedded = true %}
             {% include 'jobs/executions/partials/_queue_activity.html' %}
-        </div>
+        {% else %}
+            {% set embedded = true %}
+            {% include 'jobs/executions/partials/_active_jobs.html' %}
+        {% endif %}
     </section>
-    {% include 'jobs/executions/partials/_status_poller.html' %}
+    {% if selected_job_tab != 'active' %}
+        {% include 'jobs/executions/partials/_status_poller.html' %}
+    {% endif %}
 </section>

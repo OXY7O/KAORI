@@ -72,9 +72,9 @@ def test_platform_operations_uses_shared_tab_contracts() -> None:
     assert 'components/framed_workspace_tabs.html' in kubernetes
     assert 'framed_workspace_tabs.render(' in kubernetes
     assert 'components/framed_workspace_tabs.html' in jobs
-    assert 'framed_workspace_tabs.render(' in jobs
+    assert 'framed_workspace_tabs.render_navigation(' in jobs
     assert 'components/workspace_tabs.html' in executions
-    assert 'workspace_tabs.render(' in executions
+    assert 'workspace_tabs.render_navigation(' in executions
     assert 'role="tablist"' not in kubernetes
     assert 'role="tablist"' not in jobs
     assert 'role="tablist"' not in executions
@@ -90,11 +90,13 @@ def test_namespace_policy_table_does_not_force_horizontal_desktop_scroll() -> No
 
 def test_job_registry_filters_are_htmx_owned_without_inline_handlers() -> None:
     source = read('app/templates/jobs/executions/partials/_registry.html')
-    assert 'hx-trigger="submit, change from:select"' in source
-    assert 'hx-trigger="change from:select"' in source
+    assert 'components/table_registry.html' in source
+    assert 'table_registry.filter_form' in source
+    assert 'table_registry.clear_filters_link' in source
+    assert 'table_registry.footer' in source
     assert 'onchange=' not in source
-    for option in ('5', '10', '25', '50'):
-        assert f'<option value="{option}"' in source
+    table_registry = read('app/templates/components/table_registry.html')
+    assert 'per_page_options' in table_registry
 
 
 def test_obsolete_page_local_platform_tabs_remain_deleted() -> None:

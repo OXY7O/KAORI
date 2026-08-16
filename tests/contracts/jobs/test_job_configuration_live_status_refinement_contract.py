@@ -63,7 +63,10 @@ def test_job_catalog_status_refreshes_out_of_band() -> None:
     assert 'configuration_status' in routes
     assert "Cache-Control'] = 'no-store, max-age=0'" in routes
     assert 'hx-sync="this:replace"' in poller
-    assert "'every 2s' if selected_job.active_job else 'every 8s'" in poller
+    assert '{% if selected_job.active_job %}' in poller
+    assert 'hx-trigger="every 10s"' in poller
+    assert 'every 30s' not in poller
+    assert 'build_job_configuration_live_context' in routes
 
 
 def test_registered_job_descriptions_are_compact() -> None:

@@ -22,7 +22,11 @@ from sqlalchemy.exc import SQLAlchemyError
 from app.common.job_execution_contract import SYNC_ALL_INVENTORY_ACTION, job_operation_label
 from app.common.job_execution_presentation import present_job_execution_detail
 from app.extensions.db import db
-from app.jobs.configuration import build_job_configuration_context
+from app.jobs.configuration import (
+    build_job_configuration_context,
+    build_job_configuration_live_context,
+    build_job_configuration_summary_context,
+)
 from app.jobs.definitions.base import JobDefinition
 from app.jobs.dispatcher import dispatch_registered_job
 from app.jobs.policies.forms import JobPolicyForm, ManualJobRunForm
@@ -82,19 +86,28 @@ def _page_context(
     policy_form: JobPolicyForm | None = None,
     policy_error: str | None = None,
 ) -> dict[str, object]:
-    context = _execution_context(include_queue_activity=active_section == 'executions')
-    context.update(
-        _configuration_context(
-            selected_job_key=selected_job_key,
-            policy_form=policy_form,
-            policy_error=policy_error,
+    if active_section == 'configuration':
+        context = build_job_execution_status_context(tab='active')
+        context.update(
+            _configuration_context(
+                selected_job_key=selected_job_key,
+                policy_form=policy_form,
+                policy_error=policy_error,
+            )
         )
-    )
+    else:
+        context = _execution_context()
+        context.update(
+            build_job_configuration_summary_context(
+                active_execution_count=int(context['job_stats']['active']),
+            )
+        )
     context['active_jobs_section'] = active_section
     return context
 
 
-def _execution_context(*, include_queue_activity: bool = True) -> dict[str, object]:
+def _execution_context(*, tab_override: str | None = None) -> dict[str, object]:
+    selected_tab = tab_override or request.args.get('execution_tab', request.args.get('tab', 'active')).strip()
     return build_job_execution_context(
         page=request.args.get('page', 1, type=int) or 1,
         per_page=request.args.get('per_page', 5, type=int) or 5,
@@ -102,9 +115,14 @@ def _execution_context(*, include_queue_activity: bool = True) -> dict[str, obje
         workload=request.args.get('workload', '').strip(),
         queue=request.args.get('queue', '').strip(),
         search=request.args.get('search', '').strip(),
-        tab=request.args.get('execution_tab', request.args.get('tab', 'active')).strip(),
-        include_queue_activity=include_queue_activity,
+        tab=selected_tab,
     )
+
+
+def _configuration_live_context(job_key: str) -> dict[str, object]:
+    context = build_job_configuration_live_context(selected_job_key=job_key)
+    context['manual_form'] = ManualJobRunForm()
+    return context
 
 
 def _render_execution_fragment(context: dict[str, object], fragment: str) -> str:
@@ -176,7 +194,7 @@ def executions() -> ResponseReturnValue:
                 tab=request.args.get('execution_tab', request.args.get('tab', 'active')).strip()
             )
             if fragment == 'status'
-            else _execution_context(include_queue_activity=fragment not in {'active', 'registry'})
+            else _execution_context(tab_override=fragment if fragment in {'active', 'registry', 'queues'} else None)
         )
         response = make_response(_render_execution_fragment(context, fragment))
         response.headers['Cache-Control'] = 'no-store, max-age=0'
@@ -227,7 +245,7 @@ def configuration() -> ResponseReturnValue:
 @bp.get('/configuration/<path:job_key>/status')
 @permission_required('jobs.view')
 def configuration_status(job_key: str) -> ResponseReturnValue:
-    context = _configuration_context(selected_job_key=job_key)
+    context = _configuration_live_context(job_key)
     response = make_response(render_template('jobs/configuration/_live_status_response.html', **context))
     response.headers['Cache-Control'] = 'no-store, max-age=0'
     return response
@@ -626,7 +644,6 @@ def cancel_execution(public_id: str) -> ResponseReturnValue:
             queue=request.form.get('queue', '').strip(),
             search=request.form.get('search', '').strip(),
             tab=request.form.get('execution_tab', 'active').strip(),
-            include_queue_activity=fragment not in {'active', 'registry'},
         )
         context['operation_feedback'] = feedback
         context['notification_context'] = get_navigation_notification_context(user_id=int(current_user.id))

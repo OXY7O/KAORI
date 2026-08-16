@@ -13,6 +13,7 @@ def _read(relative: str) -> str:
 def test_tab_counts_refresh_out_of_band_without_page_reload() -> None:
     workspace = _read('_workspace.html')
     status = _read('partials/_status_refresh.html')
+    status_oob = _read('partials/_status_oob.html')
     poller = _read('partials/_status_poller.html')
     shared_tabs = (ROOT / 'app' / 'templates' / 'components' / 'workspace_tabs.html').read_text(encoding='utf-8')
 
@@ -20,10 +21,11 @@ def test_tab_counts_refresh_out_of_band_without_page_reload() -> None:
     assert "prefix='execution'" in workspace
     assert 'id="{{ prefix }}-tab-count-{{ tab_key }}"' in shared_tabs
     for key in ('active', 'registry', 'queues'):
-        assert f'id="execution-tab-count-{key}"' in status
-    assert 'hx-swap-oob="outerHTML"' in status
+        assert f'id="execution-tab-count-{key}"' in status_oob
+    assert 'hx-swap-oob="outerHTML"' in status_oob
+    assert "_status_oob.html" in status
     assert "fragment='status'" in poller
-    assert 'every 5s' in poller
+    assert 'every 30s' in poller
     assert 'class="hidden"' in poller
 
 
@@ -61,5 +63,6 @@ def test_execution_templates_parse() -> None:
         'partials/_queue_activity.html',
         'partials/_status_poller.html',
         'partials/_status_refresh.html',
+        'partials/_status_oob.html',
     ):
         environment.parse(_read(relative))

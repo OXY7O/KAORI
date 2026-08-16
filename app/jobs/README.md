@@ -107,3 +107,15 @@ The shared `components/progress_bar.html::job_progress` renderer is the only pro
 Jobs & Executions, Job Configuration, Activity Center, report execution details, and other JobExecution-backed
 surfaces. Domain-specific progress toasts may wrap the same low-level violet bar primitive, but must not
 introduce a second visual or percentage contract.
+
+## Operations UI Performance Contract
+
+Jobs & Executions is intentionally server-backed and demand-loaded. The page must not build hidden workspaces merely to support client-side tab switching.
+
+- The parent **Executions** and **Job Configuration** workspaces use server-owned navigation; only the selected workspace is built on a request.
+- Execution **Active Work**, **Registry**, and **Queues** are demand-loaded. Registry pagination never triggers Celery topology inspection, and queue inspection runs only when the Queues view is opened.
+- Global execution counters come from one conditional aggregate query. Queue activity comes from one grouped aggregate query plus one short-lived shared Celery topology snapshot.
+- Active Work polls every 15 seconds and carries the overview counters in the same response. Registry and Queues use one compact overview heartbeat every 30 seconds.
+- Job Configuration has no idle polling; active execution status refreshes every 10 seconds.
+- Browser-hidden tabs do not poll. Active Work therefore has one 15-second heartbeat instead of overlapping 15-second and 30-second refresh loops. While a selected job is active, a lightweight execution-only status poll runs every 10 seconds; domain eligibility/readiness is rebuilt once when the execution becomes terminal.
+- Terminal JobExecution history remains bounded by **Platform Operations → Data Lifecycle**. The Jobs page is the hot operational registry, not a replacement archive browser.

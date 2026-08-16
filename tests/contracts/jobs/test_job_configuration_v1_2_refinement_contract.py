@@ -10,8 +10,10 @@ def _read(relative: str) -> str:
 def test_job_configuration_does_not_inspect_queue_activity_on_initial_render() -> None:
     routes = _read('app/jobs/routes.py')
 
-    assert "_execution_context(include_queue_activity=active_section == 'executions')" in routes
-    assert "include_queue_activity=fragment not in {'active', 'registry'}" in routes
+    assert "if active_section == 'configuration':" in routes
+    assert 'build_job_configuration_summary_context' in routes
+    assert "tab_override=fragment if fragment in {'active', 'registry', 'queues'} else None" in routes
+    assert 'include_queue_activity' not in routes
 
 
 def test_inventory_manual_dispatch_uses_activity_center_without_progress_toast() -> None:

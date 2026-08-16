@@ -12,7 +12,7 @@ def _read(relative: str) -> str:
 def test_active_work_keeps_polling_after_empty_state() -> None:
     source = _read('app/templates/jobs/executions/partials/_active_jobs.html')
 
-    assert 'hx-trigger="every 5s"' in source
+    assert 'hx-trigger="every 15s"' in source
     assert 'hx-sync="this:replace"' in source
     assert '{% if active_job_rows %}hx-get=' not in source
     assert "('Active Attention', job_stats.active_attention)" in source
@@ -25,7 +25,7 @@ def test_attention_posture_is_active_plus_recent_terminal_only() -> None:
     assert "_RECENT_ATTENTION_STATUSES = ('failed', 'partially_succeeded', 'expired')" in source
     assert '\n_ATTENTION_STATUSES =' not in source
     assert 'JobExecution.completed_at >= cutoff' in source
-    assert 'active_attention + recent_terminal_attention' in source
+    assert 'active_attention + recent_attention' in source
 
 
 def test_registry_details_expand_below_row_without_raw_payload() -> None:
@@ -65,13 +65,13 @@ def test_queue_worker_readiness_uses_one_shared_topology_snapshot() -> None:
     queue = _read('app/templates/jobs/executions/partials/_queue_activity.html')
     routes = _read('app/jobs/routes.py')
 
-    assert 'topology = inspect_celery_topology() if queue_names else None' in presentation
+    assert 'topology = inspect_celery_topology() if aggregates else None' in presentation
     assert 'get_queue_readiness(queue_name, topology=topology)' in presentation
     assert 'Worker Readiness' in queue
     assert 'worker_readiness.description' in queue
     assert "fragment='queues'" in queue
     assert "'queues': 'jobs/executions/partials/_queue_activity.html'" in routes
-    assert "include_queue_activity=fragment not in {'active', 'registry'}" in routes
+    assert "tab_override=fragment if fragment in {'active', 'registry', 'queues'} else None" in routes
 
 
 def test_jobs_hero_uses_combined_operational_attention() -> None:

@@ -42,8 +42,8 @@ def test_jobs_reuse_shared_metadata_status_and_pagination_components() -> None:
 
     assert 'table_label.metadata_label(definition.queue_name)' in activity
     assert "status_indicator_label('Ready for Execution', 'normal')" in activity
-    assert 'pagination_ui.footer_classes()' in registry
-    assert "pagination_ui.resource_name('Executions'" in registry
+    assert 'table_registry.footer' in registry
+    assert "resource_label='Executions'" in registry
     assert 'Select a Registered Job' in empty_state
 
 

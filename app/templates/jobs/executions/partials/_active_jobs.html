@@ -7,7 +7,7 @@
          class="{{ 'min-w-0' if embedded|default(false) else table_ui.block_classes() }}"
          aria-labelledby="active-job-workspace-title"
          hx-get="{{ active_refresh_url }}"
-         hx-trigger="every 5s"
+         hx-trigger="every 15s"
          hx-target="this"
          hx-swap="outerHTML swap:0ms settle:0ms"
          hx-indicator="#active-job-poll-indicator"
@@ -35,6 +35,7 @@
                 <button type="button"
                         hx-get="{{ active_refresh_url }}"
                         hx-target="#active-job-workspace"
+         hx-on::before-request="if (document.hidden) event.preventDefault()"
                         hx-swap="outerHTML"
                         hx-indicator="#active-job-loading"
                         hx-disabled-elt="this"
@@ -124,3 +125,6 @@
         </div>
     {% endif %}
 </section>
+{% if embedded|default(false) %}
+    {% include 'jobs/executions/partials/_status_oob.html' %}
+{% endif %}

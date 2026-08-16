@@ -76,7 +76,10 @@ def main() -> int:
         forbid(relative, '= lambda ', errors)
 
     for relative, token in (
-        ('app/analytics/kubernetes/utilization/service.py', 'from app.integrations.prometheus.exceptions import PrometheusError'),
+        (
+            'app/analytics/kubernetes/utilization/service.py',
+            'from app.integrations.prometheus.exceptions import PrometheusError',
+        ),
         (
             'app/kubernetes_operations/secrets/reveal_service.py',
             'from app.common.kubernetes_secrets import scrub_mapping_values, scrub_secret_payload',
