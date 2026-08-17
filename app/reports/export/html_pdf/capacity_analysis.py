@@ -65,7 +65,7 @@ def build_capacity_analysis_presentation(
     cluster_info = _mapping(payload.get('cluster_info'))
     capacity_summary = _mapping(payload.get('capacity_summary'))
     allocation_summary = _mapping(payload.get('allocation_summary'))
-    prometheus_status = _mapping(payload.get('prometheus_status'))
+    metrics_source_status = _mapping(payload.get('metrics_source_status'))
     forecast_payload = _mapping(payload.get('forecast_payload'))
 
     resources = {
@@ -131,7 +131,7 @@ def build_capacity_analysis_presentation(
     )
     source_rows = _source_rows(
         payload=payload,
-        prometheus_status=prometheus_status,
+        metrics_source_status=metrics_source_status,
         forecast_payload=forecast_payload,
         period_label=period_label,
     )
@@ -1054,7 +1054,7 @@ def _recommendation_rows(
         priority = _priority_code(card.get('priority'))
         owner = (
             'Observability Owner'
-            if 'coverage' in title.lower() or 'prometheus' in title.lower()
+            if 'coverage' in title.lower() or 'metrics_source' in title.lower()
             else 'Platform Operations'
         )
         rows.append(
@@ -1173,7 +1173,7 @@ def _owner_summary(rows: Sequence[Mapping[str, Any]]) -> str:
 def _source_rows(
     *,
     payload: Mapping[str, Any],
-    prometheus_status: Mapping[str, Any],
+    metrics_source_status: Mapping[str, Any],
     forecast_payload: Mapping[str, Any],
     period_label: str,
 ) -> tuple[dict[str, str], ...]:
@@ -1191,9 +1191,9 @@ def _source_rows(
     if not rows:
         rows = [
             {
-                'source': 'Prometheus Observation Cache',
-                'freshness': _latency(prometheus_status.get('response_time_ms')),
-                'last_collected': _format_datetime(prometheus_status.get('last_checked_at')),
+                'source': 'Metrics Source Observation Cache',
+                'freshness': _latency(metrics_source_status.get('response_time_ms')),
+                'last_collected': _format_datetime(metrics_source_status.get('last_checked_at')),
             },
             {
                 'source': 'Kubernetes Cluster Scope',

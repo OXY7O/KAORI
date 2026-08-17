@@ -3,11 +3,11 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any
 
-PROMETHEUS_STATUS_SCHEMA_VERSION = 1
+METRICS_SOURCE_STATUS_SCHEMA_VERSION = 1
 
 
-def present_prometheus_status(status: dict[str, Any] | None = None) -> dict[str, Any]:
-    """Return the canonical Prometheus readiness payload used by Analytics UI.
+def present_metrics_source_status(status: dict[str, Any] | None = None) -> dict[str, Any]:
+    """Return the canonical Metrics Source readiness payload used by Analytics UI.
 
     The source services historically emitted slightly different labels, messages,
     timestamps, and readiness keys.  The presentation contract intentionally
@@ -32,31 +32,31 @@ def present_prometheus_status(status: dict[str, Any] | None = None) -> dict[str,
         status_label = 'Waiting for Cluster'
         tone = 'disabled'
         icon = 'circle-dashed'
-        message = 'Select or register a Kubernetes cluster before Prometheus readiness can be evaluated.'
+        message = 'Select or register a Kubernetes cluster before Metrics Source readiness can be evaluated.'
     elif not configured:
         state = 'not_configured'
         status_label = 'Not Configured'
         tone = 'unknown'
         icon = 'settings'
-        message = 'Configure and bind a Prometheus-compatible source for the selected cluster.'
+        message = 'Configure and bind a Metrics Source-compatible source for the selected cluster.'
     elif connected and observation_degraded:
         state = 'query_degraded'
         status_label = 'Query Degraded'
         tone = 'warning'
         icon = 'triangle-alert'
-        message = 'Prometheus can execute analytics queries, but the latest runtime observation is degraded.'
+        message = 'Metrics Source can execute analytics queries, but the latest runtime observation is degraded.'
     elif connected:
         state = 'query_ready'
         status_label = 'Query Ready'
         tone = 'normal'
         icon = 'circle-check'
-        message = 'Prometheus is reachable and eligible for Kubernetes Analytics queries.'
+        message = 'Metrics Source is reachable and eligible for Kubernetes Analytics queries.'
     else:
         state = 'unavailable'
         status_label = 'Unavailable'
         tone = 'critical'
         icon = 'circle-x'
-        message = 'Prometheus cannot execute Kubernetes Analytics queries for the selected cluster.'
+        message = 'Metrics Source cannot execute Kubernetes Analytics queries for the selected cluster.'
 
     response_time_ms = source.get('response_time_ms')
     try:
@@ -72,7 +72,7 @@ def present_prometheus_status(status: dict[str, Any] | None = None) -> dict[str,
 
     return {
         **source,
-        'schema_version': PROMETHEUS_STATUS_SCHEMA_VERSION,
+        'schema_version': METRICS_SOURCE_STATUS_SCHEMA_VERSION,
         'configured': configured,
         'connected': connected,
         'observation_degraded': observation_degraded,

@@ -14,11 +14,11 @@ from app.analytics.kubernetes.materialization.catalog import canonical_parameter
 from app.analytics.kubernetes.materialization.presentation import pending_page_context
 from app.analytics.kubernetes.materialization.requests import MaterializedRequest
 from app.analytics.kubernetes.materialization.service import SnapshotResult, store_snapshot
-from app.integrations.prometheus.capabilities import PROVIDER_CAPABILITY_KEYS
-from app.integrations.prometheus.capabilities import definition as prometheus_capability_definition
-from app.integrations.prometheus.query_profiles.audit import PromQLProfileAuditor
+from app.integrations.metrics.capabilities import PROVIDER_CAPABILITY_KEYS
+from app.integrations.metrics.capabilities import definition as metrics_source_capability_definition
+from app.integrations.metrics.query_profiles.audit import PromQLProfileAuditor
 from app.jobs.definitions.forecast_refresh import FORECAST_REFRESH_DEFINITION
-from app.prometheus.presentation import _RESOLUTION_CONSUMERS, _module_readiness_rows
+from app.metrics.presentation import _RESOLUTION_CONSUMERS, _module_readiness_rows
 
 
 def test_snapshot_parameters_exclude_view_only_filters() -> None:
@@ -91,7 +91,7 @@ def test_snapshot_store_rejects_dependency_blockers_before_database_write() -> N
             cluster_id='cluster-1',
             dataset_key='analytics.storage',
             parameters={'cluster_id': 'cluster-1'},
-            context={'dependency_blocker': {'kind': 'prometheus_capability'}},
+            context={'dependency_blocker': {'kind': 'metrics_source_capability'}},
             job_execution_id=None,
         )
 
@@ -126,7 +126,7 @@ def test_storage_and_workload_capability_contracts_match_worker_services() -> No
     assert consumers['workload']['technical_capabilities'] == workload.required_capabilities
 
 
-def test_prometheus_provider_readiness_is_independent_from_kubernetes_query_gaps() -> None:
+def test_metrics_source_provider_readiness_is_independent_from_kubernetes_query_gaps() -> None:
     persisted = PromQLProfileAuditor._module_readiness(
         {
             'app.analytics.kubernetes.storage': {
@@ -148,15 +148,15 @@ def test_prometheus_provider_readiness_is_independent_from_kubernetes_query_gaps
     )
     expected_labels: list[str] = []
     for key in PROVIDER_CAPABILITY_KEYS:
-        capability = prometheus_capability_definition(key)
+        capability = metrics_source_capability_definition(key)
         assert capability is not None
         expected_labels.append(capability.label)
 
     assert rows == [
         {
-            'key': 'prometheus_core',
-            'label': 'Prometheus Core Runtime',
-            'description': 'Provider-neutral HTTP API and PromQL capabilities required before any consumer binding is eligible.',
+            'key': 'metrics_source_core',
+            'label': 'Metrics Source Core Runtime',
+            'description': 'Provider-neutral adapter and query capabilities required before any consumer binding is eligible.',
             'status': 'ready',
             'required_capability_labels': expected_labels,
             'optional_capability_labels': [],
@@ -202,28 +202,28 @@ def test_persisted_readiness_builds_query_service_without_live_health_probe(monk
     monkeypatch.setattr(common_context, 'resolve_instance_for_cluster', lambda _cluster_id: instance)
     monkeypatch.setattr(
         common_context,
-        'resolve_prometheus_sources',
+        'resolve_metrics_sources',
         lambda **_kwargs: SimpleNamespace(selected=selected, candidates=(selected,)),
     )
-    prometheus_marker = object()
+    metrics_source_marker = object()
     utilization_marker = object()
-    monkeypatch.setattr(common_context, 'PrometheusService', lambda *_args, **_kwargs: prometheus_marker)
+    monkeypatch.setattr(common_context, 'MetricsService', lambda *_args, **_kwargs: metrics_source_marker)
     monkeypatch.setattr(
         common_context,
         'UtilizationService',
-        lambda prometheus: utilization_marker if prometheus is prometheus_marker else None,
+        lambda metrics_source: utilization_marker if metrics_source is metrics_source_marker else None,
     )
 
     _clusters, selected_cluster, utilization, context = common_context.build_analysis_utilization_context(
         {'cluster_id': 'cluster-1'},
-        check_prometheus_connection=False,
+        check_metrics_source_connection=False,
     )
 
     assert selected_cluster is cluster
     assert utilization is utilization_marker
     assert context['dependency_blocker'] is None
-    assert context['prometheus_connected'] is True
-    assert context['prometheus_status']['response_time_ms'] == 18
+    assert context['metrics_source_connected'] is True
+    assert context['metrics_source_status']['response_time_ms'] == 18
 
 
 def test_forecast_selectors_reproject_committed_history_locally(monkeypatch) -> None:
@@ -268,7 +268,7 @@ def test_forecast_selectors_reproject_committed_history_locally(monkeypatch) -> 
     assert result['forecast_payload']['items'][0]['forecast_method'] == 'conservative'
 
 
-def test_prometheus_dataset_binding_gap_is_advisory_after_query_transport_is_ready(monkeypatch) -> None:
+def test_metrics_source_dataset_binding_gap_is_advisory_after_query_transport_is_ready(monkeypatch) -> None:
     cluster = SimpleNamespace(id='cluster-1', name='Primary')
     ready = SimpleNamespace(
         missing_binding_capabilities=(),
@@ -288,31 +288,31 @@ def test_prometheus_dataset_binding_gap_is_advisory_after_query_transport_is_rea
             return SimpleNamespace(selected=ready, candidates=(ready,))
         return SimpleNamespace(selected=None, candidates=(strict_candidate,))
 
-    monkeypatch.setattr(materialization_requests, 'resolve_prometheus_sources', resolve_sources)
+    monkeypatch.setattr(materialization_requests, 'resolve_metrics_sources', resolve_sources)
     monkeypatch.setattr(
         materialization_requests,
-        'prometheus_capability_blocker',
+        'metrics_source_capability_blocker',
         lambda _cluster, **kwargs: {
-            'kind': 'prometheus_capability',
+            'kind': 'metrics_source_capability',
             'labels': kwargs['capability_labels'],
             'feature': kwargs['feature_label'],
         },
     )
 
-    blocker, warning = materialization_requests._prometheus_dependency_state(
+    blocker, warning = materialization_requests._metrics_source_dependency_state(
         dataset_key='analytics.storage',
         cluster=cluster,
     )
 
     assert blocker is None
     assert warning == {
-        'kind': 'prometheus_capability',
+        'kind': 'metrics_source_capability',
         'labels': ['Storage'],
         'feature': 'Storage Analysis',
     }
 
 
-def test_prometheus_alert_fallback_reports_capability_gap_not_connection_failure(
+def test_metrics_source_alert_fallback_reports_capability_gap_not_connection_failure(
     monkeypatch,
 ) -> None:
     cluster = SimpleNamespace(id='cluster-1', name='Primary')
@@ -328,14 +328,14 @@ def test_prometheus_alert_fallback_reports_capability_gap_not_connection_failure
     )
     monkeypatch.setattr(
         materialization_requests,
-        'resolve_prometheus_sources',
+        'resolve_metrics_sources',
         lambda **_kwargs: SimpleNamespace(selected=None, candidates=(candidate,)),
     )
     monkeypatch.setattr(
         materialization_requests,
-        'prometheus_capability_blocker',
+        'metrics_source_capability_blocker',
         lambda _cluster, **kwargs: {
-            'kind': 'prometheus_capability',
+            'kind': 'metrics_source_capability',
             'labels': kwargs['capability_labels'],
             'feature': kwargs['feature_label'],
         },
@@ -343,11 +343,11 @@ def test_prometheus_alert_fallback_reports_capability_gap_not_connection_failure
 
     blocker = materialization_requests._alert_dependency_blocker(
         cluster=cluster,
-        selected_source='prometheus',
+        selected_source='metrics_source',
     )
 
     assert blocker == {
-        'kind': 'prometheus_capability',
+        'kind': 'metrics_source_capability',
         'labels': ['Alert Metrics', 'Kubernetes Identity Metrics'],
         'feature': 'Alerts & Anomalies',
     }

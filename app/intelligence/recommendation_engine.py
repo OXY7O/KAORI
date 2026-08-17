@@ -937,7 +937,7 @@ def _storage_evidence_recommendation() -> dict[str, Any]:
         title='Restore Complete Storage Evidence',
         description=(
             'One or more filesystem, PVC, or PV evidence domains are incomplete. '
-            'Restore the missing Prometheus metrics before treating storage posture '
+            'Restore the missing Metrics Source data before treating storage posture '
             'as healthy or making capacity decisions.'
         ),
         priority='Warning',
@@ -1630,7 +1630,7 @@ def build_alerts_actionable_recommendations(
             build_recommendation(
                 title='Restore Alert Source Connectivity',
                 description=(
-                    'The selected alert source is not connected. Verify Prometheus and Alertmanager endpoint, '
+                    'The selected alert source is not connected. Verify Metrics Source and Alertmanager endpoint, '
                     'credentials, network access, and fallback mode before relying on alert analysis.'
                 ),
                 priority='Warning',
@@ -1652,7 +1652,7 @@ def build_alerts_actionable_recommendations(
             build_recommendation(
                 title='Restore Complete Anomaly Evidence',
                 description=(
-                    'Alert-source evidence is connected, but one or more Prometheus restart or readiness '
+                    'Alert-source evidence is connected, but one or more Metrics Source restart or readiness '
                     'signal families are incomplete. Restore the missing query evidence before confirming '
                     'a stable alert posture.'
                 ),
@@ -1715,7 +1715,7 @@ def build_alerts_actionable_recommendations(
             build_recommendation(
                 title='Investigate Anomaly Candidates',
                 description=(
-                    f'{len(anomalies)} anomaly candidate(s) detected from Prometheus signals '
+                    f'{len(anomalies)} anomaly candidate(s) detected from Metrics Source signals '
                     f'({restart_count} restart spike, {not_ready_count} not-ready). Review pod events, logs, probes, '
                     'recent rollouts, and resource pressure for affected workloads.'
                 ),

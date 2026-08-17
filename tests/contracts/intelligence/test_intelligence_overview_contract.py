@@ -30,7 +30,7 @@ def test_intelligence_overview_is_committed_evidence_only() -> None:
     for forbidden in (
         'load_alerts_by_source',
         'load_alert_stream',
-        'PrometheusConsumer',
+        'MetricsConsumer',
         'MinioClient',
         '.query_range(',
         '.custom_query(',

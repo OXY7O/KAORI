@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from app.integrations.prometheus.query_profiles.object_storage_audit import ObjectStoragePrometheusProfileAuditor
-from app.integrations.prometheus.query_profiles.object_storage_v1 import list_object_storage_queries
+from app.integrations.metrics.query_profiles.object_storage_audit import ObjectStorageMetricsProfileAuditor
+from app.integrations.metrics.query_profiles.object_storage_v1 import list_object_storage_queries
 
 
 def _series_rows(*, exclude: set[str] | None = None) -> list[dict[str, str]]:
@@ -22,7 +22,7 @@ def _series_rows(*, exclude: set[str] | None = None) -> list[dict[str, str]]:
     return rows
 
 
-class FakePrometheusClient:
+class FakePrometheusHttpQueryClient:
     def __init__(self, *, series_rows: list[dict[str, str]], empty_expressions: set[str] | None = None) -> None:
         self.series_rows = series_rows
         self.empty_expressions = empty_expressions or set()
@@ -42,9 +42,9 @@ class FakePrometheusClient:
 
 
 def test_readiness_audit_validates_metric_family_labels_and_registered_queries() -> None:
-    client = FakePrometheusClient(series_rows=_series_rows())
+    client = FakePrometheusHttpQueryClient(series_rows=_series_rows())
 
-    audit = ObjectStoragePrometheusProfileAuditor(client).audit(execute_queries=True)
+    audit = ObjectStorageMetricsProfileAuditor(client).audit(execute_queries=True)
 
     assert audit['status'] == 'ready'
     assert audit['summary']['required_blocked'] == 0
@@ -55,9 +55,9 @@ def test_readiness_audit_validates_metric_family_labels_and_registered_queries()
 
 
 def test_optional_metric_family_gap_does_not_block_required_contract() -> None:
-    client = FakePrometheusClient(series_rows=_series_rows(exclude={'minio_bucket_quota_total_bytes'}))
+    client = FakePrometheusHttpQueryClient(series_rows=_series_rows(exclude={'minio_bucket_quota_total_bytes'}))
 
-    audit = ObjectStoragePrometheusProfileAuditor(client).audit(execute_queries=True)
+    audit = ObjectStorageMetricsProfileAuditor(client).audit(execute_queries=True)
     quota = next(item for item in audit['items'] if item['key'] == 'object_storage.bucket.quota')
 
     assert audit['status'] == 'ready'
@@ -68,9 +68,9 @@ def test_optional_metric_family_gap_does_not_block_required_contract() -> None:
 
 
 def test_required_metric_family_gap_is_visible_as_partial_contract_evidence() -> None:
-    client = FakePrometheusClient(series_rows=_series_rows(exclude={'minio_cluster_usage_total_bytes'}))
+    client = FakePrometheusHttpQueryClient(series_rows=_series_rows(exclude={'minio_cluster_usage_total_bytes'}))
 
-    audit = ObjectStoragePrometheusProfileAuditor(client).audit(execute_queries=True)
+    audit = ObjectStorageMetricsProfileAuditor(client).audit(execute_queries=True)
     usage = next(item for item in audit['items'] if item['key'] == 'object_storage.usage.total_bytes')
 
     assert audit['status'] == 'partial'
@@ -85,9 +85,9 @@ def test_successful_query_without_samples_is_not_misreported_as_unsupported() ->
         for definition in list_object_storage_queries()
         if definition.key == 'object_storage.requests.rate'
     )
-    client = FakePrometheusClient(series_rows=_series_rows(), empty_expressions={request_query})
+    client = FakePrometheusHttpQueryClient(series_rows=_series_rows(), empty_expressions={request_query})
 
-    audit = ObjectStoragePrometheusProfileAuditor(client).audit(execute_queries=True)
+    audit = ObjectStorageMetricsProfileAuditor(client).audit(execute_queries=True)
     request_rate = next(item for item in audit['items'] if item['key'] == 'object_storage.requests.rate')
 
     assert audit['status'] == 'partial'

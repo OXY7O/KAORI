@@ -25,7 +25,7 @@ def test_storage_runtime_has_explicit_evidence_domain_and_presentation_ownership
 
 def test_storage_collector_queries_each_canonical_signal_once() -> None:
     evidence = read('app/analytics/kubernetes/storage/evidence.py')
-    query_profile = read('app/integrations/prometheus/query_profiles/kubernetes_v1.py')
+    query_profile = read('app/integrations/metrics/query_profiles/kubernetes_v1.py')
 
     assert 'PVC_CAPACITY_BY_CLAIM_QUERY' in evidence
     assert 'max by (namespace, persistentvolumeclaim)' in query_profile

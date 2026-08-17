@@ -28,7 +28,7 @@ def test_all_target_pages_use_unified_controls_and_readiness() -> None:
     ):
         content = read(relative)
         assert 'controls_readiness' in content
-        assert 'prometheus_status' in content
+        assert 'metrics_source_status' in content
         assert 'analytics_materialization' in content
 
 

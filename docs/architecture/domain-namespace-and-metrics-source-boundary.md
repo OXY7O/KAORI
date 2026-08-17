@@ -67,7 +67,7 @@ MetricsSource
         ↓
 Object Storage source resolver
         ↓
-Qualified asset-provider + metrics-provider adapter
+Qualified asset-provider metrics adapter
         ↓
 Provider runtime
 ```
@@ -75,24 +75,22 @@ Provider runtime
 Canonical metric meaning belongs to KAORI. Query language, provider response
 shape, retry semantics, and provider exceptions belong to the adapter.
 
-The first qualified adapter is:
+The first qualified asset adapter is:
 
 ```text
-MinIO + Prometheus → sources/minio_prometheus.py
+MinIO → sources/minio_metrics.py
 ```
 
-The resolver is intentionally pair-qualified. A Prometheus binding alone does
-not authorize MinIO PromQL for every Object Storage provider. A future provider
-must register its own qualified adapter, for example:
+The Object Storage resolver is asset-provider qualified, while `MetricsConsumer`
+resolves the bound Metrics Source independently through the global
+`metrics_source` contract. A Metrics Source binding alone does not authorize a
+MinIO metric profile for every Object Storage provider. A future Object Storage
+provider registers its own asset adapter/profile, while a future metrics backend
+is registered behind the Metrics Source adapter registry. Those two extension
+axes are independent.
 
-```text
-Ceph RGW + Prometheus   → ceph_prometheus.py
-S3 provider + CloudWatch → s3_cloudwatch.py
-Object Storage + OTel  → provider_otlp.py
-```
-
-Adding one of those adapters must not require changes to the Object Storage
-Analytics service or presentation contract.
+Adding either extension must not require changes to the Object Storage Analytics
+service or presentation contract.
 
 ## Metrics readiness and validation ownership
 
@@ -101,7 +99,7 @@ workflow. Object Storage Analytics must not issue discovery probes while
 rendering a page.
 
 ```text
-Prometheus Full Validation
+Metrics Source Full Validation
         ↓
 object-storage-metrics-v1 consumer profile
         ↓
@@ -118,8 +116,7 @@ Object Storage Analytics readiness presentation
 
 The generic Object Storage consumer profile does not mean every Object Storage
 provider shares MinIO metrics. Validation adapters are pair-qualified in the
-same way as runtime metrics-source adapters. A future Ceph + Prometheus profile
-must register its own validator rather than extending a MinIO conditional.
+same way as runtime metrics-source adapters. A future Object Storage asset profile must register its own validator rather than extending a MinIO conditional.
 
 Readiness evidence and runtime health are separate facts. Persisted readiness
 records the last proven metric contract. Runtime query failures describe current
@@ -144,8 +141,7 @@ Readiness tiers are explicit:
 ## Interactive failure policy
 
 Interactive Analytics must fail fast when an operational metrics source is down.
-The current MinIO + Prometheus adapter disables provider retries for interactive
-queries. If the first query fails with a transport or authentication error, the
+The current MinIO asset adapter requests the resolved Metrics Source with interactive retries disabled. If the first query fails with a transport or authentication error, the
 request-local evidence reader opens a source circuit and skips all remaining
 metric reads for that page request.
 
@@ -205,10 +201,10 @@ not require a package rename.
 - retired Inventory and Analytics namespaces;
 - imports from retired namespaces;
 - domain implementation files leaking back into capability roots;
-- direct Prometheus dependencies in Object Storage Analytics service code;
+- direct metrics-backend dependencies in Object Storage Analytics service code;
 - unqualified Object Storage metrics-source registration;
 - retired Object Storage product/provider compatibility fields and filters;
-- Prometheus-specific dependency wording in provider-neutral Analytics UI;
+- product-specific Metrics Source wording in provider-neutral Analytics UI;
 - loss of the Operations Center navigation distinction.
 
 The verifier runs from both `scripts/quality_gate.sh` and

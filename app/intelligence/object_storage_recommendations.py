@@ -278,7 +278,7 @@ def build_object_storage_recommendation_findings(
 
     The evaluator is provider-aware but domain-owned. MinIO is the first supported
     provider because KAORI currently has a validated MinIO inventory collector. No
-    live provider, Prometheus, or Alertmanager query is issued from Intelligence.
+    live provider, Metrics Source, or Alertmanager query is issued from Intelligence.
     """
 
     systems = (

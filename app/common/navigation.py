@@ -95,8 +95,8 @@ _ENDPOINT_LABELS: dict[str, str] = {
 _WORKFLOW_LABELS: tuple[tuple[str, str], ...] = (
     ('cluster.add_cluster', 'Add Cluster'),
     ('cluster.edit_cluster', 'Edit Cluster'),
-    ('prometheus.new_instance', 'Register Connection'),
-    ('prometheus.instance_detail', 'Connection Details'),
+    ('integrations.select_metrics_source_provider', 'Register Metrics Source'),
+    ('metrics.instance_detail', 'Connection Details'),
     ('alertmanager.new_instance', 'Register Connection'),
     ('alertmanager.instance_detail', 'Connection Details'),
     ('minio.new_instance', 'Register Connection'),

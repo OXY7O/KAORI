@@ -54,10 +54,10 @@ def test_alert_and_anomaly_pagination_state_is_independent() -> None:
 
 
 def test_alert_queries_deduplicate_and_scope_anomalies_to_active_pods() -> None:
-    profile = read('app/integrations/prometheus/query_profiles/kubernetes_v1.py')
-    alert_queries = read('app/integrations/prometheus/query_profiles/alerts_v1.py')
+    profile = read('app/integrations/metrics/query_profiles/kubernetes_v1.py')
+    alert_queries = read('app/integrations/metrics/query_profiles/alerts_v1.py')
 
-    assert 'expression=alerts_v1.PROMETHEUS_ALERTS_QUERY' in profile
+    assert 'expression=alerts_v1.ACTIVE_ALERTS_EXPRESSION' in profile
     assert 'expression=alerts_v1.POD_RESTART_ANOMALY_QUERY' in profile
     assert 'expression=alerts_v1.POD_NOT_READY_ANOMALY_QUERY' in profile
     assert 'ALERTS{alertstate=~"pending|firing"}' in alert_queries
@@ -76,7 +76,8 @@ def test_source_normalization_and_deduplication_have_canonical_ownership() -> No
     assert 'def normalize_prometheus_alert(' not in sources
     assert 'def filter_items(' not in sources
     assert 'def deduplicate_alerts(' in records
-    assert "'prometheus_replica'" in records
+    assert "label.endswith('_replica')" in records
+    assert "label.endswith('_replica_name')" in records
     assert "'alertstate'" in records
     assert 'strip().lower() == namespace_query' in records
     assert len(sources.splitlines()) <= 800
@@ -112,7 +113,7 @@ def test_report_reads_committed_snapshot_instead_of_live_providers() -> None:
     assert "dataset_key='analytics.alerts'" in report
     assert "parameters={'cluster_id': cluster_id, 'source': 'auto'}" in report
     assert 'get_alerts_context(' not in report
-    assert 'PrometheusService(' not in report
+    assert 'MetricsService(' not in report
     assert 'get_alertmanager_alerts' not in report
     assert "'committed_evidence_available': bool(context)" in report
 

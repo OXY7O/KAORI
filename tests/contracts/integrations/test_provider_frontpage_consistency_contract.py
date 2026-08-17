@@ -10,7 +10,7 @@ def read(path: str) -> str:
 def test_provider_front_pages_share_one_canonical_hierarchy() -> None:
     templates = {
         'kubernetes': read('app/templates/integrations/kubernetes.html'),
-        'prometheus': read('app/templates/integrations/prometheus.html'),
+        'metrics_source': read('app/templates/integrations/metrics.html'),
         'alertmanager': read('app/templates/integrations/alertmanager.html'),
         'minio': read('app/templates/minio/index.html'),
     }
@@ -96,7 +96,7 @@ def test_provider_connection_registries_share_one_column_contract() -> None:
     registry_component = read('app/templates/integrations/components/_provider_registry.html')
     registries = [
         read('app/templates/integrations/kubernetes/partials/_registry.html'),
-        read('app/templates/integrations/prometheus/partials/_inventory_content.html'),
+        read('app/templates/integrations/metrics/partials/_inventory_content.html'),
         read('app/templates/integrations/alertmanager/partials/_inventory_content.html'),
         read('app/templates/minio/partials/_registry_content.html'),
     ]

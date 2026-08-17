@@ -21,7 +21,7 @@ Implementation:
 
 ## Purpose
 
-Resource Forecast converts committed Prometheus history into capacity-planning evidence for CPU, memory, storage, and active Pods. It is a planning signal. It does not authorize autonomous remediation or replace live-state verification before a capacity decision.
+Resource Forecast converts committed Metrics Source history into capacity-planning evidence for CPU, memory, storage, and active Pods. It is a planning signal. It does not authorize autonomous remediation or replace live-state verification before a capacity decision.
 
 ## Evidence Boundary
 
@@ -164,7 +164,7 @@ The full page may be replaced through standard HTMX navigation, but Forecast doe
 
 - `contracts.py` — options, thresholds, resource definitions, value objects.
 - `calculation.py` — model calculation, quality, ETA, posture, chart payload.
-- `service.py` — Prometheus orchestration and committed snapshot construction.
+- `service.py` — Metrics Source orchestration and committed snapshot construction.
 - `resource.py` — resource evidence, status, ETA, and serialization.
 - `presentation.py` — snapshot adapter and local model/horizon/tab projection.
 - `routes.py` — full-page materialized transport boundary.

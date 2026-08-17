@@ -103,7 +103,7 @@
                         {{ integration_ui.palette_icon('archive-restore', 'info', size='sm') }}
                         <div class="min-w-0">
                             <p class="text-sm font-semibold text-content-primary">Retained After Removal</p>
-                            <p class="mt-1 text-xs leading-5 text-content-secondary">Runtime history, JobExecution history, Activity Audit evidence, reports, schedules, and reusable Prometheus or Alertmanager providers remain retained.</p>
+                            <p class="mt-1 text-xs leading-5 text-content-secondary">Runtime history, JobExecution history, Activity Audit evidence, reports, schedules, and reusable Metrics Source or Alertmanager providers remain retained.</p>
                         </div>
                     </div>
                 </section>
@@ -187,7 +187,7 @@
                         {{ integration_ui.palette_icon('waypoints', 'brand', size='sm') }}
                         <div class="min-w-0">
                             <p class="text-sm font-semibold text-content-primary">Binding Ownership</p>
-                            <p class="mt-1 text-xs leading-5 text-content-secondary">Create, validate, update, and remove Prometheus or Alertmanager bindings from the selected Observability source. This Kubernetes asset-owner workspace remains read-only for binding mutation.</p>
+                            <p class="mt-1 text-xs leading-5 text-content-secondary">Create, validate, update, and remove Metrics Source or Alertmanager bindings from the selected Observability source. This Kubernetes asset-owner workspace remains read-only for binding mutation.</p>
                         </div>
                     </div>
                     <a href="{{ url_for('integrations.observability') }}"

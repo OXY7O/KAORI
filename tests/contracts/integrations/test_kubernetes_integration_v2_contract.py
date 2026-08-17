@@ -180,10 +180,10 @@ def test_kubernetes_coverage_uses_canonical_asset_coverage_registry() -> None:
     assert 'provider_registry.asset_coverage_head(' in coverage
     assert 'Kubernetes Cluster' in coverage
     assert 'Kubernetes API' in coverage
-    assert 'Metrics Source' not in coverage  # owned by shared head
+    assert 'Metrics Source' in coverage
     assert 'Alert Source' not in coverage  # owned by shared head
     assert 'row.inventory_coverage.status' in coverage
-    assert 'row.prometheus_operational.status' in coverage
+    assert 'row.metrics_source_operational.status' in coverage
     assert 'row.alertmanager_operational.status' in coverage
     assert 'row.coverage_summary.status' in coverage
     assert 'components/states/_empty_state.html' in coverage
@@ -398,7 +398,7 @@ def test_kubernetes_registry_bulk_loads_provider_bindings() -> None:
     assert 'contains_eager(IntegrationBinding.instance)' in coverage
     assert 'source_maps = {' in coverage
     assert 'bound_sources_for_scopes(' in frontpage_service
-    assert "('prometheus', 'alertmanager')" in frontpage_service
+    assert "('metrics_source', 'alertmanager')" in frontpage_service
     assert 'contains_eager(KubernetesConnection.cluster)' in frontpage_service
     assert '_build_registry_row(connection, bound_sources=bound_sources)' in frontpage_service
 

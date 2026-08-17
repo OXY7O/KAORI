@@ -188,7 +188,7 @@ SURFACES: tuple[ReleaseSurface, ...] = (
             'integrations_bp',
             'notification_channels_bp',
             'cluster_bp',
-            'prometheus_bp',
+            'metrics_bp',
             'alertmanager_bp',
             'minio_bp',
         ),

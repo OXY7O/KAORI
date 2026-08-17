@@ -10,7 +10,7 @@ from app.dashboards.kubernetes.utils import human_time
 def build_data_freshness(
     *,
     latest_inventory_sync: datetime | None,
-    has_prometheus_data: bool,
+    has_metrics_source_data: bool,
     has_alertmanager_data: bool,
     reporting_snapshot: ReportingSnapshot,
     selected_cluster: Any | None,
@@ -18,14 +18,14 @@ def build_data_freshness(
     selected_cluster_mode = selected_cluster is not None
 
     if selected_cluster_mode:
-        prometheus_status = 'Ready' if has_prometheus_data else 'Unavailable'
-        prometheus_tone = 'normal' if has_prometheus_data else 'unknown'
-        prometheus_value = (
-            'Committed analytics snapshot available' if has_prometheus_data else 'No committed analytics snapshot'
+        metrics_source_status = 'Ready' if has_metrics_source_data else 'Unavailable'
+        metrics_source_tone = 'normal' if has_metrics_source_data else 'unknown'
+        metrics_source_value = (
+            'Committed analytics snapshot available' if has_metrics_source_data else 'No committed analytics snapshot'
         )
-        prometheus_description = (
-            'Prometheus-backed utilization, capacity, consumer, and forecast data for the selected cluster.'
-            if has_prometheus_data
+        metrics_source_description = (
+            'Metrics Source-backed utilization, capacity, consumer, and forecast data for the selected cluster.'
+            if has_metrics_source_data
             else (
                 'Run or validate analytics materialization for the selected cluster before using '
                 'detailed metric signals.'
@@ -36,15 +36,15 @@ def build_data_freshness(
         alert_tone = 'normal' if has_alertmanager_data else 'unknown'
         alert_value = 'Committed alert snapshot available' if has_alertmanager_data else 'No committed alert snapshot'
         alert_description = (
-            'Alertmanager or Prometheus alert data is available for the selected cluster.'
+            'Alertmanager or Metrics Source alert data is available for the selected cluster.'
             if has_alertmanager_data
             else 'Validate the alert source and refresh the selected cluster before relying on alert signals.'
         )
     else:
-        prometheus_status = 'Per Cluster'
-        prometheus_tone = 'info'
-        prometheus_value = 'Resolved from committed cluster snapshots'
-        prometheus_description = (
+        metrics_source_status = 'Per Cluster'
+        metrics_source_tone = 'info'
+        metrics_source_value = 'Resolved from committed cluster snapshots'
+        metrics_source_description = (
             'All Clusters mode summarizes committed capacity snapshots by cluster. '
             'Select one cluster for detailed analytics.'
         )
@@ -75,11 +75,11 @@ def build_data_freshness(
         ),
         FreshnessItem(
             label='Metrics Snapshot',
-            status=prometheus_status,
-            tone=prometheus_tone,
-            value=prometheus_value,
+            status=metrics_source_status,
+            tone=metrics_source_tone,
+            value=metrics_source_value,
             icon='activity',
-            description=prometheus_description,
+            description=metrics_source_description,
         ),
         FreshnessItem(
             label='Alert Snapshot',

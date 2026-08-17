@@ -17,13 +17,13 @@ def test_observability_coverage_uses_asset_language_and_route_owned_authorizatio
 
 
 def test_observability_empty_registry_actions_do_not_duplicate_route_authz() -> None:
-    prometheus = read('app/templates/integrations/prometheus/partials/_inventory_content.html')
+    metrics_source = read('app/templates/integrations/metrics/partials/_inventory_content.html')
     alertmanager = read('app/templates/integrations/alertmanager/partials/_inventory_content.html')
 
-    assert 'Register Prometheus' in prometheus
-    assert 'integrations.register_prometheus_metrics_source' in prometheus
+    assert 'Register Metrics Source' in metrics_source
+    assert 'integrations.select_metrics_source_provider' in metrics_source
     assert 'Register Connection' in alertmanager
-    for text in (prometheus, alertmanager):
+    for text in (metrics_source, alertmanager):
         assert 'empty_state_show_admin_required' not in text
         assert 'empty_state_permission' not in text
 
@@ -46,7 +46,7 @@ def test_provider_registration_heroes_share_one_canonical_contract() -> None:
     shared = read('app/templates/integrations/components/_provider_registration_hero.html')
     registrations = {
         'Kubernetes': read('app/templates/cluster/add.html'),
-        'Prometheus': read('app/templates/prometheus/instance_form.html'),
+        'Metrics Source': read('app/templates/metrics/instance_form.html'),
         'Alertmanager': read('app/templates/alertmanager/instance_form.html'),
         'MinIO': read('app/templates/minio/instance_form.html'),
     }
@@ -72,7 +72,7 @@ def test_provider_registration_heroes_share_one_canonical_contract() -> None:
 
     assert 'Register Kubernetes Connection' in registrations['Kubernetes']
     assert 'Add Kubernetes Connection' not in registrations['Kubernetes']
-    assert 'Register Prometheus Connection' in registrations['Prometheus']
+    assert "'Register ' ~ metrics_source_label ~ ' Connection'" in registrations['Metrics Source']
     assert 'Register Alertmanager Connection' in registrations['Alertmanager']
     assert 'Register MinIO Connection' in registrations['MinIO']
 
@@ -81,7 +81,7 @@ def test_provider_registration_context_is_shared_and_limited_to_two_context_surf
     shared = read('app/templates/integrations/components/_provider_registration_context.html')
     registrations = {
         'Kubernetes': read('app/templates/cluster/add.html'),
-        'Prometheus': read('app/templates/prometheus/instance_form.html'),
+        'Metrics Source': read('app/templates/metrics/instance_form.html'),
         'Alertmanager': read('app/templates/alertmanager/instance_form.html'),
         'MinIO': read('app/templates/minio/instance_form.html'),
     }
@@ -98,8 +98,8 @@ def test_provider_registration_context_is_shared_and_limited_to_two_context_surf
         assert 'provider_registration_context.render(' in template, provider
 
     assert 'Kubernetes RBAC & Access Contract' not in registrations['Kubernetes']
-    assert 'Connection Identity & Contract' not in registrations['Prometheus']
-    assert 'After Registration' not in registrations['Prometheus']
+    assert 'Connection Identity & Contract' not in registrations['Metrics Source']
+    assert 'After Registration' not in registrations['Metrics Source']
     assert 'Connection Identity & Contract' not in registrations['Alertmanager']
     assert 'After Registration' not in registrations['Alertmanager']
     assert 'Connection Identity & Contract' not in registrations['MinIO']
@@ -129,8 +129,8 @@ def test_frontpage_refactor_keeps_overview_and_kubernetes_filter_contracts_typed
 def test_provider_registration_actions_and_placeholders_are_consistent() -> None:
     kubernetes = read('app/templates/cluster/add.html') + read('app/templates/cluster/partials/_form.html')
     kubernetes_form = read('app/cluster/forms.py')
-    prometheus = read('app/templates/prometheus/instance_form.html')
-    prometheus_form = read('app/prometheus/forms.py')
+    metrics_source = read('app/templates/metrics/instance_form.html')
+    metrics_source_form = read('app/metrics/forms.py')
     alertmanager = read('app/templates/alertmanager/instance_form.html')
     minio = read('app/templates/minio/instance_form.html')
     minio_form = read('app/minio/forms.py')
@@ -153,7 +153,7 @@ def test_provider_registration_actions_and_placeholders_are_consistent() -> None
 
     for provider, template in {
         'Kubernetes': kubernetes,
-        'Prometheus': prometheus,
+        'Metrics Source': metrics_source,
         'Alertmanager': alertmanager,
         'MinIO': minio,
     }.items():
@@ -165,12 +165,12 @@ def test_provider_registration_actions_and_placeholders_are_consistent() -> None
     assert "'placeholder': 'Kubernetes Production'" in kubernetes_form
     assert "'placeholder': 'Operational purpose and ownership context'" in kubernetes_form
 
-    assert "'Connection Name'" in prometheus_form
-    assert "'placeholder': 'Prometheus Production'" in prometheus_form
-    assert "'placeholder': 'https://prometheus.example.internal'" in prometheus_form
-    assert "'placeholder': 'service-account'" in prometheus_form
-    assert "'placeholder': 'Enter bearer token'" in prometheus_form
-    assert 'Enter password' in prometheus
+    assert "'Connection Name'" in metrics_source_form
+    assert "'placeholder': 'Production Metrics'" in metrics_source_form
+    assert "'placeholder': 'https://metrics.example.internal'" in metrics_source_form
+    assert "'placeholder': 'service-account'" in metrics_source_form
+    assert "'placeholder': 'Enter bearer token'" in metrics_source_form
+    assert 'Enter password' in metrics_source
 
     assert 'Connection Name</label>' in alertmanager
     assert 'placeholder="Alertmanager Production"' in alertmanager
@@ -215,7 +215,7 @@ def test_minio_connection_test_separates_s3_access_from_product_identity() -> No
 def test_edit_connection_pages_keep_only_flow_and_related_workspace_context() -> None:
     edit_templates = {
         'Kubernetes': read('app/templates/cluster/edit.html'),
-        'Prometheus': read('app/templates/prometheus/instance_form.html'),
+        'Metrics Source': read('app/templates/metrics/instance_form.html'),
         'Alertmanager': read('app/templates/alertmanager/instance_form.html'),
         'MinIO': read('app/templates/minio/instance_form.html'),
     }
@@ -225,15 +225,15 @@ def test_edit_connection_pages_keep_only_flow_and_related_workspace_context() ->
         assert 'context_guidance_card.render(' not in source, provider
 
 
-def test_prometheus_and_alertmanager_detail_configuration_link_to_edit_pages() -> None:
-    prometheus = read('app/templates/prometheus/partials/_detail_configuration.html')
+def test_metrics_source_and_alertmanager_detail_configuration_link_to_edit_pages() -> None:
+    metrics_source = read('app/templates/metrics/partials/_detail_configuration.html')
     alertmanager = read('app/templates/alertmanager/partials/_detail_configuration.html')
     shared = read('app/templates/integrations/components/_provider_configuration_contract.html')
-    prom_routes = read('app/prometheus/routes.py')
+    prom_routes = read('app/metrics/routes.py')
     am_routes = read('app/alertmanager/routes.py')
 
     assert 'Configure Connection' in shared
-    assert 'url_for("prometheus.edit_instance"' in prometheus
+    assert 'url_for("metrics.edit_instance"' in metrics_source
     assert 'url_for("alertmanager.edit_instance"' in alertmanager
-    assert "@prometheus_bp.route('/instances/<int:instance_id>/edit'" in prom_routes
+    assert "@metrics_bp.route('/instances/<int:instance_id>/edit'" in prom_routes
     assert "@alertmanager_bp.route('/instances/<int:instance_id>/edit'" in am_routes

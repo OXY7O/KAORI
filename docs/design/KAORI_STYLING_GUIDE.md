@@ -250,7 +250,7 @@ Capacity is the reference composition for Analytics pages and Analytics Overview
 
 Primary evidence, analytical context, interpretation, recommended action, review path, and execution guidance use neutral surfaces with subtle outlines or separators. Color is concentrated in compact icon tiles, eyebrow labels, badges, charts, and bars. Dataset Attention uses a neutral strip plus one semantic Warning glyph and compact badge.
 
-Do not tint the entire Prometheus/readiness body, chart, record list, metric card, or guidance region. Use `analytics/components/_analysis_surfaces.html`; individual tabs must not reconstruct the snapshot shell, header, metric geometry, role icon geometry, guidance composition, or surface hierarchy.
+Do not tint the entire Metrics Source/readiness body, chart, record list, metric card, or guidance region. Use `analytics/components/_analysis_surfaces.html`; individual tabs must not reconstruct the snapshot shell, header, metric geometry, role icon geometry, guidance composition, or surface hierarchy.
 
 Analytics assigns color by visual role: Brand Violet for identity/navigation/actions, Insight cyan for explanation/methodology, Evidence slate for passive context, and semantic green/amber/red/slate only for actual operational state. Status tones are normalized through `table_label.semantic_tone(...)`. Critical, Warning, and Normal values must never fall back to the Unknown/slate treatment.
 
@@ -795,9 +795,9 @@ Use `components/operational_point_flow.html` for concise supporting sequences. F
 
 
 
-### Analytics Prometheus Readiness Standard
+### Analytics Metrics Source Readiness Standard
 
-All Prometheus-backed Kubernetes Analytics pages use `components/ANALYTICS_PROMETHEUS_READINESS.md` and `analytics/kubernetes/components/_prometheus_status.html`. The card always displays the canonical semantic state, response latency, and provider `last_checked_at`. Dataset generation time, worker-attempt time, and page-render time must never be substituted for Prometheus Checked At. Prometheus readiness and committed snapshot readiness remain separate peer evidence cards. Alerts & Anomalies retains Alert Source Readiness because it can resolve Alertmanager or Prometheus dynamically.
+All Metrics Source-backed Kubernetes Analytics pages use the canonical analytics readiness surfaces and `analytics/kubernetes/components/_metrics_source_status.html`. The card always displays the canonical semantic state, response latency, and provider `last_checked_at`. Dataset generation time, worker-attempt time, and page-render time must never be substituted for Metrics Source Checked At. Metrics Source readiness and committed snapshot readiness remain separate peer evidence cards. Alerts & Anomalies retains Alert Source Readiness because it can resolve Alertmanager or Metrics Source dynamically.
 
 ### Resource Utilization Standard
 
@@ -849,7 +849,7 @@ The canonical Integrations contract is documented in `components/INTEGRATIONS_WO
 - Primary provider, runtime, compatibility, capability, binding, and coverage evidence is bright.
 - Interpretation, remediation, and destructive-boundary guidance uses the darker soft surface.
 - Integrations semantic states render through the global `table_label` contract; provider pages do not own a second palette.
-- Prometheus and Alertmanager registries reuse the shared registry controls, loading, and pagination grammar while retaining provider-specific facts.
+- Metrics Source and Alertmanager registries reuse the shared registry controls, loading, and pagination grammar while retaining provider-specific facts.
 - Full-page and HTMX pagination have separate, explicit URL ownership and preserve path arguments, filters, and the active workspace tab.
 - One shared runtime-history component is rendered directly; provider-local presentation wrappers are prohibited.
 - Dense technical matrices may scroll only inside their owning component when simultaneous column comparison is operationally necessary.

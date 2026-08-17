@@ -25,7 +25,7 @@ def register_blueprints(app: Flask) -> None:
     from app.notification_channels.routes import notification_channels_bp
     from app.notifications.routes import notifications_bp
     from app.platform_operations import bp as platform_operations_bp
-    from app.prometheus.routes import prometheus_bp
+    from app.metrics.routes import metrics_bp
     from app.reports.routes import reports_bp
     from app.settings import bp as settings_bp
     from app.users.routes import bp as users_bp
@@ -52,7 +52,7 @@ def register_blueprints(app: Flask) -> None:
         jobs_bp,
         platform_operations_bp,
         reports_bp,
-        prometheus_bp,
+        metrics_bp,
         minio_bp,
         settings_bp,
         users_bp,

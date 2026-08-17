@@ -10,7 +10,7 @@
             <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div class="min-w-0">
                     <h3 class="text-base font-semibold text-content-primary">Anomaly Candidates</h3>
-                    <p class="mt-1 text-sm leading-6 text-content-muted">Prometheus-derived restart and readiness deviations requiring validation before incident escalation.</p>
+                    <p class="mt-1 text-sm leading-6 text-content-muted">Metrics Source-derived restart and readiness deviations requiring validation before incident escalation.</p>
                 </div>
                 <div class="flex flex-wrap items-center gap-2">
                     {{ table_label.status_label((anomalies_pagination.total_items|default(0) ) ~ ' Candidates', 'warning' if anomalies_pagination.total_items|default(0) else 'normal', size='compact') }}

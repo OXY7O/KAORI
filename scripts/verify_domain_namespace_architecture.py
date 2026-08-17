@@ -68,7 +68,7 @@ FORBIDDEN_PATHS = (
 
 REQUIRED_PATHS = (
     'app/analytics/kubernetes',
-    'app/analytics/object_storage/sources/minio_prometheus.py',
+    'app/analytics/object_storage/sources/minio_metrics.py',
     'app/analytics/object_storage/sources/resolver.py',
     'app/analytics/shared/metrics/contracts.py',
     'app/inventory/kubernetes',
@@ -167,10 +167,10 @@ def main() -> int:
 
     service = _read('app/analytics/object_storage/service.py')
     for forbidden in (
-        'PrometheusConsumer',
-        'PrometheusError',
-        'app.prometheus',
-        'app.integrations.prometheus',
+        'MetricsConsumer',
+        'MetricsSourceError',
+        'app.metrics',
+        'app.integrations.metrics',
         'get_object_storage_query_expression',
     ):
         if forbidden in service:
@@ -181,17 +181,16 @@ def main() -> int:
         if required not in contracts:
             errors.append(f'provider-neutral metrics contract is incomplete: missing {required}')
 
-    prometheus_adapter = _read('app/analytics/object_storage/sources/minio_prometheus.py')
-    for required in ('PrometheusConsumer', 'get_object_storage_query_expression', 'retry_count=0'):
-        if required not in prometheus_adapter:
-            errors.append(f'Prometheus Object Storage adapter is missing provider ownership marker: {required}')
+    metrics_adapter = _read('app/analytics/object_storage/sources/minio_metrics.py')
+    for required in ('MetricsConsumer', 'get_object_storage_query_expression', 'retry_count=0'):
+        if required not in metrics_adapter:
+            errors.append(f'Object Storage Metrics Source adapter is missing provider ownership marker: {required}')
 
     source_resolver = _read('app/analytics/object_storage/sources/resolver.py')
     for required in (
         '_SOURCE_ADAPTERS',
-        "metrics_provider='prometheus'",
         "asset_profile='minio-v2'",
-        'MinioPrometheusMetricsSource.supports',
+        'MinioMetricsSourceAdapter.supports',
     ):
         if required not in source_resolver:
             errors.append(f'Object Storage metrics source resolver is missing qualified adapter marker: {required}')

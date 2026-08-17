@@ -103,7 +103,7 @@ def test_alertmanager_consumer_profile_contract_is_documented() -> None:
     assert 'kubernetes-alerts-v1' in readme
     assert 'object-storage-alerts-v1' in readme
     assert 'Provider Core Validation checks only provider-owned contracts' in readme
-    assert 'Alert rules themselves are normally evaluated upstream by Prometheus' in readme
+    assert 'Alert rules themselves are normally evaluated upstream by a metrics/rule engine' in readme
     assert 'Consumer alert contracts are binding-scoped.' in compatibility
     assert 'Alertmanager consumer-profile boundary' in module_map
 

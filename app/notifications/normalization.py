@@ -93,8 +93,8 @@ def activity_failure_message(event_type: str, text: str) -> str:
         return 'KAORI could not complete the database operation. Review database availability and KAORI logs before retrying.'
     if 'kubernetes' in event_type or event_type.startswith('cluster_'):
         return 'The Kubernetes operation could not be completed. Review API reachability, kubeconfig credentials, TLS settings, and cluster compatibility.'
-    if event_type.startswith('prometheus_'):
-        return 'The Prometheus operation could not be completed. Review the endpoint, authentication, TLS settings, and service availability.'
+    if event_type.startswith('metrics_source_'):
+        return 'The Metrics Source operation could not be completed. Review the endpoint, authentication, TLS settings, and service availability.'
     if event_type.startswith('alertmanager_'):
         return 'The Alertmanager operation could not be completed. Review the endpoint, authentication, TLS settings, and service availability.'
     if event_type.startswith('operational_activity_'):

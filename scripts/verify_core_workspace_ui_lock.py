@@ -14,7 +14,7 @@ LOCKED_TEMPLATE_PREFIXES = (
     'app/templates/kubernetes_operations/',
     'app/templates/governance/',
     'app/templates/integrations/',
-    'app/templates/prometheus/',
+    'app/templates/metrics/',
     'app/templates/alertmanager/',
     'app/templates/platform_operations/',
     'app/templates/jobs/',
@@ -86,7 +86,7 @@ def main() -> int:
     # Canonical detail workspaces must use shared framed tabs.
     for relative in (
         'app/templates/integrations/kubernetes/detail.html',
-        'app/templates/prometheus/instance_detail.html',
+        'app/templates/metrics/instance_detail.html',
         'app/templates/alertmanager/instance_detail.html',
     ):
         source = (ROOT / relative).read_text(encoding='utf-8')

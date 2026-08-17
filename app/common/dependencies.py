@@ -6,9 +6,9 @@ from flask import render_template, url_for
 
 DependencyKind = Literal[
     'cluster_required',
-    'prometheus_setup',
-    'prometheus_connection',
-    'prometheus_capability',
+    'metrics_source_setup',
+    'metrics_source_connection',
+    'metrics_source_capability',
     'alert_source_setup',
     'alert_source_connection',
 ]
@@ -50,45 +50,45 @@ def cluster_required_blocker() -> DependencyBlocker:
     }
 
 
-def prometheus_setup_blocker(cluster: ClusterIdentity) -> DependencyBlocker:
+def metrics_source_setup_blocker(cluster: ClusterIdentity) -> DependencyBlocker:
     return {
-        'kind': 'prometheus_setup',
+        'kind': 'metrics_source_setup',
         'stage': 2,
-        'badge': 'Prometheus Required',
-        'title': 'Prometheus Setup Required',
+        'badge': 'Metrics Source Required',
+        'title': 'Metrics Source Setup Required',
         'description': (
-            f'Prometheus is not configured for {cluster.name}. Configure the integration so KAORI workers can prepare analytics snapshots.'
+            f'No eligible metrics source is bound to {cluster.name}. Register and bind a metrics source so KAORI workers can prepare analytics snapshots.'
         ),
         'diagnostic_detail': None,
         'icon': 'activity',
-        'action_label': 'Add Prometheus',
-        'action_url': url_for('prometheus.new_instance', cluster_id=cluster.id),
+        'action_label': 'Register Metrics Source',
+        'action_url': url_for('integrations.select_metrics_source_provider'),
         'permission': 'settings.manage_integrations',
     }
 
 
-def prometheus_connection_blocker(
+def metrics_source_connection_blocker(
     cluster: ClusterIdentity,
     *,
     detail: str | None = None,
 ) -> DependencyBlocker:
     return {
-        'kind': 'prometheus_connection',
+        'kind': 'metrics_source_connection',
         'stage': 2,
-        'badge': 'Prometheus Unavailable',
-        'title': 'Prometheus Connection Unavailable',
+        'badge': 'Metrics Source Unavailable',
+        'title': 'Metrics Source Connection Unavailable',
         'description': (
-            f'Prometheus is unreachable for {cluster.name}. Review the toast or Activity Log for technical details.'
+            f'The selected metrics source is unreachable for {cluster.name}. Review the toast or Activity Log for technical details.'
         ),
         'diagnostic_detail': detail,
         'icon': 'plug-zap',
-        'action_label': 'Review Prometheus',
-        'action_url': url_for('integrations.prometheus'),
+        'action_label': 'Review Metrics Sources',
+        'action_url': url_for('integrations.metrics_sources'),
         'permission': 'settings.manage_integrations',
     }
 
 
-def prometheus_capability_blocker(
+def metrics_source_capability_blocker(
     cluster: ClusterIdentity,
     *,
     capability_labels: list[str] | None = None,
@@ -98,19 +98,19 @@ def prometheus_capability_blocker(
     selected = capability_labels if capability_labels is not None else missing_capabilities
     labels = ', '.join(selected or []) if selected else 'required capabilities'
     return {
-        'kind': 'prometheus_capability',
+        'kind': 'metrics_source_capability',
         'stage': 2,
         'badge': f'{feature_label} Capability Incomplete',
         'title': f'{feature_label} Integration Contract Not Ready',
         'description': (
             f'{cluster.name} is connected, but {feature_label} requires additional '
-            f'capabilities: {labels}. Resolve them at the Prometheus/Thanos source before '
+            f'capabilities: {labels}. Resolve them at the bound metrics source before '
             'using this page.'
         ),
         'diagnostic_detail': None,
         'icon': 'shield-alert',
         'action_label': 'Review Capability',
-        'action_url': url_for('integrations.prometheus'),
+        'action_url': url_for('integrations.metrics_sources'),
         'permission': 'settings.manage_integrations',
     }
 
@@ -122,8 +122,8 @@ def alert_source_setup_blocker(
 ) -> DependencyBlocker:
     normalized_source = source.strip().lower()
 
-    if normalized_source == 'prometheus':
-        return prometheus_setup_blocker(cluster)
+    if normalized_source == 'metrics_source':
+        return metrics_source_setup_blocker(cluster)
 
     if normalized_source == 'alertmanager':
         title = 'Alertmanager Setup Required'
@@ -133,7 +133,7 @@ def alert_source_setup_blocker(
         action_url = url_for('alertmanager.new_instance', cluster_id=cluster.id)
     else:
         title = 'Alert Source Setup Required'
-        description = f'No alert source is configured for {cluster.name}. Configure Alertmanager or Prometheus to load alert data.'
+        description = f'No alert source is configured for {cluster.name}. Configure Alertmanager or a metrics source to load alert data.'
         badge = 'Alert Source Required'
         action_label = 'Add Alertmanager'
         action_url = url_for('alertmanager.new_instance', cluster_id=cluster.id)
@@ -159,9 +159,17 @@ def alert_source_connection_blocker(
     detail: str | None = None,
 ) -> DependencyBlocker:
     normalized_source = source.strip().lower()
-    source_label = 'Alert source' if normalized_source in {'', 'auto', 'none'} else normalized_source.title()
+    source_label = (
+        'Alert source'
+        if normalized_source in {'', 'auto', 'none'}
+        else 'Metrics Source'
+        if normalized_source == 'metrics_source'
+        else normalized_source.title()
+    )
 
-    action_endpoint = 'integrations.prometheus' if normalized_source == 'prometheus' else 'integrations.alertmanager'
+    action_endpoint = (
+        'integrations.metrics_sources' if normalized_source == 'metrics_source' else 'integrations.alertmanager'
+    )
 
     return {
         'kind': 'alert_source_connection',

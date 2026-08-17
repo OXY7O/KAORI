@@ -74,6 +74,7 @@ def _load_compatibility_contract() -> tuple[dict[str, str], dict[str, tuple[Comp
 
 
 _KUBERNETES_POLICY, PROFILES = _load_compatibility_contract()
+PROFILES_BY_KEY = {profile.key: profile for profiles in PROFILES.values() for profile in profiles}
 KUBERNETES_SUPPORTED_VERSION_CONSTRAINT = _KUBERNETES_POLICY['supported_version_constraint']
 KUBERNETES_LEGACY_MIN_VERSION = Version(_KUBERNETES_POLICY['legacy_min_version'])
 KUBERNETES_CURRENT_MIN_VERSION = Version(_KUBERNETES_POLICY['current_min_version'])
@@ -167,3 +168,9 @@ def get_profile(product: str, key: str | None) -> CompatibilityProfile | None:
     if not key:
         return None
     return next((profile for profile in PROFILES.get(product, ()) if profile.key == key), None)
+
+
+def get_profile_by_key(key: str | None) -> CompatibilityProfile | None:
+    if not key:
+        return None
+    return PROFILES_BY_KEY.get(str(key).strip())

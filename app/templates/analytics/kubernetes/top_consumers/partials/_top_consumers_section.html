@@ -82,7 +82,7 @@
                 {% set empty_state_label = 'Sync Required' %}
                 {% set empty_state_tone = 'warning' %}
                 {% set empty_state_title = 'No Ranked Consumer Evidence Available' %}
-                {% set empty_state_description = payload.message|default('Refresh or materialize Top Consumers after Prometheus evidence becomes available.', true) %}
+                {% set empty_state_description = payload.message|default('Refresh or materialize Top Consumers after Metrics Source evidence becomes available.', true) %}
                 {% set empty_state_min_height = 'min-h-[220px]' %}
                 {% include 'components/states/_empty_state.html' %}
             {% endif %}

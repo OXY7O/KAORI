@@ -35,6 +35,6 @@
     </div>
     <div class="{{ analysis_surface.interpretation_grid_classes() }}">
         {{ analysis_surface.interpretation_callout('Alert Reading', alert_posture.status, alert_posture.detail, icon='bell-ring', role='status', tone=alert_posture.tone) }}
-        {{ analysis_surface.interpretation_callout('Evidence Boundary', 'Provider alerts and metric signals are separate', 'Alertmanager or Prometheus ALERTS records represent upstream alert-rule state. KAORI metric-derived signals evaluate explicit Object Storage operating boundaries and are not duplicate Alertmanager lifecycle records.', icon='split-square-vertical', role='evidence') }}
+        {{ analysis_surface.interpretation_callout('Evidence Boundary', 'Provider alerts and metric signals are separate', 'Alertmanager or Metrics Source ALERTS records represent upstream alert-rule state. KAORI metric-derived signals evaluate explicit Object Storage operating boundaries and are not duplicate Alertmanager lifecycle records.', icon='split-square-vertical', role='evidence') }}
     </div>
 </section>

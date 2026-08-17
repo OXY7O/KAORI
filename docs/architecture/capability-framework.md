@@ -71,7 +71,7 @@ Unavailable
 
 ## Metric compatibility relationship
 
-For Prometheus, capability validation primarily checks metric and PromQL availability.
+For Metrics Source, capability validation checks the query and semantic capabilities declared by the selected adapter and consumer profile.
 
 For Alertmanager, capability validation checks API endpoints and alert/silence payload metadata.
 
@@ -95,7 +95,7 @@ Capability keys must be canonical, stable, documented, and provider-domain owned
 
 A capability is ready only when its complete consumer contract passes. For metrics integrations this includes the query API, metric name, required label schema, identity correlation, and required history. A fallback query based on `instance="IP:port"` must be reported as degraded or misconfigured when the canonical consumer contract requires a Kubernetes node identity.
 
-Every capability status other than `available` must provide impact, observed evidence, source owner, recommended source-side change, expected signal, and—when useful—a validation query. Version is advisory; observed capability is authoritative, including when KAORI connects through Thanos Query and cannot observe the backend Prometheus version.
+Every capability status other than `available` must provide impact, observed evidence, source owner, recommended source-side change, expected signal, and—when useful—a validation query. Version is advisory; observed capability is authoritative, including when an intermediary metrics provider cannot expose the version of its backend storage or scraper.
 
 ## Feature-contract validation and technical evidence
 
@@ -119,20 +119,22 @@ The primary status answers whether the KAORI feature works. Technical checks exp
 
 Analytics readiness is authoritative only when KAORI executes the exact query expressions from the versioned PromQL query registry used by the Analytics services. Metric-name and recent `/series` discovery remain advisory technical evidence and must not override a successful registered query.
 
-A Prometheus aggregate vector with an empty label set, for example `{} 4` returned by `count(...)`, is a valid successful result when the value is finite and satisfies the contract. Label validation must use a separate query that preserves the required labels.
+A PromQL aggregate vector with an empty label set, for example `{} 4` returned by `count(...)`, is a valid successful result when the value is finite and satisfies the contract. Label validation must use a separate query that preserves the required labels.
 
 Every Analytics contract exposes presentation-ready `Expected`, `Observed`, exact validation query, response-series count, numeric result evidence, and evidence-based remediation. Empty results are classified as `Not Observed` for contracts where absence of active objects or alerts is valid.
 
-## General Prometheus runtime and consumer bindings
+## General Metrics Source runtime and consumer bindings
 
-Prometheus is a reusable metrics runtime, not a Kubernetes-specific provider. One
-Prometheus or Thanos Query instance may serve multiple managed assets through
-explicit `IntegrationBinding` records:
+Metrics Source is a reusable integration category, not a Kubernetes-specific provider. One
+registered Metrics Source may serve multiple managed assets through explicit
+`IntegrationBinding` records:
 
 ```text
-Prometheus / Thanos Query
+Metrics Source
         ↓
-Provider core runtime (`prometheus-core-v1`)
+Provider definition (`provider_key` + `adapter_key` + `query_language`)
+        ↓
+Provider core validation
         ↓
 IntegrationBinding
         ├── Kubernetes cluster → `kubernetes-metrics-v1`
@@ -145,7 +147,7 @@ binding labels, health, readiness, and evidence supplied by Python; they must no
 construct URLs from a cluster/object-storage object or infer provider binding.
 
 Provider runtime health and consumer readiness are separate signals. A reachable,
-core-ready Prometheus remains provider-ready when one Kubernetes or MinIO consumer
+core-ready Metrics Source remains provider-ready when one Kubernetes or Object Storage consumer
 contract has missing metric evidence. The affected binding/consumer is degraded or
 blocked independently. Kubernetes Analytics exact query contracts remain
 authoritative only for Kubernetes bindings.

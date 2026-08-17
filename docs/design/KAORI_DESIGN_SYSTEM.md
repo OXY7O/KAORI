@@ -288,11 +288,11 @@ The Node Inventory right-side hero panel is the baseline for compact operational
 
 ## Form + Right Context
 
-Use the shared Form + Right Context pattern for focused create, edit, register, and configuration tasks where one primary form remains dominant and concise workflow/safety/reference guidance belongs beside it. The canonical desktop geometry is the proven Integration registration `8/12 + 4/12` split. New reviewed consumers must use `components/form_with_context_rail.html`; do not copy the grid classes into page templates. Existing Kubernetes, Prometheus, and Alertmanager registration pages remain visual references and should migrate to the shared geometry during their Integration final recheck without changing appearance. See `components/FORM_WITH_CONTEXT_RAIL.md`.
+Use the shared Form + Right Context pattern for focused create, edit, register, and configuration tasks where one primary form remains dominant and concise workflow/safety/reference guidance belongs beside it. The canonical desktop geometry is the proven Integration registration `8/12 + 4/12` split. New reviewed consumers must use `components/form_with_context_rail.html`; do not copy the grid classes into page templates. Existing Kubernetes, Metrics Source, and Alertmanager registration pages remain visual references and should migrate to the shared geometry during their Integration final recheck without changing appearance. See `components/FORM_WITH_CONTEXT_RAIL.md`.
 
 ## Info Flow
 
-Use the shared Info Flow component for short ordered governance or operational sequences. The standard structure is an expandable header, a three-to-five-step vertical timeline, and one optional flow-wide boundary note. Role Assignment Flow, Alertmanager Registration Flow, and Prometheus Configuration Flow are reference implementations. See `components/INFO_FLOW.md`.
+Use the shared Info Flow component for short ordered governance or operational sequences. The standard structure is an expandable header, a three-to-five-step vertical timeline, and one optional flow-wide boundary note. Role Assignment Flow, Alertmanager Registration Flow, and Metrics Source Configuration Flow are reference implementations. See `components/INFO_FLOW.md`.
 
 
 
@@ -306,11 +306,11 @@ Use the shared Information Guide Card for non-sequential option, concept, owners
 
 ## Workspace Summary Card
 
-Use the shared Workspace Summary Card for two to four peer summaries immediately below a tab bar or workspace header. Every card in the same row uses the same Violet Soft surface and Violet outline; do not emphasize only one equal summary through a local color variation. Configuration, Validation, Runtime, and Scope workspaces must reuse the same component when their summaries are peer-level. Alertmanager and Prometheus Manage are reference implementations. A true warning or live state must use a semantic status component instead. See `components/WORKSPACE_SUMMARY_CARD.md`.
+Use the shared Workspace Summary Card for two to four peer summaries immediately below a tab bar or workspace header. Every card in the same row uses the same Violet Soft surface and Violet outline; do not emphasize only one equal summary through a local color variation. Configuration, Validation, Runtime, and Scope workspaces must reuse the same component when their summaries are peer-level. Alertmanager and Metrics Source Manage are reference implementations. A true warning or live state must use a semantic status component instead. See `components/WORKSPACE_SUMMARY_CARD.md`.
 
 ## Health Interpretation
 
-Use the shared Health Interpretation component to translate a provider runtime score into current posture, fixed score ranges, readiness boundary, and contributing evidence. Keep runtime health separate from validation readiness, use semantic colors only for actual health meaning, and do not use oversized radial charts. Alertmanager and Prometheus Runtime & History are reference implementations. See `components/HEALTH_INTERPRETATION.md`.
+Use the shared Health Interpretation component to translate a provider runtime score into current posture, fixed score ranges, readiness boundary, and contributing evidence. Keep runtime health separate from validation readiness, use semantic colors only for actual health meaning, and do not use oversized radial charts. Alertmanager and Metrics Source Runtime & History are reference implementations. See `components/HEALTH_INTERPRETATION.md`.
 
 ## Related Workspace Contract
 
@@ -330,7 +330,7 @@ Use a KAORI critical modal for persisted-object deletion or detachment. Browser-
 
 ## Integration Manage Workspace
 
-Use the shared Integration Manage Workspace for provider instance detail pages. Alertmanager is the reference implementation; Prometheus follows the same four-tab architecture, inline Configuration flow, technical Validation & Capabilities matrix, Runtime & History presentation, and governed Scope & Resolution workspace. Provider-specific terminology and evidence remain explicit. See `components/INTEGRATION_MANAGE_WORKSPACE.md`.
+Use the shared Integration Manage Workspace for provider instance detail pages. Alertmanager is the reference implementation; Metrics Source follows the same four-tab architecture, inline Configuration flow, technical Validation & Capabilities matrix, Runtime & History presentation, and governed Scope & Resolution workspace. Provider-specific terminology and evidence remain explicit. See `components/INTEGRATION_MANAGE_WORKSPACE.md`.
 
 ## Operational mutation contract
 

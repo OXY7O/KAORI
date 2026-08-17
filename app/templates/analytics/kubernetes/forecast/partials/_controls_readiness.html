@@ -13,10 +13,10 @@
     <input type="hidden" name="tab" value="{{ selected_tab|default('cpu') }}">
     {% call analytics_workspace.controls_readiness(
         'Forecast Controls & Data Readiness',
-        'Set the forecast scope and projection configuration, then verify the committed Prometheus history used by the forecasting worker.',
+        'Set the forecast scope and projection configuration, then verify the committed Metrics Source history used by the forecasting worker.',
         'sliders-horizontal',
         'forecast-refresh-indicator',
-        prometheus_status,
+        metrics_source_status,
         analytics_materialization,
         eyebrow='Resource Forecast'
         ) %}

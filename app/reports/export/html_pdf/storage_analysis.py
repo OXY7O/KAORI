@@ -1114,7 +1114,7 @@ def _source_rows(payload: Mapping[str, Any]) -> tuple[dict[str, str], ...]:
     if result:
         return tuple(result)
     return (
-        {'source': 'Prometheus Observation Cache', 'freshness': 'Not Available', 'last_collected': 'Not Available'},
+        {'source': 'Metrics Source Observation Cache', 'freshness': 'Not Available', 'last_collected': 'Not Available'},
         {'source': 'Kubernetes Storage Inventory', 'freshness': 'Committed', 'last_collected': 'At report cut-off'},
         {'source': 'Storage Analysis Evidence', 'freshness': 'Current', 'last_collected': 'At report cut-off'},
         {'source': 'Forecast Evidence', 'freshness': 'Not Available', 'last_collected': 'Not Available'},

@@ -22,8 +22,8 @@ def test_minio_persistence_uses_provider_neutral_object_storage_asset() -> None:
     assert "down_revision = '20260810_retire_welcome_view'" in migration
     assert "'object_storage_systems'" in migration
     assert "'minio_instances'" in migration
-    assert 'minio_prometheus' not in migration.lower()
-    assert 'prometheus_id' not in model
+    assert 'minio_metrics' not in migration.lower()
+    assert 'IntegrationBinding' not in model
 
 
 def test_minio_registry_contract_is_storage_object_storage() -> None:
@@ -62,21 +62,21 @@ def test_minio_api_plane_uses_s3_sdk_and_encrypted_credentials() -> None:
     assert 'secret_key: Mapped[str] = mapped_column(EncryptedText()' in model
 
 
-def test_minio_prometheus_metrics_plane_reuses_canonical_asset_binding() -> None:
+def test_minio_metrics_source_plane_reuses_canonical_asset_binding() -> None:
     service = read('app/minio/service.py')
     registration = read('app/integrations/minio/__init__.py')
-    prometheus_profiles = read('app/integrations/prometheus/binding_profiles.py')
-    prometheus_catalog = read('app/definitions/catalogs/integrations/prometheus.yaml')
-    object_storage_validator = read('app/integrations/prometheus/binding_validators/object_storage.py')
+    metrics_profiles = read('app/integrations/metrics/binding_profiles.py')
+    metrics_catalog = read('app/definitions/catalogs/integrations/metrics_source.yaml')
+    object_storage_validator = read('app/integrations/metrics/binding_validators/object_storage.py')
     taxonomy_catalog = read('app/definitions/catalogs/integrations/taxonomy.yaml')
 
     assert 'create_source_binding' not in service
     assert 'asset_type: object_storage_system' in taxonomy_catalog
-    assert 'profile_key: object-storage-metrics-v1' in prometheus_catalog
-    assert "integration_provider_document('prometheus')" in prometheus_profiles
+    assert 'profile_key: object-storage-metrics-v1' in metrics_catalog
+    assert "integration_provider_document('metrics_source')" in metrics_profiles
     assert "asset_profile='minio-v2'" in object_storage_validator
-    assert 'ObjectStoragePrometheusProfileAuditor' in object_storage_validator
-    assert 'minio_prometheus' not in service.lower()
+    assert 'ObjectStorageMetricsProfileAuditor' in object_storage_validator
+    assert 'minio_metrics' not in service.lower()
 
     assert 'BindingValidationProfile(' not in registration
     assert 'BindingProbe(' not in registration
@@ -110,14 +110,14 @@ def test_validation_admission_and_runtime_monitoring_are_provider_generic() -> N
 
     assert 'get_integration(provider_type).get_instance(instance_id)' in validation_web
     assert 'model_by_provider' not in validation_web
-    assert 'PrometheusInstance' not in validation_web
+    assert 'MetricsSource' not in validation_web
     assert 'AlertmanagerInstance' not in validation_web
     assert 'KubernetesConnection' not in validation_web
 
     assert 'IntegrationInstance.query.filter(' in monitoring
     assert 'get_integration(identity.provider_type)' in monitoring
     assert 'module.get_record_for_canonical(identity.id)' in monitoring
-    for provider_model in ('PrometheusInstance', 'AlertmanagerInstance', 'KubernetesConnection', 'MinioInstance'):
+    for provider_model in ('MetricsSource', 'AlertmanagerInstance', 'KubernetesConnection', 'MinioInstance'):
         assert provider_model not in monitoring
 
 
@@ -180,5 +180,5 @@ def test_minio_asset_owner_lifecycle_preserves_observability_sources() -> None:
 
     assert 'def delete_minio_instance(' in service
     assert 'asset_owner_deletion_guard(' in service
-    assert 'reusable Prometheus, Thanos Query, or Alertmanager connections remain retained' in scope
+    assert 'reusable Metrics Source or Alertmanager connections remain retained' in scope
     assert 'Inventory & Lifecycle' in detail

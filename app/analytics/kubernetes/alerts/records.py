@@ -41,12 +41,16 @@ _STATUS_ALIASES = {
     '': 'active',
 }
 
-_IDENTITY_IGNORED_LABELS = {
-    '__replica__',
-    'prometheus_replica',
-    'prometheus_replica_name',
-    'alertstate',
-}
+_IDENTITY_IGNORED_LABELS = {'__replica__', 'alertstate'}
+
+
+def _identity_label_is_ignored(value: object) -> bool:
+    label = str(value or '').strip().lower()
+    return (
+        label in _IDENTITY_IGNORED_LABELS
+        or label.endswith('_replica')
+        or label.endswith('_replica_name')
+    )
 
 
 def normalize_severity(value: Any) -> str:
@@ -130,7 +134,7 @@ def normalize_alertmanager_item(item: dict[str, Any]) -> NormalizedAlert:
     }
 
 
-def normalize_prometheus_alert(item: dict[str, Any]) -> NormalizedAlert:
+def normalize_metrics_source_alert(item: dict[str, Any]) -> NormalizedAlert:
     metric = get_metric_labels(item)
     value = item.get('value', [])
     alert_value = str(value[1]) if isinstance(value, list) and len(value) >= 2 else '-'
@@ -144,9 +148,9 @@ def normalize_prometheus_alert(item: dict[str, Any]) -> NormalizedAlert:
         'status': normalize_status(metric.get('alertstate') or 'firing'),
         'namespace': namespace,
         'target': target,
-        'source': 'Prometheus',
+        'source': 'Metrics Source',
         'summary': alert_name,
-        'description': 'Alert loaded from the Prometheus ALERTS metric.',
+        'description': 'Alert loaded from the Metrics Source ALERTS metric.',
         'starts_at': '-',
         'starts_at_display': '-',
         'ends_at': '-',
@@ -173,7 +177,7 @@ def _canonical_labels(labels: Any) -> tuple[tuple[str, str], ...]:
         sorted(
             (str(key), str(value))
             for key, value in labels.items()
-            if str(key).strip().lower() not in _IDENTITY_IGNORED_LABELS
+            if not _identity_label_is_ignored(key)
         )
     )
 

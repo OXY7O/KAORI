@@ -85,7 +85,7 @@ def _notification_category_condition(category: str):
         )
     if category == 'integrations':
         return or_(
-            Notification.event_type.like('prometheus_%'),
+            Notification.event_type.like('metrics_source_%'),
             Notification.event_type.like('alertmanager_%'),
             Notification.event_type.like('cluster_%'),
             Notification.event_type.like('kubernetes_capability_%'),

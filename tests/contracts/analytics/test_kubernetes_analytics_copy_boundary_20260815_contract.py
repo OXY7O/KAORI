@@ -46,5 +46,5 @@ def test_kubernetes_analytics_routes_remain_materialized_readers() -> None:
     combined = '\n'.join(path.read_text(encoding='utf-8') for path in route_files)
 
     assert combined.count("@permission_required('analytics.view')") >= 19
-    for forbidden in ('PrometheusConsumer(', 'PrometheusService(', '.query_range(', '.custom_query('):
+    for forbidden in ('MetricsConsumer(', 'MetricsService(', '.query_range(', '.custom_query('):
         assert forbidden not in combined

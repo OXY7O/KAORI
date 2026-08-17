@@ -77,7 +77,7 @@ Browser request
        └─ committed AnalyticsSnapshot read
 
 Analytics / Forecast worker
-  ├─ Prometheus or Thanos query
+  ├─ Metrics Source query
   ├─ Alertmanager or Prometheus alert fallback
   └─ atomic AnalyticsSnapshot commit
 ```

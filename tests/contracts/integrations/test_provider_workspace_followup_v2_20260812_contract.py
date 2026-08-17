@@ -18,13 +18,13 @@ def test_full_validation_loader_matches_runtime_history_loading_bar_standard() -
 
     providers = {
         'kubernetes': 'app/templates/integrations/kubernetes/partials/_capability_workspace.html',
-        'prometheus': 'app/templates/prometheus/partials/_detail_validation_content.html',
+        'metrics-source': 'app/templates/metrics/partials/_detail_validation_content.html',
         'alertmanager': 'app/templates/alertmanager/partials/_detail_validation_content.html',
         'minio': 'app/templates/minio/partials/_detail_validation.html',
     }
     registries = {
         'kubernetes': 'app/templates/integrations/kubernetes/partials/_capability_registry.html',
-        'prometheus': 'app/templates/prometheus/partials/_capability_registry.html',
+        'metrics-source': 'app/templates/metrics/partials/_capability_registry.html',
         'alertmanager': 'app/templates/alertmanager/partials/_capability_registry.html',
         'minio': 'app/templates/minio/partials/_capability_registry.html',
     }
@@ -41,16 +41,16 @@ def test_full_validation_loader_matches_runtime_history_loading_bar_standard() -
 
 def test_observability_authority_boundary_has_right_side_metadata() -> None:
     operational = read('app/templates/integrations/components/_provider_operational_context.html')
-    prometheus = read('app/templates/prometheus/partials/_detail_configuration.html')
+    metrics_source = read('app/templates/metrics/partials/_detail_configuration.html')
     alertmanager = read('app/templates/alertmanager/partials/_detail_configuration.html')
 
     assert 'data-kaori-authority-boundary-metadata' in operational
-    for source in (prometheus, alertmanager):
+    for source in (metrics_source, alertmanager):
         assert 'operational_metadata=operational_metadata' in source
 
-    assert 'Metrics Authority' in prometheus
-    assert 'Read-Only Query' in prometheus
-    assert 'Prometheus HTTP API' in prometheus
+    assert 'Metrics Authority' in metrics_source
+    assert 'Read-Only Query' in metrics_source
+    assert 'metrics_source_label ~ " Query API"' in metrics_source
     assert 'Alert Routing Authority' in alertmanager
     assert 'Read-Only Discovery' in alertmanager
     assert 'Alertmanager API v2' in alertmanager
@@ -74,7 +74,7 @@ def test_kubernetes_legacy_summary_compacts_existing_persisted_copy() -> None:
 def test_validation_operational_gate_copy_is_compact_for_every_provider() -> None:
     providers = (
         read('app/templates/integrations/kubernetes/partials/_capability_workspace.html'),
-        read('app/templates/prometheus/partials/_detail_validation_content.html'),
+        read('app/templates/metrics/partials/_detail_validation_content.html'),
         read('app/templates/alertmanager/partials/_detail_validation_content.html'),
         read('app/templates/minio/partials/_detail_validation.html'),
     )
@@ -83,7 +83,7 @@ def test_validation_operational_gate_copy_is_compact_for_every_provider() -> Non
     assert 'Resolve required API or RBAC gaps.' in combined
     assert 'Full Validation owns API and RBAC evidence; Runtime Refresh owns live API health.' in combined
     assert 'Revalidate after Kubernetes, API, or RBAC changes.' in combined
-    assert 'Core Prometheus APIs are usable.' in combined
+    assert 'Core Metrics Source APIs are usable.' in combined
     assert 'Core Alertmanager APIs are usable.' in combined
     assert 'Required MinIO S3 contracts are usable.' in combined
 
@@ -101,7 +101,7 @@ def test_validation_operational_gate_copy_is_compact_for_every_provider() -> Non
         ),
         (
             'Full Validation owns MinIO product identity, compatibility, S3 API, and provider capability evidence. '
-            'Runtime Refresh owns current endpoint health. Prometheus and Alertmanager bindings own consumer-specific '
+            'Runtime Refresh owns current endpoint health. Metrics Source and Alertmanager bindings own consumer-specific '
             'evidence.'
         ),
     )

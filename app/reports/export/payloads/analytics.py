@@ -185,7 +185,7 @@ def _collect_inventory_snapshot(report: Report) -> dict[str, Any]:
 
 def _collect_data_freshness(payload: dict[str, Any]) -> dict[str, Any]:
     snapshot = payload.get('snapshot_summary') or {}
-    prometheus = payload.get('prometheus') or {}
+    metrics_source = payload.get('metrics_source') or {}
     alert_detail = payload.get('alert_detail') or {}
     inventory = payload.get('inventory_snapshot') or {}
     inventory_health = inventory.get('health') or {}
@@ -193,12 +193,12 @@ def _collect_data_freshness(payload: dict[str, Any]) -> dict[str, Any]:
     sources = [
         {
             'label': 'Metrics',
-            'source': 'Prometheus Observation Cache',
+            'source': 'Metrics Source Observation Cache',
             'type': 'Metrics Cache',
-            'last_successful': prometheus.get('last_checked_at') or 'Not Available',
-            'freshness': _format_latency(prometheus.get('response_time_ms')),
-            'status': prometheus.get('status_label') or prometheus.get('status') or 'Unknown',
-            'tone': prometheus.get('status_tone') or prometheus.get('status') or 'unknown',
+            'last_successful': metrics_source.get('last_checked_at') or 'Not Available',
+            'freshness': _format_latency(metrics_source.get('response_time_ms')),
+            'status': metrics_source.get('status_label') or metrics_source.get('status') or 'Unknown',
+            'tone': metrics_source.get('status_tone') or metrics_source.get('status') or 'unknown',
         },
         {
             'label': 'Inventory',
@@ -257,7 +257,7 @@ def _collect_data_freshness(payload: dict[str, Any]) -> dict[str, Any]:
     return {
         'sources': sources,
         'issues': issues,
-        'average_latency': _format_latency(prometheus.get('response_time_ms')),
+        'average_latency': _format_latency(metrics_source.get('response_time_ms')),
         'retention_coverage': 'Policy Managed',
     }
 

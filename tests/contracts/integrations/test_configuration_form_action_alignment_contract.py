@@ -1,7 +1,7 @@
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
-PROM = ROOT / 'app/templates/prometheus/partials/_detail_configuration.html'
+PROM = ROOT / 'app/templates/metrics/partials/_detail_configuration.html'
 ALERT = ROOT / 'app/templates/alertmanager/partials/_detail_configuration.html'
 SHARED = ROOT / 'app/templates/integrations/components/_provider_configuration_contract.html'
 

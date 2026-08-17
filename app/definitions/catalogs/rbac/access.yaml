@@ -176,7 +176,7 @@ permissions:
 - key: settings.manage_integrations
   module: integrations
   action: manage_integrations
-  description: Manage Prometheus, Alertmanager, and reporting integrations.
+  description: Manage Metrics Source, Alertmanager, and reporting integrations.
 - key: settings.view_operational_activity
   module: access
   action: view_operational_activity

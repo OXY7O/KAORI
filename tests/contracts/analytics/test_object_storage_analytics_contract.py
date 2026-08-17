@@ -11,19 +11,18 @@ def test_object_storage_analytics_domain_is_metrics_backend_neutral() -> None:
     service = read('app/analytics/object_storage/service.py')
     runtime = read('app/analytics/object_storage/runtime.py')
     resolver = read('app/analytics/object_storage/sources/resolver.py')
-    adapter = read('app/analytics/object_storage/sources/minio_prometheus.py')
+    adapter = read('app/analytics/object_storage/sources/minio_metrics.py')
     contracts = read('app/analytics/shared/metrics/contracts.py')
 
     assert 'MetricsSource' in runtime
     assert 'resolve_object_storage_metrics_source' in runtime
-    assert 'PrometheusConsumer' not in service
-    assert 'PrometheusError' not in service
+    assert 'MetricsConsumer' not in service
+    assert 'MetricsSourceError' not in service
     assert 'query_profiles.prometheus' not in service
     assert '_SOURCE_ADAPTERS' in resolver
-    assert "metrics_provider='prometheus'" in resolver
     assert "asset_profile='minio-v2'" in resolver
-    assert 'MinioPrometheusMetricsSource.supports' in resolver
-    assert 'PrometheusConsumer.for_asset' in adapter
+    assert 'MinioMetricsSourceAdapter.supports' in resolver
+    assert 'MetricsConsumer.for_asset' in adapter
     assert "scope_type='object_storage_system'" in adapter
     assert 'retry_count=0' in adapter
     assert 'class MetricsSource(Protocol)' in contracts
@@ -34,9 +33,9 @@ def test_object_storage_analytics_domain_is_metrics_backend_neutral() -> None:
         assert token not in contracts
 
 
-def test_prometheus_payload_parsing_is_owned_by_adapter_not_domain_service() -> None:
+def test_metrics_adapter_payload_parsing_is_owned_by_adapter_not_domain_service() -> None:
     service = read('app/analytics/object_storage/service.py')
-    adapter = read('app/analytics/object_storage/sources/minio_prometheus.py')
+    adapter = read('app/analytics/object_storage/sources/minio_metrics.py')
 
     assert '_vector_scalar' in adapter
     assert '_vector_by_label' in adapter
@@ -85,17 +84,16 @@ def test_object_storage_analytics_uses_dedicated_rbac_and_sidebar_visibility() -
     assert '_copy_role_assignments' in migration
 
 
-def test_object_storage_alert_sources_are_alertmanager_first_with_prometheus_fallback() -> None:
+def test_object_storage_alert_sources_are_alertmanager_first_with_metrics_source_fallback() -> None:
     source = read('app/analytics/object_storage/alert_sources.py')
     boundary = read('app/templates/analytics/object_storage/partials/_evidence_boundary.html')
     controls = read('app/templates/analytics/object_storage/partials/_controls.html')
 
-    assert "ALERT_SOURCE_OPTIONS = ('auto', 'alertmanager', 'prometheus')" in source
+    assert "ALERT_SOURCE_OPTIONS = ('auto', 'alertmanager', 'metrics_source')" in source
     assert "required_capabilities=('alerts_v2',)" in source
     assert 'scope_type=_OBJECT_STORAGE_SCOPE' in source
-    assert 'Prometheus Fallback Active' in source
-    assert 'apply_promql_scope' in source
-    assert '_PROMETHEUS_ALERTS_QUERY' in source
+    assert 'Metrics Source Fallback Active' in source
+    assert 'ACTIVE_ALERTS_EXPRESSION' in source
     assert 'Automatic · Alertmanager Preferred' in controls
     assert 'Alert Lifecycle & Routing' in boundary
     assert 'Lifecycle Correlation · Deferred' not in boundary
@@ -106,7 +104,7 @@ def test_object_storage_alert_sources_are_alertmanager_first_with_prometheus_fal
 
 def test_metrics_source_transport_failure_is_request_fail_fast() -> None:
     runtime = read('app/analytics/object_storage/runtime.py')
-    adapter = read('app/analytics/object_storage/sources/minio_prometheus.py')
+    adapter = read('app/analytics/object_storage/sources/minio_metrics.py')
 
     assert 'source_wide_failure' in runtime
     assert 'if self.source_wide_failure is not None' in runtime
@@ -114,8 +112,8 @@ def test_metrics_source_transport_failure_is_request_fail_fast() -> None:
     assert 'retry_count=0' in adapter
 
 
-def test_prometheus_transport_capability_ownership_is_provider_core() -> None:
-    resolver = read('app/prometheus/resolver.py')
+def test_metrics_source_transport_capability_ownership_is_provider_core() -> None:
+    resolver = read('app/metrics/resolver.py')
 
     assert 'def _available_technical_capabilities' in resolver
     assert 'provider_payload = instance.capabilities or {}' in resolver
@@ -125,12 +123,12 @@ def test_prometheus_transport_capability_ownership_is_provider_core() -> None:
 
 def test_object_storage_metrics_readiness_is_validation_owned_and_provider_qualified() -> None:
     contracts = read('app/analytics/shared/metrics/contracts.py')
-    adapter = read('app/analytics/object_storage/sources/minio_prometheus.py')
-    binding_profile_catalog = read('app/definitions/catalogs/integrations/prometheus.yaml')
-    binding_validation = read('app/integrations/prometheus/binding_validation.py')
-    validator_registry = read('app/integrations/prometheus/binding_validators/__init__.py')
-    object_storage_validator = read('app/integrations/prometheus/binding_validators/object_storage.py')
-    audit = read('app/integrations/prometheus/query_profiles/object_storage_audit.py')
+    adapter = read('app/analytics/object_storage/sources/minio_metrics.py')
+    binding_profile_catalog = read('app/definitions/catalogs/integrations/metrics_source.yaml')
+    binding_validation = read('app/integrations/metrics/binding_validation.py')
+    validator_registry = read('app/integrations/metrics/binding_validators/__init__.py')
+    object_storage_validator = read('app/integrations/metrics/binding_validators/object_storage.py')
+    audit = read('app/integrations/metrics/query_profiles/object_storage_audit.py')
     readiness_template = read('app/templates/analytics/object_storage/partials/_metrics_readiness.html')
 
     assert 'class MetricsReadinessSnapshot' in contracts
@@ -138,15 +136,15 @@ def test_object_storage_metrics_readiness_is_validation_owned_and_provider_quali
     assert 'def readiness(self) -> MetricsReadinessSnapshot' in adapter
     assert 'profile_key: object-storage-metrics-v1' in binding_profile_catalog
     assert 'validation_strategy: custom' in binding_profile_catalog
-    assert "register_binding_validator('object_storage_system'" in validator_registry
-    assert 'ObjectStoragePrometheusProfileAuditor' in object_storage_validator
+    assert "register_binding_validator(PROMETHEUS_HTTP_ADAPTER, 'object_storage_system'" in validator_registry
+    assert 'ObjectStorageMetricsProfileAuditor' in object_storage_validator
     assert 'return system.minio_connection is not None' in object_storage_validator
     assert "'metrics_readiness': audit" in object_storage_validator
     assert '_VALIDATION_ADAPTERS' in object_storage_validator
     assert "asset_profile='minio-v2'" in object_storage_validator
-    assert 'get_binding_validator(binding.asset_type)' in binding_validation
+    assert 'get_binding_validator(instance.adapter_key, binding.asset_type)' in binding_validation
     assert "profile.profile_key == 'kubernetes-metrics-v1'" not in binding_validation
-    assert 'class ObjectStoragePrometheusProfileAuditor' in audit
+    assert 'class ObjectStorageMetricsProfileAuditor' in audit
     assert 'self.client.series(metrics)' in audit
     assert 'self.client.query(definition.expression)' in audit
     assert 'Operational Metrics Readiness' in readiness_template
@@ -154,8 +152,8 @@ def test_object_storage_metrics_readiness_is_validation_owned_and_provider_quali
 
 
 def test_object_storage_query_profile_classifies_required_recommended_and_optional_evidence() -> None:
-    profile = read('app/integrations/prometheus/query_profiles/object_storage_v1.py')
-    types = read('app/integrations/prometheus/query_profiles/types.py')
+    profile = read('app/integrations/metrics/query_profiles/object_storage_v1.py')
+    types = read('app/integrations/metrics/query_profiles/types.py')
 
     assert "QueryReadinessTier = Literal['required', 'recommended', 'optional']" in types
     assert "readiness_tier: QueryReadinessTier = 'required'" in types
@@ -251,7 +249,7 @@ def test_object_storage_analysis_distinguishes_operational_domains_and_provenanc
     assert 'Alert Reading' in alerts_summary
     assert 'Provider alerts and metric signals are separate' in alerts_summary
     assert 'Active Alert Records' in alert_records
-    assert 'Prometheus fallback uses the scoped ALERTS metric' in alert_records
+    assert 'Metrics Source fallback uses the scoped ALERTS metric' in alert_records
     assert 'Alertmanager Authority' in alert_source_evidence
     assert 'Highest Error Ratio' in consumer_activity
     assert 'Inventory &amp; Operational Reconciliation' in reconciliation
@@ -499,7 +497,7 @@ def test_object_storage_forecast_consumers_and_alerts_use_shared_tab_workspace_c
     assert '_alert_records.html' in alerts_workspace
     assert '_alerts_source_evidence.html' in alerts_workspace
     assert 'clear_filters_action' in alert_records
-    assert 'Prometheus Fallback' in alert_source_evidence
+    assert 'Metrics Source Fallback' in alert_source_evidence
     assert not (ROOT / 'app/templates/analytics/object_storage/partials/_alerts_lifecycle.html').exists()
 
     for retired in ('_summary.html', '_top_consumers_analysis.html', '_alerts.html'):
@@ -507,7 +505,7 @@ def test_object_storage_forecast_consumers_and_alerts_use_shared_tab_workspace_c
 
 
 def test_object_storage_consumer_profile_staleness_is_explicit_and_direct_cutover() -> None:
-    adapter = read('app/analytics/object_storage/sources/minio_prometheus.py')
+    adapter = read('app/analytics/object_storage/sources/minio_metrics.py')
     migration = read('migrations/versions/20260814_object_storage_metrics_profile.py')
 
     assert 'Consumer Validation Stale' in adapter
@@ -518,10 +516,10 @@ def test_object_storage_consumer_profile_staleness_is_explicit_and_direct_cutove
     assert "validation_profile = 'minio-metrics-2024-v1'" in migration
 
 
-def test_prometheus_full_validation_refreshes_enabled_consumer_bindings() -> None:
+def test_metrics_source_full_validation_refreshes_enabled_consumer_bindings() -> None:
     validation_tasks = read('app/integrations/validation/tasks.py')
     integrations_readme = read('app/integrations/README.md')
-    prometheus_readme = read('app/integrations/prometheus/README.md')
+    metrics_source_readme = read('app/integrations/metrics/README.md')
 
     assert "result_payload['binding_validation_summary'] = _refresh_provider_bindings(" in validation_tasks
     assert 'IntegrationBinding.query.filter_by(' in validation_tasks
@@ -529,7 +527,7 @@ def test_prometheus_full_validation_refreshes_enabled_consumer_bindings() -> Non
     assert "'binding.validate'" in validation_tasks
     assert 'Provider Full Validation does not implicitly validate consumer bindings.' not in integrations_readme
     assert 'Provider Full Validation refreshes every enabled consumer binding' in integrations_readme
-    assert 'Full Validation refreshes enabled consumer bindings' in prometheus_readme
+    assert 'Full Validation refreshes enabled consumer bindings' in metrics_source_readme
 
 
 def test_object_storage_forecast_is_worker_materialized_on_forecasting_queue() -> None:
@@ -581,12 +579,12 @@ def test_object_storage_alerts_use_independent_alert_and_metric_evidence_paths()
     evidence = read('app/templates/analytics/object_storage/partials/_alerts_source_evidence.html')
     migration = read('migrations/versions/20260814_object_storage_alert_profile.py')
 
-    assert "ALERT_SOURCE_OPTIONS = ('auto', 'alertmanager', 'prometheus')" in sources
+    assert "ALERT_SOURCE_OPTIONS = ('auto', 'alertmanager', 'metrics_source')" in sources
     assert "selected_source == 'alertmanager'" in sources
-    assert "selected_source == 'prometheus'" in sources
+    assert "selected_source == 'metrics_source'" in sources
     assert "alertmanager = _load_alertmanager(system, selected_source='auto')" in sources
-    assert "prometheus = _load_prometheus(system, selected_source='auto')" in sources
-    assert 'Prometheus Fallback Active' in sources
+    assert "metrics_source = _load_metrics_source(system, selected_source='auto')" in sources
+    assert 'Metrics Source Fallback Active' in sources
     assert 'Consumer Validation Stale' in sources
     assert "context['alerts_evidence_available']" in service
     assert "context['alerts_degraded']" in service
@@ -597,6 +595,6 @@ def test_object_storage_alerts_use_independent_alert_and_metric_evidence_paths()
     assert 'Silenced' in records
     assert 'Inhibited' in records
     assert 'Alertmanager Authority' in evidence
-    assert 'Prometheus Fallback' in evidence
+    assert 'Metrics Source Fallback' in evidence
     assert "validation_profile = 'object-storage-alerts-v1'" in migration
     assert "validation_status = 'validation_required'" in migration

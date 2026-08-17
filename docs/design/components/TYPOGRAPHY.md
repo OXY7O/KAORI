@@ -276,7 +276,7 @@ Sentence case remains correct for explanatory prose, helper text, descriptions, 
 
 ## Integrations Semantic Label Contract
 
-All user-facing semantic labels inside Integrations Overview, Kubernetes, Prometheus, and Alertmanager use Title Case. This includes headings, form labels, filter labels, table headers, compact information titles, and Info Flow titles.
+All user-facing semantic labels inside Integrations Overview, Kubernetes, Metrics Source, and Alertmanager use Title Case. This includes headings, form labels, filter labels, table headers, compact information titles, and Info Flow titles.
 
 Examples:
 

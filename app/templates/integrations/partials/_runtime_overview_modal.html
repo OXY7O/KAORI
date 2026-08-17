@@ -5,9 +5,9 @@
 {% if detail.provider == 'kubernetes' %}
     {% set workspace_url = url_for('integrations.kubernetes_detail', cluster_id=detail.cluster_id) %}
     {% set workspace_label = "Open Kubernetes Integration" %}
-{% elif detail.provider == 'prometheus' %}
-    {% set workspace_url = url_for('prometheus.instance_detail', instance_id=detail.instance_id) %}
-    {% set workspace_label = "Open Prometheus Integration" %}
+{% elif detail.provider == 'metrics_source' %}
+    {% set workspace_url = url_for('metrics.instance_detail', instance_id=detail.instance_id) %}
+    {% set workspace_label = "Open Metrics Source" %}
 {% else %}
     {% set workspace_url = url_for('alertmanager.instance_detail', instance_id=detail.instance_id) %}
     {% set workspace_label = "Open Alertmanager Integration" %}

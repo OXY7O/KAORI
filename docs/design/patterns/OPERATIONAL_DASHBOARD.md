@@ -59,7 +59,7 @@ The Hero establishes identity and readiness. The Operational Signal Overview own
 ## Data-boundary contract
 
 - Web requests read committed database rows and worker snapshots only.
-- Web requests must not query Kubernetes, Prometheus, Alertmanager, S3, or another provider directly.
+- Web requests must not query Kubernetes API, Metrics Source, Alertmanager, Object Storage API, or another provider directly.
 - Missing, pending, failed, stale, or expired snapshots are rendered explicitly.
 - All-cluster mode may summarize inventory and per-cluster evidence.
 - Detailed capacity, forecast, consumer, and alert signals require a selected cluster.
@@ -133,7 +133,7 @@ Do not use:
 - Internal naming must distinguish selected database scope from actual live/provider state.
 - The overview shell does not read analytics snapshots; heavy evidence loads through lazy sections.
 - Cluster Health paginates before inventory and committed-snapshot reads, so work is bounded to the visible page (`5/10/25/50`) rather than the complete cluster fleet.
-- Empty snapshot messaging must describe committed worker evidence; wording such as `Prometheus returned ...` is prohibited in the web presentation because it implies a direct request-time provider call.
+- Empty snapshot messaging must describe committed worker evidence; wording such as `the metrics provider returned ...` is prohibited in the web presentation because it implies a direct request-time provider call.
 
 ## Layered release evidence
 

@@ -55,7 +55,7 @@ class AnalyticsDataset:
     snapshot_parameter_keys: tuple[str, ...] = ()
     required_binding_capabilities: tuple[str, ...] = ()
     required_capabilities: tuple[str, ...] = ()
-    source_kind: str = 'prometheus'
+    source_kind: str = 'metrics_source'
     execution_priority: int = 100
     task_budget_seconds: int = 180
 
@@ -71,8 +71,8 @@ def _dataset_from_definition(raw: Mapping[str, Any], path: str) -> AnalyticsData
     for index, item in enumerate(default_parameters_raw):
         mapping = require_mapping(item, f'{path}.default_parameters[{index}]')
         default_parameters.append({str(key): str(value) for key, value in mapping.items()})
-    source_kind = str(raw.get('source_kind') or 'prometheus').strip()
-    if source_kind not in {'prometheus', 'alert'}:
+    source_kind = str(raw.get('source_kind') or 'metrics_source').strip()
+    if source_kind not in {'metrics_source', 'alert'}:
         raise DefinitionError(f'{path}.source_kind is unsupported: {source_kind!r}.')
     return AnalyticsDataset(
         key=require_str(raw, 'key', path),
@@ -133,7 +133,7 @@ def source_binding_capabilities(dataset_key: str) -> tuple[str, ...]:
     """
 
     dataset = get_dataset(dataset_key)
-    if dataset.source_kind == 'prometheus':
+    if dataset.source_kind == 'metrics_source':
         return ('metrics',)
     return dataset.required_binding_capabilities
 

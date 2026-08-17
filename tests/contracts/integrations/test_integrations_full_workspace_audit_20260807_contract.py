@@ -39,7 +39,7 @@ def test_runtime_observation_details_use_one_shared_native_dialog() -> None:
 
 
 def test_provider_bound_scope_tables_are_full_width_before_decision_split() -> None:
-    for provider in ('prometheus', 'alertmanager'):
+    for provider in ('metrics', 'alertmanager'):
         scope = read(f'app/templates/{provider}/partials/_detail_scope.html')
         registry = read(f'app/templates/{provider}/partials/_binding_registry.html')
         include_marker = scope.index(f'include "{provider}/partials/_binding_registry.html"')
@@ -48,7 +48,7 @@ def test_provider_bound_scope_tables_are_full_width_before_decision_split() -> N
         assert 'data-kaori-bound-scopes-full-width' in registry
         assert 'table_ui.table_classes(' in registry
 
-    assert 'Consumer Bindings' in read('app/templates/prometheus/partials/_detail_scope.html')
+    assert 'Consumer Bindings' in read('app/templates/metrics/partials/_detail_scope.html')
     assert 'Consumer Binding Registry' in read('app/templates/alertmanager/partials/_binding_registry.html')
 
 
@@ -88,7 +88,7 @@ def test_operational_toast_countdown_has_visible_htmx_safe_animation() -> None:
 def test_integration_templates_do_not_use_inline_dom_handlers() -> None:
     roots = (
         ROOT / 'app/templates/integrations',
-        ROOT / 'app/templates/prometheus',
+        ROOT / 'app/templates/metrics',
         ROOT / 'app/templates/alertmanager',
     )
     offenders: list[str] = []

@@ -51,7 +51,7 @@ def build_resource_utilization_presentation(
     cluster = _mapping(payload.get('cluster'))
     cluster_info = _mapping(payload.get('cluster_info'))
     risk = _mapping(payload.get('risk_assessment'))
-    prometheus_status = _mapping(payload.get('prometheus_status'))
+    metrics_source_status = _mapping(payload.get('metrics_source_status'))
     trends = _mapping(payload.get('trends'))
     forecast_payload = _mapping(payload.get('forecast_payload'))
 
@@ -145,10 +145,10 @@ def build_resource_utilization_presentation(
         cpu_consumers=cpu_consumers,
         memory_projection=memory_projection,
         forecast_available=bool(forecast_items),
-        prometheus_status=prometheus_status,
+        metrics_source_status=metrics_source_status,
     )
 
-    source_rows = _source_rows(payload, prometheus_status, forecast_payload, period_label)
+    source_rows = _source_rows(payload, metrics_source_status, forecast_payload, period_label)
     methodology = {
         'metrics': (
             _metric(
@@ -592,7 +592,7 @@ def _consumer_rows(items: list[Any], *, resource: str) -> list[dict[str, Any]]:
 def _memory_value_gib(value: float) -> float:
     """Normalize consumer memory to GiB without double-converting GiB input.
 
-    Prometheus top-consumer payloads historically exposed raw bytes while some
+    Metrics Source top-consumer payloads historically exposed raw bytes while some
     fixtures and materialized payloads already expose GiB. Values above one
     MiB are treated as bytes; smaller values are preserved as GiB.
     """
@@ -1103,7 +1103,7 @@ def _recommendations(
     cpu_consumers: list[dict[str, Any]],
     memory_projection: float | None,
     forecast_available: bool,
-    prometheus_status: Mapping[str, Any],
+    metrics_source_status: Mapping[str, Any],
 ) -> dict[str, Any]:
     items = [
         {
@@ -1166,8 +1166,8 @@ def _recommendations(
             'title': 'Maintain Utilization Dataset Coverage',
             'owner': 'Observability Owner',
             'target': 'This Month',
-            'status': 'Current' if _prometheus_ready(prometheus_status) else 'Open',
-            'tone': 'normal' if _prometheus_ready(prometheus_status) else 'warning',
+            'status': 'Current' if _metrics_source_ready(metrics_source_status) else 'Open',
+            'tone': 'normal' if _metrics_source_ready(metrics_source_status) else 'warning',
             'description': (
                 'Maintain committed metric and forecast evidence coverage.'
                 if forecast_available
@@ -1198,7 +1198,7 @@ def _recommendations(
 
 def _source_rows(
     payload: Mapping[str, Any],
-    prometheus_status: Mapping[str, Any],
+    metrics_source_status: Mapping[str, Any],
     forecast_payload: Mapping[str, Any],
     period_label: str,
 ) -> list[dict[str, str]]:
@@ -1219,9 +1219,9 @@ def _source_rows(
 
     rows.append(
         {
-            'source': 'Prometheus Observation Cache',
-            'freshness': _latency(prometheus_status.get('response_time_ms')),
-            'last_collected': _format_datetime(prometheus_status.get('last_checked_at')),
+            'source': 'Metrics Source Observation Cache',
+            'freshness': _latency(metrics_source_status.get('response_time_ms')),
+            'last_collected': _format_datetime(metrics_source_status.get('last_checked_at')),
         }
     )
     rows.append(
@@ -1263,7 +1263,7 @@ def _latency(value: Any) -> str:
         return 'Not Available'
 
 
-def _prometheus_ready(status: Mapping[str, Any]) -> bool:
+def _metrics_source_ready(status: Mapping[str, Any]) -> bool:
     label = str(status.get('status') or status.get('status_label') or '').lower()
     return bool(status.get('connected')) or any(
         token in label for token in ('ready', 'connected', 'healthy', 'query ready')

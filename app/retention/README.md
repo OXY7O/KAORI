@@ -6,7 +6,7 @@ This package provides the shared archive-first lifecycle used by **Platform Oper
 
 - `operational_activity`: canonical Activity Audit records plus persistent user Notification Center rows from the shared `notifications` table; transient toasts are excluded because they are not persisted.
 - `job_execution`: terminal canonical worker executions and subscriber snapshots.
-- `runtime_observation`: append-only Recent Runtime Observations for Kubernetes, MinIO Object Storage, Prometheus/Thanos, Alertmanager, and future providers using the shared `IntegrationRuntimeObservation` model.
+- `runtime_observation`: append-only Recent Runtime Observations for Kubernetes, MinIO Object Storage, Metrics Source, Alertmanager, and future providers using the shared `IntegrationRuntimeObservation` model.
 - `analytics_snapshot`: reusable Analytics/Forecast materialization rows from `analytics_snapshots`; pending or still-serveable snapshots remain protected until stale grace and hot retention have both elapsed.
 - `generated_report`: terminal Generated Reports metadata from `reports`; Ready and Archived rows archive their binary PDF/XLSX/CSV evidence with SHA-256 verification before source cleanup, while active generation remains protected.
 
@@ -86,7 +86,7 @@ Restore/import remains an administrative capability and must include duplicate p
 
 ## Runtime observation lifecycle
 
-`integration_runtime_observations` is an active `runtime_observation` lifecycle domain. Kubernetes, MinIO Object Storage, Prometheus/Thanos, and Alertmanager Recent Runtime Observations all persist into this provider-neutral model, so one lifecycle policy covers the current integration families without provider-specific cleanup jobs. Runtime writes are append-only and no longer delete older rows through a per-connection rolling limit. Hot retention, archive verification, and cleanup are controlled centrally from **Platform Operations → Data Lifecycle**. The default policy keeps 90 days in PostgreSQL, retains verified archives for 365 days, and schedules the domain separately from Activity Audit and JobExecution.
+`integration_runtime_observations` is an active `runtime_observation` lifecycle domain. Kubernetes, MinIO Object Storage, Metrics Source, and Alertmanager Recent Runtime Observations all persist into this provider-neutral model, so one lifecycle policy covers the current integration families without provider-specific cleanup jobs. Runtime writes are append-only and no longer delete older rows through a per-connection rolling limit. Hot retention, archive verification, and cleanup are controlled centrally from **Platform Operations → Data Lifecycle**. The default policy keeps 90 days in PostgreSQL, retains verified archives for 365 days, and schedules the domain separately from Activity Audit and JobExecution.
 
 ## Operational activity lifecycle
 

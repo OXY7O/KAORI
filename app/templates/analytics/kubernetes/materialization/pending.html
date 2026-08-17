@@ -17,7 +17,7 @@
                     <div class="{{ page_hero.context_panel_classes() }}">
                         {{ page_hero.context_header('Shared Analytics Snapshot', 'Background Preparation', 'database-zap') }}
                         <div class="{{ page_hero.context_panel_metrics_classes() }}">
-                            {{ page_hero.context_metric('server-cog', 'Cluster', materialization_cluster.name if materialization_cluster else 'Not Selected', 'Prometheus source scope') }}
+                            {{ page_hero.context_metric('server-cog', 'Cluster', materialization_cluster.name if materialization_cluster else 'Not Selected', 'Metrics Source source scope') }}
                             {{ page_hero.context_metric('cpu', 'Execution', 'Worker', 'No heavy web request') }}
                         </div>
                     </div>

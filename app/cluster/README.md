@@ -9,4 +9,4 @@ Cluster Management owns Kubernetes API connectivity, runtime identity, lifecycle
 
 KAORI intentionally does not create one profile per Kubernetes minor release. The API contract stays readable and stable, while lifecycle and removed/deprecated API checks are maintained separately.
 
-Kubernetes compatibility is consumed by Inventory, Operations, and Governance. Prometheus and Alertmanager compatibility remain in the Integrations domain.
+Kubernetes compatibility is consumed by Inventory, Operations, and Governance. Metrics Source and Alertmanager compatibility remain in the Integrations domain.

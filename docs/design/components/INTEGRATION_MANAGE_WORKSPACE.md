@@ -2,11 +2,11 @@
 
 ## Purpose
 
-The Integration Manage Workspace is the shared KAORI structure for managing one registered provider connection. Alertmanager is the reference implementation. Prometheus must use the same information architecture, visual hierarchy, interaction model, and technical evidence depth while preserving metrics-specific terminology.
+The Integration Manage Workspace is the shared KAORI structure for managing one registered provider connection. Alertmanager is the reference implementation. Metrics Source must use the same information architecture, visual hierarchy, interaction model, and technical evidence depth while preserving metrics-specific terminology.
 
 ## Provider registration contract
 
-Before a reusable provider connection enters the manage workspace, the registration page follows one shared Prometheus and Alertmanager contract:
+Before a reusable provider connection enters the manage workspace, the registration page follows one shared Metrics Source and Alertmanager contract:
 
 1. Define the canonical connection identity and connection contract.
 2. Run a successful Test Connection against the submitted endpoint and access settings.
@@ -69,7 +69,7 @@ Validation must expose more than a readiness label. The technical matrix provide
 
 The capability catalog remains visible before the first validation and uses `Not Observed` state rather than disappearing.
 
-Provider capability probes are evidence expressions, not necessarily executable shell commands. Prometheus and Alertmanager render the probe label as normal KAORI content and place the expression value on a Violet soft surface without a copy action. Kubernetes RBAC probes may retain the terminal/copy treatment only when the displayed value is a complete CLI command that can be executed directly.
+Provider capability probes are evidence expressions, not necessarily executable shell commands. Metrics Source and Alertmanager render the probe label as normal KAORI content and place the expression value on a Violet soft surface without a copy action. Kubernetes RBAC probes may retain the terminal/copy treatment only when the displayed value is a complete CLI command that can be executed directly.
 
 Dependent operational-domain readiness is shown separately from provider capability evidence. Full Validation is the authoritative action that rebuilds this contract. It must enqueue a dedicated Celery validation job, return the workspace immediately, display the standard loading bar under the block header, disable duplicate actions, and poll the task-specific partial through HTMX until completion.
 
@@ -118,7 +118,7 @@ Resolution detail must show why a candidate was selected, eligible, or skipped. 
 Shared structure does not mean identical copy. Provider-specific technical contracts remain explicit:
 
 - Alertmanager: API availability, alerts, silences, status, routing-related evidence, and alert-source resolution.
-- Prometheus: provider-neutral instant/range query, series/label discovery, and compatibility at provider level; Kubernetes, MinIO, and future metrics/PromQL contracts plus source resolution are binding-scoped.
+- Metrics Source: provider-neutral registration, runtime, and binding ownership; adapter/query-specific transport evidence stays behind the selected backend adapter, while Kubernetes, Object Storage, and future consumer contracts remain binding-scoped.
 
 The provider remains authoritative for execution. KAORI provides validation, governance, historical evidence, and controlled source resolution.
 
@@ -150,7 +150,7 @@ The provider remains authoritative for execution. KAORI provides validation, gov
 
 ## Kubernetes provider parity
 
-Kubernetes uses the same manage-workspace hierarchy as Alertmanager and Prometheus, with provider-specific lifecycle terminology:
+Kubernetes uses the same manage-workspace hierarchy as Alertmanager and Metrics Source, with provider-specific lifecycle terminology:
 
 1. **Configuration** — canonical cluster identity, API endpoint, transport trust, access boundary, and authority contract.
 2. **Validation & Capabilities** — served API discovery, effective RBAC, stable API selection, legacy fallbacks, blocked features, CLI verification, and remediation.
@@ -171,7 +171,7 @@ Capability Technical Detail separates explanation from executable evidence:
 
 ## Shared runtime-history component
 
-Prometheus, Alertmanager, and Kubernetes include one Recent Runtime Observations component directly. Each owning workspace supplies the provider label, route, loading ID, and runtime-history context; provider-local wrapper templates are prohibited. The shared component owns:
+Metrics Source, Alertmanager, and Kubernetes include one Recent Runtime Observations component directly. Each owning workspace supplies the provider label, route, loading ID, and runtime-history context; provider-local wrapper templates are prohibited. The shared component owns:
 
 - title box and a `Manage Lifecycle` button when the user can view Data Lifecycle;
 - summary metrics;
@@ -195,7 +195,7 @@ For Kubernetes specifically, a legacy Kubernetes release can keep stable API cap
 
 ## Filesystem Analytics Contract
 
-The Prometheus Storage Filesystem Contract requires a complete capacity-and-availability pair for either `/var` or `/`:
+The Metrics Source Storage Filesystem Contract requires a complete capacity-and-availability pair for either `/var` or `/`:
 
 - `node_filesystem_size_bytes`
 - `node_filesystem_avail_bytes`
@@ -207,8 +207,8 @@ A size series alone proves filesystem capacity collection but cannot calculate u
 
 Provider deletion is a dependency-aware lifecycle operation, not a raw row delete.
 
-- Prometheus and Alertmanager require all canonical scope bindings to be removed first.
-- Kubernetes removes only bindings that target the deleted cluster; reusable Prometheus and Alertmanager source instances remain intact.
+- Metrics Source and Alertmanager require all canonical scope bindings to be removed first.
+- Kubernetes removes only bindings that target the deleted cluster; reusable Metrics Source and Alertmanager source instances remain intact.
 - Active validation, runtime, analytics, forecasting, or maintenance jobs block deletion while they still reference the provider or Kubernetes scope.
 - Kubernetes deletion is also blocked while Protected Secret Reveal requests remain `pending` or `approved`.
 - Generated reports and schedules are detached and retained. Runtime observations, canonical JobExecution history, and Activity Audit evidence remain available under their own lifecycle policies.
@@ -220,7 +220,7 @@ The Kubernetes lifecycle workspace uses one full-width information block before 
 
 - compact inventory, capability, binding, and reporting metrics;
 - the KAORI domains that consume the connection;
-- the effective Prometheus and Alertmanager source bindings;
+- the effective Metrics Source and Alertmanager source bindings;
 - the exact data removed with the registration;
 - the historical and reusable records retained after deletion.
 
@@ -228,11 +228,11 @@ The destructive control remains in a separate `Connection Lifecycle` block so op
 
 ## Technical Check Presentation
 
-Prometheus and Alertmanager expose executable provider expressions inside expandable **Technical Checks**. Kubernetes follows the same disclosure pattern and provides a runnable `kubectl` shell script that verifies API serving, resource discovery, effective RBAC, and a bounded live read. Explanatory evidence remains normal KAORI typography; only runnable queries, requests, or scripts use monospace and Copy.
+Metrics Source and Alertmanager expose executable provider expressions inside expandable **Technical Checks**. Kubernetes follows the same disclosure pattern and provides a runnable `kubectl` shell script that verifies API serving, resource discovery, effective RBAC, and a bounded live read. Explanatory evidence remains normal KAORI typography; only runnable queries, requests, or scripts use monospace and Copy.
 
 ### Operational Domain Readiness Interpretation
 
-The Prometheus Analytics Readiness workspace must explain the difference between an individual Technical Check and a complete consumer contract directly inside Operational Domain Readiness.
+The Metrics Source Analytics Readiness workspace must explain the difference between an individual Technical Check and a complete consumer contract directly inside Operational Domain Readiness.
 
 - A successful Technical Check proves only that one registered PromQL query executed.
 - Domain readiness additionally requires the complete metric, label, identity, and pairing contract consumed by the Analytics module.

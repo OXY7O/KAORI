@@ -2,18 +2,19 @@ from __future__ import annotations
 
 from typing import Any
 
+from app.integrations.metrics.providers import provider_definition
 from app.integrations.readiness import resolve_binding_operational_status
 from app.integrations.registry import get_integration
 from app.models.integration import IntegrationBinding, IntegrationInstance
 
-_OBSERVABILITY_PROVIDER_TYPES = ('prometheus', 'alertmanager')
+_OBSERVABILITY_PROVIDER_TYPES = ('metrics_source', 'alertmanager')
 
 
 def build_bound_observability_source_rows(*, asset_type: str, asset_key: str) -> list[dict[str, Any]]:
     """Project reusable observability sources bound to one asset-owner resource.
 
     Asset-owner pages consume this read-only projection. Binding mutation remains
-    source-owned in Prometheus/Alertmanager workspaces.
+    source-owned in Metrics Source and Alertmanager workspaces.
     """
     bindings = (
         IntegrationBinding.query.join(IntegrationInstance)
@@ -66,12 +67,14 @@ def _source_presentation(
     provider_icon: str,
     source: object | None,
 ) -> tuple[str, str]:
-    if canonical.provider_type != 'prometheus':
+    if canonical.provider_type != 'metrics_source':
         return provider_label, provider_icon
-    metadata = canonical.metadata_json or {}
-    source_type = str(
-        getattr(source, 'source_type', None) or metadata.get('metrics_source_type') or 'prometheus'
+    provider_key = str(
+        getattr(source, 'provider_key', None)
+        or (canonical.metadata_json or {}).get('metrics_provider_key')
+        or ''
     ).strip().lower()
-    if source_type == 'thanos':
-        return 'Thanos Query', 'database-zap'
-    return 'Prometheus', provider_icon
+    if not provider_key:
+        return 'Metrics Source', provider_icon
+    definition = provider_definition(provider_key)
+    return definition.label, definition.icon

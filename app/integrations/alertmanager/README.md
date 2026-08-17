@@ -48,7 +48,7 @@ currently active, a valid selector may still be Ready while payload-label
 evidence remains unobserved. When representative alerts are active, required
 payload evidence is validated and may degrade only that binding.
 
-Alert rules themselves are normally evaluated upstream by Prometheus or another
+Alert rules themselves are normally evaluated upstream by a metrics/rule engine or another
 rule engine. Alertmanager remains authoritative for grouping, inhibition,
 routing, silences, and delivery. KAORI consumes the resulting alert stream
 through governed bindings; it does not infer Alertmanager provider readiness

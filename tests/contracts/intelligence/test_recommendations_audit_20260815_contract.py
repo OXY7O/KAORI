@@ -59,7 +59,7 @@ def test_recommendations_remain_committed_evidence_read_side_and_governed_action
     detail = read('app/templates/intelligence/partials/_recommendation_detail_content.html')
 
     forbidden = (
-        'PrometheusConsumer(',
+        'MetricsConsumer(',
         'MinioClient(',
         'requests.get(',
         'requests.post(',

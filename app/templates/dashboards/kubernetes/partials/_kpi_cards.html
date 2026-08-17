@@ -4,7 +4,7 @@
      aria-live="polite">
     {% for kpi in dashboard.global_kpis %}
         {% if kpi.label in ['CPU Usage', 'Memory Usage'] %}
-            {% set source_label = "Prometheus" %}
+            {% set source_label = "Metrics Source" %}
         {% elif kpi.label == 'Active Alerts' %}
             {% set source_label = "Alert Signals" %}
         {% else %}

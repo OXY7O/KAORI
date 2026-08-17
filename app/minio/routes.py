@@ -128,7 +128,7 @@ def new_instance() -> ResponseReturnValue:
                         status='success',
                         title='MinIO Connection Registered',
                         message=f'{instance.name} is registered as a reusable MinIO Object Storage connection.',
-                        detail='Run Core Validation, then add Prometheus or Thanos Query metrics and Alertmanager alert consumer bindings only when required.',
+                        detail='Run Core Validation, then add Metrics Source and Alertmanager consumer bindings only when required.',
                         action_url=url_for('minio.instance_detail', instance_id=instance.id),
                     )
                     return redirect(url_for('minio.instance_detail', instance_id=instance.id))
@@ -514,7 +514,7 @@ def delete_instance(instance_id: int) -> ResponseReturnValue:
         message=f'{instance_name} and its object-storage asset were removed from KAORI.',
         detail=(
             f'Removed {summary["asset_bindings"]} asset-scoped binding(s) for {asset_name}. '
-            'Reusable Prometheus, Thanos Query, and Alertmanager source connections remain registered; runtime history and Activity Audit evidence are retained.'
+            'Reusable Metrics Source and Alertmanager source connections remain registered; runtime history and Activity Audit evidence are retained.'
         ),
         action_url=url_for('minio.index', tab='registry'),
         action_label='Open MinIO Registry',

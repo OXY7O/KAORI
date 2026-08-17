@@ -11,7 +11,7 @@ Current tabs:
 - `time-locale`: automatic browser timezone or a fixed IANA timezone.
 - `regional-format`: regional locale, date format, and 12/24-hour time format.
 - `system-information`: safe KAORI release identity, curated release highlights, and the capabilities shipped with the deployed version.
-- `compatibility-versions`: minimum compatible and recommended Kubernetes, Prometheus, Alertmanager, and Thanos Query baselines derived from the canonical integration compatibility policy.
+- `compatibility-versions`: minimum compatible and recommended Kubernetes, Metrics Source provider, and Alertmanager baselines derived from the canonical integration compatibility policy.
 
 The former standalone `/settings/time-locale` and `/settings/system-info` pages have been removed. General Settings is the canonical location for personal presentation preferences and safe release information.
 
@@ -40,7 +40,7 @@ The former standalone `/settings/time-locale` and `/settings/system-info` pages 
 - Automatic timezone mode synchronizes the browser IANA timezone through `settings.sync_browser_timezone` when the application opens.
 - Server-rendered timestamps must use the Jinja filters `user_datetime`, `user_date`, or `user_time`; templates must not call `strftime()` directly.
 - Relative ages such as `3h`, `12d`, and certificate days remaining are timezone independent.
-- Explicit execution timezones remain authoritative for report schedules and external systems. A display preference must not rewrite schedule definitions, Kubernetes timestamps, Prometheus data, LDAP data, or OAuth provider clocks.
+- Explicit execution timezones remain authoritative for report schedules and external systems. A display preference must not rewrite schedule definitions, Kubernetes timestamps, Metrics Source data, LDAP data, or OAuth provider clocks.
 
 ## System Information contract
 

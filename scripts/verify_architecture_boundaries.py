@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 _PROVIDER_DOMAIN_BOUNDARIES = {
-    'prometheus': 'app.prometheus',
+    'metrics': 'app.metrics',
     'alertmanager': 'app.alertmanager',
 }
 
@@ -33,10 +33,10 @@ _RETIRED_PYTHON_MODULES = {
     'app.integrations.kubernetes.discovery',
     'app.integrations.kubernetes.inventory',
     'app.integrations.kubernetes.schemas',
-    'app.integrations.prometheus.evidence',
-    'app.integrations.prometheus.queries',
-    'app.integrations.prometheus.schemas',
-    'app.integrations.prometheus.validation',
+    'app.integrations.metrics.evidence',
+    'app.integrations.metrics.queries',
+    'app.integrations.metrics.schemas',
+    'app.integrations.metrics.validation',
     'app.integrations.runtime.contracts',
     'app.integrations.runtime.dispatcher',
     'app.integrations.runtime.service',
@@ -45,7 +45,7 @@ _RETIRED_PYTHON_MODULES = {
     'app.jobs.resource_limits',
     'app.inventory.kubernetes.collector',
     'app.inventory.kubernetes.service',
-    'app.prometheus.binding_contract',
+    'app.metrics.binding_contract',
     'app.reports.storage.base',
     'app.users.lifecycle',
     'app.utils.formatters',

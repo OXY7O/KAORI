@@ -7,7 +7,7 @@ from app.analytics.kubernetes.top_consumers.service import TopConsumersService
 from app.analytics.kubernetes.utilization.service import UtilizationService
 from app.cluster.constants import get_environment_label
 from app.models.report import Report
-from app.prometheus.service import PrometheusService
+from app.metrics.service import MetricsService
 from app.reports.export.payloads.common import get_report_selected_cluster, report_payload_error
 
 
@@ -18,19 +18,19 @@ def get_report_top_consumers_payload(
     try:
         cluster = get_report_selected_cluster(report)
 
-        prometheus = PrometheusService(
+        metrics_source = MetricsService(
             cluster,
         )
 
         utilization_service = UtilizationService(
-            prometheus,
+            metrics_source,
         )
 
         top_consumers_service = TopConsumersService(
             utilization_service,
         )
 
-        prometheus_status = top_consumers_service.get_prometheus_status()
+        metrics_source_status = top_consumers_service.get_metrics_source_status()
 
         selected_namespace = report.namespace or ''
         consumer_payload = top_consumers_service.get_top_consumers_payload(
@@ -75,7 +75,7 @@ def get_report_top_consumers_payload(
             },
             'selected_namespace': selected_namespace or 'All Namespaces',
             'selected_time_range': 'current',
-            'prometheus_status': prometheus_status,
+            'metrics_source_status': metrics_source_status,
             'namespace_options': namespace_options,
             'consumer_payload': consumer_payload,
         }

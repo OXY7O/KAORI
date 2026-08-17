@@ -172,7 +172,7 @@ def build_workload_analysis_presentation(
                 'Configuration changes, maintenance windows, and rollout approval not represented by evidence.',
             ),
             'limitations': (
-                'Workload and pod counts inherit the selected Prometheus and report scope.',
+                'Workload and pod counts inherit the selected Metrics Source and report scope.',
                 'Quota absence and quota collection failure require separate operational validation.',
                 'Validate every recommendation against live state before remediation.',
             ),
@@ -845,11 +845,11 @@ def _source_rows(
     if rows:
         return tuple(rows[:4])
 
-    status = _mapping(payload.get('prometheus_status'))
+    status = _mapping(payload.get('metrics_source_status'))
     response = status.get('response_time_ms') or status.get('response_time')
     freshness = f'{_float(response):.0f} ms' if response is not None and _float(response) > 0 else 'Committed'
     return (
-        {'source': 'Prometheus Workload Evidence', 'freshness': freshness, 'last_collected': 'At report cut-off'},
+        {'source': 'Metrics Source Workload Evidence', 'freshness': freshness, 'last_collected': 'At report cut-off'},
         {
             'source': 'Tenant Quota Analysis',
             'freshness': 'Committed' if quota['available'] else 'Not Available',

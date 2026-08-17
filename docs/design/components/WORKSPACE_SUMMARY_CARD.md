@@ -66,9 +66,9 @@ Every row uses the same Violet surface because its cards are peer summaries.
 - No local hierarchy created through mixed card colors.
 - No action, metric, status, list, or expandable content.
 
-## Prometheus reference rows
+## Metrics Source reference rows
 
-Prometheus Instance Manage and cluster-bound Prometheus Configuration use the same peer-level summary treatment:
+Metrics Source Instance Manage and cluster-bound Metrics Source Configuration use the same peer-level summary treatment:
 
 ```text
 Configuration
@@ -94,4 +94,4 @@ Scope
 
 All cards in one row use the same Violet treatment. Lifecycle warnings and destructive actions remain separate semantic panels.
 
-The Configuration, Validation, and Runtime tabs of Alertmanager and Prometheus use identical three-card summary rows.
+The Configuration, Validation, and Runtime tabs of Alertmanager and Metrics Source use identical three-card summary rows.

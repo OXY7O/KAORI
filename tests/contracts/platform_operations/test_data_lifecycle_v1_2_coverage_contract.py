@@ -11,7 +11,7 @@ def test_runtime_observations_share_one_provider_neutral_lifecycle() -> None:
     domain = read('app/retention/domains/runtime_observation.py')
     presentation = read('app/retention/presentation.py')
     shared_history = read('app/templates/integrations/partials/_runtime_history.html')
-    prometheus = read('app/templates/prometheus/partials/_runtime_history.html')
+    metrics_source = read('app/templates/metrics/partials/_runtime_history.html')
     alertmanager = read('app/templates/alertmanager/partials/_runtime_history.html')
     kubernetes = read('app/templates/integrations/kubernetes/detail.html')
 
@@ -19,10 +19,10 @@ def test_runtime_observations_share_one_provider_neutral_lifecycle() -> None:
     assert 'IntegrationRuntimeObservation.provider ==' not in domain
     assert 'filter_by(provider=' not in domain
     assert "'label': 'Kubernetes'" in presentation
-    assert "'label': 'Prometheus'" in presentation
+    assert "'label': 'Metrics Source'" in presentation
     assert "'label': 'Alertmanager'" in presentation
     assert "domain='runtime_observation'" in shared_history
-    for rendered in (prometheus, alertmanager, kubernetes):
+    for rendered in (metrics_source, alertmanager, kubernetes):
         assert 'integrations/partials/_runtime_history.html' in rendered
 
 

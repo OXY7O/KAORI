@@ -6,19 +6,19 @@ from typing import Any
 from app.analytics.kubernetes.common.base_service import AnalyticsBaseService
 from app.analytics.kubernetes.common.context import build_analysis_utilization_context
 from app.analytics.kubernetes.common.payloads import get_empty_storage_payload
-from app.analytics.kubernetes.common.presentation import present_prometheus_status
+from app.analytics.kubernetes.common.presentation import present_metrics_source_status
 from app.analytics.kubernetes.storage.domain import build_storage_payload
 from app.analytics.kubernetes.storage.evidence import STORAGE_QUERY_CAPABILITIES, StorageEvidenceCollector
 from app.analytics.kubernetes.utilization.service import UtilizationService
 from app.analytics.shared.coercion import as_dict, as_list
-from app.common.dependencies import prometheus_capability_blocker
-from app.integrations.prometheus.capabilities import definition as capability_definition
+from app.common.dependencies import metrics_source_capability_blocker
+from app.integrations.metrics.capabilities import definition as capability_definition
 from app.intelligence.recommendation_engine import (
     build_storage_actionable_recommendations,
     count_actionable_recommendations,
     format_recommendation_cards,
 )
-from app.prometheus.consumer import PrometheusConsumer
+from app.metrics.consumer import MetricsConsumer
 
 _STORAGE_ADVISORY_CAPABILITIES = (
     'pvc_usage',
@@ -57,7 +57,7 @@ class StorageAnalysisService(AnalyticsBaseService):
     def __init__(
         self,
         utilization_service: UtilizationService,
-        consumer: PrometheusConsumer,
+        consumer: MetricsConsumer,
     ) -> None:
         self.utilization_service = utilization_service
         self.consumer = consumer
@@ -66,8 +66,8 @@ class StorageAnalysisService(AnalyticsBaseService):
     def collect_storage_payload(self) -> dict[str, Any]:
         return build_storage_payload(self.evidence_collector.collect())
 
-    def get_prometheus_status(self) -> dict[str, Any]:
-        return present_prometheus_status(self.utilization_service.get_prometheus_status())
+    def get_metrics_source_status(self) -> dict[str, Any]:
+        return present_metrics_source_status(self.utilization_service.get_metrics_source_status())
 
 
 def get_storage_analysis_context(
@@ -102,12 +102,12 @@ def get_storage_analysis_context(
         apply_empty_payload()
         return context
 
-    consumer = PrometheusConsumer(cluster)
+    consumer = MetricsConsumer(cluster)
     required = consumer.requirements(StorageAnalysisService.REQUIRED_CAPABILITIES)
     if not required.ok:
         missing = list((required.payload or {}).get('missing_capabilities') or [])
         labels = [_capability_label(str(key)) for key in missing]
-        context['dependency_blocker'] = prometheus_capability_blocker(
+        context['dependency_blocker'] = metrics_source_capability_blocker(
             cluster,
             feature_label='Storage Analytics Query Transport',
             missing_capabilities=labels,
@@ -126,7 +126,7 @@ def get_storage_analysis_context(
     evidence = payload.get('storage_evidence') or {}
     if not _has_observed_storage_query(evidence):
         errors = _storage_query_errors(evidence)
-        blocker = prometheus_capability_blocker(
+        blocker = metrics_source_capability_blocker(
             cluster,
             feature_label='Storage Analytics Evidence',
             missing_capabilities=['Storage filesystem, PVC, and PV query evidence'],

@@ -63,11 +63,11 @@ def main() -> int:
             "event_type='cluster_update'",
             "event_type='cluster_delete'",
         ),
-        'app/prometheus/routes.py': (
-            "event_type='prometheus_instance_created'",
-            "event_type='prometheus_instance_deleted'",
+        'app/metrics/registration_web.py': ("event_type='metrics_source_created'",),
+        'app/metrics/routes.py': (
+            "event_type='metrics_source_deleted'",
         ),
-        'app/prometheus/edit_web.py': ("event_type='prometheus_instance_updated'",),
+        'app/metrics/edit_web.py': ("event_type='metrics_source_updated'",),
         'app/alertmanager/routes.py': (
             "event_type='alertmanager_instance_created'",
             "event_type='alertmanager_instance_deleted'",
@@ -117,13 +117,23 @@ def main() -> int:
     )
     require(
         'app/notifications/event_catalog.py',
-        "'configmap_management': 'ConfigMap Management'",
-        "'tls_certificate': 'TLS Certificate'",
-        "'secret_management': 'Secret Management'",
-        "'integrations': 'Integrations'",
-        "'platform_operations': 'Platform Operations'",
-        "'access': 'Access'",
-        "'settings': 'Settings'",
+        "'notifications/event_categories.yaml'",
+        'CATEGORY_LABELS =',
+        'CATEGORY_ICONS =',
+        'event_category_key(',
+    )
+    require(
+        'app/definitions/catalogs/notifications/event_categories.yaml',
+        'configmap_management:',
+        'label: ConfigMap Management',
+        'label: TLS Certificate',
+        'label: Secret Management',
+        'label: Integrations',
+        'label: Platform Operations',
+        'label: Access',
+        'label: Settings',
+        'prefixes:',
+        'metrics_source_',
     )
     require(
         'docs/design/KAORI_OPERATIONAL_FEEDBACK_COVERAGE_V1.md',

@@ -67,7 +67,7 @@ def _payload(*, include_forecast: bool = True, storage_available: bool = False) 
             'worker_nodes': 3,
             'master_nodes': 1,
         },
-        'prometheus_status': {
+        'metrics_source_status': {
             'connected': True,
             'response_time_ms': 405,
             'last_checked_at': datetime(2026, 8, 3, 1, 5, tzinfo=UTC),
@@ -185,7 +185,7 @@ def _payload(*, include_forecast: bool = True, storage_available: bool = False) 
         ],
         'source_evidence': [
             {
-                'source': 'Prometheus Observation Cache',
+                'source': 'Metrics Source Observation Cache',
                 'freshness': '405 ms',
                 'last_collected': datetime(2026, 8, 3, 1, 5, tzinfo=UTC),
             },
@@ -308,7 +308,7 @@ def test_capacity_analysis_methodology_tables_are_separate_and_single_line() -> 
     assert 'class="methodology-grid"' in rendered_html
     assert 'source-register data-source-table compact-register' in rendered_html
     assert 'methodology-register compact-register' in rendered_html
-    assert 'Prometheus Observation Cache' in rendered_html
+    assert 'Metrics Source Observation Cache' in rendered_html
     assert '03 Aug 2026 01:05 UTC' in rendered_html
     assert 'grid-template-columns:minmax(0,1.08fr)minmax(0,.92fr)' in compact
     assert 'white-space:nowrap' in compact

@@ -10,20 +10,20 @@ from app.integrations.consumer_assets import registered_consumer_asset_definitio
 from app.models.alertmanager import AlertmanagerInstance
 from app.models.cluster import Cluster
 from app.models.integration import IntegrationBinding, IntegrationInstance
-from app.models.prometheus import PrometheusInstance
+from app.models.metrics_source import MetricsSource
 
 _PROVIDER_META = {
-    'prometheus': {
-        'key': 'prometheus',
+    'metrics_source': {
+        'key': 'metrics_source',
         'label': 'Metrics',
         'source_label': 'metrics source',
         'icon': 'chart-no-axes-combined',
-        'bind_endpoint': 'integrations.bind_prometheus_source',
-        'registry_endpoint': 'integrations.prometheus',
-        'register_endpoint': 'integrations.register_prometheus_metrics_source',
-        'detail_endpoint': 'prometheus.instance_detail',
+        'bind_endpoint': 'integrations.bind_metrics_source',
+        'registry_endpoint': 'integrations.metrics_sources',
+        'register_endpoint': 'integrations.select_metrics_source_provider',
+        'detail_endpoint': 'metrics.instance_detail',
         'selector_label': 'Metrics identity',
-        'selector_help': 'The selector isolates one managed asset inside a shared Prometheus source.',
+        'selector_help': 'The selector isolates one managed asset inside a shared metrics source.',
     },
     'alertmanager': {
         'key': 'alertmanager',
@@ -389,9 +389,9 @@ def bound_source_for_scope(
 
 
 def _instances(provider_type: str) -> list[Any]:
-    if provider_type == 'prometheus':
+    if provider_type == 'metrics_source':
         return (
-            PrometheusInstance.query.join(PrometheusInstance.integration_instance)
+            MetricsSource.query.join(MetricsSource.integration_instance)
             .order_by(IntegrationInstance.name.asc())
             .all()
         )

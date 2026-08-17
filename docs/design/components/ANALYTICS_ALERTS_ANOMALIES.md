@@ -38,9 +38,9 @@ Missing evidence is never converted into zero, Normal, or Healthy.
 
 ## Source Readiness and Committed Snapshot
 
-Source Readiness describes current Alertmanager or Prometheus connectivity. Committed Snapshot describes the worker-produced dataset being viewed. These are related but separate evidence boundaries. A currently degraded source does not invalidate already committed evidence, but it must be shown as a warning for future refreshes.
+Source Readiness describes current Alertmanager or Metrics Source connectivity. Committed Snapshot describes the worker-produced dataset being viewed. These are related but separate evidence boundaries. A currently degraded source does not invalidate already committed evidence, but it must be shown as a warning for future refreshes.
 
-Prometheus fallback may provide alert records while Alertmanager-specific routing, silence, and inhibition evidence remains limited. The page must state this limitation explicitly.
+Metrics Source fallback may provide alert records while Alertmanager-specific routing, silence, and inhibition evidence remains limited. The page must state this limitation explicitly.
 
 ## Snapshot and Presentation Dimensions
 

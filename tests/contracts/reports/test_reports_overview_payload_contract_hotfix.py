@@ -95,7 +95,7 @@ def test_previous_payload_is_normalized_to_redesigned_contract() -> None:
                 'status': 'Ready',
                 'tone': 'blue',
                 'icon': 'boxes',
-                'items': ['Kubernetes inventory.', 'Prometheus metrics.'],
+                'items': ['Kubernetes inventory.', 'Metrics source data.'],
             }
         ],
     }

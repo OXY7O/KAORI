@@ -14,7 +14,7 @@ from app.models.alertmanager import AlertmanagerInstance
 from app.models.integration import IntegrationBinding, IntegrationInstance
 from app.models.minio import MinioInstance
 from app.models.object_storage import ObjectStorageSystem
-from app.models.prometheus import PrometheusInstance
+from app.models.metrics_source import MetricsSource
 
 
 def test_minio_connection(values: MinioRegistrationInput) -> MinioConnectionResult:
@@ -171,7 +171,7 @@ def update_minio_instance(instance: MinioInstance, values: MinioRegistrationInpu
 def delete_minio_instance(instance: MinioInstance) -> dict[str, int]:
     """Delete a MinIO asset-owner connection and only its asset-scoped bindings.
 
-    Prometheus/Thanos Query metrics sources and Alertmanager source instances remain reusable. Runtime observation
+    Bound observability source connections remain reusable. Runtime observation
     and Activity Audit history are intentionally retained by their canonical history
     models. The object-storage asset and every binding that targets it are removed
     together with the MinIO connection identity.
@@ -199,7 +199,7 @@ def delete_minio_instance(instance: MinioInstance) -> dict[str, int]:
 
     # ObjectStorageSystem owns the MinioInstance row through a delete-orphan
     # relationship. Flush that lifecycle first, then remove the canonical provider
-    # identity without touching reusable Prometheus/Thanos Query or Alertmanager source instances.
+    # identity without touching reusable Metrics Source or Alertmanager instances.
     db.session.delete(asset)
     db.session.flush()
     if canonical is not None:
@@ -220,7 +220,7 @@ def current_metrics_binding(instance: MinioInstance) -> IntegrationBinding | Non
     return (
         IntegrationBinding.query.join(IntegrationInstance)
         .filter(
-            IntegrationInstance.provider_type == 'prometheus',
+            IntegrationInstance.provider_type == 'metrics_source',
             IntegrationInstance.enabled.is_(True),
             IntegrationBinding.asset_type == OBJECT_STORAGE_SYSTEM_SCOPE,
             IntegrationBinding.asset_key == instance.object_storage_system_id,
@@ -232,13 +232,13 @@ def current_metrics_binding(instance: MinioInstance) -> IntegrationBinding | Non
     )
 
 
-def metrics_source_for_binding(binding: IntegrationBinding | None) -> PrometheusInstance | None:
+def metrics_source_for_binding(binding: IntegrationBinding | None) -> MetricsSource | None:
     if binding is None:
         return None
     canonical = db.session.get(IntegrationInstance, binding.integration_instance_id)
-    if canonical is None or canonical.provider_type != 'prometheus':
+    if canonical is None or canonical.provider_type != 'metrics_source':
         return None
-    return PrometheusInstance.query.filter_by(integration_instance_id=canonical.id).first()
+    return MetricsSource.query.filter_by(integration_instance_id=canonical.id).first()
 
 
 def current_alert_binding(instance: MinioInstance) -> IntegrationBinding | None:

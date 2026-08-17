@@ -28,8 +28,8 @@ from app.jobs.definitions.base import RegisteredJobDispatchResult
 from app.jobs.dispatcher import enqueue_canonical_job
 from app.models import AnalyticsSnapshot, Cluster
 from app.models.job import JobExecution, JobPolicy
-from app.prometheus.repository import resolve_instance_for_cluster
-from app.prometheus.resolver import resolve_prometheus_sources
+from app.metrics.repository import resolve_instance_for_cluster
+from app.metrics.resolver import resolve_metrics_sources
 
 _DASHBOARD_REQUIRED_24H_DATASETS = {CAPACITY_DATASET_KEY}
 _RANGE_ORDER = {
@@ -58,7 +58,7 @@ def _registered_clusters() -> list[Cluster]:
     return Cluster.query.order_by(Cluster.created_at.asc(), Cluster.id.asc()).all()
 
 
-def _prometheus_eligible_clusters(clusters: list[Cluster] | None = None) -> list[Cluster]:
+def _metrics_source_eligible_clusters(clusters: list[Cluster] | None = None) -> list[Cluster]:
     candidates = clusters if clusters is not None else _registered_clusters()
     return [
         cluster
@@ -67,13 +67,13 @@ def _prometheus_eligible_clusters(clusters: list[Cluster] | None = None) -> list
     ]
 
 
-def _prometheus_dataset_eligible(
+def _metrics_source_dataset_eligible(
     cluster: Cluster,
     dataset_key: str,
     diagnostics: list[str] | None = None,
 ) -> bool:
     try:
-        resolution = resolve_prometheus_sources(
+        resolution = resolve_metrics_sources(
             scope_type=KUBERNETES_CLUSTER_SCOPE,
             scope_key=str(cluster.id),
             required_binding_capabilities=source_binding_capabilities(dataset_key),
@@ -85,7 +85,7 @@ def _prometheus_dataset_eligible(
             f'{dataset_key} on {cluster.name}: source resolution failed: {exc}',
         )
         logger.warning(
-            'Could not evaluate Prometheus eligibility for analytics dataset.',
+            'Could not evaluate Metrics Source eligibility for analytics dataset.',
             extra={
                 'cluster_id': str(cluster.id),
                 'dataset_key': dataset_key,
@@ -97,7 +97,7 @@ def _prometheus_dataset_eligible(
         reason = (
             resolution.candidates[0].decision_reason
             if resolution.candidates
-            else 'No bound Prometheus source is available.'
+            else 'No bound Metrics Source source is available.'
         )
         _append_eligibility_diagnostic(
             diagnostics,
@@ -138,9 +138,9 @@ def _alert_dataset_eligible(
         if alertmanager is not None and alertmanager.selected is not None:
             return True
 
-    if source in {'auto', 'prometheus'}:
+    if source in {'auto', 'metrics_source'}:
         try:
-            prometheus = resolve_prometheus_sources(
+            metrics_source = resolve_metrics_sources(
                 scope_type=KUBERNETES_CLUSTER_SCOPE,
                 scope_key=str(cluster.id),
                 required_binding_capabilities=('metrics',),
@@ -149,10 +149,10 @@ def _alert_dataset_eligible(
         except Exception as exc:
             _append_eligibility_diagnostic(
                 diagnostics,
-                f'{dataset_key} on {cluster.name}: Prometheus fallback resolution failed: {exc}',
+                f'{dataset_key} on {cluster.name}: Metrics Source fallback resolution failed: {exc}',
             )
             logger.warning(
-                'Could not evaluate Prometheus fallback eligibility for alerts analytics.',
+                'Could not evaluate Metrics Source fallback eligibility for alerts analytics.',
                 extra={
                     'cluster_id': str(cluster.id),
                     'dataset_key': dataset_key,
@@ -160,8 +160,8 @@ def _alert_dataset_eligible(
                     'error': str(exc)[:1000],
                 },
             )
-            prometheus = None
-        if prometheus is not None and prometheus.selected is not None:
+            metrics_source = None
+        if metrics_source is not None and metrics_source.selected is not None:
             return True
 
     _append_eligibility_diagnostic(
@@ -178,8 +178,8 @@ def _dataset_eligible(
     diagnostics: list[str] | None = None,
 ) -> bool:
     dataset = get_dataset(dataset_key)
-    if dataset.source_kind == 'prometheus':
-        return _prometheus_dataset_eligible(cluster, dataset_key, diagnostics)
+    if dataset.source_kind == 'metrics_source':
+        return _metrics_source_dataset_eligible(cluster, dataset_key, diagnostics)
     if dataset.source_kind == 'alert':
         return _alert_dataset_eligible(cluster, dataset_key, parameters, diagnostics)
     return True
@@ -187,16 +187,16 @@ def _dataset_eligible(
 
 def _analytics_eligible_clusters() -> tuple[list[Cluster], set[str]]:
     clusters = _registered_clusters()
-    prometheus_clusters = _prometheus_eligible_clusters(clusters)
-    prometheus_ids = {str(cluster.id) for cluster in prometheus_clusters}
-    eligible = list(prometheus_clusters)
+    metrics_source_clusters = _metrics_source_eligible_clusters(clusters)
+    metrics_source_ids = {str(cluster.id) for cluster in metrics_source_clusters}
+    eligible = list(metrics_source_clusters)
     for cluster in clusters:
         cluster_id = str(cluster.id)
-        if cluster_id in prometheus_ids:
+        if cluster_id in metrics_source_ids:
             continue
         if _alert_dataset_eligible(cluster, 'analytics.alerts', {'source': 'alertmanager'}):
             eligible.append(cluster)
-    return eligible, prometheus_ids
+    return eligible, metrics_source_ids
 
 
 def _range_freshness_minutes(value: str | None, base_minutes: int) -> int:
@@ -289,12 +289,12 @@ def _analytics_work_items(
     *,
     clusters: list[Cluster],
     only_due: bool,
-    prometheus_cluster_ids: set[str] | None = None,
+    metrics_source_cluster_ids: set[str] | None = None,
     eligibility_diagnostics: list[str] | None = None,
 ) -> list[dict[str, Any]]:
     configuration = policy.configuration_json or {}
-    if prometheus_cluster_ids is None:
-        prometheus_cluster_ids = {str(cluster.id) for cluster in clusters}
+    if metrics_source_cluster_ids is None:
+        metrics_source_cluster_ids = {str(cluster.id) for cluster in clusters}
     freshness_minutes = int(configuration.get('freshness_minutes') or 20)
     stale_grace_minutes = int(configuration.get('stale_grace_minutes') or 1440)
     if parameters and parameters.get('dataset_key') and parameters.get('cluster_id'):
@@ -304,7 +304,7 @@ def _analytics_work_items(
         if cluster_id not in eligible_cluster_ids:
             return []
         dataset = get_dataset(dataset_key)
-        if dataset.source_kind == 'prometheus' and cluster_id not in prometheus_cluster_ids:
+        if dataset.source_kind == 'metrics_source' and cluster_id not in metrics_source_cluster_ids:
             return []
         cluster = next((item for item in clusters if str(item.id) == cluster_id), None)
         snapshot_parameters = canonical_parameters(
@@ -358,7 +358,7 @@ def _analytics_work_items(
     for cluster in clusters:
         cluster_id = str(cluster.id)
         for dataset in list_analytics_datasets():
-            if dataset.source_kind == 'prometheus' and cluster_id not in prometheus_cluster_ids:
+            if dataset.source_kind == 'metrics_source' and cluster_id not in metrics_source_cluster_ids:
                 continue
             for default_parameters in dataset.default_parameters:
                 if not _dataset_eligible(
@@ -420,7 +420,7 @@ def _forecast_work_items(
     if parameters and parameters.get('dataset_key') and parameters.get('cluster_id'):
         cluster_id = str(parameters['cluster_id'])
         cluster = next((item for item in clusters if str(item.id) == cluster_id), None)
-        if cluster is None or not _prometheus_dataset_eligible(
+        if cluster is None or not _metrics_source_dataset_eligible(
             cluster,
             FORECAST_DATASET.key,
             eligibility_diagnostics,
@@ -459,7 +459,7 @@ def _forecast_work_items(
     history_windows = [value for value in ('7d', '30d', '90d') if value in configured_history]
     work_items: list[dict[str, Any]] = []
     for cluster in clusters:
-        if not _prometheus_dataset_eligible(
+        if not _metrics_source_dataset_eligible(
             cluster,
             FORECAST_DATASET.key,
             eligibility_diagnostics,
@@ -550,13 +550,13 @@ def _dispatch(
             )
 
     if forecasting:
-        clusters = _prometheus_eligible_clusters()
+        clusters = _metrics_source_eligible_clusters()
     else:
-        clusters, prometheus_cluster_ids = _analytics_eligible_clusters()
+        clusters, metrics_source_cluster_ids = _analytics_eligible_clusters()
     if not clusters:
         return RegisteredJobDispatchResult(
             status='blocked',
-            message=('No cluster has an eligible Prometheus or Alertmanager integration for this job.'),
+            message=('No cluster has an eligible Metrics Source or Alertmanager integration for this job.'),
         )
     only_due = trigger_type == 'scheduled'
     eligibility_diagnostics: list[str] = []
@@ -574,7 +574,7 @@ def _dispatch(
             parameters,
             clusters=clusters,
             only_due=only_due,
-            prometheus_cluster_ids=prometheus_cluster_ids,
+            metrics_source_cluster_ids=metrics_source_cluster_ids,
             eligibility_diagnostics=eligibility_diagnostics,
         )
     )
@@ -732,7 +732,7 @@ def _snapshot_health(
 
 
 def _context(policy: JobPolicy, *, forecasting: bool) -> dict[str, Any]:
-    clusters = _prometheus_eligible_clusters() if forecasting else _analytics_eligible_clusters()[0]
+    clusters = _metrics_source_eligible_clusters() if forecasting else _analytics_eligible_clusters()[0]
     datasets = (FORECAST_DATASET,) if forecasting else list_analytics_datasets()
     job_type = 'forecast_materialization' if forecasting else 'analytics_materialization'
     operation = 'materialize_forecast' if forecasting else 'materialize_analytics'

@@ -13,10 +13,10 @@ CPU, memory, and pod calculations use the same Ready-worker boundary for allocat
 
 ## Runtime and Ownership
 
-The web request reads one committed `analytics.capacity` snapshot. Prometheus access belongs to the materialization worker:
+The web request reads one committed `analytics.capacity` snapshot. Metrics Source access belongs to the materialization worker:
 
 ```text
-Prometheus / kube-state-metrics
+Metrics Source / Kubernetes metrics
         ↓
 CapacityEvidenceCollector
         ↓
@@ -77,7 +77,7 @@ Examples:
 
 - missing allocatable CPU does not become `0 cores`;
 - missing request or limit metrics do not become a Healthy commitment profile;
-- a valid zero current usage remains available evidence and is distinct from an empty Prometheus result;
+- a valid zero current usage remains available evidence and is distinct from an empty Metrics Source result;
 - a missing peak series is not replaced with current usage;
 - an unavailable filesystem series remains an optional Unknown reference.
 

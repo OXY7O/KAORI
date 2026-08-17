@@ -30,13 +30,13 @@ def build_inhibition_summary(
     if resolved_source != 'alertmanager' or not connected:
         return {
             'enabled': False,
-            'level': 'limited' if resolved_source == 'prometheus' and connected else 'unavailable',
+            'level': 'limited' if resolved_source == 'metrics_source' and connected else 'unavailable',
             'label': 'Inhibition Visibility Limited'
-            if resolved_source == 'prometheus' and connected
+            if resolved_source == 'metrics_source' and connected
             else 'Inhibition Visibility Unavailable',
             'description': (
                 'Inhibition visibility requires Alertmanager alert lifecycle metadata. '
-                'Prometheus fallback does not include inhibitedBy context.'
+                'Metrics Source fallback does not include inhibitedBy context.'
             ),
             'icon': 'shield-alert',
             'source': resolved_source,

@@ -5,11 +5,11 @@ from time import perf_counter
 from typing import Any
 
 from app.analytics.kubernetes.alerts.metrics import get_metric_labels, get_metric_value
-from app.integrations.prometheus.exceptions import PrometheusError
-from app.integrations.prometheus.query_profiles import get_query_expression
+from app.integrations.metrics.exceptions import MetricsSourceError
+from app.integrations.metrics.query_profiles import get_query_expression
 from app.models import Cluster
-from app.prometheus.repository import resolve_instance_for_cluster
-from app.prometheus.service import PrometheusService
+from app.metrics.repository import resolve_instance_for_cluster
+from app.metrics.service import MetricsService
 
 POD_RESTART_ANOMALY_QUERY = get_query_expression('analytics.alerts.queries.POD_RESTART_ANOMALY_QUERY')
 POD_NOT_READY_ANOMALY_QUERY = get_query_expression('analytics.alerts.queries.POD_NOT_READY_ANOMALY_QUERY')
@@ -76,7 +76,7 @@ def normalize_restart_anomaly(
             'Review container logs, recent rollout activity, probes, '
             'resource limits, and dependency availability.'
         ),
-        'source': 'Prometheus',
+        'source': 'Metrics Source',
         'labels': metric,
         'value': restart_count,
     }
@@ -122,7 +122,7 @@ def normalize_not_ready_anomaly(
             'Review pod events, readiness probes, container state, service '
             'endpoints, and recent rollout status.'
         ),
-        'source': 'Prometheus',
+        'source': 'Metrics Source',
         'labels': metric,
         'value': value,
     }
@@ -130,16 +130,16 @@ def normalize_not_ready_anomaly(
 
 def _query_anomaly_candidates(
     *,
-    service: PrometheusService,
+    service: MetricsService,
     cluster: Cluster,
     query: str,
     signal_name: str,
 ) -> tuple[list[dict[str, Any]], str | None]:
     try:
         result = service.instant_query(query)
-    except PrometheusError as exc:
+    except MetricsSourceError as exc:
         logger.warning(
-            'Prometheus %s anomaly collection failed for cluster %s: %s',
+            'Metrics Source %s anomaly collection failed for cluster %s: %s',
             signal_name,
             cluster.id,
             exc,
@@ -187,7 +187,7 @@ def deduplicate_anomalies(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return [selected[identity] for identity in order]
 
 
-def load_prometheus_anomaly_metrics(
+def load_metrics_source_anomaly_metrics(
     *,
     cluster: Cluster,
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
@@ -204,7 +204,7 @@ def load_prometheus_anomaly_metrics(
             'configured': False,
             'connected': False,
             'label': 'Anomaly Signals Not Configured',
-            'error': 'No canonical Prometheus runtime is bound to this Kubernetes cluster.',
+            'error': 'No canonical Metrics Source runtime is bound to this Kubernetes cluster.',
             'response_time_ms': max(int((perf_counter() - started) * 1000), 0),
             'partial': True,
             'available_queries': [],
@@ -212,10 +212,10 @@ def load_prometheus_anomaly_metrics(
         }
 
     try:
-        service = PrometheusService(cluster)
-    except PrometheusError as exc:
+        service = MetricsService(cluster)
+    except MetricsSourceError as exc:
         logger.warning(
-            'Prometheus anomaly source resolution failed for cluster %s: %s',
+            'Metrics Source anomaly source resolution failed for cluster %s: %s',
             cluster.id,
             exc,
             extra={

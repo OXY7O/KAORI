@@ -118,22 +118,22 @@ def _build_registry_row(
 ) -> dict[str, Any]:
     cluster = connection.cluster
     if bound_sources is None:
-        prometheus, prometheus_binding = bound_source_for_scope(
-            'prometheus', scope_type='kubernetes_cluster', scope_key=cluster.id
+        metrics_source, metrics_binding = bound_source_for_scope(
+            'metrics_source', scope_type='kubernetes_cluster', scope_key=cluster.id
         )
         alertmanager, alertmanager_binding = bound_source_for_scope(
             'alertmanager', scope_type='kubernetes_cluster', scope_key=cluster.id
         )
     else:
-        prometheus, prometheus_binding = bound_sources.get(('prometheus', str(cluster.id)), (None, None))
+        metrics_source, metrics_binding = bound_sources.get(('metrics_source', str(cluster.id)), (None, None))
         alertmanager, alertmanager_binding = bound_sources.get(('alertmanager', str(cluster.id)), (None, None))
 
-    metrics_operational = _provider_posture(prometheus, prometheus_binding)
+    metrics_operational = _provider_posture(metrics_source, metrics_binding)
     alerts_operational = _provider_posture(alertmanager, alertmanager_binding)
     metrics_coverage = resolve_cluster_coverage(
         kubernetes_readiness=connection.readiness_status,
-        source=prometheus,
-        binding=prometheus_binding,
+        source=metrics_source,
+        binding=metrics_binding,
     )
     alerts_coverage = resolve_cluster_coverage(
         kubernetes_readiness=connection.readiness_status,
@@ -147,7 +147,7 @@ def _build_registry_row(
 
     source_bindings = tuple(
         binding
-        for binding in (prometheus_binding, alertmanager_binding)
+        for binding in (metrics_binding, alertmanager_binding)
         if binding is not None and bool(getattr(binding, 'enabled', True))
     )
     source_postures = (metrics_operational, alerts_operational)
@@ -169,11 +169,11 @@ def _build_registry_row(
         'version': connection.detected_version,
         'source_binding_count': len(source_bindings),
         'source_operational_count': sum(1 for item in source_postures if item['status'] == 'ready'),
-        'prometheus_instance_id': prometheus.id if prometheus else None,
-        'prometheus_name': prometheus.name if prometheus else None,
-        'prometheus_source_status': getattr(prometheus, 'readiness_status', None),
-        'prometheus_binding_status': prometheus_binding.validation_status if prometheus_binding else None,
-        'prometheus_operational': metrics_operational,
+        'metrics_source_id': metrics_source.id if metrics_source else None,
+        'metrics_source_name': metrics_source.name if metrics_source else None,
+        'metrics_source_status': getattr(metrics_source, 'readiness_status', None),
+        'metrics_binding_status': metrics_binding.validation_status if metrics_binding else None,
+        'metrics_source_operational': metrics_operational,
         'alertmanager_instance_id': alertmanager.id if alertmanager else None,
         'alertmanager_name': alertmanager.name if alertmanager else None,
         'alertmanager_source_status': getattr(alertmanager, 'readiness_status', None),
@@ -198,7 +198,7 @@ def _load_rows() -> list[dict[str, Any]]:
         .all()
     )
     bound_sources = bound_sources_for_scopes(
-        ('prometheus', 'alertmanager'),
+        ('metrics_source', 'alertmanager'),
         scope_type='kubernetes_cluster',
         scope_keys=[str(connection.cluster_id) for connection in connections],
     )
@@ -232,7 +232,7 @@ def _filter_coverage_rows(
     normalized_query = filters.query.strip().lower()
     filtered = list(rows)
     if normalized_query:
-        fields = ('cluster_name', 'environment', 'server', 'prometheus_name', 'alertmanager_name')
+        fields = ('cluster_name', 'environment', 'server', 'metrics_source_name', 'alertmanager_name')
         filtered = [
             row
             for row in filtered
@@ -255,10 +255,10 @@ def _stats(rows: list[dict[str, Any]]) -> dict[str, int]:
         'attention': total - ready,
         'bindings': sum(row['source_binding_count'] for row in rows),
         'fully_operational': sum(1 for row in rows if row['coverage_summary']['status'] == 'ready'),
-        'prometheus_configured': sum(1 for row in rows if row['prometheus_instance_id']),
-        'prometheus_source_ready': sum(1 for row in rows if row['prometheus_source_status'] == 'ready'),
-        'prometheus_binding_ready': sum(1 for row in rows if row['prometheus_binding_status'] == 'ready'),
-        'prometheus_operational': sum(1 for row in rows if row['prometheus_operational']['status'] == 'ready'),
+        'metrics_source_configured': sum(1 for row in rows if row['metrics_source_id']),
+        'metrics_source_ready': sum(1 for row in rows if row['metrics_source_status'] == 'ready'),
+        'metrics_binding_ready': sum(1 for row in rows if row['metrics_binding_status'] == 'ready'),
+        'metrics_source_operational': sum(1 for row in rows if row['metrics_source_operational']['status'] == 'ready'),
         'alertmanager_configured': sum(1 for row in rows if row['alertmanager_instance_id']),
         'alertmanager_source_ready': sum(1 for row in rows if row['alertmanager_source_status'] == 'ready'),
         'alertmanager_binding_ready': sum(1 for row in rows if row['alertmanager_binding_status'] == 'ready'),

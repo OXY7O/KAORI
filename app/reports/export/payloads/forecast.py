@@ -11,7 +11,7 @@ from app.reports.export.payloads.common import get_report_selected_cluster, repo
 def get_report_resource_forecast_payload(report: Report) -> dict[str, Any]:
     """Build the Resource Forecast report from committed materialized evidence.
 
-    PDF generation must not issue long-range Prometheus queries. The selected
+    PDF generation must not issue long-range Metrics Source queries. The selected
     history snapshot is loaded from ``analytics.forecast`` and re-projected in
     memory for the configured horizon and Holt-Winters method.
     """

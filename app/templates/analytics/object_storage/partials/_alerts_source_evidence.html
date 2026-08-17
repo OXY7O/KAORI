@@ -12,7 +12,7 @@
         <article class="bg-surface-card p-5">
             <p class="{{ analysis_surface.metric_label_classes() }}">Selected Policy</p>
             <p class="mt-2 text-base font-semibold text-content-primary">{{ 'Automatic' if selected_alert_source == 'auto' else selected_alert_source|title }}</p>
-            <p class="mt-1 text-xs leading-5 text-content-muted">Automatic prefers Alertmanager, then falls back to Prometheus.</p>
+            <p class="mt-1 text-xs leading-5 text-content-muted">Automatic prefers Alertmanager, then falls back to Metrics Source.</p>
         </article>
         <article class="bg-surface-card p-5">
             <p class="{{ analysis_surface.metric_label_classes() }}">Resolved Alert Source</p>
@@ -27,6 +27,6 @@
     </div>
     <div class="{{ analysis_surface.interpretation_grid_classes() }}">
         {{ analysis_surface.interpretation_callout('Alertmanager Authority', 'Lifecycle-rich alert evidence', 'When Alertmanager is resolved, KAORI can present receiver, silence, inhibition, and provider lifecycle state from the governed object-storage binding.', icon='bell-ring', role='evidence') }}
-        {{ analysis_surface.interpretation_callout('Prometheus Fallback', 'Rule-state evidence only', 'Prometheus ALERTS fallback preserves upstream alert-rule state when Alertmanager is unavailable, but it does not provide Alertmanager routing, receiver, silence, or inhibition lifecycle metadata.', icon='activity', role='insight') }}
+        {{ analysis_surface.interpretation_callout('Metrics Source Fallback', 'Rule-state evidence only', 'Metrics Source ALERTS fallback preserves upstream alert-rule state when Alertmanager is unavailable, but it does not provide Alertmanager routing, receiver, silence, or inhibition lifecycle metadata.', icon='activity', role='insight') }}
     </div>
 </section>

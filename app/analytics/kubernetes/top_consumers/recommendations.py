@@ -201,7 +201,7 @@ def _evidence_recovery_recommendation(
         title='Restore Multi-Resource Consumer Evidence',
         description=(
             f'{int(incomplete_resources)} resource evidence set(s) are partial or '
-            'unavailable. Restore Prometheus coverage and capacity denominators '
+            'unavailable. Restore Metrics Source coverage and capacity denominators '
             'before treating the page as a complete consumer baseline.'
         ),
         priority='Warning',

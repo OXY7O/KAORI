@@ -1,7 +1,7 @@
 {% if dependency_blocker %}
     {% import "components/table_label.html" as table_label %}
-    {% set dependency_setup_kinds = dependency_setup_kinds|default(['cluster_required', 'prometheus_setup', 'prometheus_capability', 'alert_source_setup']) %}
-    {% set dependency_capability_kinds = dependency_capability_kinds|default(['prometheus_capability']) %}
+    {% set dependency_setup_kinds = dependency_setup_kinds|default(['cluster_required', 'metrics_source_setup', 'metrics_source_capability', 'alert_source_setup']) %}
+    {% set dependency_capability_kinds = dependency_capability_kinds|default(['metrics_source_capability']) %}
     {% set blocker_tone = dependency_blocker.tone|default('warning' if dependency_blocker.kind in dependency_setup_kinds else 'critical') %}
     {% set blocked_state_icon = dependency_blocker.icon %}
     {% set blocked_state_label = 'Capability Incomplete' if dependency_blocker.kind in dependency_capability_kinds else ('Setup Required' if blocker_tone == 'warning' else 'Unavailable') %}
@@ -15,7 +15,7 @@
             "description": "Cluster access and canonical binding"
         },
         {
-            "label": "Prometheus",
+            "label": "Metrics Source",
             "icon": "activity",
             "description": "Metrics source and analytics capability"
         },
@@ -25,7 +25,7 @@
             "description": "Alert source and scoped signal access"
         }
     ]) %}
-    {% set dependency_route_summary = dependency_route_summary|default('Kubernetes → Prometheus → Alertmanager') %}
+    {% set dependency_route_summary = dependency_route_summary|default('Kubernetes → Metrics Source → Alertmanager') %}
     {% set dependency_step_count = analytics_steps|length %}
     {% set dependency_grid_classes = dependency_grid_classes|default('lg:grid-cols-3') %}
     <section class="overflow-hidden rounded-xl border border-brand-outline bg-kaori-soft shadow-sm"

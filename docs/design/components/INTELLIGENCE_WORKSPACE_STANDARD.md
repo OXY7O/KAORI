@@ -43,7 +43,7 @@ The intended first controlled execution pilot remains `kubernetes.deployment.res
 The Overview must preserve capability ownership:
 
 - **Recommendations** owns catalog-backed findings from committed KAORI evidence.
-- **Alert Intelligence** resolves provider alert state on demand and keeps Alertmanager/Prometheus lifecycle ownership explicit.
+- **Alert Intelligence** resolves provider alert state on demand and keeps Alertmanager/Metrics Source lifecycle ownership explicit.
 - **Rule Catalog** owns canonical detection, evidence-boundary, provider-coverage, severity, and operator-response definitions.
 - **Automation Control** owns runbooks, decisions, approvals, readiness, controlled execution, verification, and recovery.
 
@@ -68,7 +68,7 @@ and route/model scaffolding alone must never be interpreted as execution readine
 - Recommendations are owned by the central Intelligence evaluator and may contain findings from multiple asset domains.
 - Domain-specific consumers must request findings using canonical `domain` + `asset_key` scope; a Kubernetes-only surface must not consume unscoped Object Storage findings.
 - Object Storage rules remain canonical `object_storage` rules. Provider identity such as MinIO is finding evidence, not a separate Intelligence workspace or rule namespace unless the rule is genuinely provider-exclusive.
-- Active Object Storage recommendation evaluators consume committed evidence only. Intelligence must not issue live MinIO, Prometheus, or Alertmanager queries to construct recommendation findings.
+- Active Object Storage recommendation evaluators consume committed evidence only. Intelligence must not issue live MinIO, Metrics Source, or Alertmanager queries to construct recommendation findings.
 - A finding with no active match is not equivalent to runtime health. Recommendation posture uses `No Active Findings` rather than claiming infrastructure health.
 
 ## Rule Catalog provider-coverage contract
@@ -76,12 +76,12 @@ and route/model scaffolding alone must never be interpreted as execution readine
 - Rule keys remain canonical to the asset domain. Object Storage definitions use the `object_storage.*` namespace; current MinIO support must not create a parallel `minio.*` rule namespace unless a rule is genuinely exclusive to MinIO semantics.
 - Provider coverage is implementation evidence. It identifies which provider adapters/evidence paths currently satisfy a rule definition and must not change the canonical rule namespace.
 - The catalog may filter by provider coverage, but a provider filter does not imply that the rule condition itself is provider-specific.
-- Rule definitions use a generic `evidence_boundary` contract. Prometheus, Alertmanager, provider APIs, committed inventory, and worker-materialized artifacts are evidence sources; no single backend owns the catalog schema.
+- Rule definitions use a generic `evidence_boundary` contract. Metrics Source, Alertmanager, provider APIs, committed inventory, and worker-materialized artifacts are evidence sources; no single backend owns the catalog schema.
 - Object Storage metric-signal definitions must stay aligned with the thresholds used by Object Storage Analytics. Threshold changes require coordinated updates to analysis behavior, catalog definition, recommendation semantics where applicable, and contract tests.
 
 ## Alert Intelligence and outbound notification ownership
 
-Alert Intelligence is a read-oriented, asset-scoped interpretation workspace. Kubernetes and Object Storage consume their existing alert-source contracts: Automatic mode prefers Alertmanager and may fall back to Prometheus `ALERTS`. Provider alert lifecycle, KAORI recommendations, and catalog rules must remain distinguishable; contextual correlation must never be presented as causal attribution without evidence.
+Alert Intelligence is a read-oriented, asset-scoped interpretation workspace. Kubernetes and Object Storage consume their existing alert-source contracts: Automatic mode prefers Alertmanager and may fall back to Metrics Source alert evidence. Provider alert lifecycle, KAORI recommendations, and catalog rules must remain distinguishable; contextual correlation must never be presented as causal attribution without evidence.
 
 The Alert Intelligence page keeps the **Alert Intelligence Summary** visible as global posture, then uses one **Alert Intelligence Workspace** surface. Inside that workspace, the shared **KAORI Content Tabs** (`components/content_tabs.html`, server-owned `render_links()` mode) appear immediately below the workspace header for **Alert Records**, **Correlation & Guidance**, **Notification Delivery**, and **Evidence & Ownership**. A compact **Operational Context** row follows the tabs and owns domain, asset, and source policy for every section. This ordering is canonical: section navigation answers *where the operator is*, Operational Context answers *which asset/source the section describes*, and the active section answers *what evidence is available*. Alert Intelligence must not maintain a page-local tab style or adopt the Analytics client controller; URL/HTMX state remains server-owned while the shared component owns visual geometry. Active tab content must remain inside the same outer workspace surface rather than creating a second standalone section card below it. Search, severity, and lifecycle-state controls are record filters and belong only inside **Alert Records**; they refresh automatically through HTMX, there is no Apply/Filter submit action, and a compact **Reset Filters** action remains available while preserving domain, asset, and source. Each tab must carry its own informative context rather than acting as a label-only container: Alert Records exposes resolved source/runtime/lifecycle authority, Correlation exposes recommendation/rule counts plus the non-causal boundary, Notification Delivery exposes channel/delivery posture, and Evidence & Ownership exposes detection/lifecycle/interpretation/execution authority. Record pagination remains local to the Alert Records table.
 

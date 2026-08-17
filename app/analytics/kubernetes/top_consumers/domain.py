@@ -447,7 +447,7 @@ def build_evidence_message(
     if collect_evidence_errors(evidence):
         return (
             'No eligible consumer records were committed because one or more '
-            'Prometheus evidence queries were unavailable or failed.'
+            'Metrics Source evidence queries were unavailable or failed.'
         )
     return 'No eligible active consumer records were observed in the selected scope.'
 

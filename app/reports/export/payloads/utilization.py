@@ -5,7 +5,7 @@ from typing import Any
 from app.analytics.kubernetes.utilization.service import UtilizationService
 from app.cluster.constants import get_environment_label
 from app.models.report import Report
-from app.prometheus.service import PrometheusService
+from app.metrics.service import MetricsService
 from app.reports.export.payloads.common import get_report_selected_cluster, report_payload_error
 
 
@@ -16,15 +16,15 @@ def get_report_resource_utilization_payload(
     try:
         cluster = get_report_selected_cluster(report)
 
-        prometheus = PrometheusService(
+        metrics_source = MetricsService(
             cluster,
         )
 
         service = UtilizationService(
-            prometheus,
+            metrics_source,
         )
 
-        prometheus_status = service.get_prometheus_status()
+        metrics_source_status = service.get_metrics_source_status()
         summary = service.get_summary()
         summary_table = service.get_summary_table(
             summary,
@@ -79,7 +79,7 @@ def get_report_resource_utilization_payload(
                     or ''
                 ),
             },
-            'prometheus_status': prometheus_status,
+            'metrics_source_status': metrics_source_status,
             'summary': summary,
             'summary_table': summary_table,
             'cluster_info': cluster_info,
@@ -94,7 +94,7 @@ def get_report_resource_utilization_payload(
             },
             'forecast_payload': forecast_payload,
             'source_evidence': _source_evidence(
-                prometheus_status=prometheus_status,
+                metrics_source_status=metrics_source_status,
                 report_period=report.period or '24h',
                 forecast_payload=forecast_payload,
             ),
@@ -107,7 +107,7 @@ _BYTES_PER_GIB = 1024**3
 
 
 def _normalize_memory_consumers(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    """Add an explicit GiB value while preserving the Prometheus byte evidence."""
+    """Add an explicit GiB value while preserving the Metrics Source byte evidence."""
     normalized: list[dict[str, Any]] = []
     for item in items:
         if not isinstance(item, dict):
@@ -194,15 +194,15 @@ def _forecast_history_window(period: str) -> str:
 
 def _source_evidence(
     *,
-    prometheus_status: dict[str, Any],
+    metrics_source_status: dict[str, Any],
     report_period: str,
     forecast_payload: dict[str, Any],
 ) -> list[dict[str, Any]]:
     return [
         {
-            'source': 'Prometheus Observation Cache',
-            'freshness': _format_latency(prometheus_status.get('response_time_ms')),
-            'last_collected': prometheus_status.get('last_checked_at') or 'Not Available',
+            'source': 'Metrics Source Observation Cache',
+            'freshness': _format_latency(metrics_source_status.get('response_time_ms')),
+            'last_collected': metrics_source_status.get('last_checked_at') or 'Not Available',
         },
         {
             'source': 'Kubernetes Cluster Scope',

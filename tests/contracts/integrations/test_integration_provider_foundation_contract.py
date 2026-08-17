@@ -43,7 +43,7 @@ def test_builtin_provider_registration_uses_canonical_taxonomy() -> None:
             "domain_key='orchestration'",
             "capability_key='cluster_orchestration'",
         ),
-        'app/integrations/prometheus/__init__.py': (
+        'app/integrations/metrics/__init__.py': (
             "domain_key='observability'",
             "capability_key='metrics'",
         ),
@@ -66,8 +66,8 @@ def test_builtin_provider_registration_uses_canonical_taxonomy() -> None:
 
 def test_binding_service_is_asset_centric_without_domain_compatibility_wrappers() -> None:
     binding_service = read('app/integrations/binding_service.py')
-    prometheus_adapter = read('app/integrations/prometheus/adapter.py')
-    prometheus_binding = read('app/integrations/prometheus/binding_management.py')
+    prometheus_adapter = read('app/integrations/metrics/adapter.py')
+    metrics_binding = read('app/integrations/metrics/binding_management.py')
 
     assert 'def create_source_binding(' in binding_service
     assert 'asset_type: str' in binding_service
@@ -81,9 +81,9 @@ def test_binding_service_is_asset_centric_without_domain_compatibility_wrappers(
     assert 'spec=SourceBindingSpec(' in prometheus_adapter
     assert "asset_type=str(kwargs.get('scope_type') or '')" in prometheus_adapter
     assert "asset_key=str(kwargs.get('scope_key') or '')" in prometheus_adapter
-    assert 'spec: SourceBindingSpec' in prometheus_binding
-    assert 'asset_type=normalized_scope_type' in prometheus_binding
-    assert 'asset_key=normalized_scope_key' in prometheus_binding
+    assert 'spec: SourceBindingSpec' in metrics_binding
+    assert 'asset_type=normalized_scope_type' in metrics_binding
+    assert 'asset_key=normalized_scope_key' in metrics_binding
 
 
 def test_provider_record_resolution_no_longer_branches_on_provider_names() -> None:
@@ -92,7 +92,7 @@ def test_provider_record_resolution_no_longer_branches_on_provider_names() -> No
 
     assert 'get_integration(instance.provider_type)' in provider_record
     assert 'get_record_for_canonical(instance.id)' in provider_record
-    assert "instance.provider_type == 'prometheus'" not in provider_record
+    assert "provider_type == '" not in provider_record
     assert "instance.provider_type == 'alertmanager'" not in provider_record
     assert "instance.provider_type == 'kubernetes'" not in provider_record
     assert "instance.provider_type == 'minio'" not in provider_record
@@ -107,25 +107,25 @@ def test_validation_worker_dispatches_full_validation_through_registry() -> None
     assert 'runtime_refresh.refresh_and_record(' in full_validation
     assert "if 'binding.validate' in module.operations" in full_validation
     assert '_refresh_provider_bindings(' in full_validation
-    assert "provider_type == 'prometheus'" not in full_validation
+    assert "provider_type == '" not in full_validation
     assert "provider_type == 'alertmanager'" not in full_validation
     assert "provider_type == 'kubernetes'" not in full_validation
     assert "provider_type == 'minio'" not in full_validation
 
 
-def test_prometheus_binding_validation_is_asset_profile_driven() -> None:
-    profiles = read('app/integrations/prometheus/binding_profiles.py')
-    profile_catalog = read('app/definitions/catalogs/integrations/prometheus.yaml')
-    validation = read('app/integrations/prometheus/binding_validation.py')
+def test_metrics_binding_validation_is_asset_profile_driven() -> None:
+    profiles = read('app/integrations/metrics/binding_profiles.py')
+    profile_catalog = read('app/definitions/catalogs/integrations/metrics_source.yaml')
+    validation = read('app/integrations/metrics/binding_validation.py')
 
     assert 'class BindingValidationProfile' in profiles
     assert 'def register_binding_validation_profile(' in profiles
-    assert "integration_provider_document('prometheus')" in profiles
+    assert "integration_provider_document('metrics_source')" in profiles
     assert 'asset_type: kubernetes_cluster' in profile_catalog
     assert 'profile_key: kubernetes-metrics-v1' in profile_catalog
-    assert 'get_binding_validation_profile(binding.asset_type)' in validation
+    assert 'get_binding_validation_profile(instance.adapter_key, binding.asset_type)' in validation
     assert "('kube_node_info', 'Kubernetes node identity')" not in validation
-    assert 'No Prometheus consumer validation profile is registered for asset type' in validation
+    assert 'No metrics-source validation profile is registered for adapter' in validation
 
 
 def test_overview_catalog_is_registry_driven_and_storage_is_domain_not_fake_provider() -> None:

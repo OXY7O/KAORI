@@ -21,9 +21,9 @@ Templates, routes, provider adapters, and workers must never parse definition YA
 - Evidence-ready, planned, and reserved report coverage domains used by Reports Overview.
 - Notification Center category/routing metadata.
 - Integration domain/capability taxonomy and managed consumer-asset metadata.
-- Kubernetes, Prometheus, Alertmanager, and Object Storage provider capability catalogs.
+- Kubernetes, Metrics Source, Alertmanager, and Object Storage provider capability catalogs.
 - Product/version compatibility profiles and Kubernetes lifecycle support policy.
-- Prometheus and Alertmanager consumer binding/validation profiles.
+- Metrics Source and Alertmanager consumer binding/validation profiles.
 
 ## Code/DB-owned
 

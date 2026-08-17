@@ -2,7 +2,7 @@
 {% import "components/table_label.html" as table_label %}
 {% call operational_section_card.render(
     'Alerts Summary',
-    'Active Alertmanager and Prometheus alert signals.',
+    'Active Alertmanager and Metrics Source alert signals.',
     'bell-ring',
     id='dashboard-alerts-summary',
     action_href=url_for('analytics.alerts'),
@@ -14,7 +14,7 @@
         {% set blocked_state_icon = "server-off" %}
         {% set blocked_state_label = "Cluster Required" %}
         {% set blocked_state_title = "Select Cluster" %}
-        {% set blocked_state_description = "Select a cluster to view Alertmanager and Prometheus alert signals." %}
+        {% set blocked_state_description = "Select a cluster to view Alertmanager and Metrics Source alert signals." %}
         {% set blocked_state_tone = "warning" %}
         {% include 'components/states/_blocked_state.html' %}
     {% else %}

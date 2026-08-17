@@ -32,8 +32,8 @@ def test_user_facing_analytics_routes_are_permission_guarded() -> None:
 
 def test_analytics_route_layer_does_not_execute_provider_queries_directly() -> None:
     forbidden = (
-        'PrometheusConsumer(',
-        'PrometheusService(',
+        'MetricsConsumer(',
+        'MetricsService(',
         '.query_range(',
         '.custom_query(',
         'get_alertmanager_alerts(',

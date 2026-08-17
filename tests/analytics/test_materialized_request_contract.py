@@ -48,7 +48,7 @@ def test_materialized_request_contract_exposes_readiness_states() -> None:
 
 
 def test_hard_dependency_blocker_prevents_background_dispatch(monkeypatch) -> None:
-    blocker = SimpleNamespace(kind='prometheus_connection')
+    blocker = SimpleNamespace(kind='metrics_source_connection')
     _configure_request(
         monkeypatch,
         result=SnapshotResult(None, None, 'missing', False),
@@ -81,7 +81,7 @@ def test_hard_dependency_blocker_prevents_background_dispatch(monkeypatch) -> No
 
 
 def test_available_snapshot_survives_current_source_blocker(monkeypatch) -> None:
-    blocker = SimpleNamespace(kind='prometheus_connection')
+    blocker = SimpleNamespace(kind='metrics_source_connection')
     snapshot = {'cluster': {'id': 'cluster-b', 'name': 'Cluster B'}}
     _configure_request(
         monkeypatch,

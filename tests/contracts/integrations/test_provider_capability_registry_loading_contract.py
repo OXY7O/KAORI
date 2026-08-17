@@ -2,7 +2,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
 SHARED = ROOT / 'app/integrations/capability_registry.py'
-PROM = ROOT / 'app/templates/prometheus/partials/_capability_registry.html'
+PROM = ROOT / 'app/templates/metrics/partials/_capability_registry.html'
 ALERT = ROOT / 'app/templates/alertmanager/partials/_capability_registry.html'
 
 

@@ -54,8 +54,8 @@ VALID_ANALYTICS_TIME_RANGES = {
 }
 
 
-PROMETHEUS_FAILURE_SESSION_KEY = 'analytics_overview_prometheus_failures'
-PROMETHEUS_FAILURE_SESSION_LIMIT = 32
+METRICS_SOURCE_FAILURE_SESSION_KEY = 'analytics_overview_metrics_source_failures'
+METRICS_SOURCE_FAILURE_SESSION_LIMIT = 32
 
 
 def _render_operational_toast(feedback: dict) -> str:
@@ -69,14 +69,14 @@ def _render_operational_toast(feedback: dict) -> str:
     )
 
 
-def _update_prometheus_failure_state(
+def _update_metrics_source_failure_state(
     *,
     cluster_id: str,
     fingerprint: str | None,
 ) -> bool:
     state = dict(
         session.get(
-            PROMETHEUS_FAILURE_SESSION_KEY,
+            METRICS_SOURCE_FAILURE_SESSION_KEY,
             {},
         )
     )
@@ -84,7 +84,7 @@ def _update_prometheus_failure_state(
     if fingerprint is None:
         if cluster_id in state:
             state.pop(cluster_id, None)
-            session[PROMETHEUS_FAILURE_SESSION_KEY] = state
+            session[METRICS_SOURCE_FAILURE_SESSION_KEY] = state
             session.modified = True
         return False
 
@@ -92,39 +92,39 @@ def _update_prometheus_failure_state(
         return False
 
     state[cluster_id] = fingerprint
-    if len(state) > PROMETHEUS_FAILURE_SESSION_LIMIT:
+    if len(state) > METRICS_SOURCE_FAILURE_SESSION_LIMIT:
         oldest_cluster_id = next(iter(state))
         state.pop(oldest_cluster_id, None)
 
-    session[PROMETHEUS_FAILURE_SESSION_KEY] = state
+    session[METRICS_SOURCE_FAILURE_SESSION_KEY] = state
     session.modified = True
     return True
 
 
-def _build_prometheus_failure_feedback(payload: dict) -> str:
-    prometheus = payload.get('prometheus') or {}
+def _build_metrics_source_failure_feedback(payload: dict) -> str:
+    metrics_source = payload.get('metrics_source') or {}
     selected_cluster = payload.get('selected_cluster') or {}
     cluster_id = str(selected_cluster.get('id') or payload.get('selected_cluster_id') or '')
 
     if not cluster_id:
         return ''
 
-    if prometheus.get('connected') or not prometheus.get('configured'):
-        _update_prometheus_failure_state(
+    if metrics_source.get('connected') or not metrics_source.get('configured'):
+        _update_metrics_source_failure_state(
             cluster_id=cluster_id,
             fingerprint=None,
         )
         return ''
 
-    endpoint = str(prometheus.get('endpoint') or '').strip()
+    endpoint = str(metrics_source.get('endpoint') or '').strip()
     diagnostic_detail = str(
-        prometheus.get('diagnostic_detail') or 'The Prometheus health check did not complete successfully.'
+        metrics_source.get('diagnostic_detail') or 'The Metrics Source health check did not complete successfully.'
     ).strip()
     fingerprint = sha256(
         f'{endpoint}|{diagnostic_detail}'.encode(),
     ).hexdigest()
 
-    if not _update_prometheus_failure_state(
+    if not _update_metrics_source_failure_state(
         cluster_id=cluster_id,
         fingerprint=fingerprint,
     ):
@@ -132,7 +132,7 @@ def _build_prometheus_failure_feedback(payload: dict) -> str:
 
     failure = describe_integration_failure(
         RuntimeError(diagnostic_detail),
-        service_name='Prometheus',
+        service_name='Metrics Source',
         endpoint=endpoint,
         request_path='/api/v1/query',
     )
@@ -141,10 +141,10 @@ def _build_prometheus_failure_feedback(payload: dict) -> str:
 
     feedback = record_operational_activity(
         user_id=current_user.id,
-        event_type='prometheus_health_check_failed',
+        event_type='metrics_source_health_check_failed',
         status='error',
-        title='Prometheus connection failed',
-        message=f'Prometheus is unreachable for {cluster_name}.',
+        title='Metrics Source connection failed',
+        message=f'The selected metrics source is unreachable for {cluster_name}.',
         detail=str(failure['detail']),
         metadata={
             'cluster_id': cluster_id,
@@ -289,7 +289,7 @@ def overview_section(section: str):
                     'analytics/kubernetes/overview/partials/_composite_tabs_oob.html',
                     payload=payload,
                 ),
-                _build_prometheus_failure_feedback(payload),
+                _build_metrics_source_failure_feedback(payload),
             )
         )
 

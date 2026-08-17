@@ -3,6 +3,7 @@ from flask.typing import ResponseReturnValue
 from flask_login import current_user
 
 from app.common.http import htmx_target, is_htmx_request
+from app.common.presentation import present_key_label
 from app.integrations.binding_service import SourceBindingSpec, create_source_binding
 from app.integrations.coverage import build_binding_workspace
 from app.integrations.domain_service import (
@@ -17,17 +18,18 @@ from app.integrations.kubernetes_frontpage import (
     build_kubernetes_page,
     build_kubernetes_registry_row,
 )
+from app.integrations.metrics.providers import provider_definitions
 from app.integrations.overview_workspace import build_integrations_overview
 from app.integrations.repository import get_cluster, get_kubernetes_connection_by_cluster_id
 from app.integrations.runtime.presentation import runtime_history_view
 from app.integrations.runtime.repository import paginate_runtime_history
 from app.integrations.service import (
-    PrometheusRegistryFilters,
+    MetricsSourceRegistryFilters,
     build_alertmanager_page,
     build_integration_runtime_detail,
     build_kubernetes_capability_registry,
     build_kubernetes_detail,
-    build_prometheus_page,
+    build_metrics_source_page,
 )
 from app.integrations.validation.state import (
     build_validation_snapshot,
@@ -40,7 +42,7 @@ from app.integrations.validation.web import (
     validate_snapshot_access,
 )
 from app.notifications.service import get_navigation_notification_context, record_operational_activity
-from app.prometheus.registration_web import new_instance_response, test_new_instance_connection_response
+from app.metrics.registration_web import new_instance_response, test_new_instance_connection_response
 from app.rbac.decorators import permission_required
 
 integrations_bp = Blueprint('integrations', __name__, url_prefix='/integrations')
@@ -458,43 +460,43 @@ def kubernetes_runtime_history(cluster_id: str) -> ResponseReturnValue:
     )
 
 
-@integrations_bp.route('/observability/metrics/prometheus/new', methods=['GET', 'POST'])
+@integrations_bp.get('/observability/metrics-sources/new')
 @permission_required('settings.manage_integrations')
-def register_prometheus_metrics_source() -> ResponseReturnValue:
-    return new_instance_response(source_type_override='prometheus')
+def select_metrics_source_provider() -> ResponseReturnValue:
+    providers = [
+        {
+            'key': provider.key,
+            'label': provider.label,
+            'description': provider.description,
+            'icon': provider.icon,
+            'adapter_key': provider.adapter_key,
+            'query_language': provider.query_language,
+            'registration_url': url_for('integrations.register_metrics_source', provider_key=provider.key),
+        }
+        for provider in provider_definitions()
+    ]
+    return render_template('metrics/provider_selector.html', providers=providers)
 
 
-@integrations_bp.post('/observability/metrics/prometheus/test-connection')
+@integrations_bp.route('/observability/metrics-sources/<string:provider_key>/new', methods=['GET', 'POST'])
 @permission_required('settings.manage_integrations')
-def test_prometheus_metrics_source() -> ResponseReturnValue:
-    return test_new_instance_connection_response(source_type_override='prometheus')
+def register_metrics_source(provider_key: str) -> ResponseReturnValue:
+    return new_instance_response(provider_key=provider_key)
 
 
-@integrations_bp.route('/observability/metrics/thanos/new', methods=['GET', 'POST'])
+@integrations_bp.post('/observability/metrics-sources/<string:provider_key>/test-connection')
 @permission_required('settings.manage_integrations')
-def register_thanos_metrics_source() -> ResponseReturnValue:
-    return new_instance_response(source_type_override='thanos')
+def test_metrics_source(provider_key: str) -> ResponseReturnValue:
+    return test_new_instance_connection_response(provider_key=provider_key)
 
 
-@integrations_bp.post('/observability/metrics/thanos/test-connection')
+@integrations_bp.get('/observability/metrics-sources')
 @permission_required('settings.manage_integrations')
-def test_thanos_metrics_source() -> ResponseReturnValue:
-    return test_new_instance_connection_response(source_type_override='thanos')
-
-
-@integrations_bp.get('/prometheus')
-@permission_required('settings.manage_integrations')
-def prometheus_legacy() -> ResponseReturnValue:
-    return redirect(url_for('integrations.prometheus', **request.args), code=308)
-
-
-@integrations_bp.get('/observability/metrics')
-@permission_required('settings.manage_integrations')
-def prometheus() -> ResponseReturnValue:
-    context = build_prometheus_page(
-        filters=PrometheusRegistryFilters(
+def metrics_sources() -> ResponseReturnValue:
+    context = build_metrics_source_page(
+        filters=MetricsSourceRegistryFilters(
             query=request.args.get('q', '').strip(),
-            source_type=request.args.get('source_type', '').strip(),
+            provider_key=request.args.get('provider_key', '').strip(),
             compatibility=request.args.get('compatibility', '').strip(),
             readiness=request.args.get('readiness', '').strip(),
             page=request.args.get('page', 1, type=int) or 1,
@@ -511,12 +513,12 @@ def prometheus() -> ResponseReturnValue:
         target = request.headers.get('HX-Target')
         if target == 'integration-coverage':
             return render_template('integrations/partials/_coverage_card.html', **context)
-        if target == 'prometheus-coverage-content':
+        if target == 'metrics-source-coverage-content':
             return render_template('integrations/partials/_coverage_content.html', **context)
-        if target == 'prometheus-inventory-card':
-            return render_template('integrations/prometheus/partials/_instance_inventory.html', **context)
-        return render_template('integrations/prometheus/partials/_inventory_content.html', **context)
-    return render_template('integrations/prometheus.html', **context)
+        if target == 'metrics-source-inventory-card':
+            return render_template('integrations/metrics/partials/_instance_inventory.html', **context)
+        return render_template('integrations/metrics/partials/_inventory_content.html', **context)
+    return render_template('integrations/metrics.html', **context)
 
 
 @integrations_bp.get('/alertmanager')
@@ -561,7 +563,7 @@ def _binding_response(provider_type: str, *, scope_key: str) -> ResponseReturnVa
         role = request.form.get('binding_role', 'primary').strip().lower()
         priority = request.form.get('priority', 100, type=int) or 100
         routing_policy = None
-        if provider_type == 'prometheus':
+        if provider_type == 'metrics_source':
             routing_weight = request.form.get('routing_weight', type=int)
             routing_policy = {
                 'query_horizon': request.form.get('query_horizon', 'balanced').strip().lower() or 'balanced',
@@ -572,7 +574,7 @@ def _binding_response(provider_type: str, *, scope_key: str) -> ResponseReturnVa
         binding = None
         try:
             if source_id is None:
-                raise ValueError(f'Select an existing {provider_type.title()} source.')
+                raise ValueError(f'Select an existing {present_key_label(provider_type)} source.')
             cluster = get_cluster(cluster_id)
             if cluster is None:
                 raise ValueError('The selected Kubernetes scope no longer exists.')
@@ -601,7 +603,7 @@ def _binding_response(provider_type: str, *, scope_key: str) -> ResponseReturnVa
                 user_id=current_user.id,
                 event_type=f'{provider_type}_binding_create_rejected',
                 status='error',
-                title=f'{provider_type.title()} binding not saved',
+                title=f'{present_key_label(provider_type)} binding not saved',
                 message='KAORI could not create the requested source binding.',
                 detail=str(exc),
                 action_url=request.path,
@@ -627,7 +629,7 @@ def _binding_response(provider_type: str, *, scope_key: str) -> ResponseReturnVa
                 user_id=current_user.id,
                 event_type=f'{provider_type}_binding_create_failed',
                 status='error',
-                title=f'{provider_type.title()} binding not saved',
+                title=f'{present_key_label(provider_type)} binding not saved',
                 message='KAORI could not persist the source binding.',
                 detail='Review KAORI logs and database connectivity before retrying.',
                 action_url=request.path,
@@ -646,12 +648,12 @@ def _binding_response(provider_type: str, *, scope_key: str) -> ResponseReturnVa
                 user_id=current_user.id,
                 event_type=f'{provider_type}_binding_created',
                 status='success',
-                title=f'{provider_type.title()} binding saved',
+                title=f'{present_key_label(provider_type)} binding saved',
                 message=f'{source.name} is associated with {cluster.name} and requires binding validation.',
                 detail=f'Binding selector: {selector_label}={selector_value}. Source credentials and runtime remain shared; operational resolution stays blocked until validation succeeds.',
                 action_url=(
-                    url_for('prometheus.instance_detail', instance_id=source.id) + '#scope'
-                    if provider_type == 'prometheus'
+                    url_for('metrics.instance_detail', instance_id=source.id) + '#scope'
+                    if provider_type == 'metrics_source'
                     else url_for('alertmanager.instance_detail', instance_id=source.id) + '#scope'
                 ),
                 action_label='Review source binding',
@@ -668,7 +670,7 @@ def _binding_response(provider_type: str, *, scope_key: str) -> ResponseReturnVa
             )
             if not is_htmx_request():
                 return redirect(
-                    url_for('integrations.prometheus' if provider_type == 'prometheus' else 'integrations.alertmanager')
+                    url_for('integrations.metrics_sources' if provider_type == 'metrics_source' else 'integrations.alertmanager')
                     + '#integration-coverage'
                 )
 
@@ -688,13 +690,13 @@ def _binding_response(provider_type: str, *, scope_key: str) -> ResponseReturnVa
     return render_template('integrations/bindings/source.html', **context)
 
 
-@integrations_bp.route('/prometheus/bind', methods=['GET', 'POST'])
+@integrations_bp.route('/metrics-sources/bind', methods=['GET', 'POST'])
 @permission_required('settings.manage_integrations')
-def bind_prometheus_source() -> ResponseReturnValue:
+def bind_metrics_source() -> ResponseReturnValue:
     scope_key = request.values.get('scope_key', '').strip()
     if not scope_key:
         abort(400)
-    return _binding_response('prometheus', scope_key=scope_key)
+    return _binding_response('metrics_source', scope_key=scope_key)
 
 
 @integrations_bp.route('/alertmanager/bind', methods=['GET', 'POST'])

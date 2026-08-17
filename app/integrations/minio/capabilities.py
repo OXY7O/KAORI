@@ -39,7 +39,7 @@ def _load_capability_contract() -> tuple[
         profile_keys,
         require_str(document, 'capability_profile', 'object_storage'),
         require_str(document, 'object_storage_system_scope', 'object_storage'),
-        string_tuple(document.get('prometheus_capability_scope'), 'object_storage.prometheus_capability_scope'),
+        string_tuple(document.get('metrics_source_capability_scope'), 'object_storage.metrics_source_capability_scope'),
     )
 
 
@@ -48,6 +48,6 @@ def _load_capability_contract() -> tuple[
     COMPATIBILITY_PROFILES,
     CAPABILITY_PROFILE,
     OBJECT_STORAGE_SYSTEM_SCOPE,
-    PROMETHEUS_CAPABILITY_SCOPE,
+    METRICS_SOURCE_CAPABILITY_SCOPE,
 ) = _load_capability_contract()
 CAPABILITY_KEYS = tuple(item.key for item in API_CAPABILITIES)

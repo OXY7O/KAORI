@@ -30,21 +30,20 @@ def test_inventory_and_analytics_use_explicit_domain_namespaces() -> None:
 def test_object_storage_analytics_domain_is_metrics_backend_neutral() -> None:
     service = read('app/analytics/object_storage/service.py')
     contracts = read('app/analytics/shared/metrics/contracts.py')
-    adapter = read('app/analytics/object_storage/sources/minio_prometheus.py')
+    adapter = read('app/analytics/object_storage/sources/minio_metrics.py')
     resolver = read('app/analytics/object_storage/sources/resolver.py')
 
     assert 'class MetricsSource(Protocol)' in contracts
-    assert 'PrometheusConsumer' not in service
-    assert 'PrometheusError' not in service
+    assert 'MetricsConsumer' not in service
+    assert 'MetricsSourceError' not in service
     assert 'get_object_storage_query_expression' not in service
-    assert 'PrometheusConsumer' in adapter
+    assert 'MetricsConsumer' in adapter
     assert 'retry_count=0' in adapter
     assert '_SOURCE_ADAPTERS' in resolver
-    assert "metrics_provider='prometheus'" in resolver
     assert "asset_profile='minio-v2'" in resolver
 
 
-def test_retired_object_storage_prometheus_domain_modules_are_deleted() -> None:
+def test_retired_object_storage_metrics_domain_modules_are_deleted() -> None:
     assert not (ROOT / 'app/analytics/object_storage/metrics.py').exists()
     assert not (ROOT / 'app/analytics/object_storage/parsing.py').exists()
 

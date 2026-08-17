@@ -15,7 +15,7 @@
         {% set blocked_state_icon = "server-off" %}
         {% set blocked_state_label = "Cluster Required" %}
         {% set blocked_state_title = "Select Cluster" %}
-        {% set blocked_state_description = "Select a cluster to calculate forecast from committed Prometheus trend data." %}
+        {% set blocked_state_description = "Select a cluster to calculate forecast from committed Metrics Source trend data." %}
         {% set blocked_state_tone = "warning" %}
         {% include 'components/states/_blocked_state.html' %}
     {% elif dashboard.forecast_snapshot.source_status != 'Available' %}

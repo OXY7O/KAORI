@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
+from app.common.presentation import present_key_label
 from app.extensions.db import db
 from app.models.integration import IntegrationBinding, IntegrationInstance
 
@@ -31,16 +32,16 @@ def ensure_provider_operational(provider_record: Any, *, provider_type: str) -> 
     """
     provider_enabled = getattr(provider_record, 'enabled', None)
     if provider_enabled is not None and not bool(provider_enabled):
-        raise RuntimeError(f'{provider_type.title()} operation was canceled because the provider instance is disabled.')
+        raise RuntimeError(f'{present_key_label(provider_type)} operation was canceled because the provider instance is disabled.')
     canonical = getattr(provider_record, 'integration_instance', None)
     if canonical is None:
         raise RuntimeError(
-            f'{provider_type.title()} operation was canceled because canonical integration identity is missing.'
+            f'{present_key_label(provider_type)} operation was canceled because canonical integration identity is missing.'
         )
     lifecycle_status = str(getattr(canonical, 'lifecycle_status', '') or '').strip().lower()
     if not bool(getattr(canonical, 'enabled', False)) or lifecycle_status != 'active':
         raise RuntimeError(
-            f'{provider_type.title()} operation was canceled because the integration is no longer active.'
+            f'{present_key_label(provider_type)} operation was canceled because the integration is no longer active.'
         )
     return canonical
 
@@ -73,9 +74,16 @@ def ensure_canonical_instance(provider_record: Any, *, provider_type: str) -> In
         {
             'provider_record_id': getattr(provider_record, 'id', None),
             'endpoint_product': getattr(provider_record, 'endpoint_product', None),
-            'metrics_source_type': getattr(provider_record, 'source_type', None),
         }
     )
+    if provider_type == 'metrics_source':
+        metadata.update(
+            {
+                'metrics_provider_key': getattr(provider_record, 'provider_key', None),
+                'metrics_adapter_key': getattr(provider_record, 'adapter_key', None),
+                'metrics_query_language': getattr(provider_record, 'query_language', None),
+            }
+        )
     canonical.metadata_json = metadata
     return canonical
 

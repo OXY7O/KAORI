@@ -20,7 +20,7 @@ Examples:
 
 - Roles & Access → Permission Catalog
 - Kubernetes connection detail → Kubernetes Inventory
-- Prometheus connection detail → Kubernetes Analytics
+- Metrics Source connection detail → Kubernetes Analytics
 - Alertmanager connection detail → Alert Intelligence
 
 Do not use it for generic recommendations, external documentation, unrelated shortcuts, or a list of possible destinations.

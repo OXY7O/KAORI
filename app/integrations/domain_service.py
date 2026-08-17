@@ -10,7 +10,8 @@ from sqlalchemy.orm import load_only, selectinload
 from app.common.pagination import paginate_sequence
 from app.integrations.binding_selectors import selector_summary
 from app.integrations.contracts import IntegrationNotRegistered
-from app.integrations.prometheus.routing import normalize_routing_policy
+from app.integrations.metrics.providers import provider_definition
+from app.integrations.metrics.routing import normalize_routing_policy
 from app.integrations.registry import IntegrationModule, registry
 from app.integrations.taxonomy import (
     asset_types_for_domain,
@@ -312,7 +313,7 @@ def _binding_registry_rows(
         asset_identity = (binding.asset_type, str(binding.asset_key))
         source_provider, source_provider_filter_key = _provider_source_identity(instance, module)
         routing_policy = (
-            normalize_routing_policy(binding.routing_policy) if instance.provider_type == 'prometheus' else None
+            normalize_routing_policy(binding.routing_policy) if instance.provider_type == 'metrics_source' else None
         )
         rows.append(
             {
@@ -436,14 +437,15 @@ def _routing_label(routing_policy: dict[str, Any] | None) -> str | None:
 
 
 def _provider_source_identity(instance: IntegrationInstance, module: IntegrationModule) -> tuple[str, str]:
-    if instance.provider_type != 'prometheus':
+    if instance.provider_type != 'metrics_source':
         label = module.runtime_label or module.label
         return label, instance.provider_type
     metadata = instance.metadata_json or {}
-    source_type = str(metadata.get('metrics_source_type') or 'prometheus').strip().lower()
-    if source_type == 'thanos':
-        return 'Thanos Query', 'prometheus:thanos'
-    return 'Prometheus', 'prometheus:prometheus'
+    provider_key = str(metadata.get('metrics_provider_key') or '').strip().lower()
+    if not provider_key:
+        return module.runtime_label or module.label, instance.provider_type
+    definition = provider_definition(provider_key)
+    return definition.label, f'metrics_source:{provider_key}'
 
 
 def _status_filter_options(rows: list[dict[str, Any]], key: str) -> list[dict[str, str]]:

@@ -8,7 +8,7 @@ from typing import Any
 from app.analytics.kubernetes.common.base_service import AnalyticsBaseService
 from app.analytics.kubernetes.common.context import build_analysis_utilization_context
 from app.analytics.kubernetes.common.payloads import get_empty_workload_payload
-from app.analytics.kubernetes.common.presentation import present_prometheus_status
+from app.analytics.kubernetes.common.presentation import present_metrics_source_status
 from app.analytics.kubernetes.utilization.service import UtilizationService
 from app.analytics.kubernetes.workload.domain import build_governance_findings, build_workload_posture
 from app.analytics.kubernetes.workload.formatting import get_workload_time_step
@@ -26,9 +26,9 @@ from app.analytics.kubernetes.workload.quota import (
 )
 from app.analytics.shared.coercion import as_dict, as_list, safe_float
 from app.analytics.shared.params import ALLOWED_PER_PAGE_VALUES, get_allowed_time_ranges, get_selected_time_range
-from app.common.dependencies import prometheus_capability_blocker, prometheus_connection_blocker
+from app.common.dependencies import metrics_source_capability_blocker, metrics_source_connection_blocker
 from app.integrations.consumer.contracts import ConsumerResult
-from app.integrations.prometheus.query_profiles import get_query_expression
+from app.integrations.metrics.query_profiles import get_query_expression
 from app.intelligence.recommendation_engine import (
     build_workload_actionable_recommendations,
     count_actionable_recommendations,
@@ -73,13 +73,13 @@ class WorkloadAnalysisService(AnalyticsBaseService):
     def requirements(self) -> ConsumerResult[dict[str, Any]]:
         return self.consumer.requirements(self.REQUIRED_CAPABILITIES)
 
-    def get_prometheus_result(self, query: str) -> list[dict[str, Any]]:
+    def get_metrics_result(self, query: str) -> list[dict[str, Any]]:
         response = self.consumer.query(query, required_capabilities=self.REQUIRED_CAPABILITIES)
         data = response.get('data', {}) if isinstance(response, dict) else {}
         result = data.get('result', []) if isinstance(data, dict) else []
         return [item for item in result if isinstance(item, dict)] if isinstance(result, list) else []
 
-    def get_prometheus_status(self) -> dict[str, Any]:
+    def get_metrics_source_status(self) -> dict[str, Any]:
         response = self.consumer.analytics_status()
         payload = response.payload if isinstance(response.payload, dict) else {}
         detail = None
@@ -87,9 +87,9 @@ class WorkloadAnalysisService(AnalyticsBaseService):
             detail = (
                 response.diagnostics[0].detail
                 if response.diagnostics and response.diagnostics[0].detail
-                else (response.diagnostics[0].message if response.diagnostics else 'Prometheus is unavailable.')
+                else (response.diagnostics[0].message if response.diagnostics else 'Metrics Source is unavailable.')
             )
-        return present_prometheus_status(
+        return present_metrics_source_status(
             {
                 'configured': bool(payload.get('configured', True)),
                 'connected': response.ok,
@@ -103,21 +103,21 @@ class WorkloadAnalysisService(AnalyticsBaseService):
 
     def get_tenant_quota_summary(self, selected_namespace: str = '') -> dict[str, Any]:
         return build_tenant_quota_summary(
-            active_namespaces=self.get_prometheus_vector_map(
+            active_namespaces=self.get_metrics_vector_map(
                 query=NAMESPACE_ACTIVE_QUERY,
                 label='namespace',
             ),
             hard=self.get_resource_quota_map(TENANT_QUOTA_HARD_QUERY),
             used=self.get_resource_quota_map(TENANT_QUOTA_USED_QUERY),
-            cpu_actual=self.get_prometheus_vector_map(
+            cpu_actual=self.get_metrics_vector_map(
                 query=TENANT_CPU_ACTUAL_QUERY,
                 label='namespace',
             ),
-            memory_actual=self.get_prometheus_vector_map(
+            memory_actual=self.get_metrics_vector_map(
                 query=TENANT_MEMORY_ACTUAL_QUERY,
                 label='namespace',
             ),
-            pod_actual=self.get_prometheus_vector_map(
+            pod_actual=self.get_metrics_vector_map(
                 query=TENANT_POD_ACTUAL_QUERY,
                 label='namespace',
             ),
@@ -138,13 +138,13 @@ class WorkloadAnalysisService(AnalyticsBaseService):
             memory_limits=self._pod_vector(WORKLOAD_MEMORY_LIMITS_QUERY),
             memory_current=self._pod_vector(WORKLOAD_MEMORY_CURRENT_QUERY),
             memory_peak=self._pod_vector(self.build_range_query(WORKLOAD_MEMORY_PEAK_QUERY_TEMPLATE, time_range)),
-            owner_map=parse_pod_owner_map(self.get_prometheus_result(WORKLOAD_POD_OWNER_QUERY)),
-            qos_map=parse_pod_qos_map(self.get_prometheus_result(WORKLOAD_QOS_QUERY)),
+            owner_map=parse_pod_owner_map(self.get_metrics_result(WORKLOAD_POD_OWNER_QUERY)),
+            qos_map=parse_pod_qos_map(self.get_metrics_result(WORKLOAD_QOS_QUERY)),
         )
         return build_workload_mapping_payload(evidence, selected_namespace=selected_namespace)
 
     def get_resource_quota_map(self, query: str) -> dict[str, dict[str, dict[str, float]]]:
-        return parse_resource_quota_map(self.get_prometheus_result(query), self.extract_value)
+        return parse_resource_quota_map(self.get_metrics_result(query), self.extract_value)
 
     def get_governance_findings(
         self,
@@ -160,7 +160,7 @@ class WorkloadAnalysisService(AnalyticsBaseService):
         )
 
     def _pod_vector(self, query: str) -> dict[str, float]:
-        return self.get_prometheus_vector_map(
+        return self.get_metrics_vector_map(
             query=query,
             label='pod',
             secondary_label='namespace',
@@ -171,7 +171,7 @@ def get_workload_analysis_context(query_args: Mapping[str, Any]) -> dict[str, An
     """Build the committed cluster/time-range dataset; UI filters remain presentation state."""
     _, cluster, utilization_service, context = build_analysis_utilization_context(
         query_args=query_args,
-        check_prometheus_connection=False,
+        check_metrics_source_connection=False,
     )
     time_range = get_selected_time_range(query_args=query_args)
     context.update(_empty_materialized_context(time_range))
@@ -183,7 +183,7 @@ def get_workload_analysis_context(query_args: Mapping[str, Any]) -> dict[str, An
     requirement_result = service.requirements()
     if not requirement_result.ok:
         missing = list((requirement_result.payload or {}).get('missing_capabilities') or [])
-        context['dependency_blocker'] = prometheus_capability_blocker(
+        context['dependency_blocker'] = metrics_source_capability_blocker(
             cluster,
             feature_label='Workload Analytics',
             missing_capabilities=missing,
@@ -192,18 +192,18 @@ def get_workload_analysis_context(query_args: Mapping[str, Any]) -> dict[str, An
         return context
 
     try:
-        prometheus_status = service.get_prometheus_status()
-        context.update(_prometheus_context(prometheus_status))
-        if not context['prometheus_connected']:
-            context['dependency_blocker'] = prometheus_connection_blocker(
+        metrics_source_status = service.get_metrics_source_status()
+        context.update(_metrics_source_context(metrics_source_status))
+        if not context['metrics_source_connected']:
+            context['dependency_blocker'] = metrics_source_connection_blocker(
                 cluster,
-                detail=str(prometheus_status.get('error') or 'Prometheus health check did not complete successfully.'),
+                detail=str(metrics_source_status.get('error') or 'Metrics Source health check did not complete successfully.'),
             )
             context.update(get_empty_workload_payload('', time_range))
             return context
         return _materialize_workload_context(context, service, time_range)
     except Exception as exc:
-        context['dependency_blocker'] = prometheus_connection_blocker(cluster, detail=str(exc))
+        context['dependency_blocker'] = metrics_source_connection_blocker(cluster, detail=str(exc))
         context.update(get_empty_workload_payload('', time_range))
         return context
 
@@ -358,17 +358,17 @@ def _empty_materialized_context(time_range: str) -> dict[str, Any]:
             'tone': 'info',
             'icon': 'clock-3',
         },
-        'prometheus_status_tone': 'critical',
-        'prometheus_status_icon': 'circle-x',
-        'prometheus_response_time_display': 'No Response',
+        'metrics_source_status_tone': 'critical',
+        'metrics_source_status_icon': 'circle-x',
+        'metrics_source_response_time_display': 'No Response',
     }
 
 
-def _prometheus_context(status: dict[str, Any]) -> dict[str, Any]:
+def _metrics_source_context(status: dict[str, Any]) -> dict[str, Any]:
     return {
-        'prometheus_status': status,
-        'prometheus_connected': bool(status.get('connected', False)),
-        'prometheus_status_tone': status.get('tone', 'critical'),
-        'prometheus_status_icon': status.get('icon', 'circle-x'),
-        'prometheus_response_time_display': status.get('response_time_display', 'No Response'),
+        'metrics_source_status': status,
+        'metrics_source_connected': bool(status.get('connected', False)),
+        'metrics_source_status_tone': status.get('tone', 'critical'),
+        'metrics_source_status_icon': status.get('icon', 'circle-x'),
+        'metrics_source_response_time_display': status.get('response_time_display', 'No Response'),
     }

@@ -27,8 +27,8 @@ def test_user_facing_analytics_routes_do_not_query_providers_directly() -> None:
         *Path('app/analytics').glob('*/routes.py'),
     ]
     forbidden = (
-        'PrometheusService',
-        'PrometheusConsumer',
+        'MetricsService',
+        'MetricsConsumer',
         'load_alerts_by_source',
         'get_alertmanager_alerts',
         '.query_range(',

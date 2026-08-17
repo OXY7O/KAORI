@@ -17,7 +17,7 @@ from app.jobs.service import acquire_resource_admission_locks
 from app.models import Cluster, ClusterInventory, ClusterStatus, NamespaceInventory, Report, ReportSchedule
 from app.models.integration import IntegrationBinding, IntegrationInstance
 from app.models.kubernetes import KubernetesConnection
-from app.prometheus.repository import resolve_instance_for_cluster
+from app.metrics.repository import resolve_instance_for_cluster
 
 DEFAULT_CLUSTER_PER_PAGE = 5
 CLUSTER_PER_PAGE_OPTIONS = [
@@ -340,7 +340,7 @@ def get_alertmanager_summary(
     return summary
 
 
-def get_prometheus_summary(
+def get_metrics_source_summary(
     clusters: list[Cluster],
 ) -> dict[str, dict[str, Any]]:
     summary: dict[str, dict[str, Any]] = {}
@@ -651,7 +651,7 @@ def update_cluster(
 def delete_cluster(cluster: Cluster) -> dict[str, int]:
     """Delete a managed Kubernetes registration and its scope associations.
 
-    Prometheus and Alertmanager source instances are reusable and therefore are
+    Metrics Source and Alertmanager source instances are reusable and therefore are
     never deleted with the cluster. Only bindings that target this Kubernetes
     scope are removed. Generated reports and schedules are preserved by
     detaching their cluster reference before the cluster row is deleted.
@@ -739,7 +739,7 @@ def build_cluster_context(
     return {
         'clusters': clusters,
         'inventory_summary': inventory_summary,
-        'prometheus_summary': get_prometheus_summary(
+        'metrics_source_summary': get_metrics_source_summary(
             clusters,
         ),
         'alertmanager_summary': get_alertmanager_summary(

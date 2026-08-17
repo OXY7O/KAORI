@@ -39,7 +39,7 @@ app/analytics/
 
 `app.analytics.kubernetes` owns Kubernetes-specific analytics, committed
 `AnalyticsSnapshot` materialization, worker orchestration, Kubernetes identity,
-and Kubernetes/Prometheus/Alertmanager interpretation. Its web request path is
+and Kubernetes/Metrics Source/Alertmanager interpretation. Its web request path is
 worker-first and reads committed generations.
 
 ### Object Storage
@@ -47,7 +47,7 @@ worker-first and reads committed generations.
 `app.analytics.object_storage` owns provider-neutral Object Storage analytics.
 Committed Object Storage Inventory supplies current-state evidence. Operational
 time-series evidence is obtained through `MetricsSource`, resolved from the
-asset's integration bindings. Prometheus is the first adapter, not the analytics
+asset's integration bindings. Concrete Metrics Source products are resolved through the integration adapter registry and are not the analytics
 contract.
 
 Interactive Object Storage queries are fail-fast: provider retry is disabled for

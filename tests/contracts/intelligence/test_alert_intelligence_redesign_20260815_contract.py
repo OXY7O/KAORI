@@ -114,7 +114,7 @@ def test_alert_intelligence_keeps_provider_lifecycle_and_correlation_boundaries_
     evidence = read('app/templates/intelligence/partials/_alert_intelligence_evidence.html')
 
     assert 'Alertmanager is preferred in Automatic mode' in alerts
-    assert 'Prometheus ALERTS remains the fallback evidence path' in alerts
+    assert 'Metrics Source ALERTS remains the fallback evidence path' in alerts
     assert 'contextual correlation, not a claim that every finding was caused by every alert' in correlation
     assert 'External Alert Authority' in evidence
     assert 'KAORI Owns' in evidence

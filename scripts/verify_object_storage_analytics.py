@@ -22,16 +22,16 @@ def main() -> int:
     alert_sources = read('app/analytics/object_storage/alert_sources.py')
     alert_table_service = read('app/analytics/object_storage/alert_table.py')
     presentation = read('app/analytics/object_storage/presentation.py')
-    adapter = read('app/analytics/object_storage/sources/minio_prometheus.py')
+    adapter = read('app/analytics/object_storage/sources/minio_metrics.py')
     resolver = read('app/analytics/object_storage/sources/resolver.py')
     contracts = read('app/analytics/shared/metrics/contracts.py')
-    profile = read('app/integrations/prometheus/query_profiles/object_storage_v1.py')
-    audit = read('app/integrations/prometheus/query_profiles/object_storage_audit.py')
-    prometheus_catalog = read('app/definitions/catalogs/integrations/prometheus.yaml')
+    profile = read('app/integrations/metrics/query_profiles/object_storage_v1.py')
+    audit = read('app/integrations/metrics/query_profiles/object_storage_audit.py')
+    metrics_catalog = read('app/definitions/catalogs/integrations/metrics_source.yaml')
     alertmanager_catalog = read('app/definitions/catalogs/integrations/alertmanager.yaml')
     alertmanager_profile_migration = read('migrations/versions/20260814_object_storage_alert_profile.py')
-    binding_validation = read('app/integrations/prometheus/binding_validation.py')
-    binding_validator = read('app/integrations/prometheus/binding_validators/object_storage.py')
+    binding_validation = read('app/integrations/metrics/binding_validation.py')
+    binding_validator = read('app/integrations/metrics/binding_validators/object_storage.py')
     menu = read('app/templates/components/navigation/analytics_menu.html')
     template = read('app/templates/analytics/object_storage/index.html')
     alerts_summary = read('app/templates/analytics/object_storage/partials/_alerts_summary.html')
@@ -78,29 +78,27 @@ def main() -> int:
 
     assert 'resolve_object_storage_metrics_source' in runtime
     assert 'MetricsSource' in runtime
-    assert 'PrometheusConsumer' not in service
-    assert 'PrometheusError' not in service
-    assert 'PrometheusConsumer' not in runtime
-    assert 'PrometheusError' not in runtime
+    assert 'MetricsConsumer' not in service
+    assert 'MetricsSourceError' not in service
+    assert 'MetricsConsumer' not in runtime
+    assert 'MetricsSourceError' in runtime
     assert 'ObjectStorageSystem' in service
     assert 'system.buckets' in service
     assert 'load_alert_stream' in service
     assert 'build_alert_table_view' in service
-    assert "ALERT_SOURCE_OPTIONS = ('auto', 'alertmanager', 'prometheus')" in alert_sources
+    assert "ALERT_SOURCE_OPTIONS = ('auto', 'alertmanager', 'metrics_source')" in alert_sources
     assert "required_capabilities=('alerts_v2',)" in alert_sources
-    assert 'apply_promql_scope' in alert_sources
-    assert '_PROMETHEUS_ALERTS_QUERY' in alert_sources
+    assert 'ACTIVE_ALERTS_EXPRESSION' in alert_sources
     assert 'source_wide_failure' in runtime
 
     assert 'class MetricsSource(Protocol)' in contracts
     assert 'class MetricsReadinessSnapshot' in contracts
     assert 'def readiness(self) -> MetricsReadinessSnapshot' in contracts
     assert '_SOURCE_ADAPTERS' in resolver
-    assert "metrics_provider='prometheus'" in resolver
     assert "asset_profile='minio-v2'" in resolver
-    assert 'MinioPrometheusMetricsSource.supports' in resolver
+    assert 'MinioMetricsSourceAdapter.supports' in resolver
     assert "scope_type='object_storage_system'" in adapter
-    assert 'PrometheusConsumer.for_asset' in adapter
+    assert 'MetricsConsumer.for_asset' in adapter
     assert 'retry_count=0' in adapter
     assert 'def readiness(self) -> MetricsReadinessSnapshot' in adapter
 
@@ -125,19 +123,19 @@ def main() -> int:
         if endpoint not in {'object_storage_bucket_table', 'object_storage_alert_table'}:
             assert f'analytics.{endpoint}' in menu
 
-    assert 'profile_key: object-storage-metrics-v1' in prometheus_catalog
-    assert 'validation_strategy: custom' in prometheus_catalog
-    assert "register_binding_validator('object_storage_system'" in read(
-        'app/integrations/prometheus/binding_validators/__init__.py'
+    assert 'profile_key: object-storage-metrics-v1' in metrics_catalog
+    assert 'validation_strategy: custom' in metrics_catalog
+    assert "register_binding_validator(PROMETHEUS_HTTP_ADAPTER, 'object_storage_system'" in read(
+        'app/integrations/metrics/binding_validators/__init__.py'
     )
-    assert 'ObjectStoragePrometheusProfileAuditor' in binding_validator
+    assert 'ObjectStorageMetricsProfileAuditor' in binding_validator
     assert 'return system.minio_connection is not None' in binding_validator
     assert "'metrics_readiness': audit" in binding_validator
     assert '_VALIDATION_ADAPTERS' in binding_validator
     assert "asset_profile='minio-v2'" in binding_validator
-    assert 'get_binding_validator(binding.asset_type)' in binding_validation
+    assert 'get_binding_validator(instance.adapter_key, binding.asset_type)' in binding_validation
     assert "profile.profile_key == 'kubernetes-metrics-v1'" not in binding_validation
-    assert 'class ObjectStoragePrometheusProfileAuditor' in audit
+    assert 'class ObjectStorageMetricsProfileAuditor' in audit
     assert 'self.client.series(metrics)' in audit
     assert 'self.client.query(definition.expression)' in audit
     assert "readiness_tier='optional'" in profile
@@ -157,7 +155,7 @@ def main() -> int:
         assert metric in profile
 
     assert 'Automatic · Alertmanager Preferred' in controls
-    assert 'Prometheus Fallback Active' in alert_sources
+    assert 'Metrics Source Fallback Active' in alert_sources
     assert 'Consumer Validation Stale' in alert_sources
     assert 'profile_key: object-storage-alerts-v1' in alertmanager_catalog
     assert 'minio-alerts-v1' not in alertmanager_catalog
@@ -168,7 +166,7 @@ def main() -> int:
     assert 'Provider alerts and metric signals are separate' in alerts_summary
     assert 'Metric-Derived Signal Detail' in alerts_signals
     assert 'Active Alert Records' in alert_records
-    assert 'Reset Filter' in alert_records
+    assert 'registry_ui.clear_filters_action(' in alert_records
     assert 'Alertmanager Authority' in alert_source_evidence
     assert 'Alert Lifecycle & Routing' in boundary
     assert 'Deferred' not in boundary
@@ -339,8 +337,7 @@ def main() -> int:
     assert 'js/analytics/controls.js' in layout
     assert not (ROOT / 'app/static/js/analytics/kubernetes/controls.js').exists()
     assert 'Canonical Inventory-aligned full-page + HTMX pagination' in record_pagination
-    assert 'Reset Filter' in bucket_table_template
-    assert 'rotate-ccw' in bucket_table_template
+    assert 'registry_ui.clear_filters_action(' in bucket_table_template
     assert 'Bucket Consumption Evidence' not in bucket_table_template
 
     assert 'data-analytics-tabset-id="object-storage-forecast-content"' in forecast_workspace

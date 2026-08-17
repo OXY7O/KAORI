@@ -13,7 +13,7 @@ class ProviderQueryRuntime:
     """Per-dataset provider query telemetry kept inside one worker context.
 
     The state is process-local and request-independent. It is intentionally
-    lightweight: PromQL text is never retained, only bounded fingerprints and
+    lightweight: metrics query text is never retained, only bounded fingerprints and
     aggregate timing/error counters that are safe to persist with a snapshot.
     """
 

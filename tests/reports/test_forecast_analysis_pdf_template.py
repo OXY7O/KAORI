@@ -18,7 +18,7 @@ class ForecastAnalysisReportStub:
     name: str = 'Forecast Analysis Publication Validation'
     report_type: str = 'resource_forecast'
     report_domain: str = 'kubernetes'
-    source_kind: str = 'prometheus'
+    source_kind: str = 'metrics_source'
     cluster_id: str | None = 'cluster-staging'
     namespace: str | None = None
     period: str = '24h'
@@ -220,7 +220,7 @@ def test_forecast_analysis_uses_committed_materialized_collector() -> None:
     assert "dataset_key='analytics.forecast'" in source
     assert 'present_forecast_materialized_context' in source
     assert 'ForecastAnalysisService' not in source
-    assert 'PrometheusService' not in source
+    assert 'MetricsService' not in source
 
 
 def test_forecast_analysis_stylesheet_is_isolated() -> None:

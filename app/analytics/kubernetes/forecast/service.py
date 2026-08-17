@@ -19,7 +19,7 @@ from app.analytics.kubernetes.forecast.calculation import (
     _parse_days,
     _safe_message,
     _select_range_step,
-    _to_prometheus_time,
+    _to_metrics_time,
 )
 from app.analytics.kubernetes.forecast.contracts import (
     FORECAST_HORIZON_OPTIONS,
@@ -32,8 +32,8 @@ from app.analytics.kubernetes.forecast.presentation import _empty_payload
 from app.analytics.kubernetes.forecast.resource import build_resource_forecast_payload
 from app.analytics.kubernetes.utilization.service import UtilizationService
 from app.analytics.shared.params import get_query_value
-from app.common.dependencies import prometheus_connection_blocker
-from app.integrations.prometheus.query_profiles import get_query_expression
+from app.common.dependencies import metrics_source_connection_blocker
+from app.integrations.metrics.query_profiles import get_query_expression
 from app.intelligence.recommendation_engine import (
     build_forecast_actionable_recommendations,
     count_actionable_recommendations,
@@ -69,15 +69,15 @@ class ForecastAnalysisService(AnalyticsBaseService):
         self.cluster = cluster
         self.consumer = utilization_service.consumer
 
-    def get_prometheus_status(
+    def get_metrics_source_status(
         self,
     ) -> dict[str, Any]:
-        return self.utilization_service.get_prometheus_status()
+        return self.utilization_service.get_metrics_source_status()
 
     def get_namespace_options(
         self,
     ) -> list[str]:
-        result = self.get_prometheus_result(
+        result = self.get_metrics_result(
             NAMESPACE_ACTIVE_QUERY,
         )
 
@@ -255,8 +255,8 @@ class ForecastAnalysisService(AnalyticsBaseService):
     ) -> list[ForecastPoint]:
         result = self.consumer.query_range(
             query,
-            _to_prometheus_time(start_time),
-            _to_prometheus_time(end_time),
+            _to_metrics_time(start_time),
+            _to_metrics_time(end_time),
             step,
             required_capabilities=('range_query',),
         )
@@ -343,33 +343,33 @@ def get_forecast_analysis_context(
     if utilization_service is None or cluster is None:
         return context
 
-    prometheus_status = utilization_service.get_prometheus_status()
+    metrics_source_status = utilization_service.get_metrics_source_status()
 
-    context['prometheus_status'] = prometheus_status
-    context['prometheus_connected'] = bool(
-        prometheus_status.get(
+    context['metrics_source_status'] = metrics_source_status
+    context['metrics_source_connected'] = bool(
+        metrics_source_status.get(
             'connected',
             False,
         )
     )
 
-    if not prometheus_status.get(
+    if not metrics_source_status.get(
         'connected',
         False,
     ):
-        context['dependency_blocker'] = prometheus_connection_blocker(
+        context['dependency_blocker'] = metrics_source_connection_blocker(
             cluster,
             detail=_safe_message(
-                value=prometheus_status.get('error'),
-                default='Prometheus health check did not complete successfully.',
+                value=metrics_source_status.get('error'),
+                default='Metrics Source health check did not complete successfully.',
             ),
         )
         context['forecast_payload'] = _empty_payload(
             message=_safe_message(
-                value=prometheus_status.get(
+                value=metrics_source_status.get(
                     'error',
                 ),
-                default='Prometheus is not connected for the selected cluster.',
+                default='Metrics Source is not connected for the selected cluster.',
             ),
         )
 

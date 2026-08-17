@@ -21,7 +21,9 @@ def main() -> int:
     routes = read('app/integrations/routes.py')
     service = read('app/integrations/service.py')
     domain_service = read('app/integrations/domain_service.py')
-    domain_template = read('app/templates/integrations/domain.html')
+    domain_page = read('app/templates/integrations/domain.html')
+    domain_workspace = read('app/templates/integrations/partials/_domain_workspace.html')
+    domain_template = domain_page + '\n' + domain_workspace
     breadcrumbs = read('app/common/navigation.py')
     presentation = read('app/bootstrap/presentation.py')
 
@@ -56,14 +58,8 @@ def main() -> int:
         if marker not in navigation:
             errors.append(f'registry-driven navigation missing: {marker}')
 
-    for forbidden in (
-        "provider_type == 'kubernetes'",
-        "provider_type == 'prometheus'",
-        "provider_type == 'alertmanager'",
-        "provider_type == 'minio'",
-    ):
-        if forbidden in navigation:
-            errors.append(f'provider-specific navigation branching returned: {forbidden}')
+    if "provider_type == '" in navigation:
+        errors.append('provider-specific navigation branching returned')
 
     for marker in (
         'integration_navigation.domains',
@@ -75,7 +71,7 @@ def main() -> int:
 
     for forbidden in (
         "url_for('integrations.kubernetes')",
-        "url_for('integrations.prometheus')",
+        "url_for('integrations.metrics_sources')",
         "url_for('integrations.alertmanager')",
     ):
         if forbidden in sidebar:
@@ -87,28 +83,29 @@ def main() -> int:
         "@integrations_bp.get('/storage')",
         "'integrations/domain.html'",
         "active_tab=request.args.get('tab', 'registry').strip()",
-        "provider_per_page=request.args.get('provider_per_page', 5, type=int) or 5",
-        "binding_per_page=request.args.get('binding_per_page', 5, type=int) or 5",
+        "per_page=request.args.get('provider_per_page', 5, type=int) or 5",
+        "per_page=request.args.get('binding_per_page', 5, type=int) or 5",
     ):
         if marker not in routes:
             errors.append(f'domain route contract missing: {marker}')
 
-    if 'from app.integrations.domain_service import build_integration_domain_page' not in routes:
+    if 'from app.integrations.domain_service import (' not in routes or 'build_integration_domain_page,' not in routes:
         errors.append('domain routes must import the dedicated domain page builder from its owning module')
-    if 'from app.integrations.domain_service import build_integration_domain_page' in service:
+    if 'build_integration_domain_page' in service:
         errors.append('integration service must not re-export the domain page builder')
 
     for marker in (
         'get_domain_definition(domain_key)',
         'for module in registry.all() if module.domain_key == domain.key',
-        'IntegrationInstance.query.options(selectinload(IntegrationInstance.bindings))',
+        'IntegrationInstance.query.filter(IntegrationInstance.provider_type.in_(provider_types))',
+        'IntegrationBinding.query.options(selectinload(IntegrationBinding.instance))',
         'IntegrationInstance.provider_type.in_(provider_types)',
         'asset_types_for_domain(domain_key)',
         'IntegrationBinding.asset_type.in_(owned_asset_types)',
         'domain_key_for_asset_type(binding.asset_type)',
         'selector_summary(binding.selector_json',
         'paginate_sequence(',
-        "'bindings': sum(1 for binding in related_bindings if binding.enabled)",
+        "'bindings': sum(1 for binding in consumer_bindings if binding.enabled)",
         'consumer_bindings = [binding for binding in related_bindings if not _is_owner_asset_binding(binding)]',
         'module.domain_key == owner_domain',
         '_consumer_binding_count(instance, consumer_bindings)',
@@ -118,7 +115,7 @@ def main() -> int:
 
     for forbidden in (
         'KubernetesConnection.query',
-        'PrometheusInstance.query',
+        'MetricsSource.query',
         'AlertmanagerInstance.query',
         'MinioInstance.query',
     ):
@@ -128,16 +125,14 @@ def main() -> int:
     for marker in (
         'Capability Registry',
         'Provider Registry',
-        'Bindings',
+        'Consumer Bindings',
         'Registry and Consumer Bindings',
         'data-kaori-domain-provider-registry',
         'data-kaori-domain-binding-registry',
         'No {{ domain.label }} Provider Registered',
-        'No {{ domain.label }} Bindings Yet',
+        'No {{ domain.label }} Consumer Bindings Yet',
         'Core Validation',
-        'Add Consumer Binding',
         'Consumer Contract',
-        'Domain Operating Boundary',
         'provider_registry_pagination.allowed_per_page',
         'binding_registry_pagination.allowed_per_page',
         'Open {{ item.runtime_label }}',
@@ -172,7 +167,7 @@ def main() -> int:
 
     registrations = {
         'app/integrations/kubernetes/__init__.py': "navigation_endpoint_prefixes=('integrations.kubernetes', 'cluster.')",
-        'app/integrations/prometheus/__init__.py': "navigation_endpoint_prefixes=('integrations.prometheus', 'prometheus.')",
+        'app/integrations/metrics/__init__.py': "navigation_endpoint_prefixes=('integrations.metrics_sources', 'metrics.')",
         'app/integrations/alertmanager/__init__.py': "navigation_endpoint_prefixes=('integrations.alertmanager', 'alertmanager.')",
         'app/integrations/minio/__init__.py': "navigation_endpoint_prefixes=('minio.',)",
     }

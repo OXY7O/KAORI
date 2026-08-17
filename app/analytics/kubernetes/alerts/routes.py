@@ -37,7 +37,7 @@ _PAGE = {
     'dataset_key': 'analytics.alerts',
     'title': 'Alerts & Anomalies',
     'description': (
-        'Alertmanager and Prometheus signals are collected by the analytics worker '
+        'Alertmanager and Metrics Source signals are collected by the analytics worker '
         'and shared across concurrent viewers.'
     ),
     'icon': 'siren',

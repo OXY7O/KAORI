@@ -8,30 +8,30 @@ from typing import Any
 from flask import current_app
 
 from app.analytics.kubernetes.common.clusters import get_selected_cluster
-from app.analytics.kubernetes.common.presentation import present_prometheus_status
+from app.analytics.kubernetes.common.presentation import present_metrics_source_status
 from app.analytics.kubernetes.utilization.service import UtilizationService
 from app.analytics.shared.params import get_query_value, get_selected_time_range
 from app.common.dependencies import (
     cluster_required_blocker,
-    prometheus_capability_blocker,
-    prometheus_connection_blocker,
-    prometheus_setup_blocker,
+    metrics_source_capability_blocker,
+    metrics_source_connection_blocker,
+    metrics_source_setup_blocker,
 )
-from app.integrations.prometheus.capabilities import definition as capability_definition
-from app.integrations.prometheus.exceptions import PrometheusError
+from app.integrations.metrics.capabilities import definition as capability_definition
+from app.integrations.metrics.exceptions import MetricsSourceError
 from app.models import Cluster
-from app.prometheus.repository import KUBERNETES_CLUSTER_SCOPE, resolve_instance_for_cluster
-from app.prometheus.resolver import resolve_prometheus_sources
-from app.prometheus.service import PrometheusService
+from app.metrics.repository import KUBERNETES_CLUSTER_SCOPE, resolve_instance_for_cluster
+from app.metrics.resolver import resolve_metrics_sources
+from app.metrics.service import MetricsService
 
 
-def get_default_prometheus_status() -> dict[str, Any]:
-    return present_prometheus_status(
+def get_default_metrics_source_status() -> dict[str, Any]:
+    return present_metrics_source_status(
         {
             'configured': False,
             'connected': False,
             'response_time_ms': None,
-            'label': 'Prometheus Not Configured',
+            'label': 'Metrics Source Not Configured',
             'error': None,
         }
     )
@@ -40,7 +40,7 @@ def get_default_prometheus_status() -> dict[str, Any]:
 def build_analysis_utilization_context(
     query_args: Mapping[str, Any],
     *,
-    check_prometheus_connection: bool = True,
+    check_metrics_source_connection: bool = True,
 ) -> tuple[list[Cluster], Cluster | None, UtilizationService | None, dict[str, Any]]:
     clusters = Cluster.query.order_by(
         Cluster.created_at.asc(),
@@ -62,8 +62,8 @@ def build_analysis_utilization_context(
         'clusters': clusters,
         'cluster': cluster,
         'error': None,
-        'prometheus_connected': False,
-        'prometheus_status': get_default_prometheus_status(),
+        'metrics_source_connected': False,
+        'metrics_source_status': get_default_metrics_source_status(),
         'dependency_blocker': None,
         'selected_namespace': get_query_value(
             query_args=query_args,
@@ -76,7 +76,7 @@ def build_analysis_utilization_context(
     }
 
     if cluster is None:
-        base_context['prometheus_status'] = present_prometheus_status(
+        base_context['metrics_source_status'] = present_metrics_source_status(
             {
                 'configured': False,
                 'connected': False,
@@ -88,23 +88,23 @@ def build_analysis_utilization_context(
         base_context['dependency_blocker'] = cluster_required_blocker()
         return clusters, None, None, base_context
 
-    prometheus_config = resolve_instance_for_cluster(cluster.id)
+    metrics_source_config = resolve_instance_for_cluster(cluster.id)
 
-    if prometheus_config is None or not prometheus_config.endpoint.strip():
-        base_context['prometheus_status'] = present_prometheus_status(
+    if metrics_source_config is None or not metrics_source_config.endpoint.strip():
+        base_context['metrics_source_status'] = present_metrics_source_status(
             {
                 'configured': False,
                 'connected': False,
                 'response_time_ms': None,
-                'label': 'Prometheus Not Configured',
+                'label': 'Metrics Source Not Configured',
                 'error': None,
             }
         )
-        base_context['dependency_blocker'] = prometheus_setup_blocker(cluster)
+        base_context['dependency_blocker'] = metrics_source_setup_blocker(cluster)
         return clusters, cluster, None, base_context
 
-    if not check_prometheus_connection:
-        resolution = resolve_prometheus_sources(
+    if not check_metrics_source_connection:
+        resolution = resolve_metrics_sources(
             scope_type=KUBERNETES_CLUSTER_SCOPE,
             scope_key=str(cluster.id),
             required_binding_capabilities=('metrics',),
@@ -113,7 +113,7 @@ def build_analysis_utilization_context(
         selected = resolution.selected
         if selected is None:
             if not resolution.candidates:
-                base_context['dependency_blocker'] = prometheus_setup_blocker(cluster)
+                base_context['dependency_blocker'] = metrics_source_setup_blocker(cluster)
             else:
                 candidate = resolution.candidates[0]
                 if candidate.missing_technical_capabilities:
@@ -121,37 +121,37 @@ def build_analysis_utilization_context(
                     for key in candidate.missing_technical_capabilities:
                         capability = capability_definition(key)
                         labels.append(capability.label if capability else key)
-                    base_context['dependency_blocker'] = prometheus_capability_blocker(
+                    base_context['dependency_blocker'] = metrics_source_capability_blocker(
                         cluster,
                         capability_labels=labels,
                         feature_label='Kubernetes Analytics Query Transport',
                     )
                 else:
-                    base_context['dependency_blocker'] = prometheus_connection_blocker(
+                    base_context['dependency_blocker'] = metrics_source_connection_blocker(
                         cluster,
                         detail=candidate.decision_reason,
                     )
             return clusters, cluster, None, base_context
 
         try:
-            prometheus = PrometheusService(cluster)
-            utilization_service = UtilizationService(prometheus)
+            metrics_source = MetricsService(cluster)
+            utilization_service = UtilizationService(metrics_source)
         except Exception as exc:
             current_app.logger.exception(
-                'Prometheus service initialization failed for cluster %s.',
+                'Metrics Source service initialization failed for cluster %s.',
                 cluster.name,
             )
-            message = str(exc) or 'Prometheus service initialization failed.'
-            base_context['dependency_blocker'] = prometheus_connection_blocker(
+            message = str(exc) or 'Metrics Source service initialization failed.'
+            base_context['dependency_blocker'] = metrics_source_connection_blocker(
                 cluster,
                 detail=message,
             )
-            base_context['prometheus_status'] = present_prometheus_status(
+            base_context['metrics_source_status'] = present_metrics_source_status(
                 {
                     'configured': True,
                     'connected': False,
                     'response_time_ms': None,
-                    'label': 'Prometheus Error',
+                    'label': 'Metrics Source Error',
                     'error': message,
                 }
             )
@@ -162,14 +162,14 @@ def build_analysis_utilization_context(
             'ready_not_connected',
             'degraded_not_connected',
         }
-        base_context['prometheus_connected'] = True
-        base_context['prometheus_status'] = present_prometheus_status(
+        base_context['metrics_source_connected'] = True
+        base_context['metrics_source_status'] = present_metrics_source_status(
             {
                 'configured': True,
                 'connected': True,
                 'response_time_ms': selected.instance.last_response_time_ms,
                 'last_checked_at': selected.instance.last_checked_at,
-                'label': 'Prometheus Query Ready',
+                'label': 'Metrics Source Query Ready',
                 'description': (
                     'The source is eligible for analytics queries; the previous runtime observation '
                     'was degraded and remains advisory until the dataset query runs.'
@@ -185,99 +185,99 @@ def build_analysis_utilization_context(
         return clusters, cluster, utilization_service, base_context
 
     try:
-        prometheus = PrometheusService(
+        metrics_source = MetricsService(
             cluster,
         )
-    except PrometheusError as exc:
-        message = str(exc) or 'Prometheus is not configured for the selected cluster.'
-        base_context['dependency_blocker'] = prometheus_connection_blocker(
+    except MetricsSourceError as exc:
+        message = str(exc) or 'Metrics Source is not configured for the selected cluster.'
+        base_context['dependency_blocker'] = metrics_source_connection_blocker(
             cluster,
             detail=message,
         )
-        base_context['prometheus_status'] = present_prometheus_status(
+        base_context['metrics_source_status'] = present_metrics_source_status(
             {
                 'configured': False,
                 'connected': False,
                 'response_time_ms': None,
-                'label': 'Prometheus Not Configured',
+                'label': 'Metrics Source Not Configured',
                 'error': message,
             }
         )
         return clusters, cluster, None, base_context
     except Exception as exc:
         current_app.logger.exception(
-            'Prometheus service initialization failed for cluster %s.',
+            'Metrics Source service initialization failed for cluster %s.',
             cluster.name,
         )
-        message = str(exc) or 'Prometheus service initialization failed.'
-        base_context['dependency_blocker'] = prometheus_connection_blocker(
+        message = str(exc) or 'Metrics Source service initialization failed.'
+        base_context['dependency_blocker'] = metrics_source_connection_blocker(
             cluster,
             detail=message,
         )
-        base_context['prometheus_status'] = present_prometheus_status(
+        base_context['metrics_source_status'] = present_metrics_source_status(
             {
                 'configured': True,
                 'connected': False,
                 'response_time_ms': None,
-                'label': 'Prometheus Error',
+                'label': 'Metrics Source Error',
                 'error': message,
             }
         )
         return clusters, cluster, None, base_context
 
     utilization_service = UtilizationService(
-        prometheus,
+        metrics_source,
     )
 
     try:
-        prometheus_status = utilization_service.get_prometheus_status()
-    except PrometheusError as exc:
-        message = str(exc) or 'Prometheus health check failed for the selected cluster.'
-        base_context['dependency_blocker'] = prometheus_connection_blocker(
+        metrics_source_status = utilization_service.get_metrics_source_status()
+    except MetricsSourceError as exc:
+        message = str(exc) or 'Metrics Source health check failed for the selected cluster.'
+        base_context['dependency_blocker'] = metrics_source_connection_blocker(
             cluster,
             detail=message,
         )
-        base_context['prometheus_status'] = present_prometheus_status(
+        base_context['metrics_source_status'] = present_metrics_source_status(
             {
                 'configured': True,
                 'connected': False,
                 'response_time_ms': None,
-                'label': 'Prometheus Unavailable',
+                'label': 'Metrics Source Unavailable',
                 'error': message,
             }
         )
         return clusters, cluster, None, base_context
     except Exception as exc:
         current_app.logger.exception(
-            'Prometheus health check failed for cluster %s.',
+            'Metrics Source health check failed for cluster %s.',
             cluster.name,
         )
-        message = str(exc) or 'Prometheus health check failed.'
-        base_context['dependency_blocker'] = prometheus_connection_blocker(
+        message = str(exc) or 'Metrics Source health check failed.'
+        base_context['dependency_blocker'] = metrics_source_connection_blocker(
             cluster,
             detail=message,
         )
-        base_context['prometheus_status'] = present_prometheus_status(
+        base_context['metrics_source_status'] = present_metrics_source_status(
             {
                 'configured': True,
                 'connected': False,
                 'response_time_ms': None,
-                'label': 'Prometheus Unavailable',
+                'label': 'Metrics Source Unavailable',
                 'error': message,
             }
         )
         return clusters, cluster, None, base_context
 
-    base_context['prometheus_status'] = present_prometheus_status(prometheus_status)
-    base_context['prometheus_connected'] = bool(prometheus_status.get('connected', False))
+    base_context['metrics_source_status'] = present_metrics_source_status(metrics_source_status)
+    base_context['metrics_source_connected'] = bool(metrics_source_status.get('connected', False))
 
-    if not base_context['prometheus_connected']:
+    if not base_context['metrics_source_connected']:
         message = str(
-            prometheus_status.get('error')
-            or prometheus_status.get('description')
-            or 'Prometheus did not report a healthy connection.'
+            metrics_source_status.get('error')
+            or metrics_source_status.get('description')
+            or 'Metrics Source did not report a healthy connection.'
         )
-        base_context['dependency_blocker'] = prometheus_connection_blocker(
+        base_context['dependency_blocker'] = metrics_source_connection_blocker(
             cluster,
             detail=message,
         )

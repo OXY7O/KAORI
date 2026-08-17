@@ -104,8 +104,8 @@ def test_overview_scoped_links_preserve_existing_query_strings() -> None:
 
 def test_overview_legacy_templates_are_removed() -> None:
     assert not Path('app/templates/analytics/components/_overview_surfaces.html').exists()
-    assert not Path('app/templates/analytics/kubernetes/overview/partials/_prometheus_status.html').exists()
-    assert not Path('app/templates/analytics/kubernetes/overview/partials/_prometheus_status_loading.html').exists()
+    assert not Path('app/templates/analytics/kubernetes/overview/partials/_metrics_source_status.html').exists()
+    assert not Path('app/templates/analytics/kubernetes/overview/partials/_metrics_source_status_loading.html').exists()
     assert not Path('app/analytics/kubernetes/common/cache.py').exists()
 
 

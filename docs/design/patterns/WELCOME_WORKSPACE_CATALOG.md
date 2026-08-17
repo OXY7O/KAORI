@@ -65,7 +65,7 @@ Do not paginate the current Welcome catalog. Add pagination only when the catalo
 - Welcome permission checks control discoverability only; destination routes remain authoritative for authorization.
 - The browser receives only workspace cards already authorized by the server. Search must never fetch capability data or permission metadata.
 - A `None` permission target is allowed only for a genuinely universal authenticated destination; the current exception is personal Settings (`settings.account`).
-- Welcome must remain provider-free: no Kubernetes, Prometheus, Alertmanager, database repository, or worker query is allowed in the landing request.
+- Welcome must remain provider-free: no Kubernetes API, Metrics Source, Alertmanager, database repository, or worker query is allowed in the landing request.
 
 ## Accessibility and keyboard contract
 

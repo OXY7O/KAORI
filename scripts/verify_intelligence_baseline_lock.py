@@ -44,9 +44,15 @@ def main() -> int:
     alert_intelligence = read('app/alert_intelligence/service.py')
     alert_routes = read('app/alert_intelligence/routes.py')
     alert_workspace = read('app/templates/intelligence/partials/_alert_intelligence_workspace.html')
+    alert_alerts = read('app/templates/intelligence/partials/_alert_intelligence_alerts.html')
+    alert_correlation = read('app/templates/intelligence/partials/_alert_intelligence_correlation.html')
+    alert_page_content = read('app/templates/intelligence/partials/_alert_intelligence_page.html')
     automation_routes = read('app/automation_control/routes.py')
     automation_presentation = read('app/automation_control/presentation.py')
     automation_overview = read('app/automation_control/overview.py')
+    automation_enablement = read('app/common/automation_execution.py')
+    workflow = read('app/intelligence/workflow.py')
+    resolver_tasks = read('app/resolver/tasks.py')
     readme = read('app/intelligence/README.md')
     standard = read('docs/design/components/INTELLIGENCE_WORKSPACE_STANDARD.md')
     default_config = read('app/config/default.py')
@@ -110,25 +116,35 @@ def main() -> int:
     for required in (
         "@automation_control_bp.route('/automation-control')",
         "@permission_required('intelligence.view')",
-        "current_app.config.get('AUTOMATION_CONTROL_MUTATIONS_ENABLED', False)",
-        "title='Automation Mutation Disabled'",
-        "message='KAORI did not apply the requested control-plane change.'",
+        "title='Infrastructure Execution Disabled'",
+        'execution_enabled()',
     ):
         require(required in automation_routes, f'Automation Control baseline boundary missing: {required}', errors)
 
-    mutation_gate = _function_body(automation_routes, '_handle_mutation', '_handle_control_operation')
-    gate_position = mutation_gate.index("current_app.config.get('AUTOMATION_CONTROL_MUTATIONS_ENABLED', False)")
-    operation_position = mutation_gate.index('_handle_control_operation(')
+    execution_gate = _function_body(automation_routes, '_handle_execution_action', '_handle_control_operation')
     require(
-        gate_position < operation_position,
-        'Automation execution-control callback can cross the fail-closed gate',
+        'execution_enabled()' in execution_gate,
+        'Automation infrastructure execution must remain behind the canonical fail-closed enablement gate',
+        errors,
+    )
+    governance_gate = _function_body(automation_routes, '_handle_governance_mutation', '_handle_execution_action')
+    require(
+        'execution_enabled()' not in governance_gate,
+        'Governance mutation must remain available independently from infrastructure execution',
         errors,
     )
     require('detail=str(exc)' not in automation_routes, 'Automation Control must not disclose exception text', errors)
-    governance_gate = _function_body(automation_routes, '_handle_governance_action', '_handle_mutation')
     require(
-        'AUTOMATION_CONTROL_MUTATIONS_ENABLED' not in governance_gate,
-        'Decision governance must remain available while infrastructure mutation is disabled',
+        "AUTOMATION_EXECUTION_ENABLED = _env_bool('AUTOMATION_EXECUTION_ENABLED', False)" in default_config,
+        'Automation execution must remain explicitly fail-closed in default configuration',
+        errors,
+    )
+    require('AUTOMATION_EXECUTION_ENABLED' in automation_enablement, 'Automation execution enablement contract is missing', errors)
+    require('assert_execution_enabled()' in workflow, 'Intelligence workflow must enforce execution enablement', errors)
+    require('assert_execution_enabled()' in resolver_tasks, 'Resolver tasks must enforce execution enablement', errors)
+    require(
+        'AUTOMATION_CONTROL_MUTATIONS_ENABLED' not in automation_routes + automation_presentation + default_config,
+        'Retired Automation Control mutation compatibility gate must not return',
         errors,
     )
     require(
@@ -137,19 +153,8 @@ def main() -> int:
         errors,
     )
     require(
-        "mutations_enabled = bool(current_app.config.get('AUTOMATION_CONTROL_MUTATIONS_ENABLED', False))"
-        in automation_presentation,
-        'Automation Control presentation must expose default-safe mutation state',
-        errors,
-    )
-    require(
         "'posture': overview_state['posture']" in automation_presentation,
         'Automation Control posture must be derived from current automation state',
-        errors,
-    )
-    require(
-        'AUTOMATION_CONTROL_MUTATIONS_ENABLED' not in default_config,
-        'Automation Control environment enablement must remain deferred during baseline lock',
         errors,
     )
     require(
@@ -178,21 +183,20 @@ def main() -> int:
         "'object_storage'",
         "'auto'",
         "'alertmanager'",
-        "'prometheus'",
+        "'metrics_source'",
     ):
         require(required in alert_intelligence, f'Alert Intelligence multi-domain contract missing: {required}', errors)
     for required in (
-        'Alert Overview',
         'Alert Records',
-        'Correlation',
+        'Correlation & Guidance',
         'Notification Delivery',
-        'Evidence',
-        'Alertmanager is preferred',
-        'Prometheus ALERTS',
+        'Evidence & Ownership',
     ):
         require(required in alert_workspace, f'Alert Intelligence workspace contract missing: {required}', errors)
+    for required in ('Alertmanager is preferred', 'Metrics Source ALERTS'):
+        require(required in alert_alerts, f'Alert Intelligence alert-source contract missing: {required}', errors)
     require(
-        'This is contextual correlation, not a claim that every finding was caused by every alert.' in alert_workspace,
+        'This is contextual correlation, not a claim that every finding was caused by every alert.' in alert_correlation,
         'Alert Intelligence must keep contextual correlation distinct from causal attribution',
         errors,
     )
@@ -207,20 +211,25 @@ def main() -> int:
     for page, label in (
         (recommendations_page, 'Recommendations'),
         (catalog_page, 'Rule Catalog'),
-        (alert_page, 'Alert Intelligence'),
         (automation_page, 'Automation Control'),
     ):
         require('components/page_hero.html' in page, f'{label} must use shared Hero ownership', errors)
-        shared_workspace_owned = 'intelligence/components/_workspace.html' in page
-        if label == 'Alert Intelligence':
-            shared_workspace_owned = (
-                shared_workspace_owned or 'intelligence/components/_workspace.html' in alert_workspace
-            )
         require(
-            shared_workspace_owned,
+            'intelligence/components/_workspace.html' in page,
             f'{label} must use shared Intelligence workspace',
             errors,
         )
+    require(
+        'intelligence/partials/_alert_intelligence_page.html' in alert_page
+        and 'components/page_hero.html' in alert_page_content,
+        'Alert Intelligence must use shared Hero ownership through its HTMX page-content partial',
+        errors,
+    )
+    require(
+        'intelligence/components/_workspace.html' in alert_workspace,
+        'Alert Intelligence must use shared Intelligence workspace',
+        errors,
+    )
 
     for required in (
         "{'value': 'object_storage', 'label': 'Object Storage'}",
@@ -274,8 +283,13 @@ def main() -> int:
         errors,
     )
     require(
-        'payload.summary.domains' in catalog_page and 'payload.summary.minio' in catalog_page,
-        'Rule Catalog Hero must use dynamic domain and MinIO coverage metadata',
+        'payload.summary.domains' in catalog_page and 'Canonical Definitions' in catalog_page,
+        'Rule Catalog Hero must use provider-neutral dynamic domain metadata',
+        errors,
+    )
+    require(
+        'payload.summary.minio' not in catalog_page and 'MinIO-Covered Rules' not in catalog_page,
+        'Rule Catalog Hero must not expose provider-specific coverage as a global summary',
         errors,
     )
     require('3 Asset Domains' not in catalog_page, 'Rule Catalog Hero must not hard-code stale domain count', errors)
@@ -297,7 +311,7 @@ def main() -> int:
         'baseline-locked',
         'not declared feature-complete',
         '**Reserved Plan**',
-        'intentionally not exposed as an environment-configured release toggle',
+        'AUTOMATION_EXECUTION_ENABLED=false',
     ):
         require(required in readme, f'Intelligence README baseline-lock contract missing: {required}', errors)
     require(

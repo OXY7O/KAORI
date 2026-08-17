@@ -117,6 +117,6 @@ Alertmanager Instance Manage → Runtime & History → Health Interpretation is 
 - No decorative radial chart remains.
 - Detailed remediation stays in Diagnostic Pipeline or Validation.
 
-Prometheus Instance Manage and cluster-bound Prometheus Configuration are additional reference implementations. They must import the same shared component and must not maintain provider-local score ranges, gauges, or evidence-row geometry.
+Metrics Source Instance Manage and cluster-bound Metrics Source Configuration are additional reference implementations. They must import the same shared component and must not maintain provider-local score ranges, gauges, or evidence-row geometry.
 
-Alertmanager and Prometheus Manage are reference implementations inside the shared Integration Manage Workspace.
+Alertmanager and Metrics Source Manage are reference implementations inside the shared Integration Manage Workspace.

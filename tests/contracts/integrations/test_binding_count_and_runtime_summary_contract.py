@@ -1,7 +1,7 @@
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
-PROM_DETAIL = ROOT / 'app/templates/prometheus/instance_detail.html'
+PROM_DETAIL = ROOT / 'app/templates/metrics/instance_detail.html'
 ALERT_DETAIL = ROOT / 'app/templates/alertmanager/instance_detail.html'
 RUNTIME_PRESENTATION = ROOT / 'app/integrations/runtime/presentation.py'
 

@@ -4,14 +4,14 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from app.analytics.kubernetes.common.clusters import get_selected_cluster as resolve_selected_cluster
-from app.analytics.kubernetes.common.presentation import present_prometheus_status
+from app.analytics.kubernetes.common.presentation import present_metrics_source_status
 from app.analytics.shared.coercion import safe_float
 from app.integrations.consumer.contracts import ConsumerResult
-from app.integrations.prometheus.exceptions import PrometheusError
-from app.integrations.prometheus.query_profiles import get_query_expression
+from app.integrations.metrics.exceptions import MetricsSourceError
+from app.integrations.metrics.query_profiles import get_query_expression
 from app.models import Cluster
-from app.prometheus.consumer import PrometheusConsumer
-from app.prometheus.service import PrometheusService
+from app.metrics.consumer import MetricsConsumer
+from app.metrics.service import MetricsService
 
 CPU_CAPACITY = get_query_expression('analytics.utilization.queries.CPU_CAPACITY')
 CPU_CAPACITY_BY_NODE = get_query_expression('analytics.utilization.queries.CPU_CAPACITY_BY_NODE')
@@ -75,13 +75,13 @@ class UtilizationService:
 
     def __init__(
         self,
-        prometheus: PrometheusService,
+        metrics_source: MetricsService,
     ) -> None:
-        self.prometheus = prometheus
-        consumer = prometheus.consumer
+        self.metrics_source = metrics_source
+        consumer = metrics_source.consumer
         if consumer is None:
-            raise ValueError('Utilization analytics requires a cluster-scoped Prometheus service.')
-        self.consumer: PrometheusConsumer = consumer
+            raise ValueError('Utilization analytics requires a cluster-scoped Metrics Source service.')
+        self.consumer: MetricsConsumer = consumer
 
     def requirements(self) -> ConsumerResult[dict[str, Any]]:
         return self.consumer.requirements(self.REQUIRED_CAPABILITIES)
@@ -106,7 +106,7 @@ class UtilizationService:
         ):
             return 0.0
 
-    def get_prometheus_status(
+    def get_metrics_source_status(
         self,
     ) -> dict[str, Any]:
         status = self.consumer.analytics_status()
@@ -117,9 +117,9 @@ class UtilizationService:
             detail = (
                 status.diagnostics[0].detail
                 if status.diagnostics and status.diagnostics[0].detail
-                else (status.diagnostics[0].message if status.diagnostics else 'Prometheus is unavailable.')
+                else (status.diagnostics[0].message if status.diagnostics else 'Metrics Source is unavailable.')
             )
-            return present_prometheus_status(
+            return present_metrics_source_status(
                 {
                     'configured': bool(payload.get('configured', True)),
                     'connected': False,
@@ -128,7 +128,7 @@ class UtilizationService:
                     'error': detail,
                 }
             )
-        return present_prometheus_status(
+        return present_metrics_source_status(
             {
                 'configured': True,
                 'connected': True,
@@ -1064,7 +1064,7 @@ class UtilizationService:
     def get_top_cpu_consumers(
         self,
     ) -> list[dict[str, str | float]]:
-        response = self.prometheus.instant_query(
+        response = self.metrics_source.instant_query(
             TOP_CPU_CONSUMERS,
         )
 
@@ -1075,7 +1075,7 @@ class UtilizationService:
     def get_top_memory_consumers(
         self,
     ) -> list[dict[str, str | float]]:
-        response = self.prometheus.instant_query(
+        response = self.metrics_source.instant_query(
             TOP_MEMORY_CONSUMERS,
         )
 
@@ -1100,13 +1100,13 @@ class UtilizationService:
         }
 
 
-def get_prometheus_status_snapshot(
+def get_metrics_source_status_snapshot(
     cluster_id: str,
 ) -> dict[str, Any]:
     clusters = get_utilization_clusters()
     cluster = resolve_selected_cluster(clusters, cluster_id or '')
     if not cluster:
-        return present_prometheus_status(
+        return present_metrics_source_status(
             {
                 'configured': False,
                 'connected': False,
@@ -1114,10 +1114,10 @@ def get_prometheus_status_snapshot(
             }
         )
     try:
-        consumer = PrometheusConsumer(cluster)
+        consumer = MetricsConsumer(cluster)
         response = consumer.analytics_status()
-    except PrometheusError as exc:
-        return present_prometheus_status(
+    except MetricsSourceError as exc:
+        return present_metrics_source_status(
             {
                 'configured': False,
                 'connected': False,
@@ -1132,9 +1132,9 @@ def get_prometheus_status_snapshot(
         detail = (
             diagnostic.detail
             if diagnostic is not None and diagnostic.detail
-            else (diagnostic.message if diagnostic is not None else 'Prometheus is unavailable.')
+            else (diagnostic.message if diagnostic is not None else 'Metrics Source is unavailable.')
         )
-    return present_prometheus_status(
+    return present_metrics_source_status(
         {
             'configured': bool(payload.get('configured', True)),
             'connected': response.ok,

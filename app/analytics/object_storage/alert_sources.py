@@ -6,19 +6,19 @@ from typing import Any
 
 from app.alertmanager.consumer import list_alerts_for_scope
 from app.alertmanager.resolver import resolve_alertmanager_sources
-from app.integrations.binding_selectors import apply_promql_scope
-from app.integrations.prometheus.exceptions import (
-    PrometheusAuthenticationError,
-    PrometheusConnectionError,
-    PrometheusError,
+from app.integrations.metrics.exceptions import (
+    MetricsSourceAuthenticationError,
+    MetricsSourceConnectionError,
+    MetricsSourceError,
 )
+from app.integrations.metrics.providers import provider_definition
+from app.integrations.metrics.query_profiles.alerts_v1 import ACTIVE_ALERTS_EXPRESSION
 from app.models.integration import IntegrationBinding, IntegrationInstance
 from app.models.object_storage import ObjectStorageSystem
-from app.prometheus.consumer import PrometheusConsumer
+from app.metrics.consumer import MetricsConsumer
 
-ALERT_SOURCE_OPTIONS = ('auto', 'alertmanager', 'prometheus')
+ALERT_SOURCE_OPTIONS = ('auto', 'alertmanager', 'metrics_source')
 _OBJECT_STORAGE_SCOPE = 'object_storage_system'
-_PROMETHEUS_ALERTS_QUERY = 'ALERTS{alertstate=~"firing|pending"}'
 
 
 @dataclass(frozen=True, slots=True)
@@ -38,25 +38,25 @@ def selected_alert_source(query_args: Any) -> str:
 def load_alert_stream(system: ObjectStorageSystem, *, selected_source: str) -> dict[str, Any]:
     if selected_source == 'alertmanager':
         return _load_alertmanager(system, selected_source='alertmanager')
-    if selected_source == 'prometheus':
-        return _load_prometheus(system, selected_source='prometheus')
+    if selected_source == 'metrics_source':
+        return _load_metrics_source(system, selected_source='metrics_source')
 
     alertmanager = _load_alertmanager(system, selected_source='auto')
     if alertmanager['connected']:
         return alertmanager
 
-    prometheus = _load_prometheus(system, selected_source='auto')
-    if prometheus['connected']:
-        prometheus['fallback_used'] = True
-        prometheus['label'] = 'Prometheus Fallback Active'
-        prometheus['tone'] = 'warning'
-        prometheus['fallback_reason'] = (
+    metrics_source = _load_metrics_source(system, selected_source='auto')
+    if metrics_source['connected']:
+        metrics_source['fallback_used'] = True
+        metrics_source['label'] = 'Metrics Source Fallback Active'
+        metrics_source['tone'] = 'warning'
+        metrics_source['fallback_reason'] = (
             f'Alertmanager was not usable: {alertmanager.get("detail") or alertmanager.get("label")}. '
-            'Prometheus ALERTS evidence is being used for the current view.'
+            'Metrics query evidence is being used for the current view.'
         )
-        return prometheus
+        return metrics_source
 
-    configured = bool(alertmanager['configured'] or prometheus['configured'])
+    configured = bool(alertmanager['configured'] or metrics_source['configured'])
     return _source_view(
         selected_source='auto',
         resolved_source='none',
@@ -67,7 +67,7 @@ def load_alert_stream(system: ObjectStorageSystem, *, selected_source: str) -> d
             tone='critical' if configured else 'unknown',
             detail=(
                 f'Alertmanager: {alertmanager.get("detail") or alertmanager.get("label")}. '
-                f'Prometheus: {prometheus.get("detail") or prometheus.get("label")}.'
+                f'Metrics Source: {metrics_source.get("detail") or metrics_source.get("label")}.'
             ),
         ),
         rows=[],
@@ -260,52 +260,51 @@ def _load_alertmanager(system: ObjectStorageSystem, *, selected_source: str) -> 
     )
 
 
-def _load_prometheus(system: ObjectStorageSystem, *, selected_source: str) -> dict[str, Any]:
-    configured = _provider_bound(system.id, 'prometheus')
+def _load_metrics_source(system: ObjectStorageSystem, *, selected_source: str) -> dict[str, Any]:
+    configured = _provider_bound(system.id, 'metrics_source')
     try:
-        consumer = PrometheusConsumer.for_asset(
+        consumer = MetricsConsumer.for_asset(
             scope_type=_OBJECT_STORAGE_SCOPE,
             scope_key=system.id,
             scope_name=system.name,
         )
-        query = apply_promql_scope(_PROMETHEUS_ALERTS_QUERY, consumer.binding.selector_json)
-        payload = consumer.query(query, retry_count=0)
-    except PrometheusAuthenticationError as exc:
+        payload = consumer.query(ACTIVE_ALERTS_EXPRESSION, retry_count=0)
+    except MetricsSourceAuthenticationError as exc:
         return _source_view(
             selected_source=selected_source,
             resolved_source='none',
             runtime=AlertSourceRuntime(
                 configured=configured,
                 connected=False,
-                label='Prometheus Authentication Failed',
+                label='Metrics Source Authentication Failed',
                 tone='critical',
                 detail=str(exc),
             ),
             rows=[],
             instance_name=None,
         )
-    except PrometheusConnectionError as exc:
+    except MetricsSourceConnectionError as exc:
         return _source_view(
             selected_source=selected_source,
             resolved_source='none',
             runtime=AlertSourceRuntime(
                 configured=configured,
                 connected=False,
-                label='Prometheus Disconnected',
+                label='Metrics Source Disconnected',
                 tone='critical',
                 detail=str(exc),
             ),
             rows=[],
             instance_name=None,
         )
-    except PrometheusError as exc:
+    except MetricsSourceError as exc:
         return _source_view(
             selected_source=selected_source,
             resolved_source='none',
             runtime=AlertSourceRuntime(
                 configured=configured,
                 connected=False,
-                label='Prometheus Validation Required' if configured else 'Prometheus Not Configured',
+                label='Metrics Source Validation Required' if configured else 'Metrics Source Not Configured',
                 tone='warning' if configured else 'unknown',
                 detail=str(exc),
             ),
@@ -313,16 +312,17 @@ def _load_prometheus(system: ObjectStorageSystem, *, selected_source: str) -> di
             instance_name=None,
         )
 
-    rows = _deduplicate(_prometheus_rows(payload))
+    provider = provider_definition(consumer.config.provider_key)
+    rows = _deduplicate(_metrics_source_rows(payload, source_label=provider.label))
     return _source_view(
         selected_source=selected_source,
-        resolved_source='prometheus',
+        resolved_source='metrics_source',
         runtime=AlertSourceRuntime(
             configured=True,
             connected=True,
             label='Operational',
             tone='normal',
-            detail='Prometheus ALERTS metric is the active alert source for this Object Storage system.',
+            detail=f'{provider.label} is the active metrics-backed alert source for this Object Storage system.',
         ),
         rows=rows,
         instance_name=consumer.config.name,
@@ -395,7 +395,7 @@ def _alertmanager_rows(items: list[Any]) -> list[dict[str, Any]]:
     return rows
 
 
-def _prometheus_rows(payload: dict[str, Any]) -> list[dict[str, Any]]:
+def _metrics_source_rows(payload: dict[str, Any], *, source_label: str) -> list[dict[str, Any]]:
     data = payload.get('data') if isinstance(payload, dict) else None
     result = data.get('result') if isinstance(data, dict) else None
     if not isinstance(result, list):
@@ -411,13 +411,13 @@ def _prometheus_rows(payload: dict[str, Any]) -> list[dict[str, Any]]:
                 'severity': _severity(labels.get('severity')),
                 'state': _state(labels.get('alertstate')),
                 'target': _target(labels),
-                'summary': str(labels.get('alertname') or 'Prometheus ALERTS metric'),
+                'summary': str(labels.get('alertname') or 'Metrics alert evidence'),
                 'starts_at': None,
                 'receiver': '-',
                 'silenced': False,
                 'inhibited': False,
-                'source': 'Prometheus',
-                'source_key': 'prometheus',
+                'source': source_label,
+                'source_key': 'metrics_source',
                 'fingerprint': '',
                 'labels': labels,
             }
@@ -476,8 +476,8 @@ def _state(value: Any) -> str:
 
 
 def _source_label(source: str) -> str:
-    return {'alertmanager': 'Alertmanager', 'prometheus': 'Prometheus', 'none': 'Unavailable'}.get(
-        source, source.title()
+    return {'alertmanager': 'Alertmanager', 'metrics_source': 'Metrics Source', 'none': 'Unavailable'}.get(
+        source, source.replace('_', ' ').title()
     )
 
 

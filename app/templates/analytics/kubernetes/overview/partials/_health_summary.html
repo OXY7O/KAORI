@@ -46,7 +46,7 @@
                     <div class="min-w-0">
                         <p class="text-xs font-semibold uppercase tracking-widest text-content-muted">Analytics Overview</p>
                         <h2 class="mt-1 text-lg font-semibold text-content-primary">Analytics Controls &amp; Data Readiness</h2>
-                        <p class="mt-1 text-sm leading-6 text-content-secondary">Set the cluster and analysis window, then confirm the Prometheus source and committed overview datasets.</p>
+                        <p class="mt-1 text-sm leading-6 text-content-secondary">Set the cluster and analysis window, then confirm the Metrics Source source and committed overview datasets.</p>
                     </div>
                 </div>
                 {{ loading_bar.render('analytics-overview-refresh-indicator', label='Refreshing Analytics Overview') }}
@@ -88,7 +88,7 @@
                 </div>
                 <div class="space-y-3">
                     <div class="grid gap-4 lg:grid-cols-2">
-                        {{ analytics_workspace.prometheus_card(payload.prometheus) }}
+                        {{ analytics_workspace.metrics_source_card(payload.metrics_source) }}
                         {{ analytics_workspace.snapshot_card('Latest Analytics Data Snapshot',
                                                 'Committed worker datasets used by the overview tabs.',
                                                 snapshot.status|default('Unavailable') ,

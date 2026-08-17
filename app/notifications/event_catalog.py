@@ -146,11 +146,11 @@ def build_event_context(
             event_icon='server',
             event_tone='blue',
         )
-    elif event_type.startswith('prometheus_'):
+    elif event_type.startswith('metrics_source_'):
         context.update(
             module_label='Integrations',
-            target_type='Prometheus',
-            target_name=cluster_name or endpoint or 'Prometheus integration',
+            target_type='Metrics Source',
+            target_name=cluster_name or endpoint or 'Metrics Source integration',
             event_icon='activity',
             event_tone='cyan',
         )

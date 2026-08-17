@@ -40,9 +40,9 @@ def build_payload() -> dict[str, object]:
             'environment': 'Production',
             'status': 'Ready',
         },
-        'prometheus_status': {
+        'metrics_source_status': {
             'label': 'Ready',
-            'description': 'Prometheus analytics source is available.',
+            'description': 'Metrics Source analytics evidence is available.',
         },
         'forecast_payload': {
             'summary': {

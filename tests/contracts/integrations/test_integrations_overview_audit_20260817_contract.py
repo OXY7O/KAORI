@@ -50,7 +50,7 @@ def test_runtime_overview_reuses_one_latest_observation_snapshot_and_avoids_core
     assert 'selectinload(KubernetesConnection.integration_instance)' in overview_builder
     assert 'contains_eager(KubernetesConnection.cluster)' in overview_builder
     assert (
-        'selectinload(PrometheusInstance.integration_instance).selectinload(IntegrationInstance.bindings)'
+        'selectinload(MetricsSource.integration_instance).selectinload(IntegrationInstance.bindings)'
         in overview_builder
     )
     assert (

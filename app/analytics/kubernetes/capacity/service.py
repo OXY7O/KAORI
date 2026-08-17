@@ -21,7 +21,7 @@ from app.analytics.kubernetes.capacity.evidence import (
 from app.analytics.kubernetes.common.base_service import AnalyticsBaseService
 from app.analytics.kubernetes.common.clusters import get_selected_cluster
 from app.analytics.kubernetes.common.payloads import get_capacity_review_paths, get_empty_capacity_payload
-from app.analytics.kubernetes.common.presentation import present_prometheus_status
+from app.analytics.kubernetes.common.presentation import present_metrics_source_status
 from app.analytics.kubernetes.utilization.service import UtilizationService
 from app.analytics.shared.coercion import as_dict
 from app.analytics.shared.params import (
@@ -31,21 +31,21 @@ from app.analytics.shared.params import (
 )
 from app.common.dependencies import (
     cluster_required_blocker,
-    prometheus_capability_blocker,
-    prometheus_connection_blocker,
-    prometheus_setup_blocker,
+    metrics_source_capability_blocker,
+    metrics_source_connection_blocker,
+    metrics_source_setup_blocker,
 )
-from app.integrations.prometheus.capabilities import definition as capability_definition
-from app.integrations.prometheus.exceptions import PrometheusError
+from app.integrations.metrics.capabilities import definition as capability_definition
+from app.integrations.metrics.exceptions import MetricsSourceError
 from app.intelligence.recommendation_engine import (
     build_capacity_actionable_recommendations,
     count_actionable_recommendations,
     format_recommendation_cards,
 )
 from app.models import Cluster
-from app.prometheus.consumer import PrometheusConsumer
-from app.prometheus.repository import resolve_instance_for_cluster
-from app.prometheus.service import PrometheusService
+from app.metrics.consumer import MetricsConsumer
+from app.metrics.repository import resolve_instance_for_cluster
+from app.metrics.service import MetricsService
 
 
 def get_capacity_page_context(query_args: Mapping[str, Any]) -> dict[str, Any]:
@@ -60,8 +60,8 @@ def get_capacity_page_context(query_args: Mapping[str, Any]) -> dict[str, Any]:
             'clusters': clusters,
             'cluster': None,
             'error': None,
-            'prometheus_connected': False,
-            'prometheus_status': present_prometheus_status(
+            'metrics_source_connected': False,
+            'metrics_source_status': present_metrics_source_status(
                 {
                     'configured': False,
                     'connected': False,
@@ -73,52 +73,52 @@ def get_capacity_page_context(query_args: Mapping[str, Any]) -> dict[str, Any]:
             **empty_payload,
         }
 
-    prometheus_config = resolve_instance_for_cluster(cluster.id)
-    if prometheus_config is None or not prometheus_config.endpoint.strip():
+    metrics_source_config = resolve_instance_for_cluster(cluster.id)
+    if metrics_source_config is None or not metrics_source_config.endpoint.strip():
         return {
             'clusters': clusters,
             'cluster': cluster,
             'error': None,
-            'prometheus_connected': False,
-            'prometheus_status': present_prometheus_status(
+            'metrics_source_connected': False,
+            'metrics_source_status': present_metrics_source_status(
                 {
                     'configured': False,
                     'connected': False,
                     'response_time_ms': None,
-                    'label': 'Prometheus Not Configured',
+                    'label': 'Metrics Source Not Configured',
                 }
             ),
-            'dependency_blocker': prometheus_setup_blocker(cluster),
+            'dependency_blocker': metrics_source_setup_blocker(cluster),
             **empty_payload,
         }
 
-    prometheus_connected = False
+    metrics_source_connected = False
     dependency_blocker = None
-    prometheus_status = present_prometheus_status(
+    metrics_source_status = present_metrics_source_status(
         {
             'configured': True,
             'connected': False,
             'response_time_ms': None,
-            'label': 'Prometheus Unavailable',
+            'label': 'Metrics Source Unavailable',
         }
     )
     capacity_payload = empty_payload.copy()
 
     try:
-        prometheus = PrometheusService(cluster)
-        utilization_service = UtilizationService(prometheus)
-        consumer = PrometheusConsumer(cluster)
+        metrics_source = MetricsService(cluster)
+        utilization_service = UtilizationService(metrics_source)
+        consumer = MetricsConsumer(cluster)
         capacity_service = CapacityService(utilization_service, consumer)
-        prometheus_status = capacity_service.get_prometheus_status()
-        prometheus_connected = bool(prometheus_status.get('connected', False))
+        metrics_source_status = capacity_service.get_metrics_source_status()
+        metrics_source_connected = bool(metrics_source_status.get('connected', False))
 
-        if not prometheus_connected:
-            dependency_blocker = prometheus_connection_blocker(
+        if not metrics_source_connected:
+            dependency_blocker = metrics_source_connection_blocker(
                 cluster,
                 detail=str(
-                    prometheus_status.get('error')
-                    or prometheus_status.get('description')
-                    or 'Prometheus did not report a healthy connection.'
+                    metrics_source_status.get('error')
+                    or metrics_source_status.get('description')
+                    or 'Metrics Source did not report a healthy connection.'
                 ),
             )
         else:
@@ -129,35 +129,35 @@ def get_capacity_page_context(query_args: Mapping[str, Any]) -> dict[str, Any]:
                 for key in missing:
                     capability = capability_definition(str(key))
                     labels.append(capability.label if capability is not None else str(key))
-                dependency_blocker = prometheus_capability_blocker(
+                dependency_blocker = metrics_source_capability_blocker(
                     cluster,
                     feature_label='Capacity Analytics',
                     missing_capabilities=labels,
                 )
             else:
                 capacity_payload = capacity_service.get_capacity_analysis(time_range=selected_time_range)
-    except PrometheusError as exc:
-        message = str(exc) or 'Prometheus is not configured for the selected cluster.'
-        prometheus_status = present_prometheus_status(
+    except MetricsSourceError as exc:
+        message = str(exc) or 'Metrics Source is not configured for the selected cluster.'
+        metrics_source_status = present_metrics_source_status(
             {
                 'configured': True,
                 'connected': False,
                 'response_time_ms': None,
-                'label': 'Prometheus Unavailable',
+                'label': 'Metrics Source Unavailable',
                 'error': message,
             }
         )
-        dependency_blocker = prometheus_connection_blocker(cluster, detail=message)
+        dependency_blocker = metrics_source_connection_blocker(cluster, detail=message)
     except Exception as exc:
         current_app.logger.exception(exc)
-        dependency_blocker = prometheus_connection_blocker(cluster, detail=str(exc))
+        dependency_blocker = metrics_source_connection_blocker(cluster, detail=str(exc))
 
     return {
         'clusters': clusters,
         'cluster': cluster,
         'error': None,
-        'prometheus_connected': prometheus_connected,
-        'prometheus_status': present_prometheus_status(prometheus_status),
+        'metrics_source_connected': metrics_source_connected,
+        'metrics_source_status': present_metrics_source_status(metrics_source_status),
         'dependency_blocker': dependency_blocker,
         **capacity_payload,
     }
@@ -169,7 +169,7 @@ class CapacityService(AnalyticsBaseService):
     def __init__(
         self,
         utilization_service: UtilizationService,
-        consumer: PrometheusConsumer,
+        consumer: MetricsConsumer,
     ) -> None:
         self.utilization_service = utilization_service
         self.evidence_collector = CapacityEvidenceCollector(consumer)

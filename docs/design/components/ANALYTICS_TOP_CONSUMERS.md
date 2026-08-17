@@ -23,7 +23,7 @@ Top Consumers identifies the largest active consumers in a committed cluster or 
 ## Runtime Ownership
 
 ```text
-Prometheus query registry
+Metrics Source query registry
         ↓
 TopConsumersEvidenceCollector
         ↓
@@ -38,7 +38,7 @@ Presentation-only filters and pagination
 Page, Analytics Overview, and report payload
 ```
 
-Each Prometheus signal is queried once per snapshot variant. `service.py` owns orchestration only; query parsing, row construction, risk semantics, actionable recommendations, and presentation controls belong to their dedicated modules.
+Each Metrics Source signal is queried once per snapshot variant. `service.py` owns orchestration only; query parsing, row construction, risk semantics, actionable recommendations, and presentation controls belong to their dedicated modules.
 
 ## Namespace Snapshot Ownership
 

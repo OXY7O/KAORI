@@ -14,7 +14,7 @@ NAVIGATION_DIR = ROOT / 'app/templates/components/navigation'
 BLUEPRINTS = ROOT / 'app/bootstrap/blueprints.py'
 QUALITY_GATE = ROOT / 'scripts/quality_gate.sh'
 COVERAGE_DOC = ROOT / 'docs/architecture/RELEASE_SURFACE_COVERAGE.md'
-INTEGRATION_TAXONOMY = ROOT / 'app/integrations/taxonomy.py'
+INTEGRATION_TAXONOMY_CATALOG = ROOT / 'app/definitions/catalogs/integrations/taxonomy.yaml'
 
 EXPECTED_MENU_TEMPLATES = {
     'access_management_menu.html',
@@ -54,8 +54,8 @@ def _literal_url_for_endpoints(source: str) -> set[str]:
 
 
 def _integration_domain_endpoints() -> set[str]:
-    source = INTEGRATION_TAXONOMY.read_text(encoding='utf-8')
-    return set(re.findall(r"workspace_endpoint=['\"]([^'\"]+)['\"]", source))
+    source = INTEGRATION_TAXONOMY_CATALOG.read_text(encoding='utf-8')
+    return set(re.findall(r'^\s*workspace_endpoint:\s*([^\s#]+)', source, re.M))
 
 
 def _intelligence_link_endpoints(source: str) -> set[str]:

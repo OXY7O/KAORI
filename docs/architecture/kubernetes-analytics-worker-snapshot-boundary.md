@@ -3,7 +3,7 @@
 ## Purpose
 
 This boundary prevents Kubernetes Analytics pages from issuing expensive
-Prometheus or Alertmanager requests during a user-facing web request. Provider
+Metrics Source or Alertmanager requests during a user-facing web request. Provider
 queries are executed by the analytics or forecasting worker, committed to
 `analytics_snapshots`, and reused by concurrent viewers until the configured
 freshness window expires.
@@ -12,7 +12,7 @@ freshness window expires.
 
 ### Connection readiness was confused with feature readiness
 
-Prometheus connection state answers whether the configured endpoint and binding
+Metrics Source connection state answers whether the configured endpoint and binding
 are operational. It does not prove that every analytics feature has the exact
 metrics, labels, or historical retention it requires.
 
@@ -25,11 +25,11 @@ The Storage and Workload readiness maps had drifted from their owning services:
 
 Storage incorrectly required `range_query`, even though its current analysis did
 not use a time-range query. Workload omitted Kubernetes identity and request/limit
-evidence from the readiness presentation. The Prometheus module matrix and
+evidence from the readiness presentation. The Metrics Source module matrix and
 materialization catalog retain the complete domain contract, while worker
 admission enforces only the query transport required to collect runtime evidence.
 
-A connected Prometheus source can therefore remain **Ready** while one workspace
+A connected Metrics Source can therefore remain **Ready** while one workspace
 is **Capability Incomplete**. Missing domain evidence such as storage identity,
 workload ownership, or request/limit coverage is advisory to runtime collection:
 the worker is allowed to execute the exact registered query when the binding can
@@ -42,7 +42,7 @@ transport, unusable runtime health, or missing binding setup is a hard blocker.
 
 Several analytics workspaces built their full service context when the route was
 opened or an HTMX partial was refreshed. That caused repeated provider queries
-for concurrent users and made latency depend on Prometheus series cardinality,
+for concurrent users and made latency depend on Metrics Source series cardinality,
 Alertmanager response time, historical range size, and network health.
 
 ### Forecast HTMX replacement could become blank
@@ -62,7 +62,7 @@ provider query.
 ## Final data flow
 
 ```text
-Prometheus / Alertmanager
+Metrics Source / Alertmanager
         ↓
 Capability-aware worker admission
         ↓
@@ -87,16 +87,16 @@ committed as ready analytics data.
 
 | Workspace | Worker query dimension | Web-only dimensions | Provider source |
 | --- | --- | --- | --- |
-| Analytics Overview | Reads committed helper snapshots | Selected overview section | Prometheus and Alertmanager snapshots |
-| Resource Utilization summary | Cluster | Display only | Prometheus |
-| Resource Utilization trend | `trend_hours`, optional `trend_node` | Chart rendering | Prometheus |
-| Resource Utilization node detail | `node` | Display only | Prometheus |
-| Capacity Analysis | `time_range` | Presentation only | Prometheus |
-| Storage Analysis | Current cluster snapshot | Namespace, node, search, status, storage class, pagination | Prometheus |
-| Workload Analysis | `time_range` | Namespace, filters, pagination | Prometheus |
-| Top Consumers | Optional namespace snapshot | Resource, focus, sort, search, pagination | Prometheus |
-| Resource Forecast | `history_window`, optional namespace | Horizon, model, active resource tab | Prometheus |
-| Alerts & Anomalies | `source` | Severity, status, namespace, search, pagination | Alertmanager or Prometheus |
+| Analytics Overview | Reads committed helper snapshots | Selected overview section | Metrics Source and Alertmanager snapshots |
+| Resource Utilization summary | Cluster | Display only | Metrics Source |
+| Resource Utilization trend | `trend_hours`, optional `trend_node` | Chart rendering | Metrics Source |
+| Resource Utilization node detail | `node` | Display only | Metrics Source |
+| Capacity Analysis | `time_range` | Presentation only | Metrics Source |
+| Storage Analysis | Current cluster snapshot | Namespace, node, search, status, storage class, pagination | Metrics Source |
+| Workload Analysis | `time_range` | Namespace, filters, pagination | Metrics Source |
+| Top Consumers | Optional namespace snapshot | Resource, focus, sort, search, pagination | Metrics Source |
+| Resource Forecast | `history_window`, optional namespace | Horizon, model, active resource tab | Metrics Source |
+| Alerts & Anomalies | `source` | Severity, status, namespace, search, pagination | Alertmanager or Metrics Source |
 | Kubernetes Operations Dashboard | Fixed compact snapshot consumers | Section rendering | Committed analytics snapshots |
 
 ## Canonical parameter rules
@@ -137,7 +137,7 @@ explosion and lets many users share the same committed generation.
   broad policy value cannot make five-minute alert data remain acceptable for a
   day.
 - Alertmanager-only clusters receive both compact dashboard and full-page alert
-  snapshots, but no Prometheus analytics datasets.
+  snapshots, but no Metrics Source analytics datasets.
 
 ## Overview read path
 
@@ -167,7 +167,7 @@ Overview section endpoints hydrate only the requested snapshot-backed section.
 
 ## Reliability guardrails
 
-- Web routes never run Prometheus or Alertmanager provider queries.
+- Web routes never run Metrics Source or Alertmanager provider queries.
 - Missing snapshots persist a pending record before the builder starts, allowing the page to show the current JobExecution message and progress instead of an indefinite generic loader.
 - Explicit cluster selection is authoritative. Without a cluster ID, KAORI
   prefers a cluster with a committed snapshot, then a source capable of the
@@ -181,7 +181,7 @@ Overview section endpoints hydrate only the requested snapshot-backed section.
   builders use `FORECASTING_DATASET_TIMEOUT_SECONDS`. A timeout is isolated to
   one dataset and produces a partial batch result instead of freezing all
   following snapshots.
-- Full domain capability evidence is still visible in Prometheus Operational
+- Full domain capability evidence is still visible in Metrics Source Operational
   Domain Readiness. It is not silently discarded or misrepresented as a source
   outage.
 
@@ -189,13 +189,13 @@ Overview section endpoints hydrate only the requested snapshot-backed section.
 
 After deployment:
 
-1. Run Prometheus **Full Validation** so exact capability evidence is persisted.
+1. Run Metrics Source **Full Validation** so exact capability evidence is persisted.
 2. Run **Analytics Data Refresh**.
 3. Run **Forecast Data Refresh** after Analytics completes when the heavy-job
    per-user quota is one.
 4. Confirm scheduled and on-demand jobs execute on `analytics-batch` and
    `forecasting` queues.
-5. Confirm page selector changes do not cause Prometheus or Alertmanager network
+5. Confirm page selector changes do not cause Metrics Source or Alertmanager network
    calls in the web container logs.
 6. Confirm missing forecast history renders a Pending page and never a blank
    workspace.

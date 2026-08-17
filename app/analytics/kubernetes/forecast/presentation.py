@@ -483,7 +483,7 @@ def present_forecast_materialized_context(
     context: dict[str, Any],
     query_args: Mapping[str, Any],
 ) -> dict[str, Any]:
-    """Reproject a committed history snapshot without issuing a new Prometheus query."""
+    """Reproject a committed history snapshot without issuing a new Metrics Source query."""
     from copy import deepcopy
 
     presented = deepcopy(context)

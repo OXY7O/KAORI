@@ -14,7 +14,7 @@ from app.models.object_storage import ObjectStorageSystem
 from app.notification_channels.service import notification_channel_summary, recent_delivery_summary
 
 _VALID_DOMAINS = {'kubernetes', 'object_storage'}
-_VALID_SOURCES = {'auto', 'alertmanager', 'prometheus'}
+_VALID_SOURCES = {'auto', 'alertmanager', 'metrics_source'}
 _VALID_SEVERITIES = {'all', 'critical', 'warning', 'info', 'unknown', 'none'}
 _VALID_STATES = {'all', 'firing', 'pending', 'active', 'resolved'}
 _VALID_TABS = {'alerts', 'correlation', 'delivery', 'evidence'}
@@ -66,7 +66,7 @@ def get_alert_intelligence_payload(args: MultiDict[str, str]) -> dict[str, Any]:
         'source_options': [
             {'value': 'auto', 'label': 'Automatic · Alertmanager Preferred'},
             {'value': 'alertmanager', 'label': 'Alertmanager'},
-            {'value': 'prometheus', 'label': 'Prometheus'},
+            {'value': 'metrics_source', 'label': 'Metrics Source'},
         ],
         'source_status': source_status,
         'posture': posture,
@@ -103,7 +103,7 @@ def get_alert_intelligence_payload(args: MultiDict[str, str]) -> dict[str, Any]:
             asset_key=selected_asset_key or None,
         ),
         'ownership': {
-            'detection': 'Prometheus evaluates alert rules and exposes ALERTS state.',
+            'detection': 'Metrics Source provides metric-derived alert-state evidence when supported by the selected adapter.',
             'lifecycle': (
                 'Alertmanager owns grouping, inhibition, routing, silences, receivers, '
                 'and raw alert notification delivery.'
@@ -346,6 +346,6 @@ def _choice(value: Any, valid: set[str], default: str) -> str:
 
 
 def _resolved_source_label(value: Any) -> str:
-    return {'alertmanager': 'Alertmanager', 'prometheus': 'Prometheus', 'none': 'None'}.get(
+    return {'alertmanager': 'Alertmanager', 'metrics_source': 'Metrics Source', 'none': 'None'}.get(
         str(value or 'none'), 'Unknown'
     )

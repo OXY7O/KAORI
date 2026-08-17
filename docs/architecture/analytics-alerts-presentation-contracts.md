@@ -6,7 +6,7 @@ This Batch 3 slice narrows two broad internal dictionary boundaries without chan
 
 The canonical contracts live in `app/analytics/kubernetes/alerts/contracts.py`:
 
-- `AlertIntegrationStatus` and `AlertIntegrationStatusMap` describe Prometheus and Alertmanager connection presentation state;
+- `AlertIntegrationStatus` and `AlertIntegrationStatusMap` describe Metrics Source and Alertmanager connection presentation state;
 - `AlertSourceHealthCheck` and `AlertSourceHealthSummary` describe source-health scoring and checks;
 - `AlertRoutingGroup` and `AlertRoutingSummary` describe routing availability, counts, and grouped rows.
 

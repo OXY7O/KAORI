@@ -385,7 +385,7 @@ def _build_no_forecast_data_message(
     items: list[dict[str, Any]],
 ) -> str:
     if not items:
-        return 'No forecast resource was selected. Choose a resource scope and verify that Prometheus metrics are available.'
+        return 'No forecast resource was selected. Choose a resource scope and verify that metrics data from the selected Metrics Source is available.'
 
     missing_history = [item['label'] for item in items if item.get('history_points_count', 0) < 2]
     missing_capacity = [item['label'] for item in items if item.get('capacity_missing', False)]
@@ -400,14 +400,14 @@ def _build_no_forecast_data_message(
 
     if notes:
         return (
-            'Forecast data is unavailable because Prometheus returned '
+            'Forecast data is unavailable because Metrics Source returned '
             + ' and '.join(notes)
             + '. Forecast requires at least two daily historical samples and a non-zero capacity baseline.'
         )
 
     return (
         'Forecast data is unavailable because the selected scope did not produce a usable historical series. '
-        'Check Prometheus retention, kube-state-metrics, kubelet/cAdvisor metrics, and namespace/resource filters.'
+        'Check Metrics Source retention, kube-state-metrics, kubelet/cAdvisor metrics, and namespace/resource filters.'
     )
 
 
@@ -476,10 +476,10 @@ def _build_chart_payload(
 def _extract_range_points(
     result: Any,
 ) -> list[ForecastPoint]:
-    prometheus_result = _get_prometheus_result_list(result)
+    metrics_source_result = _get_metrics_result_list(result)
     aggregated: dict[int, float] = {}
 
-    for series in prometheus_result:
+    for series in metrics_source_result:
         values = series.get('values', [])
 
         for item in values:
@@ -517,10 +517,10 @@ def _extract_range_points(
 def _extract_instant_value(
     result: Any,
 ) -> float:
-    prometheus_result = _get_prometheus_result_list(result)
+    metrics_source_result = _get_metrics_result_list(result)
     total = 0.0
 
-    for series in prometheus_result:
+    for series in metrics_source_result:
         value = series.get('value')
 
         if not value or len(value) < 2:
@@ -536,7 +536,7 @@ def _extract_instant_value(
     return total
 
 
-def _get_prometheus_result_list(
+def _get_metrics_result_list(
     result: Any,
 ) -> list[dict[str, Any]]:
     if isinstance(result, list):
@@ -548,15 +548,15 @@ def _get_prometheus_result_list(
     data = result.get('data')
 
     if isinstance(data, dict):
-        prometheus_result = data.get('result', [])
+        metrics_source_result = data.get('result', [])
 
-        if isinstance(prometheus_result, list):
-            return prometheus_result
+        if isinstance(metrics_source_result, list):
+            return metrics_source_result
 
-    prometheus_result = result.get('result', [])
+    metrics_source_result = result.get('result', [])
 
-    if isinstance(prometheus_result, list):
-        return prometheus_result
+    if isinstance(metrics_source_result, list):
+        return metrics_source_result
 
     return []
 
@@ -701,7 +701,7 @@ def _format_bytes(
     return f'{size:.0f} {units[unit_index]}' if unit_index == 0 else f'{size:.2f} {units[unit_index]}'
 
 
-def _to_prometheus_time(
+def _to_metrics_time(
     value: datetime,
 ) -> str:
     return str(value.timestamp())

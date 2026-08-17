@@ -13,7 +13,7 @@ from app.definitions.validation import (
 
 _PROVIDER_FILES = {
     'kubernetes': 'integrations/kubernetes.yaml',
-    'prometheus': 'integrations/prometheus.yaml',
+    'metrics_source': 'integrations/metrics_source.yaml',
     'alertmanager': 'integrations/alertmanager.yaml',
     'object_storage': 'integrations/object_storage.yaml',
 }
@@ -136,7 +136,23 @@ def integration_provider_document(provider: str) -> dict[str, Any]:
                             f'{capability_key!r}.'
                         )
 
-    if provider_key == 'prometheus':
+    if provider_key == 'metrics_source':
+        provider_kinds = [
+            require_mapping(item, f'{relative_path}.provider_kinds[{index}]')
+            for index, item in enumerate(
+                require_list(document.get('provider_kinds'), f'{relative_path}.provider_kinds')
+            )
+        ]
+        unique_by(provider_kinds, 'key', f'{relative_path}.provider_kinds')
+        for index, provider_kind in enumerate(provider_kinds):
+            path = f'{relative_path}.provider_kinds[{index}]'
+            require_str(provider_kind, 'label', path)
+            require_str(provider_kind, 'adapter_key', path)
+            require_str(provider_kind, 'query_language', path)
+            require_str(provider_kind, 'default_query_horizon', path)
+            require_str(provider_kind, 'version_detection_mode', path)
+            require_str(provider_kind, 'endpoint_placeholder', path)
+            require_str(provider_kind, 'icon', path)
         binding_profiles = [
             require_mapping(item, f'{relative_path}.binding_profiles[{index}]')
             for index, item in enumerate(

@@ -6,8 +6,8 @@ from app.analytics.kubernetes.capacity.service import CapacityService
 from app.analytics.kubernetes.utilization.service import UtilizationService
 from app.cluster.constants import get_environment_label
 from app.models.report import Report
-from app.prometheus.consumer import PrometheusConsumer
-from app.prometheus.service import PrometheusService
+from app.metrics.consumer import MetricsConsumer
+from app.metrics.service import MetricsService
 from app.reports.export.payloads.common import get_report_selected_cluster, report_payload_error
 
 
@@ -18,20 +18,20 @@ def get_report_capacity_analysis_payload(
     try:
         cluster = get_report_selected_cluster(report)
 
-        prometheus = PrometheusService(
+        metrics_source = MetricsService(
             cluster,
         )
 
         utilization_service = UtilizationService(
-            prometheus,
+            metrics_source,
         )
 
         capacity_service = CapacityService(
             utilization_service,
-            PrometheusConsumer(cluster),
+            MetricsConsumer(cluster),
         )
 
-        prometheus_status = utilization_service.get_prometheus_status()
+        metrics_source_status = utilization_service.get_metrics_source_status()
 
         report_period = report.period or '24h'
         capacity_payload = capacity_service.get_capacity_analysis(
@@ -72,10 +72,10 @@ def get_report_capacity_analysis_payload(
                     or ''
                 ),
             },
-            'prometheus_status': prometheus_status,
+            'metrics_source_status': metrics_source_status,
             'forecast_payload': forecast_payload,
             'source_evidence': _source_evidence(
-                prometheus_status=prometheus_status,
+                metrics_source_status=metrics_source_status,
                 report_period=report_period,
                 forecast_payload=forecast_payload,
             ),
@@ -122,15 +122,15 @@ def _forecast_history_window(period: str) -> str:
 
 def _source_evidence(
     *,
-    prometheus_status: dict[str, Any],
+    metrics_source_status: dict[str, Any],
     report_period: str,
     forecast_payload: dict[str, Any],
 ) -> list[dict[str, Any]]:
     return [
         {
-            'source': 'Prometheus Observation Cache',
-            'freshness': _format_latency(prometheus_status.get('response_time_ms')),
-            'last_collected': prometheus_status.get('last_checked_at') or 'Not Available',
+            'source': 'Metrics Source Observation Cache',
+            'freshness': _format_latency(metrics_source_status.get('response_time_ms')),
+            'last_collected': metrics_source_status.get('last_checked_at') or 'Not Available',
         },
         {
             'source': 'Kubernetes Cluster Scope',

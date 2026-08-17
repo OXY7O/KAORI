@@ -53,7 +53,7 @@ def test_alert_intelligence_uses_supported_multi_domain_alert_sources():
     assert "'kubernetes'" in module
     assert "'object_storage'" in module
     assert 'Alertmanager is preferred' in alerts
-    assert 'Prometheus ALERTS' in alerts
+    assert 'Metrics Source ALERTS' in alerts
     assert 'This is contextual correlation, not a claim that every finding was caused by every alert.' in correlation
 
 

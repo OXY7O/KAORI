@@ -10,7 +10,7 @@
                 <h2 class="mt-1 text-lg font-semibold text-content-primary">Object Storage Scope &amp; Runtime Readiness</h2>
                 <p class="mt-1 text-sm leading-6 text-content-muted">
                     {% if page_key == 'alerts' %}
-                        Select the managed system and alert source. Automatic prefers Alertmanager and falls back to Prometheus ALERTS evidence when Alertmanager is unavailable.
+                        Select the managed system and alert source. Automatic prefers Alertmanager and falls back to Metrics Source ALERTS evidence when Alertmanager is unavailable.
                     {% else %}
                         Select the managed system and analysis window. KAORI keeps committed Inventory, metric-contract validation, and current runtime connectivity as separate states.
                     {% endif %}
@@ -51,7 +51,7 @@
                             class="{{ table_ui.filter_select_classes() }}">
                         <option value="auto" {% if selected_alert_source == 'auto' %}selected{% endif %}>Automatic · Alertmanager Preferred</option>
                         <option value="alertmanager" {% if selected_alert_source == 'alertmanager' %}selected{% endif %}>Alertmanager</option>
-                        <option value="prometheus" {% if selected_alert_source == 'prometheus' %}selected{% endif %}>Prometheus</option>
+                        <option value="metrics_source" {% if selected_alert_source == 'metrics_source' %}selected{% endif %}>Metrics Source</option>
                     </select>
                 </label>
             {% elif page_key == 'forecast' %}

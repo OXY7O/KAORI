@@ -11,7 +11,10 @@ CATALOG_PATH = ROOT / 'app' / 'reports' / 'catalog.py'
 CATALOG_DEFINITION_PATH = ROOT / 'app' / 'definitions' / 'catalogs' / 'reports' / 'catalog.yaml'
 ARTIFACT_PATH = ROOT / 'app' / 'reports' / 'export' / 'artifacts.py'
 ANALYTICS_COLLECTOR_PATH = ROOT / 'app' / 'reports' / 'export' / 'html_pdf' / 'collectors.py'
-INVENTORY_PROFILE_PATH = ROOT / 'app' / 'reports' / 'export' / 'xlsx' / 'standard.py'
+INVENTORY_PROFILE_PATHS = (
+    ROOT / 'app' / 'reports' / 'export' / 'xlsx' / 'profiles_kubernetes.py',
+    ROOT / 'app' / 'reports' / 'export' / 'xlsx' / 'profiles_infrastructure.py',
+)
 MODEL_PATH = ROOT / 'app' / 'models' / 'report.py'
 STANDARD_PATH = ROOT / 'docs' / 'reports' / 'kaori-reporting-standard-v1.md'
 AUDIT_PATH = ROOT / 'docs' / 'reviews' / 'report-generation-audit-2026-08-03.md'
@@ -116,7 +119,10 @@ def _check_renderer_coverage(
     inventory: set[str],
 ) -> None:
     analytics_collectors = _dictionary_string_keys(ANALYTICS_COLLECTOR_PATH, '_PAYLOAD_COLLECTORS')
-    inventory_profiles = _dictionary_string_keys(INVENTORY_PROFILE_PATH, 'INVENTORY_WORKBOOK_PROFILES')
+    inventory_profiles = set().union(
+        _dictionary_string_keys(INVENTORY_PROFILE_PATHS[0], 'KUBERNETES_INVENTORY_WORKBOOK_PROFILES'),
+        _dictionary_string_keys(INVENTORY_PROFILE_PATHS[1], 'INFRASTRUCTURE_INVENTORY_WORKBOOK_PROFILES'),
+    )
     if analytics_collectors != analytics:
         errors.append(
             'Analytics collector coverage differs from the catalog: '

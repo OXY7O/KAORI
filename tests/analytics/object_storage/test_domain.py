@@ -7,7 +7,7 @@ from types import ModuleType
 
 from app.analytics.object_storage.analysis import metric_risk_signals
 from app.analytics.object_storage.runtime import EvidenceReader
-from app.analytics.object_storage.sources import minio_prometheus as prometheus_source
+from app.analytics.object_storage.sources import minio_metrics as metrics_source
 from app.analytics.shared.metrics import (
     MetricsSourceError,
     MetricsSourceFailureKind,
@@ -37,7 +37,7 @@ def load_module(name: str, relative: str) -> ModuleType:
     return module
 
 
-def test_prometheus_adapter_parses_scalar_bucket_vector_and_matrix() -> None:
+def test_metrics_source_adapter_parses_scalar_bucket_vector_and_matrix() -> None:
     vector_payload = {
         'data': {
             'result': [
@@ -48,12 +48,12 @@ def test_prometheus_adapter_parses_scalar_bucket_vector_and_matrix() -> None:
     }
     matrix_payload = {'data': {'result': [{'metric': {}, 'values': [[100, '10'], [200, '20.5']]}]}}
 
-    assert prometheus_source._vector_scalar(vector_payload) == 2048.0
-    assert prometheus_source._vector_by_label(vector_payload, 'bucket') == {
+    assert metrics_source._vector_scalar(vector_payload) == 2048.0
+    assert metrics_source._vector_by_label(vector_payload, 'bucket') == {
         'archive': 2048.0,
         'reports': 4096.0,
     }
-    assert prometheus_source._matrix_points(matrix_payload) == [
+    assert metrics_source._matrix_points(matrix_payload) == [
         {'timestamp': 100.0, 'value': 10.0},
         {'timestamp': 200.0, 'value': 20.5},
     ]

@@ -5,7 +5,7 @@ from copy import deepcopy
 from datetime import UTC, datetime
 from typing import Any, cast
 
-from app.analytics.kubernetes.alerts.anomalies import filter_anomalies, load_prometheus_anomaly_metrics
+from app.analytics.kubernetes.alerts.anomalies import filter_anomalies, load_metrics_source_anomaly_metrics
 from app.analytics.kubernetes.alerts.contracts import (
     PER_PAGE_OPTIONS,
     SEVERITY_OPTIONS,
@@ -94,22 +94,22 @@ def _load_anomaly_evidence(cluster) -> tuple[list[dict[str, Any]], dict[str, Any
             [],
         )
 
-    anomalies, status = load_prometheus_anomaly_metrics(cluster=cluster)
+    anomalies, status = load_metrics_source_anomaly_metrics(cluster=cluster)
     if not status.get('partial', False):
         return anomalies, status, []
 
     partially_available = bool(status.get('connected'))
     warning = {
         'title': (
-            'Prometheus Anomaly Evidence Is Partial'
+            'Metrics Source Anomaly Evidence Is Partial'
             if partially_available
-            else 'Prometheus Anomaly Evidence Is Unavailable'
+            else 'Metrics Source Anomaly Evidence Is Unavailable'
         ),
         'detail': str(
-            status.get('error') or 'One or more optional Prometheus anomaly queries did not return usable evidence.'
+            status.get('error') or 'One or more optional Metrics Source anomaly queries did not return usable evidence.'
         ),
         'remediation': (
-            'Review the Analytics Worker job log and Prometheus query pressure. '
+            'Review the Analytics Worker job log and Metrics Source query pressure. '
             'Successful alert or anomaly signal families remain available from the committed snapshot.'
         ),
     }

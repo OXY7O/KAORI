@@ -52,7 +52,7 @@
         {% set empty_state_icon = 'plug-zap' %}
         {% set empty_state_label = 'Setup Required' %}
         {% set empty_state_title = 'No Integration Targets Registered' %}
-        {% set empty_state_description = 'Register a Kubernetes, Prometheus, Alertmanager, or Object Storage provider target before runtime posture can be reviewed.' %}
+        {% set empty_state_description = 'Register a Kubernetes, Metrics Source, Alertmanager, or Object Storage provider target before runtime posture can be reviewed.' %}
         {% set empty_state_action_url = url_for('integrations.overview', tab='catalog') %}
         {% set empty_state_action_label = 'Browse Providers' %}
         {% set empty_state_action_icon = 'package-search' %}
@@ -225,7 +225,7 @@
                 {{ integration_ui.palette_icon('archive', 'brand', size='sm') }}
                 <div class="min-w-0">
                     <p class="text-xs font-semibold text-content-primary">Runtime Evidence Lifecycle</p>
-                    <p class="mt-1 text-xs leading-5 text-content-secondary">Persisted integration runtime observations are provider-neutral operational evidence. Data Lifecycle governs hot retention, verified archive, and cleanup across Kubernetes, Prometheus, Alertmanager, MinIO, and future providers.</p>
+                    <p class="mt-1 text-xs leading-5 text-content-secondary">Persisted integration runtime observations are provider-neutral operational evidence. Data Lifecycle governs hot retention, verified archive, and cleanup across Kubernetes, Metrics Source, Alertmanager, MinIO, and future providers.</p>
                 </div>
             </div>
             {% if current_user.has_permission('platform_operations.view_data_lifecycle') %}

@@ -405,7 +405,7 @@ def get_report_type_coverage() -> dict[str, Any]:
         if domain_key == 'kubernetes':
             label = 'Kubernetes Reports'
             description = (
-                'Published report contracts backed by Kubernetes inventory, Prometheus metrics, '
+                'Published report contracts backed by Kubernetes inventory, Metrics Source data, '
                 'and Alertmanager context.'
             )
             icon = 'boxes'
@@ -841,7 +841,7 @@ def get_data_collection_status(
         {
             'stage': 'ready',
             'stage_label': 'Ready Now',
-            'name': 'Prometheus / Thanos',
+            'name': 'Metrics Source',
             'category': 'Metrics Source',
             'status': 'Ready',
             'tone': 'normal',

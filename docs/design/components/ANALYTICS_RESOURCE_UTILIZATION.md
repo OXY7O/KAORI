@@ -5,7 +5,7 @@ Status: KAORI domain presentation and evidence standard
 ## Page Structure
 
 1. Hero with selected cluster, utilization posture, highest-pressure resource, and actionable count.
-2. Controls and Data Readiness with cluster, trend window, Prometheus readiness, worker scope, and committed snapshot metadata.
+2. Controls and Data Readiness with cluster, trend window, Metrics Source readiness, worker scope, and committed snapshot metadata.
 3. Quick Resource Utilization Overview.
 4. One tabbed workspace containing Summary, Trend Analysis, Node Detail, and Recommendations.
 

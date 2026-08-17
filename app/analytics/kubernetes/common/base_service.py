@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from app.analytics.kubernetes.common.presentation import present_prometheus_status
-from app.integrations.prometheus.exceptions import PrometheusError
+from app.analytics.kubernetes.common.presentation import present_metrics_source_status
+from app.integrations.metrics.exceptions import MetricsSourceError
 
 
 def bytes_to_gib(
@@ -73,11 +73,11 @@ def safe_round(
 class AnalyticsBaseService:
     utilization_service: Any
 
-    def get_prometheus_scalar(
+    def get_metrics_source_scalar(
         self,
         query: str,
     ) -> float:
-        result = self.get_prometheus_result(
+        result = self.get_metrics_result(
             query,
         )
 
@@ -88,13 +88,13 @@ class AnalyticsBaseService:
             result[0],
         )
 
-    def get_prometheus_vector_map(
+    def get_metrics_vector_map(
         self,
         query: str,
         label: str,
         secondary_label: str | None = None,
     ) -> dict[str, float]:
-        result = self.get_prometheus_result(
+        result = self.get_metrics_result(
             query,
         )
 
@@ -152,14 +152,14 @@ class AnalyticsBaseService:
 
         return values
 
-    def get_prometheus_label_map(
+    def get_metrics_source_label_map(
         self,
         query: str,
         key_label: str,
         value_label: str,
         secondary_key_label: str | None = None,
     ) -> dict[str, str]:
-        result = self.get_prometheus_result(
+        result = self.get_metrics_result(
             query,
         )
 
@@ -224,22 +224,22 @@ class AnalyticsBaseService:
 
         return values
 
-    def get_prometheus_result(
+    def get_metrics_result(
         self,
         query: str,
     ) -> list[dict[str, Any]]:
         utilization_service = getattr(self, 'utilization_service', None)
         consumer = getattr(utilization_service, 'consumer', None)
         if consumer is None:
-            raise PrometheusError('A cluster-scoped Prometheus consumer is required for analytics queries.')
+            raise MetricsSourceError('A cluster-scoped Metrics Source consumer is required for analytics queries.')
 
         response = consumer.query(query)
         if not isinstance(response, dict):
-            raise PrometheusError(f'Prometheus returned {type(response).__name__}; expected a response mapping.')
+            raise MetricsSourceError(f'Metrics Source returned {type(response).__name__}; expected a response mapping.')
         data = response.get('data', {})
         result = data.get('result', []) if isinstance(data, dict) else []
         if not isinstance(result, list):
-            raise PrometheusError('Prometheus response data.result is not a list.')
+            raise MetricsSourceError('Metrics Source response data.result is not a list.')
         return [item for item in result if isinstance(item, dict)]
 
     def extract_value(
@@ -454,18 +454,18 @@ class AnalyticsBaseService:
 
         return 0
 
-    def get_prometheus_status(
+    def get_metrics_source_status(
         self,
     ) -> dict[str, Any]:
         utilization_service = getattr(self, 'utilization_service', None)
         consumer = getattr(utilization_service, 'consumer', None)
         if consumer is None:
-            return present_prometheus_status(
+            return present_metrics_source_status(
                 {
                     'configured': False,
                     'connected': False,
                     'response_time_ms': None,
-                    'label': 'Prometheus Not Configured',
+                    'label': 'Metrics Source Not Configured',
                 }
             )
 
@@ -477,9 +477,9 @@ class AnalyticsBaseService:
             detail = (
                 response.diagnostics[0].detail
                 if response.diagnostics and response.diagnostics[0].detail
-                else (response.diagnostics[0].message if response.diagnostics else 'Prometheus is unavailable.')
+                else (response.diagnostics[0].message if response.diagnostics else 'Metrics Source is unavailable.')
             )
-            return present_prometheus_status(
+            return present_metrics_source_status(
                 {
                     'configured': bool(payload.get('configured', True)),
                     'connected': False,
@@ -488,7 +488,7 @@ class AnalyticsBaseService:
                     'error': detail,
                 }
             )
-        return present_prometheus_status(
+        return present_metrics_source_status(
             {
                 'configured': True,
                 'connected': True,

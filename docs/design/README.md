@@ -44,7 +44,7 @@ Authoritative shell standards include the locked application-shell navigation co
 - `components/ANALYTICS_RESOURCE_FORECAST.md`
 - `components/ANALYTICS_TOP_CONSUMERS.md`
 - `components/ANALYTICS_ALERTS_ANOMALIES.md`
-- `components/ANALYTICS_PROMETHEUS_READINESS.md`
+- `components/ANALYTICS_METRICS_SOURCE_READINESS.md`
 - `components/SECTION_HEADER_ACTION.md`
 - `components/PEER_CONTENT_GRID.md`
 - `components/RIGHT_CONTEXT_RAIL.md`

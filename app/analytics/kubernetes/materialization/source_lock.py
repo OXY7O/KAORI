@@ -20,7 +20,7 @@ from app.analytics.kubernetes.materialization.catalog import (
 )
 from app.analytics.kubernetes.materialization.errors import AnalyticsSourceBusyError
 from app.extensions.db import db
-from app.prometheus.resolver import resolve_prometheus_sources
+from app.metrics.resolver import resolve_metrics_sources
 
 _fallback_locks: dict[str, Lock] = {}
 
@@ -38,8 +38,8 @@ def _provider_lock_names(
 ) -> tuple[str, ...]:
     """Resolve stable provider locks without making resolution a new failure point.
 
-    Alert materialization can read Alertmanager and Prometheus in one dataset
-    (Alertmanager alerts plus Prometheus anomaly candidates). Acquiring every
+    Alert materialization can read Alertmanager and Metrics Source in one dataset
+    (Alertmanager alerts plus Metrics Source anomaly candidates). Acquiring every
     selected provider lock in sorted order prevents those optional queries from
     bypassing the same-source concurrency boundary used by other analytics jobs.
     """
@@ -48,8 +48,8 @@ def _provider_lock_names(
     normalized = canonical_parameters(dataset_key, parameters)
     lock_names: set[str] = set()
     try:
-        if dataset.source_kind == 'prometheus':
-            resolution = resolve_prometheus_sources(
+        if dataset.source_kind == 'metrics_source':
+            resolution = resolve_metrics_sources(
                 scope_type=KUBERNETES_CLUSTER_SCOPE,
                 scope_key=str(cluster_id),
                 required_binding_capabilities=source_binding_capabilities(dataset_key),
@@ -57,7 +57,7 @@ def _provider_lock_names(
             )
             selected = resolution.selected
             if selected is not None:
-                lock_names.add(f'analytics-source:prometheus:{selected.instance.id}')
+                lock_names.add(f'analytics-source:metrics_source:{selected.instance.id}')
         elif dataset.source_kind == 'alert':
             requested_source = normalized.get('source', 'auto').lower()
             if requested_source in {'auto', 'alertmanager'}:
@@ -67,15 +67,15 @@ def _provider_lock_names(
                 )
                 if alertmanager.selected is not None:
                     lock_names.add(f'analytics-source:alertmanager:{alertmanager.selected.instance.id}')
-            if requested_source in {'auto', 'prometheus'}:
-                prometheus = resolve_prometheus_sources(
+            if requested_source in {'auto', 'metrics_source'}:
+                metrics_source = resolve_metrics_sources(
                     scope_type=KUBERNETES_CLUSTER_SCOPE,
                     scope_key=str(cluster_id),
                     required_binding_capabilities=('metrics',),
                     required_technical_capabilities=('instant_query',),
                 )
-                if prometheus.selected is not None:
-                    lock_names.add(f'analytics-source:prometheus:{prometheus.selected.instance.id}')
+                if metrics_source.selected is not None:
+                    lock_names.add(f'analytics-source:metrics_source:{metrics_source.selected.instance.id}')
     except Exception:
         current_app.logger.warning(
             'Could not resolve provider-specific analytics query locks; using cluster fallback.',
@@ -110,8 +110,8 @@ def analytics_source_lock(
 ) -> Iterator[int]:
     """Serialize heavy analytics requests by selected provider instance.
 
-    Multiple clusters can share one Thanos/Prometheus endpoint and an alert
-    dataset can query both Alertmanager and Prometheus. Locks are acquired in a
+    Multiple clusters can share one Metrics Source endpoint and an alert
+    dataset can query both Alertmanager and Metrics Source. Locks are acquired in a
     deterministic order, preventing parallel workers from overloading the same
     provider while still allowing unrelated providers to run concurrently.
 

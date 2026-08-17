@@ -222,7 +222,7 @@ def test_analytics_overview_weasyprint_layout_is_exactly_12_a4_pages() -> None:
 
 def test_analytics_overview_degraded_metric_is_not_zero_percent() -> None:
     payload = _payload()
-    payload['prometheus'] = {
+    payload['metrics_source'] = {
         'status': 'query_degraded',
         'status_label': 'Query Degraded',
         'status_tone': 'critical',

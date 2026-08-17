@@ -25,7 +25,7 @@ def test_definition_registry_has_versioned_yaml_for_growing_system_catalogs():
         'integrations/taxonomy.yaml': 'integration_taxonomy',
         'integrations/compatibility.yaml': 'integration_compatibility',
         'integrations/kubernetes.yaml': 'integration_provider_contract',
-        'integrations/prometheus.yaml': 'integration_provider_contract',
+        'integrations/metrics_source.yaml': 'integration_provider_contract',
         'integrations/alertmanager.yaml': 'integration_provider_contract',
         'integrations/object_storage.yaml': 'integration_provider_contract',
     }
@@ -49,8 +49,8 @@ def test_runtime_modules_consume_registry_instead_of_embedding_catalog_growth():
         'app/integrations/taxonomy.py',
         'app/integrations/compatibility.py',
         'app/integrations/kubernetes/capabilities.py',
-        'app/integrations/prometheus/capabilities.py',
-        'app/integrations/prometheus/binding_profiles.py',
+        'app/integrations/metrics/capabilities.py',
+        'app/integrations/metrics/binding_profiles.py',
         'app/integrations/alertmanager/capabilities.py',
         'app/integrations/alertmanager/binding_profiles.py',
         'app/integrations/minio/capabilities.py',
@@ -85,7 +85,7 @@ def test_rbac_and_jobs_reference_canonical_permissions():
 def test_integration_definitions_are_taxonomy_provider_and_profile_driven():
     taxonomy = load('integrations/taxonomy.yaml')
     compatibility = load('integrations/compatibility.yaml')
-    prometheus = load('integrations/prometheus.yaml')
+    metrics_source = load('integrations/metrics_source.yaml')
     alertmanager = load('integrations/alertmanager.yaml')
     object_storage = load('integrations/object_storage.yaml')
 
@@ -101,7 +101,7 @@ def test_integration_definitions_are_taxonomy_provider_and_profile_driven():
         'alertmanager',
         'thanos',
     }
-    assert {item['profile_key'] for item in prometheus['binding_profiles']} == {
+    assert {item['profile_key'] for item in metrics_source['binding_profiles']} == {
         'kubernetes-metrics-v1',
         'object-storage-metrics-v1',
     }

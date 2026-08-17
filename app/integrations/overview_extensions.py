@@ -6,16 +6,16 @@ from app.integrations.registry import registry
 from app.models.alertmanager import AlertmanagerInstance
 from app.models.integration import IntegrationInstance
 from app.models.kubernetes import KubernetesConnection
-from app.models.prometheus import PrometheusInstance
+from app.models.metrics_source import MetricsSource
 from app.models.runtime import IntegrationRuntimeObservation
 
-CORE_OVERVIEW_PROVIDERS = frozenset({'kubernetes', 'prometheus', 'alertmanager'})
+CORE_OVERVIEW_PROVIDERS = frozenset({'kubernetes', 'metrics_source', 'alertmanager'})
 
 
 def build_overview_stats(
     *,
     kubernetes_connections: list[KubernetesConnection],
-    prometheus_instances: list[PrometheusInstance],
+    metrics_sources: list[MetricsSource],
     alertmanager_instances: list[AlertmanagerInstance],
     extension_instances: list[IntegrationInstance],
 ) -> dict[str, int]:
@@ -26,7 +26,7 @@ def build_overview_stats(
         ),
         *(
             (bool(item.endpoint), bool(item.enabled), item.readiness_status or 'validation_required')
-            for item in prometheus_instances
+            for item in metrics_sources
         ),
         *(
             (bool(item.endpoint), bool(item.enabled), item.readiness_status or 'validation_required')

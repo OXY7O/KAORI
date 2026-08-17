@@ -31,7 +31,7 @@ def test_sidebar_navigation_is_domain_driven_not_product_driven() -> None:
     assert 'module.navigation_endpoint_prefixes' in navigation
     assert 'active_domain_key = module.domain_key' in navigation
     assert "provider_type == 'kubernetes'" not in navigation
-    assert "provider_type == 'prometheus'" not in navigation
+    assert "provider_type == '" not in navigation
     assert "provider_type == 'alertmanager'" not in navigation
     assert "provider_type == 'minio'" not in navigation
 
@@ -39,14 +39,14 @@ def test_sidebar_navigation_is_domain_driven_not_product_driven() -> None:
     assert 'url_for(domain.workspace_endpoint)' in sidebar
     assert '{{ domain.label }}' in sidebar
     assert "url_for('integrations.kubernetes')" not in sidebar
-    assert "url_for('integrations.prometheus')" not in sidebar
+    assert "url_for('integrations.metrics_sources')" not in sidebar
     assert "url_for('integrations.alertmanager')" not in sidebar
 
 
 def test_builtin_providers_declare_domain_navigation_ownership() -> None:
     expected = {
         'app/integrations/kubernetes/__init__.py': "navigation_endpoint_prefixes=('integrations.kubernetes', 'cluster.')",
-        'app/integrations/prometheus/__init__.py': "navigation_endpoint_prefixes=('integrations.prometheus', 'prometheus.')",
+        'app/integrations/metrics/__init__.py': "navigation_endpoint_prefixes=('integrations.metrics_sources', 'metrics.')",
         'app/integrations/alertmanager/__init__.py': "navigation_endpoint_prefixes=('integrations.alertmanager', 'alertmanager.')",
         'app/integrations/minio/__init__.py': "navigation_endpoint_prefixes=('minio.',)",
     }
@@ -88,7 +88,7 @@ def test_domain_landing_routes_share_one_taxonomy_page_builder() -> None:
     assert 'module.domain_key == owner_domain' in domain_service
     assert '_consumer_binding_count(instance, consumer_bindings)' in domain_service
     assert 'KubernetesConnection.query' not in domain_service
-    assert 'PrometheusInstance.query' not in domain_service
+    assert 'MetricsSource.query' not in domain_service
     assert 'AlertmanagerInstance.query' not in domain_service
     assert 'MinioInstance.query' not in domain_service
 

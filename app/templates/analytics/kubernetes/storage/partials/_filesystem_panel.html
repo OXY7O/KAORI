@@ -126,7 +126,7 @@
                         {% endcall %}
                     {% endcall %}
                 {% else %}
-                    {{ evidence_list.empty('No Filesystem Metrics Available', 'Filesystem metrics will appear after Prometheus returns node filesystem data for the selected scope.', 'hard-drive', 'Sync Required', 'warning') }}
+                    {{ evidence_list.empty('No Filesystem Metrics Available', 'Filesystem metrics will appear after Metrics Source returns node filesystem data for the selected scope.', 'hard-drive', 'Sync Required', 'warning') }}
                 {% endfor %}
             </div>
         {% endcall %}

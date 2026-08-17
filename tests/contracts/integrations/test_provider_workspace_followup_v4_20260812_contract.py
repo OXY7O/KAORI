@@ -16,7 +16,7 @@ def test_validation_polling_is_isolated_from_nested_registry_indicators() -> Non
 
     targets = {
         'app/templates/integrations/kubernetes/partials/_capability_workspace.html': '#kubernetes-capability-workspace',
-        'app/templates/prometheus/partials/_detail_validation_content.html': '#prometheus-validation-workspace',
+        'app/templates/metrics/partials/_detail_validation_content.html': '#metrics-source-validation-workspace',
         'app/templates/alertmanager/partials/_detail_validation_content.html': '#alertmanager-validation-workspace',
         'app/templates/minio/partials/_detail_validation.html': '#minio-core-validation',
     }
@@ -32,7 +32,7 @@ def test_validation_polling_is_isolated_from_nested_registry_indicators() -> Non
 def test_validation_has_one_provider_job_loading_surface_but_registry_keeps_own_action_loader() -> None:
     pages = {
         'app/templates/integrations/kubernetes/partials/_capability_workspace.html': 'kubernetes-validation-loading',
-        'app/templates/prometheus/partials/_detail_validation_content.html': 'prometheus-validation-loading',
+        'app/templates/metrics/partials/_detail_validation_content.html': 'metrics-source-validation-loading',
         'app/templates/alertmanager/partials/_detail_validation_content.html': 'alertmanager-validation-loading',
         'app/templates/minio/partials/_detail_validation.html': 'minio-validation-loading',
     }
@@ -45,20 +45,20 @@ def test_validation_has_one_provider_job_loading_surface_but_registry_keeps_own_
     assert 'kubernetes-capability-loading' in read(
         'app/templates/integrations/kubernetes/partials/_capability_registry.html'
     )
-    assert 'prometheus-capability-loading' in read('app/templates/prometheus/partials/_capability_registry.html')
+    assert 'metrics-source-capability-loading' in read('app/templates/metrics/partials/_capability_registry.html')
     assert 'alertmanager-capability-loading' in read('app/templates/alertmanager/partials/_capability_registry.html')
     assert 'minio-capability-loading' in read('app/templates/minio/partials/_capability_registry.html')
 
 
 def test_observability_edit_success_queues_registry_toast_even_for_htmx_redirect() -> None:
-    prometheus = read('app/prometheus/edit_web.py')
+    metrics_source = read('app/metrics/edit_web.py')
     alertmanager = read('app/alertmanager/edit_web.py')
 
-    p_success = prometheus.split("event_type='prometheus_instance_updated'", 1)[1].split('if is_htmx:', 1)[0]
+    p_success = metrics_source.split("event_type='metrics_source_updated'", 1)[1].split('if is_htmx:', 1)[0]
     a_success = alertmanager.split("event_type='alertmanager_instance_updated'", 1)[1].split('if is_htmx:', 1)[0]
 
     assert "title=f'{source_label} Connection Updated'" in p_success
-    assert "source_label = 'Thanos Query' if instance.source_type == 'thanos' else 'Prometheus'" in prometheus
+    assert 'source_label = provider_definition(instance.provider_key).label' in metrics_source
     assert 'queue_feedback=True' in p_success
     assert "title='Alertmanager Connection Updated'" in a_success
     assert 'queue_feedback=True' in a_success

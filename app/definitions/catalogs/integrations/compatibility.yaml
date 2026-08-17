@@ -23,7 +23,7 @@ profiles:
   - instant_query
   - range_query
   notes: Prometheus HTTP API profile for runtime major 2.
-  query_profile: prometheus-core-v1
+  query_profile: prometheus-http-core-v1
 - key: prometheus-http-v3
   product: prometheus
   version_constraint: '>=3.0,<4.0'
@@ -32,7 +32,7 @@ profiles:
   - instant_query
   - range_query
   notes: Prometheus HTTP API profile for runtime major 3.
-  query_profile: prometheus-core-v1
+  query_profile: prometheus-http-core-v1
 - key: alertmanager-api-v2-legacy
   product: alertmanager
   version_constraint: '>=0.25,<0.27'
@@ -62,7 +62,7 @@ profiles:
   - instant_query
   - range_query
   notes: Supported Thanos Query 0.39 profile.
-  query_profile: prometheus-core-v1
+  query_profile: prometheus-http-core-v1
 - key: thanos-query-v0-40
   product: thanos
   version_constraint: '>=0.40,<0.41'
@@ -72,7 +72,7 @@ profiles:
   - instant_query
   - range_query
   notes: Supported Thanos Query 0.40 profile.
-  query_profile: prometheus-core-v1
+  query_profile: prometheus-http-core-v1
 - key: thanos-query-v0-41
   product: thanos
   version_constraint: '>=0.41,<0.42'
@@ -82,4 +82,4 @@ profiles:
   - instant_query
   - range_query
   notes: Current Thanos Query profile.
-  query_profile: prometheus-core-v1
+  query_profile: prometheus-http-core-v1

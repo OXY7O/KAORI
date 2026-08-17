@@ -7,15 +7,16 @@ def read(relative: str) -> str:
     return (ROOT / relative).read_text(encoding='utf-8')
 
 
-def test_prometheus_empty_states_match_alertmanager_binding_style() -> None:
-    registry = read('app/templates/prometheus/partials/_binding_registry.html')
-    scope = read('app/templates/prometheus/partials/_detail_scope.html')
+def test_metrics_source_empty_states_match_alertmanager_binding_style() -> None:
+    registry = read('app/templates/metrics/partials/_binding_registry.html')
+    scope = read('app/templates/metrics/partials/_detail_scope.html')
 
     assert 'No Consumer Bindings' in registry
     assert 'components/states/_empty_state.html' in registry
     assert 'No Consumer Bindings' in registry
     assert 'query-routing preference' in registry
-    assert "instance.source_type == 'thanos'" in registry
+    assert 'metrics-source-binding-registry' in registry
+    assert 'Metrics Identity' in registry
 
     assert 'No Source Resolution Is Available Yet' in scope
     assert 'Create a binding to evaluate metrics-source resolution and analytics eligibility.' in scope
@@ -25,7 +26,7 @@ def test_prometheus_empty_states_match_alertmanager_binding_style() -> None:
 def test_provider_edit_heroes_share_one_kaori_contract() -> None:
     shared = read('app/templates/integrations/components/_provider_edit_hero.html')
     templates = {
-        'Prometheus': read('app/templates/prometheus/instance_form.html'),
+        'Metrics Source': read('app/templates/metrics/instance_form.html'),
         'Alertmanager': read('app/templates/alertmanager/instance_form.html'),
         'MinIO': read('app/templates/minio/instance_form.html'),
     }
@@ -46,22 +47,22 @@ def test_provider_edit_heroes_share_one_kaori_contract() -> None:
         assert 'integrations/components/_provider_edit_hero.html' in template, provider
         assert 'provider_edit_hero.render(' in template, provider
 
-    assert 'Edit Prometheus Connection' in templates['Prometheus']
+    assert "'Edit ' ~ metrics_source_label ~ ' Connection'" in templates['Metrics Source']
     assert 'Edit Alertmanager Connection' in templates['Alertmanager']
     assert 'Edit MinIO Connection' in templates['MinIO']
 
 
 def test_observability_edit_success_returns_to_registry_for_browser_and_htmx() -> None:
-    prometheus = read('app/prometheus/edit_web.py')
+    metrics_source = read('app/metrics/edit_web.py')
     alertmanager = read('app/alertmanager/edit_web.py')
     minio = read('app/minio/routes.py')
 
-    assert "registry_url = url_for('integrations.prometheus')" in prometheus
-    assert "response.headers['HX-Redirect'] = registry_url" in prometheus
-    assert 'return redirect(registry_url)' in prometheus
+    assert "registry_url = url_for('integrations.metrics_sources')" in metrics_source
+    assert "response.headers['HX-Redirect'] = registry_url" in metrics_source
+    assert 'return redirect(registry_url)' in metrics_source
     assert (
         "'#configuration'"
-        not in prometheus.split("event_type='prometheus_instance_updated'", 1)[1].split('context =', 1)[0]
+        not in metrics_source.split("event_type='metrics_source_updated'", 1)[1].split('context =', 1)[0]
     )
 
     assert "registry_url = url_for('integrations.alertmanager')" in alertmanager

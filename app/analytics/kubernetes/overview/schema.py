@@ -40,7 +40,7 @@ def build_empty_overview_payload() -> dict[str, Any]:
         'selected_cluster_id': '',
         'selected_time_range': '24h',
         'last_analyzed_at': utc_now_display(),
-        'prometheus': _empty_prometheus(),
+        'metrics_source': _empty_metrics_source(),
         'snapshot_summary': _empty_snapshot_summary(),
         'health_summary': _empty_health_summary(),
         'resource_snapshot': _empty_resource_snapshot(),
@@ -56,7 +56,7 @@ def build_empty_overview_payload() -> dict[str, Any]:
     }
 
 
-def _empty_prometheus() -> dict[str, Any]:
+def _empty_metrics_source() -> dict[str, Any]:
     return {
         'configured': False,
         'connected': False,
@@ -65,7 +65,7 @@ def _empty_prometheus() -> dict[str, Any]:
         'status_tone': 'gray',
         'endpoint': '',
         'response_time_ms': None,
-        'message': 'Prometheus configuration is not available for this cluster.',
+        'message': 'Metrics Source configuration is not available for this cluster.',
         'last_checked_at': utc_now_display(),
     }
 

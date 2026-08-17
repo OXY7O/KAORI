@@ -28,11 +28,11 @@ def test_observability_binding_assets_are_registered_once_and_extensible() -> No
     assert 'ObjectStorageSystem.query' not in coverage
 
 
-def test_prometheus_and_alertmanager_own_binding_mutation_through_one_shared_modal() -> None:
+def test_metrics_source_and_alertmanager_own_binding_mutation_through_one_shared_modal() -> None:
     modal = read('app/templates/integrations/components/_observability_binding_modal.html')
-    prom_scope = read('app/templates/prometheus/partials/_detail_scope.html')
+    prom_scope = read('app/templates/metrics/partials/_detail_scope.html')
     alert_scope = read('app/templates/alertmanager/partials/_detail_scope.html')
-    prom_routes = read('app/prometheus/routes.py')
+    prom_routes = read('app/metrics/routes.py')
     alert_forms = read('app/alertmanager/forms.py')
 
     assert 'data-kaori-observability-binding-modal' in modal
@@ -92,7 +92,7 @@ def test_provider_configuration_and_readiness_use_shared_kaori_surfaces() -> Non
     configuration = read('app/templates/integrations/components/_provider_configuration_contract.html')
     operational_context = read('app/templates/integrations/components/_provider_operational_context.html')
     readiness = read('app/templates/integrations/components/_readiness_explanation.html')
-    prom_capabilities = read('app/templates/prometheus/partials/_capability_registry.html')
+    prom_capabilities = read('app/templates/metrics/partials/_capability_registry.html')
     alert_capabilities = read('app/templates/alertmanager/partials/_capability_registry.html')
 
     assert 'operational_context.render(' in configuration
@@ -130,11 +130,11 @@ def test_workspace_standard_locks_source_owned_observability_binding_and_future_
 
     assert 'consumer_assets.py' in module_map
     assert 'Vault' in module_map
-    assert 'Prometheus/Alertmanager own binding creation, validation, update, and' in module_map
+    assert 'Metrics Source/Alertmanager own binding creation, validation, update, and' in module_map
     assert 'removal from their `Bindings & Consumers` workspaces.' in module_map
 
     assert 'consumer-source relationships only' in integrations_readme
-    assert 'Prometheus and Alertmanager own binding mutation' in integrations_readme
+    assert 'Metrics Source and Alertmanager own binding mutation' in integrations_readme
 
 
 def test_binding_actions_keep_canonical_single_line_geometry() -> None:

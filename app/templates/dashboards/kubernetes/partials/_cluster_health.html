@@ -82,7 +82,7 @@
                             <td class="{{ table_ui.cell_classes(action=true) }} align-top">
                                 <div class="ml-auto flex w-fit flex-col items-end gap-1.5 text-xs">
                                     <span class="inline-flex items-center gap-2 text-content-muted"><span class="h-2 w-2 rounded-full {% if row.nodes_status == 'Inventory' %}bg-status-normal{% else %}bg-status-unknown{% endif %}"></span>Inventory</span>
-                                    <span class="inline-flex items-center gap-2 text-content-muted"><span class="h-2 w-2 rounded-full {% if row.cpu_status == 'Snapshot' or row.memory_status == 'Snapshot' %}bg-status-normal{% else %}bg-status-unknown{% endif %}"></span>Prometheus</span>
+                                    <span class="inline-flex items-center gap-2 text-content-muted"><span class="h-2 w-2 rounded-full {% if row.cpu_status == 'Snapshot' or row.memory_status == 'Snapshot' %}bg-status-normal{% else %}bg-status-unknown{% endif %}"></span>Metrics Source</span>
                                     <span class="inline-flex items-center gap-2 text-content-muted"><span class="h-2 w-2 rounded-full {% if row.alerts_status == 'Snapshot' %}bg-status-normal{% else %}bg-status-unknown{% endif %}"></span>Alert Signals</span>
                                 </div>
                             </td>

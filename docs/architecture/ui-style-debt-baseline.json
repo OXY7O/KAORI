@@ -153,18 +153,6 @@
     "app/templates/notifications/components/_activity_center_items.html": {
       "semantic_border_utilities": 1
     },
-    "app/templates/prometheus/instance_form.html": {
-      "copied_standard_surface_shells": 1
-    },
-    "app/templates/prometheus/partials/_delete_confirmation_modal.html": {
-      "semantic_border_utilities": 2
-    },
-    "app/templates/prometheus/partials/_detail_scope.html": {
-      "copied_standard_surface_shells": 1
-    },
-    "app/templates/prometheus/partials/_runtime_panel.html": {
-      "copied_standard_surface_shells": 1
-    },
     "app/templates/reports/generate/index.html": {
       "semantic_border_utilities": 16
     },
@@ -219,6 +207,18 @@
     "app/templates/users/reset_password.html": {
       "copied_standard_surface_shells": 2,
       "semantic_border_utilities": 7
+    },
+    "app/templates/metrics/instance_form.html": {
+      "copied_standard_surface_shells": 1
+    },
+    "app/templates/metrics/partials/_delete_confirmation_modal.html": {
+      "semantic_border_utilities": 2
+    },
+    "app/templates/metrics/partials/_detail_scope.html": {
+      "copied_standard_surface_shells": 1
+    },
+    "app/templates/metrics/partials/_runtime_panel.html": {
+      "copied_standard_surface_shells": 1
     }
   },
   "version": 3

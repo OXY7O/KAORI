@@ -25,8 +25,8 @@ def _forbid(relative_path: str, needle: str, description: str) -> None:
 def main() -> None:
     _require(
         'app/analytics/kubernetes/utilization/service.py',
-        'from app.integrations.prometheus.exceptions import PrometheusError',
-        'canonical PrometheusError import',
+        'from app.integrations.metrics.exceptions import MetricsSourceError',
+        'canonical MetricsSourceError import',
     )
     _require(
         'app/kubernetes_operations/secrets/reveal_service.py',

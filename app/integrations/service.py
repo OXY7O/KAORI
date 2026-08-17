@@ -19,7 +19,8 @@ from app.integrations.deletion import kubernetes_deletion_guard
 from app.integrations.kubernetes.compatibility import FEATURE_CONTRACTS
 from app.integrations.kubernetes.messages import compact_readiness_reasons
 from app.integrations.overview_extensions import sort_runtime_rows
-from app.integrations.prometheus.scope import cluster_bindings_for_instance
+from app.integrations.metrics.providers import provider_definition, provider_options
+from app.integrations.metrics.scope import cluster_bindings_for_instance
 from app.integrations.registry import get_integration, registry
 from app.integrations.taxonomy import (
     capability_definitions_for_domain,
@@ -29,7 +30,7 @@ from app.models import (
     AlertmanagerInstance,
     Cluster,
     ClusterInventory,
-    PrometheusInstance,
+    MetricsSource,
     Report,
     ReportSchedule,
 )
@@ -39,9 +40,9 @@ from app.models.runtime import IntegrationRuntimeObservation
 
 
 @dataclass(frozen=True, slots=True)
-class PrometheusRegistryFilters:
+class MetricsSourceRegistryFilters:
     query: str = ''
-    source_type: str = ''
+    provider_key: str = ''
     compatibility: str = ''
     readiness: str = ''
     page: int = 1
@@ -191,8 +192,8 @@ def build_kubernetes_detail(cluster_id: str) -> dict[str, Any] | None:
         ),
         [],
     )
-    prometheus_source, prometheus_binding = bound_source_for_scope(
-        'prometheus',
+    metrics_source, metrics_binding = bound_source_for_scope(
+        'metrics_source',
         scope_type='kubernetes_cluster',
         scope_key=cluster.id,
     )
@@ -258,9 +259,9 @@ def build_kubernetes_detail(cluster_id: str) -> dict[str, Any] | None:
     }
 
 
-def build_prometheus_page(
+def build_metrics_source_page(
     *,
-    filters: PrometheusRegistryFilters | None = None,
+    filters: MetricsSourceRegistryFilters | None = None,
     tab: str = 'coverage',
     coverage_query: str = '',
     coverage_environment: str = '',
@@ -268,12 +269,12 @@ def build_prometheus_page(
     coverage_page: int = 1,
     coverage_per_page: int = 5,
 ) -> dict[str, Any]:
-    filters = filters or PrometheusRegistryFilters()
-    all_rows = _prometheus_registry_rows()
-    filtered = _filter_prometheus_registry_rows(all_rows, filters)
+    filters = filters or MetricsSourceRegistryFilters()
+    all_rows = _metrics_source_registry_rows()
+    filtered = _filter_metrics_source_registry_rows(all_rows, filters)
     page_rows, pagination = _paginate(filtered, page=filters.page, per_page=filters.per_page)
     coverage_context = build_provider_coverage(
-        'prometheus',
+        'metrics_source',
         page=coverage_page,
         per_page=coverage_per_page,
         query=coverage_query,
@@ -282,16 +283,13 @@ def build_prometheus_page(
     )
     return {
         'rows': page_rows,
-        'stats': _prometheus_registry_stats(all_rows),
+        'stats': _metrics_source_registry_stats(all_rows),
         'pagination': pagination,
         **coverage_context,
         'active_tab': tab if tab in {'coverage', 'registry'} else 'coverage',
         'selected_query': filters.query,
-        'selected_source_type': filters.source_type,
-        'source_type_options': [
-            {'value': 'prometheus', 'label': 'Prometheus'},
-            {'value': 'thanos', 'label': 'Thanos Query'},
-        ],
+        'selected_provider_key': filters.provider_key,
+        'provider_options': provider_options(),
         'selected_compatibility': filters.compatibility,
         'selected_readiness': filters.readiness,
         'compatibility_options': _ordered_status_options(
@@ -312,11 +310,11 @@ def build_prometheus_page(
     }
 
 
-def _prometheus_registry_rows() -> list[dict[str, Any]]:
+def _metrics_source_registry_rows() -> list[dict[str, Any]]:
     clusters_by_id = {cluster.id: cluster for cluster in Cluster.query.all()}
     rows: list[dict[str, Any]] = []
     instances = (
-        PrometheusInstance.query.join(PrometheusInstance.integration_instance)
+        MetricsSource.query.join(MetricsSource.integration_instance)
         .order_by(IntegrationInstance.name.asc())
         .all()
     )
@@ -324,17 +322,19 @@ def _prometheus_registry_rows() -> list[dict[str, Any]]:
         bindings = cluster_bindings_for_instance(instance, enabled_only=True)
         cluster_ids = [binding.asset_key for binding in bindings]
         bound_clusters = [clusters_by_id[key] for key in cluster_ids if key in clusters_by_id]
-        source_type = instance.source_type or 'prometheus'
-        source_label = 'Thanos Query' if source_type == 'thanos' else 'Prometheus'
+        provider = provider_definition(instance.provider_key)
         rows.append(
             {
                 'instance_id': instance.id,
                 'name': instance.name,
                 'description': instance.description,
                 'endpoint': safe_endpoint(instance.endpoint),
-                'source_type': source_type,
-                'source_type_label': source_label,
-                'endpoint_product': instance.endpoint_product or source_type,
+                'provider_key': provider.key,
+                'provider_label': provider.label,
+                'provider_icon': provider.icon,
+                'adapter_key': instance.adapter_key,
+                'query_language': instance.query_language,
+                'endpoint_product': instance.endpoint_product or provider.key,
                 'version': instance.detected_version,
                 'compatibility': instance.compatibility_status or 'validation_required',
                 'readiness': instance.readiness_status or 'validation_required',
@@ -348,13 +348,13 @@ def _prometheus_registry_rows() -> list[dict[str, Any]]:
                 'environments': sorted({cluster.environment for cluster in bound_clusters if cluster.environment}),
                 'configured': bool(instance.endpoint),
                 'enabled': instance.enabled,
-                'search_text': _prometheus_search_text(instance, source_type, source_label),
+                'search_text': _metrics_source_search_text(instance, provider.key, provider.label),
             }
         )
     return rows
 
 
-def _prometheus_search_text(instance: PrometheusInstance, source_type: str, source_label: str) -> str:
+def _metrics_source_search_text(instance: MetricsSource, provider_key: str, provider_label: str) -> str:
     return ' '.join(
         filter(
             None,
@@ -362,8 +362,10 @@ def _prometheus_search_text(instance: PrometheusInstance, source_type: str, sour
                 (instance.name or '').lower(),
                 (instance.description or '').lower(),
                 (instance.endpoint or '').lower(),
-                source_type.lower(),
-                source_label.lower(),
+                provider_key.lower(),
+                provider_label.lower(),
+                (instance.adapter_key or '').lower(),
+                (instance.query_language or '').lower(),
                 (instance.endpoint_product or '').lower(),
                 (instance.detected_version or '').lower(),
                 (instance.compatibility_profile or '').lower(),
@@ -373,16 +375,16 @@ def _prometheus_search_text(instance: PrometheusInstance, source_type: str, sour
     )
 
 
-def _filter_prometheus_registry_rows(
+def _filter_metrics_source_registry_rows(
     rows: list[dict[str, Any]],
-    filters: PrometheusRegistryFilters,
+    filters: MetricsSourceRegistryFilters,
 ) -> list[dict[str, Any]]:
     filtered = rows
     query = filters.query.strip().lower()
     if query:
         filtered = [row for row in filtered if query in row['search_text']]
-    if filters.source_type:
-        filtered = [row for row in filtered if row['source_type'] == filters.source_type]
+    if filters.provider_key:
+        filtered = [row for row in filtered if row['provider_key'] == filters.provider_key]
     if filters.compatibility:
         filtered = [row for row in filtered if row['compatibility'] == filters.compatibility]
     if filters.readiness:
@@ -390,7 +392,7 @@ def _filter_prometheus_registry_rows(
     return filtered
 
 
-def _prometheus_registry_stats(rows: list[dict[str, Any]]) -> dict[str, int]:
+def _metrics_source_registry_stats(rows: list[dict[str, Any]]) -> dict[str, int]:
     return {
         'total': len(rows),
         'configured': len(rows),
@@ -398,8 +400,6 @@ def _prometheus_registry_stats(rows: list[dict[str, Any]]) -> dict[str, int]:
         'attention': sum(1 for row in rows if row['readiness'] != 'ready'),
         'blocked': sum(1 for row in rows if row['readiness'] == 'blocked'),
         'bindings': sum(row['binding_count'] for row in rows),
-        'prometheus': sum(1 for row in rows if row['source_type'] == 'prometheus'),
-        'thanos': sum(1 for row in rows if row['source_type'] == 'thanos'),
     }
 
 
@@ -439,7 +439,7 @@ def build_alertmanager_page(
 def _provider_portfolio_counts(
     *,
     kubernetes_connections: list[KubernetesConnection],
-    prometheus_instances: list[PrometheusInstance],
+    metrics_sources: list[MetricsSource],
     alertmanager_instances: list[AlertmanagerInstance],
     extension_instances: list[IntegrationInstance],
 ) -> dict[str, dict[str, int]]:
@@ -453,10 +453,10 @@ def _provider_portfolio_counts(
             ),
             'total': len(kubernetes_connections),
         },
-        'prometheus': {
-            'configured': sum(1 for item in prometheus_instances if item.endpoint),
-            'ready': sum(1 for item in prometheus_instances if item.enabled and item.readiness_status == 'ready'),
-            'total': len(prometheus_instances),
+        'metrics_source': {
+            'configured': sum(1 for item in metrics_sources if item.endpoint),
+            'ready': sum(1 for item in metrics_sources if item.enabled and item.readiness_status == 'ready'),
+            'total': len(metrics_sources),
         },
         'alertmanager': {
             'configured': sum(1 for item in alertmanager_instances if item.endpoint),
@@ -477,13 +477,13 @@ def _provider_portfolio_counts(
 def _coverage(
     *,
     kubernetes_connections: list[KubernetesConnection],
-    prometheus_instances: list[PrometheusInstance],
+    metrics_sources: list[MetricsSource],
     alertmanager_instances: list[AlertmanagerInstance],
     extension_instances: list[IntegrationInstance],
 ) -> list[dict[str, Any]]:
     provider_counts = _provider_portfolio_counts(
         kubernetes_connections=kubernetes_connections,
-        prometheus_instances=prometheus_instances,
+        metrics_sources=metrics_sources,
         alertmanager_instances=alertmanager_instances,
         extension_instances=extension_instances,
     )
@@ -543,13 +543,13 @@ def _coverage_stats(rows: list[dict[str, Any]]) -> dict[str, int]:
 def _catalog(
     *,
     kubernetes_connections: list[KubernetesConnection],
-    prometheus_instances: list[PrometheusInstance],
+    metrics_sources: list[MetricsSource],
     alertmanager_instances: list[AlertmanagerInstance],
     extension_instances: list[IntegrationInstance],
 ) -> list[dict[str, Any]]:
     provider_counts = _provider_portfolio_counts(
         kubernetes_connections=kubernetes_connections,
-        prometheus_instances=prometheus_instances,
+        metrics_sources=metrics_sources,
         alertmanager_instances=alertmanager_instances,
         extension_instances=extension_instances,
     )
@@ -699,13 +699,13 @@ def _latest_runtime_observations() -> dict[tuple[str, str], IntegrationRuntimeOb
 def _runtime_overview_rows(
     *,
     kubernetes_connections: list[KubernetesConnection],
-    prometheus_instances: list[PrometheusInstance],
+    metrics_sources: list[MetricsSource],
     alertmanager_instances: list[AlertmanagerInstance],
     latest: Mapping[tuple[str, str], IntegrationRuntimeObservation],
 ) -> list[dict[str, Any]]:
     rows = [
         *[_kubernetes_runtime_row(item, latest) for item in kubernetes_connections],
-        *[_prometheus_runtime_row(item, latest) for item in prometheus_instances],
+        *[_metrics_source_runtime_row(item, latest) for item in metrics_sources],
         *[_alertmanager_runtime_row(item, latest) for item in alertmanager_instances],
     ]
     sort_runtime_rows(rows)
@@ -742,25 +742,27 @@ def _kubernetes_runtime_row(
     }
 
 
-def _prometheus_runtime_row(
-    instance: PrometheusInstance,
+def _metrics_source_runtime_row(
+    instance: MetricsSource,
     latest: Mapping[tuple[str, str], IntegrationRuntimeObservation],
 ) -> dict[str, Any]:
-    observation = latest.get(('prometheus', str(instance.id)))
+    observation = latest.get(('metrics_source', str(instance.id)))
     assessments = (instance.capabilities or {}).get('assessments') or []
     attention = sum(1 for item in assessments if item.get('status') != 'available')
     enabled_bindings = [binding for binding in instance.integration_instance.bindings if binding.enabled]
-    source_type = instance.source_type or 'prometheus'
+    provider = provider_definition(instance.provider_key)
     return {
-        'provider': 'prometheus',
-        'provider_label': 'Thanos Query' if source_type == 'thanos' else 'Prometheus',
-        'provider_icon': 'database-zap' if source_type == 'thanos' else 'activity',
+        'provider': 'metrics_source',
+        'provider_label': provider.label,
+        'provider_icon': provider.icon,
         'instance_id': str(instance.id),
-        'detail_key': f'prometheus:{instance.id}',
+        'detail_key': f'metrics_source:{instance.id}',
         'instance_name': instance.name,
         'scope_label': f'{len(enabled_bindings)} asset binding(s)',
-        'endpoint_product': (instance.endpoint_product or source_type).replace('_', ' ').title(),
-        'metrics_source_type': source_type,
+        'endpoint_product': (instance.endpoint_product or provider.key).replace('_', ' ').title(),
+        'provider_key': provider.key,
+        'adapter_key': instance.adapter_key,
+        'query_language': instance.query_language,
         'connection_status': instance.last_status or 'not_observed',
         **_runtime_observation_fields(observation),
         'readiness': instance.readiness_status or 'validation_required',
@@ -773,7 +775,6 @@ def _prometheus_runtime_row(
         'capability_attention_display': _capability_attention_display(attention),
         'message': (observation.message if observation else None) or instance.validation_message or instance.last_error,
     }
-
 
 def _alertmanager_runtime_row(
     instance: AlertmanagerInstance,
@@ -827,7 +828,7 @@ def build_integration_runtime_detail(provider: str, instance_id: str) -> dict[st
         return None
     known = {
         'kubernetes': (KubernetesConnection, 'kubernetes_connections'),
-        'prometheus': (PrometheusInstance, 'prometheus_instances'),
+        'metrics_source': (MetricsSource, 'metrics_sources'),
         'alertmanager': (AlertmanagerInstance, 'alertmanager_instances'),
     }
     if provider in known:
@@ -837,7 +838,7 @@ def build_integration_runtime_detail(provider: str, instance_id: str) -> dict[st
             return None
         runtime_args: dict[str, Any] = {
             'kubernetes_connections': [],
-            'prometheus_instances': [],
+            'metrics_sources': [],
             'alertmanager_instances': [],
         }
         runtime_args[collection_key] = [target]

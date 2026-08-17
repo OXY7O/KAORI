@@ -40,7 +40,7 @@ All notable KAORI changes are recorded here. KAORI uses Semantic Versioning for 
 - Unified Orchestration, Observability, and Storage domain landing pages on one Capability Registry + Provider Registry + Bindings workspace, including asset-owned cross-domain binding visibility and canonical five-row pagination.
 - Locked the canonical Integration lifecycle in architecture/workspace documentation: Provider → Compatibility Profile → Provider Capability Set → Core Validation → Binding → Consumer Profile → Binding Validation → Consumer Eligibility.
 - Generalized Prometheus provider readiness around the consumer-neutral `prometheus-core-v1` contract and moved Kubernetes/MinIO metric, label, PromQL, and capability evidence to asset-scoped `IntegrationBinding` consumer profiles.
-- Added `kubernetes-metrics-v1` and `minio-metrics-2024-v1` binding profiles plus persisted binding validation profile/evidence so one Prometheus source can serve multiple managed-asset types without false provider degradation.
+- Added `kubernetes-metrics-v1` and `minio-metrics-2024-v1` binding profiles plus persisted binding validation profile/evidence so one Metrics Source can serve multiple managed-asset types without false provider degradation.
 
 ## [2.2.0] - 2026-08-11
 

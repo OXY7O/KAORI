@@ -528,10 +528,10 @@ def _metric_evidence_state(
     payload: Mapping[str, Any],
     snapshot_summary: Mapping[str, Any],
 ) -> dict[str, Any]:
-    prometheus = _mapping(payload.get('prometheus'))
+    metrics_source = _mapping(payload.get('metrics_source'))
     candidates = (
-        prometheus.get('status_label'),
-        prometheus.get('status'),
+        metrics_source.get('status_label'),
+        metrics_source.get('status'),
         snapshot_summary.get('status'),
     )
     first_problem = next((value for value in candidates if _unavailable_state(value)), None)
@@ -1994,7 +1994,7 @@ def _source_rows(
             for item in explicit
         ]
 
-    prometheus = _mapping(payload.get('prometheus'))
+    metrics_source = _mapping(payload.get('metrics_source'))
     snapshot = _mapping(payload.get('snapshot_summary'))
     health = _mapping(alert_detail.get('source_status'))
     inventory_clusters = _sequence(inventory.get('clusters'))
@@ -2005,12 +2005,12 @@ def _source_rows(
     return [
         {
             'label': 'Metrics',
-            'source': 'Prometheus Observation Cache',
+            'source': 'Metrics Source Observation Cache',
             'type': 'Metrics Cache',
-            'last_successful': _text(prometheus.get('last_checked_at'), 'Not Available'),
-            'freshness': _text(prometheus.get('response_time_ms'), 'Not Available'),
-            'status': _text(prometheus.get('status_label') or prometheus.get('status'), 'Unknown'),
-            'tone': _tone(prometheus.get('status_tone') or prometheus.get('status')),
+            'last_successful': _text(metrics_source.get('last_checked_at'), 'Not Available'),
+            'freshness': _text(metrics_source.get('response_time_ms'), 'Not Available'),
+            'status': _text(metrics_source.get('status_label') or metrics_source.get('status'), 'Unknown'),
+            'tone': _tone(metrics_source.get('status_tone') or metrics_source.get('status')),
         },
         {
             'label': 'Inventory',

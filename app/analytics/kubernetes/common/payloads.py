@@ -198,9 +198,9 @@ def get_empty_capacity_payload(
         'review_paths': get_capacity_review_paths(),
         'recommendation_cards': [
             {
-                'title': 'Connect Prometheus Metrics',
+                'title': 'Connect Metrics Source Metrics',
                 'description': (
-                    'Capacity analysis requires Prometheus metrics to calculate '
+                    'Capacity analysis requires metrics data from the selected Metrics Source to calculate '
                     'worker headroom, allocation, and capacity risk.'
                 ),
                 'priority': 'Info',

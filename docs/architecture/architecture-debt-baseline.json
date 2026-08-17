@@ -19,9 +19,9 @@
         "cluster",
         "integrations",
         "inventory",
-        "prometheus"
+        "metrics"
       ],
-      "reason": "Cross-domain integration presentation and Kubernetes runtime orchestration still connect cluster, inventory, and provider web modules. Prometheus and Alertmanager provider packages no longer import their web/domain packages.",
+      "reason": "Cross-domain integration presentation and Kubernetes runtime orchestration still connect cluster, inventory, and provider web modules. Metrics Source and Alertmanager provider packages no longer import their web/domain packages.",
       "exit_plan": "Move remaining provider presentation and Kubernetes runtime orchestration behind canonical integration application contracts, then shrink this envelope as each reverse edge is removed."
     }
   ],
@@ -29,11 +29,6 @@
     {
       "source": "app/alertmanager/service.py",
       "target": "app.alertmanager.forms",
-      "exit_plan": "Replace form objects with provider-neutral command/input contracts."
-    },
-    {
-      "source": "app/prometheus/service.py",
-      "target": "app.prometheus.forms",
       "exit_plan": "Replace form objects with provider-neutral command/input contracts."
     },
     {

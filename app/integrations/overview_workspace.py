@@ -21,7 +21,7 @@ from app.integrations.service import (
     _runtime_scope_label,
     _runtime_stats,
 )
-from app.models import AlertmanagerInstance, Cluster, PrometheusInstance
+from app.models import AlertmanagerInstance, Cluster, MetricsSource
 from app.models.integration import IntegrationInstance
 from app.models.kubernetes import KubernetesConnection
 
@@ -51,23 +51,23 @@ def build_integrations_overview(
         kubernetes_query = kubernetes_query.options(contains_eager(KubernetesConnection.cluster))
     kubernetes_connections = kubernetes_query.order_by(Cluster.created_at.asc(), Cluster.id.asc()).all()
 
-    prometheus_query = PrometheusInstance.query.join(PrometheusInstance.integration_instance)
+    metrics_query = MetricsSource.query.join(MetricsSource.integration_instance)
     alertmanager_query = AlertmanagerInstance.query.join(AlertmanagerInstance.integration_instance)
     if runtime_selected:
-        prometheus_query = prometheus_query.options(
-            selectinload(PrometheusInstance.integration_instance).selectinload(IntegrationInstance.bindings)
+        metrics_query = metrics_query.options(
+            selectinload(MetricsSource.integration_instance).selectinload(IntegrationInstance.bindings)
         )
         alertmanager_query = alertmanager_query.options(
             selectinload(AlertmanagerInstance.integration_instance).selectinload(IntegrationInstance.bindings)
         )
-    prometheus_instances = prometheus_query.order_by(IntegrationInstance.name.asc()).all()
+    metrics_sources = metrics_query.order_by(IntegrationInstance.name.asc()).all()
     alertmanager_instances = alertmanager_query.order_by(IntegrationInstance.name.asc()).all()
     extension_instances = load_extension_integration_instances()
 
     modules = registry.all()
     stats = build_overview_stats(
         kubernetes_connections=kubernetes_connections,
-        prometheus_instances=prometheus_instances,
+        metrics_sources=metrics_sources,
         alertmanager_instances=alertmanager_instances,
         extension_instances=extension_instances,
     )
@@ -83,7 +83,7 @@ def build_integrations_overview(
     if active_tab == 'catalog':
         context['catalog'] = _catalog(
             kubernetes_connections=kubernetes_connections,
-            prometheus_instances=prometheus_instances,
+            metrics_sources=metrics_sources,
             alertmanager_instances=alertmanager_instances,
             extension_instances=extension_instances,
         )
@@ -92,7 +92,7 @@ def build_integrations_overview(
     if active_tab == 'coverage':
         coverage = _coverage(
             kubernetes_connections=kubernetes_connections,
-            prometheus_instances=prometheus_instances,
+            metrics_sources=metrics_sources,
             alertmanager_instances=alertmanager_instances,
             extension_instances=extension_instances,
         )
@@ -103,7 +103,7 @@ def build_integrations_overview(
     latest = _latest_runtime_observations()
     runtime_rows = _runtime_overview_rows(
         kubernetes_connections=kubernetes_connections,
-        prometheus_instances=prometheus_instances,
+        metrics_sources=metrics_sources,
         alertmanager_instances=alertmanager_instances,
         latest=latest,
     )

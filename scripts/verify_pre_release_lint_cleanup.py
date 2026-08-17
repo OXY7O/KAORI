@@ -78,7 +78,7 @@ def main() -> int:
     for relative, token in (
         (
             'app/analytics/kubernetes/utilization/service.py',
-            'from app.integrations.prometheus.exceptions import PrometheusError',
+            'from app.integrations.metrics.exceptions import MetricsSourceError',
         ),
         (
             'app/kubernetes_operations/secrets/reveal_service.py',
@@ -130,15 +130,15 @@ def main() -> int:
             'from typing import Any\n\nfrom sqlalchemy.exc import SQLAlchemyError',
         ),
         (
-            'app/integrations/prometheus/binding_management.py',
+            'app/integrations/metrics/binding_management.py',
             'from __future__ import annotations\n\nfrom sqlalchemy.exc import SQLAlchemyError',
         ),
         (
-            'app/integrations/prometheus/binding_validation.py',
+            'app/integrations/metrics/binding_validation.py',
             'from typing import Any\n\nfrom sqlalchemy.exc import SQLAlchemyError',
         ),
         (
-            'app/prometheus/service.py',
+            'app/metrics/service.py',
             'from urllib.parse import urlsplit\n\nfrom sqlalchemy.exc import SQLAlchemyError',
         ),
     ):

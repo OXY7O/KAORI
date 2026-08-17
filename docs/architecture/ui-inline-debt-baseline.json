@@ -30,7 +30,7 @@
       "inline_scripts": 1,
       "inline_styles": 0
     },
-    "app/templates/prometheus/partials/_delete_confirmation_modal.html": {
+    "app/templates/metrics/partials/_delete_confirmation_modal.html": {
       "inline_event_handlers": 0,
       "inline_scripts": 1,
       "inline_styles": 0

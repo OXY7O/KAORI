@@ -1,10 +1,10 @@
 # Versioned PromQL query profiles
 
-KAORI does not permit PromQL to be added directly to routes, templates, or service methods. Every query is registered under a stable key in `app/integrations/prometheus/query_profiles/kubernetes_v1.py` and consumed directly from the canonical query-profile registry by Analytics, Dashboard, Reports, Notifications, and Intelligence.
+KAORI does not permit PromQL to be added directly to routes, templates, or service methods. For Metrics Source providers using PromQL, every query is registered under a stable key in `app/integrations/metrics/query_profiles/kubernetes_v1.py` and consumed directly from the canonical query-profile registry by Analytics, Dashboard, Reports, Notifications, and Intelligence.
 
 ## Current profile
 
-- Profile: `prometheus-kubernetes-v1`
+- Profile: `promql-kubernetes-v1`
 - Prometheus API family: Prometheus 2.x HTTP API v1
 - Thanos query family: Thanos Query implementing the Prometheus HTTP v1 API
 - Registered queries: 161
@@ -34,7 +34,7 @@ Domain services resolve stable query keys from the canonical registry. Provider-
 4. 24-hour, 7-day, 30-day, and 60-day history availability;
 5. deprecated query and replacement metadata.
 
-A compatible Prometheus binary can still be `degraded` when required exporters, metrics, labels, or historical data are missing. Query readiness is therefore separate from engine compatibility.
+A compatible Metrics Source endpoint using the Prometheus HTTP adapter can still be `degraded` when required exporters, metrics, labels, or historical data are missing. Query readiness is therefore separate from engine compatibility.
 
 ## Retention and Thanos
 

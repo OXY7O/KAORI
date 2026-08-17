@@ -8,6 +8,7 @@ from app.common.presentation import present_user_datetime
 from app.integrations.asset_owner_sources import build_bound_observability_source_rows
 from app.integrations.deletion import asset_owner_deletion_guard
 from app.integrations.minio.capabilities import API_CAPABILITIES, CAPABILITY_PROFILE
+from app.integrations.metrics.providers import provider_definition
 from app.integrations.minio.compatibility import compatibility_policy_view
 from app.integrations.runtime.presentation import runtime_history_view, runtime_observation_state_view
 from app.integrations.runtime.repository import paginate_runtime_history
@@ -175,7 +176,8 @@ def build_index_context(query: MinioIndexQuery | None = None) -> dict[str, Any]:
 def _metrics_source_label(source: object | None) -> str:
     if source is None:
         return 'No Metrics Source Binding'
-    return 'Thanos Query' if getattr(source, 'source_type', None) == 'thanos' else 'Prometheus'
+    provider_key = str(getattr(source, 'provider_key', None) or '').strip().lower()
+    return provider_definition(provider_key).label if provider_key else 'Metrics Source'
 
 
 def _filter_registry_rows(

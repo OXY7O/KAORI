@@ -2,7 +2,7 @@
 
 `app/analytics/object_storage/` owns analytics semantics for provider-neutral
 Object Storage systems. MinIO is the first qualified Object Storage provider and
-Prometheus is the first operational metrics source; neither is the domain
+Metrics Source is the only operational metrics category; concrete products are resolved by the source contract and are not part of the domain
 contract.
 
 ## Evidence ownership
@@ -11,7 +11,7 @@ contract.
   bucket, quota, and configuration evidence.
 - `MetricsSource` is authoritative for operational time-series observations used
   by Analytics.
-- Alertmanager is the preferred active-alert source for Object Storage when an eligible consumer binding is available. Automatic source selection falls back to scoped Prometheus `ALERTS` evidence when Alertmanager is unavailable.
+- Alertmanager is the preferred active-alert source for Object Storage when an eligible consumer binding is available. Automatic source selection falls back to metric-derived alert-state evidence from the selected Metrics Source adapter when Alertmanager is unavailable.
 - Analytics never reads MinIO credentials or creates MinIO clients.
 
 ## Package layout
@@ -33,15 +33,15 @@ app/analytics/object_storage/
 ├── tasks.py
 └── sources/
     ├── resolver.py
-    └── minio_prometheus.py
+    └── minio_metrics.py
 ```
 
 `service.py` orchestrates page evidence. `runtime.py` owns the provider-neutral runtime/readiness state machine and request-local fail-fast reader, while `dependencies.py` owns explicit blocking states. All three consume only the provider-neutral contract from `app.analytics.shared.metrics`. `analysis.py` owns pure domain calculations such as
 capacity/performance/forecast posture, trend summaries, headroom derivation, and
 Inventory-vs-operational reconciliation; it has no provider dependency. Provider-specific query syntax, response parsing,
 and exception translation live in a pair-qualified adapter such as
-`sources/minio_prometheus.py`. This prevents a Prometheus binding for another
-Object Storage provider from accidentally receiving MinIO PromQL.
+`sources/minio_metrics.py`. This prevents a metrics binding for another
+Object Storage provider from accidentally receiving the MinIO asset profile.
 
 ## Canonical metrics contract
 
@@ -58,22 +58,19 @@ object_storage.traffic.received_bps
 ```
 
 The active source adapter translates those keys into its native query model.
-Prometheus currently maps them to PromQL via the Object Storage query profile. A
-future CloudWatch/OpenTelemetry/etc. adapter must implement the same semantics
-without changing the domain service or presentation contract. Prometheus adapters
-for a different Object Storage provider use their own qualified metric profile.
+The qualified asset adapter requests canonical metric expressions through `MetricsConsumer`; the selected Metrics Source backend owns protocol/query execution. A future backend may implement a different API or query language without changing the Object Storage service or presentation contract. Different Object Storage providers use their own qualified asset profiles.
 
 ## Metrics readiness contract
 
-Operational metric discovery is owned by Prometheus binding validation, not by
+Operational metric discovery is owned by Metrics Source binding validation, not by
 page rendering. The source-owned Full Validation flow resolves the generic
 `object-storage-metrics-v1` consumer profile to a provider-qualified validator.
 For the current MinIO implementation that validator audits the `minio-v2`
 profile by:
 
-1. discovering scoped metric families in one Prometheus series request;
+1. discovering scoped metric families through the selected validation adapter;
 2. validating required label schema such as the bucket identity;
-3. executing each registered canonical PromQL expression;
+3. executing each registered canonical metric expression;
 4. classifying evidence as `ready`, `no_data`, `unsupported`, or `blocked`;
 5. persisting the complete readiness snapshot on `IntegrationBinding.validation_evidence`.
 
@@ -106,8 +103,7 @@ request path must not multiply an unreachable provider into a query storm.
 
 ## No-compatibility rule
 
-The retired direct Prometheus domain modules (`metrics.py` and `parsing.py`) are
-removed. Do not restore them as wrappers. Provider access belongs only to source
+Retired direct provider/query-language domain modules are removed. Do not restore them as wrappers. Provider access belongs only to source
 adapters and the domain service must stay provider-neutral.
 
 ## Analysis surfaces
@@ -119,7 +115,7 @@ The current Object Storage Analytics workspace exposes distinct operational sema
 - **Performance** separates request health, traffic/trend, bucket activity, and evidence into the shared Analytics tab workspace pattern. Request demand stays distinct from reliability, queue/inflight pressure, node availability, ingress/egress throughput, and request/error history; increasing demand is descriptive, while error, waiting, and availability evidence drive request-path posture.
 - **Top Consumers** separates Storage Leaders, Request Activity, detailed Consumer Records, and Evidence. Ranking detail remains outside the Overview.
 - **Forecast** separates Forecast Outlook, committed Usage History, Worker & Method, and Evidence. The linear baseline remains a planning boundary rather than a capacity commitment.
-- **Alerts & Anomalies** separates Alert Overview, provider Alert Records, Metric Signals, and Evidence. Automatic source selection prefers Alertmanager and falls back to scoped Prometheus `ALERTS`; metric-derived signals remain a separate KAORI operating-boundary evidence family.
+- **Alerts & Anomalies** separates Alert Overview, provider Alert Records, Metric Signals, and Evidence. Automatic source selection prefers Alertmanager and falls back to metric-derived alert-state evidence from the selected Metrics Source adapter; metric-derived signals remain a separate KAORI operating-boundary evidence family.
 
 Inventory reconciliation is intentionally non-authoritative: differences within the
 selected thresholds are review evidence because Inventory and operational metrics have
@@ -163,7 +159,7 @@ a refresh fails. Overview may consume the committed 30d forecast posture, but
 it never executes a 30d range query in the browser request.
 
 The worker resolves the same provider-neutral `MetricsSource` contract with a
-background retry policy. A future non-Prometheus metrics adapter can therefore
+background retry policy. A future Metrics Source backend can therefore
 materialize the same forecast artifact without changing Object Storage
 Analytics domain code.
 
@@ -172,7 +168,7 @@ Analytics domain code.
 
 Object Storage Alerts & Anomalies keeps two different evidence families explicit:
 
-1. **Provider alert records** use `Automatic`, `Alertmanager`, or `Prometheus` source selection. Automatic prefers the governed `object_storage_system` Alertmanager binding (`object-storage-alerts-v1`) and falls back to the scoped Prometheus `ALERTS` metric. Alertmanager is lifecycle-rich; Prometheus fallback is rule-state evidence only.
+1. **Provider alert records** use `Automatic`, `Alertmanager`, or `Metrics Source` selection. Automatic prefers the governed `object_storage_system` Alertmanager binding (`object-storage-alerts-v1`) and falls back to metric-derived alert-state evidence from the selected Metrics Source adapter. Alertmanager is lifecycle-rich; Metrics Source fallback is metric-derived rule-state evidence only.
 2. **KAORI metric-derived signals** continue to evaluate Object Storage capacity, request error, queue-pressure, and node-health operating boundaries from the operational `MetricsSource`. These signals are not duplicated Alertmanager records and do not claim routing, silence, inhibition, or receiver evidence.
 
-Alertmanager and Prometheus are therefore independent evidence paths on the Alerts page. A Prometheus metrics outage must not suppress a usable Alertmanager alert stream, and an Alertmanager outage must not suppress usable metric-derived signals or Prometheus alert fallback.
+Alertmanager and Metrics Source are therefore independent evidence paths on the Alerts page. A Metrics Source outage must not suppress a usable Alertmanager alert stream, and an Alertmanager outage must not suppress usable metric-derived signals or Metrics Source alert fallback.

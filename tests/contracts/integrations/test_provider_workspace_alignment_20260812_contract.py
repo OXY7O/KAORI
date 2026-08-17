@@ -23,14 +23,15 @@ def test_minio_configuration_reuses_canonical_operational_context() -> None:
 
 def test_provider_full_validation_uses_header_loading_bar_only() -> None:
     workspaces = {
-        'prometheus': 'app/templates/prometheus/partials/_detail_validation_content.html',
+        'metrics-source': 'app/templates/metrics/partials/_detail_validation_content.html',
         'alertmanager': 'app/templates/alertmanager/partials/_detail_validation_content.html',
         'minio': 'app/templates/minio/partials/_detail_validation.html',
     }
 
     for provider, workspace_path in workspaces.items():
         workspace = read(workspace_path)
-        registry = read(f'app/templates/{provider}/partials/_capability_registry.html')
+        registry_dir = 'metrics' if provider == 'metrics-source' else provider
+        registry = read(f'app/templates/{registry_dir}/partials/_capability_registry.html')
 
         assert (
             f"loading_id='{provider}-validation-loading'" in workspace
@@ -50,9 +51,9 @@ def test_provider_tab_badges_are_safe_during_full_page_render() -> None:
     assert 'hx-swap-oob="outerHTML"' not in badge_macro
 
     workspace_pairs = {
-        'prometheus': (
-            'app/templates/prometheus/partials/_detail_validation_content.html',
-            'app/templates/prometheus/partials/_runtime_panel.html',
+        'metrics-source': (
+            'app/templates/metrics/partials/_detail_validation_content.html',
+            'app/templates/metrics/partials/_runtime_panel.html',
         ),
         'alertmanager': (
             'app/templates/alertmanager/partials/_detail_validation_content.html',
@@ -75,7 +76,7 @@ def test_runtime_status_and_minio_lifecycle_follow_shared_provider_pattern() -> 
 
     runtime_paths = (
         'app/templates/integrations/kubernetes/partials/_runtime_workspace.html',
-        'app/templates/prometheus/partials/_runtime_panel.html',
+        'app/templates/metrics/partials/_runtime_panel.html',
         'app/templates/alertmanager/partials/_runtime_panel.html',
         'app/templates/minio/partials/_detail_runtime.html',
     )

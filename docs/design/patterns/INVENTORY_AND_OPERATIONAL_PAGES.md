@@ -44,12 +44,12 @@ This document defines reusable structures. It does not define domain-specific fi
 2. Integration Coverage and Connection Registry use one shared Violet tab bar. The selected tab uses solid KAORI Violet with white text; unselected tabs remain Violet outlined/soft rather than neutral gray.
 3. Coverage and Registry title boxes use the same icon, title, description, spacing, border, and loading-bar hierarchy. Provider-specific wording may differ, but the visual shell must not.
 4. Registry tables use explicit column widths. The final Action column is compact, right-aligned, and must not be the cause of horizontal overflow.
-5. Prometheus and Alertmanager landing registries omit the Endpoint column. Endpoint details belong in the connection manage workspace, while the landing registry prioritizes runtime, compatibility, readiness, bindings, and validation state.
+5. Metrics Source and Alertmanager landing registries omit the Endpoint column. Endpoint details belong in the connection manage workspace, while the landing registry prioritizes runtime, compatibility, readiness, bindings, and validation state.
 6. Horizontal scrolling is allowed only when the available viewport is genuinely narrower than the compact technical table contract. Do not force an oversized minimum width by default.
 
 ## Kubernetes integration landing overview
 
-1. The Kubernetes Integrations landing page uses the same overview-box hierarchy as Prometheus and Alertmanager directly below the hero.
+1. The Kubernetes Integrations landing page uses the same overview-box hierarchy as Metrics Source and Alertmanager directly below the hero.
 2. The overview header contains the provider icon, `Kubernetes Integration Overview`, and one concise description.
 3. Summary metrics are presented in four compact cards: Registered Connections, Validated Connections, Needs Attention, and Scope Bindings.
 4. The lower contract row contains Integration Contract, Capability Resolution, and Authority Boundary.
@@ -79,7 +79,7 @@ This document defines reusable structures. It does not define domain-specific fi
 
 1. The Kubernetes Connection Registry reserves its text width for connection identity, environment, readiness, compatibility, and validation time.
 2. Row actions use 36 px icon-only controls with `title`, `aria-label`, and screen-reader text.
-3. Manage, Configure, Prometheus binding, Alertmanager binding, and Delete use distinct provider or lifecycle icons; semantic color is reserved for binding state and destructive action.
+3. Manage, Configure, Metrics Source binding, Alertmanager binding, and Delete use distinct provider or lifecycle icons; semantic color is reserved for binding state and destructive action.
 4. Icon-only actions remain right-aligned in the final compact column. Do not reintroduce provider names or long action labels into the registry row.
 5. Full action wording and context belong in tooltips and the destination workspace.
 
@@ -100,7 +100,7 @@ When a registry uses icon-only actions, the Actions column width must include ic
 - Do not use horizontally scrolling binding tables for selector-heavy content. Use responsive binding cards with standard KAORI typography.
 - Metrics Identity and Alert Identity values use normal KAORI table/body typography; monospace is reserved for executable commands or code-oriented evidence.
 - Provider registry Connection columns remain proportional and must not push Runtime, Compatibility, Readiness, or Last Validated off-screen.
-- Prometheus and Alertmanager registries reserve the largest column for Connection identity. Readiness and Action remain compact; Action may use a smaller labeled Manage control as long as accessibility and focus treatment remain intact.
+- Metrics Source and Alertmanager registries reserve the largest column for Connection identity. Readiness and Action remain compact; Action may use a smaller labeled Manage control as long as accessibility and focus treatment remain intact.
 
 ## Jobs & Executions Workspace
 

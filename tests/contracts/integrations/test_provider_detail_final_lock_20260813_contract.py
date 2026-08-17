@@ -10,7 +10,7 @@ def read(path: str) -> str:
 def test_provider_details_share_canonical_lifecycle_language() -> None:
     details = {
         'Kubernetes': read('app/templates/integrations/kubernetes/detail.html'),
-        'Prometheus': read('app/templates/prometheus/instance_detail.html'),
+        'Metrics Source': read('app/templates/metrics/instance_detail.html'),
         'Alertmanager': read('app/templates/alertmanager/instance_detail.html'),
         'MinIO': read('app/templates/minio/instance_detail.html'),
     }
@@ -23,14 +23,14 @@ def test_provider_details_share_canonical_lifecycle_language() -> None:
 
     assert 'Inventory & Lifecycle' in details['Kubernetes']
     assert 'Inventory & Lifecycle' in details['MinIO']
-    assert 'Bindings & Consumers' in details['Prometheus']
+    assert 'Bindings & Consumers' in details['Metrics Source']
     assert 'Bindings & Consumers' in details['Alertmanager']
 
 
 def test_provider_validation_workspaces_use_full_validation_and_shared_readiness() -> None:
     validation = {
         'Kubernetes': read('app/templates/integrations/kubernetes/partials/_capability_workspace.html'),
-        'Prometheus': read('app/templates/prometheus/partials/_detail_validation_content.html'),
+        'Metrics Source': read('app/templates/metrics/partials/_detail_validation_content.html'),
         'Alertmanager': read('app/templates/alertmanager/partials/_detail_validation_content.html'),
         'MinIO': read('app/templates/minio/partials/_detail_validation.html'),
     }
@@ -40,13 +40,13 @@ def test_provider_validation_workspaces_use_full_validation_and_shared_readiness
         assert 'Run Full Validation' in source, provider
         assert 'capability_readiness.render(' in source, provider
 
-    assert 'Prometheus Core Validation' not in validation['Prometheus']
+    assert 'Metrics Source Core Validation' not in validation['Metrics Source']
     assert 'Alertmanager Core Validation' not in validation['Alertmanager']
 
 
 def test_provider_runtime_decision_is_shared_for_observability_and_minio() -> None:
     for provider, path in (
-        ('Prometheus', 'app/templates/prometheus/partials/_runtime_panel.html'),
+        ('Metrics Source', 'app/templates/metrics/partials/_runtime_panel.html'),
         ('Alertmanager', 'app/templates/alertmanager/partials/_runtime_panel.html'),
         ('MinIO', 'app/templates/minio/partials/_detail_runtime.html'),
     ):

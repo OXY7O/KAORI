@@ -9,23 +9,23 @@ from app.analytics.kubernetes.alerts.contracts import AlertLoadResult, AlertSour
 from app.analytics.kubernetes.alerts.records import (
     deduplicate_alerts,
     normalize_alertmanager_item,
-    normalize_prometheus_alert,
+    normalize_metrics_source_alert,
 )
 from app.analytics.kubernetes.alerts.source_messages import (
     friendly_alert_fallback_reason,
     friendly_alert_source_error,
     friendly_combined_alert_error,
 )
-from app.integrations.prometheus.exceptions import PrometheusError
-from app.integrations.prometheus.query_profiles import get_query_expression
+from app.integrations.metrics.exceptions import MetricsSourceError
+from app.integrations.metrics.query_profiles import get_query_expression
 from app.models import Cluster
-from app.prometheus.repository import resolve_instance_for_cluster
-from app.prometheus.service import PrometheusService
+from app.metrics.repository import resolve_instance_for_cluster
+from app.metrics.service import MetricsService
 
 logger = logging.getLogger(__name__)
 
 
-PROMETHEUS_ALERTS_QUERY = get_query_expression('analytics.alerts.queries.PROMETHEUS_ALERTS_QUERY')
+METRICS_SOURCE_ALERTS_QUERY = get_query_expression('analytics.alerts.queries.METRICS_SOURCE_ALERTS_QUERY')
 
 
 def build_empty_source_status(
@@ -139,28 +139,28 @@ def load_alertmanager_alerts(
         }
 
 
-def load_prometheus_alerts(
+def load_metrics_source_alerts(
     *,
     cluster: Cluster,
 ) -> AlertLoadResult:
     started_at = perf_counter()
     configured = resolve_instance_for_cluster(cluster.id) is not None
     try:
-        service = PrometheusService(cluster)
-        result = service.instant_query(PROMETHEUS_ALERTS_QUERY)
+        service = MetricsService(cluster)
+        result = service.instant_query(METRICS_SOURCE_ALERTS_QUERY)
         elapsed_ms = max(int((perf_counter() - started_at) * 1000), 0)
 
         raw_items = result.get('data', {}).get('result', [])
         if not isinstance(raw_items, list):
             raw_items = []
 
-        alerts = deduplicate_alerts(normalize_prometheus_alert(item) for item in raw_items if isinstance(item, dict))
+        alerts = deduplicate_alerts(normalize_metrics_source_alert(item) for item in raw_items if isinstance(item, dict))
 
         return alerts, {
-            'source': 'prometheus',
-            'selected_source': 'prometheus',
-            'resolved_source': 'prometheus',
-            'label': 'Prometheus Connected',
+            'source': 'metrics_source',
+            'selected_source': 'metrics_source',
+            'resolved_source': 'metrics_source',
+            'label': 'Metrics Source Connected',
             'configured': True,
             'connected': True,
             'fallback_used': False,
@@ -170,35 +170,35 @@ def load_prometheus_alerts(
             'last_checked_at': datetime.now(UTC),
         }
 
-    except PrometheusError as exc:
+    except MetricsSourceError as exc:
         elapsed_ms = max(int((perf_counter() - started_at) * 1000), 0)
-        logger.warning('Prometheus alert loading failed for cluster %s: %s', cluster.id, exc)
+        logger.warning('Metrics Source alert loading failed for cluster %s: %s', cluster.id, exc)
         return [], {
-            'source': 'prometheus',
-            'selected_source': 'prometheus',
+            'source': 'metrics_source',
+            'selected_source': 'metrics_source',
             'resolved_source': 'none',
-            'label': 'Prometheus Unavailable' if configured else 'Prometheus Not Configured',
+            'label': 'Metrics Source Unavailable' if configured else 'Metrics Source Not Configured',
             'configured': configured,
             'connected': False,
             'fallback_used': False,
             'fallback_reason': None,
-            'error': friendly_alert_source_error(exc, source_label='Prometheus'),
+            'error': friendly_alert_source_error(exc, source_label='Metrics Source'),
             'response_time_ms': elapsed_ms,
             'last_checked_at': datetime.now(UTC),
         }
     except Exception as exc:
         elapsed_ms = max(int((perf_counter() - started_at) * 1000), 0)
-        logger.exception('Unexpected Prometheus alert loading failure for cluster %s.', cluster.id)
+        logger.exception('Unexpected Metrics Source alert loading failure for cluster %s.', cluster.id)
         return [], {
-            'source': 'prometheus',
-            'selected_source': 'prometheus',
+            'source': 'metrics_source',
+            'selected_source': 'metrics_source',
             'resolved_source': 'none',
-            'label': 'Prometheus Error',
+            'label': 'Metrics Source Error',
             'configured': configured,
             'connected': False,
             'fallback_used': False,
             'fallback_reason': None,
-            'error': friendly_alert_source_error(exc, source_label='Prometheus'),
+            'error': friendly_alert_source_error(exc, source_label='Metrics Source'),
             'response_time_ms': elapsed_ms,
             'last_checked_at': datetime.now(UTC),
         }
@@ -254,8 +254,8 @@ def load_alerts_by_source(
             cluster=cluster,
         )
 
-    if source == 'prometheus':
-        return load_prometheus_alerts(
+    if source == 'metrics_source':
+        return load_metrics_source_alerts(
             cluster=cluster,
         )
 
@@ -273,7 +273,7 @@ def load_alerts_by_source(
 
         return alertmanager_alerts, alertmanager_status
 
-    prometheus_alerts, prometheus_status = load_prometheus_alerts(
+    metrics_source_alerts, metrics_source_status = load_metrics_source_alerts(
         cluster=cluster,
     )
 
@@ -282,30 +282,30 @@ def load_alerts_by_source(
         default='Alertmanager is unavailable.',
     )
 
-    prometheus_status['selected_source'] = 'auto'
-    prometheus_status['fallback_used'] = True
-    prometheus_status['fallback_reason'] = friendly_alert_fallback_reason(
+    metrics_source_status['selected_source'] = 'auto'
+    metrics_source_status['fallback_used'] = True
+    metrics_source_status['fallback_reason'] = friendly_alert_fallback_reason(
         primary_available=False,
-        fallback_available=bool(prometheus_status.get('connected')),
+        fallback_available=bool(metrics_source_status.get('connected')),
     )
 
-    if prometheus_status.get(
+    if metrics_source_status.get(
         'connected',
     ):
-        prometheus_status['label'] = 'Prometheus Fallback Connected'
-        prometheus_status['error'] = None
+        metrics_source_status['label'] = 'Metrics Source Fallback Connected'
+        metrics_source_status['error'] = None
 
-        return prometheus_alerts, prometheus_status
+        return metrics_source_alerts, metrics_source_status
 
-    prometheus_reason = get_source_status_message(
-        prometheus_status,
-        default='Prometheus fallback is unavailable.',
+    metrics_source_reason = get_source_status_message(
+        metrics_source_status,
+        default='Metrics Source fallback is unavailable.',
     )
     logger.warning(
-        'All alert sources are unavailable for cluster %s. Alertmanager: %s Prometheus: %s',
+        'All alert sources are unavailable for cluster %s. Alertmanager: %s Metrics Source: %s',
         cluster.id,
         alertmanager_reason,
-        prometheus_reason,
+        metrics_source_reason,
     )
 
     return [], {
@@ -320,7 +320,7 @@ def load_alerts_by_source(
             )
         )
         or bool(
-            prometheus_status.get(
+            metrics_source_status.get(
                 'configured',
                 False,
             )

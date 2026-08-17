@@ -332,7 +332,7 @@ def get_dashboard_section(
             dashboard.forecast_snapshot, forecast_result = _forecast_signal(selected)
         latest_sync = _latest_inventory_sync(selected_cluster_id)
         dashboard.reporting_snapshot = build_reporting_snapshot(selected_cluster_id=selected_cluster_id)
-        has_prometheus_data = any(
+        has_metrics_source_data = any(
             snapshot.source_status == 'Available'
             for snapshot in (
                 dashboard.capacity_snapshot,
@@ -342,7 +342,7 @@ def get_dashboard_section(
         )
         dashboard.data_freshness = build_data_freshness(
             latest_inventory_sync=latest_sync,
-            has_prometheus_data=has_prometheus_data,
+            has_metrics_source_data=has_metrics_source_data,
             has_alertmanager_data=dashboard.alerts_snapshot.source_status == 'Available',
             reporting_snapshot=dashboard.reporting_snapshot,
             selected_cluster=selected,

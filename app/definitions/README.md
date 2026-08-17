@@ -17,7 +17,7 @@ Integration contracts are also source-controlled under `catalogs/integrations/`:
 - domain/capability taxonomy and managed consumer-asset metadata,
 - generic product/version compatibility profiles and Kubernetes lifecycle policy,
 - Kubernetes provider capabilities,
-- Prometheus provider capabilities and consumer binding profiles,
+- Metrics Source provider capabilities and consumer binding profiles,
 - Alertmanager provider capabilities, compatibility profiles, and consumer profiles,
 - Object Storage/MinIO API capabilities and qualified release profiles.
 

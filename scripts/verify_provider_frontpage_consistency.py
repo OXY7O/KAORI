@@ -12,7 +12,7 @@ def read(path: str) -> str:
 def main() -> int:
     provider_pages = {
         'Kubernetes': read('app/templates/integrations/kubernetes.html'),
-        'Prometheus': read('app/templates/integrations/prometheus.html'),
+        'Metrics Source': read('app/templates/integrations/metrics.html'),
         'Alertmanager': read('app/templates/integrations/alertmanager.html'),
         'MinIO': read('app/templates/minio/index.html'),
     }
@@ -22,7 +22,7 @@ def main() -> int:
 
     connection_registries = {
         'Kubernetes': read('app/templates/integrations/kubernetes/partials/_registry.html'),
-        'Prometheus': read('app/templates/integrations/prometheus/partials/_inventory_content.html'),
+        'Metrics Source': read('app/templates/integrations/metrics/partials/_inventory_content.html'),
         'Alertmanager': read('app/templates/integrations/alertmanager/partials/_inventory_content.html'),
         'MinIO': read('app/templates/minio/partials/_registry_content.html'),
     }
@@ -40,7 +40,7 @@ def main() -> int:
     coverage_service = read('app/integrations/coverage.py')
     provider_registration_pages = {
         'Kubernetes': read('app/templates/cluster/add.html'),
-        'Prometheus': read('app/templates/prometheus/instance_form.html'),
+        'Metrics Source': read('app/templates/metrics/instance_form.html'),
         'Alertmanager': read('app/templates/alertmanager/instance_form.html'),
         'MinIO': read('app/templates/minio/instance_form.html'),
     }
@@ -172,7 +172,7 @@ def main() -> int:
 
     registration_forms = {
         'Kubernetes': read('app/templates/cluster/add.html') + read('app/templates/cluster/partials/_form.html'),
-        'Prometheus': provider_registration_pages['Prometheus'],
+        'Metrics Source': provider_registration_pages['Metrics Source'],
         'Alertmanager': provider_registration_pages['Alertmanager'],
         'MinIO': provider_registration_pages['MinIO'],
     }

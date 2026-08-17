@@ -1,6 +1,6 @@
 {% import "components/page_hero.html" as page_hero %}
-{% set blocker_tone = 'warning' if dependency_blocker.kind in ['cluster_required', 'prometheus_setup', 'prometheus_capability', 'alert_source_setup'] else 'critical' %}
-{% if dependency_blocker.kind == 'prometheus_capability' %}
+{% set blocker_tone = 'warning' if dependency_blocker.kind in ['cluster_required', 'metrics_source_setup', 'metrics_source_capability', 'alert_source_setup'] else 'critical' %}
+{% if dependency_blocker.kind == 'metrics_source_capability' %}
     {% set blocker_status = "Capability Incomplete" %}
 {% elif blocker_tone == 'warning' %}
     {% set blocker_status = "Setup Required" %}
@@ -9,7 +9,7 @@
 {% endif %}
 {% set blocked_step = dependency_blocker.stage|int %}
 {% set completed_step = blocked_step - 1 %}
-{% set step_labels = {1: 'Kubernetes', 2: 'Prometheus', 3: 'Alertmanager'} %}
+{% set step_labels = {1: 'Kubernetes', 2: 'Metrics Source', 3: 'Alertmanager'} %}
 {{ page_hero.context_card_body(analytics_posture_label|default('Analytics Readiness') ,
 'Analytics Readiness',
 blocker_status,

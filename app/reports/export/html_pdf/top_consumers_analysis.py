@@ -86,8 +86,8 @@ def build_top_consumers_analysis_presentation(
 
     cluster = _mapping(payload.get('cluster'))
     environment = sanitize_text(cluster.get('environment'), fallback='Not Available')
-    prometheus = _mapping(payload.get('prometheus_status'))
-    source_evidence = _source_evidence(payload, prometheus)
+    metrics_source = _mapping(payload.get('metrics_source_status'))
+    source_evidence = _source_evidence(payload, metrics_source)
 
     return {
         'presentation_version': 'v3.0-top-consumers-publication',
@@ -552,7 +552,7 @@ def _primary_interpretation(cpu_rows: list[dict[str, Any]], memory_rows: list[di
     }
 
 
-def _source_evidence(payload: Mapping[str, Any], prometheus: Mapping[str, Any]) -> list[dict[str, str]]:
+def _source_evidence(payload: Mapping[str, Any], metrics_source: Mapping[str, Any]) -> list[dict[str, str]]:
     raw = _sequence(payload.get('source_evidence'))
     result = []
     for value in raw:
@@ -567,8 +567,8 @@ def _source_evidence(payload: Mapping[str, Any], prometheus: Mapping[str, Any]) 
     if not result:
         result = [
             {
-                'source': 'Prometheus Consumer Evidence',
-                'freshness': _response_time(prometheus),
+                'source': 'Metrics Source Consumer Evidence',
+                'freshness': _response_time(metrics_source),
                 'last_collected': 'At report cut-off',
             },
             {

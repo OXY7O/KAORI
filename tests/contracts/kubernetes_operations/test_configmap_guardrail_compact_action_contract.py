@@ -28,7 +28,7 @@ def test_configmap_create_reuses_the_proven_integration_form_geometry() -> None:
     create = (ROOT / 'app/templates/kubernetes_operations/configmaps/create.html').read_text(encoding='utf-8')
     references = (
         ROOT / 'app/templates/cluster/add.html',
-        ROOT / 'app/templates/prometheus/instance_form.html',
+        ROOT / 'app/templates/metrics/instance_form.html',
         ROOT / 'app/templates/alertmanager/instance_form.html',
     )
     component = (ROOT / 'app/templates/components/form_with_context_rail.html').read_text(encoding='utf-8')

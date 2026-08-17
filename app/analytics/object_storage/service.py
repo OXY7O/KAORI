@@ -94,7 +94,7 @@ PAGES: dict[str, PageDefinition] = {
     ),
     'alerts': PageDefinition(
         'Alerts & Anomalies',
-        'Review active alerts from Alertmanager or Prometheus alongside metric-derived operating signals.',
+        'Review active alerts from Alertmanager or Metrics Source alongside metric-derived operating signals.',
         'triangle-alert',
         'Object Storage Analytics',
     ),

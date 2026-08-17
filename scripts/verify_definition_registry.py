@@ -23,7 +23,7 @@ EXPECTED = {
     'integrations/taxonomy.yaml': 'integration_taxonomy',
     'integrations/compatibility.yaml': 'integration_compatibility',
     'integrations/kubernetes.yaml': 'integration_provider_contract',
-    'integrations/prometheus.yaml': 'integration_provider_contract',
+    'integrations/metrics_source.yaml': 'integration_provider_contract',
     'integrations/alertmanager.yaml': 'integration_provider_contract',
     'integrations/object_storage.yaml': 'integration_provider_contract',
 }
@@ -171,7 +171,7 @@ def main() -> int:
         integration_provider_counts: dict[str, int] = {}
         for relative, provider_key in (
             ('integrations/kubernetes.yaml', 'kubernetes'),
-            ('integrations/prometheus.yaml', 'prometheus'),
+            ('integrations/metrics_source.yaml', 'metrics_source'),
             ('integrations/alertmanager.yaml', 'alertmanager'),
             ('integrations/object_storage.yaml', 'object_storage'),
         ):

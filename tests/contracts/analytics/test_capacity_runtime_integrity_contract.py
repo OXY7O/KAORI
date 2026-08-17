@@ -15,7 +15,7 @@ def test_capacity_collects_each_required_signal_once_and_keeps_filesystem_option
     assert 'def collect(self, *, time_range: str)' in evidence
     assert 'def optional_scalar(self, query: str)' in evidence
     assert "required_capabilities=('instant_query',)" in evidence
-    assert 'except PrometheusError:' in evidence
+    assert 'except MetricsSourceError:' in evidence
     assert 'filesystem_capacity=self.optional_scalar(NODE_FILESYSTEM_CAPACITY_QUERY)' in evidence
     assert 'evidence = self.evidence_collector.collect(time_range=time_range)' in service
     assert 'get_storage_capacity()' not in service
@@ -24,7 +24,7 @@ def test_capacity_collects_each_required_signal_once_and_keeps_filesystem_option
 
 
 def test_capacity_queries_use_ready_worker_boundary_for_every_schedulable_signal() -> None:
-    profile = read('app/integrations/prometheus/query_profiles/kubernetes_v1.py')
+    profile = read('app/integrations/metrics/query_profiles/kubernetes_v1.py')
     evidence = read('app/analytics/kubernetes/capacity/evidence.py')
 
     required_keys = (
@@ -50,7 +50,7 @@ def test_capacity_queries_use_ready_worker_boundary_for_every_schedulable_signal
 
 
 def test_capacity_removes_unscoped_legacy_query_definitions() -> None:
-    profile = read('app/integrations/prometheus/query_profiles/kubernetes_v1.py')
+    profile = read('app/integrations/metrics/query_profiles/kubernetes_v1.py')
 
     removed = (
         'CURRENT_PODS_QUERY',
@@ -66,8 +66,8 @@ def test_capacity_removes_unscoped_legacy_query_definitions() -> None:
 
 
 def test_capacity_capability_validation_includes_readiness_and_node_labels() -> None:
-    capabilities = read('app/definitions/catalogs/integrations/prometheus.yaml')
-    audit = read('app/integrations/prometheus/query_profiles/audit.py')
+    capabilities = read('app/definitions/catalogs/integrations/metrics_source.yaml')
+    audit = read('app/integrations/metrics/query_profiles/audit.py')
 
     capacity_block = capabilities.split('key: capacity_metrics', 1)[1].split('key: resource_requests_limits', 1)[0]
     assert 'kube_node_status_condition' in capacity_block

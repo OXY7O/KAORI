@@ -67,7 +67,7 @@ SIGNAL_SOURCE_OPTIONS = [
     {'value': 'object_storage_inventory', 'label': 'Object Storage Inventory'},
     {'value': 'kaori_object_storage_analysis', 'label': 'KAORI Object Storage Analysis'},
     {'value': 'alertmanager', 'label': 'Alertmanager'},
-    {'value': 'prometheus_metrics', 'label': 'Prometheus Metrics'},
+    {'value': 'metrics_source_metrics', 'label': 'Metrics Source Metrics'},
     {'value': 'server_inventory', 'label': 'Server Node Exporter'},
     {'value': 'hci_provider_api', 'label': 'HCI API'},
 ]
@@ -112,7 +112,7 @@ def signal_label(value: str) -> str:
         'object_storage_inventory': 'Object Storage Inventory',
         'kaori_object_storage_analysis': 'KAORI Object Storage Analysis',
         'alertmanager': 'Alertmanager',
-        'prometheus_metrics': 'Prometheus Metrics',
+        'metrics_source_metrics': 'Metrics Source Metrics',
         'server_inventory': 'Server Node Exporter',
         'hci_provider_api': 'HCI API',
     }.get(value, format_label(value))

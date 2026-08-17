@@ -9,7 +9,7 @@ This lock applies to the Integration workspaces that have completed final visual
 
 - Integrations Overview and Runtime Overview;
 - Kubernetes Integration registry and detail workspaces;
-- Prometheus registry, configuration, validation/capability, runtime, bindings/consumers, and lifecycle surfaces;
+- Metrics Source registry, configuration, validation/capability, runtime, bindings/consumers, and lifecycle surfaces;
 - Alertmanager registry, configuration, validation/capability, runtime, bindings/consumers, and lifecycle surfaces;
 - shared provider capability/readiness components;
 - shared Recent Runtime Observations table and detail modal;
@@ -22,7 +22,7 @@ This lock freezes presentation and interaction architecture. Provider-specific f
 
 ### Capability and Validation
 
-Kubernetes, Prometheus, and Alertmanager use the same shared capability-readiness presentation contract:
+Kubernetes, Metrics Source, and Alertmanager use the same shared capability-readiness presentation contract:
 
 ```text
 Capability Readiness
@@ -88,7 +88,7 @@ The main form remains the working surface while the shared side decision panel p
 
 Rules:
 
-- Prometheus and Alertmanager use `integrations/components/_configuration_decision.html`.
+- Metrics Source and Alertmanager use `integrations/components/_configuration_decision.html`.
 - The canonical desktop rail is 25rem and 27rem at 2xl.
 - Left and right surfaces stretch to the same visual height.
 - Save actions use the embedded form-action footer; a floating nested action card is prohibited.
@@ -97,7 +97,7 @@ Rules:
 
 - Registered binding count is independent of source runtime health. Provider badges count registered `binding_rows`; a disconnected or failed source can still have registered bindings.
 - Source Readiness, Binding Validation, and Effective Resolution remain separate.
-- Prometheus and Alertmanager Binding Decision is horizontal and full width.
+- Metrics Source and Alertmanager Binding Decision is horizontal and full width.
 - Effective Consumer Resolution is full width; only genuinely deeper candidate evidence may use local disclosure.
 - Destructive lifecycle actions remain secondary to guardrail explanation and must honor disabled state when removal is blocked.
 
@@ -132,14 +132,14 @@ Optional Secret access is a separate namespace-scoped `Role + RoleBinding`, visi
 - Contextual related-workspace surfaces may remain deep Violet in dark mode through shared KAORI contextual-brand ownership.
 - Visible headings, table headers, form labels, modal titles, tabs, and buttons use Title Case.
 - Raw Tailwind palette utilities, raw hex colors, inline `style=`, and inline DOM handlers are prohibited in locked Integration templates.
-- Shared components own geometry whenever the same concept appears across Kubernetes, Prometheus, and Alertmanager.
+- Shared components own geometry whenever the same concept appears across Kubernetes, Metrics Source, and Alertmanager.
 
 ## Dead / Legacy Paths Removed
 
 The final lock removes obsolete presentation paths that were no longer referenced after modal/runtime/capability consolidation:
 
 - `app/templates/integrations/partials/_runtime_detail_content.html`
-- `app/templates/prometheus/partials/_analytics_readiness.html`
+- `app/templates/metrics/partials/_analytics_readiness.html`
 
 Previously retired Integration compatibility paths remain registered in `scripts/cleanup_obsolete_files.sh` and are protected by the final verifier.
 

@@ -23,17 +23,17 @@ from app.common.dependencies import (
     alert_source_connection_blocker,
     alert_source_setup_blocker,
     cluster_required_blocker,
-    prometheus_capability_blocker,
-    prometheus_connection_blocker,
-    prometheus_setup_blocker,
+    metrics_source_capability_blocker,
+    metrics_source_connection_blocker,
+    metrics_source_setup_blocker,
 )
 from app.extensions.db import db
-from app.integrations.prometheus.capabilities import definition as capability_definition
-from app.integrations.prometheus.scope import KUBERNETES_CLUSTER_SCOPE
+from app.integrations.metrics.capabilities import definition as capability_definition
+from app.integrations.metrics.scope import KUBERNETES_CLUSTER_SCOPE
 from app.jobs.dispatcher import dispatch_registered_job
 from app.jobs.service import JobQuotaExceeded
 from app.models import Cluster
-from app.prometheus.resolver import resolve_prometheus_sources
+from app.metrics.resolver import resolve_metrics_sources
 
 _UNUSABLE_OPERATIONAL_STATES = {
     'unhealthy',
@@ -109,14 +109,14 @@ def _candidate_is_usable(candidate: Any | None) -> bool:
     return candidate is not None
 
 
-def _prometheus_resolution(
+def _metrics_source_resolution(
     *,
     dataset_key: str,
     cluster_id: str,
     strict: bool = False,
 ):
     dataset = get_dataset(dataset_key)
-    return resolve_prometheus_sources(
+    return resolve_metrics_sources(
         scope_type=KUBERNETES_CLUSTER_SCOPE,
         scope_key=str(cluster_id),
         required_binding_capabilities=(
@@ -133,13 +133,13 @@ def _alert_resolutions(*, cluster_id: str):
         scope_type=KUBERNETES_CLUSTER_SCOPE,
         scope_key=str(cluster_id),
     )
-    prometheus_resolution = resolve_prometheus_sources(
+    metrics_source_resolution = resolve_metrics_sources(
         scope_type=KUBERNETES_CLUSTER_SCOPE,
         scope_key=str(cluster_id),
         required_binding_capabilities=('metrics',),
         required_technical_capabilities=('instant_query',),
     )
-    return alertmanager_resolution, prometheus_resolution
+    return alertmanager_resolution, metrics_source_resolution
 
 
 def _dataset_source_is_ready(
@@ -150,8 +150,8 @@ def _dataset_source_is_ready(
 ) -> bool:
     dataset = get_dataset(dataset_key)
     try:
-        if dataset.source_kind == 'prometheus':
-            resolution = _prometheus_resolution(
+        if dataset.source_kind == 'metrics_source':
+            resolution = _metrics_source_resolution(
                 dataset_key=dataset_key,
                 cluster_id=cluster.id,
             )
@@ -159,16 +159,16 @@ def _dataset_source_is_ready(
 
         if dataset.source_kind == 'alert':
             source = str(parameters.get('source') or 'auto').strip().lower()
-            alertmanager_resolution, prometheus_resolution = _alert_resolutions(
+            alertmanager_resolution, metrics_source_resolution = _alert_resolutions(
                 cluster_id=cluster.id,
             )
             alertmanager_ready = _candidate_is_usable(alertmanager_resolution.selected)
-            prometheus_ready = _candidate_is_usable(prometheus_resolution.selected)
+            metrics_source_ready = _candidate_is_usable(metrics_source_resolution.selected)
             if source == 'alertmanager':
                 return alertmanager_ready
-            if source == 'prometheus':
-                return prometheus_ready
-            return alertmanager_ready or prometheus_ready
+            if source == 'metrics_source':
+                return metrics_source_ready
+            return alertmanager_ready or metrics_source_ready
     except Exception as exc:
         current_app.logger.exception(
             'Could not evaluate analytics source readiness for %s on cluster %s.',
@@ -212,7 +212,7 @@ def selected_cluster_from_request(
     cluster_by_id = {cluster.id: cluster for cluster in clusters}
 
     if dataset_key is None:
-        from app.prometheus.repository import resolve_instance_for_cluster
+        from app.metrics.repository import resolve_instance_for_cluster
 
         def readiness(cluster_id: str) -> bool:
             return resolve_instance_for_cluster(cluster_id) is not None
@@ -245,7 +245,7 @@ def _capability_labels(keys: tuple[str, ...]) -> list[str]:
     return labels
 
 
-def _prometheus_dependency_state(
+def _metrics_source_dependency_state(
     *,
     dataset_key: str,
     cluster: ClusterReference,
@@ -258,13 +258,13 @@ def _prometheus_dependency_state(
     or prevent the worker from collecting authoritative runtime evidence.
     """
 
-    execution = _prometheus_resolution(
+    execution = _metrics_source_resolution(
         dataset_key=dataset_key,
         cluster_id=cluster.id,
         strict=False,
     )
     if not execution.candidates:
-        return prometheus_setup_blocker(cluster), None
+        return metrics_source_setup_blocker(cluster), None
 
     selected = execution.selected
     if selected is None:
@@ -275,7 +275,7 @@ def _prometheus_dependency_state(
         )
         if missing_capabilities:
             return (
-                prometheus_capability_blocker(
+                metrics_source_capability_blocker(
                     cluster,
                     capability_labels=_capability_labels(missing_capabilities),
                     feature_label=get_dataset(dataset_key).label,
@@ -283,7 +283,7 @@ def _prometheus_dependency_state(
                 None,
             )
         return (
-            prometheus_connection_blocker(
+            metrics_source_connection_blocker(
                 cluster,
                 detail=candidate.decision_reason,
             ),
@@ -292,7 +292,7 @@ def _prometheus_dependency_state(
 
     runtime_warning = None
     if selected.operational_state in _UNUSABLE_OPERATIONAL_STATES:
-        runtime_warning = prometheus_connection_blocker(
+        runtime_warning = metrics_source_connection_blocker(
             cluster,
             detail=(
                 'The previous runtime observation was degraded. KAORI will retry the '
@@ -301,7 +301,7 @@ def _prometheus_dependency_state(
             ),
         )
 
-    strict = _prometheus_resolution(
+    strict = _metrics_source_resolution(
         dataset_key=dataset_key,
         cluster_id=cluster.id,
         strict=True,
@@ -317,7 +317,7 @@ def _prometheus_dependency_state(
     if not missing_capabilities:
         return None, runtime_warning
 
-    capability_warning = prometheus_capability_blocker(
+    capability_warning = metrics_source_capability_blocker(
         cluster,
         capability_labels=_capability_labels(missing_capabilities),
         feature_label=get_dataset(dataset_key).label,
@@ -334,7 +334,7 @@ def _alert_dependency_blocker(
     selected_source: str,
 ) -> DependencyBlocker | None:
     source = (selected_source or 'auto').strip().lower()
-    alertmanager_resolution, prometheus_resolution = _alert_resolutions(
+    alertmanager_resolution, metrics_source_resolution = _alert_resolutions(
         cluster_id=cluster.id,
     )
 
@@ -351,46 +351,46 @@ def _alert_dependency_blocker(
             detail=candidate.decision_reason,
         )
 
-    def prometheus_blocker() -> DependencyBlocker | None:
-        selected = prometheus_resolution.selected
+    def metrics_source_blocker() -> DependencyBlocker | None:
+        selected = metrics_source_resolution.selected
         if _candidate_is_usable(selected):
             return None
-        if not prometheus_resolution.candidates:
-            return alert_source_setup_blocker(cluster, source='prometheus')
-        candidate = selected or prometheus_resolution.candidates[0]
+        if not metrics_source_resolution.candidates:
+            return alert_source_setup_blocker(cluster, source='metrics_source')
+        candidate = selected or metrics_source_resolution.candidates[0]
         missing_capabilities = (
             *candidate.missing_binding_capabilities,
             *candidate.missing_technical_capabilities,
         )
         if missing_capabilities:
-            return prometheus_capability_blocker(
+            return metrics_source_capability_blocker(
                 cluster,
                 capability_labels=_capability_labels(missing_capabilities),
                 feature_label='Alerts & Anomalies',
             )
         return alert_source_connection_blocker(
             cluster,
-            source='prometheus',
+            source='metrics_source',
             detail=candidate.decision_reason,
         )
 
     if source == 'alertmanager':
         return alertmanager_blocker()
-    if source == 'prometheus':
-        return prometheus_blocker()
+    if source == 'metrics_source':
+        return metrics_source_blocker()
 
     alertmanager_issue = alertmanager_blocker()
-    prometheus_issue = prometheus_blocker()
-    if alertmanager_issue is None or prometheus_issue is None:
+    metrics_source_issue = metrics_source_blocker()
+    if alertmanager_issue is None or metrics_source_issue is None:
         return None
-    if not alertmanager_resolution.candidates and not prometheus_resolution.candidates:
+    if not alertmanager_resolution.candidates and not metrics_source_resolution.candidates:
         return alert_source_setup_blocker(cluster, source='auto')
 
     details = [
         candidate.decision_reason
         for candidate in (
             alertmanager_resolution.candidates[0] if alertmanager_resolution.candidates else None,
-            prometheus_resolution.candidates[0] if prometheus_resolution.candidates else None,
+            metrics_source_resolution.candidates[0] if metrics_source_resolution.candidates else None,
         )
         if candidate is not None
     ]
@@ -408,8 +408,8 @@ def _dependency_state(
     parameters: dict[str, str],
 ) -> tuple[DependencyBlocker | None, DependencyBlocker | None]:
     dataset = get_dataset(dataset_key)
-    if dataset.source_kind == 'prometheus':
-        return _prometheus_dependency_state(
+    if dataset.source_kind == 'metrics_source':
+        return _metrics_source_dependency_state(
             dataset_key=dataset_key,
             cluster=cluster,
         )
@@ -475,7 +475,7 @@ def resolve_materialized_request(
                 detail=f'Source readiness evaluation failed: {exc}',
             )
             if dataset.source_kind == 'alert'
-            else prometheus_connection_blocker(
+            else metrics_source_connection_blocker(
                 cluster,
                 detail=f'Source readiness evaluation failed: {exc}',
             )

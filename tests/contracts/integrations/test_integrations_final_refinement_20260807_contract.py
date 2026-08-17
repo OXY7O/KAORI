@@ -53,12 +53,12 @@ def test_integration_scope_pagination_uses_title_case_item_label() -> None:
     assert "item_label='Connections'" in provider_registry
 
 
-def test_prometheus_validation_keeps_compact_contract_and_modal_detail() -> None:
-    source = read('app/templates/prometheus/partials/_detail_validation_content.html')
-    registry = read('app/templates/prometheus/partials/_capability_registry.html')
+def test_metrics_source_validation_keeps_compact_contract_and_modal_detail() -> None:
+    source = read('app/templates/metrics/partials/_detail_validation_content.html')
+    registry = read('app/templates/metrics/partials/_capability_registry.html')
 
     assert 'import "integrations/components/_record_detail_modal.html" as record_detail_modal' in registry
-    assert 'Prometheus Full Validation' in source
+    assert 'Metrics Source Full Validation' in source
     assert 'record_actions.view_more(' in registry
     assert 'provider_capability_detail.content(' in registry
     assert 'provider_capability_detail.content(' in registry

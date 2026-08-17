@@ -32,7 +32,7 @@ def main() -> int:
         'app/templates/inventory/kubernetes/storage/partials/_inventory_scope.html',
         'app/kubernetes_operations/secrets/routes.py',
         'app/templates/integrations/partials/_runtime_detail_content.html',
-        'app/templates/prometheus/partials/_analytics_readiness.html',
+        'app/templates/metrics/partials/_analytics_readiness.html',
         'tests/kubernetes_operations/test_secret_delete_workflow.py',
     )
     for relative in obsolete_paths:

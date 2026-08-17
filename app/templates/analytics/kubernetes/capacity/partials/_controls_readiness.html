@@ -13,10 +13,10 @@
     <input type="hidden" name="tab" value="{{ initial_tab|default('summary') }}">
     {% call analytics_workspace.controls_readiness(
         'Capacity Controls & Data Readiness',
-        'Set the cluster and analysis window, then confirm the Prometheus source and committed worker-capacity snapshot.',
+        'Set the cluster and analysis window, then confirm the Metrics Source source and committed worker-capacity snapshot.',
         'sliders-horizontal',
         'capacity-refresh-indicator',
-        prometheus_status,
+        metrics_source_status,
         analytics_materialization,
         eyebrow='Capacity Analysis'
         ) %}

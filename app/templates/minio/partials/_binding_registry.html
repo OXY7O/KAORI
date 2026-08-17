@@ -5,7 +5,7 @@
     {{ loading_bar.render("minio-binding-registry-loading", label="Refreshing Bound Observability Sources") }}
     {{ asset_owner_sources.render(binding_rows,
         total_count=binding_total,
-        empty_message="No reusable observability source is currently bound to this object-storage asset. Add the binding from Prometheus, Thanos Query, or Alertmanager in Observability.",
+        empty_message="No reusable observability source is currently bound to this object-storage asset. Add the binding from Metrics Source or Alertmanager in Observability.",
         title="Bound Observability Sources",
         description="Source readiness, binding validation, and effective resolution remain independent evidence dimensions. Binding mutation belongs to the Observability source workspace.") }}
     {% if binding_pagination.total_items > 0 %}

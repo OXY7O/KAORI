@@ -11,7 +11,7 @@ from app.extensions.db import db
 if TYPE_CHECKING:
     from app.models.alertmanager import AlertmanagerInstance
     from app.models.minio import MinioInstance
-    from app.models.prometheus import PrometheusInstance
+    from app.models.metrics_source import MetricsSource
 
 
 class IntegrationInstance(db.Model):
@@ -46,8 +46,8 @@ class IntegrationInstance(db.Model):
         order_by='IntegrationBinding.priority.asc(), IntegrationBinding.id.asc()',
     )
 
-    prometheus_record: Mapped[PrometheusInstance | None] = relationship(
-        'PrometheusInstance',
+    metrics_source_record: Mapped[MetricsSource | None] = relationship(
+        'MetricsSource',
         back_populates='integration_instance',
         uselist=False,
         passive_deletes=True,

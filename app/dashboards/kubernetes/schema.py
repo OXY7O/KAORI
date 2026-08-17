@@ -98,7 +98,7 @@ class CapacitySnapshot:
     risk: str = 'Unknown'
     insight: str = 'Capacity metrics are not available yet.'
     risk_detail: str = 'Risk meaning is unavailable until worker capacity metrics are loaded.'
-    recommended_action: str = 'Select a cluster and verify the Prometheus source before taking capacity action.'
+    recommended_action: str = 'Select a cluster and verify the Metrics Source source before taking capacity action.'
     source_status: str = 'Unavailable'
 
 
@@ -138,7 +138,7 @@ class TopConsumersSnapshot:
     cpu: list[ConsumerItem] = field(default_factory=list)
     memory: list[ConsumerItem] = field(default_factory=list)
     source_status: str = 'Unavailable'
-    message: str = 'Prometheus top consumer data is not available yet.'
+    message: str = 'Metrics Source top consumer data is not available yet.'
     insight_title: str = 'Consumer Insights'
     insight_description: str = 'Select a cluster to evaluate top consumer signals.'
     insight_items: list[str] = field(default_factory=list)

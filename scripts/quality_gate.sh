@@ -60,7 +60,7 @@ run_static() {
     python scripts/verify_integration_provider_foundation.py
     python scripts/verify_integration_domain_navigation.py
     python scripts/verify_minio_object_storage_provider.py
-    python scripts/verify_prometheus_consumer_profiles.py
+    python scripts/verify_metrics_source_consumer_profiles.py
     python scripts/verify_alertmanager_consumer_profiles.py
     python scripts/verify_integrations_final_lock.py
     python scripts/verify_notification_channels.py

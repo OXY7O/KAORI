@@ -117,7 +117,7 @@ def metrics_validation_blocker(
         'title': title,
         'description': (
             f'{system.name} has a bound metrics source, but its Object Storage consumer binding is not eligible yet. '
-            'Run Prometheus Full Validation or Validate on the consumer binding, then resolve any required metric-family, label, or query gaps.'
+            'Run Metrics Source Full Validation or Validate on the consumer binding, then resolve any required metric-family, label, or query gaps.'
         ),
         'diagnostic_detail': detail,
         'icon': icon,

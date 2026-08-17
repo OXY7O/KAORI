@@ -19,7 +19,7 @@ _JOB_ICONS = {
 _PROVIDER_LABELS = {
     'minio': 'MinIO',
     'kubernetes': 'Kubernetes',
-    'prometheus': 'Prometheus',
+    'metrics_source': 'Metrics Source',
     'alertmanager': 'Alertmanager',
 }
 

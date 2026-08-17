@@ -79,7 +79,7 @@
     ) }}
 {% elif page_key == 'alerts' %}
     {% set alerts = alert_posture|default({}) %}
-    {% set alert_action_endpoint = 'integrations.alertmanager' if alert_source.resolved_source == 'alertmanager' else 'integrations.prometheus' %}
+    {% set alert_action_endpoint = 'integrations.alertmanager' if alert_source.resolved_source == 'alertmanager' else 'integrations.metrics_sources' %}
     {{ page_hero.context_card_body(
         'Alert Posture',
         'Active Alert State',

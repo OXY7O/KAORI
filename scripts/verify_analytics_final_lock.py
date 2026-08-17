@@ -237,7 +237,7 @@ def main() -> int:
         errors,
     )
     route_source = '\n'.join(read(str(path.relative_to(ROOT))) for path in ROUTE_FILES)
-    for forbidden in ('PrometheusConsumer(', 'PrometheusService(', '.query_range(', '.custom_query('):
+    for forbidden in ('MetricsConsumer(', 'MetricsService(', '.query_range(', '.custom_query('):
         require(
             forbidden not in route_source,
             f'Analytics route layer must not execute provider query directly: {forbidden}',

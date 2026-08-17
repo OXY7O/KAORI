@@ -7,7 +7,7 @@ from typing import Any, SupportsFloat, SupportsIndex
 from flask import current_app, has_app_context
 from sqlalchemy import select
 
-from app.analytics.kubernetes.common.presentation import present_prometheus_status
+from app.analytics.kubernetes.common.presentation import present_metrics_source_status
 from app.analytics.kubernetes.overview.health import build_health_summary
 from app.analytics.kubernetes.overview.schema import build_empty_overview_payload, classify_count_risk, classify_percent
 from app.analytics.kubernetes.overview.sections import get_overview_section
@@ -167,7 +167,7 @@ def _hydrate_overview_snapshot_sections(
     cluster_id: str,
     time_range: str,
 ) -> dict[str, Any]:
-    payload['prometheus'] = _get_prometheus_status(cluster_id=cluster_id)
+    payload['metrics_source'] = _get_metrics_source_status(cluster_id=cluster_id)
     payload['resource_snapshot'] = _get_resource_snapshot(
         cluster_id=cluster_id,
         time_range=time_range,
@@ -384,11 +384,11 @@ def _resolve_selected_cluster(
             return cluster
 
     try:
-        from app.integrations.prometheus.scope import KUBERNETES_CLUSTER_SCOPE
-        from app.prometheus.resolver import resolve_prometheus_sources
+        from app.integrations.metrics.scope import KUBERNETES_CLUSTER_SCOPE
+        from app.metrics.resolver import resolve_metrics_sources
 
         for cluster in clusters:
-            resolution = resolve_prometheus_sources(
+            resolution = resolve_metrics_sources(
                 scope_type=KUBERNETES_CLUSTER_SCOPE,
                 scope_key=str(cluster.get('id')),
                 required_binding_capabilities=('metrics',),
@@ -426,9 +426,9 @@ def _get_cluster_id(cluster: dict[str, Any] | None) -> str:
     return str(cluster.get('id', ''))
 
 
-def _get_prometheus_status(*, cluster_id: str) -> dict[str, Any]:
+def _get_metrics_source_status(*, cluster_id: str) -> dict[str, Any]:
     if not cluster_id:
-        return present_prometheus_status(
+        return present_metrics_source_status(
             {
                 'configured': False,
                 'connected': False,
@@ -436,20 +436,20 @@ def _get_prometheus_status(*, cluster_id: str) -> dict[str, Any]:
             }
         )
 
-    prometheus_result = _call_optional_snapshot(
+    metrics_source_result = _call_optional_snapshot(
         module_path='app.analytics.kubernetes.utilization.service',
-        function_names=['get_prometheus_status_snapshot'],
+        function_names=['get_metrics_source_status_snapshot'],
         cluster_id=cluster_id,
     )
-    if not prometheus_result:
-        return present_prometheus_status(
+    if not metrics_source_result:
+        return present_metrics_source_status(
             {
                 'configured': False,
                 'connected': False,
-                'label': 'Prometheus Not Configured',
+                'label': 'Metrics Source Not Configured',
             }
         )
-    return present_prometheus_status(prometheus_result)
+    return present_metrics_source_status(metrics_source_result)
 
 
 def _get_resource_snapshot(*, cluster_id: str, time_range: str) -> dict[str, Any]:

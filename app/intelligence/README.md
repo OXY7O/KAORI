@@ -66,7 +66,7 @@ Locked current-state contracts:
   first validated Object Storage provider. Current forecast recommendations also consume current worker-materialized Object Storage forecast snapshots.
 - **Rule Catalog** exposes canonical definitions. Rules that do not yet have a validated
   provider/evaluator path remain **Reserved Plan**.
-- **Alert Intelligence** is active for Kubernetes and Object Storage. Automatic alert-source selection prefers Alertmanager and falls back to Prometheus `ALERTS`; committed Recommendations and Rule Catalog definitions provide contextual enrichment without asserting causal correlation. A global Alert Intelligence Summary remains visible while one tabbed workspace uses the shared KAORI Content Tabs (server-owned link mode) for Alert Records, Correlation & Guidance, Notification Delivery, and Evidence & Ownership. Tabs appear before a compact shared Operational Context (domain/asset/source), while Alert Records owns its own auto-refreshing search/severity/state filters and Reset Filters action with no Apply button. Active section content stays inside the same workspace surface. Server and HCI enrichment remain **Reserved Plan**.
+- **Alert Intelligence** is active for Kubernetes and Object Storage. Automatic alert-source selection prefers Alertmanager and falls back to metric-derived alert-state evidence from the selected Metrics Source adapter; committed Recommendations and Rule Catalog definitions provide contextual enrichment without asserting causal correlation. A global Alert Intelligence Summary remains visible while one tabbed workspace uses the shared KAORI Content Tabs (server-owned link mode) for Alert Records, Correlation & Guidance, Notification Delivery, and Evidence & Ownership. Tabs appear before a compact shared Operational Context (domain/asset/source), while Alert Records owns its own auto-refreshing search/severity/state filters and Reset Filters action with no Apply button. Active section content stays inside the same workspace surface. Server and HCI enrichment remain **Reserved Plan**.
 - **Notification Channels** is owned by Integrations, not Intelligence. Alert Intelligence consumes the platform delivery contract while Alertmanager remains the raw alert routing/receiver authority.
 - **Automation Control** is an application-layer orchestration surface. Validated System Runbook activation, deterministic environment bindings, candidate review, decision approval/rejection, deployment-policy configuration, safety controls, readiness evidence, and ordered rollout configuration are governance operations and remain available while infrastructure execution is disabled. Custom runbook authoring is intentionally not production-supported yet. The resolver boundary is independently fail-closed behind `AUTOMATION_EXECUTION_ENABLED=false`; authorization and the worker both enforce it. Execution/verification lifecycle events and decision-governance events are delivered asynchronously through the Integrations-owned Notification Channels contract. Dead-letter executions are immutable and are never replayed with consumed one-time authorization; a retry requires fresh evidence and a new candidate/decision lifecycle.
 
@@ -82,7 +82,7 @@ Object Storage recommendations reuse the central Intelligence catalog and findin
 not introduce a MinIO-specific Intelligence workspace. Current active MinIO-backed evaluators consume
 only committed `ObjectStorageSystem` / `ObjectStorageBucket` evidence for bucket quota pressure, public
 exposure review, and missing encryption configuration. The recommendation evaluator does not issue live
-MinIO, Prometheus, or Alertmanager queries. Provider identity is attached to each finding as evidence while the
+MinIO, Metrics Source, or Alertmanager queries. Provider identity is attached to each finding as evidence while the
 canonical rule domain remains `object_storage`.
 
 Reusable recommendation callers must scope findings with canonical `domain` + `asset_key`. Kubernetes
@@ -97,7 +97,7 @@ provider coverage. MinIO is the currently validated provider coverage for Object
 forecast, and metric-signal definitions; the provider name is evidence metadata rather than a separate
 rule namespace. Metric-signal catalog entries mirror the current Object Storage Analytics capacity,
 request-error, waiting-request, and offline-node boundaries. The catalog schema uses a generic
-`evidence_boundary` field so Prometheus, Alertmanager, provider APIs, committed inventory, and worker
+`evidence_boundary` field so Metrics Source, Alertmanager, provider APIs, committed inventory, and worker
 artifacts can coexist without making one backend the Intelligence schema owner.
 
 ## Alert Intelligence notification delivery

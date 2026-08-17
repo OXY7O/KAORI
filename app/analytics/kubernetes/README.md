@@ -2,7 +2,7 @@
 
 `app/analytics/kubernetes/` is the complete source-code ownership boundary for
 Kubernetes Analytics. It interprets committed Kubernetes inventory context,
-Prometheus/kube-state-metrics evidence, and Alertmanager evidence into the
+Metrics Source/kube-state-metrics evidence, and Alertmanager evidence into the
 Kubernetes analytics workspaces.
 
 ## Package layout
@@ -28,13 +28,13 @@ analytics lives exclusively in `app.analytics.object_storage`.
 
 ## Source-of-truth boundary
 
-- Prometheus and kube-state-metrics are primary for Kubernetes utilization,
+- Metrics Source and kube-state-metrics are primary for Kubernetes utilization,
   capacity, request/limit, placement, headroom, and time-series evidence.
 - Alertmanager is authoritative for alert lifecycle, routing, inhibition, and
   silence evidence exposed by its API.
 - Kubernetes Inventory supplies identity and committed current-state context.
 - Analytics web requests must not silently fall back to live Kubernetes API,
-  Prometheus, or Alertmanager queries.
+  Metrics Source, or Alertmanager queries.
 - Provider network I/O belongs to materialization/forecast workers; web routes
   read committed `AnalyticsSnapshot` generations.
 - Global views use stored generations. A selected cluster scopes committed data;
@@ -43,7 +43,7 @@ analytics lives exclusively in `app.analytics.object_storage`.
 ## Worker-first request boundary
 
 ```text
-Prometheus / Alertmanager
+Metrics Source / Alertmanager
         ↓
 Analytics or forecasting worker
         ↓
@@ -142,7 +142,7 @@ Storage Analysis uses mixed but explicit scope ownership: Cluster and Namespace 
 - Storage Snapshot and Trend Summary end with concise operational tips using the shared `components/detail_tip.html` treatment.
 - Overview redesigns must preserve first-activation HTMX loading, selected cluster/time-range state, parameter-exact snapshot matching, and worker-first committed-snapshot boundaries.
 - Analytics surfaces remain neutral for readability. Color is assigned by reusable role: Brand Violet for identity/navigation/actions, Insight cyan for explanation/methodology, Evidence slate for passive context, and semantic green/amber/red/slate only for actual operational state. All role geometry and colors are owned by `analytics/components/_analysis_surfaces.html`.
-- Prometheus status and committed dataset metadata remain on neutral evidence surfaces. Dataset freshness exceptions use a neutral attention strip with a semantic warning glyph and compact badge rather than a full tinted panel.
+- Metrics Source status and committed dataset metadata remain on neutral evidence surfaces. Dataset freshness exceptions use a neutral attention strip with a semantic warning glyph and compact badge rather than a full tinted panel.
 - Pressure Posture and equivalent analytical context panels use neutral card surfaces and subtle outlines. Status is carried by a badge, semantic glyph, or quantitative bar instead of a full-card fill.
 - Normalize all status tones through `table_label.semantic_tone(...)`. New presentation payloads use semantic tones; legacy color aliases are accepted only at the shared label boundary.
 - Compact operational status uses `table_label.status_label(...)` without a Lucide icon. Dense repeated state columns use `status_indicator_label(...)` so the semantic dot improves scanning without adding decorative glyphs. Count/category metadata uses `metadata_label(...)`; count-only metadata remains iconless unless an icon conveys independent source or scope context.
@@ -158,7 +158,7 @@ Storage Analysis uses mixed but explicit scope ownership: Cluster and Namespace 
 
 - The full-page request resolves cluster scope only. It does not read every
   analytics dataset.
-- `health-summary` is the single composite owner. It reads Prometheus readiness
+- `health-summary` is the single composite owner. It reads Metrics Source readiness
   once, hydrates the seven committed datasets, builds snapshot coverage, health,
   action summary, and prioritized recommendations, then updates Hero Posture,
   Action Summary, and Recommendations through HTMX out-of-band swaps.
@@ -178,7 +178,7 @@ Storage Analysis uses mixed but explicit scope ownership: Cluster and Namespace 
 - Overview section endpoints are HTMX partial endpoints. Direct browser
   navigation redirects to the full Analytics Overview page. Responses use
   `Cache-Control: no-store` and vary on `HX-Request`.
-- A newly observed Prometheus failure emits one operator-facing toast and one
+- A newly observed Metrics Source failure emits one operator-facing toast and one
   Activity Audit record per user session and failure fingerprint. Repeated
   refreshes of the same unresolved failure do not create notification noise.
 - Drill-down links use the shared scoped-link helper so cluster/time-range
@@ -188,7 +188,7 @@ Storage Analysis uses mixed but explicit scope ownership: Cluster and Namespace 
 
 ## Analytics dependency-state presentation
 
-- Cluster, Prometheus, and alert-source blockers use the shared KAORI Violet
+- Cluster, Metrics Source, and alert-source blockers use the shared KAORI Violet
   dependency card in `components/dependencies/_blocker.html`.
 - The inline card must show only the operator-facing title, a concise next-step
   description, dependency stage, and the permitted configuration action.
@@ -209,7 +209,7 @@ Storage Analysis uses mixed but explicit scope ownership: Cluster and Namespace 
 
 `app/analytics/alerts` owns Kubernetes alert and anomaly interpretation. Alertmanager
 remains authoritative for routing, grouping, receivers, silences, inhibition, and
-notification delivery. Prometheus supplies active-alert fallback and optional
+notification delivery. Metrics Source supplies metric-derived active-alert fallback and optional
 restart/readiness anomaly evidence. KAORI reads those sources in the Analytics
 worker, commits `analytics.alerts`, and serves web and report consumers from the
 committed generation.
@@ -219,7 +219,7 @@ are only:
 
 ```text
 cluster_id
-source = auto | alertmanager | prometheus
+source = auto | alertmanager | metrics_source
 ```
 
 Severity, status, Namespace, search, active tab, alerts page, anomalies page, and
@@ -230,7 +230,7 @@ each table's page size are presentation-only state.
 ```text
 Analytics worker
     ↓
-Resolve Alertmanager and Prometheus bindings
+Resolve Alertmanager and Metrics Source bindings
     ↓
 Collect active alerts and independent restart/readiness anomaly queries
     ↓
@@ -245,7 +245,7 @@ Web/report readers load the committed snapshot
 Apply exact Namespace filter and independent local pagination
 ```
 
-The report payload must not contact Alertmanager or Prometheus during report
+The report payload must not contact Alertmanager or Metrics Source during report
 rendering. Missing committed evidence produces an explicit unavailable report
 context instead of synthetic zeroes.
 
@@ -256,7 +256,7 @@ context instead of synthetic zeroes.
 | `application.py` | Worker orchestration, committed-context presentation, global posture, and operational composition. |
 | `contracts.py` | Typed selection, pagination, source, normalized-record, and snapshot contracts. |
 | `records.py` | Severity/status normalization, provider payload normalization, HA deduplication, and exact local filters. |
-| `sources.py` | Alertmanager/Prometheus source reads, fallback policy, source status, and controlled provider errors. |
+| `sources.py` | Alertmanager/Metrics Source source reads, fallback policy, source status, and controlled provider errors. |
 | `anomalies.py` | Independent restart/readiness collection, anomaly normalization, deduplication, and partial-evidence status. |
 | `health.py` | Integration status, source health, and page summary semantics. |
 | `routing.py`, `silences.py`, `inhibition.py` | Alertmanager routing and suppression interpretation. |
@@ -266,7 +266,7 @@ context instead of synthetic zeroes.
 | `routes.py` | Full-page and HTMX-only transport boundary. |
 
 PromQL is registered in
-`app/integrations/prometheus/query_profiles/kubernetes_v1.py`; the expression
+`app/integrations/metrics/query_profiles/kubernetes_v1.py`; the expression
 family is owned by `query_profiles/alerts_v1.py`. Domain modules do not embed
 raw PromQL.
 
@@ -274,8 +274,8 @@ raw PromQL.
 
 Alert-source evidence and anomaly evidence are independent:
 
-- Alertmanager may be connected while one Prometheus anomaly query fails.
-- Prometheus fallback may provide alerts while Alertmanager routing and suppression
+- Alertmanager may be connected while one Metrics Source anomaly query fails.
+- Metrics Source fallback may provide alerts while Alertmanager routing and suppression
   evidence remains unavailable.
 - Restart and readiness anomaly queries fail independently; one successful family
   remains visible when the other fails.
@@ -284,9 +284,9 @@ Alert-source evidence and anomaly evidence are independent:
 - Partial or missing evidence is `Limited Evidence` or `Unknown`, never zero,
   Normal, or Healthy.
 
-Prometheus anomaly queries only evaluate Pods in `Pending|Running`. Restart gauges
+Metrics Source anomaly queries only evaluate Pods in `Pending|Running`. Restart gauges
 are normalized by `namespace,pod,container` before Pod aggregation. Alert records
-prefer Alertmanager fingerprint identity and otherwise ignore Prometheus HA replica
+prefer Alertmanager fingerprint identity and otherwise ignore metrics-backend HA replica
 labels when constructing canonical identity.
 
 ## Transport and table state
@@ -337,9 +337,9 @@ reasons to change. These are review triggers, not hard coding rules.
 
 ## Consumer migration rule
 
-Prometheus and Thanos reads must enter analytics through
-`app.prometheus.consumer.PrometheusConsumer`, directly or through the temporary
-canonical Prometheus consumer contract. New analytics code must declare the
+Metrics Source reads must enter analytics through
+`app.metrics.consumer.MetricsConsumer`, directly or through the temporary
+canonical Metrics Source consumer contract. New analytics code must declare the
 capabilities required by a query when the requirement is more specific than the
 base Instant Query or Range Query API.
 
@@ -371,7 +371,7 @@ before it loads live data:
 The filesystem contract accepts canonical `node`, `nodename`, or
 `kubernetes_node` labels. It does not use `instance="IP:port"` as a node name.
 When the contract is incomplete, the page renders an integration capability
-blocker and directs the operator to Prometheus/Thanos remediation instead of
+blocker and directs the operator to Metrics Source remediation instead of
 executing an unvalidated alternate query path.
 
 Filesystem PromQL returns the original series so identity labels remain
@@ -381,20 +381,20 @@ consumer-facing storage service.
 
 ### Capacity capability boundary
 
-Capacity Analytics is capability-gated through `PrometheusConsumer`. CPU, memory, and pod scheduling evidence uses one exact Ready-worker boundary: control-plane and legacy master nodes are excluded, and every allocatable, requests, limits, current usage, peak usage, and pod-placement signal is intersected with the Ready node condition. Request/limit validation requires the `node` label in addition to namespace, pod, resource, and unit.
+Capacity Analytics is capability-gated through `MetricsConsumer`. CPU, memory, and pod scheduling evidence uses one exact Ready-worker boundary: control-plane and legacy master nodes are excluded, and every allocatable, requests, limits, current usage, peak usage, and pod-placement signal is intersected with the Ready node condition. Request/limit validation requires the `node` label in addition to namespace, pod, resource, and unit.
 
 `app/analytics/kubernetes/capacity/evidence.py` collects each provider signal once per materialization, `domain.py` owns calculation and risk semantics, `service.py` orchestrates the payload, and `presentation.py` normalizes display state. Missing evidence remains Unknown/N/A and is never synthesized as zero. Node Filesystem is an optional operational reference with `scheduling_resource=False`; it cannot determine scheduling posture or Capacity recommendations.
 
 ## Utilization capability contract
 
-Utilization Analytics consumes Prometheus or Thanos only through `PrometheusConsumer` and requires instant query, range query, Kubernetes identity, utilization metrics, and canonical filesystem node identity. CPU, memory, and pod ratios use worker `kube_node_status_allocatable` denominators and exclude node roles matching `control-plane|master`; the numerator and top-consumer queries follow the same worker boundary. Node drill-down storage must use a canonical Kubernetes node label; `instance=IP:port` is not a supported identity fallback. Integration validation must report missing metrics or label remediation before the page is considered ready.
+Utilization Analytics consumes Metrics Source only through `MetricsConsumer` and requires instant query, range query, Kubernetes identity, utilization metrics, and canonical filesystem node identity. CPU, memory, and pod ratios use worker `kube_node_status_allocatable` denominators and exclude node roles matching `control-plane|master`; the numerator and top-consumer queries follow the same worker boundary. Node drill-down storage must use a canonical Kubernetes node label; `instance=IP:port` is not a supported identity fallback. Integration validation must report missing metrics or label remediation before the page is considered ready.
 
 Missing or zero denominator evidence is not zero utilization. The canonical Utilization presenter returns `Unknown`/`N/A` and suppresses semantic progress when allocatable or filesystem capacity evidence is unavailable. Presentation strings, tones, trend labels, and posture values belong to `app/analytics/kubernetes/utilization/presentation.py`, not Jinja.
 
 
 ## Workload Analytics capability contract
 
-Workload Analytics uses `PrometheusConsumer` and requires `instant_query`, `range_query`,
+Workload Analytics uses `MetricsConsumer` and requires `instant_query`, `range_query`,
 `kubernetes_identity`, `workload_metrics`, and `resource_requests_limits`. Provider-specific
 fallback logic must not be implemented in the Analytics layer.
 
@@ -411,15 +411,15 @@ zero or Healthy.
 
 ## Worker-Backed Materialization
 
-Heavy Prometheus range queries are not executed independently for every web request. KAORI stores reusable results in `analytics_snapshots` and dispatches generation through the canonical job registry:
+Heavy Metrics Source range queries are not executed independently for every web request. KAORI stores reusable results in `analytics_snapshots` and dispatches generation through the canonical job registry:
 
 - `analytics.materialize` uses the `analytics-batch` queue for Capacity, Storage, Workload, Top Consumers, long-range Utilization trends, and the compact `dashboard.kubernetes.alerts` dataset.
 - `analytics.forecast.materialize` uses the dedicated `forecasting` queue for all forecast range queries.
 - Kubernetes Operations always retains the `24h` Capacity snapshot, one current Top Consumers snapshot, and the `30d` Forecast history required by dashboard consumers, even when an operator narrows optional materialization ranges.
 - Forecast horizon and model are projected locally from committed history and never create additional worker queries or snapshot fingerprints. Resource tabs do not alter the committed payload.
-- Alert-only clusters remain eligible for both `dashboard.kubernetes.alerts` and `analytics.alerts`; Prometheus-backed datasets are never scheduled for those clusters.
+- Alert-only clusters remain eligible for both `dashboard.kubernetes.alerts` and `analytics.alerts`; Metrics Source-backed datasets are never scheduled for those clusters.
 - Automatic policies are configured under **Platform Operations → Jobs & Executions → Job Configuration**.
-- A stale successful snapshot remains readable during refresh or temporary Prometheus failure.
+- A stale successful snapshot remains readable during refresh or temporary Metrics Source failure.
 - Scheduled executions create `JobExecution` and `AuditEvent` records only; they do not create user notifications or toasts.
 - Missing custom filter combinations are deduplicated and generated once on demand. The requesting web process never runs the heavy query.
 
@@ -450,11 +450,11 @@ query. The selected dataset query is the authoritative runtime probe. A
 previous unhealthy Integration Runtime observation remains visible as advisory
 context, but it does not hard-block an eligible binding from being retried.
 
-Heavy datasets acquire a lock for the selected Prometheus, Thanos, or
+Heavy datasets acquire a lock for the selected Metrics Source or
 Alertmanager provider instance. This prevents Analytics and Forecast workers,
 or multiple clusters sharing one endpoint, from overloading the same source in
-parallel. Alert source `auto` acquires both Alertmanager and Prometheus locks
-because anomaly candidates can use Prometheus while alert records use
+parallel. Alert source `auto` acquires both Alertmanager and Metrics Source locks
+because anomaly candidates can use Metrics Source while alert records use
 Alertmanager.
 
 Dataset priority, batch task limits, and isolated dataset timeouts are derived
@@ -467,7 +467,7 @@ wait, and an explicit error code with remediation.
 Failed refreshes never replace a previously committed payload with empty data.
 Forecast, Top Consumers, and other provider failures propagate to the
 materialization boundary. Alerts & Anomalies may remain partially available
-when Alertmanager succeeds but optional Prometheus anomaly collection fails;
+when Alertmanager succeeds but optional Metrics Source anomaly collection fails;
 the partial-source warning is rendered explicitly.
 
 
@@ -513,9 +513,9 @@ CPU and memory evidence includes only active Pods and normalizes duplicate conta
 The `analytics.alerts` workspace uses `/analytics/alerts` with canonical tab state for Alerts, Anomalies, Routing & Suppression, Ownership & Runbooks, Incident Readiness, Recommendations, and Operational Resources. Source readiness and committed worker snapshot evidence are separate boundaries. Partial optional evidence produces an incomplete or limited state rather than Healthy. Alert-domain payloads carry semantic levels and factual values only; shared Jinja components own status tones, record geometry, and pagination.
 
 
-## Canonical Prometheus Readiness
+## Canonical Metrics Source Readiness
 
-All Prometheus-backed Analytics workspaces normalize provider observations through `app.analytics.common.presentation.present_prometheus_status` and render `analytics/components/_prometheus_status.html`. The card owns canonical Query Ready, Query Degraded, Unavailable, Not Configured, and Waiting for Cluster states plus Response and Checked At. Checked At always comes from the provider observation `last_checked_at`; materialization timestamps remain owned by Latest Data Snapshot.
+All Metrics Source-backed Analytics workspaces normalize provider observations through `app.analytics.common.presentation.present_metrics_source_status` and render `analytics/components/_metrics_source_status.html`. The card owns canonical Query Ready, Query Degraded, Unavailable, Not Configured, and Waiting for Cluster states plus Response and Checked At. Checked At always comes from the provider observation `last_checked_at`; materialization timestamps remain owned by Latest Data Snapshot.
 
 ## Resource Forecast runtime contract
 

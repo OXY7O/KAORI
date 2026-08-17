@@ -12,7 +12,7 @@ from app.analytics.kubernetes.alerts.contracts import (
     NormalizedAlert,
 )
 from app.models import Cluster
-from app.prometheus.repository import resolve_instance_for_cluster
+from app.metrics.repository import resolve_instance_for_cluster
 
 
 def is_alert_evidence_complete(
@@ -80,7 +80,7 @@ def build_summary(
     }
 
 
-def build_prometheus_status(
+def build_metrics_source_status(
     *,
     cluster: Cluster | None,
     source_status: AlertSourceStatus,
@@ -90,7 +90,7 @@ def build_prometheus_status(
         return {
             'configured': False,
             'connected': False,
-            'label': 'Prometheus Not Set',
+            'label': 'Metrics Source Not Set',
             'status': 'not_set',
             'response_time_ms': None,
         }
@@ -105,13 +105,13 @@ def build_prometheus_status(
         return {
             'configured': False,
             'connected': False,
-            'label': 'Prometheus Not Set',
+            'label': 'Metrics Source Not Set',
             'status': 'not_set',
             'response_time_ms': None,
         }
 
     anomaly_status = anomaly_source_status or {}
-    resolved_alert_source = source_status.get('resolved_source') == 'prometheus' and bool(
+    resolved_alert_source = source_status.get('resolved_source') == 'metrics_source' and bool(
         source_status.get('connected')
     )
     anomaly_connected = bool(anomaly_status.get('connected'))
@@ -123,7 +123,7 @@ def build_prometheus_status(
     return {
         'configured': True,
         'connected': connected,
-        'label': 'Prometheus Connected' if connected else 'Prometheus Configured',
+        'label': 'Metrics Source Connected' if connected else 'Metrics Source Configured',
         'status': 'connected' if connected else 'configured',
         'response_time_ms': response_time_ms if connected else None,
     }
@@ -202,7 +202,7 @@ def build_integration_status(
     anomaly_source_status: dict[str, Any] | None = None,
 ) -> AlertIntegrationStatusMap:
     return {
-        'prometheus': build_prometheus_status(
+        'metrics_source': build_metrics_source_status(
             cluster=cluster,
             source_status=source_status,
             anomaly_source_status=anomaly_source_status,
@@ -237,7 +237,7 @@ def build_source_health(
         }
 
     alertmanager_status = integration_status['alertmanager']
-    prometheus_status = integration_status['prometheus']
+    metrics_source_status = integration_status['metrics_source']
 
     selected_source = str(
         source_status.get(
@@ -277,14 +277,14 @@ def build_source_health(
             False,
         )
     )
-    prometheus_configured = bool(
-        prometheus_status.get(
+    metrics_source_configured = bool(
+        metrics_source_status.get(
             'configured',
             False,
         )
     )
-    prometheus_connected = bool(
-        prometheus_status.get(
+    metrics_source_connected = bool(
+        metrics_source_status.get(
             'connected',
             False,
         )
@@ -298,19 +298,19 @@ def build_source_health(
         label = 'Alertmanager Healthy'
         description = 'Alertmanager is connected and used as the primary alert source.'
         icon = 'shield-check'
-    elif connected and resolved_source == 'prometheus' and fallback_used:
+    elif connected and resolved_source == 'metrics_source' and fallback_used:
         score = 60 if alertmanager_configured else 80
         level = 'fallback'
-        label = 'Prometheus Fallback Active'
-        description = 'Alertmanager is unavailable, but Prometheus ALERTS fallback is connected.'
+        label = 'Metrics Source Fallback Active'
+        description = 'Alertmanager is unavailable, but Metrics Source ALERTS fallback is connected.'
         icon = 'route'
-    elif connected and resolved_source == 'prometheus':
+    elif connected and resolved_source == 'metrics_source':
         score = 75
         level = 'degraded'
-        label = 'Prometheus Alerts Only'
-        description = 'Prometheus ALERTS is connected, but Alertmanager routing, grouping, silence, and inhibition context is not the active source.'
+        label = 'Metrics Source Alerts Only'
+        description = 'Metrics Source ALERTS is connected, but Alertmanager routing, grouping, silence, and inhibition context is not the active source.'
         icon = 'activity'
-    elif alertmanager_configured or prometheus_configured:
+    elif alertmanager_configured or metrics_source_configured:
         score = 40
         level = 'unavailable'
         label = 'Alert Source Unavailable'
@@ -321,7 +321,7 @@ def build_source_health(
         level = 'unavailable'
         label = 'Alert Sources Not Configured'
         description = (
-            'Configure Alertmanager as the primary source and Prometheus as fallback before relying on alert analysis.'
+            'Configure Alertmanager as the primary source and Metrics Source as fallback before relying on alert analysis.'
         )
         icon = 'plug-zap'
 
@@ -346,11 +346,11 @@ def build_source_health(
             else 'Alertmanager is not connected for the selected cluster.',
         },
         {
-            'label': 'Prometheus evidence connected',
-            'status': 'pass' if prometheus_connected else ('warning' if prometheus_configured else 'fail'),
-            'description': 'Prometheus alert or anomaly evidence is connected.'
-            if prometheus_connected
-            else 'Prometheus alert and anomaly evidence is not currently connected.',
+            'label': 'Metrics Source evidence connected',
+            'status': 'pass' if metrics_source_connected else ('warning' if metrics_source_configured else 'fail'),
+            'description': 'Metrics Source alert or anomaly evidence is connected.'
+            if metrics_source_connected
+            else 'Metrics Source alert and anomaly evidence is not currently connected.',
         },
         {
             'label': 'Fallback mode active',

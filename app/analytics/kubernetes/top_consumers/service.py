@@ -23,7 +23,7 @@ from app.analytics.kubernetes.top_consumers.presentation import apply_record_pre
 from app.analytics.kubernetes.utilization.service import UtilizationService
 from app.analytics.shared.coercion import safe_float, safe_int
 from app.analytics.shared.params import ALLOWED_PER_PAGE_VALUES
-from app.common.dependencies import prometheus_connection_blocker
+from app.common.dependencies import metrics_source_connection_blocker
 
 
 class TopConsumersSnapshot(TypedDict):
@@ -41,8 +41,8 @@ class TopConsumersService:
         self.utilization_service = utilization_service
         self.collector = TopConsumersEvidenceCollector(utilization_service.consumer)
 
-    def get_prometheus_status(self) -> dict[str, Any]:
-        return self.utilization_service.get_prometheus_status()
+    def get_metrics_source_status(self) -> dict[str, Any]:
+        return self.utilization_service.get_metrics_source_status()
 
     def get_top_consumers_payload(
         self,
@@ -124,21 +124,21 @@ def get_top_consumers_context(
         return context
 
     top_consumers_service = TopConsumersService(utilization_service)
-    prometheus_status = top_consumers_service.get_prometheus_status()
-    context['prometheus_status'] = prometheus_status
-    context['prometheus_connected'] = bool(prometheus_status.get('connected', False))
-    if not context['prometheus_connected']:
-        context['dependency_blocker'] = prometheus_connection_blocker(
+    metrics_source_status = top_consumers_service.get_metrics_source_status()
+    context['metrics_source_status'] = metrics_source_status
+    context['metrics_source_connected'] = bool(metrics_source_status.get('connected', False))
+    if not context['metrics_source_connected']:
+        context['dependency_blocker'] = metrics_source_connection_blocker(
             cluster,
             detail=safe_message(
-                value=prometheus_status.get('error'),
-                default=('Prometheus health check did not complete successfully.'),
+                value=metrics_source_status.get('error'),
+                default=('Metrics Source health check did not complete successfully.'),
             ),
         )
         context['consumer_payload'] = empty_payload(
             message=safe_message(
-                value=prometheus_status.get('error'),
-                default=('Prometheus is not connected for the selected cluster.'),
+                value=metrics_source_status.get('error'),
+                default=('Metrics Source is not connected for the selected cluster.'),
             ),
             page=selection.page,
             per_page=selection.per_page,

@@ -174,7 +174,7 @@ def main() -> int:
         "'label': 'Notification Center'",
         "'label': 'Authentication Audit'",
         "'label': 'Kubernetes'",
-        "'label': 'Prometheus'",
+        "'label': 'Metrics Source'",
         "'label': 'Alertmanager'",
         "'label': 'Object Storage · MinIO'",
         'future integrations using IntegrationRuntimeObservation share the same lifecycle boundary.',
@@ -223,7 +223,7 @@ def main() -> int:
         errors.append('Runtime Observation archive domain must read the canonical integration runtime model')
     if 'IntegrationRuntimeObservation.provider ==' in runtime_domain or 'filter_by(provider=' in runtime_domain:
         errors.append(
-            'Runtime Observation lifecycle must remain provider-neutral; do not split Kubernetes/Object Storage/Prometheus/Alertmanager retention'
+            'Runtime Observation lifecycle must remain provider-neutral; do not split retention by concrete integration provider'
         )
 
     activity_domain = read('app/retention/domains/operational_activity.py')

@@ -9,7 +9,7 @@ def read(path: str) -> str:
 
 def test_binding_decision_is_shared_and_keeps_readiness_dimensions_independent() -> None:
     shared = read('app/templates/integrations/components/_binding_readiness_boundary.html')
-    prom = read('app/templates/prometheus/partials/_detail_scope.html')
+    prom = read('app/templates/metrics/partials/_detail_scope.html')
     alert = read('app/templates/alertmanager/partials/_detail_scope.html')
 
     assert 'data-kaori-binding-readiness-boundary' in shared
@@ -35,8 +35,8 @@ def test_binding_decision_is_shared_and_keeps_readiness_dimensions_independent()
     assert "identity_title='Alert Identity Boundary'" in alert
 
 
-def test_prometheus_and_alertmanager_binding_registries_share_final_column_contract() -> None:
-    prom = read('app/templates/prometheus/partials/_binding_registry.html')
+def test_metrics_source_and_alertmanager_binding_registries_share_final_column_contract() -> None:
+    prom = read('app/templates/metrics/partials/_binding_registry.html')
     alert = read('app/templates/alertmanager/partials/_binding_registry.html')
 
     columns = (
@@ -92,7 +92,7 @@ def test_shared_add_binding_modal_locks_workflow_roles_and_source_ownership() ->
 
 
 def test_binding_runtime_contract_keeps_validation_required_transition_and_roles() -> None:
-    prom = read('app/integrations/prometheus/binding_management.py')
+    prom = read('app/integrations/metrics/binding_management.py')
     alert = read('app/integrations/alertmanager/binding_management.py')
 
     for source in (prom, alert):
@@ -121,7 +121,7 @@ def test_final_lock_templates_do_not_add_page_local_style_debt() -> None:
     paths = (
         'app/templates/integrations/components/_observability_binding_modal.html',
         'app/templates/integrations/components/_binding_readiness_boundary.html',
-        'app/templates/prometheus/partials/_binding_registry.html',
+        'app/templates/metrics/partials/_binding_registry.html',
         'app/templates/alertmanager/partials/_binding_registry.html',
     )
     for path in paths:

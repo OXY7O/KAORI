@@ -10,7 +10,7 @@ def read(path: str) -> str:
 def test_provider_frontpages_use_one_coverage_gap_metric_and_safe_posture_logic() -> None:
     pages = {
         'Kubernetes': read('app/templates/integrations/kubernetes.html'),
-        'Prometheus': read('app/templates/integrations/prometheus.html'),
+        'Metrics Source': read('app/templates/integrations/metrics.html'),
         'Alertmanager': read('app/templates/integrations/alertmanager.html'),
         'MinIO': read('app/templates/minio/index.html'),
     }

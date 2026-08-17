@@ -340,7 +340,7 @@ def build_silence_summary(
                 label='Silence Visibility Limited',
                 description='Silence visibility needs Alertmanager as the active source.',
             ),
-            'level': 'limited' if resolved_source == 'prometheus' and connected else 'unavailable',
+            'level': 'limited' if resolved_source == 'metrics_source' and connected else 'unavailable',
             'source': resolved_source,
         }
 

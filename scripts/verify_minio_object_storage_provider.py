@@ -14,8 +14,8 @@ PYTHON_FILES = (
     'app/integrations/minio/capabilities.py',
     'app/integrations/minio/client.py',
     'app/integrations/minio/compatibility.py',
-    'app/integrations/prometheus/binding_profiles.py',
-    'app/integrations/prometheus/binding_validators/object_storage.py',
+    'app/integrations/metrics/binding_profiles.py',
+    'app/integrations/metrics/binding_validators/object_storage.py',
     'app/minio/contracts.py',
     'app/minio/forms.py',
     'app/minio/presentation.py',
@@ -47,8 +47,8 @@ def main() -> None:
     migration = read('migrations/versions/20260812_minio_object_storage_provider.py')
     owner_binding_cleanup = read('migrations/versions/20260812_remove_minio_owner_self_binding.py')
     registration = read('app/integrations/minio/__init__.py')
-    prometheus_catalog = read('app/definitions/catalogs/integrations/prometheus.yaml')
-    object_storage_validator = read('app/integrations/prometheus/binding_validators/object_storage.py')
+    metrics_catalog = read('app/definitions/catalogs/integrations/metrics_source.yaml')
+    object_storage_validator = read('app/integrations/metrics/binding_validators/object_storage.py')
     compatibility = read('app/integrations/minio/compatibility.py')
     provider_catalog = read('app/definitions/catalogs/integrations/object_storage.yaml')
     client = read('app/integrations/minio/client.py')
@@ -88,7 +88,7 @@ def main() -> None:
     )
     require("op.create_table(\n        'object_storage_systems'" in migration, 'object storage asset migration missing')
     require("op.create_table(\n        'minio_instances'" in migration, 'MinIO provider migration missing')
-    require('minio_prometheus' not in migration.lower(), 'MinIO must not add a provider-pair binding table')
+    require('minio_metrics' not in migration.lower(), 'MinIO must not add a provider-pair binding table')
     require(
         "down_revision = '20260812_prom_consumer_profiles'" in owner_binding_cleanup,
         'MinIO owner-binding cleanup must extend the consumer-profile head',
@@ -103,28 +103,28 @@ def main() -> None:
     require("'binding.create'" not in registration, 'MinIO provider must not create a self consumer binding')
     require("'binding.validate'" not in registration, 'MinIO Core Validation must not validate an owner self-binding')
     require(
-        'asset_type: object_storage_system' in prometheus_catalog,
-        'Object Storage Prometheus consumer profile must be asset-scoped',
+        'asset_type: object_storage_system' in metrics_catalog,
+        'Object Storage Metrics Source consumer profile must be asset-scoped',
     )
     require(
-        'profile_key: object-storage-metrics-v1' in prometheus_catalog,
-        'Object Storage Prometheus consumer profile missing',
+        'profile_key: object-storage-metrics-v1' in metrics_catalog,
+        'Object Storage Metrics Source consumer profile missing',
     )
     require(
         "asset_profile='minio-v2'" in object_storage_validator,
-        'MinIO + Prometheus provider-qualified validation adapter missing',
+        'MinIO provider-qualified Metrics Source validation adapter missing',
     )
     require(
-        'ObjectStoragePrometheusProfileAuditor' in object_storage_validator,
-        'MinIO Prometheus readiness auditor missing',
+        'ObjectStorageMetricsProfileAuditor' in object_storage_validator,
+        'MinIO Metrics Source readiness auditor missing',
     )
     require(
         'register_binding_validation_profile' not in registration,
-        'MinIO provider must not own a Prometheus consumer-profile registration',
+        'MinIO provider must not own a Metrics Source consumer-profile registration',
     )
     require(
         'BindingProbe(' not in registration,
-        'MinIO provider must not embed Prometheus metric probes',
+        'MinIO provider must not embed Metrics Source metric probes',
     )
 
     require(
@@ -153,7 +153,7 @@ def main() -> None:
         'deprecated MinIO owner-binding module must be removed',
     )
     require('create_source_binding' not in service, 'MinIO asset-owner service must not mutate observability bindings')
-    require('prometheus_id' not in minio_model, 'MinIO model must not own a direct Prometheus foreign key')
+    require('IntegrationBinding' not in minio_model, 'MinIO model must not own direct observability source bindings')
     require('app.minio.forms' not in service, 'MinIO service layer must not depend on WTForms')
     require('app.minio.forms' not in registration_service, 'MinIO registration proof must not depend on WTForms')
     require('MinioRegistrationInput' in service, 'MinIO service must consume the registration input contract')
@@ -169,13 +169,13 @@ def main() -> None:
         'get_integration(provider_type).get_instance(instance_id)' in validation_web,
         'validation admission must be registry-driven',
     )
-    for legacy in ('PrometheusInstance', 'AlertmanagerInstance', 'KubernetesConnection'):
+    for legacy in ('MetricsSource', 'AlertmanagerInstance', 'KubernetesConnection'):
         require(legacy not in validation_web, f'validation admission still hard-codes {legacy}')
 
     require(
         'IntegrationInstance.query.filter(' in monitoring, 'runtime monitoring must dispatch from canonical identities'
     )
-    for legacy in ('PrometheusInstance', 'AlertmanagerInstance', 'KubernetesConnection', 'MinioInstance'):
+    for legacy in ('MetricsSource', 'AlertmanagerInstance', 'KubernetesConnection', 'MinioInstance'):
         require(legacy not in monitoring, f'runtime monitoring hard-codes provider model {legacy}')
 
     require('from app.minio.routes import minio_bp' in blueprints, 'MinIO blueprint import missing')
@@ -284,7 +284,7 @@ def main() -> None:
     require('def asset_owner_deletion_guard(' in deletion, 'generic asset-owner deletion guard is missing')
     require('def delete_minio_instance(' in service, 'MinIO asset-owner deletion service is missing')
     require(
-        'Prometheus and Alertmanager source instances remain reusable' in service,
+        'Bound observability source connections remain reusable' in service,
         'MinIO deletion must preserve shared observability sources',
     )
 

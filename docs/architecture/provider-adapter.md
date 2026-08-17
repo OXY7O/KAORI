@@ -50,7 +50,7 @@ Examples:
 
 ```text
 app/alertmanager/runtime_adapter.py
-app/prometheus/runtime_adapter.py
+app/integrations/metrics/adapter.py
 app/harbor/runtime_adapter.py
 app/vault/runtime_adapter.py
 app/velero/runtime_adapter.py
@@ -93,6 +93,6 @@ Every adapter should test:
 - secret-free diagnostic output; and
 - state reconstruction from persisted observations without a live request.
 
-## Metrics intermediary rule
+## Metrics Source adapter rule
 
-A provider adapter must identify the runtime endpoint actually contacted by KAORI. For a Thanos Query URL, endpoint identity and version belong to Thanos. Backend Prometheus versions may be unknown. The adapter selects compatibility expectations from endpoint and administrator source-profile context, but feature readiness is determined only by probes against the exact configured endpoint.
+Metrics Source adapters are selected by `adapter_key`, never by the global source category. The adapter must identify the endpoint actually contacted by KAORI and preserve the concrete `provider_key` identity in provider evidence. Providers sharing an API adapter remain distinct products. A future provider with a new API/query language registers a new backend adapter while the global `metrics_source` category, binding schema, runtime history, and consumer contracts remain unchanged.

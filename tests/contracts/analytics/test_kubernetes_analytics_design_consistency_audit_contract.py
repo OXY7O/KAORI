@@ -13,18 +13,18 @@ def all_analytics_templates() -> str:
     return '\n'.join(path.read_text(encoding='utf-8') for path in ANALYTICS_TEMPLATES.rglob('*.html'))
 
 
-def test_shared_controls_and_prometheus_contract_are_compatible() -> None:
+def test_shared_controls_and_metrics_source_contract_are_compatible() -> None:
     workspace = read('app/templates/analytics/kubernetes/components/_analysis_workspace.html')
-    prometheus = read('app/templates/analytics/kubernetes/components/_prometheus_status.html')
+    metrics_source = read('app/templates/analytics/kubernetes/components/_metrics_source_status.html')
 
-    assert 'data-analytics-prometheus-status' in prometheus
-    assert 'Prometheus Status' in prometheus
-    assert 'Query Ready' in prometheus
-    assert 'Query Degraded' in prometheus
-    assert 'Response' in prometheus
-    assert 'Checked At' in prometheus
-    assert 'materialization' not in prometheus
-    assert 'prometheus_status_panel.render(status)' in workspace
+    assert 'data-analytics-metrics-source-status' in metrics_source
+    assert 'Metrics Source Status' in metrics_source
+    assert 'Query Ready' in metrics_source
+    assert 'Query Degraded' in metrics_source
+    assert 'Response' in metrics_source
+    assert 'Checked At' in metrics_source
+    assert 'materialization' not in metrics_source
+    assert 'metrics_source_status_panel.render(status)' in workspace
     assert 'Latest Data Snapshot' in workspace
     assert 'Source Evidence Incomplete' in workspace
     assert 'Latest Refresh Error' in workspace

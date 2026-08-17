@@ -15,10 +15,10 @@
     <input type="hidden" name="node" value="{{ selected_node }}" />
     {% call analytics_workspace.controls_readiness(
         'Utilization Controls & Data Readiness',
-        'Set the cluster and trend window, then confirm the Prometheus source, worker scope, and committed utilization snapshot.',
+        'Set the cluster and trend window, then confirm the Metrics Source source, worker scope, and committed utilization snapshot.',
         'sliders-horizontal',
         'utilization-refresh-indicator',
-        prometheus_status,
+        metrics_source_status,
         analytics_materialization,
         eyebrow='Resource Utilization'
         ) %}

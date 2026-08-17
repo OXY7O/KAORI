@@ -134,7 +134,7 @@ class IntegrationRegistry:
                 return
             for module_path in (
                 'app.integrations.kubernetes',
-                'app.integrations.prometheus',
+                'app.integrations.metrics',
                 'app.integrations.alertmanager',
                 'app.integrations.minio',
             ):

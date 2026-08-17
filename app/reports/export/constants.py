@@ -19,7 +19,7 @@ REPORT_DOMAIN_LABELS = {
 }
 
 REPORT_DOMAIN_DESCRIPTIONS = {
-    REPORT_DOMAIN_KUBERNETES: 'Kubernetes inventory, Prometheus/Alertmanager analytics, governance, and operational reports.',
+    REPORT_DOMAIN_KUBERNETES: 'Kubernetes inventory, Metrics Source/Alertmanager analytics, governance, and operational reports.',
     REPORT_DOMAIN_OBJECT_STORAGE: 'Object Storage committed inventory, metrics analytics, forecast, and operational evidence reports.',
     REPORT_DOMAIN_SERVER: 'Server and VM infrastructure reports using server inventory plus Node Exporter metrics.',
     REPORT_DOMAIN_HCI: 'HCI cluster, host, datastore, and VM placement reports using HCI API integration.',
@@ -194,7 +194,7 @@ SECTION_DESCRIPTIONS = {
     'resource_hotspots': ('Prepared section for recurring hotspots and high-impact resource consumers.'),
     'active_alerts': ('Prepared section for active alerts, severity, and operational impact.'),
     'alert_severity_summary': ('Prepared section for alert severity distribution and priority handling.'),
-    'source_health': ('Summarizes Alertmanager, Prometheus fallback, resolved source, and source confidence state.'),
+    'source_health': ('Summarizes Alertmanager, Metrics Source fallback, resolved source, and source confidence state.'),
     'routing_grouping': (
         'Summarizes Alertmanager routing, receiver groups, grouping keys, fingerprints, and namespace spread.'
     ),

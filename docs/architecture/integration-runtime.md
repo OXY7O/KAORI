@@ -2,7 +2,7 @@
 
 ## Purpose
 
-The Integration Runtime Framework is the shared operational foundation for every external provider integrated with KAORI. It separates stable configuration from changing runtime observations so Prometheus, Alertmanager, Harbor, Vault, Velero, GitHub, MinIO, Argo CD, Ansible, and future providers follow the same lifecycle and UI vocabulary.
+The Integration Runtime Framework is the shared operational foundation for every external provider integrated with KAORI. It separates stable configuration from changing runtime observations so Metrics Source, Alertmanager, Kubernetes, Object Storage, and future providers follow the same lifecycle and UI vocabulary.
 
 ```text
 Provider configuration
@@ -186,15 +186,15 @@ app/jobs/
 └── tasks.py                 # stale-job recovery
 
 app/integrations/runtime/kubernetes_adapter.py
-app/prometheus/runtime_adapter.py
+app/integrations/metrics/adapter.py
 app/alertmanager/runtime_adapter.py
 ```
 
-Kubernetes, Prometheus, and Alertmanager implement the provider-neutral runtime contract. Provider-specific probes remain inside their owning domains.
+Kubernetes, Metrics Source, and Alertmanager implement the provider-neutral runtime contract. Provider-specific probes remain inside their owning domains.
 
 ## Runtime evidence and scheduled monitoring
 
-A refresh is not only a UI action. Manual Runtime Refresh and scheduled monitoring both append a runtime observation, but scheduled monitoring must remain lightweight. Celery Beat performs no provider I/O; it fans out one independent task per provider instance to the dedicated `integration-runtime` queue. A healthy transition after a recorded outage also queues focused recovery work for the affected Kubernetes cluster bindings: Kubernetes inventory is synchronized again, and recovered Prometheus or Alertmanager sources refresh alert snapshots without waiting for the next full analytics schedule. Prometheus and Alertmanager scheduled jobs verify reachability, identity, latency, and current health without rebuilding the full capability catalog. Full Validation remains a separate worker operation that rebuilds compatibility, capability, query/API contract, retention, and readiness evidence. Kubernetes runtime health uses a lightweight API version and reachability probe that preserves the latest capability evidence. Full Validation is the only workflow that rebuilds served-API discovery, compatibility, adapter selection, and capability evidence.
+A refresh is not only a UI action. Manual Runtime Refresh and scheduled monitoring both append a runtime observation, but scheduled monitoring must remain lightweight. Celery Beat performs no provider I/O; it fans out one independent task per provider instance to the dedicated `integration-runtime` queue. A healthy transition after a recorded outage also queues focused recovery work for the affected Kubernetes cluster bindings: Kubernetes inventory is synchronized again, and recovered Metrics Source or Alertmanager sources refresh alert snapshots without waiting for the next full analytics schedule. Metrics Source and Alertmanager scheduled jobs verify reachability, identity, latency, and current health without rebuilding the full capability catalog. Full Validation remains a separate worker operation that rebuilds compatibility, capability, query/API contract, retention, and readiness evidence. Kubernetes runtime health uses a lightweight API version and reachability probe that preserves the latest capability evidence. Full Validation is the only workflow that rebuilds served-API discovery, compatibility, adapter selection, and capability evidence.
 
 Manual actions return after enqueueing and poll through HTMX. PostgreSQL provides the canonical active-job registry and multi-user deduplication. Redis adds fast provider locks and atomically blocks Full Validation from overlapping Runtime Refresh for the same instance. Provider credentials and raw validation payloads are never copied into job payloads, task metadata, or runtime observations.
 

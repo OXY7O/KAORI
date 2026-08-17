@@ -1,34 +1,23 @@
 # Provider Persistence Authority
 
-## Canonical Ownership
+Canonical `IntegrationInstance` rows own cross-provider identity, lifecycle, bindings, runtime observations, and shared orchestration metadata. Provider-native tables own only configuration/evidence that cannot be represented generically.
 
-`IntegrationInstance` is the only database authority for shared provider fields:
+## Metrics Source
 
-- provider type;
-- name and description;
-- environment;
-- enabled state;
-- lifecycle status;
-- readiness status;
-- health status;
-- last error;
-- last checked timestamp.
+`MetricsSource` stores provider-neutral connection state plus extensibility axes:
 
-`PrometheusInstance` and `AlertmanagerInstance` store only provider-specific
-connection configuration and validation evidence.
+- `provider_key` — concrete product/provider implementation;
+- `adapter_key` — registered backend protocol adapter;
+- `query_language` — declared query language;
+- endpoint/authentication settings;
+- compatibility/readiness evidence.
 
-## ORM Access
+It does not create separate tables per metrics product. Prometheus, Thanos Query, and future metrics providers share `metrics_sources`.
 
-Provider records expose shared values through SQLAlchemy association proxies.
-This is a domain-model composition mechanism, not a compatibility shim. No
-duplicate provider columns are retained and no two-way synchronization is used.
+## Alertmanager and asset providers
 
-Class-level filtering and ordering by provider name must join
-`IntegrationInstance`; provider-specific tables do not own a `name` column.
+Alertmanager and managed asset providers keep their provider-specific configuration in their owning models. Cross-domain relationships are canonical bindings and must not be duplicated as product-specific foreign-key mapping tables.
 
-## Development Reset
+## Rule
 
-Revision `20260722_provider_authority` is destructive by design. KAORI is still
-in development, therefore existing provider rows are not migrated. Reset the
-development database, apply all migrations, bootstrap the administrator, then
-register and validate providers again.
+A new metrics product must not require a new global model/table merely because its product name differs. A new schema boundary is justified only when the data semantics are genuinely different from the Metrics Source contract.

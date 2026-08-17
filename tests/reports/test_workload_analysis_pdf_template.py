@@ -117,7 +117,7 @@ def _payload(*, quota_available: bool = True, mapping_available: bool = True) ->
             'pgnmobile-staging',
             'url-shortener-staging',
         ],
-        'prometheus_status': {'connected': True, 'response_time_ms': 390},
+        'metrics_source_status': {'connected': True, 'response_time_ms': 390},
         'tenant_quota_summary': {
             'scope_total': len(quota_rows),
             'scope_covered': sum(
@@ -162,7 +162,7 @@ def _payload(*, quota_available: bool = True, mapping_available: bool = True) ->
         ],
         'source_evidence': [
             {
-                'source': 'Prometheus Workload Evidence',
+                'source': 'Metrics Source Workload Evidence',
                 'freshness': '390 ms',
                 'last_collected': '03 Aug 2026 03:35 UTC',
             },

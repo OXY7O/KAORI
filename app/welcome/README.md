@@ -7,7 +7,7 @@ Welcome is the authenticated platform landing page and is not an infrastructure 
 - Every authenticated role can open `/` and `/welcome`; both resolve to `welcome.index`.
 - `/` is a canonical Welcome route, not a redirect or compatibility alias to the retired dashboard package.
 - Welcome describes KAORI as an extensible infrastructure operations platform. It must not define KAORI through the technologies currently integrated.
-- Welcome must not load live Prometheus, Alertmanager, Kubernetes, Server, HCI, storage, or other infrastructure data.
+- Welcome must not load live Metrics Source, Alertmanager, Kubernetes, Server, HCI, storage, or other infrastructure data.
 - Asset-specific KPI, capacity, alert, and inventory aggregation belongs in the relevant dashboard or domain page.
 
 ## Role-aware workspace catalog

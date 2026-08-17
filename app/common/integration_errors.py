@@ -198,7 +198,7 @@ def describe_integration_failure(
         return result
 
     if (
-        {'PrometheusAuthenticationError', 'AlertmanagerAuthError'} & names
+        {'MetricsSourceAuthenticationError', 'AlertmanagerAuthError'} & names
         or 'authentication failed' in message
         or 'unauthorized' in message
         or 'forbidden' in message

@@ -39,7 +39,7 @@ def test_reviewed_operations_tasks_consume_shared_form_with_context_geometry() -
 def test_integration_registration_pages_remain_visual_references_until_refactor() -> None:
     references = (
         'app/templates/cluster/add.html',
-        'app/templates/prometheus/instance_form.html',
+        'app/templates/metrics/instance_form.html',
         'app/templates/alertmanager/instance_form.html',
     )
     for relative in references:
@@ -55,7 +55,7 @@ def test_form_with_context_standard_is_indexed_and_distinct_from_fixed_width_rai
     design_readme = read('docs/design/README.md')
     assert '# KAORI Form + Right Context Standard' in standard
     assert 'Register Kubernetes Connection' in standard
-    assert 'Register Prometheus Connection' in standard
+    assert 'Register Metrics Source' in standard
     assert 'Register Alertmanager Connection' in standard
     assert 'Create Kubernetes ConfigMap' in standard
     assert 'Protected Kubernetes Secret Reveal' in standard

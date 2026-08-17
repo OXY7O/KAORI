@@ -300,11 +300,11 @@ def build_routing_summary(
         label = 'Alertmanager Routing Context Available'
         description = 'Alertmanager context is available.'
         icon = 'route'
-    elif resolved_source == 'prometheus' and connected:
+    elif resolved_source == 'metrics_source' and connected:
         enabled = False
         level = 'limited'
         label = 'Routing Context Limited'
-        description = 'Prometheus fallback is active; Alertmanager context is limited.'
+        description = 'Metrics Source fallback is active; Alertmanager context is limited.'
         icon = 'activity'
     else:
         enabled = False

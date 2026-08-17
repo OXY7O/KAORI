@@ -17,7 +17,7 @@ def test_overview_controls_and_readiness_follow_shared_analytics_standard() -> N
     assert 'Analytics Controls &amp; Data Readiness' in source
     assert 'id="analytics-overview-filter"' in source
     assert 'analytics_workspace.control_select_classes()' in source
-    assert 'analytics_workspace.prometheus_card(payload.prometheus)' in source
+    assert 'analytics_workspace.metrics_source_card(payload.metrics_source)' in source
     assert 'embedded=true' not in source
     assert 'payload.last_analyzed_at' not in source
     assert 'Latest Analytics Data Snapshot' in source
@@ -26,12 +26,12 @@ def test_overview_controls_and_readiness_follow_shared_analytics_standard() -> N
     assert 'id="analytics-overview-filter"' not in hero
 
 
-def test_prometheus_status_uses_one_canonical_card_contract() -> None:
-    source = Path('app/templates/analytics/kubernetes/components/_prometheus_status.html').read_text(encoding='utf-8')
+def test_metrics_source_status_uses_one_canonical_card_contract() -> None:
+    source = Path('app/templates/analytics/kubernetes/components/_metrics_source_status.html').read_text(encoding='utf-8')
 
     assert 'macro render(status' in source
-    assert 'data-analytics-prometheus-status' in source
-    assert 'Prometheus Status' in source
+    assert 'data-analytics-metrics-source-status' in source
+    assert 'Metrics Source Status' in source
     assert 'Query Ready' in source
     assert 'Query Degraded' in source
     assert 'Response' in source
@@ -258,7 +258,7 @@ def test_overview_readiness_and_interpretation_surface_hierarchy_is_canonical() 
     top_consumers = read('partials/_top_consumers_snapshot.html')
     surfaces = Path('app/templates/analytics/components/_analysis_surfaces.html').read_text(encoding='utf-8')
 
-    assert 'analytics_workspace.prometheus_card(payload.prometheus)' in health
+    assert 'analytics_workspace.metrics_source_card(payload.metrics_source)' in health
     assert 'analytics_workspace.snapshot_card(' in health
     assert 'overview_surface.attention_strip_classes()' in health
     assert 'overview_surface.interpretation_grid_classes()' in health

@@ -15,6 +15,30 @@ Production principles:
 - Bootstrap the first administrator only during initial installation.
 - Place Gunicorn behind a trusted HTTPS reverse proxy.
 
+## Metrics Source Hard-Cut Deployment
+
+Revision `20260817_metrics_source_v2` is an atomic namespace/schema cutover from the retired product-owned metrics integration to the provider-neutral **Metrics Source** contract. It renames the metrics table to `metrics_sources`, rewrites canonical integration/runtime/job/event identities to `metrics_source`, and persists concrete product identity only in `provider_key`. Active runtime code intentionally provides no dual-read path, route alias, compatibility redirect, or model wrapper for the retired namespace.
+
+Do not run old and new KAORI web/worker versions concurrently across this migration. Old integration-validation/runtime messages can contain the retired provider identifier in their serialized task arguments, and a database migration cannot rewrite messages already waiting in Redis.
+
+Deployment sequence:
+
+1. Back up PostgreSQL and record the current Alembic revision.
+2. Stop Celery Beat and stop/drain the old web, `integration-validation`, and `integration-runtime` processes so no old code can enqueue or consume integration work during the cutover.
+3. Confirm the `integration-validation` and `integration-runtime` queues contain no pending messages created by the old release. If the broker is purged instead of drained, reconcile any corresponding queued `JobExecution` records through the governed Jobs & Executions workflow before retrying those operations.
+4. Deploy the new image/code to all components, but keep integration workers stopped.
+5. Run the migration exactly once:
+
+```bash
+flask db upgrade
+```
+
+6. Start the new web process, `integration-validation` worker, `integration-runtime` worker, analytics/forecasting workers, maintenance worker, and Beat from the same release image.
+7. Run **Metrics Source Full Validation** for every enabled source, then validate enabled Kubernetes/Object Storage bindings and run one analytics refresh for each affected domain.
+8. Verify **Integrations → Observability → Metrics Sources** shows each provider through its concrete `provider_key` label while runtime, jobs, routing, notifications, Analytics, Reports, Intelligence, Kubernetes, and Object Storage use the global Metrics Source category.
+
+For a provider that uses the existing registered adapter/query contract, future onboarding is provider-catalog work rather than a global schema/route/consumer refactor. A provider with a genuinely different API or query language adds a backend adapter and adapter-scoped validation/query profiles while retaining the same `metrics_source` table, binding model, route family, runtime namespace, and consumer source category.
+
 ## Job Orchestration Services
 
 The Jobs control plane requires three production components for automatic Kubernetes Inventory Sync:
@@ -130,7 +154,7 @@ python scripts/verify_python_syntax.py
 
 Runtime verification:
 
-- Web logs must not show Prometheus or Alertmanager calls while `/dashboards/kubernetes/section/*` loads.
+- Web logs must not show Metrics Source or Alertmanager calls while `/dashboards/kubernetes/section/*` loads.
 - Analytics worker logs own Capacity, Top Consumers, and alert snapshot generation.
 - Forecasting worker logs own Forecast generation.
 - Missing rows intentionally render an unavailable worker-snapshot state. The dashboard does not perform a live fallback.
@@ -140,20 +164,20 @@ Rollback does not require data cleanup. Revert the application commit and redepl
 
 ## Kubernetes Analytics Dataset Timeouts
 
-KAORI isolates each analytics dataset inside the worker batch so one expensive or unresponsive Prometheus query cannot freeze every following snapshot.
+KAORI isolates each analytics dataset inside the worker batch so one expensive or unresponsive Metrics Source query cannot freeze every following snapshot.
 
 ```env
 ANALYTICS_DATASET_TIMEOUT_SECONDS=300
 FORECASTING_DATASET_TIMEOUT_SECONDS=600
-PROMETHEUS_ANALYTICS_QUERY_TIMEOUT_SECONDS=30
-PROMETHEUS_ANALYTICS_RANGE_QUERY_TIMEOUT_SECONDS=120
+METRICS_SOURCE_ANALYTICS_QUERY_TIMEOUT_SECONDS=30
+METRICS_SOURCE_ANALYTICS_RANGE_QUERY_TIMEOUT_SECONDS=120
 ```
 
-`ANALYTICS_DATASET_TIMEOUT_SECONDS` applies to utilization, capacity, storage, workload, top-consumer, and alert materialization. `FORECASTING_DATASET_TIMEOUT_SECONDS` applies to one forecast history snapshot. The Prometheus query timeouts bound each individual instant or range request so a multi-query dataset cannot wait indefinitely on one provider call. Keep dataset limits below their corresponding Celery task soft limits. After changing them, recreate or restart the analytics and forecasting workers.
+`ANALYTICS_DATASET_TIMEOUT_SECONDS` applies to utilization, capacity, storage, workload, top-consumer, and alert materialization. `FORECASTING_DATASET_TIMEOUT_SECONDS` applies to one forecast history snapshot. The Metrics Source query timeouts bound each individual instant or range request so a multi-query dataset cannot wait indefinitely on one provider call. Keep dataset limits below their corresponding Celery task soft limits. After changing them, recreate or restart the analytics and forecasting workers.
 
 Deployment validation:
 
-1. Run Prometheus Full Validation.
+1. Run Metrics Source Full Validation for each bound source.
 2. Run Analytics Data Refresh and confirm a failed dataset does not stop later work items.
 3. Run Forecast Data Refresh after the analytics job reaches a terminal state.
 4. Open every Kubernetes Analytics page for a ready cluster and for an explicitly selected incomplete cluster.

@@ -52,9 +52,9 @@ def _load_records_module():
                 sys.modules[name] = value
 
 
-def test_prometheus_replica_records_are_deduplicated() -> None:
+def test_metrics_source_replica_records_are_deduplicated() -> None:
     records = _load_records_module()
-    first = records.normalize_prometheus_alert(
+    first = records.normalize_metrics_source_alert(
         {
             'metric': {
                 'alertname': 'HighErrorRate',
@@ -66,7 +66,7 @@ def test_prometheus_replica_records_are_deduplicated() -> None:
             'value': [0, '1'],
         }
     )
-    second = records.normalize_prometheus_alert(
+    second = records.normalize_metrics_source_alert(
         {
             'metric': {
                 'alertname': 'HighErrorRate',
@@ -101,10 +101,10 @@ def test_namespace_filter_is_exact_and_severity_is_canonical() -> None:
     assert filtered == [items[0]]
 
 
-def test_pending_and_firing_prometheus_copies_collapse_to_firing() -> None:
+def test_pending_and_firing_metrics_source_copies_collapse_to_firing() -> None:
     records = _load_records_module()
     pending = {
-        'source': 'Prometheus',
+        'source': 'Metrics Source',
         'name': 'HighLatency',
         'namespace': 'payments',
         'target': 'api-1',

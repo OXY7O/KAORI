@@ -68,7 +68,7 @@ def _payload() -> dict[str, object]:
     ]
     return {
         'cluster': {'environment': 'Staging'},
-        'prometheus_status': {'connected': True, 'response_time_ms': 405},
+        'metrics_source_status': {'connected': True, 'response_time_ms': 405},
         'consumer_payload': {
             'rows': rows,
             'coverage': {'complete_count': 2, 'partial_count': 1, 'unavailable_count': 1},

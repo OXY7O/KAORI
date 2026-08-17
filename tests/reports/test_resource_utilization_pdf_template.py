@@ -44,7 +44,7 @@ def _payload(*, include_forecast: bool = True) -> dict[str, object]:
             'environment': 'Staging',
             'status': 'active',
         },
-        'prometheus_status': {
+        'metrics_source_status': {
             'connected': True,
             'status': 'query_ready',
             'status_label': 'Query Ready',
@@ -113,7 +113,7 @@ def _payload(*, include_forecast: bool = True) -> dict[str, object]:
         },
         'source_evidence': [
             {
-                'source': 'Prometheus Observation Cache',
+                'source': 'Metrics Source Observation Cache',
                 'freshness': '293 ms',
                 'last_collected': datetime(2026, 8, 2, 15, 10, tzinfo=UTC),
             },
@@ -238,7 +238,7 @@ def test_resource_utilization_methodology_tables_are_separate_and_single_line() 
     assert 'class="methodology-grid"' in rendered_html
     assert 'source-register data-source-table compact-register' in rendered_html
     assert 'methodology-register compact-register' in rendered_html
-    assert 'Prometheus Observation Cache' in rendered_html
+    assert 'Metrics Source Observation Cache' in rendered_html
     assert '02 Aug 2026 15:14 UTC' in rendered_html
     assert 'grid-template-columns:minmax(0,1.08fr)minmax(0,.92fr)' in compact
     assert 'white-space:nowrap' in compact

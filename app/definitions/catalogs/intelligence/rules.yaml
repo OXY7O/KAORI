@@ -15,12 +15,12 @@ rules:
   condition_summary: A workload has one or more containers where resources.requests.cpu is not defined.
   recommended_action: Set CPU requests from recent p95 usage, then review namespace quota and workload criticality.
   impact: Improves scheduler placement, capacity planning, and non-technical report readability.
-  evidence_boundary: This is not a Prometheus alert replacement. Prometheus may supply usage history, while KAORI evaluates
+  evidence_boundary: This is not a Metrics Source alert replacement. Metrics Source may supply usage history, while KAORI evaluates
     configuration posture.
   supported_sources:
   - Kubernetes API
   - Inventory Collector
-  - Optional Prometheus usage metrics
+  - Optional Metrics Source usage metrics
   visible_in:
   - Recommendations
   - Capacity Analysis
@@ -40,11 +40,11 @@ rules:
   condition_summary: A workload has one or more containers where resources.requests.memory is not defined.
   recommended_action: Define memory requests based on observed usage and application baseline requirements.
   impact: Reduces scheduling ambiguity and improves memory capacity reports.
-  evidence_boundary: Prometheus measures memory usage; KAORI evaluates whether the workload declares scheduling requirements.
+  evidence_boundary: Metrics Source measures memory usage; KAORI evaluates whether the workload declares scheduling requirements.
   supported_sources:
   - Kubernetes API
   - Inventory Collector
-  - Optional Prometheus usage metrics
+  - Optional Metrics Source usage metrics
   visible_in:
   - Recommendations
   - Capacity Analysis
@@ -64,7 +64,7 @@ rules:
   condition_summary: A pod or workload image reference ends with :latest or omits a deterministic tag/digest.
   recommended_action: Pin images to immutable tags or digests and connect image metadata to image governance later.
   impact: Improves change traceability and operational audit quality.
-  evidence_boundary: This is inventory governance and is intentionally outside Prometheus alert rules.
+  evidence_boundary: This is inventory governance and is intentionally outside Metrics Source alert rules.
   supported_sources:
   - Kubernetes API
   - Pod Inventory
@@ -88,7 +88,7 @@ rules:
   condition_summary: A namespace has no ResourceQuota object or no effective quota baseline.
   recommended_action: Define namespace quota and limit range based on tenant or workload class.
   impact: Improves tenant isolation and reduces noisy-neighbor risk.
-  evidence_boundary: Prometheus can show usage, while KAORI evaluates tenant governance posture.
+  evidence_boundary: Metrics Source can show usage, while KAORI evaluates tenant governance posture.
   supported_sources:
   - Kubernetes API
   - Namespace Inventory
@@ -114,7 +114,7 @@ rules:
   recommended_action: Upload a renewed certificate and matching private key through Kubernetes Governance > TLS Secret Update,
     then validate the affected Ingress hosts.
   impact: Prevents customer-facing TLS errors, failed browser trust validation, and service availability issues on HTTPS endpoints.
-  evidence_boundary: This is Kubernetes Secret governance from the Kubernetes API. Prometheus may alert on endpoint symptoms,
+  evidence_boundary: This is Kubernetes Secret governance from the Kubernetes API. Metrics Source may alert on endpoint symptoms,
     while KAORI tracks certificate posture and update readiness.
   supported_sources:
   - Kubernetes API
@@ -141,7 +141,7 @@ rules:
   recommended_action: Prepare the renewed certificate pair, select the affected existing TLS Secrets in TLS Secret Update,
     validate SAN coverage, and apply the update before expiry.
   impact: Reduces emergency certificate replacement work and protects planned HTTPS availability windows.
-  evidence_boundary: This rule is derived from Kubernetes Secret certificate metadata. Prometheus is not the source of truth
+  evidence_boundary: This rule is derived from Kubernetes Secret certificate metadata. Metrics Source is not the source of truth
     for certificate update workflow.
   supported_sources:
   - Kubernetes API
@@ -190,14 +190,14 @@ rules:
   logic_type: alert_enrichment
   signal_source: alertmanager
   summary: Enriches storage capacity alerts with ownership, namespace, workload, trend, and report context.
-  condition_summary: An Alertmanager/Prometheus signal indicates PVC or filesystem usage is near the configured threshold.
-  recommended_action: Keep threshold detection in Prometheus, then use KAORI Kubernetes Reports to add context, trend, owner,
+  condition_summary: An Alertmanager/Metrics Source signal indicates PVC or filesystem usage is near the configured threshold.
+  recommended_action: Keep threshold detection in Metrics Source, then use KAORI Kubernetes Reports to add context, trend, owner,
     and remediation guidance.
   impact: Prevents storage alerts from becoming isolated technical signals without operational context.
-  evidence_boundary: Prometheus remains the alert source of truth. KAORI imports and enriches the signal instead of duplicating
+  evidence_boundary: Metrics Source remains the alert source of truth. KAORI imports and enriches the signal instead of duplicating
     the rule.
   supported_sources:
-  - Prometheus Rule
+  - Metrics Source Rule
   - Alertmanager Alert
   - Kubernetes API
   - Storage Analysis
@@ -216,17 +216,17 @@ rules:
   logic_type: alert_enrichment
   signal_source: alertmanager
   summary: Adds top consumers, scheduling pressure, and capacity context around memory pressure alerts.
-  condition_summary: Prometheus or Kubernetes conditions indicate node memory pressure or low memory headroom.
+  condition_summary: Metrics Source or Kubernetes conditions indicate node memory pressure or low memory headroom.
   recommended_action: Use existing alert routing for notification, then review top consumers, eviction risk, and capacity
     recommendations in KAORI Kubernetes Reports.
   impact: Shortens investigation time without replacing Alertmanager routing.
-  evidence_boundary: Prometheus and Alertmanager own real-time detection and routing. KAORI owns interpretation and report
+  evidence_boundary: Metrics Source and Alertmanager own real-time detection and routing. KAORI owns interpretation and report
     context.
   supported_sources:
   - Alertmanager Alert
   - Kubernetes API
   - Node Inventory
-  - Prometheus Metrics
+  - Metrics Source Metrics
   visible_in:
   - Alert Intelligence
   - Resource Utilization
@@ -246,9 +246,9 @@ rules:
   condition_summary: Recent trend data projects available headroom crossing the configured risk threshold.
   recommended_action: Plan scaling, quota changes, or workload optimization before the risk window is reached.
   impact: Supports proactive capacity planning and readable operational reporting.
-  evidence_boundary: Prometheus provides time-series history; KAORI derives forecast insight from that history.
+  evidence_boundary: Metrics Source provides time-series history; KAORI derives forecast insight from that history.
   supported_sources:
-  - Prometheus range queries
+  - Metrics Source range queries
   - Capacity Analysis
   - Forecast Analysis
   visible_in:
@@ -273,7 +273,7 @@ rules:
   recommended_action: Review bucket growth and ownership, validate physical capacity headroom, then adjust quota or reduce
     retained data through the approved change path.
   impact: Reduces the risk of quota exhaustion while keeping bucket governance separate from physical storage capacity.
-  evidence_boundary: This rule is evaluated from committed Object Storage inventory quota and usage evidence. Prometheus may
+  evidence_boundary: This rule is evaluated from committed Object Storage inventory quota and usage evidence. Metrics Source may
     provide operational growth context but is not required to detect the committed quota posture.
   supported_sources:
   - Object Storage Inventory
@@ -300,7 +300,7 @@ rules:
   recommended_action: Validate the current bucket demand and physical headroom immediately, then expand the approved quota
     or reduce retained data before writes are constrained.
   impact: Protects write availability and prevents bucket-level quota exhaustion from becoming an operational incident.
-  evidence_boundary: This rule is evaluated from committed Object Storage inventory quota and usage evidence. Prometheus may
+  evidence_boundary: This rule is evaluated from committed Object Storage inventory quota and usage evidence. Metrics Source may
     enrich trend analysis but does not replace the quota evidence.
   supported_sources:
   - Object Storage Inventory
@@ -329,12 +329,12 @@ rules:
   recommended_action: Validate the sustained growth window, review top consumers and lifecycle policy, then schedule capacity
     expansion or demand reduction before headroom narrows further.
   impact: Supports proactive Object Storage capacity planning before the system enters a critical exhaustion window.
-  evidence_boundary: Prometheus supplies history to the forecasting worker; Intelligence consumes only the committed forecast
+  evidence_boundary: Metrics Source supplies history to the forecasting worker; Intelligence consumes only the committed forecast
     snapshot and does not issue a live metrics query.
   supported_sources:
   - Object Storage Forecast Snapshot
   - Forecasting Worker
-  - Prometheus history via MetricsSource
+  - Metrics Source history via MetricsSource
   visible_in:
   - Recommendations
   - Object Storage Forecast
@@ -359,12 +359,12 @@ rules:
   recommended_action: Validate the current forecast immediately, prepare approved capacity expansion or demand reduction,
     and monitor the highest-contributing consumers until headroom is restored.
   impact: Reduces the risk of near-term Object Storage saturation and protects write availability.
-  evidence_boundary: Prometheus supplies history to the forecasting worker; Intelligence consumes only the committed forecast
+  evidence_boundary: Metrics Source supplies history to the forecasting worker; Intelligence consumes only the committed forecast
     snapshot and does not issue a live metrics query.
   supported_sources:
   - Object Storage Forecast Snapshot
   - Forecasting Worker
-  - Prometheus history via MetricsSource
+  - Metrics Source history via MetricsSource
   visible_in:
   - Recommendations
   - Object Storage Forecast
@@ -388,7 +388,7 @@ rules:
     and resync Object Storage inventory to verify the exposure posture.
   impact: Reduces unintended data exposure while allowing intentionally public buckets to be reviewed against ownership and
     policy.
-  evidence_boundary: This is Object Storage access-governance evidence from the provider API. Prometheus and Alertmanager
+  evidence_boundary: This is Object Storage access-governance evidence from the provider API. Metrics Source and Alertmanager
     are not the source of truth for bucket exposure configuration.
   supported_sources:
   - Object Storage Inventory
@@ -414,7 +414,7 @@ rules:
   recommended_action: Validate the data-classification requirement, enable the approved server-side encryption policy when
     required, and resync Object Storage inventory to verify the resulting posture.
   impact: Improves storage governance and reduces the risk of retaining sensitive data without the intended encryption control.
-  evidence_boundary: This is provider configuration evidence from Object Storage inventory. Prometheus and Alertmanager do
+  evidence_boundary: This is provider configuration evidence from Object Storage inventory. Metrics Source and Alertmanager do
     not determine bucket encryption configuration.
   supported_sources:
   - Object Storage Inventory
@@ -469,7 +469,7 @@ rules:
   recommended_action: Protect write headroom immediately by validating current demand, reducing retained data when approved,
     or expanding usable capacity.
   impact: Reduces the risk of storage saturation and write disruption when usable headroom becomes critically constrained.
-  evidence_boundary: The signal is derived from canonical capacity and usage evidence. Prometheus is the current MinIO metrics
+  evidence_boundary: The signal is derived from canonical capacity and usage evidence. Metrics Source is the current MinIO metrics
     backend, but the rule remains owned by the Object Storage analysis domain.
   supported_sources:
   - Object Storage Analytics
@@ -498,7 +498,7 @@ rules:
     changes before demand is increased.
   impact: Surfaces material request degradation before the error ratio enters the critical reliability boundary.
   evidence_boundary: KAORI derives the ratio from canonical request and error-rate metrics. The current MinIO implementation
-    uses Prometheus through the qualified MetricsSource adapter.
+    uses Metrics Source through the qualified MetricsSource adapter.
   supported_sources:
   - Object Storage Analytics
   - Operational Metrics Source
@@ -608,7 +608,7 @@ rules:
   condition_summary: A VM snapshot is older than the configured retention policy.
   recommended_action: Review ownership, confirm rollback need, then consolidate or delete according to change policy.
   impact: Reduces datastore pressure and long-running snapshot risk.
-  evidence_boundary: This is KAORI Server Reports inventory and Node Exporter intelligence, not a Prometheus alerting rule.
+  evidence_boundary: This is KAORI Server Reports inventory and Node Exporter intelligence, not a Metrics Source alerting rule.
   supported_sources:
   - Server Inventory
   - Node Exporter
@@ -653,12 +653,12 @@ rules:
   condition_summary: Datastore usage or growth trend exceeds warning or critical policy thresholds.
   recommended_action: Expand datastore capacity, rebalance workloads, or clean unused disks and snapshots.
   impact: Prevents storage saturation and protects VM availability.
-  evidence_boundary: If Prometheus covers this signal, KAORI should import/enrich it. If the HCI API is the source, KAORI
+  evidence_boundary: If Metrics Source covers this signal, KAORI should import/enrich it. If the HCI API is the source, KAORI
     HCI Reports owns the finding context.
   supported_sources:
   - HCI API Inventory
   - HCI Provider API
-  - Optional Prometheus Metrics
+  - Optional Metrics Source Metrics
   visible_in:
   - KAORI HCI Reports
   - HCI Cluster Health Report
@@ -698,7 +698,7 @@ rules:
   condition_summary: Pod phase is Pending, Failed, Unknown, or another non-healthy runtime state.
   recommended_action: Review pod events, image pulls, scheduling constraints, probes, and rollout activity.
   impact: Improves workload reliability triage and highlights unstable runtime state.
-  evidence_boundary: Prometheus may alert on symptoms, while KAORI maps Kubernetes inventory state to action.
+  evidence_boundary: Metrics Source may alert on symptoms, while KAORI maps Kubernetes inventory state to action.
   supported_sources:
   - Kubernetes API
   - Pod Inventory
@@ -720,11 +720,11 @@ rules:
   condition_summary: Pod restart_count is greater than or equal to 5 in the latest inventory snapshot.
   recommended_action: Review container logs, probes, resource pressure, and recent deployment changes.
   impact: Finds unstable workloads before they become sustained incidents.
-  evidence_boundary: Prometheus can alert on restart rate; KAORI adds inventory context and investigation guidance.
+  evidence_boundary: Metrics Source can alert on restart rate; KAORI adds inventory context and investigation guidance.
   supported_sources:
   - Kubernetes API
   - Pod Inventory
-  - Optional Prometheus metrics
+  - Optional Metrics Source data
   visible_in:
   - Recommendations
   - Pod Inventory
@@ -744,11 +744,11 @@ rules:
   condition_summary: Node status is not Ready.
   recommended_action: Check kubelet, container runtime, disk pressure, network reachability, and recent node events.
   impact: Protects schedulable capacity and workload availability.
-  evidence_boundary: Prometheus may detect node symptoms; KAORI maps readiness state to operational action.
+  evidence_boundary: Metrics Source may detect node symptoms; KAORI maps readiness state to operational action.
   supported_sources:
   - Kubernetes API
   - Node Inventory
-  - Optional Prometheus metrics
+  - Optional Metrics Source data
   visible_in:
   - Recommendations
   - Node Inventory
@@ -768,7 +768,7 @@ rules:
   condition_summary: Storage status is not Bound or Available.
   recommended_action: Review PVC/PV binding, storage class, provisioner health, and pending workload dependencies.
   impact: Reduces storage provisioning risk and workload scheduling delays.
-  evidence_boundary: Prometheus may expose storage health metrics; KAORI maps Kubernetes storage state to action.
+  evidence_boundary: Metrics Source may expose storage health metrics; KAORI maps Kubernetes storage state to action.
   supported_sources:
   - Kubernetes API
   - Storage Inventory

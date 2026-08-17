@@ -105,7 +105,7 @@ def empty_capacity_snapshot(*, insight: str) -> CapacitySnapshot:
         risk='Unknown',
         insight=insight,
         risk_detail='Overall worker capacity risk cannot be calculated because one or more required metrics are unavailable.',
-        recommended_action='Verify the selected cluster Prometheus connection and kube-state-metrics node-role labels, then reload the snapshot.',
+        recommended_action='Verify the selected cluster Metrics Source connection and kube-state-metrics node-role labels, then reload the snapshot.',
         source_status='Unavailable',
     )
 
@@ -140,5 +140,5 @@ def _capacity_risk_guidance(
         )
     return (
         'Worker capacity risk is unknown because the required utilization or allocatable metrics are incomplete.',
-        'Verify Prometheus, kube-state-metrics, and node-role labels before making scaling or placement decisions.',
+        'Verify Metrics Source, kube-state-metrics, and node-role labels before making scaling or placement decisions.',
     )

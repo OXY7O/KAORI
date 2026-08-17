@@ -4,9 +4,9 @@ from dataclasses import dataclass
 from math import isfinite
 from typing import Any
 
-from app.integrations.prometheus.exceptions import PrometheusError
-from app.integrations.prometheus.query_profiles import get_query_expression
-from app.prometheus.consumer import PrometheusConsumer
+from app.integrations.metrics.exceptions import MetricsSourceError
+from app.integrations.metrics.query_profiles import get_query_expression
+from app.metrics.consumer import MetricsConsumer
 
 TOP_CONSUMERS_QUERY_CAPABILITIES = ('instant_query',)
 TOP_CONSUMERS_ADVISORY_CAPABILITIES = (
@@ -121,7 +121,7 @@ class TopConsumersEvidence:
 class TopConsumersEvidenceCollector:
     """Collect each Top Consumers signal once for one snapshot variant."""
 
-    def __init__(self, consumer: PrometheusConsumer) -> None:
+    def __init__(self, consumer: MetricsConsumer) -> None:
         self.consumer = consumer
 
     def query(
@@ -136,17 +136,17 @@ class TopConsumersEvidenceCollector:
                 expression,
                 required_capabilities=TOP_CONSUMERS_QUERY_CAPABILITIES,
             )
-        except PrometheusError as exc:
-            return VectorEvidence(error=str(exc) or 'Prometheus query failed.')
+        except MetricsSourceError as exc:
+            return VectorEvidence(error=str(exc) or 'Metrics Source query failed.')
 
         if not isinstance(response, dict):
             return VectorEvidence(
-                error=(f'Prometheus returned {type(response).__name__}; expected a response mapping.')
+                error=(f'Metrics Source returned {type(response).__name__}; expected a response mapping.')
             )
         data = response.get('data', {})
         result = data.get('result', []) if isinstance(data, dict) else []
         if not isinstance(result, list):
-            return VectorEvidence(error='Prometheus response data.result is not a list.')
+            return VectorEvidence(error='Metrics Source response data.result is not a list.')
         rows = tuple(item for item in result if isinstance(item, dict))
         if not rows and advisory_capability in advisory_missing:
             return VectorEvidence(

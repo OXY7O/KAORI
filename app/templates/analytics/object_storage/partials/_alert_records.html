@@ -10,7 +10,7 @@
             <div>
                 <h2 class="text-lg font-semibold text-content-primary">Active Alert Records</h2>
                 <p class="mt-1 max-w-4xl text-sm leading-6 text-content-muted">
-                    Alertmanager is preferred in Automatic mode because it provides lifecycle metadata such as receiver, silence, and inhibition state. Prometheus fallback uses the scoped ALERTS metric and therefore exposes a narrower record contract.
+                    Alertmanager is preferred in Automatic mode because it provides lifecycle metadata such as receiver, silence, and inhibition state. Metrics Source fallback uses the scoped ALERTS metric and therefore exposes a narrower record contract.
                 </p>
             </div>
             <div class="flex flex-wrap items-center gap-2">
@@ -113,7 +113,7 @@
                                 <td class="{{ table_ui.cell_classes() }} break-all">{{ row.receiver }}</td>
                                 <td class="{{ table_ui.cell_classes() }}">
                                     <div class="flex flex-wrap gap-1.5">
-                                        {% if row.source_key == 'prometheus' %}
+                                        {% if row.source_key == 'metrics_source' %}
                                             {{ table_label.status_label('Metrics Only', 'info') }}
                                         {% else %}
                                             {% if row.silenced %}{{ table_label.status_label('Silenced', 'warning') }}{% endif %}

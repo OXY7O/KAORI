@@ -26,9 +26,9 @@ def test_integrations_uses_one_semantic_status_owner() -> None:
 
 def test_provider_registries_share_geometry_loading_and_pagination() -> None:
     shared = read('app/templates/integrations/components/_provider_registry.html')
-    prometheus = read('app/templates/integrations/prometheus/partials/_instance_inventory.html')
+    metrics_source = read('app/templates/integrations/metrics/partials/_instance_inventory.html')
     alertmanager = read('app/templates/integrations/alertmanager/partials/_inventory_card.html')
-    prometheus_results = read('app/templates/integrations/prometheus/partials/_inventory_content.html')
+    metrics_source_results = read('app/templates/integrations/metrics/partials/_inventory_content.html')
     alertmanager_results = read('app/templates/integrations/alertmanager/partials/_inventory_content.html')
 
     for token in ('registry_header', 'search_field', 'select_field', 'pagination_footer'):
@@ -37,14 +37,14 @@ def test_provider_registries_share_geometry_loading_and_pagination() -> None:
     assert 'hx-push-url="true"' in shared
     assert 'href_endpoint=endpoint' in shared
 
-    for template in (prometheus, alertmanager):
+    for template in (metrics_source, alertmanager):
         assert 'integrations/components/_provider_registry.html' in template
         assert 'provider_registry.registry_header(' in template
         assert 'provider_registry.search_field(' in template
         assert 'provider_registry.select_field(' in template
 
     assert 'deployment_type' in alertmanager
-    assert 'provider_registry.pagination_footer(' in prometheus_results
+    assert 'provider_registry.pagination_footer(' in metrics_source_results
     assert 'provider_registry.pagination_footer(' in alertmanager_results
     kubernetes = read('app/templates/integrations/kubernetes/partials/_registry.html')
     coverage = read('app/templates/components/integration_coverage.html')
@@ -84,7 +84,7 @@ def test_dead_binding_presentation_is_removed() -> None:
 def test_integrations_templates_do_not_reintroduce_micro_typography() -> None:
     roots = (
         ROOT / 'app/templates/integrations',
-        ROOT / 'app/templates/prometheus',
+        ROOT / 'app/templates/metrics',
         ROOT / 'app/templates/alertmanager',
     )
     offenders: list[str] = []
@@ -100,7 +100,7 @@ def test_integrations_templates_do_not_reintroduce_micro_typography() -> None:
 def test_integrations_does_not_add_inline_submit_handlers() -> None:
     roots = (
         ROOT / 'app/templates/integrations',
-        ROOT / 'app/templates/prometheus',
+        ROOT / 'app/templates/metrics',
         ROOT / 'app/templates/alertmanager',
     )
     offenders: list[str] = []

@@ -4,9 +4,9 @@ from dataclasses import dataclass
 from math import isfinite
 from typing import Any
 
-from app.integrations.prometheus.exceptions import PrometheusError
-from app.integrations.prometheus.query_profiles import get_query_expression
-from app.prometheus.consumer import PrometheusConsumer
+from app.integrations.metrics.exceptions import MetricsSourceError
+from app.integrations.metrics.query_profiles import get_query_expression
+from app.metrics.consumer import MetricsConsumer
 
 CAPACITY_REQUIRED_CAPABILITIES = (
     'instant_query',
@@ -90,7 +90,7 @@ class CapacityEvidence:
 class CapacityEvidenceCollector:
     """Collect every worker-capacity signal once for one materialization run."""
 
-    def __init__(self, consumer: PrometheusConsumer) -> None:
+    def __init__(self, consumer: MetricsConsumer) -> None:
         self.consumer = consumer
 
     def scalar(self, query: str) -> ScalarEvidence:
@@ -99,11 +99,11 @@ class CapacityEvidenceCollector:
             required_capabilities=CAPACITY_REQUIRED_CAPABILITIES,
         )
         if not isinstance(response, dict):
-            raise PrometheusError(f'Prometheus returned {type(response).__name__}; expected a response mapping.')
+            raise MetricsSourceError(f'Metrics Source returned {type(response).__name__}; expected a response mapping.')
         data = response.get('data', {})
         result = data.get('result', []) if isinstance(data, dict) else []
         if not isinstance(result, list):
-            raise PrometheusError('Prometheus response data.result is not a list.')
+            raise MetricsSourceError('Metrics Source response data.result is not a list.')
         first = next((item for item in result if isinstance(item, dict)), None)
         if first is None:
             return ScalarEvidence()
@@ -117,7 +117,7 @@ class CapacityEvidenceCollector:
                 query,
                 required_capabilities=('instant_query',),
             )
-        except PrometheusError:
+        except MetricsSourceError:
             return ScalarEvidence()
         if not isinstance(response, dict):
             return ScalarEvidence()

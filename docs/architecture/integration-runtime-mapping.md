@@ -1,21 +1,12 @@
-# Integration Runtime and Asset Mapping
+# Integration Runtime Mapping
 
-KAORI treats Kubernetes, Prometheus-compatible metrics endpoints, and Alertmanager as independent runtimes. Asset relationships are explicit bindings; configuration ownership is never inferred from a template or from a global integration state.
+KAORI treats Kubernetes, Metrics Source, Alertmanager, and Object Storage identities independently. Relationships are explicit `IntegrationBinding` records; configuration ownership is never inferred from templates or global state.
 
-## Runtime boundaries
+- Kubernetes runtime: canonical Kubernetes connection owned by the cluster.
+- Metrics runtime: one standalone `MetricsSource`, reusable through canonical `IntegrationBinding` records.
+- Alert runtime: one standalone Alertmanager instance, reusable through canonical bindings.
+- Object Storage runtime: provider-owned managed storage identity with observability sources attached through bindings.
 
-- Kubernetes runtime: one registered API endpoint represented by a cluster record and observed through `KubernetesRuntimeAdapter`.
-- Prometheus runtime: one standalone `PrometheusInstance`, reusable through `PrometheusBinding` records.
-- Alertmanager runtime: one standalone `AlertmanagerInstance`, reusable through `AlertmanagerBinding` records.
+Metrics consumers resolve `provider_type='metrics_source'`. They may display the concrete `provider_key` label, but they must not branch on Prometheus, Thanos, or another product to locate the source.
 
-Bindings use `scope_type=kubernetes_cluster` and `scope_key=<cluster UUID>` for Kubernetes Analytics.
-
-## Analytics dependency policy
-
-Dependency evaluation is selected-cluster scoped and feature scoped. A missing or degraded runtime for cluster B must never block cluster A. When no cluster is supplied, KAORI deterministically selects the first registered cluster (`created_at`, then UUID), not the first alphabetical name.
-
-Metric pages require Kubernetes and Prometheus. Alert-specific pages additionally require Alertmanager. Inventory requires only the Kubernetes runtime and stored inventory snapshots.
-
-## Presentation boundary
-
-Templates consume display-ready values. Date/time conversion, unit conversion, percentages, status labels, and action URLs belong in services or presentation builders. Jinja templates must not construct provider routes or convert datetimes. Existing template-side formatting is migration debt and must be removed whenever the template is touched.
+Metric pages require an eligible Metrics Source binding for the selected asset. Alert-specific pages resolve Alertmanager first where that domain contract requires it and may use Metrics Source alert-state evidence only through the generic metrics adapter capability. Inventory does not require a metrics product.

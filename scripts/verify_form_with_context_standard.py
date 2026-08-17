@@ -79,7 +79,7 @@ def main() -> int:
 
     references = (
         'app/templates/cluster/add.html',
-        'app/templates/prometheus/instance_form.html',
+        'app/templates/metrics/instance_form.html',
         'app/templates/alertmanager/instance_form.html',
     )
     for relative in references:
@@ -98,7 +98,7 @@ def main() -> int:
     for token in (
         '# KAORI Form + Right Context Standard',
         'Register Kubernetes Connection',
-        'Register Prometheus Connection',
+        'Register Metrics Source',
         'Register Alertmanager Connection',
         'Create Kubernetes ConfigMap',
         'Protected Kubernetes Secret Reveal',

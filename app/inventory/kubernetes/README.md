@@ -223,7 +223,7 @@ Inventory detail evidence must remain readable without intentional truncation. T
 
 Inventory protected reads follow `inventory.view` authorization before the clusterless HTMX blocker. The blocker is deliberately route-owned rather than a Blueprint `before_request`, so unauthorized requests cannot probe cluster readiness or read Inventory evidence before authorization. Inventory synchronization remains a separate `clusters.sync` mutation boundary.
 
-The web read side is committed-snapshot only. `overview.py`, `resources/`, and `topology/` must not import Kubernetes/Prometheus/provider clients or network libraries. Topology reads API Server metadata from the eagerly loaded canonical `Cluster.kubernetes_connection` relationship instead of resolving a live integration on the request path.
+The web read side is committed-snapshot only. `overview.py`, `resources/`, and `topology/` must not import Kubernetes/Metrics Source/provider clients or network libraries. Topology reads API Server metadata from the eagerly loaded canonical `Cluster.kubernetes_connection` relationship instead of resolving a live integration on the request path.
 
 Final release evidence is layered:
 

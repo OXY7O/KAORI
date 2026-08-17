@@ -2,7 +2,7 @@
 {% set tracker_id = analytics_tracker_id|default('analytics-load-tracker') %}
 {% set page_id = analytics_page_id|default('analytics-page') %}
 {% set title = analytics_load_title|default('Loading analytics page') %}
-{% set description = analytics_load_description|default('Loading Prometheus and Alertmanager-backed sections.') %}
+{% set description = analytics_load_description|default('Loading Metrics Source and Alertmanager-backed sections.') %}
 {% set complete_title = analytics_load_complete_title|default('Analytics page fully loaded') %}
 {% set complete_description = analytics_load_complete_description|default('All tracked analytics sections have finished loading.') %}
 <div id="{{ tracker_id }}"

@@ -15,7 +15,7 @@ from app.reports.export.payloads.common import get_report_selected_cluster, repo
 def get_report_alerts_anomalies_payload(report: Report) -> dict[str, Any]:
     """Build the report from the committed ``analytics.alerts`` snapshot.
 
-    Report rendering must not call Alertmanager or Prometheus directly. Missing or
+    Report rendering must not call Alertmanager or Metrics Source directly. Missing or
     expired committed evidence is represented explicitly so the PDF can still be
     generated without presenting synthetic zeroes as healthy observations.
     """

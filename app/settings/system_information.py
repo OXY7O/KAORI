@@ -9,6 +9,7 @@ from app.integrations.compatibility import (
     KUBERNETES_SUPPORTED_VERSION_LABEL,
     PROFILES,
 )
+from app.integrations.metrics.providers import provider_definitions
 
 _RELEASE_HIGHLIGHTS: tuple[dict[str, str], ...] = (
     {
@@ -76,8 +77,8 @@ _RELEASE_FEATURES: tuple[dict[str, Any], ...] = (
         'icon': 'unplug',
         'description': 'Versioned adapters, live capability evidence, and recovery monitoring for infrastructure providers.',
         'features': (
-            'Kubernetes, Prometheus, Alertmanager, and Thanos Query compatibility profiles',
-            'Direct Prometheus and indirect Thanos Query integration modes',
+            'Kubernetes, Metrics Source, and Alertmanager compatibility profiles',
+            'Provider-neutral Metrics Source registration with adapter and query-language contracts',
             'Runtime observations, readiness validation, and capability evidence collection',
             'Automatic runtime monitoring with targeted recovery refresh after connectivity returns',
             'User-friendly source failure presentation without exposing raw endpoints or exceptions',
@@ -117,7 +118,7 @@ _RELEASE_FEATURES: tuple[dict[str, Any], ...] = (
     },
 )
 
-_COMPATIBILITY_PRESENTATION: tuple[dict[str, Any], ...] = (
+_STATIC_COMPATIBILITY_PRESENTATION: tuple[dict[str, Any], ...] = (
     {
         'key': 'kubernetes',
         'product': 'Kubernetes',
@@ -134,21 +135,6 @@ _COMPATIBILITY_PRESENTATION: tuple[dict[str, Any], ...] = (
         'validation_basis': 'Live API discovery and feature-level Kubernetes RBAC remain authoritative.',
     },
     {
-        'key': 'prometheus',
-        'product': 'Prometheus',
-        'icon': 'chart-no-axes-combined',
-        'minimum_version': '2.40',
-        'minimum_label': 'v2.40',
-        'recommended_version': '3.0',
-        'recommended_label': 'v3.0+',
-        'support_band': 'v2.40–v3.x',
-        'current_band': 'v3.x',
-        'support_label': 'Prometheus 3 Current',
-        'support_tone': 'normal',
-        'capability_summary': 'Prometheus HTTP API core queries with asset-scoped consumer metric contracts.',
-        'validation_basis': 'Provider readiness validates endpoint compatibility and core Prometheus APIs; Kubernetes, MinIO, and future metric contracts are validated per asset binding.',
-    },
-    {
         'key': 'alertmanager',
         'product': 'Alertmanager',
         'icon': 'bell-ring',
@@ -163,22 +149,34 @@ _COMPATIBILITY_PRESENTATION: tuple[dict[str, Any], ...] = (
         'capability_summary': 'Alertmanager API v2 status, alerts, and silences contracts.',
         'validation_basis': 'Observed API metadata and binding scope must pass before alert analytics are considered ready.',
     },
-    {
-        'key': 'thanos',
-        'product': 'Thanos Query',
-        'icon': 'database-zap',
-        'minimum_version': '0.39',
-        'minimum_label': 'v0.39',
-        'recommended_version': '0.41',
-        'recommended_label': 'v0.41+',
-        'support_band': 'v0.39–v0.41',
-        'current_band': 'v0.41.x',
-        'support_label': 'Query Profile Current',
-        'support_tone': 'normal',
-        'capability_summary': 'Prometheus-compatible API v1 queries and long-term historical metric access.',
-        'validation_basis': 'Query results and historical block availability are validated instead of relying on a Prometheus version endpoint.',
-    },
 )
+
+
+def _metrics_compatibility_presentation() -> tuple[dict[str, Any], ...]:
+    rows: list[dict[str, Any]] = []
+    for provider in provider_definitions():
+        support = provider.support_presentation
+        if support is None:
+            continue
+        rows.append(
+            {
+                'key': provider.key,
+                'product': provider.label,
+                'icon': provider.icon,
+                'minimum_version': support.minimum_version,
+                'minimum_label': support.minimum_label,
+                'recommended_version': support.recommended_version,
+                'recommended_label': support.recommended_label,
+                'support_band': support.support_band,
+                'current_band': support.current_band,
+                'support_label': support.support_label,
+                'support_tone': support.support_tone,
+                'capability_summary': support.capability_summary,
+                'validation_basis': support.validation_basis,
+            }
+        )
+    return tuple(rows)
+
 
 
 def _clean_config_value(value: Any, fallback: str = 'Not provided') -> str:
@@ -188,7 +186,12 @@ def _clean_config_value(value: Any, fallback: str = 'Not provided') -> str:
 
 def _compatibility_catalog() -> tuple[dict[str, Any], ...]:
     catalog: list[dict[str, Any]] = []
-    for presentation in _COMPATIBILITY_PRESENTATION:
+    presentations = (
+        _STATIC_COMPATIBILITY_PRESENTATION[0],
+        *_metrics_compatibility_presentation(),
+        *_STATIC_COMPATIBILITY_PRESENTATION[1:],
+    )
+    for presentation in presentations:
         profiles = PROFILES.get(presentation['key'], ())
         catalog.append(
             {

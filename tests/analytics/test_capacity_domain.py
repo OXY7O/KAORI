@@ -18,9 +18,9 @@ def _load_module(name: str, path: str) -> ModuleType:
 
 def _load_capacity_modules() -> tuple[ModuleType, ModuleType]:
     names = (
-        'app.integrations.prometheus.exceptions',
-        'app.integrations.prometheus.query_profiles',
-        'app.prometheus.consumer',
+        'app.integrations.metrics.exceptions',
+        'app.integrations.metrics.query_profiles',
+        'app.metrics.consumer',
         'app.analytics.kubernetes.common.base_service',
         'app.analytics.kubernetes.capacity.evidence',
         'capacity_domain_under_test',
@@ -36,7 +36,7 @@ def _load_capacity_modules() -> tuple[ModuleType, ModuleType]:
     sys.modules[names[1]] = query_profiles
 
     consumer = ModuleType(names[2])
-    consumer.PrometheusConsumer = object  # type: ignore[attr-defined]
+    consumer.MetricsConsumer = object  # type: ignore[attr-defined]
     sys.modules[names[2]] = consumer
 
     base_service = ModuleType(names[3])

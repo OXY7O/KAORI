@@ -160,7 +160,7 @@ def _payload(
             'ready_nodes': 4,
             'not_ready_nodes': 0,
         },
-        'prometheus_status': {
+        'metrics_source_status': {
             'connected': True,
             'response_time_ms': 405,
             'last_checked_at': datetime(2026, 8, 3, 1, 5, tzinfo=UTC),
@@ -219,7 +219,7 @@ def _payload(
         ],
         'source_evidence': [
             {
-                'source': 'Prometheus Observation Cache',
+                'source': 'Metrics Source Observation Cache',
                 'freshness': '405 ms',
                 'last_collected': datetime(2026, 8, 3, 1, 5, tzinfo=UTC),
             },

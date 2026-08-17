@@ -44,7 +44,7 @@ routes:
   - category: integrations
     exact: [kubernetes_inventory_sync]
     prefixes:
-      - prometheus_
+      - metrics_source_
       - alertmanager_
       - cluster_
       - kubernetes_capability_

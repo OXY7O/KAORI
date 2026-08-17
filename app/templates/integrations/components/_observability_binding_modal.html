@@ -139,27 +139,31 @@
                         <p class="mt-3 text-xs leading-5 text-content-muted"><span class="font-semibold text-content-secondary">Preference contract:</span> Primary resolves before Secondary, then Fallback. Lower priority wins within the same role.</p>
                         {% if metrics_routing %}
                             <div class="mt-4 grid gap-4 border-t border-outline-subtle pt-4 sm:grid-cols-2">
-                                <label class="block">
-                                    <span class="{{ integration_ui.control_label_classes() }}">Query Horizon</span>
-                                    <select name="query_horizon"
-                                            class="{{ integration_ui.control_classes() }}">
-                                        <option value="recent" {% if metrics_default_horizon == 'recent' %}selected{% endif %}>Recent Preferred</option>
-                                        <option value="historical" {% if metrics_default_horizon == 'historical' %}selected{% endif %}>Historical Preferred</option>
-                                        <option value="balanced" {% if metrics_default_horizon == 'balanced' %}selected{% endif %}>Balanced</option>
-                                    </select>
-                                    <span class="mt-1.5 block text-xs leading-5 text-content-muted">Recent prefers this source when the query starts inside the configured {{ metrics_recent_window_hours }}h recent-data window. Historical prefers it when the query begins before that boundary.</span>
-                                </label>
-                                <label class="block">
-                                    <span class="{{ integration_ui.control_label_classes() }}">Routing Weight</span>
-                                    <input type="number"
-                                           name="routing_weight"
-                                           min="1"
-                                           max="100"
-                                           value="100"
-                                           required
-                                           class="{{ integration_ui.control_classes() }}">
-                                    <span class="mt-1.5 block text-xs leading-5 text-content-muted">Higher weight wins between equally healthy sources in the same query horizon and source role. Role remains the failover tier; priority breaks remaining ties.</span>
-                                </label>
+                                <div>
+                                    <label class="block">
+                                        <span class="{{ integration_ui.control_label_classes() }}">Query Horizon</span>
+                                        <select name="query_horizon"
+                                                class="{{ integration_ui.control_classes() }}">
+                                            <option value="recent" {% if metrics_default_horizon == 'recent' %}selected{% endif %}>Recent Preferred</option>
+                                            <option value="historical" {% if metrics_default_horizon == 'historical' %}selected{% endif %}>Historical Preferred</option>
+                                            <option value="balanced" {% if metrics_default_horizon == 'balanced' %}selected{% endif %}>Balanced</option>
+                                        </select>
+                                    </label>
+                                    <p class="mt-1.5 text-xs leading-5 text-content-muted">Recent prefers this source when the query starts inside the configured {{ metrics_recent_window_hours }}h recent-data window. Historical prefers it when the query begins before that boundary.</p>
+                                </div>
+                                <div>
+                                    <label class="block">
+                                        <span class="{{ integration_ui.control_label_classes() }}">Routing Weight</span>
+                                        <input type="number"
+                                               name="routing_weight"
+                                               min="1"
+                                               max="100"
+                                               value="100"
+                                               required
+                                               class="{{ integration_ui.control_classes() }}">
+                                    </label>
+                                    <p class="mt-1.5 text-xs leading-5 text-content-muted">Higher weight wins between equally healthy sources in the same query horizon and source role. Role remains the failover tier; priority breaks remaining ties.</p>
+                                </div>
                             </div>
                             <p class="mt-3 text-xs leading-5 text-content-muted"><span class="font-semibold text-content-secondary">Metrics routing:</span> KAORI first requires an eligible and healthy source, then evaluates horizon match, source role, routing weight, and priority. A mismatched horizon remains a fallback rather than a hard block.</p>
                         {% endif %}

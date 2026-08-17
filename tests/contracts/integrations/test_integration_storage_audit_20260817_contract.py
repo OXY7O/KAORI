@@ -20,21 +20,22 @@ def test_storage_domain_keeps_owner_and_observability_source_boundaries_explicit
     assert "capability_key='object_storage'" in registration
     assert 'data-kaori-storage-binding-boundary' in workspace
     assert 'MinIO owns the object-storage API and managed asset.' in workspace
-    assert 'Prometheus or Thanos Query provides metrics' in workspace
+    assert 'A Metrics Source provides metrics' in workspace
     assert 'File Storage and Block Storage remain capability placeholders' in workspace
 
 
-def test_storage_asset_owner_projection_distinguishes_thanos_query_from_prometheus() -> None:
+def test_storage_asset_owner_projection_uses_metrics_provider_registry() -> None:
     projection = read('app/integrations/asset_owner_sources.py')
     coverage = read('app/minio/presentation.py')
     coverage_template = read('app/templates/minio/partials/_coverage_content.html')
 
     assert 'def _source_presentation(' in projection
-    assert "if source_type == 'thanos':" in projection
-    assert "return 'Thanos Query', 'database-zap'" in projection
-    assert "return 'Prometheus', provider_icon" in projection
-    assert "def _metrics_source_label(source: object | None) -> str:" in coverage
-    assert "return 'Thanos Query' if getattr(source, 'source_type', None) == 'thanos' else 'Prometheus'" in coverage
+    assert "canonical.provider_type != 'metrics_source'" in projection
+    assert "(canonical.metadata_json or {}).get('metrics_provider_key')" in projection
+    assert 'definition = provider_definition(provider_key)' in projection
+    assert 'return definition.label, definition.icon' in projection
+    assert 'def _metrics_source_label(source: object | None) -> str:' in coverage
+    assert 'provider_definition(provider_key).label' in coverage
     assert 'row.metrics_source_label' in coverage_template
     assert 'No Prometheus binding' not in coverage_template
 
@@ -57,6 +58,6 @@ def test_minio_bound_source_registry_hides_empty_pagination_and_uses_metrics_sou
     index = read('app/templates/minio/index.html')
 
     assert '{% if binding_pagination.total_items > 0 %}' in registry
-    assert 'Prometheus, Thanos Query, or Alertmanager' in registry
-    assert 'Prometheus, Thanos Query, and Alertmanager remain reusable source-owned connections' in scope
-    assert 'Prometheus or Thanos Query owns metrics by source identity' in index
+    assert 'Metrics Source or Alertmanager' in registry
+    assert 'Metrics Source and Alertmanager remain reusable source-owned connections' in scope
+    assert 'Metrics Source owns metrics by source identity' in index

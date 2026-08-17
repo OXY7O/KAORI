@@ -59,7 +59,7 @@ def test_object_storage_runtime_boundary_stays_provider_neutral_and_fail_fast() 
     materialization = read('app/analytics/object_storage/materialization.py')
 
     assert routes.count("@permission_required('object_storage_analytics.view')") == 8
-    for forbidden in ('PrometheusConsumer(', 'MinioClient(', 'boto3', 'minio.client'):
+    for forbidden in ('MetricsConsumer(', 'MinioClient(', 'boto3', 'minio.client'):
         assert forbidden not in routes
         assert forbidden not in service
         assert forbidden not in runtime
@@ -77,8 +77,8 @@ def test_object_storage_alert_and_metric_evidence_paths_remain_independent() -> 
 
     assert 'alerts_evidence_available' in service
     assert 'alerts_degraded' in service
-    assert "ALERT_SOURCE_OPTIONS = ('auto', 'alertmanager', 'prometheus')" in alerts
-    assert 'Prometheus Fallback Active' in alerts
+    assert "ALERT_SOURCE_OPTIONS = ('auto', 'alertmanager', 'metrics_source')" in alerts
+    assert 'Metrics Source Fallback Active' in alerts
     assert 'Alert Records' in workspace
     assert 'Metric Signals' in workspace
 

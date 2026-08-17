@@ -70,10 +70,10 @@ def test_on_demand_request_only_attaches_to_matching_fleet_work_item() -> None:
     )
 
 
-def test_prometheus_consumer_reduces_domain_capabilities_to_query_transport() -> None:
-    from app.prometheus.consumer import PrometheusConsumer
+def test_metrics_source_consumer_reduces_domain_capabilities_to_query_transport() -> None:
+    from app.metrics.consumer import MetricsConsumer
 
-    assert PrometheusConsumer._execution_capabilities(
+    assert MetricsConsumer._execution_capabilities(
         (
             'instant_query',
             'range_query',
@@ -132,35 +132,35 @@ def test_non_live_context_still_returns_utilization_service(monkeypatch) -> None
     )
     monkeypatch.setattr(
         analytics_context,
-        'resolve_prometheus_sources',
+        'resolve_metrics_sources',
         lambda **_kwargs: resolution,
     )
     monkeypatch.setattr(
         analytics_context,
-        'PrometheusService',
+        'MetricsService',
         lambda _cluster: SimpleNamespace(),
     )
     monkeypatch.setattr(
         analytics_context,
         'UtilizationService',
-        lambda _prometheus: utilization_marker,
+        lambda _metrics_source: utilization_marker,
     )
 
     _clusters, selected_cluster, utilization, payload = analytics_context.build_analysis_utilization_context(
         {'cluster_id': 'cluster-b', 'time_range': '24h'},
-        check_prometheus_connection=False,
+        check_metrics_source_connection=False,
     )
 
     assert selected_cluster is cluster
     assert utilization is utilization_marker
     assert payload['dependency_blocker'] is None
-    assert payload['prometheus_connected'] is True
+    assert payload['metrics_source_connected'] is True
 
 
 def test_explicit_analytics_query_timeout_can_exceed_instance_default() -> None:
-    from app.integrations.prometheus.client import PrometheusClient
+    from app.integrations.metrics.prometheus_http_client import PrometheusHttpQueryClient
 
-    client = object.__new__(PrometheusClient)
+    client = object.__new__(PrometheusHttpQueryClient)
     client.request_timeout_seconds = 300
     client.config = SimpleNamespace(timeout=5)
 

@@ -8,6 +8,7 @@ from celery import Task, shared_task
 from flask import current_app
 
 import app.integrations.runtime.refresh as runtime_refresh
+from app.common.presentation import present_key_label
 from app.extensions.db import db
 from app.integrations.lifecycle import ensure_canonical_instance, ensure_provider_operational
 from app.integrations.registry import execute_integration_operation, get_integration
@@ -53,10 +54,8 @@ def _queue_name() -> str:
 
 
 def _runtime_queue_name() -> str:
-    return (
-        str(current_app.config.get('INTEGRATION_RUNTIME_CELERY_QUEUE') or 'integration-runtime').strip()
-        or 'integration-runtime'
-    )
+    configured = str(current_app.config.get('INTEGRATION_RUNTIME_CELERY_QUEUE') or 'integration-runtime').strip()
+    return configured or 'integration-runtime'
 
 
 def _action_url(provider_type: str, instance_id: int, *, section: str) -> str:
@@ -418,7 +417,7 @@ def validate_integration_instance(
             operation=operation,
             status='error',
             title='Integration validation failed',
-            message=f'KAORI could not complete the {provider_type.title()} validation job.',
+            message=f'KAORI could not complete the {present_key_label(provider_type)} validation job.',
             detail=detail,
             metadata={
                 'task_id': task_id,
@@ -433,7 +432,7 @@ def validate_integration_instance(
             base=base,
             status='error',
             title='Integration validation failed',
-            message=f'KAORI could not complete the {provider_type.title()} validation job.',
+            message=f'KAORI could not complete the {present_key_label(provider_type)} validation job.',
             detail=detail,
             feedback=feedback,
         )
@@ -588,7 +587,7 @@ def validate_integration_binding(
         )
         binding_status = str(result_payload.get('status') or 'validation_required')
         status = 'success' if binding_status == 'ready' else ('error' if binding_status == 'blocked' else 'warning')
-        title = f'{provider_type.title()} binding validation completed'
+        title = f'{present_key_label(provider_type)} binding validation completed'
         message = str(result_payload.get('message') or 'Binding validation completed.')
         detail = f'Binding status: {binding_status.replace("_", " ").title()}.'
         feedback = _record_completion(
@@ -632,7 +631,7 @@ def validate_integration_binding(
             operation='binding_validation',
             status='error',
             title='Binding validation failed',
-            message=f'KAORI could not validate the {provider_type.title()} scope binding.',
+            message=f'KAORI could not validate the {present_key_label(provider_type)} scope binding.',
             detail=detail,
             metadata={
                 'task_id': task_id,
@@ -647,7 +646,7 @@ def validate_integration_binding(
             base=base,
             status='error',
             title='Binding validation failed',
-            message=f'KAORI could not validate the {provider_type.title()} scope binding.',
+            message=f'KAORI could not validate the {present_key_label(provider_type)} scope binding.',
             detail=detail,
             feedback=feedback,
         )
@@ -755,7 +754,7 @@ def refresh_integration_runtime_instance(
             operation='runtime_refresh',
             status=completion_status,
             title='Runtime health refresh completed',
-            message=f'{provider_type.title()} runtime health is {state.health.status}.',
+            message=f'{present_key_label(provider_type)} runtime health is {state.health.status}.',
             detail=state.message,
             metadata={
                 'task_id': task_id,
@@ -770,7 +769,7 @@ def refresh_integration_runtime_instance(
             base=base,
             status=completion_status,
             title='Runtime health refresh completed',
-            message=f'{provider_type.title()} runtime health is {state.health.status}.',
+            message=f'{present_key_label(provider_type)} runtime health is {state.health.status}.',
             detail=state.message,
             feedback=feedback,
             result=completion_result,
@@ -794,7 +793,7 @@ def refresh_integration_runtime_instance(
             operation='runtime_refresh',
             status='error',
             title='Runtime health refresh failed',
-            message=f'KAORI could not refresh {provider_type.title()} runtime health.',
+            message=f'KAORI could not refresh {present_key_label(provider_type)} runtime health.',
             detail=detail,
             metadata={
                 'task_id': task_id,
@@ -809,7 +808,7 @@ def refresh_integration_runtime_instance(
             base=base,
             status='error',
             title='Runtime health refresh failed',
-            message=f'KAORI could not refresh {provider_type.title()} runtime health.',
+            message=f'KAORI could not refresh {present_key_label(provider_type)} runtime health.',
             detail=detail,
             feedback=feedback,
         )

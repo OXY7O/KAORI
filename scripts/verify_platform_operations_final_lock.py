@@ -285,7 +285,7 @@ def main() -> int:
         "'label': 'Activity Audit Table'",
         "'label': 'Notification Center'",
         "'label': 'Kubernetes'",
-        "'label': 'Prometheus'",
+        "'label': 'Metrics Source'",
         "'label': 'Alertmanager'",
     ):
         if required not in retention_presentation:

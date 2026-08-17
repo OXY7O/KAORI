@@ -261,7 +261,7 @@ SECTION_OPTIONS: list[dict[str, str]] = [
     {
         'value': 'source_health',
         'label': 'Alert Source Health',
-        'description': 'Alertmanager, Prometheus fallback, resolved source, and source confidence state.',
+        'description': 'Alertmanager, Metrics Source fallback, resolved source, and source confidence state.',
     },
     {
         'value': 'routing_grouping',

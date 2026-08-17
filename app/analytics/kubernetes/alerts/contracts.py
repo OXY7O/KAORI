@@ -11,7 +11,7 @@ from typing import (
 DEFAULT_PER_PAGE = 5
 
 PER_PAGE_OPTIONS = [5, 10, 25, 50]
-SOURCE_OPTIONS = ['auto', 'alertmanager', 'prometheus']
+SOURCE_OPTIONS = ['auto', 'alertmanager', 'metrics_source']
 SEVERITY_OPTIONS = ['all', 'critical', 'warning', 'info', 'none']
 STATUS_OPTIONS = ['all', 'firing', 'pending', 'resolved', 'active']
 
@@ -22,7 +22,7 @@ class NormalizedAlert(TypedDict):
     status: str
     namespace: Any
     target: Any
-    source: Literal['Alertmanager', 'Prometheus']
+    source: Literal['Alertmanager', 'Metrics Source']
     summary: Any
     description: Any
     starts_at: Any
@@ -68,7 +68,7 @@ class AlertIntegrationStatus(TypedDict):
 
 
 class AlertIntegrationStatusMap(TypedDict):
-    prometheus: AlertIntegrationStatus
+    metrics_source: AlertIntegrationStatus
     alertmanager: AlertIntegrationStatus
 
 

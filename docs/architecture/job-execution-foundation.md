@@ -113,7 +113,7 @@ Provider validation may not always be interruptible during one remote API call. 
 
 ## Large query planning
 
-Large-range Prometheus or Thanos execution is intentionally not preimplemented. The first Analytics worker that requires historical chunking must introduce its query-plan contract, provider concurrency guard, persistence model, and functional tests in the same domain change. KAORI must not carry dormant worker infrastructure that is not invoked by a production task.
+Large-range Metrics Source execution is intentionally not preimplemented. The first Analytics worker that requires historical chunking must introduce its query-plan contract, provider concurrency guard, persistence model, and functional tests in the same domain change. KAORI must not carry dormant worker infrastructure that is not invoked by a production task.
 
 The required execution shape remains:
 

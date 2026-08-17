@@ -465,7 +465,7 @@ def _build_executive_summary(report: Any, payload: Mapping[str, Any], number: in
         if environment:
             metrics.append(ReportMetric('Environment', sanitize_text(environment), tone='info'))
 
-    for status_key in ('inventory_status', 'prometheus_status', 'source_status', 'integration_status'):
+    for status_key in ('inventory_status', 'metrics_source_status', 'source_status', 'integration_status'):
         status = payload.get(status_key)
         if isinstance(status, Mapping):
             label = status.get('label') or status.get('status_label') or status.get('status')
@@ -672,7 +672,7 @@ def _build_source_metrics(report: Any, payload: Mapping[str, Any]) -> tuple[Repo
 
     for label, key in (
         ('Inventory', 'inventory_status'),
-        ('Prometheus', 'prometheus_status'),
+        ('Metrics Source', 'metrics_source_status'),
         ('Alert Source', 'source_status'),
         ('Integration', 'integration_status'),
     ):

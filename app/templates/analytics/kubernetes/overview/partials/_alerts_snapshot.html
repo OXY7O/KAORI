@@ -105,7 +105,7 @@
                     {% elif not alerts.evidence_complete|default(false) %}
                         {{ overview_surface.interpretation_callout('Recommended Action',
                                                 'Restore Complete Signal Evidence',
-                                                'Refresh Alertmanager and Prometheus anomaly evidence before treating the absence of active signals as a stable condition.',
+                                                'Refresh Alertmanager and Metrics Source anomaly evidence before treating the absence of active signals as a stable condition.',
                                                 icon='circle-help',
                                                 role='brand',
                                                 tone='warning') }}

@@ -200,7 +200,7 @@ def build_fix_steps(item: dict[str, Any]) -> list[str]:
     elif category == 'capacity':
         steps = [
             'Review the committed capacity finding, selected scope, utilization trend, saturation point, and top-consumer evidence.',
-            'Validate the current Prometheus source, time range, workload demand, quotas, limits, and infrastructure allocation before changing capacity.',
+            'Validate the current Metrics Source source, time range, workload demand, quotas, limits, and infrastructure allocation before changing capacity.',
             'Apply the approved capacity, quota, limit, or infrastructure allocation change.',
             'Refresh analytics and generated report context, then confirm the risk state and recommendation are cleared.',
         ]

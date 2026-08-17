@@ -87,8 +87,8 @@
                             <p class="mt-1 break-words text-xs text-content-muted [overflow-wrap:anywhere]">{{ row.server }}</p>
                         </td>
                         <td class="{{ table_ui.cell_classes() }}">
-                            {{ integration_status(row.prometheus_operational.status, row.prometheus_operational.label, display="indicator") }}
-                            <p class="mt-1 break-words text-xs text-content-muted [overflow-wrap:anywhere]">{{ row.prometheus_name or "No Prometheus binding" }}</p>
+                            {{ integration_status(row.metrics_source_operational.status, row.metrics_source_operational.label, display="indicator") }}
+                            <p class="mt-1 break-words text-xs text-content-muted [overflow-wrap:anywhere]">{{ row.metrics_source_name or "No Metrics Source Binding" }}</p>
                         </td>
                         <td class="{{ table_ui.cell_classes() }}">
                             {{ integration_status(row.alertmanager_operational.status, row.alertmanager_operational.label, display="indicator") }}
@@ -111,7 +111,7 @@
                             {% set empty_state_icon = "route" %}
                             {% set empty_state_label = "No Results" if coverage_has_active_filters else "Setup Required" %}
                             {% set empty_state_title = "No Kubernetes Coverage Matches the Active Filters" if coverage_has_active_filters else "No Kubernetes Coverage Found" %}
-                            {% set empty_state_description = "Adjust the coverage filters to review another Kubernetes cluster." if coverage_has_active_filters else "Register a Kubernetes API connection, then bind Prometheus or Alertmanager only when those consumer planes are required." %}
+                            {% set empty_state_description = "Adjust the coverage filters to review another Kubernetes cluster." if coverage_has_active_filters else "Register a Kubernetes API connection, then bind a Metrics Source or Alertmanager only when those consumer planes are required." %}
                             {% set empty_state_action_url = url_for('cluster.add_cluster') %}
                             {% set empty_state_action_label = "Register Connection" %}
                             {% set empty_state_action_icon = "plus" %}

@@ -3,7 +3,7 @@ kind: integration_provider_contract
 provider: object_storage
 capability_profile: minio-object-storage-api-v1
 object_storage_system_scope: object_storage_system
-prometheus_capability_scope:
+metrics_source_capability_scope:
 - object_storage.metrics.version
 - object_storage.metrics.cluster
 - object_storage.metrics.bucket

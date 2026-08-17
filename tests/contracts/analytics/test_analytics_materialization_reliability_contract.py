@@ -8,10 +8,10 @@ def _read(relative: str) -> str:
 
 
 def test_analytics_status_does_not_run_duplicate_health_query() -> None:
-    consumer = _read('app/prometheus/consumer.py')
+    consumer = _read('app/metrics/consumer.py')
     utilization = _read('app/analytics/kubernetes/utilization/service.py')
     base = _read('app/analytics/kubernetes/common/base_service.py')
-    profile = _read('app/integrations/prometheus/query_profiles/kubernetes_v1.py')
+    profile = _read('app/integrations/metrics/query_profiles/kubernetes_v1.py')
     presentation = _read('app/analytics/kubernetes/common/presentation.py')
 
     assert 'def analytics_status' in consumer
@@ -19,19 +19,25 @@ def test_analytics_status_does_not_run_duplicate_health_query() -> None:
     assert 'consumer.analytics_status()' in utilization
     assert 'consumer.analytics_status()' in base
     assert 'analytics.utilization.queries.PROMETHEUS_HEALTH' not in profile
-    assert 'get_prometheus_status_snapshot' in utilization
+    assert 'get_metrics_source_status_snapshot' in utilization
     assert "'status_label': status_label" in presentation
     assert "status_label = 'Query Ready'" in presentation
 
 
-def test_prometheus_queries_reuse_clients_retry_transient_failures_and_keep_fingerprints() -> None:
-    consumer = _read('app/prometheus/consumer.py')
-    client = _read('app/integrations/prometheus/client.py')
+def test_metrics_queries_reuse_backend_sessions_retry_transient_failures_and_keep_fingerprints() -> None:
+    consumer = _read('app/metrics/consumer.py')
+    client = _read('app/integrations/metrics/prometheus_http_client.py')
+    adapter = _read('app/integrations/metrics/adapter.py')
+    backend_registry = _read('app/integrations/metrics/backend_registry.py')
     runtime = _read('app/common/provider_query_runtime.py')
 
-    assert 'self._client_cache' in consumer
-    assert 'PROMETHEUS_ANALYTICS_QUERY_RETRIES' in consumer
-    assert 'PROMETHEUS_ANALYTICS_RETRY_BACKOFF_SECONDS' in consumer
+    assert 'self._query_session_cache' in consumer
+    assert "'query.session.build'" in consumer
+    assert 'class MetricsQuerySession(Protocol)' in backend_registry
+    assert 'metrics_backend_for' in adapter
+    assert 'class PrometheusHttpQuerySession' in adapter
+    assert 'METRICS_SOURCE_ANALYTICS_QUERY_RETRIES' in consumer
+    assert 'METRICS_SOURCE_ANALYTICS_RETRY_BACKOFF_SECONDS' in consumer
     assert '_TRANSIENT_HTTP_STATUS_TOKENS' in consumer
     assert 'query_fingerprint' in consumer
     assert 'record_provider_retry()' in consumer
@@ -52,7 +58,7 @@ def test_provider_scoped_lock_serializes_shared_heavy_sources() -> None:
     assert 'analytics_source_lock(' in tasks
     assert 'source_lock_wait_ms' in tasks
     assert 'Could not resolve provider-specific analytics query locks' in source_lock
-    assert "requested_source in {'auto', 'prometheus'}" in source_lock
+    assert "requested_source in {'auto', 'metrics_source'}" in source_lock
     assert 'for lock_name in lock_names' in source_lock
 
 
@@ -102,9 +108,9 @@ def test_forecast_and_top_consumers_do_not_hide_provider_failures_as_empty_data(
     forecast = _read('app/analytics/kubernetes/forecast/service.py')
     top_consumers = _read('app/analytics/kubernetes/top_consumers/service.py')
 
-    base_query = base.split('def get_prometheus_result', 1)[1].split('def extract_value', 1)[0]
+    base_query = base.split('def get_metrics_result', 1)[1].split('def extract_value', 1)[0]
     assert 'except Exception' not in base_query
-    assert 'raise PrometheusError' in base_query
+    assert 'raise MetricsSourceError' in base_query
 
     forecast_range = forecast.split('def _query_range', 1)[1].split('def get_forecast_analysis_context', 1)[0]
     assert 'except Exception' not in forecast_range
@@ -145,7 +151,7 @@ def test_default_analytics_policy_refreshes_current_snapshots_before_they_age_ou
 
     assert 'default_interval_minutes: 15' in definition
     assert 'freshness_minutes: 15' in definition
-    assert 'PROMETHEUS_ANALYTICS_QUERY_RETRIES=2' in env_example
+    assert 'METRICS_SOURCE_ANALYTICS_QUERY_RETRIES=2' in env_example
     assert 'ANALYTICS_SOURCE_LOCK_TIMEOUT_SECONDS=900' in env_example
     assert 'ANALYTICS_TASK_MAX_SOFT_TIME_LIMIT_SECONDS=7200' in env_example
     assert 'CELERY_VISIBILITY_TIMEOUT_SECONDS=18000' in env_example
@@ -155,10 +161,10 @@ def test_persisted_runtime_health_is_advisory_for_worker_and_page_dispatch() -> 
     common_context = _read('app/analytics/kubernetes/common/context.py')
     requests = _read('app/analytics/kubernetes/materialization/requests.py')
 
-    assert "'label': 'Prometheus Query Ready'" in common_context
-    assert "base_context['prometheus_connected'] = True" in common_context
+    assert "'label': 'Metrics Source Query Ready'" in common_context
+    assert "base_context['metrics_source_connected'] = True" in common_context
     assert 'previous runtime observation' in common_context
-    candidate_function = requests.split('def _candidate_is_usable', 1)[1].split('def _prometheus_resolution', 1)[0]
+    candidate_function = requests.split('def _candidate_is_usable', 1)[1].split('def _metrics_source_resolution', 1)[0]
     assert 'candidate is not None' in candidate_function
     assert 'operational_state not in' not in candidate_function
     assert 'runtime_warning' in requests
@@ -174,19 +180,20 @@ def test_optional_alert_anomaly_failures_are_visible_as_partial_data() -> None:
     assert "'available_queries': available_queries" in anomalies
     assert "'failed_queries': sorted(errors)" in anomalies
     assert 'collection_warnings' in application
-    assert 'Prometheus Anomaly Evidence Is Partial' in application
-    assert 'Prometheus Anomaly Evidence Is Unavailable' in application
+    assert 'Metrics Source Anomaly Evidence Is Partial' in application
+    assert 'Metrics Source Anomaly Evidence Is Unavailable' in application
     assert 'collection_warnings|default([])' in filters
     assert 'Source Evidence Incomplete' in filters
 
 
-def test_prometheus_clients_are_created_lazily_for_cluster_scoped_queries() -> None:
-    consumer = _read('app/prometheus/consumer.py')
-    service = _read('app/prometheus/service.py')
+def test_metrics_backend_sessions_are_created_lazily_for_scoped_queries() -> None:
+    consumer = _read('app/metrics/consumer.py')
+    service = _read('app/metrics/service.py')
 
     init_block = consumer.split('def __init__', 1)[1].split('def query', 1)[0]
     assert 'self.client =' not in init_block
-    assert 'self.client = None' in service
+    assert 'self.client =' not in service
+    assert "'query.instant'" in service
     assert 'self.instance = self.consumer.config' in service
 
 

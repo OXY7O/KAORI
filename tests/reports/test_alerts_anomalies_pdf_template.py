@@ -54,7 +54,7 @@ def _payload() -> dict[str, object]:
         'alerts': alerts,
         'anomalies': anomalies,
         'source_status': {'label': 'Alertmanager Connected', 'response_time_ms': 25},
-        'anomaly_source_status': {'label': 'Prometheus Anomaly Evidence', 'partial': True},
+        'anomaly_source_status': {'label': 'Metrics Source Anomaly Evidence', 'partial': True},
         'actionable_recommendations': [],
     }
 

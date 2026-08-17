@@ -1,0 +1,272 @@
+{% extends "layouts/app.html" %}
+{% import "components/operational_toggle.html" as operational_toggle %}
+{% import "components/form_action_bar.html" as form_action_bar %}
+{% import "components/connection_validation_header.html" as connection_validation_header %}
+{% import "components/table.html" as table_ui %}
+{% import "components/action_button.html" as action_button %}
+{% import "integrations/components/_provider_registration_hero.html" as provider_registration_hero %}
+{% import "integrations/components/_provider_edit_hero.html" as provider_edit_hero %}
+{% import "integrations/components/_provider_registration_context.html" as provider_registration_context %}
+{% import "integrations/components/_provider_registration_actions.html" as provider_registration_actions %}
+{% set metrics_source_label = provider.label %}
+{% set metrics_source_icon = provider.icon %}
+{% block title %}{{ 'Edit' if instance else 'Register' }} {{ metrics_source_label }} Connection · KAORI{% endblock title %}
+{% block dashboard_content %}
+    <div id="metrics-source-registration-workspace"
+         class="kaori-integration-semantic space-y-6">
+        {% if instance %}
+            {{ provider_edit_hero.render("activity",
+                        "Metrics Integration",
+                        "chart-spline",
+                        'Edit ' ~ metrics_source_label ~ ' Connection',
+                        "Update the reusable metrics connection while preserving consumer bindings.",
+                        "database-zap",
+                        metrics_source_label ~ " API",
+                        "Connection",
+                        instance.name,
+                        instance.environment|default("") |title,
+            instance.readiness_status or "validation_required",
+            url_for("integrations.metrics_sources"),
+            metrics_source_label ~ " configuration posture") }}
+        {% else %}
+            {{ provider_registration_hero.render("activity",
+                        "Metrics Integration",
+                        "chart-spline",
+                        'Register ' ~ metrics_source_label ~ ' Connection',
+                        "Create a reusable metrics connection before Core Validation and independent consumer bindings.",
+                        "database-zap",
+                        metrics_source_label ~ " API",
+                        url_for("integrations.metrics_sources") ,
+            metrics_source_label ~ " connection workflow") }}
+        {% endif %}
+        {% if instance %}
+            {% set metrics_source_submit_url = url_for('metrics.edit_instance', instance_id=instance.id) %}
+            {% set metrics_source_test_url = url_for('metrics.test_instance_configuration', instance_id=instance.id) %}
+        {% else %}
+            {% set metrics_source_submit_url = url_for('integrations.register_metrics_source', provider_key=provider.key, cluster_id=initial_cluster.id if initial_cluster else none) %}
+            {% set metrics_source_test_url = url_for('integrations.test_metrics_source', provider_key=provider.key) %}
+        {% endif %}
+        <form id="metrics-source-instance-form"
+              method="post"
+              action="{{ metrics_source_submit_url }}"
+              hx-post="{{ metrics_source_submit_url }}"
+              hx-target="#metrics-source-registration-workspace"
+              hx-select="#metrics-source-registration-workspace"
+              hx-swap="outerHTML"
+              hx-disabled-elt="button[type='submit']"
+              class="grid gap-6 xl:grid-cols-12 xl:items-start"
+              x-data="{ authType: '{{ form.auth_type.data or 'none' }}', detectionMode: '{{ provider.version_detection_mode }}', connectionVerified: {{ 'true' if registration_proof is defined and registration_proof else 'false' }}, invalidateConnectionTest(event) { const fieldName = event.target?.name || ''; if (['csrf_token', 'connection_test_proof'].includes(fieldName)) return; this.connectionVerified = false; this.$refs.connectionProof.value = ''; }, applyConnectionTest(event) { this.connectionVerified = event.detail?.connected === true; this.$refs.connectionProof.value = event.detail?.proof || ''; } }"
+              x-on:input.capture="invalidateConnectionTest($event)"
+              x-on:change.capture="invalidateConnectionTest($event)"
+              x-on:metrics-source-connection-tested.window="applyConnectionTest($event)">
+            {{ form.hidden_tag() }}
+            <input x-ref="connectionProof"
+                   type="hidden"
+                   name="connection_test_proof"
+                   value="{{ registration_proof if registration_proof is defined and registration_proof else '' }}">
+            {% if initial_cluster %}<input type="hidden" name="cluster_id" value="{{ initial_cluster.id }}">{% endif %}
+            <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm xl:col-span-8">
+                <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+                    <div class="flex items-start gap-3">
+                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary dark:text-kaori-accent"><i data-lucide="settings-2" class="h-5 w-5"></i></span>
+                        <div>
+                            <h2 class="text-base font-semibold text-content-primary">Connection Configuration</h2>
+                            <p class="mt-1 text-sm leading-6 text-content-secondary">Define identity, endpoint access, compatibility mode, and operational controls.</p>
+                        </div>
+                    </div>
+                </header>
+                <div class="space-y-6 p-5 sm:p-6">
+                    <section>
+                        <div class="mb-4 flex items-start gap-3">
+                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary dark:text-kaori-accent"><i data-lucide="fingerprint" class="h-4 w-4"></i></span>
+                            <div>
+                                <h3 class="text-sm font-semibold text-content-primary">Connection Identity</h3>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">Stable identity used by validation, bindings, runtime history, notifications, and audit records.</p>
+                            </div>
+                        </div>
+                        <label class="block">
+                            <span class="mb-1.5 block text-sm font-semibold text-content-primary">{{ form.name.label.text }}</span>
+                            {{ form.name(class_='h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-medium text-content-primary outline-none transition placeholder:text-content-disabled hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20') }}
+                            {% for error in form.name.errors %}
+                                <p class="mt-1.5 text-xs font-medium text-status-critical-text">{{ error }}</p>
+                            {% endfor %}
+                        </label>
+                        <label class="mt-4 block">
+                            <span class="mb-1.5 block text-sm font-semibold text-content-primary">{{ form.description.label.text }}</span>
+                            {{ form.description(class_='min-h-24 w-full resize-y rounded-lg border border-outline-default bg-surface-card px-3.5 py-3 text-sm font-normal leading-6 text-content-primary outline-none transition placeholder:text-content-disabled hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20') }}
+                        </label>
+                    </section>
+                    <section class="relative overflow-hidden rounded-lg border border-outline-subtle bg-surface-elevated">
+                        {% call connection_validation_header.render(
+                            'Endpoint & Access',
+                            'Define ' ~ metrics_source_label ~ ' endpoint access and authentication, then verify reachability before registration.',
+                            icon='network',
+                            loading_id='metrics-source-connection-test-loading',
+                            loading_label='Testing ' ~ metrics_source_label ~ ' connection'
+                            ) %}
+                            {% if not instance %}
+                                <button type="button"
+                                        hx-post="{{ metrics_source_test_url }}"
+                                        hx-include="#metrics-source-instance-form"
+                                        hx-target="#metrics-source-connection-test-result"
+                                        hx-swap="innerHTML"
+                                        hx-indicator="#metrics-source-connection-test-loading"
+                                        hx-disabled-elt="this"
+                                        x-on:click="const form = $el.closest('form'); if (!form.reportValidity()) { $event.preventDefault(); $event.stopImmediatePropagation(); }"
+                                        class="group {{ action_button.classes('secondary') }} disabled:cursor-wait disabled:opacity-70">
+                                    <i data-lucide="plug-zap"
+                                       class="h-4 w-4 group-[.htmx-request]:animate-pulse"></i>
+                                    Test Connection
+                                </button>
+                            {% endif %}
+                        {% endcall %}
+                        <div class="p-4">
+                            <label class="block">
+                                <span class="mb-1.5 block text-sm font-semibold text-content-primary">{{ form.endpoint.label.text }}</span>
+                                {{ form.endpoint(class_='h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 font-sans text-sm font-medium text-content-primary outline-none transition placeholder:text-content-disabled hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20') }}
+                                {% for error in form.endpoint.errors %}
+                                    <p class="mt-1.5 text-xs font-medium text-status-critical-text">{{ error }}</p>
+                                {% endfor %}
+                            </label>
+                            <div class="mt-4 grid gap-4 md:grid-cols-2">
+                                <label class="block">
+                                    <span class="mb-1.5 block text-sm font-semibold text-content-primary">{{ form.auth_type.label.text }}</span>
+                                    {{ form.auth_type(class_='h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-medium text-content-primary outline-none transition hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20', **{'x-model':'authType'}) }}
+                                </label>
+                                <label class="block">
+                                    <span class="mb-1.5 block text-sm font-semibold text-content-primary">{{ form.timeout.label.text }}</span>
+                                    {{ form.timeout(class_='h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-medium text-content-primary outline-none transition hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20') }}
+                                </label>
+                            </div>
+                            <div class="mt-4 grid gap-4 md:grid-cols-2"
+                                 x-show="authType === 'basic'"
+                                 x-cloak>
+                                <label class="block"><span class="mb-1.5 block text-sm font-semibold text-content-primary">{{ form.username.label.text }}</span>{{ form.username(class_='h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-medium text-content-primary outline-none transition placeholder:text-content-disabled hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20', **{':required':"authType === 'basic'"}) }}</label>
+                                <label class="block">
+                                    <span class="mb-1.5 block text-sm font-semibold text-content-primary">{{ form.password.label.text }}</span>{{ form.password(class_='h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-medium text-content-primary outline-none transition placeholder:text-content-disabled hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20', placeholder=('Leave blank to keep the current password' if instance else 'Enter password') , **{':required':"authType === 'basic' && " + ('false' if instance else 'true') }) }}
+                                </label>
+                            </div>
+                            <div class="mt-4" x-show="authType === 'bearer'" x-cloak>
+                                <label class="block">
+                                    <span class="mb-1.5 block text-sm font-semibold text-content-primary">{{ form.bearer_token.label.text }}</span>{{ form.bearer_token(class_='h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-medium text-content-primary outline-none transition placeholder:text-content-disabled hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20', placeholder=('Leave blank to keep the current token' if instance else 'Enter bearer token') , **{':required':"authType === 'bearer' && " + ('false' if instance else 'true') }) }}
+                                </label>
+                            </div>
+                        </div>
+                    </section>
+                    <section class="border-t border-outline-subtle pt-6">
+                        <div class="mb-4 flex items-start gap-3">
+                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary dark:text-kaori-accent"><i data-lucide="scan-search" class="h-4 w-4"></i></span>
+                            <div>
+                                <h3 class="text-sm font-semibold text-content-primary">Metrics Source Contract</h3>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">Provider identity is explicit and immutable for this connection. Bindings and consumers depend on the global Metrics Source contract, while adapter and query-language details remain provider-defined.</p>
+                            </div>
+                        </div>
+                        <div class="grid gap-4 md:grid-cols-2">
+                            <div class="rounded-lg border border-outline-subtle bg-surface-subtle px-4 py-3">
+                                <p class="text-xs font-semibold text-content-muted">Metrics Provider</p>
+                                <p class="mt-1 text-sm font-semibold text-content-primary">{{ metrics_source_label }}</p>
+                                <p class="mt-1 text-xs leading-5 text-content-secondary">{{ provider.description }}</p>
+                                <p class="mt-2 text-xs leading-5 text-content-muted">Adapter {{ provider.adapter_key|replace('_', ' ')|title }} · Query {{ provider.query_language|upper }}</p>
+                            </div>
+                            {% if provider.compatibility_profile_options %}
+                                <div>
+                                    <label class="block">
+                                        <span class="mb-1.5 block text-sm font-semibold text-content-primary">{{ form.compatibility_profile_override.label.text }}</span>
+                                        {{ form.compatibility_profile_override(class_='h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-medium text-content-primary outline-none transition hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20', required=provider.version_detection_mode == 'manual') }}
+                                    </label>
+                                    <p class="mt-1.5 text-xs leading-5 text-content-muted">Select an API compatibility profile only when the provider contract requires an explicit override.</p>
+                                </div>
+                            {% else %}
+                                <div class="rounded-lg border border-outline-subtle bg-surface-subtle px-4 py-3">
+                                    <p class="text-xs font-semibold text-content-muted">Compatibility Detection</p>
+                                    <p class="mt-1 text-sm font-semibold text-content-primary">{{ provider.version_detection_mode|replace('_', ' ')|title }}</p>
+                                    <p class="mt-1 text-xs leading-5 text-content-secondary">KAORI applies the compatibility policy declared by this metrics provider.</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </section>
+                    <section class="border-t border-outline-subtle pt-6">
+                        <div class="mb-4 flex items-start gap-3">
+                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary dark:text-kaori-accent"><i data-lucide="shield-check" class="h-4 w-4"></i></span>
+                            <div>
+                                <h3 class="text-sm font-semibold text-content-primary">Security &amp; Operational Controls</h3>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">Control certificate verification and whether KAORI may resolve this connection for bound scopes.</p>
+                            </div>
+                        </div>
+                        <div class="grid gap-3 md:grid-cols-2">
+                            {% call operational_toggle.render(
+                                'Verify TLS Certificate',
+                                'Reject untrusted or mismatched certificates.'
+                                ) %}
+                                {{ form.verify_ssl(class_='h-4 w-4 rounded border-outline-strong text-kaori-primary focus:ring-outline-focus') }}
+                            {% endcall %}
+                            {% call operational_toggle.render(
+                                'Allow KAORI to Use This Connection',
+                                'Disabled connections remain stored but are excluded from scope resolution.'
+                                ) %}
+                                {{ form.enabled(class_='h-4 w-4 rounded border-outline-strong text-kaori-primary focus:ring-outline-focus') }}
+                            {% endcall %}
+                        </div>
+                    </section>
+                </div>
+                {% if not instance %}
+                    <div id="metrics-source-connection-test-result"
+                         class="hidden"
+                         aria-hidden="true"></div>
+                {% endif %}
+                {% if instance %}
+                    {% call form_action_bar.render('Save changes, then run Full Validation.', aria_label=metrics_source_label ~ ' Connection Actions') %}
+                        <a href="{{ url_for('integrations.metrics_sources') }}"
+                           class="{{ action_button.classes('secondary') }}">Cancel</a>
+                        <button type="submit"
+                                data-operation-submit
+                                data-loading-label="Saving changes..."
+                                class="{{ action_button.classes('primary') }} shrink-0">
+                            <i data-lucide="save" class="h-4 w-4"></i><span data-operation-submit-label>Save Changes</span>
+                        </button>
+                    {% endcall %}
+                {% else %}
+                    {{ provider_registration_actions.render(url_for('integrations.metrics_sources') ,
+                    aria_label=metrics_source_label ~ ' Connection Actions',
+                    register_label='Register Connection',
+                    loading_label='Registering Connection...'
+                    ) }}
+                {% endif %}
+            </section>
+            <aside class="space-y-4 xl:col-span-4 xl:sticky xl:top-5">
+                {% if instance %}
+                    {% set metrics_source_flow_items = [('Save Changes', 'Update the reusable connection contract and return readiness to Validation Required.'), ('Test Connection', 'Confirm the saved endpoint remains reachable with the selected access settings.'), ('Run Core Validation', 'Rebuild provider compatibility and adapter and query-contract readiness evidence.'), ('Review Consumer Bindings', 'Confirm Kubernetes, MinIO, and future consumers retain independent validated bindings.')] %}
+                    {{ provider_registration_context.render(metrics_source_label ~ " Configuration Flow",
+                                        "How saved connection changes return to governed operational use.",
+                                        metrics_source_flow_items,
+                                        "Observability Integrations",
+                                        "Review " ~ metrics_source_label ~ " coverage, connection readiness, and consumer bindings from the observability workspace.",
+                                        url_for("integrations.observability") ,
+                    "Open Observability Integrations",
+                    flow_icon="workflow",
+                    flow_note="Saving changes does not establish readiness until Core Validation succeeds.",
+                    related_icon="waypoints",
+                    authority_boundary=metrics_source_label ~ " remains authoritative for metric query execution. Metrics collection and retention remain owned by the selected source platform. KAORI owns provider readiness, consumer binding validation, and governed source resolution.") }}
+                {% else %}
+                    {% set metrics_source_flow_items = [('Define Connection Identity', 'Provide a stable KAORI name and ownership description for the reusable source.'), ('Configure Endpoint Access', 'Set the endpoint, authentication, TLS verification, timeout, and compatibility detection.'), ('Test Connection', 'Verify reachability and compatibility before KAORI enables registration.'), ('Register Connection', 'Create the reusable connection identity before Core Validation and consumer binding.')] %}
+                    {% set metrics_source_related_description = "A single metrics source can serve Kubernetes, MinIO, and future integrations through independent consumer bindings and horizon-aware routing." %}
+                    {% if initial_cluster %}
+                        {% set metrics_source_related_description = metrics_source_related_description ~ " This registration will also create the initial metrics binding for " ~ initial_cluster.name ~ "." %}
+                    {% endif %}
+                    {{ provider_registration_context.render(metrics_source_label ~ " Registration Flow",
+                                        "How a reusable metrics connection is registered in KAORI.",
+                                        metrics_source_flow_items,
+                                        "Observability Integrations",
+                                        metrics_source_related_description,
+                                        url_for("integrations.observability") ,
+                    "Open Observability Integrations",
+                    flow_icon="workflow",
+                    flow_note="Registration requires a successful Test Connection and creates the reusable source identity only.",
+                    related_icon="waypoints",
+                    authority_boundary=metrics_source_label ~ " remains authoritative for metric query execution. Metrics collection and retention remain owned by the selected source platform. KAORI owns provider readiness, consumer binding validation, and governed source resolution.") }}
+                {% endif %}
+            </aside>
+        </form>
+        {% include "components/operation_feedback_oob.html" %}
+    </div>
+{% endblock dashboard_content %}

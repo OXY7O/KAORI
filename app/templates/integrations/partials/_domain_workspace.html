@@ -255,16 +255,16 @@
                         <div class="mb-4 flex flex-wrap items-start justify-between gap-3 rounded-lg border border-brand-outline bg-kaori-soft px-4 py-3">
                             <div class="min-w-0">
                                 <p class="text-xs font-semibold uppercase tracking-wide text-kaori-primary dark:text-kaori-accent">Observability Routing</p>
-                                <p class="mt-1 text-xs leading-5 text-content-secondary">Prometheus and Thanos Query are distinct metrics sources. Query age selects the recent or historical horizon first; source role, routing weight, and priority then choose among healthy matching bindings.</p>
+                                <p class="mt-1 text-xs leading-5 text-content-secondary">Metrics sources are independent reusable providers. Query age selects the recent or historical horizon first; source role, routing weight, and priority then choose among healthy matching bindings.</p>
                             </div>
-                            <p class="text-xs leading-5 text-content-muted">Alertmanager remains an alert source and does not participate in PromQL horizon routing.</p>
+                            <p class="text-xs leading-5 text-content-muted">Alertmanager remains an alert source and does not participate in metrics-query horizon routing.</p>
                         </div>
                     {% endif %}
                     {% if domain.key == 'storage' %}
                         <div class="mb-4 flex flex-wrap items-start justify-between gap-3 rounded-lg border border-brand-outline bg-kaori-soft px-4 py-3" data-kaori-storage-binding-boundary>
                             <div class="min-w-0">
                                 <p class="text-xs font-semibold uppercase tracking-wide text-kaori-primary dark:text-kaori-accent">Storage Authority Boundary</p>
-                                <p class="mt-1 text-xs leading-5 text-content-secondary">MinIO owns the object-storage API and managed asset. Prometheus or Thanos Query provides metrics, while Alertmanager provides alert evidence through independent source-owned bindings.</p>
+                                <p class="mt-1 text-xs leading-5 text-content-secondary">MinIO owns the object-storage API and managed asset. A Metrics Source provides metrics, while Alertmanager provides alert evidence through independent source-owned bindings.</p>
                             </div>
                             <p class="text-xs leading-5 text-content-muted">File Storage and Block Storage remain capability placeholders until a provider implementation is registered.</p>
                         </div>

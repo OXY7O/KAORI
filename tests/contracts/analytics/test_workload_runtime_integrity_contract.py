@@ -38,7 +38,7 @@ def test_active_deep_link_renders_directly_and_inactive_tabs_are_lazy() -> None:
 
 
 def test_promql_is_active_pod_scoped_and_deduplicates_scrape_series() -> None:
-    profile = read('app/integrations/prometheus/query_profiles/kubernetes_v1.py')
+    profile = read('app/integrations/metrics/query_profiles/kubernetes_v1.py')
     workload_block = profile[profile.index("'analytics.workload.queries.NAMESPACE_ACTIVE_QUERY'") :]
 
     assert 'phase=~"Pending|Running"' in workload_block
@@ -48,7 +48,7 @@ def test_promql_is_active_pod_scoped_and_deduplicates_scrape_series() -> None:
 
 
 def test_resource_quota_keeps_object_identity_and_independent_pressure() -> None:
-    profile = read('app/integrations/prometheus/query_profiles/kubernetes_v1.py')
+    profile = read('app/integrations/metrics/query_profiles/kubernetes_v1.py')
     quota = read('app/analytics/kubernetes/workload/quota.py')
 
     assert 'max by (namespace, resourcequota, resource, type)' in profile

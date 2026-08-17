@@ -63,7 +63,7 @@ def main() -> int:
     for required in (
         "'minio': 'MinIO'",
         "'kubernetes': 'Kubernetes'",
-        "'prometheus': 'Prometheus'",
+        "'metrics_source': 'Metrics Source'",
         "'alertmanager': 'Alertmanager'",
         "if raw.lower() == 'all':",
         "return 'All'",

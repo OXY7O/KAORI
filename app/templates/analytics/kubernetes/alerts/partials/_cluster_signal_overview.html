@@ -39,12 +39,12 @@
                             <span class="{{ analysis_surface.role_icon_classes('brand') }}"
                                   aria-hidden="true"><i data-lucide="waves" class="h-4 w-4"></i></span>
                         </div>
-                        <p class="mt-4 text-xs leading-5 text-content-muted">Active alerts plus Prometheus-derived anomaly candidates in the committed snapshot.</p>
+                        <p class="mt-4 text-xs leading-5 text-content-muted">Active alerts plus Metrics Source-derived anomaly candidates in the committed snapshot.</p>
                     </article>
                     <div class="grid gap-px overflow-hidden rounded-lg border border-outline-subtle bg-outline-subtle sm:grid-cols-2">
                         {% for label, value, helper in [
                             ('Active Alerts', overview.active_alerts, 'Firing, active, or pending'),
-                            ('Anomalies', overview.anomalies, 'Prometheus-derived candidates'),
+                            ('Anomalies', overview.anomalies, 'Metrics Source-derived candidates'),
                             ('Pending Alerts', overview.pending_alerts, 'Awaiting evaluation'),
                             ('Resolved Alerts', overview.resolved_alerts, 'Resolved in loaded evidence')
                             ] %}

@@ -124,7 +124,7 @@ def _signal_action_hint(
     if warning_alerts > 0:
         return 'Review warning alerts and validate whether workload behavior is expected.'
     if anomaly_count > 0:
-        return 'Inspect restart and readiness anomaly candidates from Prometheus metrics.'
+        return 'Inspect restart and readiness anomaly candidates from Metrics Source data.'
     if not evidence_complete:
         return 'Restore complete anomaly evidence before confirming a stable signal posture.'
     return 'No immediate inspection is required.'

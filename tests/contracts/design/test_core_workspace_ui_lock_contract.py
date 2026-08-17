@@ -10,7 +10,7 @@ def read(relative: str) -> str:
 def test_provider_details_use_shared_framed_tabs():
     for relative in (
         'app/templates/integrations/kubernetes/detail.html',
-        'app/templates/prometheus/instance_detail.html',
+        'app/templates/metrics/instance_detail.html',
         'app/templates/alertmanager/instance_detail.html',
     ):
         source = read(relative)
@@ -32,7 +32,7 @@ def test_dynamic_progress_uses_shared_component_in_reviewed_integration_surfaces
 
     for relative in (
         'app/templates/integrations/kubernetes/partials/_capability_workspace.html',
-        'app/templates/prometheus/partials/_detail_validation_content.html',
+        'app/templates/metrics/partials/_detail_validation_content.html',
         'app/templates/alertmanager/partials/_detail_validation_content.html',
     ):
         source = read(relative)

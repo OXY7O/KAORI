@@ -26,7 +26,7 @@
                 "Kubernetes API",
                 "Endpoint identity, authentication, effective RBAC, version compatibility, and core API capabilities are validated before use.",
                 "Direct Authority and Binding Aware",
-                "Inventory uses direct Kubernetes authority, while Analytics and Alert Intelligence resolve eligible Prometheus and Alertmanager consumer bindings.",
+                "Inventory uses direct Kubernetes authority, while Analytics and Alert Intelligence resolve eligible Metrics Source and Alertmanager consumer bindings.",
                 "Kubernetes Remains Authoritative",
                 "Cluster state, workloads, namespaces, configuration, and API authorization remain owned by Kubernetes; KAORI governs validation and consumer resolution evidence.") }}
         {% call(tab_name) integration_tabs.render("kubernetes", active_tab, stats.total, stats.total) %}

@@ -48,16 +48,16 @@ def test_kubernetes_connection_forms_follow_integration_dark_mode_and_shared_act
     assert 'dark:text-kaori-accent' in form
 
 
-def test_prometheus_and_alertmanager_registration_forms_use_shared_action_contract() -> None:
-    prometheus = read('app/templates/prometheus/instance_form.html')
+def test_metrics_source_and_alertmanager_registration_forms_use_shared_action_contract() -> None:
+    metrics_source = read('app/templates/metrics/instance_form.html')
     alertmanager = read('app/templates/alertmanager/instance_form.html')
 
-    for source in (prometheus, alertmanager):
+    for source in (metrics_source, alertmanager):
         assert '{% import "components/action_button.html" as action_button %}' in source
         assert "action_button.classes('secondary')" in source
         assert "action_button.classes('primary')" in source
 
     shared_context = read('app/templates/integrations/components/_provider_registration_context.html')
-    assert 'provider_registration_context.render(' in prometheus
+    assert 'provider_registration_context.render(' in metrics_source
     assert 'provider_registration_context.render(' in alertmanager
     assert 'Related Operational Workspace' in shared_context

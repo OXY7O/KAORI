@@ -35,7 +35,7 @@ def test_configured_zero_quota_key_is_not_classified_as_missing() -> None:
 def test_workload_runtime_terms_are_factual_and_composite_efficiency_is_removed() -> None:
     service = read('app/analytics/kubernetes/workload/service.py')
     mapping = read('app/templates/analytics/kubernetes/workload/partials/_workload_mapping_section.html')
-    query_profile = read('app/integrations/prometheus/query_profiles/kubernetes_v1.py')
+    query_profile = read('app/integrations/metrics/query_profiles/kubernetes_v1.py')
 
     assert 'WORKLOAD_CPU_CURRENT_QUERY' in service
     assert 'WORKLOAD_MEMORY_CURRENT_QUERY' in service

@@ -122,7 +122,7 @@ def enqueue_recovery_work(*, provider_type: str, instance: Any) -> RecoveryDispa
                     _record_dispatch(result, created=created)
         return result
 
-    if provider_type not in {'prometheus', 'alertmanager'}:
+    if provider_type not in {'metrics_source', 'alertmanager'}:
         return result
 
     requests = (

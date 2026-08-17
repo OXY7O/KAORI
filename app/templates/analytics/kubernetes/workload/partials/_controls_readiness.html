@@ -13,10 +13,10 @@
     <input type="hidden" name="tab" value="{{ initial_tab|default('quotas') }}">
     {% call analytics_workspace.controls_readiness(
         'Workload Controls & Data Readiness',
-        'Set the top-level tenant scope and confirm the Prometheus source and committed workload snapshot before reviewing governance evidence.',
+        'Set the top-level tenant scope and confirm the Metrics Source source and committed workload snapshot before reviewing governance evidence.',
         'sliders-horizontal',
         'workload-refresh-indicator',
-        prometheus_status,
+        metrics_source_status,
         analytics_materialization,
         eyebrow='Workload Analysis'
         ) %}

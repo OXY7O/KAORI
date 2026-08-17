@@ -61,20 +61,20 @@ Toast persistence failure must not reverse a successful provider operation. The 
 
 ## Provider normal flow
 
-Prometheus and Alertmanager use their canonical instance workspace:
+Metrics Source and Alertmanager use their canonical instance workspace:
 
 - Configuration
 - Validation & Capabilities
 - Runtime & History
 - Bindings & Consumers
 
-Cluster compatibility routes may exist only as redirect or migration boundaries. Normal templates, dependency blockers, and action feedback must point to canonical registration, provider registry, or instance manage routes. Legacy Prometheus registry and cluster-configuration bookmarks redirect to the canonical provider landing or instance Configuration tab; they do not render a parallel management workflow.
+Cluster compatibility routes may exist only as redirect or migration boundaries. Normal templates, dependency blockers, and action feedback must point to canonical registration, provider registry, or instance manage routes. Retired product-specific Metrics Source routes are not registered. Canonical registration, provider registry, and instance routes own the workflow without redirects or compatibility wrappers.
 
 ## Reference implementation
 
 - `app/templates/components/operation_feedback_oob.html`
 - `app/notifications/service.py::record_operational_activity`
-- `app/prometheus/routes.py`
+- `app/metrics/routes.py`
 - `app/alertmanager/routes.py`
 
 

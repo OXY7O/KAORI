@@ -86,7 +86,7 @@ Technical product names keep their official casing:
 
 ```text
 Kubernetes Inventory
-Prometheus
+Metrics Sources
 Alertmanager
 GitOps
 OAuth

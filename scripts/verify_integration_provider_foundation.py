@@ -13,11 +13,11 @@ FILES = (
     'app/integrations/resolver.py',
     'app/integrations/validation/tasks.py',
     'app/integrations/kubernetes/__init__.py',
-    'app/integrations/prometheus/__init__.py',
-    'app/integrations/prometheus/adapter.py',
-    'app/integrations/prometheus/binding_management.py',
-    'app/integrations/prometheus/binding_profiles.py',
-    'app/integrations/prometheus/binding_validation.py',
+    'app/integrations/metrics/__init__.py',
+    'app/integrations/metrics/adapter.py',
+    'app/integrations/metrics/binding_management.py',
+    'app/integrations/metrics/binding_profiles.py',
+    'app/integrations/metrics/binding_validation.py',
     'app/integrations/alertmanager/__init__.py',
     'app/integrations/alertmanager/adapter.py',
     'app/integrations/alertmanager/binding_management.py',
@@ -48,8 +48,8 @@ def main() -> None:
 
     resolver = read('app/integrations/resolver.py')
     require(
-        "instance.provider_type == 'prometheus'" not in resolver,
-        'resolver must not branch on Prometheus provider name',
+        "provider_type == '" not in resolver,
+        'resolver must not branch on concrete provider names',
     )
     require(
         'get_record_for_canonical(instance.id)' in resolver,
@@ -59,8 +59,8 @@ def main() -> None:
     binding_service = read('app/integrations/binding_service.py')
     require('def create_source_binding(' in binding_service, 'generic source binding entrypoint is required')
     require(
-        "if provider not in {'prometheus', 'alertmanager'}" not in binding_service,
-        'binding service must not use a provider allow-list',
+        'if provider not in {' not in binding_service,
+        'binding service must not use a concrete-provider allow-list',
     )
     require(
         'def create_cluster_source_binding(' not in binding_service,
@@ -70,11 +70,10 @@ def main() -> None:
 
     validation = read('app/integrations/validation/tasks.py')
     full_validation = validation.split('def validate_integration_instance', 1)[1].split('def _as_result_payload', 1)[0]
-    for provider in ('prometheus', 'alertmanager', 'kubernetes', 'minio'):
-        require(
-            f"provider_type == '{provider}'" not in full_validation,
-            f'full validation must not branch on {provider}',
-        )
+    require(
+        "provider_type == '" not in full_validation,
+        'full validation must not branch on concrete provider names',
+    )
     require(
         "if 'binding.validate' in module.operations" in full_validation,
         'full validation must discover binding validation through registered operations',
@@ -85,10 +84,10 @@ def main() -> None:
     require('for module in registry.all()' in catalog, 'provider catalog must be registry-driven')
     require('S3-compatible Storage' not in catalog, 'storage must be a domain, not a fake S3 provider entry')
 
-    profiles = read('app/integrations/prometheus/binding_profiles.py')
+    profiles = read('app/integrations/metrics/binding_profiles.py')
     require(
         'register_binding_validation_profile' in profiles,
-        'Prometheus binding validation must expose asset-specific profile registration',
+        'Metrics Source binding validation must expose asset-specific profile registration',
     )
 
     print('PASS: Integration provider foundation is taxonomy-driven, asset-bound, and provider-extensible.')

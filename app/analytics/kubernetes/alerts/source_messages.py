@@ -76,12 +76,12 @@ def friendly_alert_fallback_reason(*, primary_available: bool, fallback_availabl
     if primary_available:
         return None
     if fallback_available:
-        return 'Alertmanager is unavailable, so KAORI is using the Prometheus ALERTS fallback.'
-    return 'Alertmanager and the Prometheus ALERTS fallback are currently unavailable.'
+        return 'Alertmanager is unavailable, so KAORI is using the Metrics Source ALERTS fallback.'
+    return 'Alertmanager and the Metrics Source ALERTS fallback are currently unavailable.'
 
 
 def friendly_combined_alert_error() -> str:
     return (
         'Alert data is temporarily unavailable because neither Alertmanager nor the '
-        'Prometheus fallback could be reached. KAORI will retry automatically.'
+        'Metrics Source fallback could be reached. KAORI will retry automatically.'
     )

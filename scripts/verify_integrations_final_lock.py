@@ -8,7 +8,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 INTEGRATION_TEMPLATE_ROOTS = (
     Path('app/templates/integrations'),
-    Path('app/templates/prometheus'),
+    Path('app/templates/metrics'),
     Path('app/templates/alertmanager'),
 )
 
@@ -60,7 +60,7 @@ def main() -> int:
     require('progress_bar.bar(' in readiness, 'Capability readiness must use the shared progress bar', errors)
     for relative in (
         'app/templates/integrations/kubernetes/partials/_capability_workspace.html',
-        'app/templates/prometheus/partials/_detail_validation_content.html',
+        'app/templates/metrics/partials/_detail_validation_content.html',
         'app/templates/alertmanager/partials/_detail_validation_content.html',
     ):
         source = read(relative)
@@ -80,7 +80,7 @@ def main() -> int:
             'kubernetes-capability-loading',
             False,
         ),
-        ('app/templates/prometheus/partials/_capability_registry.html', 'prometheus-capability-loading', True),
+        ('app/templates/metrics/partials/_capability_registry.html', 'metrics-source-capability-loading', True),
         ('app/templates/alertmanager/partials/_capability_registry.html', 'alertmanager-capability-loading', True),
     )
     fake_loading_tokens = (
@@ -195,7 +195,7 @@ def main() -> int:
 
     # Runtime detail workspaces remain full-width decision/evidence surfaces.
     for relative in (
-        'app/templates/prometheus/partials/_runtime_panel.html',
+        'app/templates/metrics/partials/_runtime_panel.html',
         'app/templates/alertmanager/partials/_runtime_panel.html',
     ):
         source = read(relative)
@@ -238,8 +238,8 @@ def main() -> int:
         require(marker in config_contract, f'Shared provider Configuration contract missing: {marker}', errors)
     require('Operational Boundary' not in config_contract, 'Separate Operational Boundary surface is retired', errors)
     require('Operational Flow' not in config_contract, 'Separate Operational Flow surface is retired', errors)
-    for provider in ('prometheus', 'alertmanager'):
-        relative = f'app/templates/{provider}/partials/_detail_configuration.html'
+    for provider, template_root in (('metrics_source', 'metrics'), ('alertmanager', 'alertmanager')):
+        relative = f'app/templates/{template_root}/partials/_detail_configuration.html'
         source = read(relative)
         require(
             'provider_configuration_contract.render(' in source,
@@ -258,8 +258,8 @@ def main() -> int:
     require(
         'integration_workspace_tabs.js' in layout, 'Application layout must load shared provider tab controller', errors
     )
-    for provider in ('prometheus', 'alertmanager'):
-        source = read(f'app/templates/{provider}/instance_detail.html')
+    for provider, template_root in (('metrics_source', 'metrics'), ('alertmanager', 'alertmanager')):
+        source = read(f'app/templates/{template_root}/instance_detail.html')
         require('integrationWorkspaceTabs(' in source, f'{provider}: detail tabs must use shared controller', errors)
         require(
             'binding_rows|default([])' in source,
@@ -287,7 +287,7 @@ def main() -> int:
     )
     registry_templates = (
         'app/templates/integrations/kubernetes/partials/_registry.html',
-        'app/templates/integrations/prometheus/partials/_inventory_content.html',
+        'app/templates/integrations/metrics/partials/_inventory_content.html',
         'app/templates/integrations/alertmanager/partials/_inventory_content.html',
         'app/templates/minio/partials/_registry_content.html',
     )
@@ -357,11 +357,11 @@ def main() -> int:
     # Known dead Integration-era templates may not return.
     obsolete = (
         'app/templates/integrations/partials/_runtime_detail_content.html',
-        'app/templates/prometheus/partials/_analytics_readiness.html',
+        'app/templates/metrics/partials/_analytics_readiness.html',
         'app/templates/integrations/kubernetes/partials/_runtime_history.html',
         'app/templates/integrations/partials/_binding_validation_posture.html',
         'app/templates/integrations/partials/_status_badge.html',
-        'app/templates/prometheus/partials/_validation_response.html',
+        'app/templates/metrics/partials/_validation_response.html',
         'app/templates/alertmanager/partials/_operation_feedback_oob.html',
     )
     cleanup_script = read('scripts/cleanup_obsolete_files.sh')
@@ -395,8 +395,11 @@ def main() -> int:
         'Shared Observability Add Binding dialog must keep workflow and validation ownership guidance',
         errors,
     )
-    for provider, identity_column in (('prometheus', 'Metrics Identity'), ('alertmanager', 'Alert Identity')):
-        registry = read(f'app/templates/{provider}/partials/_binding_registry.html')
+    for provider, template_root, identity_column in (
+        ('metrics_source', 'metrics', 'Metrics Identity'),
+        ('alertmanager', 'alertmanager', 'Alert Identity'),
+    ):
+        registry = read(f'app/templates/{template_root}/partials/_binding_registry.html')
         for marker in (
             'data-kaori-binding-registry-final-lock',
             'Consumer Asset',
@@ -419,7 +422,7 @@ def main() -> int:
     # Integrations Overview and provider front-page final-lock contract.
     provider_front_pages = {
         'Kubernetes': read('app/templates/integrations/kubernetes.html'),
-        'Prometheus': read('app/templates/integrations/prometheus.html'),
+        'Metrics Source': read('app/templates/integrations/metrics.html'),
         'Alertmanager': read('app/templates/integrations/alertmanager.html'),
         'MinIO': read('app/templates/minio/index.html'),
     }
@@ -551,7 +554,7 @@ def main() -> int:
     # Provider detail lifecycle final-lock contract.
     provider_details = {
         'Kubernetes': read('app/templates/integrations/kubernetes/detail.html'),
-        'Prometheus': read('app/templates/prometheus/instance_detail.html'),
+        'Metrics Source': read('app/templates/metrics/instance_detail.html'),
         'Alertmanager': read('app/templates/alertmanager/instance_detail.html'),
         'MinIO': read('app/templates/minio/instance_detail.html'),
     }
@@ -578,8 +581,8 @@ def main() -> int:
         'Inventory & Lifecycle' in provider_details['MinIO'], 'MinIO detail must retain Inventory & Lifecycle', errors
     )
     require(
-        'Bindings & Consumers' in provider_details['Prometheus'],
-        'Prometheus detail must retain Bindings & Consumers',
+        'Bindings & Consumers' in provider_details['Metrics Source'],
+        'Metrics Source detail must retain Bindings & Consumers',
         errors,
     )
     require(
@@ -590,7 +593,7 @@ def main() -> int:
 
     validation_templates = {
         'Kubernetes': read('app/templates/integrations/kubernetes/partials/_capability_workspace.html'),
-        'Prometheus': read('app/templates/prometheus/partials/_detail_validation_content.html'),
+        'Metrics Source': read('app/templates/metrics/partials/_detail_validation_content.html'),
         'Alertmanager': read('app/templates/alertmanager/partials/_detail_validation_content.html'),
         'MinIO': read('app/templates/minio/partials/_detail_validation.html'),
     }
@@ -609,8 +612,8 @@ def main() -> int:
             errors,
         )
     require(
-        'Prometheus Core Validation' not in validation_templates['Prometheus'],
-        'Prometheus detail UI must not expose retired Core Validation title',
+        'Core Validation' not in validation_templates['Metrics Source'],
+        'Metrics Source detail UI must not expose retired Core Validation title',
         errors,
     )
     require(
@@ -620,7 +623,7 @@ def main() -> int:
     )
 
     for provider, relative in (
-        ('Prometheus', 'app/templates/prometheus/partials/_runtime_panel.html'),
+        ('Metrics Source', 'app/templates/metrics/partials/_runtime_panel.html'),
         ('Alertmanager', 'app/templates/alertmanager/partials/_runtime_panel.html'),
         ('MinIO', 'app/templates/minio/partials/_detail_runtime.html'),
     ):
@@ -651,8 +654,8 @@ def main() -> int:
         errors,
     )
     require(
-        'Prometheus Configuration Decision' in audit_doc,
-        'Integration v1.1 audit must record Prometheus Configuration Decision refinement',
+        'Configuration Decision' in audit_doc,
+        'Integration v1.1 audit must record Configuration Decision refinement',
         errors,
     )
     require(

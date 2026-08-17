@@ -20,7 +20,7 @@ def test_runtime_history_pagination_uses_provider_owned_routing() -> None:
     runtime = read('app/templates/integrations/partials/_runtime_history.html')
     kubernetes_detail = read('app/templates/integrations/kubernetes/detail.html')
     kubernetes_workspace = read('app/templates/integrations/kubernetes/partials/_runtime_workspace.html')
-    prometheus = read('app/templates/prometheus/partials/_runtime_history.html')
+    metrics_source = read('app/templates/metrics/partials/_runtime_history.html')
     alertmanager = read('app/templates/alertmanager/partials/_runtime_history.html')
 
     assert 'runtime_history_route_args_value.copy()' in runtime
@@ -35,7 +35,7 @@ def test_runtime_history_pagination_uses_provider_owned_routing() -> None:
         assert "runtime_history_endpoint='integrations.kubernetes_runtime_history'" in template
         assert "runtime_history_detail_endpoint='integrations.kubernetes_detail'" in template
 
-    assert "runtime_history_route_args = {'instance_id': instance.id}" in prometheus
+    assert "runtime_history_route_args = {'instance_id': instance.id}" in metrics_source
     assert "runtime_history_route_args = {'instance_id': instance.id}" in alertmanager
 
 

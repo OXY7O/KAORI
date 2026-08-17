@@ -31,7 +31,7 @@ def test_provider_configuration_uses_shared_read_only_contract() -> None:
     operational = read('app/templates/integrations/components/_provider_operational_context.html')
     assert 'Step {{ loop.index }}' in operational
     assert 'Configure Connection' in shared
-    for provider in ('prometheus', 'alertmanager'):
+    for provider in ('metrics', 'alertmanager'):
         source = read(f'app/templates/{provider}/partials/_detail_configuration.html')
         assert 'provider_configuration_contract.render(' in source
 
@@ -41,7 +41,7 @@ def test_provider_tabs_share_one_controller() -> None:
     layout = read('app/templates/layouts/app.html')
     assert 'window.integrationWorkspaceTabs' in controller
     assert 'integration_workspace_tabs.js' in layout
-    for provider in ('prometheus', 'alertmanager'):
+    for provider in ('metrics', 'alertmanager'):
         assert 'integrationWorkspaceTabs(' in read(f'app/templates/{provider}/instance_detail.html')
 
 
@@ -59,7 +59,7 @@ def test_runtime_overview_uses_modal_and_registry_tables_avoid_forced_scroll() -
 
     pairs = [
         ('app/templates/integrations/kubernetes/partials/_registry.html', 'min-w-[1040px]'),
-        ('app/templates/integrations/prometheus/partials/_inventory_content.html', 'min-w-[1080px]'),
+        ('app/templates/integrations/metrics/partials/_inventory_content.html', 'min-w-[1080px]'),
         ('app/templates/integrations/alertmanager/partials/_inventory_content.html', 'min-w-[1040px]'),
     ]
     registry_component = read('app/templates/integrations/components/_provider_registry.html')

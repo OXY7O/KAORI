@@ -58,7 +58,7 @@ def test_forecast_snapshot_identity_excludes_local_projection_controls() -> None
 
 
 def test_forecast_queries_use_ready_worker_and_duplicate_safe_boundaries() -> None:
-    profile = read('app/integrations/prometheus/query_profiles/forecast_v1.py')
+    profile = read('app/integrations/metrics/query_profiles/forecast_v1.py')
 
     assert 'max by (namespace, pod, container)' in profile
     assert 'max by (namespace, pod, node)' in profile
