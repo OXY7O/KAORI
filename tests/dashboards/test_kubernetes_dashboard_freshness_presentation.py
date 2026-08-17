@@ -9,7 +9,7 @@ from app.kubernetes.dashboard.sections.freshness import build_data_freshness
 def test_selected_cluster_freshness_uses_specific_status_labels() -> None:
     items = build_data_freshness(
         latest_inventory_sync=datetime.now(UTC),
-        has_prometheus_data=True,
+        has_metrics_source_data=True,
         has_alertmanager_data=False,
         reporting_snapshot=ReportingSnapshot(generated_reports=3),
         selected_cluster=object(),
@@ -38,7 +38,7 @@ def test_selected_cluster_freshness_uses_specific_status_labels() -> None:
 def test_fleet_freshness_distinguishes_scope_from_missing_data() -> None:
     items = build_data_freshness(
         latest_inventory_sync=None,
-        has_prometheus_data=False,
+        has_metrics_source_data=False,
         has_alertmanager_data=False,
         reporting_snapshot=ReportingSnapshot(),
         selected_cluster=None,

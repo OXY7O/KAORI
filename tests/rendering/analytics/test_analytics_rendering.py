@@ -5,7 +5,7 @@ from pathlib import Path
 from jinja2 import Environment
 
 ROOT = Path(__file__).resolve().parents[3]
-TEMPLATES = ROOT / 'app/templates/analytics'
+TEMPLATES = ROOT / 'app/templates/kubernetes/analytics'
 
 
 def test_all_analytics_templates_parse_with_jinja() -> None:

@@ -154,7 +154,7 @@ def test_inventory_sync_keeps_clusters_sync_as_separate_mutation_permission() ->
 
 def test_inventory_resource_template_registry_targets_existing_kubernetes_templates() -> None:
     routes = Path(inventory_routes.__file__).read_text(encoding='utf-8')
-    template_root = Path(inventory_routes.__file__).resolve().parents[2] / 'templates' / 'inventory' / 'kubernetes'
+    template_root = Path(inventory_routes.__file__).resolve().parents[2] / 'templates' / 'kubernetes' / 'inventory'
     resources = ('nodes', 'namespaces', 'configuration', 'workloads', 'pods', 'services', 'ingresses', 'storage')
 
     assert "f'kubernetes/inventory/{resource}/index.html'" in routes

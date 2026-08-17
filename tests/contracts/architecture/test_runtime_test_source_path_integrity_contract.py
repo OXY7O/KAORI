@@ -20,3 +20,13 @@ def test_runtime_test_source_path_verifier_accepts_the_current_tree() -> None:
     spec.loader.exec_module(module)
 
     assert module.main() == 0
+
+
+def test_runtime_test_source_path_verifier_blocks_retired_metrics_and_template_references() -> None:
+    source = VERIFIER.read_text(encoding='utf-8')
+
+    assert 'has_prometheus_data' in source
+    assert 'prometheus_cluster_ids' in source
+    assert '_prometheus_dataset_eligible' in source
+    assert "templates' / 'inventory' / 'kubernetes" in source
+    assert "ROOT / 'app/templates/analytics'" in source

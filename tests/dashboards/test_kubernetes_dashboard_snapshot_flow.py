@@ -213,7 +213,7 @@ def test_alertmanager_only_cluster_schedules_alert_snapshots(monkeypatch) -> Non
         None,
         clusters=[cluster],
         only_due=False,
-        prometheus_cluster_ids=set(),
+        metrics_source_cluster_ids=set(),
     )
 
     assert [item['dataset_key'] for item in work_items] == [
@@ -287,7 +287,7 @@ def test_forecast_history_snapshots_are_materialized_without_ui_projection_dimen
     )
     cluster = SimpleNamespace(id='cluster-1')
 
-    monkeypatch.setattr(job_adapter, '_prometheus_dataset_eligible', lambda *_args: True)
+    monkeypatch.setattr(job_adapter, '_metrics_source_dataset_eligible', lambda *_args: True)
 
     work_items = job_adapter._forecast_work_items(
         policy,

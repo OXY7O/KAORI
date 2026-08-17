@@ -7,6 +7,14 @@ ROOT = Path(__file__).resolve().parents[1]
 TESTS_ROOT = ROOT / 'tests'
 SOURCE_SEGMENTS = {'app', 'migrations', 'scripts'}
 
+RETIRED_TEST_REFERENCES = {
+    'has_prometheus_data': 'use has_metrics_source_data',
+    'prometheus_cluster_ids': 'use metrics_source_cluster_ids',
+    '_prometheus_dataset_eligible': 'use _metrics_source_dataset_eligible',
+    "templates' / 'inventory' / 'kubernetes": 'use app/templates/kubernetes/inventory',
+    "ROOT / 'app/templates/analytics'": 'use app/templates/kubernetes/analytics for Kubernetes analytics rendering tests',
+}
+
 
 def _evaluate_path(node: ast.AST, env: dict[str, Path], test_file: Path) -> Path | str | None:
     if isinstance(node, ast.Name) and node.id in env:
@@ -93,6 +101,11 @@ def main() -> int:
         for name, path in sorted(paths.items()):
             if _is_source_reference(path) and not path.exists():
                 errors.append(f'{test_file.relative_to(ROOT)}: {name} points to missing path {path.relative_to(ROOT)}')
+
+        source = test_file.read_text(encoding='utf-8')
+        for retired, replacement in RETIRED_TEST_REFERENCES.items():
+            if retired in source:
+                errors.append(f'{test_file.relative_to(ROOT)}: retired test reference {retired!r}; {replacement}')
 
     if errors:
         print('FAIL — KAORI Runtime Test Source Paths')
