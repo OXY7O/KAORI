@@ -30,6 +30,10 @@ class User(UserMixin, db.Model):
             unique=True,
             postgresql_where=db.text('deleted_at IS NULL'),
         ),
+        db.CheckConstraint(
+            "NOT is_super_admin OR auth_source = 'database'",
+            name='ck_users_super_admin_local_database',
+        ),
     )
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -123,7 +127,7 @@ class User(UserMixin, db.Model):
     def role_name(self) -> str:
         if self.role_record is not None:
             return self.role_record.name
-        return 'viewer'
+        return 'unassigned'
 
     @property
     def role_display_name(self) -> str:
@@ -159,7 +163,7 @@ class User(UserMixin, db.Model):
         return check_password_hash(self.password_hash, password)
 
     def has_permission(self, permission_key: str) -> bool:
-        if self.is_super_admin:
+        if self.is_super_admin and self.auth_source == 'database':
             return True
 
         # A persisted role assignment is authoritative. An inactive role must

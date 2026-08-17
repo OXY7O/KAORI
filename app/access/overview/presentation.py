@@ -36,13 +36,14 @@ def _user_supporting_text(summary: dict[str, Any]) -> str:
         return 'No active user account is available; review account lifecycle before relying on Access controls.'
     if not summary['active_super_admins']:
         return 'No active break-glass super admin is available; restore protected administrative authority.'
-    if summary['unassigned_active_users']:
+    if summary['access_review']:
         return (
-            f'{summary["unassigned_active_users"]} active account(s) have no role assignment and therefore fail closed.'
+            f'{summary["access_review"]} account admission issue(s) require review across RBAC, '
+            'external identity, or emergency-access state.'
         )
     return (
-        f'{summary["total"]} registered account(s) with {summary["active_super_admins"]} active break-glass '
-        'super admin(s).'
+        f'{summary["total"]} registered account(s) with {summary["active_super_admins"]} active Local Database '
+        'break-glass super admin(s).'
     )
 
 
@@ -113,7 +114,7 @@ def build_access_overview() -> dict[str, Any]:
                 'metrics': (
                     ('users-round', 'Active Users', users['active']),
                     ('contact-round', 'External Users', users['external']),
-                    ('shield-check', 'Super Admins', users['active_super_admins']),
+                    ('shield-check', 'Local Super Admins', users['active_super_admins']),
                 ),
                 'supporting_text': _user_supporting_text(users),
                 'boundary_label': 'Account lifecycle authority',

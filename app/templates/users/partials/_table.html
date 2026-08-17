@@ -43,12 +43,17 @@
                     </td>
                     <td class="{{ table_ui.cell_classes() }}">
                         <div class="flex flex-wrap items-center gap-1.5">
-                            {{ table_label.metadata_label(user.role_display_name, icon='badge-check') }}
-                            {% if user_view.role.state_label == 'Inactive' %}{{ table_label.status_label('Role Inactive', 'warning', 'triangle-alert') }}{% endif %}
+                            {{ table_label.metadata_label(user_view.role.label, icon='badge-check') }}
+                            {% if user_view.role.state_label != 'Active' %}{{ table_label.status_label('Role ' ~ user_view.role.state_label, user_view.role.state_tone, user_view.role.state_icon) }}{% endif %}
                         </div>
                     </td>
                     <td class="{{ table_ui.cell_classes() }}">{{ table_label.metadata_label(user_view.source.label, icon=user_view.source.icon) }}</td>
-                    <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_label(user_view.lifecycle.label, user_view.lifecycle.tone, user_view.lifecycle.icon) }}</td>
+                    <td class="{{ table_ui.cell_classes() }}">
+                        <div class="flex flex-wrap items-center gap-1.5">
+                            {{ table_label.status_label(user_view.lifecycle.label, user_view.lifecycle.tone, user_view.lifecycle.icon) }}
+                            {{ table_label.status_label(user_view.access.label, user_view.access.tone, user_view.access.icon) }}
+                        </div>
+                    </td>
                     <td class="{{ table_ui.cell_classes() }}"><span class="text-sm text-content-secondary">{{ user.last_login_at|user_datetime("Never") }}</span></td>
                     <td class="{{ table_ui.cell_classes(action=true) }}">
                         <div class="flex justify-end gap-2">

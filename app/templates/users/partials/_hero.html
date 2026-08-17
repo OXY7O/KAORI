@@ -15,7 +15,7 @@
                 <div class="{{ page_hero.metadata_row_classes() }}">
                     {{ page_hero.meta_label('users-round', summary.managed ~ (' Managed Account' if summary.managed == 1 else ' Managed Accounts') ) }}
                     {{ page_hero.meta_label('fingerprint', summary.identity_source_count ~ (' Identity Source' if summary.identity_source_count == 1 else ' Identity Sources') ) }}
-                    {{ page_hero.meta_label('shield-check', summary.active_super_admins ~ (' Active Super Admin' if summary.active_super_admins == 1 else ' Active Super Admins') ) }}
+                    {{ page_hero.meta_label('shield-check', summary.active_super_admins ~ (' Active Local Super Admin' if summary.active_super_admins == 1 else ' Active Local Super Admins') ) }}
                 </div>
             {% endcall %}
         </div>
@@ -25,8 +25,8 @@
                 summary.posture_label,
                 summary.posture_tone,
                 [
-                ('circle-check', 'Active Users', summary.active, 'Allowed to authenticate') ,
-        ('fingerprint', 'External Identities', summary.external, 'LDAP and SSO accounts')
+                ('circle-check', 'Active Accounts', summary.active, 'Lifecycle enabled') ,
+        ('shield-alert', 'Access Findings', summary.access_review, 'Blocked admission states')
         ],
         hero_action_label,
         hero_action_href,

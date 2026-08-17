@@ -271,24 +271,24 @@
                                         Allows sign-in when the identity source and provider are available. Disable the account to block access without deleting it.
                                     </span>
                                 </label>
-                                {% if can_manage_admin_fields %}
+                                {% if can_manage_admin_fields and super_admin_eligible %}
                                     <label class="flex min-h-full cursor-pointer flex-col rounded-lg border border-outline-subtle bg-surface-card p-3.5 transition hover:border-outline-strong">
                                         <span class="flex h-11 items-center gap-3 rounded-lg border border-brand-outline bg-kaori-soft px-3.5">
                                             {{ form.is_super_admin(class="h-4 w-4 shrink-0 rounded border-outline-strong accent-kaori-primary focus:ring-kaori-primary") }}
                                             <span class="text-sm font-semibold text-kaori-strong">Super Admin</span>
                                         </span>
                                         <span class="mt-3 text-xs leading-5 text-content-muted">
-                                            Grants the highest administrative tier. Last-super-admin safeguards protect the final active Super Admin account.
+                                            Grants Local Database break-glass authority. The final active Local Super Admin is protected from demotion, deactivation, and deletion.
                                         </span>
                                     </label>
                                 {% else %}
                                     <div class="flex min-h-full flex-col rounded-lg border border-outline-subtle bg-surface-card p-3.5">
                                         <div class="flex h-11 items-center gap-3 rounded-lg border border-outline-default bg-surface-hover px-3.5">
                                             <i data-lucide="lock" class="h-4 w-4 shrink-0 text-content-muted"></i>
-                                            <span class="text-sm font-semibold text-content-secondary">Super Admin restricted</span>
+                                            <span class="text-sm font-semibold text-content-secondary">Super Admin unavailable</span>
                                         </div>
                                         <p class="mt-3 text-xs leading-5 text-content-muted">
-                                            Only an existing super admin may assign or remove the protected Super Admin tier.
+                                            {{ 'Super Admin is reserved for Local Database break-glass accounts.' if not super_admin_eligible else 'Only an existing super admin may assign or remove the protected Super Admin tier.' }}
                                         </p>
                                     </div>
                                 {% endif %}
@@ -301,7 +301,7 @@
                                        class="mt-0.5 h-5 w-5 shrink-0 text-kaori-primary"></i>
                                     <div>
                                         <p class="font-semibold">Protected Super Admin Account</p>
-                                        <p class="mt-1 text-xs leading-5 text-kaori-primary">Only another super admin can downgrade, deactivate, or delete this account. The last active super admin remains protected.</p>
+                                        <p class="mt-1 text-xs leading-5 text-kaori-primary">Only another Local Database super admin can downgrade, deactivate, or delete this account. The last active Local Database super admin remains protected.</p>
                                     </div>
                                 </div>
                             </div>
@@ -452,7 +452,7 @@
                             </div>
                             <div class="grid grid-cols-[24px_minmax(0,1fr)] gap-2">
                                 <span class="font-semibold text-kaori-primary">03</span>
-                                <p><strong class="font-semibold text-content-secondary">Super Admin</strong> is provider-independent, but at least one active Local Database Super Admin must remain available for Emergency Access.</p>
+                                <p><strong class="font-semibold text-content-secondary">Super Admin</strong> is Local Database break-glass authority and is never granted to LDAP or SSO identities. At least one active Local Super Admin must remain available for Emergency Access.</p>
                             </div>
                         </div>
                     </details>
@@ -563,7 +563,7 @@
                             </div>
                             <div class="grid grid-cols-[24px_minmax(0,1fr)] gap-2">
                                 <span class="font-semibold text-kaori-primary">04</span>
-                                <p><strong class="font-semibold text-content-secondary">Super Admin</strong> remains protected by administrator and last-active-super-admin safeguards.</p>
+                                <p><strong class="font-semibold text-content-secondary">Super Admin</strong> remains a Local Database break-glass boundary protected by last-active-local-super-admin safeguards.</p>
                             </div>
                         </div>
                     </section>

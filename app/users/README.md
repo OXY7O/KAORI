@@ -11,7 +11,7 @@
 - Activate or deactivate accounts.
 - Soft-delete accounts.
 - Reset Local Database passwords.
-- Protect self-management, administrator-level accounts, and the last active super admin.
+- Protect self-management, administrator-level accounts, and the last active Local Database super admin.
 - Record every mutation in Activity Audit Log and return all operator feedback through the standard toast.
 
 Self-registration is not supported.
@@ -23,11 +23,13 @@ Self-registration is not supported.
 | `__init__.py`      | Package marker and stable public exports only.                                                                         |
 | `routes.py`        | User Management HTTP boundary, permission decorators, form orchestration, redirect/HTMX responses, and toast delivery. |
 | `forms.py`         | Administrative form validation and provider-aware fields. It must not query providers or persist users.                |
-| `service.py`       | User queries, pagination, mutation helpers, administrative guardrails, and audit-event preparation.                    |
-| `identity.py`      | Canonical Local/LDAP/SSO identity-source definitions and credential ownership.                                         |
-| `lifecycle.py`     | Canonical active, inactive, deleted, and administrative-tier presentation.                                             |
+| `directory.py`     | User-directory filters, pagination, identity/effective-access presentation, and domain summary composition.             |
+| `service.py`       | Identity-provider administration, user mutation helpers, administrative guardrails, and audit-event preparation.       |
+| `access_summary.py` | Lightweight User/Identity Provider posture used by Access Overview and User Management.                              |
+| `external.py`      | Administrative external-identity projection and role assignment boundary.                                              |
 | `notifications.py` | Standard User Management toast and Activity Audit payload construction.                                                |
 | `provider_forms.py` | Maps the provider WTForms surface into the Auth-owned provider configuration DTO.                                      |
+| `provisioning_proof.py` | Issues and verifies short-lived signed LDAP identity evidence before administrative projection.                   |
 
 ## Identity sources
 
@@ -46,7 +48,7 @@ Lifecycle and privilege are separate axes:
 - Administrative tier: standard, admin, super admin.
 - Identity source: Local Database, LDAP, SSO.
 
-`is_super_admin` is an explicit emergency/platform authority flag. It is not a substitute for a normal role and cannot be changed by a non-super-admin actor. The last active super admin cannot be disabled, demoted, or deleted.
+`is_super_admin` is an explicit **Local Database break-glass** authority flag. It is not a substitute for a normal role, is never valid for LDAP/SSO identities, and cannot be granted by a non-super-admin actor. The last active Local Database super admin cannot be disabled, demoted, or deleted.
 
 ## Notification contract
 
@@ -113,7 +115,7 @@ Canonical administration routes:
 /users/external-identities
 ```
 
-LDAP users are administratively provisioned before credential authentication. Google and GitHub may use pre-provisioned links or controlled JIT with a non-admin default role and provider-specific allow-list.
+LDAP users are administratively provisioned before credential authentication. Directory search results are converted into short-lived signed projection proofs, so the provisioning POST cannot replace the selected LDAP subject, username, DN, email, or display name with browser-controlled hidden-field values. Google and GitHub may use pre-provisioned links or controlled JIT with a non-admin default role and provider-specific allow-list.
 
 ## Identity provider UI structure
 
@@ -157,9 +159,9 @@ Google and GitHub provider configuration is managed by the Users domain, while b
 Access Final Lock v1 freezes the following User Management operational contract:
 
 - Restore and Activate are separate lifecycle decisions. Restore clears `deleted_at` but returns the account to **Inactive**.
-- Deactivate, delete, and super-admin demotion serialize the active-super-admin rows with a database `FOR UPDATE` boundary before the final last-super-admin check.
+- Deactivate, delete, and super-admin demotion serialize the active **Local Database** super-admin rows with a database `FOR UPDATE` boundary before the final break-glass check.
 - The directory uses shared KAORI loading, filter, table-label, expandable-detail, destructive-confirmation, and pagination contracts.
-- Inactive roles remain visible in the directory filter so operators can locate users assigned to a fail-closed role.
+- Inactive roles remain visible in the directory filter so operators can locate users assigned to a fail-closed role. Missing roles, inactive roles, disabled/missing external identity providers, and invalid external Super Admin flags surface as explicit Effective Access findings.
 - User-directory mutations update the hero posture out-of-band so account counts do not remain stale after HTMX actions.
 
 User Management is final-locked as an Access child workspace under `docs/design/KAORI_ACCESS_LOCK_V1.md`.

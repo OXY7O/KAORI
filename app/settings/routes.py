@@ -34,7 +34,7 @@ from app.notifications.feedback import OperationalDeliveryPolicy
 from app.notifications.service import record_operational_activity
 from app.settings.general.forms import RegionalFormatForm, TimezonePreferenceForm
 from app.settings.system_information import build_system_information
-from app.users.service import build_user_identity_context
+from app.users.directory import build_user_identity_context
 
 bp = Blueprint(
     'settings',

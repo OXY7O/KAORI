@@ -11,15 +11,15 @@
                     <p class="mt-0.5 text-xs leading-5 text-content-muted">Current account lifecycle, privileged access, and identity-source ownership.</p>
                 </div>
             </div>
-            {{ table_label.metadata_label('Lifecycle Governed', icon='shield-check') }}
+            {{ table_label.status_label(summary.posture_label, summary.posture_tone, 'shield-check' if summary.posture_tone == 'normal' else 'shield-alert') }}
         </div>
     </header>
     <div class="grid gap-px bg-outline-subtle md:grid-cols-2 xl:grid-cols-4">
         {% set metrics = [
-                    ('circle-check', 'Active Accounts', summary.active, 'Accounts currently allowed to authenticate.', 'bg-status-normal-soft text-status-normal-text'),
+                    ('circle-check', 'Active Accounts', summary.active, 'Lifecycle is active; effective access still depends on identity and RBAC admission.', 'bg-status-normal-soft text-status-normal-text'),
                     ('pause-circle', 'Inactive Accounts', summary.inactive, 'Access is paused while the account record remains managed.', 'bg-status-info-soft text-status-info-text'),
-                    ('archive', 'Deleted Accounts', summary.deleted, 'Soft-deleted accounts remain recoverable and auditable.', 'bg-status-warning-soft text-status-warning-text'),
-                    ('shield-check', 'Super Admins', summary.active_super_admins, 'Active emergency administrative authority.', 'bg-kaori-soft text-kaori-primary')
+                    ('shield-alert', 'Access Findings', summary.access_review, 'Active accounts blocked by RBAC, identity-provider, or invalid emergency-access state.', 'bg-status-warning-soft text-status-warning-text'),
+                    ('shield-check', 'Local Super Admins', summary.active_super_admins, 'Active Local Database break-glass authority.', 'bg-kaori-soft text-kaori-primary')
                 ] %}
         {% for icon, label, value, description, tone in metrics %}
             <article class="flex min-h-[11rem] flex-col bg-surface-card p-5">
@@ -41,8 +41,8 @@
             {% set boundaries = [
                             ('database', 'Local Database', summary.local ~ (' Account' if summary.local == 1 else ' Accounts'), 'KAORI owns local credentials and password lifecycle.'),
                             ('building-2', 'LDAP Directory', summary.ldap ~ (' Account' if summary.ldap == 1 else ' Accounts'), 'Directory credentials remain authoritative outside KAORI.'),
-                            ('fingerprint', 'SSO Providers', summary.sso ~ (' Account' if summary.sso == 1 else ' Accounts'), 'Google and GitHub identities remain provider-owned.'),
-                            ('rotate-ccw', 'Restore Boundary', 'Deleted → Inactive', 'Restore never reactivates access; activation remains explicit.')
+                            ('fingerprint', 'SSO Providers', summary.sso ~ (' Account' if summary.sso == 1 else ' Accounts'), 'Browser SSO identities remain provider-owned.'),
+                            ('rotate-ccw', 'Deleted & Restore', summary.deleted ~ (' Account' if summary.deleted == 1 else ' Accounts'), 'Restore returns Deleted → Inactive and never reactivates access; activation remains explicit.')
                         ] %}
             {% for icon, title, value, description in boundaries %}
                 <div class="flex items-start gap-3 rounded-xl border border-outline-subtle bg-surface-card p-3.5">

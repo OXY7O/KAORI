@@ -4,9 +4,8 @@ from collections.abc import Mapping
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any
 
-from sqlalchemy import and_, case, func, or_, select
+from sqlalchemy import func, or_, select
 
-from app.auth.providers.catalog import provider_types_for_family
 from app.common.pagination import (
     PER_PAGE_OPTIONS,
     build_pagination_window,
@@ -18,9 +17,6 @@ from app.models import AuditEvent, ExternalIdentityLink, IdentityProvider, Role,
 
 if TYPE_CHECKING:
     from app.users.forms import UserForm
-
-USER_STATUS_OPTIONS = ['all', 'active', 'inactive', 'deleted']
-USER_AUTH_SOURCE_OPTIONS = ['all', 'database', 'ldap', 'sso']
 
 PROVIDER_TYPE_OPTIONS = ['all', 'ldap', 'google_oidc', 'github_oauth']
 PROVIDER_STATE_OPTIONS = ['all', 'enabled', 'disabled']
@@ -215,198 +211,26 @@ def normalize_optional_text(value: str | None) -> str | None:
     return normalized or None
 
 
-def normalize_user_filters(args: Mapping[str, str | None]) -> dict[str, Any]:
-    status = (args.get('status') or 'all').strip().lower()
-    auth_source = (args.get('auth_source') or 'all').strip().lower()
-    role_id_raw = (args.get('role_id') or 'all').strip()
-
-    page = positive_int(args.get('page'), 1)
-    per_page = normalize_per_page(args.get('per_page'))
-
-    return {
-        'search': (args.get('search') or '').strip(),
-        'status': status if status in USER_STATUS_OPTIONS else 'all',
-        'auth_source': auth_source if auth_source in USER_AUTH_SOURCE_OPTIONS else 'all',
-        'role_id': int(role_id_raw) if role_id_raw.isdigit() else None,
-        'page': page,
-        'per_page': per_page,
-    }
-
-
-def build_users_payload(filters: dict[str, Any], actor: User | None = None) -> dict[str, Any]:
-    query = User.query
-
-    if filters['status'] != 'deleted':
-        query = query.filter(User.deleted_at.is_(None))
-
-    if filters['status'] == 'active':
-        query = query.filter(User.account_is_active.is_(True), User.deleted_at.is_(None))
-    elif filters['status'] == 'inactive':
-        query = query.filter(User.account_is_active.is_(False), User.deleted_at.is_(None))
-    elif filters['status'] == 'deleted':
-        query = query.filter(User.deleted_at.is_not(None))
-
-    if filters['auth_source'] != 'all':
-        source_values = provider_types_for_family(filters['auth_source'])
-        query = query.filter(User.auth_source.in_(source_values))
-
-    if filters['role_id']:
-        query = query.filter(User.role_id == filters['role_id'])
-
-    if filters['search']:
-        search_term = f'%{filters["search"]}%'
-        query = query.filter(
-            or_(
-                User.username.ilike(search_term),
-                User.email.ilike(search_term),
-                User.display_name.ilike(search_term),
-            )
-        )
-
-    total_items = query.count()
-    pagination = build_pagination_window(
-        total_items=total_items,
-        page=filters['page'],
-        per_page=filters['per_page'],
-    )
-    page = pagination.page
-
-    users = (
-        query.order_by(User.deleted_at.asc(), User.account_is_active.desc(), User.username.asc())
-        .offset(pagination.offset)
-        .limit(pagination.per_page)
-        .all()
-    )
-
-    population = (
-        db.session.query(
-            func.count(User.id).label('total'),
-            func.sum(case((User.account_is_active.is_(True), 1), else_=0)).label('active'),
-            func.sum(case((User.account_is_active.is_(False), 1), else_=0)).label('inactive'),
-            func.sum(
-                case(
-                    (
-                        and_(
-                            User.is_super_admin.is_(True),
-                            User.account_is_active.is_(True),
-                        ),
-                        1,
-                    ),
-                    else_=0,
-                )
-            ).label('active_super_admins'),
-        )
-        .filter(User.deleted_at.is_(None))
-        .one()
-    )
-    source_count_rows = (
-        db.session.query(User.auth_source, func.count(User.id))
-        .filter(User.deleted_at.is_(None))
-        .group_by(User.auth_source)
-        .all()
-    )
-    source_counts: dict[str, int] = {
-        str(source): int(count or 0) for source, count in source_count_rows if source is not None
-    }
-    local_users = int(source_counts.get('database', 0))
-    ldap_users = int(source_counts.get('ldap', 0))
-    google_users = int(source_counts.get('google_oidc', 0))
-    github_users = int(source_counts.get('github_oauth', 0))
-    deleted_users = User.query.filter(User.deleted_at.is_not(None)).count()
-    roles = Role.query.order_by(Role.is_active.desc(), Role.display_name.asc()).all()
-    user_presentations = {user.id: present_user_record(user) for user in users}
-    user_identity_contexts = {user.id: build_user_identity_context(user) for user in users}
-
-    can_manage_users = bool(actor and actor.has_permission('users.manage'))
-    active_users = int(population.active or 0)
-    inactive_users = int(population.inactive or 0)
-    active_super_admins = int(population.active_super_admins or 0)
-    sso_users = google_users + github_users
-    external_users = ldap_users + sso_users
-    identity_source_count = sum(1 for count in (local_users, ldap_users, sso_users) if count > 0)
-    posture_requires_review = active_users == 0 or active_super_admins == 0
-
-    return {
-        'users': users,
-        'roles': roles,
-        'summary': {
-            'total': int(population.total or 0),
-            'managed': int(population.total or 0) + int(deleted_users or 0),
-            'active': active_users,
-            'inactive': inactive_users,
-            'deleted': int(deleted_users or 0),
-            'local': local_users,
-            'ldap': ldap_users,
-            'google': google_users,
-            'github': github_users,
-            'sso': sso_users,
-            'external': external_users,
-            'identity_source_count': identity_source_count,
-            'active_super_admins': active_super_admins,
-            'posture_label': 'Review Required' if posture_requires_review else 'Ready',
-            'posture_tone': 'warning' if posture_requires_review else 'normal',
-        },
-        'filters': {**filters, 'page': page},
-        'pagination': pagination.as_dict(),
-        'per_page_options': list(PER_PAGE_OPTIONS),
-        'status_options': USER_STATUS_OPTIONS,
-        'auth_source_options': USER_AUTH_SOURCE_OPTIONS,
-        'user_actions': build_user_action_policies(actor, users),
-        'user_presentations': user_presentations,
-        'user_identity_contexts': user_identity_contexts,
-        'can_manage_users': can_manage_users,
-        'pagination_query': {
-            'per_page': pagination.per_page,
-            'search': filters['search'],
-            'status': filters['status'],
-            'auth_source': filters['auth_source'],
-            'role_id': filters['role_id'] or 'all',
-        },
-    }
-
-
-def present_user_record(user: User) -> dict[str, dict[str, str]]:
-    """Return semantic, presentation-only labels for the User Directory."""
-
-    if user.deleted_at is not None:
-        lifecycle = {'label': 'Deleted', 'tone': 'unknown', 'icon': 'archive'}
-    elif user.account_is_active:
-        lifecycle = {'label': 'Active', 'tone': 'normal', 'icon': 'circle-check'}
-    else:
-        lifecycle = {'label': 'Inactive', 'tone': 'unknown', 'icon': 'pause-circle'}
-
-    sources = {
-        'database': {'label': 'Local Database', 'icon': 'database'},
-        'ldap': {'label': 'LDAP', 'icon': 'building-2'},
-        'google_oidc': {'label': 'Google OIDC', 'icon': 'chrome'},
-        'github_oauth': {'label': 'GitHub OAuth', 'icon': 'github'},
-    }
-    source = sources.get(user.auth_source, {'label': 'External Provider', 'icon': 'key-round'})
-
-    role_active = bool(user.role_record and user.role_record.is_active)
-    role = {
-        'label': user.role_display_name,
-        'state_label': 'Active' if role_active else 'Inactive',
-        'state_tone': 'normal' if role_active else 'warning',
-    }
-
-    return {'lifecycle': lifecycle, 'source': source, 'role': role}
-
-
 def lock_active_super_admin_boundary(target: User) -> None:
     """Serialize lifecycle mutations that could remove active super-admin authority.
 
     Presentation checks remain lock-free. Mutation routes call this immediately
     before the final guardrail check so concurrent deactivate/delete/demotion
-    requests cannot each observe a stale active-super-admin count.
+    requests cannot each observe a stale active-local-super-admin count.
     """
 
-    if not target.is_super_admin or not target.account_is_active or target.deleted_at is not None:
+    if (
+        target.auth_source != 'database'
+        or not target.is_super_admin
+        or not target.account_is_active
+        or target.deleted_at is not None
+    ):
         return
 
     statement = (
         select(User)
         .where(
+            User.auth_source == 'database',
             User.is_super_admin.is_(True),
             User.account_is_active.is_(True),
             User.deleted_at.is_(None),
@@ -425,79 +249,6 @@ def assign_user_form_choices(form: UserForm, *, include_admin_roles: bool = True
 
     roles = query.order_by(Role.display_name.asc()).all()
     form.role_id.choices = [(str(role.id), role.display_name) for role in roles]
-
-
-def build_user_identity_context(user: User) -> dict[str, Any]:
-    identity_link = next(
-        (
-            link
-            for link in user.external_identities
-            if link.provider is not None and link.provider.provider_type == user.auth_source
-        ),
-        None,
-    )
-    if identity_link is None and user.external_identities:
-        identity_link = user.external_identities[0]
-    identity_provider = identity_link.provider if identity_link is not None else None
-
-    source_presentations = {
-        'database': {
-            'type_label': 'Local Database',
-            'icon': 'database',
-            'credential_owner': 'KAORI',
-            'credential_detail': 'KAORI stores the password hash and owns the password reset workflow.',
-        },
-        'ldap': {
-            'type_label': 'LDAP / Active Directory',
-            'icon': 'building-2',
-            'credential_owner': 'LDAP directory',
-            'credential_detail': 'The directory validates the password; KAORI stores only the linked identity and access controls.',
-        },
-        'google_oidc': {
-            'type_label': 'Google OpenID Connect',
-            'icon': 'chrome',
-            'credential_owner': 'Google',
-            'credential_detail': 'Google authenticates the user; KAORI enforces the identity link, lifecycle, and RBAC role.',
-        },
-        'github_oauth': {
-            'type_label': 'GitHub OAuth',
-            'icon': 'github',
-            'credential_owner': 'GitHub',
-            'credential_detail': 'GitHub authenticates the user; KAORI enforces the identity link, lifecycle, and RBAC role.',
-        },
-    }
-    presentation = source_presentations.get(
-        user.auth_source,
-        {
-            'type_label': 'External Identity Provider',
-            'icon': 'key-round',
-            'credential_owner': 'External provider',
-            'credential_detail': 'The external provider owns authentication; KAORI manages lifecycle and authorization.',
-        },
-    )
-    projection_type = str(identity_link.projection_type) if identity_link is not None else None
-    projection_labels = {
-        'administrative': 'Administrative provisioning',
-        'jit': 'Controlled JIT provisioning',
-    }
-    projection_label = (projection_labels.get(projection_type) if projection_type is not None else None) or (
-        'Local account' if user.auth_source == 'database' else 'Linked external identity'
-    )
-
-    return {
-        **presentation,
-        'provider_name': identity_provider.display_name
-        if identity_provider is not None
-        else presentation['type_label'],
-        'provider_key': identity_provider.key if identity_provider is not None else None,
-        'provider_enabled': identity_provider.enabled
-        if identity_provider is not None
-        else user.auth_source == 'database',
-        'projection_label': projection_label,
-        'external_username': identity_link.external_username if identity_link is not None else None,
-        'subject': identity_link.subject if identity_link is not None else user.external_id,
-        'distinguished_name': identity_link.distinguished_name if identity_link is not None else None,
-    }
 
 
 def find_active_user_identity_conflict(*, username: str, email: str, exclude_user_id: int | None = None) -> User | None:
@@ -567,19 +318,25 @@ def requested_admin_level(*, role_id: int | None, is_super_admin: bool) -> bool:
     return bool(is_super_admin or role_id_is_admin_level(role_id))
 
 
-def active_super_admin_count() -> int:
+def active_local_super_admin_count() -> int:
     return User.query.filter(
+        User.auth_source == 'database',
         User.is_super_admin.is_(True),
         User.account_is_active.is_(True),
         User.deleted_at.is_(None),
     ).count()
 
 
-def is_last_active_super_admin(user: User) -> bool:
-    if not user.is_super_admin or not user.account_is_active or user.deleted_at is not None:
+def is_last_active_local_super_admin(user: User) -> bool:
+    if (
+        user.auth_source != 'database'
+        or not user.is_super_admin
+        or not user.account_is_active
+        or user.deleted_at is not None
+    ):
         return False
 
-    return active_super_admin_count() <= 1
+    return active_local_super_admin_count() <= 1
 
 
 def _is_self_action(actor: User, target: User) -> bool:
@@ -631,7 +388,14 @@ def can_activate_user(actor: User, target: User) -> tuple[bool, str | None]:
     if not allowed:
         return allowed, message
 
-    return _block_admin_level_management(actor, target)
+    allowed, message = _block_admin_level_management(actor, target)
+    if not allowed:
+        return allowed, message
+
+    if target.is_super_admin and target.auth_source != 'database':
+        return False, 'Clear the invalid external Super Admin flag before activating this account.'
+
+    return True, None
 
 
 def can_restore_user(actor: User, target: User) -> tuple[bool, str | None]:
@@ -684,8 +448,8 @@ def can_deactivate_user(actor: User, target: User) -> tuple[bool, str | None]:
     if not allowed:
         return allowed, message
 
-    if is_last_active_super_admin(target):
-        return False, 'The last active super admin cannot be deactivated.'
+    if is_last_active_local_super_admin(target):
+        return False, 'The last active Local Database super admin cannot be deactivated.'
 
     return True, None
 
@@ -706,8 +470,8 @@ def can_delete_user(actor: User, target: User) -> tuple[bool, str | None]:
     if not allowed:
         return allowed, message
 
-    if is_last_active_super_admin(target):
-        return False, 'The last active super admin cannot be deleted.'
+    if is_last_active_local_super_admin(target):
+        return False, 'The last active Local Database super admin cannot be deleted.'
 
     return True, None
 
@@ -748,6 +512,9 @@ def can_edit_user(
         is_super_admin=requested_is_super_admin,
     )
 
+    if requested_is_super_admin and target.auth_source != 'database':
+        return False, 'Super Admin authority is reserved for Local Database break-glass accounts.'
+
     if _is_self_action(actor, target):
         security_fields_changed = (
             target.role_id != requested_role_id
@@ -763,11 +530,16 @@ def can_edit_user(
     if requested_is_admin_level and not actor.is_super_admin:
         return False, 'Only a super admin can grant administrator-level access.'
 
-    if target.is_super_admin and target.account_is_active and is_last_active_super_admin(target):
+    if (
+        target.auth_source == 'database'
+        and target.is_super_admin
+        and target.account_is_active
+        and is_last_active_local_super_admin(target)
+    ):
         if not requested_is_active:
-            return False, 'The last active super admin cannot be deactivated.'
+            return False, 'The last active Local Database super admin cannot be deactivated.'
         if not requested_is_super_admin:
-            return False, 'The last active super admin cannot lose the super admin flag.'
+            return False, 'The last active Local Database super admin cannot lose the super admin flag.'
 
     return True, None
 
@@ -793,7 +565,7 @@ def build_user_action_policies(actor: User | None, users: list[User]) -> dict[in
             user,
             requested_role_id=user.role_id,
             requested_is_active=user.account_is_active,
-            requested_is_super_admin=user.is_super_admin,
+            requested_is_super_admin=user.is_super_admin if user.auth_source == 'database' else False,
         )
         can_reset, reset_reason = can_reset_user_password(actor, user)
         can_activate, activate_reason = can_activate_user(actor, user)

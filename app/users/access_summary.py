@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from typing import Any
 
-from sqlalchemy import and_, case, func
+from sqlalchemy import and_, case, func, select
 
 from app.extensions.db import db
-from app.models import ExternalIdentityLink, IdentityProvider, User
+from app.models import ExternalIdentityLink, IdentityProvider, Role, User
 from app.users.service import present_identity_provider
 
 
@@ -63,7 +63,7 @@ def build_identity_provider_summary() -> dict[str, Any]:
 
 
 def build_user_access_summary() -> dict[str, Any]:
-    """Return access-control posture for the managed user population."""
+    """Return authoritative access-control posture for the managed user population."""
 
     population = (
         db.session.query(
@@ -74,6 +74,7 @@ def build_user_access_summary() -> dict[str, Any]:
                 case(
                     (
                         and_(
+                            User.auth_source == 'database',
                             User.is_super_admin.is_(True),
                             User.account_is_active.is_(True),
                         ),
@@ -81,24 +82,51 @@ def build_user_access_summary() -> dict[str, Any]:
                     ),
                     else_=0,
                 )
-            ).label('active_super_admins'),
-            func.sum(
-                case(
-                    (
-                        and_(
-                            User.account_is_active.is_(True),
-                            User.is_super_admin.is_(False),
-                            User.role_id.is_(None),
-                        ),
-                        1,
-                    ),
-                    else_=0,
-                )
-            ).label('unassigned_active_users'),
+            ).label('active_local_super_admins'),
         )
         .filter(User.deleted_at.is_(None))
         .one()
     )
+
+    unassigned_active_users = User.query.filter(
+        User.deleted_at.is_(None),
+        User.account_is_active.is_(True),
+        User.is_super_admin.is_(False),
+        User.role_id.is_(None),
+    ).count()
+    inactive_role_users = (
+        User.query.join(Role, Role.id == User.role_id)
+        .filter(
+            User.deleted_at.is_(None),
+            User.account_is_active.is_(True),
+            User.is_super_admin.is_(False),
+            Role.is_active.is_(False),
+        )
+        .count()
+    )
+    authorization_review = int(unassigned_active_users or 0) + int(inactive_role_users or 0)
+
+    enabled_matching_identity = (
+        select(ExternalIdentityLink.id)
+        .join(IdentityProvider, IdentityProvider.id == ExternalIdentityLink.provider_id)
+        .where(
+            ExternalIdentityLink.user_id == User.id,
+            IdentityProvider.provider_type == User.auth_source,
+            IdentityProvider.enabled.is_(True),
+        )
+        .exists()
+    )
+    external_identity_review = User.query.filter(
+        User.deleted_at.is_(None),
+        User.account_is_active.is_(True),
+        User.auth_source != 'database',
+        ~enabled_matching_identity,
+    ).count()
+    invalid_external_super_admins = User.query.filter(
+        User.deleted_at.is_(None),
+        User.is_super_admin.is_(True),
+        User.auth_source != 'database',
+    ).count()
     external_users = User.query.filter(
         User.deleted_at.is_(None),
         User.auth_source != 'database',
@@ -107,9 +135,14 @@ def build_user_access_summary() -> dict[str, Any]:
     total = int(population.total or 0)
     active = int(population.active or 0)
     inactive = int(population.inactive or 0)
-    active_super_admins = int(population.active_super_admins or 0)
-    unassigned_active_users = int(population.unassigned_active_users or 0)
-    review_count = int(active == 0) + int(active_super_admins == 0) + int(unassigned_active_users > 0)
+    active_super_admins = int(population.active_local_super_admins or 0)
+    unassigned_active_users = int(unassigned_active_users or 0)
+    inactive_role_users = int(inactive_role_users or 0)
+    authorization_review = int(authorization_review or 0)
+    external_identity_review = int(external_identity_review or 0)
+    invalid_external_super_admins = int(invalid_external_super_admins or 0)
+    access_review = authorization_review + external_identity_review + invalid_external_super_admins
+    review_count = int(active == 0) + int(active_super_admins == 0) + int(access_review > 0)
 
     return {
         'total': total,
@@ -118,6 +151,11 @@ def build_user_access_summary() -> dict[str, Any]:
         'external': int(external_users or 0),
         'active_super_admins': active_super_admins,
         'unassigned_active_users': unassigned_active_users,
+        'inactive_role_users': inactive_role_users,
+        'authorization_review': authorization_review,
+        'external_identity_review': external_identity_review,
+        'invalid_external_super_admins': invalid_external_super_admins,
+        'access_review': access_review,
         'review_count': review_count,
         'posture_label': 'Review Required' if review_count else 'Ready',
         'posture_tone': 'warning' if review_count else 'normal',

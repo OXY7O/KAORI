@@ -26,14 +26,14 @@ def test_last_super_admin_mutations_use_transaction_safe_boundary() -> None:
     assert 'db.session.refresh(target)' in service
     assert 'removes_active_super_admin_authority = bool(' in routes
     assert routes.count('lock_active_super_admin_boundary(user)') >= 3
-    assert 'The last active super admin cannot be deactivated.' in service
-    assert 'The last active super admin cannot be deleted.' in service
-    assert 'The last active super admin cannot lose the super admin flag.' in service
+    assert 'The last active Local Database super admin cannot be deactivated.' in service
+    assert 'The last active Local Database super admin cannot be deleted.' in service
+    assert 'The last active Local Database super admin cannot lose the super admin flag.' in service
 
 
 def test_user_management_hero_matches_inventory_hero_contract() -> None:
     template = read('app/templates/users/partials/_hero.html')
-    service = read('app/users/service.py')
+    directory = read('app/users/directory.py')
     routes = read('app/users/routes.py')
     assert 'page_hero.context_card(' in template
     assert 'page_hero.context_panel_classes()' not in template
@@ -41,29 +41,29 @@ def test_user_management_hero_matches_inventory_hero_contract() -> None:
     assert "'User Posture'" in template
     assert 'summary.posture_label' in template
     assert 'summary.posture_tone' in template
-    assert "('circle-check', 'Active Users'" in template
-    assert "('fingerprint', 'External Identities'" in template
+    assert "('circle-check', 'Active Accounts'" in template
+    assert "('shield-alert', 'Access Findings'" in template
     assert "hero_action_label = 'Add User' if can_manage_users else 'View User Directory'" in template
     assert "hero_action_href = url_for('users.create') if can_manage_users else '#user-directory'" in template
-    assert "'managed': int(population.total or 0) + int(deleted_users or 0)" in service
-    assert "'posture_label': 'Review Required' if posture_requires_review else 'Ready'" in service
+    assert "'managed': int(access_summary['total']) + int(deleted_users or 0)" in directory
+    assert 'access_summary = build_user_access_summary()' in directory
     assert 'hero_oob=True' in routes
     assert 'hx-swap-oob="outerHTML"' in template
 
 
 def test_user_management_posture_matches_permission_registry_overview_structure() -> None:
     summary = read('app/templates/users/partials/_summary_cards.html')
-    service = read('app/users/service.py')
+    directory = read('app/users/directory.py')
     assert 'Account &amp; Identity Posture' in summary
     assert 'grid gap-px bg-outline-subtle md:grid-cols-2 xl:grid-cols-4' in summary
     assert 'border-t border-outline-subtle bg-surface-hover' in summary
-    for label in ('Active Accounts', 'Inactive Accounts', 'Deleted Accounts', 'Super Admins'):
+    for label in ('Active Accounts', 'Inactive Accounts', 'Access Findings', 'Local Super Admins'):
         assert label in summary
-    for label in ('Local Database', 'LDAP Directory', 'SSO Providers', 'Restore Boundary'):
+    for label in ('Local Database', 'LDAP Directory', 'SSO Providers', 'Deleted & Restore'):
         assert label in summary
-    assert 'Deleted → Inactive' in summary
-    assert 'Restore never reactivates access' in summary
-    assert "'deleted': int(deleted_users or 0)" in service
+    assert 'Restore returns Deleted → Inactive' in summary
+    assert 'never reactivates access' in summary
+    assert "'deleted': int(deleted_users or 0)" in directory
 
 
 def test_user_directory_uses_shared_kaori_loading_filters_labels_and_expand_details() -> None:

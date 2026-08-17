@@ -61,6 +61,12 @@
                     </dd>
                 </div>
                 <div>
+                    <dt class="text-xs text-content-muted">Identity Admission</dt>
+                    <dd class="mt-1">
+                        {{ table_label.status_label(identity_context.identity_state, identity_context.identity_tone, 'fingerprint') }}
+                    </dd>
+                </div>
+                <div>
                     <dt class="text-xs text-content-muted">Last Authentication</dt>
                     <dd class="mt-1 font-medium text-content-secondary">
                         {{ user.last_login_at|user_datetime("Never") }}
@@ -79,13 +85,13 @@
                 <div>
                     <dt class="text-xs text-content-muted">Assigned Role</dt>
                     <dd class="mt-1 font-semibold text-content-primary">
-                        {{ user.role_display_name }}
+                        {{ user_view.role.label }}
                     </dd>
                 </div>
                 <div>
                     <dt class="text-xs text-content-muted">Role State</dt>
                     <dd class="mt-1">
-                        {{ table_label.status_label(user_view.role.state_label, user_view.role.state_tone, 'badge-check') }}
+                        {{ table_label.status_label(user_view.role.state_label, user_view.role.state_tone, user_view.role.state_icon) }}
                     </dd>
                 </div>
                 <div>
@@ -97,7 +103,7 @@
                 <div>
                     <dt class="text-xs text-content-muted">Effective Access</dt>
                     <dd class="mt-1 font-medium text-content-secondary">
-                        {{ 'Allowed by active account and role' if user.is_active and user_view.role.state_label == 'Active' else 'Restricted by lifecycle or role state' }}
+                        {{ user_view.access.label }} · {{ user_view.access.reason }}
                     </dd>
                 </div>
             </dl>
@@ -213,7 +219,7 @@
                                     data-destructive-modal-id="delete-user-modal"
                                     data-destructive-submit-button-id="delete-user-submit-{{ user.id }}"
                                     data-destructive-target="{{ user.display_label }}"
-                                    data-destructive-scope="{{ user.username }} · {{ user.role_display_name }}"
+                                    data-destructive-scope="{{ user.username }} · {{ user_view.role.label }}"
                                     class="{{ table_ui.action_classes(destructive=true) }}">
                                 <i data-lucide="trash-2" class="h-3.5 w-3.5" aria-hidden="true"></i>Delete
                             </button>

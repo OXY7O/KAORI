@@ -19,6 +19,11 @@ from app.auth.sso import SsoAdmissionError
 from app.extensions.db import db
 from app.models import IdentityProvider, Role, User
 from app.rbac.decorators import permission_required
+from app.users.directory import (
+    build_user_identity_context,
+    build_users_payload,
+    normalize_user_filters,
+)
 from app.users.external import (
     IdentityProjectionError,
     assign_projection_role_choices,
@@ -34,11 +39,14 @@ from app.users.forms import (
 )
 from app.users.notifications import user_management_feedback
 from app.users.provider_forms import identity_provider_configuration_from_form
+from app.users.provisioning_proof import (
+    ProjectionProofError,
+    issue_projection_proof,
+    verify_projection_proof,
+)
 from app.users.service import (
     assign_user_form_choices,
     build_identity_provider_payload,
-    build_user_identity_context,
-    build_users_payload,
     can_activate_user,
     can_create_user,
     can_deactivate_user,
@@ -49,7 +57,6 @@ from app.users.service import (
     create_or_update_user,
     lock_active_super_admin_boundary,
     normalize_provider_filters,
-    normalize_user_filters,
     record_admin_event,
     restore_user,
     set_user_active,
@@ -116,7 +123,12 @@ def create():
                 'External identities must be selected through LDAP Directory Provisioning.',
             ]
             return render_template(
-                'users/form.html', form=form, mode='create', user=None, can_manage_admin_fields=actor.is_super_admin
+                'users/form.html',
+                form=form,
+                mode='create',
+                user=None,
+                can_manage_admin_fields=actor.is_super_admin,
+                super_admin_eligible=True,
             )
         allowed, message = can_create_user(
             actor,
@@ -154,7 +166,12 @@ def create():
                 form.username.errors = [*form.username.errors, 'Username or email already exists.']
 
     return render_template(
-        'users/form.html', form=form, mode='create', user=None, can_manage_admin_fields=actor.is_super_admin
+        'users/form.html',
+        form=form,
+        mode='create',
+        user=None,
+        can_manage_admin_fields=actor.is_super_admin,
+        super_admin_eligible=True,
     )
 
 
@@ -171,7 +188,7 @@ def edit(user_id: int):
         user,
         requested_role_id=user.role_id,
         requested_is_active=user.account_is_active,
-        requested_is_super_admin=user.is_super_admin,
+        requested_is_super_admin=user.is_super_admin if user.auth_source == 'database' else False,
     )
     if not allowed:
         return reject('User update blocked', message or 'This account cannot be edited.', target=user)
@@ -233,6 +250,7 @@ def edit(user_id: int):
         mode='edit',
         user=user,
         can_manage_admin_fields=actor.is_super_admin,
+        super_admin_eligible=user.auth_source == 'database',
         identity_context=identity_context,
         reset_password_allowed=reset_password_allowed,
         reset_password_reason=reset_password_reason,
@@ -514,12 +532,21 @@ def external_identities():
     assign_provider_choices(search_form)
     assign_projection_role_choices(provision_form, include_admin_roles=cast(User, current_user).is_super_admin)
     results: list[ExternalIdentity] = []
+    projection_proofs: dict[str, str] = {}
     selected_provider = None
     if search_form.validate_on_submit() and search_form.submit.data:
         selected_provider = db.session.get(IdentityProvider, search_form.provider_id.data)
         if selected_provider is not None:
             try:
                 results = LdapDirectoryClient(selected_provider).search(search_form.query.data or '')
+                projection_proofs = {
+                    identity.subject: issue_projection_proof(
+                        provider_id=selected_provider.id,
+                        identity=identity,
+                        user_id=int(current_user.id),
+                    )
+                    for identity in results
+                }
             except ExternalProviderError as exc:
                 user_management_feedback(
                     actor=cast(User, current_user),
@@ -534,6 +561,7 @@ def external_identities():
         provision_form=provision_form,
         results=results,
         selected_provider=selected_provider,
+        projection_proofs=projection_proofs,
     )
 
 
@@ -553,16 +581,7 @@ def provision_identity():
         return redirect(url_for('users.external_identities'))
     provider_id_raw = (form.provider_id.data or '').strip()
     role_id = form.role_id.data
-    subject = (form.subject.data or '').strip()
-    external_username = (form.external_username.data or '').strip()
-    distinguished_name = (form.distinguished_name.data or '').strip()
-    if (
-        not provider_id_raw.isdigit()
-        or role_id is None
-        or not subject
-        or not external_username
-        or not distinguished_name
-    ):
+    if not provider_id_raw.isdigit() or role_id is None:
         user_management_feedback(
             actor=cast(User, current_user),
             event_type='external_identity_provision_failed',
@@ -582,14 +601,12 @@ def provision_identity():
             message='The selected LDAP provider is unavailable.',
         )
         return redirect(url_for('users.external_identities'))
-    identity = ExternalIdentity(
-        subject=subject,
-        username=external_username,
-        email=(form.email.data or '').strip() or None,
-        display_name=(form.display_name.data or '').strip() or None,
-        distinguished_name=distinguished_name,
-    )
     try:
+        identity = verify_projection_proof(
+            token=form.projection_proof.data or '',
+            provider_id=provider.id,
+            user_id=int(current_user.id),
+        )
         user = provision_external_identity(
             provider=provider,
             identity=identity,
@@ -604,7 +621,7 @@ def provision_identity():
             metadata={'provider_key': provider.key},
         )
         db.session.commit()
-    except IdentityProjectionError as exc:
+    except (IdentityProjectionError, ProjectionProofError) as exc:
         db.session.rollback()
         user_management_feedback(
             actor=cast(User, current_user),

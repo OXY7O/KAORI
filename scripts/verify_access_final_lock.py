@@ -189,7 +189,10 @@ def main() -> int:
     # User lifecycle and last-super-admin protections.
     users_routes = read('app/users/routes.py')
     users_service = read('app/users/service.py')
+    users_directory = read('app/users/directory.py')
+    user_access_summary = read('app/users/access_summary.py')
     user_model = read('app/models/user.py')
+    user_provisioning_proof = read('app/users/provisioning_proof.py')
     users_index = read('app/templates/users/index.html')
     users_hero = read('app/templates/users/partials/_hero.html')
     for permission in ('users.view', 'users.manage', 'users.activate', 'users.reset_password', 'users.delete'):
@@ -200,8 +203,8 @@ def main() -> int:
         )
     for required in (
         'lock_active_super_admin_boundary(user)',
-        'def is_last_active_super_admin',
-        'The last active super admin cannot be deleted.',
+        'def is_last_active_local_super_admin',
+        'The last active Local Database super admin cannot be deleted.',
         'with_for_update()',
     ):
         source = users_routes if required == 'lock_active_super_admin_boundary(user)' else users_service
@@ -213,6 +216,39 @@ def main() -> int:
         'User Management must use shared destructive confirmation runtime',
         errors,
     )
+
+    for required in (
+        "if self.is_super_admin and self.auth_source == 'database':",
+        "return 'unassigned'",
+    ):
+        require(required in user_model, f'User admission model contract missing: {required}', errors)
+    for required in (
+        "User.auth_source == 'database'",
+        'def active_local_super_admin_count()',
+        'Super Admin authority is reserved for Local Database break-glass accounts.',
+    ):
+        require(required in users_service, f'Local break-glass lifecycle contract missing: {required}', errors)
+    for required in (
+        'def build_users_payload(',
+        'def build_user_identity_context(',
+        "'label': 'Unassigned'",
+        "'label': 'Blocked'",
+        "'label': 'Allowed'",
+    ):
+        require(required in users_directory, f'User effective-access presentation contract missing: {required}', errors)
+    require(
+        'def build_users_payload(' not in users_service,
+        'User directory composition must remain split from mutation service',
+        errors,
+    )
+    for required in (
+        "'access_review': access_review",
+        "'invalid_external_super_admins': invalid_external_super_admins",
+        "'external_identity_review': external_identity_review",
+    ):
+        require(required in user_access_summary, f'User posture review contract missing: {required}', errors)
+    for required in ('URLSafeTimedSerializer', 'verify_projection_proof(', 'PROJECTION_PROOF_MAX_AGE_SECONDS = 600'):
+        require(required in user_provisioning_proof, f'LDAP projection proof contract missing: {required}', errors)
 
     # Identity Providers: administration-only, secrets external, live validation on demand.
     provider_index = read('app/templates/users/providers/index.html')

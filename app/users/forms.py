@@ -3,7 +3,7 @@ from __future__ import annotations
 from flask import current_app
 from flask_wtf import FlaskForm
 from wtforms import BooleanField, HiddenField, PasswordField, SelectField, StringField, SubmitField, TextAreaField
-from wtforms.validators import DataRequired, EqualTo, Length, Optional, ValidationError
+from wtforms.validators import DataRequired, Email, EqualTo, Length, Optional, ValidationError
 
 from app.auth.password_policy import LOCAL_PASSWORD_MAX_LENGTH, LocalPasswordPolicy
 from app.auth.provider_configuration import normalize_provider_key
@@ -14,7 +14,7 @@ from app.auth.providers.ldap import ExternalProviderError, resolve_ldap_transpor
 class UserForm(FlaskForm):
     user_id = HiddenField()
     username = StringField('Username', validators=[DataRequired(), Length(max=100)])
-    email = StringField('Email', validators=[DataRequired(), Length(max=255)])
+    email = StringField('Email', validators=[DataRequired(), Email(), Length(max=255)])
     display_name = StringField('Display Name', validators=[Optional(), Length(max=150)])
     auth_source = HiddenField(default='database')
     external_id = HiddenField()
@@ -145,11 +145,7 @@ class ExternalIdentitySearchForm(FlaskForm):
 
 class ExternalIdentityProvisionForm(FlaskForm):
     provider_id = HiddenField(validators=[DataRequired()])
-    subject = HiddenField(validators=[DataRequired()])
-    external_username = HiddenField(validators=[DataRequired()])
-    distinguished_name = HiddenField(validators=[DataRequired()])
-    email = HiddenField()
-    display_name = HiddenField()
+    projection_proof = HiddenField(validators=[DataRequired()])
     role_id = SelectField('Assigned Role', coerce=int, validators=[DataRequired()])
     is_active = BooleanField('Active', default=True)
     submit = SubmitField('Provision User')
