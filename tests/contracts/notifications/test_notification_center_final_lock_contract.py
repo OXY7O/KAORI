@@ -153,18 +153,21 @@ def test_notification_center_final_lock_is_documented_and_release_gated() -> Non
     assert 'verify_notification_center_final_lock.py' in read('scripts/quality_gate.sh')
 
 
-def test_secret_management_filter_excludes_tls_certificate_events() -> None:
+def test_notification_categories_use_persisted_source_controlled_classification() -> None:
     queries = read('app/notifications/queries.py')
-    assert "~Notification.event_type.like('kubernetes_tls_secret_%')" in queries
+    catalog = read('app/definitions/catalogs/notifications/event_categories.yaml')
+    writer = read('app/notifications/writer.py')
+    assert 'Notification.category_key == normalized_category' in queries
+    assert 'kubernetes_tls_secret_' in catalog
+    assert 'kubernetes_secret_' in catalog
+    assert 'notification.category_key = event_category_key(event_type)' in writer
 
 
 def test_notification_center_service_forwards_all_filter_arguments() -> None:
     service = read('app/notifications/service.py')
 
     signature = service.split('def get_notification_center_page_context(', 1)[1].split(') -> dict[str, Any]:', 1)[0]
-    body = service.split('def get_notification_center_page_context(', 1)[1].split(
-        'def get_notification_activity_context(', 1
-    )[0]
+    body = service.split('def get_notification_center_page_context(', 1)[1].split('def mark_notification_read(', 1)[0]
 
     for token in (
         "status: str = 'all'",

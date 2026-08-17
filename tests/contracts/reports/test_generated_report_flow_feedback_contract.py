@@ -37,14 +37,16 @@ def test_terminal_report_outcomes_are_persistent_notification_center_events() ->
 
 def test_report_events_are_platform_operations_in_notification_center() -> None:
     catalog = read(ROOT / 'app/notifications/event_catalog.py')
+    category_catalog = read(ROOT / 'app/definitions/catalogs/notifications/event_categories.yaml')
     queries = read(ROOT / 'app/notifications/queries.py')
 
     for prefix in ("'report_'", "'generated_report_'", "'generated_reports_'"):
         assert prefix in catalog
 
-    assert "Notification.event_type.like('report_%')" in queries
-    assert "Notification.event_type.like('generated_report_%')" in queries
-    assert "Notification.event_type.like('generated_reports_%')" in queries
+    assert '      - report_' in category_catalog
+    assert '      - generated_report_' in category_catalog
+    assert '      - generated_reports_' in category_catalog
+    assert 'Notification.category_key == normalized_category' in queries
     assert "target_type='Report'" in catalog
     assert "source_label='Reports operation'" in catalog
 

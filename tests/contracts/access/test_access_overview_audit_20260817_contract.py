@@ -14,7 +14,7 @@ def test_access_overview_is_a_domain_summary_composer_not_a_persistence_owner() 
         'build_identity_provider_summary()',
         "build_roles_index_context(can_manage_roles=False)['summary']",
         "build_permission_registry_snapshot()['summary']",
-        'get_notification_activity_summary()',
+        'get_activity_audit_summary()',
     ):
         assert required in presentation
     for forbidden in (
@@ -44,12 +44,13 @@ def test_user_and_identity_provider_access_summaries_enforce_operational_guardra
 def test_permission_and_activity_posture_reuse_authoritative_evidence() -> None:
     presentation = read('app/access/overview/presentation.py')
     permission_service = read('app/access/permissions/service.py')
+    activity_service = read('app/access/activity_audit/service.py')
     notification_queries = read('app/notifications/queries.py')
     assert "permission_summary['drift_count']" in presentation
     assert "'posture_label': 'Synchronized' if not drift_contracts else 'Review Required'" in permission_service
-    assert 'def get_notification_activity_summary()' in notification_queries
+    assert 'def get_activity_audit_summary()' in activity_service
     assert "Notification.status.in_(['warning', 'error'])" in notification_queries
-    assert 'func.count(func.distinct(actor_identity))' in notification_queries
+    assert 'func.count(func.distinct(Notification.actor_key))' in notification_queries
 
 
 def test_access_boundaries_show_posture_without_mutation_controls() -> None:

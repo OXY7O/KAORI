@@ -56,7 +56,7 @@ def test_permission_contract_keys_follow_current_domain_ownership_without_runtim
     catalog = read('app/definitions/catalogs/rbac/access.yaml')
     migration = read('migrations/versions/20260817_permission_contract_ownership.py')
     sidebar = read('app/templates/components/navigation/sidebar.html')
-    activity_routes = read('app/notifications/routes.py')
+    activity_routes = read('app/access/activity_audit/routes.py')
 
     assert 'key: integrations.manage' in catalog
     assert 'key: activity_audit.view' in catalog
@@ -80,3 +80,16 @@ def test_permission_catalog_remains_read_only_and_convergence_command_owned() ->
     assert 'db.session.commit' not in routes
     assert 'db.session.commit' not in service
     assert 'flask seed-rbac' in detail
+
+
+def test_permission_catalog_registry_summary_is_wired_once_without_recursive_shadow_state() -> None:
+    service = read('app/access/permissions/service.py')
+    summary_block = service.split('def _registry_summary(', 1)[1].split('def build_permission_registry_snapshot(', 1)[0]
+    snapshot_block = service.split('def build_permission_registry_snapshot(', 1)[1]
+
+    assert "canonical_contracts = [row for row in contracts if row['code_owned']]" in summary_block
+    assert "drift_contracts = [row for row in contracts if row['state_key'] != 'canonical']" in summary_block
+    assert 'database_only_in_use_count = sum(' in summary_block
+    assert '_registry_summary(' not in summary_block
+    assert 'summary = _registry_summary(' in snapshot_block
+    assert "'summary': summary" in snapshot_block

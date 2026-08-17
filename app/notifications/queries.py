@@ -4,7 +4,6 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from sqlalchemy import (
-    and_,
     case,
     func,
     or_,
@@ -16,7 +15,6 @@ from app.common.job_execution_presentation import present_job_execution
 from app.extensions.db import db
 from app.models.job import JobExecution, JobExecutionSubscriber
 from app.models.notification import Notification
-from app.models.user import User
 from app.notifications.constants import (
     ACTIVITY_CENTER_ACTIVE_JOB_STATUSES,
     ACTIVITY_CENTER_ATTENTION_STATUSES,
@@ -26,21 +24,15 @@ from app.notifications.constants import (
     ALLOWED_STATUSES,
     NAVIGATION_NOTIFICATION_LIMIT,
 )
-from app.notifications.event_catalog import CATEGORY_LABELS
-from app.notifications.presentation import _serialize_notification, _user_label
-
-_CENTER_CATEGORY_ORDER = (
-    'configmap_management',
-    'tls_certificate',
-    'secret_management',
-    'integrations',
-    'platform_operations',
-    'access',
-    'settings',
+from app.notifications.event_catalog import (
+    CATEGORY_LABELS,
+    activity_category_keys,
+    notification_center_category_keys,
 )
+from app.notifications.presentation import _serialize_notification
 
-
-_AUDIT_CATEGORY_ORDER = (*_CENTER_CATEGORY_ORDER, 'operations')
+_CENTER_CATEGORY_ORDER = notification_center_category_keys()
+_AUDIT_CATEGORY_ORDER = activity_category_keys()
 _ACTIVITY_TIME_RANGES = {
     '24h': timedelta(hours=24),
     '7d': timedelta(days=7),
@@ -50,77 +42,11 @@ _ACTIVITY_TIME_RANGES = {
 }
 
 
-def _activity_category_condition(category: str):
-    if category == 'operations':
-        known_conditions = [
-            condition
-            for key in _CENTER_CATEGORY_ORDER
-            if (condition := _notification_category_condition(key)) is not None
-        ]
-        return ~or_(*known_conditions) if known_conditions else None
-    return _notification_category_condition(category)
-
-
 def _activity_cutoff(time_range: str) -> datetime | None:
     delta = _ACTIVITY_TIME_RANGES.get(time_range)
     if delta is None:
         return None
     return datetime.now(UTC) - delta
-
-
-def _notification_category_condition(category: str):
-    if category == 'configmap_management':
-        return Notification.event_type.like('kubernetes_configmap_%')
-    if category == 'tls_certificate':
-        return or_(
-            Notification.event_type.like('governance_tls_%'),
-            Notification.event_type.like('kubernetes_tls_secret_%'),
-        )
-    if category == 'secret_management':
-        return and_(
-            Notification.event_type.like('kubernetes_secret_%'),
-            ~Notification.event_type.like('kubernetes_tls_secret_%'),
-            ~Notification.event_type.like('kubernetes_secret_reveal_cluster_readiness_%'),
-            ~Notification.event_type.like('kubernetes_secret_reveal_namespace_policy_%'),
-        )
-    if category == 'integrations':
-        return or_(
-            Notification.event_type.like('metrics_source_%'),
-            Notification.event_type.like('alertmanager_%'),
-            Notification.event_type.like('cluster_%'),
-            Notification.event_type.like('kubernetes_capability_%'),
-            Notification.event_type.like('kubernetes_runtime_%'),
-            Notification.event_type.like('integration_%'),
-            Notification.event_type == 'kubernetes_inventory_sync',
-        )
-    if category == 'platform_operations':
-        return or_(
-            Notification.event_type.like('data_lifecycle_%'),
-            Notification.event_type.like('job_%'),
-            Notification.event_type.like('report_%'),
-            Notification.event_type.like('generated_report_%'),
-            Notification.event_type.like('generated_reports_%'),
-            Notification.event_type.like('kubernetes_secret_reveal_cluster_readiness_%'),
-            Notification.event_type.like('kubernetes_secret_reveal_namespace_policy_%'),
-        )
-    if category == 'access':
-        return or_(
-            Notification.event_type.like('rbac_%'),
-            Notification.event_type.like('identity_provider_%'),
-            Notification.event_type.like('external_identity_%'),
-            and_(
-                Notification.event_type.like('user_%'),
-                Notification.event_type != 'user_preference',
-            ),
-            Notification.event_type == 'authentication',
-        )
-    if category == 'settings':
-        return or_(
-            Notification.event_type == 'user_preference',
-            Notification.event_type == 'account_security',
-            Notification.event_type.like('settings_%'),
-        )
-    return None
 
 
 def get_navigation_notification_context(
@@ -288,9 +214,7 @@ def get_notification_center_page_context(
     elif normalized_read_state == 'unread':
         filtered_query = filtered_query.filter(Notification.read_at.is_(None))
     if normalized_category != 'all':
-        category_condition = _notification_category_condition(normalized_category)
-        if category_condition is not None:
-            filtered_query = filtered_query.filter(category_condition)
+        filtered_query = filtered_query.filter(Notification.category_key == normalized_category)
     if normalized_search:
         pattern = f'%{normalized_search}%'
         filtered_query = filtered_query.filter(
@@ -341,50 +265,42 @@ def get_notification_center_page_context(
     return base_context
 
 
-def _normalize_user_filter(user_id: int | None) -> int | None:
-    if user_id is None or user_id <= 0:
-        return None
-    return user_id
+def _normalize_actor_filter(actor_key: str | None) -> str | None:
+    normalized = str(actor_key or '').strip()
+    return normalized or None
 
 
 def get_notification_activity_summary() -> dict[str, int | str]:
-    """Return the 24-hour administrative activity posture without page hydration."""
+    """Return recent evidence volume without treating evidence outcomes as workspace health."""
 
     cutoff_24h = datetime.now(UTC) - timedelta(hours=24)
-    actor_identity = case(
-        (
-            and_(
-                Notification.event_type == 'authentication',
-                Notification.status != 'success',
-            ),
-            None,
-        ),
-        else_=Notification.user_id,
-    )
     events_24h, success_24h, attention_24h, actors_24h = (
         db.session.query(
             func.count(Notification.id),
             func.coalesce(func.sum(case((Notification.status == 'success', 1), else_=0)), 0),
             func.coalesce(func.sum(case((Notification.status.in_(['warning', 'error']), 1), else_=0)), 0),
-            func.count(func.distinct(actor_identity)),
+            func.count(func.distinct(Notification.actor_key)),
         )
         .filter(Notification.created_at >= cutoff_24h)
         .one()
     )
+    events = int(events_24h or 0)
     attention = int(attention_24h or 0)
     return {
-        'events_24h': int(events_24h or 0),
+        'events_24h': events,
         'success_24h': int(success_24h or 0),
         'attention_24h': attention,
         'actors_24h': int(actors_24h or 0),
-        'posture_label': 'Needs Review' if attention else 'Available',
-        'posture_tone': 'warning' if attention else 'normal',
+        'posture_label': 'Available',
+        'posture_tone': 'normal',
+        'evidence_label': 'Evidence Recorded' if events else 'No Recent Evidence',
+        'attention_label': 'Attention Recorded' if attention else 'No Attention Recorded',
     }
 
 
 def get_notification_activity_context(
     *,
-    user_id: int | None,
+    actor_key: str | None,
     page: int,
     per_page: int,
     status: str,
@@ -399,29 +315,18 @@ def get_notification_activity_context(
     normalized_category = category if category in _AUDIT_CATEGORY_ORDER else 'all'
     normalized_time_range = time_range if time_range in _ACTIVITY_TIME_RANGES else '7d'
     normalized_search = search.strip()
-    normalized_user_id = _normalize_user_filter(user_id)
+    normalized_actor_key = _normalize_actor_filter(actor_key)
 
-    filtered_query = Notification.query.outerjoin(
-        User,
-        User.id == Notification.user_id,
-    )
+    filtered_query = Notification.query
 
-    if normalized_user_id is not None:
-        filtered_query = filtered_query.filter(
-            Notification.user_id == normalized_user_id,
-            or_(
-                Notification.event_type != 'authentication',
-                Notification.status == 'success',
-            ),
-        )
+    if normalized_actor_key is not None:
+        filtered_query = filtered_query.filter(Notification.actor_key == normalized_actor_key)
 
     if normalized_status != 'all':
         filtered_query = filtered_query.filter(Notification.status == normalized_status)
 
     if normalized_category != 'all':
-        category_condition = _activity_category_condition(normalized_category)
-        if category_condition is not None:
-            filtered_query = filtered_query.filter(category_condition)
+        filtered_query = filtered_query.filter(Notification.category_key == normalized_category)
 
     cutoff = _activity_cutoff(normalized_time_range)
     if cutoff is not None:
@@ -435,9 +340,7 @@ def get_notification_activity_context(
                 Notification.message.ilike(pattern),
                 Notification.detail.ilike(pattern),
                 Notification.event_type.ilike(pattern),
-                User.username.ilike(pattern),
-                User.email.ilike(pattern),
-                User.display_name.ilike(pattern),
+                Notification.actor_label.ilike(pattern),
             )
         )
 
@@ -450,11 +353,16 @@ def get_notification_activity_context(
         error_out=False,
     )
 
-    page_user_ids = {notification.user_id for notification in pagination.items if notification.user_id is not None}
-    page_users = User.query.filter(User.id.in_(page_user_ids)).all() if page_user_ids else []
-    users_by_id = {user.id: user for user in page_users}
-
-    user_options = User.query.order_by(User.username.asc(), User.id.asc()).all()
+    actor_rows = (
+        db.session.query(
+            Notification.actor_key,
+            func.max(Notification.actor_label).label('actor_label'),
+        )
+        .filter(Notification.actor_key.is_not(None), Notification.actor_label.is_not(None))
+        .group_by(Notification.actor_key)
+        .order_by(func.max(Notification.actor_label).asc(), Notification.actor_key.asc())
+        .all()
+    )
     pagination_total = int(pagination.total or 0)
 
     context: dict[str, Any] = {
@@ -462,24 +370,22 @@ def get_notification_activity_context(
             _serialize_notification(
                 notification,
                 include_metadata=False,
-                user=users_by_id.get(notification.user_id),
             )
             for notification in pagination.items
         ],
         'filters': {
-            'user_id': normalized_user_id,
+            'actor_key': normalized_actor_key,
             'status': normalized_status,
             'category': normalized_category,
             'time_range': normalized_time_range,
             'search': normalized_search,
         },
-        'user_options': [
+        'actor_options': [
             {
-                'id': user.id,
-                'label': _user_label(user, user.id),
-                'email': user.email,
+                'key': str(row.actor_key),
+                'label': str(row.actor_label),
             }
-            for user in user_options
+            for row in actor_rows
         ],
         'category_options': [{'key': key, 'label': CATEGORY_LABELS[key]} for key in _AUDIT_CATEGORY_ORDER],
         'time_range_options': [
@@ -487,7 +393,7 @@ def get_notification_activity_context(
             ('7d', '7 Days'),
             ('30d', '30 Days'),
             ('90d', '90 Days'),
-            ('all', 'All Retained'),
+            ('all', 'All Hot Records'),
         ],
         'pagination': {
             'page': pagination.page,
@@ -515,8 +421,7 @@ def get_notification_activity_detail(*, notification_id: int) -> dict[str, Any] 
     if notification is None:
         return None
 
-    user = User.query.filter(User.id == notification.user_id).first() if notification.user_id is not None else None
-    return _serialize_notification(notification, include_metadata=True, user=user)
+    return _serialize_notification(notification, include_metadata=True)
 
 
 def mark_notification_read(

@@ -4,9 +4,9 @@ from typing import Any
 
 from flask_login import current_user
 
+from app.access.activity_audit.service import get_activity_audit_summary
 from app.access.permissions.service import build_permission_registry_snapshot
 from app.access.roles.presentation import build_roles_index_context
-from app.notifications.service import get_notification_activity_summary
 from app.users.access_summary import build_identity_provider_summary, build_user_access_summary
 
 
@@ -221,7 +221,7 @@ def build_access_overview() -> dict[str, Any]:
         )
 
     if _can('activity_audit.view'):
-        activity = get_notification_activity_summary()
+        activity = get_activity_audit_summary()
         workspaces.append(
             {
                 'key': 'activity-audit',
@@ -237,7 +237,7 @@ def build_access_overview() -> dict[str, Any]:
                 ),
                 'supporting_text': _activity_supporting_text(activity),
                 'boundary_label': 'Administrative evidence',
-                'action_endpoint': 'notifications.activity_log',
+                'action_endpoint': 'access.activity_audit.index',
                 'action_label': 'Open Activity Audit',
             }
         )

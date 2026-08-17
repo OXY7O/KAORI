@@ -15,13 +15,10 @@ from flask_login import current_user, login_required
 from app.notifications.constants import ACTIVITY_CENTER_PAGE_LIMIT
 from app.notifications.service import (
     get_navigation_notification_context,
-    get_notification_activity_context,
-    get_notification_activity_detail,
     get_notification_center_page_context,
     mark_all_notifications_read,
     mark_notification_read,
 )
-from app.rbac.decorators import permission_required
 
 notifications_bp = Blueprint(
     'notifications',
@@ -163,42 +160,6 @@ def center() -> ResponseReturnValue:
 @login_required
 def panel_snapshot() -> ResponseReturnValue:
     return _render_status_snapshot()
-
-
-@notifications_bp.get('/activity')
-@permission_required('activity_audit.view')
-def activity_log() -> ResponseReturnValue:
-    is_htmx = request.headers.get('HX-Request') == 'true'
-    context = get_notification_activity_context(
-        user_id=_request_int('user_id', 0) or None,
-        page=_request_int('page', 1),
-        per_page=_request_int('per_page', 5),
-        status=request.args.get('status', 'all'),
-        category=request.args.get('category', 'all'),
-        time_range=request.args.get('time_range', '7d'),
-        search=request.args.get('search', ''),
-        include_summary=not is_htmx,
-    )
-
-    if is_htmx:
-        return render_template(
-            'notifications/partials/_activity_table_card.html',
-            **context,
-        )
-
-    return render_template(
-        'notifications/activity.html',
-        **context,
-    )
-
-
-@notifications_bp.get('/activity/<int:notification_id>/details')
-@permission_required('activity_audit.view')
-def activity_detail(notification_id: int) -> ResponseReturnValue:
-    item = get_notification_activity_detail(notification_id=notification_id)
-    if item is None:
-        return ('Activity not found.', 404)
-    return render_template('notifications/partials/_activity_detail.html', item=item)
 
 
 @notifications_bp.post('/<int:notification_id>/read')

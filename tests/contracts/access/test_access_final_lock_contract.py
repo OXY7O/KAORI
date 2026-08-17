@@ -23,6 +23,7 @@ def test_access_final_lock_is_release_gated_and_documented() -> None:
 def test_access_final_lock_preserves_authentication_actor_and_session_security() -> None:
     config = read('app/config/default.py')
     queries = read('app/notifications/queries.py')
+    actors = read('app/notifications/actors.py')
     session = read('app/auth/session.py')
 
     assert 'AUTH_REMEMBER_ME_DAYS = _bounded_env_int(' in config
@@ -30,12 +31,11 @@ def test_access_final_lock_preserves_authentication_actor_and_session_security()
     assert 'REMEMBER_COOKIE_DURATION = timedelta(days=AUTH_REMEMBER_ME_DAYS)' in config
     assert "current_app.config.get('AUTH_ALLOW_SUPER_ADMIN_REMEMBER_ME', False)" in session
 
-    assert 'actor_identity = case(' in queries
-    assert "Notification.event_type == 'authentication'" in queries
-    assert "Notification.status != 'success'" in queries
-    assert 'func.count(func.distinct(actor_identity))' in queries
-    assert "Notification.event_type != 'authentication'" in queries
-    assert "Notification.status == 'success'" in queries
+    assert 'func.count(func.distinct(Notification.actor_key))' in queries
+    assert 'Notification.actor_key == normalized_actor_key' in queries
+    assert "key='unauthenticated'" in actors
+    assert "key='system:kaori'" in actors
+    assert 'def actor_snapshot_for_user(' in actors
 
 
 def test_access_final_lock_protects_content_driven_modal_formatter_boundary() -> None:

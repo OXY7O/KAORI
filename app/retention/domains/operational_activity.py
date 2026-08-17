@@ -9,7 +9,6 @@ from sqlalchemy import and_, func, or_
 
 from app.extensions.db import db
 from app.models.notification import Notification
-from app.models.user import User
 from app.retention.policy_service import resolve_policy
 from app.retention.types import ArchiveBoundary, PartialCleanupError, RetentionPolicy
 
@@ -17,7 +16,7 @@ from app.retention.types import ArchiveBoundary, PartialCleanupError, RetentionP
 class OperationalActivityArchiveDomain:
     name = 'operational_activity'
     source_model = 'notifications'
-    schema_version = 1
+    schema_version = 2
 
     def build_policy(self) -> RetentionPolicy:
         retention_days = _positive_int_config('ACTIVITY_RETENTION_DAYS', 90)
@@ -97,9 +96,7 @@ class OperationalActivityArchiveDomain:
         last_id = 0
         while True:
             rows = (
-                db.session.query(Notification, User)
-                .outerjoin(User, User.id == Notification.user_id)
-                .filter(
+                Notification.query.filter(
                     self._eligible_filter(
                         policy,
                         cutoff_at=boundary.cutoff_at,
@@ -115,9 +112,9 @@ class OperationalActivityArchiveDomain:
             if not rows:
                 break
 
-            for notification, user in rows:
+            for notification in rows:
                 last_id = notification.id
-                yield self._serialize(notification, user)
+                yield self._serialize(notification)
 
             db.session.expire_all()
 
@@ -178,7 +175,6 @@ class OperationalActivityArchiveDomain:
     def _serialize(
         self,
         notification: Notification,
-        user: User | None,
     ) -> dict[str, Any]:
         return {
             'schema_version': self.schema_version,
@@ -188,8 +184,9 @@ class OperationalActivityArchiveDomain:
                 'record_id': notification.id,
             },
             'activity': {
-                'user_id': notification.user_id,
+                'recipient_user_id': notification.user_id,
                 'event_type': notification.event_type,
+                'category_key': notification.category_key,
                 'status': notification.status,
                 'title': notification.title,
                 'message': notification.message,
@@ -199,20 +196,7 @@ class OperationalActivityArchiveDomain:
                 'created_at': _isoformat(notification.created_at),
                 'read_at': _isoformat(notification.read_at),
             },
-            'actor_snapshot': {
-                'user_id': user.id if user is not None else notification.user_id,
-                'username': (user.username if user is not None else (notification.metadata_json or {}).get('username')),
-                'email': (user.email if user is not None else (notification.metadata_json or {}).get('actor_email')),
-                'display_name': (
-                    user.display_name
-                    if user is not None
-                    else (notification.metadata_json or {}).get('actor_display_name')
-                ),
-                'auth_source': (
-                    user.auth_source if user is not None else (notification.metadata_json or {}).get('auth_source')
-                ),
-                'deleted_at': _isoformat(user.deleted_at) if user is not None else None,
-            },
+            'actor_snapshot': dict(notification.actor_snapshot_json or {}),
         }
 
 

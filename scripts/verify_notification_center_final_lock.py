@@ -57,7 +57,7 @@ def main() -> int:
         'Unread',
         'Active Work',
         'Activity Audit',
-        "url_for('notifications.activity_log')",
+        "url_for('access.activity_audit.index')",
     ):
         if required not in page:
             errors.append(f'Notification Center hero/boundary contract missing: {required}')

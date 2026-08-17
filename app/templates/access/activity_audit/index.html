@@ -22,12 +22,12 @@
                 {% if current_user.has_permission('platform_operations.view_data_lifecycle') %}
                     {{ page_hero.context_card('Administrative evidence posture',
                                         'Administrative Evidence',
-                                        'Audit Posture',
+                                        'Evidence Availability',
                                         summary.posture_label,
                                         summary.posture_tone,
                                         [
                                         ('activity', 'Events · 24H', summary.events_24h, 'Recorded evidence') ,
-                    ('triangle-alert', 'Attention · 24H', summary.attention_24h, 'Warning or failed outcomes')
+                    ('triangle-alert', 'Attention · 24H', summary.attention_24h, summary.attention_label)
                     ],
                     'Open Data Lifecycle',
                     url_for('platform_operations.data_lifecycle.index', tab='policies', domain='operational_activity'),
@@ -36,12 +36,12 @@
                 {% else %}
                     {{ page_hero.context_card('Administrative evidence posture',
                                         'Administrative Evidence',
-                                        'Audit Posture',
+                                        'Evidence Availability',
                                         summary.posture_label,
                                         summary.posture_tone,
                                         [
                                         ('activity', 'Events · 24H', summary.events_24h, 'Recorded evidence') ,
-                    ('triangle-alert', 'Attention · 24H', summary.attention_24h, 'Warning or failed outcomes')
+                    ('triangle-alert', 'Attention · 24H', summary.attention_24h, summary.attention_label)
                     ],
                     'Open Notification Center',
                     url_for('notifications.center'),
@@ -50,11 +50,11 @@
                 {% endif %}
             </div>
         </section>
-        {% include "notifications/partials/_activity_summary_cards.html" %}
-        {% include "notifications/partials/_activity_table_card.html" %}
+        {% include "access/activity_audit/partials/_activity_summary_cards.html" %}
+        {% include "access/activity_audit/partials/_activity_table_card.html" %}
         {{ resource_detail_modal.host('Activity',
-                url_for('notifications.activity_detail', notification_id=0) ,
-        footer_text='Activity evidence reflects the committed administrative record captured by KAORI.',
+                url_for('access.activity_audit.detail', notification_id=0) ,
+        footer_text='Activity evidence uses the immutable actor and category snapshot captured when KAORI committed the record.',
         context_label='Access',
         dialog_max_width='max-w-6xl',
         content_driven=true

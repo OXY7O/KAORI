@@ -10,7 +10,7 @@
 {% set role_access_active = request.endpoint and request.endpoint.startswith('access.roles.') %}
 {% set permission_catalog_active = request.endpoint and request.endpoint.startswith('access.permissions.') %}
 {% set access_overview_active = request.endpoint and request.endpoint.startswith('access.overview.') %}
-{% set activity_audit_active = request.endpoint == 'notifications.activity_log' %}
+{% set activity_audit_active = request.endpoint == 'access.activity_audit.index' %}
 {% set access_management_active = access_overview_active or user_management_active or identity_provider_active or role_access_active or permission_catalog_active or activity_audit_active %}
 {% set can_access_management = current_user.is_authenticated and (
     current_user.has_permission('users.view')
@@ -63,7 +63,7 @@
                 </a>
             {% endif %}
             {% if current_user.has_permission('activity_audit.view') %}
-                <a href="{{ url_for('notifications.activity_log') }}"
+                <a href="{{ url_for('access.activity_audit.index') }}"
                    class="{{ 'bg-white/[0.08] text-kaori-accent' if activity_audit_active else 'sidebar-item-idle' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm leading-5 transition">
                     <span class="h-1.5 w-1.5 rounded-full {{ 'bg-kaori-accent' if activity_audit_active else 'bg-white/20 group-hover:bg-white/[0.45]' }}"></span><i data-lucide="history" class="h-3.5 w-3.5"></i><span class="truncate whitespace-nowrap">Activity Audit</span>
                 </a>

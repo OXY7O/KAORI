@@ -13,12 +13,11 @@ LOCK_DOCS = (
 )
 
 ACTIVITY_TEMPLATES = (
-    'app/templates/notifications/activity.html',
-    'app/templates/notifications/components/_activity_center_items.html',
-    'app/templates/notifications/partials/_activity_detail.html',
-    'app/templates/notifications/partials/_activity_summary_cards.html',
-    'app/templates/notifications/partials/_activity_table_card.html',
-    'app/templates/notifications/partials/_activity_table_content.html',
+    'app/templates/access/activity_audit/index.html',
+    'app/templates/access/activity_audit/partials/_activity_detail.html',
+    'app/templates/access/activity_audit/partials/_activity_summary_cards.html',
+    'app/templates/access/activity_audit/partials/_activity_table_card.html',
+    'app/templates/access/activity_audit/partials/_activity_table_content.html',
 )
 
 RAW_HEX = re.compile(r'(?<![\w-])#[0-9a-fA-F]{3,8}\b')
@@ -105,7 +104,7 @@ def main() -> int:
         'build_identity_provider_summary',
         'build_roles_index_context',
         'build_permission_registry_snapshot',
-        'get_notification_activity_summary',
+        'get_activity_audit_summary',
     ):
         require(
             required in overview_presentation,
@@ -373,29 +372,47 @@ def main() -> int:
     for required in (
         "AUTHENTICATION_AUDIT_SCHEMA = 'authentication.v2'",
         "'target_user_id': user.id if user is not None else None",
-        "'actor_user_id': authenticated_actor.id if authenticated_actor is not None else None",
+        'actor_snapshot_for_user(authenticated_actor)',
+        'unauthenticated_actor_snapshot()',
+        'activity.actor_snapshot_json = actor.as_json()',
+        'activity.deck_visible = False',
     ):
         require(required in auth_audit, f'Authentication actor/target contract missing: {required}', errors)
 
-    # Activity Audit: read-only permission boundary and actor semantics.
+    # Activity Audit: Access-owned workspace over the shared Notification evidence store.
+    activity_routes = read('app/access/activity_audit/routes.py')
     notification_routes = read('app/notifications/routes.py')
     notification_queries = read('app/notifications/queries.py')
-    activity_page = read('app/templates/notifications/activity.html')
+    notification_model = read('app/models/notification.py')
+    activity_actors = read('app/notifications/actors.py')
+    activity_page = read('app/templates/access/activity_audit/index.html')
     for required in (
         "@permission_required('activity_audit.view')",
-        "@notifications_bp.get('/activity')",
-        "@notifications_bp.get('/activity/<int:notification_id>/details')",
+        "@bp.get('/')",
+        "@bp.get('/<int:notification_id>/details')",
     ):
-        require(required in notification_routes, f'Activity Audit route contract missing: {required}', errors)
+        require(required in activity_routes, f'Activity Audit route contract missing: {required}', errors)
+    require("/activity'" not in notification_routes, 'Notification Center must not own Activity Audit routes', errors)
     for required in (
-        'actor_identity = case(',
-        "Notification.event_type == 'authentication'",
-        "Notification.status != 'success'",
-        'func.count(func.distinct(actor_identity))',
-        "Notification.event_type != 'authentication'",
-        "Notification.status == 'success'",
+        'func.count(func.distinct(Notification.actor_key))',
+        'Notification.actor_key == normalized_actor_key',
+        'Notification.category_key == normalized_category',
+        "('all', 'All Hot Records')",
     ):
-        require(required in notification_queries, f'Activity actor contract missing: {required}', errors)
+        require(required in notification_queries, f'Activity evidence-query contract missing: {required}', errors)
+    for required in (
+        "db.ForeignKey('users.id', ondelete='SET NULL')",
+        'actor_snapshot_json',
+        'actor_key',
+        'category_key',
+    ):
+        require(required in notification_model, f'Activity evidence model contract missing: {required}', errors)
+    for required in (
+        "key='system:kaori'",
+        "key='unauthenticated'",
+        'def resolve_operational_actor(',
+    ):
+        require(required in activity_actors, f'Activity actor snapshot contract missing: {required}', errors)
     require(
         'components/resource_detail_modal.html' in activity_page, 'Activity Audit must use shared detail modal', errors
     )

@@ -28,7 +28,7 @@ def test_access_overview_composes_domain_owned_posture_contracts() -> None:
         'build_identity_provider_summary',
         'build_roles_index_context',
         'build_permission_registry_snapshot',
-        'get_notification_activity_summary',
+        'get_activity_audit_summary',
     ):
         assert token in presentation
     for forbidden in (

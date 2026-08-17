@@ -166,14 +166,11 @@ def _registry_summary(
     roles: list[Role],
     modules: list[str],
 ) -> dict[str, Any]:
-    modules = sorted({row['module'] for row in contracts}, key=module_label)
-    summary = _registry_summary(
-        contracts=contracts,
-        database_permissions=database_permissions,
-        roles=roles,
-        modules=modules,
+    canonical_contracts = [row for row in contracts if row['code_owned']]
+    drift_contracts = [row for row in contracts if row['state_key'] != 'canonical']
+    database_only_in_use_count = sum(
+        1 for row in contracts if row['state_key'] == 'database_only' and row['role_count'] > 0
     )
-
     return {
         'canonical_permissions': len(canonical_contracts),
         'registered_permissions': len(database_permissions),
@@ -238,12 +235,13 @@ def build_permission_registry_snapshot() -> dict[str, Any]:
     )
     contracts.sort(key=lambda row: (row['module_label'].lower(), row['title'].lower(), row['key']))
 
-    canonical_contracts = [row for row in contracts if row['code_owned']]
-    drift_contracts = [row for row in contracts if row['state_key'] != 'canonical']
-    database_only_in_use = [row for row in contracts if row['state_key'] == 'database_only' and row['role_count'] > 0]
-    role_mappings = sum(len(role.permissions) for role in roles)
-    unused_contracts = sum(1 for row in canonical_contracts if row['role_count'] == 0)
     modules = sorted({row['module'] for row in contracts}, key=module_label)
+    summary = _registry_summary(
+        contracts=contracts,
+        database_permissions=database_permissions,
+        roles=roles,
+        modules=modules,
+    )
 
     return {
         'contracts': contracts,

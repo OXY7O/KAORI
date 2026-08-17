@@ -34,11 +34,15 @@ def test_activity_audit_and_user_notifications_share_one_lifecycle_source() -> N
     domain = read('app/retention/domains/operational_activity.py')
     queries = read('app/notifications/queries.py')
     presentation = read('app/retention/presentation.py')
-    activity = read('app/templates/notifications/activity.html')
+    activity = read('app/templates/access/activity_audit/index.html')
     center = read('app/templates/notifications/partials/_center_page_content.html')
 
     assert "source_model = 'notifications'" in domain
+    assert 'schema_version = 2' in domain
     assert 'Notification.query.filter(Notification.id.in_(record_ids))' in domain
+    assert "'actor_snapshot': dict(notification.actor_snapshot_json or {})" in domain
+    assert 'outerjoin(User' not in domain
+    assert 'from app.models.user import User' not in domain
     assert 'deck_visible' not in domain
     assert 'Notification.deck_visible.is_(True)' in queries
     assert "'label': 'Activity Audit Table'" in presentation

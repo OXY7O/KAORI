@@ -231,7 +231,7 @@ SURFACES: tuple[ReleaseSurface, ...] = (
             'identity_providers.index',
             'access.roles.index',
             'access.permissions.index',
-            'notifications.activity_log',
+            'access.activity_audit.index',
         ),
         blueprint_vars=('access_bp', 'users_bp', 'identity_providers_bp'),
         verifiers=('scripts/verify_access_final_lock.py', 'scripts/verify_identity_provider_architecture.py'),

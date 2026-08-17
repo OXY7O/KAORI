@@ -41,7 +41,7 @@ records, and integrations.
 ## Adding an event
 
 1. Emit through `record_operational_activity()` or `create_notification()`.
-2. Classify a new event family in `event_catalog.py`.
+2. Classify a new event family in the source-controlled `app/definitions/catalogs/notifications/event_categories.yaml`; `event_catalog.py` loads and validates that contract.
 3. Add user-relevant metadata labels/formatting in `metadata.py`.
 4. Add failure matching in `normalization.py`.
 5. Never expose stack traces, SQL errors, transport exceptions, or raw payload dumps.
@@ -70,9 +70,9 @@ Do not reintroduce `_notification_deck_content.html`, an `outerHTML` poll on the
 root, a self-replacing fragment with a `load` trigger, or separate Activity and
 Notifications polling requests.
 
-## Activity Log visual standard
+## Activity Audit evidence-store boundary
 
-The Activity Audit Log uses the KAORI Violet Infrastructure presentation standard. The page hero and operational posture use KAORI Violet surfaces, while success, warning, failure, pending, and disabled states retain their semantic colors. Text labels use compact rectangular geometry (`rounded-md`) rather than pill geometry. Activity payloads, audit metadata, filters, HTMX pagination, retention execution, and lifecycle behavior are unchanged by this visual standard.
+Activity Audit HTTP routes and templates are Access-owned under `app/access/activity_audit/`. `app/notifications/` owns the shared operational evidence persistence/query kernel used by Activity Audit and Notification Center. Each persisted row snapshots its event category and actor identity so later catalog changes, user renames, role changes, or user deletion do not rewrite historical evidence.
 
 
 ## Toast visual standard

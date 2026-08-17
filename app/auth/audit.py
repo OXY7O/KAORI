@@ -11,6 +11,8 @@ from app.auth.user_agent import parse_user_agent
 from app.extensions.db import db
 from app.models.notification import Notification
 from app.models.user import User
+from app.notifications.actors import actor_snapshot_for_user, unauthenticated_actor_snapshot
+from app.notifications.event_catalog import event_category_key
 
 AUTHENTICATION_EVENT_TYPE = 'authentication'
 AUTHENTICATION_AUDIT_SCHEMA = 'authentication.v2'
@@ -77,12 +79,21 @@ def record_authentication_activity(
     success = result == 'success'
     is_logout = action == 'logout'
     authenticated_actor = user if user is not None and (success or is_logout) else None
+    actor = (
+        actor_snapshot_for_user(authenticated_actor)
+        if authenticated_actor is not None
+        else unauthenticated_actor_snapshot()
+    )
 
     activity = Notification()
     # Keep failed attempts linked to a resolved target account so Account &
     # Authentication can show attempted access without asserting actor identity.
     activity.user_id = user.id if user is not None else None
     activity.event_type = AUTHENTICATION_EVENT_TYPE
+    activity.category_key = event_category_key(AUTHENTICATION_EVENT_TYPE)
+    activity.actor_key = actor.key
+    activity.actor_label = actor.label
+    activity.actor_snapshot_json = actor.as_json()
     activity.status = 'success' if success else 'error'
     activity.title = 'User signed out' if is_logout else ('User signed in' if success else 'Sign-in attempt failed')
     activity.message = (
@@ -123,13 +134,9 @@ def record_authentication_activity(
         'request_path': _bounded_text(request.path, limit=500),
         'request_endpoint': _bounded_text(request.endpoint, limit=160),
         'target_user_id': user.id if user is not None else None,
-        'actor_authenticated': authenticated_actor is not None,
-        'actor_user_id': authenticated_actor.id if authenticated_actor is not None else None,
-        'actor_display_name': authenticated_actor.display_label if authenticated_actor is not None else None,
-        'actor_email': authenticated_actor.email if authenticated_actor is not None else None,
-        'actor_role': authenticated_actor.role_display_name if authenticated_actor is not None else None,
     }
     activity.created_at = created_at
+    activity.deck_visible = False
     # Authentication events are audit-only and must not create unread items in
     # the personal notification center.
     activity.read_at = created_at

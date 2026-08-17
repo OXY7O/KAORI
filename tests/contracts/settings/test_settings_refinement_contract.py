@@ -13,7 +13,7 @@ def test_settings_navigation_keeps_current_ownership_boundary() -> None:
     assert 'settings.account' in menu
     assert 'users.index' not in menu
     assert 'access.roles' not in menu
-    assert 'notifications.activity_log' not in menu
+    assert 'access.activity_audit.index' not in menu
 
 
 def test_account_tabs_follow_general_settings_tab_contract() -> None:

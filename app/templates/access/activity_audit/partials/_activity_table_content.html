@@ -7,7 +7,7 @@
     'search': filters.search,
     'category': filters.category,
     'status': filters.status,
-    'user_id': filters.user_id or '',
+    'actor_key': filters.actor_key or '',
     'time_range': filters.time_range
 } %}
 {% if items %}
@@ -42,7 +42,7 @@
                         </td>
                         <td class="{{ table_ui.cell_classes(action=true) }}">
                             {{ resource_detail_modal.detail_button(item.id,
-                                                        url_for('notifications.activity_detail', notification_id=item.id) ,
+                                                        url_for('access.activity_audit.detail', notification_id=item.id) ,
                             item.title,
                             'Activity'
                             ) }}
@@ -55,7 +55,7 @@
 {% else %}
     {% set empty_state_icon = "history" %}
     {% set empty_state_title = "No Activity Found" %}
-    {% set empty_state_description = "No administrative evidence matches the current filters and retained time range." %}
+    {% set empty_state_description = "No administrative evidence matches the current filters and hot-record time range." %}
     {% set empty_state_min_height = "min-h-[260px]" %}
     {% include "components/states/_empty_state.html" %}
 {% endif %}
@@ -67,8 +67,8 @@
             {{ pagination_ui.resource_name('Activities', pagination.total) }}
         </p>
         <form method="get"
-              action="{{ url_for('notifications.activity_log') }}"
-              hx-get="{{ url_for('notifications.activity_log') }}"
+              action="{{ url_for('access.activity_audit.index') }}"
+              hx-get="{{ url_for('access.activity_audit.index') }}"
               hx-target="#activity-register-workspace"
               hx-swap="outerHTML"
               hx-indicator="#operational-activity-loading"
@@ -78,7 +78,7 @@
             <input type="hidden" name="search" value="{{ filters.search }}">
             <input type="hidden" name="category" value="{{ filters.category }}">
             <input type="hidden" name="status" value="{{ filters.status }}">
-            <input type="hidden" name="user_id" value="{{ filters.user_id or '' }}">
+            <input type="hidden" name="actor_key" value="{{ filters.actor_key or '' }}">
             <input type="hidden" name="time_range" value="{{ filters.time_range }}">
             <label for="activity-per-page"
                    class="text-xs font-semibold text-content-secondary">Rows</label>
@@ -97,8 +97,8 @@
     <nav class="{{ pagination_ui.navigation_group_classes() }}"
          aria-label="Activity Audit pagination">
         {% if pagination.has_prev %}
-            <a href="{{ url_for('notifications.activity_log', page=pagination.prev_num, per_page=pagination.per_page, search=filters.search, category=filters.category, status=filters.status, user_id=filters.user_id or '', time_range=filters.time_range) }}"
-               hx-get="{{ url_for('notifications.activity_log', page=pagination.prev_num, per_page=pagination.per_page, search=filters.search, category=filters.category, status=filters.status, user_id=filters.user_id or '', time_range=filters.time_range) }}"
+            <a href="{{ url_for('access.activity_audit.index', page=pagination.prev_num, per_page=pagination.per_page, search=filters.search, category=filters.category, status=filters.status, actor_key=filters.actor_key or '', time_range=filters.time_range) }}"
+               hx-get="{{ url_for('access.activity_audit.index', page=pagination.prev_num, per_page=pagination.per_page, search=filters.search, category=filters.category, status=filters.status, actor_key=filters.actor_key or '', time_range=filters.time_range) }}"
                hx-target="#activity-register-workspace"
                hx-swap="outerHTML"
                hx-indicator="#operational-activity-loading"
@@ -111,13 +111,13 @@
                 pagination.pages,
                 hx_target='#activity-register-workspace',
                 hx_indicator='#operational-activity-loading',
-                endpoint='notifications.activity_log',
-                href_endpoint='notifications.activity_log',
+                endpoint='access.activity_audit.index',
+                href_endpoint='access.activity_audit.index',
                 query_params=query_params,
                 hx_swap='outerHTML') }}
         {% if pagination.has_next %}
-            <a href="{{ url_for('notifications.activity_log', page=pagination.next_num, per_page=pagination.per_page, search=filters.search, category=filters.category, status=filters.status, user_id=filters.user_id or '', time_range=filters.time_range) }}"
-               hx-get="{{ url_for('notifications.activity_log', page=pagination.next_num, per_page=pagination.per_page, search=filters.search, category=filters.category, status=filters.status, user_id=filters.user_id or '', time_range=filters.time_range) }}"
+            <a href="{{ url_for('access.activity_audit.index', page=pagination.next_num, per_page=pagination.per_page, search=filters.search, category=filters.category, status=filters.status, actor_key=filters.actor_key or '', time_range=filters.time_range) }}"
+               hx-get="{{ url_for('access.activity_audit.index', page=pagination.next_num, per_page=pagination.per_page, search=filters.search, category=filters.category, status=filters.status, actor_key=filters.actor_key or '', time_range=filters.time_range) }}"
                hx-target="#activity-register-workspace"
                hx-swap="outerHTML"
                hx-indicator="#operational-activity-loading"

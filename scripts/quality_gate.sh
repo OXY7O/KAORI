@@ -36,6 +36,7 @@ run_static() {
     python scripts/verify_operational_feedback_coverage.py
     python scripts/verify_access_ownership.py
     python scripts/verify_access_final_lock.py
+    python scripts/verify_activity_audit_final_lock.py
     python scripts/verify_identity_provider_architecture.py
     python scripts/verify_authentication_surface_final_lock.py
     python scripts/verify_settings_final_lock.py

@@ -27,12 +27,13 @@ Access
 - `app/access/overview/` owns the read-only Access landing page.
 - `app/access/roles/` owns role-management HTTP routes, forms, presentation context, and role mutation orchestration.
 - `app/access/permissions/` owns the read-only Permission Catalog HTTP/presentation boundary.
+- `app/access/activity_audit/` owns the system-wide Activity Audit HTTP/workspace boundary.
 - `app/users/` remains authoritative for user lifecycle and effective-access presentation.
 - `app/identity_providers/` owns Identity Provider administration and directory projection workflows.
 - `app/auth/identity_provider/` owns provider catalog, adapter registries, protocol validation, and external authentication contracts.
 - `app/auth/` owns session admission and authentication orchestration.
 - `app/rbac/` remains authoritative for the code-owned permission registry, protected default roles, authorization rules, role mutation guardrails, and route decorators.
-- `app/notifications/` remains authoritative for Notification Center and Activity Audit persistence/presentation.
+- `app/notifications/` remains authoritative for Notification Center persistence and the shared operational evidence store/query kernel. Activity Audit presentation and HTTP orchestration belong to `app/access/activity_audit/`.
 
 The Access menu groups these capabilities; it does not duplicate their domain logic.
 
@@ -49,6 +50,8 @@ Canonical Access-owned URLs:
 /access/roles/<id>/edit
 /access/roles/<id>/delete
 /access/permissions/
+/access/activity-audit/
+/access/activity-audit/<notification-id>/details
 ```
 
 User lifecycle remains under `/users/`. Identity Provider administration is canonical under `/access/identity-providers/`; no compatibility route is retained under `/users/providers`.
@@ -63,7 +66,7 @@ Access v1 is final-locked across Access Overview, User Management, Identity Prov
 
 Access Overview is a read-only composition surface. It does not query User, Identity Provider, Role, Permission, or Activity persistence directly to invent a second health model. The overview consumes domain-owned summary contracts and only aggregates permission-scoped posture.
 
-The posture contract now treats missing active break-glass authority, active users without role assignment, inactive roles with assigned users, permission-registry drift, enabled identity-provider configuration/admission-policy gaps, and recent warning/error administrative evidence as explicit review signals. Optional external authentication remains informational when no provider is configured.
+The posture contract now treats missing active break-glass authority, active users without role assignment, inactive roles with assigned users, permission-registry drift and enabled identity-provider configuration/admission-policy gaps as explicit review signals. Activity Audit warning/error records remain evidence counts and do not make the audit workspace itself unhealthy. Optional external authentication remains informational when no provider is configured.
 
 Control Boundaries expose the same authoritative posture as their source workspace instead of static architecture copy alone. This composition rule is protected by `scripts/verify_access_final_lock.py`.
 
@@ -87,3 +90,10 @@ The catalog owns two views:
 - **Role Coverage** — cross-role effective permission comparison. Roles & Access intentionally keeps only role-specific permission coverage in its detail modal.
 
 This Permission Catalog presentation is part of Access Final Lock v1.
+
+
+## Activity Audit review status
+
+Activity Audit is an Access-owned, read-only evidence workspace over the shared `notifications` operational evidence store. The hot register uses persisted `category_key`, `actor_key`, `actor_label`, and immutable `actor_snapshot_json` fields rather than reconstructing actor identity from the current User row. Notification recipient ownership remains separate through `notifications.user_id`.
+
+The register reads hot PostgreSQL rows only. The `All Hot Records` option is intentionally explicit; verified older evidence remains under Platform Operations → Data Lifecycle after archive-and-cleanup. Notification recipient deletion cannot erase retained evidence because the Notification foreign key uses `ON DELETE SET NULL`, while actor identity remains in the immutable snapshot.

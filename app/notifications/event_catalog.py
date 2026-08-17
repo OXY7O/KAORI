@@ -75,13 +75,27 @@ def event_category_key(event_type: str) -> str:
     return default_category
 
 
-def event_category(event_type: str) -> dict[str, str]:
-    key = event_category_key(event_type)
+def event_category_for_key(category_key: str) -> dict[str, str]:
+    key = category_key if category_key in CATEGORY_LABELS else event_category_key('')
     return {
         'key': key,
         'label': CATEGORY_LABELS[key],
         'icon': CATEGORY_ICONS[key],
     }
+
+
+def event_category(event_type: str) -> dict[str, str]:
+    return event_category_for_key(event_category_key(event_type))
+
+
+def activity_category_keys() -> tuple[str, ...]:
+    """Return source-controlled Activity Audit category order."""
+    return tuple(CATEGORY_LABELS)
+
+
+def notification_center_category_keys() -> tuple[str, ...]:
+    """Return explicit notification categories; catch-all Operations stays audit-only."""
+    return tuple(key for key in CATEGORY_LABELS if key != 'operations')
 
 
 def _string_metadata(

@@ -13,7 +13,7 @@ Access Final Lock v1 covers:
 - Permission Catalog;
 - Activity Audit.
 
-Runtime ownership remains explicit: `app/users` owns account/provider administration, `app/auth` owns authentication/session admission, `app/rbac` owns authorization policy, and `app/notifications` owns Activity Audit persistence/presentation. `app/access` is the control-plane composition owner.
+Runtime ownership remains explicit: `app/users` owns account lifecycle, `app/identity_providers` owns provider administration, `app/auth` owns authentication/session admission, `app/rbac` owns authorization policy, `app/access/activity_audit` owns the Activity Audit workspace, and `app/notifications` owns its shared operational evidence store/query kernel. `app/access` is the control-plane composition owner.
 
 ## Locked security boundaries
 
@@ -23,9 +23,9 @@ Runtime ownership remains explicit: `app/users` owns account/provider administra
 4. User Management uses explicit `users.*` permissions, protects administrator-level accounts, and serializes last-active-super-admin disable/demotion/delete decisions.
 5. Password replacement advances `User.auth_session_version`; existing sessions and remember cookies fail closed on the next request.
 6. Remember-me persistence defaults to 7 days and is bounded to 1–30 days. Super-admin remember-me remains default-deny.
-7. Identity Provider administration requires `users.manage`; provider records keep secret values externalized and runtime validation remains on-demand.
-8. Failed authentication attempts may remain linked to a target account for evidence, but never claim that target as the authenticated actor. Activity filters and 24-hour actor counts exclude failed-authentication targets.
-9. Activity Audit requires `activity_audit.view` and remains read-only administrative evidence.
+7. Identity Provider reads, mutation, and directory projection use the dedicated `identity_providers.view/manage/provision` permission family; provider records keep secret values externalized and runtime validation remains on-demand.
+8. Failed authentication attempts may remain linked to a target account for evidence, but never claim that target as the authenticated actor. Activity actor identity is snapshotted separately from the notification recipient.
+9. Activity Audit requires `activity_audit.view`, remains read-only, reads only hot PostgreSQL evidence, and links older verified evidence to Data Lifecycle archive history. User deletion cannot cascade-delete Activity Audit evidence.
 
 ## Locked presentation boundaries
 

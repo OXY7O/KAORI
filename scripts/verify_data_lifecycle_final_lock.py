@@ -233,6 +233,15 @@ def main() -> int:
         errors.append(
             'Operational Activity retention must not filter by deck visibility; audit-only and user notifications share one lifecycle'
         )
+    for required in (
+        'schema_version = 2',
+        "'actor_snapshot': dict(notification.actor_snapshot_json or {})",
+        "'recipient_user_id': notification.user_id",
+    ):
+        if required not in activity_domain:
+            errors.append(f'Operational Activity immutable archive evidence missing: {required}')
+    if 'outerjoin(User' in activity_domain or 'from app.models.user import User' in activity_domain:
+        errors.append('Operational Activity archive must never reconstruct actor identity from the live User table')
 
     for required in (
         'Archive Target Contract',
@@ -340,7 +349,7 @@ def main() -> int:
     if "down_revision = '20260816_schedule_run_evidence'" not in lifecycle_seed_migration:
         errors.append('Lifecycle policy seed must depend on the restored Schedule Run evidence revision')
 
-    activity = read('app/templates/notifications/activity.html')
+    activity = read('app/templates/access/activity_audit/index.html')
     runtime_history = read('app/templates/integrations/partials/_runtime_history.html')
     retention_tasks = read('app/retention/tasks.py')
     for source_name, source in (

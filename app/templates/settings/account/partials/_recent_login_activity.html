@@ -13,7 +13,7 @@
             </div>
         </div>
         {% if current_user.has_permission('activity_audit.view') %}
-            <a href="{{ url_for('notifications.activity_log', category='access', search=current_user.username) }}"
+            <a href="{{ url_for('access.activity_audit.index', category='access', search=current_user.username) }}"
                class="inline-flex h-10 w-fit items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-semibold text-content-secondary transition hover:border-outline-focus hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
                 <i data-lucide="external-link" class="h-4 w-4"></i>
                 Open Activity Audit

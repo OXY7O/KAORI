@@ -17,12 +17,14 @@ class Notification(db.Model):
         Index('ix_notifications_user_created', 'user_id', 'created_at'),
         Index('ix_notifications_user_deck_created', 'user_id', 'deck_visible', 'created_at'),
         Index('ix_notifications_event_created', 'event_type', 'created_at'),
+        Index('ix_notifications_category_created', 'category_key', 'created_at'),
+        Index('ix_notifications_actor_created', 'actor_key', 'created_at'),
     )
 
     id: Mapped[int] = mapped_column(primary_key=True)
 
     user_id: Mapped[int | None] = mapped_column(
-        db.ForeignKey('users.id', ondelete='CASCADE'),
+        db.ForeignKey('users.id', ondelete='SET NULL'),
         nullable=True,
         index=True,
     )
@@ -31,6 +33,30 @@ class Notification(db.Model):
         db.String(80),
         nullable=False,
         index=True,
+    )
+
+    category_key: Mapped[str] = mapped_column(
+        db.String(80),
+        nullable=False,
+        default='operations',
+    )
+
+    actor_key: Mapped[str] = mapped_column(
+        db.String(160),
+        nullable=False,
+        default='system:kaori',
+    )
+
+    actor_label: Mapped[str] = mapped_column(
+        db.String(255),
+        nullable=False,
+        default='KAORI System',
+    )
+
+    actor_snapshot_json: Mapped[dict[str, Any]] = mapped_column(
+        db.JSON,
+        nullable=False,
+        default=dict,
     )
 
     status: Mapped[str] = mapped_column(

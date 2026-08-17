@@ -5,6 +5,7 @@ from typing import Any
 
 from app.extensions.db import db
 from app.models.notification import Notification
+from app.notifications.actors import resolve_operational_actor
 from app.notifications.constants import (
     ACTIVITY_CENTER_JOB_LIMIT,
     ACTIVITY_CENTER_NOTIFICATION_LIMIT,
@@ -20,17 +21,10 @@ from app.notifications.feedback import (
 from app.notifications.normalization import standardize_activity_text, standardize_activity_title
 from app.notifications.queries import get_activity_center_context as _get_activity_center_context
 from app.notifications.queries import get_navigation_notification_context as _get_navigation_notification_context
-from app.notifications.queries import (
-    get_notification_activity_context as _get_notification_activity_context,
-)
-from app.notifications.queries import (
-    get_notification_activity_detail as _get_notification_activity_detail,
-)
-from app.notifications.queries import get_notification_activity_summary as _get_notification_activity_summary
 from app.notifications.queries import get_notification_center_page_context as _get_notification_center_page_context
 from app.notifications.queries import mark_all_notifications_read as _mark_all_notifications_read
 from app.notifications.queries import mark_notification_read as _mark_notification_read
-from app.notifications.writer import persist_notification
+from app.notifications.writer import NotificationPersistenceEvidence, persist_notification
 
 logger = logging.getLogger(__name__)
 
@@ -115,7 +109,7 @@ def _normalize_notification_content(
 
 def create_notification(
     *,
-    user_id: int,
+    user_id: int | None,
     event_type: str,
     status: str,
     title: str,
@@ -134,6 +128,8 @@ def create_notification(
         detail=detail,
     )
 
+    actor = resolve_operational_actor(metadata=metadata)
+    evidence = NotificationPersistenceEvidence(metadata=metadata, actor=actor)
     return persist_notification(
         user_id=user_id,
         event_type=event_type,
@@ -142,14 +138,14 @@ def create_notification(
         message=normalized_message,
         detail=normalized_detail,
         action_url=action_url,
-        metadata=metadata,
+        evidence=evidence,
         deck_visible=deck_visible,
     )
 
 
 def record_operational_activity(
     *,
-    user_id: int,
+    user_id: int | None,
     event_type: str,
     status: str,
     title: str,
@@ -176,6 +172,8 @@ def record_operational_activity(
         detail=detail,
     )
 
+    actor = resolve_operational_actor(metadata=metadata)
+    evidence = NotificationPersistenceEvidence(metadata=metadata, actor=actor)
     policy = OperationalDeliveryPolicy.normalize(delivery_policy)
     deck_visible = policy.deck_visible(normalized_status)
     activity_audit_saved = True
@@ -188,7 +186,7 @@ def record_operational_activity(
             message=normalized_message,
             detail=normalized_detail,
             action_url=action_url,
-            metadata=metadata,
+            evidence=evidence,
             deck_visible=deck_visible,
         )
     except Exception:
@@ -206,7 +204,7 @@ def record_operational_activity(
                 message=normalized_message,
                 detail=normalized_detail,
                 action_url=action_url,
-                metadata=metadata,
+                evidence=evidence,
                 deck_visible=deck_visible,
             )
         except Exception:
@@ -362,40 +360,6 @@ def get_notification_center_page_context(
         category=category,
         search=search,
     )
-
-
-def get_notification_activity_summary() -> dict[str, int | str]:
-    """Return the lightweight 24-hour administrative activity posture."""
-    return _get_notification_activity_summary()
-
-
-def get_notification_activity_context(
-    *,
-    user_id: int | None,
-    page: int,
-    per_page: int,
-    status: str,
-    category: str,
-    time_range: str,
-    search: str,
-    include_summary: bool = True,
-) -> dict[str, Any]:
-    """Build the filtered administrative activity-audit context."""
-    return _get_notification_activity_context(
-        user_id=user_id,
-        page=page,
-        per_page=per_page,
-        status=status,
-        category=category,
-        time_range=time_range,
-        search=search,
-        include_summary=include_summary,
-    )
-
-
-def get_notification_activity_detail(*, notification_id: int) -> dict[str, Any] | None:
-    """Read one administrative activity record for the shared detail modal."""
-    return _get_notification_activity_detail(notification_id=notification_id)
 
 
 def mark_notification_read(*, notification_id: int, user_id: int) -> None:

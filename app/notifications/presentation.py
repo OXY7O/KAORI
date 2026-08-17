@@ -6,7 +6,7 @@ from typing import Any
 
 from app.models.notification import Notification
 from app.models.user import User
-from app.notifications.event_catalog import build_event_context, event_label
+from app.notifications.event_catalog import build_event_context, event_category_for_key, event_label
 from app.notifications.metadata import changed_fields, metadata_items
 from app.notifications.normalization import standardize_activity_text, standardize_activity_title
 
@@ -60,6 +60,8 @@ def _auth_source_label(value: str | None) -> str:
         'saml': 'SAML / SSO',
         'api_token': 'API Token',
         'system': 'System Service',
+        'internal': 'KAORI Internal',
+        'unauthenticated': 'Unauthenticated',
     }
     return labels.get(
         normalized,
@@ -258,26 +260,22 @@ def _serialize_notification(
 ) -> dict[str, Any]:
     metadata = notification.metadata_json or {}
     created_at = _normalize_created_at(notification.created_at)
-    default_user_label = _user_label(user, notification.user_id)
-    actor_display_name = str(metadata.get('actor_display_name') or '').strip()
-    actor_email = str(metadata.get('actor_email') or '').strip() or None
-    actor_role = str(metadata.get('actor_role') or '').strip() or None
-    unauthenticated_attempt = (
-        notification.event_type == 'authentication' and str(metadata.get('result') or '').strip().lower() == 'failed'
-    )
-    if unauthenticated_attempt:
-        user_label = 'Unauthenticated Request'
-        actor_email = None
-        actor_role = 'No Authenticated Role'
-    else:
-        user_label = actor_display_name or default_user_label
-    auth_source_override = (
-        str(metadata.get('authentication_provider') or metadata.get('auth_source') or '').strip() or None
-    )
+    actor_snapshot = notification.actor_snapshot_json or {}
+    actor_type = str(actor_snapshot.get('type') or 'system').strip().lower()
+    user_label = str(notification.actor_label or actor_snapshot.get('label') or 'KAORI System').strip()
+    actor_email = str(actor_snapshot.get('email') or '').strip() or None
+    actor_role = str(actor_snapshot.get('role') or 'System Runtime').strip()
+    actor_auth_source = str(actor_snapshot.get('auth_source') or 'internal').strip()
     event_context = build_event_context(
         notification.event_type,
         metadata,
         notification.title,
+    )
+    persisted_category = event_category_for_key(str(notification.category_key or 'operations'))
+    event_context.update(
+        category_key=persisted_category['key'],
+        category_label=persisted_category['label'],
+        category_icon=persisted_category['icon'],
     )
 
     status_labels = {
@@ -290,25 +288,13 @@ def _serialize_notification(
     item: dict[str, Any] = {
         'id': notification.id,
         'user_id': notification.user_id,
+        'actor_key': notification.actor_key,
+        'actor_type': actor_type,
         'user_label': user_label,
-        'user_email': (
-            None
-            if unauthenticated_attempt
-            else actor_email
-            if actor_email is not None
-            else (user.email if user is not None else None)
-        ),
+        'user_email': actor_email,
         'user_initials': _actor_initials(user_label),
-        'user_role': (
-            'No Authenticated Role'
-            if unauthenticated_attempt
-            else actor_role or (user.role_display_name if user is not None else 'Unknown role')
-        ),
-        'user_auth_source': _auth_source_label(
-            auth_source_override
-            if auth_source_override is not None
-            else (user.auth_source if user is not None else None)
-        ),
+        'user_role': actor_role,
+        'user_auth_source': _auth_source_label(actor_auth_source),
         'event_type': notification.event_type,
         'event_label': event_label(notification.event_type),
         'status': notification.status,
