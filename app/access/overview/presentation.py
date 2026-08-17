@@ -64,12 +64,14 @@ def _identity_provider_supporting_text(summary: dict[str, Any]) -> str:
 def _role_supporting_text(summary: dict[str, Any]) -> str:
     if not summary['active_roles']:
         return 'No active role is available; role-based authorization cannot grant access.'
+    if summary['baseline_drift_count']:
+        return f'{summary["baseline_drift_count"]} protected role baseline finding(s) require explicit RBAC convergence review.'
     if summary['inactive_assigned_users']:
         return (
             f'{summary["inactive_assigned_users"]} user assignment(s) point to inactive roles '
             'and therefore fail closed.'
         )
-    return 'Inactive roles fail closed; protected default roles remain code-owned.'
+    return 'Protected defaults match the source-controlled baseline; custom role delegation remains ceiling-bound.'
 
 
 def _permission_supporting_text(summary: dict[str, Any]) -> str:
@@ -131,7 +133,7 @@ def build_access_overview() -> dict[str, Any]:
             }
         )
 
-    if _can('users.manage'):
+    if _can('identity_providers.view'):
         providers = build_identity_provider_summary()
         workspaces.append(
             {

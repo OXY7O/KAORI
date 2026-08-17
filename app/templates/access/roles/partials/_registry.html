@@ -11,7 +11,7 @@
                 <span class="{{ table_ui.block_icon_classes() }}" aria-hidden="true"><i data-lucide="list-tree" class="h-5 w-5"></i></span>
                 <div class="min-w-0">
                     <h2 class="{{ table_ui.block_title_classes() }}">Role Registry</h2>
-                    <p class="{{ table_ui.block_description_classes() }}">Review role type, lifecycle state, assignments, permission coverage, and governed actions.</p>
+                    <p class="{{ table_ui.block_description_classes() }}">Review role type, lifecycle state, baseline integrity, assignments, permission coverage, and governed actions.</p>
                 </div>
             </div>
             <div class="flex flex-wrap items-center gap-2">
@@ -53,7 +53,7 @@
                 <select name="role_type" class="{{ table_ui.filter_select_classes() }}">
                     <option value="all" {% if filters.role_type == 'all' %}selected{% endif %}>All Types</option>
                     <option value="system"
-                            {% if filters.role_type == 'system' %}selected{% endif %}>Default Roles</option>
+                            {% if filters.role_type == 'system' %}selected{% endif %}>Protected/System Roles</option>
                     <option value="custom"
                             {% if filters.role_type == 'custom' %}selected{% endif %}>Custom Roles</option>
                 </select>
@@ -70,12 +70,13 @@
         </form>
     </div>
     <div class="overflow-x-auto">
-        <table class="{{ table_ui.table_classes('min-w-[980px]') }}">
+        <table class="{{ table_ui.table_classes('min-w-[1080px]') }}">
             <thead class="{{ table_ui.head_classes() }}">
                 <tr>
                     <th class="{{ table_ui.header_cell_classes() }}">Role</th>
                     <th class="{{ table_ui.header_cell_classes() }}">Type</th>
                     <th class="{{ table_ui.header_cell_classes() }}">State</th>
+                    <th class="{{ table_ui.header_cell_classes() }}">Baseline</th>
                     <th class="{{ table_ui.header_cell_classes() }}">Assigned Users</th>
                     <th class="{{ table_ui.header_cell_classes() }}">Permissions</th>
                     <th class="{{ table_ui.header_cell_classes(action=true) }}">Action</th>
@@ -88,13 +89,14 @@
                         <td class="{{ table_ui.cell_classes() }}">{{ table_ui.title_cell(role.display_name, role.name, row.type.icon) }}</td>
                         <td class="{{ table_ui.cell_classes() }}">{{ table_label.metadata_label(row.type.short_label, icon=row.type.icon) }}</td>
                         <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_label(row.state.label, row.state.tone, row.state.icon) }}</td>
+                        <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_label(row.baseline.label, row.baseline.tone, row.baseline.icon) }}</td>
                         <td class="{{ table_ui.cell_classes() }}"><span class="text-sm font-semibold text-content-primary">{{ row.assigned_users }}</span></td>
                         <td class="{{ table_ui.cell_classes() }}"><span class="text-sm font-semibold text-content-primary">{{ row.permission_count }}</span></td>
                         <td class="{{ table_ui.cell_classes(action=true) }}">{{ resource_detail_modal.detail_button(role.id, url_for('access.roles.modal_details', role_id=role.id) , role.display_name, 'Role', label='View Details') }}</td>
                     </tr>
                 {% else %}
                     <tr>
-                        <td colspan="6" class="p-0">
+                        <td colspan="7" class="p-0">
                             {% set empty_state_icon = "shield-off" %}
                             {% set empty_state_label = "No Results" %}
                             {% set empty_state_title = 'No Matching Roles' if summary.total_roles else 'No Roles Registered' %}

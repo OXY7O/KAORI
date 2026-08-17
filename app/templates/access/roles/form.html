@@ -2,7 +2,7 @@
 {% import "components/page_hero.html" as page_hero %}
 {% import "components/table_label.html" as table_label %}
 {% set read_only = view_only|default(false) %}
-{% set is_system_role = role and role.is_system %}
+{% set is_system_role = protected_default|default(false) %}
 {% set page_mode = 'view' if read_only else ('clone' if clone_source else ('edit' if role else 'create')) %}
 {% block title %}
     {% if page_mode == 'clone' %}
@@ -130,6 +130,17 @@
                 </div>
             </section>
         {% endif %}
+        {% if baseline_state and baseline_state.key in ['drift', 'unexpected_system'] %}
+            <section class="rounded-xl border border-outline-default bg-status-warning-soft p-4 text-status-warning-text">
+                <div class="flex items-start gap-3">
+                    <i data-lucide="triangle-alert" class="mt-0.5 h-5 w-5 shrink-0"></i>
+                    <div>
+                        <h2 class="text-sm font-bold">{{ baseline_state.label }}</h2>
+                        <p class="mt-1 text-sm leading-6">{{ baseline_state.detail }} Run the explicit RBAC convergence workflow instead of editing the protected database record.</p>
+                    </div>
+                </div>
+            </section>
+        {% endif %}
         <form method="post" class="space-y-6">
             {{ form.hidden_tag() }}
             {% if form.errors %}
@@ -222,7 +233,7 @@
                                 <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"><i data-lucide="grid-2x2-check" class="h-5 w-5"></i></span>
                                 <div class="min-w-0">
                                     <h2 class="text-base font-bold text-content-primary">Permission Matrix</h2>
-                                    <p class="mt-0.5 text-sm leading-5 text-content-muted">Review {{ selected_count }} mapped permissions across {{ selected_module_ns.count }} modules. Expand only the modules you need.</p>
+                                    <p class="mt-0.5 text-sm leading-5 text-content-muted">Review {{ selected_count }} mapped permissions across {{ selected_module_ns.count }} modules. {% if delegation_limited and not read_only %}Only permissions inside your effective delegation boundary can be selected.{% else %}Expand only the modules you need.{% endif %}</p>
                                 </div>
                             </div>
                             {{ table_label.metadata_label('RBAC Scope', icon='shield-check') }}
@@ -309,7 +320,7 @@
                                                            aria-label="{{ permission_label(permission) |trim }}"
                                                            class="peer absolute left-3 top-3 z-10 h-8 w-8 cursor-pointer opacity-0 focus:outline-none disabled:cursor-default"
                                                            {% if permission.id in selected_permission_ids %}checked{% endif %}
-                                                           {% if read_only %}disabled{% endif %}>
+                                                           {% if read_only or permission.id not in delegable_permission_ids %}disabled{% endif %}>
                                                     <span aria-hidden="true"
                                                           class="pointer-events-none mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-outline-default bg-surface-subtle text-content-muted transition peer-checked:border-kaori-primary peer-checked:bg-kaori-primary peer-checked:text-white peer-focus-visible:ring-2 peer-focus-visible:ring-outline-focus">
                                                         <i data-lucide="check" class="h-4 w-4"></i>
@@ -318,6 +329,7 @@
                                                         <span class="flex flex-wrap items-center gap-2">
                                                             <span class="text-sm font-semibold text-content-primary">{{ permission_label(permission) }}</span>
                                                             {% if permission.id in required_permission_ids %}{{ table_label.status_label('Required', 'info', 'git-merge') }}{% endif %}
+                                                            {% if not read_only and permission.id not in delegable_permission_ids %}{{ table_label.status_label('Outside Ceiling', 'unknown', 'shield-ban') }}{% endif %}
                                                         </span>
                                                         <span class="mt-1 block text-xs font-medium text-content-muted">{{ permission.key }}</span>
                                                         <span class="mt-1.5 block text-xs leading-5 text-content-muted">{{ permission.description or 'No permission description is defined.' }}</span>
@@ -338,7 +350,7 @@
                         <div class="flex shrink-0 justify-end gap-3">
                             <a href="{{ url_for('access.roles.index') }}"
                                class="inline-flex min-h-10 items-center justify-center rounded-lg border border-outline-default bg-surface-card px-4 py-2 text-sm font-semibold text-content-secondary hover:bg-surface-hover">{{ 'Back' if read_only else 'Cancel' }}</a>
-                            {% if read_only and not is_system_role and current_user.has_permission('roles.manage') %}
+                            {% if read_only and can_mutate_role %}
                                 <a href="{{ url_for('access.roles.edit', role_id=role.id) }}"
                                    class="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 py-2 text-sm font-semibold text-white hover:bg-kaori-primary/90"><i data-lucide="pencil" class="h-4 w-4"></i>Edit custom role</a>
                             {% elif read_only and is_system_role and current_user.has_permission('roles.manage') %}
@@ -410,12 +422,18 @@
                                        data-role-selected-module-count>{{ selected_module_ns.count }}</p>
                                 </article>
                             </div>
-                            {% if page_mode == 'edit' and role and role.is_active and not form.is_active.data and assigned_user_count %}
-                                <div class="rounded-xl border border-status-warning-border bg-status-warning-soft p-3.5 text-xs leading-5 text-status-warning-text">
+                            {% if page_mode == 'edit' and role and role.is_active and (assigned_user_count or identity_provider_count) %}
+                                <div class="space-y-3 rounded-xl border border-status-warning-border bg-status-warning-soft p-3.5 text-xs leading-5 text-status-warning-text">
                                     <div class="flex items-start gap-2.5">
                                         <i data-lucide="triangle-alert" class="mt-0.5 h-4 w-4 shrink-0"></i>
-                                        <p>{{ assigned_user_count }} assigned {{ 'user' if assigned_user_count == 1 else 'users' }} will lose this role's permissions when the role is deactivated.</p>
+                                        <p>Deactivating this role will fail closed for {{ assigned_user_count }} assigned user{{ '' if assigned_user_count == 1 else 's' }} and {{ identity_provider_count }} Identity Provider default mapping{{ '' if identity_provider_count == 1 else 's' }}.</p>
                                     </div>
+                                    {% if not read_only %}
+                                        <label class="flex cursor-pointer items-start gap-2 rounded-lg border border-outline-default bg-surface-card/60 p-2.5">
+                                            {{ form.impact_acknowledged(class="mt-0.5 h-4 w-4 rounded border-outline-strong accent-kaori-primary focus:ring-kaori-primary") }}
+                                            <span>I understand this impact if I deactivate the role.</span>
+                                        </label>
+                                    {% endif %}
                                 </div>
                             {% else %}
                                 <div class="rounded-xl border border-outline-default bg-surface-hover p-3.5 text-xs leading-5 text-content-muted">
@@ -451,14 +469,21 @@
                                 <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary"><i data-lucide="git-merge" class="h-4 w-4"></i></span>
                                 <div>
                                     <p class="text-sm font-semibold text-content-primary">Dependency Normalization</p>
-                                    <p class="mt-1 text-xs leading-5 text-content-muted">Required baseline permissions are added automatically when needed.</p>
+                                    <p class="mt-1 text-xs leading-5 text-content-muted">Required baseline permissions are source-controlled and added automatically when needed.</p>
+                                </div>
+                            </div>
+                            <div class="flex items-start gap-3 rounded-xl border border-outline-default bg-surface-subtle p-3.5">
+                                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary"><i data-lucide="shield-ellipsis" class="h-4 w-4"></i></span>
+                                <div>
+                                    <p class="text-sm font-semibold text-content-primary">Delegation Boundary</p>
+                                    <p class="mt-1 text-xs leading-5 text-content-muted">Role managers can only delegate permissions already present in their own effective access. Local Database Super Admin is the explicit break-glass exception.</p>
                                 </div>
                             </div>
                             <div class="flex items-start gap-3 rounded-xl border border-outline-default bg-surface-subtle p-3.5">
                                 <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary"><i data-lucide="shield-alert" class="h-4 w-4"></i></span>
                                 <div>
                                     <p class="text-sm font-semibold text-content-primary">Super Admin Boundary</p>
-                                    <p class="mt-1 text-xs leading-5 text-content-muted">Emergency authority remains separate from normal role permissions.</p>
+                                    <p class="mt-1 text-xs leading-5 text-content-muted">Emergency authority remains a Local Database-only flag and is never granted through normal role composition.</p>
                                 </div>
                             </div>
                         </div>

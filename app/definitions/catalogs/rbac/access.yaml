@@ -213,6 +213,18 @@ permissions:
   module: access
   action: delete_users
   description: Soft delete user accounts.
+- key: identity_providers.view
+  module: access
+  action: view_identity_providers
+  description: View configured authentication providers, posture, and identity-link evidence.
+- key: identity_providers.manage
+  module: access
+  action: manage_identity_providers
+  description: Configure, validate, enable, and update authentication providers.
+- key: identity_providers.provision
+  module: access
+  action: provision_external_identities
+  description: Search directory providers and project external identities into KAORI user accounts.
 - key: roles.view
   module: access
   action: view_roles
@@ -229,6 +241,52 @@ permissions:
   module: system
   action: manage
   description: Manage system-level settings.
+permission_dependencies:
+  clusters.manage: [clusters.view]
+  clusters.sync: [clusters.view, jobs.execute]
+  storage.sync: [object_storage_inventory.view, jobs.execute]
+  kubernetes_configmaps.create: [kubernetes_configmaps.view]
+  kubernetes_configmaps.update: [kubernetes_configmaps.view]
+  kubernetes_configmaps.delete: [kubernetes_configmaps.view]
+  kubernetes_secrets.create: [kubernetes_secrets.view]
+  kubernetes_secrets.replace: [kubernetes_secrets.view]
+  kubernetes_secrets.delete: [kubernetes_secrets.view]
+  kubernetes_secrets.reveal: [kubernetes_secrets.view]
+  kubernetes_secrets.approve_reveal: [kubernetes_secrets.view]
+  kubernetes_secrets.manage_reveal: [kubernetes_secrets.view]
+  kubernetes_secrets.rotate_tls: [kubernetes_secrets.view]
+  kubernetes_secrets.bulk_rotate_tls: [kubernetes_secrets.view]
+  tls_certificates.sync: [tls_certificates.view]
+  reports.generate: [reports.view]
+  reports.manage_templates: [reports.view]
+  reports.manage_schedules: [reports.view]
+  reports.manage_storage: [reports.view]
+  jobs.cancel: [jobs.view]
+  jobs.execute: [jobs.view]
+  jobs.configure: [jobs.view]
+  knowledge.runbooks.manage: [knowledge.runbooks.view]
+  knowledge.runbooks.publish: [knowledge.runbooks.view, knowledge.runbooks.manage]
+  intelligence.decisions.create: [intelligence.decisions.view]
+  intelligence.decisions.approve: [intelligence.decisions.view]
+  intelligence.decisions.execute: [intelligence.decisions.view]
+  platform_operations.export_data_lifecycle: [platform_operations.view_data_lifecycle]
+  platform_operations.manage_data_lifecycle: [platform_operations.view_data_lifecycle]
+  users.manage: [users.view]
+  users.reset_password: [users.view]
+  users.activate: [users.view]
+  users.delete: [users.view]
+  identity_providers.manage: [identity_providers.view]
+  identity_providers.provision: [identity_providers.view]
+  roles.manage: [roles.view]
+  system.manage: [system.view]
+access_administration_permissions:
+  - roles.manage
+  - users.manage
+  - users.reset_password
+  - users.activate
+  - users.delete
+  - identity_providers.manage
+  - identity_providers.provision
 system_roles:
 - key: viewer
   display_name: Viewer
@@ -370,6 +428,9 @@ system_roles:
   - reports.manage_storage
   - reports.manage_templates
   - reports.view
+  - identity_providers.manage
+  - identity_providers.provision
+  - identity_providers.view
   - roles.manage
   - roles.view
   - settings.manage_integrations

@@ -91,7 +91,7 @@ def test_permission_catalog_exposes_drift_dependency_and_cross_role_coverage() -
         'missing',
         'metadata_drift',
         'database_only',
-        'PERMISSION_DEPENDENCIES',
+        'DEFAULT_PERMISSION_DEPENDENCIES',
         'drift_count',
         'unused_contracts',
         'roles_by_permission_key',

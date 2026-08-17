@@ -13,11 +13,15 @@
                 <p class="mt-1 text-sm leading-6 text-content-secondary">Project approved directory identities into KAORI accounts, then assign local authorization without taking ownership of directory credentials.</p>
             </div>
         </div>
-        <a href="{{ url_for('identity_providers.directory_provisioning') }}"
-           class="inline-flex h-9 shrink-0 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-primary transition hover:border-outline-strong hover:bg-surface-hover">
-            <i data-lucide="arrow-up-right" class="h-3.5 w-3.5" aria-hidden="true"></i>
-            Open Directory Provisioning
-        </a>
+        {% if current_user.has_permission('identity_providers.provision') %}
+            <a href="{{ url_for('identity_providers.directory_provisioning') }}"
+               class="inline-flex h-9 shrink-0 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-primary transition hover:border-outline-strong hover:bg-surface-hover">
+                <i data-lucide="arrow-up-right" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                Open Directory Provisioning
+            </a>
+        {% else %}
+            <span class="inline-flex min-h-6 items-center rounded-md border border-outline-subtle bg-surface-subtle px-2 text-xs font-semibold text-content-secondary">Read Only</span>
+        {% endif %}
     </header>
     <div class="grid border-b border-outline-subtle sm:grid-cols-3 sm:divide-x sm:divide-outline-subtle">
         <div class="px-5 py-4 sm:px-6">

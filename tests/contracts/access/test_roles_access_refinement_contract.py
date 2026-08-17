@@ -93,6 +93,8 @@ def test_role_mutations_are_serialized_and_version_checked() -> None:
     assert "db.session.expire(role, ['permissions'])" in service
     assert 'def role_version_token' in service
     assert 'def role_version_matches' in service
+    assert 'def ensure_permission_selection_within_delegation_boundary' in service
+    assert 'def ensure_role_within_delegation_boundary' in service
     assert 'lock_role_for_mutation(role_id)' in routes
     assert 'This role changed after the page was opened' in routes
     assert 'The role changed after the registry was loaded' in routes
@@ -112,6 +114,8 @@ def test_role_form_uses_sticky_impact_rail_visible_guardrails_and_dependency_evi
         'Changes apply on the next authorization check.',
         'Design for Responsibility',
         'Dependency Normalization',
+        'Delegation Boundary',
+        'Outside Ceiling',
         'Super Admin Boundary',
     ):
         assert required in form
@@ -149,7 +153,8 @@ def test_role_registry_overview_matches_kaori_registry_overview_visual_grammar()
         'min-h-[11rem]',
         'border-t border-outline-subtle bg-surface-hover px-5 py-4 lg:px-6',
         'Protected Defaults',
-        'Custom Role Ownership',
+        'Delegation Boundary',
+        'Baseline Drift',
         'Permission Dependencies',
         'Effective Authorization',
     ):

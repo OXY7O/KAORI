@@ -34,6 +34,8 @@
                 {{ detail_ui.technical_row('Role Key', role.name, break_all=false) }}
                 {{ detail_ui.metadata_row('Role Type', detail.type_label, detail.type_icon) }}
                 {{ detail_ui.status_row('Role State', detail.state_label, detail.state_tone, detail.state_icon, 'detail') }}
+                {{ detail_ui.status_row('Baseline Integrity', detail.baseline_label, detail.baseline_tone, detail.baseline_icon, 'detail') }}
+                {{ detail_ui.stacked_detail_row('Baseline Evidence', detail.baseline_detail) }}
                 {{ detail_ui.stacked_detail_row('Operational Purpose', role.description or 'No role description is defined.') }}
             {% endcall %}
             {% call detail_ui.detail_card('Assignment Impact', 'users-round', detail.assigned_users ~ ' Users', badge_size='detail', stretch=false, density='compact') %}
@@ -41,7 +43,7 @@
                 {{ detail_ui.detail_row('Provider Defaults', detail.provider_mappings) }}
                 {{ detail_ui.detail_row('Assignment Availability', 'Available' if role.is_active else 'Blocked') }}
                 {{ detail_ui.stacked_detail_row('Authorization Effect', detail.assignment_effect) }}
-                {% if detail.delete_blocked and not role.is_system %}
+                {% if detail.delete_blocked and not detail.mutation_protected %}
                     <div class="mt-2 rounded-lg border border-status-warning-border bg-status-warning-soft p-3 text-xs leading-5 text-status-warning-text">
                         Remove {{ detail.assigned_users }} user assignment{{ '' if detail.assigned_users == 1 else 's' }} and {{ detail.provider_mappings }} provider default mapping{{ '' if detail.provider_mappings == 1 else 's' }} before deleting this role.
                     </div>
@@ -93,21 +95,22 @@
                     <div class="p-4">{{ detail_ui.empty_evidence('No Permissions Assigned', 'This role currently grants no effective permission contracts.', 'key-round') }}</div>
                 {% endif %}
             </section>
-            {% call detail_ui.detail_card('Administrative Boundary', 'shield-check', 'Protected' if role.is_system else 'Custom', badge_size='detail', stretch=false, density='compact', class_name='xl:col-span-2') %}
-                {% if role.is_system %}
+            {% call detail_ui.detail_card('Administrative Boundary', 'shield-check', 'Protected' if detail.mutation_protected else 'Custom', badge_size='detail', stretch=false, density='compact', class_name='xl:col-span-2') %}
+                {% if detail.mutation_protected %}
                     {{ detail_ui.stacked_detail_row('Ownership', 'Protected defaults are code-owned and cannot be edited or deleted directly.') }}
                     {{ detail_ui.stacked_detail_row('Customization Path', 'Clone this role to create an editable custom authorization profile.') }}
                 {% else %}
-                    {{ detail_ui.stacked_detail_row('Ownership', 'Custom roles are administrator-managed and remain subject to assignment and provider-reference guardrails.') }}
+                    {{ detail_ui.stacked_detail_row('Ownership', 'Custom roles are administrator-managed and remain subject to delegation-ceiling, assignment, and provider-reference guardrails.') }}
+                    {{ detail_ui.stacked_detail_row('Delegation Boundary', 'Within your effective access ceiling' if detail.within_delegation else 'Outside your effective access ceiling; mutation is blocked') }}
                     {{ detail_ui.stacked_detail_row('Deletion State', 'Eligible' if detail.delete_eligible else 'Blocked by active references') }}
                 {% endif %}
                 <div class="mt-3 flex flex-wrap gap-2">
                     <a href="{{ url_for('access.roles.detail', role_id=role.id) }}"
                        class="{{ action_button.classes('secondary', false) }}"><i data-lucide="external-link" class="h-4 w-4"></i>Open Role</a>
-                    {% if can_manage_roles and role.is_system %}
+                    {% if can_manage_roles and detail.mutation_protected %}
                         <a href="{{ url_for('access.roles.clone', role_id=role.id) }}"
                            class="{{ action_button.classes('primary', false) }}"><i data-lucide="copy-plus" class="h-4 w-4"></i>Clone Role</a>
-                    {% elif can_manage_roles and not role.is_system %}
+                    {% elif can_mutate_role %}
                         <a href="{{ url_for('access.roles.edit', role_id=role.id) }}"
                            class="{{ action_button.classes('primary', false) }}"><i data-lucide="pencil" class="h-4 w-4"></i>Edit Role</a>
                         {% if detail.delete_eligible %}

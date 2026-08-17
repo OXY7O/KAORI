@@ -69,8 +69,8 @@ def _load_provider_definitions() -> tuple[IdentityProviderDefinition, ...]:
                 enabled_copy=require_str(raw, 'enabled_copy', path),
                 admission_label=require_str(raw, 'admission_label', path),
                 admission_help=require_str(raw, 'admission_help', path),
-                client_secret_placeholder=require_str(raw, 'client_secret_placeholder', path),
-                guidance_partial=require_str(raw, 'guidance_partial', path),
+                client_secret_placeholder=require_str(raw, 'client_secret_placeholder', path, allow_empty=True),
+                guidance_partial=require_str(raw, 'guidance_partial', path, allow_empty=True),
             )
         )
     return tuple(output)

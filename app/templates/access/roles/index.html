@@ -55,7 +55,7 @@
                                     ('circle-check', 'Active Roles', summary.active_roles, 'Profiles currently available for assignment.', 'bg-status-normal-soft text-status-normal-text'),
                                     ('lock-keyhole', 'System Roles', summary.system_roles, 'Protected defaults owned by the RBAC baseline.', 'bg-kaori-soft text-kaori-primary'),
                                     ('sparkles', 'Custom Roles', summary.custom_roles, 'Editable administrator-managed access profiles.', 'bg-status-info-soft text-status-info-text'),
-                                    ('users', 'Assigned Users', summary.assigned_users, 'Managed accounts with a role assignment.', 'bg-status-unknown-soft text-status-unknown-text')
+                                    ('triangle-alert', 'Baseline Drift', summary.baseline_drift_count, 'Protected default definitions requiring RBAC convergence review.', 'bg-status-warning-soft text-status-warning-text' if summary.baseline_drift_count else 'bg-status-normal-soft text-status-normal-text')
                                 ] %}
                 {% for icon, label, value, description, tone in overview_metrics %}
                     <article class="flex min-h-[11rem] flex-col bg-surface-card p-5">
@@ -73,7 +73,7 @@
             </div>
             <div class="border-t border-outline-subtle bg-surface-hover px-5 py-4 lg:px-6">
                 <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-                    {% set boundaries = [('lock-keyhole', 'Protected Defaults', 'Code-Owned', 'System roles are code-owned and must be cloned before customization.'), ('user-cog', 'Custom Role Ownership', 'Administrator', 'Authorized administrators own custom role lifecycle and status.'), ('git-merge', 'Permission Dependencies', 'Normalized', 'Required baseline permissions are included automatically when needed.'), ('shield-check', 'Effective Authorization', 'Fail Closed', 'Inactive roles fail closed on the next authorization check.')] %}
+                    {% set boundaries = [('lock-keyhole', 'Protected Defaults', 'Code-Owned', 'System roles are code-owned and must be cloned before customization.'), ('shield-ellipsis', 'Delegation Boundary', 'Effective Access', 'Role managers may only delegate permissions already inside their own effective access ceiling.'), ('git-merge', 'Permission Dependencies', 'Catalog-Owned', 'Required baseline permissions are source-controlled and expanded automatically when needed.'), ('shield-check', 'Effective Authorization', 'Fail Closed', 'Inactive roles fail closed on the next authorization check.')] %}
                     {% for icon, title, value, description in boundaries %}
                         <article class="flex items-start gap-3 rounded-xl border border-outline-subtle bg-surface-card p-3.5">
                             <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
@@ -101,7 +101,7 @@
             ) %}
             {% set role_flow = [('book-key', 'Permission Catalog', 'Code-owned capabilities define the available permission contracts.'), ('layers-3', 'Role Composition', 'Default or custom roles package permissions into reusable profiles.'), ('user-round-check', 'User Assignment', 'User Management assigns one active role to each managed account.'), ('shield-check', 'Authorization Check', 'Server-side guards evaluate effective permissions on every protected action.')] %}
             {{ point_flow.render(role_flow, aria_label='Role Assignment Flow') }}
-            <p class="mt-4 text-xs leading-5 text-content-muted">Super Admin remains a separately controlled emergency authority flag and is never granted through a normal role.</p>
+            <p class="mt-4 text-xs leading-5 text-content-muted">Super Admin remains a separately controlled Local Database emergency authority flag and is never granted through a normal role. Custom role delegation cannot exceed the administrator's own effective permission boundary.</p>
         {% endcall %}
         {% include "access/roles/partials/_registry.html" %}
         {{ resource_detail_modal.host('Role',

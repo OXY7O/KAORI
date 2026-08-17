@@ -1,9 +1,11 @@
 <nav class="flex flex-wrap gap-1 rounded-xl border border-outline-default bg-surface-card p-1 shadow-sm" aria-label="Identity Provider workspace">
     {% set tabs = [
         ('overview', 'layout-dashboard', 'Overview', url_for('identity_providers.index', tab='overview')),
-        ('providers', 'blocks', 'Providers', url_for('identity_providers.index', tab='providers')),
-        ('directory', 'contact-round', 'Directory Provisioning', url_for('identity_providers.directory_provisioning'))
+        ('providers', 'blocks', 'Providers', url_for('identity_providers.index', tab='providers'))
     ] %}
+    {% if current_user.has_permission('identity_providers.provision') %}
+        {% set tabs = tabs + [('directory', 'contact-round', 'Directory Provisioning', url_for('identity_providers.directory_provisioning'))] %}
+    {% endif %}
     {% for key, icon, label, href in tabs %}
         <a href="{{ href }}"
            class="inline-flex min-h-9 items-center gap-2 rounded-lg px-3 text-sm font-semibold transition {{ 'bg-kaori-soft text-kaori-primary' if active_tab == key else 'text-content-secondary hover:bg-surface-hover hover:text-content-primary' }}"

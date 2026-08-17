@@ -16,7 +16,9 @@ Canonical registry for:
 
 - permission key, module, action, and description;
 - five protected default-role definitions;
-- exact permission set for Viewer, Operator, Editor, Admin, and Auditor.
+- exact permission set for Viewer, Operator, Editor, Admin, and Auditor;
+- permission dependency graph;
+- capability-based Access administration boundary used to classify administrator-level roles.
 
 A permission added here must also be enforced in code, represented in navigation where applicable, documented, seeded, and tested.
 
@@ -41,9 +43,10 @@ Owns RBAC business rules:
 - role slug normalization and uniqueness lookup;
 - active-role query;
 - Permission Catalog module grouping;
-- action-to-view permission dependency expansion;
+- source-controlled permission dependency expansion;
 - safe replacement of custom-role permissions;
-- system-role mutation rejection;
+- protected-default and unexpected-system-role mutation rejection;
+- custom-role delegation boundarys so non-break-glass administrators cannot grant permissions they do not possess;
 - custom-role deletion blockers for users and identity providers.
 
 ## Related files
@@ -66,7 +69,10 @@ Owns RBAC business rules:
 - Default roles cannot be edited, deactivated, or deleted.
 - Clone a default role when a different permission set is required.
 - Custom-role deletion is blocked while referenced by users or identity-provider defaults.
-- Super Admin remains a separate emergency authority flag.
+- Super Admin remains a Local Database-only emergency authority flag.
+- A custom role slug can never reuse a source-controlled protected default key, even when the database baseline is missing or drifted.
+- Administrator-level role classification is capability-based from `access_administration_permissions`, never inferred from the role slug `admin`.
+- Deactivating a referenced custom role requires explicit impact acknowledgement because assigned users fail closed and Identity Provider default mappings become unusable.
 - UI visibility is not authorization.
 - Every protected mutation requires a server-side permission guard and target-state validation.
 - Current role scope is global; do not imply cluster- or namespace-scoped RBAC.
@@ -78,7 +84,7 @@ RBAC routes do not use Flask flash messages. Mutation outcomes are recorded thro
 
 ## RBAC convergence boundary
 
-`seed_default_rbac()` is a governed command/bootstrap operation, not an HTTP read-path side effect. Access pages must never call it from GET routes or presentation builders. Permission Catalog compares `DEFAULT_PERMISSIONS` with the persisted registry and reports drift without mutating it.
+`seed_default_rbac()` is a governed command/bootstrap operation, not an HTTP read-path side effect. Access pages must never call it from GET routes or presentation builders. Permission Catalog compares `DEFAULT_PERMISSIONS` with the persisted registry and reports drift without mutating it. Roles & Access separately compares protected default-role identity, lifecycle, metadata, and permission membership against `DEFAULT_ROLE_DEFINITIONS` / `DEFAULT_ROLE_PERMISSIONS`; drift remains protected from UI mutation until explicit RBAC convergence.
 
 `flask seed-rbac` may create missing canonical permissions, synchronize canonical metadata, converge protected default roles, and normalize default-role mappings. Database-only permission rows are not silently deleted by Permission Catalog; operators must review role usage before any controlled cleanup migration.
 

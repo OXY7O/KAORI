@@ -112,10 +112,12 @@
                         <td class="{{ table_ui.cell_classes() }}"><span class="text-sm font-semibold text-content-primary">{{ row.identity_links }}</span></td>
                         <td class="{{ table_ui.cell_classes(action=true) }}">
                             <div class="flex justify-end gap-2">
-                                <a href="{{ url_for('identity_providers.edit', provider_id=provider.id) }}"
-                                   class="{{ table_ui.action_classes() }}">
-                                    <i data-lucide="pencil" class="h-3.5 w-3.5" aria-hidden="true"></i>Edit
-                                </a>
+                                {% if current_user.has_permission('identity_providers.manage') %}
+                                    <a href="{{ url_for('identity_providers.edit', provider_id=provider.id) }}"
+                                       class="{{ table_ui.action_classes() }}">
+                                        <i data-lucide="pencil" class="h-3.5 w-3.5" aria-hidden="true"></i>Edit
+                                    </a>
+                                {% endif %}
                                 {{ expandable.toggle_button('identity-providers', provider.id, '', detail_target_id, detail_row_id) }}
                             </div>
                         </td>

@@ -26,7 +26,7 @@
                         <div class="flex min-w-[15rem] items-start gap-2.5">
                             <span class="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary"
                                   aria-hidden="true">
-                                <i data-lucide="{{ 'shield-check' if user.is_super_admin else 'shield' if user.role_name == 'admin' else 'user' }}"
+                                <i data-lucide="{{ 'shield-check' if user.is_super_admin else 'shield' if user.is_admin_level else 'user' }}"
                                    class="h-4 w-4"></i>
                             </span>
                             <div class="min-w-0">

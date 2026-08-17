@@ -73,6 +73,8 @@ Roles & Access now uses the KAORI operational registry pattern: read-only postur
 
 Custom-role edit/delete mutations are serialized with a database row lock and protected by a role version token so stale administrative forms do not silently overwrite a newer role state. Delete blockers for user assignments and Identity Provider defaults are rechecked at mutation time.
 
+The role mutation boundary also enforces a delegation boundary: a non-break-glass role manager can only grant permissions already present in their own effective role. Protected default keys remain source-controlled even if database `is_system` metadata drifts, and Roles & Access surfaces baseline drift until explicit `flask seed-rbac` convergence. Administrator-level role classification is capability-based from the RBAC catalog rather than the role slug. Deactivating a referenced custom role requires explicit impact acknowledgement.
+
 This Roles & Access presentation is part of Access Final Lock v1. RBAC seed/convergence remains an explicit deployment boundary owned by the Permission Catalog and `flask seed-rbac`.
 
 ## Permission Catalog review status

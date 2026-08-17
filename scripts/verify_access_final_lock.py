@@ -95,7 +95,13 @@ def main() -> int:
     # Access overview is read-only and permission scoped.
     overview_routes = read('app/access/overview/routes.py')
     overview_template = read('app/templates/access/overview/index.html')
-    for permission in ('users.view', 'users.manage', 'roles.view', 'settings.view_operational_activity'):
+    for permission in (
+        'users.view',
+        'users.manage',
+        'identity_providers.view',
+        'roles.view',
+        'settings.view_operational_activity',
+    ):
         require(repr(permission) in overview_routes, f'Access Overview permission missing: {permission}', errors)
     require('@any_permission_required(' in overview_routes, 'Access Overview must use any_permission_required', errors)
     require('page_hero.shell_classes()' in overview_template, 'Access Overview must use shared Hero', errors)
@@ -144,16 +150,37 @@ def main() -> int:
         "@permission_required('roles.manage')",
         'lock_role_for_mutation(role_id)',
         'This role changed after the page was opened',
-        'Default role is protected',
+        'Protected role cannot be edited',
+        'ensure_role_within_delegation_boundary(actor=actor, role=role)',
     ):
         require(required in roles_routes, f'Roles security contract missing: {required}', errors)
-    for required in ('with_for_update()', 'def role_version_token', 'def role_version_matches'):
+    for required in (
+        'with_for_update()',
+        'def role_version_token',
+        'def role_version_matches',
+        'def ensure_permission_selection_within_delegation_boundary',
+        'def ensure_role_within_delegation_boundary',
+        'def validate_custom_role_slug',
+        'Confirm the user and Identity Provider impact before deactivating this referenced role.',
+    ):
         require(required in roles_service, f'Roles concurrency contract missing: {required}', errors)
     for required in ('components/page_hero.html', 'components/resource_detail_modal.html'):
         require(required in roles_index, f'Roles shared UI contract missing: {required}', errors)
     for required in ('components/table.html', 'components/loading_bar.html', 'components/pagination.html'):
         require(required in roles_registry, f'Role Registry shared UI contract missing: {required}', errors)
     require('xl:sticky xl:top-5' in roles_form, 'Role form sticky context rail contract drifted', errors)
+    for required in ('Delegation Boundary', 'Outside Ceiling', 'impact_acknowledged'):
+        require(required in roles_form, f'Role form delegation/impact guardrail missing: {required}', errors)
+    rbac_defaults = read('app/rbac/defaults.py')
+    rbac_policy = read('app/rbac/policy.py')
+    rbac_catalog = read('app/definitions/catalogs/rbac/access.yaml')
+    for required in ('permission_dependencies:', 'access_administration_permissions:'):
+        require(required in rbac_catalog, f'RBAC source-controlled policy contract missing: {required}', errors)
+    for required in ('DEFAULT_PERMISSION_DEPENDENCIES', 'ACCESS_ADMINISTRATION_PERMISSIONS'):
+        require(required in rbac_defaults, f'RBAC catalog loader contract missing: {required}', errors)
+    for required in ('role_is_access_admin_level', 'role_is_mutation_protected', 'role_slug_is_reserved'):
+        require(required in rbac_policy, f'RBAC policy boundary missing: {required}', errors)
+    require('Baseline Drift' in roles_index, 'Roles Overview must expose protected-baseline drift', errors)
     require(
         not (ROOT / 'app/static/js/role_access_tabs.js').exists(),
         'obsolete role_access_tabs.js reintroduced',
@@ -251,7 +278,6 @@ def main() -> int:
         require(required in user_provisioning_proof, f'LDAP projection proof contract missing: {required}', errors)
 
     # Identity Providers: provider-neutral administration, adapter-owned protocol behavior, external secrets.
-    provider_index = read('app/templates/access/identity_providers/index.html')
     provider_detail = read('app/templates/access/identity_providers/partials/_provider_detail.html')
     provider_overview = read('app/templates/access/identity_providers/partials/_overview.html')
     provider_routes = read('app/identity_providers/routes.py')
@@ -261,7 +287,9 @@ def main() -> int:
     for required in (
         "bp = Blueprint('identity_providers'",
         "url_prefix='/access/identity-providers'",
-        "@permission_required('users.manage')",
+        "@permission_required('identity_providers.view')",
+        "@permission_required('identity_providers.manage')",
+        "@permission_required('identity_providers.provision')",
         'validate_identity_provider(candidate)',
         'validate_identity_provider(provider)',
         'get_directory_provider_adapter(selected_provider.adapter_key)',
@@ -282,6 +310,17 @@ def main() -> int:
         )
     require(
         'load_definition_document(' in provider_catalog, 'Identity Provider catalog must be source-controlled', errors
+    )
+    require(
+        "client_secret_placeholder=require_str(raw, 'client_secret_placeholder', path, allow_empty=True)"
+        in provider_catalog,
+        'Identity Provider catalog must allow non-browser providers to omit a client-secret placeholder',
+        errors,
+    )
+    require(
+        "guidance_partial=require_str(raw, 'guidance_partial', path, allow_empty=True)" in provider_catalog,
+        'Identity Provider catalog must allow non-configurable providers to omit guidance partials',
+        errors,
     )
     require(
         'get_directory_provider_adapter(' in provider_registry, 'Directory adapter registry contract missing', errors

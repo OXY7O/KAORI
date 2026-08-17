@@ -12,6 +12,7 @@ from app.auth.identity_provider.registry import registered_browser_sso_adapter_k
 from app.auth.results import DATABASE_UNAVAILABLE_MESSAGE, USER_INACTIVE_MESSAGE, AuthResult
 from app.extensions.db import db
 from app.models import ExternalIdentityLink, IdentityProvider, Role, User
+from app.rbac.policy import role_is_access_admin_level
 
 
 class SsoAdmissionError(RuntimeError):
@@ -112,7 +113,7 @@ def validate_jit_configuration(provider: IdentityProvider) -> None:
     if not definition.supports_jit or definition.family != AuthProviderFamily.SSO:
         raise SsoAdmissionError('The selected identity provider does not support JIT provisioning.')
     role = db.session.get(Role, provider.default_role_id) if provider.default_role_id else None
-    if role is None or not role.is_active or role.name == 'admin':
+    if role is None or not role.is_active or role_is_access_admin_level(role):
         raise SsoAdmissionError('JIT requires an active non-admin default role.')
     if (
         definition.admission_policy in {'verified_email_domain_allowlist', 'subject_allowlist'}

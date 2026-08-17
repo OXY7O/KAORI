@@ -114,7 +114,9 @@ def test_object_storage_manual_execution_has_domain_permission_and_migration() -
     role_grants = {role['key']: set(role['permissions']) for role in access['system_roles']}
     assert 'storage.sync' in role_grants['operator']
     assert 'storage.sync' in role_grants['editor']
-    assert "'storage.sync': {'object_storage_inventory.view', 'jobs.execute'}" in service
+    dependencies = access['permission_dependencies']
+    assert set(dependencies['storage.sync']) == {'object_storage_inventory.view', 'jobs.execute'}
+    assert 'DEFAULT_PERMISSION_DEPENDENCIES' in service
     assert "revision = '20260813_obj_storage_jobs'" in migration
     assert "down_revision = '20260812_obj_storage_inv'" in migration
     assert "ROLE_NAMES = ('operator', 'editor', 'admin')" in migration

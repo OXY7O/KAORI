@@ -4,8 +4,7 @@ from collections import defaultdict
 from typing import Any
 
 from app.models import Permission, Role
-from app.rbac.defaults import DEFAULT_PERMISSIONS
-from app.rbac.service import PERMISSION_DEPENDENCIES
+from app.rbac.defaults import DEFAULT_PERMISSION_DEPENDENCIES, DEFAULT_PERMISSIONS
 
 MODULE_LABELS: dict[str, str] = {
     'workspace': 'Welcome',
@@ -48,7 +47,7 @@ def permission_title(key: str, action: str | None) -> str:
 
 def _inverse_dependencies() -> dict[str, set[str]]:
     inverse: dict[str, set[str]] = defaultdict(set)
-    for permission_key, dependencies in PERMISSION_DEPENDENCIES.items():
+    for permission_key, dependencies in DEFAULT_PERMISSION_DEPENDENCIES.items():
         for dependency_key in dependencies:
             inverse[dependency_key].add(permission_key)
     return dict(inverse)
@@ -102,7 +101,7 @@ def build_permission_registry_snapshot() -> dict[str, Any]:
                 'state_key': state_key,
                 'state': REGISTRY_STATE_PRESENTATION[state_key],
                 'code_owned': True,
-                'requires': sorted(PERMISSION_DEPENDENCIES.get(key, set())),
+                'requires': sorted(DEFAULT_PERMISSION_DEPENDENCIES.get(key, set())),
                 'required_by': sorted(inverse_dependencies.get(key, set())),
                 'roles': mapped_roles,
                 'role_count': len(mapped_roles),
@@ -130,7 +129,7 @@ def build_permission_registry_snapshot() -> dict[str, Any]:
                 'state_key': state_key,
                 'state': REGISTRY_STATE_PRESENTATION[state_key],
                 'code_owned': False,
-                'requires': sorted(PERMISSION_DEPENDENCIES.get(key, set())),
+                'requires': sorted(DEFAULT_PERMISSION_DEPENDENCIES.get(key, set())),
                 'required_by': sorted(inverse_dependencies.get(key, set())),
                 'roles': mapped_roles,
                 'role_count': len(mapped_roles),

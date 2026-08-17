@@ -6,50 +6,17 @@ from collections.abc import Iterable
 
 from app.extensions.db import db
 from app.models import IdentityProvider, Permission, Role, RolePermission, User
-from app.rbac.defaults import DEFAULT_PERMISSIONS, DEFAULT_ROLE_DEFINITIONS, DEFAULT_ROLE_PERMISSIONS
+from app.rbac.defaults import (
+    DEFAULT_PERMISSION_DEPENDENCIES,
+    DEFAULT_PERMISSIONS,
+    DEFAULT_ROLE_DEFINITIONS,
+    DEFAULT_ROLE_PERMISSIONS,
+)
+from app.rbac.policy import role_is_delegable_by_actor, role_is_protected_default
 
 ROLE_SLUG_PATTERN = re.compile(r'[^a-z0-9_]+')
 
-# Action permissions that require a baseline view permission. The service expands
-# selected permissions so custom roles cannot be saved in an internally
-# inconsistent state such as users.manage without users.view.
-PERMISSION_DEPENDENCIES: dict[str, set[str]] = {
-    'clusters.manage': {'clusters.view'},
-    'clusters.sync': {'clusters.view', 'jobs.execute'},
-    'storage.sync': {'object_storage_inventory.view', 'jobs.execute'},
-    'kubernetes_configmaps.create': {'kubernetes_configmaps.view'},
-    'kubernetes_configmaps.update': {'kubernetes_configmaps.view'},
-    'kubernetes_configmaps.delete': {'kubernetes_configmaps.view'},
-    'kubernetes_secrets.create': {'kubernetes_secrets.view'},
-    'kubernetes_secrets.replace': {'kubernetes_secrets.view'},
-    'kubernetes_secrets.delete': {'kubernetes_secrets.view'},
-    'kubernetes_secrets.reveal': {'kubernetes_secrets.view'},
-    'kubernetes_secrets.approve_reveal': {'kubernetes_secrets.view'},
-    'kubernetes_secrets.manage_reveal': {'kubernetes_secrets.view'},
-    'kubernetes_secrets.rotate_tls': {'kubernetes_secrets.view'},
-    'kubernetes_secrets.bulk_rotate_tls': {'kubernetes_secrets.view'},
-    'tls_certificates.sync': {'tls_certificates.view'},
-    'reports.generate': {'reports.view'},
-    'reports.manage_templates': {'reports.view'},
-    'reports.manage_schedules': {'reports.view'},
-    'reports.manage_storage': {'reports.view'},
-    'jobs.cancel': {'jobs.view'},
-    'jobs.execute': {'jobs.view'},
-    'jobs.configure': {'jobs.view'},
-    'knowledge.runbooks.manage': {'knowledge.runbooks.view'},
-    'knowledge.runbooks.publish': {'knowledge.runbooks.view', 'knowledge.runbooks.manage'},
-    'intelligence.decisions.create': {'intelligence.decisions.view'},
-    'intelligence.decisions.approve': {'intelligence.decisions.view'},
-    'intelligence.decisions.execute': {'intelligence.decisions.view'},
-    'platform_operations.export_data_lifecycle': {'platform_operations.view_data_lifecycle'},
-    'platform_operations.manage_data_lifecycle': {'platform_operations.view_data_lifecycle'},
-    'users.manage': {'users.view'},
-    'users.reset_password': {'users.view'},
-    'users.activate': {'users.view'},
-    'users.delete': {'users.view'},
-    'roles.manage': {'roles.view'},
-    'system.manage': {'system.view'},
-}
+# Permission dependency contracts are source-controlled in rbac/access.yaml.
 
 
 def normalize_role_slug(value: str | None) -> str:
@@ -64,6 +31,11 @@ def role_slug_exists(slug: str, *, exclude_role_id: int | None = None) -> bool:
     if exclude_role_id is not None:
         query = query.filter(Role.id != exclude_role_id)
     return db.session.query(query.exists()).scalar()
+
+
+def assignable_roles_for_actor(actor: User) -> list[Role]:
+    roles = Role.query.filter_by(is_active=True).order_by(Role.display_name.asc()).all()
+    return [role for role in roles if role_is_delegable_by_actor(actor, role)]
 
 
 def seed_default_rbac() -> dict[str, int]:
@@ -145,7 +117,7 @@ def expand_permission_keys(permission_keys: Iterable[str]) -> set[str]:
     pending = list(expanded)
     while pending:
         permission_key = pending.pop()
-        for dependency_key in PERMISSION_DEPENDENCIES.get(permission_key, set()):
+        for dependency_key in DEFAULT_PERMISSION_DEPENDENCIES.get(permission_key, set()):
             if dependency_key not in expanded:
                 expanded.add(dependency_key)
                 pending.append(dependency_key)
@@ -165,8 +137,8 @@ def expand_permission_ids(permission_ids: Iterable[int]) -> set[int]:
 
 
 def replace_role_permissions(role: Role, permission_ids: Iterable[int]) -> set[int]:
-    if role.is_system:
-        raise ValueError('System role permissions are code-owned and cannot be replaced.')
+    if role_is_protected_default(role):
+        raise ValueError('Protected default role permissions are code-owned and cannot be replaced.')
 
     selected_ids = expand_permission_ids(permission_ids)
     existing_by_permission_id = {

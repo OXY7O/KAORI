@@ -305,7 +305,7 @@
                                     </div>
                                 </div>
                             </div>
-                        {% elif mode == 'edit' and user and user.role_name == 'admin' %}
+                        {% elif mode == 'edit' and user and user.is_admin_level %}
                             <div class="rounded-lg border border-outline-subtle bg-surface-hover p-4 text-sm text-content-secondary">
                                 <div class="flex items-start gap-3">
                                     <i data-lucide="shield"
@@ -413,14 +413,16 @@
                             </article>
                         </div>
                     </details>
-                    {{ related_page_card.render('Identity Providers',
-                                        'Manage provider records, adapter contracts, and admission paths used to create external identities in KAORI.',
-                                        url_for('identity_providers.index') ,
-                    'Open Identity Providers',
-                    icon='fingerprint',
-                    eyebrow='Related User Management',
-                    boundary='Create Local Database users in this form. Provision directory identities and govern SSO admission from their authoritative provider workflows.'
-                    ) }}
+                    {% if current_user.has_permission('identity_providers.view') %}
+                        {{ related_page_card.render('Identity Providers',
+                                            'Manage provider records, adapter contracts, and admission paths used to create external identities in KAORI.',
+                                            url_for('identity_providers.index') ,
+                        'Open Identity Providers',
+                        icon='fingerprint',
+                        eyebrow='Related User Management',
+                        boundary='Create Local Database users in this form. Provision directory identities and govern SSO admission from their authoritative provider workflows.'
+                        ) }}
+                    {% endif %}
                     <details class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm group">
                         <summary class="border-b border-outline-subtle bg-surface-hover px-4 py-3.5 cursor-pointer list-none select-none transition hover:bg-kaori-soft/40 [&::-webkit-details-marker]:hidden flex items-start justify-between gap-3">
                             <div class="flex items-start gap-3">
@@ -513,25 +515,29 @@
                                 </div>
                             </dl>
                         </div>
-                        {% if identity_context.source_family == 'directory' %}
+                        {% if identity_context.source_family == 'directory' and (current_user.has_permission('identity_providers.provision') or current_user.has_permission('identity_providers.view')) %}
                             <footer class="grid gap-2 border-t border-outline-subtle bg-surface-hover p-4 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
-                                <a href="{{ url_for('identity_providers.directory_provisioning') }}"
-                                   class="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-semibold text-content-secondary transition hover:border-outline-focus hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
-                                    <i data-lucide="contact-round" class="h-4 w-4"></i>
-                                    Directory Provisioning
-                                </a>
-                                <a href="{{ url_for('identity_providers.index') }}"
-                                   class="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-semibold text-content-secondary transition hover:border-outline-focus hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
-                                    <i data-lucide="fingerprint" class="h-4 w-4"></i>
-                                    Identity Providers
-                                </a>
+                                {% if current_user.has_permission('identity_providers.provision') %}
+                                    <a href="{{ url_for('identity_providers.directory_provisioning') }}"
+                                       class="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-semibold text-content-secondary transition hover:border-outline-focus hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                                        <i data-lucide="contact-round" class="h-4 w-4"></i>
+                                        Directory Provisioning
+                                    </a>
+                                {% endif %}
+                                {% if current_user.has_permission('identity_providers.view') %}
+                                    <a href="{{ url_for('identity_providers.index') }}"
+                                       class="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-semibold text-content-secondary transition hover:border-outline-focus hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                                        <i data-lucide="fingerprint" class="h-4 w-4"></i>
+                                        Identity Providers
+                                    </a>
+                                {% endif %}
                             </footer>
-                        {% elif user.auth_source != 'database' %}
+                        {% elif user.auth_source != 'database' and current_user.has_permission('identity_providers.view') %}
                             <footer class="border-t border-outline-subtle bg-surface-hover p-4">
                                 <a href="{{ url_for('identity_providers.index') }}"
                                    class="inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-semibold text-content-secondary transition hover:border-outline-focus hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
                                     <i data-lucide="fingerprint" class="h-4 w-4"></i>
-                                    Manage Identity Providers
+                                    Identity Providers
                                 </a>
                             </footer>
                         {% endif %}
@@ -567,7 +573,7 @@
                             </div>
                         </div>
                     </section>
-                    {% if identity_context.source_family == 'directory' %}
+                    {% if identity_context.source_family == 'directory' and current_user.has_permission('identity_providers.provision') %}
                         {{ related_page_card.render('Directory Provisioning',
                                                 'Review the authoritative directory projection and external identity context used by this KAORI account.',
                                                 url_for('identity_providers.directory_provisioning') ,
@@ -585,7 +591,7 @@
                         eyebrow='Related User Management',
                         boundary='KAORI is authoritative for this Local Database identity and its credential lifecycle.'
                         ) }}
-                    {% else %}
+                    {% elif current_user.has_permission('identity_providers.view') %}
                         {{ related_page_card.render('Identity Providers',
                                                 'Review the external provider configuration and admission controls associated with this KAORI identity.',
                                                 url_for('identity_providers.index') ,

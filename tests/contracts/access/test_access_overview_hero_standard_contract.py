@@ -27,7 +27,7 @@ def test_access_overview_hero_summary_is_permission_aware() -> None:
     presentation = read('app/access/overview/presentation.py')
     for permission in (
         "_can('users.view')",
-        "_can('users.manage')",
+        "_can('identity_providers.view')",
         "_can('roles.view')",
         "_can('settings.view_operational_activity')",
     ):

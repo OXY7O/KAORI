@@ -13,7 +13,9 @@ from app.auth.identity_provider.catalog import (
 from app.auth.identity_provider.configuration import identity_provider_configuration_complete
 from app.common.pagination import PER_PAGE_OPTIONS, build_pagination_window, normalize_per_page, positive_int
 from app.extensions.db import db
-from app.models import ExternalIdentityLink, IdentityProvider, Role
+from app.models import ExternalIdentityLink, IdentityProvider, Role, User
+from app.rbac.policy import is_local_break_glass, role_is_access_admin_level, role_is_delegable_by_actor
+from app.rbac.service import assignable_roles_for_actor
 
 PROVIDER_STATE_OPTIONS = ('all', 'enabled', 'disabled')
 
@@ -214,6 +216,19 @@ def build_identity_provider_payload(filters: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def assign_provider_role_choices(form) -> None:
-    roles = Role.query.filter_by(is_active=True).filter(Role.name != 'admin').order_by(Role.display_name.asc()).all()
+def assign_provider_role_choices(form, *, actor: User) -> None:
+    roles = assignable_roles_for_actor(actor)
     form.default_role_id.choices = [(0, 'Select role'), *((role.id, role.display_name) for role in roles)]
+
+
+def provider_default_role_assignment_error(actor: User, role_id: int | None) -> str | None:
+    if not role_id:
+        return None
+    role = db.session.get(Role, role_id)
+    if role is None or not role.is_active:
+        return 'The selected JIT default role is unavailable.'
+    if role_is_delegable_by_actor(actor, role):
+        return None
+    if role_is_access_admin_level(role) and not is_local_break_glass(actor):
+        return 'Only a Local Database Super Admin can assign an administrator-level JIT default role.'
+    return 'The selected JIT default role exceeds your delegation boundary.'

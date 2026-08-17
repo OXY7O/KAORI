@@ -6,7 +6,9 @@ from typing import TYPE_CHECKING, Any
 from sqlalchemy import or_, select
 
 from app.extensions.db import db
-from app.models import AuditEvent, Role, User
+from app.models import Role, User
+from app.rbac.policy import is_local_break_glass, role_is_access_admin_level, role_is_delegable_by_actor
+from app.rbac.service import assignable_roles_for_actor
 
 if TYPE_CHECKING:
     from app.users.forms import UserForm
@@ -48,12 +50,8 @@ def lock_active_super_admin_boundary(target: User) -> None:
     db.session.refresh(target)
 
 
-def assign_user_form_choices(form: UserForm, *, include_admin_roles: bool = True) -> None:
-    query = Role.query.filter_by(is_active=True)
-    if not include_admin_roles:
-        query = query.filter(Role.name != 'admin')
-
-    roles = query.order_by(Role.display_name.asc()).all()
+def assign_user_form_choices(form: UserForm, *, actor: User) -> None:
+    roles = assignable_roles_for_actor(actor)
     form.role_id.choices = [(str(role.id), role.display_name) for role in roles]
 
 
@@ -109,7 +107,7 @@ def create_or_update_user(form: UserForm, user: User | None = None) -> User:
 
 
 def is_admin_level_user(user: User) -> bool:
-    return bool(user.is_super_admin or user.role_name == 'admin')
+    return bool(user.is_super_admin or role_is_access_admin_level(user.role_record))
 
 
 def role_id_is_admin_level(role_id: int | None) -> bool:
@@ -117,11 +115,24 @@ def role_id_is_admin_level(role_id: int | None) -> bool:
         return False
 
     role = db.session.get(Role, role_id)
-    return bool(role and role.name == 'admin')
+    return role_is_access_admin_level(role)
 
 
 def requested_admin_level(*, role_id: int | None, is_super_admin: bool) -> bool:
     return bool(is_super_admin or role_id_is_admin_level(role_id))
+
+
+def requested_role_assignment_allowed(actor: User, role_id: int | None) -> tuple[bool, str | None]:
+    if role_id is None:
+        return False, 'Select an active role before saving this account.'
+    role = db.session.get(Role, role_id)
+    if role is None or not role.is_active:
+        return False, 'The selected role is unavailable.'
+    if not role_is_delegable_by_actor(actor, role):
+        if role_is_access_admin_level(role) and not is_local_break_glass(actor):
+            return False, 'Only a Local Database Super Admin can assign administrator-level roles.'
+        return False, 'The selected role exceeds your delegation boundary.'
+    return True, None
 
 
 def active_local_super_admin_count() -> int:
@@ -172,6 +183,10 @@ def can_create_user(
 ) -> tuple[bool, str | None]:
     if not actor.has_permission('users.manage'):
         return False, 'You do not have permission to create users.'
+
+    allowed, message = requested_role_assignment_allowed(actor, requested_role_id)
+    if not allowed:
+        return allowed, message
 
     if (
         requested_admin_level(role_id=requested_role_id, is_super_admin=requested_is_super_admin)
@@ -313,6 +328,10 @@ def can_edit_user(
     if target.deleted_at is not None:
         return False, 'Deleted users cannot be edited.'
 
+    allowed, message = requested_role_assignment_allowed(actor, requested_role_id)
+    if not allowed:
+        return allowed, message
+
     requested_is_admin_level = requested_admin_level(
         role_id=requested_role_id,
         is_super_admin=requested_is_super_admin,
@@ -416,16 +435,3 @@ def restore_user(target: User) -> None:
     # account returns to inactive administration until activation is explicit.
     target.account_is_active = False
     target.updated_at = now
-
-
-def record_admin_event(
-    *, actor: User | None, action: str, target: User | Role, summary: str, metadata: dict[str, Any] | None = None
-) -> None:
-    event = AuditEvent()
-    event.actor_user_id = actor.id if actor else None
-    event.target_type = target.__class__.__name__.lower()
-    event.target_id = str(target.id)
-    event.action = action
-    event.summary = summary
-    event.metadata_json = metadata
-    db.session.add(event)

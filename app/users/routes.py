@@ -12,6 +12,7 @@ from flask import (
 from flask_login import current_user
 from sqlalchemy.exc import IntegrityError
 
+from app.common.admin_audit import record_admin_event
 from app.extensions.db import db
 from app.models import User
 from app.rbac.decorators import permission_required
@@ -33,7 +34,6 @@ from app.users.service import (
     can_restore_user,
     create_or_update_user,
     lock_active_super_admin_boundary,
-    record_admin_event,
     restore_user,
     set_user_active,
     soft_delete_user,
@@ -89,7 +89,7 @@ def index():
 def create():
     actor = cast(User, current_user)
     form = UserForm()
-    assign_user_form_choices(form, include_admin_roles=actor.is_super_admin)
+    assign_user_form_choices(form, actor=actor)
     form.is_active.data = True if request.method == 'GET' else form.is_active.data
 
     if form.validate_on_submit():
@@ -173,7 +173,7 @@ def edit(user_id: int):
     reset_password_allowed, reset_password_reason = can_reset_user_password(actor, user)
 
     form = UserForm(obj=user)
-    assign_user_form_choices(form, include_admin_roles=actor.is_super_admin)
+    assign_user_form_choices(form, actor=actor)
     if request.method == 'GET':
         form.role_id.data = user.role_id or (user.role_record.id if user.role_record else 0)
         form.is_active.data = user.account_is_active

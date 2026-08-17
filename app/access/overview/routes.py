@@ -12,6 +12,7 @@ bp = Blueprint('overview', __name__)
 @any_permission_required(
     'users.view',
     'users.manage',
+    'identity_providers.view',
     'roles.view',
     'settings.view_operational_activity',
 )

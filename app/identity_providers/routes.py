@@ -17,6 +17,7 @@ from app.auth.identity_provider.configuration import apply_identity_provider_con
 from app.auth.identity_provider.directory import DirectoryProviderError, ExternalIdentity
 from app.auth.identity_provider.registry import get_directory_provider_adapter
 from app.auth.sso import SsoAdmissionError
+from app.common.admin_audit import record_admin_event
 from app.extensions.db import db
 from app.identity_providers.forms import (
     ExternalIdentityProvisionForm,
@@ -41,10 +42,10 @@ from app.identity_providers.service import (
     assign_provider_role_choices,
     build_identity_provider_payload,
     normalize_provider_filters,
+    provider_default_role_assignment_error,
 )
 from app.models import IdentityProvider, User
 from app.rbac.decorators import permission_required
-from app.users.service import record_admin_event
 
 bp = Blueprint('identity_providers', __name__, url_prefix='/access/identity-providers')
 
@@ -62,7 +63,7 @@ def _form_context(form: IdentityProviderForm, provider: IdentityProvider | None,
 
 
 @bp.get('/')
-@permission_required('users.manage')
+@permission_required('identity_providers.view')
 def index():
     filters = normalize_provider_filters(request.args.to_dict())
     payload = build_identity_provider_payload(filters)
@@ -73,11 +74,16 @@ def index():
 
 
 @bp.route('/new', methods=['GET', 'POST'])
-@permission_required('users.manage')
+@permission_required('identity_providers.manage')
 def create():
+    actor = cast(User, current_user)
     form = IdentityProviderForm()
-    assign_provider_role_choices(form)
+    assign_provider_role_choices(form, actor=actor)
     if form.validate_on_submit():
+        role_error = provider_default_role_assignment_error(actor, form.default_role_id.data)
+        if role_error:
+            form.default_role_id.errors = [*form.default_role_id.errors, role_error]
+            return render_template('access/identity_providers/form.html', **_form_context(form, None))
         provider = IdentityProvider()
         apply_identity_provider_configuration(provider, configuration_from_form(form))
         db.session.add(provider)
@@ -88,7 +94,7 @@ def create():
             form.key.errors = [*form.key.errors, 'Provider key already exists.']
         else:
             identity_provider_feedback(
-                actor=cast(User, current_user),
+                actor=actor,
                 event_type='identity_provider_created',
                 status='success',
                 title='Identity provider created',
@@ -101,14 +107,19 @@ def create():
 
 
 @bp.route('/<int:provider_id>/edit', methods=['GET', 'POST'])
-@permission_required('users.manage')
+@permission_required('identity_providers.manage')
 def edit(provider_id: int):
     provider = db.get_or_404(IdentityProvider, provider_id)
+    actor = cast(User, current_user)
     form = IdentityProviderForm()
-    assign_provider_role_choices(form)
+    assign_provider_role_choices(form, actor=actor)
     if request.method == 'GET':
         populate_form(form, provider)
     if form.validate_on_submit():
+        role_error = provider_default_role_assignment_error(actor, form.default_role_id.data)
+        if role_error:
+            form.default_role_id.errors = [*form.default_role_id.errors, role_error]
+            return render_template('access/identity_providers/form.html', **_form_context(form, provider))
         apply_identity_provider_configuration(provider, configuration_from_form(form))
         try:
             db.session.commit()
@@ -117,7 +128,7 @@ def edit(provider_id: int):
             form.key.errors = [*form.key.errors, 'Provider key already exists.']
         else:
             identity_provider_feedback(
-                actor=cast(User, current_user),
+                actor=actor,
                 event_type='identity_provider_updated',
                 status='success',
                 title='Identity provider updated',
@@ -131,13 +142,18 @@ def edit(provider_id: int):
 
 @bp.post('/test')
 @bp.post('/<int:provider_id>/test')
-@permission_required('users.manage')
+@permission_required('identity_providers.manage')
 def test_configuration(provider_id: int | None = None):
     provider = db.get_or_404(IdentityProvider, provider_id) if provider_id is not None else None
+    actor = cast(User, current_user)
     form = IdentityProviderForm()
-    assign_provider_role_choices(form)
+    assign_provider_role_choices(form, actor=actor)
     test_result: dict[str, str]
     if form.validate_on_submit():
+        role_error = provider_default_role_assignment_error(actor, form.default_role_id.data)
+        if role_error:
+            form.default_role_id.errors = [*form.default_role_id.errors, role_error]
+            return render_template('access/identity_providers/form.html', **_form_context(form, provider))
         candidate = IdentityProvider()
         apply_identity_provider_configuration(candidate, configuration_from_form(form))
         try:
@@ -158,8 +174,9 @@ def test_configuration(provider_id: int | None = None):
 
 
 @bp.post('/<int:provider_id>/validate')
-@permission_required('users.manage')
+@permission_required('identity_providers.manage')
 def validate(provider_id: int):
+    actor = cast(User, current_user)
     provider = db.get_or_404(IdentityProvider, provider_id)
     status, title = 'success', 'Provider validation passed'
     try:
@@ -167,7 +184,7 @@ def validate(provider_id: int):
     except (ExternalProviderError, SsoProviderError, SsoAdmissionError) as exc:
         status, title, message = 'error', 'Provider validation failed', str(exc)
     identity_provider_feedback(
-        actor=cast(User, current_user),
+        actor=actor,
         event_type='identity_provider_validated',
         status=status,
         title=title,
@@ -179,12 +196,13 @@ def validate(provider_id: int):
 
 
 @bp.route('/directory-provisioning', methods=['GET', 'POST'])
-@permission_required('users.manage')
+@permission_required('identity_providers.provision')
 def directory_provisioning():
+    actor = cast(User, current_user)
     search_form = ExternalIdentitySearchForm()
     provision_form = ExternalIdentityProvisionForm()
     assign_provider_choices(search_form)
-    assign_projection_role_choices(provision_form, include_admin_roles=cast(User, current_user).is_super_admin)
+    assign_projection_role_choices(provision_form, actor=actor)
     results: list[ExternalIdentity] = []
     projection_proofs: dict[str, str] = {}
     selected_provider = None
@@ -205,7 +223,7 @@ def directory_provisioning():
                 }
             except (ExternalProviderError, DirectoryProviderError) as exc:
                 identity_provider_feedback(
-                    actor=cast(User, current_user),
+                    actor=actor,
                     event_type='external_identity_search_failed',
                     status='error',
                     title='Directory search failed',
@@ -225,13 +243,14 @@ def directory_provisioning():
 
 
 @bp.post('/directory-provisioning/provision')
-@permission_required('users.manage')
+@permission_required('identity_providers.provision')
 def provision_identity():
+    actor = cast(User, current_user)
     form = ExternalIdentityProvisionForm()
-    assign_projection_role_choices(form, include_admin_roles=cast(User, current_user).is_super_admin)
+    assign_projection_role_choices(form, actor=actor)
     if not form.validate_on_submit():
         identity_provider_feedback(
-            actor=cast(User, current_user),
+            actor=actor,
             event_type='external_identity_provision_failed',
             status='error',
             title='Provisioning failed',
@@ -251,7 +270,7 @@ def provision_identity():
         or provider_definition(provider.provider_key).family != AuthProviderFamily.DIRECTORY
     ):
         identity_provider_feedback(
-            actor=cast(User, current_user),
+            actor=actor,
             event_type='external_identity_provision_failed',
             status='error',
             title='Provisioning failed',
@@ -266,13 +285,14 @@ def provision_identity():
             user_id=int(current_user.id),
         )
         user = provision_external_identity(
+            actor=actor,
             provider=provider,
             identity=identity,
             role_id=role_id,
             is_active=bool(form.is_active.data),
         )
         record_admin_event(
-            actor=cast(User, current_user),
+            actor=actor,
             action='user.external_identity_provisioned',
             target=user,
             summary=f'Provisioned directory identity {user.username}.',
@@ -282,7 +302,7 @@ def provision_identity():
     except (IdentityProjectionError, ProjectionProofError) as exc:
         db.session.rollback()
         identity_provider_feedback(
-            actor=cast(User, current_user),
+            actor=actor,
             event_type='external_identity_provision_failed',
             status='error',
             title='Provisioning failed',
@@ -292,7 +312,7 @@ def provision_identity():
         )
     else:
         identity_provider_feedback(
-            actor=cast(User, current_user),
+            actor=actor,
             event_type='external_identity_provisioned',
             status='success',
             title='Directory user provisioned',

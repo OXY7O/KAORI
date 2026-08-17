@@ -11,7 +11,7 @@ def test_user_restore_returns_to_inactive_administration() -> None:
     service = read('app/users/service.py')
     routes = read('app/users/routes.py')
     assert 'def restore_user(target: User)' in service
-    restore_block = service.split('def restore_user(target: User)', 1)[1].split('def record_admin_event', 1)[0]
+    restore_block = service.split('def restore_user(target: User)', 1)[1]
     assert 'target.deleted_at = None' in restore_block
     assert 'target.account_is_active = False' in restore_block
     assert 'target.account_is_active = True' not in restore_block
@@ -120,13 +120,16 @@ def test_user_delete_uses_shared_destructive_confirmation_component() -> None:
     assert "notice='This final action cannot be reversed by KAORI.'" in modal
 
 
-def test_user_management_keeps_dual_audit_ledger_until_shared_audit_consumers_are_migrated() -> None:
+def test_access_administration_uses_shared_persisted_audit_helper() -> None:
     service = read('app/users/service.py')
+    routes = read('app/users/routes.py')
+    helper = read('app/common/admin_audit.py')
     readme = read('app/users/README.md')
-    assert 'AuditEvent' in service and 'Role' in service and 'User' in service
-    assert 'def record_admin_event(' in service
-    assert 'Legacy AuditEvent Boundary' in readme
-    assert 'must not be removed from User Management in isolation' in readme
+    assert 'def record_admin_event(' not in service
+    assert 'from app.common.admin_audit import record_admin_event' in routes
+    assert 'AuditEvent()' in helper
+    assert 'Shared Administrative Audit Boundary' in readme
+    assert 'app/common/admin_audit.py' in readme
 
 
 def test_password_reset_revokes_existing_sessions_through_credential_generation() -> None:

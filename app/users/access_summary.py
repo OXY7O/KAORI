@@ -8,6 +8,7 @@ from app.auth.identity_provider.catalog import provider_definition
 from app.auth.identity_provider.configuration import identity_provider_configuration_complete
 from app.extensions.db import db
 from app.models import ExternalIdentityLink, IdentityProvider, Role, User
+from app.rbac.policy import role_is_access_admin_level
 
 
 def build_identity_provider_summary() -> dict[str, Any]:
@@ -25,7 +26,7 @@ def build_identity_provider_summary() -> dict[str, Any]:
         if not provider.enabled or not provider.jit_enabled:
             continue
         role = provider.default_role
-        policy_ready = bool(role and role.is_active and role.name != 'admin')
+        policy_ready = bool(role and role.is_active and not role_is_access_admin_level(role))
         definition = provider_definition(provider.provider_key)
         if definition.admission_policy in {'verified_email_domain_allowlist', 'subject_allowlist'}:
             policy_ready = policy_ready and bool(provider.admission_values)

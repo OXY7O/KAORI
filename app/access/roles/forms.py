@@ -8,6 +8,7 @@ from wtforms.validators import DataRequired, Length, Optional, Regexp
 class RoleForm(FlaskForm):
     role_id = HiddenField()
     role_version = HiddenField()
+    permission_scope = HiddenField()
     name = StringField(
         'Role Slug',
         validators=[
@@ -22,6 +23,7 @@ class RoleForm(FlaskForm):
     display_name = StringField('Display Name', validators=[DataRequired(), Length(min=2, max=120)])
     description = TextAreaField('Description', validators=[Optional(), Length(max=500)])
     is_active = BooleanField('Active')
+    impact_acknowledged = BooleanField('I understand the access impact of deactivating this referenced role.')
     submit = SubmitField('Save Role')
 
 

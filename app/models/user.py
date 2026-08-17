@@ -8,6 +8,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from app.extensions.db import db
+from app.rbac.policy import role_is_access_admin_level
 
 if TYPE_CHECKING:
     from app.models.rbac import Role
@@ -141,7 +142,7 @@ class User(UserMixin, db.Model):
 
     @property
     def is_admin_level(self) -> bool:
-        return bool(self.is_super_admin or self.role_name == 'admin')
+        return bool(self.is_super_admin or role_is_access_admin_level(self.role_record))
 
     def get_id(self) -> str:  # type: ignore[override]
         """Bind Flask-Login session identity to the current credential generation."""

@@ -13,6 +13,9 @@ def test_identity_provider_workspace_is_separate_from_user_lifecycle() -> None:
     service = read('app/identity_providers/service.py')
     assert "bp = Blueprint('identity_providers'" in routes
     assert "url_prefix='/access/identity-providers'" in routes
+    assert "@permission_required('identity_providers.view')" in routes
+    assert "@permission_required('identity_providers.manage')" in routes
+    assert "@permission_required('identity_providers.provision')" in routes
     assert 'normalize_provider_filters(request.args.to_dict())' in routes
     assert 'build_identity_provider_payload(filters)' in routes
     assert "request.headers.get('HX-Request') == 'true'" in routes

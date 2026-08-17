@@ -5,7 +5,7 @@
 ## Ownership
 
 - `directory.py`: read-side user directory, filtering, pagination, identity context, and Effective Access presentation.
-- `service.py`: user mutations, lifecycle guardrails, Local Database break-glass enforcement, and administrative audit events.
+- `service.py`: user mutations, lifecycle guardrails, and Local Database break-glass enforcement.
 - `access_summary.py`: source summary consumed by Access Overview.
 - `forms.py`: Local Database user lifecycle forms.
 
@@ -28,9 +28,9 @@ Canonical user sources are provider keys from the Identity Provider catalog. UI 
 
 Adding a new Identity Provider must not add provider-specific branching to User Management. `app/users` consumes only catalog-derived provider identity/family and identity-link state.
 
-## Legacy AuditEvent Boundary
+## Shared Administrative Audit Boundary
 
-`AuditEvent` remains part of User Management's dual administrative ledger while shared audit consumers still depend on it. This compatibility ledger must not be removed from User Management in isolation; migration must be coordinated with every consumer.
+User, Role, and Identity Provider mutations write the persisted `AuditEvent` ledger through `app/common/admin_audit.py`. User Management does not own that helper; each Access administration workspace records audit evidence in the same transaction as its mutation. Notification-backed Activity Audit feedback remains a separate operator-facing evidence stream.
 
 ## Password Reset Session Boundary
 

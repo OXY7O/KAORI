@@ -15,6 +15,7 @@
 {% set can_access_management = current_user.is_authenticated and (
     current_user.has_permission('users.view')
     or current_user.has_permission('users.manage')
+    or current_user.has_permission('identity_providers.view')
     or current_user.has_permission('roles.view')
     or current_user.has_permission('settings.view_operational_activity')
 ) %}
@@ -45,7 +46,7 @@
                     <span class="h-1.5 w-1.5 rounded-full {{ 'bg-kaori-accent' if user_management_active else 'bg-white/20 group-hover:bg-white/[0.45]' }}"></span><i data-lucide="users-round" class="h-3.5 w-3.5"></i><span class="truncate whitespace-nowrap">User Management</span>
                 </a>
             {% endif %}
-            {% if current_user.has_permission('users.manage') %}
+            {% if current_user.has_permission('identity_providers.view') %}
                 <a href="{{ url_for('identity_providers.index') }}"
                    class="{{ 'bg-white/[0.08] text-kaori-accent' if identity_provider_active else 'sidebar-item-idle' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm leading-5 transition">
                     <span class="h-1.5 w-1.5 rounded-full {{ 'bg-kaori-accent' if identity_provider_active else 'bg-white/20 group-hover:bg-white/[0.45]' }}"></span><i data-lucide="fingerprint" class="h-3.5 w-3.5"></i><span class="truncate whitespace-nowrap">Identity Providers</span>

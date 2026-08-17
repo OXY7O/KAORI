@@ -36,7 +36,7 @@ def test_user_and_identity_provider_access_summaries_enforce_operational_guardra
     assert "'unassigned_active_users': unassigned_active_users" in summary
     assert 'identity_provider_configuration_complete(provider)' in summary
     assert 'provider.enabled and not configuration_states[provider.id]' in summary
-    assert "role and role.is_active and role.name != 'admin'" in summary
+    assert 'role_is_access_admin_level(role)' in summary
     assert 'provider.admission_values' in summary
     assert 'definition.admission_policy' in summary
 

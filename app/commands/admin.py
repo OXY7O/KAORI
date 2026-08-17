@@ -8,6 +8,7 @@ from flask.cli import with_appcontext
 from app.auth.password_policy import local_password_policy_error
 from app.extensions.db import db
 from app.models import Role, User
+from app.rbac.policy import role_is_access_admin_level
 from app.rbac.service import seed_default_rbac
 
 
@@ -44,7 +45,7 @@ def _get_admin_role() -> Role | None:
 
 
 def _is_admin_level_user(user: User) -> bool:
-    return bool(user.is_super_admin or user.role_name == 'admin')
+    return bool(user.is_super_admin or role_is_access_admin_level(user.role_record))
 
 
 @click.command(

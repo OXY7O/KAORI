@@ -9,6 +9,8 @@ from app.auth.identity_provider.catalog import AuthProviderFamily, provider_defi
 from app.auth.identity_provider.directory import ExternalIdentity
 from app.extensions.db import db
 from app.models import ExternalIdentityLink, IdentityProvider, Role, User
+from app.rbac.policy import role_is_access_admin_level, role_is_delegable_by_actor
+from app.rbac.service import assignable_roles_for_actor
 
 if TYPE_CHECKING:
     from app.identity_providers.forms import ExternalIdentityProvisionForm, ExternalIdentitySearchForm
@@ -31,15 +33,14 @@ def assign_provider_choices(form: ExternalIdentitySearchForm) -> None:
     form.provider_id.choices = [(str(provider.id), provider.display_name) for provider in enabled_directory_providers()]
 
 
-def assign_projection_role_choices(form: ExternalIdentityProvisionForm, *, include_admin_roles: bool) -> None:
-    query = Role.query.filter_by(is_active=True)
-    if not include_admin_roles:
-        query = query.filter(Role.name != 'admin')
-    form.role_id.choices = [(str(role.id), role.display_name) for role in query.order_by(Role.display_name.asc()).all()]
+def assign_projection_role_choices(form: ExternalIdentityProvisionForm, *, actor: User) -> None:
+    roles = assignable_roles_for_actor(actor)
+    form.role_id.choices = [(str(role.id), role.display_name) for role in roles]
 
 
 def provision_external_identity(
     *,
+    actor: User,
     provider: IdentityProvider,
     identity: ExternalIdentity,
     role_id: int,
@@ -52,6 +53,12 @@ def provision_external_identity(
     role = db.session.get(Role, role_id)
     if role is None or not role.is_active:
         raise IdentityProjectionError('The selected role is unavailable.')
+    if not role_is_delegable_by_actor(actor, role):
+        if role_is_access_admin_level(role):
+            raise IdentityProjectionError(
+                'Only a Local Database Super Admin can assign an administrator-level role during directory provisioning.'
+            )
+        raise IdentityProjectionError('The selected role exceeds your delegation boundary.')
 
     existing_user = User.query.filter(
         User.deleted_at.is_(None),
