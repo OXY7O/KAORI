@@ -15,12 +15,12 @@ from app.models.prometheus import PrometheusInstance
 _PROVIDER_META = {
     'prometheus': {
         'key': 'prometheus',
-        'label': 'Prometheus',
+        'label': 'Metrics',
         'source_label': 'metrics source',
         'icon': 'chart-no-axes-combined',
         'bind_endpoint': 'integrations.bind_prometheus_source',
         'registry_endpoint': 'integrations.prometheus',
-        'register_endpoint': 'prometheus.new_instance',
+        'register_endpoint': 'integrations.register_prometheus_metrics_source',
         'detail_endpoint': 'prometheus.instance_detail',
         'selector_label': 'Metrics identity',
         'selector_help': 'The selector isolates one managed asset inside a shared Prometheus source.',

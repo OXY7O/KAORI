@@ -1,8 +1,8 @@
 from typing import TYPE_CHECKING
 
 from flask_wtf import FlaskForm
-from wtforms import BooleanField, IntegerField, PasswordField, SelectField, StringField, TextAreaField
-from wtforms.validators import DataRequired, Length, NumberRange, Optional, ValidationError
+from wtforms import BooleanField, HiddenField, IntegerField, PasswordField, SelectField, StringField, TextAreaField
+from wtforms.validators import AnyOf, DataRequired, Length, NumberRange, Optional, ValidationError
 
 if TYPE_CHECKING:
     from app.models.prometheus import PrometheusInstance
@@ -10,6 +10,12 @@ if TYPE_CHECKING:
 
 class PrometheusConfigForm(FlaskForm):
     _existing_instance: 'PrometheusInstance | None' = None
+
+    source_type = HiddenField(
+        'Metrics Source Type',
+        default='prometheus',
+        validators=[DataRequired(), AnyOf(('prometheus', 'thanos'))],
+    )
 
     endpoint = StringField(
         'Endpoint',
@@ -25,14 +31,10 @@ class PrometheusConfigForm(FlaskForm):
         },
     )
 
-    version_detection_mode = SelectField(
+    version_detection_mode = HiddenField(
         'Compatibility Detection',
-        choices=[
-            ('automatic', 'Automatic — Direct Prometheus'),
-            ('manual', 'Manual — Prometheus-Compatible Gateway'),
-        ],
         default='automatic',
-        validators=[DataRequired()],
+        validators=[DataRequired(), AnyOf(('automatic', 'manual'))],
     )
 
     source_prometheus_major = SelectField(
@@ -151,9 +153,9 @@ class PrometheusConfigForm(FlaskForm):
             )
 
     def validate_source_prometheus_major(self, field: SelectField) -> None:
-        if self.version_detection_mode.data == 'manual' and not field.data:
+        if self.source_type.data == 'thanos' and not field.data:
             raise ValidationError(
-                'Select the Prometheus major version used behind the intermediary endpoint.',
+                'Select the Prometheus API compatibility major used by this Thanos Query source.',
             )
 
 

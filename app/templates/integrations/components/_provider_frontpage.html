@@ -1,7 +1,7 @@
 {% import "components/page_hero.html" as page_hero %}
 {% import "integrations/components/_workspace.html" as integration_ui %}
 {% from "integrations/components/_semantic_status.html" import integration_status %}
-{% macro hero(icon, accent_icon, title, description, registered_count, ready_count, binding_count, posture_status, register_url, ready_total=None) -%}
+{% macro hero(icon, accent_icon, title, description, registered_count, ready_count, binding_count, posture_status, register_url, ready_total=None, secondary_register_url=None, secondary_register_label=None, register_label='Register Connection') -%}
     {% set denominator = ready_total if ready_total is not none else registered_count %}
     <section class="{{ page_hero.shell_classes() }}"
              data-kaori-provider-frontpage-hero>
@@ -31,11 +31,20 @@
                         {{ page_hero.context_metric("badge-check", "Ready", ready_count ~ " / " ~ denominator, "Validated connections available") }}
                         {{ page_hero.context_metric("link-2", "Bindings", binding_count, "Governed consumer associations") }}
                     </div>
-                    <a href="{{ register_url }}"
-                       class="{{ page_hero.context_single_action_classes() }}">
-                        <i data-lucide="plus" class="h-4 w-4" aria-hidden="true"></i>
-                        Register Connection
-                    </a>
+                    <div class="grid gap-2 sm:grid-cols-2">
+                        <a href="{{ register_url }}"
+                           class="{{ page_hero.context_single_action_classes() }}">
+                            <i data-lucide="plus" class="h-4 w-4" aria-hidden="true"></i>
+                            {{ register_label }}
+                        </a>
+                        {% if secondary_register_url %}
+                            <a href="{{ secondary_register_url }}"
+                               class="{{ page_hero.context_single_action_classes() }}">
+                                <i data-lucide="plus" class="h-4 w-4" aria-hidden="true"></i>
+                                {{ secondary_register_label or 'Register Connection' }}
+                            </a>
+                        {% endif %}
+                    </div>
                 </div>
             </aside>
         </div>

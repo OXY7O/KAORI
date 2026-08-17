@@ -1,3 +1,4 @@
+{% set metrics_source_label = 'Thanos Query' if instance.source_type == 'thanos' else 'Prometheus' %}
 <div class="space-y-4 font-sans">
     {% include "prometheus/partials/_runtime_panel.html" %}
     {% with
@@ -10,7 +11,7 @@
         runtime_history_detail_endpoint="prometheus.instance_detail",
         runtime_history_tab="runtime",
         runtime_history_filters_enabled=true,
-        provider_label="Prometheus"
+        provider_label=metrics_source_label
         %}
         {% include "integrations/partials/_runtime_history.html" %}
     {% endwith %}

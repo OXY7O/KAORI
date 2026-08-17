@@ -24,11 +24,11 @@ def _record_failure(instance: PrometheusInstance, error: Exception) -> None:
 
 integration_module = IntegrationModule(
     provider_type='prometheus',
-    label='Prometheus',
+    label='Metrics Sources',
     domain_key='observability',
     capability_key='metrics',
     icon='activity',
-    description='Metrics collection and versioned PromQL validation for connected infrastructure assets.',
+    description='Prometheus and Thanos Query source registration, PromQL validation, consumer binding, and horizon-aware routing.',
     workspace_endpoint='integrations.prometheus',
     adapter=runtime_adapter,
     instance_loader=model_loader(PrometheusInstance),
@@ -62,7 +62,7 @@ integration_module = IntegrationModule(
     ),
     capability_keys=CAPABILITY_KEYS,
     compatibility_profiles=COMPATIBILITY_PROFILES,
-    runtime_label='Prometheus',
+    runtime_label='Metrics Sources',
     navigation_endpoint_prefixes=('integrations.prometheus', 'prometheus.'),
     detail_url_builder=_detail_url,
     failure_recorder=_record_failure,

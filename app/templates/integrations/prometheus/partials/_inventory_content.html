@@ -13,7 +13,7 @@
                         <div class="flex max-w-[260px] items-start gap-3">
                             <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-kaori-primary/15 bg-kaori-soft text-kaori-primary dark:border-brand-outline dark:text-kaori-accent"
                                   aria-hidden="true">
-                                <i data-lucide="activity" class="h-4 w-4"></i>
+                                <i data-lucide="{{ 'database-zap' if row.source_type == 'thanos' else 'activity' }}" class="h-4 w-4"></i>
                             </span>
                             <div class="min-w-0">
                                 <p class="truncate text-sm font-semibold text-content-primary"
@@ -25,7 +25,8 @@
                     <td class="{{ table_ui.cell_classes() }}">
                         <p class="break-words text-sm font-semibold text-content-primary [overflow-wrap:anywhere]"
                            title="{{ row.endpoint }}">{{ row.endpoint }}</p>
-                        <p class="mt-1 text-xs leading-5 text-content-muted">{{ (row.endpoint_product or "prometheus")|replace('_', ' ') |title }}</p>
+                        <p class="mt-1 text-xs font-semibold text-kaori-primary dark:text-kaori-accent">{{ row.source_type_label }}</p>
+                        <p class="mt-0.5 text-xs leading-5 text-content-muted">Detected {{ (row.endpoint_product or row.source_type)|replace('_', ' ') |title }}</p>
                     </td>
                     <td class="{{ table_ui.cell_classes() }}">
                         {{ integration_status(row.readiness, display="indicator") }}
@@ -52,12 +53,12 @@
                 <tr>
                     <td colspan="6" class="p-0">
                         {% set empty_state_icon = "activity" %}
-                        {% set empty_state_label = "No Results" if selected_query or selected_readiness or selected_compatibility else "Setup Required" %}
-                        {% set empty_state_title = "No Prometheus Connections Match the Active Filters" if selected_query or selected_readiness or selected_compatibility else "No Prometheus Connections Found" %}
-                        {% set empty_state_description = "Adjust the registry filters to review another Prometheus connection." if selected_query or selected_readiness or selected_compatibility else "Register a Prometheus connection to establish Core Validation and downstream consumer coverage." %}
+                        {% set empty_state_label = "No Results" if selected_query or selected_source_type or selected_readiness or selected_compatibility else "Setup Required" %}
+                        {% set empty_state_title = "No Metrics Sources Match the Active Filters" if selected_query or selected_source_type or selected_readiness or selected_compatibility else "No Metrics Sources Registered" %}
+                        {% set empty_state_description = "Adjust the registry filters to review another metrics source." if selected_query or selected_source_type or selected_readiness or selected_compatibility else "Register Prometheus for recent telemetry or Thanos Query for long-retention historical access." %}
                         {% set empty_state_min_height = "min-h-[190px]" %}
-                        {% set empty_state_action_url = url_for('prometheus.new_instance') if not selected_query and not selected_readiness and not selected_compatibility else none %}
-                        {% set empty_state_action_label = 'Register Connection' if empty_state_action_url else none %}
+                        {% set empty_state_action_url = url_for('integrations.register_prometheus_metrics_source') if not selected_query and not selected_source_type and not selected_readiness and not selected_compatibility else none %}
+                        {% set empty_state_action_label = 'Register Prometheus' if empty_state_action_url else none %}
                         {% set empty_state_action_icon = "plus" %}
                         {% include 'components/states/_empty_state.html' %}
                     </td>
@@ -69,6 +70,7 @@
 {% set registry_query_params = {
     'tab': 'registry',
     'q': selected_query,
+    'source_type': selected_source_type,
     'compatibility': selected_compatibility,
     'readiness': selected_readiness,
     'coverage_page': 1,

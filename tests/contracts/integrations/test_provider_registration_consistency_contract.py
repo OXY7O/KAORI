@@ -16,13 +16,14 @@ def test_observability_coverage_uses_asset_language_and_route_owned_authorizatio
     assert 'empty_state_permission' not in coverage
 
 
-def test_prometheus_and_alertmanager_empty_registry_actions_do_not_duplicate_route_authz() -> None:
-    for path in (
-        'app/templates/integrations/prometheus/partials/_inventory_content.html',
-        'app/templates/integrations/alertmanager/partials/_inventory_content.html',
-    ):
-        text = read(path)
-        assert 'Register Connection' in text
+def test_observability_empty_registry_actions_do_not_duplicate_route_authz() -> None:
+    prometheus = read('app/templates/integrations/prometheus/partials/_inventory_content.html')
+    alertmanager = read('app/templates/integrations/alertmanager/partials/_inventory_content.html')
+
+    assert 'Register Prometheus' in prometheus
+    assert 'integrations.register_prometheus_metrics_source' in prometheus
+    assert 'Register Connection' in alertmanager
+    for text in (prometheus, alertmanager):
         assert 'empty_state_show_admin_required' not in text
         assert 'empty_state_permission' not in text
 

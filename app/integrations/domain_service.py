@@ -10,6 +10,7 @@ from sqlalchemy.orm import load_only, selectinload
 from app.common.pagination import paginate_sequence
 from app.integrations.binding_selectors import selector_summary
 from app.integrations.contracts import IntegrationNotRegistered
+from app.integrations.prometheus.routing import normalize_routing_policy
 from app.integrations.registry import IntegrationModule, registry
 from app.integrations.taxonomy import (
     asset_types_for_domain,
@@ -77,12 +78,14 @@ def build_integration_domain_page(
     binding_registry_rows: list[dict[str, Any]] = []
     provider_pagination = None
     binding_pagination = None
+    provider_filter_options: list[dict[str, str]] = []
     provider_readiness_options: list[dict[str, str]] = []
     binding_provider_options: list[dict[str, str]] = []
     binding_status_options: list[dict[str, str]] = []
 
     if normalized_tab == 'registry':
         all_provider_rows = _provider_registry_rows(modules, instances, consumer_bindings)
+        provider_filter_options = _provider_filter_options(all_provider_rows)
         provider_readiness_options = _status_filter_options(all_provider_rows, 'readiness')
         filtered_provider_rows = _filter_provider_rows(
             all_provider_rows,
@@ -134,9 +137,7 @@ def build_integration_domain_page(
         'selected_binding_query': binding_filters.query,
         'selected_binding_provider': binding_filters.provider,
         'selected_binding_status': binding_filters.status,
-        'provider_filter_options': [
-            {'value': item['key'], 'label': item['runtime_label']} for item in provider_types
-        ],
+        'provider_filter_options': provider_filter_options,
         'provider_readiness_options': provider_readiness_options,
         'binding_provider_options': binding_provider_options,
         'binding_status_options': binding_status_options,
@@ -254,13 +255,15 @@ def _provider_registry_rows(
             continue
         enabled_bindings = _consumer_binding_count(instance, consumer_bindings)
         readiness = _instance_readiness(instance)
+        provider_label, provider_filter_key = _provider_source_identity(instance, module)
         rows.append(
             {
                 'id': instance.id,
                 'name': instance.name,
                 'environment': _humanize(instance.environment, empty='Environment not specified'),
-                'provider_label': module.runtime_label or module.label,
+                'provider_label': provider_label,
                 'provider_type': module.provider_type,
+                'provider_filter_key': provider_filter_key,
                 'provider_icon': module.icon,
                 'capability_label': module.capability.label,
                 'readiness': readiness,
@@ -277,7 +280,7 @@ def _provider_registry_rows(
                         [
                             instance.name.lower(),
                             str(instance.environment or '').lower(),
-                            (module.runtime_label or module.label).lower(),
+                            provider_label.lower(),
                             module.capability.label.lower(),
                             readiness.lower(),
                             str(instance.health_status or '').lower(),
@@ -307,6 +310,10 @@ def _binding_registry_rows(
         except IntegrationNotRegistered:
             continue
         asset_identity = (binding.asset_type, str(binding.asset_key))
+        source_provider, source_provider_filter_key = _provider_source_identity(instance, module)
+        routing_policy = (
+            normalize_routing_policy(binding.routing_policy) if instance.provider_type == 'prometheus' else None
+        )
         rows.append(
             {
                 'id': binding.id,
@@ -314,11 +321,13 @@ def _binding_registry_rows(
                 'asset_type_label': _humanize(binding.asset_type),
                 'asset_key': str(binding.asset_key),
                 'source_name': instance.name,
-                'source_provider': module.runtime_label or module.label,
+                'source_provider': source_provider,
                 'source_provider_type': module.provider_type,
+                'source_provider_filter_key': source_provider_filter_key,
                 'source_icon': module.icon,
                 'role': _humanize(binding.binding_role, empty='Primary'),
                 'priority': binding.priority,
+                'routing_label': _routing_label(routing_policy),
                 'profile': binding.validation_profile or 'Consumer Profile Pending',
                 'selector': selector_summary(binding.selector_json, empty='Selector not configured'),
                 'validation_status': _binding_status(binding),
@@ -336,7 +345,7 @@ def _binding_registry_rows(
                             str(binding.asset_type or '').lower(),
                             str(binding.asset_key or '').lower(),
                             instance.name.lower(),
-                            (module.runtime_label or module.label).lower(),
+                            source_provider.lower(),
                             str(binding.validation_profile or '').lower(),
                             selector_summary(binding.selector_json, empty='').lower(),
                             _binding_status(binding).lower(),
@@ -388,7 +397,7 @@ def _filter_provider_rows(
     if normalized_query:
         filtered = [row for row in filtered if normalized_query in row['search_text']]
     if provider_type:
-        filtered = [row for row in filtered if row['provider_type'] == provider_type]
+        filtered = [row for row in filtered if row['provider_filter_key'] == provider_type]
     if readiness:
         filtered = [row for row in filtered if row['readiness'] == readiness]
     return filtered
@@ -406,10 +415,35 @@ def _filter_binding_rows(
     if normalized_query:
         filtered = [row for row in filtered if normalized_query in row['search_text']]
     if provider:
-        filtered = [row for row in filtered if row['source_provider_type'] == provider]
+        filtered = [row for row in filtered if row['source_provider_filter_key'] == provider]
     if status:
         filtered = [row for row in filtered if row['validation_status'] == status]
     return filtered
+
+
+def _provider_filter_options(rows: list[dict[str, Any]]) -> list[dict[str, str]]:
+    labels = {
+        str(row['provider_filter_key']): str(row['provider_label']) for row in rows if row.get('provider_filter_key')
+    }
+    return [{'value': value, 'label': labels[value]} for value in sorted(labels, key=lambda item: labels[item].lower())]
+
+
+def _routing_label(routing_policy: dict[str, Any] | None) -> str | None:
+    if routing_policy is None:
+        return None
+    horizon = str(routing_policy['query_horizon']).replace('_', ' ').title()
+    return f'{horizon} · Weight {routing_policy["weight"]}'
+
+
+def _provider_source_identity(instance: IntegrationInstance, module: IntegrationModule) -> tuple[str, str]:
+    if instance.provider_type != 'prometheus':
+        label = module.runtime_label or module.label
+        return label, instance.provider_type
+    metadata = instance.metadata_json or {}
+    source_type = str(metadata.get('metrics_source_type') or 'prometheus').strip().lower()
+    if source_type == 'thanos':
+        return 'Thanos Query', 'prometheus:thanos'
+    return 'Prometheus', 'prometheus:prometheus'
 
 
 def _status_filter_options(rows: list[dict[str, Any]], key: str) -> list[dict[str, str]]:
@@ -419,9 +453,9 @@ def _status_filter_options(rows: list[dict[str, Any]], key: str) -> list[dict[st
 
 def _binding_provider_filter_options(rows: list[dict[str, Any]]) -> list[dict[str, str]]:
     labels = {
-        str(row['source_provider_type']): str(row['source_provider'])
+        str(row['source_provider_filter_key']): str(row['source_provider'])
         for row in rows
-        if row.get('source_provider_type')
+        if row.get('source_provider_filter_key')
     }
     return [{'value': key, 'label': labels[key]} for key in sorted(labels, key=lambda item: labels[item].lower())]
 

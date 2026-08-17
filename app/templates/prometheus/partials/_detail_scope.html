@@ -1,3 +1,4 @@
+{% set metrics_source_label = 'Thanos Query' if instance.source_type == 'thanos' else 'Prometheus' %}
 {% import "components/table.html" as table_ui %}
 {% import "components/action_button.html" as action_button %}
 {% import "components/table_label.html" as table_label %}
@@ -21,7 +22,7 @@
                     <div class="min-w-0">
                         <h2 id="prometheus-bindings-title"
                             class="text-base font-semibold text-content-primary">Bindings &amp; Consumers</h2>
-                        <p class="mt-1 max-w-3xl text-sm leading-6 text-content-secondary">Review asset-scoped consumer bindings, validation profiles, resolver preference, and the domains that can effectively select this Prometheus source.</p>
+                        <p class="mt-1 max-w-3xl text-sm leading-6 text-content-secondary">Review asset-scoped consumer bindings, validation profiles, resolver preference, and the domains and query horizons that can effectively select this metrics source.</p>
                     </div>
                 </div>
                 <button type="button"
@@ -66,7 +67,7 @@
         </div>
     </section>
     {% include "prometheus/partials/_binding_registry.html" %}
-    {{ binding_readiness_boundary.render('Prometheus',
+    {{ binding_readiness_boundary.render(metrics_source_label,
         instance.readiness_status or 'validation_required',
         binding_rows|length,
         validated_binding_count,
@@ -192,7 +193,7 @@
                 <button type="button"
                         data-prometheus-delete-button
                         data-delete-url="{{ delete_instance_url }}"
-                        data-delete-title="Delete Prometheus Instance?"
+                        data-delete-title="Delete {{ metrics_source_label }} Instance?"
                         data-delete-name="{{ instance.name }}"
                         data-delete-detail="The connection identity, endpoint configuration, and stored credentials will be removed. Runtime observations, JobExecution history, and Activity Audit records remain available."
                         data-delete-action-label="Delete Instance"
@@ -205,14 +206,17 @@
         </div>
     </section>
     {{ observability_binding_modal.render("prometheus-create-binding-dialog",
-        "Prometheus",
-        "activity",
+        metrics_source_label,
+        "database-zap" if instance.source_type == "thanos" else "activity",
         "metrics",
         url_for('prometheus.add_instance_binding', instance_id=instance.id) ,
     "#prometheus-scope-workspace",
     "prometheus-binding-loading",
     consumer_asset_groups,
-    binding_error=binding_error|default(none)
+    binding_error=binding_error|default(none),
+    metrics_routing=true,
+    metrics_default_horizon='historical' if instance.source_type == 'thanos' else 'recent',
+    metrics_recent_window_hours=metrics_recent_window_hours
     ) }}
 </div>
 {% include "components/operation_feedback_oob.html" %}

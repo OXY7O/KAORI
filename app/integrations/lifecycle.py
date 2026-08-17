@@ -15,6 +15,7 @@ class BindingPersistenceSpec:
     priority: int = 100
     capability_scope: list[str] | None = None
     selector_json: dict | None = None
+    routing_policy: dict | None = None
     validation_status: str | None = None
     validation_profile: str | None = None
     validation_evidence: dict | None = None
@@ -72,6 +73,7 @@ def ensure_canonical_instance(provider_record: Any, *, provider_type: str) -> In
         {
             'provider_record_id': getattr(provider_record, 'id', None),
             'endpoint_product': getattr(provider_record, 'endpoint_product', None),
+            'metrics_source_type': getattr(provider_record, 'source_type', None),
         }
     )
     canonical.metadata_json = metadata
@@ -126,6 +128,8 @@ def bind_instance(
     binding.capability_scope = spec.capability_scope
     if spec.selector_json is not None:
         binding.selector_json = spec.selector_json
+    if spec.routing_policy is not None:
+        binding.routing_policy = spec.routing_policy
     if spec.validation_status is not None:
         binding.validation_status = spec.validation_status
     if spec.validation_profile is not None:

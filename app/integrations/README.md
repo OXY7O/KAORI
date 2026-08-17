@@ -169,6 +169,28 @@ evidence, allowing one shared Alertmanager to safely serve multiple alert famili
 See `docs/architecture/integration-module-map.md` and the README inside each
 provider module.
 
+### Metrics source identity and horizon routing
+
+Prometheus and Thanos Query are explicit metrics-source identities in the Observability workspace. Operator-facing registration routes are distinct (`/integrations/observability/metrics/prometheus/new` and `/integrations/observability/metrics/thanos/new`); the shared `app.integrations.prometheus` package is an internal Prometheus-compatible API adapter, not a UI identity. They share the Prometheus HTTP API/PromQL technical adapter, but KAORI never asks an operator to register Thanos as a manual Prometheus connection. Existing manual/Thanos records are migrated to `source_type=thanos`.
+
+A metrics consumer may bind multiple eligible sources to the same asset. Every Prometheus-family binding owns a routing policy:
+
+```text
+query_horizon = recent | historical | balanced
+weight        = 1..100
+```
+
+`METRICS_RECENT_WINDOW_HOURS` defines the recent-data boundary (24h by default). Instant/current queries request the recent horizon. Point-in-time and range queries select recent or historical from their actual time boundary. Resolution is deterministic and safety-first: eligibility and runtime health are evaluated before horizon preference; role (`Primary → Secondary → Fallback`) remains the failover tier; routing weight ranks sources inside the same horizon and role; lower priority breaks remaining ties. A horizon mismatch is a fallback, not a hard rejection.
+
+Recommended topology:
+
+```text
+Prometheus    primary + recent     weight 100
+Thanos Query primary + historical weight 100
+```
+
+Additional sources may be secondary/fallback with lower or higher weights inside their own role. This gives KAORI short-range/local Prometheus preference and long-retention Thanos preference without duplicating analytics query code or making the consumer know a provider-specific endpoint.
+
 ## UI workspace contract
 
 The implemented Integrations presentation and interaction contract is `docs/design/components/INTEGRATIONS_WORKSPACE_STANDARD.md`. The original findings and implementation disposition are recorded in `docs/design/audits/INTEGRATIONS_FULL_AUDIT_20260731.md`.
@@ -193,6 +215,6 @@ Prometheus and Alertmanager own binding mutation for their respective source fam
 
 ## Bindings & Consumers Final Lock
 
-Prometheus and Alertmanager are source-owned mutation workspaces. Their binding registries expose Consumer Asset, provider identity selector, Consumer Profile, Resolver Preference, Binding Validation, Effective Resolution, and Actions with canonical pagination/loading behavior. Resolver preference is `Primary → Secondary → Fallback`, with lower numeric priority winning within the same role.
+Prometheus and Alertmanager are source-owned mutation workspaces. Their binding registries expose Consumer Asset, provider identity selector, Consumer Profile, Resolver Preference, Binding Validation, Effective Resolution, and Actions with canonical pagination/loading behavior. Resolver preference is safety-first. Metrics sources add query-horizon routing: eligible/healthy sources are ranked by horizon match, then `Primary → Secondary → Fallback`, then routing weight, with lower numeric priority breaking remaining ties inside the same role/weight.
 
 A saved binding starts in `Validation Required`. Selector changes clear stale binding evidence and return the record to `Validation Required`; a successful `binding.validate` operation grants binding eligibility. Provider Full Validation refreshes every enabled consumer binding after the provider-core checks complete, while the explicit binding Validate action remains available for targeted revalidation. Object Storage binding validation additionally persists canonical metric-family, label-schema, and executable-query readiness so Analytics can distinguish contract gaps from current runtime reachability. Kubernetes and Object Storage inventory/lifecycle pages show the relationship read-only and link operators back to the source workspace for mutation.

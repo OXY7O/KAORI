@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
+from dataclasses import dataclass
 from typing import Any
 from urllib.parse import urlsplit
 
@@ -35,6 +36,16 @@ from app.models import (
 from app.models.integration import IntegrationInstance
 from app.models.kubernetes import KubernetesConnection
 from app.models.runtime import IntegrationRuntimeObservation
+
+
+@dataclass(frozen=True, slots=True)
+class PrometheusRegistryFilters:
+    query: str = ''
+    source_type: str = ''
+    compatibility: str = ''
+    readiness: str = ''
+    page: int = 1
+    per_page: int = 5
 
 
 def safe_endpoint(value: str | None) -> str:
@@ -249,78 +260,18 @@ def build_kubernetes_detail(cluster_id: str) -> dict[str, Any] | None:
 
 def build_prometheus_page(
     *,
-    query: str = '',
-    compatibility: str = '',
-    readiness: str = '',
+    filters: PrometheusRegistryFilters | None = None,
     tab: str = 'coverage',
-    page: int = 1,
-    per_page: int = 5,
     coverage_query: str = '',
     coverage_environment: str = '',
     coverage_status: str = '',
     coverage_page: int = 1,
     coverage_per_page: int = 5,
 ) -> dict[str, Any]:
-    clusters_by_id = {cluster.id: cluster for cluster in Cluster.query.all()}
-    all_rows: list[dict[str, Any]] = []
-    for instance in (
-        PrometheusInstance.query.join(PrometheusInstance.integration_instance)
-        .order_by(IntegrationInstance.name.asc())
-        .all()
-    ):
-        bindings = cluster_bindings_for_instance(instance, enabled_only=True)
-        cluster_ids = [binding.asset_key for binding in bindings]
-        bound_clusters = [clusters_by_id[key] for key in cluster_ids if key in clusters_by_id]
-        environments = sorted({cluster.environment for cluster in bound_clusters if cluster.environment})
-        readiness_value = instance.readiness_status or 'validation_required'
-        compatibility_value = instance.compatibility_status or 'validation_required'
-        search_text = ' '.join(
-            filter(
-                None,
-                [
-                    (instance.name or '').lower(),
-                    (instance.description or '').lower(),
-                    (instance.endpoint or '').lower(),
-                    (instance.endpoint_product or '').lower(),
-                    (instance.detected_version or '').lower(),
-                    (instance.compatibility_profile or '').lower(),
-                    (instance.query_profile or '').lower(),
-                ],
-            )
-        )
-        all_rows.append(
-            {
-                'instance_id': instance.id,
-                'name': instance.name,
-                'description': instance.description,
-                'endpoint': safe_endpoint(instance.endpoint),
-                'endpoint_product': instance.endpoint_product or 'prometheus',
-                'version': instance.detected_version,
-                'compatibility': compatibility_value,
-                'readiness': readiness_value,
-                'profile': instance.compatibility_profile,
-                'query_profile': instance.query_profile,
-                'capability_profile': instance.capability_profile,
-                'validated_at': present_user_datetime(instance.last_validated_at, empty='Not validated'),
-                'binding_count': len(bindings),
-                'bound_clusters': bound_clusters,
-                'cluster_ids': cluster_ids,
-                'environments': environments,
-                'configured': bool(instance.endpoint),
-                'enabled': instance.enabled,
-                'search_text': search_text,
-            }
-        )
-
-    filtered = all_rows
-    normalized_query = query.strip().lower()
-    if normalized_query:
-        filtered = [row for row in filtered if normalized_query in row['search_text']]
-    if compatibility:
-        filtered = [row for row in filtered if row['compatibility'] == compatibility]
-    if readiness:
-        filtered = [row for row in filtered if row['readiness'] == readiness]
-    page_rows, pagination = _paginate(filtered, page=page, per_page=per_page)
+    filters = filters or PrometheusRegistryFilters()
+    all_rows = _prometheus_registry_rows()
+    filtered = _filter_prometheus_registry_rows(all_rows, filters)
+    page_rows, pagination = _paginate(filtered, page=filters.page, per_page=filters.per_page)
     coverage_context = build_provider_coverage(
         'prometheus',
         page=coverage_page,
@@ -331,20 +282,18 @@ def build_prometheus_page(
     )
     return {
         'rows': page_rows,
-        'stats': {
-            'total': len(all_rows),
-            'configured': len(all_rows),
-            'ready': sum(1 for row in all_rows if row['readiness'] == 'ready'),
-            'attention': sum(1 for row in all_rows if row['readiness'] != 'ready'),
-            'blocked': sum(1 for row in all_rows if row['readiness'] == 'blocked'),
-            'bindings': sum(row['binding_count'] for row in all_rows),
-        },
+        'stats': _prometheus_registry_stats(all_rows),
         'pagination': pagination,
         **coverage_context,
         'active_tab': tab if tab in {'coverage', 'registry'} else 'coverage',
-        'selected_query': query,
-        'selected_compatibility': compatibility,
-        'selected_readiness': readiness,
+        'selected_query': filters.query,
+        'selected_source_type': filters.source_type,
+        'source_type_options': [
+            {'value': 'prometheus', 'label': 'Prometheus'},
+            {'value': 'thanos', 'label': 'Thanos Query'},
+        ],
+        'selected_compatibility': filters.compatibility,
+        'selected_readiness': filters.readiness,
         'compatibility_options': _ordered_status_options(
             all_rows,
             'compatibility',
@@ -360,6 +309,97 @@ def build_prometheus_page(
         'readiness_options': _ordered_status_options(
             all_rows, 'readiness', ['ready', 'degraded', 'blocked', 'validation_required']
         ),
+    }
+
+
+def _prometheus_registry_rows() -> list[dict[str, Any]]:
+    clusters_by_id = {cluster.id: cluster for cluster in Cluster.query.all()}
+    rows: list[dict[str, Any]] = []
+    instances = (
+        PrometheusInstance.query.join(PrometheusInstance.integration_instance)
+        .order_by(IntegrationInstance.name.asc())
+        .all()
+    )
+    for instance in instances:
+        bindings = cluster_bindings_for_instance(instance, enabled_only=True)
+        cluster_ids = [binding.asset_key for binding in bindings]
+        bound_clusters = [clusters_by_id[key] for key in cluster_ids if key in clusters_by_id]
+        source_type = instance.source_type or 'prometheus'
+        source_label = 'Thanos Query' if source_type == 'thanos' else 'Prometheus'
+        rows.append(
+            {
+                'instance_id': instance.id,
+                'name': instance.name,
+                'description': instance.description,
+                'endpoint': safe_endpoint(instance.endpoint),
+                'source_type': source_type,
+                'source_type_label': source_label,
+                'endpoint_product': instance.endpoint_product or source_type,
+                'version': instance.detected_version,
+                'compatibility': instance.compatibility_status or 'validation_required',
+                'readiness': instance.readiness_status or 'validation_required',
+                'profile': instance.compatibility_profile,
+                'query_profile': instance.query_profile,
+                'capability_profile': instance.capability_profile,
+                'validated_at': present_user_datetime(instance.last_validated_at, empty='Not validated'),
+                'binding_count': len(bindings),
+                'bound_clusters': bound_clusters,
+                'cluster_ids': cluster_ids,
+                'environments': sorted({cluster.environment for cluster in bound_clusters if cluster.environment}),
+                'configured': bool(instance.endpoint),
+                'enabled': instance.enabled,
+                'search_text': _prometheus_search_text(instance, source_type, source_label),
+            }
+        )
+    return rows
+
+
+def _prometheus_search_text(instance: PrometheusInstance, source_type: str, source_label: str) -> str:
+    return ' '.join(
+        filter(
+            None,
+            [
+                (instance.name or '').lower(),
+                (instance.description or '').lower(),
+                (instance.endpoint or '').lower(),
+                source_type.lower(),
+                source_label.lower(),
+                (instance.endpoint_product or '').lower(),
+                (instance.detected_version or '').lower(),
+                (instance.compatibility_profile or '').lower(),
+                (instance.query_profile or '').lower(),
+            ],
+        )
+    )
+
+
+def _filter_prometheus_registry_rows(
+    rows: list[dict[str, Any]],
+    filters: PrometheusRegistryFilters,
+) -> list[dict[str, Any]]:
+    filtered = rows
+    query = filters.query.strip().lower()
+    if query:
+        filtered = [row for row in filtered if query in row['search_text']]
+    if filters.source_type:
+        filtered = [row for row in filtered if row['source_type'] == filters.source_type]
+    if filters.compatibility:
+        filtered = [row for row in filtered if row['compatibility'] == filters.compatibility]
+    if filters.readiness:
+        filtered = [row for row in filtered if row['readiness'] == filters.readiness]
+    return filtered
+
+
+def _prometheus_registry_stats(rows: list[dict[str, Any]]) -> dict[str, int]:
+    return {
+        'total': len(rows),
+        'configured': len(rows),
+        'ready': sum(1 for row in rows if row['readiness'] == 'ready'),
+        'attention': sum(1 for row in rows if row['readiness'] != 'ready'),
+        'blocked': sum(1 for row in rows if row['readiness'] == 'blocked'),
+        'bindings': sum(row['binding_count'] for row in rows),
+        'prometheus': sum(1 for row in rows if row['source_type'] == 'prometheus'),
+        'thanos': sum(1 for row in rows if row['source_type'] == 'thanos'),
     }
 
 
@@ -663,125 +703,121 @@ def _runtime_overview_rows(
     alertmanager_instances: list[AlertmanagerInstance],
     latest: Mapping[tuple[str, str], IntegrationRuntimeObservation],
 ) -> list[dict[str, Any]]:
-    rows: list[dict[str, Any]] = []
-    for connection in kubernetes_connections:
-        cluster = connection.cluster
-        canonical = connection.integration_instance
-        observation = latest.get(('kubernetes', str(connection.id)))
-        validation_at = connection.last_validated_at
-        readiness = connection.readiness_status or 'validation_required'
-        capability_attention = 0 if readiness == 'ready' else 1
-        rows.append(
-            {
-                'provider': 'kubernetes',
-                'provider_label': 'Kubernetes',
-                'provider_icon': 'boxes',
-                'instance_id': str(connection.id),
-                'detail_key': f'kubernetes:{connection.id}',
-                'cluster_id': str(cluster.id),
-                'instance_name': canonical.name if canonical else f'{cluster.name} Kubernetes API',
-                'scope_label': cluster.name,
-                'endpoint_product': 'Kubernetes API',
-                'connection_status': cluster.status or 'not_observed',
-                'health_status': observation.health_status if observation else 'not_observed',
-                'health_score': observation.health_score if observation else None,
-                'readiness': readiness,
-                'observed_at': observation.observed_at if observation else None,
-                'observed_at_display': present_user_datetime(
-                    observation.observed_at if observation else None,
-                    empty='Not observed',
-                ),
-                'validation_at_display': present_user_datetime(validation_at, empty='Not validated'),
-                'latency_ms': observation.latency_ms if observation else None,
-                'latency_display': (
-                    f'{observation.latency_ms} ms' if observation and observation.latency_ms is not None else None
-                ),
-                'capability_profile': connection.compatibility_profile,
-                'capability_attention': capability_attention,
-                'capability_attention_display': _capability_attention_display(capability_attention),
-                'message': (observation.message if observation else None) or connection.validation_message,
-            }
-        )
-
-    for instance in prometheus_instances:
-        observation = latest.get(('prometheus', str(instance.id)))
-        assessments = (instance.capabilities or {}).get('assessments') or []
-        attention = sum(1 for item in assessments if item.get('status') != 'available')
-        validation_at = instance.last_checked_at or instance.last_validated_at
-        enabled_bindings = [binding for binding in instance.integration_instance.bindings if binding.enabled]
-        rows.append(
-            {
-                'provider': 'prometheus',
-                'provider_label': 'Prometheus',
-                'provider_icon': 'activity',
-                'instance_id': str(instance.id),
-                'detail_key': f'prometheus:{instance.id}',
-                'instance_name': instance.name,
-                'scope_label': f'{len(enabled_bindings)} asset binding(s)',
-                'endpoint_product': (instance.endpoint_product or 'prometheus').replace('_', ' ').title(),
-                'connection_status': instance.last_status or 'not_observed',
-                'health_status': observation.health_status if observation else 'not_observed',
-                'health_score': observation.health_score if observation else None,
-                'readiness': instance.readiness_status or 'validation_required',
-                'observed_at': observation.observed_at if observation else None,
-                'observed_at_display': present_user_datetime(
-                    observation.observed_at if observation else None,
-                    empty='Not observed',
-                ),
-                'validation_at_display': present_user_datetime(validation_at, empty='Not validated'),
-                'latency_ms': observation.latency_ms if observation else None,
-                'latency_display': (
-                    f'{observation.latency_ms} ms' if observation and observation.latency_ms is not None else None
-                ),
-                'capability_profile': instance.capability_profile or instance.query_profile,
-                'capability_attention': attention,
-                'capability_attention_display': _capability_attention_display(attention),
-                'message': (observation.message if observation else None)
-                or instance.validation_message
-                or instance.last_error,
-            }
-        )
-
-    for instance in alertmanager_instances:
-        observation = latest.get(('alertmanager', str(instance.id)))
-        validation_at = instance.last_checked_at or instance.last_validated_at
-        capability_attention = 0 if instance.capabilities else 1
-        enabled_bindings = [binding for binding in instance.integration_instance.bindings if binding.enabled]
-        rows.append(
-            {
-                'provider': 'alertmanager',
-                'provider_label': 'Alertmanager',
-                'provider_icon': 'siren',
-                'instance_id': str(instance.id),
-                'detail_key': f'alertmanager:{instance.id}',
-                'instance_name': instance.name,
-                'scope_label': f'{len(enabled_bindings)} asset binding(s)',
-                'endpoint_product': 'Alertmanager',
-                'connection_status': instance.last_status or 'not_observed',
-                'health_status': observation.health_status if observation else 'not_observed',
-                'health_score': observation.health_score if observation else None,
-                'readiness': instance.readiness_status or 'validation_required',
-                'observed_at': observation.observed_at if observation else None,
-                'observed_at_display': present_user_datetime(
-                    observation.observed_at if observation else None,
-                    empty='Not observed',
-                ),
-                'validation_at_display': present_user_datetime(validation_at, empty='Not validated'),
-                'latency_ms': observation.latency_ms if observation else None,
-                'latency_display': (
-                    f'{observation.latency_ms} ms' if observation and observation.latency_ms is not None else None
-                ),
-                'capability_profile': instance.capability_profile,
-                'capability_attention': capability_attention,
-                'capability_attention_display': _capability_attention_display(capability_attention),
-                'message': (observation.message if observation else None)
-                or instance.validation_message
-                or instance.last_error,
-            }
-        )
-
+    rows = [
+        *[_kubernetes_runtime_row(item, latest) for item in kubernetes_connections],
+        *[_prometheus_runtime_row(item, latest) for item in prometheus_instances],
+        *[_alertmanager_runtime_row(item, latest) for item in alertmanager_instances],
+    ]
     sort_runtime_rows(rows)
     return rows
+
+
+def _kubernetes_runtime_row(
+    connection: KubernetesConnection,
+    latest: Mapping[tuple[str, str], IntegrationRuntimeObservation],
+) -> dict[str, Any]:
+    cluster = connection.cluster
+    canonical = connection.integration_instance
+    observation = latest.get(('kubernetes', str(connection.id)))
+    readiness = connection.readiness_status or 'validation_required'
+    capability_attention = 0 if readiness == 'ready' else 1
+    return {
+        'provider': 'kubernetes',
+        'provider_label': 'Kubernetes',
+        'provider_icon': 'boxes',
+        'instance_id': str(connection.id),
+        'detail_key': f'kubernetes:{connection.id}',
+        'cluster_id': str(cluster.id),
+        'instance_name': canonical.name if canonical else f'{cluster.name} Kubernetes API',
+        'scope_label': cluster.name,
+        'endpoint_product': 'Kubernetes API',
+        'connection_status': cluster.status or 'not_observed',
+        **_runtime_observation_fields(observation),
+        'readiness': readiness,
+        'validation_at_display': present_user_datetime(connection.last_validated_at, empty='Not validated'),
+        'capability_profile': connection.compatibility_profile,
+        'capability_attention': capability_attention,
+        'capability_attention_display': _capability_attention_display(capability_attention),
+        'message': (observation.message if observation else None) or connection.validation_message,
+    }
+
+
+def _prometheus_runtime_row(
+    instance: PrometheusInstance,
+    latest: Mapping[tuple[str, str], IntegrationRuntimeObservation],
+) -> dict[str, Any]:
+    observation = latest.get(('prometheus', str(instance.id)))
+    assessments = (instance.capabilities or {}).get('assessments') or []
+    attention = sum(1 for item in assessments if item.get('status') != 'available')
+    enabled_bindings = [binding for binding in instance.integration_instance.bindings if binding.enabled]
+    source_type = instance.source_type or 'prometheus'
+    return {
+        'provider': 'prometheus',
+        'provider_label': 'Thanos Query' if source_type == 'thanos' else 'Prometheus',
+        'provider_icon': 'database-zap' if source_type == 'thanos' else 'activity',
+        'instance_id': str(instance.id),
+        'detail_key': f'prometheus:{instance.id}',
+        'instance_name': instance.name,
+        'scope_label': f'{len(enabled_bindings)} asset binding(s)',
+        'endpoint_product': (instance.endpoint_product or source_type).replace('_', ' ').title(),
+        'metrics_source_type': source_type,
+        'connection_status': instance.last_status or 'not_observed',
+        **_runtime_observation_fields(observation),
+        'readiness': instance.readiness_status or 'validation_required',
+        'validation_at_display': present_user_datetime(
+            instance.last_checked_at or instance.last_validated_at,
+            empty='Not validated',
+        ),
+        'capability_profile': instance.capability_profile or instance.query_profile,
+        'capability_attention': attention,
+        'capability_attention_display': _capability_attention_display(attention),
+        'message': (observation.message if observation else None) or instance.validation_message or instance.last_error,
+    }
+
+
+def _alertmanager_runtime_row(
+    instance: AlertmanagerInstance,
+    latest: Mapping[tuple[str, str], IntegrationRuntimeObservation],
+) -> dict[str, Any]:
+    observation = latest.get(('alertmanager', str(instance.id)))
+    capability_attention = 0 if instance.capabilities else 1
+    enabled_bindings = [binding for binding in instance.integration_instance.bindings if binding.enabled]
+    return {
+        'provider': 'alertmanager',
+        'provider_label': 'Alertmanager',
+        'provider_icon': 'siren',
+        'instance_id': str(instance.id),
+        'detail_key': f'alertmanager:{instance.id}',
+        'instance_name': instance.name,
+        'scope_label': f'{len(enabled_bindings)} asset binding(s)',
+        'endpoint_product': 'Alertmanager',
+        'connection_status': instance.last_status or 'not_observed',
+        **_runtime_observation_fields(observation),
+        'readiness': instance.readiness_status or 'validation_required',
+        'validation_at_display': present_user_datetime(
+            instance.last_checked_at or instance.last_validated_at,
+            empty='Not validated',
+        ),
+        'capability_profile': instance.capability_profile,
+        'capability_attention': capability_attention,
+        'capability_attention_display': _capability_attention_display(capability_attention),
+        'message': (observation.message if observation else None) or instance.validation_message or instance.last_error,
+    }
+
+
+def _runtime_observation_fields(observation: IntegrationRuntimeObservation | None) -> dict[str, Any]:
+    latency_ms = observation.latency_ms if observation else None
+    return {
+        'health_status': observation.health_status if observation else 'not_observed',
+        'health_score': observation.health_score if observation else None,
+        'observed_at': observation.observed_at if observation else None,
+        'observed_at_display': present_user_datetime(
+            observation.observed_at if observation else None,
+            empty='Not observed',
+        ),
+        'latency_ms': latency_ms,
+        'latency_display': f'{latency_ms} ms' if latency_ms is not None else None,
+    }
 
 
 def build_integration_runtime_detail(provider: str, instance_id: str) -> dict[str, Any] | None:

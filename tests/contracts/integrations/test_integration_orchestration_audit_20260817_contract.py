@@ -30,11 +30,14 @@ def test_domain_workspace_is_htmx_partial_and_demand_loads_selected_registry() -
 def test_orchestration_domain_counts_only_consumer_bindings_and_disabled_targets_need_review() -> None:
     service = read('app/integrations/domain_service.py')
 
-    assert 'consumer_bindings = [binding for binding in related_bindings if not _is_owner_asset_binding(binding)]' in service
+    assert (
+        'consumer_bindings = [binding for binding in related_bindings if not _is_owner_asset_binding(binding)]'
+        in service
+    )
     assert "'bindings': sum(1 for binding in consumer_bindings if binding.enabled)" in service
     assert '_capability_rows(domain.key, modules, provider_types, consumer_bindings)' in service
-    assert "if registered <= 0:" in service
-    assert "if enabled <= 0:" in service
+    assert 'if registered <= 0:' in service
+    assert 'if enabled <= 0:' in service
     assert "return 'attention'" in service
     assert 'attention = len(targets) - ready' in service
 
@@ -57,7 +60,7 @@ def test_domain_registries_follow_kaori_filter_and_clear_filter_standard() -> No
     assert 'def _filter_provider_rows(' in service
     assert 'def _filter_binding_rows(' in service
     assert "normalized_query in row['search_text']" in service
-    assert "row['source_provider_type'] == provider" in service
+    assert "row['source_provider_filter_key'] == provider" in service
     assert "row['validation_status'] == status" in service
 
     assert 'components/table_registry.html' in workspace

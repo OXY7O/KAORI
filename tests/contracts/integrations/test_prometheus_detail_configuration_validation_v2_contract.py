@@ -20,11 +20,11 @@ def test_configuration_uses_shared_read_only_contract_and_edit_route():
     assert '<form' not in text
 
 
-def test_configuration_keeps_prometheus_product_semantics_explicit():
+def test_configuration_keeps_metrics_source_identity_and_prometheus_api_contract_explicit():
     text = CONFIG.read_text()
     assert 'Prometheus API Endpoint' in text
-    assert 'Prometheus' in text
-    assert 'Thanos Query' not in text
+    assert 'Thanos Query API Endpoint' in text
+    assert "metrics_source_label = 'Thanos Query' if instance.source_type == 'thanos' else 'Prometheus'" in text
     assert 'provider-neutral Prometheus HTTP API and PromQL capabilities' in text
 
 

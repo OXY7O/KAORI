@@ -12,6 +12,7 @@ from app.integrations.deletion import provider_deletion_guard
 from app.integrations.prometheus.binding_profiles import get_binding_validation_profile
 from app.integrations.prometheus.capabilities import PROVIDER_CAPABILITY_KEYS
 from app.integrations.prometheus.capabilities import definition as capability_definition
+from app.integrations.prometheus.routing import normalize_routing_policy, recent_window_hours
 from app.integrations.prometheus.scope import KUBERNETES_CLUSTER_SCOPE, bindings_for_instance
 from app.integrations.readiness import resolve_binding_operational_status
 from app.integrations.registry import get_integration
@@ -170,6 +171,7 @@ def build_instance_context(
         'binding_registry_rows': binding_registry_rows,
         'binding_registry_pagination': binding_registry_pagination,
         'consumer_asset_groups': consumer_asset_groups,
+        'metrics_recent_window_hours': recent_window_hours(),
         'capability_rows': capability_rows,
         'capability_summary': {
             'total': len(capability_rows),
@@ -412,6 +414,7 @@ def _binding_row(binding: IntegrationBinding, source: PrometheusInstance) -> dic
             else binding.asset_type.replace('_', ' ').title()
         )
     )
+    routing_policy = normalize_routing_policy(binding.routing_policy)
     return {
         'binding': binding,
         'scope_label': scope_label,
@@ -427,6 +430,8 @@ def _binding_row(binding: IntegrationBinding, source: PrometheusInstance) -> dic
         'source_readiness': source_readiness,
         'operational_status': operational['status'],
         'operational_label': operational['label'],
+        'query_horizon': routing_policy['query_horizon'],
+        'routing_weight': routing_policy['weight'],
     }
 
 
@@ -483,6 +488,9 @@ def _resolution_view(
             'binding_id': candidate.binding.id,
             'binding_role': candidate.binding.binding_role,
             'priority': candidate.binding.priority,
+            'query_horizon': candidate.query_horizon,
+            'routing_weight': candidate.routing_weight,
+            'source_type': candidate.source_type,
             'eligible': candidate.eligible,
             'decision_reason': candidate.decision_reason,
             'missing_capability_labels': [_capability_label(key) for key in candidate.missing_technical_capabilities],

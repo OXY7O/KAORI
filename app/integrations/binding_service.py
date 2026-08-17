@@ -18,6 +18,7 @@ class SourceBindingSpec:
     selector_value: str | None = None
     selector_operator: str = '='
     capability_scope: tuple[str, ...] | list[str] | None = None
+    routing_policy: dict[str, Any] | None = None
     enabled: bool = True
 
 
@@ -72,6 +73,7 @@ def create_source_binding(
             selector_value=spec.selector_value,
             selector_operator=spec.selector_operator,
             capability_scope=spec.capability_scope,
+            routing_policy=spec.routing_policy,
         )
     except Exception:
         db.session.rollback()

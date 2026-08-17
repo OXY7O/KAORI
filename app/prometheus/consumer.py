@@ -14,6 +14,7 @@ from app.integrations.prometheus.exceptions import (
     PrometheusError,
     PrometheusQueryError,
 )
+from app.integrations.prometheus.routing import query_horizon_for_range, query_horizon_for_timestamp
 from app.integrations.registry import get_integration
 from app.models import Cluster
 from app.prometheus.resolver import ResolvedPrometheusSource, resolve_prometheus_sources
@@ -92,7 +93,7 @@ class PrometheusConsumer:
         required_capabilities: tuple[str, ...] = DEFAULT_QUERY_CAPABILITIES,
         retry_count: int | None = None,
     ) -> dict[str, Any]:
-        source = self._source_for(required_capabilities)
+        source = self._source_for(required_capabilities, query_horizon='recent')
         return self._run_query(
             source=source,
             promql=promql,
@@ -108,7 +109,10 @@ class PrometheusConsumer:
         *,
         required_capabilities: tuple[str, ...] = DEFAULT_QUERY_CAPABILITIES,
     ) -> dict[str, Any]:
-        source = self._source_for(required_capabilities)
+        source = self._source_for(
+            required_capabilities,
+            query_horizon=query_horizon_for_timestamp(timestamp),
+        )
         return self._run_query(
             source=source,
             promql=promql,
@@ -126,7 +130,10 @@ class PrometheusConsumer:
         required_capabilities: tuple[str, ...] = DEFAULT_RANGE_CAPABILITIES,
         retry_count: int | None = None,
     ) -> dict[str, Any]:
-        source = self._source_for(required_capabilities)
+        source = self._source_for(
+            required_capabilities,
+            query_horizon=query_horizon_for_range(start, end),
+        )
         return self._run_query(
             source=source,
             promql=promql,
@@ -150,6 +157,7 @@ class PrometheusConsumer:
             ),
             required_capabilities=required_capabilities,
             execution_capabilities=DEFAULT_QUERY_CAPABILITIES,
+            query_horizon='recent',
         )
 
     def execute_range_query(
@@ -170,6 +178,7 @@ class PrometheusConsumer:
             ),
             required_capabilities=required_capabilities,
             execution_capabilities=DEFAULT_RANGE_CAPABILITIES,
+            query_horizon=query_horizon_for_range(start, end),
         )
 
     def requirements(
@@ -447,9 +456,10 @@ class PrometheusConsumer:
         *,
         required_capabilities: tuple[str, ...],
         execution_capabilities: tuple[str, ...],
+        query_horizon: str = 'balanced',
     ) -> ConsumerResult[dict[str, Any]]:
         try:
-            selected = self._source_for(execution_capabilities)
+            selected = self._source_for(execution_capabilities, query_horizon=query_horizon)
             payload = operation(selected)
         except PrometheusError as exc:
             return ConsumerResult(
@@ -487,12 +497,15 @@ class PrometheusConsumer:
     def _source_for(
         self,
         required_capabilities: tuple[str, ...],
+        *,
+        query_horizon: str = 'balanced',
     ) -> ResolvedPrometheusSource:
         execution_capabilities = self._execution_capabilities(required_capabilities)
         resolution = resolve_prometheus_sources(
             scope_type=self.scope_type,
             scope_key=self.scope_key,
             required_technical_capabilities=execution_capabilities,
+            query_horizon=query_horizon,
         )
         selected = resolution.selected
         if selected is not None:

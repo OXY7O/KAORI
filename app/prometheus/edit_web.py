@@ -23,6 +23,7 @@ def edit_instance_response(instance_id: int) -> ResponseReturnValue:
     if instance is None:
         abort(404)
     form = PrometheusInstanceForm(obj=instance)
+    source_label = 'Thanos Query' if instance.source_type == 'thanos' else 'Prometheus'
     setattr(form, '_existing_instance', instance)
     feedback = None
     is_htmx = is_htmx_request()
@@ -37,11 +38,11 @@ def edit_instance_response(instance_id: int) -> ResponseReturnValue:
                     user_id=current_user.id,
                     event_type='prometheus_instance_update_failed',
                     status='error',
-                    title='Prometheus connection not updated',
+                    title=f'{source_label} connection not updated',
                     message=f'KAORI could not update {instance.name}.',
                     detail=str(exc) or 'Review the submitted connection settings before retrying.',
                     action_url=url_for('prometheus.edit_instance', instance_id=instance.id),
-                    action_label='Review Prometheus configuration',
+                    action_label=f'Review {source_label} configuration',
                     action_icon='settings-2',
                     metadata={'instance_id': instance.id, 'reason': type(exc).__name__},
                     queue_feedback=not is_htmx,
@@ -52,11 +53,11 @@ def edit_instance_response(instance_id: int) -> ResponseReturnValue:
                     user_id=current_user.id,
                     event_type='prometheus_instance_updated',
                     status='success',
-                    title='Prometheus Connection Updated',
+                    title=f'{source_label} Connection Updated',
                     message=f'{instance.name} connection settings were saved.',
                     detail='Readiness returned to Validation Required until Full Validation rebuilds provider evidence.',
                     action_url=registry_url,
-                    action_label='Back to Prometheus Registry',
+                    action_label='Back to Metrics Sources',
                     action_icon='chart-spline',
                     metadata={'instance_id': instance.id},
                     queue_feedback=True,
@@ -71,11 +72,11 @@ def edit_instance_response(instance_id: int) -> ResponseReturnValue:
                 user_id=current_user.id,
                 event_type='prometheus_instance_update_rejected',
                 status='error',
-                title='Prometheus connection not updated',
+                title=f'{source_label} connection not updated',
                 message=f'KAORI could not update {instance.name}.',
                 detail='Review the highlighted configuration fields before saving again.',
                 action_url=url_for('prometheus.edit_instance', instance_id=instance.id),
-                action_label='Review Prometheus configuration',
+                action_label=f'Review {source_label} configuration',
                 action_icon='settings-2',
                 metadata={'instance_id': instance.id, 'fields': sorted(form.errors)},
                 queue_feedback=not is_htmx,

@@ -32,6 +32,7 @@ class PrometheusInstance(db.Model):
         unique=True,
     )
     endpoint: Mapped[str] = mapped_column(String(500), nullable=False)
+    source_type: Mapped[str] = mapped_column(String(20), nullable=False, default='prometheus')
     auth_type: Mapped[str] = mapped_column(String(30), nullable=False, default='none')
     username: Mapped[str | None] = mapped_column(String(255), nullable=True)
     password: Mapped[str | None] = mapped_column(EncryptedText(), nullable=True)

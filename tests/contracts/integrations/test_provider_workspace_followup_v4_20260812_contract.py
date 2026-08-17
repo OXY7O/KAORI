@@ -57,7 +57,8 @@ def test_observability_edit_success_queues_registry_toast_even_for_htmx_redirect
     p_success = prometheus.split("event_type='prometheus_instance_updated'", 1)[1].split('if is_htmx:', 1)[0]
     a_success = alertmanager.split("event_type='alertmanager_instance_updated'", 1)[1].split('if is_htmx:', 1)[0]
 
-    assert "title='Prometheus Connection Updated'" in p_success
+    assert "title=f'{source_label} Connection Updated'" in p_success
+    assert "source_label = 'Thanos Query' if instance.source_type == 'thanos' else 'Prometheus'" in prometheus
     assert 'queue_feedback=True' in p_success
     assert "title='Alertmanager Connection Updated'" in a_success
     assert 'queue_feedback=True' in a_success

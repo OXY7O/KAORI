@@ -38,14 +38,14 @@ from app.reports.generate.service import (
 from app.reports.jobs.queue import get_reports_queue_name
 from app.reports.jobs.service import ReportJobEnqueueError, enqueue_report_generation
 from app.reports.notifications import get_report_notification_channel_options
-from app.reports.schedules.registry import filter_schedule_rows as _filter_schedule_rows
-from app.reports.schedules.registry import get_selected_filters as _get_selected_filters
 from app.reports.schedules.delivery import get_recommended_actions, get_scheduler_context
 from app.reports.schedules.failures import mark_schedule_dispatch_failed
 from app.reports.schedules.presentation import DAY_OF_WEEK_OPTIONS
 from app.reports.schedules.presentation import serialize_run as _serialize_run
 from app.reports.schedules.presentation import serialize_schedule as _serialize_schedule
 from app.reports.schedules.presentation import title_case_period_options as _title_case_period_options
+from app.reports.schedules.registry import filter_schedule_rows as _filter_schedule_rows
+from app.reports.schedules.registry import get_selected_filters as _get_selected_filters
 from app.reports.schedules.support import build_schedule_evidence_snapshot as _build_schedule_evidence_snapshot
 from app.reports.schedules.support import ensure_utc as _ensure_utc
 from app.reports.schedules.support import get_cluster_map as _get_cluster_map
@@ -840,8 +840,7 @@ def _get_schedule_filter_options(
 ) -> dict[str, list[dict[str, str]]]:
     delivery_catalog = _get_delivery_channel_options()
     asset_options: dict[str, str] = {
-        f'{KUBERNETES_CLUSTER_ASSET_TYPE}:{item["value"]}': f'Kubernetes · {item["label"]}'
-        for item in cluster_options
+        f'{KUBERNETES_CLUSTER_ASSET_TYPE}:{item["value"]}': f'Kubernetes · {item["label"]}' for item in cluster_options
     }
     asset_options.update(
         {

@@ -17,17 +17,19 @@ def test_domain_workspace_separates_tabs_from_registry_surface_and_preserves_rea
     assert 'table-fixed' not in template
 
 
-def test_operator_facing_prometheus_name_is_canonical() -> None:
+def test_operator_facing_metrics_sources_keep_prometheus_and_thanos_identity_explicit() -> None:
     module = read('app/integrations/prometheus/__init__.py')
     service = read('app/integrations/service.py')
     detail = read('app/templates/prometheus/partials/_detail_configuration.html')
     form = read('app/templates/prometheus/instance_form.html')
-    assert "runtime_label='Prometheus'" in module
-    assert "'provider_label': 'Prometheus'" in service
+    assert "runtime_label='Metrics Sources'" in module
+    assert "source_type = instance.source_type or 'prometheus'" in service
+    assert "'provider_label': 'Thanos Query' if source_type == 'thanos' else 'Prometheus'" in service
     assert 'Prometheus / Thanos' not in module
     assert 'Prometheus / Thanos' not in service
-    assert 'Thanos Query' not in detail
-    assert 'Thanos Query' not in form
+    assert "metrics_source_label = 'Thanos Query' if instance.source_type == 'thanos' else 'Prometheus'" in detail
+    assert "metrics_source_label = 'Thanos Query' if metrics_source_type == 'thanos' else 'Prometheus'" in form
+    assert 'Manual — Prometheus-Compatible Gateway' not in form
 
 
 def test_loading_bars_are_operation_scoped() -> None:

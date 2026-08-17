@@ -108,15 +108,10 @@ def test_prometheus_form_connection(
     """
     endpoint = (form.endpoint.data or '').strip()
     auth_type = form.auth_type.data or 'none'
-    detection_mode = form.version_detection_mode.data or 'automatic'
-    source_major = form.source_prometheus_major.data or None if detection_mode == 'manual' else None
-    password = form.password.data or None
-    bearer_token = form.bearer_token.data or None
-    if existing_instance is not None and auth_type == existing_instance.auth_type:
-        if auth_type == 'basic' and not password:
-            password = existing_instance.password
-        elif auth_type == 'bearer' and not bearer_token:
-            bearer_token = existing_instance.bearer_token
+    source_type = str(form.source_type.data or 'prometheus').strip().lower()
+    detection_mode = 'manual' if source_type == 'thanos' else 'automatic'
+    source_major = (form.source_prometheus_major.data or None) if source_type == 'thanos' else None
+    password, bearer_token = _resolved_test_credentials(form, existing_instance, auth_type=auth_type)
 
     draft = PrometheusInstance()
     draft.name = (form.name.data or '').strip() or 'Draft Prometheus connection'
@@ -129,8 +124,9 @@ def test_prometheus_form_connection(
     draft.timeout = int(form.timeout.data or 5)
     draft.verify_ssl = bool(form.verify_ssl.data)
     draft.enabled = bool(form.enabled.data)
+    draft.source_type = source_type
     draft.version_detection_mode = detection_mode
-    draft.endpoint_product = 'thanos' if detection_mode == 'manual' else 'prometheus'
+    draft.endpoint_product = source_type
     draft.source_prometheus_major = source_major
     try:
         result = PrometheusService(draft).test_connection(persist=False)
@@ -171,6 +167,23 @@ def test_prometheus_form_connection(
     }
 
 
+def _resolved_test_credentials(
+    form: PrometheusInstanceForm,
+    existing_instance: PrometheusInstance | None,
+    *,
+    auth_type: str,
+) -> tuple[str | None, str | None]:
+    password = form.password.data or None
+    bearer_token = form.bearer_token.data or None
+    if existing_instance is None or auth_type != existing_instance.auth_type:
+        return password, bearer_token
+    if auth_type == 'basic' and not password:
+        password = existing_instance.password
+    if auth_type == 'bearer' and not bearer_token:
+        bearer_token = existing_instance.bearer_token
+    return password, bearer_token
+
+
 def save_prometheus_instance(
     form: PrometheusInstanceForm,
     *,
@@ -207,27 +220,69 @@ def save_prometheus_instance(
     instance.timeout = form.timeout.data or 5
     instance.verify_ssl = bool(form.verify_ssl.data)
     instance.enabled = bool(form.enabled.data)
-    instance.version_detection_mode = form.version_detection_mode.data or 'automatic'
-    instance.endpoint_product = 'thanos' if instance.version_detection_mode == 'manual' else 'prometheus'
-    instance.source_prometheus_major = (
-        (form.source_prometheus_major.data or None) if instance.version_detection_mode == 'manual' else None
-    )
+    _apply_metrics_source_contract(form, instance, creating=creating)
+    _apply_auth_contract(form, instance)
+    _reset_provider_evidence(instance)
 
+    canonical = ensure_canonical_instance(instance, provider_type='prometheus')
+    db.session.flush()
+    ensure_canonical_instance(instance, provider_type='prometheus')
+    if not creating:
+        invalidate_bindings(
+            canonical,
+            message=(
+                'Metrics source settings changed. Run Full Validation to refresh '
+                'the provider and all affected scope bindings.'
+            ),
+        )
+    if initial_cluster is not None:
+        _bind_initial_cluster(canonical, instance, initial_cluster)
+    try:
+        db.session.commit()
+    except SQLAlchemyError:
+        db.session.rollback()
+        raise
+    return instance
+
+
+def _apply_metrics_source_contract(
+    form: PrometheusInstanceForm,
+    instance: PrometheusInstance,
+    *,
+    creating: bool,
+) -> None:
+    source_type = str(form.source_type.data or instance.source_type or 'prometheus').strip().lower()
+    if source_type not in {'prometheus', 'thanos'}:
+        raise PrometheusError('Metrics source type must be Prometheus or Thanos Query.')
+    if not creating and instance.source_type and instance.source_type != source_type:
+        raise PrometheusError(
+            'Metrics source type is immutable. Register a separate connection for another source type.'
+        )
+    instance.source_type = source_type
+    instance.version_detection_mode = 'manual' if source_type == 'thanos' else 'automatic'
+    instance.endpoint_product = source_type
+    instance.source_prometheus_major = (form.source_prometheus_major.data or None) if source_type == 'thanos' else None
+
+
+def _apply_auth_contract(form: PrometheusInstanceForm, instance: PrometheusInstance) -> None:
     if instance.auth_type == 'basic':
         instance.username = (form.username.data or '').strip() or None
         if form.password.data:
             instance.password = form.password.data
         instance.bearer_token = None
-    elif instance.auth_type == 'bearer':
+        return
+    if instance.auth_type == 'bearer':
         instance.username = None
         instance.password = None
         if form.bearer_token.data:
             instance.bearer_token = form.bearer_token.data
-    else:
-        instance.username = None
-        instance.password = None
-        instance.bearer_token = None
+        return
+    instance.username = None
+    instance.password = None
+    instance.bearer_token = None
 
+
+def _reset_provider_evidence(instance: PrometheusInstance) -> None:
     instance.detected_version = None
     instance.compatibility_status = 'validation_required'
     instance.compatibility_profile = None
@@ -246,37 +301,32 @@ def save_prometheus_instance(
     instance.last_checked_at = None
     instance.last_validated_at = None
 
-    canonical = ensure_canonical_instance(instance, provider_type='prometheus')
-    db.session.flush()
-    ensure_canonical_instance(instance, provider_type='prometheus')
-    if not creating:
-        invalidate_bindings(
-            canonical,
-            message=(
-                'Prometheus connection settings changed. Run Full Validation to refresh '
-                'the provider and all affected scope bindings.'
+
+def _bind_initial_cluster(
+    canonical: IntegrationInstance,
+    instance: PrometheusInstance,
+    initial_cluster: Cluster,
+) -> None:
+    profile = get_binding_validation_profile(KUBERNETES_CLUSTER_SCOPE)
+    bind_instance(
+        canonical,
+        spec=BindingPersistenceSpec(
+            asset_type=KUBERNETES_CLUSTER_SCOPE,
+            asset_key=str(initial_cluster.id),
+            capability_scope=list(BINDING_CAPABILITY_KEYS),
+            selector_json=build_selector(label='cluster', value=initial_cluster.name),
+            routing_policy={
+                'query_horizon': 'historical' if instance.source_type == 'thanos' else 'recent',
+                'weight': 100,
+            },
+            validation_status='validation_required',
+            validation_profile=profile.profile_key if profile is not None else None,
+            validation_message=(
+                'Registration created a provisional cluster selector. Verify the actual source label value '
+                'before operational use.'
             ),
-        )
-    if initial_cluster is not None:
-        profile = get_binding_validation_profile(KUBERNETES_CLUSTER_SCOPE)
-        bind_instance(
-            canonical,
-            spec=BindingPersistenceSpec(
-                asset_type=KUBERNETES_CLUSTER_SCOPE,
-                asset_key=str(initial_cluster.id),
-                capability_scope=list(BINDING_CAPABILITY_KEYS),
-                selector_json=build_selector(label='cluster', value=initial_cluster.name),
-                validation_status='validation_required',
-                validation_profile=profile.profile_key if profile is not None else None,
-                validation_message='Registration created a provisional cluster selector. Verify the actual source label value before operational use.',
-            ),
-        )
-    try:
-        db.session.commit()
-    except SQLAlchemyError:
-        db.session.rollback()
-        raise
-    return instance
+        ),
+    )
 
 
 def validate_prometheus_binding(
@@ -352,6 +402,7 @@ def create_prometheus_binding(
         selector_value=spec.selector_value,
         selector_operator=spec.selector_operator,
         capability_scope=spec.capability_scope,
+        routing_policy=spec.routing_policy,
         enabled=spec.enabled,
         commit=commit,
     )
@@ -364,6 +415,7 @@ def update_prometheus_binding_selector(
     selector_label: str | None,
     selector_value: str | None,
     selector_operator: str = '=',
+    routing_policy: dict | None = None,
     commit: bool = True,
 ) -> IntegrationBinding:
     return get_integration('prometheus').execute(
@@ -373,5 +425,6 @@ def update_prometheus_binding_selector(
         selector_label=selector_label,
         selector_value=selector_value,
         selector_operator=selector_operator,
+        routing_policy=routing_policy,
         commit=commit,
     )

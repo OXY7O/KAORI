@@ -118,7 +118,7 @@ Query deprecation and replacement metadata is owned by `app/integrations/prometh
 Integration inventory and configuration are owned by the top-level `Integrations` domain.
 
 - `/integrations/` — cross-cluster integration overview.
-- `/integrations/prometheus` — Prometheus inventory.
+- `/integrations/observability/metrics` — Prometheus + Thanos Query metrics-source inventory.
 - `/integrations/alertmanager` — Alertmanager inventory.
 - `/integrations/storage` — Storage domain portfolio.
 - `/integrations/minio/` — MinIO Object Storage provider inventory and registration.
@@ -147,7 +147,7 @@ A matching version profile does not itself make an integration ready. Provider-l
 KAORI exposes one canonical management route per integration domain:
 
 - `/integrations/kubernetes`
-- `/integrations/prometheus`
+- `/integrations/observability/metrics` (canonical metrics-source workspace; `/integrations/prometheus` redirects for compatibility)
 - `/integrations/alertmanager`
 - `/integrations/storage`
 - `/integrations/minio/`

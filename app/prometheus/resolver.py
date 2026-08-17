@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from typing import Final
 
 from app.integrations.binding_selectors import selector_is_configured
+from app.integrations.prometheus.routing import normalize_routing_policy, routing_rank
 from app.integrations.resolver import resolve_integration
 from app.models.integration import IntegrationBinding
 from app.models.prometheus import PrometheusInstance
@@ -29,7 +30,10 @@ class ResolvedPrometheusSource:
     missing_technical_capabilities: tuple[str, ...]
     operational_state: str
     decision_reason: str
-    score: tuple[int, int, int, int, int, int]
+    query_horizon: str
+    routing_weight: int
+    source_type: str
+    score: tuple[int, int, int, int, int, int, int, int]
 
 
 @dataclass(frozen=True, slots=True)
@@ -55,6 +59,7 @@ def resolve_prometheus_sources(
     scope_key: str,
     required_binding_capabilities: tuple[str, ...] = (),
     required_technical_capabilities: tuple[str, ...] = (),
+    query_horizon: str = 'balanced',
 ) -> PrometheusSourceResolution:
     canonical = resolve_integration(
         provider_type='prometheus',
@@ -77,6 +82,7 @@ def resolve_prometheus_sources(
                 provider_instance,
                 missing_binding_capabilities=missing_binding_capabilities,
                 required_technical_capabilities=required_technical_capabilities,
+                query_horizon=query_horizon,
             )
         )
     candidates.sort(key=lambda candidate: candidate.score)
@@ -95,6 +101,7 @@ def _evaluate_binding(
     *,
     missing_binding_capabilities: tuple[str, ...],
     required_technical_capabilities: tuple[str, ...],
+    query_horizon: str,
 ) -> ResolvedPrometheusSource:
     readiness = (instance.readiness_status or '').strip().lower()
     health = (instance.last_status or '').strip().lower()
@@ -128,6 +135,8 @@ def _evaluate_binding(
         instance.enabled and binding.enabled and binding_eligible and readiness_eligible and technical_eligible
     )
     operational_rank, operational_state = _operational_rank(readiness=readiness, health=health)
+    routing_policy = normalize_routing_policy(binding.routing_policy)
+    horizon_rank, weight_rank = routing_rank(routing_policy, requested_horizon=query_horizon)
     reason = _decision_reason(
         eligible=eligible,
         readiness=readiness,
@@ -149,11 +158,16 @@ def _evaluate_binding(
         missing_technical_capabilities=missing_technical,
         operational_state=operational_state,
         decision_reason=reason,
+        query_horizon=str(routing_policy['query_horizon']),
+        routing_weight=int(routing_policy['weight']),
+        source_type=str(instance.source_type or 'prometheus'),
         score=(
             0 if eligible else 1,
             operational_rank,
-            capability_rank,
+            horizon_rank,
             _ROLE_ORDER.get(binding.binding_role, 9),
+            weight_rank,
+            capability_rank,
             binding.priority,
             binding.id,
         ),

@@ -88,6 +88,7 @@ class IntegrationBinding(db.Model):
     enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     capability_scope: Mapped[list[str] | None] = mapped_column(JSON, nullable=True)
     selector_json: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    routing_policy: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     validation_status: Mapped[str | None] = mapped_column(String(40), nullable=True)
     validation_profile: Mapped[str | None] = mapped_column(String(120), nullable=True)
     validation_evidence: Mapped[dict | None] = mapped_column(JSON, nullable=True)

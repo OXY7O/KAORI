@@ -8,7 +8,10 @@
 {% import "integrations/components/_provider_edit_hero.html" as provider_edit_hero %}
 {% import "integrations/components/_provider_registration_context.html" as provider_registration_context %}
 {% import "integrations/components/_provider_registration_actions.html" as provider_registration_actions %}
-{% block title %}{{ 'Edit' if instance else 'Register' }} Prometheus Connection · KAORI{% endblock title %}
+{% set metrics_source_type = (instance.source_type if instance else form.source_type.data)|default('prometheus', true) %}
+{% set metrics_source_label = 'Thanos Query' if metrics_source_type == 'thanos' else 'Prometheus' %}
+{% set metrics_source_icon = 'database-zap' if metrics_source_type == 'thanos' else 'activity' %}
+{% block title %}{{ 'Edit' if instance else 'Register' }} {{ metrics_source_label }} Connection · KAORI{% endblock title %}
 {% block dashboard_content %}
     <div id="prometheus-registration-workspace"
          class="kaori-integration-semantic space-y-6">
@@ -16,29 +19,37 @@
             {{ provider_edit_hero.render("activity",
                         "Metrics Integration",
                         "chart-spline",
-                        "Edit Prometheus Connection",
+                        ('Edit Thanos Query Connection' if metrics_source_type == 'thanos' else 'Edit Prometheus Connection'),
                         "Update the reusable metrics connection while preserving consumer bindings.",
                         "database-zap",
-                        "Prometheus-Compatible API",
+                        metrics_source_label ~ " API",
                         "Connection",
                         instance.name,
                         instance.environment|default("") |title,
             instance.readiness_status or "validation_required",
             url_for("integrations.prometheus"),
-            "Prometheus configuration posture") }}
+            metrics_source_label ~ " configuration posture") }}
         {% else %}
             {{ provider_registration_hero.render("activity",
                         "Metrics Integration",
                         "chart-spline",
-                        "Register Prometheus Connection",
+                        ('Register Thanos Query Connection' if metrics_source_type == 'thanos' else 'Register Prometheus Connection'),
                         "Create a reusable metrics connection before Core Validation and independent consumer bindings.",
                         "database-zap",
-                        "Prometheus-Compatible API",
+                        metrics_source_label ~ " API",
                         url_for("integrations.prometheus") ,
-            "Prometheus connection workflow") }}
+            metrics_source_label ~ " connection workflow") }}
         {% endif %}
-        {% set prometheus_submit_url = url_for("prometheus.edit_instance", instance_id=instance.id) if instance else url_for("prometheus.new_instance", cluster_id=initial_cluster.id if initial_cluster else none) %}
-        {% set prometheus_test_url = url_for("prometheus.test_instance_configuration", instance_id=instance.id) if instance else url_for("prometheus.test_new_instance_connection") %}
+        {% if instance %}
+            {% set prometheus_submit_url = url_for('prometheus.edit_instance', instance_id=instance.id) %}
+            {% set prometheus_test_url = url_for('prometheus.test_instance_configuration', instance_id=instance.id) %}
+        {% elif metrics_source_type == 'thanos' %}
+            {% set prometheus_submit_url = url_for('integrations.register_thanos_metrics_source', cluster_id=initial_cluster.id if initial_cluster else none) %}
+            {% set prometheus_test_url = url_for('integrations.test_thanos_metrics_source') %}
+        {% else %}
+            {% set prometheus_submit_url = url_for('integrations.register_prometheus_metrics_source', cluster_id=initial_cluster.id if initial_cluster else none) %}
+            {% set prometheus_test_url = url_for('integrations.test_prometheus_metrics_source') %}
+        {% endif %}
         <form id="prometheus-instance-form"
               method="post"
               action="{{ prometheus_submit_url }}"
@@ -48,7 +59,7 @@
               hx-swap="outerHTML"
               hx-disabled-elt="button[type='submit']"
               class="grid gap-6 xl:grid-cols-12 xl:items-start"
-              x-data="{ authType: '{{ form.auth_type.data or 'none' }}', detectionMode: '{{ form.version_detection_mode.data or 'automatic' }}', connectionVerified: {{ 'true' if registration_proof is defined and registration_proof else 'false' }}, invalidateConnectionTest(event) { const fieldName = event.target?.name || ''; if (['csrf_token', 'connection_test_proof'].includes(fieldName)) return; this.connectionVerified = false; this.$refs.connectionProof.value = ''; }, applyConnectionTest(event) { this.connectionVerified = event.detail?.connected === true; this.$refs.connectionProof.value = event.detail?.proof || ''; } }"
+              x-data="{ authType: '{{ form.auth_type.data or 'none' }}', detectionMode: '{{ 'manual' if metrics_source_type == 'thanos' else 'automatic' }}', connectionVerified: {{ 'true' if registration_proof is defined and registration_proof else 'false' }}, invalidateConnectionTest(event) { const fieldName = event.target?.name || ''; if (['csrf_token', 'connection_test_proof'].includes(fieldName)) return; this.connectionVerified = false; this.$refs.connectionProof.value = ''; }, applyConnectionTest(event) { this.connectionVerified = event.detail?.connected === true; this.$refs.connectionProof.value = event.detail?.proof || ''; } }"
               x-on:input.capture="invalidateConnectionTest($event)"
               x-on:change.capture="invalidateConnectionTest($event)"
               x-on:prometheus-connection-tested.window="applyConnectionTest($event)">
@@ -92,10 +103,10 @@
                     <section class="relative overflow-hidden rounded-lg border border-outline-subtle bg-surface-elevated">
                         {% call connection_validation_header.render(
                             'Endpoint & Access',
-                            'Define Prometheus endpoint access and authentication, then verify reachability before registration.',
+                            'Define ' ~ metrics_source_label ~ ' endpoint access and authentication, then verify reachability before registration.',
                             icon='network',
                             loading_id='prometheus-connection-test-loading',
-                            loading_label='Testing Prometheus connection'
+                            loading_label='Testing ' ~ metrics_source_label ~ ' connection'
                             ) %}
                             {% if not instance %}
                                 <button type="button"
@@ -150,19 +161,29 @@
                         <div class="mb-4 flex items-start gap-3">
                             <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary dark:text-kaori-accent"><i data-lucide="scan-search" class="h-4 w-4"></i></span>
                             <div>
-                                <h3 class="text-sm font-semibold text-content-primary">Compatibility Contract</h3>
-                                <p class="mt-1 text-xs leading-5 text-content-muted">Automatic mode discovers a direct Prometheus endpoint. Manual mode records the upstream Prometheus major behind a compatible intermediary such as a query gateway.</p>
+                                <h3 class="text-sm font-semibold text-content-primary">Metrics Source Contract</h3>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">The source type is explicit and immutable. Prometheus serves direct recent-query workloads; Thanos Query is registered as a distinct long-retention metrics source while reusing the Prometheus-compatible API contract.</p>
                             </div>
                         </div>
                         <div class="grid gap-4 md:grid-cols-2">
-                            <label class="block">
-                                <span class="mb-1.5 block text-sm font-semibold text-content-primary">{{ form.version_detection_mode.label.text }}</span>
-                                {{ form.version_detection_mode(class_='h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-medium text-content-primary outline-none transition hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20', **{'x-model':'detectionMode'}) }}
-                            </label>
-                            <label class="block" x-show="detectionMode === 'manual'" x-cloak>
-                                <span class="mb-1.5 block text-sm font-semibold text-content-primary">{{ form.source_prometheus_major.label.text }}</span>
-                                {{ form.source_prometheus_major(class_='h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-medium text-content-primary outline-none transition hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20', **{':required':"detectionMode === 'manual'"}) }}
-                            </label>
+                            <div class="rounded-lg border border-outline-subtle bg-surface-subtle px-4 py-3">
+                                <p class="text-xs font-semibold text-content-muted">Source Type</p>
+                                <p class="mt-1 text-sm font-semibold text-content-primary">{{ metrics_source_label }}</p>
+                                <p class="mt-1 text-xs leading-5 text-content-secondary">{{ 'Direct Prometheus query endpoint for recent operational telemetry.' if metrics_source_type == 'prometheus' else 'Thanos Query endpoint for long-retention and historical PromQL workloads.' }}</p>
+                            </div>
+                            {% if metrics_source_type == 'thanos' %}
+                                <label class="block">
+                                    <span class="mb-1.5 block text-sm font-semibold text-content-primary">{{ form.source_prometheus_major.label.text }}</span>
+                                    {{ form.source_prometheus_major(class_='h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-medium text-content-primary outline-none transition hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20', required=true) }}
+                                    <p class="mt-1.5 text-xs leading-5 text-content-muted">Used only for Prometheus API compatibility validation behind Thanos Query. This does not turn the source into a Prometheus connection.</p>
+                                </label>
+                            {% else %}
+                                <div class="rounded-lg border border-outline-subtle bg-surface-subtle px-4 py-3">
+                                    <p class="text-xs font-semibold text-content-muted">Compatibility</p>
+                                    <p class="mt-1 text-sm font-semibold text-content-primary">Automatic Prometheus Detection</p>
+                                    <p class="mt-1 text-xs leading-5 text-content-secondary">KAORI validates the direct Prometheus build and query APIs automatically.</p>
+                                </div>
+                            {% endif %}
                         </div>
                     </section>
                     <section class="border-t border-outline-subtle pt-6">
@@ -195,7 +216,7 @@
                          aria-hidden="true"></div>
                 {% endif %}
                 {% if instance %}
-                    {% call form_action_bar.render('Save changes, then run Full Validation.', aria_label='Prometheus Connection Actions') %}
+                    {% call form_action_bar.render('Save changes, then run Full Validation.', aria_label=metrics_source_label ~ ' Connection Actions') %}
                         <a href="{{ url_for('integrations.prometheus') }}"
                            class="{{ action_button.classes('secondary') }}">Cancel</a>
                         <button type="submit"
@@ -207,7 +228,7 @@
                     {% endcall %}
                 {% else %}
                     {{ provider_registration_actions.render(url_for('integrations.prometheus') ,
-                    aria_label='Prometheus Connection Actions',
+                    aria_label=metrics_source_label ~ ' Connection Actions',
                     register_label='Register Connection',
                     loading_label='Registering Connection...'
                     ) }}
@@ -215,27 +236,27 @@
             </section>
             <aside class="space-y-4 xl:col-span-4 xl:sticky xl:top-5">
                 {% if instance %}
-                    {% set prometheus_flow_items = [('Save Changes', 'Update the reusable connection contract and return readiness to Validation Required.'), ('Test Connection', 'Confirm the saved endpoint remains reachable with the selected access settings.'), ('Run Core Validation', 'Rebuild provider compatibility and generic Prometheus API readiness evidence.'), ('Review Consumer Bindings', 'Confirm Kubernetes, MinIO, and future consumers retain independent validated bindings.')] %}
-                    {{ provider_registration_context.render("Prometheus Configuration Flow",
+                    {% set metrics_source_flow_items = [('Save Changes', 'Update the reusable connection contract and return readiness to Validation Required.'), ('Test Connection', 'Confirm the saved endpoint remains reachable with the selected access settings.'), ('Run Core Validation', 'Rebuild provider compatibility and generic Prometheus API readiness evidence.'), ('Review Consumer Bindings', 'Confirm Kubernetes, MinIO, and future consumers retain independent validated bindings.')] %}
+                    {{ provider_registration_context.render(metrics_source_label ~ " Configuration Flow",
                                         "How saved connection changes return to governed operational use.",
-                                        prometheus_flow_items,
+                                        metrics_source_flow_items,
                                         "Observability Integrations",
-                                        "Review Prometheus provider coverage, connection readiness, and consumer bindings from the observability workspace.",
+                                        "Review " ~ metrics_source_label ~ " coverage, connection readiness, and consumer bindings from the observability workspace.",
                                         url_for("integrations.observability") ,
                     "Open Observability Integrations",
                     flow_icon="workflow",
                     flow_note="Saving changes does not establish readiness until Core Validation succeeds.",
                     related_icon="waypoints",
-                    authority_boundary="Prometheus remains authoritative for metric collection and query execution. KAORI owns provider readiness, consumer binding validation, and governed source resolution.") }}
+                    authority_boundary=metrics_source_label ~ " remains authoritative for metric query execution. Metrics collection and retention remain owned by the selected source platform. KAORI owns provider readiness, consumer binding validation, and governed source resolution.") }}
                 {% else %}
-                    {% set prometheus_flow_items = [('Define Connection Identity', 'Provide a stable KAORI name and ownership description for the reusable source.'), ('Configure Endpoint Access', 'Set the endpoint, authentication, TLS verification, timeout, and compatibility detection.'), ('Test Connection', 'Verify reachability and compatibility before KAORI enables registration.'), ('Register Connection', 'Create the reusable connection identity before Core Validation and consumer binding.')] %}
-                    {% set prometheus_related_description = "A single Prometheus runtime can serve Kubernetes, MinIO, and future integrations through independent consumer bindings." %}
+                    {% set metrics_source_flow_items = [('Define Connection Identity', 'Provide a stable KAORI name and ownership description for the reusable source.'), ('Configure Endpoint Access', 'Set the endpoint, authentication, TLS verification, timeout, and compatibility detection.'), ('Test Connection', 'Verify reachability and compatibility before KAORI enables registration.'), ('Register Connection', 'Create the reusable connection identity before Core Validation and consumer binding.')] %}
+                    {% set prometheus_related_description = "A single metrics source can serve Kubernetes, MinIO, and future integrations through independent consumer bindings and horizon-aware routing." %}
                     {% if initial_cluster %}
                         {% set prometheus_related_description = prometheus_related_description ~ " This registration will also create the initial metrics binding for " ~ initial_cluster.name ~ "." %}
                     {% endif %}
-                    {{ provider_registration_context.render("Prometheus Registration Flow",
+                    {{ provider_registration_context.render(metrics_source_label ~ " Registration Flow",
                                         "How a reusable metrics connection is registered in KAORI.",
-                                        prometheus_flow_items,
+                                        metrics_source_flow_items,
                                         "Observability Integrations",
                                         prometheus_related_description,
                                         url_for("integrations.observability") ,
@@ -243,7 +264,7 @@
                     flow_icon="workflow",
                     flow_note="Registration requires a successful Test Connection and creates the reusable source identity only.",
                     related_icon="waypoints",
-                    authority_boundary="Prometheus remains authoritative for metric collection and query execution. KAORI owns provider readiness, consumer binding validation, and governed source resolution.") }}
+                    authority_boundary=metrics_source_label ~ " remains authoritative for metric query execution. Metrics collection and retention remain owned by the selected source platform. KAORI owns provider readiness, consumer binding validation, and governed source resolution.") }}
                 {% endif %}
             </aside>
         </form>

@@ -59,10 +59,8 @@ def test_tls_integrations_platform_operations_access_and_settings_are_covered() 
         ),
         'app/governance/tls_certificates/routes.py': ('governance_tls_secret_sync_dispatch',),
         'app/cluster/routes.py': ('cluster_create', 'cluster_update', 'cluster_delete'),
-        'app/prometheus/routes.py': (
-            'prometheus_instance_created',
-            'prometheus_instance_deleted',
-        ),
+        'app/prometheus/registration_web.py': ('prometheus_instance_created',),
+        'app/prometheus/routes.py': ('prometheus_instance_deleted',),
         'app/prometheus/edit_web.py': ('prometheus_instance_updated',),
         'app/alertmanager/routes.py': (
             'alertmanager_instance_created',

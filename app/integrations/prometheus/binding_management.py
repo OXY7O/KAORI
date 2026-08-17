@@ -8,6 +8,7 @@ from app.integrations.binding_service import SourceBindingSpec
 from app.integrations.lifecycle import BindingPersistenceSpec, bind_instance, ensure_canonical_instance
 from app.integrations.prometheus.binding_profiles import get_binding_validation_profile
 from app.integrations.prometheus.capabilities import BINDING_CAPABILITY_KEYS
+from app.integrations.prometheus.routing import normalize_routing_policy
 from app.integrations.prometheus.scope import KUBERNETES_CLUSTER_SCOPE
 from app.models.cluster import Cluster
 from app.models.integration import IntegrationBinding, IntegrationInstance
@@ -33,9 +34,9 @@ def create_binding(
         normalized_scope_type = normalized_scope_type or KUBERNETES_CLUSTER_SCOPE
         normalized_scope_key = normalized_scope_key or str(cluster.id)
     if not normalized_scope_type:
-        raise ValueError('Select an operational scope type before saving the Prometheus binding.')
+        raise ValueError('Select an operational scope type before saving the metrics-source binding.')
     if not normalized_scope_key:
-        raise ValueError('Select or enter an operational scope before saving the Prometheus binding.')
+        raise ValueError('Select or enter an operational scope before saving the metrics-source binding.')
     if len(normalized_scope_key) > 255:
         raise ValueError('The operational scope key must be 255 characters or fewer.')
 
@@ -45,35 +46,24 @@ def create_binding(
         operator=spec.selector_operator,
     )
     if selector_json is None:
-        raise ValueError('Define a metrics identity selector before binding this Prometheus source.')
+        raise ValueError('Define a metrics identity selector before binding this metrics source.')
 
     canonical = ensure_canonical_instance(instance, provider_type='prometheus')
+    routing_policy = normalize_routing_policy(spec.routing_policy)
     existing = IntegrationBinding.query.filter_by(
         integration_instance_id=canonical.id,
         asset_type=normalized_scope_type,
         asset_key=normalized_scope_key,
     ).first()
     if existing is not None:
-        raise ValueError('This Prometheus connection is already bound to the selected operational scope.')
+        raise ValueError('This metrics source is already bound to the selected operational scope.')
 
-    if normalized_role == 'primary':
-        conflicting_primary = (
-            IntegrationBinding.query.join(
-                IntegrationInstance,
-                IntegrationBinding.integration_instance_id == IntegrationInstance.id,
-            )
-            .filter(
-                IntegrationInstance.provider_type == 'prometheus',
-                IntegrationInstance.enabled.is_(True),
-                IntegrationBinding.asset_type == normalized_scope_type,
-                IntegrationBinding.asset_key == normalized_scope_key,
-                IntegrationBinding.binding_role == 'primary',
-                IntegrationBinding.enabled.is_(True),
-            )
-            .first()
-        )
-        if conflicting_primary is not None:
-            raise ValueError('The selected operational scope already has an enabled primary Prometheus source.')
+    _assert_primary_horizon_available(
+        asset_type=normalized_scope_type,
+        asset_key=normalized_scope_key,
+        role=normalized_role,
+        routing_policy=routing_policy,
+    )
 
     validation_profile = get_binding_validation_profile(normalized_scope_type)
     if validation_profile is None:
@@ -90,6 +80,7 @@ def create_binding(
             priority=spec.priority,
             capability_scope=list(spec.capability_scope or BINDING_CAPABILITY_KEYS),
             selector_json=selector_json,
+            routing_policy=routing_policy,
             validation_status='validation_required',
             validation_profile=validation_profile.profile_key,
             validation_message=(
@@ -115,6 +106,7 @@ def update_binding_selector(
     selector_label: str | None,
     selector_value: str | None,
     selector_operator: str = '=',
+    routing_policy: dict | None = None,
     commit: bool = True,
 ) -> IntegrationBinding:
     if instance.integration_instance_id != binding.integration_instance_id:
@@ -127,6 +119,16 @@ def update_binding_selector(
     if selector_json is None:
         raise ValueError('Define a metrics identity selector before saving this binding.')
     binding.selector_json = selector_json
+    if routing_policy is not None:
+        normalized_routing = normalize_routing_policy(routing_policy)
+        _assert_primary_horizon_available(
+            asset_type=binding.asset_type,
+            asset_key=str(binding.asset_key),
+            role=binding.binding_role,
+            routing_policy=normalized_routing,
+            exclude_binding_id=binding.id,
+        )
+        binding.routing_policy = normalized_routing
     binding.validation_status = 'validation_required'
     profile = get_binding_validation_profile(binding.asset_type)
     binding.validation_profile = profile.profile_key if profile is not None else None
@@ -144,3 +146,41 @@ def update_binding_selector(
     else:
         db.session.flush()
     return binding
+
+
+def _assert_primary_horizon_available(
+    *,
+    asset_type: str,
+    asset_key: str,
+    role: str,
+    routing_policy: dict,
+    exclude_binding_id: int | None = None,
+) -> None:
+    if role != 'primary':
+        return
+    query = IntegrationBinding.query.join(
+        IntegrationInstance,
+        IntegrationBinding.integration_instance_id == IntegrationInstance.id,
+    ).filter(
+        IntegrationInstance.provider_type == 'prometheus',
+        IntegrationInstance.enabled.is_(True),
+        IntegrationBinding.asset_type == asset_type,
+        IntegrationBinding.asset_key == asset_key,
+        IntegrationBinding.binding_role == 'primary',
+        IntegrationBinding.enabled.is_(True),
+    )
+    if exclude_binding_id is not None:
+        query = query.filter(IntegrationBinding.id != exclude_binding_id)
+    requested_horizon = str(routing_policy['query_horizon'])
+    conflicting_primary = next(
+        (
+            item
+            for item in query.all()
+            if normalize_routing_policy(item.routing_policy)['query_horizon'] == requested_horizon
+        ),
+        None,
+    )
+    if conflicting_primary is not None:
+        raise ValueError(
+            f'The selected operational scope already has an enabled primary metrics source for {requested_horizon} queries.'
+        )

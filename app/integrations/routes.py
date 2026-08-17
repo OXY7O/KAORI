@@ -22,6 +22,7 @@ from app.integrations.repository import get_cluster, get_kubernetes_connection_b
 from app.integrations.runtime.presentation import runtime_history_view
 from app.integrations.runtime.repository import paginate_runtime_history
 from app.integrations.service import (
+    PrometheusRegistryFilters,
     build_alertmanager_page,
     build_integration_runtime_detail,
     build_kubernetes_capability_registry,
@@ -39,6 +40,7 @@ from app.integrations.validation.web import (
     validate_snapshot_access,
 )
 from app.notifications.service import get_navigation_notification_context, record_operational_activity
+from app.prometheus.registration_web import new_instance_response, test_new_instance_connection_response
 from app.rbac.decorators import permission_required
 
 integrations_bp = Blueprint('integrations', __name__, url_prefix='/integrations')
@@ -456,16 +458,49 @@ def kubernetes_runtime_history(cluster_id: str) -> ResponseReturnValue:
     )
 
 
+@integrations_bp.route('/observability/metrics/prometheus/new', methods=['GET', 'POST'])
+@permission_required('settings.manage_integrations')
+def register_prometheus_metrics_source() -> ResponseReturnValue:
+    return new_instance_response(source_type_override='prometheus')
+
+
+@integrations_bp.post('/observability/metrics/prometheus/test-connection')
+@permission_required('settings.manage_integrations')
+def test_prometheus_metrics_source() -> ResponseReturnValue:
+    return test_new_instance_connection_response(source_type_override='prometheus')
+
+
+@integrations_bp.route('/observability/metrics/thanos/new', methods=['GET', 'POST'])
+@permission_required('settings.manage_integrations')
+def register_thanos_metrics_source() -> ResponseReturnValue:
+    return new_instance_response(source_type_override='thanos')
+
+
+@integrations_bp.post('/observability/metrics/thanos/test-connection')
+@permission_required('settings.manage_integrations')
+def test_thanos_metrics_source() -> ResponseReturnValue:
+    return test_new_instance_connection_response(source_type_override='thanos')
+
+
 @integrations_bp.get('/prometheus')
+@permission_required('settings.manage_integrations')
+def prometheus_legacy() -> ResponseReturnValue:
+    return redirect(url_for('integrations.prometheus', **request.args), code=308)
+
+
+@integrations_bp.get('/observability/metrics')
 @permission_required('settings.manage_integrations')
 def prometheus() -> ResponseReturnValue:
     context = build_prometheus_page(
-        query=request.args.get('q', '').strip(),
-        compatibility=request.args.get('compatibility', '').strip(),
-        readiness=request.args.get('readiness', '').strip(),
+        filters=PrometheusRegistryFilters(
+            query=request.args.get('q', '').strip(),
+            source_type=request.args.get('source_type', '').strip(),
+            compatibility=request.args.get('compatibility', '').strip(),
+            readiness=request.args.get('readiness', '').strip(),
+            page=request.args.get('page', 1, type=int) or 1,
+            per_page=request.args.get('per_page', 5, type=int) or 5,
+        ),
         tab=request.args.get('tab', 'coverage').strip(),
-        page=request.args.get('page', 1, type=int) or 1,
-        per_page=request.args.get('per_page', 5, type=int) or 5,
         coverage_query=request.args.get('coverage_q', '').strip(),
         coverage_environment=request.args.get('coverage_environment', '').strip(),
         coverage_status=request.args.get('coverage_status', '').strip(),
@@ -525,6 +560,13 @@ def _binding_response(provider_type: str, *, scope_key: str) -> ResponseReturnVa
         selector_operator = request.form.get('selector_operator', '=').strip() or '='
         role = request.form.get('binding_role', 'primary').strip().lower()
         priority = request.form.get('priority', 100, type=int) or 100
+        routing_policy = None
+        if provider_type == 'prometheus':
+            routing_weight = request.form.get('routing_weight', type=int)
+            routing_policy = {
+                'query_horizon': request.form.get('query_horizon', 'balanced').strip().lower() or 'balanced',
+                'weight': 100 if routing_weight is None else routing_weight,
+            }
         source = None
         cluster = None
         binding = None
@@ -545,6 +587,7 @@ def _binding_response(provider_type: str, *, scope_key: str) -> ResponseReturnVa
                     selector_label=selector_label,
                     selector_value=selector_value,
                     selector_operator=selector_operator,
+                    routing_policy=routing_policy,
                 ),
                 asset=cluster,
             )

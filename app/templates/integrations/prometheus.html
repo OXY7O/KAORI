@@ -1,31 +1,34 @@
 {% extends "layouts/app.html" %}
 {% import "components/integration_workspace_tabs.html" as integration_tabs %}
 {% import "integrations/components/_provider_frontpage.html" as provider_front %}
-{% block title %}Prometheus Integrations · KAORI{% endblock title %}
+{% block title %}Metrics Sources · KAORI{% endblock title %}
 {% block dashboard_content %}
     {% set posture_status = "Healthy" if stats.total > 0 and stats.ready == stats.configured else ("Attention" if stats.total > 0 else "Not Configured") %}
     {% set overview_metrics = [
-            {"label": "Registered Connections", "value": stats.total, "description": "Reusable Prometheus endpoints", "icon": "server-cog"},
-            {"label": "Validated Connections", "value": stats.ready, "description": "Ready for operational use", "icon": "badge-check"},
-            {"label": "Needs Attention", "value": stats.attention, "description": "Validation or runtime review", "icon": "triangle-alert"},
+            {"label": "Prometheus Sources", "value": stats.prometheus, "description": "Recent operational telemetry", "icon": "activity"},
+            {"label": "Thanos Sources", "value": stats.thanos, "description": "Long-retention historical queries", "icon": "database-zap"},
+            {"label": "Ready Sources", "value": stats.ready, "description": "Eligible for query routing", "icon": "badge-check"},
             {"label": "Coverage Gaps", "value": coverage_stats.uncovered, "description": "Scopes without an eligible source", "icon": "unlink"}
         ] %}
     <div class="kaori-integration-semantic space-y-6">
         {{ provider_front.hero("activity", "chart-no-axes-combined",
-                "Prometheus Integrations",
-                "Register, validate, and govern reusable Prometheus connections and consumer bindings.",
-                stats.total, stats.ready, stats.bindings, posture_status, url_for('prometheus.new_instance') ,
-        ready_total=stats.configured) }}
+                "Metrics Sources",
+                "Register Prometheus and Thanos Query as explicit metrics sources, then bind and route consumers by query horizon.",
+                stats.total, stats.ready, stats.bindings, posture_status, url_for('integrations.register_prometheus_metrics_source') ,
+        ready_total=stats.configured,
+        secondary_register_url=url_for('integrations.register_thanos_metrics_source'),
+        secondary_register_label='Register Thanos Query',
+        register_label='Register Prometheus') }}
         {{ provider_front.overview("chart-spline",
-                "Prometheus Integration Overview",
-                "Each Prometheus connection is registered once; consumer-specific metric contracts are assigned through governed bindings.",
+                "Metrics Source Overview",
+                "Prometheus and Thanos Query are distinct source types. Each connection is registered once; consumer bindings define identity, resolver role, routing horizon, and weight.",
                 overview_metrics,
-                "Prometheus-Compatible HTTP API",
-                "Endpoint identity, query APIs, metric signals, and retention evidence are validated before use.",
-                "Asset, Binding, and Runtime Aware",
-                "KAORI resolves an eligible metrics source for each bound consumer without coupling provider readiness to a specific workload.",
-                "Prometheus Remains Authoritative",
-                "Scraping, recording rules, retention, federation, and historical storage remain managed by Prometheus.") }}
+                "Prometheus-Compatible Query API",
+                "Both source types share the PromQL API contract, while source identity remains explicit for routing and operations.",
+                "Horizon-Aware Source Resolution",
+                "Recent queries prefer recent-weighted sources; historical ranges prefer historical-weighted sources, then fall back by role, priority, and readiness.",
+                "Source Platforms Remain Authoritative",
+                "Prometheus owns recent collection and local retention; Thanos owns long-retention query access and object-store backed history. KAORI only governs connection readiness and source routing.") }}
         {% call(tab_name) integration_tabs.render("prometheus", active_tab, coverage_stats.total, stats.total) %}
             {% if tab_name == "coverage" %}
                 {% include "integrations/partials/_coverage_card.html" %}

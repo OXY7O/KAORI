@@ -541,8 +541,8 @@ def main() -> int:
         errors,
     )
     require(
-        "if registered <= 0:" in domain_service
-        and "if enabled <= 0:" in domain_service
+        'if registered <= 0:' in domain_service
+        and 'if enabled <= 0:' in domain_service
         and "return 'attention'" in domain_service,
         'Integration domain posture must not label registered disabled targets as Not Configured',
         errors,

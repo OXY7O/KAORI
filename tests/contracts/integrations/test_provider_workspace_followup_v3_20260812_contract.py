@@ -12,8 +12,10 @@ def test_prometheus_empty_states_match_alertmanager_binding_style() -> None:
     scope = read('app/templates/prometheus/partials/_detail_scope.html')
 
     assert 'No Consumer Bindings' in registry
-    assert 'Create a binding to authorize this reusable Prometheus source for one managed consumer asset.' in registry
-    assert 'No consumer binding is attached to this Prometheus source yet.' not in registry
+    assert 'components/states/_empty_state.html' in registry
+    assert 'No Consumer Bindings' in registry
+    assert 'query-routing preference' in registry
+    assert "instance.source_type == 'thanos'" in registry
 
     assert 'No Source Resolution Is Available Yet' in scope
     assert 'Create a binding to evaluate metrics-source resolution and analytics eligibility.' in scope

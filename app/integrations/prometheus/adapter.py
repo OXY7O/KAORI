@@ -80,6 +80,7 @@ class PrometheusRuntimeAdapter:
                     selector_value=kwargs.get('selector_value'),
                     selector_operator=str(kwargs.get('selector_operator') or '='),
                     capability_scope=kwargs.get('capability_scope'),
+                    routing_policy=kwargs.get('routing_policy'),
                     enabled=bool(kwargs.get('enabled', True)),
                 ),
                 commit=bool(kwargs.get('commit', True)),
@@ -94,6 +95,7 @@ class PrometheusRuntimeAdapter:
                 selector_label=kwargs.get('selector_label'),
                 selector_value=kwargs.get('selector_value'),
                 selector_operator=str(kwargs.get('selector_operator') or '='),
+                routing_policy=kwargs.get('routing_policy'),
                 commit=bool(kwargs.get('commit', True)),
             )
         if operation == 'binding.validate':
@@ -123,6 +125,7 @@ class PrometheusRuntimeAdapter:
             observed_at=instance.last_checked_at or instance.last_validated_at or now,
             metadata={
                 'endpoint_product': instance.endpoint_product,
+                'metrics_source_type': instance.source_type or 'prometheus',
                 'endpoint_version': instance.detected_version,
                 'source_prometheus_major': instance.source_prometheus_major,
                 'module_readiness': instance.module_readiness or {},
@@ -131,7 +134,9 @@ class PrometheusRuntimeAdapter:
                 'consumer_validation_owner': 'integration_binding',
             },
         )
-        fallback_name = 'Prometheus metrics source'
+        fallback_name = (
+            'Thanos Query metrics source' if instance.source_type == 'thanos' else 'Prometheus metrics source'
+        )
         return RuntimeState(
             provider=self.provider,
             instance_id=str(instance.id),

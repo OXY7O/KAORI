@@ -22,6 +22,7 @@ def test_prometheus_configuration_exposes_provider_and_consumer_boundary() -> No
     prometheus = read('app/templates/prometheus/partials/_detail_configuration.html')
     assert 'provider_configuration_contract.render(' in prometheus
     assert 'Prometheus API Endpoint' in prometheus
-    assert 'Prometheus owns metrics query and history.' in prometheus
-    assert 'provider readiness separate from consumer bindings' in prometheus
+    assert 'Thanos Query API Endpoint' in prometheus
+    assert 'metrics_source_label ~ " owns its metrics and retention.' in prometheus
+    assert 'source readiness separate from consumer bindings and query routing' in prometheus
     assert 'url_for("prometheus.edit_instance"' in prometheus

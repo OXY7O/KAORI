@@ -92,7 +92,9 @@ def serialize_schedule(
         'scope_label': scope_label,
         'namespace': namespace_label,
         'scope_detail': (
-            scope_label if scope_asset_type == OBJECT_STORAGE_SYSTEM_ASSET_TYPE else f'{scope_label} · {namespace_label}'
+            scope_label
+            if scope_asset_type == OBJECT_STORAGE_SYSTEM_ASSET_TYPE
+            else f'{scope_label} · {namespace_label}'
         ),
         'period': format_period_label(schedule.period),
         'period_value': schedule.period,

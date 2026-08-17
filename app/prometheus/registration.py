@@ -13,6 +13,7 @@ from app.prometheus.forms import PrometheusInstanceForm
 _REGISTRATION_PROOF_SALT = 'prometheus-registration-proof-v1'
 REGISTRATION_PROOF_MAX_AGE_SECONDS = 600
 _FINGERPRINT_FIELDS = (
+    'source_type',
     'name',
     'description',
     'endpoint',
