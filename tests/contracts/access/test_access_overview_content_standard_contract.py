@@ -21,24 +21,31 @@ def test_access_overview_workspace_posture_matches_kaori_operational_card_gramma
     assert 'workspace.grid_classes' in template
 
 
-def test_access_overview_workspace_metrics_are_operational_and_domain_owned() -> None:
+def test_access_overview_composes_domain_owned_posture_contracts() -> None:
     presentation = read('app/access/overview/presentation.py')
     for token in (
-        "'Active Users'",
-        "'External Users'",
-        "'Super Admins'",
-        "'Identity Links'",
-        "'System Roles'",
-        "'Custom Roles'",
-        "'Assigned'",
-        "'Events · 24H'",
-        "'Attention · 24H'",
+        'build_user_access_summary',
+        'build_identity_provider_summary',
+        'build_roles_index_context',
+        'build_permission_registry_snapshot',
+        'get_notification_activity_summary',
     ):
         assert token in presentation
-    for model in ('ExternalIdentityLink', 'Notification', 'RolePermission'):
-        assert model in presentation
-    assert "Notification.status.in_(['warning', 'error'])" in presentation
-    assert "User.auth_source != 'database'" in presentation
+    for forbidden in (
+        'User.query',
+        'IdentityProvider.query',
+        'Role.query',
+        'Permission.query',
+        'Notification.query',
+        'db.session',
+    ):
+        assert forbidden not in presentation
+    assert "permission_summary['drift_count']" in presentation
+    assert "users['active_super_admins']" in presentation
+    user_summary = read('app/users/access_summary.py')
+    assert "'unassigned_active_users': unassigned_active_users" in user_summary
+    assert "summary['inactive_assigned_users']" in presentation
+    assert "activity['attention_24h']" in presentation
 
 
 def test_access_overview_balances_five_workspace_cards_without_empty_quadrant() -> None:
@@ -53,7 +60,11 @@ def test_access_overview_explains_permission_scoped_control_boundaries() -> None
     template = read('app/templates/access/overview/index.html')
     presentation = read('app/access/overview/presentation.py')
     assert "'Access Boundaries'" in template
-    assert 'Identity, authentication, authorization, and audit remain separate control responsibilities.' in template
+    assert (
+        'Identity, authentication, authorization, and audit remain separate authorities with their own '
+        'posture evidence.' in template
+    )
+    assert 'table_label.status_indicator_label(boundary.status_label, boundary.status_tone)' in template
     for boundary in (
         'Identity Lifecycle',
         'Authentication Sources',

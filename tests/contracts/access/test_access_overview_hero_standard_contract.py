@@ -19,7 +19,8 @@ def test_access_overview_hero_uses_shared_kaori_hero_contract() -> None:
     assert 'page_hero.context_info' in template
     assert 'Access Posture' in template
     assert 'Permission Scoped' in template
-    assert 'Read-only overview; changes stay in each workspace.' in template
+    assert 'access_overview.attention_workspace_count' in template
+    assert 'Read-only composition; posture comes from each authoritative Access workspace.' in template
 
 
 def test_access_overview_hero_summary_is_permission_aware() -> None:
@@ -32,6 +33,7 @@ def test_access_overview_hero_summary_is_permission_aware() -> None:
     ):
         assert permission in presentation
     assert "'attention_workspace_count': attention_workspace_count" in presentation
+    assert "'unknown_workspace_count': unknown_workspace_count" in presentation
     assert "'overall_status_label': overall_status_label" in presentation
     assert "'overall_status_tone': overall_status_tone" in presentation
     assert "'label': 'Workspaces'" in presentation

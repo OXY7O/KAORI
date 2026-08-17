@@ -347,6 +347,41 @@ def _normalize_user_filter(user_id: int | None) -> int | None:
     return user_id
 
 
+def get_notification_activity_summary() -> dict[str, int | str]:
+    """Return the 24-hour administrative activity posture without page hydration."""
+
+    cutoff_24h = datetime.now(UTC) - timedelta(hours=24)
+    actor_identity = case(
+        (
+            and_(
+                Notification.event_type == 'authentication',
+                Notification.status != 'success',
+            ),
+            None,
+        ),
+        else_=Notification.user_id,
+    )
+    events_24h, success_24h, attention_24h, actors_24h = (
+        db.session.query(
+            func.count(Notification.id),
+            func.coalesce(func.sum(case((Notification.status == 'success', 1), else_=0)), 0),
+            func.coalesce(func.sum(case((Notification.status.in_(['warning', 'error']), 1), else_=0)), 0),
+            func.count(func.distinct(actor_identity)),
+        )
+        .filter(Notification.created_at >= cutoff_24h)
+        .one()
+    )
+    attention = int(attention_24h or 0)
+    return {
+        'events_24h': int(events_24h or 0),
+        'success_24h': int(success_24h or 0),
+        'attention_24h': attention,
+        'actors_24h': int(actors_24h or 0),
+        'posture_label': 'Needs Review' if attention else 'Available',
+        'posture_tone': 'warning' if attention else 'normal',
+    }
+
+
 def get_notification_activity_context(
     *,
     user_id: int | None,
@@ -470,36 +505,7 @@ def get_notification_activity_context(
     }
 
     if include_summary:
-        cutoff_24h = datetime.now(UTC) - timedelta(hours=24)
-        actor_identity = case(
-            (
-                and_(
-                    Notification.event_type == 'authentication',
-                    Notification.status != 'success',
-                ),
-                None,
-            ),
-            else_=Notification.user_id,
-        )
-        events_24h, success_24h, attention_24h, actors_24h = (
-            db.session.query(
-                func.count(Notification.id),
-                func.coalesce(func.sum(case((Notification.status == 'success', 1), else_=0)), 0),
-                func.coalesce(func.sum(case((Notification.status.in_(['warning', 'error']), 1), else_=0)), 0),
-                func.count(func.distinct(actor_identity)),
-            )
-            .filter(Notification.created_at >= cutoff_24h)
-            .one()
-        )
-
-        context['summary'] = {
-            'events_24h': int(events_24h or 0),
-            'success_24h': int(success_24h or 0),
-            'attention_24h': int(attention_24h or 0),
-            'actors_24h': int(actors_24h or 0),
-            'posture_label': 'Needs Review' if int(attention_24h or 0) else 'Available',
-            'posture_tone': 'warning' if int(attention_24h or 0) else 'normal',
-        }
+        context['summary'] = get_notification_activity_summary()
 
     return context
 

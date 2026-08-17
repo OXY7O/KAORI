@@ -57,6 +57,14 @@ Legacy Settings role/permission URLs are retired. Settings must not contain redi
 
 Access v1 is final-locked across Access Overview, User Management, Identity Providers, Roles & Access, Permission Catalog, and Activity Audit. Runtime ownership remains distributed by domain, while the Access control-plane UI, security boundaries, canonical components, and legacy-cleanup rules are protected by `scripts/verify_access_final_lock.py`.
 
+## Access Overview review status
+
+Access Overview is a read-only composition surface. It does not query User, Identity Provider, Role, Permission, or Activity persistence directly to invent a second health model. The overview consumes domain-owned summary contracts and only aggregates permission-scoped posture.
+
+The posture contract now treats missing active break-glass authority, active users without role assignment, inactive roles with assigned users, permission-registry drift, enabled identity-provider configuration/admission-policy gaps, and recent warning/error administrative evidence as explicit review signals. Optional external authentication remains informational when no provider is configured.
+
+Control Boundaries expose the same authoritative posture as their source workspace instead of static architecture copy alone. This composition rule is protected by `scripts/verify_access_final_lock.py`.
+
 ## Roles & Access review status
 
 Roles & Access now uses the KAORI operational registry pattern: read-only posture overview, compact assignment flow, full-width filtered Role Registry, expandable role evidence, shared pagination/loading, and a sticky impact rail on role forms. The old page-local Role-Permission Mapping Matrix and `role_access_tabs.js` have been removed; cross-role permission coverage belongs to Permission Catalog.

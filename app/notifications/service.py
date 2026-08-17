@@ -26,6 +26,7 @@ from app.notifications.queries import (
 from app.notifications.queries import (
     get_notification_activity_detail as _get_notification_activity_detail,
 )
+from app.notifications.queries import get_notification_activity_summary as _get_notification_activity_summary
 from app.notifications.queries import get_notification_center_page_context as _get_notification_center_page_context
 from app.notifications.queries import mark_all_notifications_read as _mark_all_notifications_read
 from app.notifications.queries import mark_notification_read as _mark_notification_read
@@ -361,6 +362,11 @@ def get_notification_center_page_context(
         category=category,
         search=search,
     )
+
+
+def get_notification_activity_summary() -> dict[str, int | str]:
+    """Return the lightweight 24-hour administrative activity posture."""
+    return _get_notification_activity_summary()
 
 
 def get_notification_activity_context(

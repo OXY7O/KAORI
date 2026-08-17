@@ -69,6 +69,7 @@ def test_portfolio_stats_separate_validation_and_missing_configuration() -> None
         'configured': 3,
         'ready': 1,
         'validation_required': 2,
+        'readiness_review': 2,
         'not_configured': 1,
         'attention': 3,
         'blocked': 1,

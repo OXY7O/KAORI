@@ -99,6 +99,37 @@ def main() -> int:
         require(repr(permission) in overview_routes, f'Access Overview permission missing: {permission}', errors)
     require('@any_permission_required(' in overview_routes, 'Access Overview must use any_permission_required', errors)
     require('page_hero.shell_classes()' in overview_template, 'Access Overview must use shared Hero', errors)
+    overview_presentation = read('app/access/overview/presentation.py')
+    for required in (
+        'build_user_access_summary',
+        'build_identity_provider_summary',
+        'build_roles_index_context',
+        'build_permission_registry_snapshot',
+        'get_notification_activity_summary',
+    ):
+        require(
+            required in overview_presentation,
+            f'Access Overview domain summary contract missing: {required}',
+            errors,
+        )
+    for forbidden in (
+        'User.query',
+        'IdentityProvider.query',
+        'Role.query',
+        'Permission.query',
+        'Notification.query',
+        'db.session',
+    ):
+        require(
+            forbidden not in overview_presentation,
+            f'Access Overview must not redefine domain posture with direct persistence access: {forbidden}',
+            errors,
+        )
+    require(
+        'table_label.status_indicator_label(boundary.status_label, boundary.status_tone)' in overview_template,
+        'Access Overview boundaries must expose authoritative posture',
+        errors,
+    )
     for forbidden in ('hx-post=', 'type="submit"', '<form'):
         require(forbidden not in overview_template, f'Access Overview must remain read-only: {forbidden}', errors)
 
