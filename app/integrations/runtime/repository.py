@@ -14,7 +14,9 @@ def persist_runtime_state(
 ) -> IntegrationRuntimeObservation:
     row = IntegrationRuntimeObservation()
     row.integration_instance_id = integration_instance_id
-    row.provider = state.provider
+    row.integration_type = state.integration_type
+    row.provider_key = state.provider_key
+    row.adapter_key = state.adapter_key
     row.instance_id = state.instance_id
     row.instance_name = state.instance_name
     row.trigger_type = trigger_type
@@ -50,14 +52,14 @@ def persist_runtime_state(
 
 
 def list_runtime_history(
-    provider: str,
+    integration_type: str,
     instance_id: str,
     *,
     limit: int = 5,
 ) -> list[IntegrationRuntimeObservation]:
     return (
         IntegrationRuntimeObservation.query.filter_by(
-            provider=provider,
+            integration_type=integration_type,
             instance_id=str(instance_id),
         )
         .order_by(
@@ -70,7 +72,7 @@ def list_runtime_history(
 
 
 def paginate_runtime_history(
-    provider: str,
+    integration_type: str,
     instance_id: str,
     *,
     page: int = 1,
@@ -87,7 +89,7 @@ def paginate_runtime_history(
     )
 
     query = IntegrationRuntimeObservation.query.filter_by(
-        provider=provider,
+        integration_type=integration_type,
         instance_id=str(instance_id),
     )
     if trigger_filter:

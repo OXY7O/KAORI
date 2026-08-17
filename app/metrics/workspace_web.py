@@ -5,10 +5,10 @@ from flask_login import current_user
 
 from app.integrations.capability_registry import build_capability_registry_view
 from app.integrations.validation.state import build_validation_snapshot, get_active_validation_task_id
-from app.models import MetricsSource
-from app.notifications.service import get_navigation_notification_context
 from app.metrics.presentation import build_instance_context
 from app.metrics.repository import get_instance
+from app.models import MetricsSource
+from app.notifications.service import get_navigation_notification_context
 
 
 def instance_or_404(instance_id: int) -> MetricsSource:
@@ -45,8 +45,8 @@ def instance_detail_context(
         search_fields=('label', 'category', 'source_owner'),
     )
     context['delete_instance_url'] = url_for('metrics.delete_instance', instance_id=instance.id)
-    context['validation_job'] = _active_task(instance.id, 'full_validation')
-    context['runtime_refresh_job'] = _active_task(instance.id, 'runtime_refresh')
+    context['validation_job'] = _active_task(instance.integration_instance_id, 'full_validation')
+    context['runtime_refresh_job'] = _active_task(instance.integration_instance_id, 'runtime_refresh')
     context['binding_validation_job'] = _active_binding_task(instance, context.get('bindings', []))
     return context
 
@@ -65,11 +65,11 @@ def render_instance_partial(
     return render_template(template_name, **context)
 
 
-def _active_task(instance_id: int, operation: str):
+def _active_task(integration_instance_id: int, operation: str):
     task_id = get_active_validation_task_id(
-        provider_type='metrics_source',
+        integration_type='metrics_source',
         operation=operation,
-        instance_id=instance_id,
+        integration_instance_id=integration_instance_id,
     )
     return build_validation_snapshot(task_id) if task_id else None
 
@@ -77,9 +77,9 @@ def _active_task(instance_id: int, operation: str):
 def _active_binding_task(instance: MetricsSource, bindings):
     for binding in bindings:
         task_id = get_active_validation_task_id(
-            provider_type='metrics_source',
+            integration_type='metrics_source',
             operation='binding_validation',
-            instance_id=instance.id,
+            integration_instance_id=instance.integration_instance_id,
             binding_id=binding.id,
         )
         if task_id:

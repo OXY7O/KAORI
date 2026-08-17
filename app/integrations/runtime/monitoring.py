@@ -24,55 +24,57 @@ def dispatch_integration_runtime_refresh() -> dict[str, object]:
             IntegrationInstance.enabled.is_(True),
             IntegrationInstance.lifecycle_status == 'active',
         )
-        .order_by(IntegrationInstance.provider_type.asc(), IntegrationInstance.id.asc())
+        .order_by(IntegrationInstance.integration_type.asc(), IntegrationInstance.id.asc())
         .all()
     )
-    provider_ids: dict[str, list[int]] = {}
+    integration_ids: dict[str, list[int]] = {}
     for identity in identities:
         try:
-            module = get_integration(identity.provider_type)
+            module = get_integration(identity.integration_type)
         except IntegrationNotRegistered:
-            logger.exception('Could not resolve registered provider %s for runtime refresh.', identity.provider_type)
+            logger.exception('Could not resolve registered provider %s for runtime refresh.', identity.integration_type)
             continue
         if 'runtime.health' not in module.operations:
             continue
-        record = module.get_record_for_canonical(identity.id)
-        record_id = getattr(record, 'id', None)
-        if record_id is None:
+        if module.get_record_for_canonical(identity.id) is None:
             logger.warning(
-                'Canonical integration %s:%s has no provider record; skipping runtime refresh.',
-                identity.provider_type,
+                'Canonical integration %s:%s has no provider implementation record; skipping runtime refresh.',
+                identity.integration_type,
                 identity.id,
             )
             continue
-        provider_ids.setdefault(identity.provider_type, []).append(int(record_id))
+        integration_ids.setdefault(identity.integration_type, []).append(int(identity.id))
 
-    result: dict[str, Any] = {'queued': 0, 'skipped': 0, 'providers': {}}
-    for provider_type, instance_ids in provider_ids.items():
-        provider_result: dict[str, Any] = {'queued': 0, 'skipped': 0, 'tasks': []}
-        for instance_id in instance_ids:
+    result: dict[str, Any] = {'queued': 0, 'skipped': 0, 'integration_types': {}}
+    for integration_type, integration_instance_ids in integration_ids.items():
+        type_result: dict[str, Any] = {'queued': 0, 'skipped': 0, 'tasks': []}
+        for integration_instance_id in integration_instance_ids:
             try:
                 task_id = enqueue_runtime_refresh(
-                    provider_type=provider_type,
-                    instance_id=int(instance_id),
+                    integration_type=integration_type,
+                    integration_instance_id=integration_instance_id,
                 )
             except (CeleryError, KombuOperationalError, OSError, RuntimeError, SQLAlchemyError, ValueError) as exc:
                 logger.exception(
                     'Could not enqueue runtime refresh for %s instance %s.',
-                    provider_type,
-                    instance_id,
+                    integration_type,
+                    integration_instance_id,
                 )
-                provider_result['skipped'] += 1
+                type_result['skipped'] += 1
                 result['skipped'] += 1
-                provider_result['tasks'].append({'instance_id': instance_id, 'error': str(exc)[:300]})
+                type_result['tasks'].append(
+                    {'integration_instance_id': integration_instance_id, 'error': str(exc)[:300]}
+                )
                 continue
             if task_id is None:
-                provider_result['skipped'] += 1
+                type_result['skipped'] += 1
                 result['skipped'] += 1
-                provider_result['tasks'].append({'instance_id': instance_id, 'status': 'already_active'})
+                type_result['tasks'].append(
+                    {'integration_instance_id': integration_instance_id, 'status': 'already_active'}
+                )
                 continue
-            provider_result['queued'] += 1
+            type_result['queued'] += 1
             result['queued'] += 1
-            provider_result['tasks'].append({'instance_id': instance_id, 'task_id': task_id})
-        result['providers'][provider_type] = provider_result
+            type_result['tasks'].append({'integration_instance_id': integration_instance_id, 'task_id': task_id})
+        result['integration_types'][integration_type] = type_result
     return result

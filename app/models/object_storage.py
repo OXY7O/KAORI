@@ -2,15 +2,11 @@ from __future__ import annotations
 
 import uuid
 from datetime import UTC, datetime
-from typing import TYPE_CHECKING
 
 from sqlalchemy import BigInteger, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.extensions.db import db
-
-if TYPE_CHECKING:
-    from app.models.minio import MinioInstance
 
 
 class ObjectStorageSystem(db.Model):
@@ -35,13 +31,6 @@ class ObjectStorageSystem(db.Model):
         onupdate=lambda: datetime.now(UTC),
     )
 
-    minio_connection: Mapped[MinioInstance | None] = relationship(
-        'MinioInstance',
-        back_populates='object_storage_system',
-        cascade='all, delete-orphan',
-        passive_deletes=True,
-        uselist=False,
-    )
     buckets: Mapped[list[ObjectStorageBucket]] = relationship(
         'ObjectStorageBucket',
         back_populates='object_storage_system',

@@ -44,7 +44,7 @@ def test_runtime_observation_lookup_is_latest_per_target_in_database() -> None:
 
     assert 'func.row_number()' in lookup
     assert '.over(' in lookup
-    assert 'IntegrationRuntimeObservation.provider' in lookup
+    assert 'IntegrationRuntimeObservation.integration_type' in lookup
     assert 'IntegrationRuntimeObservation.instance_id' in lookup
     assert '.where(ranked.c.row_number == 1)' in lookup
     assert 'IntegrationRuntimeObservation.query.order_by(' not in lookup

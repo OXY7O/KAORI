@@ -2,20 +2,26 @@
 {% import "integrations/components/_record_detail_modal.html" as record_detail_modal %}
 {% import "integrations/components/_workspace.html" as integration_ui %}
 {% from "integrations/components/_semantic_status.html" import integration_status %}
-{% if detail.provider == 'kubernetes' %}
+{% if detail.integration_type == 'container_orchestrator' %}
     {% set workspace_url = url_for('integrations.kubernetes_detail', cluster_id=detail.cluster_id) %}
     {% set workspace_label = "Open Kubernetes Integration" %}
-{% elif detail.provider == 'metrics_source' %}
+{% elif detail.integration_type == 'metrics_source' %}
     {% set workspace_url = url_for('metrics.instance_detail', instance_id=detail.instance_id) %}
     {% set workspace_label = "Open Metrics Source" %}
-{% else %}
+{% elif detail.integration_type == 'alert_source' %}
     {% set workspace_url = url_for('alertmanager.instance_detail', instance_id=detail.instance_id) %}
-    {% set workspace_label = "Open Alertmanager Integration" %}
+    {% set workspace_label = "Open Alert Source" %}
+{% elif detail.integration_type == 'object_storage' %}
+    {% set workspace_url = url_for('minio.instance_detail', instance_id=detail.instance_id) %}
+    {% set workspace_label = "Open Object Storage" %}
+{% else %}
+    {% set workspace_url = url_for('integrations.overview', tab='catalog') %}
+    {% set workspace_label = "Open Integrations" %}
 {% endif %}
-{% set modal_id = 'integration-runtime-detail-' ~ detail.provider ~ '-' ~ detail.instance_id %}
+{% set modal_id = 'integration-runtime-detail-' ~ detail.integration_type ~ '-' ~ detail.instance_id %}
 {% call record_detail_modal.render(
     modal_id,
-    detail.provider ~ ':' ~ detail.instance_id,
+    detail.integration_type ~ ':' ~ detail.instance_id,
     'Integration Runtime Evidence',
     detail.instance_name,
     detail.provider_label ~ ' · ' ~ detail.endpoint_product ~ ' · ' ~ detail.scope_label,

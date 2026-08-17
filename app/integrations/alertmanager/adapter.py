@@ -20,7 +20,7 @@ from app.models.alertmanager import AlertmanagerInstance
 
 
 class AlertmanagerRuntimeAdapter:
-    provider = 'alertmanager'
+    integration_type = 'alert_source'
 
     def refresh(self, instance: AlertmanagerInstance) -> ValidationResult:
         return validate_source(instance, source_label=instance.name)
@@ -101,7 +101,9 @@ class AlertmanagerRuntimeAdapter:
             instance.last_checked_at if instance.last_status in {'error', 'disconnected', 'incompatible'} else None
         )
         return RuntimeState(
-            provider=self.provider,
+            integration_type=self.integration_type,
+            provider_key=instance.provider_key,
+            adapter_key=instance.adapter_key,
             instance_id=str(instance.id),
             instance_name=instance.name,
             observed_at=instance.last_checked_at or instance.last_validated_at or now,

@@ -32,8 +32,8 @@ from app.integrations.metrics.capabilities import definition as capability_defin
 from app.integrations.metrics.scope import KUBERNETES_CLUSTER_SCOPE
 from app.jobs.dispatcher import dispatch_registered_job
 from app.jobs.service import JobQuotaExceeded
-from app.models import Cluster
 from app.metrics.resolver import resolve_metrics_sources
+from app.models import Cluster
 
 _UNUSABLE_OPERATIONAL_STATES = {
     'unhealthy',

@@ -5,7 +5,7 @@ from typing import Any
 
 from app.extensions.db import db
 from app.integrations.registry import get_integration
-from app.integrations.repository import get_provider_record
+from app.integrations.repository import get_integration_record
 
 
 @dataclass(frozen=True, slots=True)
@@ -30,9 +30,9 @@ class CreatedSourceBinding:
 
 
 def create_source_binding(
-    provider_type: str,
+    integration_type: str,
     *,
-    source_id: int,
+    integration_instance_id: int,
     spec: SourceBindingSpec,
     asset: Any | None = None,
 ) -> CreatedSourceBinding:
@@ -43,7 +43,7 @@ def create_source_binding(
     asset_key so new consumers such as object storage do not need a second binding
     table or a provider-to-provider foreign key.
     """
-    provider = str(provider_type or '').strip().lower()
+    type_key = str(integration_type or '').strip().lower()
     normalized_asset_type = str(spec.asset_type or '').strip()
     normalized_asset_key = str(spec.asset_key or '').strip()
     if not normalized_asset_type:
@@ -51,12 +51,12 @@ def create_source_binding(
     if not normalized_asset_key:
         raise ValueError('Select or enter an operational asset before saving the binding.')
 
-    source = get_provider_record(provider, source_id)
+    source = get_integration_record(type_key, integration_instance_id)
     if source is None:
-        module = get_integration(provider)
+        module = get_integration(type_key)
         raise ValueError(f'The selected {module.label} source no longer exists.')
 
-    module = get_integration(provider)
+    module = get_integration(type_key)
     if 'binding.create' not in module.operations:
         raise ValueError(f'{module.label} does not support source bindings.')
 

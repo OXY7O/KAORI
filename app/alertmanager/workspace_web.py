@@ -24,8 +24,8 @@ def instance_context(instance, *, binding_page: int = 1, binding_per_page: int =
         search_fields=('label', 'category', 'description'),
         distinguish_optional_gap=True,
     )
-    context['validation_job'] = _active_task(instance.id, 'full_validation')
-    context['runtime_refresh_job'] = _active_task(instance.id, 'runtime_refresh')
+    context['validation_job'] = _active_task(instance.integration_instance_id, 'full_validation')
+    context['runtime_refresh_job'] = _active_task(instance.integration_instance_id, 'runtime_refresh')
     context['binding_validation_job'] = _active_binding_task(instance, context.get('bindings', []))
     return context
 
@@ -40,11 +40,11 @@ def render_instance_partial(
     return render_template(template_name, **context)
 
 
-def _active_task(instance_id: int, operation: str):
+def _active_task(integration_instance_id: int, operation: str):
     task_id = get_active_validation_task_id(
-        provider_type='alertmanager',
+        integration_type='alert_source',
         operation=operation,
-        instance_id=instance_id,
+        integration_instance_id=integration_instance_id,
     )
     return build_validation_snapshot(task_id) if task_id else None
 
@@ -52,9 +52,9 @@ def _active_task(instance_id: int, operation: str):
 def _active_binding_task(instance, bindings):
     for binding in bindings:
         task_id = get_active_validation_task_id(
-            provider_type='alertmanager',
+            integration_type='alert_source',
             operation='binding_validation',
-            instance_id=instance.id,
+            integration_instance_id=instance.integration_instance_id,
             binding_id=binding.id,
         )
         if task_id:

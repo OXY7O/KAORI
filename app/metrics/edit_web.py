@@ -10,11 +10,11 @@ from sqlalchemy.exc import SQLAlchemyError
 from app.common.http import is_htmx_request
 from app.integrations.metrics.exceptions import MetricsSourceError
 from app.integrations.metrics.providers import provider_definition
-from app.notifications.service import get_navigation_notification_context, record_operational_activity
 from app.metrics.forms import MetricsSourceForm
 from app.metrics.presentation import build_instance_context
 from app.metrics.repository import get_instance
 from app.metrics.service import save_metrics_source
+from app.notifications.service import get_navigation_notification_context, record_operational_activity
 
 logger = logging.getLogger(__name__)
 

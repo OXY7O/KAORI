@@ -7,7 +7,7 @@ from typing import Any
 
 from app.integrations.metrics.capabilities import definition as capability_definition
 from app.integrations.metrics.exceptions import MetricsSourceError
-from app.integrations.metrics.query_profiles import PROFILE_KEY, list_queries
+from app.integrations.metrics.query_profiles import PROFILE_KEY, list_kubernetes_queries
 from app.integrations.metrics.query_profiles.feature_contracts import evaluate_feature_contracts
 
 _CAPACITY_LABEL_REQUIREMENTS = {
@@ -65,7 +65,7 @@ class PromQLProfileAuditor:
         self.client = client
 
     def audit(self, *, execute_queries: bool = True) -> dict[str, Any]:
-        definitions = list_queries()
+        definitions = list_kubernetes_queries()
         available_metrics = self._available_metric_names()
         namespaces = self.client.label_values('namespace').get('data') or []
         sample_namespace = namespaces[0] if namespaces else 'default'

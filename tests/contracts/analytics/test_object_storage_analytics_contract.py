@@ -138,7 +138,8 @@ def test_object_storage_metrics_readiness_is_validation_owned_and_provider_quali
     assert 'validation_strategy: custom' in binding_profile_catalog
     assert "register_binding_validator(PROMETHEUS_HTTP_ADAPTER, 'object_storage_system'" in validator_registry
     assert 'ObjectStorageMetricsProfileAuditor' in object_storage_validator
-    assert 'return system.minio_connection is not None' in object_storage_validator
+    assert 'owner = object_storage_owner(system.id)' in object_storage_validator
+    assert "owner.provider_key == 'minio'" in object_storage_validator
     assert "'metrics_readiness': audit" in object_storage_validator
     assert '_VALIDATION_ADAPTERS' in object_storage_validator
     assert "asset_profile='minio-v2'" in object_storage_validator

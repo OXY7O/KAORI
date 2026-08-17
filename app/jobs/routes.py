@@ -584,9 +584,11 @@ def cancel_execution(public_id: str) -> ResponseReturnValue:
                     )
                     release_validation_job(
                         task_id=job.celery_task_id,
-                        provider_type=str(job.provider_type or payload.get('provider_type') or ''),
+                        integration_type=str(job.integration_type or payload.get('integration_type') or ''),
                         operation=job.operation,
-                        instance_id=int(job.provider_instance_id or payload.get('instance_id') or 0),
+                        integration_instance_id=int(
+                            job.integration_instance_id or payload.get('integration_instance_id') or 0
+                        ),
                         binding_id=payload.get('binding_id'),
                     )
                 except Exception:

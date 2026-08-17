@@ -79,18 +79,18 @@ def acquire_resource_admission_locks(*resource_groups: str | None) -> None:
 def find_active_job(
     *,
     deduplication_key: str | None = None,
-    provider_type: str | None = None,
-    provider_instance_id: int | None = None,
+    integration_type: str | None = None,
+    integration_instance_id: int | None = None,
     operation: str | None = None,
     scope_key: str | None = None,
 ) -> JobExecution | None:
     query = _active_query()
     if deduplication_key:
         query = query.filter(JobExecution.active_deduplication_key == deduplication_key)
-    if provider_type:
-        query = query.filter(JobExecution.provider_type == provider_type)
-    if provider_instance_id is not None:
-        query = query.filter(JobExecution.provider_instance_id == provider_instance_id)
+    if integration_type:
+        query = query.filter(JobExecution.integration_type == integration_type)
+    if integration_instance_id is not None:
+        query = query.filter(JobExecution.integration_instance_id == integration_instance_id)
     if operation:
         query = query.filter(JobExecution.operation == operation)
     if scope_key:
@@ -164,8 +164,8 @@ def create_or_attach_job(
     queue_name: str,
     workload_class: str,
     requested_by_user_id: int | None,
-    provider_type: str | None = None,
-    provider_instance_id: int | None = None,
+    integration_type: str | None = None,
+    integration_instance_id: int | None = None,
     scope_type: str | None = None,
     scope_key: str | None = None,
     resource_group: str | None = None,
@@ -181,8 +181,8 @@ def create_or_attach_job(
     key = deduplication_key or build_deduplication_key(
         job_type,
         operation,
-        provider_type,
-        provider_instance_id,
+        integration_type,
+        integration_instance_id,
         scope_type,
         scope_key,
         fingerprint=fingerprint,
@@ -210,8 +210,8 @@ def create_or_attach_job(
     job.priority = priority if priority is not None else DEFAULT_PRIORITIES.get(workload_class, 5)
     job.status = 'queued'
     job.requested_by_user_id = requested_by_user_id
-    job.provider_type = provider_type
-    job.provider_instance_id = provider_instance_id
+    job.integration_type = integration_type
+    job.integration_instance_id = integration_instance_id
     job.scope_type = scope_type
     job.scope_key = scope_key
     job.resource_group = resource_group
@@ -530,8 +530,8 @@ def job_snapshot(job: JobExecution) -> dict[str, Any]:
         'queue_name': job.queue_name,
         'priority': job.priority,
         'status': job.status,
-        'provider_type': job.provider_type,
-        'instance_id': job.provider_instance_id,
+        'integration_type': job.integration_type,
+        'integration_instance_id': job.integration_instance_id,
         'scope_type': job.scope_type,
         'scope_key': job.scope_key,
         'resource_group': job.resource_group,

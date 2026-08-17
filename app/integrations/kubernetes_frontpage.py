@@ -122,11 +122,11 @@ def _build_registry_row(
             'metrics_source', scope_type='kubernetes_cluster', scope_key=cluster.id
         )
         alertmanager, alertmanager_binding = bound_source_for_scope(
-            'alertmanager', scope_type='kubernetes_cluster', scope_key=cluster.id
+            'alert_source', scope_type='kubernetes_cluster', scope_key=cluster.id
         )
     else:
         metrics_source, metrics_binding = bound_sources.get(('metrics_source', str(cluster.id)), (None, None))
-        alertmanager, alertmanager_binding = bound_sources.get(('alertmanager', str(cluster.id)), (None, None))
+        alertmanager, alertmanager_binding = bound_sources.get(('alert_source', str(cluster.id)), (None, None))
 
     metrics_operational = _provider_posture(metrics_source, metrics_binding)
     alerts_operational = _provider_posture(alertmanager, alertmanager_binding)
@@ -198,7 +198,7 @@ def _load_rows() -> list[dict[str, Any]]:
         .all()
     )
     bound_sources = bound_sources_for_scopes(
-        ('metrics_source', 'alertmanager'),
+        ('metrics_source', 'alert_source'),
         scope_type='kubernetes_cluster',
         scope_keys=[str(connection.cluster_id) for connection in connections],
     )

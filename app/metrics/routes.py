@@ -26,11 +26,8 @@ from app.integrations.validation.web import (
     snapshot_feedback_for_user,
     validate_snapshot_access,
 )
-from app.models.integration import IntegrationBinding
-from app.notifications.service import get_navigation_notification_context, record_operational_activity
 from app.metrics.edit_web import edit_instance_response
 from app.metrics.forms import MetricsSourceForm
-from app.metrics.registration_web import new_instance_response, test_new_instance_connection_response
 from app.metrics.service import (
     MetricsService,
     create_metrics_binding,
@@ -47,6 +44,8 @@ from app.metrics.workspace_web import (
 from app.metrics.workspace_web import (
     render_instance_partial as _render_instance_partial,
 )
+from app.models.integration import IntegrationBinding
+from app.notifications.service import get_navigation_notification_context, record_operational_activity
 from app.rbac.decorators import permission_required
 
 logger = logging.getLogger(__name__)
@@ -397,16 +396,14 @@ def validate_instance_binding(instance_id: int, binding_id: int) -> ResponseRetu
     is_htmx = is_htmx_request()
     try:
         validation_job, created = enqueue_binding_validation(
-            provider_type='metrics_source',
-            instance_id=instance.id,
+            integration_type='metrics_source',
+            integration_instance_id=instance.integration_instance_id,
             binding_id=binding.id,
             requested_by_user_id=int(current_user.id),
         )
         feedback = record_operational_activity(
             user_id=int(current_user.id),
-            event_type='metrics_binding_validation_queued'
-            if created
-            else 'metrics_binding_validation_already_running',
+            event_type='metrics_binding_validation_queued' if created else 'metrics_binding_validation_already_running',
             status='info' if created else 'warning',
             title='Metrics Source binding validation queued'
             if created
@@ -468,8 +465,8 @@ def binding_validation_status(instance_id: int, binding_id: int, task_id: str) -
     snapshot = build_validation_snapshot(task_id)
     if not validate_snapshot_access(
         snapshot,
-        provider_type='metrics_source',
-        instance_id=instance.id,
+        integration_type='metrics_source',
+        integration_instance_id=instance.integration_instance_id,
         binding_id=binding.id,
     ):
         abort(404)
@@ -641,7 +638,7 @@ def instance_test(instance_id: int) -> ResponseReturnValue:
     is_htmx = is_htmx_request()
     try:
         result = MetricsService(instance).test_connection()
-        ensure_canonical_instance(instance, provider_type='metrics_source')
+        ensure_canonical_instance(instance, integration_type='metrics_source')
         db.session.commit()
         feedback = record_operational_activity(
             user_id=current_user.id,
@@ -719,13 +716,15 @@ def instance_validate(instance_id: int) -> ResponseReturnValue:
     is_htmx = is_htmx_request()
     try:
         validation_job, created = enqueue_instance_validation(
-            provider_type='metrics_source',
-            instance_id=instance.id,
+            integration_type='metrics_source',
+            integration_instance_id=instance.integration_instance_id,
             requested_by_user_id=int(current_user.id),
         )
         feedback = record_operational_activity(
             user_id=int(current_user.id),
-            event_type='metrics_source_full_validation_queued' if created else 'metrics_source_full_validation_already_running',
+            event_type='metrics_source_full_validation_queued'
+            if created
+            else 'metrics_source_full_validation_already_running',
             status='info' if created else 'warning',
             title='Metrics Source validation queued' if created else 'Metrics Source validation already running',
             message=(
@@ -782,8 +781,8 @@ def instance_validation_status(instance_id: int, task_id: str) -> ResponseReturn
     snapshot = build_validation_snapshot(task_id)
     if not validate_snapshot_access(
         snapshot,
-        provider_type='metrics_source',
-        instance_id=instance.id,
+        integration_type='metrics_source',
+        integration_instance_id=instance.integration_instance_id,
     ):
         abort(404)
     return _render_instance_partial(
@@ -801,15 +800,19 @@ def refresh_runtime(instance_id: int) -> ResponseReturnValue:
     is_htmx = is_htmx_request()
     try:
         runtime_refresh_job, created = enqueue_runtime_health_refresh(
-            provider_type='metrics_source',
-            instance_id=instance.id,
+            integration_type='metrics_source',
+            integration_instance_id=instance.integration_instance_id,
             requested_by_user_id=int(current_user.id),
         )
         feedback = record_operational_activity(
             user_id=int(current_user.id),
-            event_type='metrics_source_runtime_refresh_queued' if created else 'metrics_source_runtime_refresh_already_running',
+            event_type='metrics_source_runtime_refresh_queued'
+            if created
+            else 'metrics_source_runtime_refresh_already_running',
             status='info' if created else 'warning',
-            title='Metrics Source runtime refresh queued' if created else 'Metrics Source runtime refresh already running',
+            title='Metrics Source runtime refresh queued'
+            if created
+            else 'Metrics Source runtime refresh already running',
             message=(
                 f'KAORI queued a lightweight runtime refresh for {instance.name}.'
                 if created
@@ -863,8 +866,8 @@ def runtime_refresh_status(instance_id: int, task_id: str) -> ResponseReturnValu
     snapshot = build_validation_snapshot(task_id)
     if not validate_snapshot_access(
         snapshot,
-        provider_type='metrics_source',
-        instance_id=instance.id,
+        integration_type='metrics_source',
+        integration_instance_id=instance.integration_instance_id,
     ):
         abort(404)
     return _render_instance_partial(
@@ -894,6 +897,4 @@ def instance_runtime_history(instance_id: int) -> ResponseReturnValue:
         readiness=history_readiness,
     )
     runtime_history = runtime_history_view(rows, pagination=pagination)
-    return render_template(
-        'metrics/partials/_runtime_history.html', instance=instance, runtime_history=runtime_history
-    )
+    return render_template('metrics/partials/_runtime_history.html', instance=instance, runtime_history=runtime_history)

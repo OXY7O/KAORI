@@ -13,7 +13,9 @@ from app.security.credentials import EncryptedText
 
 def _alertmanager_identity(name: str) -> IntegrationInstance:
     identity = IntegrationInstance()
-    identity.provider_type = 'alertmanager'
+    identity.integration_type = 'alert_source'
+    identity.provider_key = 'alertmanager'
+    identity.adapter_key = 'alertmanager_api_v2'
     identity.name = name
     identity.enabled = True
     identity.readiness_status = 'validation_required'
@@ -57,17 +59,15 @@ class AlertmanagerInstance(db.Model):
         onupdate=lambda: datetime.now(UTC),
     )
 
-    integration_instance: Mapped[IntegrationInstance] = relationship(
-        'IntegrationInstance',
-        back_populates='alertmanager_record',
-        lazy='joined',
-    )
+    integration_instance: Mapped[IntegrationInstance] = relationship('IntegrationInstance', lazy='joined')
 
     name: AssociationProxy[str] = association_proxy(
         'integration_instance',
         'name',
         creator=_alertmanager_identity,
     )
+    provider_key: AssociationProxy[str] = association_proxy('integration_instance', 'provider_key')
+    adapter_key: AssociationProxy[str] = association_proxy('integration_instance', 'adapter_key')
     description: AssociationProxy[str | None] = association_proxy(
         'integration_instance',
         'description',

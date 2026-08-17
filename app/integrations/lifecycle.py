@@ -5,6 +5,7 @@ from typing import Any
 
 from app.common.presentation import present_key_label
 from app.extensions.db import db
+from app.integrations.provider_matrix import provider_kind
 from app.models.integration import IntegrationBinding, IntegrationInstance
 
 
@@ -23,7 +24,7 @@ class BindingPersistenceSpec:
     validation_message: str | None = None
 
 
-def ensure_provider_operational(provider_record: Any, *, provider_type: str) -> IntegrationInstance:
+def ensure_provider_operational(provider_record: Any, *, integration_type: str) -> IntegrationInstance:
     """Return the active canonical identity or fail before provider I/O.
 
     Workers and synchronous operations must reload their provider record and call
@@ -32,21 +33,23 @@ def ensure_provider_operational(provider_record: Any, *, provider_type: str) -> 
     """
     provider_enabled = getattr(provider_record, 'enabled', None)
     if provider_enabled is not None and not bool(provider_enabled):
-        raise RuntimeError(f'{present_key_label(provider_type)} operation was canceled because the provider instance is disabled.')
+        raise RuntimeError(
+            f'{present_key_label(integration_type)} operation was canceled because the provider instance is disabled.'
+        )
     canonical = getattr(provider_record, 'integration_instance', None)
     if canonical is None:
         raise RuntimeError(
-            f'{present_key_label(provider_type)} operation was canceled because canonical integration identity is missing.'
+            f'{present_key_label(integration_type)} operation was canceled because canonical integration identity is missing.'
         )
     lifecycle_status = str(getattr(canonical, 'lifecycle_status', '') or '').strip().lower()
     if not bool(getattr(canonical, 'enabled', False)) or lifecycle_status != 'active':
         raise RuntimeError(
-            f'{present_key_label(provider_type)} operation was canceled because the integration is no longer active.'
+            f'{present_key_label(integration_type)} operation was canceled because the integration is no longer active.'
         )
     return canonical
 
 
-def ensure_canonical_instance(provider_record: Any, *, provider_type: str) -> IntegrationInstance:
+def ensure_canonical_instance(provider_record: Any, *, integration_type: str) -> IntegrationInstance:
     """Return the canonical identity owned by a provider-specific record.
 
     Shared identity and runtime fields live only on IntegrationInstance. Provider
@@ -59,15 +62,17 @@ def ensure_canonical_instance(provider_record: Any, *, provider_type: str) -> In
         if not name:
             raise ValueError('Provider identity requires a name before persistence.')
         canonical = IntegrationInstance()
-        canonical.provider_type = provider_type
+        canonical.integration_type = integration_type
         canonical.name = name
         canonical.enabled = True
         canonical.readiness_status = 'validation_required'
         provider_record.integration_instance = canonical
         db.session.add(canonical)
 
-    if canonical.provider_type != provider_type:
-        raise ValueError(f'Provider identity mismatch: expected {provider_type}, found {canonical.provider_type}.')
+    if canonical.integration_type != integration_type:
+        raise ValueError(
+            f'Integration identity mismatch: expected {integration_type}, found {canonical.integration_type}.'
+        )
 
     metadata = dict(canonical.metadata_json or {})
     metadata.update(
@@ -76,14 +81,21 @@ def ensure_canonical_instance(provider_record: Any, *, provider_type: str) -> In
             'endpoint_product': getattr(provider_record, 'endpoint_product', None),
         }
     )
-    if provider_type == 'metrics_source':
-        metadata.update(
-            {
-                'metrics_provider_key': getattr(provider_record, 'provider_key', None),
-                'metrics_adapter_key': getattr(provider_record, 'adapter_key', None),
-                'metrics_query_language': getattr(provider_record, 'query_language', None),
-            }
-        )
+    provider_key = str(getattr(provider_record, 'provider_key', None) or canonical.provider_key or '').strip().lower()
+    adapter_key = str(getattr(provider_record, 'adapter_key', None) or canonical.adapter_key or '').strip().lower()
+    if provider_key and adapter_key:
+        definition = provider_kind(integration_type, provider_key)
+        if definition.adapter_key != adapter_key:
+            raise ValueError(
+                f'Provider adapter mismatch for {integration_type}/{provider_key}: '
+                f'expected {definition.adapter_key}, found {adapter_key}.'
+            )
+        if not definition.available:
+            raise ValueError(f'Provider {definition.label} is planned and cannot be activated yet.')
+        canonical.provider_key = provider_key
+        canonical.adapter_key = adapter_key
+    if integration_type == 'metrics_source':
+        metadata['metrics_query_language'] = getattr(provider_record, 'query_language', None)
     canonical.metadata_json = metadata
     return canonical
 

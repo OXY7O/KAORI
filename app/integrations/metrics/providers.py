@@ -66,16 +66,36 @@ def _load_provider_definitions() -> dict[str, MetricsProviderDefinition]:
         if support_raw is not None:
             support_item = require_mapping(support_raw, f'metrics_source.provider_kinds[{index}].support_presentation')
             support = MetricsProviderSupportPresentation(
-                minimum_version=require_str(support_item, 'minimum_version', f'metrics_source.provider_kinds[{index}].support_presentation'),
-                minimum_label=require_str(support_item, 'minimum_label', f'metrics_source.provider_kinds[{index}].support_presentation'),
-                recommended_version=require_str(support_item, 'recommended_version', f'metrics_source.provider_kinds[{index}].support_presentation'),
-                recommended_label=require_str(support_item, 'recommended_label', f'metrics_source.provider_kinds[{index}].support_presentation'),
-                support_band=require_str(support_item, 'support_band', f'metrics_source.provider_kinds[{index}].support_presentation'),
-                current_band=require_str(support_item, 'current_band', f'metrics_source.provider_kinds[{index}].support_presentation'),
-                support_label=require_str(support_item, 'support_label', f'metrics_source.provider_kinds[{index}].support_presentation'),
-                support_tone=require_str(support_item, 'support_tone', f'metrics_source.provider_kinds[{index}].support_presentation'),
-                capability_summary=require_str(support_item, 'capability_summary', f'metrics_source.provider_kinds[{index}].support_presentation'),
-                validation_basis=require_str(support_item, 'validation_basis', f'metrics_source.provider_kinds[{index}].support_presentation'),
+                minimum_version=require_str(
+                    support_item, 'minimum_version', f'metrics_source.provider_kinds[{index}].support_presentation'
+                ),
+                minimum_label=require_str(
+                    support_item, 'minimum_label', f'metrics_source.provider_kinds[{index}].support_presentation'
+                ),
+                recommended_version=require_str(
+                    support_item, 'recommended_version', f'metrics_source.provider_kinds[{index}].support_presentation'
+                ),
+                recommended_label=require_str(
+                    support_item, 'recommended_label', f'metrics_source.provider_kinds[{index}].support_presentation'
+                ),
+                support_band=require_str(
+                    support_item, 'support_band', f'metrics_source.provider_kinds[{index}].support_presentation'
+                ),
+                current_band=require_str(
+                    support_item, 'current_band', f'metrics_source.provider_kinds[{index}].support_presentation'
+                ),
+                support_label=require_str(
+                    support_item, 'support_label', f'metrics_source.provider_kinds[{index}].support_presentation'
+                ),
+                support_tone=require_str(
+                    support_item, 'support_tone', f'metrics_source.provider_kinds[{index}].support_presentation'
+                ),
+                capability_summary=require_str(
+                    support_item, 'capability_summary', f'metrics_source.provider_kinds[{index}].support_presentation'
+                ),
+                validation_basis=require_str(
+                    support_item, 'validation_basis', f'metrics_source.provider_kinds[{index}].support_presentation'
+                ),
             )
         definition = MetricsProviderDefinition(
             key=require_str(item, 'key', f'metrics_source.provider_kinds[{index}]').lower(),

@@ -29,7 +29,7 @@ from app.models.kubernetes import KubernetesConnection
 def build_integrations_overview(
     *,
     tab: str = 'catalog',
-    provider: str = '',
+    integration_type: str = '',
     health: str = '',
     readiness: str = '',
     page: int = 1,
@@ -110,15 +110,15 @@ def build_integrations_overview(
     runtime_rows.extend(build_extension_runtime_rows(latest))
     sort_runtime_rows(runtime_rows)
     filtered_runtime_rows = runtime_rows
-    if provider:
-        filtered_runtime_rows = [row for row in filtered_runtime_rows if row['provider'] == provider]
+    if integration_type:
+        filtered_runtime_rows = [row for row in filtered_runtime_rows if row['integration_type'] == integration_type]
     if health:
         filtered_runtime_rows = [row for row in filtered_runtime_rows if row['health_status'] == health]
     if readiness:
         filtered_runtime_rows = [row for row in filtered_runtime_rows if row['readiness'] == readiness]
 
     page_rows, runtime_pagination = _paginate(filtered_runtime_rows, page=page, per_page=per_page)
-    runtime_scope_label = _runtime_scope_label(provider=provider, health=health, readiness=readiness)
+    runtime_scope_label = _runtime_scope_label(integration_type=integration_type, health=health, readiness=readiness)
     context.update(
         {
             'runtime_rows': page_rows,
@@ -127,11 +127,11 @@ def build_integrations_overview(
             'runtime_scope_label': runtime_scope_label,
             'runtime_pagination': runtime_pagination,
             'runtime_has_targets': bool(runtime_rows),
-            'selected_provider': provider,
+            'selected_integration_type': integration_type,
             'selected_health': health,
             'selected_readiness': readiness,
-            'provider_options': [
-                {'value': module.provider_type, 'label': module.runtime_label or module.label} for module in modules
+            'integration_type_options': [
+                {'value': module.integration_type, 'label': module.runtime_label or module.label} for module in modules
             ],
             'health_options': [
                 {'value': 'healthy', 'label': 'Healthy'},

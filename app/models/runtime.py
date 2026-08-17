@@ -14,7 +14,9 @@ class IntegrationRuntimeObservation(db.Model):
     integration_instance_id: Mapped[int | None] = mapped_column(
         ForeignKey('integration_instances.id', ondelete='SET NULL'), nullable=True
     )
-    provider: Mapped[str] = mapped_column(String(80), nullable=False)
+    integration_type: Mapped[str] = mapped_column(String(80), nullable=False)
+    provider_key: Mapped[str] = mapped_column(String(80), nullable=False)
+    adapter_key: Mapped[str] = mapped_column(String(80), nullable=False)
     instance_id: Mapped[str] = mapped_column(String(120), nullable=False)
     instance_name: Mapped[str] = mapped_column(String(180), nullable=False)
     trigger_type: Mapped[str] = mapped_column(String(30), nullable=False, default='manual')
@@ -33,6 +35,6 @@ class IntegrationRuntimeObservation(db.Model):
     )
     __table_args__ = (
         Index('ix_integration_runtime_canonical_instance', 'integration_instance_id', 'observed_at'),
-        Index('ix_integration_runtime_provider_instance', 'provider', 'instance_id', 'observed_at'),
-        Index('ix_integration_runtime_health', 'provider', 'health_status', 'observed_at'),
+        Index('ix_integration_runtime_type_instance', 'integration_type', 'instance_id', 'observed_at'),
+        Index('ix_integration_runtime_health', 'integration_type', 'health_status', 'observed_at'),
     )

@@ -13,7 +13,7 @@ def test_job_identity_uses_canonical_provider_and_scope_labels() -> None:
     assert "'kubernetes': 'Kubernetes'" in presentation
     assert "if raw.lower() == 'all':" in presentation
     assert "return 'All'" in presentation
-    assert "'provider_label': _provider_label(job.provider_type)" in presentation
+    assert "'provider_label': _provider_label(job.integration_type)" in presentation
     assert 'scope = _scope_label(raw_scope)' in presentation
 
 

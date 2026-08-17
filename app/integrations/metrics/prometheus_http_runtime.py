@@ -13,10 +13,10 @@ from app.integrations.compatibility import (
     get_profile,
     get_profile_by_key,
 )
+from app.integrations.metrics.exceptions import MetricsSourceError
 from app.integrations.metrics.prometheus_http_client import PrometheusHttpQueryClient
 from app.integrations.metrics.prometheus_http_validation import PROFILE_KEY as CORE_PROFILE_KEY
 from app.integrations.metrics.prometheus_http_validation import validate_metrics_core
-from app.integrations.metrics.exceptions import MetricsSourceError
 from app.integrations.metrics.providers import provider_definition
 from app.integrations.metrics.query_profiles.audit import PromQLProfileAuditor
 from app.models.metrics_source import MetricsSource
@@ -155,9 +155,7 @@ class PrometheusHttpRuntimeService:
             )
             core_audit = validate_metrics_core(validation_client)
             core_status = str(core_audit.get('status') or 'blocked')
-            readiness = (
-                'blocked' if core_status != 'ready' else resolution.endpoint_compatibility.readiness
-            )
+            readiness = 'blocked' if core_status != 'ready' else resolution.endpoint_compatibility.readiness
 
         config.readiness_status = readiness
         config.query_validation_status = core_status

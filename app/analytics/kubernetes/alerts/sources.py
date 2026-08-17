@@ -17,15 +17,15 @@ from app.analytics.kubernetes.alerts.source_messages import (
     friendly_combined_alert_error,
 )
 from app.integrations.metrics.exceptions import MetricsSourceError
-from app.integrations.metrics.query_profiles import get_query_expression
-from app.models import Cluster
+from app.integrations.metrics.query_profiles import get_kubernetes_query_expression
 from app.metrics.repository import resolve_instance_for_cluster
 from app.metrics.service import MetricsService
+from app.models import Cluster
 
 logger = logging.getLogger(__name__)
 
 
-METRICS_SOURCE_ALERTS_QUERY = get_query_expression('analytics.alerts.queries.METRICS_SOURCE_ALERTS_QUERY')
+ACTIVE_ALERT_STATE_QUERY = get_kubernetes_query_expression('analytics.alerts.queries.ACTIVE_ALERTS_EXPRESSION')
 
 
 def build_empty_source_status(
@@ -147,14 +147,16 @@ def load_metrics_source_alerts(
     configured = resolve_instance_for_cluster(cluster.id) is not None
     try:
         service = MetricsService(cluster)
-        result = service.instant_query(METRICS_SOURCE_ALERTS_QUERY)
+        result = service.instant_query(ACTIVE_ALERT_STATE_QUERY)
         elapsed_ms = max(int((perf_counter() - started_at) * 1000), 0)
 
         raw_items = result.get('data', {}).get('result', [])
         if not isinstance(raw_items, list):
             raw_items = []
 
-        alerts = deduplicate_alerts(normalize_metrics_source_alert(item) for item in raw_items if isinstance(item, dict))
+        alerts = deduplicate_alerts(
+            normalize_metrics_source_alert(item) for item in raw_items if isinstance(item, dict)
+        )
 
         return alerts, {
             'source': 'metrics_source',

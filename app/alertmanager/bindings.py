@@ -17,7 +17,7 @@ def create_or_update_binding(
     form: AlertmanagerBindingForm,
     commit: bool = True,
 ) -> IntegrationBinding:
-    return get_integration('alertmanager').execute(
+    return get_integration('alert_source').execute(
         'binding.create',
         instance,
         scope_type=form.scope_type,

@@ -30,8 +30,8 @@ def test_storage_asset_owner_projection_uses_metrics_provider_registry() -> None
     coverage_template = read('app/templates/minio/partials/_coverage_content.html')
 
     assert 'def _source_presentation(' in projection
-    assert "canonical.provider_type != 'metrics_source'" in projection
-    assert "(canonical.metadata_json or {}).get('metrics_provider_key')" in projection
+    assert "canonical.integration_type != 'metrics_source'" in projection
+    assert 'canonical.provider_key' in projection
     assert 'definition = provider_definition(provider_key)' in projection
     assert 'return definition.label, definition.icon' in projection
     assert 'def _metrics_source_label(source: object | None) -> str:' in coverage

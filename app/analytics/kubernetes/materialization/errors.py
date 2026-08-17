@@ -5,10 +5,10 @@ from dataclasses import dataclass
 from billiard.exceptions import SoftTimeLimitExceeded
 
 from app.integrations.metrics.exceptions import (
+    MetricsQueryError,
     MetricsSourceAuthenticationError,
     MetricsSourceConnectionError,
     MetricsSourceError,
-    MetricsQueryError,
 )
 
 

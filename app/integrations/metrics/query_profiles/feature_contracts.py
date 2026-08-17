@@ -5,7 +5,7 @@ from math import isfinite
 from typing import Any
 
 from app.integrations.metrics.exceptions import MetricsSourceError
-from app.integrations.metrics.query_profiles import get_query
+from app.integrations.metrics.query_profiles import get_kubernetes_query
 
 
 @dataclass(frozen=True, slots=True)
@@ -208,7 +208,7 @@ def _evaluate(client: Any, contract: FeatureContract, *, sample_namespace: str) 
     query_texts: list[str] = []
 
     for query_key in contract.query_keys:
-        definition = get_query(query_key)
+        definition = get_kubernetes_query(query_key)
         registered_expression = definition.expression.replace('$namespace', _escape_label_value(sample_namespace))
         expression = _validation_expression(contract, registered_expression)
         query_texts.append(expression)

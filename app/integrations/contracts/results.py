@@ -46,7 +46,9 @@ class CapabilitySnapshot:
 
 @dataclass(frozen=True, slots=True)
 class RuntimeState:
-    provider: str
+    integration_type: str
+    provider_key: str
+    adapter_key: str
     instance_id: str
     instance_name: str
     observed_at: datetime
@@ -68,7 +70,7 @@ class IntegrationOperationResult:
     shared status/message fields for orchestration and user feedback.
     """
 
-    provider: str
+    integration_type: str
     operation: str
     status: str
     message: str

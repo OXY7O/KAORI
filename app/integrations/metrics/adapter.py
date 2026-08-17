@@ -6,15 +6,13 @@ from typing import Any
 from app.integrations.binding_service import SourceBindingSpec
 from app.integrations.contracts import CapabilitySnapshot, DiagnosticResult, HealthFactor, RuntimeState
 from app.integrations.metrics.backend_registry import (
-    MetricsBackendAdapter,
-    MetricsQuerySession,
     metrics_backend_for,
     register_metrics_backend,
 )
 from app.integrations.metrics.binding_management import create_binding, update_binding_selector
 from app.integrations.metrics.prometheus_http_client import PrometheusHttpQueryClient
-from app.integrations.metrics.providers import provider_definition
 from app.integrations.metrics.prometheus_http_runtime import PrometheusHttpRuntimeService
+from app.integrations.metrics.providers import provider_definition
 from app.integrations.runtime.scoring import calculate_health
 from app.models.metrics_source import MetricsSource
 
@@ -101,7 +99,7 @@ register_metrics_backend(PrometheusHttpBackendAdapter())
 
 
 class MetricsRuntimeAdapter:
-    provider = 'metrics_source'
+    integration_type = 'metrics_source'
 
     def execute(self, operation: str, instance: MetricsSource, **kwargs: Any) -> Any:
         if operation in {
@@ -194,7 +192,9 @@ class MetricsRuntimeAdapter:
             },
         )
         return RuntimeState(
-            provider=self.provider,
+            integration_type=self.integration_type,
+            provider_key=instance.provider_key,
+            adapter_key=instance.adapter_key,
             instance_id=str(instance.id),
             instance_name=getattr(instance, 'name', None) or f'{definition.label} metrics source',
             observed_at=instance.last_checked_at or instance.last_validated_at or now,
@@ -204,12 +204,12 @@ class MetricsRuntimeAdapter:
             snapshot=snapshot,
             last_success_at=instance.last_checked_at if instance.last_status == 'connected' else None,
             last_failure_at=(
-                instance.last_checked_at
-                if instance.last_status in {'error', 'disconnected', 'incompatible'}
-                else None
+                instance.last_checked_at if instance.last_status in {'error', 'disconnected', 'incompatible'} else None
             ),
             latency_ms=instance.last_response_time_ms,
-            message=instance.validation_message or instance.last_error or 'Run full validation to observe this metrics source.',
+            message=instance.validation_message
+            or instance.last_error
+            or 'Run full validation to observe this metrics source.',
         )
 
     @staticmethod
@@ -220,7 +220,9 @@ class MetricsRuntimeAdapter:
                 key='endpoint',
                 label='Metrics endpoint',
                 category='connectivity',
-                status='success' if instance.last_status == 'connected' else ('failed' if instance.last_status else 'unknown'),
+                status='success'
+                if instance.last_status == 'connected'
+                else ('failed' if instance.last_status else 'unknown'),
                 detail=(
                     f'{instance.endpoint_product or provider.label} {instance.detected_version or "version not observed"}'
                     if instance.last_status == 'connected'
@@ -272,7 +274,9 @@ class MetricsRuntimeAdapter:
             HealthFactor(
                 'readiness',
                 'Provider readiness',
-                'success' if instance.readiness_status == 'ready' else ('failed' if instance.readiness_status == 'blocked' else 'warning'),
+                'success'
+                if instance.readiness_status == 'ready'
+                else ('failed' if instance.readiness_status == 'blocked' else 'warning'),
                 25,
                 100 if instance.readiness_status == 'ready' else (0 if instance.readiness_status == 'blocked' else 65),
                 instance.validation_message or '',
@@ -296,9 +300,13 @@ class MetricsRuntimeAdapter:
             HealthFactor(
                 'latency',
                 'Latency',
-                'warning' if (instance.last_response_time_ms or 0) > 1500 else ('success' if instance.last_response_time_ms is not None else 'unknown'),
+                'warning'
+                if (instance.last_response_time_ms or 0) > 1500
+                else ('success' if instance.last_response_time_ms is not None else 'unknown'),
                 10,
-                60 if (instance.last_response_time_ms or 0) > 1500 else (100 if instance.last_response_time_ms is not None else 50),
+                60
+                if (instance.last_response_time_ms or 0) > 1500
+                else (100 if instance.last_response_time_ms is not None else 50),
             ),
         )
 

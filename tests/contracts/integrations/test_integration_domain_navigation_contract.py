@@ -73,8 +73,11 @@ def test_domain_landing_routes_share_one_taxonomy_page_builder() -> None:
     assert 'BindingRegistryFilters' in routes
     assert 'get_domain_definition(domain_key)' in domain_service
     assert 'for module in registry.all() if module.domain_key == domain.key' in domain_service
-    assert 'IntegrationInstance.query.filter(IntegrationInstance.provider_type.in_(provider_types))' in domain_service
-    assert 'IntegrationInstance.provider_type.in_(provider_types)' in domain_service
+    assert (
+        'IntegrationInstance.query.filter(IntegrationInstance.integration_type.in_(integration_types))'
+        in domain_service
+    )
+    assert 'IntegrationInstance.integration_type.in_(integration_types)' in domain_service
     assert 'asset_types_for_domain(domain_key)' in domain_service
     assert 'IntegrationBinding.asset_type.in_(owned_asset_types)' in domain_service
     assert 'domain_key_for_asset_type(binding.asset_type)' in domain_service
@@ -140,7 +143,7 @@ def test_domain_binding_registry_is_cross_domain_and_asset_centric() -> None:
     assert 'integration_taxonomy_document()' in taxonomy
     assert '- kubernetes_cluster' in taxonomy_catalog
     assert '- object_storage_system' in taxonomy_catalog
-    assert 'IntegrationInstance.provider_type.in_(provider_types)' in domain_service
+    assert 'IntegrationInstance.integration_type.in_(integration_types)' in domain_service
     assert 'IntegrationBinding.asset_type.in_(owned_asset_types)' in domain_service
     assert 'or_(*clauses)' in domain_service
     assert 'Native Provider Contract' not in domain_service

@@ -97,9 +97,9 @@ def main() -> int:
     for marker in (
         'get_domain_definition(domain_key)',
         'for module in registry.all() if module.domain_key == domain.key',
-        'IntegrationInstance.query.filter(IntegrationInstance.provider_type.in_(provider_types))',
+        'IntegrationInstance.query.filter(IntegrationInstance.integration_type.in_(provider_types))',
         'IntegrationBinding.query.options(selectinload(IntegrationBinding.instance))',
-        'IntegrationInstance.provider_type.in_(provider_types)',
+        'IntegrationInstance.integration_type.in_(provider_types)',
         'asset_types_for_domain(domain_key)',
         'IntegrationBinding.asset_type.in_(owned_asset_types)',
         'domain_key_for_asset_type(binding.asset_type)',

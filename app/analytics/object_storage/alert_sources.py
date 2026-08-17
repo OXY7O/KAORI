@@ -13,9 +13,9 @@ from app.integrations.metrics.exceptions import (
 )
 from app.integrations.metrics.providers import provider_definition
 from app.integrations.metrics.query_profiles.alerts_v1 import ACTIVE_ALERTS_EXPRESSION
+from app.metrics.consumer import MetricsConsumer
 from app.models.integration import IntegrationBinding, IntegrationInstance
 from app.models.object_storage import ObjectStorageSystem
-from app.metrics.consumer import MetricsConsumer
 
 ALERT_SOURCE_OPTIONS = ('auto', 'alertmanager', 'metrics_source')
 _OBJECT_STORAGE_SCOPE = 'object_storage_system'
@@ -312,7 +312,7 @@ def _load_metrics_source(system: ObjectStorageSystem, *, selected_source: str) -
             instance_name=None,
         )
 
-    provider = provider_definition(consumer.config.provider_key)
+    provider = provider_definition(consumer.config.provider_key_key)
     rows = _deduplicate(_metrics_source_rows(payload, source_label=provider.label))
     return _source_view(
         selected_source=selected_source,
@@ -354,14 +354,14 @@ def _source_view(
     }
 
 
-def _provider_bound(system_id: str, provider_type: str) -> bool:
+def _provider_bound(system_id: str, integration_type: str) -> bool:
     return (
         IntegrationBinding.query.join(IntegrationInstance)
         .filter(
             IntegrationBinding.asset_type == _OBJECT_STORAGE_SCOPE,
             IntegrationBinding.asset_key == str(system_id),
             IntegrationBinding.enabled.is_(True),
-            IntegrationInstance.provider_type == provider_type,
+            IntegrationInstance.integration_type == integration_type,
             IntegrationInstance.enabled.is_(True),
         )
         .first()

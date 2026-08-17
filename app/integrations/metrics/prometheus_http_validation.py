@@ -5,8 +5,8 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from app.integrations.metrics.capabilities import PROVIDER_CAPABILITY_KEYS, definition
-from app.integrations.metrics.prometheus_http_client import PrometheusHttpQueryClient
 from app.integrations.metrics.exceptions import MetricsSourceError
+from app.integrations.metrics.prometheus_http_client import PrometheusHttpQueryClient
 
 PROFILE_KEY = 'prometheus-http-core-v1'
 PROFILE_VERSION = 1

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from app.integrations.metrics.query_profiles.registry import QueryReference, query_reference, register_query_profile
 from app.integrations.metrics.query_profiles.types import QueryDefinition
 
 PROFILE_KEY = 'object-storage-minio-v2'
@@ -149,8 +150,11 @@ def get_object_storage_query(key: str) -> QueryDefinition:
         raise LookupError(f'Object-storage metrics query key is not registered: {key}') from exc
 
 
-def get_object_storage_query_expression(key: str) -> str:
-    return get_object_storage_query(key).expression
+register_query_profile(adapter_key='prometheus_http', profile_key=PROFILE_KEY, queries=QUERIES)
+
+
+def get_object_storage_query_expression(key: str) -> QueryReference:
+    return query_reference(profile_key=PROFILE_KEY, query=get_object_storage_query(key))
 
 
 def list_object_storage_queries(*, domain: str | None = None) -> tuple[QueryDefinition, ...]:

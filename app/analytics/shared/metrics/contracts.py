@@ -28,7 +28,8 @@ class MetricReadinessState(StrEnum):
 
 @dataclass(frozen=True, slots=True)
 class MetricsSourceIdentity:
-    provider: str
+    integration_type: str
+    provider_key: str
     provider_label: str
     instance_name: str
     detail: str
@@ -69,11 +70,11 @@ class MetricsSourceError(RuntimeError):
         message: str,
         *,
         kind: MetricsSourceFailureKind,
-        provider: str | None = None,
+        provider_key: str | None = None,
     ) -> None:
         super().__init__(message)
         self.kind = kind
-        self.provider = provider
+        self.provider_key = provider_key
 
     @property
     def source_wide(self) -> bool:

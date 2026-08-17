@@ -4,7 +4,7 @@ from collections import defaultdict
 from datetime import UTC, datetime
 from typing import Any
 
-from app.integrations.metrics.exceptions import MetricsSourceError, MetricsQueryError
+from app.integrations.metrics.exceptions import MetricsQueryError, MetricsSourceError
 from app.integrations.metrics.query_profiles.object_storage_v1 import (
     PROFILE_KEY,
     PROFILE_LABEL,

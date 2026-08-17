@@ -5,7 +5,7 @@ from math import isfinite
 from typing import Any
 
 from app.integrations.metrics.exceptions import MetricsSourceError
-from app.integrations.metrics.query_profiles import get_query_expression
+from app.integrations.metrics.query_profiles import get_kubernetes_query_expression
 from app.metrics.consumer import MetricsConsumer
 
 CAPACITY_REQUIRED_CAPABILITIES = (
@@ -16,25 +16,43 @@ CAPACITY_REQUIRED_CAPABILITIES = (
     'resource_requests_limits',
 )
 
-CURRENT_WORKER_PODS_QUERY = get_query_expression('analytics.capacity.queries.CURRENT_WORKER_PODS_QUERY')
-READY_WORKER_NODE_COUNT_QUERY = get_query_expression('analytics.capacity.queries.READY_WORKER_NODE_COUNT_QUERY')
-WORKER_NODE_COUNT_QUERY = get_query_expression('analytics.capacity.queries.WORKER_NODE_COUNT_QUERY')
-WORKER_CPU_ALLOCATABLE_QUERY = get_query_expression('analytics.capacity.queries.WORKER_CPU_ALLOCATABLE_QUERY')
-WORKER_CPU_LIMITS_TOTAL_QUERY = get_query_expression('analytics.capacity.queries.WORKER_CPU_LIMITS_TOTAL_QUERY')
-WORKER_CPU_PEAK_QUERY_TEMPLATE = get_query_expression('analytics.capacity.queries.WORKER_CPU_PEAK_QUERY_TEMPLATE')
-WORKER_CPU_REQUESTS_TOTAL_QUERY = get_query_expression('analytics.capacity.queries.WORKER_CPU_REQUESTS_TOTAL_QUERY')
-WORKER_CPU_USAGE_QUERY = get_query_expression('analytics.capacity.queries.WORKER_CPU_USAGE_QUERY')
-WORKER_MEMORY_ALLOCATABLE_QUERY = get_query_expression('analytics.capacity.queries.WORKER_MEMORY_ALLOCATABLE_QUERY')
-WORKER_MEMORY_LIMITS_TOTAL_QUERY = get_query_expression('analytics.capacity.queries.WORKER_MEMORY_LIMITS_TOTAL_QUERY')
-WORKER_MEMORY_PEAK_QUERY_TEMPLATE = get_query_expression('analytics.capacity.queries.WORKER_MEMORY_PEAK_QUERY_TEMPLATE')
-WORKER_MEMORY_REQUESTS_TOTAL_QUERY = get_query_expression(
+CURRENT_WORKER_PODS_QUERY = get_kubernetes_query_expression('analytics.capacity.queries.CURRENT_WORKER_PODS_QUERY')
+READY_WORKER_NODE_COUNT_QUERY = get_kubernetes_query_expression(
+    'analytics.capacity.queries.READY_WORKER_NODE_COUNT_QUERY'
+)
+WORKER_NODE_COUNT_QUERY = get_kubernetes_query_expression('analytics.capacity.queries.WORKER_NODE_COUNT_QUERY')
+WORKER_CPU_ALLOCATABLE_QUERY = get_kubernetes_query_expression(
+    'analytics.capacity.queries.WORKER_CPU_ALLOCATABLE_QUERY'
+)
+WORKER_CPU_LIMITS_TOTAL_QUERY = get_kubernetes_query_expression(
+    'analytics.capacity.queries.WORKER_CPU_LIMITS_TOTAL_QUERY'
+)
+WORKER_CPU_PEAK_QUERY_TEMPLATE = get_kubernetes_query_expression(
+    'analytics.capacity.queries.WORKER_CPU_PEAK_QUERY_TEMPLATE'
+)
+WORKER_CPU_REQUESTS_TOTAL_QUERY = get_kubernetes_query_expression(
+    'analytics.capacity.queries.WORKER_CPU_REQUESTS_TOTAL_QUERY'
+)
+WORKER_CPU_USAGE_QUERY = get_kubernetes_query_expression('analytics.capacity.queries.WORKER_CPU_USAGE_QUERY')
+WORKER_MEMORY_ALLOCATABLE_QUERY = get_kubernetes_query_expression(
+    'analytics.capacity.queries.WORKER_MEMORY_ALLOCATABLE_QUERY'
+)
+WORKER_MEMORY_LIMITS_TOTAL_QUERY = get_kubernetes_query_expression(
+    'analytics.capacity.queries.WORKER_MEMORY_LIMITS_TOTAL_QUERY'
+)
+WORKER_MEMORY_PEAK_QUERY_TEMPLATE = get_kubernetes_query_expression(
+    'analytics.capacity.queries.WORKER_MEMORY_PEAK_QUERY_TEMPLATE'
+)
+WORKER_MEMORY_REQUESTS_TOTAL_QUERY = get_kubernetes_query_expression(
     'analytics.capacity.queries.WORKER_MEMORY_REQUESTS_TOTAL_QUERY'
 )
-WORKER_MEMORY_USAGE_QUERY = get_query_expression('analytics.capacity.queries.WORKER_MEMORY_USAGE_QUERY')
-WORKER_POD_ALLOCATABLE_QUERY = get_query_expression('analytics.capacity.queries.WORKER_POD_ALLOCATABLE_QUERY')
-NODE_FILESYSTEM_CAPACITY_QUERY = get_query_expression('analytics.utilization.queries.STORAGE_CAPACITY')
-NODE_FILESYSTEM_AVAILABLE_QUERY = get_query_expression('analytics.utilization.queries.STORAGE_AVAILABLE')
-NODE_FILESYSTEM_USAGE_QUERY = get_query_expression('analytics.utilization.queries.STORAGE_USAGE')
+WORKER_MEMORY_USAGE_QUERY = get_kubernetes_query_expression('analytics.capacity.queries.WORKER_MEMORY_USAGE_QUERY')
+WORKER_POD_ALLOCATABLE_QUERY = get_kubernetes_query_expression(
+    'analytics.capacity.queries.WORKER_POD_ALLOCATABLE_QUERY'
+)
+NODE_FILESYSTEM_CAPACITY_QUERY = get_kubernetes_query_expression('analytics.utilization.queries.STORAGE_CAPACITY')
+NODE_FILESYSTEM_AVAILABLE_QUERY = get_kubernetes_query_expression('analytics.utilization.queries.STORAGE_AVAILABLE')
+NODE_FILESYSTEM_USAGE_QUERY = get_kubernetes_query_expression('analytics.utilization.queries.STORAGE_USAGE')
 
 CAPACITY_TIME_RANGE_STEP_MAP = {
     '1h': '5m',

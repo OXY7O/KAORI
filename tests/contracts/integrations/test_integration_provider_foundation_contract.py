@@ -27,9 +27,9 @@ def test_registry_owns_domain_capability_and_provider_extension_metadata() -> No
     for domain in ('key: orchestration', 'key: observability', 'key: storage'):
         assert domain in taxonomy_catalog
     for capability in (
-        'key: cluster_orchestration',
-        'key: metrics',
-        'key: alerting',
+        'key: container_orchestrator',
+        'key: metrics_source',
+        'key: alert_source',
         'key: object_storage',
         'key: file_storage',
         'key: block_storage',
@@ -41,15 +41,15 @@ def test_builtin_provider_registration_uses_canonical_taxonomy() -> None:
     registrations = {
         'app/integrations/kubernetes/__init__.py': (
             "domain_key='orchestration'",
-            "capability_key='cluster_orchestration'",
+            "capability_key='container_orchestrator'",
         ),
         'app/integrations/metrics/__init__.py': (
             "domain_key='observability'",
-            "capability_key='metrics'",
+            "capability_key='metrics_source'",
         ),
         'app/integrations/alertmanager/__init__.py': (
             "domain_key='observability'",
-            "capability_key='alerting'",
+            "capability_key='alert_source'",
         ),
         'app/integrations/minio/__init__.py': (
             "domain_key='storage'",
@@ -90,24 +90,24 @@ def test_provider_record_resolution_no_longer_branches_on_provider_names() -> No
     resolver = read('app/integrations/resolver.py')
     provider_record = resolver.split('def provider_record', 1)[1]
 
-    assert 'get_integration(instance.provider_type)' in provider_record
+    assert 'get_integration(instance.integration_type)' in provider_record
     assert 'get_record_for_canonical(instance.id)' in provider_record
-    assert "provider_type == '" not in provider_record
-    assert "instance.provider_type == 'alertmanager'" not in provider_record
-    assert "instance.provider_type == 'kubernetes'" not in provider_record
-    assert "instance.provider_type == 'minio'" not in provider_record
+    assert "instance.integration_type == '" not in provider_record
+    assert "instance.integration_type == 'alert_source'" not in provider_record
+    assert "instance.integration_type == 'container_orchestrator'" not in provider_record
+    assert "instance.integration_type == 'object_storage'" not in provider_record
 
 
 def test_validation_worker_dispatches_full_validation_through_registry() -> None:
     tasks = read('app/integrations/validation/tasks.py')
     full_validation = tasks.split('def validate_integration_instance', 1)[1].split('def _as_result_payload', 1)[0]
 
-    assert 'module = get_integration(provider_type)' in full_validation
-    assert 'instance = module.get_instance(instance_id)' in full_validation
+    assert 'module = get_integration(integration_type)' in full_validation
+    assert 'instance = module.require_record_for_canonical(integration_instance_id)' in full_validation
     assert 'runtime_refresh.refresh_and_record(' in full_validation
     assert "if 'binding.validate' in module.operations" in full_validation
     assert '_refresh_provider_bindings(' in full_validation
-    assert "provider_type == '" not in full_validation
+    assert "instance.integration_type == '" not in full_validation
     assert "provider_type == 'alertmanager'" not in full_validation
     assert "provider_type == 'kubernetes'" not in full_validation
     assert "provider_type == 'minio'" not in full_validation

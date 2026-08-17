@@ -21,11 +21,11 @@ def register_blueprints(app: Flask) -> None:
     from app.inventory.object_storage.routes import object_storage_inventory_bp
     from app.jobs.routes import bp as jobs_bp
     from app.kubernetes_operations.routes import kubernetes_operations_bp
+    from app.metrics.routes import metrics_bp
     from app.minio.routes import minio_bp
     from app.notification_channels.routes import notification_channels_bp
     from app.notifications.routes import notifications_bp
     from app.platform_operations import bp as platform_operations_bp
-    from app.metrics.routes import metrics_bp
     from app.reports.routes import reports_bp
     from app.settings import bp as settings_bp
     from app.users.routes import bp as users_bp

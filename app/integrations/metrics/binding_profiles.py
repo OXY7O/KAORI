@@ -79,7 +79,9 @@ def _load_profiles() -> tuple[BindingValidationProfile, ...]:
         for probe_index, raw_probe in enumerate(
             require_list(item.get('probes'), f'metrics_source.binding_profiles[{profile_index}].probes')
         ):
-            probe = require_mapping(raw_probe, f'metrics_source.binding_profiles[{profile_index}].probes[{probe_index}]')
+            probe = require_mapping(
+                raw_probe, f'metrics_source.binding_profiles[{profile_index}].probes[{probe_index}]'
+            )
             probes.append(
                 BindingProbe(
                     expression=require_str(
@@ -93,7 +95,9 @@ def _load_profiles() -> tuple[BindingValidationProfile, ...]:
                     ),
                 )
             )
-        validation_strategy = require_str(item, 'validation_strategy', f'metrics_source.binding_profiles[{profile_index}]')
+        validation_strategy = require_str(
+            item, 'validation_strategy', f'metrics_source.binding_profiles[{profile_index}]'
+        )
         if validation_strategy not in {'probe', 'custom'}:
             raise ValueError(f'Unsupported metrics-source binding validation strategy: {validation_strategy!r}.')
         profiles.append(
@@ -103,8 +107,12 @@ def _load_profiles() -> tuple[BindingValidationProfile, ...]:
                 profile_key=require_str(item, 'profile_key', f'metrics_source.binding_profiles[{profile_index}]'),
                 label=require_str(item, 'label', f'metrics_source.binding_profiles[{profile_index}]'),
                 probes=tuple(probes),
-                no_match_message=require_str(item, 'no_match_message', f'metrics_source.binding_profiles[{profile_index}]'),
-                consumer_family=require_str(item, 'consumer_family', f'metrics_source.binding_profiles[{profile_index}]'),
+                no_match_message=require_str(
+                    item, 'no_match_message', f'metrics_source.binding_profiles[{profile_index}]'
+                ),
+                consumer_family=require_str(
+                    item, 'consumer_family', f'metrics_source.binding_profiles[{profile_index}]'
+                ),
                 validation_strategy=validation_strategy,  # type: ignore[arg-type]
             )
         )

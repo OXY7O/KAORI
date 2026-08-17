@@ -11,8 +11,8 @@ from app.analytics.kubernetes.alerts.contracts import (
     AlertSourceStatus,
     NormalizedAlert,
 )
-from app.models import Cluster
 from app.metrics.repository import resolve_instance_for_cluster
+from app.models import Cluster
 
 
 def is_alert_evidence_complete(
@@ -320,9 +320,7 @@ def build_source_health(
         score = 20
         level = 'unavailable'
         label = 'Alert Sources Not Configured'
-        description = (
-            'Configure Alertmanager as the primary source and Metrics Source as fallback before relying on alert analysis.'
-        )
+        description = 'Configure Alertmanager as the primary source and Metrics Source as fallback before relying on alert analysis.'
         icon = 'plug-zap'
 
     checks: list[AlertSourceHealthCheck] = [

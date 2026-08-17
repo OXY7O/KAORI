@@ -94,7 +94,7 @@ def test_kubernetes_runtime_health_requires_persisted_observation() -> None:
     runtime = read('app/templates/integrations/kubernetes/partials/_runtime_workspace.html')
 
     assert 'IntegrationRuntimeObservation.query.filter_by(' in service
-    assert "provider='kubernetes'" in service
+    assert "integration_type='container_orchestrator'" in service
     assert 'runtime_observation_state_view(' in service
     assert 'def runtime_observation_state_view(' in presentation
     assert "'health_status': 'not_observed'" in presentation
@@ -398,7 +398,7 @@ def test_kubernetes_registry_bulk_loads_provider_bindings() -> None:
     assert 'contains_eager(IntegrationBinding.instance)' in coverage
     assert 'source_maps = {' in coverage
     assert 'bound_sources_for_scopes(' in frontpage_service
-    assert "('metrics_source', 'alertmanager')" in frontpage_service
+    assert "('metrics_source', 'alert_source')" in frontpage_service
     assert 'contains_eager(KubernetesConnection.cluster)' in frontpage_service
     assert '_build_registry_row(connection, bound_sources=bound_sources)' in frontpage_service
 

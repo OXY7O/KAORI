@@ -4,8 +4,8 @@ from typing import Any
 
 from app.analytics.kubernetes.utilization.service import UtilizationService
 from app.cluster.constants import get_environment_label
-from app.models.report import Report
 from app.metrics.service import MetricsService
+from app.models.report import Report
 from app.reports.export.payloads.common import get_report_selected_cluster, report_payload_error
 
 

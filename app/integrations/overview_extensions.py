@@ -9,7 +9,7 @@ from app.models.kubernetes import KubernetesConnection
 from app.models.metrics_source import MetricsSource
 from app.models.runtime import IntegrationRuntimeObservation
 
-CORE_OVERVIEW_PROVIDERS = frozenset({'kubernetes', 'metrics_source', 'alertmanager'})
+CORE_OVERVIEW_PROVIDERS = frozenset({'container_orchestrator', 'metrics_source', 'alert_source', 'object_storage'})
 
 
 def build_overview_stats(
@@ -65,14 +65,14 @@ def build_overview_stats(
 
 
 def load_extension_integration_instances() -> list[IntegrationInstance]:
-    provider_types = tuple(
-        module.provider_type for module in registry.all() if module.provider_type not in CORE_OVERVIEW_PROVIDERS
+    integration_types = tuple(
+        module.integration_type for module in registry.all() if module.integration_type not in CORE_OVERVIEW_PROVIDERS
     )
-    if not provider_types:
+    if not integration_types:
         return []
     return (
-        IntegrationInstance.query.filter(IntegrationInstance.provider_type.in_(provider_types))
-        .order_by(IntegrationInstance.provider_type.asc(), IntegrationInstance.name.asc())
+        IntegrationInstance.query.filter(IntegrationInstance.integration_type.in_(integration_types))
+        .order_by(IntegrationInstance.integration_type.asc(), IntegrationInstance.name.asc())
         .all()
     )
 
@@ -82,8 +82,7 @@ def build_extension_runtime_rows(
 ) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     for module in registry.all():
-        if module.runtime_overview_builder is not None:
-            rows.extend(module.runtime_overview_builder(latest, None))
+        rows.extend(module.build_runtime_overview_rows(latest))
     return rows
 
 

@@ -102,7 +102,7 @@ def test_minio_asset_owner_deletion_removes_asset_bindings_not_shared_sources() 
     assert 'asset_owner_deletion_guard(' in service
     assert 'IntegrationBinding.asset_type == OBJECT_STORAGE_SYSTEM_SCOPE' in service
     assert 'db.session.delete(asset)' in service
-    assert "provider_type='minio'" in service
+    assert "integration_type='object_storage'" in service
     assert 'Bound observability source connections remain reusable' in service
     assert "@minio_bp.post('/instances/<int:instance_id>/delete')" in routes
     assert 'def asset_owner_deletion_guard(' in deletion

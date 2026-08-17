@@ -46,11 +46,7 @@ _IDENTITY_IGNORED_LABELS = {'__replica__', 'alertstate'}
 
 def _identity_label_is_ignored(value: object) -> bool:
     label = str(value or '').strip().lower()
-    return (
-        label in _IDENTITY_IGNORED_LABELS
-        or label.endswith('_replica')
-        or label.endswith('_replica_name')
-    )
+    return label in _IDENTITY_IGNORED_LABELS or label.endswith('_replica') or label.endswith('_replica_name')
 
 
 def normalize_severity(value: Any) -> str:
@@ -173,13 +169,7 @@ def normalize_metrics_source_alert(item: dict[str, Any]) -> NormalizedAlert:
 def _canonical_labels(labels: Any) -> tuple[tuple[str, str], ...]:
     if not isinstance(labels, dict):
         return ()
-    return tuple(
-        sorted(
-            (str(key), str(value))
-            for key, value in labels.items()
-            if not _identity_label_is_ignored(key)
-        )
-    )
+    return tuple(sorted((str(key), str(value)) for key, value in labels.items() if not _identity_label_is_ignored(key)))
 
 
 def alert_identity(alert: NormalizedAlert) -> tuple[Any, ...]:

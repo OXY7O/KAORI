@@ -1,17 +1,11 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
-from typing import TYPE_CHECKING
 
 from sqlalchemy import JSON, Boolean, DateTime, ForeignKey, Index, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.extensions.db import db
-
-if TYPE_CHECKING:
-    from app.models.alertmanager import AlertmanagerInstance
-    from app.models.minio import MinioInstance
-    from app.models.metrics_source import MetricsSource
 
 
 class IntegrationInstance(db.Model):
@@ -20,7 +14,9 @@ class IntegrationInstance(db.Model):
     __tablename__ = 'integration_instances'
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    provider_type: Mapped[str] = mapped_column(String(80), nullable=False)
+    integration_type: Mapped[str] = mapped_column(String(80), nullable=False)
+    provider_key: Mapped[str] = mapped_column(String(80), nullable=False)
+    adapter_key: Mapped[str] = mapped_column(String(80), nullable=False)
     name: Mapped[str] = mapped_column(String(180), nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     environment: Mapped[str | None] = mapped_column(String(40), nullable=True)
@@ -46,29 +42,10 @@ class IntegrationInstance(db.Model):
         order_by='IntegrationBinding.priority.asc(), IntegrationBinding.id.asc()',
     )
 
-    metrics_source_record: Mapped[MetricsSource | None] = relationship(
-        'MetricsSource',
-        back_populates='integration_instance',
-        uselist=False,
-        passive_deletes=True,
-    )
-    alertmanager_record: Mapped[AlertmanagerInstance | None] = relationship(
-        'AlertmanagerInstance',
-        back_populates='integration_instance',
-        uselist=False,
-        passive_deletes=True,
-    )
-    minio_record: Mapped[MinioInstance | None] = relationship(
-        'MinioInstance',
-        back_populates='integration_instance',
-        uselist=False,
-        passive_deletes=True,
-    )
-
     __table_args__ = (
-        UniqueConstraint('provider_type', 'name', name='uq_integration_instance_provider_name'),
-        Index('ix_integration_instances_provider_enabled', 'provider_type', 'enabled'),
-        Index('ix_integration_instances_readiness', 'provider_type', 'readiness_status'),
+        UniqueConstraint('integration_type', 'name', name='uq_integration_instance_type_name'),
+        Index('ix_integration_instances_type_enabled', 'integration_type', 'enabled'),
+        Index('ix_integration_instances_readiness', 'integration_type', 'readiness_status'),
     )
 
 

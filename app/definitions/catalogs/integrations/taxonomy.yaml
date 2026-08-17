@@ -20,22 +20,22 @@ domains:
   workspace_endpoint: integrations.storage
   order: 30
 capabilities:
-- key: cluster_orchestration
+- key: container_orchestrator
   domain_key: orchestration
-  label: Cluster Orchestration
+  label: Container Orchestrator
   description: Cluster API connectivity, inventory discovery, and control-plane operations.
   order: 10
   asset_types:
   - kubernetes_cluster
-- key: metrics
+- key: metrics_source
   domain_key: observability
-  label: Metrics
+  label: Metrics Source
   description: Metrics query, historical telemetry, and capability validation.
   order: 10
   asset_types: []
-- key: alerting
+- key: alert_source
   domain_key: observability
-  label: Alerting
+  label: Alert Source
   description: Alert retrieval, routing context, silence capability, and alert API validation.
   order: 20
   asset_types: []

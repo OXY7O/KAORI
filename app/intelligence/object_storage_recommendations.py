@@ -3,8 +3,9 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from typing import Any
 
-from sqlalchemy.orm import joinedload, selectinload
+from sqlalchemy.orm import selectinload
 
+from app.models.integration import IntegrationInstance
 from app.models.object_storage import ObjectStorageBucket, ObjectStorageSystem
 from app.models.object_storage_analytics import ObjectStorageForecastSnapshot
 
@@ -32,9 +33,21 @@ def _format_percent(value: float | None) -> str:
 
 
 def _provider_identity(system: ObjectStorageSystem) -> tuple[str, str]:
-    if system.minio_connection is not None:
-        return 'minio', 'MinIO'
-    return '', 'Object Storage'
+    identity = (
+        IntegrationInstance.query.filter(
+            IntegrationInstance.integration_type == 'object_storage',
+            IntegrationInstance.metadata_json['asset_type'].as_string() == 'object_storage_system',
+            IntegrationInstance.metadata_json['asset_key'].as_string() == str(system.id),
+        )
+        .order_by(IntegrationInstance.id.asc())
+        .first()
+    )
+    if identity is None:
+        return '', 'Object Storage'
+    provider_key = str(identity.provider_key or '').strip().lower()
+    metadata = identity.metadata_json or {}
+    provider_label = str(metadata.get('provider_label') or provider_key.replace('_', ' ').title() or 'Object Storage')
+    return provider_key, provider_label
 
 
 def _finding(
@@ -282,10 +295,7 @@ def build_object_storage_recommendation_findings(
     """
 
     systems = (
-        ObjectStorageSystem.query.options(
-            joinedload(ObjectStorageSystem.minio_connection),
-            selectinload(ObjectStorageSystem.buckets),
-        )
+        ObjectStorageSystem.query.options(selectinload(ObjectStorageSystem.buckets))
         .order_by(ObjectStorageSystem.name.asc())
         .all()
     )

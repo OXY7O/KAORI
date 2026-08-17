@@ -12,9 +12,9 @@ from app.jobs.service import acquire_resource_admission_locks
 from app.minio.contracts import MinioRegistrationInput
 from app.models.alertmanager import AlertmanagerInstance
 from app.models.integration import IntegrationBinding, IntegrationInstance
+from app.models.metrics_source import MetricsSource
 from app.models.minio import MinioInstance
 from app.models.object_storage import ObjectStorageSystem
-from app.models.metrics_source import MetricsSource
 
 
 def test_minio_connection(values: MinioRegistrationInput) -> MinioConnectionResult:
@@ -34,13 +34,15 @@ def test_minio_connection(values: MinioRegistrationInput) -> MinioConnectionResu
 
 def create_minio_instance(values: MinioRegistrationInput) -> MinioInstance:
     name = values.name
-    if IntegrationInstance.query.filter_by(provider_type='minio', name=name).first() is not None:
+    if IntegrationInstance.query.filter_by(integration_type='object_storage', name=name).first() is not None:
         raise ValueError('A MinIO connection with this name already exists.')
     if ObjectStorageSystem.query.filter_by(name=name).first() is not None:
         raise ValueError('An object-storage asset with this name already exists.')
 
     canonical = IntegrationInstance()
-    canonical.provider_type = 'minio'
+    canonical.integration_type = 'object_storage'
+    canonical.provider_key = 'minio'
+    canonical.adapter_key = 's3'
     canonical.name = name
     canonical.description = values.description
     canonical.environment = values.environment
@@ -76,6 +78,7 @@ def create_minio_instance(values: MinioRegistrationInput) -> MinioInstance:
         'asset_type': OBJECT_STORAGE_SYSTEM_SCOPE,
         'asset_key': asset.id,
         'endpoint_product': 'minio',
+        'provider_label': 'MinIO',
         'declared_release': instance.declared_release,
     }
     try:
@@ -88,7 +91,7 @@ def create_minio_instance(values: MinioRegistrationInput) -> MinioInstance:
 
 def update_minio_instance(instance: MinioInstance, values: MinioRegistrationInput) -> MinioInstance:
     duplicate_canonical = IntegrationInstance.query.filter(
-        IntegrationInstance.provider_type == 'minio',
+        IntegrationInstance.integration_type == 'object_storage',
         IntegrationInstance.name == values.name,
         IntegrationInstance.id != instance.integration_instance_id,
     ).first()
@@ -158,6 +161,7 @@ def update_minio_instance(instance: MinioInstance, values: MinioRegistrationInpu
         'asset_type': OBJECT_STORAGE_SYSTEM_SCOPE,
         'asset_key': asset.id,
         'endpoint_product': 'minio',
+        'provider_label': 'MinIO',
         'declared_release': instance.declared_release,
     }
     try:
@@ -178,12 +182,12 @@ def delete_minio_instance(instance: MinioInstance) -> dict[str, int]:
     """
     asset_key = str(instance.object_storage_system_id)
     acquire_resource_admission_locks(
-        f'integration:minio:{instance.id}',
+        f'integration:object_storage:{instance.integration_instance_id}',
         f'{OBJECT_STORAGE_SYSTEM_SCOPE}:{asset_key}',
     )
     guard = asset_owner_deletion_guard(
-        provider_type='minio',
-        provider_instance_id=instance.id,
+        integration_type='object_storage',
+        integration_instance_id=instance.integration_instance_id,
         asset_type=OBJECT_STORAGE_SYSTEM_SCOPE,
         asset_key=asset_key,
     )
@@ -197,9 +201,11 @@ def delete_minio_instance(instance: MinioInstance) -> dict[str, int]:
         IntegrationBinding.asset_key == asset_key,
     ).delete(synchronize_session=False)
 
-    # ObjectStorageSystem owns the MinioInstance row through a delete-orphan
-    # relationship. Flush that lifecycle first, then remove the canonical provider
-    # identity without touching reusable Metrics Source or Alertmanager instances.
+    # Provider implementation records point inward to the provider-neutral asset;
+    # the asset core does not expose a MinIO-specific reverse relationship. Remove
+    # the implementation record explicitly, then the asset and canonical identity.
+    db.session.delete(instance)
+    db.session.flush()
     db.session.delete(asset)
     db.session.flush()
     if canonical is not None:
@@ -220,7 +226,7 @@ def current_metrics_binding(instance: MinioInstance) -> IntegrationBinding | Non
     return (
         IntegrationBinding.query.join(IntegrationInstance)
         .filter(
-            IntegrationInstance.provider_type == 'metrics_source',
+            IntegrationInstance.integration_type == 'metrics_source',
             IntegrationInstance.enabled.is_(True),
             IntegrationBinding.asset_type == OBJECT_STORAGE_SYSTEM_SCOPE,
             IntegrationBinding.asset_key == instance.object_storage_system_id,
@@ -236,7 +242,7 @@ def metrics_source_for_binding(binding: IntegrationBinding | None) -> MetricsSou
     if binding is None:
         return None
     canonical = db.session.get(IntegrationInstance, binding.integration_instance_id)
-    if canonical is None or canonical.provider_type != 'metrics_source':
+    if canonical is None or canonical.integration_type != 'metrics_source':
         return None
     return MetricsSource.query.filter_by(integration_instance_id=canonical.id).first()
 
@@ -245,7 +251,7 @@ def current_alert_binding(instance: MinioInstance) -> IntegrationBinding | None:
     return (
         IntegrationBinding.query.join(IntegrationInstance)
         .filter(
-            IntegrationInstance.provider_type == 'alertmanager',
+            IntegrationInstance.integration_type == 'alert_source',
             IntegrationInstance.enabled.is_(True),
             IntegrationBinding.asset_type == OBJECT_STORAGE_SYSTEM_SCOPE,
             IntegrationBinding.asset_key == instance.object_storage_system_id,
@@ -261,7 +267,7 @@ def alert_source_for_binding(binding: IntegrationBinding | None) -> Alertmanager
     if binding is None:
         return None
     canonical = db.session.get(IntegrationInstance, binding.integration_instance_id)
-    if canonical is None or canonical.provider_type != 'alertmanager':
+    if canonical is None or canonical.integration_type != 'alert_source':
         return None
     return AlertmanagerInstance.query.filter_by(integration_instance_id=canonical.id).first()
 

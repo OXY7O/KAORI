@@ -17,7 +17,9 @@ if TYPE_CHECKING:
 
 def _minio_identity(name: str) -> IntegrationInstance:
     identity = IntegrationInstance()
-    identity.provider_type = 'minio'
+    identity.integration_type = 'object_storage'
+    identity.provider_key = 'minio'
+    identity.adapter_key = 's3'
     identity.name = name
     identity.enabled = True
     identity.readiness_status = 'validation_required'
@@ -69,22 +71,16 @@ class MinioInstance(db.Model):
         onupdate=lambda: datetime.now(UTC),
     )
 
-    integration_instance: Mapped[IntegrationInstance] = relationship(
-        'IntegrationInstance',
-        back_populates='minio_record',
-        lazy='joined',
-    )
-    object_storage_system: Mapped[ObjectStorageSystem] = relationship(
-        'ObjectStorageSystem',
-        back_populates='minio_connection',
-        lazy='joined',
-    )
+    integration_instance: Mapped[IntegrationInstance] = relationship('IntegrationInstance', lazy='joined')
+    object_storage_system: Mapped[ObjectStorageSystem] = relationship('ObjectStorageSystem', lazy='joined')
 
     name: AssociationProxy[str] = association_proxy(
         'integration_instance',
         'name',
         creator=_minio_identity,
     )
+    provider_key: AssociationProxy[str] = association_proxy('integration_instance', 'provider_key')
+    adapter_key: AssociationProxy[str] = association_proxy('integration_instance', 'adapter_key')
     description: AssociationProxy[str | None] = association_proxy('integration_instance', 'description')
     environment: AssociationProxy[str | None] = association_proxy('integration_instance', 'environment')
     enabled: AssociationProxy[bool] = association_proxy('integration_instance', 'enabled')

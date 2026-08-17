@@ -71,7 +71,7 @@ def main() -> int:
         "return 'Global'",
         "if job.status == 'queued':\n        return 'Waiting'",
         "payload.get('_progress')",
-        "'provider_label': _provider_label(job.provider_type)",
+        "'provider_label': _provider_label(job.integration_type)",
         'scope = _scope_label(raw_scope)',
     ):
         if required not in presentation:

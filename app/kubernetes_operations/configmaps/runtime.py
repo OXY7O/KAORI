@@ -14,7 +14,7 @@ from app.models.cluster import Cluster
 
 
 def runtime_client(cluster: Cluster) -> Any:
-    return get_integration('kubernetes').execute(
+    return get_integration('container_orchestrator').execute(
         'client.build',
         connection_for_cluster(cluster),
     )

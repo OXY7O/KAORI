@@ -45,7 +45,7 @@ def _load_anomalies_module():
         sys.modules[exceptions.__name__] = exceptions
 
         profiles = ModuleType('app.integrations.metrics.query_profiles')
-        profiles.get_query_expression = lambda key: key
+        profiles.get_kubernetes_query_expression = lambda key: key
         sys.modules[profiles.__name__] = profiles
 
         models = ModuleType('app.models')

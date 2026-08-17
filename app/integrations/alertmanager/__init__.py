@@ -1,6 +1,7 @@
 from app.integrations.alertmanager.adapter import runtime_adapter
 from app.integrations.alertmanager.capabilities import COMPATIBILITY_PROFILES, CORE_CAPABILITY_KEYS
 from app.integrations.registry import (
+    IntegrationImplementation,
     IntegrationModule,
     canonical_model_loader,
     model_loader,
@@ -14,19 +15,16 @@ def _detail_url(instance: AlertmanagerInstance, section: str) -> str:
 
 
 integration_module = IntegrationModule(
-    provider_type='alertmanager',
-    label='Alertmanager',
+    integration_type='alert_source',
+    label='Alert Sources',
     domain_key='observability',
-    capability_key='alerting',
+    capability_key='alert_source',
     icon='siren',
     description=(
-        'Shared alerting providers, asset bindings, alert retrieval, silence capability, '
-        'and API compatibility validation.'
+        'Provider-neutral alert sources, asset bindings, alert retrieval, control capability, '
+        'and adapter-specific runtime validation.'
     ),
     workspace_endpoint='integrations.alertmanager',
-    adapter=runtime_adapter,
-    instance_loader=model_loader(AlertmanagerInstance),
-    canonical_record_loader=canonical_model_loader(AlertmanagerInstance),
     module_path='app.integrations.alertmanager',
     worker_queue='integration-runtime',
     worker_domain='observability-alerts',
@@ -52,8 +50,20 @@ integration_module = IntegrationModule(
     ),
     capability_keys=CORE_CAPABILITY_KEYS,
     compatibility_profiles=COMPATIBILITY_PROFILES,
+    runtime_label='Alert Sources',
     navigation_endpoint_prefixes=('integrations.alertmanager', 'alertmanager.'),
+)
+
+provider_implementation = IntegrationImplementation(
+    integration_type='alert_source',
+    provider_key='alertmanager',
+    adapter_key='alertmanager_api_v2',
+    adapter=runtime_adapter,
+    instance_loader=model_loader(AlertmanagerInstance),
+    canonical_record_loader=canonical_model_loader(AlertmanagerInstance),
+    module_path='app.integrations.alertmanager',
     detail_url_builder=_detail_url,
 )
 
 registry.register(integration_module)
+registry.register_implementation(provider_implementation)

@@ -42,10 +42,10 @@ from app.intelligence.recommendation_engine import (
     count_actionable_recommendations,
     format_recommendation_cards,
 )
-from app.models import Cluster
 from app.metrics.consumer import MetricsConsumer
 from app.metrics.repository import resolve_instance_for_cluster
 from app.metrics.service import MetricsService
+from app.models import Cluster
 
 
 def get_capacity_page_context(query_args: Mapping[str, Any]) -> dict[str, Any]:

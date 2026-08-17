@@ -194,7 +194,9 @@ SECTION_DESCRIPTIONS = {
     'resource_hotspots': ('Prepared section for recurring hotspots and high-impact resource consumers.'),
     'active_alerts': ('Prepared section for active alerts, severity, and operational impact.'),
     'alert_severity_summary': ('Prepared section for alert severity distribution and priority handling.'),
-    'source_health': ('Summarizes Alertmanager, Metrics Source fallback, resolved source, and source confidence state.'),
+    'source_health': (
+        'Summarizes Alertmanager, Metrics Source fallback, resolved source, and source confidence state.'
+    ),
     'routing_grouping': (
         'Summarizes Alertmanager routing, receiver groups, grouping keys, fingerprints, and namespace spread.'
     ),

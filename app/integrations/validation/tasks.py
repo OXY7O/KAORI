@@ -58,9 +58,9 @@ def _runtime_queue_name() -> str:
     return configured or 'integration-runtime'
 
 
-def _action_url(provider_type: str, instance_id: int, *, section: str) -> str:
+def _action_url(integration_type: str, integration_instance_id: int, *, section: str) -> str:
     try:
-        return get_integration(provider_type).detail_url(instance_id, section=section)
+        return get_integration(integration_type).detail_url(integration_instance_id, section=section)
     except Exception:
         return '/integrations/'
 
@@ -126,61 +126,61 @@ def _update_worker_phase(
 def _release_job_safely(
     *,
     task_id: str,
-    provider_type: str,
+    integration_type: str,
     operation: str,
-    instance_id: int,
+    integration_instance_id: int,
     binding_id: int | None = None,
 ) -> None:
     try:
         release_validation_job(
             task_id=task_id,
-            provider_type=provider_type,
+            integration_type=integration_type,
             operation=operation,
-            instance_id=instance_id,
+            integration_instance_id=integration_instance_id,
             binding_id=binding_id,
         )
     except Exception:
         logger.exception(
             'Could not release validation lock for %s %s instance %s binding %s.',
-            provider_type,
+            integration_type,
             operation,
-            instance_id,
+            integration_instance_id,
             binding_id,
         )
 
 
 def _persist_failure_observation(
     *,
-    provider_type: str,
-    instance_id: int,
+    integration_type: str,
+    integration_instance_id: int,
     trigger_type: str,
     error: Exception,
 ) -> None:
     """Best-effort persistence for failed runtime or validation attempts."""
     try:
-        module = get_integration(provider_type)
-        instance = module.get_instance(instance_id)
+        module = get_integration(integration_type)
+        instance = module.require_record_for_canonical(integration_instance_id)
         module.record_failure(instance, error)
-        state = module.adapter.get_state(instance)
+        state = module.runtime_state(instance)
         persist_runtime_state(
             state,
             trigger_type=trigger_type,
-            integration_instance_id=getattr(instance, 'integration_instance_id', None),
+            integration_instance_id=integration_instance_id,
         )
     except Exception:
         db.session.rollback()
         logger.exception(
             'Could not persist failed runtime observation for %s instance %s.',
-            provider_type,
-            instance_id,
+            integration_type,
+            integration_instance_id,
         )
 
 
 def _record_completion(
     *,
     requested_by_user_id: int | None,
-    provider_type: str,
-    instance_id: int,
+    integration_type: str,
+    integration_instance_id: int,
     operation: str,
     status: str,
     title: str,
@@ -205,14 +205,14 @@ def _record_completion(
     for user_id in user_ids:
         feedback = record_operational_activity(
             user_id=user_id,
-            event_type=f'{provider_type}_{operation}_completed'
+            event_type=f'{integration_type}_{operation}_completed'
             if status != 'error'
-            else f'{provider_type}_{operation}_failed',
+            else f'{integration_type}_{operation}_failed',
             status=status,
             title=title,
             message=message,
             detail=detail,
-            action_url=_action_url(provider_type, instance_id, section=section),
+            action_url=_action_url(integration_type, integration_instance_id, section=section),
             action_label='Review validation',
             action_icon='scan-search',
             metadata=enriched_metadata,
@@ -274,8 +274,8 @@ def _final_payload(
 def validate_integration_instance(
     self,
     *,
-    provider_type: str,
-    instance_id: int,
+    integration_type: str,
+    integration_instance_id: int,
     requested_by_user_id: int | None,
     trigger_type: str = 'manual',
     job_execution_id: int | None = None,
@@ -284,9 +284,9 @@ def validate_integration_instance(
     started_at = _now_iso()
     base = {
         'task_id': task_id,
-        'provider_type': provider_type,
+        'integration_type': integration_type,
         'operation': 'full_validation',
-        'instance_id': instance_id,
+        'integration_instance_id': integration_instance_id,
         'binding_id': None,
         'requested_by_user_id': requested_by_user_id,
         'job_execution_id': job_execution_id,
@@ -302,9 +302,9 @@ def validate_integration_instance(
     if _canceled_before_worker_start(task_id):
         _release_job_safely(
             task_id=task_id,
-            provider_type=provider_type,
+            integration_type=integration_type,
             operation='full_validation',
-            instance_id=instance_id,
+            integration_instance_id=integration_instance_id,
         )
         return {
             **base,
@@ -320,11 +320,11 @@ def validate_integration_instance(
         _update_worker_phase(
             self, current=1, total=4, message='Connecting to the provider and loading the full validation contract.'
         )
-        module = get_integration(provider_type)
-        instance = module.get_instance(instance_id)
-        ensure_provider_operational(instance, provider_type=provider_type)
+        module = get_integration(integration_type)
+        instance = module.require_record_for_canonical(integration_instance_id)
+        ensure_provider_operational(instance, integration_type=integration_type)
         validation_result, state, _ = runtime_refresh.refresh_and_record(
-            module.adapter,
+            module.implementation_for_record(instance).adapter,
             instance,
             trigger_type=trigger_type,
         )
@@ -337,10 +337,10 @@ def validate_integration_instance(
                 total=4,
                 message=f'{module.label} capability evidence was collected; refreshing asset bindings.',
             )
-            ensure_canonical_instance(instance, provider_type=provider_type)
+            ensure_canonical_instance(instance, integration_type=integration_type)
             result_payload['binding_validation_summary'] = _refresh_provider_bindings(
-                provider_type=provider_type,
-                instance=instance,
+                integration_type=integration_type,
+                record=instance,
             )
             db.session.commit()
             finalizing_phase = 3
@@ -371,17 +371,17 @@ def validate_integration_instance(
 
         completion_metadata = {
             'task_id': task_id,
-            'provider_type': provider_type,
+            'integration_type': integration_type,
             'operation': operation,
-            'instance_id': instance_id,
+            'integration_instance_id': integration_instance_id,
             'instance_name': instance_name,
             'readiness_status': result_payload.get('readiness_status'),
             'trigger_type': trigger_type,
         }
         feedback = _record_completion(
             requested_by_user_id=requested_by_user_id,
-            provider_type=provider_type,
-            instance_id=instance_id,
+            integration_type=integration_type,
+            integration_instance_id=integration_instance_id,
             operation=operation,
             status=status,
             title=title,
@@ -403,27 +403,27 @@ def validate_integration_instance(
     except Exception as exc:
         db.session.rollback()
         _persist_failure_observation(
-            provider_type=provider_type,
-            instance_id=instance_id,
+            integration_type=integration_type,
+            integration_instance_id=integration_instance_id,
             trigger_type=trigger_type,
             error=exc,
         )
-        logger.exception('%s validation task failed for instance %s.', provider_type, instance_id)
+        logger.exception('%s validation task failed for instance %s.', integration_type, integration_instance_id)
         detail = str(exc) or 'Review runtime-worker logs, provider reachability, credentials, and Redis connectivity.'
         feedback = _record_completion(
             requested_by_user_id=requested_by_user_id,
-            provider_type=provider_type,
-            instance_id=instance_id,
+            integration_type=integration_type,
+            integration_instance_id=integration_instance_id,
             operation=operation,
             status='error',
             title='Integration validation failed',
-            message=f'KAORI could not complete the {present_key_label(provider_type)} validation job.',
+            message=f'KAORI could not complete the {present_key_label(integration_type)} validation job.',
             detail=detail,
             metadata={
                 'task_id': task_id,
-                'provider_type': provider_type,
+                'integration_type': integration_type,
                 'operation': operation,
-                'instance_id': instance_id,
+                'integration_instance_id': integration_instance_id,
                 'reason': type(exc).__name__,
                 'trigger_type': trigger_type,
             },
@@ -432,7 +432,7 @@ def validate_integration_instance(
             base=base,
             status='error',
             title='Integration validation failed',
-            message=f'KAORI could not complete the {present_key_label(provider_type)} validation job.',
+            message=f'KAORI could not complete the {present_key_label(integration_type)} validation job.',
             detail=detail,
             feedback=feedback,
         )
@@ -441,9 +441,9 @@ def validate_integration_instance(
     finally:
         _release_job_safely(
             task_id=task_id,
-            provider_type=provider_type,
+            integration_type=integration_type,
             operation=operation,
-            instance_id=instance_id,
+            integration_instance_id=integration_instance_id,
         )
 
 
@@ -468,7 +468,7 @@ def _validation_completion_status(result_payload: dict[str, Any], state: Any) ->
     return 'warning'
 
 
-def _refresh_provider_bindings(*, provider_type: str, instance: Any) -> dict[str, Any]:
+def _refresh_provider_bindings(*, integration_type: str, instance: Any) -> dict[str, Any]:
     integration_instance_id = getattr(instance, 'integration_instance_id', None)
     if integration_instance_id is None:
         return {'total': 0, 'ready': 0, 'attention': 0, 'results': []}
@@ -484,9 +484,9 @@ def _refresh_provider_bindings(*, provider_type: str, instance: Any) -> dict[str
     results: list[dict[str, Any]] = []
     for binding in bindings:
         result = execute_integration_operation(
-            provider_type,
+            integration_type,
             'binding.validate',
-            instance=instance,
+            record=instance,
             binding=binding,
             commit=False,
         )
@@ -518,8 +518,8 @@ def _refresh_provider_bindings(*, provider_type: str, instance: Any) -> dict[str
 def validate_integration_binding(
     self,
     *,
-    provider_type: str,
-    instance_id: int,
+    integration_type: str,
+    integration_instance_id: int,
     binding_id: int,
     requested_by_user_id: int | None,
     job_execution_id: int | None = None,
@@ -528,9 +528,9 @@ def validate_integration_binding(
     started_at = _now_iso()
     base = {
         'task_id': task_id,
-        'provider_type': provider_type,
+        'integration_type': integration_type,
         'operation': 'binding_validation',
-        'instance_id': instance_id,
+        'integration_instance_id': integration_instance_id,
         'binding_id': binding_id,
         'requested_by_user_id': requested_by_user_id,
         'job_execution_id': job_execution_id,
@@ -546,9 +546,9 @@ def validate_integration_binding(
     if _canceled_before_worker_start(task_id):
         _release_job_safely(
             task_id=task_id,
-            provider_type=provider_type,
+            integration_type=integration_type,
             operation='binding_validation',
-            instance_id=instance_id,
+            integration_instance_id=integration_instance_id,
             binding_id=binding_id,
         )
         return {
@@ -565,19 +565,19 @@ def validate_integration_binding(
         binding = db.session.get(IntegrationBinding, binding_id)
         if binding is None:
             raise LookupError('Integration binding no longer exists.')
-        module = get_integration(provider_type)
+        module = get_integration(integration_type)
         if 'binding.validate' not in module.operations:
             raise ValueError(f'{module.label} does not support binding validation.')
-        instance = module.get_instance(instance_id)
-        ensure_provider_operational(instance, provider_type=provider_type)
+        instance = module.require_record_for_canonical(integration_instance_id)
+        ensure_provider_operational(instance, integration_type=integration_type)
         if not binding.enabled:
             raise RuntimeError('Binding validation was canceled because the binding is disabled.')
         if binding.integration_instance_id != instance.integration_instance_id:
             raise LookupError(f'{module.label} binding does not belong to the selected source.')
         result_payload = execute_integration_operation(
-            provider_type,
+            integration_type,
             'binding.validate',
-            instance=instance,
+            record=instance,
             binding=binding,
         )
         instance_name = instance.name
@@ -587,13 +587,13 @@ def validate_integration_binding(
         )
         binding_status = str(result_payload.get('status') or 'validation_required')
         status = 'success' if binding_status == 'ready' else ('error' if binding_status == 'blocked' else 'warning')
-        title = f'{present_key_label(provider_type)} binding validation completed'
+        title = f'{present_key_label(integration_type)} binding validation completed'
         message = str(result_payload.get('message') or 'Binding validation completed.')
         detail = f'Binding status: {binding_status.replace("_", " ").title()}.'
         feedback = _record_completion(
             requested_by_user_id=requested_by_user_id,
-            provider_type=provider_type,
-            instance_id=instance_id,
+            integration_type=integration_type,
+            integration_instance_id=integration_instance_id,
             operation='binding_validation',
             status=status,
             title=title,
@@ -601,9 +601,9 @@ def validate_integration_binding(
             detail=detail,
             metadata={
                 'task_id': task_id,
-                'provider_type': provider_type,
+                'integration_type': integration_type,
                 'operation': 'binding_validation',
-                'instance_id': instance_id,
+                'integration_instance_id': integration_instance_id,
                 'instance_name': instance_name,
                 'binding_id': binding_id,
                 **result_payload,
@@ -622,22 +622,22 @@ def validate_integration_binding(
         return payload
     except Exception as exc:
         db.session.rollback()
-        logger.exception('%s binding validation task failed for binding %s.', provider_type, binding_id)
+        logger.exception('%s binding validation task failed for binding %s.', integration_type, binding_id)
         detail = str(exc) or 'Review validation-worker logs and the source selector before retrying.'
         feedback = _record_completion(
             requested_by_user_id=requested_by_user_id,
-            provider_type=provider_type,
-            instance_id=instance_id,
+            integration_type=integration_type,
+            integration_instance_id=integration_instance_id,
             operation='binding_validation',
             status='error',
             title='Binding validation failed',
-            message=f'KAORI could not validate the {present_key_label(provider_type)} scope binding.',
+            message=f'KAORI could not validate the {present_key_label(integration_type)} scope binding.',
             detail=detail,
             metadata={
                 'task_id': task_id,
-                'provider_type': provider_type,
+                'integration_type': integration_type,
                 'operation': 'binding_validation',
-                'instance_id': instance_id,
+                'integration_instance_id': integration_instance_id,
                 'binding_id': binding_id,
                 'reason': type(exc).__name__,
             },
@@ -646,7 +646,7 @@ def validate_integration_binding(
             base=base,
             status='error',
             title='Binding validation failed',
-            message=f'KAORI could not validate the {present_key_label(provider_type)} scope binding.',
+            message=f'KAORI could not validate the {present_key_label(integration_type)} scope binding.',
             detail=detail,
             feedback=feedback,
         )
@@ -655,9 +655,9 @@ def validate_integration_binding(
     finally:
         _release_job_safely(
             task_id=task_id,
-            provider_type=provider_type,
+            integration_type=integration_type,
             operation='binding_validation',
-            instance_id=instance_id,
+            integration_instance_id=integration_instance_id,
             binding_id=binding_id,
         )
 
@@ -671,8 +671,8 @@ def validate_integration_binding(
 def refresh_integration_runtime_instance(
     self,
     *,
-    provider_type: str,
-    instance_id: int,
+    integration_type: str,
+    integration_instance_id: int,
     requested_by_user_id: int | None = None,
     trigger_type: str = 'scheduled',
     job_execution_id: int | None = None,
@@ -681,9 +681,9 @@ def refresh_integration_runtime_instance(
     started_at = _now_iso()
     base = {
         'task_id': task_id,
-        'provider_type': provider_type,
+        'integration_type': integration_type,
         'operation': 'runtime_refresh',
-        'instance_id': instance_id,
+        'integration_instance_id': integration_instance_id,
         'binding_id': None,
         'requested_by_user_id': requested_by_user_id,
         'job_execution_id': job_execution_id,
@@ -699,9 +699,9 @@ def refresh_integration_runtime_instance(
     if _canceled_before_worker_start(task_id):
         _release_job_safely(
             task_id=task_id,
-            provider_type=provider_type,
+            integration_type=integration_type,
             operation='runtime_refresh',
-            instance_id=instance_id,
+            integration_instance_id=integration_instance_id,
         )
         return {
             **base,
@@ -716,12 +716,12 @@ def refresh_integration_runtime_instance(
         _update_worker_phase(
             self, current=1, total=3, message='Connecting to the provider for a lightweight runtime health check.'
         )
-        integration = get_integration(provider_type)
-        instance = integration.get_instance(instance_id)
-        ensure_provider_operational(instance, provider_type=provider_type)
+        integration = get_integration(integration_type)
+        instance = integration.require_record_for_canonical(integration_instance_id)
+        ensure_provider_operational(instance, integration_type=integration_type)
         previous_health = latest_runtime_health(instance.integration_instance_id)
         result_payload = integration.execute('runtime.health', instance)
-        state = integration.adapter.get_state(instance, validation_result=result_payload)
+        state = integration.runtime_state(instance, validation_result=result_payload)
         persist_runtime_state(
             state,
             trigger_type=trigger_type,
@@ -730,8 +730,8 @@ def refresh_integration_runtime_instance(
         recovery_result = None
         if is_runtime_recovery(previous_health, state.health.status):
             recovery_result = enqueue_recovery_work(
-                provider_type=provider_type,
-                instance=instance,
+                integration_type=integration_type,
+                record=instance,
             )
         _update_worker_phase(
             self, current=2, total=3, message='Runtime health evidence was collected; persisting the observation.'
@@ -749,18 +749,18 @@ def refresh_integration_runtime_instance(
         }
         feedback = _record_completion(
             requested_by_user_id=requested_by_user_id,
-            provider_type=provider_type,
-            instance_id=instance_id,
+            integration_type=integration_type,
+            integration_instance_id=integration_instance_id,
             operation='runtime_refresh',
             status=completion_status,
             title='Runtime health refresh completed',
-            message=f'{present_key_label(provider_type)} runtime health is {state.health.status}.',
+            message=f'{present_key_label(integration_type)} runtime health is {state.health.status}.',
             detail=state.message,
             metadata={
                 'task_id': task_id,
-                'provider_type': provider_type,
+                'integration_type': integration_type,
                 'operation': 'runtime_refresh',
-                'instance_id': instance_id,
+                'integration_instance_id': integration_instance_id,
                 'trigger_type': trigger_type,
                 **completion_result,
             },
@@ -769,7 +769,7 @@ def refresh_integration_runtime_instance(
             base=base,
             status=completion_status,
             title='Runtime health refresh completed',
-            message=f'{present_key_label(provider_type)} runtime health is {state.health.status}.',
+            message=f'{present_key_label(integration_type)} runtime health is {state.health.status}.',
             detail=state.message,
             feedback=feedback,
             result=completion_result,
@@ -779,27 +779,27 @@ def refresh_integration_runtime_instance(
     except Exception as exc:
         db.session.rollback()
         _persist_failure_observation(
-            provider_type=provider_type,
-            instance_id=instance_id,
+            integration_type=integration_type,
+            integration_instance_id=integration_instance_id,
             trigger_type=trigger_type,
             error=exc,
         )
-        logger.exception('Runtime refresh failed for %s instance %s.', provider_type, instance_id)
+        logger.exception('Runtime refresh failed for %s instance %s.', integration_type, integration_instance_id)
         detail = str(exc) or 'Review runtime-worker logs, provider reachability, credentials, and Redis connectivity.'
         feedback = _record_completion(
             requested_by_user_id=requested_by_user_id,
-            provider_type=provider_type,
-            instance_id=instance_id,
+            integration_type=integration_type,
+            integration_instance_id=integration_instance_id,
             operation='runtime_refresh',
             status='error',
             title='Runtime health refresh failed',
-            message=f'KAORI could not refresh {present_key_label(provider_type)} runtime health.',
+            message=f'KAORI could not refresh {present_key_label(integration_type)} runtime health.',
             detail=detail,
             metadata={
                 'task_id': task_id,
-                'provider_type': provider_type,
+                'integration_type': integration_type,
                 'operation': 'runtime_refresh',
-                'instance_id': instance_id,
+                'integration_instance_id': integration_instance_id,
                 'trigger_type': trigger_type,
                 'reason': type(exc).__name__,
             },
@@ -808,7 +808,7 @@ def refresh_integration_runtime_instance(
             base=base,
             status='error',
             title='Runtime health refresh failed',
-            message=f'KAORI could not refresh {present_key_label(provider_type)} runtime health.',
+            message=f'KAORI could not refresh {present_key_label(integration_type)} runtime health.',
             detail=detail,
             feedback=feedback,
         )
@@ -817,33 +817,35 @@ def refresh_integration_runtime_instance(
     finally:
         _release_job_safely(
             task_id=task_id,
-            provider_type=provider_type,
+            integration_type=integration_type,
             operation='runtime_refresh',
-            instance_id=instance_id,
+            integration_instance_id=integration_instance_id,
         )
 
 
-def enqueue_runtime_refresh(*, provider_type: str, instance_id: int) -> str | None:
+def enqueue_runtime_refresh(*, integration_type: str, integration_instance_id: int) -> str | None:
     if get_active_validation_task_id(
-        provider_type=provider_type,
+        integration_type=integration_type,
         operation='full_validation',
-        instance_id=instance_id,
+        integration_instance_id=integration_instance_id,
     ):
         return None
-    deduplication_key = build_deduplication_key('integration', provider_type, instance_id, 'runtime_refresh')
+    deduplication_key = build_deduplication_key(
+        'integration', integration_type, integration_instance_id, 'runtime_refresh'
+    )
     job, created = create_or_attach_job(
         job_type='integration_operation',
         operation='runtime_refresh',
         queue_name=_runtime_queue_name(),
         workload_class=WORKLOAD_RUNTIME,
         requested_by_user_id=None,
-        provider_type=provider_type,
-        provider_instance_id=instance_id,
+        integration_type=integration_type,
+        integration_instance_id=integration_instance_id,
         scope_type='integration_instance',
-        resource_group=f'integration:{provider_type}:{instance_id}',
+        resource_group=f'integration:{integration_type}:{integration_instance_id}',
         parameters={
-            'provider_type': provider_type,
-            'instance_id': instance_id,
+            'integration_type': integration_type,
+            'integration_instance_id': integration_instance_id,
             'operation': 'runtime_refresh',
             'trigger_type': 'scheduled',
         },
@@ -856,9 +858,9 @@ def enqueue_runtime_refresh(*, provider_type: str, instance_id: int) -> str | No
     metadata = {
         'task_id': job.celery_task_id,
         'job_execution_id': job.id,
-        'provider_type': provider_type,
+        'integration_type': integration_type,
         'operation': 'runtime_refresh',
-        'instance_id': instance_id,
+        'integration_instance_id': integration_instance_id,
         'binding_id': None,
         'requested_by_user_id': None,
         'created_at': created_at,
@@ -869,9 +871,9 @@ def enqueue_runtime_refresh(*, provider_type: str, instance_id: int) -> str | No
     }
     if not claim_validation_job(
         task_id=job.celery_task_id,
-        provider_type=provider_type,
+        integration_type=integration_type,
         operation='runtime_refresh',
-        instance_id=instance_id,
+        integration_instance_id=integration_instance_id,
         binding_id=None,
         metadata=metadata,
         conflicting_operations=('full_validation',),
@@ -886,8 +888,8 @@ def enqueue_runtime_refresh(*, provider_type: str, instance_id: int) -> str | No
         runtime_refresh_task = cast(Task, refresh_integration_runtime_instance)
         runtime_refresh_task.apply_async(
             kwargs={
-                'provider_type': provider_type,
-                'instance_id': instance_id,
+                'integration_type': integration_type,
+                'integration_instance_id': integration_instance_id,
                 'requested_by_user_id': None,
                 'trigger_type': 'scheduled',
                 'job_execution_id': job.id,
@@ -899,9 +901,9 @@ def enqueue_runtime_refresh(*, provider_type: str, instance_id: int) -> str | No
     except Exception as exc:
         release_validation_job(
             task_id=job.celery_task_id,
-            provider_type=provider_type,
+            integration_type=integration_type,
             operation='runtime_refresh',
-            instance_id=instance_id,
+            integration_instance_id=integration_instance_id,
         )
         mark_job_failed(job.celery_task_id, error=exc, error_code='dispatch_failed')
         raise

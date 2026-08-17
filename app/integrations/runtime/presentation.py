@@ -20,7 +20,9 @@ def runtime_state_view(
     binding = binding or {}
     metadata = state.snapshot.metadata or {}
     return {
-        'provider': state.provider,
+        'integration_type': state.integration_type,
+        'provider_key': state.provider_key,
+        'adapter_key': state.adapter_key,
         'instance_id': state.instance_id,
         'instance_name': state.instance_name,
         'observed_at': state.observed_at,
@@ -65,7 +67,7 @@ def runtime_state_view(
         'capability_count_display': present_count(len(state.snapshot.capabilities), 'capability'),
         'capabilities': state.snapshot.capabilities,
         'capability_metadata': metadata,
-        'lifecycle_context': _kubernetes_lifecycle_context(state.provider, metadata),
+        'lifecycle_context': _kubernetes_lifecycle_context(state.integration_type, metadata),
         'latency_ms': state.latency_ms,
         'latency_display': present_milliseconds(state.latency_ms),
         'last_success_at': state.last_success_at,
@@ -157,14 +159,14 @@ def runtime_observation_state_view(
         'diagnostics': diagnostics,
         'factors': attention_factors,
         'attention_factors': attention_factors,
-        'lifecycle_context': _kubernetes_lifecycle_context(observation.provider, metadata),
+        'lifecycle_context': _kubernetes_lifecycle_context(observation.integration_type, metadata),
         'observed_at': observation.observed_at,
         'observed_at_display': present_user_datetime(
             observation.observed_at, empty='Not observed', include_seconds=True
         ),
         'message': observation.message or '',
         'summary': _runtime_primary_summary(
-            provider=observation.provider,
+            integration_type=observation.integration_type,
             message=observation.message or '',
             diagnostics=diagnostics,
         ),
@@ -200,7 +202,7 @@ def runtime_history_view(
         removed_capabilities = sorted(previous_capabilities - current_capabilities) if previous_row is not None else []
         transition = _runtime_transition(row, previous_row)
         diagnostics = _diagnostic_rows(row.diagnostics or [])
-        lifecycle_context = _kubernetes_lifecycle_context(row.provider, metadata)
+        lifecycle_context = _kubernetes_lifecycle_context(row.integration_type, metadata)
         effective_status = _effective_runtime_posture(row.health_status, row.readiness)
         rendered_rows.append(
             {
@@ -316,7 +318,7 @@ def _diagnostic_summary(detail: str, *, label: str = 'Diagnostic') -> str:
 
 def _runtime_primary_summary(
     *,
-    provider: str,
+    integration_type: str,
     message: str,
     diagnostics: list[dict[str, object]],
 ) -> str:
@@ -330,11 +332,11 @@ def _runtime_primary_summary(
         if str(item.get('status') or '').lower() in priority:
             summary = str(item.get('summary') or '').strip()
             if summary:
-                if provider == 'kubernetes' and summary.startswith('Provider '):
+                if integration_type == 'container_orchestrator' and summary.startswith('Provider '):
                     return 'Kubernetes API ' + summary[len('Provider ') :]
                 return summary
     if message:
-        label = 'Kubernetes API' if provider == 'kubernetes' else 'Runtime'
+        label = 'Kubernetes API' if integration_type == 'container_orchestrator' else 'Runtime'
         return _diagnostic_summary(message, label=label)
     return 'No current runtime issue was recorded.'
 
@@ -379,8 +381,10 @@ def _diagnostic_rows(items: list[object]) -> list[dict[str, object]]:
     return rows
 
 
-def _kubernetes_lifecycle_context(provider: str, metadata: Mapping[str, Any] | None) -> dict[str, object] | None:
-    if provider != 'kubernetes':
+def _kubernetes_lifecycle_context(
+    integration_type: str, metadata: Mapping[str, Any] | None
+) -> dict[str, object] | None:
+    if integration_type != 'container_orchestrator':
         return None
     metadata = metadata or {}
     version = str(metadata.get('version') or '')

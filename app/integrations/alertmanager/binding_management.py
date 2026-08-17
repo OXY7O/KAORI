@@ -36,7 +36,7 @@ def create_binding(
     if spec.priority < 1 or spec.priority > 1000:
         raise ValueError('Priority must be between 1 and 1000.')
 
-    canonical = ensure_canonical_instance(instance, provider_type='alertmanager')
+    canonical = ensure_canonical_instance(instance, integration_type='alert_source')
     existing = IntegrationBinding.query.filter_by(
         integration_instance_id=canonical.id,
         asset_type=normalized_scope_type,
@@ -59,7 +59,7 @@ def create_binding(
                 AlertmanagerInstance.integration_instance_id == IntegrationInstance.id,
             )
             .filter(
-                IntegrationInstance.provider_type == 'alertmanager',
+                IntegrationInstance.integration_type == 'alert_source',
                 IntegrationInstance.enabled.is_(True),
                 IntegrationBinding.asset_type == normalized_scope_type,
                 IntegrationBinding.asset_key == normalized_scope_key,

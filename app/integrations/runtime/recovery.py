@@ -13,7 +13,7 @@ _ANALYTICS_JOB_KEY = 'analytics.materialize'
 
 
 class RecoveryDispatchResult(TypedDict):
-    provider_type: str
+    integration_type: str
     clusters: list[str]
     queued: int
     skipped: int
@@ -81,7 +81,7 @@ def _record_dispatch(result: RecoveryDispatchResult, *, created: bool) -> None:
     result['skipped'] += int(not created)
 
 
-def enqueue_recovery_work(*, provider_type: str, instance: Any) -> RecoveryDispatchResult:
+def enqueue_recovery_work(*, integration_type: str, instance: Any) -> RecoveryDispatchResult:
     """Queue focused data refresh after a provider transitions back to healthy.
 
     Recovery dispatch is best-effort. A failed enqueue must never turn a healthy
@@ -91,7 +91,7 @@ def enqueue_recovery_work(*, provider_type: str, instance: Any) -> RecoveryDispa
     """
     cluster_ids = _bound_cluster_ids(instance)
     result: RecoveryDispatchResult = {
-        'provider_type': provider_type,
+        'integration_type': integration_type,
         'clusters': cluster_ids,
         'queued': 0,
         'skipped': 0,
@@ -99,7 +99,7 @@ def enqueue_recovery_work(*, provider_type: str, instance: Any) -> RecoveryDispa
     if not cluster_ids:
         return result
 
-    if provider_type == 'kubernetes':
+    if integration_type == 'container_orchestrator':
         requests = (
             (_INVENTORY_JOB_KEY, 'inventory'),
             (_TLS_CERTIFICATE_JOB_KEY, 'TLS certificate'),
@@ -122,7 +122,7 @@ def enqueue_recovery_work(*, provider_type: str, instance: Any) -> RecoveryDispa
                     _record_dispatch(result, created=created)
         return result
 
-    if provider_type not in {'metrics_source', 'alertmanager'}:
+    if integration_type not in {'metrics_source', 'alert_source'}:
         return result
 
     requests = (

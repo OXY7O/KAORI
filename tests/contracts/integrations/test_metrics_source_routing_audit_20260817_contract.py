@@ -16,12 +16,16 @@ def test_metrics_source_is_provider_neutral_first_class_integration() -> None:
     workspace = read('app/templates/integrations/metrics.html')
 
     assert "__tablename__ = 'metrics_sources'" in model
-    assert "identity.provider_type = 'metrics_source'" in model
-    assert 'provider_key: Mapped[str]' in model
-    assert 'adapter_key: Mapped[str]' in model
+    assert 'creator=_metrics_source_identity' not in model
+    service = read('app/metrics/service.py')
+    assert "integration_type='metrics_source'" in service
+    assert 'provider_key=provider.key' in service
+    assert 'adapter_key=provider.adapter_key' in service
+    assert 'provider_key: AssociationProxy[str]' in model
+    assert 'adapter_key: AssociationProxy[str]' in model
     assert 'query_language: Mapped[str]' in model
     assert 'source_type:' not in model
-    assert "provider_type='metrics_source'" in integration_module
+    assert "integration_type='metrics_source'" in integration_module
     assert "integration_provider_document('metrics_source')" in providers
     assert 'provider_kinds:' in catalog
     assert '- key: prometheus' in catalog
@@ -154,7 +158,7 @@ def test_generalization_migration_removes_product_category_from_runtime_schema()
     assert "'metrics_provider_key'" in migration
     assert "'metrics_adapter_key'" in migration
     assert "'metrics_query_language'" in migration
-    assert "provider = 'metrics_source'" in runtime
-    assert "'metrics_provider_key': getattr(provider_record, 'provider_key', None)" in lifecycle
-    assert "'metrics_adapter_key': getattr(provider_record, 'adapter_key', None)" in lifecycle
-    assert "'metrics_query_language': getattr(provider_record, 'query_language', None)" in lifecycle
+    assert "integration_type = 'metrics_source'" in runtime
+    assert 'canonical.provider_key = provider_key' in lifecycle
+    assert 'canonical.adapter_key = adapter_key' in lifecycle
+    assert "metadata['metrics_query_language'] = getattr(provider_record, 'query_language', None)" in lifecycle

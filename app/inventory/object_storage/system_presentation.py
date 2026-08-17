@@ -4,8 +4,9 @@ import re
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
-from sqlalchemy.orm import joinedload, selectinload
+from sqlalchemy.orm import selectinload
 
+from app.integrations.managed_assets import object_storage_owner
 from app.models.object_storage import ObjectStorageSystem
 
 OBJECT_STORAGE_INVENTORY_FRESHNESS_HOURS = 24
@@ -164,14 +165,14 @@ def _inventory_guidance(row: dict[str, Any], signals: list[dict[str, str]]) -> d
 
 
 def _system_query():
-    return ObjectStorageSystem.query.options(
-        joinedload(ObjectStorageSystem.minio_connection),
-        selectinload(ObjectStorageSystem.buckets),
-    ).order_by(ObjectStorageSystem.name.asc())
+    return ObjectStorageSystem.query.options(selectinload(ObjectStorageSystem.buckets)).order_by(
+        ObjectStorageSystem.name.asc()
+    )
 
 
 def _system_row(system: ObjectStorageSystem) -> dict[str, Any]:
-    connection = system.minio_connection
+    owner = object_storage_owner(system.id)
+    connection = owner.record if owner is not None else None
     status_label, status_tone = _status(system.status)
     buckets = list(system.buckets or ())
     latest_observed_at = system.inventory_observed_at
@@ -184,8 +185,8 @@ def _system_row(system: ObjectStorageSystem) -> dict[str, Any]:
         'status': system.status,
         'status_label': status_label,
         'status_tone': status_tone,
-        'provider_key': str(connection.detected_product or '') if connection is not None else '',
-        'provider_label': _provider_label(connection.detected_product if connection is not None else None),
+        'provider_key': owner.provider_key if owner is not None else '',
+        'provider_label': owner.provider.label if owner is not None else 'Object Storage',
         'release': (
             connection.declared_release if connection is not None and connection.declared_release else 'Not Declared'
         ),

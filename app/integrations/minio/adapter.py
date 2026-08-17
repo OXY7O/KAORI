@@ -91,7 +91,7 @@ def _snapshot_metadata(instance: MinioInstance) -> dict[str, Any]:
 
 
 class MinioRuntimeAdapter:
-    provider = 'minio'
+    integration_type = 'object_storage'
 
     def refresh(self, instance: MinioInstance) -> dict[str, Any]:
         """Run Full Validation without committing object-storage inventory."""
@@ -225,7 +225,9 @@ class MinioRuntimeAdapter:
         readiness = instance.readiness_status or 'validation_required'
         observed_at = instance.last_checked_at or instance.last_validated_at or now
         return RuntimeState(
-            provider=self.provider,
+            integration_type=self.integration_type,
+            provider_key=instance.provider_key,
+            adapter_key=instance.adapter_key,
             instance_id=str(instance.id),
             instance_name=instance.name,
             observed_at=observed_at,

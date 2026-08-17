@@ -139,7 +139,11 @@ def main() -> int:
         'Automation execution must remain explicitly fail-closed in default configuration',
         errors,
     )
-    require('AUTOMATION_EXECUTION_ENABLED' in automation_enablement, 'Automation execution enablement contract is missing', errors)
+    require(
+        'AUTOMATION_EXECUTION_ENABLED' in automation_enablement,
+        'Automation execution enablement contract is missing',
+        errors,
+    )
     require('assert_execution_enabled()' in workflow, 'Intelligence workflow must enforce execution enablement', errors)
     require('assert_execution_enabled()' in resolver_tasks, 'Resolver tasks must enforce execution enablement', errors)
     require(
@@ -196,7 +200,8 @@ def main() -> int:
     for required in ('Alertmanager is preferred', 'Metrics Source ALERTS'):
         require(required in alert_alerts, f'Alert Intelligence alert-source contract missing: {required}', errors)
     require(
-        'This is contextual correlation, not a claim that every finding was caused by every alert.' in alert_correlation,
+        'This is contextual correlation, not a claim that every finding was caused by every alert.'
+        in alert_correlation,
         'Alert Intelligence must keep contextual correlation distinct from causal attribution',
         errors,
     )

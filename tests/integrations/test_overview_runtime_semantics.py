@@ -19,11 +19,11 @@ def test_runtime_scope_label_describes_active_filters() -> None:
     assert _runtime_scope_label(provider='', health='', readiness='') == 'All Registered Targets'
     assert (
         _runtime_scope_label(
-            provider='prometheus',
+            provider='metrics_source',
             health='not_observed',
             readiness='validation_required',
         )
-        == 'Prometheus · Not Observed · Validation Required'
+        == 'Metrics Sources · Not Observed · Validation Required'
     )
 
 
@@ -44,7 +44,7 @@ def test_runtime_stats_are_calculated_from_the_supplied_scope() -> None:
 
 def test_portfolio_stats_separate_validation_and_missing_configuration() -> None:
     kubernetes = [SimpleNamespace(readiness_status='ready')]
-    prometheus = [
+    metrics_sources = [
         SimpleNamespace(endpoint='https://prometheus.example', readiness_status='degraded'),
         SimpleNamespace(endpoint='', readiness_status='validation_required'),
     ]
@@ -54,7 +54,7 @@ def test_portfolio_stats_separate_validation_and_missing_configuration() -> None
 
     result = build_overview_stats(
         kubernetes_connections=kubernetes,
-        prometheus_instances=prometheus,
+        metrics_sources=metrics_sources,
         alertmanager_instances=alertmanager,
         extension_instances=[],
     )

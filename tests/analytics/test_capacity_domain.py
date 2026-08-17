@@ -28,11 +28,11 @@ def _load_capacity_modules() -> tuple[ModuleType, ModuleType]:
     previous = {name: sys.modules.get(name) for name in names}
 
     exceptions = ModuleType(names[0])
-    exceptions.PrometheusError = type('PrometheusError', (Exception,), {})  # type: ignore[attr-defined]
+    exceptions.MetricsSourceError = type('MetricsSourceError', (Exception,), {})  # type: ignore[attr-defined]
     sys.modules[names[0]] = exceptions
 
     query_profiles = ModuleType(names[1])
-    query_profiles.get_query_expression = lambda key: key  # type: ignore[attr-defined]
+    query_profiles.get_kubernetes_query_expression = lambda key: key  # type: ignore[attr-defined]
     sys.modules[names[1]] = query_profiles
 
     consumer = ModuleType(names[2])

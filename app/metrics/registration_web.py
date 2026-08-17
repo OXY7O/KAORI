@@ -11,10 +11,10 @@ from app.cluster.service import get_cluster_by_id
 from app.common.http import is_htmx_request
 from app.integrations.metrics.exceptions import MetricsSourceError
 from app.integrations.metrics.providers import MetricsProviderDefinition, provider_definition
-from app.notifications.service import get_navigation_notification_context, record_operational_activity
 from app.metrics.forms import MetricsSourceForm
 from app.metrics.registration import issue_registration_proof, verify_registration_proof
 from app.metrics.service import save_metrics_source, test_metrics_source_connection
+from app.notifications.service import get_navigation_notification_context, record_operational_activity
 
 logger = logging.getLogger(__name__)
 

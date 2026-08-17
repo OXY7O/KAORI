@@ -19,9 +19,9 @@ from app.integrations.readiness import resolve_binding_operational_status
 from app.integrations.registry import get_integration
 from app.integrations.runtime.presentation import runtime_history_view, runtime_state_view
 from app.integrations.runtime.repository import paginate_runtime_history
-from app.models import Cluster, ObjectStorageSystem, MetricsSource
-from app.models.integration import IntegrationBinding
 from app.metrics.resolver import MetricsSourceResolution, resolve_metrics_sources
+from app.models import Cluster, MetricsSource, ObjectStorageSystem
+from app.models.integration import IntegrationBinding
 
 _CORE_CAPABILITIES = set(PROVIDER_CAPABILITY_KEYS)
 
@@ -129,12 +129,10 @@ def build_instance_context(
     ]
     assessment_map = {str(item.get('key') or ''): item for item in assessments if item.get('key')}
     runtime_state = runtime_state_view(
-        get_integration('metrics_source').adapter.get_state(instance),
+        get_integration('metrics_source').runtime_state(instance),
         actions={
             'refresh_url': url_for('metrics.refresh_runtime', instance_id=instance.id),
-            'configuration_url': url_for(
-                'metrics.instance_detail', instance_id=instance.id, _anchor='configuration'
-            ),
+            'configuration_url': url_for('metrics.instance_detail', instance_id=instance.id, _anchor='configuration'),
             'history_url': url_for('metrics.instance_runtime_history', instance_id=instance.id),
         },
     )
@@ -154,8 +152,8 @@ def build_instance_context(
     observed_keys: set[str] = {str(row['key']) for row in capability_rows if row['available']}
 
     deletion_guard = provider_deletion_guard(
-        provider_type='metrics_source',
-        provider_instance_id=instance.id,
+        integration_type='metrics_source',
+        integration_instance_id=instance.integration_instance_id,
     )
     binding_rows = [_binding_row(binding, instance) for binding in bindings]
     binding_registry_rows, binding_registry_pagination = paginate_sequence(
@@ -229,8 +227,7 @@ def _capability_row(item: dict[str, Any]) -> dict[str, Any]:
     expected_signals = list(item.get('expected_signals') or (definition.expected_signals if definition else ()))
     required_by = list(item.get('required_by') or (definition.required_by if definition else ()))
     source_owner = str(
-        item.get('source_owner')
-        or (definition.source_owner if definition else 'configured metrics pipeline')
+        item.get('source_owner') or (definition.source_owner if definition else 'configured metrics pipeline')
     )
     recommendation = str(
         item.get('recommendation')

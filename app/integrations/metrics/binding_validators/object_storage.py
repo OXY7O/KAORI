@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from app.extensions.db import db
+from app.integrations.managed_assets import object_storage_owner
 from app.integrations.metrics.binding_profiles import BindingValidationProfile
 from app.integrations.metrics.binding_validators.contracts import BindingValidationAssessment
 from app.integrations.metrics.query_profiles.object_storage_audit import ObjectStorageMetricsProfileAuditor
@@ -26,7 +27,8 @@ class ObjectStorageValidationAdapter:
 
 
 def _supports_minio(system: ObjectStorageSystem) -> bool:
-    return system.minio_connection is not None
+    owner = object_storage_owner(system.id)
+    return owner is not None and owner.provider_key == 'minio'
 
 
 _VALIDATION_ADAPTERS: tuple[ObjectStorageValidationAdapter, ...] = (

@@ -22,7 +22,7 @@ class IntegrationCandidate:
 
 @dataclass(frozen=True, slots=True)
 class IntegrationResolution:
-    provider_type: str
+    integration_type: str
     asset_type: str
     asset_key: str
     required_capabilities: tuple[str, ...]
@@ -35,7 +35,7 @@ class IntegrationResolution:
 
 def resolve_integration(
     *,
-    provider_type: str,
+    integration_type: str,
     asset_type: str,
     asset_key: str,
     required_capabilities: tuple[str, ...] = (),
@@ -43,7 +43,7 @@ def resolve_integration(
     rows = (
         IntegrationBinding.query.join(IntegrationInstance)
         .filter(
-            IntegrationInstance.provider_type == provider_type,
+            IntegrationInstance.integration_type == integration_type,
             IntegrationInstance.enabled.is_(True),
             IntegrationInstance.lifecycle_status == 'active',
             IntegrationBinding.asset_type == asset_type,
@@ -90,12 +90,12 @@ def resolve_integration(
             item.binding.id,
         )
     )
-    return IntegrationResolution(provider_type, asset_type, str(asset_key), required_capabilities, tuple(candidates))
+    return IntegrationResolution(integration_type, asset_type, str(asset_key), required_capabilities, tuple(candidates))
 
 
 def provider_record(instance: IntegrationInstance) -> Any | None:
     """Resolve the provider-specific record through the integration registry."""
     from app.integrations.registry import get_integration
 
-    module = get_integration(instance.provider_type)
+    module = get_integration(instance.integration_type)
     return module.get_record_for_canonical(instance.id)

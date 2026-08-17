@@ -62,7 +62,7 @@ def resolve_metrics_sources(
     query_horizon: str = 'balanced',
 ) -> MetricsSourceResolution:
     canonical = resolve_integration(
-        provider_type='metrics_source',
+        integration_type='metrics_source',
         asset_type=scope_type,
         asset_key=scope_key,
         required_capabilities=required_binding_capabilities,

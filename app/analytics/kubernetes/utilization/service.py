@@ -8,53 +8,59 @@ from app.analytics.kubernetes.common.presentation import present_metrics_source_
 from app.analytics.shared.coercion import safe_float
 from app.integrations.consumer.contracts import ConsumerResult
 from app.integrations.metrics.exceptions import MetricsSourceError
-from app.integrations.metrics.query_profiles import get_query_expression
-from app.models import Cluster
+from app.integrations.metrics.query_profiles import get_kubernetes_query_expression
 from app.metrics.consumer import MetricsConsumer
 from app.metrics.service import MetricsService
+from app.models import Cluster
 
-CPU_CAPACITY = get_query_expression('analytics.utilization.queries.CPU_CAPACITY')
-CPU_CAPACITY_BY_NODE = get_query_expression('analytics.utilization.queries.CPU_CAPACITY_BY_NODE')
-CPU_USAGE = get_query_expression('analytics.utilization.queries.CPU_USAGE')
-CPU_USAGE_BY_NODE = get_query_expression('analytics.utilization.queries.CPU_USAGE_BY_NODE')
-CPU_UTILIZATION = get_query_expression('analytics.utilization.queries.CPU_UTILIZATION')
-CPU_UTILIZATION_BY_NODE = get_query_expression('analytics.utilization.queries.CPU_UTILIZATION_BY_NODE')
-DISK_PRESSURE_NODES = get_query_expression('analytics.utilization.queries.DISK_PRESSURE_NODES')
-DISK_PRESSURE_NODES_BY_NODE = get_query_expression('analytics.utilization.queries.DISK_PRESSURE_NODES_BY_NODE')
-KUBERNETES_VERSION = get_query_expression('analytics.utilization.queries.KUBERNETES_VERSION')
-MASTER_NODES = get_query_expression('analytics.utilization.queries.MASTER_NODES')
-MEMORY_CAPACITY = get_query_expression('analytics.utilization.queries.MEMORY_CAPACITY')
-MEMORY_CAPACITY_BY_NODE = get_query_expression('analytics.utilization.queries.MEMORY_CAPACITY_BY_NODE')
-MEMORY_PRESSURE_NODES = get_query_expression('analytics.utilization.queries.MEMORY_PRESSURE_NODES')
-MEMORY_PRESSURE_NODES_BY_NODE = get_query_expression('analytics.utilization.queries.MEMORY_PRESSURE_NODES_BY_NODE')
-MEMORY_USAGE = get_query_expression('analytics.utilization.queries.MEMORY_USAGE')
-MEMORY_USAGE_BY_NODE = get_query_expression('analytics.utilization.queries.MEMORY_USAGE_BY_NODE')
-MEMORY_UTILIZATION = get_query_expression('analytics.utilization.queries.MEMORY_UTILIZATION')
-MEMORY_UTILIZATION_BY_NODE = get_query_expression('analytics.utilization.queries.MEMORY_UTILIZATION_BY_NODE')
-NODE_LIST = get_query_expression('analytics.utilization.queries.NODE_LIST')
-NOT_READY_NODES = get_query_expression('analytics.utilization.queries.NOT_READY_NODES')
-PID_PRESSURE_NODES = get_query_expression('analytics.utilization.queries.PID_PRESSURE_NODES')
-PID_PRESSURE_NODES_BY_NODE = get_query_expression('analytics.utilization.queries.PID_PRESSURE_NODES_BY_NODE')
-POD_CAPACITY = get_query_expression('analytics.utilization.queries.POD_CAPACITY')
-POD_CAPACITY_BY_NODE = get_query_expression('analytics.utilization.queries.POD_CAPACITY_BY_NODE')
-POD_COUNT = get_query_expression('analytics.utilization.queries.POD_COUNT')
-POD_COUNT_BY_NODE = get_query_expression('analytics.utilization.queries.POD_COUNT_BY_NODE')
-POD_UTILIZATION = get_query_expression('analytics.utilization.queries.POD_UTILIZATION')
-POD_UTILIZATION_BY_NODE = get_query_expression('analytics.utilization.queries.POD_UTILIZATION_BY_NODE')
-READY_NODES = get_query_expression('analytics.utilization.queries.READY_NODES')
-STORAGE_AVAILABLE = get_query_expression('analytics.utilization.queries.STORAGE_AVAILABLE')
-STORAGE_AVAILABLE_BY_NODE = get_query_expression('analytics.utilization.queries.STORAGE_AVAILABLE_BY_NODE')
-STORAGE_CAPACITY = get_query_expression('analytics.utilization.queries.STORAGE_CAPACITY')
-STORAGE_CAPACITY_BY_NODE = get_query_expression('analytics.utilization.queries.STORAGE_CAPACITY_BY_NODE')
-STORAGE_USAGE = get_query_expression('analytics.utilization.queries.STORAGE_USAGE')
-STORAGE_USAGE_BY_NODE = get_query_expression('analytics.utilization.queries.STORAGE_USAGE_BY_NODE')
-STORAGE_UTILIZATION = get_query_expression('analytics.utilization.queries.STORAGE_UTILIZATION')
-STORAGE_UTILIZATION_BY_NODE = get_query_expression('analytics.utilization.queries.STORAGE_UTILIZATION_BY_NODE')
-TOP_CPU_CONSUMERS = get_query_expression('analytics.utilization.queries.TOP_CPU_CONSUMERS')
-TOP_MEMORY_CONSUMERS = get_query_expression('analytics.utilization.queries.TOP_MEMORY_CONSUMERS')
-TOTAL_NODES = get_query_expression('analytics.utilization.queries.TOTAL_NODES')
-WORKER_NODES = get_query_expression('analytics.utilization.queries.WORKER_NODES')
-WORKER_NODE_LIST = get_query_expression('analytics.utilization.queries.WORKER_NODE_LIST')
+CPU_CAPACITY = get_kubernetes_query_expression('analytics.utilization.queries.CPU_CAPACITY')
+CPU_CAPACITY_BY_NODE = get_kubernetes_query_expression('analytics.utilization.queries.CPU_CAPACITY_BY_NODE')
+CPU_USAGE = get_kubernetes_query_expression('analytics.utilization.queries.CPU_USAGE')
+CPU_USAGE_BY_NODE = get_kubernetes_query_expression('analytics.utilization.queries.CPU_USAGE_BY_NODE')
+CPU_UTILIZATION = get_kubernetes_query_expression('analytics.utilization.queries.CPU_UTILIZATION')
+CPU_UTILIZATION_BY_NODE = get_kubernetes_query_expression('analytics.utilization.queries.CPU_UTILIZATION_BY_NODE')
+DISK_PRESSURE_NODES = get_kubernetes_query_expression('analytics.utilization.queries.DISK_PRESSURE_NODES')
+DISK_PRESSURE_NODES_BY_NODE = get_kubernetes_query_expression(
+    'analytics.utilization.queries.DISK_PRESSURE_NODES_BY_NODE'
+)
+KUBERNETES_VERSION = get_kubernetes_query_expression('analytics.utilization.queries.KUBERNETES_VERSION')
+MASTER_NODES = get_kubernetes_query_expression('analytics.utilization.queries.MASTER_NODES')
+MEMORY_CAPACITY = get_kubernetes_query_expression('analytics.utilization.queries.MEMORY_CAPACITY')
+MEMORY_CAPACITY_BY_NODE = get_kubernetes_query_expression('analytics.utilization.queries.MEMORY_CAPACITY_BY_NODE')
+MEMORY_PRESSURE_NODES = get_kubernetes_query_expression('analytics.utilization.queries.MEMORY_PRESSURE_NODES')
+MEMORY_PRESSURE_NODES_BY_NODE = get_kubernetes_query_expression(
+    'analytics.utilization.queries.MEMORY_PRESSURE_NODES_BY_NODE'
+)
+MEMORY_USAGE = get_kubernetes_query_expression('analytics.utilization.queries.MEMORY_USAGE')
+MEMORY_USAGE_BY_NODE = get_kubernetes_query_expression('analytics.utilization.queries.MEMORY_USAGE_BY_NODE')
+MEMORY_UTILIZATION = get_kubernetes_query_expression('analytics.utilization.queries.MEMORY_UTILIZATION')
+MEMORY_UTILIZATION_BY_NODE = get_kubernetes_query_expression('analytics.utilization.queries.MEMORY_UTILIZATION_BY_NODE')
+NODE_LIST = get_kubernetes_query_expression('analytics.utilization.queries.NODE_LIST')
+NOT_READY_NODES = get_kubernetes_query_expression('analytics.utilization.queries.NOT_READY_NODES')
+PID_PRESSURE_NODES = get_kubernetes_query_expression('analytics.utilization.queries.PID_PRESSURE_NODES')
+PID_PRESSURE_NODES_BY_NODE = get_kubernetes_query_expression('analytics.utilization.queries.PID_PRESSURE_NODES_BY_NODE')
+POD_CAPACITY = get_kubernetes_query_expression('analytics.utilization.queries.POD_CAPACITY')
+POD_CAPACITY_BY_NODE = get_kubernetes_query_expression('analytics.utilization.queries.POD_CAPACITY_BY_NODE')
+POD_COUNT = get_kubernetes_query_expression('analytics.utilization.queries.POD_COUNT')
+POD_COUNT_BY_NODE = get_kubernetes_query_expression('analytics.utilization.queries.POD_COUNT_BY_NODE')
+POD_UTILIZATION = get_kubernetes_query_expression('analytics.utilization.queries.POD_UTILIZATION')
+POD_UTILIZATION_BY_NODE = get_kubernetes_query_expression('analytics.utilization.queries.POD_UTILIZATION_BY_NODE')
+READY_NODES = get_kubernetes_query_expression('analytics.utilization.queries.READY_NODES')
+STORAGE_AVAILABLE = get_kubernetes_query_expression('analytics.utilization.queries.STORAGE_AVAILABLE')
+STORAGE_AVAILABLE_BY_NODE = get_kubernetes_query_expression('analytics.utilization.queries.STORAGE_AVAILABLE_BY_NODE')
+STORAGE_CAPACITY = get_kubernetes_query_expression('analytics.utilization.queries.STORAGE_CAPACITY')
+STORAGE_CAPACITY_BY_NODE = get_kubernetes_query_expression('analytics.utilization.queries.STORAGE_CAPACITY_BY_NODE')
+STORAGE_USAGE = get_kubernetes_query_expression('analytics.utilization.queries.STORAGE_USAGE')
+STORAGE_USAGE_BY_NODE = get_kubernetes_query_expression('analytics.utilization.queries.STORAGE_USAGE_BY_NODE')
+STORAGE_UTILIZATION = get_kubernetes_query_expression('analytics.utilization.queries.STORAGE_UTILIZATION')
+STORAGE_UTILIZATION_BY_NODE = get_kubernetes_query_expression(
+    'analytics.utilization.queries.STORAGE_UTILIZATION_BY_NODE'
+)
+TOP_CPU_CONSUMERS = get_kubernetes_query_expression('analytics.utilization.queries.TOP_CPU_CONSUMERS')
+TOP_MEMORY_CONSUMERS = get_kubernetes_query_expression('analytics.utilization.queries.TOP_MEMORY_CONSUMERS')
+TOTAL_NODES = get_kubernetes_query_expression('analytics.utilization.queries.TOTAL_NODES')
+WORKER_NODES = get_kubernetes_query_expression('analytics.utilization.queries.WORKER_NODES')
+WORKER_NODE_LIST = get_kubernetes_query_expression('analytics.utilization.queries.WORKER_NODE_LIST')
 
 
 def get_utilization_clusters() -> list[Cluster]:

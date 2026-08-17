@@ -225,16 +225,16 @@ def source_setup(
             runtime_state, label, tone = 'authentication_failed', 'Authentication Failed', 'critical'
         elif exc.kind == MetricsSourceFailureKind.TRANSPORT:
             runtime_state, label, tone = 'disconnected', 'Disconnected', 'critical'
-        elif exc.provider:
+        elif exc.provider_key:
             runtime_state, label, tone = 'capability_incomplete', 'Capability Incomplete', 'warning'
         else:
             runtime_state, label, tone = 'not_configured', 'Not Configured', 'warning'
         return (
             None,
             {
-                'configured': bool(exc.provider),
-                'provider': exc.provider,
-                'provider_label': (exc.provider.title() if exc.provider else 'Metrics Source'),
+                'configured': bool(exc.provider_key),
+                'provider_key': exc.provider_key,
+                'provider_label': (exc.provider_key.title() if exc.provider_key else 'Metrics Source'),
                 'instance_name': None,
                 'runtime_state': runtime_state,
                 'label': label,
@@ -249,7 +249,7 @@ def source_setup(
     readiness = metrics_readiness_view(source.readiness)
     source_view = {
         'configured': True,
-        'provider': identity.provider,
+        'provider_key': identity.provider_key,
         'provider_label': identity.provider_label,
         'instance_name': identity.instance_name,
         'runtime_state': 'consumer_validation_required',

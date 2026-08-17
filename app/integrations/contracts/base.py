@@ -9,7 +9,7 @@ from app.integrations.contracts.results import RuntimeState
 class RuntimeAdapter(Protocol):
     """Minimum contract implemented by every KAORI integration adapter."""
 
-    provider: str
+    integration_type: str
 
     def refresh(self, instance: Any) -> Any:
         """Rebuild compatibility and capability evidence for one instance."""

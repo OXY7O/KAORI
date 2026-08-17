@@ -18,9 +18,10 @@ from app.integrations.coverage import (
 from app.integrations.deletion import kubernetes_deletion_guard
 from app.integrations.kubernetes.compatibility import FEATURE_CONTRACTS
 from app.integrations.kubernetes.messages import compact_readiness_reasons
-from app.integrations.overview_extensions import sort_runtime_rows
 from app.integrations.metrics.providers import provider_definition, provider_options
 from app.integrations.metrics.scope import cluster_bindings_for_instance
+from app.integrations.overview_extensions import sort_runtime_rows
+from app.integrations.provider_matrix import provider_kind
 from app.integrations.registry import get_integration, registry
 from app.integrations.taxonomy import (
     capability_definitions_for_domain,
@@ -169,7 +170,7 @@ def build_kubernetes_detail(cluster_id: str) -> dict[str, Any] | None:
     selected_adapters = discovery.get('selected_adapters') or {}
     latest_runtime_observation = (
         IntegrationRuntimeObservation.query.filter_by(
-            provider='kubernetes',
+            integration_type='container_orchestrator',
             instance_id=str(connection.id),
         )
         .order_by(
@@ -198,7 +199,7 @@ def build_kubernetes_detail(cluster_id: str) -> dict[str, Any] | None:
         scope_key=cluster.id,
     )
     alertmanager_source, alertmanager_binding = bound_source_for_scope(
-        'alertmanager',
+        'alert_source',
         scope_type='kubernetes_cluster',
         scope_key=cluster.id,
     )
@@ -210,7 +211,7 @@ def build_kubernetes_detail(cluster_id: str) -> dict[str, Any] | None:
     report_count = Report.query.filter(Report.cluster_id == cluster.id).count()
     schedule_count = ReportSchedule.query.filter(ReportSchedule.cluster_id == cluster.id).count()
     deletion_guard = kubernetes_deletion_guard(
-        connection_id=connection.id,
+        integration_instance_id=connection.integration_instance_id,
         cluster_id=cluster.id,
     )
     source_bindings = build_bound_observability_source_rows(
@@ -228,7 +229,7 @@ def build_kubernetes_detail(cluster_id: str) -> dict[str, Any] | None:
             'message': ' '.join(compact_readiness_reasons(discovery.get('readiness_reasons') or []))
             or 'Run Full Validation to refresh API, compatibility, and RBAC evidence.',
         },
-        'runtime_history': list_runtime_history('kubernetes', str(connection.id), limit=5),
+        'runtime_history': list_runtime_history('container_orchestrator', str(connection.id), limit=5),
         'feature_rows': feature_rows,
         'blocked_features': discovery.get('blocked_features') or [],
         'legacy_features': discovery.get('legacy_features') or [],
@@ -314,9 +315,7 @@ def _metrics_source_registry_rows() -> list[dict[str, Any]]:
     clusters_by_id = {cluster.id: cluster for cluster in Cluster.query.all()}
     rows: list[dict[str, Any]] = []
     instances = (
-        MetricsSource.query.join(MetricsSource.integration_instance)
-        .order_by(IntegrationInstance.name.asc())
-        .all()
+        MetricsSource.query.join(MetricsSource.integration_instance).order_by(IntegrationInstance.name.asc()).all()
     )
     for instance in instances:
         bindings = cluster_bindings_for_instance(instance, enabled_only=True)
@@ -444,7 +443,7 @@ def _provider_portfolio_counts(
     extension_instances: list[IntegrationInstance],
 ) -> dict[str, dict[str, int]]:
     counts = {
-        'kubernetes': {
+        'container_orchestrator': {
             'configured': len(kubernetes_connections),
             'ready': sum(
                 1
@@ -458,15 +457,15 @@ def _provider_portfolio_counts(
             'ready': sum(1 for item in metrics_sources if item.enabled and item.readiness_status == 'ready'),
             'total': len(metrics_sources),
         },
-        'alertmanager': {
+        'alert_source': {
             'configured': sum(1 for item in alertmanager_instances if item.endpoint),
             'ready': sum(1 for item in alertmanager_instances if item.enabled and item.readiness_status == 'ready'),
             'total': len(alertmanager_instances),
         },
     }
-    for provider_type in {item.provider_type for item in extension_instances}:
-        targets = [item for item in extension_instances if item.provider_type == provider_type]
-        counts[provider_type] = {
+    for integration_type in {item.integration_type for item in extension_instances}:
+        targets = [item for item in extension_instances if item.integration_type == integration_type]
+        counts[integration_type] = {
             'configured': len(targets),
             'ready': sum(1 for item in targets if item.enabled and item.readiness_status == 'ready'),
             'total': len(targets),
@@ -492,7 +491,7 @@ def _coverage(
     for domain in ordered_domain_definitions():
         domain_modules = [module for module in modules if module.domain_key == domain.key]
         lifecycle = 'available' if domain_modules else 'planned'
-        counts = [provider_counts.get(module.provider_type, {}) for module in domain_modules]
+        counts = [provider_counts.get(module.integration_type, {}) for module in domain_modules]
         configured = sum(int(item.get('configured') or 0) for item in counts)
         ready = sum(int(item.get('ready') or 0) for item in counts)
         total = sum(int(item.get('total') or 0) for item in counts)
@@ -555,7 +554,7 @@ def _catalog(
     )
     rows: list[dict[str, Any]] = []
     for module in registry.all():
-        counts = provider_counts.get(module.provider_type, {})
+        counts = provider_counts.get(module.integration_type, {})
         configured = int(counts.get('configured') or 0)
         ready = int(counts.get('ready') or 0)
         total = int(counts.get('total') or 0)
@@ -571,7 +570,7 @@ def _catalog(
             posture_label = 'Ready'
         rows.append(
             {
-                'key': module.provider_type,
+                'key': module.integration_type,
                 'name': module.label,
                 'category': module.domain.label,
                 'capability': module.capability.label,
@@ -637,14 +636,14 @@ def _runtime_stats(rows: list[dict[str, Any]]) -> dict[str, int]:
     }
 
 
-def _runtime_scope_label(*, provider: str, health: str, readiness: str) -> str:
+def _runtime_scope_label(*, integration_type: str, health: str, readiness: str) -> str:
     parts: list[str] = []
-    if provider:
+    if integration_type:
         try:
-            module = get_integration(provider)
+            module = get_integration(integration_type)
             parts.append(module.runtime_label or module.label)
         except IntegrationNotRegistered:
-            parts.append(provider.replace('_', ' ').title())
+            parts.append(integration_type.replace('_', ' ').title())
     if health:
         parts.append(health.replace('_', ' ').title())
     if readiness:
@@ -660,9 +659,9 @@ def _capability_attention_display(count: int) -> str:
     return f'{count} Items Need Attention'
 
 
-def _latest_runtime_observation(provider: str, instance_id: str) -> IntegrationRuntimeObservation | None:
+def _latest_runtime_observation(integration_type: str, instance_id: str) -> IntegrationRuntimeObservation | None:
     return (
-        IntegrationRuntimeObservation.query.filter_by(provider=provider, instance_id=instance_id)
+        IntegrationRuntimeObservation.query.filter_by(integration_type=integration_type, instance_id=instance_id)
         .order_by(
             IntegrationRuntimeObservation.observed_at.desc(),
             IntegrationRuntimeObservation.id.desc(),
@@ -677,7 +676,7 @@ def _latest_runtime_observations() -> dict[tuple[str, str], IntegrationRuntimeOb
         func.row_number()
         .over(
             partition_by=(
-                IntegrationRuntimeObservation.provider,
+                IntegrationRuntimeObservation.integration_type,
                 IntegrationRuntimeObservation.instance_id,
             ),
             order_by=(
@@ -693,7 +692,7 @@ def _latest_runtime_observations() -> dict[tuple[str, str], IntegrationRuntimeOb
         .where(ranked.c.row_number == 1)
     )
     observations = db.session.execute(statement).scalars().all()
-    return {(row.provider, row.instance_id): row for row in observations}
+    return {(row.integration_type, row.instance_id): row for row in observations}
 
 
 def _runtime_overview_rows(
@@ -718,15 +717,18 @@ def _kubernetes_runtime_row(
 ) -> dict[str, Any]:
     cluster = connection.cluster
     canonical = connection.integration_instance
-    observation = latest.get(('kubernetes', str(connection.id)))
+    observation = latest.get(('container_orchestrator', str(connection.id)))
     readiness = connection.readiness_status or 'validation_required'
     capability_attention = 0 if readiness == 'ready' else 1
+    provider = provider_kind('container_orchestrator', canonical.provider_key)
     return {
-        'provider': 'kubernetes',
-        'provider_label': 'Kubernetes',
+        'integration_type': 'container_orchestrator',
+        'provider_key': provider.key,
+        'adapter_key': canonical.adapter_key,
+        'provider_label': provider.label,
         'provider_icon': 'boxes',
         'instance_id': str(connection.id),
-        'detail_key': f'kubernetes:{connection.id}',
+        'detail_key': f'container_orchestrator:{connection.id}',
         'cluster_id': str(cluster.id),
         'instance_name': canonical.name if canonical else f'{cluster.name} Kubernetes API',
         'scope_label': cluster.name,
@@ -752,7 +754,7 @@ def _metrics_source_runtime_row(
     enabled_bindings = [binding for binding in instance.integration_instance.bindings if binding.enabled]
     provider = provider_definition(instance.provider_key)
     return {
-        'provider': 'metrics_source',
+        'integration_type': 'metrics_source',
         'provider_label': provider.label,
         'provider_icon': provider.icon,
         'instance_id': str(instance.id),
@@ -776,19 +778,24 @@ def _metrics_source_runtime_row(
         'message': (observation.message if observation else None) or instance.validation_message or instance.last_error,
     }
 
+
 def _alertmanager_runtime_row(
     instance: AlertmanagerInstance,
     latest: Mapping[tuple[str, str], IntegrationRuntimeObservation],
 ) -> dict[str, Any]:
-    observation = latest.get(('alertmanager', str(instance.id)))
+    observation = latest.get(('alert_source', str(instance.id)))
     capability_attention = 0 if instance.capabilities else 1
     enabled_bindings = [binding for binding in instance.integration_instance.bindings if binding.enabled]
+    canonical = instance.integration_instance
+    provider = provider_kind('alert_source', canonical.provider_key)
     return {
-        'provider': 'alertmanager',
-        'provider_label': 'Alertmanager',
+        'integration_type': 'alert_source',
+        'provider_key': provider.key,
+        'adapter_key': canonical.adapter_key,
+        'provider_label': provider.label,
         'provider_icon': 'siren',
         'instance_id': str(instance.id),
-        'detail_key': f'alertmanager:{instance.id}',
+        'detail_key': f'alert_source:{instance.id}',
         'instance_name': instance.name,
         'scope_label': f'{len(enabled_bindings)} asset binding(s)',
         'endpoint_product': 'Alertmanager',
@@ -821,18 +828,18 @@ def _runtime_observation_fields(observation: IntegrationRuntimeObservation | Non
     }
 
 
-def build_integration_runtime_detail(provider: str, instance_id: str) -> dict[str, Any] | None:
+def build_integration_runtime_detail(integration_type: str, instance_id: str) -> dict[str, Any] | None:
     try:
         target_id = int(instance_id)
     except (TypeError, ValueError):
         return None
     known = {
-        'kubernetes': (KubernetesConnection, 'kubernetes_connections'),
+        'container_orchestrator': (KubernetesConnection, 'kubernetes_connections'),
         'metrics_source': (MetricsSource, 'metrics_sources'),
-        'alertmanager': (AlertmanagerInstance, 'alertmanager_instances'),
+        'alert_source': (AlertmanagerInstance, 'alertmanager_instances'),
     }
-    if provider in known:
-        model, collection_key = known[provider]
+    if integration_type in known:
+        model, collection_key = known[integration_type]
         target = db.session.get(model, target_id)
         if target is None:
             return None
@@ -842,17 +849,15 @@ def build_integration_runtime_detail(provider: str, instance_id: str) -> dict[st
             'alertmanager_instances': [],
         }
         runtime_args[collection_key] = [target]
-        observation = _latest_runtime_observation(provider, str(target_id))
-        latest = {(provider, str(target_id)): observation} if observation is not None else {}
+        observation = _latest_runtime_observation(integration_type, str(target_id))
+        latest = {(integration_type, str(target_id)): observation} if observation is not None else {}
         rows = _runtime_overview_rows(**runtime_args, latest=latest)
     else:
         try:
-            module = get_integration(provider)
+            module = get_integration(integration_type)
         except IntegrationNotRegistered:
             return None
-        if module.runtime_overview_builder is None:
-            return None
-        observation = _latest_runtime_observation(provider, str(target_id))
-        latest = {(provider, str(target_id)): observation} if observation is not None else {}
-        rows = module.runtime_overview_builder(latest, target_id)
+        observation = _latest_runtime_observation(integration_type, str(target_id))
+        latest = {(integration_type, str(target_id)): observation} if observation is not None else {}
+        rows = module.build_runtime_overview_rows(latest, target_id)
     return rows[0] if rows else None

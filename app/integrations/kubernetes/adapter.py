@@ -13,7 +13,7 @@ from app.models.kubernetes import KubernetesConnection
 class KubernetesRuntimeAdapter:
     """Provider-neutral runtime adapter for canonical Kubernetes connections."""
 
-    provider = 'kubernetes'
+    integration_type = 'container_orchestrator'
 
     @staticmethod
     def _cluster(instance: KubernetesConnection | Any):
@@ -162,7 +162,9 @@ class KubernetesRuntimeAdapter:
             ),
         ]
         return RuntimeState(
-            provider=self.provider,
+            integration_type=self.integration_type,
+            provider_key=connection.provider_key,
+            adapter_key=connection.adapter_key,
             instance_id=str(getattr(connection, 'id', cluster.id)),
             instance_name=getattr(getattr(connection, 'integration_instance', None), 'name', None) or cluster.name,
             observed_at=cluster.last_check or connection.last_validated_at or now,

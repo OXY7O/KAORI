@@ -12,17 +12,20 @@ from app.analytics.shared.metrics import (
     MetricsSourceFailureKind,
     MetricsSourceIdentity,
 )
+from app.integrations.managed_assets import object_storage_owner
 from app.integrations.metrics.binding_profiles import get_binding_validation_profile
 from app.integrations.metrics.exceptions import (
+    MetricsQueryError,
     MetricsSourceAuthenticationError,
     MetricsSourceConnectionError,
-    MetricsSourceError,
-    MetricsQueryError,
+)
+from app.integrations.metrics.exceptions import (
+    MetricsSourceError as MetricsIntegrationError,
 )
 from app.integrations.metrics.providers import provider_definition
 from app.integrations.metrics.query_profiles.object_storage_v1 import get_object_storage_query_expression
-from app.models.object_storage import ObjectStorageSystem
 from app.metrics.consumer import MetricsConsumer
+from app.models.object_storage import ObjectStorageSystem
 
 _TIME_WINDOWS: dict[str, tuple[timedelta, str]] = {
     '1h': (timedelta(hours=1), '60s'),
@@ -191,7 +194,7 @@ def _readiness_from_evidence(
     )
 
 
-def _translate_error(exc: MetricsSourceError) -> MetricsSourceError:
+def _translate_error(exc: MetricsIntegrationError) -> MetricsSourceError:
     if isinstance(exc, MetricsSourceConnectionError):
         kind = MetricsSourceFailureKind.TRANSPORT
     elif isinstance(exc, MetricsSourceAuthenticationError):
@@ -200,7 +203,7 @@ def _translate_error(exc: MetricsSourceError) -> MetricsSourceError:
         kind = MetricsSourceFailureKind.QUERY
     else:
         kind = MetricsSourceFailureKind.CONFIGURATION
-    return MetricsSourceError(str(exc), kind=kind, provider='metrics_source')
+    return MetricsSourceError(str(exc), kind=kind, provider_key=None)
 
 
 class MinioMetricsSourceAdapter:
@@ -213,7 +216,8 @@ class MinioMetricsSourceAdapter:
     @staticmethod
     def supports(system: ObjectStorageSystem) -> bool:
         """Return whether this adapter has a qualified metric profile for the asset provider."""
-        return system.minio_connection is not None
+        owner = object_storage_owner(system.id)
+        return owner is not None and owner.provider_key == 'minio'
 
     @classmethod
     def for_system(
@@ -226,7 +230,7 @@ class MinioMetricsSourceAdapter:
             raise MetricsSourceError(
                 'A metrics source is bound, but no qualified Object Storage metric profile is registered for this asset provider.',
                 kind=MetricsSourceFailureKind.CONFIGURATION,
-                provider='metrics_source',
+                provider_key=None,
             )
         try:
             consumer = MetricsConsumer.for_asset(
@@ -234,7 +238,7 @@ class MinioMetricsSourceAdapter:
                 scope_key=system.id,
                 scope_name=system.name,
             )
-        except MetricsSourceError as exc:
+        except MetricsIntegrationError as exc:
             raise _translate_error(exc) from exc
         return cls(consumer, retry_count=0 if execution_mode == 'interactive' else None)
 
@@ -242,7 +246,8 @@ class MinioMetricsSourceAdapter:
     def identity(self) -> MetricsSourceIdentity:
         provider = provider_definition(self._consumer.config.provider_key)
         return MetricsSourceIdentity(
-            provider='metrics_source',
+            integration_type='metrics_source',
+            provider_key=provider.key,
             provider_label=provider.label,
             instance_name=self._consumer.config.name,
             detail=f'{self._consumer.config.name} · MinIO Metrics v2',
@@ -263,7 +268,7 @@ class MinioMetricsSourceAdapter:
                 get_object_storage_query_expression(metric_key),
                 retry_count=self._retry_count,
             )
-        except MetricsSourceError as exc:
+        except MetricsIntegrationError as exc:
             raise _translate_error(exc) from exc
         return _vector_scalar(payload)
 
@@ -273,7 +278,7 @@ class MinioMetricsSourceAdapter:
                 get_object_storage_query_expression(metric_key),
                 retry_count=self._retry_count,
             )
-        except MetricsSourceError as exc:
+        except MetricsIntegrationError as exc:
             raise _translate_error(exc) from exc
         return _vector_by_label(payload, label)
 
@@ -289,6 +294,6 @@ class MinioMetricsSourceAdapter:
                 step,
                 retry_count=self._retry_count,
             )
-        except MetricsSourceError as exc:
+        except MetricsIntegrationError as exc:
             raise _translate_error(exc) from exc
         return _matrix_points(payload)

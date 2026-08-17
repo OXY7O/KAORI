@@ -48,11 +48,13 @@ def _runtime_queue_name() -> str:
     )
 
 
-def _dedup_key(*, provider_type: str, operation: str, instance_id: int, binding_id: int | None = None) -> str:
+def _dedup_key(
+    *, integration_type: str, operation: str, integration_instance_id: int, binding_id: int | None = None
+) -> str:
     return build_deduplication_key(
         'integration',
-        provider_type,
-        instance_id,
+        integration_type,
+        integration_instance_id,
         operation,
         binding_id,
     )
@@ -62,9 +64,9 @@ def _metadata(
     *,
     task_id: str,
     job_execution_id: int,
-    provider_type: str,
+    integration_type: str,
     operation: str,
-    instance_id: int,
+    integration_instance_id: int,
     binding_id: int | None,
     requested_by_user_id: int | None,
     title: str,
@@ -74,9 +76,9 @@ def _metadata(
     return {
         'task_id': task_id,
         'job_execution_id': job_execution_id,
-        'provider_type': provider_type,
+        'integration_type': integration_type,
         'operation': operation,
-        'instance_id': instance_id,
+        'integration_instance_id': integration_instance_id,
         'binding_id': binding_id,
         'requested_by_user_id': requested_by_user_id,
         'created_at': _now_iso(),
@@ -87,20 +89,20 @@ def _metadata(
     }
 
 
-def _assert_provider_target_exists(*, provider_type: str, instance_id: int) -> None:
+def _assert_provider_target_exists(*, integration_type: str, integration_instance_id: int) -> None:
     try:
-        get_integration(provider_type).get_instance(instance_id)
+        get_integration(integration_type).require_record_for_canonical(integration_instance_id)
     except IntegrationNotRegistered as exc:
-        raise ValueError(f'Unsupported integration provider: {provider_type}.') from exc
+        raise ValueError(f'Unsupported integration type: {integration_type}.') from exc
     except IntegrationInstanceNotFound as exc:
         raise RuntimeError('The integration connection was deleted before KAORI could admit the job.') from exc
 
 
 def _enqueue_job(
     *,
-    provider_type: str,
+    integration_type: str,
     operation: str,
-    instance_id: int,
+    integration_instance_id: int,
     binding_id: int | None,
     requested_by_user_id: int,
     queue_name: str,
@@ -114,43 +116,43 @@ def _enqueue_job(
 ) -> tuple[dict[str, Any], bool]:
     if conflicting_operation:
         conflict = find_active_job(
-            provider_type=provider_type,
-            provider_instance_id=instance_id,
+            integration_type=integration_type,
+            integration_instance_id=integration_instance_id,
             operation=conflicting_operation,
         )
         if conflict is not None and conflict.celery_task_id:
             return build_validation_snapshot(conflict.celery_task_id), False
 
     deduplication_key = _dedup_key(
-        provider_type=provider_type,
+        integration_type=integration_type,
         operation=operation,
-        instance_id=instance_id,
+        integration_instance_id=integration_instance_id,
         binding_id=binding_id,
     )
     scope_key = f'binding:{binding_id}' if binding_id is not None else None
-    resource_group = f'integration:{provider_type}:{instance_id}'
+    resource_group = f'integration:{integration_type}:{integration_instance_id}'
     acquire_resource_admission_locks(resource_group)
-    _assert_provider_target_exists(provider_type=provider_type, instance_id=instance_id)
+    _assert_provider_target_exists(integration_type=integration_type, integration_instance_id=integration_instance_id)
     job, created = create_or_attach_job(
         job_type='integration_operation',
         operation=operation,
         queue_name=queue_name,
         workload_class=workload_class,
         requested_by_user_id=requested_by_user_id,
-        provider_type=provider_type,
-        provider_instance_id=instance_id,
+        integration_type=integration_type,
+        integration_instance_id=integration_instance_id,
         scope_type='integration_binding' if binding_id is not None else 'integration_instance',
         scope_key=scope_key,
         resource_group=resource_group,
         parameters={
-            'provider_type': provider_type,
-            'instance_id': instance_id,
+            'integration_type': integration_type,
+            'integration_instance_id': integration_instance_id,
             'binding_id': binding_id,
             'operation': operation,
         },
         payload={
-            'provider_type': provider_type,
-            'instance_id': instance_id,
+            'integration_type': integration_type,
+            'integration_instance_id': integration_instance_id,
             'binding_id': binding_id,
             'trigger_type': 'manual',
         },
@@ -165,9 +167,9 @@ def _enqueue_job(
     metadata = _metadata(
         task_id=job.celery_task_id,
         job_execution_id=job.id,
-        provider_type=provider_type,
+        integration_type=integration_type,
         operation=operation,
-        instance_id=instance_id,
+        integration_instance_id=integration_instance_id,
         binding_id=binding_id,
         requested_by_user_id=requested_by_user_id,
         title=title,
@@ -176,9 +178,9 @@ def _enqueue_job(
     )
     acquired = claim_validation_job(
         task_id=job.celery_task_id,
-        provider_type=provider_type,
+        integration_type=integration_type,
         operation=operation,
-        instance_id=instance_id,
+        integration_instance_id=integration_instance_id,
         binding_id=binding_id,
         metadata=metadata,
         conflicting_operations=(conflicting_operation,) if conflicting_operation else (),
@@ -190,9 +192,9 @@ def _enqueue_job(
             error_code='resource_lock_conflict',
         )
         active_task_id = get_active_validation_task_id(
-            provider_type=provider_type,
+            integration_type=integration_type,
             operation=operation,
-            instance_id=instance_id,
+            integration_instance_id=integration_instance_id,
             binding_id=binding_id,
         )
         if active_task_id:
@@ -211,9 +213,9 @@ def _enqueue_job(
     except Exception as exc:
         release_validation_job(
             task_id=job.celery_task_id,
-            provider_type=provider_type,
+            integration_type=integration_type,
             operation=operation,
-            instance_id=instance_id,
+            integration_instance_id=integration_instance_id,
             binding_id=binding_id,
         )
         mark_job_failed(job.celery_task_id, error=exc, error_code='dispatch_failed')
@@ -223,22 +225,22 @@ def _enqueue_job(
 
 def enqueue_instance_validation(
     *,
-    provider_type: str,
-    instance_id: int,
+    integration_type: str,
+    integration_instance_id: int,
     requested_by_user_id: int,
 ) -> tuple[dict[str, Any], bool]:
     return _enqueue_job(
-        provider_type=provider_type,
+        integration_type=integration_type,
         operation='full_validation',
-        instance_id=instance_id,
+        integration_instance_id=integration_instance_id,
         binding_id=None,
         requested_by_user_id=requested_by_user_id,
         queue_name=_validation_queue_name(),
         workload_class=WORKLOAD_VALIDATION,
         task=validate_integration_instance,
         task_kwargs={
-            'provider_type': provider_type,
-            'instance_id': instance_id,
+            'integration_type': integration_type,
+            'integration_instance_id': integration_instance_id,
             'requested_by_user_id': requested_by_user_id,
             'trigger_type': 'manual',
         },
@@ -251,23 +253,23 @@ def enqueue_instance_validation(
 
 def enqueue_binding_validation(
     *,
-    provider_type: str,
-    instance_id: int,
+    integration_type: str,
+    integration_instance_id: int,
     binding_id: int,
     requested_by_user_id: int,
 ) -> tuple[dict[str, Any], bool]:
     return _enqueue_job(
-        provider_type=provider_type,
+        integration_type=integration_type,
         operation='binding_validation',
-        instance_id=instance_id,
+        integration_instance_id=integration_instance_id,
         binding_id=binding_id,
         requested_by_user_id=requested_by_user_id,
         queue_name=_validation_queue_name(),
         workload_class=WORKLOAD_VALIDATION,
         task=validate_integration_binding,
         task_kwargs={
-            'provider_type': provider_type,
-            'instance_id': instance_id,
+            'integration_type': integration_type,
+            'integration_instance_id': integration_instance_id,
             'binding_id': binding_id,
             'requested_by_user_id': requested_by_user_id,
         },
@@ -280,13 +282,13 @@ def enqueue_binding_validation(
 def validate_snapshot_access(
     snapshot: dict[str, Any],
     *,
-    provider_type: str,
-    instance_id: int,
+    integration_type: str,
+    integration_instance_id: int,
     binding_id: int | None = None,
 ) -> bool:
     return (
-        str(snapshot.get('provider_type') or '') == provider_type
-        and int(snapshot.get('instance_id') or 0) == int(instance_id)
+        str(snapshot.get('integration_type') or '') == integration_type
+        and int(snapshot.get('integration_instance_id') or 0) == int(integration_instance_id)
         and (binding_id is None or int(snapshot.get('binding_id') or 0) == int(binding_id))
     )
 
@@ -314,22 +316,22 @@ def snapshot_feedback_for_user(
 
 def enqueue_runtime_health_refresh(
     *,
-    provider_type: str,
-    instance_id: int,
+    integration_type: str,
+    integration_instance_id: int,
     requested_by_user_id: int,
 ) -> tuple[dict[str, Any], bool]:
     return _enqueue_job(
-        provider_type=provider_type,
+        integration_type=integration_type,
         operation='runtime_refresh',
-        instance_id=instance_id,
+        integration_instance_id=integration_instance_id,
         binding_id=None,
         requested_by_user_id=requested_by_user_id,
         queue_name=_runtime_queue_name(),
         workload_class=WORKLOAD_RUNTIME,
         task=refresh_integration_runtime_instance,
         task_kwargs={
-            'provider_type': provider_type,
-            'instance_id': instance_id,
+            'integration_type': integration_type,
+            'integration_instance_id': integration_instance_id,
             'requested_by_user_id': requested_by_user_id,
             'trigger_type': 'manual',
         },

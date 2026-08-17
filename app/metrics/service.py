@@ -21,13 +21,14 @@ from app.integrations.metrics.binding_profiles import get_binding_validation_pro
 from app.integrations.metrics.capabilities import BINDING_CAPABILITY_KEYS
 from app.integrations.metrics.exceptions import MetricsSourceError
 from app.integrations.metrics.providers import provider_definition
+from app.integrations.metrics.query_profiles import resolve_query_reference
 from app.integrations.registry import get_integration
 from app.jobs.service import acquire_resource_admission_locks
-from app.models import Cluster, MetricsSource
-from app.models.integration import IntegrationBinding, IntegrationInstance
 from app.metrics.consumer import MetricsConsumer
 from app.metrics.contracts import MetricsSourceConfigurationInput
 from app.metrics.repository import KUBERNETES_CLUSTER_SCOPE
+from app.models import Cluster, MetricsSource
+from app.models.integration import IntegrationBinding, IntegrationInstance
 
 
 class MetricsService:
@@ -54,7 +55,7 @@ class MetricsService:
         return get_integration('metrics_source').execute(
             'query.instant',
             self.instance,
-            expression=query,
+            expression=resolve_query_reference(query, adapter_key=self.instance.adapter_key),
         )
 
     def range_query(
@@ -69,7 +70,7 @@ class MetricsService:
         return get_integration('metrics_source').execute(
             'query.range',
             self.instance,
-            expression=query,
+            expression=resolve_query_reference(query, adapter_key=self.instance.adapter_key),
             start=start,
             end=end,
             step=step,
@@ -107,7 +108,15 @@ def test_metrics_source_connection(
     provider = provider_definition(configuration.provider_key)
     password, bearer_token = _resolved_test_credentials(configuration, existing_instance, auth_type=auth_type)
 
-    draft = MetricsSource()
+    draft_identity = IntegrationInstance(
+        integration_type='metrics_source',
+        provider_key=provider.key,
+        adapter_key=provider.adapter_key,
+        name=configuration.name or 'Draft metrics source',
+        enabled=configuration.enabled,
+        readiness_status='validation_required',
+    )
+    draft = MetricsSource(integration_instance=draft_identity)
     draft.name = configuration.name or 'Draft metrics source'
     draft.endpoint = endpoint
     draft.description = configuration.description
@@ -196,7 +205,7 @@ def save_metrics_source(
     duplicate = (
         MetricsSource.query.join(MetricsSource.integration_instance)
         .filter(
-            IntegrationInstance.provider_type == 'metrics_source',
+            IntegrationInstance.integration_type == 'metrics_source',
             IntegrationInstance.name == configuration.name,
         )
         .first()
@@ -206,8 +215,16 @@ def save_metrics_source(
 
     creating = instance is None
     if instance is None:
-        instance = MetricsSource()
-        instance.name = configuration.name
+        provider = provider_definition(configuration.provider_key)
+        canonical = IntegrationInstance(
+            integration_type='metrics_source',
+            provider_key=provider.key,
+            adapter_key=provider.adapter_key,
+            name=configuration.name,
+            enabled=configuration.enabled,
+            readiness_status='validation_required',
+        )
+        instance = MetricsSource(integration_instance=canonical)
         instance.endpoint = endpoint
         db.session.add(instance)
 
@@ -222,9 +239,9 @@ def save_metrics_source(
     _apply_auth_contract(configuration, instance)
     _reset_provider_evidence(instance)
 
-    canonical = ensure_canonical_instance(instance, provider_type='metrics_source')
+    canonical = ensure_canonical_instance(instance, integration_type='metrics_source')
     db.session.flush()
-    ensure_canonical_instance(instance, provider_type='metrics_source')
+    ensure_canonical_instance(instance, integration_type='metrics_source')
     if not creating:
         invalidate_bindings(
             canonical,
@@ -362,8 +379,8 @@ def remove_metrics_source(instance: MetricsSource) -> None:
         )
 
     guard = provider_deletion_guard(
-        provider_type='metrics_source',
-        provider_instance_id=instance.id,
+        integration_type='metrics_source',
+        integration_instance_id=instance.integration_instance_id,
     )
     if guard.blocked:
         raise DeletionBlocked(guard)

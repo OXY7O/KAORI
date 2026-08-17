@@ -64,9 +64,9 @@ def test_runtime_detail_reads_only_the_selected_target_observation() -> None:
     service = read('app/integrations/service.py')
     detail = service.split('def build_integration_runtime_detail(', 1)[1]
 
-    assert 'observation = _latest_runtime_observation(provider, str(target_id))' in detail
+    assert 'observation = _latest_runtime_observation(integration_type, str(target_id))' in detail
     assert '_runtime_overview_rows(**runtime_args, latest=latest)' in detail
-    assert 'module.runtime_overview_builder(latest, target_id)' in detail
+    assert 'module.build_runtime_overview_rows(latest, target_id)' in detail
     assert '_latest_runtime_observations()' not in detail
 
 

@@ -28,31 +28,39 @@ from app.analytics.shared.coercion import as_dict, as_list, safe_float
 from app.analytics.shared.params import ALLOWED_PER_PAGE_VALUES, get_allowed_time_ranges, get_selected_time_range
 from app.common.dependencies import metrics_source_capability_blocker, metrics_source_connection_blocker
 from app.integrations.consumer.contracts import ConsumerResult
-from app.integrations.metrics.query_profiles import get_query_expression
+from app.integrations.metrics.query_profiles import get_kubernetes_query_expression
 from app.intelligence.recommendation_engine import (
     build_workload_actionable_recommendations,
     count_actionable_recommendations,
     format_recommendation_cards,
 )
 
-NAMESPACE_ACTIVE_QUERY = get_query_expression('analytics.workload.queries.NAMESPACE_ACTIVE_QUERY')
-TENANT_CPU_ACTUAL_QUERY = get_query_expression('analytics.workload.queries.TENANT_CPU_ACTUAL_QUERY')
-TENANT_MEMORY_ACTUAL_QUERY = get_query_expression('analytics.workload.queries.TENANT_MEMORY_ACTUAL_QUERY')
-TENANT_POD_ACTUAL_QUERY = get_query_expression('analytics.workload.queries.TENANT_POD_ACTUAL_QUERY')
-TENANT_QUOTA_HARD_QUERY = get_query_expression('analytics.workload.queries.TENANT_QUOTA_HARD_QUERY')
-TENANT_QUOTA_USED_QUERY = get_query_expression('analytics.workload.queries.TENANT_QUOTA_USED_QUERY')
-WORKLOAD_CPU_CURRENT_QUERY = get_query_expression('analytics.workload.queries.WORKLOAD_CPU_CURRENT_QUERY')
-WORKLOAD_CPU_LIMITS_QUERY = get_query_expression('analytics.workload.queries.WORKLOAD_CPU_LIMITS_QUERY')
-WORKLOAD_CPU_PEAK_QUERY_TEMPLATE = get_query_expression('analytics.workload.queries.WORKLOAD_CPU_PEAK_QUERY_TEMPLATE')
-WORKLOAD_CPU_REQUESTS_QUERY = get_query_expression('analytics.workload.queries.WORKLOAD_CPU_REQUESTS_QUERY')
-WORKLOAD_MEMORY_CURRENT_QUERY = get_query_expression('analytics.workload.queries.WORKLOAD_MEMORY_CURRENT_QUERY')
-WORKLOAD_MEMORY_LIMITS_QUERY = get_query_expression('analytics.workload.queries.WORKLOAD_MEMORY_LIMITS_QUERY')
-WORKLOAD_MEMORY_PEAK_QUERY_TEMPLATE = get_query_expression(
+NAMESPACE_ACTIVE_QUERY = get_kubernetes_query_expression('analytics.workload.queries.NAMESPACE_ACTIVE_QUERY')
+TENANT_CPU_ACTUAL_QUERY = get_kubernetes_query_expression('analytics.workload.queries.TENANT_CPU_ACTUAL_QUERY')
+TENANT_MEMORY_ACTUAL_QUERY = get_kubernetes_query_expression('analytics.workload.queries.TENANT_MEMORY_ACTUAL_QUERY')
+TENANT_POD_ACTUAL_QUERY = get_kubernetes_query_expression('analytics.workload.queries.TENANT_POD_ACTUAL_QUERY')
+TENANT_QUOTA_HARD_QUERY = get_kubernetes_query_expression('analytics.workload.queries.TENANT_QUOTA_HARD_QUERY')
+TENANT_QUOTA_USED_QUERY = get_kubernetes_query_expression('analytics.workload.queries.TENANT_QUOTA_USED_QUERY')
+WORKLOAD_CPU_CURRENT_QUERY = get_kubernetes_query_expression('analytics.workload.queries.WORKLOAD_CPU_CURRENT_QUERY')
+WORKLOAD_CPU_LIMITS_QUERY = get_kubernetes_query_expression('analytics.workload.queries.WORKLOAD_CPU_LIMITS_QUERY')
+WORKLOAD_CPU_PEAK_QUERY_TEMPLATE = get_kubernetes_query_expression(
+    'analytics.workload.queries.WORKLOAD_CPU_PEAK_QUERY_TEMPLATE'
+)
+WORKLOAD_CPU_REQUESTS_QUERY = get_kubernetes_query_expression('analytics.workload.queries.WORKLOAD_CPU_REQUESTS_QUERY')
+WORKLOAD_MEMORY_CURRENT_QUERY = get_kubernetes_query_expression(
+    'analytics.workload.queries.WORKLOAD_MEMORY_CURRENT_QUERY'
+)
+WORKLOAD_MEMORY_LIMITS_QUERY = get_kubernetes_query_expression(
+    'analytics.workload.queries.WORKLOAD_MEMORY_LIMITS_QUERY'
+)
+WORKLOAD_MEMORY_PEAK_QUERY_TEMPLATE = get_kubernetes_query_expression(
     'analytics.workload.queries.WORKLOAD_MEMORY_PEAK_QUERY_TEMPLATE'
 )
-WORKLOAD_MEMORY_REQUESTS_QUERY = get_query_expression('analytics.workload.queries.WORKLOAD_MEMORY_REQUESTS_QUERY')
-WORKLOAD_POD_OWNER_QUERY = get_query_expression('analytics.workload.queries.WORKLOAD_POD_OWNER_QUERY')
-WORKLOAD_QOS_QUERY = get_query_expression('analytics.workload.queries.WORKLOAD_QOS_QUERY')
+WORKLOAD_MEMORY_REQUESTS_QUERY = get_kubernetes_query_expression(
+    'analytics.workload.queries.WORKLOAD_MEMORY_REQUESTS_QUERY'
+)
+WORKLOAD_POD_OWNER_QUERY = get_kubernetes_query_expression('analytics.workload.queries.WORKLOAD_POD_OWNER_QUERY')
+WORKLOAD_QOS_QUERY = get_kubernetes_query_expression('analytics.workload.queries.WORKLOAD_QOS_QUERY')
 
 
 class WorkloadAnalysisService(AnalyticsBaseService):
@@ -197,7 +205,9 @@ def get_workload_analysis_context(query_args: Mapping[str, Any]) -> dict[str, An
         if not context['metrics_source_connected']:
             context['dependency_blocker'] = metrics_source_connection_blocker(
                 cluster,
-                detail=str(metrics_source_status.get('error') or 'Metrics Source health check did not complete successfully.'),
+                detail=str(
+                    metrics_source_status.get('error') or 'Metrics Source health check did not complete successfully.'
+                ),
             )
             context.update(get_empty_workload_payload('', time_range))
             return context

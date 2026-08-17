@@ -178,7 +178,6 @@ def _metrics_compatibility_presentation() -> tuple[dict[str, Any], ...]:
     return tuple(rows)
 
 
-
 def _clean_config_value(value: Any, fallback: str = 'Not provided') -> str:
     normalized = str(value or '').strip()
     return normalized or fallback

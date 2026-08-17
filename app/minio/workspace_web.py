@@ -39,8 +39,8 @@ def queue_full_validation(
     validation_job: dict[str, Any] | None = None
     try:
         validation_job, created = enqueue_instance_validation(
-            provider_type='minio',
-            instance_id=instance.id,
+            integration_type='object_storage',
+            integration_instance_id=instance.integration_instance_id,
             requested_by_user_id=user_id,
         )
         feedback = record_operational_activity(
@@ -90,8 +90,8 @@ def queue_runtime_refresh(
     runtime_refresh_job: dict[str, Any] | None = None
     try:
         runtime_refresh_job, created = enqueue_runtime_health_refresh(
-            provider_type='minio',
-            instance_id=instance.id,
+            integration_type='object_storage',
+            integration_instance_id=instance.integration_instance_id,
             requested_by_user_id=user_id,
         )
         feedback = record_operational_activity(

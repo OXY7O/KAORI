@@ -375,8 +375,8 @@ def refresh_runtime(instance_id: int) -> ResponseReturnValue:
     is_htmx = is_htmx_request()
     try:
         runtime_refresh_job, created = enqueue_runtime_health_refresh(
-            provider_type='alertmanager',
-            instance_id=instance.id,
+            integration_type='alert_source',
+            integration_instance_id=instance.integration_instance_id,
             requested_by_user_id=int(current_user.id),
         )
         feedback = record_instance_activity(
@@ -436,8 +436,8 @@ def runtime_refresh_status(instance_id: int, task_id: str) -> ResponseReturnValu
     snapshot = build_validation_snapshot(task_id)
     if not validate_snapshot_access(
         snapshot,
-        provider_type='alertmanager',
-        instance_id=instance.id,
+        integration_type='alert_source',
+        integration_instance_id=instance.integration_instance_id,
     ):
         abort(404)
     return _render_instance_partial(
@@ -482,8 +482,8 @@ def validate_instance(instance_id: int) -> ResponseReturnValue:
     is_htmx = is_htmx_request()
     try:
         validation_job, created = enqueue_instance_validation(
-            provider_type='alertmanager',
-            instance_id=instance.id,
+            integration_type='alert_source',
+            integration_instance_id=instance.integration_instance_id,
             requested_by_user_id=int(current_user.id),
         )
         feedback = record_instance_activity(
@@ -564,8 +564,8 @@ def instance_validation_status(instance_id: int, task_id: str) -> ResponseReturn
     snapshot = build_validation_snapshot(task_id)
     if not validate_snapshot_access(
         snapshot,
-        provider_type='alertmanager',
-        instance_id=instance.id,
+        integration_type='alert_source',
+        integration_instance_id=instance.integration_instance_id,
     ):
         abort(404)
     return _render_instance_partial(
@@ -734,8 +734,8 @@ def validate_binding(instance_id: int, binding_id: int) -> ResponseReturnValue:
     is_htmx = is_htmx_request()
     try:
         validation_job, created = enqueue_binding_validation(
-            provider_type='alertmanager',
-            instance_id=instance.id,
+            integration_type='alert_source',
+            integration_instance_id=instance.integration_instance_id,
             binding_id=binding.id,
             requested_by_user_id=int(current_user.id),
         )
@@ -800,8 +800,8 @@ def binding_validation_status(instance_id: int, binding_id: int, task_id: str) -
     snapshot = build_validation_snapshot(task_id)
     if not validate_snapshot_access(
         snapshot,
-        provider_type='alertmanager',
-        instance_id=instance.id,
+        integration_type='alert_source',
+        integration_instance_id=instance.integration_instance_id,
         binding_id=binding.id,
     ):
         abort(404)

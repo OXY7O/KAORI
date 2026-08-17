@@ -24,7 +24,7 @@
                 </div>
             </div>
             <div class="flex flex-wrap items-center gap-2">
-                {% if selected_provider or selected_health or selected_readiness %}
+                {% if selected_integration_type or selected_health or selected_readiness %}
                     {{ registry_ui.clear_filters_action(
                         url_for('integrations.overview', tab='runtime', per_page=runtime_pagination.per_page),
                         table_ui.action_classes(),
@@ -35,7 +35,7 @@
                     ) }}
                 {% endif %}
                 <button type="button"
-                    hx-get="{{ url_for('integrations.overview', tab='runtime', provider=selected_provider, health=selected_health, readiness=selected_readiness, page=runtime_pagination.page, per_page=runtime_pagination.per_page) }}"
+                    hx-get="{{ url_for('integrations.overview', tab='runtime', integration_type=selected_integration_type, health=selected_health, readiness=selected_readiness, page=runtime_pagination.page, per_page=runtime_pagination.per_page) }}"
                     hx-target="#integration-runtime-overview"
                     hx-swap="outerHTML"
                     hx-indicator="#integration-runtime-loading"
@@ -86,14 +86,14 @@
                        value="{{ runtime_pagination.per_page }}" />
                 <div>
                     <label for="runtime-provider-filter"
-                           class="{{ table_ui.filter_label_classes() }}">Provider</label>
+                           class="{{ table_ui.filter_label_classes() }}">Integration Type</label>
                     <select id="runtime-provider-filter"
-                            name="provider"
+                            name="integration_type"
                             class="{{ table_ui.filter_select_classes() }}">
-                        <option value="">All Providers</option>
-                        {% for item in provider_options %}
+                        <option value="">All Integration Types</option>
+                        {% for item in integration_type_options %}
                             <option value="{{ item.value }}"
-                                    {% if selected_provider == item.value %}selected{% endif %}>{{ item.label }}</option>
+                                    {% if selected_integration_type == item.value %}selected{% endif %}>{{ item.label }}</option>
                         {% endfor %}
                     </select>
                 </div>
@@ -148,7 +148,7 @@
                 </thead>
                 <tbody class="{{ table_ui.body_classes() }}">
                     {% for row in runtime_rows %}
-                        {% set detail_token = row.provider ~ '-' ~ row.instance_id %}
+                        {% set detail_token = row.integration_type ~ '-' ~ row.instance_id %}
                         {% set detail_target_id = 'integration-runtime-detail-' ~ detail_token %}
                         <tr class="{{ table_ui.row_classes() }}">
                             <td class="{{ table_ui.cell_classes() }}">
@@ -196,7 +196,7 @@
                                 {% set empty_state_icon = 'search-x' %}
                                 {% set empty_state_label = 'No Results' %}
                                 {% set empty_state_title = 'No Runtime Targets Match These Filters' %}
-                                {% set empty_state_description = 'Clear or adjust the provider, health, or readiness filters to expand the result set.' %}
+                                {% set empty_state_description = 'Clear or adjust the integration-type, health, or readiness filters to expand the result set.' %}
                                 {% set empty_state_min_height = "min-h-[190px]" %}
                                 {% include 'components/states/_empty_state.html' %}
                             </td>
@@ -207,7 +207,7 @@
         </div>
         {% set runtime_query_params = {
                     'tab': 'runtime',
-                    'provider': selected_provider,
+                    'provider': selected_integration_type,
                     'health': selected_health,
                     'readiness': selected_readiness
                 } %}

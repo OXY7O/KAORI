@@ -30,16 +30,16 @@ class DeletionBlocked(ValueError):
         self.guard = guard
 
 
-def provider_active_job_count(*, provider_type: str, provider_instance_id: int) -> int:
+def provider_active_job_count(*, integration_type: str, integration_instance_id: int) -> int:
     return (
         JobExecution.query.filter(JobExecution.status.in_(ACTIVE_JOB_STATUSES))
         .filter(
             or_(
                 (
-                    (JobExecution.provider_type == provider_type)
-                    & (JobExecution.provider_instance_id == provider_instance_id)
+                    (JobExecution.integration_type == integration_type)
+                    & (JobExecution.integration_instance_id == integration_instance_id)
                 ),
-                JobExecution.resource_group == f'integration:{provider_type}:{provider_instance_id}',
+                JobExecution.resource_group == f'integration:{integration_type}:{integration_instance_id}',
             )
         )
         .count()
@@ -48,8 +48,8 @@ def provider_active_job_count(*, provider_type: str, provider_instance_id: int) 
 
 def asset_owner_active_job_count(
     *,
-    provider_type: str,
-    provider_instance_id: int,
+    integration_type: str,
+    integration_instance_id: int,
     asset_type: str,
     asset_key: str,
 ) -> int:
@@ -59,11 +59,11 @@ def asset_owner_active_job_count(
         .filter(
             or_(
                 (
-                    (JobExecution.provider_type == provider_type)
-                    & (JobExecution.provider_instance_id == provider_instance_id)
+                    (JobExecution.integration_type == integration_type)
+                    & (JobExecution.integration_instance_id == integration_instance_id)
                 ),
                 (JobExecution.scope_type == asset_type) & (JobExecution.scope_key == str(asset_key)),
-                JobExecution.resource_group == f'integration:{provider_type}:{provider_instance_id}',
+                JobExecution.resource_group == f'integration:{integration_type}:{integration_instance_id}',
                 JobExecution.resource_group == f'{asset_type}:{asset_key}',
             )
         )
@@ -71,19 +71,22 @@ def asset_owner_active_job_count(
     )
 
 
-def kubernetes_active_job_count(*, connection_id: int, cluster_id: str) -> int:
+def kubernetes_active_job_count(*, integration_instance_id: int, cluster_id: str) -> int:
     return (
         JobExecution.query.filter(JobExecution.status.in_(ACTIVE_JOB_STATUSES))
         .filter(
             or_(
-                ((JobExecution.provider_type == 'kubernetes') & (JobExecution.provider_instance_id == connection_id)),
+                (
+                    (JobExecution.integration_type == 'container_orchestrator')
+                    & (JobExecution.integration_instance_id == integration_instance_id)
+                ),
                 ((JobExecution.scope_type == 'kubernetes_cluster') & (JobExecution.scope_key == cluster_id)),
                 (
-                    (JobExecution.provider_type == 'kubernetes')
+                    (JobExecution.integration_type == 'container_orchestrator')
                     & (JobExecution.operation == KUBERNETES_INVENTORY_SYNC_OPERATION)
                 ),
                 JobExecution.resource_group == f'kubernetes-cluster:{cluster_id}',
-                JobExecution.resource_group == f'integration:kubernetes:{connection_id}',
+                JobExecution.resource_group == f'integration:container_orchestrator:{integration_instance_id}',
             )
         )
         .count()
@@ -97,10 +100,10 @@ def kubernetes_active_reveal_request_count(*, cluster_id: str) -> int:
     ).count()
 
 
-def provider_deletion_guard(*, provider_type: str, provider_instance_id: int) -> DeletionGuard:
+def provider_deletion_guard(*, integration_type: str, integration_instance_id: int) -> DeletionGuard:
     active_jobs = provider_active_job_count(
-        provider_type=provider_type,
-        provider_instance_id=provider_instance_id,
+        integration_type=integration_type,
+        integration_instance_id=integration_instance_id,
     )
     reasons: list[str] = []
     if active_jobs:
@@ -117,15 +120,15 @@ def provider_deletion_guard(*, provider_type: str, provider_instance_id: int) ->
 
 def asset_owner_deletion_guard(
     *,
-    provider_type: str,
-    provider_instance_id: int,
+    integration_type: str,
+    integration_instance_id: int,
     asset_type: str,
     asset_key: str,
 ) -> DeletionGuard:
     """Guard deletion of a provider that owns one managed operational asset."""
     active_jobs = asset_owner_active_job_count(
-        provider_type=provider_type,
-        provider_instance_id=provider_instance_id,
+        integration_type=integration_type,
+        integration_instance_id=integration_instance_id,
         asset_type=asset_type,
         asset_key=asset_key,
     )
@@ -142,9 +145,9 @@ def asset_owner_deletion_guard(
     )
 
 
-def kubernetes_deletion_guard(*, connection_id: int, cluster_id: str) -> DeletionGuard:
+def kubernetes_deletion_guard(*, integration_instance_id: int, cluster_id: str) -> DeletionGuard:
     active_jobs = kubernetes_active_job_count(
-        connection_id=connection_id,
+        integration_instance_id=integration_instance_id,
         cluster_id=cluster_id,
     )
     active_requests = kubernetes_active_reveal_request_count(cluster_id=cluster_id)

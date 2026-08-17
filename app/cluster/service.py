@@ -14,10 +14,10 @@ from app.integrations.deletion import DeletionBlocked, kubernetes_deletion_guard
 from app.integrations.kubernetes.resolver import connection_for_cluster
 from app.integrations.kubernetes.validation import test_cluster_connection, test_cluster_runtime_health
 from app.jobs.service import acquire_resource_admission_locks
+from app.metrics.repository import resolve_instance_for_cluster
 from app.models import Cluster, ClusterInventory, ClusterStatus, NamespaceInventory, Report, ReportSchedule
 from app.models.integration import IntegrationBinding, IntegrationInstance
 from app.models.kubernetes import KubernetesConnection
-from app.metrics.repository import resolve_instance_for_cluster
 
 DEFAULT_CLUSTER_PER_PAGE = 5
 CLUSTER_PER_PAGE_OPTIONS = [
@@ -407,7 +407,9 @@ def _sync_kubernetes_runtime(
     canonical = connection.integration_instance if connection is not None else None
     if canonical is None:
         canonical = IntegrationInstance()
-        canonical.provider_type = 'kubernetes'
+        canonical.integration_type = 'container_orchestrator'
+        canonical.provider_key = 'kubernetes'
+        canonical.adapter_key = 'kubernetes_api'
         canonical.name = f'{cluster.name} Kubernetes API'
         canonical.description = cluster.description
         canonical.environment = cluster.environment
@@ -658,17 +660,19 @@ def delete_cluster(cluster: Cluster) -> dict[str, int]:
     """
     cluster_id = str(cluster.id)
     connection = cluster.kubernetes_connection
-    connection_id = connection.id if connection is not None else None
+    integration_instance_id = connection.integration_instance_id if connection is not None else None
     acquire_resource_admission_locks(
         f'kubernetes-cluster:{cluster_id}',
-        f'integration:kubernetes:{connection_id}' if connection_id is not None else None,
+        f'integration:container_orchestrator:{integration_instance_id}'
+        if integration_instance_id is not None
+        else None,
     )
     connection = cluster.kubernetes_connection
     canonical = connection.integration_instance if connection else None
 
     if connection is not None:
         guard = kubernetes_deletion_guard(
-            connection_id=connection.id,
+            integration_instance_id=connection.integration_instance_id,
             cluster_id=cluster_id,
         )
         if guard.blocked:

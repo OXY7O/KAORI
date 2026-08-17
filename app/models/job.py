@@ -38,8 +38,10 @@ class JobExecution(db.Model):
     requested_by_user_id: Mapped[int | None] = mapped_column(
         db.ForeignKey('users.id', ondelete='SET NULL'), nullable=True, index=True
     )
-    provider_type: Mapped[str | None] = mapped_column(db.String(80), nullable=True, index=True)
-    provider_instance_id: Mapped[int | None] = mapped_column(db.Integer, nullable=True, index=True)
+    integration_type: Mapped[str | None] = mapped_column(db.String(80), nullable=True, index=True)
+    integration_instance_id: Mapped[int | None] = mapped_column(
+        db.ForeignKey('integration_instances.id', ondelete='SET NULL'), nullable=True, index=True
+    )
     scope_type: Mapped[str | None] = mapped_column(db.String(80), nullable=True, index=True)
     scope_key: Mapped[str | None] = mapped_column(db.String(255), nullable=True, index=True)
     resource_group: Mapped[str | None] = mapped_column(db.String(255), nullable=True, index=True)

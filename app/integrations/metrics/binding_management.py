@@ -48,7 +48,7 @@ def create_binding(
     if selector_json is None:
         raise ValueError('Define a metrics identity selector before binding this metrics source.')
 
-    canonical = ensure_canonical_instance(instance, provider_type='metrics_source')
+    canonical = ensure_canonical_instance(instance, integration_type='metrics_source')
     routing_policy = normalize_routing_policy(spec.routing_policy)
     existing = IntegrationBinding.query.filter_by(
         integration_instance_id=canonical.id,
@@ -162,7 +162,7 @@ def _assert_primary_horizon_available(
         IntegrationInstance,
         IntegrationBinding.integration_instance_id == IntegrationInstance.id,
     ).filter(
-        IntegrationInstance.provider_type == 'metrics_source',
+        IntegrationInstance.integration_type == 'metrics_source',
         IntegrationInstance.enabled.is_(True),
         IntegrationBinding.asset_type == asset_type,
         IntegrationBinding.asset_key == asset_key,

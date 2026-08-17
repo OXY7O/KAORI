@@ -20,7 +20,7 @@ def resolve_kubernetes_for_cluster(cluster: Cluster | str) -> KubernetesAssetRun
     if cluster_obj is None:
         return None
     resolution = resolve_integration(
-        provider_type='kubernetes',
+        integration_type='container_orchestrator',
         asset_type=KUBERNETES_ASSET,
         asset_key=cluster_obj.id,
         required_capabilities=(),

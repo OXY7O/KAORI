@@ -2,7 +2,13 @@ from datetime import UTC, datetime
 
 from app.integrations.metrics.adapter import runtime_adapter
 from app.integrations.metrics.capabilities import CAPABILITY_KEYS, COMPATIBILITY_PROFILES
-from app.integrations.registry import IntegrationModule, canonical_model_loader, model_loader, registry
+from app.integrations.registry import (
+    IntegrationImplementation,
+    IntegrationModule,
+    canonical_model_loader,
+    model_loader,
+    registry,
+)
 from app.models.metrics_source import MetricsSource
 
 
@@ -18,19 +24,15 @@ def _record_failure(instance: MetricsSource, error: Exception) -> None:
 
 
 integration_module = IntegrationModule(
-    provider_type='metrics_source',
+    integration_type='metrics_source',
     label='Metrics Sources',
     domain_key='observability',
-    capability_key='metrics',
+    capability_key='metrics_source',
     icon='activity',
     description=(
-        'Provider-neutral metrics source registration, query validation, consumer binding, '
-        'and horizon-aware routing.'
+        'Provider-neutral metrics source registration, query validation, consumer binding, and horizon-aware routing.'
     ),
     workspace_endpoint='integrations.metrics_sources',
-    adapter=runtime_adapter,
-    instance_loader=model_loader(MetricsSource),
-    canonical_record_loader=canonical_model_loader(MetricsSource),
     module_path='app.integrations.metrics',
     worker_queue='integration-runtime',
     worker_domain='observability-metrics',
@@ -70,8 +72,21 @@ integration_module = IntegrationModule(
     compatibility_profiles=COMPATIBILITY_PROFILES,
     runtime_label='Metrics Sources',
     navigation_endpoint_prefixes=('integrations.metrics_sources', 'metrics.'),
-    detail_url_builder=_detail_url,
-    failure_recorder=_record_failure,
 )
 
 registry.register(integration_module)
+
+for provider_key in ('prometheus', 'thanos'):
+    registry.register_implementation(
+        IntegrationImplementation(
+            integration_type='metrics_source',
+            provider_key=provider_key,
+            adapter_key='prometheus_http',
+            adapter=runtime_adapter,
+            instance_loader=model_loader(MetricsSource),
+            canonical_record_loader=canonical_model_loader(MetricsSource),
+            module_path='app.integrations.metrics',
+            detail_url_builder=_detail_url,
+            failure_recorder=_record_failure,
+        )
+    )

@@ -10,14 +10,15 @@ from flask import current_app, has_app_context
 from app.common.provider_query_runtime import record_provider_query, record_provider_retry
 from app.integrations.consumer.contracts import ConsumerDiagnostic, ConsumerResult, ConsumerSource
 from app.integrations.metrics.exceptions import (
+    MetricsQueryError,
     MetricsSourceConnectionError,
     MetricsSourceError,
-    MetricsQueryError,
 )
+from app.integrations.metrics.query_profiles import resolve_query_reference
 from app.integrations.metrics.routing import query_horizon_for_range, query_horizon_for_timestamp
 from app.integrations.registry import get_integration
-from app.models import Cluster
 from app.metrics.resolver import ResolvedMetricsSource, resolve_metrics_sources
+from app.models import Cluster
 
 DEFAULT_QUERY_CAPABILITIES = ('instant_query',)
 DEFAULT_RANGE_CAPABILITIES = ('range_query',)
@@ -346,7 +347,11 @@ class MetricsConsumer:
         retry_count: int | None = None,
     ) -> dict[str, Any]:
         retries = self._normalize_retry_count(retry_count)
-        fingerprint = sha256(expression.encode('utf-8')).hexdigest()[:12]
+        try:
+            resolved_expression = resolve_query_reference(expression, adapter_key=source.instance.adapter_key)
+        except LookupError as exc:
+            raise MetricsQueryError(str(exc)) from exc
+        fingerprint = sha256(resolved_expression.encode('utf-8')).hexdigest()[:12]
         operation_name = 'range' if range_query else 'instant'
         timeout_seconds = self._query_timeout_seconds(range_query=range_query)
 
@@ -358,7 +363,7 @@ class MetricsConsumer:
                     request_timeout_seconds=timeout_seconds,
                 ).execute(
                     backend_operation,
-                    expression,
+                    resolved_expression,
                     **(operation_args or {}),
                 )
             except MetricsSourceError as exc:

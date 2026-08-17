@@ -5,7 +5,7 @@ from math import isfinite
 from typing import Any
 
 from app.integrations.metrics.exceptions import MetricsSourceError
-from app.integrations.metrics.query_profiles import get_query_expression
+from app.integrations.metrics.query_profiles import get_kubernetes_query_expression
 from app.metrics.consumer import MetricsConsumer
 
 STORAGE_QUERY_CAPABILITIES = (
@@ -13,24 +13,28 @@ STORAGE_QUERY_CAPABILITIES = (
     'kubernetes_identity',
 )
 
-NAMESPACE_ACTIVE_QUERY = get_query_expression('analytics.storage.queries.NAMESPACE_ACTIVE_QUERY')
-NODE_ROOT_FILESYSTEM_AVAILABLE_QUERY = get_query_expression(
+NAMESPACE_ACTIVE_QUERY = get_kubernetes_query_expression('analytics.storage.queries.NAMESPACE_ACTIVE_QUERY')
+NODE_ROOT_FILESYSTEM_AVAILABLE_QUERY = get_kubernetes_query_expression(
     'analytics.storage.queries.NODE_ROOT_FILESYSTEM_AVAILABLE_QUERY'
 )
-NODE_ROOT_FILESYSTEM_SIZE_QUERY = get_query_expression('analytics.storage.queries.NODE_ROOT_FILESYSTEM_SIZE_QUERY')
-NODE_VAR_FILESYSTEM_AVAILABLE_QUERY = get_query_expression(
+NODE_ROOT_FILESYSTEM_SIZE_QUERY = get_kubernetes_query_expression(
+    'analytics.storage.queries.NODE_ROOT_FILESYSTEM_SIZE_QUERY'
+)
+NODE_VAR_FILESYSTEM_AVAILABLE_QUERY = get_kubernetes_query_expression(
     'analytics.storage.queries.NODE_VAR_FILESYSTEM_AVAILABLE_QUERY'
 )
-NODE_VAR_FILESYSTEM_SIZE_QUERY = get_query_expression('analytics.storage.queries.NODE_VAR_FILESYSTEM_SIZE_QUERY')
-PVC_AVAILABLE_BY_CLAIM_QUERY = get_query_expression('analytics.storage.queries.PVC_AVAILABLE_BY_CLAIM_QUERY')
-PVC_CAPACITY_BY_CLAIM_QUERY = get_query_expression('analytics.storage.queries.PVC_CAPACITY_BY_CLAIM_QUERY')
-PVC_INFO_QUERY = get_query_expression('analytics.storage.queries.PVC_INFO_QUERY')
-PVC_REQUESTED_BY_CLAIM_QUERY = get_query_expression('analytics.storage.queries.PVC_REQUESTED_BY_CLAIM_QUERY')
-PVC_STATUS_BY_CLAIM_QUERY = get_query_expression('analytics.storage.queries.PVC_STATUS_BY_CLAIM_QUERY')
-PVC_USED_BY_CLAIM_QUERY = get_query_expression('analytics.storage.queries.PVC_USED_BY_CLAIM_QUERY')
-PV_CAPACITY_BY_VOLUME_QUERY = get_query_expression('analytics.storage.queries.PV_CAPACITY_BY_VOLUME_QUERY')
-PV_INFO_QUERY = get_query_expression('analytics.storage.queries.PV_INFO_QUERY')
-PV_STATUS_BY_VOLUME_QUERY = get_query_expression('analytics.storage.queries.PV_STATUS_BY_VOLUME_QUERY')
+NODE_VAR_FILESYSTEM_SIZE_QUERY = get_kubernetes_query_expression(
+    'analytics.storage.queries.NODE_VAR_FILESYSTEM_SIZE_QUERY'
+)
+PVC_AVAILABLE_BY_CLAIM_QUERY = get_kubernetes_query_expression('analytics.storage.queries.PVC_AVAILABLE_BY_CLAIM_QUERY')
+PVC_CAPACITY_BY_CLAIM_QUERY = get_kubernetes_query_expression('analytics.storage.queries.PVC_CAPACITY_BY_CLAIM_QUERY')
+PVC_INFO_QUERY = get_kubernetes_query_expression('analytics.storage.queries.PVC_INFO_QUERY')
+PVC_REQUESTED_BY_CLAIM_QUERY = get_kubernetes_query_expression('analytics.storage.queries.PVC_REQUESTED_BY_CLAIM_QUERY')
+PVC_STATUS_BY_CLAIM_QUERY = get_kubernetes_query_expression('analytics.storage.queries.PVC_STATUS_BY_CLAIM_QUERY')
+PVC_USED_BY_CLAIM_QUERY = get_kubernetes_query_expression('analytics.storage.queries.PVC_USED_BY_CLAIM_QUERY')
+PV_CAPACITY_BY_VOLUME_QUERY = get_kubernetes_query_expression('analytics.storage.queries.PV_CAPACITY_BY_VOLUME_QUERY')
+PV_INFO_QUERY = get_kubernetes_query_expression('analytics.storage.queries.PV_INFO_QUERY')
+PV_STATUS_BY_VOLUME_QUERY = get_kubernetes_query_expression('analytics.storage.queries.PV_STATUS_BY_VOLUME_QUERY')
 
 
 @dataclass(frozen=True, slots=True)

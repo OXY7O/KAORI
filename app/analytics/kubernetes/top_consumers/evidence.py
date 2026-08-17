@@ -5,7 +5,7 @@ from math import isfinite
 from typing import Any
 
 from app.integrations.metrics.exceptions import MetricsSourceError
-from app.integrations.metrics.query_profiles import get_query_expression
+from app.integrations.metrics.query_profiles import get_kubernetes_query_expression
 from app.metrics.consumer import MetricsConsumer
 
 TOP_CONSUMERS_QUERY_CAPABILITIES = ('instant_query',)
@@ -17,66 +17,76 @@ TOP_CONSUMERS_ADVISORY_CAPABILITIES = (
     'pvc_usage',
 )
 
-NAMESPACE_ACTIVE_QUERY = get_query_expression('analytics.top_consumers.queries.NAMESPACE_ACTIVE_QUERY')
-TOP_CPU_CONSUMERS_QUERY = get_query_expression('analytics.top_consumers.queries.TOP_CPU_CONSUMERS_QUERY')
-TOP_CPU_CONSUMERS_BY_NAMESPACE_QUERY = get_query_expression(
+NAMESPACE_ACTIVE_QUERY = get_kubernetes_query_expression('analytics.top_consumers.queries.NAMESPACE_ACTIVE_QUERY')
+TOP_CPU_CONSUMERS_QUERY = get_kubernetes_query_expression('analytics.top_consumers.queries.TOP_CPU_CONSUMERS_QUERY')
+TOP_CPU_CONSUMERS_BY_NAMESPACE_QUERY = get_kubernetes_query_expression(
     'analytics.top_consumers.queries.TOP_CPU_CONSUMERS_BY_NAMESPACE_QUERY'
 )
-CPU_REQUEST_BY_CONTAINER_QUERY = get_query_expression('analytics.top_consumers.queries.CPU_REQUEST_BY_CONTAINER_QUERY')
-CPU_REQUEST_BY_CONTAINER_NAMESPACE_QUERY = get_query_expression(
+CPU_REQUEST_BY_CONTAINER_QUERY = get_kubernetes_query_expression(
+    'analytics.top_consumers.queries.CPU_REQUEST_BY_CONTAINER_QUERY'
+)
+CPU_REQUEST_BY_CONTAINER_NAMESPACE_QUERY = get_kubernetes_query_expression(
     'analytics.top_consumers.queries.CPU_REQUEST_BY_CONTAINER_NAMESPACE_QUERY'
 )
-CPU_LIMIT_BY_CONTAINER_QUERY = get_query_expression('analytics.top_consumers.queries.CPU_LIMIT_BY_CONTAINER_QUERY')
-CPU_LIMIT_BY_CONTAINER_NAMESPACE_QUERY = get_query_expression(
+CPU_LIMIT_BY_CONTAINER_QUERY = get_kubernetes_query_expression(
+    'analytics.top_consumers.queries.CPU_LIMIT_BY_CONTAINER_QUERY'
+)
+CPU_LIMIT_BY_CONTAINER_NAMESPACE_QUERY = get_kubernetes_query_expression(
     'analytics.top_consumers.queries.CPU_LIMIT_BY_CONTAINER_NAMESPACE_QUERY'
 )
-CPU_ALLOCATABLE_QUERY = get_query_expression('analytics.top_consumers.queries.CPU_ALLOCATABLE_QUERY')
-TOTAL_CPU_USAGE_QUERY = get_query_expression('analytics.top_consumers.queries.TOTAL_CPU_USAGE_QUERY')
-TOTAL_CPU_USAGE_BY_NAMESPACE_QUERY = get_query_expression(
+CPU_ALLOCATABLE_QUERY = get_kubernetes_query_expression('analytics.top_consumers.queries.CPU_ALLOCATABLE_QUERY')
+TOTAL_CPU_USAGE_QUERY = get_kubernetes_query_expression('analytics.top_consumers.queries.TOTAL_CPU_USAGE_QUERY')
+TOTAL_CPU_USAGE_BY_NAMESPACE_QUERY = get_kubernetes_query_expression(
     'analytics.top_consumers.queries.TOTAL_CPU_USAGE_BY_NAMESPACE_QUERY'
 )
-TOP_MEMORY_CONSUMERS_QUERY = get_query_expression('analytics.top_consumers.queries.TOP_MEMORY_CONSUMERS_QUERY')
-TOP_MEMORY_CONSUMERS_BY_NAMESPACE_QUERY = get_query_expression(
+TOP_MEMORY_CONSUMERS_QUERY = get_kubernetes_query_expression(
+    'analytics.top_consumers.queries.TOP_MEMORY_CONSUMERS_QUERY'
+)
+TOP_MEMORY_CONSUMERS_BY_NAMESPACE_QUERY = get_kubernetes_query_expression(
     'analytics.top_consumers.queries.TOP_MEMORY_CONSUMERS_BY_NAMESPACE_QUERY'
 )
-MEMORY_REQUEST_BY_CONTAINER_QUERY = get_query_expression(
+MEMORY_REQUEST_BY_CONTAINER_QUERY = get_kubernetes_query_expression(
     'analytics.top_consumers.queries.MEMORY_REQUEST_BY_CONTAINER_QUERY'
 )
-MEMORY_REQUEST_BY_CONTAINER_NAMESPACE_QUERY = get_query_expression(
+MEMORY_REQUEST_BY_CONTAINER_NAMESPACE_QUERY = get_kubernetes_query_expression(
     'analytics.top_consumers.queries.MEMORY_REQUEST_BY_CONTAINER_NAMESPACE_QUERY'
 )
-MEMORY_LIMIT_BY_CONTAINER_QUERY = get_query_expression(
+MEMORY_LIMIT_BY_CONTAINER_QUERY = get_kubernetes_query_expression(
     'analytics.top_consumers.queries.MEMORY_LIMIT_BY_CONTAINER_QUERY'
 )
-MEMORY_LIMIT_BY_CONTAINER_NAMESPACE_QUERY = get_query_expression(
+MEMORY_LIMIT_BY_CONTAINER_NAMESPACE_QUERY = get_kubernetes_query_expression(
     'analytics.top_consumers.queries.MEMORY_LIMIT_BY_CONTAINER_NAMESPACE_QUERY'
 )
-MEMORY_ALLOCATABLE_QUERY = get_query_expression('analytics.top_consumers.queries.MEMORY_ALLOCATABLE_QUERY')
-TOTAL_MEMORY_USAGE_QUERY = get_query_expression('analytics.top_consumers.queries.TOTAL_MEMORY_USAGE_QUERY')
-TOTAL_MEMORY_USAGE_BY_NAMESPACE_QUERY = get_query_expression(
+MEMORY_ALLOCATABLE_QUERY = get_kubernetes_query_expression('analytics.top_consumers.queries.MEMORY_ALLOCATABLE_QUERY')
+TOTAL_MEMORY_USAGE_QUERY = get_kubernetes_query_expression('analytics.top_consumers.queries.TOTAL_MEMORY_USAGE_QUERY')
+TOTAL_MEMORY_USAGE_BY_NAMESPACE_QUERY = get_kubernetes_query_expression(
     'analytics.top_consumers.queries.TOTAL_MEMORY_USAGE_BY_NAMESPACE_QUERY'
 )
-POD_OWNER_QUERY = get_query_expression('analytics.top_consumers.queries.POD_OWNER_QUERY')
-POD_OWNER_BY_NAMESPACE_QUERY = get_query_expression('analytics.top_consumers.queries.POD_OWNER_BY_NAMESPACE_QUERY')
-TOP_POD_CONSUMERS_QUERY = get_query_expression('analytics.top_consumers.queries.TOP_POD_CONSUMERS_QUERY')
-TOP_POD_CONSUMERS_BY_NAMESPACE_QUERY = get_query_expression(
+POD_OWNER_QUERY = get_kubernetes_query_expression('analytics.top_consumers.queries.POD_OWNER_QUERY')
+POD_OWNER_BY_NAMESPACE_QUERY = get_kubernetes_query_expression(
+    'analytics.top_consumers.queries.POD_OWNER_BY_NAMESPACE_QUERY'
+)
+TOP_POD_CONSUMERS_QUERY = get_kubernetes_query_expression('analytics.top_consumers.queries.TOP_POD_CONSUMERS_QUERY')
+TOP_POD_CONSUMERS_BY_NAMESPACE_QUERY = get_kubernetes_query_expression(
     'analytics.top_consumers.queries.TOP_POD_CONSUMERS_BY_NAMESPACE_QUERY'
 )
-POD_CAPACITY_QUERY = get_query_expression('analytics.top_consumers.queries.POD_CAPACITY_QUERY')
-TOTAL_RUNNING_PODS_QUERY = get_query_expression('analytics.top_consumers.queries.TOTAL_RUNNING_PODS_QUERY')
-TOTAL_RUNNING_PODS_BY_NAMESPACE_QUERY = get_query_expression(
+POD_CAPACITY_QUERY = get_kubernetes_query_expression('analytics.top_consumers.queries.POD_CAPACITY_QUERY')
+TOTAL_RUNNING_PODS_QUERY = get_kubernetes_query_expression('analytics.top_consumers.queries.TOTAL_RUNNING_PODS_QUERY')
+TOTAL_RUNNING_PODS_BY_NAMESPACE_QUERY = get_kubernetes_query_expression(
     'analytics.top_consumers.queries.TOTAL_RUNNING_PODS_BY_NAMESPACE_QUERY'
 )
-TOP_PVC_CONSUMERS_QUERY = get_query_expression('analytics.top_consumers.queries.TOP_PVC_CONSUMERS_QUERY')
-TOP_PVC_CONSUMERS_BY_NAMESPACE_QUERY = get_query_expression(
+TOP_PVC_CONSUMERS_QUERY = get_kubernetes_query_expression('analytics.top_consumers.queries.TOP_PVC_CONSUMERS_QUERY')
+TOP_PVC_CONSUMERS_BY_NAMESPACE_QUERY = get_kubernetes_query_expression(
     'analytics.top_consumers.queries.TOP_PVC_CONSUMERS_BY_NAMESPACE_QUERY'
 )
-PVC_CAPACITY_BY_CLAIM_QUERY = get_query_expression('analytics.top_consumers.queries.PVC_CAPACITY_BY_CLAIM_QUERY')
-PVC_CAPACITY_BY_CLAIM_NAMESPACE_QUERY = get_query_expression(
+PVC_CAPACITY_BY_CLAIM_QUERY = get_kubernetes_query_expression(
+    'analytics.top_consumers.queries.PVC_CAPACITY_BY_CLAIM_QUERY'
+)
+PVC_CAPACITY_BY_CLAIM_NAMESPACE_QUERY = get_kubernetes_query_expression(
     'analytics.top_consumers.queries.PVC_CAPACITY_BY_CLAIM_NAMESPACE_QUERY'
 )
-TOTAL_PVC_USED_QUERY = get_query_expression('analytics.top_consumers.queries.TOTAL_PVC_USED_QUERY')
-TOTAL_PVC_USED_BY_NAMESPACE_QUERY = get_query_expression(
+TOTAL_PVC_USED_QUERY = get_kubernetes_query_expression('analytics.top_consumers.queries.TOTAL_PVC_USED_QUERY')
+TOTAL_PVC_USED_BY_NAMESPACE_QUERY = get_kubernetes_query_expression(
     'analytics.top_consumers.queries.TOTAL_PVC_USED_BY_NAMESPACE_QUERY'
 )
 

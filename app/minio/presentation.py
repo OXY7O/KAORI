@@ -7,8 +7,8 @@ from app.common.pagination import paginate_sequence
 from app.common.presentation import present_user_datetime
 from app.integrations.asset_owner_sources import build_bound_observability_source_rows
 from app.integrations.deletion import asset_owner_deletion_guard
-from app.integrations.minio.capabilities import API_CAPABILITIES, CAPABILITY_PROFILE
 from app.integrations.metrics.providers import provider_definition
+from app.integrations.minio.capabilities import API_CAPABILITIES, CAPABILITY_PROFILE
 from app.integrations.minio.compatibility import compatibility_policy_view
 from app.integrations.runtime.presentation import runtime_history_view, runtime_observation_state_view
 from app.integrations.runtime.repository import paginate_runtime_history
@@ -258,7 +258,7 @@ def build_detail_context(
     alert_source = alert_source_for_binding(alert_binding)
 
     runtime_rows, runtime_pagination = paginate_runtime_history(
-        'minio',
+        'object_storage',
         str(instance.id),
         page=query.history_page,
         per_page=query.history_per_page,
@@ -267,7 +267,7 @@ def build_detail_context(
         readiness=query.history_readiness,
     )
     latest_rows, _latest_pagination = paginate_runtime_history(
-        'minio',
+        'object_storage',
         str(instance.id),
         page=1,
         per_page=5,
@@ -323,8 +323,8 @@ def build_detail_context(
         ),
         'capability_count': len(instance.capabilities or ()),
         'deletion_guard': asset_owner_deletion_guard(
-            provider_type='minio',
-            provider_instance_id=instance.id,
+            integration_type='object_storage',
+            integration_instance_id=instance.integration_instance_id,
             asset_type='object_storage_system',
             asset_key=str(instance.object_storage_system_id),
         ),

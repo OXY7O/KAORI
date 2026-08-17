@@ -4,6 +4,7 @@ from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
 from sqlalchemy import JSON, Boolean, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.extensions.db import db
@@ -49,3 +50,6 @@ class KubernetesConnection(db.Model):
 
     integration_instance: Mapped[IntegrationInstance] = relationship('IntegrationInstance')
     cluster: Mapped[Cluster] = relationship('Cluster', back_populates='kubernetes_connection')
+
+    provider_key: AssociationProxy[str] = association_proxy('integration_instance', 'provider_key')
+    adapter_key: AssociationProxy[str] = association_proxy('integration_instance', 'adapter_key')

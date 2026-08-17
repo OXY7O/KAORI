@@ -7,9 +7,9 @@ from typing import Any, Protocol
 from sqlalchemy.orm import joinedload, selectinload
 
 from app.common.pagination import paginate_sequence
+from app.integrations.managed_assets import object_storage_owner
 from app.inventory.object_storage.system_presentation import (
     _compatibility_profile_display,
-    _provider_label,
     _release_display,
     _snapshot_status,
     _system_filter_options,
@@ -345,16 +345,16 @@ def _provider_detail_sections(
 
 
 def _system_query():
-    return ObjectStorageSystem.query.options(
-        joinedload(ObjectStorageSystem.minio_connection),
-        selectinload(ObjectStorageSystem.buckets),
-    ).order_by(ObjectStorageSystem.name.asc())
+    return ObjectStorageSystem.query.options(selectinload(ObjectStorageSystem.buckets)).order_by(
+        ObjectStorageSystem.name.asc()
+    )
 
 
 def _system_row(system: ObjectStorageSystem) -> dict[str, Any]:
     """Committed row used by inventory pages. Run Object Storage Inventory Sync from Job Execution."""
     row = _system_row_impl(system)
-    connection = system.minio_connection
+    owner = object_storage_owner(system.id)
+    connection = owner.record if owner is not None else None
     row.update(
         {
             'release_label': _release_display(connection.declared_release if connection is not None else None),
@@ -579,9 +579,10 @@ def build_system_detail(system_id: str) -> dict[str, Any] | None:
 
 def _bucket_row(bucket: ObjectStorageBucket) -> dict[str, Any]:
     system = bucket.object_storage_system
-    connection = system.minio_connection
-    provider_key = str(connection.detected_product or '') if connection is not None else ''
-    provider_label = _provider_label(connection.detected_product if connection is not None else None)
+    owner = object_storage_owner(system.id)
+    connection = owner.record if owner is not None else None
+    provider_key = owner.provider_key if owner is not None else ''
+    provider_label = owner.provider.label if owner is not None else 'Object Storage'
     native_type = str(bucket.native_type or 'bucket').strip().lower()
     location = (
         str(bucket.location or '').strip() or (connection.region if connection is not None else '') or 'Not Observed'
@@ -716,9 +717,7 @@ def build_buckets(filters: BucketFilters) -> dict[str, Any]:
     system_rows = [_system_row(system) for system in systems]
     system_by_id = {system.id: system for system in systems}
     buckets = (
-        ObjectStorageBucket.query.options(
-            joinedload(ObjectStorageBucket.object_storage_system).joinedload(ObjectStorageSystem.minio_connection)
-        )
+        ObjectStorageBucket.query.options(joinedload(ObjectStorageBucket.object_storage_system))
         .order_by(ObjectStorageBucket.name.asc())
         .all()
     )
@@ -755,9 +754,7 @@ def build_buckets(filters: BucketFilters) -> dict[str, Any]:
 
 def build_bucket_detail(bucket_id: int) -> dict[str, Any] | None:
     bucket = (
-        ObjectStorageBucket.query.options(
-            joinedload(ObjectStorageBucket.object_storage_system).joinedload(ObjectStorageSystem.minio_connection)
-        )
+        ObjectStorageBucket.query.options(joinedload(ObjectStorageBucket.object_storage_system))
         .filter(ObjectStorageBucket.id == bucket_id)
         .first()
     )

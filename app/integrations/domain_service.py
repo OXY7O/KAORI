@@ -10,8 +10,8 @@ from sqlalchemy.orm import load_only, selectinload
 from app.common.pagination import paginate_sequence
 from app.integrations.binding_selectors import selector_summary
 from app.integrations.contracts import IntegrationNotRegistered
-from app.integrations.metrics.providers import provider_definition
 from app.integrations.metrics.routing import normalize_routing_policy
+from app.integrations.provider_matrix import provider_kind
 from app.integrations.registry import IntegrationModule, registry
 from app.integrations.taxonomy import (
     asset_types_for_domain,
@@ -25,7 +25,7 @@ from app.models.integration import IntegrationBinding, IntegrationInstance
 @dataclass(frozen=True, slots=True)
 class ProviderRegistryFilters:
     query: str = ''
-    provider_type: str = ''
+    provider_key: str = ''
     readiness: str = ''
     page: int = 1
     per_page: int = 5
@@ -63,10 +63,10 @@ def build_integration_domain_page(
     )
     consumer_bindings = [binding for binding in related_bindings if not _is_owner_asset_binding(binding)]
 
-    provider_types = _provider_type_rows(modules, instances, consumer_bindings)
+    integration_types = _integration_type_rows(modules, instances, consumer_bindings)
     capability_definitions = capability_definitions_for_domain(domain.key)
     capabilities = (
-        _capability_rows(domain.key, modules, provider_types, consumer_bindings) if include_capabilities else []
+        _capability_rows(domain.key, modules, integration_types, consumer_bindings) if include_capabilities else []
     )
     stats, posture_status = _domain_stats(
         modules,
@@ -91,7 +91,7 @@ def build_integration_domain_page(
         filtered_provider_rows = _filter_provider_rows(
             all_provider_rows,
             query=provider_filters.query,
-            provider_type=provider_filters.provider_type,
+            provider_key=provider_filters.provider_key,
             readiness=provider_filters.readiness,
         )
         provider_registry_rows, provider_pagination = paginate_sequence(
@@ -123,7 +123,7 @@ def build_integration_domain_page(
 
     return {
         'domain': domain,
-        'providers': provider_types,
+        'integration_types': integration_types,
         'capabilities': capabilities,
         'provider_registry_rows': provider_registry_rows,
         'provider_registry_pagination': provider_pagination,
@@ -133,7 +133,7 @@ def build_integration_domain_page(
         'stats': stats,
         'posture_status': posture_status,
         'selected_provider_query': provider_filters.query,
-        'selected_provider_type': provider_filters.provider_type,
+        'selected_provider_key': provider_filters.provider_key,
         'selected_provider_readiness': provider_filters.readiness,
         'selected_binding_query': binding_filters.query,
         'selected_binding_provider': binding_filters.provider,
@@ -148,12 +148,12 @@ def build_integration_domain_page(
 
 
 def _load_domain_instances(modules: tuple[IntegrationModule, ...]) -> list[IntegrationInstance]:
-    provider_types = tuple(module.provider_type for module in modules)
-    if not provider_types:
+    integration_types = tuple(module.integration_type for module in modules)
+    if not integration_types:
         return []
     return (
-        IntegrationInstance.query.filter(IntegrationInstance.provider_type.in_(provider_types))
-        .order_by(IntegrationInstance.provider_type.asc(), IntegrationInstance.name.asc())
+        IntegrationInstance.query.filter(IntegrationInstance.integration_type.in_(integration_types))
+        .order_by(IntegrationInstance.integration_type.asc(), IntegrationInstance.name.asc())
         .all()
     )
 
@@ -164,11 +164,11 @@ def _load_related_bindings(
     *,
     include_details: bool,
 ) -> list[IntegrationBinding]:
-    provider_types = tuple(module.provider_type for module in modules)
+    integration_types = tuple(module.integration_type for module in modules)
     owned_asset_types = asset_types_for_domain(domain_key)
     clauses = []
-    if provider_types:
-        clauses.append(IntegrationInstance.provider_type.in_(provider_types))
+    if integration_types:
+        clauses.append(IntegrationInstance.integration_type.in_(integration_types))
     if owned_asset_types:
         clauses.append(IntegrationBinding.asset_type.in_(owned_asset_types))
     if not clauses:
@@ -202,21 +202,21 @@ def _load_related_bindings(
     )
 
 
-def _provider_type_rows(
+def _integration_type_rows(
     modules: tuple[IntegrationModule, ...],
     instances: list[IntegrationInstance],
     consumer_bindings: list[IntegrationBinding],
 ) -> list[dict[str, Any]]:
     instances_by_provider: dict[str, list[IntegrationInstance]] = {}
     for instance in instances:
-        instances_by_provider.setdefault(instance.provider_type, []).append(instance)
+        instances_by_provider.setdefault(instance.integration_type, []).append(instance)
     return [
-        _provider_type_row(module, instances_by_provider.get(module.provider_type, []), consumer_bindings)
+        _integration_type_row(module, instances_by_provider.get(module.integration_type, []), consumer_bindings)
         for module in modules
     ]
 
 
-def _provider_type_row(
+def _integration_type_row(
     module: IntegrationModule,
     targets: list[IntegrationInstance],
     consumer_bindings: list[IntegrationBinding],
@@ -226,7 +226,7 @@ def _provider_type_row(
     attention = len(targets) - ready
     bindings = sum(_consumer_binding_count(item, consumer_bindings) for item in enabled_targets)
     return {
-        'key': module.provider_type,
+        'key': module.integration_type,
         'label': module.label,
         'runtime_label': module.runtime_label or module.label,
         'icon': module.icon,
@@ -248,10 +248,10 @@ def _provider_registry_rows(
     instances: list[IntegrationInstance],
     consumer_bindings: list[IntegrationBinding],
 ) -> list[dict[str, Any]]:
-    module_by_provider = {module.provider_type: module for module in modules}
+    module_by_provider = {module.integration_type: module for module in modules}
     rows: list[dict[str, Any]] = []
     for instance in instances:
-        module = module_by_provider.get(instance.provider_type)
+        module = module_by_provider.get(instance.integration_type)
         if module is None:
             continue
         enabled_bindings = _consumer_binding_count(instance, consumer_bindings)
@@ -263,7 +263,7 @@ def _provider_registry_rows(
                 'name': instance.name,
                 'environment': _humanize(instance.environment, empty='Environment not specified'),
                 'provider_label': provider_label,
-                'provider_type': module.provider_type,
+                'integration_type': module.integration_type,
                 'provider_filter_key': provider_filter_key,
                 'provider_icon': module.icon,
                 'capability_label': module.capability.label,
@@ -307,13 +307,13 @@ def _binding_registry_rows(
     for binding in bindings:
         instance = binding.instance
         try:
-            module = registry.get(instance.provider_type)
+            module = registry.get(instance.integration_type)
         except IntegrationNotRegistered:
             continue
         asset_identity = (binding.asset_type, str(binding.asset_key))
         source_provider, source_provider_filter_key = _provider_source_identity(instance, module)
         routing_policy = (
-            normalize_routing_policy(binding.routing_policy) if instance.provider_type == 'metrics_source' else None
+            normalize_routing_policy(binding.routing_policy) if instance.integration_type == 'metrics_source' else None
         )
         rows.append(
             {
@@ -323,7 +323,7 @@ def _binding_registry_rows(
                 'asset_key': str(binding.asset_key),
                 'source_name': instance.name,
                 'source_provider': source_provider,
-                'source_provider_type': module.provider_type,
+                'source_integration_type': module.integration_type,
                 'source_provider_filter_key': source_provider_filter_key,
                 'source_icon': module.icon,
                 'role': _humanize(binding.binding_role, empty='Primary'),
@@ -364,7 +364,7 @@ def _resolve_provider_detail_urls(rows: list[dict[str, Any]]) -> None:
         if instance is None:
             continue
         try:
-            module = registry.get(instance.provider_type)
+            module = registry.get(instance.integration_type)
         except IntegrationNotRegistered:
             continue
         record = module.get_record_for_canonical(instance.id)
@@ -378,7 +378,7 @@ def _resolve_binding_detail_urls(rows: list[dict[str, Any]]) -> None:
         if instance is None:
             continue
         try:
-            module = registry.get(instance.provider_type)
+            module = registry.get(instance.integration_type)
         except IntegrationNotRegistered:
             continue
         record = module.get_record_for_canonical(instance.id)
@@ -390,15 +390,15 @@ def _filter_provider_rows(
     rows: list[dict[str, Any]],
     *,
     query: str,
-    provider_type: str,
+    provider_key: str,
     readiness: str,
 ) -> list[dict[str, Any]]:
     filtered = rows
     normalized_query = query.strip().lower()
     if normalized_query:
         filtered = [row for row in filtered if normalized_query in row['search_text']]
-    if provider_type:
-        filtered = [row for row in filtered if row['provider_filter_key'] == provider_type]
+    if provider_key:
+        filtered = [row for row in filtered if row['provider_filter_key'] == provider_key]
     if readiness:
         filtered = [row for row in filtered if row['readiness'] == readiness]
     return filtered
@@ -437,15 +437,14 @@ def _routing_label(routing_policy: dict[str, Any] | None) -> str | None:
 
 
 def _provider_source_identity(instance: IntegrationInstance, module: IntegrationModule) -> tuple[str, str]:
-    if instance.provider_type != 'metrics_source':
-        label = module.runtime_label or module.label
-        return label, instance.provider_type
-    metadata = instance.metadata_json or {}
-    provider_key = str(metadata.get('metrics_provider_key') or '').strip().lower()
+    provider_key = str(instance.provider_key or '').strip().lower()
     if not provider_key:
-        return module.runtime_label or module.label, instance.provider_type
-    definition = provider_definition(provider_key)
-    return definition.label, f'metrics_source:{provider_key}'
+        return module.runtime_label or module.label, instance.integration_type
+    try:
+        definition = provider_kind(instance.integration_type, provider_key)
+    except ValueError:
+        return provider_key.replace('_', ' ').title(), f'{instance.integration_type}:{provider_key}'
+    return definition.label, f'{instance.integration_type}:{definition.key}'
 
 
 def _status_filter_options(rows: list[dict[str, Any]], key: str) -> list[dict[str, str]]:
@@ -473,7 +472,7 @@ def _is_owner_asset_binding(binding: IntegrationBinding) -> bool:
     if owner_domain is None:
         return False
     try:
-        module = registry.get(binding.instance.provider_type)
+        module = registry.get(binding.instance.integration_type)
     except IntegrationNotRegistered:
         return False
     return module.domain_key == owner_domain
@@ -512,7 +511,7 @@ def _asset_identity_labels(
         if owner_domain is None:
             continue
         try:
-            module = registry.get(binding.instance.provider_type)
+            module = registry.get(binding.instance.integration_type)
         except IntegrationNotRegistered:
             continue
         if module.domain_key != owner_domain:
@@ -559,12 +558,15 @@ def _capability_binding_count(
     modules: tuple[IntegrationModule, ...],
     bindings: list[IntegrationBinding],
 ) -> int:
-    provider_types = {module.provider_type for module in modules}
+    integration_types = {module.integration_type for module in modules}
     return sum(
         1
         for binding in bindings
         if binding.enabled
-        and ((asset_types and binding.asset_type in asset_types) or binding.instance.provider_type in provider_types)
+        and (
+            (asset_types and binding.asset_type in asset_types)
+            or binding.instance.integration_type in integration_types
+        )
     )
 
 
@@ -584,7 +586,7 @@ def _domain_stats(
     ready_targets = sum(1 for item in enabled_targets if item.readiness_status == 'ready')
     attention_targets = len(instances) - ready_targets
     stats = {
-        'provider_types': len(modules),
+        'integration_types': len(modules),
         'capability_types': capability_types,
         'registered_targets': len(instances),
         'enabled_targets': len(enabled_targets),

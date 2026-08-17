@@ -63,7 +63,7 @@ def build_inventory_context(
         'bindings': sum(row['binding_count'] for row in rows),
     }
     coverage_context = build_provider_coverage(
-        'alertmanager',
+        'alert_source',
         page=coverage_page,
         per_page=coverage_per_page,
         query=coverage_query,
@@ -178,7 +178,9 @@ def build_instance_context(
             }
         )
     deletion_guard = (
-        provider_deletion_guard(provider_type='alertmanager', provider_instance_id=instance.id)
+        provider_deletion_guard(
+            integration_type='alert_source', integration_instance_id=instance.integration_instance_id
+        )
         if instance is not None
         else None
     )
@@ -200,7 +202,7 @@ def build_instance_context(
         'module_readiness_rows': evaluate_module_readiness(observed_capabilities),
         'capability_summary': _core_capability_summary(observed_capabilities),
         'source_resolution_rows': _source_resolution_rows(instance) if instance else [],
-        'runtime_state': runtime_state_view(get_integration('alertmanager').adapter.get_state(instance))
+        'runtime_state': runtime_state_view(get_integration('alert_source').runtime_state(instance))
         if instance
         else None,
         'runtime_history': build_runtime_history_context(instance) if instance else None,
@@ -417,7 +419,7 @@ def build_runtime_history_context(
     readiness: str = '',
 ) -> dict[str, object]:
     rows, pagination = paginate_runtime_history(
-        'alertmanager',
+        'alert_source',
         str(instance.id),
         page=page,
         per_page=per_page,

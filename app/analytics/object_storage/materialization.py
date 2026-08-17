@@ -142,7 +142,7 @@ def materialize_forecast(
             'points': points,
             'forecast': forecast,
             'source': {
-                'provider': source.identity.provider,
+                'provider_key': source.identity.provider_key,
                 'provider_label': source.identity.provider_label,
                 'instance_name': source.identity.instance_name,
             },

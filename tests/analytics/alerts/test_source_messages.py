@@ -29,6 +29,6 @@ def test_authentication_and_tls_errors_have_actionable_messages() -> None:
 
 def test_fallback_messages_do_not_include_provider_exceptions() -> None:
     assert friendly_alert_fallback_reason(primary_available=False, fallback_available=True) == (
-        'Alertmanager is unavailable, so KAORI is using the Prometheus ALERTS fallback.'
+        'Alertmanager is unavailable, so KAORI is using the Metrics Source ALERTS fallback.'
     )
     assert 'retry automatically' in friendly_combined_alert_error()

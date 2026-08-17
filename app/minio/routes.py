@@ -343,14 +343,14 @@ def test_instance_configuration(instance_id: int) -> ResponseReturnValue:
 def instance_detail(instance_id: int) -> ResponseReturnValue:
     instance = _instance_or_404(instance_id)
     validation_task_id = get_active_validation_task_id(
-        provider_type='minio',
+        integration_type='object_storage',
         operation='full_validation',
-        instance_id=instance.id,
+        integration_instance_id=instance.integration_instance_id,
     )
     runtime_task_id = get_active_validation_task_id(
-        provider_type='minio',
+        integration_type='object_storage',
         operation='runtime_refresh',
-        instance_id=instance.id,
+        integration_instance_id=instance.integration_instance_id,
     )
 
     return render_template(
@@ -368,9 +368,9 @@ def capability_registry(instance_id: int) -> ResponseReturnValue:
     instance = _instance_or_404(instance_id)
     context = build_detail_context(instance, detail_query_from_request())
     validation_task_id = get_active_validation_task_id(
-        provider_type='minio',
+        integration_type='object_storage',
         operation='full_validation',
-        instance_id=instance.id,
+        integration_instance_id=instance.integration_instance_id,
     )
     context['validation_job'] = build_validation_snapshot(validation_task_id) if validation_task_id else None
     return render_template('minio/partials/_capability_registry.html', **context)
@@ -419,7 +419,11 @@ def refresh_runtime(instance_id: int) -> ResponseReturnValue:
 def runtime_refresh_status(instance_id: int, task_id: str) -> ResponseReturnValue:
     instance = _instance_or_404(instance_id)
     snapshot = build_validation_snapshot(task_id)
-    if not validate_snapshot_access(snapshot, provider_type='minio', instance_id=instance.id):
+    if not validate_snapshot_access(
+        snapshot,
+        integration_type='object_storage',
+        integration_instance_id=instance.integration_instance_id,
+    ):
         abort(404)
     context = build_detail_context(instance)
     context.update(
@@ -435,7 +439,11 @@ def runtime_refresh_status(instance_id: int, task_id: str) -> ResponseReturnValu
 def validation_status(instance_id: int, task_id: str) -> ResponseReturnValue:
     instance = _instance_or_404(instance_id)
     snapshot = build_validation_snapshot(task_id)
-    if not validate_snapshot_access(snapshot, provider_type='minio', instance_id=instance.id):
+    if not validate_snapshot_access(
+        snapshot,
+        integration_type='object_storage',
+        integration_instance_id=instance.integration_instance_id,
+    ):
         abort(404)
     context = build_detail_context(instance, detail_query_from_request())
     context.update(

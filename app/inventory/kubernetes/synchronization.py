@@ -75,7 +75,7 @@ def _discover_inventory(
     _report_progress(
         progress_callback, 6, 'Preparing Kubernetes Client', 'Building the canonical Kubernetes API client.'
     )
-    client = get_integration('kubernetes').execute('client.build', connection)
+    client = get_integration('container_orchestrator').execute('client.build', connection)
     core_api = client.core_api()
     _report_progress(
         progress_callback,

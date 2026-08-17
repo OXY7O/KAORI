@@ -7,9 +7,9 @@ from requests.auth import HTTPBasicAuth
 
 from app.integrations.binding_selectors import BindingSelectorError, apply_promql_scope
 from app.integrations.metrics.exceptions import (
+    MetricsQueryError,
     MetricsSourceAuthenticationError,
     MetricsSourceConnectionError,
-    MetricsQueryError,
 )
 from app.models.metrics_source import MetricsSource
 

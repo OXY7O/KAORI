@@ -191,7 +191,7 @@ def resolver_error_blocker(
 ) -> ObjectStorageDependencyBlocker:
     if exc.kind in {MetricsSourceFailureKind.TRANSPORT, MetricsSourceFailureKind.AUTHENTICATION}:
         return metrics_runtime_blocker(system, exc)
-    if exc.provider:
+    if exc.provider_key:
         return {
             'kind': 'metrics_source_capability',
             'stage': 2,

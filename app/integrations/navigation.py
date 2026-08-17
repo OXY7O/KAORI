@@ -25,7 +25,7 @@ def integration_endpoint_owner(endpoint: str | None) -> dict[str, str] | None:
             return {
                 'domain_key': module.domain_key,
                 'domain_label': module.domain.label,
-                'provider_type': module.provider_type,
+                'integration_type': module.integration_type,
                 'provider_label': module.runtime_label or module.label,
             }
     return None

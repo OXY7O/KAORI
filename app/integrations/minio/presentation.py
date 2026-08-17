@@ -6,6 +6,7 @@ from typing import Any
 from sqlalchemy.orm import selectinload
 
 from app.common.presentation import present_user_datetime
+from app.integrations.provider_matrix import provider_kind
 from app.models.integration import IntegrationInstance
 from app.models.minio import MinioInstance
 
@@ -20,7 +21,7 @@ def build_runtime_overview_rows(
     if instance_id is not None:
         query = query.filter(MinioInstance.id == int(instance_id))
     instances = query.order_by(IntegrationInstance.name.asc()).all()
-    return [_runtime_row(instance, latest.get(('minio', str(instance.id)))) for instance in instances]
+    return [_runtime_row(instance, latest.get(('object_storage', str(instance.id)))) for instance in instances]
 
 
 def _runtime_row(instance: MinioInstance, observation: Any | None) -> dict[str, Any]:
@@ -28,12 +29,16 @@ def _runtime_row(instance: MinioInstance, observation: Any | None) -> dict[str, 
     capability_attention = 0 if instance.capabilities else 1
     enabled_bindings = [binding for binding in instance.integration_instance.bindings if binding.enabled]
     latency_ms = observation.latency_ms if observation else None
+    canonical = instance.integration_instance
+    provider = provider_kind('object_storage', canonical.provider_key)
     return {
-        'provider': 'minio',
-        'provider_label': 'MinIO',
+        'integration_type': 'object_storage',
+        'provider_key': provider.key,
+        'adapter_key': canonical.adapter_key,
+        'provider_label': provider.label,
         'provider_icon': 'database',
         'instance_id': str(instance.id),
-        'detail_key': f'minio:{instance.id}',
+        'detail_key': f'object_storage:{instance.id}',
         'instance_name': instance.name,
         'scope_label': instance.object_storage_system.name,
         'endpoint_product': (instance.detected_product or 'minio').replace('_', ' ').title(),

@@ -27,7 +27,9 @@ def test_overview_controls_and_readiness_follow_shared_analytics_standard() -> N
 
 
 def test_metrics_source_status_uses_one_canonical_card_contract() -> None:
-    source = Path('app/templates/analytics/kubernetes/components/_metrics_source_status.html').read_text(encoding='utf-8')
+    source = Path('app/templates/analytics/kubernetes/components/_metrics_source_status.html').read_text(
+        encoding='utf-8'
+    )
 
     assert 'macro render(status' in source
     assert 'data-analytics-metrics-source-status' in source

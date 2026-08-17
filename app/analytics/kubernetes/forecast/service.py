@@ -33,7 +33,7 @@ from app.analytics.kubernetes.forecast.resource import build_resource_forecast_p
 from app.analytics.kubernetes.utilization.service import UtilizationService
 from app.analytics.shared.params import get_query_value
 from app.common.dependencies import metrics_source_connection_blocker
-from app.integrations.metrics.query_profiles import get_query_expression
+from app.integrations.metrics.query_profiles import get_kubernetes_query_expression
 from app.intelligence.recommendation_engine import (
     build_forecast_actionable_recommendations,
     count_actionable_recommendations,
@@ -41,22 +41,32 @@ from app.intelligence.recommendation_engine import (
 )
 from app.models import Cluster
 
-CPU_USAGE_BY_NAMESPACE_QUERY = get_query_expression('analytics.forecast.queries.CPU_USAGE_BY_NAMESPACE_QUERY')
-CPU_USAGE_QUERY = get_query_expression('analytics.forecast.queries.CPU_USAGE_QUERY')
-CPU_WORKER_CAPACITY_QUERY = get_query_expression('analytics.forecast.queries.CPU_WORKER_CAPACITY_QUERY')
-MEMORY_USAGE_BY_NAMESPACE_QUERY = get_query_expression('analytics.forecast.queries.MEMORY_USAGE_BY_NAMESPACE_QUERY')
-MEMORY_USAGE_QUERY = get_query_expression('analytics.forecast.queries.MEMORY_USAGE_QUERY')
-MEMORY_WORKER_CAPACITY_QUERY = get_query_expression('analytics.forecast.queries.MEMORY_WORKER_CAPACITY_QUERY')
-NAMESPACE_ACTIVE_QUERY = get_query_expression('analytics.forecast.queries.NAMESPACE_ACTIVE_QUERY')
-POD_USAGE_BY_NAMESPACE_QUERY = get_query_expression('analytics.forecast.queries.POD_USAGE_BY_NAMESPACE_QUERY')
-POD_USAGE_QUERY = get_query_expression('analytics.forecast.queries.POD_USAGE_QUERY')
-POD_WORKER_CAPACITY_QUERY = get_query_expression('analytics.forecast.queries.POD_WORKER_CAPACITY_QUERY')
-STORAGE_CAPACITY_BY_NAMESPACE_QUERY = get_query_expression(
+CPU_USAGE_BY_NAMESPACE_QUERY = get_kubernetes_query_expression(
+    'analytics.forecast.queries.CPU_USAGE_BY_NAMESPACE_QUERY'
+)
+CPU_USAGE_QUERY = get_kubernetes_query_expression('analytics.forecast.queries.CPU_USAGE_QUERY')
+CPU_WORKER_CAPACITY_QUERY = get_kubernetes_query_expression('analytics.forecast.queries.CPU_WORKER_CAPACITY_QUERY')
+MEMORY_USAGE_BY_NAMESPACE_QUERY = get_kubernetes_query_expression(
+    'analytics.forecast.queries.MEMORY_USAGE_BY_NAMESPACE_QUERY'
+)
+MEMORY_USAGE_QUERY = get_kubernetes_query_expression('analytics.forecast.queries.MEMORY_USAGE_QUERY')
+MEMORY_WORKER_CAPACITY_QUERY = get_kubernetes_query_expression(
+    'analytics.forecast.queries.MEMORY_WORKER_CAPACITY_QUERY'
+)
+NAMESPACE_ACTIVE_QUERY = get_kubernetes_query_expression('analytics.forecast.queries.NAMESPACE_ACTIVE_QUERY')
+POD_USAGE_BY_NAMESPACE_QUERY = get_kubernetes_query_expression(
+    'analytics.forecast.queries.POD_USAGE_BY_NAMESPACE_QUERY'
+)
+POD_USAGE_QUERY = get_kubernetes_query_expression('analytics.forecast.queries.POD_USAGE_QUERY')
+POD_WORKER_CAPACITY_QUERY = get_kubernetes_query_expression('analytics.forecast.queries.POD_WORKER_CAPACITY_QUERY')
+STORAGE_CAPACITY_BY_NAMESPACE_QUERY = get_kubernetes_query_expression(
     'analytics.forecast.queries.STORAGE_CAPACITY_BY_NAMESPACE_QUERY'
 )
-STORAGE_CAPACITY_QUERY = get_query_expression('analytics.forecast.queries.STORAGE_CAPACITY_QUERY')
-STORAGE_USAGE_BY_NAMESPACE_QUERY = get_query_expression('analytics.forecast.queries.STORAGE_USAGE_BY_NAMESPACE_QUERY')
-STORAGE_USAGE_QUERY = get_query_expression('analytics.forecast.queries.STORAGE_USAGE_QUERY')
+STORAGE_CAPACITY_QUERY = get_kubernetes_query_expression('analytics.forecast.queries.STORAGE_CAPACITY_QUERY')
+STORAGE_USAGE_BY_NAMESPACE_QUERY = get_kubernetes_query_expression(
+    'analytics.forecast.queries.STORAGE_USAGE_BY_NAMESPACE_QUERY'
+)
+STORAGE_USAGE_QUERY = get_kubernetes_query_expression('analytics.forecast.queries.STORAGE_USAGE_QUERY')
 
 
 class ForecastAnalysisService(AnalyticsBaseService):

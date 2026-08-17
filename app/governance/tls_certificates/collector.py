@@ -79,7 +79,7 @@ def _collection_failure(exc: Exception) -> tuple[str, str]:
 
 
 def build_kubernetes_client(cluster: Cluster):
-    return get_integration('kubernetes').execute(
+    return get_integration('container_orchestrator').execute(
         'client.build',
         connection_for_cluster(cluster),
     )

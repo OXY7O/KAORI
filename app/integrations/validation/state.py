@@ -51,12 +51,12 @@ def _lock_ttl_seconds() -> int:
 
 def _target_key(
     *,
-    provider_type: str,
+    integration_type: str,
     operation: str,
-    instance_id: int | str,
+    integration_instance_id: int | str,
     binding_id: int | str | None = None,
 ) -> str:
-    target = f'{provider_type}:{operation}:{instance_id}'
+    target = f'{integration_type}:{operation}:{integration_instance_id}'
     if binding_id is not None:
         target = f'{target}:{binding_id}'
     return target
@@ -64,12 +64,12 @@ def _target_key(
 
 def _lock_key(
     *,
-    provider_type: str,
+    integration_type: str,
     operation: str,
-    instance_id: int | str,
+    integration_instance_id: int | str,
     binding_id: int | str | None = None,
 ) -> str:
-    return f'{VALIDATION_LOCK_PREFIX}{_target_key(provider_type=provider_type, operation=operation, instance_id=instance_id, binding_id=binding_id)}'
+    return f'{VALIDATION_LOCK_PREFIX}{_target_key(integration_type=integration_type, operation=operation, integration_instance_id=integration_instance_id, binding_id=binding_id)}'
 
 
 def _metadata_key(task_id: str) -> str:
@@ -111,25 +111,25 @@ def _release_stale_validation_lock(client: Redis, key: str) -> bool:
 def claim_validation_job(
     *,
     task_id: str,
-    provider_type: str,
+    integration_type: str,
     operation: str,
-    instance_id: int | str,
+    integration_instance_id: int | str,
     binding_id: int | str | None,
     metadata: dict[str, Any],
     conflicting_operations: tuple[str, ...] = (),
 ) -> bool:
     client = _redis_client()
     lock_key = _lock_key(
-        provider_type=provider_type,
+        integration_type=integration_type,
         operation=operation,
-        instance_id=instance_id,
+        integration_instance_id=integration_instance_id,
         binding_id=binding_id,
     )
     conflict_keys = [
         _lock_key(
-            provider_type=provider_type,
+            integration_type=integration_type,
             operation=conflicting_operation,
-            instance_id=instance_id,
+            integration_instance_id=integration_instance_id,
             binding_id=None,
         )
         for conflicting_operation in conflicting_operations
@@ -154,9 +154,9 @@ def claim_validation_job(
     except Exception:
         release_validation_job(
             task_id=task_id,
-            provider_type=provider_type,
+            integration_type=integration_type,
             operation=operation,
-            instance_id=instance_id,
+            integration_instance_id=integration_instance_id,
             binding_id=binding_id,
         )
         raise
@@ -165,17 +165,17 @@ def claim_validation_job(
 
 def get_active_validation_task_id(
     *,
-    provider_type: str,
+    integration_type: str,
     operation: str,
-    instance_id: int | str,
+    integration_instance_id: int | str,
     binding_id: int | str | None = None,
 ) -> str | None:
     from app.jobs.service import find_active_job
 
     scope_key = f'binding:{binding_id}' if binding_id is not None else None
     job = find_active_job(
-        provider_type=provider_type,
-        provider_instance_id=int(instance_id),
+        integration_type=integration_type,
+        integration_instance_id=int(integration_instance_id),
         operation=operation,
         scope_key=scope_key,
     )
@@ -187,15 +187,15 @@ def get_active_validation_task_id(
 def release_validation_job(
     *,
     task_id: str,
-    provider_type: str,
+    integration_type: str,
     operation: str,
-    instance_id: int | str,
+    integration_instance_id: int | str,
     binding_id: int | str | None = None,
 ) -> bool:
     key = _lock_key(
-        provider_type=provider_type,
+        integration_type=integration_type,
         operation=operation,
-        instance_id=instance_id,
+        integration_instance_id=integration_instance_id,
         binding_id=binding_id,
     )
     released = _redis_client().eval(_COMPARE_DELETE_SCRIPT, 1, key, task_id)

@@ -219,7 +219,7 @@ def _registry_query(*, status: str, workload: str, queue: str, search: str):
             or_(
                 JobExecution.operation.ilike(value),
                 JobExecution.job_type.ilike(value),
-                JobExecution.provider_type.ilike(value),
+                JobExecution.integration_type.ilike(value),
                 JobExecution.scope_key.ilike(value),
                 JobExecution.resource_group.ilike(value),
                 JobExecution.public_id.ilike(value),

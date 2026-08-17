@@ -28,12 +28,12 @@ from app.models.job import JobExecution, JobExecutionSubscriber, JobPolicy
 from app.models.knowledge import KnowledgeRunbook, KnowledgeRunbookAlertBinding, KnowledgeRunbookRevision
 from app.models.kubernetes import KubernetesConnection
 from app.models.lifecycle import DataLifecyclePolicy
+from app.models.metrics_source import MetricsSource
 from app.models.minio import MinioInstance
 from app.models.notification import Notification
 from app.models.notification_channel import NotificationChannel, NotificationDelivery
 from app.models.object_storage import ObjectStorageBucket, ObjectStorageSystem
 from app.models.object_storage_analytics import ObjectStorageForecastSnapshot
-from app.models.metrics_source import MetricsSource
 from app.models.rbac import Permission, Role, RolePermission
 from app.models.report import Report, ReportSchedule, ReportScheduleRun, ReportTemplate
 from app.models.resolver import (

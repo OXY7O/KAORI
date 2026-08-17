@@ -57,6 +57,52 @@ def integration_taxonomy_document() -> dict[str, Any]:
 
 
 @lru_cache(maxsize=1)
+def integration_provider_matrix_document() -> dict[str, Any]:
+    document = load_definition_document(
+        'integrations/provider_matrix.yaml',
+        expected_kind='integration_provider_matrix',
+    )
+    integration_types = [
+        require_mapping(item, f'integration_types[{index}]')
+        for index, item in enumerate(require_list(document.get('integration_types'), 'integration_types'))
+    ]
+    unique_by(integration_types, 'key', 'integration_types')
+    taxonomy = integration_taxonomy_document()
+    capability_keys = {
+        require_str(item, 'key', f'capabilities[{index}]')
+        for index, item in enumerate(require_list(taxonomy.get('capabilities'), 'capabilities'))
+    }
+    domain_by_capability = {
+        require_str(item, 'key', f'capabilities[{index}]'): require_str(item, 'domain_key', f'capabilities[{index}]')
+        for index, item in enumerate(require_list(taxonomy.get('capabilities'), 'capabilities'))
+    }
+    for index, raw in enumerate(integration_types):
+        path = f'integration_types[{index}]'
+        integration_type = require_str(raw, 'key', path)
+        domain_key = require_str(raw, 'domain_key', path)
+        if integration_type not in capability_keys:
+            raise DefinitionError(f'{path}.key references unknown integration capability {integration_type!r}.')
+        if domain_by_capability[integration_type] != domain_key:
+            raise DefinitionError(
+                f'{path}.domain_key must be {domain_by_capability[integration_type]!r} for {integration_type!r}.'
+            )
+        providers = [
+            require_mapping(item, f'{path}.providers[{provider_index}]')
+            for provider_index, item in enumerate(require_list(raw.get('providers'), f'{path}.providers'))
+        ]
+        unique_by(providers, 'key', f'{path}.providers')
+        for provider_index, provider in enumerate(providers):
+            provider_path = f'{path}.providers[{provider_index}]'
+            require_str(provider, 'label', provider_path)
+            require_str(provider, 'adapter_key', provider_path)
+            lifecycle = require_str(provider, 'lifecycle', provider_path)
+            if lifecycle not in {'available', 'planned'}:
+                raise DefinitionError(f'{provider_path}.lifecycle must be available or planned; got {lifecycle!r}.')
+            require_str(provider, 'protocol', provider_path)
+    return document
+
+
+@lru_cache(maxsize=1)
 def integration_compatibility_document() -> dict[str, Any]:
     document = load_definition_document(
         'integrations/compatibility.yaml',
@@ -194,5 +240,6 @@ def integration_provider_document(provider: str) -> dict[str, Any]:
 
 def clear_integration_definition_cache() -> None:
     integration_taxonomy_document.cache_clear()
+    integration_provider_matrix_document.cache_clear()
     integration_compatibility_document.cache_clear()
     integration_provider_document.cache_clear()

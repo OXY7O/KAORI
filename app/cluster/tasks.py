@@ -213,7 +213,7 @@ def sync_all_clusters_task(
                 if cluster is None:
                     raise LookupError('The cluster was deleted after the fleet job was admitted.')
                 connection = connection_for_cluster(cluster)
-                get_integration('kubernetes').execute(
+                get_integration('container_orchestrator').execute(
                     'inventory.sync',
                     connection,
                     progress_callback=report_cluster_progress,
@@ -357,7 +357,7 @@ def sync_single_cluster_task(
             _store_single(task_id, progress)
             self.update_state(state='PROGRESS', meta=progress)
 
-        get_integration('kubernetes').execute(
+        get_integration('container_orchestrator').execute(
             'inventory.sync',
             connection,
             progress_callback=report_single_cluster_progress,

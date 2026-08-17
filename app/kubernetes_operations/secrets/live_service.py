@@ -70,7 +70,7 @@ def get_cluster(cluster_id: str | None) -> Cluster:
 
 def core_api(cluster: Cluster) -> CoreV1Api:
     return (
-        get_integration('kubernetes')
+        get_integration('container_orchestrator')
         .execute(
             'client.build',
             connection_for_cluster(cluster),
@@ -81,7 +81,7 @@ def core_api(cluster: Cluster) -> CoreV1Api:
 
 def authorization_api(cluster: Cluster) -> AuthorizationV1Api:
     return (
-        get_integration('kubernetes')
+        get_integration('container_orchestrator')
         .execute(
             'client.build',
             connection_for_cluster(cluster),

@@ -40,7 +40,7 @@ def resolve_object_storage_metrics_source(
         raise MetricsSourceError(
             'No qualified operational metrics adapter is registered for this Object Storage provider.',
             kind=MetricsSourceFailureKind.CONFIGURATION,
-            provider='metrics_source',
+            provider_key=None,
         )
 
     diagnostics: list[MetricsSourceError] = []
@@ -52,10 +52,10 @@ def resolve_object_storage_metrics_source(
 
     first = diagnostics[0] if diagnostics else None
     if first is not None:
-        raise MetricsSourceError(str(first), kind=first.kind, provider=first.provider)
+        raise MetricsSourceError(str(first), kind=first.kind, provider_key=first.provider_key)
 
     raise MetricsSourceError(
         'No supported operational metrics source is bound to this Object Storage system.',
         kind=MetricsSourceFailureKind.CONFIGURATION,
-        provider='metrics_source',
+        provider_key=None,
     )

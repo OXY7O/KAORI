@@ -1,0 +1,26 @@
+from __future__ import annotations
+
+CONTAINER_ORCHESTRATOR = 'container_orchestrator'
+METRICS_SOURCE = 'metrics_source'
+ALERT_SOURCE = 'alert_source'
+OBJECT_STORAGE = 'object_storage'
+FILE_STORAGE = 'file_storage'
+BLOCK_STORAGE = 'block_storage'
+
+BUILTIN_INTEGRATION_TYPES = (
+    CONTAINER_ORCHESTRATOR,
+    METRICS_SOURCE,
+    ALERT_SOURCE,
+    OBJECT_STORAGE,
+)
+
+STORAGE_INTEGRATION_TYPES = (
+    OBJECT_STORAGE,
+    FILE_STORAGE,
+    BLOCK_STORAGE,
+)
+
+OBSERVABILITY_INTEGRATION_TYPES = (
+    METRICS_SOURCE,
+    ALERT_SOURCE,
+)

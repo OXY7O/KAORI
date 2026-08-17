@@ -15,7 +15,7 @@
             domain.workspace_endpoint,
             tab="registry",
             provider_q=selected_provider_query,
-            provider_type=selected_provider_type,
+            provider_key=selected_provider_key,
             provider_readiness=selected_provider_readiness,
             provider_per_page=provider_per_page,
             binding_q=selected_binding_query,
@@ -33,7 +33,7 @@
             domain.workspace_endpoint,
             tab="bindings",
             provider_q=selected_provider_query,
-            provider_type=selected_provider_type,
+            provider_key=selected_provider_key,
             provider_readiness=selected_provider_readiness,
             provider_per_page=provider_per_page,
             binding_q=selected_binding_query,
@@ -58,10 +58,10 @@
                             <p class="mt-1 text-sm leading-6 text-content-secondary">Review provider connections and cross-domain consumer bindings for assets in this domain.</p>
                         </div>
                     </div>
-                    {% if providers %}
+                    {% if integration_types %}
                         <div class="flex flex-wrap items-center gap-2 lg:justify-end"
-                             aria-label="{{ domain.label }} provider workspaces">
-                            {% for item in providers %}
+                             aria-label="{{ domain.label }} integration type workspaces">
+                            {% for item in integration_types %}
                                 <a href="{{ url_for(item.workspace_endpoint) }}"
                                    class="inline-flex h-9 items-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary transition hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary dark:hover:text-kaori-accent">
                                     <i data-lucide="{{ item.icon }}" class="h-3.5 w-3.5" aria-hidden="true"></i>
@@ -78,7 +78,7 @@
             </div>
             {% if active_tab == "registry" %}
                 <div class="p-4 sm:p-5" data-kaori-domain-provider-registry>
-                    {% set provider_filters_active = selected_provider_query or selected_provider_type or selected_provider_readiness %}
+                    {% set provider_filters_active = selected_provider_query or selected_provider_key or selected_provider_readiness %}
                     {% set provider_clear_query = {
                         'tab': 'registry',
                         'binding_q': selected_binding_query,
@@ -129,15 +129,15 @@
                             ) }}
                             {% if provider_filter_options|length > 1 %}
                                 {{ provider_registry.select_field(
-                                    'domain-provider-type',
-                                    'provider_type',
-                                    selected_provider_type,
+                                    'domain-provider-key',
+                                    'provider_key',
+                                    selected_provider_key,
                                     'Provider',
                                     provider_filter_options,
                                     'All Providers'
                                 ) }}
                             {% else %}
-                                <input type="hidden" name="provider_type" value="{{ selected_provider_type }}">
+                                <input type="hidden" name="provider_key" value="{{ selected_provider_key }}">
                             {% endif %}
                             {{ provider_registry.select_field(
                                 'domain-provider-readiness',
@@ -181,7 +181,7 @@
                                         </td>
                                         <td class="{{ table_ui.cell_classes() }}">
                                             <p class="text-sm font-semibold text-content-primary">{{ row.capability_label }}</p>
-                                            <p class="mt-1 text-xs text-content-muted">{{ row.provider_type }}</p>
+                                            <p class="mt-1 text-xs text-content-muted">{{ row.integration_type|replace("_", " ")|title }}</p>
                                         </td>
                                         <td class="{{ table_ui.cell_classes() }}">
                                             {{ integration_status(row.readiness, display="indicator") }}
@@ -202,7 +202,7 @@
                                 {% else %}
                                     <tr>
                                         <td colspan="5" class="p-0">
-                                            {% if selected_provider_query or selected_provider_type or selected_provider_readiness %}
+                                            {% if selected_provider_query or selected_provider_key or selected_provider_readiness %}
                                                 {% set empty_state_icon = 'search-x' %}
                                                 {% set empty_state_label = 'No Results' %}
                                                 {% set empty_state_title %}No {{ domain.label }} Providers Match These Filters{% endset %}
@@ -226,7 +226,7 @@
                             {% set provider_query_params = {
                                 'tab': 'registry',
                                 'provider_q': selected_provider_query,
-                                'provider_type': selected_provider_type,
+                                'provider_key': selected_provider_key,
                                 'provider_readiness': selected_provider_readiness,
                                 'binding_q': selected_binding_query,
                                 'binding_provider': selected_binding_provider,
@@ -273,7 +273,7 @@
                     {% set binding_clear_query = {
                         'tab': 'bindings',
                         'provider_q': selected_provider_query,
-                        'provider_type': selected_provider_type,
+                        'provider_key': selected_provider_key,
                         'provider_readiness': selected_provider_readiness,
                         'provider_per_page': provider_per_page
                     } %}
@@ -308,7 +308,7 @@
                         ) %}
                             <input type="hidden" name="tab" value="bindings">
                             <input type="hidden" name="provider_q" value="{{ selected_provider_query }}">
-                            <input type="hidden" name="provider_type" value="{{ selected_provider_type }}">
+                            <input type="hidden" name="provider_key" value="{{ selected_provider_key }}">
                             <input type="hidden" name="provider_readiness" value="{{ selected_provider_readiness }}">
                             <input type="hidden" name="provider_per_page" value="{{ provider_per_page }}">
                             {{ provider_registry.search_field(
@@ -419,7 +419,7 @@
                                 'binding_provider': selected_binding_provider,
                                 'binding_status': selected_binding_status,
                                 'provider_q': selected_provider_query,
-                                'provider_type': selected_provider_type,
+                                'provider_key': selected_provider_key,
                                 'provider_readiness': selected_provider_readiness,
                                 'provider_per_page': provider_per_page
                             } %}

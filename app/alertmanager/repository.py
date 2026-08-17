@@ -6,7 +6,7 @@ from app.extensions.db import db
 from app.models.alertmanager import AlertmanagerInstance
 from app.models.integration import IntegrationBinding, IntegrationInstance
 
-PROVIDER_TYPE = 'alertmanager'
+INTEGRATION_TYPE = 'alert_source'
 
 
 def list_instances() -> list[AlertmanagerInstance]:
@@ -27,7 +27,7 @@ def get_instance_by_name(name: str) -> AlertmanagerInstance | None:
         select(AlertmanagerInstance)
         .join(AlertmanagerInstance.integration_instance)
         .where(
-            IntegrationInstance.provider_type == PROVIDER_TYPE,
+            IntegrationInstance.integration_type == INTEGRATION_TYPE,
             IntegrationInstance.name == name,
         )
     )
@@ -52,7 +52,7 @@ def get_binding(binding_id: int) -> IntegrationBinding | None:
         .join(IntegrationBinding.instance)
         .where(
             IntegrationBinding.id == binding_id,
-            IntegrationInstance.provider_type == PROVIDER_TYPE,
+            IntegrationInstance.integration_type == INTEGRATION_TYPE,
         )
     )
     return db.session.execute(statement).scalar_one_or_none()
@@ -66,7 +66,7 @@ def list_bindings_for_scope(*, scope_type: str, scope_key: str) -> list[Integrat
             IntegrationBinding.asset_type == scope_type,
             IntegrationBinding.asset_key == str(scope_key),
             IntegrationBinding.enabled.is_(True),
-            IntegrationInstance.provider_type == PROVIDER_TYPE,
+            IntegrationInstance.integration_type == INTEGRATION_TYPE,
             IntegrationInstance.enabled.is_(True),
         )
     )
@@ -111,7 +111,7 @@ def count_bindings_by_scope_type() -> dict[str, int]:
     statement = (
         select(IntegrationBinding.asset_type, func.count(IntegrationBinding.id))
         .join(IntegrationBinding.instance)
-        .where(IntegrationInstance.provider_type == PROVIDER_TYPE)
+        .where(IntegrationInstance.integration_type == INTEGRATION_TYPE)
         .group_by(IntegrationBinding.asset_type)
     )
     return {scope_type: int(count) for scope_type, count in db.session.execute(statement).all()}

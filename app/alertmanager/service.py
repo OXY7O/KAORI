@@ -142,11 +142,11 @@ def save_alertmanager_instance(
     # Create or resolve the canonical identity before flushing the provider row,
     # otherwise a newly registered Alertmanager is inserted with a NULL
     # integration_instance_id.
-    ensure_canonical_instance(instance, provider_type='alertmanager')
+    ensure_canonical_instance(instance, integration_type='alert_source')
     db.session.flush()
 
     # Refresh canonical metadata after the provider row has received its ID.
-    canonical = ensure_canonical_instance(instance, provider_type='alertmanager')
+    canonical = ensure_canonical_instance(instance, integration_type='alert_source')
     if not creating:
         invalidate_bindings(
             canonical,
@@ -193,7 +193,7 @@ def validate_alertmanager_binding(
     commit: bool = True,
 ) -> dict[str, Any]:
     """Validate one scope binding through the canonical provider adapter."""
-    return get_integration('alertmanager').execute(
+    return get_integration('alert_source').execute(
         'binding.validate',
         instance,
         binding=binding,
@@ -211,8 +211,8 @@ def remove_alertmanager_instance(instance: AlertmanagerInstance) -> None:
         )
 
     guard = provider_deletion_guard(
-        provider_type='alertmanager',
-        provider_instance_id=instance.id,
+        integration_type='alert_source',
+        integration_instance_id=instance.integration_instance_id,
     )
     if guard.blocked:
         raise DeletionBlocked(guard)
@@ -234,11 +234,11 @@ def remove_alertmanager_instance(instance: AlertmanagerInstance) -> None:
 
 def refresh_alertmanager_runtime_health(instance: AlertmanagerInstance) -> dict[str, Any]:
     """Refresh provider health through the canonical registry adapter."""
-    return get_integration('alertmanager').execute('runtime.health', instance)
+    return get_integration('alert_source').execute('runtime.health', instance)
 
 
 def validate_alertmanager_instance(instance: AlertmanagerInstance) -> dict[str, Any]:
-    result = get_integration('alertmanager').execute('runtime.validate', instance)
+    result = get_integration('alert_source').execute('runtime.validate', instance)
     return result.to_dict() if hasattr(result, 'to_dict') else dict(result)
 
 
@@ -282,7 +282,7 @@ def test_alertmanager_form_connection(
     draft.bearer_token = bearer_token
     draft.timeout = form.timeout
     draft.verify_ssl = form.verify_ssl
-    client = get_integration('alertmanager').execute('client.build', draft)
+    client = get_integration('alert_source').execute('client.build', draft)
     try:
         result = client.test_connection()
     except AlertmanagerError as exc:
@@ -357,7 +357,7 @@ def update_alertmanager_binding_selector(
     selector_operator: str = '=',
     commit: bool = True,
 ) -> IntegrationBinding:
-    return get_integration('alertmanager').execute(
+    return get_integration('alert_source').execute(
         'binding.selector.update',
         instance,
         binding=binding,
@@ -383,7 +383,7 @@ def get_alertmanager_bindings(instance_id: int) -> list[IntegrationBinding]:
 
 
 def build_alertmanager_client(config: AlertmanagerInstance):
-    return get_integration('alertmanager').execute('client.build', config)
+    return get_integration('alert_source').execute('client.build', config)
 
 
 def test_alertmanager_connection(*, cluster_id: str) -> dict[str, Any]:

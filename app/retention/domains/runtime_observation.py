@@ -115,7 +115,9 @@ class RuntimeObservationArchiveDomain:
                 'integration_instance_id': row.integration_instance_id,
             },
             'observation': {
-                'provider': row.provider,
+                'integration_type': row.integration_type,
+                'provider_key': row.provider_key,
+                'adapter_key': row.adapter_key,
                 'instance_id': row.instance_id,
                 'instance_name': row.instance_name,
                 'trigger_type': row.trigger_type,

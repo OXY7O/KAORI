@@ -84,7 +84,7 @@ def resolve_alertmanager_sources(
     required_capabilities: tuple[str, ...] = (),
 ) -> AlertmanagerSourceResolution:
     canonical = resolve_integration(
-        provider_type='alertmanager',
+        integration_type='alert_source',
         asset_type=scope_type,
         asset_key=scope_key,
         required_capabilities=required_capabilities,

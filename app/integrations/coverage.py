@@ -7,10 +7,8 @@ from sqlalchemy.orm import contains_eager
 from app.cluster.constants import get_environment_label
 from app.integrations.binding_selectors import selector_is_configured, selector_summary
 from app.integrations.consumer_assets import registered_consumer_asset_definitions
-from app.models.alertmanager import AlertmanagerInstance
 from app.models.cluster import Cluster
 from app.models.integration import IntegrationBinding, IntegrationInstance
-from app.models.metrics_source import MetricsSource
 
 _PROVIDER_META = {
     'metrics_source': {
@@ -25,9 +23,9 @@ _PROVIDER_META = {
         'selector_label': 'Metrics identity',
         'selector_help': 'The selector isolates one managed asset inside a shared metrics source.',
     },
-    'alertmanager': {
-        'key': 'alertmanager',
-        'label': 'Alertmanager',
+    'alert_source': {
+        'key': 'alert_source',
+        'label': 'Alert Sources',
         'source_label': 'alert source',
         'icon': 'siren',
         'bind_endpoint': 'integrations.bind_alertmanager_source',
@@ -35,24 +33,24 @@ _PROVIDER_META = {
         'register_endpoint': 'alertmanager.new_instance',
         'detail_endpoint': 'alertmanager.instance_detail',
         'selector_label': 'Alert identity',
-        'selector_help': 'The selector isolates one managed asset inside a shared Alertmanager source.',
+        'selector_help': 'The selector isolates one managed asset inside a shared alert source.',
     },
 }
 
 
-def provider_meta(provider_type: str) -> dict[str, str]:
+def provider_meta(integration_type: str) -> dict[str, str]:
     try:
-        return dict(_PROVIDER_META[provider_type])
+        return dict(_PROVIDER_META[integration_type])
     except KeyError as exc:
-        raise ValueError(f'Unsupported integration provider: {provider_type}.') from exc
+        raise ValueError(f'Unsupported integration provider: {integration_type}.') from exc
 
 
 def _provider_binding_indexes(
-    provider_type: str,
+    integration_type: str,
 ) -> tuple[list[IntegrationBinding], dict[tuple[str, str], list[IntegrationBinding]], dict[int, int], dict[int, int]]:
     bindings = (
         IntegrationBinding.query.join(IntegrationInstance)
-        .filter(IntegrationInstance.provider_type == provider_type)
+        .filter(IntegrationInstance.integration_type == integration_type)
         .order_by(
             IntegrationBinding.asset_type.asc(),
             IntegrationBinding.asset_key.asc(),
@@ -120,7 +118,8 @@ def _coverage_row(
     return {
         **scope,
         'source': source,
-        'source_id': source.id if source is not None else None,
+        'source_id': source.integration_instance_id if source is not None else None,
+        'source_record_id': source.id if source is not None else None,
         'source_name': source_name,
         'source_readiness': (source.readiness_status or 'validation_required')
         if source is not None
@@ -168,7 +167,8 @@ def _coverage_source_options(
         selectable = readiness not in blocked and unscoped == 0
         options.append(
             {
-                'id': instance.id,
+                'id': instance.integration_instance_id,
+                'record_id': instance.id,
                 'name': instance.name,
                 'readiness': readiness,
                 'binding_count': sharing_counts.get(canonical_id, 0),
@@ -190,7 +190,7 @@ def _coverage_source_options(
 
 
 def build_provider_coverage(
-    provider_type: str,
+    integration_type: str,
     *,
     page: int = 1,
     per_page: int = 5,
@@ -198,14 +198,14 @@ def build_provider_coverage(
     environment: str = '',
     status: str = '',
 ) -> dict[str, Any]:
-    meta = provider_meta(provider_type)
-    instances = _instances(provider_type)
+    meta = provider_meta(integration_type)
+    instances = _instances(integration_type)
     instance_by_canonical = {
         instance.integration_instance_id: instance
         for instance in instances
         if instance.integration_instance_id is not None
     }
-    _, bindings_by_asset, sharing_counts, unscoped_counts = _provider_binding_indexes(provider_type)
+    _, bindings_by_asset, sharing_counts, unscoped_counts = _provider_binding_indexes(integration_type)
     all_rows = [
         _coverage_row(
             scope,
@@ -253,30 +253,30 @@ def build_provider_coverage(
 
 
 def build_binding_workspace(
-    provider_type: str,
+    integration_type: str,
     *,
     scope_key: str,
     submitted: dict[str, Any] | None = None,
     operation_feedback: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    meta = provider_meta(provider_type)
+    meta = provider_meta(integration_type)
     cluster = Cluster.query.filter_by(id=scope_key).first()
-    instances = _instances(provider_type)
+    instances = _instances(integration_type)
     cluster_position = Cluster.query.order_by(Cluster.name.asc(), Cluster.id.asc()).with_entities(Cluster.id).all()
     position = next((index for index, row in enumerate(cluster_position) if str(row[0]) == str(scope_key)), 0)
-    coverage = build_provider_coverage(provider_type, page=(position // 50) + 1, per_page=50)
+    coverage = build_provider_coverage(integration_type, page=(position // 50) + 1, per_page=50)
     scope_row = next(
         (row for row in coverage['coverage_rows'] if row['scope_key'] == str(scope_key)),
         None,
     )
     selected_source_id = str((submitted or {}).get('source_id') or '')
     selected_source = next(
-        (instance for instance in instances if str(instance.id) == selected_source_id),
+        (instance for instance in instances if str(instance.integration_instance_id) == selected_source_id),
         None,
     )
     return {
         'provider': meta,
-        'provider_type': provider_type,
+        'integration_type': integration_type,
         'cluster': cluster,
         'scope_row': scope_row,
         'source_options': coverage['source_options'],
@@ -290,7 +290,7 @@ def build_binding_workspace(
 
 
 def bound_sources_for_scopes(
-    provider_types: tuple[str, ...] | list[str],
+    integration_types: tuple[str, ...] | list[str],
     *,
     scope_type: str,
     scope_keys: tuple[str, ...] | list[str],
@@ -300,7 +300,7 @@ def bound_sources_for_scopes(
     Registry pages use this helper to avoid repeating one binding query and one
     provider-registry query for every Kubernetes connection row.
     """
-    normalized_providers = tuple(dict.fromkeys(str(value) for value in provider_types if value))
+    normalized_providers = tuple(dict.fromkeys(str(value) for value in integration_types if value))
     normalized_scope_keys = tuple(dict.fromkeys(str(value) for value in scope_keys if value))
     if not normalized_providers or not normalized_scope_keys:
         return {}
@@ -309,14 +309,14 @@ def bound_sources_for_scopes(
         IntegrationBinding.query.join(IntegrationInstance)
         .options(contains_eager(IntegrationBinding.instance))
         .filter(
-            IntegrationInstance.provider_type.in_(normalized_providers),
+            IntegrationInstance.integration_type.in_(normalized_providers),
             IntegrationBinding.asset_type == scope_type,
             IntegrationBinding.asset_key.in_(normalized_scope_keys),
             IntegrationBinding.enabled.is_(True),
         )
         .order_by(
             IntegrationBinding.asset_key.asc(),
-            IntegrationInstance.provider_type.asc(),
+            IntegrationInstance.integration_type.asc(),
             IntegrationBinding.priority.asc(),
             IntegrationBinding.id.asc(),
         )
@@ -325,7 +325,7 @@ def bound_sources_for_scopes(
     candidates: dict[tuple[str, str], list[IntegrationBinding]] = {}
     provider_by_instance: dict[int, str] = {}
     for binding in bindings:
-        provider = binding.instance.provider_type
+        provider = binding.instance.integration_type
         provider_by_instance[binding.integration_instance_id] = provider
         candidates.setdefault((provider, str(binding.asset_key)), []).append(binding)
 
@@ -352,7 +352,7 @@ def bound_sources_for_scopes(
 
 
 def bound_source_for_scope(
-    provider_type: str, *, scope_type: str, scope_key: str
+    integration_type: str, *, scope_type: str, scope_key: str
 ) -> tuple[Any | None, IntegrationBinding | None]:
     """Return the preferred persisted source binding without performing live resolution.
 
@@ -362,7 +362,7 @@ def bound_source_for_scope(
     bindings = (
         IntegrationBinding.query.join(IntegrationInstance)
         .filter(
-            IntegrationInstance.provider_type == provider_type,
+            IntegrationInstance.integration_type == integration_type,
             IntegrationBinding.asset_type == scope_type,
             IntegrationBinding.asset_key == str(scope_key),
             IntegrationBinding.enabled.is_(True),
@@ -380,7 +380,7 @@ def bound_source_for_scope(
     source = next(
         (
             instance
-            for instance in _instances(provider_type)
+            for instance in _instances(integration_type)
             if instance.integration_instance_id == binding.integration_instance_id
         ),
         None,
@@ -388,20 +388,21 @@ def bound_source_for_scope(
     return source, binding
 
 
-def _instances(provider_type: str) -> list[Any]:
-    if provider_type == 'metrics_source':
-        return (
-            MetricsSource.query.join(MetricsSource.integration_instance)
-            .order_by(IntegrationInstance.name.asc())
-            .all()
-        )
-    if provider_type == 'alertmanager':
-        return (
-            AlertmanagerInstance.query.join(AlertmanagerInstance.integration_instance)
-            .order_by(IntegrationInstance.name.asc())
-            .all()
-        )
-    raise ValueError(f'Unsupported integration provider: {provider_type}.')
+def _instances(integration_type: str) -> list[Any]:
+    from app.integrations.registry import get_integration
+
+    module = get_integration(integration_type)
+    identities = (
+        IntegrationInstance.query.filter_by(integration_type=integration_type)
+        .order_by(IntegrationInstance.name.asc(), IntegrationInstance.id.asc())
+        .all()
+    )
+    records: list[Any] = []
+    for identity in identities:
+        record = module.get_record_for_canonical(identity.id)
+        if record is not None:
+            records.append(record)
+    return records
 
 
 def _coverage_status(

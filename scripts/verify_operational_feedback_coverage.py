@@ -64,9 +64,7 @@ def main() -> int:
             "event_type='cluster_delete'",
         ),
         'app/metrics/registration_web.py': ("event_type='metrics_source_created'",),
-        'app/metrics/routes.py': (
-            "event_type='metrics_source_deleted'",
-        ),
+        'app/metrics/routes.py': ("event_type='metrics_source_deleted'",),
         'app/metrics/edit_web.py': ("event_type='metrics_source_updated'",),
         'app/alertmanager/routes.py': (
             "event_type='alertmanager_instance_created'",

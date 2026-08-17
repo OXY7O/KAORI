@@ -41,8 +41,8 @@ from app.integrations.validation.web import (
     snapshot_feedback_for_user,
     validate_snapshot_access,
 )
-from app.notifications.service import get_navigation_notification_context, record_operational_activity
 from app.metrics.registration_web import new_instance_response, test_new_instance_connection_response
+from app.notifications.service import get_navigation_notification_context, record_operational_activity
 from app.rbac.decorators import permission_required
 
 integrations_bp = Blueprint('integrations', __name__, url_prefix='/integrations')
@@ -53,7 +53,7 @@ integrations_bp = Blueprint('integrations', __name__, url_prefix='/integrations'
 def overview() -> ResponseReturnValue:
     context = build_integrations_overview(
         tab=request.args.get('tab', 'catalog').strip(),
-        provider=request.args.get('provider', '').strip(),
+        integration_type=request.args.get('integration_type', '').strip(),
         health=request.args.get('health', '').strip(),
         readiness=request.args.get('readiness', '').strip(),
         page=request.args.get('page', 1, type=int) or 1,
@@ -74,7 +74,7 @@ def _render_domain_page(domain_key: str) -> ResponseReturnValue:
         active_tab=request.args.get('tab', 'registry').strip(),
         provider_filters=ProviderRegistryFilters(
             query=request.args.get('provider_q', '').strip(),
-            provider_type=request.args.get('provider_type', '').strip(),
+            provider_key=request.args.get('provider_key', '').strip(),
             readiness=request.args.get('provider_readiness', '').strip(),
             page=request.args.get('provider_page', 1, type=int) or 1,
             per_page=request.args.get('provider_per_page', 5, type=int) or 5,
@@ -114,10 +114,10 @@ def storage() -> ResponseReturnValue:
 @integrations_bp.get('/runtime/<string:detail_key>/details')
 @permission_required('settings.manage_integrations')
 def runtime_overview_details(detail_key: str) -> ResponseReturnValue:
-    provider, separator, instance_id = detail_key.partition(':')
-    if not separator or not provider or not instance_id:
+    integration_type, separator, instance_id = detail_key.partition(':')
+    if not separator or not integration_type or not instance_id:
         abort(404)
-    detail = build_integration_runtime_detail(provider, instance_id)
+    detail = build_integration_runtime_detail(integration_type, instance_id)
     if detail is None:
         abort(404)
     return render_template(
@@ -171,14 +171,14 @@ def _kubernetes_detail_context(
         abort(404)
     connection = context['connection']
     capability_task_id = get_active_validation_task_id(
-        provider_type='kubernetes',
+        integration_type='container_orchestrator',
         operation='full_validation',
-        instance_id=connection.id,
+        integration_instance_id=connection.integration_instance_id,
     )
     runtime_task_id = get_active_validation_task_id(
-        provider_type='kubernetes',
+        integration_type='container_orchestrator',
         operation='runtime_refresh',
-        instance_id=connection.id,
+        integration_instance_id=connection.integration_instance_id,
     )
     context['capability_validation_job'] = build_validation_snapshot(capability_task_id) if capability_task_id else None
     context['runtime_validation_job'] = build_validation_snapshot(runtime_task_id) if runtime_task_id else None
@@ -196,7 +196,7 @@ def _kubernetes_detail_context(
             history_per_page if history_per_page is not None else (request.args.get('per_page', 5, type=int) or 5)
         )
         rows, pagination = paginate_runtime_history(
-            'kubernetes',
+            'container_orchestrator',
             str(connection.id),
             page=resolved_page,
             per_page=resolved_per_page,
@@ -249,8 +249,8 @@ def kubernetes_capability_validate(cluster_id: str) -> ResponseReturnValue:
     is_htmx = request.headers.get('HX-Request') == 'true'
     try:
         validation_job, created = enqueue_instance_validation(
-            provider_type='kubernetes',
-            instance_id=connection.id,
+            integration_type='container_orchestrator',
+            integration_instance_id=connection.integration_instance_id,
             requested_by_user_id=int(current_user.id),
         )
         feedback = record_operational_activity(
@@ -319,8 +319,8 @@ def kubernetes_capability_validation_status(cluster_id: str, task_id: str) -> Re
     snapshot = build_validation_snapshot(task_id)
     if not validate_snapshot_access(
         snapshot,
-        provider_type='kubernetes',
-        instance_id=connection.id,
+        integration_type='container_orchestrator',
+        integration_instance_id=connection.integration_instance_id,
     ):
         abort(404)
     context = _kubernetes_detail_context(cluster_id)
@@ -345,8 +345,8 @@ def kubernetes_runtime_refresh(cluster_id: str) -> ResponseReturnValue:
     is_htmx = request.headers.get('HX-Request') == 'true'
     try:
         validation_job, created = enqueue_runtime_health_refresh(
-            provider_type='kubernetes',
-            instance_id=connection.id,
+            integration_type='container_orchestrator',
+            integration_instance_id=connection.integration_instance_id,
             requested_by_user_id=int(current_user.id),
         )
         feedback = record_operational_activity(
@@ -414,8 +414,8 @@ def kubernetes_runtime_refresh_status(cluster_id: str, task_id: str) -> Response
     snapshot = build_validation_snapshot(task_id)
     if not validate_snapshot_access(
         snapshot,
-        provider_type='kubernetes',
-        instance_id=connection.id,
+        integration_type='container_orchestrator',
+        integration_instance_id=connection.integration_instance_id,
     ):
         abort(404)
     context = _kubernetes_detail_context(cluster_id, include_history=True)
@@ -437,7 +437,7 @@ def kubernetes_runtime_history(cluster_id: str) -> ResponseReturnValue:
     if connection is None:
         abort(404)
     rows, pagination = paginate_runtime_history(
-        'kubernetes',
+        'container_orchestrator',
         str(connection.id),
         page=request.args.get('page', 1, type=int) or 1,
         per_page=request.args.get('per_page', 5, type=int) or 5,
@@ -550,7 +550,7 @@ def alertmanager() -> ResponseReturnValue:
     return render_template('integrations/alertmanager.html', **context)
 
 
-def _binding_response(provider_type: str, *, scope_key: str) -> ResponseReturnValue:
+def _binding_response(integration_type: str, *, scope_key: str) -> ResponseReturnValue:
     submitted = dict(request.form) if request.method == 'POST' else {}
     feedback = None
 
@@ -563,7 +563,7 @@ def _binding_response(provider_type: str, *, scope_key: str) -> ResponseReturnVa
         role = request.form.get('binding_role', 'primary').strip().lower()
         priority = request.form.get('priority', 100, type=int) or 100
         routing_policy = None
-        if provider_type == 'metrics_source':
+        if integration_type == 'metrics_source':
             routing_weight = request.form.get('routing_weight', type=int)
             routing_policy = {
                 'query_horizon': request.form.get('query_horizon', 'balanced').strip().lower() or 'balanced',
@@ -574,13 +574,13 @@ def _binding_response(provider_type: str, *, scope_key: str) -> ResponseReturnVa
         binding = None
         try:
             if source_id is None:
-                raise ValueError(f'Select an existing {present_key_label(provider_type)} source.')
+                raise ValueError(f'Select an existing {present_key_label(integration_type)} source.')
             cluster = get_cluster(cluster_id)
             if cluster is None:
                 raise ValueError('The selected Kubernetes scope no longer exists.')
             created_binding = create_source_binding(
-                provider_type,
-                source_id=source_id,
+                integration_type,
+                integration_instance_id=source_id,
                 spec=SourceBindingSpec(
                     asset_type='kubernetes_cluster',
                     asset_key=str(cluster.id),
@@ -601,16 +601,16 @@ def _binding_response(provider_type: str, *, scope_key: str) -> ResponseReturnVa
         except ValueError as exc:
             feedback = record_operational_activity(
                 user_id=current_user.id,
-                event_type=f'{provider_type}_binding_create_rejected',
+                event_type=f'{integration_type}_binding_create_rejected',
                 status='error',
-                title=f'{present_key_label(provider_type)} binding not saved',
+                title=f'{present_key_label(integration_type)} binding not saved',
                 message='KAORI could not create the requested source binding.',
                 detail=str(exc),
                 action_url=request.path,
                 action_label='Review binding',
                 action_icon='link-2',
                 metadata={
-                    'provider_type': provider_type,
+                    'integration_type': integration_type,
                     'scope_type': 'kubernetes_cluster',
                     'scope_key': cluster_id,
                     'source_id': source_id,
@@ -621,22 +621,22 @@ def _binding_response(provider_type: str, *, scope_key: str) -> ResponseReturnVa
         except Exception as exc:
             current_app.logger.exception(
                 'Unexpected %s binding persistence failure for scope %s and source %s',
-                provider_type,
+                integration_type,
                 cluster_id,
                 source_id,
             )
             feedback = record_operational_activity(
                 user_id=current_user.id,
-                event_type=f'{provider_type}_binding_create_failed',
+                event_type=f'{integration_type}_binding_create_failed',
                 status='error',
-                title=f'{present_key_label(provider_type)} binding not saved',
+                title=f'{present_key_label(integration_type)} binding not saved',
                 message='KAORI could not persist the source binding.',
                 detail='Review KAORI logs and database connectivity before retrying.',
                 action_url=request.path,
                 action_label='Review binding',
                 action_icon='link-2',
                 metadata={
-                    'provider_type': provider_type,
+                    'integration_type': integration_type,
                     'scope_key': cluster_id,
                     'source_id': source_id,
                     'reason': type(exc).__name__,
@@ -646,20 +646,20 @@ def _binding_response(provider_type: str, *, scope_key: str) -> ResponseReturnVa
         else:
             feedback = record_operational_activity(
                 user_id=current_user.id,
-                event_type=f'{provider_type}_binding_created',
+                event_type=f'{integration_type}_binding_created',
                 status='success',
-                title=f'{present_key_label(provider_type)} binding saved',
+                title=f'{present_key_label(integration_type)} binding saved',
                 message=f'{source.name} is associated with {cluster.name} and requires binding validation.',
                 detail=f'Binding selector: {selector_label}={selector_value}. Source credentials and runtime remain shared; operational resolution stays blocked until validation succeeds.',
                 action_url=(
                     url_for('metrics.instance_detail', instance_id=source.id) + '#scope'
-                    if provider_type == 'metrics_source'
+                    if integration_type == 'metrics_source'
                     else url_for('alertmanager.instance_detail', instance_id=source.id) + '#scope'
                 ),
                 action_label='Review source binding',
                 action_icon='route',
                 metadata={
-                    'provider_type': provider_type,
+                    'integration_type': integration_type,
                     'binding_id': binding.id,
                     'scope_key': cluster.id,
                     'source_id': source.id,
@@ -670,12 +670,16 @@ def _binding_response(provider_type: str, *, scope_key: str) -> ResponseReturnVa
             )
             if not is_htmx_request():
                 return redirect(
-                    url_for('integrations.metrics_sources' if provider_type == 'metrics_source' else 'integrations.alertmanager')
+                    url_for(
+                        'integrations.metrics_sources'
+                        if integration_type == 'metrics_source'
+                        else 'integrations.alertmanager'
+                    )
                     + '#integration-coverage'
                 )
 
     context = build_binding_workspace(
-        provider_type,
+        integration_type,
         scope_key=scope_key,
         submitted=submitted,
         operation_feedback=feedback,
@@ -705,4 +709,4 @@ def bind_alertmanager_source() -> ResponseReturnValue:
     scope_key = request.values.get('scope_key', '').strip()
     if not scope_key:
         abort(400)
-    return _binding_response('alertmanager', scope_key=scope_key)
+    return _binding_response('alert_source', scope_key=scope_key)

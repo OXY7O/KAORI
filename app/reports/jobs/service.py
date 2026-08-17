@@ -44,7 +44,9 @@ def enqueue_report_generation(
             queue_name=get_reports_queue_name(),
             workload_class='heavy' if parameters.report_family == 'analytics' else 'standard',
             requested_by_user_id=requested_by_user_id,
-            provider_type='object_storage' if parameters.scope_asset_type == 'object_storage_system' else 'kubernetes',
+            integration_type='object_storage'
+            if parameters.scope_asset_type == 'object_storage_system'
+            else 'kubernetes',
             scope_type=parameters.scope_asset_type,
             scope_key=parameters.scope_asset_id,
             resource_group=resource_group,

@@ -9,9 +9,7 @@ import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
 
-EXPECTED_HERO_DESCRIPTION = (
-    'Operate and govern infrastructure through unified visibility, intelligence, controlled workflows, automation, reporting, and administration.'
-)
+EXPECTED_HERO_DESCRIPTION = 'Operate and govern infrastructure through unified visibility, intelligence, controlled workflows, automation, reporting, and administration.'
 EXPECTED_GROUP_KEYS = ('visibility', 'operations', 'assurance', 'platform')
 UNIVERSAL_TARGET = ('Settings', None, 'settings.account')
 FORBIDDEN_WELCOME_IMPORT_FRAGMENTS = (

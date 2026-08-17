@@ -35,7 +35,7 @@ def test_orchestration_domain_counts_only_consumer_bindings_and_disabled_targets
         in service
     )
     assert "'bindings': sum(1 for binding in consumer_bindings if binding.enabled)" in service
-    assert '_capability_rows(domain.key, modules, provider_types, consumer_bindings)' in service
+    assert '_capability_rows(domain.key, modules, integration_types, consumer_bindings)' in service
     assert 'if registered <= 0:' in service
     assert 'if enabled <= 0:' in service
     assert "return 'attention'" in service
@@ -49,7 +49,7 @@ def test_domain_registries_follow_kaori_filter_and_clear_filter_standard() -> No
 
     for token in (
         "query=request.args.get('provider_q', '').strip()",
-        "provider_type=request.args.get('provider_type', '').strip()",
+        "integration_type=request.args.get('integration_type', '').strip()",
         "readiness=request.args.get('provider_readiness', '').strip()",
         "query=request.args.get('binding_q', '').strip()",
         "provider=request.args.get('binding_provider', '').strip()",
@@ -79,7 +79,7 @@ def test_domain_instance_loading_does_not_preload_unused_binding_relationship() 
     service = read('app/integrations/domain_service.py')
     loader = service.split('def _load_domain_instances(', 1)[1].split('def _load_related_bindings(', 1)[0]
 
-    assert 'IntegrationInstance.query.filter(IntegrationInstance.provider_type.in_(provider_types))' in loader
+    assert 'IntegrationInstance.query.filter(IntegrationInstance.integration_type.in_(integration_types))' in loader
     assert 'selectinload(IntegrationInstance.bindings)' not in loader
     assert 'detail_url_for_record' in read('app/integrations/registry.py')
     assert '_resolve_provider_detail_urls(provider_registry_rows)' in service

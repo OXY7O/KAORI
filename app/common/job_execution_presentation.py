@@ -105,8 +105,8 @@ def present_job_execution_row(job: JobExecution) -> dict[str, Any]:
         (job.status.replace('_', ' ').title(), 'unknown', 'circle-help'),
     )
     raw_scope = job.scope_key or (
-        f'{job.provider_type}:{job.provider_instance_id}'
-        if job.provider_type and job.provider_instance_id is not None
+        f'{job.integration_type}:{job.integration_instance_id}'
+        if job.integration_type and job.integration_instance_id is not None
         else job.resource_group or 'Global'
     )
     scope = _scope_label(raw_scope)
@@ -125,8 +125,8 @@ def present_job_execution_row(job: JobExecution) -> dict[str, Any]:
         'status_label': status_label,
         'status_tone': status_tone,
         'status_icon': status_icon,
-        'provider_type': job.provider_type,
-        'provider_label': _provider_label(job.provider_type),
+        'integration_type': job.integration_type,
+        'provider_label': _provider_label(job.integration_type),
         'scope': scope,
         'resource_group': job.resource_group,
         'requester': requester,
@@ -212,7 +212,9 @@ def present_job_execution_detail(job: JobExecution) -> dict[str, Any]:
     row.update(
         {
             'scope_type': (job.scope_type or 'global').replace('_', ' ').title(),
-            'provider_instance': str(job.provider_instance_id) if job.provider_instance_id is not None else '-',
+            'integration_instance': str(job.integration_instance_id)
+            if job.integration_instance_id is not None
+            else '-',
             'resource_group': job.resource_group or '-',
             'parent_public_id': job.parent.public_id if job.parent is not None else '-',
             'heartbeat_at': present_user_datetime(job.heartbeat_at, empty='No heartbeat recorded'),

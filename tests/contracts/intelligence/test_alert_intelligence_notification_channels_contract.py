@@ -18,7 +18,10 @@ def test_alert_intelligence_is_asset_scoped_multi_domain_and_keeps_source_author
     assert "_VALID_SOURCES = {'auto', 'alertmanager', 'metrics_source'}" in module
     assert 'get_active_recommendation_findings' in module
     assert "'label': 'Automatic · Alertmanager Preferred'" in module
-    assert "'detection': 'Metrics Source provides metric-derived alert-state evidence when supported by the selected adapter.'" in module
+    assert (
+        "'detection': 'Metrics Source provides metric-derived alert-state evidence when supported by the selected adapter.'"
+        in module
+    )
     assert 'Alertmanager owns grouping, inhibition, routing, silences, receivers' in module
     assert 'Alert Source' in workspace
     assert 'payload.source_options' in workspace

@@ -11,15 +11,6 @@ from app.models.integration import IntegrationInstance
 from app.security.credentials import EncryptedText
 
 
-def _metrics_source_identity(name: str) -> IntegrationInstance:
-    identity = IntegrationInstance()
-    identity.provider_type = 'metrics_source'
-    identity.name = name
-    identity.enabled = True
-    identity.readiness_status = 'validation_required'
-    return identity
-
-
 class MetricsSource(db.Model):
     """Provider-neutral metrics source connection backed by IntegrationInstance."""
 
@@ -31,8 +22,6 @@ class MetricsSource(db.Model):
         nullable=False,
         unique=True,
     )
-    provider_key: Mapped[str] = mapped_column(String(80), nullable=False)
-    adapter_key: Mapped[str] = mapped_column(String(80), nullable=False)
     query_language: Mapped[str] = mapped_column(String(40), nullable=False)
     endpoint: Mapped[str] = mapped_column(String(500), nullable=False)
     auth_type: Mapped[str] = mapped_column(String(30), nullable=False, default='none')
@@ -64,17 +53,11 @@ class MetricsSource(db.Model):
         onupdate=lambda: datetime.now(UTC),
     )
 
-    integration_instance: Mapped[IntegrationInstance] = relationship(
-        'IntegrationInstance',
-        back_populates='metrics_source_record',
-        lazy='joined',
-    )
+    integration_instance: Mapped[IntegrationInstance] = relationship('IntegrationInstance', lazy='joined')
 
-    name: AssociationProxy[str] = association_proxy(
-        'integration_instance',
-        'name',
-        creator=_metrics_source_identity,
-    )
+    name: AssociationProxy[str] = association_proxy('integration_instance', 'name')
+    provider_key: AssociationProxy[str] = association_proxy('integration_instance', 'provider_key')
+    adapter_key: AssociationProxy[str] = association_proxy('integration_instance', 'adapter_key')
     description: AssociationProxy[str | None] = association_proxy(
         'integration_instance',
         'description',

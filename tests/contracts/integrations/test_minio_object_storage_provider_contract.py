@@ -18,7 +18,9 @@ def test_minio_persistence_uses_provider_neutral_object_storage_asset() -> None:
     assert 'integration_instance_id' in model
     assert 'object_storage_system_id' in model
     assert 'EncryptedText()' in model
-    assert 'minio_record' in integration
+    assert 'integration_type: Mapped[str]' in integration
+    assert 'provider_key: Mapped[str]' in integration
+    assert 'adapter_key: Mapped[str]' in integration
     assert "down_revision = '20260810_retire_welcome_view'" in migration
     assert "'object_storage_systems'" in migration
     assert "'minio_instances'" in migration
@@ -34,7 +36,9 @@ def test_minio_registry_contract_is_storage_object_storage() -> None:
     provider_catalog = read('app/definitions/catalogs/integrations/object_storage.yaml')
 
     assert "'app.integrations.minio'" in registry
-    assert "provider_type='minio'" in registration
+    assert "integration_type='object_storage'" in registration
+    assert "provider_key='minio'" in registration
+    assert "adapter_key='s3'" in registration
     assert "domain_key='storage'" in registration
     assert "capability_key='object_storage'" in registration
     assert "workspace_endpoint='minio.index'" in registration
@@ -96,7 +100,7 @@ def test_minio_owner_relationship_is_not_a_consumer_self_binding() -> None:
     assert "'binding.create'" not in registration
     assert "'binding.validate'" not in registration
     assert 'build_bound_observability_source_rows(' in presentation
-    assert 'IntegrationInstance.provider_type.in_(_OBSERVABILITY_PROVIDER_TYPES)' in source_projection
+    assert 'IntegrationInstance.integration_type.in_(_OBSERVABILITY_PROVIDER_TYPES)' in source_projection
     assert 'Native Provider Contract' not in presentation
     assert 'DELETE FROM integration_bindings' in cleanup
     assert "ii.provider_type = 'minio'" in cleanup
@@ -108,14 +112,14 @@ def test_validation_admission_and_runtime_monitoring_are_provider_generic() -> N
     validation_web = read('app/integrations/validation/web.py')
     monitoring = read('app/integrations/runtime/monitoring.py')
 
-    assert 'get_integration(provider_type).get_instance(instance_id)' in validation_web
+    assert 'get_integration(integration_type).require_record_for_canonical(integration_instance_id)' in validation_web
     assert 'model_by_provider' not in validation_web
     assert 'MetricsSource' not in validation_web
     assert 'AlertmanagerInstance' not in validation_web
     assert 'KubernetesConnection' not in validation_web
 
     assert 'IntegrationInstance.query.filter(' in monitoring
-    assert 'get_integration(identity.provider_type)' in monitoring
+    assert 'get_integration(identity.integration_type)' in monitoring
     assert 'module.get_record_for_canonical(identity.id)' in monitoring
     for provider_model in ('MetricsSource', 'AlertmanagerInstance', 'KubernetesConnection', 'MinioInstance'):
         assert provider_model not in monitoring

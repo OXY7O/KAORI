@@ -6,7 +6,13 @@ from app.integrations.minio.capabilities import (
     COMPATIBILITY_PROFILES,
 )
 from app.integrations.minio.presentation import build_runtime_overview_rows
-from app.integrations.registry import IntegrationModule, canonical_model_loader, model_loader, registry
+from app.integrations.registry import (
+    IntegrationImplementation,
+    IntegrationModule,
+    canonical_model_loader,
+    model_loader,
+    registry,
+)
 from app.models.minio import MinioInstance
 
 
@@ -25,16 +31,13 @@ def _record_failure(instance: MinioInstance, error: Exception) -> None:
 
 
 integration_module = IntegrationModule(
-    provider_type='minio',
-    label='MinIO',
+    integration_type='object_storage',
+    label='Object Storage',
     domain_key='storage',
     capability_key='object_storage',
     icon='database',
-    description='MinIO object-storage API registration, compatibility validation, and asset-scoped observability binding.',
+    description='Provider-neutral object-storage registration, adapter validation, and asset-scoped observability binding.',
     workspace_endpoint='minio.index',
-    adapter=runtime_adapter,
-    instance_loader=model_loader(MinioInstance),
-    canonical_record_loader=canonical_model_loader(MinioInstance),
     module_path='app.integrations.minio',
     worker_queue='integration-runtime',
     worker_domain='storage-object',
@@ -54,11 +57,22 @@ integration_module = IntegrationModule(
     ),
     capability_keys=CAPABILITY_KEYS,
     compatibility_profiles=COMPATIBILITY_PROFILES,
-    runtime_label='MinIO',
+    runtime_label='Object Storage',
     navigation_endpoint_prefixes=('minio.',),
+)
+
+provider_implementation = IntegrationImplementation(
+    integration_type='object_storage',
+    provider_key='minio',
+    adapter_key='s3',
+    adapter=runtime_adapter,
+    instance_loader=model_loader(MinioInstance),
+    canonical_record_loader=canonical_model_loader(MinioInstance),
+    module_path='app.integrations.minio',
     detail_url_builder=_detail_url,
     failure_recorder=_record_failure,
     runtime_overview_builder=build_runtime_overview_rows,
 )
 
 registry.register(integration_module)
+registry.register_implementation(provider_implementation)

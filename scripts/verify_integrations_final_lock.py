@@ -503,7 +503,7 @@ def main() -> int:
     )
     runtime_detail_builder = integration_service.split('def build_integration_runtime_detail(', 1)[1]
     require(
-        '_latest_runtime_observation(provider, str(target_id))' in runtime_detail_builder
+        '_latest_runtime_observation(integration_type, str(target_id))' in runtime_detail_builder
         and '_latest_runtime_observations()' not in runtime_detail_builder,
         'Integration Runtime detail must read only the selected target observation',
         errors,
