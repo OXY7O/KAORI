@@ -58,7 +58,7 @@ def test_general_settings_retired_side_context_is_not_reintroduced() -> None:
 
 def test_general_settings_feedback_contract_matches_audit_only_delivery() -> None:
     readme = _read('app/settings/README.md')
-    routes = _read('app/settings/routes.py')
+    actions = _read('app/settings/general/actions.py')
     assert 'shared KAORI operational result toast' in readme
     assert 'do not create unread Notification Center items' in readme
-    assert 'OperationalDeliveryPolicy.AUDIT_ONLY' in routes
+    assert 'OperationalDeliveryPolicy.AUDIT_ONLY' in actions

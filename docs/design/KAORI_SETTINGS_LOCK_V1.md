@@ -41,3 +41,16 @@ The following pre-lock side-context partials must not return:
 - `settings/account/partials/_activity_information.html`
 
 Permanent enforcement: `scripts/verify_settings_final_lock.py`.
+
+## Settings Overview decision
+
+- No dedicated Settings Overview is shipped while Settings owns only General and Account.
+- `/settings/` remains the General Settings entry point.
+- Add an Overview only after Settings has at least three independently owned workspaces or a real cross-settings posture requiring composition.
+
+## Loading and operational feedback
+
+- General and Account use the shared KAORI loading-bar component for HTMX tab switches and mutations.
+- User-triggered Settings mutations return the canonical operational toast for success and failure; field errors remain inline.
+- Background browser-timezone convergence stays silent.
+- Notification/Activity progress surfaces use one shared notification-progress geometry rather than page-local track heights.

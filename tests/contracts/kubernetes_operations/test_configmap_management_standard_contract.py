@@ -84,7 +84,7 @@ def test_operational_toast_is_the_only_canonical_feedback_surface() -> None:
     assert 'absolute inset-y-0 left-0 w-1' not in toast
     assert 'tone_dot_classes(resolved_tone)' not in toast
     assert 'data-operational-toast-timer' in toast
-    assert 'mt-3 h-1 w-24 overflow-hidden rounded-full bg-surface-hover' in toast
+    assert 'mt-3 h-1.5 w-24 overflow-hidden rounded-full bg-surface-hover' in toast
     assert 'h-full w-full origin-left rounded-full bg-kaori-primary' in toast
     assert 'timerBar.animate' in toast_js and 'scaleX(0)' in toast_js
     assert 'w-1.5 shrink-0 bg-kaori-primary' not in progress

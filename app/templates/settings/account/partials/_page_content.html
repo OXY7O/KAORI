@@ -1,3 +1,4 @@
+{% import "components/loading_bar.html" as loading_bar %}
 {% set auth_source = session.get('auth_source') or current_user.auth_source|default('database', true) %}
 {% set user_role = current_user.role_display_name %}
 {% set last_auth_source = current_user.last_auth_source|default(auth_source, true) %}
@@ -6,6 +7,9 @@
     {% include "settings/account/partials/_hero.html" %}
     <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
         {% include "settings/account/partials/_tabs.html" %}
+        <div class="px-5 sm:px-6">
+            {{ loading_bar.render('account-settings-loading', label='Updating Account & Authentication') }}
+        </div>
         {% if active_tab == 'profile' %}
             <div class="p-5 xl:p-6" data-account-profile-full-width="true">
                 {% include "settings/account/partials/_profile_cards.html" %}

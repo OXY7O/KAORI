@@ -36,7 +36,8 @@ def test_active_progress_is_determinate_without_restarting_animation() -> None:
     shared_progress = _read('app/templates/components/operational_progress_toast.html')
     assert 'components/operational_progress_toast.html' in quick_sync
     assert 'progress_toast.render' in quick_sync
-    assert 'progress_bar.bar' in shared_progress
+    assert 'progress_bar.notification_progress' in shared_progress
+    assert 'progress_bar.notification_indeterminate' in shared_progress
     assert 'progress_bar.determinate' not in shared_progress
 
     for relative in (

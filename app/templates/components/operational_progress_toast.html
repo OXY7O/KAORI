@@ -64,15 +64,11 @@
                 </div>
                 {% if progress_percent is not none %}
                     <div class="mt-3">
-                        {{ progress_bar.bar(progress_percent,
-                                                track_classes='h-1 overflow-hidden rounded-full bg-kaori-soft/70 dark:bg-kaori-primary/15',
-                                                fill_classes='h-full rounded-full bg-kaori-primary transition-all duration-500 ease-out',
-                                                label=title ~ ' progress') }}
+                        {{ progress_bar.notification_progress(progress_percent, label=title ~ ' progress') }}
                     </div>
                 {% else %}
-                    <div class="mt-3 h-1 overflow-hidden rounded-full bg-kaori-soft/70"
-                         aria-hidden="true">
-                        <div class="notification-progress-indeterminate h-full rounded-full bg-kaori-primary dark:bg-kaori-primary"></div>
+                    <div class="mt-3">
+                        {{ progress_bar.notification_indeterminate(label=title ~ ' progress') }}
                     </div>
                 {% endif %}
             </div>

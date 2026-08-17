@@ -31,15 +31,15 @@
                         {{ page_hero.context_metric("badge-check", "Ready", ready_count ~ " / " ~ denominator, "Validated connections available") }}
                         {{ page_hero.context_metric("link-2", "Bindings", binding_count, "Governed consumer associations") }}
                     </div>
-                    <div class="grid gap-2 sm:grid-cols-2">
+                    <div class="{{ page_hero.context_actions_classes(2 if secondary_register_url else 1) }}">
                         <a href="{{ register_url }}"
-                           class="{{ page_hero.context_single_action_classes() }}">
+                           class="{{ page_hero.context_action_classes() }}">
                             <i data-lucide="plus" class="h-4 w-4" aria-hidden="true"></i>
                             {{ register_label }}
                         </a>
                         {% if secondary_register_url %}
                             <a href="{{ secondary_register_url }}"
-                               class="{{ page_hero.context_single_action_classes() }}">
+                               class="{{ page_hero.context_action_classes() }}">
                                 <i data-lucide="plus" class="h-4 w-4" aria-hidden="true"></i>
                                 {{ secondary_register_label or 'Register Connection' }}
                             </a>

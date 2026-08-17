@@ -35,6 +35,8 @@ def test_shared_overview_owns_summary_and_boundary_geometry() -> None:
     assert 'Ready Connections' in overview
     assert 'Consumer Bindings' in overview
     assert 'Register Connection' in overview
+    assert 'page_hero.context_actions_classes(2 if secondary_register_url else 1)' in overview
+    assert 'page_hero.context_action_classes()' in overview
     assert 'data-kaori-provider-integration-overview' in overview
     assert 'integration_ui.metric_grid_classes(4)' in overview
     assert 'Integration Contract' in overview
@@ -161,3 +163,13 @@ def test_observability_coverage_includes_kubernetes_and_object_storage_assets() 
     assert 'Choose Source' in coverage_template
     assert 'Manage Binding' in coverage_template
     assert 'url_for(provider.registry_endpoint' in coverage_template
+
+
+def test_metrics_source_provider_selector_uses_canonical_hero_shell_api() -> None:
+    selector = read('app/templates/integrations/observability/metrics_source/provider_selector.html')
+
+    assert 'page_hero.shell_classes()' in selector
+    assert 'page_hero.layout_classes()' in selector
+    assert 'page_hero.content_classes()' in selector
+    assert "page_hero.intro('chart-spline', 'Metrics Source Registration', 'plus')" in selector
+    assert 'page_hero.hero(' not in selector

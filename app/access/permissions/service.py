@@ -166,6 +166,7 @@ def _registry_summary(
     roles: list[Role],
     modules: list[str],
 ) -> dict[str, Any]:
+    """Build registry posture only from explicit inputs; never depend on outer snapshot locals."""
     canonical_contracts = [row for row in contracts if row['code_owned']]
     drift_contracts = [row for row in contracts if row['state_key'] != 'canonical']
     database_only_in_use_count = sum(

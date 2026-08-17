@@ -2,6 +2,8 @@
 
 Status: **PASS**
 
+2026-08-17 extension: Reports mutation coverage and notification-surface style checks were added to the same release gate.
+
 This audit verifies operator-facing mutation feedback across the requested KAORI domains. The canonical event is persisted once through `record_operational_activity()` and is then exposed according to the delivery policy as immediate toast feedback, the user-scoped Notification Center, and the administrative Activity Audit.
 
 ## Coverage Result
@@ -11,7 +13,8 @@ This audit verifies operator-facing mutation feedback across the requested KAORI
 | ConfigMap Management | Create, update, delete, validation and failure paths | Yes | Destructive/failure only; routine create/update success stays out of the inbox | Yes | PASS |
 | TLS Certificate | Rotation, bulk rotation, inventory synchronization dispatch/result and failure paths | Yes / Activity Center for running work | Persistent terminal/attention evidence | Yes | PASS |
 | Secret Management | Create, replace, delete, protected reveal request/approval/deny/reveal/failure | Yes | Delete/security-attention outcomes only; routine create/replace and reveal value remain out of inbox | Yes | PASS |
-| Integrations | Kubernetes connection, Prometheus instance/binding, Alertmanager instance/binding create/update/delete plus validation/runtime dispatch | Yes / Activity Center for running work | CRUD and persistent terminal outcomes | Yes | PASS |
+| Integrations | Kubernetes connection, Metrics Source instance/binding, Alertmanager instance/binding create/update/delete plus validation/runtime dispatch | Yes / Activity Center for running work | CRUD and persistent terminal outcomes | Yes | PASS |
+| Reports | Generate/queue, template CRUD/duplicate, schedule CRUD/toggle/run, storage verification, generated-report archive/restore | Yes / Activity Center for running generation | By delivery policy; failures and selected terminal outcomes may persist | Yes | PASS |
 | Platform Operations | Job policy/manual dispatch/cancellation, Data Lifecycle policy/execution, Secret Reveal readiness/policy | Yes / Activity Center for running work | Persistent policy/security/terminal outcomes | Yes | PASS |
 | Access | Users, account lifecycle, Identity Provider create/update/validation, external identity provisioning, RBAC role mutation | Yes | Yes for security-significant persisted outcomes | Yes | PASS |
 | Settings | Account security and personal time/locale preference mutations | Yes | Account security only; routine personal preference stays out of inbox | Yes | PASS |
@@ -34,6 +37,7 @@ Notification Center category presentation is normalized in `app/notifications/ev
 - TLS Certificate
 - Secret Management
 - Integrations
+- Reports
 - Platform Operations
 - Access
 - Settings

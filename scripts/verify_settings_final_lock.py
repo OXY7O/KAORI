@@ -63,6 +63,8 @@ def main() -> int:
         require((ROOT / relative).exists(), f'missing Settings lock artifact: {relative}', errors)
 
     routes = read('app/settings/routes.py')
+    general_actions = read('app/settings/general/actions.py')
+    account_actions = read('app/settings/account/actions.py')
     readme = read('app/settings/README.md')
     quality_gate = read('scripts/quality_gate.sh')
     system_information = read('app/settings/system_information.py')
@@ -73,11 +75,15 @@ def main() -> int:
         '@login_required',
         "user.has_permission('system.view')",
         "allowed_tabs = {'time-locale', 'regional-format'}",
-        'OperationalDeliveryPolicy.AUDIT_ONLY',
         "'kaori:general-settings-saved'",
         "@bp.post('/general/browser-timezone')",
     ):
         require(required in routes, f'General Settings contract missing: {required}', errors)
+    require(
+        'OperationalDeliveryPolicy.AUDIT_ONLY' in general_actions,
+        'General Settings actions must remain audit-only for routine personal preference feedback',
+        errors,
+    )
 
     for required in (
         "'X-CSRFToken': csrfToken",
@@ -120,6 +126,25 @@ def main() -> int:
             errors,
         )
     require('flex gap-2 overflow-x-auto' in general_tabs, 'General Settings tab contract drifted', errors)
+    require('components/loading_bar.html' in general_page, 'General Settings must use shared loading bar', errors)
+    require('general-settings-loading' in general_page, 'General Settings loading indicator missing', errors)
+    require(
+        'hx-indicator="#general-settings-loading"' in general_tabs,
+        'General Settings tabs must use shared loading indicator',
+        errors,
+    )
+    require(
+        'hx-indicator="#general-settings-loading"' in timezone,
+        'Time Zone save must use shared loading indicator',
+        errors,
+    )
+    require(
+        'hx-indicator="#general-settings-loading"' in regional,
+        'Regional Format save must use shared loading indicator',
+        errors,
+    )
+    require('components/action_button.html' in timezone, 'Time Zone save must use shared action button', errors)
+    require('components/action_button.html' in regional, 'Regional Format save must use shared action button', errors)
 
     account_page = read('app/templates/settings/account/partials/_page_content.html')
     account_tabs = read('app/templates/settings/account/partials/_tabs.html')
@@ -131,13 +156,16 @@ def main() -> int:
     for required in (
         "@bp.route('/account', methods=['GET', 'POST'])",
         "can_change_password = auth_source == 'database'",
+    ):
+        require(required in routes, f'Account security route contract missing: {required}', errors)
+    for required in (
         'preserve_current_session_after_password_change(user)',
         "reason_code='current_password_mismatch'",
         "reason_code='current_password_reuse'",
         "'session_effect': 'other_sessions_revoked'",
         "'remembered_sign_ins': 'revoked'",
     ):
-        require(required in routes, f'Account security contract missing: {required}', errors)
+        require(required in account_actions, f'Account security action contract missing: {required}', errors)
     require('flex gap-2 overflow-x-auto' in account_tabs, 'Account tab contract drifted', errors)
     require('data-account-profile-workspace="full-width"' in profile, 'Account Profile must remain full-width', errors)
     require('Last Verified Sign-In' in profile, 'Account Profile sign-in evidence missing', errors)
@@ -163,6 +191,45 @@ def main() -> int:
         'Credential security context drifted',
         errors,
     )
+    require('components/loading_bar.html' in account_page, 'Account must use shared loading bar', errors)
+    require('account-settings-loading' in account_page, 'Account loading indicator missing', errors)
+    require(
+        'hx-indicator="#account-settings-loading"' in account_tabs,
+        'Account tabs must use shared loading indicator',
+        errors,
+    )
+    require(
+        'hx-indicator="#account-settings-loading"' in credentials,
+        'Credential action must use shared loading indicator',
+        errors,
+    )
+    require('components/action_button.html' in credentials, 'Credential action must use shared action button', errors)
+    require(
+        'create_transient_feedback(' in general_actions and 'create_transient_feedback(' in account_actions,
+        'Settings failure actions must have canonical transient toast feedback',
+        errors,
+    )
+    require(
+        "reason_code='external_credential_owner'" in account_actions,
+        'External credential rejection must be audited and toasted',
+        errors,
+    )
+    require(
+        'queue_feedback=not is_htmx' in general_actions and 'queue_feedback=not is_htmx' in account_actions,
+        'Settings action feedback must survive non-HTMX rendering',
+        errors,
+    )
+    require(
+        "@bp.route('/', methods=['GET', 'POST'])" in routes, 'Settings root must remain General entry point', errors
+    )
+    require(
+        'Settings does **not** have a dedicated Overview page' in readme, 'Settings Overview decision missing', errors
+    )
+    require(
+        not (ROOT / 'app/templates/settings/overview').exists(),
+        'Settings Overview must not be introduced without a cross-settings posture',
+        errors,
+    )
 
     for required in (
         'Settings v1 is final-locked',
@@ -172,6 +239,8 @@ def main() -> int:
         'simple tab contract as General Settings',
         'Last Verified Sign-In',
         'Avoid hand-built status badges',
+        'Settings Overview decision',
+        'Loading and action feedback contract',
     ):
         require(required in readme, f'Settings README final-lock contract missing: {required}', errors)
     require(

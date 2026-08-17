@@ -73,7 +73,8 @@ def test_job_related_specialized_bars_share_the_same_low_level_violet_primitive(
     tls_live = read('app/templates/governance/tls_certificates/partials/_sync_live_state.html')
     analytics_pending = read('app/templates/analytics/kubernetes/materialization/_pending.html')
 
-    assert 'progress_bar.bar' in operational
+    assert 'progress_bar.notification_progress' in operational
+    assert 'progress_bar.notification_indeterminate' in operational
     assert 'progress_bar.bar' in tls_live
     assert 'progress_bar.bar' in analytics_pending
     assert 'progress_bar.determinate' not in operational

@@ -33,7 +33,7 @@ def test_password_change_advances_session_generation_and_preserves_only_current_
     model = read('app/models/user.py')
     session_source = read('app/auth/session.py')
     login_extension = read('app/extensions/login.py')
-    settings_routes = read('app/settings/routes.py')
+    account_actions = read('app/settings/account/actions.py')
     migration = read('migrations/versions/20260809_auth_session_generation.py')
 
     assert 'auth_session_version: Mapped[int]' in model
@@ -46,22 +46,22 @@ def test_password_change_advances_session_generation_and_preserves_only_current_
     assert 'parse_authenticated_user_identifier(user_id)' in login_extension
     assert 'issued_session_version != current_session_version' in login_extension
     assert 'current_session_version != 1' in login_extension
-    assert 'preserve_current_session_after_password_change(user)' in settings_routes
-    assert "'session_effect': 'other_sessions_revoked'" in settings_routes
-    assert "'remembered_sign_ins': 'revoked'" in settings_routes
+    assert 'preserve_current_session_after_password_change(user)' in account_actions
+    assert "'session_effect': 'other_sessions_revoked'" in account_actions
+    assert "'remembered_sign_ins': 'revoked'" in account_actions
     assert "revision = '20260809_auth_session_generation'" in migration
     assert "down_revision = '20260808_data_lifecycle_ops'" in migration
 
 
 def test_self_service_password_change_rejects_current_password_reuse_and_audits_rejections() -> None:
-    routes = read('app/settings/routes.py')
+    actions = read('app/settings/account/actions.py')
 
-    assert 'def _record_password_change_rejection(' in routes
-    assert 'delivery_policy=OperationalDeliveryPolicy.AUDIT_ONLY' in routes
-    assert "reason_code='current_password_mismatch'" in routes
-    assert 'elif user.check_password(new_password):' in routes
-    assert 'New password must be different from the current password.' in routes
-    assert "reason_code='current_password_reuse'" in routes
+    assert 'def _record_password_change_rejection(' in actions
+    assert 'delivery_policy=OperationalDeliveryPolicy.AUDIT_ONLY' in actions
+    assert "reason_code='current_password_mismatch'" in actions
+    assert 'if user.check_password(new_password):' in actions
+    assert 'New password must be different from the current password.' in actions
+    assert "reason_code='current_password_reuse'" in actions
 
 
 def test_credential_workspace_explains_session_effect_without_reopening_external_provider_ownership() -> None:

@@ -21,8 +21,9 @@ def test_job_progress_runtime_geometry_and_loading_labels_are_canonical() -> Non
     active = read('app/templates/jobs/executions/partials/_active_jobs.html')
     queue = read('app/templates/jobs/executions/partials/_queue_activity.html')
 
-    assert "track_classes='h-1.5 w-full overflow-hidden rounded-full" in progress
-    assert 'mt-2 h-1.5 w-full overflow-hidden rounded-full' in progress
+    assert '{% macro notification_track_classes()' in progress
+    assert 'h-1.5 w-full overflow-hidden rounded-full' in progress
+    assert 'notification_indeterminate(' in progress
     assert 'w-1/4 rounded-full bg-kaori-primary/55' in progress
     assert "label='Refreshing Active Work'" in active
     assert "label='Refreshing Queue Activity and Worker Readiness'" in queue

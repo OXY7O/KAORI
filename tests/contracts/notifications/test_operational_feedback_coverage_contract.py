@@ -14,6 +14,7 @@ def test_feedback_coverage_matrix_is_documented_and_release_gated() -> None:
         'TLS Certificate',
         'Secret Management',
         'Integrations',
+        'Reports',
         'Platform Operations',
         'Access',
         'Settings',
@@ -26,6 +27,7 @@ def test_feedback_coverage_matrix_is_documented_and_release_gated() -> None:
         'TLS Certificate',
         'Secret Management',
         'Integrations',
+        'Reports',
         'Platform Operations',
         'Access',
         'Settings',
@@ -85,7 +87,8 @@ def test_tls_integrations_platform_operations_access_and_settings_are_covered() 
             'identity_provider_validated',
         ),
         'app/access/roles/routes.py': ('rbac_role_created', 'rbac_role_updated', 'rbac_role_deleted'),
-        'app/settings/routes.py': ('account_security', 'user_preference'),
+        'app/settings/general/actions.py': ('user_preference',),
+        'app/settings/account/actions.py': ('account_security',),
     }
     for path, events in sources.items():
         text = read(path)
@@ -94,9 +97,53 @@ def test_tls_integrations_platform_operations_access_and_settings_are_covered() 
 
 
 def test_general_settings_preference_save_has_toast_and_audit_without_inbox_noise() -> None:
-    settings = read('app/settings/routes.py')
-    assert 'OperationalDeliveryPolicy.AUDIT_ONLY' in settings
-    assert "queue_feedback=not bool(request.headers.get('HX-Request'))" in settings
-    assert 'toast_oob=True' in settings
-    assert "notification_changed = bool(operation_feedback.get('notification_deck_visible'))" in settings
-    assert 'general_settings_saved = True' in settings
+    actions = read('app/settings/general/actions.py')
+    routes = read('app/settings/routes.py')
+    assert 'OperationalDeliveryPolicy.AUDIT_ONLY' in actions
+    assert 'queue_feedback=not is_htmx' in actions
+    assert 'toast_oob=True' in routes
+    assert 'notification_changed = result.notification_changed' in routes
+    assert 'general_settings_saved = result.saved' in routes
+
+
+def test_notification_channel_crud_and_settings_failures_reach_canonical_toast_stack() -> None:
+    channels = read('app/notification_channels/routes.py')
+    settings = read('app/settings/account/actions.py')
+
+    assert "event_type=f'integration.notification_channel.{action}'" in channels
+    assert "event_type='integration.notification_channel.delete_blocked'" in channels
+    assert 'queue_feedback=True' in channels
+
+    assert 'create_transient_feedback(' in settings
+    assert 'queue_feedback=not is_htmx' in settings
+    assert "reason_code='external_credential_owner'" in settings
+
+
+def test_reports_mutation_surfaces_use_canonical_operational_feedback() -> None:
+    sources = {
+        'app/reports/generate/routes.py': ('report_generation_queue_failed', 'report_generation_queued'),
+        'app/reports/report_templates/routes.py': (
+            'report_template_create',
+            'report_template_update',
+            'report_template_delete',
+            'report_template_duplicate',
+        ),
+        'app/reports/schedules/routes.py': (
+            'report_schedule_create',
+            'report_schedule_update',
+            'report_schedule_toggle',
+            'report_schedule_delete',
+            'report_schedule_run',
+        ),
+        'app/reports/generated/routes.py': (
+            'generated_reports_bulk_archive',
+            'generated_report_archive',
+            'generated_report_restore',
+        ),
+        'app/reports/storage/routes.py': ('report_storage_verification',),
+    }
+    for path, events in sources.items():
+        source = read(path)
+        assert 'queue_feedback=True' in source
+        for event in events:
+            assert event in source

@@ -2,6 +2,22 @@
 
 Settings v1 is final-locked. General Settings and Account & Authentication are release baselines; future changes require targeted regression evidence rather than presentation redesign.
 
+
+## Settings Overview decision
+
+Settings does **not** have a dedicated Overview page in the current release. The category owns only two top-level workspaces: General Settings and Account & Authentication. Adding an Overview now would introduce an extra navigation step without a distinct cross-settings posture or lifecycle. `/settings/` therefore remains the canonical entry to General Settings.
+
+Create a Settings Overview only when at least three independently owned Settings workspaces exist, or when KAORI has a cross-settings posture that cannot be represented faithfully inside General or Account. Do not create an Overview merely to mirror the sidebar.
+
+## Loading and action feedback contract
+
+- General and Account tab switches use the shared `components/loading_bar.html` indicator at the workspace boundary.
+- Settings save/password actions use the same indicator and shared primary action-button primitive.
+- Successful preference and credential mutations use the shared operational toast.
+- User-triggered save/password failures also return a canonical toast; field-level validation remains inline so the operator can correct the form without losing context.
+- Automatic browser-timezone synchronization is intentionally silent because it is background preference convergence, not a user-triggered CRUD action.
+- Settings must not introduce page-local loading-bar heights or page-local toast implementations.
+
 ## General Settings
 
 `/settings/general` is a per-user workspace available to every authenticated KAORI account. It uses query-backed HTMX tabs so Time Zone, Regional Format, System Information, and Compatibility Versions switch inside `#general-settings-page` without a full-page reload. Normal links remain the progressive-enhancement fallback.

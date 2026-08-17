@@ -82,6 +82,7 @@ def test_dark_mode_brand_identity_uses_dark_accent() -> None:
 def test_operational_toast_countdown_has_visible_htmx_safe_animation() -> None:
     toast = read('app/templates/components/operational_toast.html')
     progress = read('app/templates/components/operational_progress_toast.html')
+    progress_primitive = read('app/templates/components/progress_bar.html')
     script = read('app/static/js/operational_toasts.js')
 
     assert 'data-operational-toast-timer' in toast
@@ -92,7 +93,8 @@ def test_operational_toast_countdown_has_visible_htmx_safe_animation() -> None:
     assert "timerBar.style.transform = 'scaleX(0)'" in script
     assert 'current.animation?.pause?.()' in script
     assert 'dark:bg-kaori-primary' in toast
-    assert 'dark:bg-kaori-primary' in progress
+    assert 'progress_bar.notification_progress' in progress
+    assert 'dark:bg-kaori-primary/15' in progress_primitive
 
 
 def test_integration_templates_do_not_use_inline_dom_handlers() -> None:

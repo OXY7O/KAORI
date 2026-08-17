@@ -66,13 +66,7 @@ def create() -> ResponseReturnValue:
         'Notification channel created',
         f'{channel.name} is available for testing.',
     )
-    return redirect(
-        url_for(
-            'notification_channels.index',
-            tab='channels',
-            feedback='Channel created. Test delivery before relying on it.',
-        )
-    )
+    return redirect(url_for('notification_channels.index', tab='channels'))
 
 
 @notification_channels_bp.post('/<int:channel_id>/update')
@@ -99,7 +93,7 @@ def update(channel_id: int) -> ResponseReturnValue:
         'Notification channel updated',
         f'{channel.name} configuration was updated.',
     )
-    return redirect(url_for('notification_channels.index', tab='channels', feedback='Channel updated.'))
+    return redirect(url_for('notification_channels.index', tab='channels'))
 
 
 @notification_channels_bp.post('/<int:channel_id>/test')
@@ -117,7 +111,7 @@ def test(channel_id: int) -> ResponseReturnValue:
         result.message,
         status='success' if result.success else 'error',
     )
-    return redirect(url_for('notification_channels.index', tab='channels', feedback=result.message))
+    return redirect(url_for('notification_channels.index', tab='channels'))
 
 
 @notification_channels_bp.post('/<int:channel_id>/delete')
@@ -140,14 +134,9 @@ def delete(channel_id: int) -> ResponseReturnValue:
             action_label='Review Notification Channels',
             action_icon='shield-alert',
             metadata={'module': 'integrations', 'channel_id': channel_id},
+            queue_feedback=True,
         )
-        return redirect(
-            url_for(
-                'notification_channels.index',
-                tab='channels',
-                feedback=exc.usage.message,
-            )
-        )
+        return redirect(url_for('notification_channels.index', tab='channels'))
     record_operational_activity(
         user_id=int(current_user.id),
         event_type='integration.notification_channel.deleted',
@@ -155,8 +144,9 @@ def delete(channel_id: int) -> ResponseReturnValue:
         title='Notification channel deleted',
         message=f'{name} was removed from KAORI notification delivery.',
         metadata={'module': 'integrations', 'channel_id': channel_id},
+        queue_feedback=True,
     )
-    return redirect(url_for('notification_channels.index', tab='channels', feedback='Channel deleted.'))
+    return redirect(url_for('notification_channels.index', tab='channels'))
 
 
 def _record_channel_activity(
@@ -177,4 +167,5 @@ def _record_channel_activity(
         action_label='Open Notification Channels',
         action_icon='send',
         metadata={'module': 'integrations', 'channel_id': channel_id},
+        queue_feedback=True,
     )

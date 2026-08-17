@@ -59,6 +59,7 @@ run_static() {
     python scripts/verify_data_lifecycle_final_lock.py
     python scripts/verify_notification_center_final_lock.py
     python scripts/verify_notification_activity_center.py
+    python scripts/verify_notification_surface_style.py
     python scripts/verify_integration_provider_foundation.py
     python scripts/verify_integration_domain_navigation.py
     python scripts/verify_minio_object_storage_provider.py

@@ -242,6 +242,11 @@ def verify() -> None:
         if f'page_hero.{macro}(' in active_templates:
             raise AssertionError(f'Active templates still reference removed Hero macro {macro}()')
 
+    if 'page_hero.hero(' in active_templates:
+        raise AssertionError(
+            'Active templates reference nonexistent page_hero.hero(); compose the canonical shell macros instead'
+        )
+
     quality_gate = _read(QUALITY_GATE)
     if 'python scripts/verify_hero_component_standard.py' not in quality_gate:
         raise AssertionError('scripts/quality_gate.sh does not execute the Hero standard verifier')

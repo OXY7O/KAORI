@@ -25,6 +25,7 @@ def require(path: str, *tokens: str) -> None:
 
 
 def main() -> int:
+    # Kubernetes operational CRUD surfaces.
     require(
         'app/kubernetes_operations/configmaps/routes.py',
         "'kubernetes_configmap_created'",
@@ -57,6 +58,8 @@ def main() -> int:
         'record_operational_activity(',
         "event_type='governance_tls_secret_sync_dispatch'",
     )
+
+    # Provider and integration CRUD/action surfaces.
     for path, tokens in {
         'app/cluster/routes.py': (
             "event_type='cluster_create'",
@@ -66,13 +69,63 @@ def main() -> int:
         'app/metrics_sources/registration_web.py': ("event_type='metrics_source_created'",),
         'app/metrics_sources/routes.py': ("event_type='metrics_source_deleted'",),
         'app/metrics_sources/edit_web.py': ("event_type='metrics_source_updated'",),
-        'app/alert_sources/providers/alertmanager/routes.py': (
-            "event_type='alertmanager_instance_created'",
-            "event_type='alertmanager_instance_deleted'",
-        ),
+        'app/alert_sources/providers/alertmanager/registration_web.py': ("event_type='alertmanager_instance_created'",),
+        'app/alert_sources/providers/alertmanager/routes.py': ("event_type='alertmanager_instance_deleted'",),
         'app/alert_sources/providers/alertmanager/edit_web.py': ("event_type='alertmanager_instance_updated'",),
+        'app/object_storage/providers/minio/routes.py': (
+            "event_type='minio_provider_registered'",
+            "event_type='minio_provider_updated'",
+            "event_type='minio_instance_deleted'",
+        ),
     }.items():
         require(path, *tokens)
+
+    require(
+        'app/notification_channels/routes.py',
+        "event_type='integration.notification_channel.delete_blocked'",
+        "event_type='integration.notification_channel.deleted'",
+        "event_type=f'integration.notification_channel.{action}'",
+        'queue_feedback=True',
+    )
+
+    # Reports: generation, templates, schedules, storage verification, and archive lifecycle.
+    require(
+        'app/reports/generate/routes.py',
+        "event_type='report_generation_queue_failed'",
+        "event_type='report_generation_queued'",
+        'queue_feedback=True',
+    )
+    require(
+        'app/reports/report_templates/routes.py',
+        "event_type='report_template_create'",
+        "event_type='report_template_update'",
+        "event_type='report_template_delete'",
+        "event_type='report_template_duplicate'",
+        'queue_feedback=True',
+    )
+    require(
+        'app/reports/schedules/routes.py',
+        "event_type='report_schedule_create'",
+        "event_type='report_schedule_update'",
+        "event_type='report_schedule_toggle'",
+        "event_type='report_schedule_delete'",
+        "event_type='report_schedule_run'",
+        'queue_feedback=True',
+    )
+    require(
+        'app/reports/generated/routes.py',
+        "event_type='generated_reports_bulk_archive'",
+        "event_type='generated_report_archive'",
+        "event_type='generated_report_restore'",
+        'queue_feedback=True',
+    )
+    require(
+        'app/reports/storage/routes.py',
+        "event_type='report_storage_verification'",
+        'queue_feedback=True',
+    )
+
+    # Platform Operations and Jobs.
     require(
         'app/jobs/routes.py',
         "event_type='job_policy_updated'",
@@ -92,27 +145,63 @@ def main() -> int:
         "event_type='kubernetes_secret_reveal_namespace_policy_updated'",
         'record_operational_activity(',
     )
+
+    # Access administration and user lifecycle.
     require(
         'app/users/routes.py',
         "event_type='user_created'",
         "event_type='user_updated'",
+        "event_type='user_activated'",
+        "event_type='user_deactivated'",
+        "event_type='user_password_reset'",
+        "event_type='user_restored'",
         "event_type='user_deleted'",
+        'user_management_feedback(',
+    )
+    require(
+        'app/users/notifications.py',
+        'queue_feedback: bool = True',
+        'queue_feedback=queue_feedback',
+    )
+    require(
+        'app/identity_providers/routes.py',
         "event_type='identity_provider_created'",
         "event_type='identity_provider_updated'",
+        "event_type='identity_provider_validated'",
+        "event_type='external_identity_provisioned'",
+    )
+    require(
+        'app/identity_providers/notifications.py',
+        'queue_feedback: bool = True',
+        'queue_feedback=queue_feedback',
     )
     require(
         'app/access/roles/routes.py',
         "event_type='rbac_role_created'",
         "event_type='rbac_role_updated'",
         "event_type='rbac_role_deleted'",
+        'role_access_feedback(',
     )
+
+    # Settings: success/failure actions must both reach the canonical toast stack.
     require(
-        'app/settings/routes.py',
-        "event_type='account_security'",
+        'app/settings/general/actions.py',
         "event_type='user_preference'",
         'OperationalDeliveryPolicy.AUDIT_ONLY',
-        'toast_oob=True',
+        'create_transient_feedback(',
+        'queue_feedback=not is_htmx',
     )
+    require(
+        'app/settings/account/actions.py',
+        "event_type='account_security'",
+        'OperationalDeliveryPolicy.AUDIT_ONLY',
+        'create_transient_feedback(',
+        'queue_feedback=not is_htmx',
+        "reason_code='external_credential_owner'",
+    )
+    require('app/settings/routes.py', 'toast_oob=True')
+
+    # Canonical event/category ownership and documentation.
     require(
         'app/notifications/event_catalog.py',
         "'notifications/event_categories.yaml'",
@@ -139,6 +228,7 @@ def main() -> int:
         'TLS Certificate',
         'Secret Management',
         'Integrations',
+        'Reports',
         'Platform Operations',
         'Access',
         'Settings',
@@ -150,12 +240,14 @@ def main() -> int:
         'TLS Certificate',
         'Secret Management',
         'Integrations',
+        'Reports',
         'Platform Operations',
         'Access',
         'Settings',
         'Release Gate',
     )
-    print('KAORI Operational Feedback Coverage v1: PASS')
+
+    print('KAORI Operational Feedback Coverage v1.1: PASS')
     return 0
 
 
