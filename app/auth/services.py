@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from app.auth.admission import enforce_login_admission
-from app.auth.providers.registry import build_credential_provider_registry
+from app.auth.identity_provider.registry import build_credential_provider_registry
 from app.auth.results import (
     DATABASE_UNAVAILABLE_MESSAGE,
     INVALID_LOGIN_MESSAGE,

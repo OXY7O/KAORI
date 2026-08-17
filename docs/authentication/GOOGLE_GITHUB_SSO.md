@@ -17,7 +17,8 @@ docs/authentication/IDENTITY_PROVIDER_CONFIGURATION.md
 
 ## Google identity contract
 
-- Provider type: `google_oidc`
+- Provider key: `google`
+- Adapter key: `google_oidc`
 - Stable subject: validated ID-token `sub`
 - Requested scope: `openid email profile`
 - Validation: state, nonce, ID-token signature, audience, issuer, and expiry
@@ -27,7 +28,8 @@ Email is profile data and an admission signal. It is not the stable identity key
 
 ## GitHub identity contract
 
-- Provider type: `github_oauth`
+- Provider key: `github`
+- Adapter key: `github_oauth2`
 - Stable subject: immutable numeric GitHub user ID
 - Requested scope: `read:user user:email`
 - Validation: state, authorization-code exchange, authenticated `/user` response

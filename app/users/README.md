@@ -1,175 +1,37 @@
 # User Management
 
-## Purpose
+`app/users` owns KAORI user lifecycle and effective-access presentation. It does not authenticate credentials, configure external identity providers, or implement provider protocols.
 
-`app/users` owns administrative lifecycle management for KAORI user records. It does not authenticate credentials and it does not define permissions. Authentication belongs to `app/auth`; authorization and role mapping belong to `app/rbac`. The Access control plane groups User Management and Identity Providers in navigation, while this package remains the canonical user/provider administration implementation.
+## Ownership
 
-## Current scope
+- `directory.py`: read-side user directory, filtering, pagination, identity context, and Effective Access presentation.
+- `service.py`: user mutations, lifecycle guardrails, Local Database break-glass enforcement, and administrative audit events.
+- `access_summary.py`: source summary consumed by Access Overview.
+- `forms.py`: Local Database user lifecycle forms.
 
-- Administratively create Local Database users.
-- Edit identity metadata and assigned role.
-- Activate or deactivate accounts.
-- Soft-delete accounts.
-- Reset Local Database passwords.
-- Protect self-management, administrator-level accounts, and the last active Local Database super admin.
-- Record every mutation in Activity Audit Log and return all operator feedback through the standard toast.
+External Identity Provider administration is owned by `app/identity_providers/`. Authentication protocol and adapter behavior is owned by `app/auth/identity_provider/`. RBAC policy remains owned by Access Roles/Permissions.
 
-Self-registration is not supported.
+## Identity and access boundary
 
-## File responsibilities
+Canonical user sources are provider keys from the Identity Provider catalog. UI grouping uses provider families (`database`, `directory`, `sso`) rather than product names.
 
-| File               | Responsibility                                                                                                         |
-| ------------------ | ---------------------------------------------------------------------------------------------------------------------- |
-| `__init__.py`      | Package marker and stable public exports only.                                                                         |
-| `routes.py`        | User Management HTTP boundary, permission decorators, form orchestration, redirect/HTMX responses, and toast delivery. |
-| `forms.py`         | Administrative form validation and provider-aware fields. It must not query providers or persist users.                |
-| `directory.py`     | User-directory filters, pagination, identity/effective-access presentation, and domain summary composition.             |
-| `service.py`       | Identity-provider administration, user mutation helpers, administrative guardrails, and audit-event preparation.       |
-| `access_summary.py` | Lightweight User/Identity Provider posture used by Access Overview and User Management.                              |
-| `external.py`      | Administrative external-identity projection and role assignment boundary.                                              |
-| `notifications.py` | Standard User Management toast and Activity Audit payload construction.                                                |
-| `provider_forms.py` | Maps the provider WTForms surface into the Auth-owned provider configuration DTO.                                      |
-| `provisioning_proof.py` | Issues and verifies short-lived signed LDAP identity evidence before administrative projection.                   |
+- Local Database owns KAORI password credentials and is the only valid Super Admin break-glass source.
+- Directory providers own external credentials; KAORI stores identity projection and authorization state only.
+- Browser SSO providers own external authentication; KAORI stores the external subject link, lifecycle state, and RBAC role.
+- Missing role, inactive role, missing/disabled external provider, invalid identity link, inactive account, or invalid external Super Admin state fail closed and surface as Effective Access findings.
 
-## Identity sources
+## Break-glass invariant
 
-- `database`: active. KAORI is credential owner and source of truth.
-- `ldap`: active administrative identity projection. LDAP/Active Directory remains source of truth for credentials.
-- `google_oidc`: active Google browser SSO projection. Google remains source of truth for the external identity.
-- `github_oauth`: active GitHub browser SSO projection. GitHub remains source of truth for the external identity.
+`is_super_admin` is valid only when `auth_source == 'database'`. At least one active Local Database Super Admin must remain available. External Directory/SSO identities may receive normal RBAC roles but never the break-glass flag.
 
-External provider records must never contain a KAORI password. The form may display credential ownership, but password inputs must be disabled and omitted from submission for LDAP/SSO.
+## Extension rule
 
-## Lifecycle and administrative controls
-
-Lifecycle and privilege are separate axes:
-
-- Lifecycle: active, inactive, soft-deleted.
-- Administrative tier: standard, admin, super admin.
-- Identity source: Local Database, LDAP, SSO.
-
-`is_super_admin` is an explicit **Local Database break-glass** authority flag. It is not a substitute for a normal role, is never valid for LDAP/SSO identities, and cannot be granted by a non-super-admin actor. The last active Local Database super admin cannot be disabled, demoted, or deleted.
-
-## Notification contract
-
-User Management must not call Flask `flash()`. Every create, update, activate, deactivate, reset-password, and soft-delete action emits:
-
-1. a top-right KAORI operational toast;
-2. a persistent Activity Audit record;
-3. a safe metadata payload without passwords or provider tokens.
-
-## Template structure
-
-`users/index.html` is the page shell. Reusable sections live in `users/partials/`. Forms remain dedicated templates because they are independent workflows. Templates contain presentation branching only; business rules remain in Python.
-
-## Identity Providers refinement baseline
-
-Identity Providers uses the Access/Inventory visual grammar while `app/users` remains the provider-administration owner. The registry uses shared KAORI table, filter, loading, expandable-detail, and pagination components. Add/Edit provider forms use sticky right rails; LDAP setup is presented as an always-visible controlled flow, while SSO guidance remains collapsible. Draft provider configuration can be tested live before save without persisting validation as readiness evidence. Provider secret values remain runtime-owned and only environment-reference names may appear in UI evidence.
-
-Identity Providers and Directory Provisioning are included in Access Final Lock v1. Runtime provider validation remains intentionally on-demand and is not persisted as durable readiness evidence.
-
-## External-provider extension boundary
-
-Provider discovery, external subject binding, LDAP directory search, administrative LDAP provisioning, and controlled Google/GitHub JIT are implemented. Protocol behavior remains in Auth provider adapters; Users owns only administration forms, lifecycle orchestration, and projection requests. Generic OIDC, SAML, group/claim mapping, reconciliation, and deprovisioning remain future extensions.
-
-## Known staged work
-
-Authentication events are stored only in Activity Audit Log under the `authentication` event type. Login success, login failure, and logout share the same audit presentation with provider, IP, browser, operating system, device, user-agent, result, and reason metadata. User account summaries query this canonical event stream directly.
-
-## Persistence boundary
-
-All SQLAlchemy models remain centralized in `app/models/`. The User Management domain may import `User`, `Role`, audit, and future external-identity models from that package, but it must not define domain-local ORM models. This keeps migration discovery, model registration, and database ownership consistent across KAORI.
-
-Existing `IdentityProvider` and `ExternalIdentityLink` records remain under `app/models/identity.py`. Future additions such as durable account-lock state, group/claim mapping, or projection reconciliation metadata must also be added under `app/models/` and consumed through domain services.
-
-## Blueprint and URL ownership
-
-User Management is registered as the standalone `users` blueprint with the canonical URL prefix `/users`.
-
-| Workflow                           | Endpoint               | URL                          |
-| ---------------------------------- | ---------------------- | ---------------------------- |
-| Directory                          | `users.index`          | `/users/`                    |
-| Create                             | `users.create`         | `/users/new`                 |
-| Edit                               | `users.edit`           | `/users/<id>/edit`           |
-| Reset password                     | `users.reset_password` | `/users/<id>/reset-password` |
-| Activate/deactivate/restore/delete | `users.*`              | `/users/<id>/<action>`       |
-
-There are no Settings wrappers, endpoint aliases, compatibility imports, or redirect shims.
-
-## External identity implementation
-
-The domain now owns:
-
-- identity-provider configuration routes;
-- provider administration and validation initiation;
-- LDAP directory search;
-- controlled administrative provisioning;
-- external identity projection.
-
-Persistence remains centralized in `app/models/identity.py`. LDAP protocol behavior is owned by `app/auth/providers/ldap.py`; User Management consumes that boundary for validation, directory search, and administrative projection.
-
-Canonical administration routes:
-
-```text
-/users/providers
-/users/external-identities
-```
-
-LDAP users are administratively provisioned before credential authentication. Directory search results are converted into short-lived signed projection proofs, so the provisioning POST cannot replace the selected LDAP subject, username, DN, email, or display name with browser-controlled hidden-field values. Google and GitHub may use pre-provisioned links or controlled JIT with a non-admin default role and provider-specific allow-list.
-
-## Identity provider UI structure
-
-The provider form is split so provider-specific UI remains traceable and only active controls are submitted:
-
-| File                                                          | Responsibility                                                                                                                    |
-| ------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| `templates/users/providers/form.html`                         | Add/Edit page shell, standardized hero, two-column composition, and save actions.                                                 |
-| `templates/users/providers/partials/_provider_selector.html`  | Explicit LDAP, Google, and GitHub provider cards backed by the `provider_type` form field.                                        |
-| `templates/users/providers/partials/_ldap_configuration.html` | LDAP-only connection, TLS, search, and attribute-mapping fields.                                                                  |
-| `templates/users/providers/partials/_sso_configuration.html`  | SSO credentials, JIT role, Google-domain policy, and GitHub-subject policy.                                                       |
-| `templates/users/providers/partials/_registry.html`           | Shared KAORI provider registry with server-side Search / Type / State filtering, loading evidence, and expandable rows.            |
-| `templates/users/providers/partials/_provider_detail.html`    | Expanded provider identity, authentication contract, projection evidence, and administrative actions.                             |
-| `templates/users/providers/partials/_directory_provisioning_strip.html` | Full-width LDAP provisioning workflow with posture evidence, four controlled steps, and the Directory Provisioning action.                                      |
-| `templates/users/providers/partials/_provider_guidance.html`  | Sticky provider-form guidance using always-visible Role Assignment Flow-style provider setup guidance, callback evidence, and a compact runbook reference.                    |
-| `static/js/identity_provider_form.js`                         | Provider selection, panel visibility, inactive-control disabling, JIT policy selection, callback preview, and dynamic SSO labels. |
-
-Full administrator configuration is documented in `docs/authentication/IDENTITY_PROVIDER_CONFIGURATION.md`.
-
-## Identity Providers refinement baseline
-
-Access Final Lock v1 freezes the following Identity Providers presentation contract:
-
-- the hero uses the shared Inventory-style KAORI `page_hero.context_card()` pattern;
-- Provider Registry Overview separates configuration completeness, enablement, provider family, and identity-link evidence;
-- the Provider Registry uses shared KAORI table/filter/loading/detail components, right-aligned matching-count evidence, full-width HTMX loading feedback, and server-side filtering;
-- `Enabled` and `Configured` are independent states; KAORI does not claim durable `Validated` readiness because provider validation results are currently on-demand operational feedback rather than persisted provider evidence;
-- provider detail surfaces may display environment-variable references, but never runtime secret values;
-- LDAP Directory Provisioning remains a child workflow of Identity Providers and local KAORI role assignment remains the authorization boundary;
-- the provider index is a full-width operational workspace: authentication/provider-family guidance is consolidated into Provider Registry Overview, while Directory Provisioning is a dedicated operational workflow above the registry;
-- LDAP, Google OIDC, and GitHub OAuth setup guidance use the same always-visible ordered flow grammar as Role Assignment Flow; the Technical Runbook is a compact non-expandable reference, while form right rails remain sticky at `xl:top-5`.
-
-Identity Providers is final-locked as an Access child workspace under `docs/design/KAORI_ACCESS_LOCK_V1.md`.
-
-## SSO provider administration
-
-Google and GitHub provider configuration is managed by the Users domain, while browser authentication is owned by Authentication. Controlled SSO JIT requires a non-admin default role and provider-specific allow-list. Persistence remains centralized in `app/models/identity.py`.
-
-## User Management refinement baseline
-
-Access Final Lock v1 freezes the following User Management operational contract:
-
-- Restore and Activate are separate lifecycle decisions. Restore clears `deleted_at` but returns the account to **Inactive**.
-- Deactivate, delete, and super-admin demotion serialize the active **Local Database** super-admin rows with a database `FOR UPDATE` boundary before the final break-glass check.
-- The directory uses shared KAORI loading, filter, table-label, expandable-detail, destructive-confirmation, and pagination contracts.
-- Inactive roles remain visible in the directory filter so operators can locate users assigned to a fail-closed role. Missing roles, inactive roles, disabled/missing external identity providers, and invalid external Super Admin flags surface as explicit Effective Access findings.
-- User-directory mutations update the hero posture out-of-band so account counts do not remain stale after HTMX actions.
-
-User Management is final-locked as an Access child workspace under `docs/design/KAORI_ACCESS_LOCK_V1.md`.
+Adding a new Identity Provider must not add provider-specific branching to User Management. `app/users` consumes only catalog-derived provider identity/family and identity-link state.
 
 ## Legacy AuditEvent Boundary
 
-User Management still writes the legacy `AuditEvent` row in the primary mutation transaction and also emits the Notification-backed operational feedback used by Activity Audit / Notification Center. `AuditEvent` is still consumed by Jobs, TLS Governance, Intelligence, Resolver, Knowledge, and other domains, so it **must not be removed from User Management in isolation**. Consolidation requires a separate cross-domain audit-ledger migration.
+`AuditEvent` remains part of User Management's dual administrative ledger while shared audit consumers still depend on it. This compatibility ledger must not be removed from User Management in isolation; migration must be coordinated with every consumer.
 
 ## Password Reset Session Boundary
 
-Account deactivation and soft deletion take effect on the next authenticated request because the Flask-Login user loader rejects inactive/deleted users. Local Database credentials now share the canonical 12-character password policy and `User.auth_session_version` security generation. Any password replacement advances that generation, so administrator and CLI password resets revoke all existing authenticated sessions and remembered sign-ins for the target account on their next request. Self-service Account Settings is the only workflow that deliberately preserves the current browser by rebinding it to the new generation.
+Local password changes and administrator resets advance `User.auth_session_version` to revoke all existing authenticated sessions and remembered sign-ins for the affected credential generation. Self-service change may re-establish only the current browser on the new generation.

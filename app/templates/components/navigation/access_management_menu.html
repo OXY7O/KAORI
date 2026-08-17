@@ -1,10 +1,10 @@
 {% set identity_provider_active = request.endpoint in [
-    'users.providers',
-    'users.create_provider',
-    'users.edit_provider',
-    'users.validate_provider',
-    'users.external_identities',
-    'users.provision_identity'
+    'identity_providers.index',
+    'identity_providers.create',
+    'identity_providers.edit',
+    'identity_providers.validate',
+    'identity_providers.directory_provisioning',
+    'identity_providers.provision_identity'
 ] %}
 {% set user_management_active = request.endpoint and request.endpoint.startswith('users.') and not identity_provider_active %}
 {% set role_access_active = request.endpoint and request.endpoint.startswith('access.roles.') %}
@@ -46,7 +46,7 @@
                 </a>
             {% endif %}
             {% if current_user.has_permission('users.manage') %}
-                <a href="{{ url_for('users.providers') }}"
+                <a href="{{ url_for('identity_providers.index') }}"
                    class="{{ 'bg-white/[0.08] text-kaori-accent' if identity_provider_active else 'sidebar-item-idle' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm leading-5 transition">
                     <span class="h-1.5 w-1.5 rounded-full {{ 'bg-kaori-accent' if identity_provider_active else 'bg-white/20 group-hover:bg-white/[0.45]' }}"></span><i data-lucide="fingerprint" class="h-3.5 w-3.5"></i><span class="truncate whitespace-nowrap">Identity Providers</span>
                 </a>

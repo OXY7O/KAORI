@@ -16,7 +16,7 @@ def test_session_admission_is_shared_by_credentials_sso_and_existing_sessions() 
     assert 'def session_admission_reason(' in admission
     assert 'if not user.is_active:' in admission
     assert 'if user.is_super_admin:' in admission
-    assert 'normalized_source != AuthProviderType.DATABASE.value' in admission
+    assert "normalized_source != 'database'" in admission
     assert 'if account_source != normalized_source:' in admission
     assert 'if role is None or not role.is_active:' in admission
 

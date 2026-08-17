@@ -148,7 +148,7 @@ def build_access_overview() -> dict[str, Any]:
                 ),
                 'supporting_text': _identity_provider_supporting_text(providers),
                 'boundary_label': 'Authentication source authority',
-                'action_endpoint': 'users.providers',
+                'action_endpoint': 'identity_providers.index',
                 'action_label': 'Open Identity Providers',
             }
         )

@@ -2,95 +2,141 @@
 
 ## Objective
 
-KAORI uses a provider-neutral authentication core with two explicit protocol flows:
+KAORI uses a provider-neutral authentication architecture in the Access domain. Provider identity and technical protocol are intentionally separate so new identity products can reuse existing protocol adapters without refactoring User Management, RBAC, routes, or persistence.
 
-- **credential flow** for Local Database and LDAP;
-- **browser SSO flow** for Google OpenID Connect and GitHub OAuth.
+The canonical hierarchy is:
 
-The application owns local user projection, account-state enforcement, session lifecycle, login metadata, and authentication Activity Audit records. External systems remain authoritative for external credentials and identities.
+```text
+Access
+→ Identity Provider
+→ Provider
+→ Adapter
+→ Authentication / Directory Flow
+→ External Identity Projection
+→ KAORI User
+→ RBAC
+```
+
+Identity Provider follows the same architectural principle as KAORI infrastructure Integrations, but it remains under the authentication boundary rather than `app/integrations/`.
 
 ## Context and Boundary
 
 ```mermaid
 flowchart LR
-    Browser --> Routes[Auth Routes]
-    Routes --> CredentialService[Credential Orchestrator]
-    CredentialService --> CredentialRegistry[Credential Registry]
-    CredentialRegistry --> Database[Local Database Provider]
-    CredentialRegistry --> LDAP[LDAP Credential Adapter]
+    Browser --> AuthRoutes[Auth Routes]
+    AuthRoutes --> CredentialRegistry[Credential Adapter Registry]
+    AuthRoutes --> BrowserRegistry[Browser Adapter Registry]
 
-    Routes --> BrowserRegistry[Browser SSO Registry]
-    BrowserRegistry --> Google[Google OIDC Strategy]
-    BrowserRegistry --> GitHub[GitHub OAuth Strategy]
-    Google --> IdentityResolution[SSO Identity Resolution]
-    GitHub --> IdentityResolution
+    CredentialRegistry --> LocalDatabase[Local Database]
+    CredentialRegistry --> DirectoryCredential[Directory Credential Adapter]
 
-    LDAP --> IdentityLinks[External Identity Links]
+    BrowserRegistry --> BrowserAdapter[Browser SSO Adapter]
+    BrowserAdapter --> IdentityResolution[External Identity Resolution]
+    DirectoryCredential --> IdentityLinks[External Identity Links]
     IdentityResolution --> IdentityLinks
-    Routes --> Session[Session Lifecycle]
-    Routes --> Audit[Authentication Activity Audit]
-    Session --> Welcome[Role-Aware Welcome]
-    Welcome --> RBAC[RBAC and Permissions]
+
+    Admin[Identity Provider Workspace] --> DirectoryRegistry[Directory Adapter Registry]
+    DirectoryRegistry --> DirectoryAdapter[Directory Adapter]
+    DirectoryAdapter --> ProjectionProof[Signed Projection Proof]
+    ProjectionProof --> IdentityLinks
+
+    IdentityLinks --> UserProjection[KAORI User Projection]
+    AuthRoutes --> Session[Session Lifecycle]
+    UserProjection --> RBAC[RBAC and Permissions]
+    AuthRoutes --> Audit[Authentication Activity Audit]
 ```
 
 ## Canonical Provider Vocabulary
 
-`app/auth/providers/catalog.py` is the authority for provider vocabulary.
+`app/definitions/catalogs/auth/identity_provider/providers.yaml` is the source-controlled provider catalog. `app/auth/identity_provider/catalog.py` is its runtime vocabulary loader.
 
-- Family: `database`, `ldap`, `sso`.
-- Concrete type: `database`, `ldap`, `google_oidc`, `github_oauth`.
-- Flow: `credentials` or `browser`.
+Every provider definition separates:
 
-Family-level behavior includes user filtering and password ownership. Concrete types select protocol implementations and identity-provider configuration.
+- `provider_key` — product/authority identity;
+- `adapter_key` — technical implementation contract;
+- `family` — `database`, `directory`, or `sso`;
+- `flow` — `credentials` or `browser`;
+- `configuration_profile` — configuration shape;
+- `admission_policy` — projection/JIT admission contract.
 
-## Responsibility Boundaries
+Examples:
 
-### Authentication
+```text
+provider_key=google          adapter_key=google_oidc
+provider_key=github          adapter_key=github_oauth2
+provider_key=ldap_directory  adapter_key=ldap
+provider_key=database        adapter_key=local_database
+```
 
-Owns credential verification, browser callback validation, normalized results, provider lookup, identity resolution, JIT admission, login metadata, session lifecycle, and authentication Activity Audit records.
+Product identity must not be encoded in core form branches, route branches, or ORM columns.
+
+## Code Ownership
+
+### Authentication Kernel
+
+`app/auth/identity_provider/` owns provider vocabulary, adapter protocols, adapter registries, provider-specific protocol implementations, and normalized authentication/directory outcomes.
+
+Reusable protocols live under:
+
+```text
+app/auth/identity_provider/adapters/<adapter>/
+```
+
+Provider-specific behavior lives under:
+
+```text
+app/auth/identity_provider/providers/<provider>/
+```
+
+### Identity Provider Workspace
+
+`app/identity_providers/` owns provider administration, validation, directory search, signed administrative identity projection, and workspace presentation.
+
+Its canonical UI is `/access/identity-providers` with:
+
+```text
+Overview · Providers · Directory Provisioning
+```
 
 ### User Management
 
-Owns provider administration UI, account lifecycle, role assignment, LDAP directory search initiation, and administrative external-identity projection. It calls Authentication-owned provider configuration and LDAP client boundaries.
+`app/users/` owns KAORI user lifecycle, effective access presentation, and role assignment. It does not own provider configuration.
 
 ### RBAC
 
-Owns roles, permissions, route guards, menu visibility, and operational authorization. Provider adapters must not assign hidden permissions.
+RBAC owns roles, permissions, route guards, menu visibility, and operational authorization. Provider adapters must not assign hidden permissions. `is_super_admin` is reserved for Local Database break-glass identities.
 
-### Models
+## Adapter Registries
 
-`app/models/identity.py` and `app/models/user.py` remain the persistence authority. Protocol modules do not define ORM models.
+KAORI maintains separate registries because the protocol contracts are different:
 
-## Provider Registries
+- credential adapter registry;
+- browser SSO adapter registry;
+- directory adapter registry.
 
-### Credential Registry
-
-`CredentialProviderRegistry` always contains the Local Database provider and currently contains the LDAP adapter as its external credential provider. Local identity presence is authoritative: a wrong password for an existing Local Database user does not fall through to LDAP.
-
-### Browser SSO Registry
-
-Browser SSO is selected through `get_browser_sso_provider(provider_type)`. Routes do not contain Google/GitHub protocol branches. Unsupported provider types fail closed.
+Application routes dispatch using `adapter_key`; they do not instantiate LDAP, Google, GitHub, or future products directly.
 
 ## Provider Lifecycle
 
-1. **Configured** — provider record and secret references exist.
-2. **Validated** — connection/discovery, TLS, secret reference, and JIT policy pass validation.
-3. **Enabled** — new authentication attempts may use the provider.
-4. **Degraded** — the provider is temporarily unavailable; Local Database recovery remains available.
-5. **Disabled** — new attempts are rejected while existing audit history and identity links remain.
+1. **Registered** — provider identity and adapter contract exist.
+2. **Configured** — required non-secret configuration and secret references exist.
+3. **Validated** — adapter-level connectivity/protocol and admission-policy checks pass.
+4. **Enabled** — new authentication/provisioning attempts may use the provider.
+5. **Review Required** — enabled configuration, JIT/admission, or projection posture is incomplete.
+6. **Disabled** — new attempts are rejected while identity links and audit evidence remain.
 
 ## Error Normalization
 
-Provider exceptions never cross the HTTP boundary directly.
+Protocol exceptions never cross the HTTP boundary directly.
+
+Examples include:
 
 - invalid password → `invalid_credentials`;
 - inactive linked user → `user_inactive`;
 - database failure → `database_unavailable`;
 - external protocol outage → `provider_unavailable`;
-- missing SSO projection/admission failure → `identity_not_provisioned`;
-- callback state/code failures → explicit SSO reason codes.
-
-LDAP user-bind rejection and operational provider failure are distinguished internally so an outage is not silently reported as a bad password.
+- missing projection/admission failure → `identity_not_provisioned`;
+- browser callback failures → explicit normalized SSO reason codes.
 
 ## Redirect Contract
 
@@ -98,4 +144,12 @@ Successful authentication routes to `welcome.index`. Authentication does not enc
 
 ## Extension Contract
 
-A new browser provider implements `BrowserSsoProvider` in a dedicated module and is registered once. A new credential provider implements `CredentialAuthProvider` and declares an explicit identity-collision policy. Provider-specific branches are prohibited in `app/auth/routes.py` and `app/users/routes.py`.
+Adding a new identity product must follow this order:
+
+1. add or reuse an adapter;
+2. add a provider definition to the source-controlled catalog;
+3. add provider-specific implementation only when the provider has behavior beyond the reusable adapter;
+4. add provider-specific guidance partial when needed;
+5. validate catalog/registry/contracts.
+
+Core routes, User Management, RBAC, and database schema must remain unchanged when an existing adapter can serve the provider.

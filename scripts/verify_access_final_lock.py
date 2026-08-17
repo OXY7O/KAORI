@@ -192,7 +192,7 @@ def main() -> int:
     users_directory = read('app/users/directory.py')
     user_access_summary = read('app/users/access_summary.py')
     user_model = read('app/models/user.py')
-    user_provisioning_proof = read('app/users/provisioning_proof.py')
+    user_provisioning_proof = read('app/identity_providers/provisioning_proof.py')
     users_index = read('app/templates/users/index.html')
     users_hero = read('app/templates/users/partials/_hero.html')
     for permission in ('users.view', 'users.manage', 'users.activate', 'users.reset_password', 'users.delete'):
@@ -250,20 +250,50 @@ def main() -> int:
     for required in ('URLSafeTimedSerializer', 'verify_projection_proof(', 'PROJECTION_PROOF_MAX_AGE_SECONDS = 600'):
         require(required in user_provisioning_proof, f'LDAP projection proof contract missing: {required}', errors)
 
-    # Identity Providers: administration-only, secrets external, live validation on demand.
-    provider_index = read('app/templates/users/providers/index.html')
-    provider_detail = read('app/templates/users/providers/partials/_provider_detail.html')
-    provider_routes = users_routes
+    # Identity Providers: provider-neutral administration, adapter-owned protocol behavior, external secrets.
+    provider_index = read('app/templates/access/identity_providers/index.html')
+    provider_detail = read('app/templates/access/identity_providers/partials/_provider_detail.html')
+    provider_overview = read('app/templates/access/identity_providers/partials/_overview.html')
+    provider_routes = read('app/identity_providers/routes.py')
+    provider_model = read('app/models/identity.py')
+    provider_catalog = read('app/auth/identity_provider/catalog.py')
+    provider_registry = read('app/auth/identity_provider/registry.py')
     for required in (
-        "@bp.route('/providers', methods=['GET'])",
-        "@bp.post('/providers/test')",
-        "@bp.post('/providers/<int:provider_id>/validate')",
+        "bp = Blueprint('identity_providers'",
+        "url_prefix='/access/identity-providers'",
         "@permission_required('users.manage')",
         'validate_identity_provider(candidate)',
         'validate_identity_provider(provider)',
+        'get_directory_provider_adapter(selected_provider.adapter_key)',
     ):
         require(required in provider_routes, f'Identity Provider route contract missing: {required}', errors)
-    require('Provider Registry Overview' in provider_index, 'Identity Provider overview contract missing', errors)
+    for required in (
+        'provider_key:',
+        'adapter_key:',
+        'configuration_json:',
+        'admission_policy_json:',
+    ):
+        require(required in provider_model, f'Identity Provider canonical model contract missing: {required}', errors)
+    for forbidden in ('provider_type:', 'oidc_client_id:', 'server_uri:', 'allowed_domains:', 'allowed_subjects:'):
+        require(
+            forbidden not in provider_model,
+            f'Identity Provider model must not retain product/adapter-specific field: {forbidden}',
+            errors,
+        )
+    require(
+        'load_definition_document(' in provider_catalog, 'Identity Provider catalog must be source-controlled', errors
+    )
+    require(
+        'get_directory_provider_adapter(' in provider_registry, 'Directory adapter registry contract missing', errors
+    )
+    require('get_browser_sso_adapter(' in provider_registry, 'Browser adapter registry contract missing', errors)
+    require('Authentication Source Posture' in provider_overview, 'Identity Provider overview contract missing', errors)
+    for tab in ('Overview', 'Providers', 'Directory Provisioning'):
+        require(
+            tab in read('app/templates/access/identity_providers/partials/_tabs.html'),
+            f'Identity Provider tab missing: {tab}',
+            errors,
+        )
     for forbidden in ('Client Secret Value', 'Bind Password Value', 'Last Validated'):
         require(
             forbidden not in provider_detail, f'Identity Provider secret/durable-validation leak: {forbidden}', errors

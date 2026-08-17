@@ -5,14 +5,14 @@ from typing import Any
 
 from sqlalchemy import func, or_
 
-from app.auth.providers.catalog import AuthProviderFamily, provider_definition, provider_types_for_family
+from app.auth.identity_provider.catalog import AuthProviderFamily, provider_definition, provider_keys_for_family
 from app.common.pagination import PER_PAGE_OPTIONS, build_pagination_window, normalize_per_page, positive_int
 from app.extensions.db import db
 from app.models import Role, User
 from app.users.access_summary import build_user_access_summary
 
 USER_STATUS_OPTIONS = ['all', 'active', 'inactive', 'deleted']
-USER_AUTH_SOURCE_OPTIONS = ['all', 'database', 'ldap', 'sso']
+USER_AUTH_SOURCE_OPTIONS = ['all', 'database', 'directory', 'sso']
 
 
 def normalize_user_filters(args: Mapping[str, str | None]) -> dict[str, Any]:
@@ -39,7 +39,7 @@ def _auth_source_presentation(auth_source: str) -> dict[str, str]:
 
     icons = {
         AuthProviderFamily.DATABASE: 'database',
-        AuthProviderFamily.LDAP: 'building-2',
+        AuthProviderFamily.DIRECTORY: 'building-2',
         AuthProviderFamily.SSO: 'fingerprint',
     }
     return {
@@ -54,7 +54,7 @@ def build_user_identity_context(user: User) -> dict[str, Any]:
         (
             link
             for link in user.external_identities
-            if link.provider is not None and link.provider.provider_type == user.auth_source
+            if link.provider is not None and link.provider.provider_key == user.auth_source
         ),
         None,
     )
@@ -64,7 +64,7 @@ def build_user_identity_context(user: User) -> dict[str, Any]:
     if user.auth_source == 'database':
         credential_owner = 'KAORI'
         credential_detail = 'KAORI stores the password hash and owns the password reset workflow.'
-    elif source['family'] == AuthProviderFamily.LDAP.value:
+    elif source['family'] == AuthProviderFamily.DIRECTORY.value:
         credential_owner = identity_provider.display_name if identity_provider is not None else 'LDAP directory'
         credential_detail = (
             'The directory validates the password; KAORI stores only the linked identity and access controls.'
@@ -110,6 +110,7 @@ def build_user_identity_context(user: User) -> dict[str, Any]:
 
     return {
         'type_label': source['label'],
+        'source_family': source['family'],
         'icon': source['icon'],
         'credential_owner': credential_owner,
         'credential_detail': credential_detail,
@@ -230,7 +231,7 @@ def build_users_payload(filters: dict[str, Any], actor: User | None = None) -> d
         query = query.filter(User.deleted_at.is_not(None))
 
     if filters['auth_source'] != 'all':
-        source_values = provider_types_for_family(filters['auth_source'])
+        source_values = provider_keys_for_family(filters['auth_source'])
         query = query.filter(User.auth_source.in_(source_values))
 
     if filters['role_id']:
@@ -268,9 +269,13 @@ def build_users_payload(filters: dict[str, Any], actor: User | None = None) -> d
     )
     source_counts = {str(source): int(count or 0) for source, count in source_count_rows if source is not None}
     local_users = int(source_counts.get('database', 0))
-    ldap_users = int(source_counts.get('ldap', 0))
+    directory_users = sum(
+        count
+        for source, count in source_counts.items()
+        if source in provider_keys_for_family(AuthProviderFamily.DIRECTORY)
+    )
     sso_users = sum(
-        count for source, count in source_counts.items() if source in provider_types_for_family(AuthProviderFamily.SSO)
+        count for source, count in source_counts.items() if source in provider_keys_for_family(AuthProviderFamily.SSO)
     )
     external_users = sum(count for source, count in source_counts.items() if source != 'database')
     deleted_users = User.query.filter(User.deleted_at.is_not(None)).count()
@@ -283,8 +288,8 @@ def build_users_payload(filters: dict[str, Any], actor: User | None = None) -> d
     access_summary = build_user_access_summary()
     identity_source_count = sum(
         1
-        for family in (AuthProviderFamily.DATABASE, AuthProviderFamily.LDAP, AuthProviderFamily.SSO)
-        if sum(source_counts.get(item, 0) for item in provider_types_for_family(family)) > 0
+        for family in (AuthProviderFamily.DATABASE, AuthProviderFamily.DIRECTORY, AuthProviderFamily.SSO)
+        if sum(source_counts.get(item, 0) for item in provider_keys_for_family(family)) > 0
     )
     can_manage_users = bool(actor and actor.has_permission('users.manage'))
 
@@ -293,7 +298,7 @@ def build_users_payload(filters: dict[str, Any], actor: User | None = None) -> d
         'managed': int(access_summary['total']) + int(deleted_users or 0),
         'deleted': int(deleted_users or 0),
         'local': local_users,
-        'ldap': ldap_users,
+        'directory': int(directory_users),
         'sso': int(sso_users),
         'external': int(external_users),
         'identity_source_count': identity_source_count,

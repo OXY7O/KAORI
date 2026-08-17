@@ -59,7 +59,7 @@ def test_user_management_posture_matches_permission_registry_overview_structure(
     assert 'border-t border-outline-subtle bg-surface-hover' in summary
     for label in ('Active Accounts', 'Inactive Accounts', 'Access Findings', 'Local Super Admins'):
         assert label in summary
-    for label in ('Local Database', 'LDAP Directory', 'SSO Providers', 'Deleted & Restore'):
+    for label in ('Local Database', 'Directory', 'SSO Providers', 'Deleted & Restore'):
         assert label in summary
     assert 'Restore returns Deleted → Inactive' in summary
     assert 'never reactivates access' in summary
@@ -170,8 +170,8 @@ def test_access_main_right_rails_are_sticky_with_shared_desktop_offset() -> None
     required = {
         'app/templates/users/form.html': 2,
         'app/templates/users/reset_password.html': 1,
-        'app/templates/users/providers/partials/_provider_guidance.html': 1,
-        'app/templates/users/external_identities.html': 1,
+        'app/templates/access/identity_providers/partials/_provider_guidance.html': 1,
+        'app/templates/access/identity_providers/directory_provisioning.html': 1,
         'app/templates/access/roles/form.html': 1,
     }
     for path, minimum in required.items():

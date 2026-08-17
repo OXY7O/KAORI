@@ -40,7 +40,7 @@
         <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
             {% set boundaries = [
                             ('database', 'Local Database', summary.local ~ (' Account' if summary.local == 1 else ' Accounts'), 'KAORI owns local credentials and password lifecycle.'),
-                            ('building-2', 'LDAP Directory', summary.ldap ~ (' Account' if summary.ldap == 1 else ' Accounts'), 'Directory credentials remain authoritative outside KAORI.'),
+                            ('building-2', 'Directory', summary.directory ~ (' Account' if summary.directory == 1 else ' Accounts'), 'Directory credentials remain authoritative outside KAORI.'),
                             ('fingerprint', 'SSO Providers', summary.sso ~ (' Account' if summary.sso == 1 else ' Accounts'), 'Browser SSO identities remain provider-owned.'),
                             ('rotate-ccw', 'Deleted & Restore', summary.deleted ~ (' Account' if summary.deleted == 1 else ' Accounts'), 'Restore returns Deleted → Inactive and never reactivates access; activation remains explicit.')
                         ] %}

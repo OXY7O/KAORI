@@ -33,7 +33,7 @@
             {% for option in auth_source_options %}
                 <option value="{{ option }}"
                         {% if filters.auth_source == option %}selected{% endif %}>
-                    {{ {'all': 'All Sources', 'database': 'Local Database', 'ldap': 'LDAP', 'sso': 'SSO'}.get(option, option|title) }}
+                    {{ {'all': 'All Sources', 'database': 'Local Database', 'directory': 'Directory', 'sso': 'SSO'}.get(option, option|title) }}
                 </option>
             {% endfor %}
         </select>

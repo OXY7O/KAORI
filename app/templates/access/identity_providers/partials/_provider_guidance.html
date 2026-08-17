@@ -1,0 +1,29 @@
+<aside class="space-y-5 xl:sticky xl:top-5">
+    {% for definition in provider_options %}
+        <div id="guidance-{{ definition.provider_key }}" data-provider-guidance {% if not selected_definition or selected_definition.provider_key != definition.provider_key %}hidden{% endif %}>
+            {% include definition.guidance_partial %}
+        </div>
+    {% endfor %}
+    <section data-browser-callback class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm" {% if not selected_definition or selected_definition.flow.value != 'browser' %}hidden{% endif %}>
+        <header class="flex items-start gap-3 border-b border-outline-subtle bg-surface-hover px-5 py-4">
+            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="route" class="h-5 w-5"></i></span>
+            <div class="min-w-0">
+                <h2 class="text-sm font-semibold text-content-primary">Exact Callback URL</h2>
+                <p class="mt-1 text-xs leading-5 text-content-muted">Register this exact scheme, host, path, and provider instance key with the external application.</p>
+            </div>
+        </header>
+        <div class="p-5"><div class="block break-all rounded-lg border border-outline-default bg-surface-hover p-3 text-xs font-medium leading-5 text-content-primary"><span>{{ request.url_root.rstrip('/') }}/auth/sso/</span><span data-callback-key>{{ form.key.data or '&lt;provider-key&gt;' }}</span>/callback</div></div>
+    </section>
+    <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm" aria-label="Identity Provider Technical Runbook">
+        <header class="flex items-start gap-3 border-b border-outline-subtle bg-surface-hover px-5 py-4">
+            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="book-open-text" class="h-5 w-5"></i></span>
+            <div><h2 class="text-sm font-semibold text-content-primary">Technical Runbook</h2><p class="mt-1 text-xs leading-5 text-content-muted">Provider selection, adapter validation, and controlled enablement guidance.</p></div>
+        </header>
+        <div class="space-y-4 p-5">
+            <div class="break-all rounded-lg border border-outline-default bg-surface-hover p-3 text-xs font-medium leading-5 text-content-primary">docs/authentication/IDENTITY_PROVIDER_CONFIGURATION.md</div>
+            {% for icon, title, text in [('save', 'Save Disabled', 'Keep the provider disabled while credentials or callback registration are incomplete.'), ('scan-search', 'Validate Adapter', 'Run Test Connection after runtime secrets and network access are available.'), ('shield-check', 'Enable Last', 'Enable only after the expected authentication and admission flow succeeds.')] %}
+                <div class="flex items-start gap-3"><i data-lucide="{{ icon }}" class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary"></i><div><p class="text-xs font-semibold text-content-primary">{{ title }}</p><p class="mt-1 text-xs leading-5 text-content-muted">{{ text }}</p></div></div>
+            {% endfor %}
+        </div>
+    </section>
+</aside>

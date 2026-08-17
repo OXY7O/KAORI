@@ -62,10 +62,10 @@ def test_user_access_summary_detects_rbac_identity_and_invalid_break_glass_findi
 
 
 def test_ldap_administrative_projection_requires_short_lived_signed_directory_evidence() -> None:
-    proof = read('app/users/provisioning_proof.py')
-    routes = read('app/users/routes.py')
-    forms = read('app/users/forms.py')
-    template = read('app/templates/users/external_identities.html')
+    proof = read('app/identity_providers/provisioning_proof.py')
+    routes = read('app/identity_providers/routes.py')
+    forms = read('app/identity_providers/forms.py')
+    template = read('app/templates/access/identity_providers/directory_provisioning.html')
 
     assert 'URLSafeTimedSerializer' in proof
     assert 'PROJECTION_PROOF_MAX_AGE_SECONDS = 600' in proof

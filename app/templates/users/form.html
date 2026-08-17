@@ -133,7 +133,7 @@
                                                     <span class="inline-flex rounded-md border border-brand-outline bg-surface-card px-2 py-0.5 text-xs font-semibold text-kaori-primary">Created on this page</span>
                                                 </div>
                                                 <p class="mt-1.5 text-xs leading-5 text-kaori-primary">
-                                                    KAORI owns this account credential. LDAP identities must use Directory Provisioning; Google and GitHub identities use an existing identity link or controlled JIT.
+                                                    KAORI owns this account credential. Directory identities must use Directory Provisioning; browser SSO identities use an existing identity link or provider-defined controlled JIT.
                                                 </p>
                                             </div>
                                         </div>
@@ -382,13 +382,13 @@
                                     </div>
                                     <div class="min-w-0">
                                         <div class="flex flex-wrap items-center gap-2">
-                                            <h3 class="text-sm font-semibold text-content-primary">LDAP / Active Directory</h3>
+                                            <h3 class="text-sm font-semibold text-content-primary">Directory Provider</h3>
                                             <span class="inline-flex rounded-md border border-outline-default bg-surface-hover px-2 py-0.5 text-xs font-semibold text-content-secondary">Use Directory Provisioning</span>
                                         </div>
                                         <ol class="mt-2 space-y-1 text-xs leading-5 text-content-muted">
-                                            <li><strong class="font-semibold text-content-secondary">1.</strong> Open LDAP Provisioning and select the configured directory provider.</li>
+                                            <li><strong class="font-semibold text-content-secondary">1.</strong> Open Directory Provisioning and select the configured directory provider.</li>
                                             <li><strong class="font-semibold text-content-secondary">2.</strong> Search and select the authoritative directory identity.</li>
-                                            <li><strong class="font-semibold text-content-secondary">3.</strong> Assign KAORI access; LDAP retains password ownership.</li>
+                                            <li><strong class="font-semibold text-content-secondary">3.</strong> Assign KAORI access; The directory retains password ownership.</li>
                                         </ol>
                                     </div>
                                 </div>
@@ -414,8 +414,8 @@
                         </div>
                     </details>
                     {{ related_page_card.render('Identity Providers',
-                                        'Manage the provider records and admission paths used to create LDAP, Google, and GitHub identities in KAORI.',
-                                        url_for('users.providers') ,
+                                        'Manage provider records, adapter contracts, and admission paths used to create external identities in KAORI.',
+                                        url_for('identity_providers.index') ,
                     'Open Identity Providers',
                     icon='fingerprint',
                     eyebrow='Related User Management',
@@ -448,11 +448,11 @@
                             </div>
                             <div class="grid grid-cols-[24px_minmax(0,1fr)] gap-2">
                                 <span class="font-semibold text-kaori-primary">02</span>
-                                <p><strong class="font-semibold text-content-secondary">Active Account</strong> gates access for Local, LDAP, Google, and GitHub identities.</p>
+                                <p><strong class="font-semibold text-content-secondary">Active Account</strong> gates access for Local Database, Directory, and SSO identities.</p>
                             </div>
                             <div class="grid grid-cols-[24px_minmax(0,1fr)] gap-2">
                                 <span class="font-semibold text-kaori-primary">03</span>
-                                <p><strong class="font-semibold text-content-secondary">Super Admin</strong> is Local Database break-glass authority and is never granted to LDAP or SSO identities. At least one active Local Super Admin must remain available for Emergency Access.</p>
+                                <p><strong class="font-semibold text-content-secondary">Super Admin</strong> is Local Database break-glass authority and is never granted to external Directory or SSO identities. At least one active Local Super Admin must remain available for Emergency Access.</p>
                             </div>
                         </div>
                     </details>
@@ -513,14 +513,14 @@
                                 </div>
                             </dl>
                         </div>
-                        {% if user.auth_source == 'ldap' %}
+                        {% if identity_context.source_family == 'directory' %}
                             <footer class="grid gap-2 border-t border-outline-subtle bg-surface-hover p-4 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
-                                <a href="{{ url_for('users.external_identities') }}"
+                                <a href="{{ url_for('identity_providers.directory_provisioning') }}"
                                    class="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-semibold text-content-secondary transition hover:border-outline-focus hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
                                     <i data-lucide="contact-round" class="h-4 w-4"></i>
-                                    LDAP Provisioning
+                                    Directory Provisioning
                                 </a>
-                                <a href="{{ url_for('users.providers') }}"
+                                <a href="{{ url_for('identity_providers.index') }}"
                                    class="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-semibold text-content-secondary transition hover:border-outline-focus hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
                                     <i data-lucide="fingerprint" class="h-4 w-4"></i>
                                     Identity Providers
@@ -528,7 +528,7 @@
                             </footer>
                         {% elif user.auth_source != 'database' %}
                             <footer class="border-t border-outline-subtle bg-surface-hover p-4">
-                                <a href="{{ url_for('users.providers') }}"
+                                <a href="{{ url_for('identity_providers.index') }}"
                                    class="inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-semibold text-content-secondary transition hover:border-outline-focus hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
                                     <i data-lucide="fingerprint" class="h-4 w-4"></i>
                                     Manage Identity Providers
@@ -567,14 +567,14 @@
                             </div>
                         </div>
                     </section>
-                    {% if user.auth_source == 'ldap' %}
-                        {{ related_page_card.render('LDAP Directory Provisioning',
-                                                'Review the authoritative directory projection and synchronize LDAP identity context used by this KAORI account.',
-                                                url_for('users.external_identities') ,
-                        'Open LDAP Provisioning',
+                    {% if identity_context.source_family == 'directory' %}
+                        {{ related_page_card.render('Directory Provisioning',
+                                                'Review the authoritative directory projection and external identity context used by this KAORI account.',
+                                                url_for('identity_providers.directory_provisioning') ,
+                        'Open Directory Provisioning',
                         icon='contact-round',
                         eyebrow='Related User Management',
-                        boundary='LDAP remains authoritative for authentication credentials. KAORI owns role assignment, lifecycle state, and administrative controls.'
+                        boundary='The external directory remains authoritative for authentication credentials. KAORI owns role assignment, lifecycle state, and administrative controls.'
                         ) }}
                     {% elif user.auth_source == 'database' %}
                         {{ related_page_card.render('User Registry',
@@ -588,7 +588,7 @@
                     {% else %}
                         {{ related_page_card.render('Identity Providers',
                                                 'Review the external provider configuration and admission controls associated with this KAORI identity.',
-                                                url_for('users.providers') ,
+                                                url_for('identity_providers.index') ,
                         'Open Identity Providers',
                         icon='fingerprint',
                         eyebrow='Related User Management',

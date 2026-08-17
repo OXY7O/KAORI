@@ -1,0 +1,14 @@
+{% import "components/info_flow.html" as info_flow %}
+{% set setup_steps = [
+    ('Create OIDC Client', 'Create a Google Web application client and complete the required consent configuration.'),
+    ('Register Callback', 'Add the exact KAORI callback URL as an authorized redirect URI.'),
+    ('Supply Credentials', 'Store the client ID in KAORI and resolve the client secret through the runtime environment reference.'),
+    ('Control Admission', 'For JIT, choose a non-admin role and admit only approved verified email domains.')
+] %}
+{{ info_flow.render('Google OIDC Guidance',
+        'Controlled path from client registration to locally authorized KAORI access.',
+        setup_steps,
+        icon='workflow',
+        note='Google authenticates identity; KAORI retains local authorization and account-lifecycle authority.',
+        note_icon='shield-check',
+        open_by_default=true) }}

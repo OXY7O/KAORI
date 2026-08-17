@@ -84,8 +84,8 @@ _ENDPOINT_LABELS: dict[str, str] = {
     # Access
     'access.overview.index': 'Overview',
     'users.index': 'User Management',
-    'users.providers': 'Identity Providers',
-    'users.external_identities': 'Directory Provisioning',
+    'identity_providers.index': 'Identity Providers',
+    'identity_providers.directory_provisioning': 'Directory Provisioning',
     'access.roles.index': 'Roles & Access',
     'access.permissions.index': 'Permission Catalog',
     'notifications.center': 'Notification Center',
@@ -104,10 +104,10 @@ _WORKFLOW_LABELS: tuple[tuple[str, str], ...] = (
     ('users.create', 'Add User'),
     ('users.edit', 'Edit User'),
     ('users.reset_password', 'Reset Password'),
-    ('users.providers', 'Identity Providers'),
-    ('users.create_provider', 'Add Provider'),
-    ('users.edit_provider', 'Edit Provider'),
-    ('users.external_identities', 'External Identities'),
+    ('identity_providers.index', 'Identity Providers'),
+    ('identity_providers.create', 'Add Provider'),
+    ('identity_providers.edit', 'Edit Provider'),
+    ('identity_providers.directory_provisioning', 'External Identities'),
     ('access.roles.create', 'Add Role'),
     ('access.roles.clone', 'Clone Role'),
     ('access.roles.detail', 'Role Details'),
@@ -240,10 +240,15 @@ def build_navigation_breadcrumb(
         ]
     elif endpoint.startswith('access.overview.'):
         items = [BreadcrumbItem('Access', 'users-round'), BreadcrumbItem('Overview')]
-    elif endpoint in {'users.providers', 'users.create_provider', 'users.edit_provider', 'users.validate_provider'}:
+    elif endpoint in {
+        'identity_providers.index',
+        'identity_providers.create',
+        'identity_providers.edit',
+        'identity_providers.validate',
+    }:
         items = [BreadcrumbItem('Access', 'users-round'), BreadcrumbItem('Identity Providers')]
         items = _append_workflow(items, endpoint)
-    elif endpoint in {'users.external_identities', 'users.provision_identity'}:
+    elif endpoint in {'identity_providers.directory_provisioning', 'identity_providers.provision_identity'}:
         items = [
             BreadcrumbItem('Access', 'users-round'),
             BreadcrumbItem('Identity Providers'),

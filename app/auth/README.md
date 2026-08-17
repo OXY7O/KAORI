@@ -1,5 +1,15 @@
 # KAORI Authentication Domain
 
+## Identity Provider architecture
+
+External authentication follows `identity_provider -> provider_key -> adapter_key -> capability/admission policy`. Provider identity and technical adapter identity are separate. The source-controlled catalog is `app/definitions/catalogs/auth/identity_provider/providers.yaml`; the kernel is `app/auth/identity_provider/`; administrative UI is `app/identity_providers/`.
+
+- Directory providers reuse registered directory/credential adapters such as `ldap`.
+- Browser providers register provider-specific implementations behind an `adapter_key`.
+- Core login/session routes do not branch on Google, GitHub, LDAP, or future product names.
+- Provider records persist canonical identity plus JSON adapter configuration and admission policy; secret values remain external environment references.
+
+
 ## Purpose
 
 `app/auth` is the identity-verification boundary for KAORI. It verifies credentials or browser SSO assertions, normalizes outcomes, applies account-state checks, establishes or clears the Flask session, records authentication activity, and hands the authenticated user to the role-aware Welcome workspace.
@@ -8,22 +18,20 @@ Authentication answers **who the user is**. Authorization remains owned by `app/
 
 ## Provider Model
 
-KAORI exposes three primary provider families:
+KAORI groups authentication by family while keeping product identity and technical adapter identity separate.
 
-| Family | Concrete types | Flow | Credential authority |
+| Family | Example provider keys | Example adapter keys | Flow |
 | --- | --- | --- | --- |
-| Database | `database` | Username/password | KAORI |
-| LDAP | `ldap` | Username/password with directory bind | LDAP / Active Directory |
-| SSO | `google_oidc`, `github_oauth` | Browser redirect/callback | Google or GitHub |
+| Database | `database` | `local_database` | Username/password |
+| Directory | `ldap_directory` | `ldap` | Username/password with directory bind |
+| SSO | `google`, `github` | `google_oidc`, `github_oauth2` | Browser redirect/callback |
 
-The distinction between **family** and **concrete provider type** is intentional. User filters and credential ownership operate on the family, while protocol adapters and identity links use the concrete type.
-
-The canonical catalog is `app/auth/providers/catalog.py`. New provider types must be registered there and, for browser SSO, in `app/auth/providers/registry.py`.
+The provider catalog is source-controlled in `app/definitions/catalogs/auth/identity_provider/providers.yaml`. Adding a provider that reuses an existing adapter changes the catalog/provider package only; core schema, User Management, and auth routes remain unchanged.
 
 ## Dependency Direction
 
 ```text
-app/users forms -> app/users/provider_forms.py -> Auth configuration DTO
+app/users forms -> app/identity_providers/forms.py -> Auth configuration DTO
                                               |
                                               v
                                   app/auth provider services
@@ -32,7 +40,7 @@ app/users forms -> app/users/provider_forms.py -> Auth configuration DTO
                                   app/models persistence records
 ```
 
-`app/auth` does not import `app/users`. LDAP connection, TLS, search, and bind behavior are owned by `app/auth/providers/ldap.py`; User Management maps WTForms into `IdentityProviderConfiguration` and invokes the Auth boundary for provider validation, directory search, and administrative projection.
+`app/auth` does not import `app/users`. LDAP connection, TLS, search, and bind behavior are owned by `app/auth/identity_provider/adapters/ldap/client.py`; Identity Provider administration maps WTForms into `IdentityProviderConfiguration` and invokes the Auth boundary for provider validation, directory search, and administrative projection.
 
 ## File Responsibilities
 
@@ -46,7 +54,7 @@ app/users forms -> app/users/provider_forms.py -> Auth configuration DTO
 | `routes.py` | HTTP boundary for login, SSO start/callback, logout, rate limits, and response handling. |
 | `session.py` | Session rotation, Flask-Login establishment, remember-me policy, and auth-owned cleanup. |
 | `sso.py` | SSO provider lookup, external identity resolution, JIT admission, projection, and link synchronization. |
-| `provider_configuration.py` | Provider-neutral configuration DTO, canonical key validation, model projection, and provider validation dispatch. |
+| `identity_provider/configuration.py` | Provider-neutral configuration DTO, canonical key validation, model projection, and provider validation dispatch. |
 | `readiness.py` | Database/schema readiness for every table needed by authentication. |
 | `audit.py` | Authentication Activity Audit writer with safe provider, IP, browser, OS, and device metadata. |
 | `user_agent.py` | Stateless user-agent parsing. |
@@ -55,14 +63,14 @@ app/users forms -> app/users/provider_forms.py -> Auth configuration DTO
 
 | File | Responsibility |
 | --- | --- |
-| `providers/catalog.py` | Canonical provider types, families, flows, labels, and configurable choices. |
-| `providers/base.py` | `CredentialAuthProvider` protocol for username/password providers. |
-| `providers/registry.py` | Credential registry plus explicit browser-SSO strategy registry. |
-| `providers/database.py` | Local database password verification and database-error normalization. |
-| `providers/ldap.py` | LDAP directory client, TLS/search/bind behavior, and LDAP credential adapter. |
-| `providers/browser.py` | Browser SSO contract, normalized identity, state/nonce helpers, secret lookup, and timeout policy. |
-| `providers/google_oidc.py` | Google authorization, token exchange, ID-token verification, nonce enforcement, and discovery validation. |
-| `providers/github_oauth.py` | GitHub authorization, token exchange, profile/email lookup, and endpoint validation. |
+| `identity_provider/catalog.py` | Canonical provider definitions, families, flows, labels, and configurable choices. |
+| `identity_provider/credential.py` | Provider-neutral credential-adapter protocol. |
+| `identity_provider/registry.py` | Credential registry plus explicit browser-SSO strategy registry. |
+| `local_database.py` | Local database password verification and database-error normalization. |
+| `identity_provider/adapters/ldap/client.py` | LDAP directory client, TLS/search/bind behavior, and LDAP credential adapter. |
+| `identity_provider/browser.py` | Browser SSO contract, normalized identity, state/nonce helpers, secret lookup, and timeout policy. |
+| `identity_provider/providers/google/browser.py` | Google authorization, token exchange, ID-token verification, nonce enforcement, and discovery validation. |
+| `identity_provider/providers/github/browser.py` | GitHub authorization, token exchange, profile/email lookup, and endpoint validation. |
 
 ## Credential Authentication Flow
 
@@ -82,7 +90,7 @@ This prevents a local username collision from silently authenticating against LD
 ## Browser SSO Flow
 
 1. `/auth/sso/<provider>/start` resolves an enabled provider from the identity-provider registry.
-2. The browser strategy is selected by concrete provider type.
+2. The browser strategy is selected by provider identity and adapter key.
 3. KAORI stores only the state fingerprint, provider ID, nonce when required, and start timestamp in the session.
 4. The callback validates provider identity, state, and the configured `AUTH_SSO_FLOW_TTL_SECONDS` window.
 5. The registered strategy exchanges and validates the authorization code.
@@ -95,7 +103,7 @@ This prevents a local username collision from silently authenticating against LD
 - Local Database authentication remains available as the controlled recovery provider.
 - Authentication and authorization remain separate domains.
 - Passwords, hashes, bind secrets, authorization codes, tokens, assertions, and raw provider payloads are never written to Activity Audit Log.
-- Unknown provider types are rejected by the provider catalog; unknown identity sources never gain KAORI password ownership.
+- Unknown provider identities are rejected by the provider catalog; unknown identity sources never gain KAORI password ownership.
 - LDAP invalid credentials are distinguished internally from LDAP operational outages without exposing raw directory errors.
 - LDAP transport mode and URI scheme must agree; plaintext LDAP remains disabled unless `AUTH_LDAP_ALLOW_PLAINTEXT=true` is explicitly enabled for a controlled development environment.
 - Google OIDC requires a nonce at authorization and callback validation.
@@ -140,21 +148,21 @@ pytest -q tests/auth -m functional --cov=app.auth --cov-report=term-missing
 
 The security regression contracts specifically cover session admission, safe post-login redirects, remember-cookie revocation, bounded remember-me duration, rate-limit audit evidence, and `authentication.v2` actor/target semantics.
 
-The functional gate covers provider family/type mapping, credential orchestration, Database behavior, LDAP transport and bind semantics, browser SSO strategy selection and token projection, SSO identity resolution, provider configuration projection, session policy, readiness, and login transaction boundaries. Contract tests are guardrails and are not counted as evidence that a function works.
+The functional gate covers provider family/provider/adapter mapping, credential orchestration, Database behavior, LDAP transport and bind semantics, browser SSO strategy selection and token projection, SSO identity resolution, provider configuration projection, session policy, readiness, and login transaction boundaries. Contract tests are guardrails and are not counted as evidence that a function works.
 
 ## Extension Rule
 
-Adding another provider must not add provider-specific branching to `app/auth/routes.py` or `app/users/routes.py`.
+Adding another provider must not add provider-specific branching to `app/auth/routes.py` or `app/identity_providers/routes.py`.
 
 For another browser SSO provider:
 
-1. add the concrete type to `providers/catalog.py`;
-2. implement `BrowserSsoProvider` in a dedicated module;
-3. register the adapter in `providers/registry.py`;
+1. add the provider definition to the source-controlled catalog;
+2. implement the provider browser adapter in `identity_provider/providers/<provider>/`;
+3. register the adapter in `identity_provider/registry.py`;
 4. add provider-specific configuration fields and validation only where required;
 5. add unit tests for authorization URL, callback validation, admission, and configuration validation.
 
-For another credential provider, implement `CredentialAuthProvider` and register it in the credential registry with an explicit authority and collision policy.
+For another credential provider, implement `CredentialAuthAdapter` and register it in the credential registry with an explicit authority and collision policy.
 
 
 ## Authentication Surface Final Lock v1

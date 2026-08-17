@@ -6,7 +6,7 @@ from typing import Literal
 from flask import current_app, request
 from sqlalchemy.exc import SQLAlchemyError
 
-from app.auth.providers.catalog import provider_label
+from app.auth.identity_provider.catalog import provider_label
 from app.auth.user_agent import parse_user_agent
 from app.extensions.db import db
 from app.models.notification import Notification

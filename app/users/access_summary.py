@@ -4,35 +4,31 @@ from typing import Any
 
 from sqlalchemy import and_, case, func, select
 
+from app.auth.identity_provider.catalog import provider_definition
+from app.auth.identity_provider.configuration import identity_provider_configuration_complete
 from app.extensions.db import db
 from app.models import ExternalIdentityLink, IdentityProvider, Role, User
-from app.users.service import present_identity_provider
 
 
 def build_identity_provider_summary() -> dict[str, Any]:
     """Return provider posture without building registry rows or pagination."""
 
     providers = IdentityProvider.query.order_by(
-        IdentityProvider.provider_type.asc(), IdentityProvider.display_name.asc()
+        IdentityProvider.provider_key.asc(), IdentityProvider.display_name.asc()
     ).all()
-    presentations = [present_identity_provider(provider, identity_links=0) for provider in providers]
-    configured = sum(1 for row in presentations if row['configuration']['complete'])
+    configuration_states = {provider.id: identity_provider_configuration_complete(provider) for provider in providers}
+    configured = sum(1 for provider in providers if configuration_states[provider.id])
     enabled = sum(1 for provider in providers if provider.enabled)
-    enabled_incomplete = sum(
-        1
-        for provider, row in zip(providers, presentations, strict=True)
-        if provider.enabled and not row['configuration']['complete']
-    )
+    enabled_incomplete = sum(1 for provider in providers if provider.enabled and not configuration_states[provider.id])
     jit_policy_review = 0
     for provider in providers:
         if not provider.enabled or not provider.jit_enabled:
             continue
         role = provider.default_role
         policy_ready = bool(role and role.is_active and role.name != 'admin')
-        if provider.provider_type == 'google_oidc':
-            policy_ready = policy_ready and bool(provider.allowed_domains_list)
-        elif provider.provider_type == 'github_oauth':
-            policy_ready = policy_ready and bool(provider.allowed_subjects_list)
+        definition = provider_definition(provider.provider_key)
+        if definition.admission_policy in {'verified_email_domain_allowlist', 'subject_allowlist'}:
+            policy_ready = policy_ready and bool(provider.admission_values)
         if not policy_ready:
             jit_policy_review += 1
 
@@ -111,7 +107,7 @@ def build_user_access_summary() -> dict[str, Any]:
         .join(IdentityProvider, IdentityProvider.id == ExternalIdentityLink.provider_id)
         .where(
             ExternalIdentityLink.user_id == User.id,
-            IdentityProvider.provider_type == User.auth_source,
+            IdentityProvider.provider_key == User.auth_source,
             IdentityProvider.enabled.is_(True),
         )
         .exists()

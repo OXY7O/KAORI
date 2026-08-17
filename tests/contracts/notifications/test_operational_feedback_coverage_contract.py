@@ -80,8 +80,11 @@ def test_tls_integrations_platform_operations_access_and_settings_are_covered() 
             'user_created',
             'user_updated',
             'user_deleted',
+        ),
+        'app/identity_providers/routes.py': (
             'identity_provider_created',
             'identity_provider_updated',
+            'identity_provider_validated',
         ),
         'app/access/roles/routes.py': ('rbac_role_created', 'rbac_role_updated', 'rbac_role_deleted'),
         'app/settings/routes.py': ('account_security', 'user_preference'),

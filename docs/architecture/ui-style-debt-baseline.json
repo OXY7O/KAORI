@@ -174,7 +174,7 @@
     "app/templates/settings/general/partials/_tabs.html": {
       "page_local_workspace_tablists": 1
     },
-    "app/templates/users/external_identities.html": {
+    "app/templates/access/identity_providers/directory_provisioning.html": {
       "copied_standard_surface_shells": 2
     },
     "app/templates/users/form.html": {
@@ -184,23 +184,23 @@
     "app/templates/users/partials/_content.html": {
       "copied_standard_surface_shells": 1
     },
-    "app/templates/users/providers/form.html": {
+    "app/templates/access/identity_providers/form.html": {
       "copied_standard_surface_shells": 1,
       "semantic_border_utilities": 2
     },
-    "app/templates/users/providers/partials/_directory_provisioning_strip.html": {
+    "app/templates/access/identity_providers/partials/_directory_provisioning_strip.html": {
       "copied_standard_surface_shells": 1
     },
-    "app/templates/users/providers/partials/_ldap_configuration.html": {
+    "app/templates/access/identity_providers/partials/_ldap_configuration.html": {
       "copied_standard_surface_shells": 2
     },
-    "app/templates/users/providers/partials/_provider_guidance.html": {
+    "app/templates/access/identity_providers/partials/_provider_guidance.html": {
       "copied_standard_surface_shells": 2
     },
-    "app/templates/users/providers/partials/_provider_selector.html": {
+    "app/templates/access/identity_providers/partials/_provider_selector.html": {
       "copied_standard_surface_shells": 1
     },
-    "app/templates/users/providers/partials/_sso_configuration.html": {
+    "app/templates/access/identity_providers/partials/_sso_configuration.html": {
       "copied_standard_surface_shells": 2,
       "semantic_border_utilities": 1
     },

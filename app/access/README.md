@@ -27,8 +27,10 @@ Access
 - `app/access/overview/` owns the read-only Access landing page.
 - `app/access/roles/` owns role-management HTTP routes, forms, presentation context, and role mutation orchestration.
 - `app/access/permissions/` owns the read-only Permission Catalog HTTP/presentation boundary.
-- `app/users/` remains authoritative for user lifecycle, provider administration forms, LDAP directory provisioning, and external identity projection.
-- `app/auth/` remains authoritative for Local/LDAP/OIDC/OAuth authentication protocol behavior and session admission.
+- `app/users/` remains authoritative for user lifecycle and effective-access presentation.
+- `app/identity_providers/` owns Identity Provider administration and directory projection workflows.
+- `app/auth/identity_provider/` owns provider catalog, adapter registries, protocol validation, and external authentication contracts.
+- `app/auth/` owns session admission and authentication orchestration.
 - `app/rbac/` remains authoritative for the code-owned permission registry, protected default roles, authorization rules, role mutation guardrails, and route decorators.
 - `app/notifications/` remains authoritative for Notification Center and Activity Audit persistence/presentation.
 
@@ -49,7 +51,7 @@ Canonical Access-owned URLs:
 /access/permissions/
 ```
 
-User and provider URLs remain canonical under `/users/` until their page-by-page Access review determines whether a URL namespace cutover is useful. The current refactor intentionally avoids changing stable user/provider URLs only for cosmetic consistency.
+User lifecycle remains under `/users/`. Identity Provider administration is canonical under `/access/identity-providers/`; no compatibility route is retained under `/users/providers`.
 
 Legacy Settings role/permission URLs are retired. Settings must not contain redirect shims, compatibility wrappers, or role/permission presentation/mutation logic; callers must use the canonical Access routes.
 

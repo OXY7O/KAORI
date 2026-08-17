@@ -8,14 +8,15 @@ from sqlalchemy.exc import SQLAlchemyError
 from app.auth.admission import enforce_login_admission
 from app.auth.audit import record_authentication_activity
 from app.auth.forms import LoginForm
-from app.auth.providers.browser import (
+from app.auth.identity_provider.browser import (
     SsoProviderError,
     generate_nonce,
     generate_state,
     sso_flow_is_valid,
     state_fingerprint,
 )
-from app.auth.providers.registry import get_browser_sso_provider
+from app.auth.identity_provider.catalog import provider_definition
+from app.auth.identity_provider.registry import get_browser_sso_adapter
 from app.auth.readiness import check_authentication_database_readiness
 from app.auth.results import ACCESS_NOT_PERMITTED_MESSAGE, AuthResult
 from app.auth.services import (
@@ -148,7 +149,11 @@ def login():
             message=message,
         )
 
-    return render_template('auth/index.html', form=form, sso_providers=enabled_sso_providers())
+    sso_provider_rows = [
+        {'record': provider, 'definition': provider_definition(provider.provider_key)}
+        for provider in enabled_sso_providers()
+    ]
+    return render_template('auth/index.html', form=form, sso_provider_rows=sso_provider_rows)
 
 
 @auth_bp.get('/sso/<provider_key>/start')
@@ -183,12 +188,12 @@ def sso_start(provider_key: str):
 
     state = generate_state()
     try:
-        adapter = get_browser_sso_provider(provider.provider_type)
+        adapter = get_browser_sso_adapter(provider.adapter_key)
     except SsoProviderError:
         record_authentication_activity(
             action='login',
             username=provider.key,
-            source=provider.provider_type,
+            source=provider.provider_key,
             result='failed',
             reason='provider_unavailable',
         )
@@ -221,7 +226,7 @@ def sso_start(provider_key: str):
         record_authentication_activity(
             action='login',
             username=provider.key,
-            source=provider.provider_type,
+            source=provider.provider_key,
             result='failed',
             reason='provider_unavailable',
         )
@@ -263,12 +268,12 @@ def sso_callback(provider_key: str):
         )
         return redirect(url_for('auth.login'))
     try:
-        adapter = get_browser_sso_provider(provider.provider_type)
+        adapter = get_browser_sso_adapter(provider.adapter_key)
     except SsoProviderError:
         record_authentication_activity(
             action='login',
             username=provider.key,
-            source=provider.provider_type,
+            source=provider.provider_key,
             result='failed',
             reason='provider_unavailable',
         )
@@ -288,7 +293,7 @@ def sso_callback(provider_key: str):
         now_timestamp=datetime.now(UTC).timestamp(),
         ttl_seconds=flow_ttl_seconds,
     ):
-        result = AuthResult(False, 'state_mismatch', source=provider.provider_type)
+        result = AuthResult(False, 'state_mismatch', source=provider.provider_key)
         _record_result(provider.key, result)
         queue_transient_feedback(
             status='error',
@@ -299,7 +304,7 @@ def sso_callback(provider_key: str):
 
     provider_error = request.args.get('error')
     if provider_error:
-        result = AuthResult(False, 'authorization_denied', source=provider.provider_type)
+        result = AuthResult(False, 'authorization_denied', source=provider.provider_key)
         _record_result(provider.key, result)
         queue_transient_feedback(
             status='warning',
@@ -310,7 +315,7 @@ def sso_callback(provider_key: str):
 
     code = request.args.get('code', '')
     if not code:
-        result = AuthResult(False, 'authorization_code_missing', source=provider.provider_type)
+        result = AuthResult(False, 'authorization_code_missing', source=provider.provider_key)
         _record_result(provider.key, result)
         queue_transient_feedback(
             status='error',
@@ -330,7 +335,7 @@ def sso_callback(provider_key: str):
         result = enforce_login_admission(resolve_sso_identity(provider, identity))
     except SsoProviderError:
         current_app.logger.warning('SSO callback failed for provider %s.', provider.key, exc_info=True)
-        result = AuthResult(False, 'provider_unavailable', source=provider.provider_type)
+        result = AuthResult(False, 'provider_unavailable', source=provider.provider_key)
 
     audit_username = identity.username if 'identity' in locals() else provider.key
     if result.success and result.user:

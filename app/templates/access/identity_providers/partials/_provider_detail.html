@@ -1,0 +1,38 @@
+{% import "components/table_label.html" as table_label %}
+<div class="grid gap-4 p-4 lg:grid-cols-2 xl:grid-cols-4">
+    <section class="rounded-xl border border-outline-default bg-surface-card p-4">
+        <div class="flex items-start gap-3"><span class="flex h-9 w-9 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="fingerprint" class="h-4 w-4"></i></span><div><h3 class="text-sm font-semibold text-content-primary">Provider Identity</h3><p class="mt-1 text-xs leading-5 text-content-muted">Canonical product identity and adapter contract.</p></div></div>
+        <dl class="mt-4 grid gap-3 text-xs">
+            <div class="flex items-start justify-between gap-4"><dt class="text-content-muted">Provider</dt><dd>{{ table_label.metadata_label(row.definition.short_label, icon=row.definition.icon) }}</dd></div>
+            <div class="flex items-start justify-between gap-4"><dt class="text-content-muted">Instance Key</dt><dd class="max-w-[65%] break-all text-right font-mono font-semibold text-content-primary">{{ provider.key }}</dd></div>
+            <div class="flex items-start justify-between gap-4"><dt class="text-content-muted">Adapter</dt><dd class="text-right font-semibold text-content-primary">{{ row.definition.adapter_key|replace('_', ' ')|title }}</dd></div>
+            <div class="flex items-start justify-between gap-4"><dt class="text-content-muted">Family</dt><dd class="text-right font-semibold text-content-primary">{{ row.definition.family.value|title }}</dd></div>
+        </dl>
+    </section>
+    <section class="rounded-xl border border-outline-default bg-surface-card p-4">
+        <div class="flex items-start gap-3"><span class="flex h-9 w-9 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="key-round" class="h-4 w-4"></i></span><div><h3 class="text-sm font-semibold text-content-primary">Authentication Contract</h3><p class="mt-1 text-xs leading-5 text-content-muted">Connection evidence without exposing credential values.</p></div></div>
+        <dl class="mt-4 grid gap-3 text-xs">
+            <div class="flex items-start justify-between gap-4"><dt class="text-content-muted">Configuration</dt><dd>{{ table_label.status_label(row.configuration.label, row.configuration.tone, row.configuration.icon) }}</dd></div>
+            <div class="flex items-start justify-between gap-4"><dt class="text-content-muted">Connection</dt><dd class="max-w-[65%] break-all text-right font-semibold text-content-primary">{{ row.connection }}</dd></div>
+            <div class="flex items-start justify-between gap-4"><dt class="text-content-muted">Credential Reference</dt><dd class="max-w-[65%] break-all text-right font-mono font-semibold text-content-primary">{{ row.credential_reference }}</dd></div>
+            <div class="flex items-start justify-between gap-4"><dt class="text-content-muted">State</dt><dd>{{ table_label.status_label(row.state.label, row.state.tone, row.state.icon) }}</dd></div>
+        </dl>
+    </section>
+    <section class="rounded-xl border border-outline-default bg-surface-card p-4">
+        <div class="flex items-start gap-3"><span class="flex h-9 w-9 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="contact-round" class="h-4 w-4"></i></span><div><h3 class="text-sm font-semibold text-content-primary">Identity Projection</h3><p class="mt-1 text-xs leading-5 text-content-muted">External identity remains separate from KAORI authorization.</p></div></div>
+        <dl class="mt-4 grid gap-3 text-xs">
+            <div class="flex items-start justify-between gap-4"><dt class="text-content-muted">Projection</dt><dd class="text-right font-semibold text-content-primary">{{ row.projection }}</dd></div>
+            <div class="flex items-start justify-between gap-4"><dt class="text-content-muted">Identity Links</dt><dd class="font-semibold text-content-primary">{{ row.identity_links }}</dd></div>
+            <div class="flex items-start justify-between gap-4"><dt class="text-content-muted">Access Model</dt><dd class="max-w-[65%] text-right font-semibold text-content-primary">{{ row.access_model.label }}</dd></div>
+            {% if provider.default_role %}<div class="flex items-start justify-between gap-4"><dt class="text-content-muted">Default Role</dt><dd class="text-right font-semibold text-content-primary">{{ provider.default_role.display_name }}</dd></div>{% endif %}
+        </dl>
+    </section>
+    <section class="rounded-xl border border-outline-default bg-surface-card p-4">
+        <div class="flex items-start gap-3"><span class="flex h-9 w-9 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="settings-2" class="h-4 w-4"></i></span><div><h3 class="text-sm font-semibold text-content-primary">Actions</h3><p class="mt-1 text-xs leading-5 text-content-muted">Validation is live and does not change provider enablement.</p></div></div>
+        <div class="mt-4 flex flex-wrap gap-2">
+            <form method="post" action="{{ url_for('identity_providers.validate', provider_id=provider.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button type="submit" class="inline-flex min-h-9 items-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary transition hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary"><i data-lucide="scan-search" class="h-3.5 w-3.5"></i>Validate</button></form>
+            <a href="{{ url_for('identity_providers.edit', provider_id=provider.id) }}" class="inline-flex min-h-9 items-center gap-2 rounded-lg bg-kaori-primary px-3 text-xs font-semibold text-white transition hover:bg-kaori-primary-hover"><i data-lucide="pencil" class="h-3.5 w-3.5"></i>Edit</a>
+            {% if row.definition.family.value == 'directory' %}<a href="{{ url_for('identity_providers.directory_provisioning') }}" class="inline-flex min-h-9 items-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary transition hover:border-brand-outline hover:bg-surface-hover hover:text-kaori-primary"><i data-lucide="contact-round" class="h-3.5 w-3.5"></i>Provision</a>{% endif %}
+        </div>
+    </section>
+</div>

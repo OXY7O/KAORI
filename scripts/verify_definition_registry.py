@@ -14,7 +14,7 @@ EXPECTED = {
     'rbac/access.yaml': 'rbac_access',
     'knowledge/system_runbooks.yaml': 'system_runbooks',
     'automation/production_readiness.yaml': 'automation_production_readiness',
-    'auth/providers.yaml': 'auth_providers',
+    'auth/identity_provider/providers.yaml': 'identity_providers',
     'jobs/registered_jobs.yaml': 'registered_jobs',
     'analytics/kubernetes_datasets.yaml': 'kubernetes_analytics_datasets',
     'reports/catalog.yaml': 'report_catalog',
@@ -109,8 +109,8 @@ def main() -> int:
         if not stages or stages[0] != 'disabled' or stages[-1] != 'production':
             raise ValueError('automation rollout must start disabled and end production')
 
-        providers = docs['auth/providers.yaml']['providers']
-        unique(providers, 'provider_type', 'auth providers')
+        providers = docs['auth/identity_provider/providers.yaml']['providers']
+        unique(providers, 'provider_key', 'identity providers')
 
         analytics = docs['analytics/kubernetes_datasets.yaml']
         datasets = list(analytics['datasets']) + [analytics['forecast_dataset']]
