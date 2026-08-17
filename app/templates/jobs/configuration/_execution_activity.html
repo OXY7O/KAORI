@@ -158,13 +158,12 @@
                     {% endif %}
                 </article>
             {% else %}
-                <div class="px-6 py-10 text-center">
-                    <span class="mx-auto flex h-10 w-10 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                        <i data-lucide="history" class="h-4 w-4"></i>
-                    </span>
-                    <p class="mt-3 text-sm font-semibold text-content-primary">No Execution Recorded</p>
-                    <p class="mt-1 text-xs text-content-muted">The first scheduled or manual run will appear here.</p>
-                </div>
+                {% set empty_state_icon = 'history' %}
+                {% set empty_state_label = 'No Data' %}
+                {% set empty_state_title = 'No Execution Recorded' %}
+                {% set empty_state_description = 'The first scheduled or manual run will appear here.' %}
+                {% set empty_state_min_height = 'min-h-[160px]' %}
+                {% include 'components/states/_empty_state.html' %}
             {% endfor %}
         </div>
     </div>

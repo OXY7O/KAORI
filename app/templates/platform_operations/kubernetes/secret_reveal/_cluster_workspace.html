@@ -201,11 +201,17 @@
                 </aside>
             </div>
         {% else %}
-            <div class="p-8 text-center">
-                <span class="mx-auto flex h-11 w-11 items-center justify-center rounded-xl bg-surface-disabled text-content-muted"><i data-lucide="server" class="h-5 w-5"></i></span>
-                <h3 class="mt-3 text-sm font-semibold text-content-primary">No Kubernetes Cluster Registered</h3>
-                <p class="mt-1 text-sm text-content-muted">Register and synchronize a cluster before configuring namespace-level reveal policies.</p>
-            </div>
+            {% set empty_state_icon = 'server' %}
+            {% set empty_state_label = 'Setup Required' %}
+            {% set empty_state_title = 'No Kubernetes Cluster Registered' %}
+            {% set empty_state_description = 'Register a Kubernetes connection before configuring namespace-level reveal policies.' %}
+            {% set empty_state_action_url = url_for('cluster.add_cluster') %}
+            {% set empty_state_action_label = 'Add Cluster' %}
+            {% set empty_state_action_icon = 'plus' %}
+            {% set empty_state_permission = 'clusters.manage' %}
+            {% set empty_state_show_admin_required = true %}
+            {% set empty_state_min_height = 'min-h-[210px]' %}
+            {% include 'components/states/_empty_state.html' %}
         {% endif %}
     </section>
     {% if selected_cluster %}

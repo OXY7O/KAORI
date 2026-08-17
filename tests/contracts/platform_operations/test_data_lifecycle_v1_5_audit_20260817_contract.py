@@ -71,7 +71,7 @@ def test_shared_archive_storage_uses_verified_evidence_from_current_storage_prof
     assert 'ArchiveArtifact.domain.in_(domain_names)' in presentation
     assert 'ArchiveArtifact.storage_backend == profile.backend' in presentation
     assert '.yield_per(100)' in presentation
-    assert '_artifact_matches_storage_profile(item, profile)' in presentation
+    assert 'storage_ui.artifact_matches_storage_profile(item, profile)' in presentation
     assert 'def artifact_matches_storage_profile(' in storage_presentation
 
 
@@ -127,7 +127,9 @@ def test_archive_purge_is_bounded_retryable_and_never_advertises_partial_objects
     config = read('app/config/default.py')
 
     assert "ARCHIVE_STATUS_PURGE_FAILED = 'purge_failed'" in model
-    assert 'ARCHIVE_STATUS_PURGE_FAILED' not in model.split('def is_downloadable', 1)[1].split('def is_verifiable', 1)[0]
+    assert (
+        'ARCHIVE_STATUS_PURGE_FAILED' not in model.split('def is_downloadable', 1)[1].split('def is_verifiable', 1)[0]
+    )
     assert "current_app.config.get('ARCHIVE_PURGE_BATCH_SIZE', 250)" in service
     assert '.limit(batch_size)' in service
     assert '.all()' in service

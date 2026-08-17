@@ -27,10 +27,10 @@
                                                 'Governance & Protected Access',
                                                 'server-cog') }}
                         <div class="{{ page_hero.context_panel_metrics_classes() }}">
-                            {{ page_hero.context_metric('blocks', 'Available Controls', 1, 'Production-ready workspaces') }}
+                            {{ page_hero.context_metric('blocks', 'Managed Controls', 1, 'Protected administration workspace') }}
                             {{ page_hero.context_metric('badge-check', 'Ready Clusters', ready_cluster_count ~ ' / ' ~ cluster_count, 'Reveal prerequisites verified') }}
                         </div>
-                        {{ page_hero.context_info('shield-check', 'Control Status: Protected Secret Reveal Available') }}
+                        {{ page_hero.context_info('shield-check' if administration_status_tone == 'normal' else 'shield-alert', 'Control Status: ' ~ administration_status_label) }}
                     </div>
                 </aside>
             </div>
@@ -48,11 +48,11 @@
                         <p class="mt-0.5 text-xs leading-5 text-content-muted">Current administrative coverage and readiness across connected Kubernetes clusters.</p>
                     </div>
                 </div>
-                {{ table_label.status_label('Available' if global_reveal_enabled else 'Configuration Required', 'normal' if global_reveal_enabled else 'warning') }}
+                {{ table_label.status_label(administration_status_label, administration_status_tone) }}
             </header>
             <div class="grid gap-px bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4">
                 {% set metrics = [
-                                    ('blocks', 'Available Controls', '1', 'Protected Secret Reveal'),
+                                    ('blocks', 'Managed Controls', '1', 'Protected Secret Reveal'),
                                     ('server', 'Connected Clusters', cluster_count, 'Registered Kubernetes scope'),
                                     ('badge-check', 'Reveal Ready', ready_cluster_count, 'Security prerequisites verified'),
                                     ('boxes', 'Protected Namespaces', enabled_namespace_count, 'Step-up or approval policy')

@@ -118,4 +118,6 @@ Jobs & Executions is intentionally server-backed and demand-loaded. The page mus
 - Active Work polls every 15 seconds and carries the overview counters in the same response. Registry and Queues use one compact overview heartbeat every 30 seconds.
 - Job Configuration has no idle polling; active execution status refreshes every 10 seconds.
 - Browser-hidden tabs do not poll. Active Work therefore has one 15-second heartbeat instead of overlapping 15-second and 30-second refresh loops. While a selected job is active, a lightweight execution-only status poll runs every 10 seconds; domain eligibility/readiness is rebuilt once when the execution becomes terminal.
+- Active Work OOB counter fragments are emitted only by HTMX fragment responses. The initial full-page render must never append those response helpers as visible inline content.
+- Active Work, Registry, and Queues use the canonical KAORI empty-state component so healthy zero work, filtered no-results, and initial no-data conditions keep one visual grammar.
 - Terminal JobExecution history remains bounded by **Platform Operations → Data Lifecycle**. The Jobs page is the hot operational registry, not a replacement archive browser.

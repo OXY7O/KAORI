@@ -116,16 +116,13 @@ def queue_lifecycle_execution(*, domain_name: str, mode: str, user_id: int) -> d
         if stored_policy is None or not policy.enabled:
             reason = 'policy_missing' if stored_policy is None else 'policy_disabled'
             title = (
-                'Data lifecycle policy is not persisted'
-                if stored_policy is None
-                else 'Data lifecycle policy is paused'
+                'Data lifecycle policy is not persisted' if stored_policy is None else 'Data lifecycle policy is paused'
             )
             detail = (
                 'Save the policy before execution so KAORI has an authoritative persisted lifecycle contract.'
                 if stored_policy is None
                 else (
-                    'Preview remains available while the policy is paused. '
-                    'Enable and save the policy before execution.'
+                    'Preview remains available while the policy is paused. Enable and save the policy before execution.'
                 )
             )
             return record_operational_activity(

@@ -3,15 +3,13 @@
         {% include selected_job.definition.configuration_template %}
         {% include 'jobs/configuration/_live_poller.html' %}
     {% else %}
-        <section class="rounded-xl border border-outline-default bg-surface-card p-8 text-center shadow-sm">
-            <span class="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary">
-                <i data-lucide="workflow" class="h-5 w-5"></i>
-            </span>
-            <h2 class="mt-4 text-base font-semibold text-content-primary">Select a Registered Job</h2>
-            <p class="mt-1 text-sm text-content-muted">
-                Select a registered job definition to review its policy and execution controls.
-            </p>
-        </section>
+        {% set empty_state_icon = 'workflow' %}
+        {% set empty_state_label = 'Selection Required' %}
+        {% set empty_state_title = 'Select a Registered Job' %}
+        {% set empty_state_description = 'Select a registered job definition to review its policy and execution controls.' %}
+        {% set empty_state_min_height = 'min-h-[220px]' %}
+        {% set empty_state_variant = 'panel' %}
+        {% include 'components/states/_empty_state.html' %}
     {% endif %}
 </div>
 {% if request.headers.get('HX-Request') == 'true' %}

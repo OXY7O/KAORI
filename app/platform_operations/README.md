@@ -42,7 +42,7 @@ Operational Secret values remain owned by `app/kubernetes_operations/secrets/`. 
 ## Kubernetes Administration workspace contract
 
 - The landing page owns the canonical hero, one administration overview surface, a standalone Jobs & Executions-style violet tab surface, and the active workspace below it. Canonical `space-y-6` gaps must separate all four layers so no surface visually collides.
-- The hero context panel follows Jobs & Executions geometry: one header, two metric cards, and one compact status strip below the metrics.
+- The hero context panel follows Jobs & Executions geometry: one header, two metric cards, and one compact status strip below the metrics. The status is factual: missing clusters, a disabled global gate, incomplete cluster readiness, missing namespace policy coverage, and operational readiness must not collapse into a hard-coded Available state.
 - Every Secret Reveal workspace response must have a single `space-y-6` root. Protection posture, global warning, cluster readiness, and namespace policy surfaces must remain separate blocks rather than adjacent unspaced siblings.
 - Overview and Secret Reveal tab changes must not reload the page. The selected tab updates browser history with `history.replaceState`; Secret Reveal loads its heavier cluster and namespace workspace lazily through HTMX only when the tab is opened. Both tabs remain directly addressable through `?tab=overview` or `?tab=secret-reveal`.
 - The Secret Reveal legacy route redirects to the consolidated Kubernetes Administration workspace so bookmarks and notification links remain compatible.
@@ -51,6 +51,8 @@ Operational Secret values remain owned by `app/kubernetes_operations/secrets/`. 
 
 - Kubernetes Administration tabs use the same compact rounded-button treatment as the Jobs & Executions inner workspace tabs: violet soft container, active violet button, and inactive white button with violet border.
 - Secret Reveal readiness and namespace policy saves update only the Secret Reveal cluster workspace through HTMX; full-page redirects are fallback behavior only.
+- Missing or ineligible canonical Kubernetes connection evidence fails closed as `Cluster Credential: Missing`; it must not crash Kubernetes Administration or Protected Reveal workspace construction.
+- No-cluster and namespace zero-result states use the shared KAORI empty-state component. A live namespace source outage is a blocker, not empty data, and uses the shared table blocked-state variant.
 
 ## Final UI refinement rules
 

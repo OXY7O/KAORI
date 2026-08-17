@@ -21,14 +21,10 @@ from app.models.archive import (
 from app.models.job import JobExecution
 from app.models.lifecycle import DataLifecyclePolicy
 from app.retention import generated_report_presentation as generated_report_ui
+from app.retention import storage_presentation as storage_ui
 from app.retention.domains import DOMAIN_FACTORIES, get_archive_domain
 from app.retention.policy_service import default_schedule_hour, default_schedule_minute, get_policy
 from app.retention.service import paginate_archives, preview_retention
-from app.retention.storage_presentation import (
-    archive_storage_label as _archive_storage_label,
-    artifact_matches_storage_profile as _artifact_matches_storage_profile,
-    build_storage_context as _build_storage_context,
-)
 from app.retention.types import RetentionPolicy
 from app.storage.service import StorageProfile, build_storage_profile
 
@@ -140,8 +136,7 @@ def build_data_lifecycle_context(
     selected = selected_domain if selected_domain in supported else supported[0]
     active = active_tab if active_tab in {'policies', 'history', 'storage'} else 'policies'
     stored_map = {
-        item.domain: item
-        for item in DataLifecyclePolicy.query.filter(DataLifecyclePolicy.domain.in_(supported)).all()
+        item.domain: item for item in DataLifecyclePolicy.query.filter(DataLifecyclePolicy.domain.in_(supported)).all()
     }
     posture_map = _build_domain_posture_summaries(supported)
     enabled_domain_count = sum(int(bool(stored_map[name].enabled)) for name in supported if name in stored_map)
@@ -166,6 +161,7 @@ def build_data_lifecycle_context(
             policy=policies[selected],
             stored_policy=stored_map.get(selected),
         )
+        selected_context['storage_contract'] = _build_selected_storage_contract(selected)
         selected_preview_count = (selected_context.get('preview') or {}).get('record_count')
         domain_cards = []
         for name in supported:
@@ -265,7 +261,7 @@ def build_data_lifecycle_context(
     last_verified = _latest_verified_archive_for_profile(storage_profile, supported)
     context.update(
         {
-            'storage': _build_storage_context(storage_profile, last_verified),
+            'storage': storage_ui.build_storage_context(storage_profile, last_verified),
             'worker': _cached_status('retention-worker', 12.0, _inspect_retention_worker),
             'queue_name': str(current_app.config.get('RETENTION_CELERY_QUEUE', 'maintenance') or 'maintenance'),
             'archive_format': 'JSONL.GZ + manifest JSON',
@@ -312,7 +308,7 @@ def _latest_verified_archive_for_profile(
         .order_by(ArchiveArtifact.verified_at.desc(), ArchiveArtifact.id.desc())
         .yield_per(100)
     )
-    return next((item for item in candidates if _artifact_matches_storage_profile(item, profile)), None)
+    return next((item for item in candidates if storage_ui.artifact_matches_storage_profile(item, profile)), None)
 
 
 def _domain_label(name: str) -> str:
@@ -427,6 +423,57 @@ def _domain_exclusion_note(name: str) -> str | None:
         'analytics_snapshot': 'Pending or still-serveable snapshots are protected from archive cleanup.',
         'generated_report': generated_report_ui.GENERATED_REPORT_EXCLUSION_NOTE,
     }.get(name)
+
+
+def _build_selected_storage_contract(name: str) -> dict[str, Any]:
+    profile = build_storage_profile('archive')
+    return _domain_storage_contract(
+        name,
+        source_model=get_archive_domain(name).source_model,
+        archive_storage=storage_ui.build_storage_contract_context(profile),
+    )
+
+
+def _domain_storage_contract(
+    name: str,
+    *,
+    source_model: str,
+    archive_storage: dict[str, Any],
+) -> dict[str, Any]:
+    source_label = 'PostgreSQL'
+    source_detail = source_model
+    archive_content = 'JSONL.GZ data + manifest JSON'
+    archive_detail = 'Structured lifecycle evidence only; no provider credentials or binary supplements.'
+
+    if name == 'generated_report':
+        source_label = 'PostgreSQL + Reports Artifact Storage'
+        source_detail = 'reports metadata plus retained PDF, XLSX, or CSV artifacts'
+        archive_content = 'JSONL.GZ + manifest + report artifacts'
+        archive_detail = 'Ready and manually Archived report binaries are copied and checksum-verified.'
+    elif name == 'runtime_observation':
+        archive_detail = (
+            'Runtime observations do not own a separate archive bucket. Provider-neutral evidence rows are serialized '
+            'to the shared Data Lifecycle archive target.'
+        )
+    elif name == 'analytics_snapshot':
+        archive_detail = (
+            'Materialized analytics payloads are archived as structured evidence after serve-window protection ends.'
+        )
+    elif name == 'job_execution':
+        archive_detail = (
+            'Execution metadata and result references are archived; domain-owned result datasets are not copied.'
+        )
+    elif name == 'operational_activity':
+        archive_detail = 'Activity and persistent notification evidence share the same structured archive bundle.'
+
+    return {
+        'hot_source_label': source_label,
+        'hot_source_detail': source_detail,
+        'archive_provider_label': archive_storage['provider_label'],
+        'archive_location': archive_storage['location'],
+        'archive_content': archive_content,
+        'archive_detail': archive_detail,
+    }
 
 
 def _normalize_archive_filters(
@@ -569,7 +616,7 @@ def _serialize_archive(artifact: ArchiveArtifact) -> dict[str, Any]:
         'record_count': artifact.record_count,
         'cleanup_deleted_count': artifact.cleanup_deleted_count,
         'storage_backend': artifact.storage_backend,
-        'storage_label': _archive_storage_label(artifact.storage_backend, storage_locator),
+        'storage_label': storage_ui.archive_storage_label(artifact.storage_backend, storage_locator),
         'size_bytes': int(artifact.size_bytes or 0) + int(metadata.get('supplemental_size_bytes') or 0),
         'size_label': _format_size(int(artifact.size_bytes or 0) + int(metadata.get('supplemental_size_bytes') or 0)),
         'supplemental_count': len(metadata.get('supplemental_artifacts') or []),

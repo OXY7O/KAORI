@@ -69,7 +69,10 @@ Requirements include:
 - use the label **Clear Filters** and the shared `components/table_registry.html` interaction instead of page-local `Reset Filter(s)` controls;
 - canonical compact rectangular status/metadata labels;
 - status never communicated by color alone;
-- table loading, empty, and error states remain inside the table surface.
+- table loading, empty, and error states remain inside the table surface;
+- canonical table/registry/workspace zero states use `components/states/_empty_state.html`; filtered zero results use `No Results`, while healthy zero-result states use factual domain wording;
+- unavailable dependencies and unmet prerequisites use `components/states/_blocked_state.html` instead of being disguised as empty data; table-body blockers use `blocked_state_variant='table'`;
+- HTMX out-of-band response fragments must not be rendered inline during the initial full-page composition.
 
 ## 4. Right-side content rail
 
@@ -177,7 +180,7 @@ Verify the supported compact laptop/desktop layouts, narrow viewport reflow, no 
 
 Canonical owner: `docs/design/components/EMPTY_ERROR_STATE.md`.
 
-Unknown, unavailable, empty, permission denied, disconnected, pending, and not configured are distinct states. Do not expose raw provider/backend exceptions to end users.
+Unknown, unavailable, empty, permission denied, disconnected, pending, and not configured are distinct states. Use the canonical shared state partials rather than page-local zero-state markup. `No Results` means active filters returned zero rows; a healthy zero state must say so explicitly; dependency blockers never masquerade as empty data. Do not expose raw provider/backend exceptions to end users.
 
 ## 14. Architecture and ownership
 

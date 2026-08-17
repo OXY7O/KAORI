@@ -4,6 +4,8 @@ Use `app/templates/components/states/_empty_state.html` for full table, registry
 
 ## Contract
 
+- Full table, registry, workspace, and major-card zero states use this shared component; page-local icon/title/description empty-state markup is not allowed for newly reviewed KAORI surfaces.
+- Keep the empty state inside its owning table/card/workspace so the page header, filters, and pagination context remain stable.
 - Titles and semantic labels use Title Case.
 - Primary and secondary action labels contain no more than two words.
 - A state exposes no more than two visible actions.
@@ -31,12 +33,17 @@ Optional parameters include `empty_state_secondary_action_url`, `empty_state_sec
 ## Semantic Labels
 
 - `Setup Required`: no canonical source is registered.
-- `No Results`: data exists, but current filters return no rows.
-- `Sync Required`: the source exists, but KAORI has no collected snapshot.
-- `No Data`: neutral default when a more precise state is unavailable.
+- `No Results`: canonical data exists, but current search/filter state returns no rows.
+- `Sync Required`: the source exists, but KAORI has no collected snapshot yet.
+- `No Data`: neutral zero-result state when a more precise state is unavailable.
+- A domain-specific healthy label such as `Queue Clear` may use `empty_state_tone='normal'` when zero rows are the expected healthy operating state.
 - `Admin Required`: the current user cannot perform the setup action.
 
-Do not use empty states to represent authorization failures, dependency blockers, validation failures, or runtime errors. Those conditions require their dedicated KAORI state patterns.
+Do not use empty states to represent authorization failures, dependency blockers, validation failures, or runtime errors. Those conditions require their dedicated KAORI state patterns. In a table body, unavailable prerequisites use `components/states/_blocked_state.html` with `blocked_state_variant='table'`.
+
+## HTMX and Fragment Rule
+
+An empty state must not change the refresh contract of its owning region. If a workspace polls while populated, the same owning region remains the HTMX target while empty. HTMX out-of-band fragments are response-only helpers: do not render them inline during the initial full-page composition.
 
 ## Canonical State Architecture
 

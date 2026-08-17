@@ -56,7 +56,10 @@ def normalize_namespace_policy(value: str | None) -> str:
 
 
 def cluster_reveal_readiness_evidence(cluster: Cluster) -> dict[str, bool]:
-    credential_configured = bool(kubeconfig_for_cluster(cluster))
+    try:
+        credential_configured = bool(kubeconfig_for_cluster(cluster))
+    except (RuntimeError, ValueError):
+        credential_configured = False
     encryption_verified = bool(cluster.secret_reveal_encryption_verified)
     audit_verified = bool(cluster.secret_reveal_audit_verified)
     return {

@@ -217,13 +217,19 @@
             {% endfor %}
         </div>
     {% else %}
-        <div class="px-6 py-12 text-center">
-            <span class="mx-auto flex h-11 w-11 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary">
-                <i data-lucide="list-checks" class="h-5 w-5"></i>
-            </span>
-            <p class="mt-4 font-semibold text-content-primary">No Job Executions</p>
-            <p class="mt-1 text-sm text-content-muted">KAORI has not recorded an execution matching the selected filters.</p>
-        </div>
+        {% if job_has_filters %}
+            {% set empty_state_icon = 'search-x' %}
+            {% set empty_state_label = 'No Results' %}
+            {% set empty_state_title = 'No Job Executions Match the Current Filters' %}
+            {% set empty_state_description = 'Clear or adjust the filters to review other execution records.' %}
+        {% else %}
+            {% set empty_state_icon = 'list-checks' %}
+            {% set empty_state_label = 'No Data' %}
+            {% set empty_state_title = 'No Job Executions Recorded' %}
+            {% set empty_state_description = 'Execution history will appear after KAORI queues its first registered background job.' %}
+        {% endif %}
+        {% set empty_state_min_height = 'min-h-[190px]' %}
+        {% include 'components/states/_empty_state.html' %}
     {% endif %}
     {{ table_registry.footer('jobs.executions',
                              'job-execution-registry',

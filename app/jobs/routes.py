@@ -135,6 +135,7 @@ def _render_execution_fragment(context: dict[str, object], fragment: str) -> str
     fragment_context = dict(context)
     if fragment in {'active', 'registry', 'queues'}:
         fragment_context['embedded'] = True
+    fragment_context['include_status_oob'] = fragment == 'active'
     return render_template(
         template_by_fragment.get(fragment, 'jobs/executions/_workspace.html'),
         **fragment_context,

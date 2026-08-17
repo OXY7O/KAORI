@@ -8,6 +8,7 @@
          aria-labelledby="active-job-workspace-title"
          hx-get="{{ active_refresh_url }}"
          hx-trigger="every 15s"
+         hx-on::before-request="if (document.hidden) event.preventDefault()"
          hx-target="this"
          hx-swap="outerHTML swap:0ms settle:0ms"
          hx-indicator="#active-job-poll-indicator"
@@ -118,13 +119,15 @@
             <div class="border-t border-outline-subtle bg-surface-hover px-5 py-3 text-xs text-content-muted sm:px-6">{{ active_job_overflow }} additional active execution{{ '' if active_job_overflow == 1 else 's' }} can be reviewed in the Registry.</div>
         {% endif %}
     {% else %}
-        <div class="px-6 py-12 text-center">
-            <span class="mx-auto flex h-11 w-11 items-center justify-center rounded-xl bg-status-normal-soft text-status-normal-text"><i data-lucide="circle-check-big" class="h-5 w-5"></i></span>
-            <h3 class="mt-4 text-base font-semibold text-content-primary">No Active Executions</h3>
-            <p class="mt-1 text-sm text-content-secondary">All registered background work is currently idle or terminal.</p>
-        </div>
+        {% set empty_state_icon = 'circle-check-big' %}
+        {% set empty_state_label = 'Queue Clear' %}
+        {% set empty_state_tone = 'normal' %}
+        {% set empty_state_title = 'No Active Executions' %}
+        {% set empty_state_description = 'All registered background work is currently idle or terminal.' %}
+        {% set empty_state_min_height = 'min-h-[180px]' %}
+        {% include 'components/states/_empty_state.html' %}
     {% endif %}
 </section>
-{% if embedded|default(false) %}
+{% if include_status_oob|default(false) %}
     {% include 'jobs/executions/partials/_status_oob.html' %}
 {% endif %}

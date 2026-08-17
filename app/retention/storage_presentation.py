@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import os
 import socket
-from datetime import datetime
 from pathlib import Path
 from time import monotonic
 from typing import Any
@@ -81,6 +80,17 @@ def build_storage_context(
         'endpoint_label': _storage_endpoint_label(profile),
         'bucket': profile.s3_bucket if profile.backend == 's3' else None,
         'last_verified_at': verified_artifact.verified_at if verified_artifact else None,
+    }
+
+
+def build_storage_contract_context(profile: StorageProfile) -> dict[str, Any]:
+    """Return configuration-only archive storage metadata without probing the backend."""
+    return {
+        'backend': profile.backend,
+        'provider_label': _storage_provider_label(profile.backend, profile.s3_endpoint_url),
+        'location': _storage_location(profile),
+        'endpoint_label': _storage_endpoint_label(profile),
+        'bucket': profile.s3_bucket if profile.backend == 's3' else None,
     }
 
 

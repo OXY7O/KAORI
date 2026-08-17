@@ -69,7 +69,7 @@ Review the baseline diff before committing. A lower count is expected; moving de
 | Related workspace box | `components/RELATED_PAGE_CARD.md` | `components/related_page_card.html` |
 | Expandable supporting content | `components/VIEW_MORE_CONTENT.md` | `components/view_more_content.html` and wrappers |
 | Form actions | `components/FORM_ACTION_BAR.md`, `components/BUTTON.md` | `components/form_action_bar.html`, `components/action_button.html` |
-| Empty/error/loading | component-specific contracts | `components/states/`, `components/loading_bar.html` |
+| Empty / blocked / error / loading | `components/EMPTY_ERROR_STATE.md`, `components/empty-state.md` | `components/states/_empty_state.html`, `components/states/_blocked_state.html`, `components/loading_bar.html` |
 
 A page-specific requirement may select and compose these components but may not override their standard geometry.
 
@@ -374,6 +374,9 @@ Pagination Footer
 Core rules:
 
 - default left alignment;
+- table/registry zero states use `components/states/_empty_state.html` rather than page-local icon/title/description blocks;
+- filtered zero results use the semantic label `No Results`; healthy operational zero states use factual domain wording;
+- unavailable prerequisites use the blocked-state component, with `blocked_state_variant='table'` inside a table body;
 - final action column right aligned;
 - 14 px primary table content;
 - 12 px supporting context;
@@ -506,12 +509,18 @@ Welcome may use `welcome_capability_group.html` as a documented dark Violet cate
 
 ## 17. Loading, Empty, Error, and Permission States
 
+Canonical owners are `docs/design/components/EMPTY_ERROR_STATE.md` and `docs/design/components/empty-state.md`.
+
 - Loading appears in the affected region, never by replacing the hero.
 - Initial dashboard sections use local skeletons; paginated or filterable dashboard tables also own a loading bar inside their section header.
 - `hx-indicator` points to the bar owned by the same partial region.
 - Dashboard initial loads use section-owned skeleton placeholders. A page-level bar must not represent unrelated asynchronous dashboard sections.
 - Analytics Overview may add one compact composite progress strip because all tracked lazy requests belong to the same Overview workspace and progress is calculated from explicit section states. Local skeletons and the filter-owned loading bar remain required.
-- Empty states explain what is absent and the next valid action when one exists.
+- Full table, registry, workspace, and major-card empty states use `components/states/_empty_state.html`; reviewed pages do not duplicate the icon/title/description geometry locally.
+- `No Results` means active search/filter state returned zero rows. Initial setup, uncollected snapshots, and healthy zero-result states use wording that states the actual condition.
+- Unavailable dependencies and unmet prerequisites use `components/states/_blocked_state.html`; table-body blockers use `blocked_state_variant='table'`.
+- Empty or blocked states remain inside the same owning HTMX region so refresh, filters, and pagination do not change geometry.
+- HTMX out-of-band fragments are response-only helpers and must not appear as ordinary inline content during the initial full-page render.
 - Error copy is concise; technical evidence belongs in detail views, toast, or Activity Audit Log.
 - Unknown, unavailable, permission denied, and not configured are separate states.
 - Permission-restricted actions follow the authorization contract and must not look like temporary loading.

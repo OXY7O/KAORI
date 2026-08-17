@@ -58,7 +58,9 @@ def test_live_polling_is_bounded_and_configuration_has_no_idle_poller() -> None:
     assert 'every 30s' in status
     assert "if selected_job_tab != 'active'" in workspace
     assert '_status_oob.html' in active
-    assert active.count('document.hidden') >= 1
+    assert '{% if include_status_oob|default(false) %}' in active
+    assert "fragment_context['include_status_oob'] = fragment == 'active'" in read('app/jobs/routes.py')
+    assert active.count('document.hidden') >= 2
     assert 'document.hidden' in status
     assert '{% if selected_job.active_job %}' in configuration
     assert 'hx-trigger="every 10s"' in configuration

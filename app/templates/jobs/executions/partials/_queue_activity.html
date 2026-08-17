@@ -86,10 +86,11 @@
         </div>
         <div class="border-t border-outline-subtle bg-surface-hover px-5 py-3 text-xs leading-5 text-content-muted sm:px-6">Execution posture comes from canonical JobExecution records. Worker readiness comes from one short-lived Celery topology snapshot shared across all queues in this render.</div>
     {% else %}
-        <div class="px-6 py-12 text-center">
-            <span class="mx-auto flex h-11 w-11 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"><i data-lucide="network" class="h-5 w-5"></i></span>
-            <h3 class="mt-4 text-base font-semibold text-content-primary">No Queue Activity</h3>
-            <p class="mt-1 text-sm text-content-secondary">KAORI has not recorded background execution activity yet.</p>
-        </div>
+        {% set empty_state_icon = 'network' %}
+        {% set empty_state_label = 'No Data' %}
+        {% set empty_state_title = 'No Queue Activity' %}
+        {% set empty_state_description = 'Queue activity will appear after KAORI records its first background execution.' %}
+        {% set empty_state_min_height = 'min-h-[180px]' %}
+        {% include 'components/states/_empty_state.html' %}
     {% endif %}
 </section>

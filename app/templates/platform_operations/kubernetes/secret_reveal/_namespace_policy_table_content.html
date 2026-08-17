@@ -84,20 +84,28 @@
                 <tr>
                     <td colspan="4" class="p-0">
                         {% if namespace_summary.total %}
-                            {% set empty_state_icon = "search" %}
-                            {% set empty_state_title = "No Namespace Matches the Current Filters" %}
-                            {% set empty_state_description = "Adjust the search or reveal policy filter to show namespace settings." %}
+                            {% set empty_state_icon = 'search-x' %}
+                            {% set empty_state_label = 'No Results' %}
+                            {% set empty_state_title = 'No Namespace Matches the Current Filters' %}
+                            {% set empty_state_description = 'Clear or adjust the search and reveal policy filters to show namespace settings.' %}
+                            {% set empty_state_min_height = 'min-h-[190px]' %}
+                            {% include 'components/states/_empty_state.html' %}
                         {% elif not namespace_source.available %}
-                            {% set empty_state_icon = "cloud-off" %}
-                            {% set empty_state_title = "Live Namespace Source Unavailable" %}
-                            {% set empty_state_description = "Retry the live source after Kubernetes connectivity is restored." %}
+                            {% set blocked_state_variant = 'table' %}
+                            {% set blocked_state_icon = 'cloud-off' %}
+                            {% set blocked_state_label = 'Source Unavailable' %}
+                            {% set blocked_state_title = 'Live Namespace Source Unavailable' %}
+                            {% set blocked_state_description = 'Retry the live namespace source after Kubernetes connectivity is restored.' %}
+                            {% set blocked_state_min_height = 'min-h-[190px]' %}
+                            {% include 'components/states/_blocked_state.html' %}
                         {% else %}
-                            {% set empty_state_icon = "box" %}
-                            {% set empty_state_title = "No Live Namespace Available" %}
-                            {% set empty_state_description = "Refresh the live source after namespaces are created in Kubernetes." %}
+                            {% set empty_state_icon = 'box' %}
+                            {% set empty_state_label = 'No Data' %}
+                            {% set empty_state_title = 'No Live Namespace Available' %}
+                            {% set empty_state_description = 'Refresh the live source after namespaces are created in Kubernetes.' %}
+                            {% set empty_state_min_height = 'min-h-[190px]' %}
+                            {% include 'components/states/_empty_state.html' %}
                         {% endif %}
-                        {% set empty_state_min_height = "min-h-[190px]" %}
-                        {% include 'components/states/_empty_state.html' %}
                     </td>
                 </tr>
             {% endfor %}

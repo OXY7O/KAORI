@@ -28,13 +28,8 @@ from app.models.archive import (
     ARCHIVE_STATUS_VERIFYING,
     ArchiveArtifact,
 )
+from app.retention import archive_support
 from app.retention.domains import get_archive_domain
-from app.retention.archive_support import (
-    artifact_storage_locator as _artifact_storage_locator,
-    error_text as _error_text,
-    estimate_uncompressed_size as _estimate_uncompressed_size,
-    normalize_supplement_path as _normalize_supplement_path,
-)
 from app.retention.lock import retention_lock
 from app.retention.types import ArchiveBoundary, ArchiveSupplement, PartialCleanupError, RetentionPolicy
 from app.storage.service import (
@@ -45,7 +40,6 @@ from app.storage.service import (
 )
 
 logger = logging.getLogger(__name__)
-
 
 
 class ArchiveVerificationError(RuntimeError):
@@ -136,7 +130,7 @@ def verify_archive_artifact(archive_id: str) -> dict[str, Any]:
     backend = build_artifact_storage_for_backend(
         'archive',
         artifact.storage_backend,
-        locator=_artifact_storage_locator(artifact),
+        locator=archive_support.artifact_storage_locator(artifact),
     )
     _verify_stored_file(
         backend=backend,
@@ -194,7 +188,7 @@ def get_archive_download_path(
     backend = build_artifact_storage_for_backend(
         'archive',
         artifact.storage_backend,
-        locator=_artifact_storage_locator(artifact),
+        locator=archive_support.artifact_storage_locator(artifact),
     )
     return artifact, backend.build_download_path(object_key)
 
@@ -304,9 +298,7 @@ def purge_expired_archives(
 
     batch_size = max(25, min(int(current_app.config.get('ARCHIVE_PURGE_BATCH_SIZE', 250) or 250), 2500))
     candidates = (
-        candidate_query.order_by(ArchiveArtifact.completed_at.asc(), ArchiveArtifact.id.asc())
-        .limit(batch_size)
-        .all()
+        candidate_query.order_by(ArchiveArtifact.completed_at.asc(), ArchiveArtifact.id.asc()).limit(batch_size).all()
     )
     purged_count = 0
     with retention_lock(f'{domain_name}:archive-purge'):
@@ -316,7 +308,7 @@ def purge_expired_archives(
                     backend = build_artifact_storage_for_backend(
                         'archive',
                         artifact.storage_backend,
-                        locator=_artifact_storage_locator(artifact),
+                        locator=archive_support.artifact_storage_locator(artifact),
                     )
                     for supplemental in _supplemental_artifacts(artifact):
                         object_key = str(supplemental.get('object_key') or '').strip()
@@ -338,7 +330,7 @@ def purge_expired_archives(
                 failed_artifact = db.session.get(ArchiveArtifact, artifact.id)
                 if failed_artifact is not None:
                     failed_artifact.status = ARCHIVE_STATUS_PURGE_FAILED
-                    failed_artifact.error_message = _error_text(exc)
+                    failed_artifact.error_message = archive_support.error_text(exc)
                     db.session.commit()
 
     return {
@@ -509,7 +501,7 @@ def _execute_archive(
                 ARCHIVE_STATUS_CLEANUP_PARTIAL if cleanup_started and deleted_count > 0 else ARCHIVE_STATUS_FAILED
             )
             artifact.cleanup_deleted_count = deleted_count
-            artifact.error_message = _error_text(exc)
+            artifact.error_message = archive_support.error_text(exc)
             artifact.completed_at = datetime.now(UTC)
             db.session.commit()
         raise
@@ -628,7 +620,7 @@ def _build_manifest(
             },
             'storage_backend': artifact.storage_backend,
             'object_key': artifact.data_object_key,
-            'storage_locator': _artifact_storage_locator(artifact),
+            'storage_locator': archive_support.artifact_storage_locator(artifact),
         },
         'supplemental_artifacts': _supplemental_artifacts(artifact),
         'retention_policy': _serialize_policy(policy),
@@ -690,7 +682,7 @@ def _estimate_archive_size(domain, boundary: ArchiveBoundary, policy: RetentionP
     estimator = getattr(domain, 'estimate_uncompressed_bytes', None)
     if callable(estimator):
         return max(int(estimator(boundary, policy) or 0), 0)
-    return _estimate_uncompressed_size(boundary.record_count)
+    return archive_support.estimate_uncompressed_size(boundary.record_count)
 
 
 def _archive_supplements_for_artifact(
@@ -741,7 +733,7 @@ def _store_supplemental_artifacts(
         if not source_path.is_file():
             raise RuntimeError(f'Supplemental archive source is unavailable: {source_path.name}.')
 
-        relative_path = _normalize_supplement_path(item.relative_path)
+        relative_path = archive_support.normalize_supplement_path(item.relative_path)
         checksum = _sha256_file(source_path)
         object_key = f'{object_prefix}/{artifact.id}/artifacts/{relative_path}'
         stored = backend.save_file(

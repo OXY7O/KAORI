@@ -25,6 +25,8 @@ REQUIRED = (
     'docs/design/audits/KAORI_PLATFORM_OPERATIONS_DATA_LIFECYCLE_FINAL_LOCK_V1_3_AUDIT_2026_08_08.md',
     'app/retention/domains/analytics_snapshot.py',
     'migrations/versions/20260808_data_lifecycle_platform_operations.py',
+    'migrations/versions/20260816_schedule_run_evidence.py',
+    'migrations/versions/20260817_lifecycle_policy_seed.py',
     'app/settings/data_lifecycle_compat.py',
 )
 
@@ -156,6 +158,12 @@ def main() -> int:
         'Records covered by this retention, archive, and cleanup policy.',
         'Coverage:',
         'Excluded:',
+        'Storage Boundary',
+        'Hot Source',
+        'Archive Target',
+        'Archive Payload',
+        'Shared Archive Control Plane',
+        'Open Archive Storage',
     ):
         if required not in domain_workspace:
             errors.append(f'Data Lifecycle v1.2 coverage presentation missing: {required}')
@@ -313,6 +321,24 @@ def main() -> int:
         if required not in migration:
             errors.append(f'Data Lifecycle ownership migration missing: {required}')
 
+    storage_presentation = read('app/retention/storage_presentation.py')
+    if 'def build_storage_contract_context(' not in storage_presentation:
+        errors.append('Retention Policies must expose configuration-only archive storage ownership without probing')
+    if 'Runtime observations do not own a separate archive bucket.' not in retention_presentation:
+        errors.append('Runtime Observation storage ownership must remain explicit and provider-neutral')
+
+    schedule_evidence_migration = read('migrations/versions/20260816_schedule_run_evidence.py')
+    lifecycle_seed_migration = read('migrations/versions/20260817_lifecycle_policy_seed.py')
+    for required in (
+        "revision = '20260816_schedule_run_evidence'",
+        "down_revision = '20260816_report_lifecycle'",
+        "sa.inspect(bind).get_columns('report_schedule_runs')",
+    ):
+        if required not in schedule_evidence_migration:
+            errors.append(f'Schedule evidence migration recovery contract missing: {required}')
+    if "down_revision = '20260816_schedule_run_evidence'" not in lifecycle_seed_migration:
+        errors.append('Lifecycle policy seed must depend on the restored Schedule Run evidence revision')
+
     activity = read('app/templates/notifications/activity.html')
     runtime_history = read('app/templates/integrations/partials/_runtime_history.html')
     retention_tasks = read('app/retention/tasks.py')
@@ -343,11 +369,11 @@ def main() -> int:
         return 1
 
     print(
-        'KAORI Data Lifecycle Final Lock v1.5 passed: Platform Operations owns route, template, RBAC, navigation, '
+        'KAORI Data Lifecycle Final Lock v1.6 passed: Platform Operations owns route, template, RBAC, navigation, '
         'feedback and presentation boundaries; read paths are mutation-free; persisted policies fail closed; archive '
         'selection is frozen; cleanup remains archive-and-checksum gated; purge work is bounded and retryable; Jobs & '
         'Executions remains canonical runtime evidence; Archive History preserves operator context; and top-level '
-        'workspaces are server-owned and demand-loaded.'
+        'workspaces are server-owned and demand-loaded; and every policy exposes a shared archive-storage boundary.'
     )
     return 0
 
