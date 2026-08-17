@@ -1,7 +1,10 @@
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
-TEMPLATE = ROOT / 'app/templates/integrations/kubernetes/partials/_runtime_workspace.html'
+TEMPLATE = (
+    ROOT
+    / 'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_runtime_workspace.html'
+)
 
 
 def _source() -> str:

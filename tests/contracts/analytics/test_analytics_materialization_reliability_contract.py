@@ -8,10 +8,10 @@ def _read(relative: str) -> str:
 
 
 def test_analytics_status_does_not_run_duplicate_health_query() -> None:
-    consumer = _read('app/metrics/consumer.py')
+    consumer = _read('app/metrics_sources/consumer.py')
     utilization = _read('app/analytics/kubernetes/utilization/service.py')
     base = _read('app/analytics/kubernetes/common/base_service.py')
-    profile = _read('app/integrations/metrics/query_profiles/kubernetes_v1.py')
+    profile = _read('app/integrations/observability/metrics_source/query_profiles/kubernetes_v1.py')
     presentation = _read('app/analytics/kubernetes/common/presentation.py')
 
     assert 'def analytics_status' in consumer
@@ -25,10 +25,10 @@ def test_analytics_status_does_not_run_duplicate_health_query() -> None:
 
 
 def test_metrics_queries_reuse_backend_sessions_retry_transient_failures_and_keep_fingerprints() -> None:
-    consumer = _read('app/metrics/consumer.py')
-    client = _read('app/integrations/metrics/prometheus_http_client.py')
-    adapter = _read('app/integrations/metrics/adapter.py')
-    backend_registry = _read('app/integrations/metrics/backend_registry.py')
+    consumer = _read('app/metrics_sources/consumer.py')
+    client = _read('app/integrations/observability/metrics_source/adapters/prometheus_http/client.py')
+    adapter = _read('app/integrations/observability/metrics_source/adapter.py')
+    backend_registry = _read('app/integrations/observability/metrics_source/backend_registry.py')
     runtime = _read('app/common/provider_query_runtime.py')
 
     assert 'self._query_session_cache' in consumer
@@ -187,8 +187,8 @@ def test_optional_alert_anomaly_failures_are_visible_as_partial_data() -> None:
 
 
 def test_metrics_backend_sessions_are_created_lazily_for_scoped_queries() -> None:
-    consumer = _read('app/metrics/consumer.py')
-    service = _read('app/metrics/service.py')
+    consumer = _read('app/metrics_sources/consumer.py')
+    service = _read('app/metrics_sources/service.py')
 
     init_block = consumer.split('def __init__', 1)[1].split('def query', 1)[0]
     assert 'self.client =' not in init_block

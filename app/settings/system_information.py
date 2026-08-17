@@ -9,7 +9,7 @@ from app.integrations.compatibility import (
     KUBERNETES_SUPPORTED_VERSION_LABEL,
     PROFILES,
 )
-from app.integrations.metrics.providers import provider_definitions
+from app.integrations.observability.metrics_source.providers import provider_definitions
 
 _RELEASE_HIGHLIGHTS: tuple[dict[str, str], ...] = (
     {

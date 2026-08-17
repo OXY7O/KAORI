@@ -25,7 +25,7 @@ def _forbid(relative_path: str, needle: str, description: str) -> None:
 def main() -> None:
     _require(
         'app/analytics/kubernetes/utilization/service.py',
-        'from app.integrations.metrics.exceptions import MetricsSourceError',
+        'from app.integrations.observability.metrics_source.exceptions import MetricsSourceError',
         'canonical MetricsSourceError import',
     )
     _require(

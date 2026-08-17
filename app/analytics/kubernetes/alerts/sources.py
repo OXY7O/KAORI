@@ -4,7 +4,7 @@ import logging
 from datetime import UTC, datetime
 from time import perf_counter
 
-from app.alertmanager.service import get_alertmanager_alerts, get_alertmanager_status
+from app.alert_sources.providers.alertmanager.service import get_alertmanager_alerts, get_alertmanager_status
 from app.analytics.kubernetes.alerts.contracts import AlertLoadResult, AlertSourceStatus
 from app.analytics.kubernetes.alerts.records import (
     deduplicate_alerts,
@@ -16,10 +16,10 @@ from app.analytics.kubernetes.alerts.source_messages import (
     friendly_alert_source_error,
     friendly_combined_alert_error,
 )
-from app.integrations.metrics.exceptions import MetricsSourceError
-from app.integrations.metrics.query_profiles import get_kubernetes_query_expression
-from app.metrics.repository import resolve_instance_for_cluster
-from app.metrics.service import MetricsService
+from app.integrations.observability.metrics_source.exceptions import MetricsSourceError
+from app.integrations.observability.metrics_source.query_profiles import get_kubernetes_query_expression
+from app.metrics_sources.repository import resolve_instance_for_cluster
+from app.metrics_sources.service import MetricsService
 from app.models import Cluster
 
 logger = logging.getLogger(__name__)

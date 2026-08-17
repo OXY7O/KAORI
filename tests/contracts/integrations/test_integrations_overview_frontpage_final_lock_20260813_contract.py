@@ -9,10 +9,14 @@ def read(path: str) -> str:
 
 def test_provider_frontpages_use_one_coverage_gap_metric_and_safe_posture_logic() -> None:
     pages = {
-        'Kubernetes': read('app/templates/integrations/kubernetes.html'),
-        'Metrics Source': read('app/templates/integrations/metrics.html'),
-        'Alertmanager': read('app/templates/integrations/alertmanager.html'),
-        'MinIO': read('app/templates/minio/index.html'),
+        'Kubernetes': read(
+            'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/frontpage.html'
+        ),
+        'Metrics Source': read('app/templates/integrations/observability/metrics_source/frontpage.html'),
+        'Alertmanager': read(
+            'app/templates/integrations/observability/alert_source/providers/alertmanager/frontpage.html'
+        ),
+        'MinIO': read('app/templates/integrations/storage/object_storage/providers/minio/index.html'),
     }
     for provider, page in pages.items():
         assert 'Coverage Gaps' in page, provider

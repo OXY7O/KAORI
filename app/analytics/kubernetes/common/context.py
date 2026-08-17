@@ -17,11 +17,11 @@ from app.common.dependencies import (
     metrics_source_connection_blocker,
     metrics_source_setup_blocker,
 )
-from app.integrations.metrics.capabilities import definition as capability_definition
-from app.integrations.metrics.exceptions import MetricsSourceError
-from app.metrics.repository import KUBERNETES_CLUSTER_SCOPE, resolve_instance_for_cluster
-from app.metrics.resolver import resolve_metrics_sources
-from app.metrics.service import MetricsService
+from app.integrations.observability.metrics_source.capabilities import definition as capability_definition
+from app.integrations.observability.metrics_source.exceptions import MetricsSourceError
+from app.metrics_sources.repository import KUBERNETES_CLUSTER_SCOPE, resolve_instance_for_cluster
+from app.metrics_sources.resolver import resolve_metrics_sources
+from app.metrics_sources.service import MetricsService
 from app.models import Cluster
 
 

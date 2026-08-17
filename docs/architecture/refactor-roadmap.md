@@ -55,7 +55,7 @@ Target:
 ```text
 app/integrations/core/
 app/integrations/providers/kubernetes/
-app/integrations/metrics/
+app/integrations/observability/metrics_source/
 app/integrations/providers/alertmanager/
 ```
 

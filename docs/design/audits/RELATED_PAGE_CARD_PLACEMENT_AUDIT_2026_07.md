@@ -21,9 +21,9 @@ Exception: a single-page module such as Roles & Access may use the component on 
 Removed from:
 
 ```text
-app/templates/integrations/kubernetes.html
+app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/frontpage.html
 app/templates/integrations/prometheus.html
-app/templates/integrations/alertmanager.html
+app/templates/integrations/observability/alert_source/providers/alertmanager/frontpage.html
 ```
 
 Applied to contextual subpages:

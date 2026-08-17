@@ -22,10 +22,10 @@ EXPECTED = {
     'notifications/event_categories.yaml': 'notification_event_categories',
     'integrations/taxonomy.yaml': 'integration_taxonomy',
     'integrations/compatibility.yaml': 'integration_compatibility',
-    'integrations/kubernetes.yaml': 'integration_provider_contract',
-    'integrations/metrics_source.yaml': 'integration_provider_contract',
-    'integrations/alertmanager.yaml': 'integration_provider_contract',
-    'integrations/object_storage.yaml': 'integration_provider_contract',
+    'integrations/orchestration/container_orchestrator/providers/kubernetes.yaml': 'integration_provider_contract',
+    'integrations/observability/metrics_source/contract.yaml': 'integration_provider_contract',
+    'integrations/observability/alert_source/providers/alertmanager.yaml': 'integration_provider_contract',
+    'integrations/storage/object_storage/contract.yaml': 'integration_provider_contract',
 }
 
 
@@ -170,10 +170,10 @@ def main() -> int:
 
         integration_provider_counts: dict[str, int] = {}
         for relative, provider_key in (
-            ('integrations/kubernetes.yaml', 'kubernetes'),
-            ('integrations/metrics_source.yaml', 'metrics_source'),
-            ('integrations/alertmanager.yaml', 'alertmanager'),
-            ('integrations/object_storage.yaml', 'object_storage'),
+            ('integrations/orchestration/container_orchestrator/providers/kubernetes.yaml', 'kubernetes'),
+            ('integrations/observability/metrics_source/contract.yaml', 'metrics_source'),
+            ('integrations/observability/alert_source/providers/alertmanager.yaml', 'alertmanager'),
+            ('integrations/storage/object_storage/contract.yaml', 'object_storage'),
         ):
             provider = docs[relative]
             if provider.get('provider') != provider_key:
@@ -182,7 +182,7 @@ def main() -> int:
             unique(provider_capabilities, 'key', f'{provider_key} capabilities')
             integration_provider_counts[provider_key] = len(provider_capabilities)
 
-        alertmanager = docs['integrations/alertmanager.yaml']
+        alertmanager = docs['integrations/observability/alert_source/providers/alertmanager.yaml']
         alert_capability_keys = {str(item['key']) for item in alertmanager['capabilities']}
         profile_keys = unique(alertmanager['profiles'], 'key', 'Alertmanager provider profiles')
         for profile in alertmanager['profiles']:
@@ -194,7 +194,7 @@ def main() -> int:
         if set(alertmanager.get('compatibility_profiles') or ()) != profile_keys:
             raise ValueError('Alertmanager compatibility profile keys must match provider profile definitions')
 
-        object_storage = docs['integrations/object_storage.yaml']
+        object_storage = docs['integrations/storage/object_storage/contract.yaml']
         products = object_storage.get('products') or []
         unique(products, 'key', 'object-storage product families')
         object_profile_keys = {

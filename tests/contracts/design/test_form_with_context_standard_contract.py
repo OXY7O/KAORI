@@ -39,8 +39,8 @@ def test_reviewed_operations_tasks_consume_shared_form_with_context_geometry() -
 def test_integration_registration_pages_remain_visual_references_until_refactor() -> None:
     references = (
         'app/templates/cluster/add.html',
-        'app/templates/metrics/instance_form.html',
-        'app/templates/alertmanager/instance_form.html',
+        'app/templates/integrations/observability/metrics_source/instance_form.html',
+        'app/templates/integrations/observability/alert_source/providers/alertmanager/instance_form.html',
     )
     for relative in references:
         source = read(relative)

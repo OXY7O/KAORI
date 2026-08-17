@@ -37,7 +37,7 @@ def test_object_storage_inventory_is_registered_as_read_only_inventory_domain() 
 def test_bucket_inventory_is_committed_snapshot_not_live_page_discovery() -> None:
     model = read('app/models/object_storage.py')
     sync = read('app/inventory/object_storage/sync.py')
-    adapter = read('app/integrations/minio/adapter.py')
+    adapter = read('app/integrations/storage/object_storage/providers/minio/adapter.py')
     overview = read('app/templates/inventory/object_storage/overview/partials/_snapshot_boundary.html')
     buckets = read('app/templates/inventory/object_storage/buckets/partials/_table_card.html')
 

@@ -30,7 +30,7 @@ def test_inventory_and_analytics_use_explicit_domain_namespaces() -> None:
 def test_object_storage_analytics_domain_is_metrics_backend_neutral() -> None:
     service = read('app/analytics/object_storage/service.py')
     contracts = read('app/analytics/shared/metrics/contracts.py')
-    adapter = read('app/analytics/object_storage/sources/minio_metrics.py')
+    adapter = read('app/analytics/object_storage/sources/providers/minio/metrics.py')
     resolver = read('app/analytics/object_storage/sources/resolver.py')
 
     assert 'class MetricsSource(Protocol)' in contracts

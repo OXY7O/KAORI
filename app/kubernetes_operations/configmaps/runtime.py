@@ -7,8 +7,11 @@ from kubernetes.client.exceptions import ApiException
 from kubernetes.config.config_exception import ConfigException
 from urllib3.exceptions import HTTPError as Urllib3HTTPError
 
-from app.integrations.kubernetes.resolver import connection_for_cluster, tls_policy_for_cluster
-from app.integrations.kubernetes.tls import weak_tls_context
+from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.resolver import (
+    connection_for_cluster,
+    tls_policy_for_cluster,
+)
+from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.tls import weak_tls_context
 from app.integrations.registry import get_integration
 from app.models.cluster import Cluster
 

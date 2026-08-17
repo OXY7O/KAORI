@@ -19,11 +19,11 @@ def _load_anomalies_module():
         'app.analytics.kubernetes.alerts',
         'app.analytics.kubernetes.alerts.metrics',
         'app.integrations',
-        'app.integrations.metrics.exceptions',
-        'app.integrations.metrics.query_profiles',
+        'app.integrations.observability.metrics_source.exceptions',
+        'app.integrations.observability.metrics_source.query_profiles',
         'app.models',
-        'app.metrics.repository',
-        'app.metrics.service',
+        'app.metrics_sources.repository',
+        'app.metrics_sources.service',
     ]
     previous = {name: sys.modules.get(name) for name in names}
     try:
@@ -40,11 +40,11 @@ def _load_anomalies_module():
         metrics.get_metric_value = lambda item: float((item.get('value') or [0, 0])[1])
         sys.modules[metrics.__name__] = metrics
 
-        exceptions = ModuleType('app.integrations.metrics.exceptions')
+        exceptions = ModuleType('app.integrations.observability.metrics_source.exceptions')
         exceptions.MetricsSourceError = FakeMetricsSourceError
         sys.modules[exceptions.__name__] = exceptions
 
-        profiles = ModuleType('app.integrations.metrics.query_profiles')
+        profiles = ModuleType('app.integrations.observability.metrics_source.query_profiles')
         profiles.get_kubernetes_query_expression = lambda key: key
         sys.modules[profiles.__name__] = profiles
 
@@ -52,11 +52,11 @@ def _load_anomalies_module():
         models.Cluster = object
         sys.modules[models.__name__] = models
 
-        repository = ModuleType('app.metrics.repository')
+        repository = ModuleType('app.metrics_sources.repository')
         repository.resolve_instance_for_cluster = lambda cluster_id: object()
         sys.modules[repository.__name__] = repository
 
-        service = ModuleType('app.metrics.service')
+        service = ModuleType('app.metrics_sources.service')
         service.MetricsService = object
         sys.modules[service.__name__] = service
 

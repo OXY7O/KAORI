@@ -7,7 +7,10 @@ from dataclasses import dataclass
 
 from flask import Flask
 
-from app.integrations.kubernetes.resolver_adapter import KubernetesDeploymentRestartAdapter, NamespaceGuardrail
+from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.resolver_adapter import (
+    KubernetesDeploymentRestartAdapter,
+    NamespaceGuardrail,
+)
 from app.resolver.contracts import ResolverError
 from app.resolver.registry import ResolverRegistry
 

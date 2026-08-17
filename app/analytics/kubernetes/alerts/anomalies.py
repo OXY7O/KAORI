@@ -5,10 +5,10 @@ from time import perf_counter
 from typing import Any
 
 from app.analytics.kubernetes.alerts.metrics import get_metric_labels, get_metric_value
-from app.integrations.metrics.exceptions import MetricsSourceError
-from app.integrations.metrics.query_profiles import get_kubernetes_query_expression
-from app.metrics.repository import resolve_instance_for_cluster
-from app.metrics.service import MetricsService
+from app.integrations.observability.metrics_source.exceptions import MetricsSourceError
+from app.integrations.observability.metrics_source.query_profiles import get_kubernetes_query_expression
+from app.metrics_sources.repository import resolve_instance_for_cluster
+from app.metrics_sources.service import MetricsService
 from app.models import Cluster
 
 POD_RESTART_ANOMALY_QUERY = get_kubernetes_query_expression('analytics.alerts.queries.POD_RESTART_ANOMALY_QUERY')

@@ -1,6 +1,6 @@
 {
   "files": {
-    "app/templates/alertmanager/partials/_delete_confirmation_modal.html": {
+    "app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_delete_confirmation_modal.html": {
       "inline_event_handlers": 0,
       "inline_scripts": 1,
       "inline_styles": 0
@@ -30,7 +30,7 @@
       "inline_scripts": 1,
       "inline_styles": 0
     },
-    "app/templates/metrics/partials/_delete_confirmation_modal.html": {
+    "app/templates/integrations/observability/metrics_source/partials/_delete_confirmation_modal.html": {
       "inline_event_handlers": 0,
       "inline_scripts": 1,
       "inline_styles": 0

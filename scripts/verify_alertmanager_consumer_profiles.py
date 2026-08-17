@@ -11,29 +11,39 @@ def read(path: str) -> str:
 
 
 def main() -> int:
-    registration = read('app/integrations/alertmanager/__init__.py')
-    capabilities = read('app/integrations/alertmanager/capabilities.py')
-    capability_catalog = read('app/definitions/catalogs/integrations/alertmanager.yaml')
-    requirements = read('app/integrations/alertmanager/requirements.py')
-    validation = read('app/integrations/alertmanager/validation.py')
-    profiles = read('app/integrations/alertmanager/binding_profiles.py')
-    binding_validation = read('app/integrations/alertmanager/binding_validation.py')
-    resolver = read('app/alertmanager/resolver.py')
+    registration = read('app/integrations/observability/alert_source/providers/alertmanager/__init__.py')
+    capabilities = read('app/integrations/observability/alert_source/providers/alertmanager/capabilities.py')
+    capability_catalog = read(
+        'app/definitions/catalogs/integrations/observability/alert_source/providers/alertmanager.yaml'
+    )
+    requirements = read('app/integrations/observability/alert_source/providers/alertmanager/requirements.py')
+    validation = read('app/integrations/observability/alert_source/providers/alertmanager/validation.py')
+    profiles = read('app/integrations/observability/alert_source/providers/alertmanager/binding_profiles.py')
+    binding_validation = read(
+        'app/integrations/observability/alert_source/providers/alertmanager/binding_validation.py'
+    )
+    resolver = read('app/alert_sources/providers/alertmanager/resolver.py')
     object_storage_profile_migration = read('migrations/versions/20260814_object_storage_alert_profile.py')
-    forms = read('app/alertmanager/forms.py')
-    minio_service = read('app/minio/service.py')
+    forms = read('app/alert_sources/providers/alertmanager/forms.py')
+    minio_service = read('app/object_storage/providers/minio/service.py')
     consumer_assets = read('app/integrations/consumer_assets.py')
     taxonomy_catalog = read('app/definitions/catalogs/integrations/taxonomy.yaml')
-    validation_template = read('app/templates/alertmanager/partials/_detail_validation_content.html')
-    scope_template = read('app/templates/alertmanager/partials/_detail_scope.html')
-    binding_template = read('app/templates/alertmanager/partials/_binding_registry.html')
+    validation_template = read(
+        'app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_detail_validation_content.html'
+    )
+    scope_template = read(
+        'app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_detail_scope.html'
+    )
+    binding_template = read(
+        'app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_binding_registry.html'
+    )
     binding_modal = read('app/templates/integrations/components/_observability_binding_modal.html')
     readiness_template = read('app/templates/integrations/components/_readiness_explanation.html')
-    minio_index = read('app/templates/minio/index.html')
+    minio_index = read('app/templates/integrations/storage/object_storage/providers/minio/index.html')
     provider_frontpage = read('app/templates/integrations/components/_provider_frontpage.html')
     provider_tabs = read('app/templates/components/integration_workspace_tabs.html')
-    minio_detail = read('app/templates/minio/instance_detail.html')
-    alertmanager_readme = read('app/integrations/alertmanager/README.md')
+    minio_detail = read('app/templates/integrations/storage/object_storage/providers/minio/instance_detail.html')
+    alertmanager_readme = read('app/integrations/observability/alert_source/providers/alertmanager/README.md')
     compatibility_doc = read('docs/INTEGRATION_COMPATIBILITY.md')
     module_map = read('docs/architecture/integration-module-map.md')
     workspace_standard = read('docs/design/components/INTEGRATIONS_WORKSPACE_STANDARD.md')

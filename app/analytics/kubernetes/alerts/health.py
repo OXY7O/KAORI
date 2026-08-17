@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
-from app.alertmanager.service import get_alertmanager_status
+from app.alert_sources.providers.alertmanager.service import get_alertmanager_status
 from app.analytics.kubernetes.alerts.contracts import (
     AlertIntegrationStatus,
     AlertIntegrationStatusMap,
@@ -11,7 +11,7 @@ from app.analytics.kubernetes.alerts.contracts import (
     AlertSourceStatus,
     NormalizedAlert,
 )
-from app.metrics.repository import resolve_instance_for_cluster
+from app.metrics_sources.repository import resolve_instance_for_cluster
 from app.models import Cluster
 
 

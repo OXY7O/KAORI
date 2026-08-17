@@ -18,9 +18,9 @@ def _load_module(name: str, path: str) -> ModuleType:
 
 def _load_capacity_modules() -> tuple[ModuleType, ModuleType]:
     names = (
-        'app.integrations.metrics.exceptions',
-        'app.integrations.metrics.query_profiles',
-        'app.metrics.consumer',
+        'app.integrations.observability.metrics_source.exceptions',
+        'app.integrations.observability.metrics_source.query_profiles',
+        'app.metrics_sources.consumer',
         'app.analytics.kubernetes.common.base_service',
         'app.analytics.kubernetes.capacity.evidence',
         'capacity_domain_under_test',

@@ -12,13 +12,13 @@ from app.analytics.kubernetes.storage.evidence import STORAGE_QUERY_CAPABILITIES
 from app.analytics.kubernetes.utilization.service import UtilizationService
 from app.analytics.shared.coercion import as_dict, as_list
 from app.common.dependencies import metrics_source_capability_blocker
-from app.integrations.metrics.capabilities import definition as capability_definition
+from app.integrations.observability.metrics_source.capabilities import definition as capability_definition
 from app.intelligence.recommendation_engine import (
     build_storage_actionable_recommendations,
     count_actionable_recommendations,
     format_recommendation_cards,
 )
-from app.metrics.consumer import MetricsConsumer
+from app.metrics_sources.consumer import MetricsConsumer
 
 _STORAGE_ADVISORY_CAPABILITIES = (
     'pvc_usage',

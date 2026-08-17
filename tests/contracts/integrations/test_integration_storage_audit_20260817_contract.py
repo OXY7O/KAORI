@@ -10,7 +10,7 @@ def read(relative: str) -> str:
 def test_storage_domain_keeps_owner_and_observability_source_boundaries_explicit() -> None:
     taxonomy = read('app/definitions/catalogs/integrations/taxonomy.yaml')
     workspace = read('app/templates/integrations/partials/_domain_workspace.html')
-    registration = read('app/integrations/minio/__init__.py')
+    registration = read('app/integrations/storage/object_storage/providers/minio/__init__.py')
 
     assert '- key: storage' in taxonomy
     assert '- key: object_storage' in taxonomy
@@ -26,8 +26,10 @@ def test_storage_domain_keeps_owner_and_observability_source_boundaries_explicit
 
 def test_storage_asset_owner_projection_uses_metrics_provider_registry() -> None:
     projection = read('app/integrations/asset_owner_sources.py')
-    coverage = read('app/minio/presentation.py')
-    coverage_template = read('app/templates/minio/partials/_coverage_content.html')
+    coverage = read('app/object_storage/providers/minio/presentation.py')
+    coverage_template = read(
+        'app/templates/integrations/storage/object_storage/providers/minio/partials/_coverage_content.html'
+    )
 
     assert 'def _source_presentation(' in projection
     assert "canonical.integration_type != 'metrics_source'" in projection
@@ -41,9 +43,9 @@ def test_storage_asset_owner_projection_uses_metrics_provider_registry() -> None
 
 
 def test_minio_registration_test_does_not_claim_product_identity_authority() -> None:
-    form = read('app/templates/minio/instance_form.html')
-    routes = read('app/minio/routes.py')
-    service = read('app/minio/service.py')
+    form = read('app/templates/integrations/storage/object_storage/providers/minio/instance_form.html')
+    routes = read('app/object_storage/providers/minio/routes.py')
+    service = read('app/object_storage/providers/minio/service.py')
 
     assert 'Verify S3 API reachability, credential access, and read-only bucket discovery' in form
     assert 'Verify MinIO identity and API reachability' not in form
@@ -53,9 +55,9 @@ def test_minio_registration_test_does_not_claim_product_identity_authority() -> 
 
 
 def test_minio_bound_source_registry_hides_empty_pagination_and_uses_metrics_source_copy() -> None:
-    registry = read('app/templates/minio/partials/_binding_registry.html')
-    scope = read('app/templates/minio/partials/_detail_scope.html')
-    index = read('app/templates/minio/index.html')
+    registry = read('app/templates/integrations/storage/object_storage/providers/minio/partials/_binding_registry.html')
+    scope = read('app/templates/integrations/storage/object_storage/providers/minio/partials/_detail_scope.html')
+    index = read('app/templates/integrations/storage/object_storage/providers/minio/index.html')
 
     assert '{% if binding_pagination.total_items > 0 %}' in registry
     assert 'Metrics Source or Alertmanager' in registry

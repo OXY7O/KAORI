@@ -9,7 +9,7 @@ def read(relative: str) -> str:
 
 def test_tab_v2_is_shared_by_kubernetes_and_integration_overview() -> None:
     component = read('app/templates/components/framed_workspace_tabs.html')
-    detail = read('app/templates/integrations/kubernetes/detail.html')
+    detail = read('app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/detail.html')
     overview = read('app/templates/integrations/overview.html')
     tab_v1 = read('app/templates/components/workspace_tabs.html')
 
@@ -36,9 +36,11 @@ def test_tab_v2_is_shared_by_kubernetes_and_integration_overview() -> None:
 
 
 def test_kubernetes_registry_uses_one_line_htmx_filters_and_inventory_table() -> None:
-    registry = read('app/templates/integrations/kubernetes/partials/_registry.html')
+    registry = read(
+        'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_registry.html'
+    )
     routes = read('app/integrations/routes.py')
-    frontpage_service = read('app/integrations/kubernetes_frontpage.py')
+    frontpage_service = read('app/integrations/orchestration/container_orchestrator/frontpage.py')
 
     assert 'components/table.html' in registry
     assert 'data-kaori-one-line-filters' in registry
@@ -62,10 +64,16 @@ def test_kubernetes_registry_uses_one_line_htmx_filters_and_inventory_table() ->
 
 
 def test_kubernetes_activity_is_navigation_and_capability_modal_scope_isolated() -> None:
-    registry = read('app/templates/integrations/kubernetes/partials/_registry.html')
+    registry = read(
+        'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_registry.html'
+    )
     capability = (
-        read('app/templates/integrations/kubernetes/partials/_capability_workspace.html')
-        + read('app/templates/integrations/kubernetes/partials/_capability_registry.html')
+        read(
+            'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_capability_workspace.html'
+        )
+        + read(
+            'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_capability_registry.html'
+        )
         + read('app/templates/integrations/components/_capability_readiness.html')
     )
     modal = read('app/templates/integrations/components/_record_detail_modal.html')
@@ -91,7 +99,9 @@ def test_kubernetes_activity_is_navigation_and_capability_modal_scope_isolated()
 def test_kubernetes_runtime_health_requires_persisted_observation() -> None:
     service = read('app/integrations/service.py')
     presentation = read('app/integrations/runtime/presentation.py')
-    runtime = read('app/templates/integrations/kubernetes/partials/_runtime_workspace.html')
+    runtime = read(
+        'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_runtime_workspace.html'
+    )
 
     assert 'IntegrationRuntimeObservation.query.filter_by(' in service
     assert "integration_type='container_orchestrator'" in service
@@ -108,15 +118,23 @@ def test_kubernetes_runtime_health_requires_persisted_observation() -> None:
 
 
 def test_kubernetes_actions_are_permission_aware() -> None:
-    detail = read('app/templates/integrations/kubernetes/detail.html')
+    detail = read('app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/detail.html')
     detail_posture = read('app/templates/integrations/components/_provider_detail_posture.html')
     capability = (
-        read('app/templates/integrations/kubernetes/partials/_capability_workspace.html')
-        + read('app/templates/integrations/kubernetes/partials/_capability_registry.html')
+        read(
+            'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_capability_workspace.html'
+        )
+        + read(
+            'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_capability_registry.html'
+        )
         + read('app/templates/integrations/components/_capability_readiness.html')
     )
-    runtime = read('app/templates/integrations/kubernetes/partials/_runtime_workspace.html')
-    connection = read('app/templates/integrations/kubernetes/partials/_connection_contract.html')
+    runtime = read(
+        'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_runtime_workspace.html'
+    )
+    connection = read(
+        'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_connection_contract.html'
+    )
 
     assert "current_user.has_permission('clusters.sync')" in detail
     assert 'show_primary_action' in detail_posture
@@ -133,7 +151,9 @@ def test_kubernetes_actions_are_permission_aware() -> None:
 
 
 def test_validation_rbac_excludes_secrets_from_baseline_and_labels_optional_access() -> None:
-    rbac = read('app/templates/integrations/kubernetes/partials/_minimum_validation_rbac.html')
+    rbac = read(
+        'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_minimum_validation_rbac.html'
+    )
     baseline, optional = rbac.split('Optional Governance Secret Reader', maxsplit=1)
 
     assert 'resources: ["secrets"]' not in baseline
@@ -145,7 +165,9 @@ def test_validation_rbac_excludes_secrets_from_baseline_and_labels_optional_acce
 
 def test_source_binding_evidence_is_not_collapsed_into_one_status() -> None:
     source_projection = read('app/integrations/asset_owner_sources.py')
-    inventory = read('app/templates/integrations/kubernetes/partials/_inventory_lifecycle.html')
+    inventory = read(
+        'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_inventory_lifecycle.html'
+    )
 
     for key in ('source_readiness', 'binding_validation', 'effective_status', 'effective_label'):
         assert f"'{key}'" in source_projection
@@ -157,8 +179,10 @@ def test_source_binding_evidence_is_not_collapsed_into_one_status() -> None:
 
 def test_inventory_freshness_and_capability_dimensions_are_explicit() -> None:
     service = read('app/integrations/service.py')
-    inventory = read('app/templates/integrations/kubernetes/partials/_inventory_lifecycle.html')
-    detail = read('app/templates/integrations/kubernetes/detail.html')
+    inventory = read(
+        'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_inventory_lifecycle.html'
+    )
+    detail = read('app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/detail.html')
 
     assert 'ClusterInventory.query.filter_by(cluster_id=cluster.id)' in service
     assert "'inventory_collected_at_display'" in service
@@ -172,7 +196,9 @@ def test_inventory_freshness_and_capability_dimensions_are_explicit() -> None:
 
 
 def test_kubernetes_coverage_uses_canonical_asset_coverage_registry() -> None:
-    coverage = read('app/templates/integrations/kubernetes/partials/_integration_coverage.html')
+    coverage = read(
+        'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_integration_coverage.html'
+    )
 
     assert 'Kubernetes Integration Coverage' in coverage
     assert 'kubernetes-coverage-filter-form' in coverage
@@ -193,12 +219,18 @@ def test_kubernetes_coverage_uses_canonical_asset_coverage_registry() -> None:
 
 
 def test_secret_capability_is_optional_and_kept_out_of_baseline_readiness() -> None:
-    compatibility = read('app/integrations/kubernetes/compatibility.py')
-    validation = read('app/integrations/kubernetes/validation.py')
+    compatibility = read(
+        'app/integrations/orchestration/container_orchestrator/adapters/kubernetes_api/compatibility.py'
+    )
+    validation = read('app/integrations/orchestration/container_orchestrator/adapters/kubernetes_api/validation.py')
     service = read('app/integrations/service.py')
     capability = (
-        read('app/templates/integrations/kubernetes/partials/_capability_workspace.html')
-        + read('app/templates/integrations/kubernetes/partials/_capability_registry.html')
+        read(
+            'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_capability_workspace.html'
+        )
+        + read(
+            'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_capability_registry.html'
+        )
         + read('app/templates/integrations/components/_capability_readiness.html')
     )
 
@@ -213,7 +245,9 @@ def test_secret_capability_is_optional_and_kept_out_of_baseline_readiness() -> N
 
 
 def test_minimum_validation_rbac_uses_copy_friendly_modal() -> None:
-    rbac = read('app/templates/integrations/kubernetes/partials/_minimum_validation_rbac.html')
+    rbac = read(
+        'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_minimum_validation_rbac.html'
+    )
 
     assert 'Open RBAC Examples' in rbac
     assert 'x-teleport="body"' in rbac
@@ -225,8 +259,12 @@ def test_minimum_validation_rbac_uses_copy_friendly_modal() -> None:
 
 def test_capability_workspace_uses_registry_modal_and_consistent_typography() -> None:
     capability = (
-        read('app/templates/integrations/kubernetes/partials/_capability_workspace.html')
-        + read('app/templates/integrations/kubernetes/partials/_capability_registry.html')
+        read(
+            'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_capability_workspace.html'
+        )
+        + read(
+            'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_capability_registry.html'
+        )
         + read('app/templates/integrations/components/_capability_readiness.html')
     )
     modal = read('app/templates/integrations/components/_record_detail_modal.html')
@@ -294,14 +332,24 @@ def test_capability_workspace_uses_registry_modal_and_consistent_typography() ->
 
 
 def test_kubernetes_detail_workspaces_use_connected_standard_surfaces() -> None:
-    connection = read('app/templates/integrations/kubernetes/partials/_connection_contract.html')
+    connection = read(
+        'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_connection_contract.html'
+    )
     capability = (
-        read('app/templates/integrations/kubernetes/partials/_capability_workspace.html')
-        + read('app/templates/integrations/kubernetes/partials/_capability_registry.html')
+        read(
+            'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_capability_workspace.html'
+        )
+        + read(
+            'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_capability_registry.html'
+        )
         + read('app/templates/integrations/components/_capability_readiness.html')
     )
-    inventory = read('app/templates/integrations/kubernetes/partials/_inventory_lifecycle.html')
-    runtime = read('app/templates/integrations/kubernetes/partials/_runtime_workspace.html')
+    inventory = read(
+        'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_inventory_lifecycle.html'
+    )
+    runtime = read(
+        'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_runtime_workspace.html'
+    )
 
     assert 'data-kaori-connection-contract-v2' in connection
     assert 'data-kaori-connection-summary' in connection
@@ -350,9 +398,13 @@ def test_kubernetes_detail_workspaces_use_connected_standard_surfaces() -> None:
 
 
 def test_kubernetes_runtime_uses_neutral_surfaces_with_controlled_brand_identity() -> None:
-    detail = read('app/templates/integrations/kubernetes/detail.html')
-    runtime = read('app/templates/integrations/kubernetes/partials/_runtime_workspace.html')
-    inventory = read('app/templates/integrations/kubernetes/partials/_inventory_lifecycle.html')
+    detail = read('app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/detail.html')
+    runtime = read(
+        'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_runtime_workspace.html'
+    )
+    inventory = read(
+        'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_inventory_lifecycle.html'
+    )
     history = read('app/templates/integrations/partials/_runtime_history.html')
 
     assert 'data-kaori-runtime-workspace-v8' in runtime
@@ -375,7 +427,9 @@ def test_kubernetes_runtime_uses_neutral_surfaces_with_controlled_brand_identity
 
 
 def test_connection_contract_uses_controlled_kaori_icon_palette() -> None:
-    connection = read('app/templates/integrations/kubernetes/partials/_connection_contract.html')
+    connection = read(
+        'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_connection_contract.html'
+    )
 
     assert 'data-kaori-connection-icon-palette' in connection
     assert 'data-kaori-palette-icon="brand"' in connection
@@ -392,7 +446,7 @@ def test_connection_contract_uses_controlled_kaori_icon_palette() -> None:
 
 def test_kubernetes_registry_bulk_loads_provider_bindings() -> None:
     coverage = read('app/integrations/coverage.py')
-    frontpage_service = read('app/integrations/kubernetes_frontpage.py')
+    frontpage_service = read('app/integrations/orchestration/container_orchestrator/frontpage.py')
 
     assert 'def bound_sources_for_scopes(' in coverage
     assert 'contains_eager(IntegrationBinding.instance)' in coverage
@@ -404,9 +458,13 @@ def test_kubernetes_registry_bulk_loads_provider_bindings() -> None:
 
 
 def test_kubernetes_integration_overview_uses_controlled_kaori_icon_palette() -> None:
-    page = read('app/templates/integrations/kubernetes.html')
-    coverage = read('app/templates/integrations/kubernetes/partials/_integration_coverage.html')
-    registry = read('app/templates/integrations/kubernetes/partials/_registry.html')
+    page = read('app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/frontpage.html')
+    coverage = read(
+        'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_integration_coverage.html'
+    )
+    registry = read(
+        'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_registry.html'
+    )
     provider_registry = read('app/templates/integrations/components/_provider_registry.html')
 
     assert 'data-kaori-kubernetes-integration-icon-palette' in page
@@ -432,17 +490,29 @@ def test_kubernetes_integration_overview_uses_controlled_kaori_icon_palette() ->
 
 
 def test_kubernetes_integration_uses_canonical_compact_label_roles() -> None:
-    page = read('app/templates/integrations/kubernetes.html')
+    page = read('app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/frontpage.html')
     provider_frontpage = read('app/templates/integrations/components/_provider_frontpage.html')
-    coverage = read('app/templates/integrations/kubernetes/partials/_integration_coverage.html')
-    registry = read('app/templates/integrations/kubernetes/partials/_registry.html')
-    connection = read('app/templates/integrations/kubernetes/partials/_connection_contract.html')
+    coverage = read(
+        'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_integration_coverage.html'
+    )
+    registry = read(
+        'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_registry.html'
+    )
+    connection = read(
+        'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_connection_contract.html'
+    )
     capability = (
-        read('app/templates/integrations/kubernetes/partials/_capability_workspace.html')
-        + read('app/templates/integrations/kubernetes/partials/_capability_registry.html')
+        read(
+            'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_capability_workspace.html'
+        )
+        + read(
+            'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_capability_registry.html'
+        )
         + read('app/templates/integrations/components/_capability_readiness.html')
     )
-    runtime = read('app/templates/integrations/kubernetes/partials/_runtime_workspace.html')
+    runtime = read(
+        'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_runtime_workspace.html'
+    )
     history = read('app/templates/integrations/partials/_runtime_history.html')
     labels = read('app/templates/components/table_label.html')
     standard = read('docs/design/components/INTEGRATIONS_WORKSPACE_STANDARD.md')

@@ -4,16 +4,16 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any
 
-from app.alertmanager.consumer import list_alerts_for_scope
-from app.alertmanager.resolver import resolve_alertmanager_sources
-from app.integrations.metrics.exceptions import (
+from app.alert_sources.providers.alertmanager.consumer import list_alerts_for_scope
+from app.alert_sources.providers.alertmanager.resolver import resolve_alertmanager_sources
+from app.integrations.observability.metrics_source.exceptions import (
     MetricsSourceAuthenticationError,
     MetricsSourceConnectionError,
     MetricsSourceError,
 )
-from app.integrations.metrics.providers import provider_definition
-from app.integrations.metrics.query_profiles.alerts_v1 import ACTIVE_ALERTS_EXPRESSION
-from app.metrics.consumer import MetricsConsumer
+from app.integrations.observability.metrics_source.providers import provider_definition
+from app.integrations.observability.metrics_source.query_profiles.alerts_v1 import ACTIVE_ALERTS_EXPRESSION
+from app.metrics_sources.consumer import MetricsConsumer
 from app.models.integration import IntegrationBinding, IntegrationInstance
 from app.models.object_storage import ObjectStorageSystem
 

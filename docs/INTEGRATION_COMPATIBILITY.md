@@ -55,7 +55,7 @@ The global resolver, runtime history, jobs, notifications, routing, analytics, r
 
 ## Current provider implementations
 
-The active provider catalog is `app/definitions/catalogs/integrations/metrics_source.yaml`.
+The active provider catalog is `app/definitions/catalogs/integrations/observability/metrics_source/contract.yaml`.
 
 - **Prometheus** — `provider_key=prometheus`, currently uses `adapter_key=prometheus_http`, `query_language=promql`, and prefers the recent-query horizon.
 - **Thanos Query** — `provider_key=thanos`, currently uses the same Prometheus HTTP/PromQL adapter but has its own endpoint identity, compatibility profiles, and historical-query preference.
@@ -76,7 +76,7 @@ A provider using a new API or query language additionally requires a new backend
 
 ## Adapter boundary
 
-Backend-specific code lives under `app/integrations/metrics/` and is selected by `adapter_key`.
+Backend-specific code lives under `app/integrations/observability/metrics_source/` and is selected by `adapter_key`.
 
 The generic Metrics Source contract exposes operations such as:
 

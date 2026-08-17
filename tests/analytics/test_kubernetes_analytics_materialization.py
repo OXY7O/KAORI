@@ -14,11 +14,11 @@ from app.analytics.kubernetes.materialization.catalog import canonical_parameter
 from app.analytics.kubernetes.materialization.presentation import pending_page_context
 from app.analytics.kubernetes.materialization.requests import MaterializedRequest
 from app.analytics.kubernetes.materialization.service import SnapshotResult, store_snapshot
-from app.integrations.metrics.capabilities import PROVIDER_CAPABILITY_KEYS
-from app.integrations.metrics.capabilities import definition as metrics_source_capability_definition
-from app.integrations.metrics.query_profiles.audit import PromQLProfileAuditor
+from app.integrations.observability.metrics_source.capabilities import PROVIDER_CAPABILITY_KEYS
+from app.integrations.observability.metrics_source.capabilities import definition as metrics_source_capability_definition
+from app.integrations.observability.metrics_source.query_profiles.audit import PromQLProfileAuditor
 from app.jobs.definitions.forecast_refresh import FORECAST_REFRESH_DEFINITION
-from app.metrics.presentation import _RESOLUTION_CONSUMERS, _module_readiness_rows
+from app.metrics_sources.presentation import _RESOLUTION_CONSUMERS, _module_readiness_rows
 
 
 def test_snapshot_parameters_exclude_view_only_filters() -> None:

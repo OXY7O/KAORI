@@ -4,8 +4,13 @@ from jinja2 import Environment
 
 ROOT = Path(__file__).resolve().parents[3]
 RUNTIME_HISTORY = ROOT / 'app/templates/integrations/partials/_runtime_history.html'
-RUNTIME_WORKSPACE = ROOT / 'app/templates/integrations/kubernetes/partials/_runtime_workspace.html'
-KUBERNETES_DETAIL = ROOT / 'app/templates/integrations/kubernetes/detail.html'
+RUNTIME_WORKSPACE = (
+    ROOT
+    / 'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_runtime_workspace.html'
+)
+KUBERNETES_DETAIL = (
+    ROOT / 'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/detail.html'
+)
 REPOSITORY = ROOT / 'app/integrations/runtime/repository.py'
 ROUTES = ROOT / 'app/integrations/routes.py'
 

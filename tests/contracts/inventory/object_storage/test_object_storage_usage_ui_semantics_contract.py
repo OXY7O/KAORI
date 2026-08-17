@@ -6,7 +6,7 @@ def read(path: str) -> str:
 
 
 def test_minio_usage_state_distinguishes_disabled_from_collection_failure():
-    client = read('app/integrations/minio/client.py')
+    client = read('app/integrations/storage/object_storage/providers/minio/client.py')
     assert "usage_state = 'disabled'" in client
     assert "if usage_stats_mode == 'provider_metrics':" in client
     assert "elif usage_stats_mode == 'full_scan':" in client

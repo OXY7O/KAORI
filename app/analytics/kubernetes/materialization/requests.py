@@ -9,7 +9,7 @@ from flask import current_app, request
 from kombu.exceptions import OperationalError as KombuOperationalError
 from sqlalchemy.exc import SQLAlchemyError
 
-from app.alertmanager.resolver import resolve_alertmanager_sources
+from app.alert_sources.providers.alertmanager.resolver import resolve_alertmanager_sources
 from app.analytics.kubernetes.materialization.catalog import (
     canonical_parameters,
     get_dataset,
@@ -28,11 +28,11 @@ from app.common.dependencies import (
     metrics_source_setup_blocker,
 )
 from app.extensions.db import db
-from app.integrations.metrics.capabilities import definition as capability_definition
-from app.integrations.metrics.scope import KUBERNETES_CLUSTER_SCOPE
+from app.integrations.observability.metrics_source.capabilities import definition as capability_definition
+from app.integrations.observability.metrics_source.scope import KUBERNETES_CLUSTER_SCOPE
 from app.jobs.dispatcher import dispatch_registered_job
 from app.jobs.service import JobQuotaExceeded
-from app.metrics.resolver import resolve_metrics_sources
+from app.metrics_sources.resolver import resolve_metrics_sources
 from app.models import Cluster
 
 _UNUSABLE_OPERATIONAL_STATES = {
@@ -212,7 +212,7 @@ def selected_cluster_from_request(
     cluster_by_id = {cluster.id: cluster for cluster in clusters}
 
     if dataset_key is None:
-        from app.metrics.repository import resolve_instance_for_cluster
+        from app.metrics_sources.repository import resolve_instance_for_cluster
 
         def readiness(cluster_id: str) -> bool:
             return resolve_instance_for_cluster(cluster_id) is not None

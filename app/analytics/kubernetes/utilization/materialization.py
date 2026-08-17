@@ -12,7 +12,7 @@ from app.common.dependencies import (
     metrics_source_capability_blocker,
     metrics_source_connection_blocker,
 )
-from app.integrations.metrics.exceptions import MetricsSourceError
+from app.integrations.observability.metrics_source.exceptions import MetricsSourceError
 from app.intelligence.recommendation_engine import (
     build_utilization_actionable_recommendations,
     count_actionable_recommendations,

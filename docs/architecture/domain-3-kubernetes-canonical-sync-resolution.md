@@ -2,7 +2,7 @@
 
 ## Decision
 
-Kubernetes inventory admission and worker execution must resolve the runtime connection through `app.integrations.kubernetes.resolver.connection_for_cluster`.
+Kubernetes inventory admission and worker execution must resolve the runtime connection through `app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.resolver.connection_for_cluster`.
 
 The `Cluster.kubernetes_connection` ORM relationship is persistence plumbing, not authorization to execute. It does not by itself prove that the canonical integration instance is enabled, bound as the selected primary source, or still eligible for runtime use.
 

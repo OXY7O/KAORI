@@ -7,6 +7,12 @@ def read(relative: str) -> str:
     return (ROOT / relative).read_text(encoding='utf-8')
 
 
+PROVIDER_TEMPLATE_ROOTS = (
+    'app/templates/integrations/observability/metrics_source',
+    'app/templates/integrations/observability/alert_source/providers/alertmanager',
+)
+
+
 def test_runtime_observation_state_view_is_exported_and_does_not_infer_health() -> None:
     presentation = read('app/integrations/runtime/presentation.py')
     assert 'def runtime_observation_state_view(' in presentation
@@ -39,17 +45,21 @@ def test_runtime_observation_details_use_one_shared_native_dialog() -> None:
 
 
 def test_provider_bound_scope_tables_are_full_width_before_decision_split() -> None:
-    for provider in ('metrics', 'alertmanager'):
-        scope = read(f'app/templates/{provider}/partials/_detail_scope.html')
-        registry = read(f'app/templates/{provider}/partials/_binding_registry.html')
-        include_marker = scope.index(f'include "{provider}/partials/_binding_registry.html"')
+    for template_root in PROVIDER_TEMPLATE_ROOTS:
+        scope = read(f'{template_root}/partials/_detail_scope.html')
+        registry = read(f'{template_root}/partials/_binding_registry.html')
+        include_marker = scope.index('_binding_registry.html')
         decision = scope.index('Binding Decision')
         assert include_marker < decision
         assert 'data-kaori-bound-scopes-full-width' in registry
         assert 'table_ui.table_classes(' in registry
 
-    assert 'Consumer Bindings' in read('app/templates/metrics/partials/_detail_scope.html')
-    assert 'Consumer Binding Registry' in read('app/templates/alertmanager/partials/_binding_registry.html')
+    assert 'Consumer Bindings' in read(
+        'app/templates/integrations/observability/metrics_source/partials/_detail_scope.html'
+    )
+    assert 'Consumer Binding Registry' in read(
+        'app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_binding_registry.html'
+    )
 
 
 def test_compact_labels_are_one_line_by_default() -> None:
@@ -88,8 +98,8 @@ def test_operational_toast_countdown_has_visible_htmx_safe_animation() -> None:
 def test_integration_templates_do_not_use_inline_dom_handlers() -> None:
     roots = (
         ROOT / 'app/templates/integrations',
-        ROOT / 'app/templates/metrics',
-        ROOT / 'app/templates/alertmanager',
+        ROOT / 'app/templates/integrations/observability/metrics_source',
+        ROOT / 'app/templates/integrations/observability/alert_source/providers/alertmanager',
     )
     offenders: list[str] = []
     for root in roots:

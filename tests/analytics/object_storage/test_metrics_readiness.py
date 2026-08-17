@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from app.integrations.metrics.query_profiles.object_storage_audit import ObjectStorageMetricsProfileAuditor
-from app.integrations.metrics.query_profiles.object_storage_v1 import list_object_storage_queries
+from app.integrations.observability.metrics_source.query_profiles.object_storage_audit import ObjectStorageMetricsProfileAuditor
+from app.integrations.observability.metrics_source.query_profiles.object_storage_v1 import list_object_storage_queries
 
 
 def _series_rows(*, exclude: set[str] | None = None) -> list[dict[str, str]]:

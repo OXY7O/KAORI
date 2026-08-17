@@ -186,8 +186,8 @@ app/jobs/
 └── tasks.py                 # stale-job recovery
 
 app/integrations/runtime/kubernetes_adapter.py
-app/integrations/metrics/adapter.py
-app/alertmanager/runtime_adapter.py
+app/integrations/observability/metrics_source/adapter.py
+app/alert_sources/providers/alertmanager/runtime_adapter.py
 ```
 
 Kubernetes, Metrics Source, and Alertmanager implement the provider-neutral runtime contract. Provider-specific probes remain inside their owning domains.

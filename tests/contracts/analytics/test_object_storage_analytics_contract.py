@@ -11,7 +11,7 @@ def test_object_storage_analytics_domain_is_metrics_backend_neutral() -> None:
     service = read('app/analytics/object_storage/service.py')
     runtime = read('app/analytics/object_storage/runtime.py')
     resolver = read('app/analytics/object_storage/sources/resolver.py')
-    adapter = read('app/analytics/object_storage/sources/minio_metrics.py')
+    adapter = read('app/analytics/object_storage/sources/providers/minio/metrics.py')
     contracts = read('app/analytics/shared/metrics/contracts.py')
 
     assert 'MetricsSource' in runtime
@@ -35,7 +35,7 @@ def test_object_storage_analytics_domain_is_metrics_backend_neutral() -> None:
 
 def test_metrics_adapter_payload_parsing_is_owned_by_adapter_not_domain_service() -> None:
     service = read('app/analytics/object_storage/service.py')
-    adapter = read('app/analytics/object_storage/sources/minio_metrics.py')
+    adapter = read('app/analytics/object_storage/sources/providers/minio/metrics.py')
 
     assert '_vector_scalar' in adapter
     assert '_vector_by_label' in adapter
@@ -104,7 +104,7 @@ def test_object_storage_alert_sources_are_alertmanager_first_with_metrics_source
 
 def test_metrics_source_transport_failure_is_request_fail_fast() -> None:
     runtime = read('app/analytics/object_storage/runtime.py')
-    adapter = read('app/analytics/object_storage/sources/minio_metrics.py')
+    adapter = read('app/analytics/object_storage/sources/providers/minio/metrics.py')
 
     assert 'source_wide_failure' in runtime
     assert 'if self.source_wide_failure is not None' in runtime
@@ -113,7 +113,7 @@ def test_metrics_source_transport_failure_is_request_fail_fast() -> None:
 
 
 def test_metrics_source_transport_capability_ownership_is_provider_core() -> None:
-    resolver = read('app/metrics/resolver.py')
+    resolver = read('app/metrics_sources/resolver.py')
 
     assert 'def _available_technical_capabilities' in resolver
     assert 'provider_payload = instance.capabilities or {}' in resolver
@@ -123,12 +123,14 @@ def test_metrics_source_transport_capability_ownership_is_provider_core() -> Non
 
 def test_object_storage_metrics_readiness_is_validation_owned_and_provider_qualified() -> None:
     contracts = read('app/analytics/shared/metrics/contracts.py')
-    adapter = read('app/analytics/object_storage/sources/minio_metrics.py')
-    binding_profile_catalog = read('app/definitions/catalogs/integrations/metrics_source.yaml')
-    binding_validation = read('app/integrations/metrics/binding_validation.py')
-    validator_registry = read('app/integrations/metrics/binding_validators/__init__.py')
-    object_storage_validator = read('app/integrations/metrics/binding_validators/object_storage.py')
-    audit = read('app/integrations/metrics/query_profiles/object_storage_audit.py')
+    adapter = read('app/analytics/object_storage/sources/providers/minio/metrics.py')
+    binding_profile_catalog = read('app/definitions/catalogs/integrations/observability/metrics_source/contract.yaml')
+    binding_validation = read('app/integrations/observability/metrics_source/binding_validation.py')
+    validator_registry = read('app/integrations/observability/metrics_source/binding_validators/__init__.py')
+    object_storage_validator = read(
+        'app/integrations/observability/metrics_source/binding_validators/object_storage.py'
+    )
+    audit = read('app/integrations/observability/metrics_source/query_profiles/object_storage_audit.py')
     readiness_template = read('app/templates/analytics/object_storage/partials/_metrics_readiness.html')
 
     assert 'class MetricsReadinessSnapshot' in contracts
@@ -153,8 +155,8 @@ def test_object_storage_metrics_readiness_is_validation_owned_and_provider_quali
 
 
 def test_object_storage_query_profile_classifies_required_recommended_and_optional_evidence() -> None:
-    profile = read('app/integrations/metrics/query_profiles/object_storage_v1.py')
-    types = read('app/integrations/metrics/query_profiles/types.py')
+    profile = read('app/integrations/observability/metrics_source/query_profiles/object_storage_v1.py')
+    types = read('app/integrations/observability/metrics_source/query_profiles/types.py')
 
     assert "QueryReadinessTier = Literal['required', 'recommended', 'optional']" in types
     assert "readiness_tier: QueryReadinessTier = 'required'" in types
@@ -506,7 +508,7 @@ def test_object_storage_forecast_consumers_and_alerts_use_shared_tab_workspace_c
 
 
 def test_object_storage_consumer_profile_staleness_is_explicit_and_direct_cutover() -> None:
-    adapter = read('app/analytics/object_storage/sources/minio_metrics.py')
+    adapter = read('app/analytics/object_storage/sources/providers/minio/metrics.py')
     migration = read('migrations/versions/20260814_object_storage_metrics_profile.py')
 
     assert 'Consumer Validation Stale' in adapter
@@ -520,7 +522,7 @@ def test_object_storage_consumer_profile_staleness_is_explicit_and_direct_cutove
 def test_metrics_source_full_validation_refreshes_enabled_consumer_bindings() -> None:
     validation_tasks = read('app/integrations/validation/tasks.py')
     integrations_readme = read('app/integrations/README.md')
-    metrics_source_readme = read('app/integrations/metrics/README.md')
+    metrics_source_readme = read('app/integrations/observability/metrics_source/README.md')
 
     assert "result_payload['binding_validation_summary'] = _refresh_provider_bindings(" in validation_tasks
     assert 'IntegrationBinding.query.filter_by(' in validation_tasks

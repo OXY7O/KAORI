@@ -17,16 +17,16 @@ def test_full_validation_loader_matches_runtime_history_loading_bar_standard() -
     assert 'loading_bar.render(runtime_history_loading_id' in history
 
     providers = {
-        'kubernetes': 'app/templates/integrations/kubernetes/partials/_capability_workspace.html',
-        'metrics-source': 'app/templates/metrics/partials/_detail_validation_content.html',
-        'alertmanager': 'app/templates/alertmanager/partials/_detail_validation_content.html',
-        'minio': 'app/templates/minio/partials/_detail_validation.html',
+        'kubernetes': 'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_capability_workspace.html',
+        'metrics-source': 'app/templates/integrations/observability/metrics_source/partials/_detail_validation_content.html',
+        'alertmanager': 'app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_detail_validation_content.html',
+        'minio': 'app/templates/integrations/storage/object_storage/providers/minio/partials/_detail_validation.html',
     }
     registries = {
-        'kubernetes': 'app/templates/integrations/kubernetes/partials/_capability_registry.html',
-        'metrics-source': 'app/templates/metrics/partials/_capability_registry.html',
-        'alertmanager': 'app/templates/alertmanager/partials/_capability_registry.html',
-        'minio': 'app/templates/minio/partials/_capability_registry.html',
+        'kubernetes': 'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_capability_registry.html',
+        'metrics-source': 'app/templates/integrations/observability/metrics_source/partials/_capability_registry.html',
+        'alertmanager': 'app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_capability_registry.html',
+        'minio': 'app/templates/integrations/storage/object_storage/providers/minio/partials/_capability_registry.html',
     }
 
     for provider, path in providers.items():
@@ -41,8 +41,10 @@ def test_full_validation_loader_matches_runtime_history_loading_bar_standard() -
 
 def test_observability_authority_boundary_has_right_side_metadata() -> None:
     operational = read('app/templates/integrations/components/_provider_operational_context.html')
-    metrics_source = read('app/templates/metrics/partials/_detail_configuration.html')
-    alertmanager = read('app/templates/alertmanager/partials/_detail_configuration.html')
+    metrics_source = read('app/templates/integrations/observability/metrics_source/partials/_detail_configuration.html')
+    alertmanager = read(
+        'app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_detail_configuration.html'
+    )
 
     assert 'data-kaori-authority-boundary-metadata' in operational
     for source in (metrics_source, alertmanager):
@@ -57,11 +59,11 @@ def test_observability_authority_boundary_has_right_side_metadata() -> None:
 
 
 def test_kubernetes_legacy_summary_compacts_existing_persisted_copy() -> None:
-    messages = read('app/integrations/kubernetes/messages.py')
-    adapter = read('app/integrations/kubernetes/adapter.py')
+    messages = read('app/integrations/orchestration/container_orchestrator/adapters/kubernetes_api/messages.py')
+    adapter = read('app/integrations/orchestration/container_orchestrator/adapters/kubernetes_api/adapter.py')
     service = read('app/integrations/service.py')
     runtime_presentation = read('app/integrations/runtime/presentation.py')
-    validation = read('app/integrations/kubernetes/validation.py')
+    validation = read('app/integrations/orchestration/container_orchestrator/adapters/kubernetes_api/validation.py')
 
     assert "return f'{subject} is in a legacy lifecycle band. Plan an upgrade.'" in messages
     assert 'compact_readiness_reasons(' in adapter
@@ -73,10 +75,14 @@ def test_kubernetes_legacy_summary_compacts_existing_persisted_copy() -> None:
 
 def test_validation_operational_gate_copy_is_compact_for_every_provider() -> None:
     providers = (
-        read('app/templates/integrations/kubernetes/partials/_capability_workspace.html'),
-        read('app/templates/metrics/partials/_detail_validation_content.html'),
-        read('app/templates/alertmanager/partials/_detail_validation_content.html'),
-        read('app/templates/minio/partials/_detail_validation.html'),
+        read(
+            'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_capability_workspace.html'
+        ),
+        read('app/templates/integrations/observability/metrics_source/partials/_detail_validation_content.html'),
+        read(
+            'app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_detail_validation_content.html'
+        ),
+        read('app/templates/integrations/storage/object_storage/providers/minio/partials/_detail_validation.html'),
     )
     combined = '\n'.join(providers)
 

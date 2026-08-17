@@ -8,8 +8,8 @@ def read(path: str) -> str:
 
 
 def test_metrics_source_runtime_matches_kubernetes_layout_and_filtered_history() -> None:
-    detail = read('app/templates/metrics/partials/_detail_runtime.html')
-    runtime = read('app/templates/metrics/partials/_runtime_panel.html')
+    detail = read('app/templates/integrations/observability/metrics_source/partials/_detail_runtime.html')
+    runtime = read('app/templates/integrations/observability/metrics_source/partials/_runtime_panel.html')
 
     assert 'runtime_history_filters_enabled=true' in detail
     assert 'runtime_history_endpoint="metrics.instance_runtime_history"' in detail
@@ -27,8 +27,8 @@ def test_metrics_source_runtime_matches_kubernetes_layout_and_filtered_history()
 
 
 def test_metrics_bindings_use_kaori_table_and_native_create_dialog() -> None:
-    template = read('app/templates/metrics/partials/_detail_scope.html')
-    registry = read('app/templates/metrics/partials/_binding_registry.html')
+    template = read('app/templates/integrations/observability/metrics_source/partials/_detail_scope.html')
+    registry = read('app/templates/integrations/observability/metrics_source/partials/_binding_registry.html')
     modal = read('app/templates/integrations/components/_observability_binding_modal.html')
 
     assert 'Bindings &amp; Consumers' in template
@@ -45,8 +45,8 @@ def test_metrics_bindings_use_kaori_table_and_native_create_dialog() -> None:
 
 
 def test_metrics_source_runtime_history_filters_are_server_side() -> None:
-    routes = read('app/metrics/routes.py')
-    presentation = read('app/metrics/presentation.py')
+    routes = read('app/metrics_sources/routes.py')
+    presentation = read('app/metrics_sources/presentation.py')
 
     for token in ['history_trigger', 'history_health', 'history_readiness']:
         assert token in routes

@@ -14,7 +14,7 @@ These files are obsolete because their canonical replacements are already active
 
 - `app/static/js/analytics_capacity.js`
 - `app/static/js/analytics_forecast.js`
-- `app/templates/alertmanager/partials/_operation_feedback_oob.html`
+- `app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_operation_feedback_oob.html`
 - `app/templates/analytics/kubernetes/alerts/partials/_pagination.html`
 - `app/templates/analytics/kubernetes/alerts/partials/_source_status.html`
 - `app/templates/analytics/components/_controls.html`
@@ -29,7 +29,7 @@ These files are obsolete because their canonical replacements are already active
 - `app/templates/components/footer.html`
 - `app/templates/governance/tls_certificates/partials/_operation_feedback_oob.html`
 - `app/templates/governance/tls_certificates/partials/_sync_toast_oob.html`
-- `app/templates/integrations/kubernetes/partials/_runtime_history.html`
+- `app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_runtime_history.html`
 - `app/templates/integrations/partials/_binding_validation_posture.html`
 - `app/templates/integrations/partials/_status_badge.html`
 - `app/templates/jobs/executions/partials/_hero_context_metrics.html`

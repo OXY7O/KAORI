@@ -1,0 +1,194 @@
+{% import "components/table.html" as table_ui %}
+{% import "components/table_label.html" as table_label %}
+{% import "components/action_button.html" as action_button %}
+{% import "components/loading_bar.html" as loading_bar %}
+{% import "integrations/components/_workspace.html" as integration_ui %}
+{% import "integrations/components/_observability_binding_modal.html" as observability_binding_modal %}
+{% import "integrations/components/_binding_readiness_boundary.html" as binding_readiness_boundary %}
+{% from "integrations/components/_semantic_status.html" import integration_status %}
+{% set validated_binding_count = binding_rows|selectattr('validation_status', 'equalto', 'ready')|list|length %}
+{% set operational_binding_count = binding_rows|selectattr('operational_status', 'equalto', 'ready')|list|length %}
+{% set lifecycle_blocked = bindings or (deletion_guard and deletion_guard.blocked) %}
+<div id="alertmanager-scope-workspace"
+     {% if scope_oob is defined and scope_oob %}hx-swap-oob="outerHTML"{% endif %}
+     class="space-y-4 font-sans"
+     data-kaori-alertmanager-bindings-v3
+     {% if binding_validation_job and binding_validation_job.is_active %}hx-get="{{ url_for('alertmanager.binding_validation_status', instance_id=instance.id, binding_id=binding_validation_job.binding_id, task_id=binding_validation_job.task_id) }}" hx-trigger="load delay:1500ms" hx-target="this" hx-swap="outerHTML"{% endif %}>
+    <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm">
+        <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div class="flex min-w-0 items-start gap-3">
+                    {{ integration_ui.palette_icon('route', 'brand', size='lg') }}
+                    <div>
+                        <h2 class="text-base font-semibold text-content-primary">Bindings &amp; Consumers</h2>
+                        <p class="mt-1 max-w-3xl text-sm leading-6 text-content-secondary">Review governed consumer bindings, alert identity selectors, consumer profiles, effective source resolution, and lifecycle guardrails.</p>
+                    </div>
+                </div>
+                <button type="button"
+                        data-kaori-dialog-open
+                        data-dialog-target="alertmanager-create-binding-dialog"
+                        class="{{ action_button.classes('primary') }}"><i data-lucide="link" class="h-4 w-4" aria-hidden="true"></i>Add Binding</button>
+            </div>
+            {{ loading_bar.render('alertmanager-binding-validation-loading', active=binding_validation_job and binding_validation_job.is_active, label='Validating Alertmanager binding') }}
+        </header>
+        {% if binding_validation_job and binding_validation_job.is_active %}
+            <div class="flex flex-col gap-2 border-b border-outline-subtle bg-surface-subtle px-5 py-3 text-xs text-content-secondary sm:flex-row sm:items-center sm:justify-between"><span class="inline-flex items-center gap-2 font-semibold text-content-primary"><i data-lucide="loader-circle"
+   class="h-3.5 w-3.5 animate-spin text-kaori-primary dark:text-kaori-accent"
+   aria-hidden="true"></i>{{ binding_validation_job.title or 'Binding validation running' }}</span><span>Task {{ binding_validation_job.task_id[:8] }} · {{ binding_validation_job.elapsed_seconds }}s</span></div>
+        {% endif %}
+        <div class="grid divide-y divide-outline-subtle sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-4">
+            <div class="px-5 py-4 sm:px-6">
+                <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Consumer Bindings</p>
+                <p class="mt-2 text-xl font-semibold tabular-nums text-content-primary">{{ binding_rows|length }}</p>
+                <p class="mt-1 text-xs leading-5 text-content-secondary">Managed assets using this source</p>
+            </div>
+            <div class="px-5 py-4 sm:px-6">
+                <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Validated Bindings</p>
+                <p class="mt-2 text-xl font-semibold tabular-nums text-content-primary">{{ validated_binding_count }}</p>
+                <p class="mt-1 text-xs leading-5 text-content-secondary">Selector and binding evidence ready</p>
+            </div>
+            <div class="px-5 py-4 sm:px-6">
+                <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Operational Bindings</p>
+                <p class="mt-2 text-xl font-semibold tabular-nums text-content-primary">{{ operational_binding_count }}</p>
+                <p class="mt-1 text-xs leading-5 text-content-secondary">Source + binding effective</p>
+            </div>
+            <div class="px-5 py-4 sm:px-6">
+                <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Consumer Assets</p>
+                <p class="mt-2 text-xl font-semibold tabular-nums text-content-primary">{{ source_resolution_rows|length }}</p>
+                <p class="mt-1 text-xs leading-5 text-content-secondary">Consumer assets evaluated</p>
+            </div>
+        </div>
+    </section>
+    {% include "integrations/observability/alert_source/providers/alertmanager/partials/_binding_registry.html" %}
+    {{ binding_readiness_boundary.render('Alertmanager',
+        instance.readiness_status or 'validation_required',
+        binding_rows|length,
+        validated_binding_count,
+        operational_binding_count,
+        title='Binding Decision',
+        description='Source readiness, binding validation, resolver preference, alert identity, and operational eligibility remain independent evidence dimensions.',
+        marker='data-kaori-alertmanager-binding-decision-horizontal',
+        identity_title='Alert Identity Boundary',
+        identity_copy='Shared-source bindings use stable alert selectors so Kubernetes, Object Storage, and future consumer alert streams remain isolated.') }}
+    <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm"
+             aria-labelledby="alertmanager-consumer-resolution-title"
+             data-kaori-alertmanager-consumer-resolution-full-width>
+        <header class="border-b border-outline-subtle px-5 py-4">
+            <div class="flex items-start gap-3">
+                {{ integration_ui.palette_icon('workflow', 'brand', size='md') }}
+                <div>
+                    <h3 id="alertmanager-consumer-resolution-title"
+                        class="text-sm font-semibold text-content-primary">Effective Consumer Resolution</h3>
+                    <p class="mt-1 text-xs leading-5 text-content-secondary">Alert Intelligence and silence operations resolve independently against required capability contracts.</p>
+                </div>
+            </div>
+        </header>
+        <div class="divide-y divide-outline-subtle">
+            {% for scope in source_resolution_rows %}
+                <article class="px-5 py-4">
+                    <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                        <div>
+                            <p class="text-sm font-semibold text-content-primary">{{ scope.scope_label }}</p>
+                            <p class="mt-1 text-xs text-content-muted">{{ scope.scope_type_label }}</p>
+                        </div>
+                        {{ integration_status(scope.validation_status, scope.validation_status|replace('_', ' ') |title, display='text') }}
+                    </div>
+                    <div class="mt-4 grid gap-3 lg:grid-cols-2">
+                        {% for label, resolution, icon in [('Alert Intelligence', scope.alerts, 'bell-ring'),('Silence Operations', scope.silences, 'bell-off')] %}
+                            <details class="group overflow-hidden rounded-lg border border-outline-subtle bg-surface-card">
+                                <summary class="flex cursor-pointer list-none items-start justify-between gap-3 px-4 py-3.5 hover:bg-kaori-mist [&::-webkit-details-marker]:hidden">
+                                    <div class="flex min-w-0 items-start gap-3">
+                                        {{ integration_ui.palette_icon(icon, 'brand', size='sm') }}
+                                        <div class="min-w-0">
+                                            <p class="text-xs font-semibold text-content-primary">{{ label }}</p>
+                                            <p class="mt-1 truncate text-xs leading-5 text-content-secondary"
+                                               title="{{ resolution.selected_instance_name or 'No effective source' }}">{{ resolution.selected_instance_name or 'No effective source' }}</p>
+                                        </div>
+                                    </div>
+                                    <div class="flex shrink-0 items-center gap-2">{{ integration_status('ready' if resolution.current_instance_selected else ('degraded' if resolution.selected_instance_id else 'blocked') , 'Selected' if resolution.current_instance_selected else ('Alternate Source' if resolution.selected_instance_id else 'Unavailable'), display='indicator') }}<i data-lucide="chevron-down"
+   class="h-4 w-4 text-content-muted transition group-open:rotate-180"
+   aria-hidden="true"></i></div>
+                                </summary>
+                                <div class="space-y-3 border-t border-outline-subtle bg-surface-subtle p-4">
+                                    <div class="rounded-lg border border-outline-subtle bg-surface-card p-3">
+                                        <p class="text-xs font-semibold text-content-primary">Required Capability Contract</p>
+                                        <p class="mt-1 text-xs leading-5 text-content-secondary">{{ resolution.required_capabilities|join(", ") }}</p>
+                                    </div>
+                                    {% for candidate in resolution.candidates %}
+                                        <div class="rounded-lg border border-outline-subtle bg-surface-card p-3">
+                                            <div class="flex items-start justify-between gap-3">
+                                                <div>
+                                                    <p class="text-xs font-semibold text-content-primary">{{ candidate.instance_name }}</p>
+                                                    <p class="mt-1 text-xs text-content-muted">{{ candidate.binding_role|title }} · Priority {{ candidate.priority }}</p>
+                                                </div>
+                                                {{ integration_status('ready' if candidate.eligible else 'blocked', 'Eligible' if candidate.eligible else 'Skipped', display='indicator') }}
+                                            </div>
+                                            <p class="mt-2 text-xs leading-5 text-content-secondary">{{ candidate.decision_reason }}</p>
+                                            {% if candidate.missing_capability_labels %}
+                                                <p class="mt-2 text-xs font-medium text-status-critical-text">Missing: {{ candidate.missing_capability_labels|join(", ") }}</p>
+                                            {% endif %}
+                                        </div>
+                                    {% else %}
+                                        <p class="text-xs text-content-muted">No enabled candidate is available.</p>
+                                    {% endfor %}
+                                </div>
+                            </details>
+                        {% endfor %}
+                    </div>
+                </article>
+            {% else %}
+                <div class="px-5 py-10 text-center">
+                    <p class="text-sm font-semibold text-content-primary">No Source Resolution Is Available Yet</p>
+                    <p class="mt-1 text-xs leading-5 text-content-secondary">Create a binding to evaluate Alert Intelligence and silence-operation eligibility.</p>
+                </div>
+            {% endfor %}
+        </div>
+    </section>
+    <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm"
+             aria-labelledby="alertmanager-instance-lifecycle-title"
+             data-kaori-alertmanager-lifecycle-horizontal>
+        <div class="grid gap-px bg-outline-subtle lg:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)_auto]">
+            <div class="bg-surface-card px-5 py-4">
+                <div class="flex items-start gap-3">
+                    {{ integration_ui.palette_icon('shield-alert', 'critical' if lifecycle_blocked else 'normal', size='sm') }}
+                    <div class="min-w-0">
+                        <div class="flex flex-wrap items-center gap-2">
+                            <h3 id="alertmanager-instance-lifecycle-title"
+                                class="text-sm font-semibold text-content-primary">Connection Lifecycle</h3>
+                            {{ integration_status('blocked' if lifecycle_blocked else 'ready', 'Blocked' if lifecycle_blocked else 'Guardrails Passed', display='indicator') }}
+                        </div>
+                        <p class="mt-1 text-xs leading-5 text-content-secondary">Deletion requires consumer bindings and active provider jobs to be resolved first.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-surface-card px-5 py-4">
+                <p class="text-xs font-semibold text-content-muted">Retained Evidence</p>
+                <p class="mt-1 text-xs leading-5 text-content-secondary">Runtime observations, execution history, and Activity Audit records remain available after connection removal.</p>
+            </div>
+            <div class="flex items-center justify-end bg-surface-card px-5 py-4">
+                <button type="button"
+                        data-alertmanager-delete-button
+                        data-delete-url="{{ url_for('alertmanager.delete_instance', instance_id=instance.id) }}"
+                        data-delete-title="Delete Alertmanager Instance?"
+                        data-delete-name="{{ instance.name }}"
+                        data-delete-detail="The connection identity, endpoint configuration, and saved credentials will be removed. Runtime observations and audit history remain available."
+                        data-delete-action-label="Delete Instance"
+                        {% if lifecycle_blocked %}disabled{% endif %}
+                        class="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-4 text-sm font-semibold text-status-critical-text transition hover:bg-status-critical-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus disabled:cursor-not-allowed disabled:border-outline-default disabled:bg-status-disabled-soft disabled:text-status-disabled-text"><i data-lucide="trash-2" class="h-4 w-4" aria-hidden="true"></i>Delete Connection</button>
+            </div>
+        </div>
+    </section>
+    {{ observability_binding_modal.render("alertmanager-create-binding-dialog",
+        "Alertmanager",
+        "bell-ring",
+        "alerts",
+        url_for('alertmanager.create_binding', instance_id=instance.id) ,
+    "#alertmanager-scope-workspace",
+    "alertmanager-binding-loading",
+    consumer_asset_groups,
+    binding_error=binding_error|default(none)
+    ) }}
+</div>
+{% if not scope_oob|default(false) %}
+    {% include "components/operation_feedback_oob.html" %}
+{% endif %}

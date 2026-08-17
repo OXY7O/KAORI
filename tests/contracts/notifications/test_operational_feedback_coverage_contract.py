@@ -59,14 +59,14 @@ def test_tls_integrations_platform_operations_access_and_settings_are_covered() 
         ),
         'app/governance/tls_certificates/routes.py': ('governance_tls_secret_sync_dispatch',),
         'app/cluster/routes.py': ('cluster_create', 'cluster_update', 'cluster_delete'),
-        'app/metrics/registration_web.py': ('metrics_source_created',),
-        'app/metrics/routes.py': ('metrics_source_deleted',),
-        'app/metrics/edit_web.py': ('metrics_source_updated',),
-        'app/alertmanager/routes.py': (
+        'app/metrics_sources/registration_web.py': ('metrics_source_created',),
+        'app/metrics_sources/routes.py': ('metrics_source_deleted',),
+        'app/metrics_sources/edit_web.py': ('metrics_source_updated',),
+        'app/alert_sources/providers/alertmanager/routes.py': (
             'alertmanager_instance_created',
             'alertmanager_instance_deleted',
         ),
-        'app/alertmanager/edit_web.py': ('alertmanager_instance_updated',),
+        'app/alert_sources/providers/alertmanager/edit_web.py': ('alertmanager_instance_updated',),
         'app/jobs/routes.py': ('job_policy_updated', 'job_manual_dispatch', 'job_cancellation_requested'),
         'app/platform_operations/data_lifecycle/service.py': (
             'data_lifecycle_policy_updated',

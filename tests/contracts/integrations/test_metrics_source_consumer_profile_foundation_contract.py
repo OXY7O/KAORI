@@ -10,8 +10,8 @@ def read(path: str) -> str:
 
 
 def test_metrics_source_provider_full_validation_is_consumer_neutral() -> None:
-    runtime = read('app/integrations/metrics/prometheus_http_runtime.py')
-    core = read('app/integrations/metrics/prometheus_http_validation.py')
+    runtime = read('app/integrations/observability/metrics_source/adapters/prometheus_http/runtime.py')
+    core = read('app/integrations/observability/metrics_source/adapters/prometheus_http/validation.py')
     compatibility = read('app/integrations/compatibility.py')
     compatibility_catalog = read('app/definitions/catalogs/integrations/compatibility.yaml')
 
@@ -26,13 +26,15 @@ def test_metrics_source_provider_full_validation_is_consumer_neutral() -> None:
 
 
 def test_consumer_validation_profiles_are_asset_scoped() -> None:
-    profiles = read('app/integrations/metrics/binding_profiles.py')
-    profile_catalog = read('app/definitions/catalogs/integrations/metrics_source.yaml')
-    minio = read('app/integrations/minio/__init__.py')
-    binding_validation = read('app/integrations/metrics/binding_validation.py')
-    kubernetes_validator = read('app/integrations/metrics/binding_validators/kubernetes.py')
-    object_storage_validator = read('app/integrations/metrics/binding_validators/object_storage.py')
-    resolver = read('app/metrics/resolver.py')
+    profiles = read('app/integrations/observability/metrics_source/binding_profiles.py')
+    profile_catalog = read('app/definitions/catalogs/integrations/observability/metrics_source/contract.yaml')
+    minio = read('app/integrations/storage/object_storage/providers/minio/__init__.py')
+    binding_validation = read('app/integrations/observability/metrics_source/binding_validation.py')
+    kubernetes_validator = read('app/integrations/observability/metrics_source/binding_validators/kubernetes.py')
+    object_storage_validator = read(
+        'app/integrations/observability/metrics_source/binding_validators/object_storage.py'
+    )
+    resolver = read('app/metrics_sources/resolver.py')
 
     assert 'profile_key: kubernetes-metrics-v1' in profile_catalog
     assert 'profile_key: object-storage-metrics-v1' in profile_catalog
@@ -69,9 +71,11 @@ def test_binding_persists_profile_and_validation_evidence() -> None:
 
 
 def test_metrics_source_ui_separates_provider_and_consumer_readiness() -> None:
-    validation = read('app/templates/metrics/partials/_detail_validation_content.html')
-    scope = read('app/templates/metrics/partials/_detail_scope.html')
-    registry = read('app/templates/metrics/partials/_binding_registry.html')
+    validation = read(
+        'app/templates/integrations/observability/metrics_source/partials/_detail_validation_content.html'
+    )
+    scope = read('app/templates/integrations/observability/metrics_source/partials/_detail_scope.html')
+    registry = read('app/templates/integrations/observability/metrics_source/partials/_binding_registry.html')
 
     assert 'Metrics Source Full Validation' in validation
     assert 'Metrics Source Provider Readiness' in validation

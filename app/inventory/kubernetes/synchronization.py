@@ -8,8 +8,11 @@ from kubernetes.client import BatchV1Api, DiscoveryV1Api
 from sqlalchemy import select
 
 from app.extensions.db import db
-from app.integrations.kubernetes.compatibility import KubernetesDiscovery, list_cluster_resource
-from app.integrations.kubernetes.tls import weak_tls_context
+from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.compatibility import (
+    KubernetesDiscovery,
+    list_cluster_resource,
+)
+from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.tls import weak_tls_context
 from app.integrations.registry import get_integration
 from app.inventory.kubernetes.persistence import (
     save_cluster_info,

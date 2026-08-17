@@ -6,7 +6,7 @@ from app.analytics.kubernetes.utilization.service import UtilizationService
 from app.analytics.kubernetes.workload.service import WorkloadAnalysisService
 from app.cluster.constants import get_environment_label
 from app.intelligence.recommendation_engine import build_workload_actionable_recommendations
-from app.metrics.service import MetricsService
+from app.metrics_sources.service import MetricsService
 from app.models.report import Report
 from app.reports.export.payloads.common import get_report_selected_cluster, report_payload_error
 

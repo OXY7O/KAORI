@@ -26,7 +26,7 @@ Introduce the first live provider adapter behind the Domain 10 resolver boundary
 - Missing service-account permission blocks dry-run before any mutation call.
 - UID or resourceVersion drift after dry-run blocks execution.
 - Execution cannot proceed from a fabricated or rejected dry-run result.
-- The shared resolver service remains provider-neutral; provider code lives under `app/integrations/kubernetes`.
+- The shared resolver service remains provider-neutral; provider code lives under `app/integrations/orchestration/container_orchestrator/adapters/kubernetes_api`.
 
 ## Rollback boundary
 

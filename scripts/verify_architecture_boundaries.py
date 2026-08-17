@@ -8,10 +8,23 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
 
-_PROVIDER_DOMAIN_BOUNDARIES = {
-    'metrics': 'app.metrics',
-    'alertmanager': 'app.alertmanager',
-}
+_PROVIDER_DOMAIN_BOUNDARIES = (
+    (
+        'metrics_source',
+        Path('integrations/observability/metrics_source'),
+        'app.metrics_sources',
+    ),
+    (
+        'alertmanager',
+        Path('integrations/observability/alert_source/providers/alertmanager'),
+        'app.alert_sources.providers.alertmanager',
+    ),
+    (
+        'minio',
+        Path('integrations/storage/object_storage/providers/minio'),
+        'app.object_storage.providers.minio',
+    ),
+)
 
 _RETIRED_PYTHON_MODULES = {
     'app.analytics.kubernetes.alerts.queries',
@@ -25,18 +38,18 @@ _RETIRED_PYTHON_MODULES = {
     'app.analytics.kubernetes.top_consumers.queries',
     'app.analytics.kubernetes.utilization.queries',
     'app.analytics.kubernetes.workload.queries',
-    'app.integrations.alertmanager.alerts',
-    'app.integrations.alertmanager.schemas',
-    'app.integrations.alertmanager.silences',
+    'app.integrations.observability.alert_source.providers.alertmanager.alerts',
+    'app.integrations.observability.alert_source.providers.alertmanager.schemas',
+    'app.integrations.observability.alert_source.providers.alertmanager.silences',
     'app.integrations.deprecations',
-    'app.integrations.kubernetes.actions',
-    'app.integrations.kubernetes.discovery',
-    'app.integrations.kubernetes.inventory',
-    'app.integrations.kubernetes.schemas',
-    'app.integrations.metrics.evidence',
-    'app.integrations.metrics.queries',
-    'app.integrations.metrics.schemas',
-    'app.integrations.metrics.validation',
+    'app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.actions',
+    'app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.discovery',
+    'app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.inventory',
+    'app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.schemas',
+    'app.integrations.observability.metrics_source.evidence',
+    'app.integrations.observability.metrics_source.queries',
+    'app.integrations.observability.metrics_source.schemas',
+    'app.integrations.observability.metrics_source.validation',
     'app.integrations.runtime.contracts',
     'app.integrations.runtime.dispatcher',
     'app.integrations.runtime.service',
@@ -45,7 +58,7 @@ _RETIRED_PYTHON_MODULES = {
     'app.jobs.resource_limits',
     'app.inventory.kubernetes.collector',
     'app.inventory.kubernetes.service',
-    'app.metrics.binding_contract',
+    'app.metrics_sources.binding_contract',
     'app.reports.storage.base',
     'app.users.lifecycle',
     'app.utils.formatters',
@@ -195,22 +208,19 @@ def validate_boundaries(
             errors.append(f'{relative_source}:{record.line}: import targets retired module {record.target!r}')
 
         relative_to_app = record.source.relative_to(app_root)
-        provider = (
-            relative_to_app.parts[1]
-            if len(relative_to_app.parts) >= 3 and relative_to_app.parts[0] == 'integrations'
-            else None
-        )
-        forbidden_domain = _PROVIDER_DOMAIN_BOUNDARIES.get(provider or '')
-        if forbidden_domain and (record.target == forbidden_domain or record.target.startswith(f'{forbidden_domain}.')):
-            errors.append(
-                f'{relative_source}:{record.line}: canonical {provider.title()} provider code may not '
-                f'import its web/domain package ({record.target})'
-            )
+        for provider, kernel_root, forbidden_domain in _PROVIDER_DOMAIN_BOUNDARIES:
+            if not relative_to_app.is_relative_to(kernel_root):
+                continue
+            if record.target == forbidden_domain or record.target.startswith(f'{forbidden_domain}.'):
+                errors.append(
+                    f'{relative_source}:{record.line}: canonical {provider.replace("_", " ").title()} kernel '
+                    f'may not import its web/application workspace ({record.target})'
+                )
 
         if record.source == app_root / 'integrations' / 'binding_service.py':
             forbidden_binding_import = any(
                 record.target == domain or record.target.startswith(f'{domain}.')
-                for domain in _PROVIDER_DOMAIN_BOUNDARIES.values()
+                for _, _, domain in _PROVIDER_DOMAIN_BOUNDARIES
             )
             if forbidden_binding_import:
                 errors.append(

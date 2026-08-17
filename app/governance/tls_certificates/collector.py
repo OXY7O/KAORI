@@ -27,8 +27,11 @@ from app.governance.tls_certificates.constants import (
     TLS_SECRET_TYPE,
     TLS_STATUS_INVALID,
 )
-from app.integrations.kubernetes.resolver import connection_for_cluster, tls_policy_for_cluster
-from app.integrations.kubernetes.tls import weak_tls_context
+from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.resolver import (
+    connection_for_cluster,
+    tls_policy_for_cluster,
+)
+from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.tls import weak_tls_context
 from app.integrations.registry import get_integration
 from app.models import Cluster
 

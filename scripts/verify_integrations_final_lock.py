@@ -8,8 +8,8 @@ ROOT = Path(__file__).resolve().parents[1]
 
 INTEGRATION_TEMPLATE_ROOTS = (
     Path('app/templates/integrations'),
-    Path('app/templates/metrics'),
-    Path('app/templates/alertmanager'),
+    Path('app/templates/integrations/observability/metrics_source'),
+    Path('app/templates/integrations/observability/alert_source/providers/alertmanager'),
 )
 
 RAW_HEX = re.compile(r'(?<![\w-])#[0-9a-fA-F]{3,8}\b')
@@ -59,9 +59,9 @@ def main() -> int:
     require('data-kaori-capability-readiness' in readiness, 'Shared capability readiness marker is missing', errors)
     require('progress_bar.bar(' in readiness, 'Capability readiness must use the shared progress bar', errors)
     for relative in (
-        'app/templates/integrations/kubernetes/partials/_capability_workspace.html',
-        'app/templates/metrics/partials/_detail_validation_content.html',
-        'app/templates/alertmanager/partials/_detail_validation_content.html',
+        'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_capability_workspace.html',
+        'app/templates/integrations/observability/metrics_source/partials/_detail_validation_content.html',
+        'app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_detail_validation_content.html',
     ):
         source = read(relative)
         require(
@@ -76,12 +76,20 @@ def main() -> int:
     # Capability registries use real HTMX interaction + one shared loading bar.
     registry_contracts = (
         (
-            'app/templates/integrations/kubernetes/partials/_capability_registry.html',
+            'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_capability_registry.html',
             'kubernetes-capability-loading',
             False,
         ),
-        ('app/templates/metrics/partials/_capability_registry.html', 'metrics-source-capability-loading', True),
-        ('app/templates/alertmanager/partials/_capability_registry.html', 'alertmanager-capability-loading', True),
+        (
+            'app/templates/integrations/observability/metrics_source/partials/_capability_registry.html',
+            'metrics-source-capability-loading',
+            True,
+        ),
+        (
+            'app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_capability_registry.html',
+            'alertmanager-capability-loading',
+            True,
+        ),
     )
     fake_loading_tokens = (
         'registryLoading:',
@@ -195,8 +203,8 @@ def main() -> int:
 
     # Runtime detail workspaces remain full-width decision/evidence surfaces.
     for relative in (
-        'app/templates/metrics/partials/_runtime_panel.html',
-        'app/templates/alertmanager/partials/_runtime_panel.html',
+        'app/templates/integrations/observability/metrics_source/partials/_runtime_panel.html',
+        'app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_runtime_panel.html',
     ):
         source = read(relative)
         require(
@@ -209,7 +217,9 @@ def main() -> int:
         )
         require('xl:sticky' not in source, f'{relative}: sticky Runtime Decision rail is forbidden', errors)
 
-    kubernetes_runtime = read('app/templates/integrations/kubernetes/partials/_runtime_workspace.html')
+    kubernetes_runtime = read(
+        'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_runtime_workspace.html'
+    )
     require(
         'data-kaori-runtime-decision-summary' in kubernetes_runtime,
         'Kubernetes runtime decision summary marker is missing',
@@ -238,8 +248,11 @@ def main() -> int:
         require(marker in config_contract, f'Shared provider Configuration contract missing: {marker}', errors)
     require('Operational Boundary' not in config_contract, 'Separate Operational Boundary surface is retired', errors)
     require('Operational Flow' not in config_contract, 'Separate Operational Flow surface is retired', errors)
-    for provider, template_root in (('metrics_source', 'metrics'), ('alertmanager', 'alertmanager')):
-        relative = f'app/templates/{template_root}/partials/_detail_configuration.html'
+    for provider, template_root in (
+        ('metrics_source', 'app/templates/integrations/observability/metrics_source'),
+        ('alertmanager', 'app/templates/integrations/observability/alert_source/providers/alertmanager'),
+    ):
+        relative = f'{template_root}/partials/_detail_configuration.html'
         source = read(relative)
         require(
             'provider_configuration_contract.render(' in source,
@@ -258,8 +271,11 @@ def main() -> int:
     require(
         'integration_workspace_tabs.js' in layout, 'Application layout must load shared provider tab controller', errors
     )
-    for provider, template_root in (('metrics_source', 'metrics'), ('alertmanager', 'alertmanager')):
-        source = read(f'app/templates/{template_root}/instance_detail.html')
+    for provider, template_root in (
+        ('metrics_source', 'app/templates/integrations/observability/metrics_source'),
+        ('alertmanager', 'app/templates/integrations/observability/alert_source/providers/alertmanager'),
+    ):
+        source = read(f'{template_root}/instance_detail.html')
         require('integrationWorkspaceTabs(' in source, f'{provider}: detail tabs must use shared controller', errors)
         require(
             'binding_rows|default([])' in source,
@@ -286,10 +302,10 @@ def main() -> int:
         errors,
     )
     registry_templates = (
-        'app/templates/integrations/kubernetes/partials/_registry.html',
-        'app/templates/integrations/metrics/partials/_inventory_content.html',
-        'app/templates/integrations/alertmanager/partials/_inventory_content.html',
-        'app/templates/minio/partials/_registry_content.html',
+        'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_registry.html',
+        'app/templates/integrations/observability/metrics_source/partials/_inventory_content.html',
+        'app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_inventory_content.html',
+        'app/templates/integrations/storage/object_storage/providers/minio/partials/_registry_content.html',
     )
     for relative in registry_templates:
         source = read(relative)
@@ -303,7 +319,9 @@ def main() -> int:
         require('min-w-[10' not in source, f'{relative}: forced desktop registry width is forbidden', errors)
 
     # RBAC baseline and optional Secret access remain separate by design.
-    rbac = read('app/templates/integrations/kubernetes/partials/_minimum_validation_rbac.html')
+    rbac = read(
+        'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_minimum_validation_rbac.html'
+    )
     require(
         'components/workspace_tabs.html' in rbac and 'workspace_tabs.render(' in rbac,
         'Minimum Validation RBAC modal must use shared tabs',
@@ -328,7 +346,9 @@ def main() -> int:
     )
 
     # Canonical Kubernetes navigation must not regress to the retired cluster list endpoint.
-    kubernetes_detail = read('app/templates/integrations/kubernetes/detail.html')
+    kubernetes_detail = read(
+        'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/detail.html'
+    )
     require(
         (
             "url_for('integrations.kubernetes')" in kubernetes_detail
@@ -357,12 +377,12 @@ def main() -> int:
     # Known dead Integration-era templates may not return.
     obsolete = (
         'app/templates/integrations/partials/_runtime_detail_content.html',
-        'app/templates/metrics/partials/_analytics_readiness.html',
-        'app/templates/integrations/kubernetes/partials/_runtime_history.html',
+        'app/templates/integrations/observability/metrics_source/partials/_analytics_readiness.html',
+        'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_runtime_history.html',
         'app/templates/integrations/partials/_binding_validation_posture.html',
         'app/templates/integrations/partials/_status_badge.html',
-        'app/templates/metrics/partials/_validation_response.html',
-        'app/templates/alertmanager/partials/_operation_feedback_oob.html',
+        'app/templates/integrations/observability/metrics_source/partials/_validation_response.html',
+        'app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_operation_feedback_oob.html',
     )
     cleanup_script = read('scripts/cleanup_obsolete_files.sh')
     for relative in obsolete:
@@ -396,10 +416,14 @@ def main() -> int:
         errors,
     )
     for provider, template_root, identity_column in (
-        ('metrics_source', 'metrics', 'Metrics Identity'),
-        ('alertmanager', 'alertmanager', 'Alert Identity'),
+        ('metrics_source', 'app/templates/integrations/observability/metrics_source', 'Metrics Identity'),
+        (
+            'alertmanager',
+            'app/templates/integrations/observability/alert_source/providers/alertmanager',
+            'Alert Identity',
+        ),
     ):
-        registry = read(f'app/templates/{template_root}/partials/_binding_registry.html')
+        registry = read(f'{template_root}/partials/_binding_registry.html')
         for marker in (
             'data-kaori-binding-registry-final-lock',
             'Consumer Asset',
@@ -421,10 +445,14 @@ def main() -> int:
 
     # Integrations Overview and provider front-page final-lock contract.
     provider_front_pages = {
-        'Kubernetes': read('app/templates/integrations/kubernetes.html'),
-        'Metrics Source': read('app/templates/integrations/metrics.html'),
-        'Alertmanager': read('app/templates/integrations/alertmanager.html'),
-        'MinIO': read('app/templates/minio/index.html'),
+        'Kubernetes': read(
+            'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/frontpage.html'
+        ),
+        'Metrics Source': read('app/templates/integrations/observability/metrics_source/frontpage.html'),
+        'Alertmanager': read(
+            'app/templates/integrations/observability/alert_source/providers/alertmanager/frontpage.html'
+        ),
+        'MinIO': read('app/templates/integrations/storage/object_storage/providers/minio/index.html'),
     }
     for provider, source in provider_front_pages.items():
         require('Coverage Gaps' in source, f'{provider}: fourth overview metric must be Coverage Gaps', errors)
@@ -553,10 +581,14 @@ def main() -> int:
 
     # Provider detail lifecycle final-lock contract.
     provider_details = {
-        'Kubernetes': read('app/templates/integrations/kubernetes/detail.html'),
-        'Metrics Source': read('app/templates/metrics/instance_detail.html'),
-        'Alertmanager': read('app/templates/alertmanager/instance_detail.html'),
-        'MinIO': read('app/templates/minio/instance_detail.html'),
+        'Kubernetes': read(
+            'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/detail.html'
+        ),
+        'Metrics Source': read('app/templates/integrations/observability/metrics_source/instance_detail.html'),
+        'Alertmanager': read(
+            'app/templates/integrations/observability/alert_source/providers/alertmanager/instance_detail.html'
+        ),
+        'MinIO': read('app/templates/integrations/storage/object_storage/providers/minio/instance_detail.html'),
     }
     for provider, source in provider_details.items():
         for label in ('Configuration', 'Validation & Capabilities', 'Runtime & History'):
@@ -592,10 +624,18 @@ def main() -> int:
     )
 
     validation_templates = {
-        'Kubernetes': read('app/templates/integrations/kubernetes/partials/_capability_workspace.html'),
-        'Metrics Source': read('app/templates/metrics/partials/_detail_validation_content.html'),
-        'Alertmanager': read('app/templates/alertmanager/partials/_detail_validation_content.html'),
-        'MinIO': read('app/templates/minio/partials/_detail_validation.html'),
+        'Kubernetes': read(
+            'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_capability_workspace.html'
+        ),
+        'Metrics Source': read(
+            'app/templates/integrations/observability/metrics_source/partials/_detail_validation_content.html'
+        ),
+        'Alertmanager': read(
+            'app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_detail_validation_content.html'
+        ),
+        'MinIO': read(
+            'app/templates/integrations/storage/object_storage/providers/minio/partials/_detail_validation.html'
+        ),
     }
     for provider, source in validation_templates.items():
         require(
@@ -623,9 +663,12 @@ def main() -> int:
     )
 
     for provider, relative in (
-        ('Metrics Source', 'app/templates/metrics/partials/_runtime_panel.html'),
-        ('Alertmanager', 'app/templates/alertmanager/partials/_runtime_panel.html'),
-        ('MinIO', 'app/templates/minio/partials/_detail_runtime.html'),
+        ('Metrics Source', 'app/templates/integrations/observability/metrics_source/partials/_runtime_panel.html'),
+        (
+            'Alertmanager',
+            'app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_runtime_panel.html',
+        ),
+        ('MinIO', 'app/templates/integrations/storage/object_storage/providers/minio/partials/_detail_runtime.html'),
     ):
         source = read(relative)
         require(

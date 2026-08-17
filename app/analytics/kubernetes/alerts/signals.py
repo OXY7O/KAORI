@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from app.alertmanager.service import get_alertmanager_status
+from app.alert_sources.providers.alertmanager.service import get_alertmanager_status
 from app.analytics.kubernetes.alerts.contracts import (
     AlertResourceLinks,
     AlertSelectedClusterSignalOverview,

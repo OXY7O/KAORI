@@ -9,7 +9,9 @@ from app.governance.tls_certificates.constants import (
     TLS_SYNC_QUEUE,
 )
 from app.governance.tls_certificates.tasks import sync_tls_certificates_task
-from app.integrations.kubernetes.resolver import connection_for_cluster
+from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.resolver import (
+    connection_for_cluster,
+)
 from app.jobs.constants import ACTIVE_JOB_STATUSES, WORKLOAD_STANDARD
 from app.jobs.dispatcher import enqueue_canonical_job
 from app.jobs.service import acquire_resource_admission_locks, attach_job_subscriber

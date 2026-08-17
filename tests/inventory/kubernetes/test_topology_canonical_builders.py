@@ -128,7 +128,7 @@ def _topology_builder_modules(monkeypatch: pytest.MonkeyPatch):
     for package in (
         'app.cluster',
         'app.integrations',
-        'app.integrations.kubernetes',
+        'app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api',
         'app.inventory.kubernetes.resources',
     ):
         module = ModuleType(package)
@@ -139,9 +139,9 @@ def _topology_builder_modules(monkeypatch: pytest.MonkeyPatch):
     constants.get_environment_label = lambda value: str(value or 'Not Reported').title()
     monkeypatch.setitem(sys.modules, 'app.cluster.constants', constants)
 
-    resolver = ModuleType('app.integrations.kubernetes.resolver')
+    resolver = ModuleType('app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.resolver')
     resolver.server_for_cluster = lambda cluster: getattr(cluster, 'server', None)
-    monkeypatch.setitem(sys.modules, 'app.integrations.kubernetes.resolver', resolver)
+    monkeypatch.setitem(sys.modules, 'app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.resolver', resolver)
 
     _load_module(
         'app.inventory.kubernetes.formatting',

@@ -69,7 +69,7 @@ This closes the previous gap where Domain 17 and Domain 20 state existed but was
 
 | Diagnostic family | Resolution |
 |---|---|
-| Nullable Alertmanager passed to `_binding_row` | Guarded in `app/alertmanager/presentation.py`. |
+| Nullable Alertmanager passed to `_binding_row` | Guarded in `app/alert_sources/providers/alertmanager/presentation.py`. |
 | Alert health TypedDict/list invariance | Exact `AlertSourceHealthCheck` and `AlertSourceHealthSummary` annotations in `app/analytics/kubernetes/alerts/health.py`. |
 | Incomplete `AlertSourceStatus` | Central complete empty-status constructor in `app/analytics/kubernetes/alerts/snapshots.py`. |
 | Optional capability/consumer attributes | Explicit narrowing in capacity, utilization, and workload analytics services. |
@@ -93,7 +93,7 @@ The committed baseline still contains two cycle envelopes:
 
 It also allows three service-to-form imports:
 
-- `app/alertmanager/service.py → app.alertmanager.forms`
+- `app/alert_sources/providers/alertmanager/service.py → app.alert_sources.providers.alertmanager.forms`
 - `app/prometheus/service.py → app.prometheus.forms`
 - `app/users/service.py → app.users.forms`
 

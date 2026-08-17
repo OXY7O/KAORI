@@ -59,7 +59,9 @@ def test_quality_gate_cannot_skip_surface_coverage() -> None:
 def test_cluster_listing_legacy_chain_is_retired_and_guarded() -> None:
     coverage = read('scripts/verify_release_surface_coverage.py')
     sidebar = read('app/templates/components/navigation/sidebar.html')
-    kubernetes_registration = read('app/integrations/kubernetes/__init__.py')
+    kubernetes_registration = read(
+        'app/integrations/orchestration/container_orchestrator/adapters/kubernetes_api/__init__.py'
+    )
 
     assert 'can_clusters' not in sidebar
     assert "navigation_endpoint_prefixes=('integrations.kubernetes', 'cluster.')" in kubernetes_registration

@@ -27,7 +27,7 @@ The following pages now consume it:
 
 ```text
 app/templates/settings/roles/index.html
-app/templates/alertmanager/instance_form.html
+app/templates/integrations/observability/alert_source/providers/alertmanager/instance_form.html
 ```
 
 ### Roles & Access

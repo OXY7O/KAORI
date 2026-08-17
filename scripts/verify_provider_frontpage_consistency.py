@@ -11,24 +11,40 @@ def read(path: str) -> str:
 
 def main() -> int:
     provider_pages = {
-        'Kubernetes': read('app/templates/integrations/kubernetes.html'),
-        'Metrics Source': read('app/templates/integrations/metrics.html'),
-        'Alertmanager': read('app/templates/integrations/alertmanager.html'),
-        'MinIO': read('app/templates/minio/index.html'),
+        'Kubernetes': read(
+            'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/frontpage.html'
+        ),
+        'Metrics Source': read('app/templates/integrations/observability/metrics_source/frontpage.html'),
+        'Alertmanager': read(
+            'app/templates/integrations/observability/alert_source/providers/alertmanager/frontpage.html'
+        ),
+        'MinIO': read('app/templates/integrations/storage/object_storage/providers/minio/index.html'),
     }
     shared_frontpage = read('app/templates/integrations/components/_provider_frontpage.html')
     shared_registry = read('app/templates/integrations/components/_provider_registry.html')
     shared_tabs = read('app/templates/components/integration_workspace_tabs.html')
 
     connection_registries = {
-        'Kubernetes': read('app/templates/integrations/kubernetes/partials/_registry.html'),
-        'Metrics Source': read('app/templates/integrations/metrics/partials/_inventory_content.html'),
-        'Alertmanager': read('app/templates/integrations/alertmanager/partials/_inventory_content.html'),
-        'MinIO': read('app/templates/minio/partials/_registry_content.html'),
+        'Kubernetes': read(
+            'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_registry.html'
+        ),
+        'Metrics Source': read(
+            'app/templates/integrations/observability/metrics_source/partials/_inventory_content.html'
+        ),
+        'Alertmanager': read(
+            'app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_inventory_content.html'
+        ),
+        'MinIO': read(
+            'app/templates/integrations/storage/object_storage/providers/minio/partials/_registry_content.html'
+        ),
     }
     direct_coverage = {
-        'Kubernetes': read('app/templates/integrations/kubernetes/partials/_integration_coverage.html'),
-        'MinIO': read('app/templates/minio/partials/_coverage_content.html'),
+        'Kubernetes': read(
+            'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_integration_coverage.html'
+        ),
+        'MinIO': read(
+            'app/templates/integrations/storage/object_storage/providers/minio/partials/_coverage_content.html'
+        ),
     }
     observability_coverage = read('app/templates/components/integration_coverage_content.html')
     workspace_standard = read('docs/design/components/INTEGRATIONS_WORKSPACE_STANDARD.md')
@@ -40,9 +56,11 @@ def main() -> int:
     coverage_service = read('app/integrations/coverage.py')
     provider_registration_pages = {
         'Kubernetes': read('app/templates/cluster/add.html'),
-        'Metrics Source': read('app/templates/metrics/instance_form.html'),
-        'Alertmanager': read('app/templates/alertmanager/instance_form.html'),
-        'MinIO': read('app/templates/minio/instance_form.html'),
+        'Metrics Source': read('app/templates/integrations/observability/metrics_source/instance_form.html'),
+        'Alertmanager': read(
+            'app/templates/integrations/observability/alert_source/providers/alertmanager/instance_form.html'
+        ),
+        'MinIO': read('app/templates/integrations/storage/object_storage/providers/minio/instance_form.html'),
     }
 
     for provider, page in provider_pages.items():
@@ -200,16 +218,18 @@ def main() -> int:
 
     coverage = (ROOT / 'app/templates/components/integration_coverage_content.html').read_text()
     registry = (ROOT / 'app/templates/integrations/components/_provider_registry.html').read_text()
-    minio_form = (ROOT / 'app/templates/minio/instance_form.html').read_text()
-    minio_routes = (ROOT / 'app/minio/routes.py').read_text()
+    minio_form = (
+        ROOT / 'app/templates/integrations/storage/object_storage/providers/minio/instance_form.html'
+    ).read_text()
+    minio_routes = (ROOT / 'app/object_storage/providers/minio/routes.py').read_text()
     assert 'Consumer Asset' in registry
     assert "item_label='Assets'" in coverage or 'item_label="Assets"' in coverage
     assert 'empty_state_show_admin_required' not in coverage
     assert 'connection_validation_header.render(' in minio_form
     assert 'minio.test_new_instance_connection' in minio_form
     assert 'minio-connection-tested' in minio_routes
-    minio_client = read('app/integrations/minio/client.py')
-    minio_service = read('app/minio/service.py')
+    minio_client = read('app/integrations/storage/object_storage/providers/minio/client.py')
+    minio_service = read('app/object_storage/providers/minio/service.py')
     assert 's3:ListAllMyBuckets' in minio_client
     assert '/minio/health/live' in minio_client
     assert 'identity_evidence' in minio_client

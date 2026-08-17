@@ -1,6 +1,6 @@
 # Versioned PromQL query profiles
 
-KAORI does not permit PromQL to be added directly to routes, templates, or service methods. For Metrics Source providers using PromQL, every query is registered under a stable key in `app/integrations/metrics/query_profiles/kubernetes_v1.py` and consumed directly from the canonical query-profile registry by Analytics, Dashboard, Reports, Notifications, and Intelligence.
+KAORI does not permit PromQL to be added directly to routes, templates, or service methods. For Metrics Source providers using PromQL, every query is registered under a stable key in `app/integrations/observability/metrics_source/query_profiles/kubernetes_v1.py` and consumed directly from the canonical query-profile registry by Analytics, Dashboard, Reports, Notifications, and Intelligence.
 
 ## Current profile
 

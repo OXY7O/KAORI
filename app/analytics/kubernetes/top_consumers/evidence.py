@@ -4,9 +4,9 @@ from dataclasses import dataclass
 from math import isfinite
 from typing import Any
 
-from app.integrations.metrics.exceptions import MetricsSourceError
-from app.integrations.metrics.query_profiles import get_kubernetes_query_expression
-from app.metrics.consumer import MetricsConsumer
+from app.integrations.observability.metrics_source.exceptions import MetricsSourceError
+from app.integrations.observability.metrics_source.query_profiles import get_kubernetes_query_expression
+from app.metrics_sources.consumer import MetricsConsumer
 
 TOP_CONSUMERS_QUERY_CAPABILITIES = ('instant_query',)
 TOP_CONSUMERS_ADVISORY_CAPABILITIES = (

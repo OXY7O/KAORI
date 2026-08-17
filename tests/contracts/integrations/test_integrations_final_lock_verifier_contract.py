@@ -50,7 +50,7 @@ def test_final_lock_document_freezes_current_integration_architecture() -> None:
 def test_retired_integration_presentation_paths_are_removed() -> None:
     obsolete = (
         ROOT / 'app/templates/integrations/partials/_runtime_detail_content.html',
-        ROOT / 'app/templates/metrics/partials/_analytics_readiness.html',
+        ROOT / 'app/templates/integrations/observability/metrics_source/partials/_analytics_readiness.html',
     )
     for path in obsolete:
         assert not path.exists()

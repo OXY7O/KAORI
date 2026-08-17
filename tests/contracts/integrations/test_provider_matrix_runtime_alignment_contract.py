@@ -9,8 +9,12 @@ def read(path: str) -> str:
 
 def test_provider_validation_workspaces_share_capability_readiness_component():
     shared = read('app/templates/integrations/components/_capability_readiness.html')
-    metrics_source = read('app/templates/metrics/partials/_detail_validation_content.html')
-    alertmanager = read('app/templates/alertmanager/partials/_detail_validation_content.html')
+    metrics_source = read(
+        'app/templates/integrations/observability/metrics_source/partials/_detail_validation_content.html'
+    )
+    alertmanager = read(
+        'app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_detail_validation_content.html'
+    )
 
     assert 'data-kaori-provider-capability-readiness' in shared
     assert 'Validated capability coverage' not in shared  # label is provider supplied
@@ -22,8 +26,10 @@ def test_provider_validation_workspaces_share_capability_readiness_component():
 
 def test_provider_runtime_workspaces_share_kubernetes_style_decision_component():
     shared = read('app/templates/integrations/components/_runtime_decision.html')
-    metrics_source = read('app/templates/metrics/partials/_runtime_panel.html')
-    alertmanager = read('app/templates/alertmanager/partials/_runtime_panel.html')
+    metrics_source = read('app/templates/integrations/observability/metrics_source/partials/_runtime_panel.html')
+    alertmanager = read(
+        'app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_runtime_panel.html'
+    )
 
     assert 'data-kaori-provider-runtime-decision' in shared
     assert 'Operational Response' in shared
@@ -38,8 +44,10 @@ def test_provider_runtime_workspaces_share_kubernetes_style_decision_component()
 def test_provider_runtime_main_page_uses_concise_diagnostics_and_modal_owns_full_detail():
     presentation = read('app/integrations/runtime/presentation.py')
     modal = read('app/templates/integrations/components/_runtime_observation_modal.html')
-    metrics_source = read('app/templates/metrics/partials/_runtime_panel.html')
-    alertmanager = read('app/templates/alertmanager/partials/_runtime_panel.html')
+    metrics_source = read('app/templates/integrations/observability/metrics_source/partials/_runtime_panel.html')
+    alertmanager = read(
+        'app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_runtime_panel.html'
+    )
 
     assert "'summary': _diagnostic_summary(" in presentation
     assert "'message_redundant': _message_repeats_diagnostic" in presentation

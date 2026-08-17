@@ -60,7 +60,7 @@ def test_lifecycle_migration_chain_restores_schedule_evidence_revision() -> None
 def test_runtime_observation_lifecycle_includes_object_storage_runtime_history() -> None:
     presentation = read('app/retention/presentation.py')
     runtime_domain = read('app/retention/domains/runtime_observation.py')
-    minio_adapter = read('app/integrations/minio/adapter.py')
+    minio_adapter = read('app/integrations/storage/object_storage/providers/minio/adapter.py')
     validation_tasks = read('app/integrations/validation/tasks.py')
     readme = read('app/retention/README.md')
     runtime_history = read('app/templates/integrations/partials/_runtime_history.html')

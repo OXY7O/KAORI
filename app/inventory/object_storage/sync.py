@@ -9,7 +9,7 @@ from flask import current_app
 from sqlalchemy import select
 
 from app.extensions.db import db
-from app.integrations.minio.client import (
+from app.integrations.storage.object_storage.providers.minio.client import (
     MinioBucketSummary,
     collect_instance_bucket_inventory,
 )

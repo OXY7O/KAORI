@@ -384,8 +384,8 @@ def _resolve_selected_cluster(
             return cluster
 
     try:
-        from app.integrations.metrics.scope import KUBERNETES_CLUSTER_SCOPE
-        from app.metrics.resolver import resolve_metrics_sources
+        from app.integrations.observability.metrics_source.scope import KUBERNETES_CLUSTER_SCOPE
+        from app.metrics_sources.resolver import resolve_metrics_sources
 
         for cluster in clusters:
             resolution = resolve_metrics_sources(

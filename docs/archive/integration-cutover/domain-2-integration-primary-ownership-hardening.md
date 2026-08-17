@@ -21,7 +21,7 @@ its binding, validation evidence, runtime history, or audit history.
 ## Files
 
 - `app/integrations/prometheus/binding_management.py`
-- `app/integrations/alertmanager/binding_management.py`
+- `app/integrations/observability/alert_source/providers/alertmanager/binding_management.py`
 - `tests/integrations/test_primary_binding_eligibility.py`
 - `tests/contracts/integrations/test_primary_binding_ownership_contract.py`
 

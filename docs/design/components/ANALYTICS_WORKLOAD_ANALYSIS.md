@@ -11,7 +11,7 @@ Implementation:
 - `app/analytics/kubernetes/workload/presentation.py`
 - `app/analytics/kubernetes/workload/routes.py`
 - `app/templates/analytics/kubernetes/workload/`
-- `app/integrations/metrics/query_profiles/kubernetes_v1.py`
+- `app/integrations/observability/metrics_source/query_profiles/kubernetes_v1.py`
 
 ## Purpose
 

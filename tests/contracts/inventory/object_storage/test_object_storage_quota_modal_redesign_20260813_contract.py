@@ -35,7 +35,7 @@ def test_bucket_detail_modal_uses_dense_operational_information_architecture() -
 
 
 def test_quota_collection_is_minio_specific_and_optional_to_snapshot_success() -> None:
-    client = read('app/integrations/minio/client.py')
+    client = read('app/integrations/storage/object_storage/providers/minio/client.py')
     presentation = read('app/inventory/object_storage/presentation.py')
 
     assert "f'/minio/admin/{api_version}/get-bucket-quota'" in client
@@ -51,7 +51,7 @@ def test_quota_collection_is_minio_specific_and_optional_to_snapshot_success() -
 
 
 def test_usage_full_scan_remains_separate_from_quota_collection() -> None:
-    client = read('app/integrations/minio/client.py')
+    client = read('app/integrations/storage/object_storage/providers/minio/client.py')
     template = read('app/templates/inventory/object_storage/buckets/partials/_table_content.html')
 
     assert 'collect_quota: bool = True' in client

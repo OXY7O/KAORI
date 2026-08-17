@@ -32,7 +32,7 @@ bash scripts/quality_gate.sh
 Restore the previous versions of:
 
 - `app/inventory/synchronization.py`
-- `app/integrations/kubernetes/adapter.py`
-- `app/integrations/kubernetes/inventory.py`
+- `app/integrations/orchestration/container_orchestrator/adapters/kubernetes_api/adapter.py`
+- `app/integrations/orchestration/container_orchestrator/adapters/kubernetes_api/inventory.py`
 
 No schema or data migration is involved.

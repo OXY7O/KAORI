@@ -49,12 +49,14 @@ def test_object_storage_job_uses_canonical_job_execution_and_inventory_worker() 
 
 
 def test_minio_validation_runtime_and_inventory_ownership_are_separated() -> None:
-    integration = read('app/integrations/minio/__init__.py')
-    adapter = read('app/integrations/minio/adapter.py')
-    client = read('app/integrations/minio/client.py')
+    integration = read('app/integrations/storage/object_storage/providers/minio/__init__.py')
+    adapter = read('app/integrations/storage/object_storage/providers/minio/adapter.py')
+    client = read('app/integrations/storage/object_storage/providers/minio/client.py')
     sync = read('app/inventory/object_storage/sync.py')
-    validation = read('app/templates/minio/partials/_detail_validation.html')
-    runtime = read('app/templates/minio/partials/_detail_runtime.html')
+    validation = read(
+        'app/templates/integrations/storage/object_storage/providers/minio/partials/_detail_validation.html'
+    )
+    runtime = read('app/templates/integrations/storage/object_storage/providers/minio/partials/_detail_runtime.html')
 
     assert "'runtime.validate': 'integration-validation'" in integration
     assert "'runtime.health': 'integration-runtime'" in integration
@@ -78,8 +80,8 @@ def test_minio_validation_runtime_and_inventory_ownership_are_separated() -> Non
 
 
 def test_inventory_pages_and_minio_lifecycle_read_only_committed_job_snapshot() -> None:
-    minio_presentation = read('app/minio/presentation.py')
-    scope = read('app/templates/minio/partials/_detail_scope.html')
+    minio_presentation = read('app/object_storage/providers/minio/presentation.py')
+    scope = read('app/templates/integrations/storage/object_storage/providers/minio/partials/_detail_scope.html')
     storage_presentation = read('app/inventory/object_storage/presentation.py')
 
     assert 'len(instance.object_storage_system.buckets or ())' in minio_presentation

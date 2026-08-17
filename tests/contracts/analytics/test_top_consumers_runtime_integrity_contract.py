@@ -38,7 +38,7 @@ def test_legacy_top_consumers_section_surface_is_removed() -> None:
 
 
 def test_promql_normalizes_series_and_uses_ready_worker_capacity() -> None:
-    profile = read('app/integrations/metrics/query_profiles/kubernetes_v1.py')
+    profile = read('app/integrations/observability/metrics_source/query_profiles/kubernetes_v1.py')
 
     assert 'def _tc_active_worker_pods(' in profile
     assert 'max by (namespace, pod, container)' in profile

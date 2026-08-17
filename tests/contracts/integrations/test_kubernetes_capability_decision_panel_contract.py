@@ -1,7 +1,11 @@
 from pathlib import Path
 
-TEMPLATE = Path('app/templates/integrations/kubernetes/partials/_capability_workspace.html')
-REGISTRY = Path('app/templates/integrations/kubernetes/partials/_capability_registry.html')
+TEMPLATE = Path(
+    'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_capability_workspace.html'
+)
+REGISTRY = Path(
+    'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_capability_registry.html'
+)
 READINESS = Path('app/templates/integrations/components/_capability_readiness.html')
 ROUTES = Path('app/integrations/routes.py')
 SERVICE = Path('app/integrations/service.py')

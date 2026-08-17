@@ -9,10 +9,14 @@ def read(path: str) -> str:
 
 def test_provider_details_share_canonical_lifecycle_language() -> None:
     details = {
-        'Kubernetes': read('app/templates/integrations/kubernetes/detail.html'),
-        'Metrics Source': read('app/templates/metrics/instance_detail.html'),
-        'Alertmanager': read('app/templates/alertmanager/instance_detail.html'),
-        'MinIO': read('app/templates/minio/instance_detail.html'),
+        'Kubernetes': read(
+            'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/detail.html'
+        ),
+        'Metrics Source': read('app/templates/integrations/observability/metrics_source/instance_detail.html'),
+        'Alertmanager': read(
+            'app/templates/integrations/observability/alert_source/providers/alertmanager/instance_detail.html'
+        ),
+        'MinIO': read('app/templates/integrations/storage/object_storage/providers/minio/instance_detail.html'),
     }
 
     for provider, source in details.items():
@@ -29,10 +33,18 @@ def test_provider_details_share_canonical_lifecycle_language() -> None:
 
 def test_provider_validation_workspaces_use_full_validation_and_shared_readiness() -> None:
     validation = {
-        'Kubernetes': read('app/templates/integrations/kubernetes/partials/_capability_workspace.html'),
-        'Metrics Source': read('app/templates/metrics/partials/_detail_validation_content.html'),
-        'Alertmanager': read('app/templates/alertmanager/partials/_detail_validation_content.html'),
-        'MinIO': read('app/templates/minio/partials/_detail_validation.html'),
+        'Kubernetes': read(
+            'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_capability_workspace.html'
+        ),
+        'Metrics Source': read(
+            'app/templates/integrations/observability/metrics_source/partials/_detail_validation_content.html'
+        ),
+        'Alertmanager': read(
+            'app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_detail_validation_content.html'
+        ),
+        'MinIO': read(
+            'app/templates/integrations/storage/object_storage/providers/minio/partials/_detail_validation.html'
+        ),
     }
 
     for provider, source in validation.items():
@@ -46,16 +58,19 @@ def test_provider_validation_workspaces_use_full_validation_and_shared_readiness
 
 def test_provider_runtime_decision_is_shared_for_observability_and_minio() -> None:
     for provider, path in (
-        ('Metrics Source', 'app/templates/metrics/partials/_runtime_panel.html'),
-        ('Alertmanager', 'app/templates/alertmanager/partials/_runtime_panel.html'),
-        ('MinIO', 'app/templates/minio/partials/_detail_runtime.html'),
+        ('Metrics Source', 'app/templates/integrations/observability/metrics_source/partials/_runtime_panel.html'),
+        (
+            'Alertmanager',
+            'app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_runtime_panel.html',
+        ),
+        ('MinIO', 'app/templates/integrations/storage/object_storage/providers/minio/partials/_detail_runtime.html'),
     ):
         source = read(path)
         assert 'integrations/components/_runtime_decision.html' in source, provider
         assert 'runtime_decision.render(' in source, provider
         assert 'Runtime Health & Diagnostics' in source, provider
 
-    minio = read('app/templates/minio/partials/_detail_runtime.html')
+    minio = read('app/templates/integrations/storage/object_storage/providers/minio/partials/_detail_runtime.html')
     assert 'Inventory Sync owns committed assets' in minio
     assert 'data-kaori-minio-runtime-evidence' in minio
 

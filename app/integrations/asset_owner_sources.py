@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from app.integrations.metrics.providers import provider_definition
+from app.integrations.observability.metrics_source.providers import provider_definition
 from app.integrations.readiness import resolve_binding_operational_status
 from app.integrations.registry import get_integration
 from app.models.integration import IntegrationBinding, IntegrationInstance

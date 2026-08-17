@@ -49,8 +49,8 @@ app/<provider>/runtime_adapter.py
 Examples:
 
 ```text
-app/alertmanager/runtime_adapter.py
-app/integrations/metrics/adapter.py
+app/alert_sources/providers/alertmanager/runtime_adapter.py
+app/integrations/observability/metrics_source/adapter.py
 app/harbor/runtime_adapter.py
 app/vault/runtime_adapter.py
 app/velero/runtime_adapter.py

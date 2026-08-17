@@ -23,8 +23,8 @@ Updated:
 
 - `app/templates/components/page_hero.html`
 - `app/templates/inventory/kubernetes/nodes/partials/_hero.html`
-- `app/templates/integrations/alertmanager.html`
-- `app/templates/alertmanager/instance_detail.html`
+- `app/templates/integrations/observability/alert_source/providers/alertmanager/frontpage.html`
+- `app/templates/integrations/observability/alert_source/providers/alertmanager/instance_detail.html`
 
 The Alertmanager Integrations panel now follows the Node Inventory baseline with a 208 px minimum height, two descriptive metric cards, a semantic status badge, and one full-width action.
 

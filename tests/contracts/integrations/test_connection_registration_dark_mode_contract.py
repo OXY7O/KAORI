@@ -49,8 +49,10 @@ def test_kubernetes_connection_forms_follow_integration_dark_mode_and_shared_act
 
 
 def test_metrics_source_and_alertmanager_registration_forms_use_shared_action_contract() -> None:
-    metrics_source = read('app/templates/metrics/instance_form.html')
-    alertmanager = read('app/templates/alertmanager/instance_form.html')
+    metrics_source = read('app/templates/integrations/observability/metrics_source/instance_form.html')
+    alertmanager = read(
+        'app/templates/integrations/observability/alert_source/providers/alertmanager/instance_form.html'
+    )
 
     for source in (metrics_source, alertmanager):
         assert '{% import "components/action_button.html" as action_button %}' in source

@@ -6,7 +6,7 @@ def read(path: str) -> str:
 
 
 def test_minio_2024_quota_parser_does_not_mask_legacy_quota_with_zero_size() -> None:
-    client = read('app/integrations/minio/client.py')
+    client = read('app/integrations/storage/object_storage/providers/minio/client.py')
 
     assert "for field_name in ('size', 'quota')" in client
     assert "field_name == 'size' and value > 0" in client

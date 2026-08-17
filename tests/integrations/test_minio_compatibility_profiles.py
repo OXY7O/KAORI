@@ -3,7 +3,7 @@ from importlib.util import module_from_spec, spec_from_file_location
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-MODULE_PATH = ROOT / 'app/integrations/minio/compatibility.py'
+MODULE_PATH = ROOT / 'app/integrations/storage/object_storage/providers/minio/compatibility.py'
 SPEC = spec_from_file_location('kaori_minio_compatibility_test_target', MODULE_PATH)
 assert SPEC is not None and SPEC.loader is not None
 compatibility = module_from_spec(SPEC)

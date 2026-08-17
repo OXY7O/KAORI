@@ -9,20 +9,20 @@ ROOT = Path(__file__).resolve().parents[1]
 PYTHON_FILES = (
     'app/models/object_storage.py',
     'app/models/minio.py',
-    'app/integrations/minio/__init__.py',
-    'app/integrations/minio/adapter.py',
-    'app/integrations/minio/capabilities.py',
-    'app/integrations/minio/client.py',
-    'app/integrations/minio/compatibility.py',
-    'app/integrations/metrics/binding_profiles.py',
-    'app/integrations/metrics/binding_validators/object_storage.py',
-    'app/minio/contracts.py',
-    'app/minio/forms.py',
-    'app/minio/presentation.py',
-    'app/minio/registration.py',
-    'app/minio/routes.py',
-    'app/minio/service.py',
-    'app/minio/workspace_web.py',
+    'app/integrations/storage/object_storage/providers/minio/__init__.py',
+    'app/integrations/storage/object_storage/providers/minio/adapter.py',
+    'app/integrations/storage/object_storage/providers/minio/capabilities.py',
+    'app/integrations/storage/object_storage/providers/minio/client.py',
+    'app/integrations/storage/object_storage/providers/minio/compatibility.py',
+    'app/integrations/observability/metrics_source/binding_profiles.py',
+    'app/integrations/observability/metrics_source/binding_validators/object_storage.py',
+    'app/object_storage/providers/minio/contracts.py',
+    'app/object_storage/providers/minio/forms.py',
+    'app/object_storage/providers/minio/presentation.py',
+    'app/object_storage/providers/minio/registration.py',
+    'app/object_storage/providers/minio/routes.py',
+    'app/object_storage/providers/minio/service.py',
+    'app/object_storage/providers/minio/workspace_web.py',
     'migrations/versions/20260812_minio_object_storage_provider.py',
     'migrations/versions/20260812_remove_minio_owner_self_binding.py',
 )
@@ -46,14 +46,16 @@ def main() -> None:
     minio_model = read('app/models/minio.py')
     migration = read('migrations/versions/20260812_minio_object_storage_provider.py')
     owner_binding_cleanup = read('migrations/versions/20260812_remove_minio_owner_self_binding.py')
-    registration = read('app/integrations/minio/__init__.py')
-    metrics_catalog = read('app/definitions/catalogs/integrations/metrics_source.yaml')
-    object_storage_validator = read('app/integrations/metrics/binding_validators/object_storage.py')
-    compatibility = read('app/integrations/minio/compatibility.py')
-    provider_catalog = read('app/definitions/catalogs/integrations/object_storage.yaml')
-    client = read('app/integrations/minio/client.py')
-    service = read('app/minio/service.py')
-    registration_service = read('app/minio/registration.py')
+    registration = read('app/integrations/storage/object_storage/providers/minio/__init__.py')
+    metrics_catalog = read('app/definitions/catalogs/integrations/observability/metrics_source/contract.yaml')
+    object_storage_validator = read(
+        'app/integrations/observability/metrics_source/binding_validators/object_storage.py'
+    )
+    compatibility = read('app/integrations/storage/object_storage/providers/minio/compatibility.py')
+    provider_catalog = read('app/definitions/catalogs/integrations/storage/object_storage/contract.yaml')
+    client = read('app/integrations/storage/object_storage/providers/minio/client.py')
+    service = read('app/object_storage/providers/minio/service.py')
+    registration_service = read('app/object_storage/providers/minio/registration.py')
     validation_web = read('app/integrations/validation/web.py')
     monitoring = read('app/integrations/runtime/monitoring.py')
     blueprints = read('app/bootstrap/blueprints.py')
@@ -61,17 +63,27 @@ def main() -> None:
     integration_navigation = read('app/integrations/navigation.py')
     presentation = read('app/bootstrap/presentation.py')
     domain_template = read('app/templates/integrations/domain.html')
-    minio_detail = read('app/templates/minio/instance_detail.html')
-    minio_configuration = read('app/templates/minio/partials/_detail_configuration.html')
+    minio_detail = read('app/templates/integrations/storage/object_storage/providers/minio/instance_detail.html')
+    minio_configuration = read(
+        'app/templates/integrations/storage/object_storage/providers/minio/partials/_detail_configuration.html'
+    )
     provider_configuration_contract = read(
         'app/templates/integrations/components/_provider_configuration_contract.html'
     )
-    minio_scope = read('app/templates/minio/partials/_detail_scope.html')
-    minio_runtime = read('app/templates/minio/partials/_detail_runtime.html')
-    minio_validation = read('app/templates/minio/partials/_detail_validation.html')
-    minio_capability_registry = read('app/templates/minio/partials/_capability_registry.html')
-    minio_binding_registry = read('app/templates/minio/partials/_binding_registry.html')
-    minio_routes = read('app/minio/routes.py')
+    minio_scope = read('app/templates/integrations/storage/object_storage/providers/minio/partials/_detail_scope.html')
+    minio_runtime = read(
+        'app/templates/integrations/storage/object_storage/providers/minio/partials/_detail_runtime.html'
+    )
+    minio_validation = read(
+        'app/templates/integrations/storage/object_storage/providers/minio/partials/_detail_validation.html'
+    )
+    minio_capability_registry = read(
+        'app/templates/integrations/storage/object_storage/providers/minio/partials/_capability_registry.html'
+    )
+    minio_binding_registry = read(
+        'app/templates/integrations/storage/object_storage/providers/minio/partials/_binding_registry.html'
+    )
+    minio_routes = read('app/object_storage/providers/minio/routes.py')
     deletion = read('app/integrations/deletion.py')
 
     require(
@@ -149,13 +161,16 @@ def main() -> None:
         'ensure_primary_asset_binding' not in service, 'MinIO registration must not create a provider-to-self binding'
     )
     require(
-        not (ROOT / 'app/integrations/minio/binding.py').exists(),
+        not (ROOT / 'app/integrations/storage/object_storage/providers/minio/binding.py').exists(),
         'deprecated MinIO owner-binding module must be removed',
     )
     require('create_source_binding' not in service, 'MinIO asset-owner service must not mutate observability bindings')
     require('IntegrationBinding' not in minio_model, 'MinIO model must not own direct observability source bindings')
-    require('app.minio.forms' not in service, 'MinIO service layer must not depend on WTForms')
-    require('app.minio.forms' not in registration_service, 'MinIO registration proof must not depend on WTForms')
+    require('app.object_storage.providers.minio.forms' not in service, 'MinIO service layer must not depend on WTForms')
+    require(
+        'app.object_storage.providers.minio.forms' not in registration_service,
+        'MinIO registration proof must not depend on WTForms',
+    )
     require('MinioRegistrationInput' in service, 'MinIO service must consume the registration input contract')
     require(
         'MinioMetricsBindingInput' not in service,
@@ -178,7 +193,9 @@ def main() -> None:
     for legacy in ('MetricsSource', 'AlertmanagerInstance', 'KubernetesConnection', 'MinioInstance'):
         require(legacy not in monitoring, f'runtime monitoring hard-codes provider model {legacy}')
 
-    require('from app.minio.routes import minio_bp' in blueprints, 'MinIO blueprint import missing')
+    require(
+        'from app.object_storage.providers.minio.routes import minio_bp' in blueprints, 'MinIO blueprint import missing'
+    )
     require('        minio_bp,' in blueprints, 'MinIO blueprint registration missing')
     require(
         'integration_endpoint_owner(request.endpoint)' in presentation,

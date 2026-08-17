@@ -50,7 +50,7 @@ def test_domain_progress_reports_real_work_boundaries() -> None:
     kubernetes = read('app/inventory/kubernetes/synchronization.py')
     cluster_tasks = read('app/cluster/tasks.py')
     storage_tasks = read('app/inventory/object_storage/tasks.py')
-    minio_client = read('app/integrations/minio/client.py')
+    minio_client = read('app/integrations/storage/object_storage/providers/minio/client.py')
     analytics = read('app/analytics/kubernetes/tasks.py')
 
     for stage in (

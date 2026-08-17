@@ -8,7 +8,7 @@ def read(path: str) -> str:
 
 
 def test_alertmanager_detail_uses_provider_v2_tabs_without_malformed_alpine_markup():
-    content = read('app/templates/alertmanager/instance_detail.html')
+    content = read('app/templates/integrations/observability/alert_source/providers/alertmanager/instance_detail.html')
     assert 'Bindings & Consumers' in content
     assert 'x-data="integrationWorkspaceTabs(' in content
     assert 'x-on:popstate.window="syncTab()"' in content
@@ -17,9 +17,11 @@ def test_alertmanager_detail_uses_provider_v2_tabs_without_malformed_alpine_mark
 
 
 def test_alertmanager_configuration_uses_read_only_contract_and_edit_link():
-    content = read('app/templates/alertmanager/partials/_detail_configuration.html')
+    content = read(
+        'app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_detail_configuration.html'
+    )
     shared = read('app/templates/integrations/components/_provider_configuration_contract.html')
-    routes = read('app/alertmanager/routes.py')
+    routes = read('app/alert_sources/providers/alertmanager/routes.py')
     assert 'provider_configuration_contract.render(' in content
     assert 'Alertmanager API Endpoint' in content
     assert 'Configure Connection' in shared
@@ -29,8 +31,12 @@ def test_alertmanager_configuration_uses_read_only_contract_and_edit_link():
 
 
 def test_alertmanager_validation_uses_kubernetes_style_capability_readiness_and_registry():
-    content = read('app/templates/alertmanager/partials/_detail_validation_content.html')
-    registry = read('app/templates/alertmanager/partials/_capability_registry.html')
+    content = read(
+        'app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_detail_validation_content.html'
+    )
+    registry = read(
+        'app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_capability_registry.html'
+    )
     assert 'Alertmanager Full Validation' in content
     assert 'Alertmanager Provider Readiness' in content
     assert 'integrations/components/_readiness_explanation.html' in content
@@ -43,8 +49,12 @@ def test_alertmanager_validation_uses_kubernetes_style_capability_readiness_and_
 
 
 def test_alertmanager_runtime_uses_kubernetes_layout_and_history_filters():
-    panel = read('app/templates/alertmanager/partials/_runtime_panel.html')
-    history = read('app/templates/alertmanager/partials/_runtime_history.html')
+    panel = read(
+        'app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_runtime_panel.html'
+    )
+    history = read(
+        'app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_runtime_history.html'
+    )
     assert 'integrations/components/_runtime_decision.html' in panel
     assert 'runtime_decision.render(' in panel
     assert 'Runtime Evidence' in panel
@@ -56,9 +66,13 @@ def test_alertmanager_runtime_uses_kubernetes_layout_and_history_filters():
 
 
 def test_alertmanager_bindings_use_standard_table_and_native_dialog():
-    content = read('app/templates/alertmanager/partials/_detail_scope.html')
+    content = read(
+        'app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_detail_scope.html'
+    )
     assert 'Bindings &amp; Consumers' in content
-    binding_registry = read('app/templates/alertmanager/partials/_binding_registry.html')
+    binding_registry = read(
+        'app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_binding_registry.html'
+    )
     binding_modal = read('app/templates/integrations/components/_observability_binding_modal.html')
     assert 'Consumer Binding Registry' in binding_registry
     assert 'Consumer Profile' in binding_registry
@@ -70,8 +84,8 @@ def test_alertmanager_bindings_use_standard_table_and_native_dialog():
 
 
 def test_alertmanager_runtime_history_accepts_server_side_filters():
-    routes = read('app/alertmanager/routes.py')
-    presentation = read('app/alertmanager/presentation.py')
+    routes = read('app/alert_sources/providers/alertmanager/routes.py')
+    presentation = read('app/alert_sources/providers/alertmanager/presentation.py')
     assert "history_trigger = request.args.get('history_trigger'" in routes
     assert "history_health = request.args.get('history_health'" in routes
     assert "history_readiness = request.args.get('history_readiness'" in routes

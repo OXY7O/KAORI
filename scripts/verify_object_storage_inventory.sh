@@ -11,9 +11,9 @@ python -m ruff check \
   app/inventory/object_storage \
   app/models/object_storage.py \
   app/models/__init__.py \
-  app/integrations/minio/client.py \
-  app/integrations/minio/adapter.py \
-  app/integrations/minio/__init__.py \
+  app/integrations/storage/object_storage/providers/minio/client.py \
+  app/integrations/storage/object_storage/providers/minio/adapter.py \
+  app/integrations/storage/object_storage/providers/minio/__init__.py \
   app/jobs/configuration.py \
   app/jobs/definitions/object_storage_inventory_sync.py \
   app/inventory/object_storage/job_adapter.py \
@@ -38,9 +38,9 @@ python -m djlint \
   app/templates/components/navigation/object_storage_menu.html \
   app/templates/components/navigation/sidebar.html \
   app/templates/jobs/configuration/definitions/object_storage_inventory_sync.html \
-  app/templates/minio/partials/_detail_validation.html \
-  app/templates/minio/partials/_detail_runtime.html \
-  app/templates/minio/partials/_detail_scope.html \
+  app/templates/integrations/storage/object_storage/providers/minio/partials/_detail_validation.html \
+  app/templates/integrations/storage/object_storage/providers/minio/partials/_detail_runtime.html \
+  app/templates/integrations/storage/object_storage/providers/minio/partials/_detail_scope.html \
   --check
 
 printf '\n[3/6] Sidebar Navigation Standard\n'

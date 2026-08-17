@@ -9,10 +9,14 @@ def read(path: str) -> str:
 
 def test_provider_front_pages_share_one_canonical_hierarchy() -> None:
     templates = {
-        'kubernetes': read('app/templates/integrations/kubernetes.html'),
-        'metrics_source': read('app/templates/integrations/metrics.html'),
-        'alertmanager': read('app/templates/integrations/alertmanager.html'),
-        'minio': read('app/templates/minio/index.html'),
+        'kubernetes': read(
+            'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/frontpage.html'
+        ),
+        'metrics_source': read('app/templates/integrations/observability/metrics_source/frontpage.html'),
+        'alertmanager': read(
+            'app/templates/integrations/observability/alert_source/providers/alertmanager/frontpage.html'
+        ),
+        'minio': read('app/templates/integrations/storage/object_storage/providers/minio/index.html'),
     }
 
     for provider, template in templates.items():
@@ -40,16 +44,26 @@ def test_shared_overview_owns_summary_and_boundary_geometry() -> None:
 
 
 def test_kubernetes_frontpage_uses_same_coverage_and_registry_contract() -> None:
-    page = read('app/templates/integrations/kubernetes.html')
-    coverage = read('app/templates/integrations/kubernetes/partials/_integration_coverage.html')
-    registry = read('app/templates/integrations/kubernetes/partials/_registry.html')
+    page = read('app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/frontpage.html')
+    coverage = read(
+        'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_integration_coverage.html'
+    )
+    registry = read(
+        'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_registry.html'
+    )
     routes = read('app/integrations/routes.py')
-    frontpage_service = read('app/integrations/kubernetes_frontpage.py')
+    frontpage_service = read('app/integrations/orchestration/container_orchestrator/frontpage.py')
 
     assert 'Kubernetes Integration Overview' in page
     assert 'integration_tabs.render("kubernetes"' in page
-    assert '{% include "integrations/kubernetes/partials/_integration_coverage.html" %}' in page
-    assert '{% include "integrations/kubernetes/partials/_registry.html" %}' in page
+    assert (
+        '{% include "integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_integration_coverage.html" %}'
+        in page
+    )
+    assert (
+        '{% include "integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_registry.html" %}'
+        in page
+    )
     assert 'provider_registry.asset_coverage_head(' in coverage
     assert 'Kubernetes Cluster' in coverage
     assert 'Kubernetes API' in coverage
@@ -63,17 +77,21 @@ def test_kubernetes_frontpage_uses_same_coverage_and_registry_contract() -> None
 
 
 def test_minio_empty_and_populated_states_keep_registry_geometry() -> None:
-    index = read('app/templates/minio/index.html')
-    coverage = read('app/templates/minio/partials/_coverage.html')
-    coverage_content = read('app/templates/minio/partials/_coverage_content.html')
-    registry = read('app/templates/minio/partials/_registry.html')
-    registry_content = read('app/templates/minio/partials/_registry_content.html')
-    routes = read('app/minio/routes.py')
-    presentation = read('app/minio/presentation.py')
+    index = read('app/templates/integrations/storage/object_storage/providers/minio/index.html')
+    coverage = read('app/templates/integrations/storage/object_storage/providers/minio/partials/_coverage.html')
+    coverage_content = read(
+        'app/templates/integrations/storage/object_storage/providers/minio/partials/_coverage_content.html'
+    )
+    registry = read('app/templates/integrations/storage/object_storage/providers/minio/partials/_registry.html')
+    registry_content = read(
+        'app/templates/integrations/storage/object_storage/providers/minio/partials/_registry_content.html'
+    )
+    routes = read('app/object_storage/providers/minio/routes.py')
+    presentation = read('app/object_storage/providers/minio/presentation.py')
 
     assert 'MinIO Integration Overview' in index
-    assert '{% include "minio/partials/_coverage.html" %}' in index
-    assert '{% include "minio/partials/_registry.html" %}' in index
+    assert '{% include "integrations/storage/object_storage/providers/minio/partials/_coverage.html" %}' in index
+    assert '{% include "integrations/storage/object_storage/providers/minio/partials/_registry.html" %}' in index
 
     assert 'minio-coverage-filter-form' in coverage
     assert 'minio-coverage-content' in coverage
@@ -95,10 +113,14 @@ def test_minio_empty_and_populated_states_keep_registry_geometry() -> None:
 def test_provider_connection_registries_share_one_column_contract() -> None:
     registry_component = read('app/templates/integrations/components/_provider_registry.html')
     registries = [
-        read('app/templates/integrations/kubernetes/partials/_registry.html'),
-        read('app/templates/integrations/metrics/partials/_inventory_content.html'),
-        read('app/templates/integrations/alertmanager/partials/_inventory_content.html'),
-        read('app/templates/minio/partials/_registry_content.html'),
+        read(
+            'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_registry.html'
+        ),
+        read('app/templates/integrations/observability/metrics_source/partials/_inventory_content.html'),
+        read(
+            'app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_inventory_content.html'
+        ),
+        read('app/templates/integrations/storage/object_storage/providers/minio/partials/_registry_content.html'),
     ]
 
     for label in ('Connection', 'Endpoint / Scope', 'Core Readiness', 'Compatibility', 'Bindings', 'Actions'):
@@ -110,8 +132,10 @@ def test_provider_connection_registries_share_one_column_contract() -> None:
 
 def test_asset_provider_coverage_tables_share_one_column_contract() -> None:
     registry_component = read('app/templates/integrations/components/_provider_registry.html')
-    kubernetes = read('app/templates/integrations/kubernetes/partials/_integration_coverage.html')
-    minio = read('app/templates/minio/partials/_coverage_content.html')
+    kubernetes = read(
+        'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_integration_coverage.html'
+    )
+    minio = read('app/templates/integrations/storage/object_storage/providers/minio/partials/_coverage_content.html')
 
     for label in ('Metrics Source', 'Alert Source', 'Coverage', 'Actions'):
         assert label in registry_component

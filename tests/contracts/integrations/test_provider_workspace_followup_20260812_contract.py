@@ -8,14 +8,18 @@ def read(path: str) -> str:
 
 
 def test_kubernetes_validation_uses_validated_capabilities_copy() -> None:
-    workspace = read('app/templates/integrations/kubernetes/partials/_capability_workspace.html')
+    workspace = read(
+        'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_capability_workspace.html'
+    )
 
     assert "'Validated Capabilities'," in workspace
     assert 'Validated capability coverage' not in workspace
 
 
 def test_minio_validation_has_provider_readiness_explanation() -> None:
-    validation = read('app/templates/minio/partials/_detail_validation.html')
+    validation = read(
+        'app/templates/integrations/storage/object_storage/providers/minio/partials/_detail_validation.html'
+    )
 
     assert '_readiness_explanation.html' in validation
     assert 'Provider Readiness Is Ready' in validation
@@ -26,8 +30,10 @@ def test_minio_validation_has_provider_readiness_explanation() -> None:
 
 
 def test_minio_capability_registry_matches_modal_detail_standard() -> None:
-    registry = read('app/templates/minio/partials/_capability_registry.html')
-    presentation = read('app/minio/presentation.py')
+    registry = read(
+        'app/templates/integrations/storage/object_storage/providers/minio/partials/_capability_registry.html'
+    )
+    presentation = read('app/object_storage/providers/minio/presentation.py')
 
     assert '_record_detail_modal.html' in registry
     assert '_provider_capability_detail.html' in registry
@@ -43,8 +49,8 @@ def test_minio_capability_registry_matches_modal_detail_standard() -> None:
 
 
 def test_minio_runtime_refresh_isolated_from_history_loader() -> None:
-    runtime = read('app/templates/minio/partials/_detail_runtime.html')
-    routes = read('app/minio/routes.py')
+    runtime = read('app/templates/integrations/storage/object_storage/providers/minio/partials/_detail_runtime.html')
+    routes = read('app/object_storage/providers/minio/routes.py')
 
     refresh_surface = runtime.split('{% if runtime_history_oob|default(false) %}', 1)[0]
     assert 'data-kaori-minio-runtime-refresh-surface' in refresh_surface
@@ -57,7 +63,9 @@ def test_minio_runtime_refresh_isolated_from_history_loader() -> None:
 
 
 def test_minio_authority_boundary_has_right_side_metadata_labels() -> None:
-    configuration = read('app/templates/minio/partials/_detail_configuration.html')
+    configuration = read(
+        'app/templates/integrations/storage/object_storage/providers/minio/partials/_detail_configuration.html'
+    )
     operational_context = read('app/templates/integrations/components/_provider_operational_context.html')
 
     assert 'data-kaori-authority-boundary-metadata' in operational_context
@@ -69,7 +77,9 @@ def test_minio_authority_boundary_has_right_side_metadata_labels() -> None:
 
 
 def test_kubernetes_inventory_lifecycle_exposes_binding_ownership() -> None:
-    lifecycle = read('app/templates/integrations/kubernetes/partials/_inventory_lifecycle.html')
+    lifecycle = read(
+        'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_inventory_lifecycle.html'
+    )
 
     assert 'data-kaori-kubernetes-binding-ownership' in lifecycle
     assert 'Binding Ownership' in lifecycle
@@ -79,7 +89,7 @@ def test_kubernetes_inventory_lifecycle_exposes_binding_ownership() -> None:
 
 
 def test_kubernetes_legacy_primary_finding_is_compact() -> None:
-    validation = read('app/integrations/kubernetes/validation.py')
+    validation = read('app/integrations/orchestration/container_orchestrator/adapters/kubernetes_api/validation.py')
 
     assert 'is in a legacy lifecycle band.' in validation
     assert 'Plan an upgrade.' in validation

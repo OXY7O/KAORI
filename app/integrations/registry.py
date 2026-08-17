@@ -234,10 +234,10 @@ class IntegrationRegistry:
             if self._builtins_loaded:
                 return
             for module_path in (
-                'app.integrations.kubernetes',
-                'app.integrations.metrics',
-                'app.integrations.alertmanager',
-                'app.integrations.minio',
+                'app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api',
+                'app.integrations.observability.metrics_source',
+                'app.integrations.observability.alert_source.providers.alertmanager',
+                'app.integrations.storage.object_storage.providers.minio',
             ):
                 import_module(module_path)
             self._builtins_loaded = True

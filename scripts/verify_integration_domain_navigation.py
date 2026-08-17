@@ -166,10 +166,10 @@ def main() -> int:
             errors.append(f'bootstrap breadcrumb ownership missing: {marker}')
 
     registrations = {
-        'app/integrations/kubernetes/__init__.py': "navigation_endpoint_prefixes=('integrations.kubernetes', 'cluster.')",
-        'app/integrations/metrics/__init__.py': "navigation_endpoint_prefixes=('integrations.metrics_sources', 'metrics.')",
-        'app/integrations/alertmanager/__init__.py': "navigation_endpoint_prefixes=('integrations.alertmanager', 'alertmanager.')",
-        'app/integrations/minio/__init__.py': "navigation_endpoint_prefixes=('minio.',)",
+        'app/integrations/orchestration/container_orchestrator/adapters/kubernetes_api/__init__.py': "navigation_endpoint_prefixes=('integrations.kubernetes', 'cluster.')",
+        'app/integrations/observability/metrics_source/__init__.py': "navigation_endpoint_prefixes=('integrations.metrics_sources', 'metrics.')",
+        'app/integrations/observability/alert_source/providers/alertmanager/__init__.py': "navigation_endpoint_prefixes=('integrations.alertmanager', 'alertmanager.')",
+        'app/integrations/storage/object_storage/providers/minio/__init__.py': "navigation_endpoint_prefixes=('minio.',)",
     }
     for relative, marker in registrations.items():
         if marker not in read(relative):

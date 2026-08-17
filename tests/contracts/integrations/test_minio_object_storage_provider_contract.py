@@ -29,13 +29,13 @@ def test_minio_persistence_uses_provider_neutral_object_storage_asset() -> None:
 
 
 def test_minio_registry_contract_is_storage_object_storage() -> None:
-    registration = read('app/integrations/minio/__init__.py')
+    registration = read('app/integrations/storage/object_storage/providers/minio/__init__.py')
     registry = read('app/integrations/registry.py')
-    compatibility = read('app/integrations/minio/compatibility.py')
-    capabilities = read('app/integrations/minio/capabilities.py')
-    provider_catalog = read('app/definitions/catalogs/integrations/object_storage.yaml')
+    compatibility = read('app/integrations/storage/object_storage/providers/minio/compatibility.py')
+    capabilities = read('app/integrations/storage/object_storage/providers/minio/capabilities.py')
+    provider_catalog = read('app/definitions/catalogs/integrations/storage/object_storage/contract.yaml')
 
-    assert "'app.integrations.minio'" in registry
+    assert "'app.integrations.storage.object_storage.providers.minio'" in registry
     assert "integration_type='object_storage'" in registration
     assert "provider_key='minio'" in registration
     assert "adapter_key='s3'" in registration
@@ -51,14 +51,16 @@ def test_minio_registry_contract_is_storage_object_storage() -> None:
 
 
 def test_minio_api_plane_uses_s3_sdk_and_encrypted_credentials() -> None:
-    client = read('app/integrations/minio/client.py')
-    forms = read('app/minio/forms.py')
+    client = read('app/integrations/storage/object_storage/providers/minio/client.py')
+    s3_adapter = read('app/integrations/storage/object_storage/adapters/s3/client.py')
+    forms = read('app/object_storage/providers/minio/forms.py')
     model = read('app/models/minio.py')
 
-    assert "boto3.client(\n        's3'" in client
-    assert "signature_version='s3v4'" in client
-    assert "s3={'addressing_style': addressing_style or 'path'}" in client
-    assert 'client.list_buckets()' in client
+    assert "boto3.client(\n        's3'" in s3_adapter
+    assert "signature_version='s3v4'" in s3_adapter
+    assert "s3={'addressing_style': addressing_style or 'path'}" in s3_adapter
+    assert 'client.list_buckets()' in s3_adapter
+    assert 'list_s3_buckets(' in client
     assert 'PasswordField(' in forms
     assert "'Secret Key'" in forms
     assert 'StringField(' in forms
@@ -67,11 +69,13 @@ def test_minio_api_plane_uses_s3_sdk_and_encrypted_credentials() -> None:
 
 
 def test_minio_metrics_source_plane_reuses_canonical_asset_binding() -> None:
-    service = read('app/minio/service.py')
-    registration = read('app/integrations/minio/__init__.py')
-    metrics_profiles = read('app/integrations/metrics/binding_profiles.py')
-    metrics_catalog = read('app/definitions/catalogs/integrations/metrics_source.yaml')
-    object_storage_validator = read('app/integrations/metrics/binding_validators/object_storage.py')
+    service = read('app/object_storage/providers/minio/service.py')
+    registration = read('app/integrations/storage/object_storage/providers/minio/__init__.py')
+    metrics_profiles = read('app/integrations/observability/metrics_source/binding_profiles.py')
+    metrics_catalog = read('app/definitions/catalogs/integrations/observability/metrics_source/contract.yaml')
+    object_storage_validator = read(
+        'app/integrations/observability/metrics_source/binding_validators/object_storage.py'
+    )
     taxonomy_catalog = read('app/definitions/catalogs/integrations/taxonomy.yaml')
 
     assert 'create_source_binding' not in service
@@ -89,10 +93,10 @@ def test_minio_metrics_source_plane_reuses_canonical_asset_binding() -> None:
 
 
 def test_minio_owner_relationship_is_not_a_consumer_self_binding() -> None:
-    service = read('app/minio/service.py')
-    adapter = read('app/integrations/minio/adapter.py')
-    registration = read('app/integrations/minio/__init__.py')
-    presentation = read('app/minio/presentation.py')
+    service = read('app/object_storage/providers/minio/service.py')
+    adapter = read('app/integrations/storage/object_storage/providers/minio/adapter.py')
+    registration = read('app/integrations/storage/object_storage/providers/minio/__init__.py')
+    presentation = read('app/object_storage/providers/minio/presentation.py')
     source_projection = read('app/integrations/asset_owner_sources.py')
     cleanup = read('migrations/versions/20260812_remove_minio_owner_self_binding.py')
 
@@ -130,12 +134,12 @@ def test_minio_workspace_is_nested_under_integrations_storage() -> None:
     navigation = read('app/common/navigation.py')
     integration_navigation = read('app/integrations/navigation.py')
     presentation = read('app/bootstrap/presentation.py')
-    routes = read('app/minio/routes.py')
-    index = read('app/templates/minio/index.html')
+    routes = read('app/object_storage/providers/minio/routes.py')
+    index = read('app/templates/integrations/storage/object_storage/providers/minio/index.html')
     tabs = read('app/templates/components/integration_workspace_tabs.html')
-    detail = read('app/templates/minio/instance_detail.html')
+    detail = read('app/templates/integrations/storage/object_storage/providers/minio/instance_detail.html')
 
-    assert 'from app.minio.routes import minio_bp' in blueprints
+    assert 'from app.object_storage.providers.minio.routes import minio_bp' in blueprints
     assert '        minio_bp,' in blueprints
     assert "Blueprint('minio', __name__, url_prefix='/integrations/minio')" in routes
     assert 'integration_endpoint_owner(request.endpoint)' in presentation
@@ -154,16 +158,16 @@ def test_minio_workspace_is_nested_under_integrations_storage() -> None:
 
 
 def test_minio_service_boundary_uses_input_contracts_not_forms() -> None:
-    service = read('app/minio/service.py')
-    registration = read('app/minio/registration.py')
-    forms = read('app/minio/forms.py')
+    service = read('app/object_storage/providers/minio/service.py')
+    registration = read('app/object_storage/providers/minio/registration.py')
+    forms = read('app/object_storage/providers/minio/forms.py')
 
     assert 'MinioRegistrationInput' in service
     assert 'MinioMetricsBindingInput' not in service
     assert 'MinioAlertBindingInput' not in service
-    assert 'from app.minio.contracts import MinioRegistrationInput' in registration
-    assert 'app.minio.forms' not in service
-    assert 'app.minio.forms' not in registration
+    assert 'from app.object_storage.providers.minio.contracts import MinioRegistrationInput' in registration
+    assert 'app.object_storage.providers.minio.forms' not in service
+    assert 'app.object_storage.providers.minio.forms' not in registration
     assert 'def to_input(self' in forms
     assert '-> MinioRegistrationInput:' in forms
     assert 'MinioMetricsBindingForm' not in forms
@@ -178,9 +182,9 @@ def test_domain_section_header_runtime_regression_is_closed() -> None:
 
 
 def test_minio_asset_owner_lifecycle_preserves_observability_sources() -> None:
-    service = read('app/minio/service.py')
-    detail = read('app/templates/minio/instance_detail.html')
-    scope = read('app/templates/minio/partials/_detail_scope.html')
+    service = read('app/object_storage/providers/minio/service.py')
+    detail = read('app/templates/integrations/storage/object_storage/providers/minio/instance_detail.html')
+    scope = read('app/templates/integrations/storage/object_storage/providers/minio/partials/_detail_scope.html')
 
     assert 'def delete_minio_instance(' in service
     assert 'asset_owner_deletion_guard(' in service

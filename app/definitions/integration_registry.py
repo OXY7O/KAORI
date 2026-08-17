@@ -12,10 +12,10 @@ from app.definitions.validation import (
 )
 
 _PROVIDER_FILES = {
-    'kubernetes': 'integrations/kubernetes.yaml',
-    'metrics_source': 'integrations/metrics_source.yaml',
-    'alertmanager': 'integrations/alertmanager.yaml',
-    'object_storage': 'integrations/object_storage.yaml',
+    'kubernetes': 'integrations/orchestration/container_orchestrator/providers/kubernetes.yaml',
+    'metrics_source': 'integrations/observability/metrics_source/contract.yaml',
+    'alertmanager': 'integrations/observability/alert_source/providers/alertmanager.yaml',
+    'object_storage': 'integrations/storage/object_storage/contract.yaml',
 }
 
 

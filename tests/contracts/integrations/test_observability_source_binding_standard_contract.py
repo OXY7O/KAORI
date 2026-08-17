@@ -30,10 +30,12 @@ def test_observability_binding_assets_are_registered_once_and_extensible() -> No
 
 def test_metrics_source_and_alertmanager_own_binding_mutation_through_one_shared_modal() -> None:
     modal = read('app/templates/integrations/components/_observability_binding_modal.html')
-    prom_scope = read('app/templates/metrics/partials/_detail_scope.html')
-    alert_scope = read('app/templates/alertmanager/partials/_detail_scope.html')
-    prom_routes = read('app/metrics/routes.py')
-    alert_forms = read('app/alertmanager/forms.py')
+    prom_scope = read('app/templates/integrations/observability/metrics_source/partials/_detail_scope.html')
+    alert_scope = read(
+        'app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_detail_scope.html'
+    )
+    prom_routes = read('app/metrics_sources/routes.py')
+    alert_forms = read('app/alert_sources/providers/alertmanager/forms.py')
 
     assert 'data-kaori-observability-binding-modal' in modal
     assert 'Consumer Type' in modal
@@ -55,12 +57,18 @@ def test_metrics_source_and_alertmanager_own_binding_mutation_through_one_shared
 
 def test_asset_owner_pages_inventory_bound_sources_without_owning_binding_mutation() -> None:
     shared_inventory = read('app/templates/integrations/components/_asset_owner_observability_sources.html')
-    kubernetes_lifecycle = read('app/templates/integrations/kubernetes/partials/_inventory_lifecycle.html')
-    minio_lifecycle = read('app/templates/minio/partials/_detail_scope.html')
-    minio_binding_registry = read('app/templates/minio/partials/_binding_registry.html')
-    minio_routes = read('app/minio/routes.py')
-    minio_forms = read('app/minio/forms.py')
-    minio_service = read('app/minio/service.py')
+    kubernetes_lifecycle = read(
+        'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_inventory_lifecycle.html'
+    )
+    minio_lifecycle = read(
+        'app/templates/integrations/storage/object_storage/providers/minio/partials/_detail_scope.html'
+    )
+    minio_binding_registry = read(
+        'app/templates/integrations/storage/object_storage/providers/minio/partials/_binding_registry.html'
+    )
+    minio_routes = read('app/object_storage/providers/minio/routes.py')
+    minio_forms = read('app/object_storage/providers/minio/forms.py')
+    minio_service = read('app/object_storage/providers/minio/service.py')
 
     for marker in ('Source', 'Source Readiness', 'Binding Validation', 'Effective Resolution'):
         assert marker in shared_inventory
@@ -69,10 +77,14 @@ def test_asset_owner_pages_inventory_bound_sources_without_owning_binding_mutati
     assert 'asset_owner_sources.render(' in kubernetes_lifecycle
     assert '_asset_owner_observability_sources.html' in minio_binding_registry
     assert 'asset_owner_sources.render(' in minio_binding_registry
-    assert 'minio/partials/_binding_registry.html' in minio_lifecycle
+    assert 'integrations/storage/object_storage/providers/minio/partials/_binding_registry.html' in minio_lifecycle
 
-    assert 'Inventory & Lifecycle' in read('app/templates/integrations/kubernetes/detail.html')
-    assert 'Inventory & Lifecycle' in read('app/templates/minio/instance_detail.html')
+    assert 'Inventory & Lifecycle' in read(
+        'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/detail.html'
+    )
+    assert 'Inventory & Lifecycle' in read(
+        'app/templates/integrations/storage/object_storage/providers/minio/instance_detail.html'
+    )
     assert 'Open Observability' in minio_lifecycle
 
     for retired_owner_mutation in (
@@ -92,8 +104,12 @@ def test_provider_configuration_and_readiness_use_shared_kaori_surfaces() -> Non
     configuration = read('app/templates/integrations/components/_provider_configuration_contract.html')
     operational_context = read('app/templates/integrations/components/_provider_operational_context.html')
     readiness = read('app/templates/integrations/components/_readiness_explanation.html')
-    prom_capabilities = read('app/templates/metrics/partials/_capability_registry.html')
-    alert_capabilities = read('app/templates/alertmanager/partials/_capability_registry.html')
+    prom_capabilities = read(
+        'app/templates/integrations/observability/metrics_source/partials/_capability_registry.html'
+    )
+    alert_capabilities = read(
+        'app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_capability_registry.html'
+    )
 
     assert 'operational_context.render(' in configuration
     assert 'Operational Boundary' not in configuration

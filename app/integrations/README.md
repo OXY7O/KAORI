@@ -32,6 +32,48 @@ Integrations
 `worker_domain` remains execution metadata and must not be reused as the UI or
 architecture taxonomy. `app/definitions/catalogs/integrations/taxonomy.yaml` is the canonical domain/capability map; `taxonomy.py` is its validated runtime adapter.
 
+## Physical namespace contract
+
+Folder layout follows the same hierarchy as the persisted integration identity:
+
+```text
+app/integrations/
+├── orchestration/
+│   └── container_orchestrator/
+│       ├── frontpage.py
+│       └── adapters/
+│           └── kubernetes_api/
+├── observability/
+│   ├── metrics_source/
+│   │   ├── adapters/
+│   │   │   └── prometheus_http/
+│   │   ├── binding_validators/
+│   │   └── query_profiles/
+│   └── alert_source/
+│       └── providers/
+│           └── alertmanager/
+└── storage/
+    ├── object_storage/
+    │   ├── adapters/
+    │   │   └── s3/
+    │   └── providers/
+    │       └── minio/
+    ├── file_storage/
+    └── block_storage/
+```
+
+The rules are deliberate:
+
+- domain and integration-type directories are stable architecture names;
+- a product name may appear only in a provider implementation or provider definition;
+- a reusable protocol/API belongs under `adapters/<adapter_key>/`;
+- providers that share an adapter reuse that adapter rather than copying transport code;
+- provider-neutral routing, bindings, query profiles, and consumer contracts stay at the integration-type level;
+- application workspaces mirror the same intent: `app/metrics_sources`, `app/alert_sources/providers/<provider>`, and `app/object_storage/providers/<provider>`;
+- templates and definition catalogs mirror the same domain/integration-type/provider hierarchy.
+
+For example, Prometheus and Thanos share `prometheus_http`; MinIO, Garage, and AWS S3 can share the `s3` adapter; Rancher and Sangfor Kubernetes Engine can reuse `kubernetes_api` after producing or resolving a Kubernetes API connection. Adding a provider must not create a new product directory directly under `app/integrations`.
+
 
 ## Navigation projection
 
@@ -83,8 +125,7 @@ binding tables such as `minio_metrics_bindings`.
 
 - Cross-domain callers resolve integrations with `get_integration()` or
   `execute_integration_operation()`.
-- Provider clients and compatibility logic live under
-  `app/integrations/<provider>/`.
+- Provider-specific code lives under the matching `providers/<provider>/` namespace; reusable transport/API code lives under `adapters/<adapter_key>/`.
 - Every provider registers `domain_key`, `capability_key`, catalog metadata,
   canonical-record reverse loading, workspace routing, queue ownership,
   capability keys, and compatibility profiles through `IntegrationModule`.
@@ -151,7 +192,7 @@ Compatibility profile and consumer profile are different contracts:
 
 Metrics Source is the canonical metrics abstraction. `provider_key` records product
 identity, `adapter_key` selects the backend implementation, and `query_language`
-records the source query contract. `metrics/binding_profiles.py` selects consumer
+records the source query contract. `observability/metrics_source/binding_profiles.py` selects consumer
 validation by `adapter_key + asset_type`: Kubernetes registers
 `kubernetes-metrics-v1`; Object Storage registers the provider-neutral
 `object-storage-metrics-v1`. Consumer validators may then resolve provider-qualified
@@ -159,7 +200,7 @@ evidence contracts such as MinIO Metrics v2 without leaking backend products int
 the generic binding registry.
 
 Alertmanager follows the same boundary. Provider Core Validation proves only the
-Alertmanager API contract. `alertmanager/binding_profiles.py` resolves
+Alertmanager API contract. `observability/alert_source/providers/alertmanager/binding_profiles.py` resolves
 `kubernetes-alerts-v1`, `object-storage-alerts-v1`, and future alert consumer profiles by
 asset type. Non-global bindings own their alert identity selector and validation
 evidence, allowing one shared Alertmanager to safely serve multiple alert families.

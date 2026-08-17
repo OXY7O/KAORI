@@ -11,14 +11,14 @@ from app.integrations.domain_service import (
     ProviderRegistryFilters,
     build_integration_domain_page,
 )
-from app.integrations.kubernetes_frontpage import (
+from app.integrations.observability.metrics_source.providers import provider_definitions
+from app.integrations.orchestration.container_orchestrator.frontpage import (
     KubernetesCoverageFilters,
     KubernetesFrontPageFilters,
     KubernetesRegistryFilters,
     build_kubernetes_page,
     build_kubernetes_registry_row,
 )
-from app.integrations.metrics.providers import provider_definitions
 from app.integrations.overview_workspace import build_integrations_overview
 from app.integrations.repository import get_cluster, get_kubernetes_connection_by_cluster_id
 from app.integrations.runtime.presentation import runtime_history_view
@@ -41,7 +41,7 @@ from app.integrations.validation.web import (
     snapshot_feedback_for_user,
     validate_snapshot_access,
 )
-from app.metrics.registration_web import new_instance_response, test_new_instance_connection_response
+from app.metrics_sources.registration_web import new_instance_response, test_new_instance_connection_response
 from app.notifications.service import get_navigation_notification_context, record_operational_activity
 from app.rbac.decorators import permission_required
 
@@ -153,10 +153,18 @@ def kubernetes() -> ResponseReturnValue:
     if request.headers.get('HX-Request') == 'true':
         target = request.headers.get('HX-Target')
         if target == 'kubernetes-integration-coverage':
-            return render_template('integrations/kubernetes/partials/_integration_coverage.html', **context)
+            return render_template(
+                'integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_integration_coverage.html',
+                **context,
+            )
         if target == 'kubernetes-connection-registry':
-            return render_template('integrations/kubernetes/partials/_registry.html', **context)
-    return render_template('integrations/kubernetes.html', **context)
+            return render_template(
+                'integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_registry.html',
+                **context,
+            )
+    return render_template(
+        'integrations/orchestration/container_orchestrator/providers/kubernetes/frontpage.html', **context
+    )
 
 
 def _kubernetes_detail_context(
@@ -215,7 +223,7 @@ def kubernetes_registry_details(cluster_id: str) -> ResponseReturnValue:
     if row is None:
         abort(404)
     return render_template(
-        'integrations/kubernetes/partials/_registry_detail_content.html',
+        'integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_registry_detail_content.html',
         row=row,
     )
 
@@ -224,7 +232,7 @@ def kubernetes_registry_details(cluster_id: str) -> ResponseReturnValue:
 @permission_required('clusters.view')
 def kubernetes_detail(cluster_id: str) -> ResponseReturnValue:
     return render_template(
-        'integrations/kubernetes/detail.html',
+        'integrations/orchestration/container_orchestrator/providers/kubernetes/detail.html',
         **_kubernetes_detail_context(cluster_id, include_history=True),
     )
 
@@ -234,7 +242,7 @@ def kubernetes_detail(cluster_id: str) -> ResponseReturnValue:
 def kubernetes_capability_registry(cluster_id: str) -> ResponseReturnValue:
     context = _kubernetes_detail_context(cluster_id)
     return render_template(
-        'integrations/kubernetes/partials/_capability_registry.html',
+        'integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_capability_registry.html',
         validation_job=context.get('capability_validation_job'),
         **context,
     )
@@ -306,7 +314,10 @@ def kubernetes_capability_validate(cluster_id: str) -> ResponseReturnValue:
                 'notification_context': get_navigation_notification_context(user_id=int(current_user.id)),
             }
         )
-        return render_template('integrations/kubernetes/partials/_capability_workspace.html', **context)
+        return render_template(
+            'integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_capability_workspace.html',
+            **context,
+        )
     return redirect(url_for('integrations.kubernetes_detail', cluster_id=cluster_id) + '#validation')
 
 
@@ -333,7 +344,10 @@ def kubernetes_capability_validation_status(cluster_id: str, task_id: str) -> Re
             'runtime_history_oob': True,
         }
     )
-    return render_template('integrations/kubernetes/partials/_capability_workspace.html', **context)
+    return render_template(
+        'integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_capability_workspace.html',
+        **context,
+    )
 
 
 @integrations_bp.post('/kubernetes/<string:cluster_id>/runtime/refresh')
@@ -401,7 +415,10 @@ def kubernetes_runtime_refresh(cluster_id: str) -> ResponseReturnValue:
                 'runtime_history_oob': True,
             }
         )
-        return render_template('integrations/kubernetes/partials/_runtime_workspace.html', **context)
+        return render_template(
+            'integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_runtime_workspace.html',
+            **context,
+        )
     return redirect(url_for('integrations.kubernetes_detail', cluster_id=cluster_id) + '#runtime')
 
 
@@ -427,7 +444,10 @@ def kubernetes_runtime_refresh_status(cluster_id: str, task_id: str) -> Response
             'notification_context': get_navigation_notification_context(user_id=int(current_user.id)),
         }
     )
-    return render_template('integrations/kubernetes/partials/_runtime_workspace.html', **context)
+    return render_template(
+        'integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_runtime_workspace.html',
+        **context,
+    )
 
 
 @integrations_bp.get('/kubernetes/<string:cluster_id>/runtime/history')
@@ -475,7 +495,7 @@ def select_metrics_source_provider() -> ResponseReturnValue:
         }
         for provider in provider_definitions()
     ]
-    return render_template('metrics/provider_selector.html', providers=providers)
+    return render_template('integrations/observability/metrics_source/provider_selector.html', providers=providers)
 
 
 @integrations_bp.route('/observability/metrics-sources/<string:provider_key>/new', methods=['GET', 'POST'])
@@ -516,9 +536,11 @@ def metrics_sources() -> ResponseReturnValue:
         if target == 'metrics-source-coverage-content':
             return render_template('integrations/partials/_coverage_content.html', **context)
         if target == 'metrics-source-inventory-card':
-            return render_template('integrations/metrics/partials/_instance_inventory.html', **context)
-        return render_template('integrations/metrics/partials/_inventory_content.html', **context)
-    return render_template('integrations/metrics.html', **context)
+            return render_template(
+                'integrations/observability/metrics_source/partials/_instance_inventory.html', **context
+            )
+        return render_template('integrations/observability/metrics_source/partials/_inventory_content.html', **context)
+    return render_template('integrations/observability/metrics_source/frontpage.html', **context)
 
 
 @integrations_bp.get('/alertmanager')
@@ -545,9 +567,14 @@ def alertmanager() -> ResponseReturnValue:
         if target == 'alertmanager-coverage-content':
             return render_template('integrations/partials/_coverage_content.html', **context)
         if target == 'alertmanager-inventory-card':
-            return render_template('integrations/alertmanager/partials/_inventory_card.html', **context)
-        return render_template('integrations/alertmanager/partials/_inventory_content.html', **context)
-    return render_template('integrations/alertmanager.html', **context)
+            return render_template(
+                'integrations/observability/alert_source/providers/alertmanager/partials/_inventory_card.html',
+                **context,
+            )
+        return render_template(
+            'integrations/observability/alert_source/providers/alertmanager/partials/_inventory_content.html', **context
+        )
+    return render_template('integrations/observability/alert_source/providers/alertmanager/frontpage.html', **context)
 
 
 def _binding_response(integration_type: str, *, scope_key: str) -> ResponseReturnValue:

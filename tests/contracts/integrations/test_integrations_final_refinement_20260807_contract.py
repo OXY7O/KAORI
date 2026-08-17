@@ -8,7 +8,9 @@ def read(path: str) -> str:
 
 
 def test_minimum_validation_rbac_remains_modal() -> None:
-    source = read('app/templates/integrations/kubernetes/partials/_minimum_validation_rbac.html')
+    source = read(
+        'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_minimum_validation_rbac.html'
+    )
 
     assert 'Minimum Validation RBAC Example' in source
     assert 'Open RBAC Examples' in source
@@ -32,7 +34,9 @@ def test_minimum_validation_rbac_remains_modal() -> None:
 
 
 def test_kubernetes_runtime_health_uses_latest_decision_workspace() -> None:
-    source = read('app/templates/integrations/kubernetes/partials/_runtime_workspace.html')
+    source = read(
+        'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_runtime_workspace.html'
+    )
 
     assert 'Runtime Health & Diagnostics' in source
     assert 'data-kaori-runtime-workspace-v8' in source
@@ -54,8 +58,8 @@ def test_integration_scope_pagination_uses_title_case_item_label() -> None:
 
 
 def test_metrics_source_validation_keeps_compact_contract_and_modal_detail() -> None:
-    source = read('app/templates/metrics/partials/_detail_validation_content.html')
-    registry = read('app/templates/metrics/partials/_capability_registry.html')
+    source = read('app/templates/integrations/observability/metrics_source/partials/_detail_validation_content.html')
+    registry = read('app/templates/integrations/observability/metrics_source/partials/_capability_registry.html')
 
     assert 'import "integrations/components/_record_detail_modal.html" as record_detail_modal' in registry
     assert 'Metrics Source Full Validation' in source
@@ -68,9 +72,15 @@ def test_metrics_source_validation_keeps_compact_contract_and_modal_detail() -> 
 
 
 def test_alertmanager_capability_matrix_uses_modal_detail() -> None:
-    source = read('app/templates/alertmanager/partials/_detail_validation_content.html')
-    registry = read('app/templates/alertmanager/partials/_capability_registry.html')
-    bindings = read('app/templates/alertmanager/partials/_binding_registry.html')
+    source = read(
+        'app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_detail_validation_content.html'
+    )
+    registry = read(
+        'app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_capability_registry.html'
+    )
+    bindings = read(
+        'app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_binding_registry.html'
+    )
 
     assert 'import "integrations/components/_record_detail_modal.html" as record_detail_modal' in registry
     assert 'Alertmanager Full Validation' in source

@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import dataclass
 
-from app.analytics.object_storage.sources.minio_metrics import MinioMetricsSourceAdapter
+from app.analytics.object_storage.sources.providers.minio.metrics import MinioMetricsSourceAdapter
 from app.analytics.shared.metrics import MetricsSource, MetricsSourceError, MetricsSourceFailureKind
 from app.models.object_storage import ObjectStorageSystem
 

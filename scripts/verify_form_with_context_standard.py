@@ -79,8 +79,8 @@ def main() -> int:
 
     references = (
         'app/templates/cluster/add.html',
-        'app/templates/metrics/instance_form.html',
-        'app/templates/alertmanager/instance_form.html',
+        'app/templates/integrations/observability/metrics_source/instance_form.html',
+        'app/templates/integrations/observability/alert_source/providers/alertmanager/instance_form.html',
     )
     for relative in references:
         source = read(relative)

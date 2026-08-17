@@ -10,8 +10,10 @@ def read(relative: str) -> str:
 def test_runtime_and_capability_use_one_view_more_action_contract() -> None:
     actions = read('app/templates/integrations/components/_record_actions.html')
     runtime = read('app/templates/integrations/partials/_runtime_history.html')
-    capability = read('app/templates/integrations/kubernetes/partials/_capability_workspace.html') + read(
-        'app/templates/integrations/kubernetes/partials/_capability_registry.html'
+    capability = read(
+        'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_capability_workspace.html'
+    ) + read(
+        'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_capability_registry.html'
     )
 
     assert 'macro view_more(' in actions

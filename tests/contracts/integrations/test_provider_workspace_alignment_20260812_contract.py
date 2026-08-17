@@ -8,7 +8,9 @@ def read(path: str) -> str:
 
 
 def test_minio_configuration_reuses_canonical_operational_context() -> None:
-    minio = read('app/templates/minio/partials/_detail_configuration.html')
+    minio = read(
+        'app/templates/integrations/storage/object_storage/providers/minio/partials/_detail_configuration.html'
+    )
     provider_contract = read('app/templates/integrations/components/_provider_configuration_contract.html')
     operational_context = read('app/templates/integrations/components/_provider_operational_context.html')
 
@@ -23,15 +25,20 @@ def test_minio_configuration_reuses_canonical_operational_context() -> None:
 
 def test_provider_full_validation_uses_header_loading_bar_only() -> None:
     workspaces = {
-        'metrics-source': 'app/templates/metrics/partials/_detail_validation_content.html',
-        'alertmanager': 'app/templates/alertmanager/partials/_detail_validation_content.html',
-        'minio': 'app/templates/minio/partials/_detail_validation.html',
+        'metrics-source': 'app/templates/integrations/observability/metrics_source/partials/_detail_validation_content.html',
+        'alertmanager': 'app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_detail_validation_content.html',
+        'minio': 'app/templates/integrations/storage/object_storage/providers/minio/partials/_detail_validation.html',
+    }
+
+    registry_paths = {
+        'metrics-source': 'app/templates/integrations/observability/metrics_source/partials/_capability_registry.html',
+        'alertmanager': 'app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_capability_registry.html',
+        'minio': 'app/templates/integrations/storage/object_storage/providers/minio/partials/_capability_registry.html',
     }
 
     for provider, workspace_path in workspaces.items():
         workspace = read(workspace_path)
-        registry_dir = 'metrics' if provider == 'metrics-source' else provider
-        registry = read(f'app/templates/{registry_dir}/partials/_capability_registry.html')
+        registry = read(registry_paths[provider])
 
         assert (
             f"loading_id='{provider}-validation-loading'" in workspace
@@ -52,16 +59,16 @@ def test_provider_tab_badges_are_safe_during_full_page_render() -> None:
 
     workspace_pairs = {
         'metrics-source': (
-            'app/templates/metrics/partials/_detail_validation_content.html',
-            'app/templates/metrics/partials/_runtime_panel.html',
+            'app/templates/integrations/observability/metrics_source/partials/_detail_validation_content.html',
+            'app/templates/integrations/observability/metrics_source/partials/_runtime_panel.html',
         ),
         'alertmanager': (
-            'app/templates/alertmanager/partials/_detail_validation_content.html',
-            'app/templates/alertmanager/partials/_runtime_panel.html',
+            'app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_detail_validation_content.html',
+            'app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_runtime_panel.html',
         ),
         'minio': (
-            'app/templates/minio/partials/_detail_validation.html',
-            'app/templates/minio/partials/_detail_runtime.html',
+            'app/templates/integrations/storage/object_storage/providers/minio/partials/_detail_validation.html',
+            'app/templates/integrations/storage/object_storage/providers/minio/partials/_detail_runtime.html',
         ),
     }
     for provider, (validation_path, runtime_path) in workspace_pairs.items():
@@ -75,20 +82,25 @@ def test_runtime_status_and_minio_lifecycle_follow_shared_provider_pattern() -> 
     assert 'border-brand-outline bg-kaori-soft' in status
 
     runtime_paths = (
-        'app/templates/integrations/kubernetes/partials/_runtime_workspace.html',
-        'app/templates/metrics/partials/_runtime_panel.html',
-        'app/templates/alertmanager/partials/_runtime_panel.html',
-        'app/templates/minio/partials/_detail_runtime.html',
+        'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_runtime_workspace.html',
+        'app/templates/integrations/observability/metrics_source/partials/_runtime_panel.html',
+        'app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_runtime_panel.html',
+        'app/templates/integrations/storage/object_storage/providers/minio/partials/_detail_runtime.html',
     )
     for path in runtime_paths:
         runtime = read(path)
         assert '_provider_job_status.html' in runtime
         assert 'provider_job_status.render(' in runtime
 
-    minio_lifecycle = read('app/templates/minio/partials/_detail_scope.html')
+    minio_lifecycle = read(
+        'app/templates/integrations/storage/object_storage/providers/minio/partials/_detail_scope.html'
+    )
     assert 'data-kaori-inventory-lifecycle-v4' in minio_lifecycle
     assert 'data-kaori-inventory-lifecycle-v5' in minio_lifecycle
     assert 'data-kaori-inventory-lifecycle-decision' in minio_lifecycle
     assert 'KAORI Operational Consumers' in minio_lifecycle
     assert 'data-kaori-inventory-lifecycle-boundary' in minio_lifecycle
-    assert 'include "minio/partials/_binding_registry.html"' in minio_lifecycle
+    assert (
+        'include "integrations/storage/object_storage/providers/minio/partials/_binding_registry.html"'
+        in minio_lifecycle
+    )

@@ -41,10 +41,10 @@ wire protocol.
 
 | Domain | Capability | Provider | Module | Primary worker domain |
 |---|---|---|---|---|
-| Orchestration | Cluster Orchestration | Kubernetes | `app/integrations/kubernetes/` | `kubernetes` |
-| Observability | Metrics | Metrics Source | `app/integrations/metrics/` | `observability-metrics` |
-| Observability | Alerting | Alertmanager | `app/integrations/alertmanager/` | `observability-alerts` |
-| Storage | Object Storage | MinIO | `app/integrations/minio/` | `storage-object` |
+| Orchestration | Cluster Orchestration | Kubernetes | `app/integrations/orchestration/container_orchestrator/adapters/kubernetes_api/` | `kubernetes` |
+| Observability | Metrics | Metrics Source | `app/integrations/observability/metrics_source/` | `observability-metrics` |
+| Observability | Alerting | Alertmanager | `app/integrations/observability/alert_source/providers/alertmanager/` | `observability-alerts` |
+| Storage | Object Storage | MinIO | `app/integrations/storage/object_storage/providers/minio/` | `storage-object` |
 
 Every registered operation has an explicit execution queue. Inline operations
 are construction or state-translation operations that perform no asynchronous
@@ -103,8 +103,8 @@ adapter/profile. See `domain-namespace-and-metrics-source-boundary.md`.
 | `app/analytics/` | Capability root with explicit `kubernetes/` and `object_storage/` domains plus genuinely provider-neutral `shared/` contracts. | Mixed-domain implementation, provider credentials, or provider query/payload semantics in domain services. |
 | `app/kubernetes_operations/` | ConfigMap/Secret operational policy, authorization, confirmation, and audit. | Kubernetes transport construction. |
 | `app/governance/` | Governance policy and interpretation. | Kubernetes credential persistence. |
-| `app/metrics/` | Metrics Source registration forms, provider selection, domain services, source resolution, bindings UI, and presentation. | Backend transport, query profiles, compatibility implementation, or runtime adapter implementation. |
-| `app/alertmanager/` | Alertmanager registration forms, domain services, source resolution, bindings UI, and presentation. | Transport, normalizers, compatibility implementation, or runtime adapter implementation. |
+| `app/metrics_sources/` | Metrics Source registration forms, provider selection, domain services, source resolution, bindings UI, and presentation. | Backend transport, query profiles, compatibility implementation, or runtime adapter implementation. |
+| `app/alert_sources/providers/alertmanager/` | Alertmanager registration forms, domain services, source resolution, bindings UI, and presentation. | Transport, normalizers, compatibility implementation, or runtime adapter implementation. |
 
 SQLAlchemy models remain centralized under `app/models/`. Provider packages do
 not define mapped database models.

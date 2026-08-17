@@ -39,19 +39,19 @@ def test_registry_owns_domain_capability_and_provider_extension_metadata() -> No
 
 def test_builtin_provider_registration_uses_canonical_taxonomy() -> None:
     registrations = {
-        'app/integrations/kubernetes/__init__.py': (
+        'app/integrations/orchestration/container_orchestrator/adapters/kubernetes_api/__init__.py': (
             "domain_key='orchestration'",
             "capability_key='container_orchestrator'",
         ),
-        'app/integrations/metrics/__init__.py': (
+        'app/integrations/observability/metrics_source/__init__.py': (
             "domain_key='observability'",
             "capability_key='metrics_source'",
         ),
-        'app/integrations/alertmanager/__init__.py': (
+        'app/integrations/observability/alert_source/providers/alertmanager/__init__.py': (
             "domain_key='observability'",
             "capability_key='alert_source'",
         ),
-        'app/integrations/minio/__init__.py': (
+        'app/integrations/storage/object_storage/providers/minio/__init__.py': (
             "domain_key='storage'",
             "capability_key='object_storage'",
         ),
@@ -66,8 +66,8 @@ def test_builtin_provider_registration_uses_canonical_taxonomy() -> None:
 
 def test_binding_service_is_asset_centric_without_domain_compatibility_wrappers() -> None:
     binding_service = read('app/integrations/binding_service.py')
-    prometheus_adapter = read('app/integrations/metrics/adapter.py')
-    metrics_binding = read('app/integrations/metrics/binding_management.py')
+    prometheus_adapter = read('app/integrations/observability/metrics_source/adapter.py')
+    metrics_binding = read('app/integrations/observability/metrics_source/binding_management.py')
 
     assert 'def create_source_binding(' in binding_service
     assert 'asset_type: str' in binding_service
@@ -114,9 +114,9 @@ def test_validation_worker_dispatches_full_validation_through_registry() -> None
 
 
 def test_metrics_binding_validation_is_asset_profile_driven() -> None:
-    profiles = read('app/integrations/metrics/binding_profiles.py')
-    profile_catalog = read('app/definitions/catalogs/integrations/metrics_source.yaml')
-    validation = read('app/integrations/metrics/binding_validation.py')
+    profiles = read('app/integrations/observability/metrics_source/binding_profiles.py')
+    profile_catalog = read('app/definitions/catalogs/integrations/observability/metrics_source/contract.yaml')
+    validation = read('app/integrations/observability/metrics_source/binding_validation.py')
 
     assert 'class BindingValidationProfile' in profiles
     assert 'def register_binding_validation_profile(' in profiles

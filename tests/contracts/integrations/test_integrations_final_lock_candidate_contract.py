@@ -7,6 +7,12 @@ def read(path: str) -> str:
     return (ROOT / path).read_text(encoding='utf-8')
 
 
+PROVIDER_TEMPLATE_ROOTS = (
+    'app/templates/integrations/observability/metrics_source',
+    'app/templates/integrations/observability/alert_source/providers/alertmanager',
+)
+
+
 def test_shared_record_detail_and_action_contract_is_canonical() -> None:
     actions = read('app/templates/integrations/components/_record_actions.html')
     runtime_modal = read('app/templates/integrations/components/_runtime_observation_modal.html')
@@ -31,8 +37,8 @@ def test_provider_configuration_uses_shared_read_only_contract() -> None:
     operational = read('app/templates/integrations/components/_provider_operational_context.html')
     assert 'Step {{ loop.index }}' in operational
     assert 'Configure Connection' in shared
-    for provider in ('metrics', 'alertmanager'):
-        source = read(f'app/templates/{provider}/partials/_detail_configuration.html')
+    for template_root in PROVIDER_TEMPLATE_ROOTS:
+        source = read(f'{template_root}/partials/_detail_configuration.html')
         assert 'provider_configuration_contract.render(' in source
 
 
@@ -41,8 +47,8 @@ def test_provider_tabs_share_one_controller() -> None:
     layout = read('app/templates/layouts/app.html')
     assert 'window.integrationWorkspaceTabs' in controller
     assert 'integration_workspace_tabs.js' in layout
-    for provider in ('metrics', 'alertmanager'):
-        assert 'integrationWorkspaceTabs(' in read(f'app/templates/{provider}/instance_detail.html')
+    for template_root in PROVIDER_TEMPLATE_ROOTS:
+        assert 'integrationWorkspaceTabs(' in read(f'{template_root}/instance_detail.html')
 
 
 def test_runtime_overview_uses_modal_and_registry_tables_avoid_forced_scroll() -> None:
@@ -58,9 +64,15 @@ def test_runtime_overview_uses_modal_and_registry_tables_avoid_forced_scroll() -
     assert 'record_detail_modal.render(' in modal
 
     pairs = [
-        ('app/templates/integrations/kubernetes/partials/_registry.html', 'min-w-[1040px]'),
-        ('app/templates/integrations/metrics/partials/_inventory_content.html', 'min-w-[1080px]'),
-        ('app/templates/integrations/alertmanager/partials/_inventory_content.html', 'min-w-[1040px]'),
+        (
+            'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_registry.html',
+            'min-w-[1040px]',
+        ),
+        ('app/templates/integrations/observability/metrics_source/partials/_inventory_content.html', 'min-w-[1080px]'),
+        (
+            'app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_inventory_content.html',
+            'min-w-[1040px]',
+        ),
     ]
     registry_component = read('app/templates/integrations/components/_provider_registry.html')
     assert 'connection_registry_head()' in registry_component

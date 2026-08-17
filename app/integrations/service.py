@@ -16,10 +16,14 @@ from app.integrations.coverage import (
     build_provider_coverage,
 )
 from app.integrations.deletion import kubernetes_deletion_guard
-from app.integrations.kubernetes.compatibility import FEATURE_CONTRACTS
-from app.integrations.kubernetes.messages import compact_readiness_reasons
-from app.integrations.metrics.providers import provider_definition, provider_options
-from app.integrations.metrics.scope import cluster_bindings_for_instance
+from app.integrations.observability.metrics_source.providers import provider_definition, provider_options
+from app.integrations.observability.metrics_source.scope import cluster_bindings_for_instance
+from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.compatibility import (
+    FEATURE_CONTRACTS,
+)
+from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.messages import (
+    compact_readiness_reasons,
+)
 from app.integrations.overview_extensions import sort_runtime_rows
 from app.integrations.provider_matrix import provider_kind
 from app.integrations.registry import get_integration, registry
@@ -417,7 +421,7 @@ def build_alertmanager_page(
     coverage_page: int = 1,
     coverage_per_page: int = 5,
 ) -> dict[str, Any]:
-    from app.alertmanager.presentation import build_inventory_context
+    from app.alert_sources.providers.alertmanager.presentation import build_inventory_context
 
     return build_inventory_context(
         query=query,

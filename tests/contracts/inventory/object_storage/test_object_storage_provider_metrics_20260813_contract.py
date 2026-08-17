@@ -10,7 +10,7 @@ def read(relative: str) -> str:
 def test_provider_metrics_is_safe_explicit_usage_strategy() -> None:
     config = read('app/config/default.py')
     sync = read('app/inventory/object_storage/sync.py')
-    client = read('app/integrations/minio/client.py')
+    client = read('app/integrations/storage/object_storage/providers/minio/client.py')
 
     assert "{'disabled', 'provider_metrics', 'full_scan'}" in config
     assert 'usage_stats_mode=usage_stats_mode' in sync
@@ -21,7 +21,7 @@ def test_provider_metrics_is_safe_explicit_usage_strategy() -> None:
 
 
 def test_minio_provider_metrics_uses_one_admin_data_usage_snapshot() -> None:
-    client = read('app/integrations/minio/client.py')
+    client = read('app/integrations/storage/object_storage/providers/minio/client.py')
     assert "f'/minio/admin/{api_version}/datausageinfo'" in client
     assert "params={'capacity': 'true'}" in client
     assert "payload.get('bucketsUsageInfo')" in client
@@ -38,7 +38,7 @@ def test_minio_provider_metrics_uses_one_admin_data_usage_snapshot() -> None:
 
 
 def test_provider_metrics_never_silently_falls_back_to_full_scan() -> None:
-    client = read('app/integrations/minio/client.py')
+    client = read('app/integrations/storage/object_storage/providers/minio/client.py')
     provider_branch = client.split("if usage_stats_mode == 'provider_metrics':", 1)[1].split(
         "elif usage_stats_mode == 'full_scan':", 1
     )[0]

@@ -14,8 +14,8 @@ LOCKED_TEMPLATE_PREFIXES = (
     'app/templates/kubernetes_operations/',
     'app/templates/governance/',
     'app/templates/integrations/',
-    'app/templates/metrics/',
-    'app/templates/alertmanager/',
+    'app/templates/integrations/observability/metrics_source/',
+    'app/templates/integrations/observability/alert_source/providers/alertmanager/',
     'app/templates/platform_operations/',
     'app/templates/jobs/',
 )
@@ -85,9 +85,9 @@ def main() -> int:
 
     # Canonical detail workspaces must use shared framed tabs.
     for relative in (
-        'app/templates/integrations/kubernetes/detail.html',
-        'app/templates/metrics/instance_detail.html',
-        'app/templates/alertmanager/instance_detail.html',
+        'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/detail.html',
+        'app/templates/integrations/observability/metrics_source/instance_detail.html',
+        'app/templates/integrations/observability/alert_source/providers/alertmanager/instance_detail.html',
     ):
         source = (ROOT / relative).read_text(encoding='utf-8')
         if 'components/framed_workspace_tabs.html' not in source or 'framed_workspace_tabs.render(' not in source:
@@ -101,9 +101,10 @@ def main() -> int:
     # Security boundary: baseline Kubernetes validation RBAC must never grant
     # cluster-wide Secrets read. A separate namespace-scoped optional Role is
     # intentionally allowed for explicitly approved governance workflows.
-    rbac = (ROOT / 'app/templates/integrations/kubernetes/partials/_minimum_validation_rbac.html').read_text(
-        encoding='utf-8'
-    )
+    rbac = (
+        ROOT
+        / 'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_minimum_validation_rbac.html'
+    ).read_text(encoding='utf-8')
     baseline_start = rbac.find('id="minimum-rbac-panel-baseline"')
     optional_start = rbac.find('id="minimum-rbac-panel-secret"')
     baseline_rbac = (

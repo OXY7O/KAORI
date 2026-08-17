@@ -122,7 +122,7 @@ def main() -> int:
         'httpx.',
         'urllib.request',
         'boto3.client',
-        'app.integrations.kubernetes.resolver',
+        'app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.resolver',
     ):
         require(token not in read_side, f'Inventory read side must remain provider-free: {token}', errors)
 

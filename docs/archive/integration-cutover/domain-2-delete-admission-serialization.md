@@ -44,6 +44,6 @@ Revert this patch. No database rollback is required.
 - `app/integrations/validation/web.py`
 - `app/cluster/sync_jobs.py`
 - `app/prometheus/service.py`
-- `app/alertmanager/service.py`
+- `app/alert_sources/providers/alertmanager/service.py`
 - `app/cluster/service.py`
 - corresponding functional test, contract test, and this document

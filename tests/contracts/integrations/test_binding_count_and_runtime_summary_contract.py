@@ -1,8 +1,10 @@
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
-PROM_DETAIL = ROOT / 'app/templates/metrics/instance_detail.html'
-ALERT_DETAIL = ROOT / 'app/templates/alertmanager/instance_detail.html'
+PROM_DETAIL = ROOT / 'app/templates/integrations/observability/metrics_source/instance_detail.html'
+ALERT_DETAIL = (
+    ROOT / 'app/templates/integrations/observability/alert_source/providers/alertmanager/instance_detail.html'
+)
 RUNTIME_PRESENTATION = ROOT / 'app/integrations/runtime/presentation.py'
 
 

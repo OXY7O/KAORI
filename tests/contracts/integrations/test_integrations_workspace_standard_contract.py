@@ -26,10 +26,16 @@ def test_integrations_uses_one_semantic_status_owner() -> None:
 
 def test_provider_registries_share_geometry_loading_and_pagination() -> None:
     shared = read('app/templates/integrations/components/_provider_registry.html')
-    metrics_source = read('app/templates/integrations/metrics/partials/_instance_inventory.html')
-    alertmanager = read('app/templates/integrations/alertmanager/partials/_inventory_card.html')
-    metrics_source_results = read('app/templates/integrations/metrics/partials/_inventory_content.html')
-    alertmanager_results = read('app/templates/integrations/alertmanager/partials/_inventory_content.html')
+    metrics_source = read('app/templates/integrations/observability/metrics_source/partials/_instance_inventory.html')
+    alertmanager = read(
+        'app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_inventory_card.html'
+    )
+    metrics_source_results = read(
+        'app/templates/integrations/observability/metrics_source/partials/_inventory_content.html'
+    )
+    alertmanager_results = read(
+        'app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_inventory_content.html'
+    )
 
     for token in ('registry_header', 'search_field', 'select_field', 'pagination_footer'):
         assert f'macro {token}' in shared
@@ -46,7 +52,9 @@ def test_provider_registries_share_geometry_loading_and_pagination() -> None:
     assert 'deployment_type' in alertmanager
     assert 'provider_registry.pagination_footer(' in metrics_source_results
     assert 'provider_registry.pagination_footer(' in alertmanager_results
-    kubernetes = read('app/templates/integrations/kubernetes/partials/_registry.html')
+    kubernetes = read(
+        'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_registry.html'
+    )
     coverage = read('app/templates/components/integration_coverage.html')
     assert 'provider_registry.registry_header(' in kubernetes
     assert 'provider_registry.registry_header(' in coverage
@@ -68,7 +76,9 @@ def test_runtime_history_has_one_direct_shared_component() -> None:
     routes = read('app/integrations/routes.py')
     shared = read('app/templates/integrations/partials/_runtime_history.html')
 
-    assert not exists('app/templates/integrations/kubernetes/partials/_runtime_history.html')
+    assert not exists(
+        'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_runtime_history.html'
+    )
     assert "'integrations/partials/_runtime_history.html'" in routes
     assert 'integrations/components/_semantic_status.html' in shared
     assert 'runtime_history_detail_endpoint_name' in shared
@@ -84,8 +94,8 @@ def test_dead_binding_presentation_is_removed() -> None:
 def test_integrations_templates_do_not_reintroduce_micro_typography() -> None:
     roots = (
         ROOT / 'app/templates/integrations',
-        ROOT / 'app/templates/metrics',
-        ROOT / 'app/templates/alertmanager',
+        ROOT / 'app/templates/integrations/observability/metrics_source',
+        ROOT / 'app/templates/integrations/observability/alert_source/providers/alertmanager',
     )
     offenders: list[str] = []
     for root in roots:
@@ -100,8 +110,8 @@ def test_integrations_templates_do_not_reintroduce_micro_typography() -> None:
 def test_integrations_does_not_add_inline_submit_handlers() -> None:
     roots = (
         ROOT / 'app/templates/integrations',
-        ROOT / 'app/templates/metrics',
-        ROOT / 'app/templates/alertmanager',
+        ROOT / 'app/templates/integrations/observability/metrics_source',
+        ROOT / 'app/templates/integrations/observability/alert_source/providers/alertmanager',
     )
     offenders: list[str] = []
     for root in roots:

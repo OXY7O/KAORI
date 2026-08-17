@@ -53,10 +53,10 @@ Revert the stabilization commit and redeploy all KAORI web and worker processes 
 
 ## Changed production files
 
-- `app/alertmanager/service.py`
+- `app/alert_sources/providers/alertmanager/service.py`
 - `app/cluster/service.py`
 - `app/cluster/sync_jobs.py`
-- `app/integrations/alertmanager/binding_management.py`
+- `app/integrations/observability/alert_source/providers/alertmanager/binding_management.py`
 - `app/integrations/deletion.py`
 - `app/integrations/prometheus/binding_management.py`
 - `app/integrations/runtime/repository.py`

@@ -152,7 +152,9 @@ def verify() -> None:
     sidebar = _read('app/templates/components/navigation/sidebar.html')
     if 'can_clusters' in sidebar:
         errors.append('sidebar.html: stale can_clusters capability remains without a direct menu owner')
-    kubernetes_registration = _read('app/integrations/kubernetes/__init__.py')
+    kubernetes_registration = _read(
+        'app/integrations/orchestration/container_orchestrator/adapters/kubernetes_api/__init__.py'
+    )
     if "navigation_endpoint_prefixes=('integrations.kubernetes', 'cluster.')" not in kubernetes_registration:
         errors.append(
             'Integrations → Orchestration must remain the navigation owner for Kubernetes and cluster.* routes'

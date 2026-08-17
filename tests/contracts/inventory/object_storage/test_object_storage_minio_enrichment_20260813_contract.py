@@ -8,7 +8,7 @@ def read(path: str) -> str:
 
 
 def test_minio_inventory_collects_normalized_bucket_configuration_evidence() -> None:
-    client = read('app/integrations/minio/client.py')
+    client = read('app/integrations/storage/object_storage/providers/minio/client.py')
     sync = read('app/inventory/object_storage/sync.py')
     model = read('app/models/object_storage.py')
 
@@ -37,7 +37,7 @@ def test_minio_inventory_collects_normalized_bucket_configuration_evidence() -> 
 
 
 def test_bucket_usage_stats_are_optional_and_persisted_canonically() -> None:
-    client = read('app/integrations/minio/client.py')
+    client = read('app/integrations/storage/object_storage/providers/minio/client.py')
     config = read('app/config/default.py')
     model = read('app/models/object_storage.py')
     presentation = read('app/inventory/object_storage/presentation.py')
@@ -80,7 +80,7 @@ def test_enrichment_migration_extends_current_bucket_container_head() -> None:
 
 
 def test_minio_bucket_quota_is_canonical_inventory_evidence() -> None:
-    client = read('app/integrations/minio/client.py')
+    client = read('app/integrations/storage/object_storage/providers/minio/client.py')
     model = read('app/models/object_storage.py')
     sync = read('app/inventory/object_storage/sync.py')
     presentation = read('app/inventory/object_storage/presentation.py')

@@ -78,7 +78,7 @@ def main() -> int:
     for relative, token in (
         (
             'app/analytics/kubernetes/utilization/service.py',
-            'from app.integrations.metrics.exceptions import MetricsSourceError',
+            'from app.integrations.observability.metrics_source.exceptions import MetricsSourceError',
         ),
         (
             'app/kubernetes_operations/secrets/reveal_service.py',
@@ -114,31 +114,31 @@ def main() -> int:
 
     for relative, token in (
         (
-            'app/alertmanager/bindings.py',
+            'app/alert_sources/providers/alertmanager/bindings.py',
             'from __future__ import annotations\n\nfrom sqlalchemy.exc import SQLAlchemyError',
         ),
         (
-            'app/alertmanager/service.py',
+            'app/alert_sources/providers/alertmanager/service.py',
             'from urllib.parse import urlsplit\n\nfrom sqlalchemy.exc import SQLAlchemyError',
         ),
         (
-            'app/integrations/alertmanager/binding_management.py',
+            'app/integrations/observability/alert_source/providers/alertmanager/binding_management.py',
             'from __future__ import annotations\n\nfrom sqlalchemy.exc import SQLAlchemyError',
         ),
         (
-            'app/integrations/alertmanager/binding_validation.py',
+            'app/integrations/observability/alert_source/providers/alertmanager/binding_validation.py',
             'from typing import Any\n\nfrom sqlalchemy.exc import SQLAlchemyError',
         ),
         (
-            'app/integrations/metrics/binding_management.py',
+            'app/integrations/observability/metrics_source/binding_management.py',
             'from __future__ import annotations\n\nfrom sqlalchemy.exc import SQLAlchemyError',
         ),
         (
-            'app/integrations/metrics/binding_validation.py',
+            'app/integrations/observability/metrics_source/binding_validation.py',
             'from typing import Any\n\nfrom sqlalchemy.exc import SQLAlchemyError',
         ),
         (
-            'app/metrics/service.py',
+            'app/metrics_sources/service.py',
             'from urllib.parse import urlsplit\n\nfrom sqlalchemy.exc import SQLAlchemyError',
         ),
     ):

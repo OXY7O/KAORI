@@ -74,8 +74,8 @@ Cluster compatibility routes may exist only as redirect or migration boundaries.
 
 - `app/templates/components/operation_feedback_oob.html`
 - `app/notifications/service.py::record_operational_activity`
-- `app/metrics/routes.py`
-- `app/alertmanager/routes.py`
+- `app/metrics_sources/routes.py`
+- `app/alert_sources/providers/alertmanager/routes.py`
 
 
 ## Toast lifecycle

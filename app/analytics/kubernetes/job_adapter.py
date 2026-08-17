@@ -6,8 +6,8 @@ from typing import Any
 
 from flask import current_app
 
-from app.alertmanager.consumer import KUBERNETES_CLUSTER_SCOPE
-from app.alertmanager.resolver import resolve_alertmanager_sources
+from app.alert_sources.providers.alertmanager.consumer import KUBERNETES_CLUSTER_SCOPE
+from app.alert_sources.providers.alertmanager.resolver import resolve_alertmanager_sources
 from app.analytics.kubernetes.materialization.catalog import (
     FORECAST_DATASET,
     canonical_parameters,
@@ -26,8 +26,8 @@ from app.common.job_execution_presentation import present_job_execution
 from app.jobs.constants import ACTIVE_JOB_STATUSES
 from app.jobs.definitions.base import RegisteredJobDispatchResult
 from app.jobs.dispatcher import enqueue_canonical_job
-from app.metrics.repository import resolve_instance_for_cluster
-from app.metrics.resolver import resolve_metrics_sources
+from app.metrics_sources.repository import resolve_instance_for_cluster
+from app.metrics_sources.resolver import resolve_metrics_sources
 from app.models import AnalyticsSnapshot, Cluster
 from app.models.job import JobExecution, JobPolicy
 

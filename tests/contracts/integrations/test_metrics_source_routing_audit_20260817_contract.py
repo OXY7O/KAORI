@@ -9,15 +9,15 @@ def read(relative: str) -> str:
 
 def test_metrics_source_is_provider_neutral_first_class_integration() -> None:
     model = read('app/models/metrics_source.py')
-    integration_module = read('app/integrations/metrics/__init__.py')
-    providers = read('app/integrations/metrics/providers.py')
-    catalog = read('app/definitions/catalogs/integrations/metrics_source.yaml')
+    integration_module = read('app/integrations/observability/metrics_source/__init__.py')
+    providers = read('app/integrations/observability/metrics_source/providers.py')
+    catalog = read('app/definitions/catalogs/integrations/observability/metrics_source/contract.yaml')
     routes = read('app/integrations/routes.py')
-    workspace = read('app/templates/integrations/metrics.html')
+    workspace = read('app/templates/integrations/observability/metrics_source/frontpage.html')
 
     assert "__tablename__ = 'metrics_sources'" in model
     assert 'creator=_metrics_source_identity' not in model
-    service = read('app/metrics/service.py')
+    service = read('app/metrics_sources/service.py')
     assert "integration_type='metrics_source'" in service
     assert 'provider_key=provider.key' in service
     assert 'adapter_key=provider.adapter_key' in service
@@ -42,20 +42,20 @@ def test_metrics_source_is_provider_neutral_first_class_integration() -> None:
 
 
 def test_metrics_source_adapter_and_binding_profiles_are_extension_points() -> None:
-    adapter = read('app/integrations/metrics/adapter.py')
-    backend_registry = read('app/integrations/metrics/backend_registry.py')
-    profiles = read('app/integrations/metrics/binding_profiles.py')
-    validation = read('app/integrations/metrics/binding_validation.py')
-    registry = read('app/integrations/metrics/binding_validators/registry.py')
-    catalog = read('app/definitions/catalogs/integrations/metrics_source.yaml')
-    runtime = read('app/integrations/metrics/prometheus_http_runtime.py')
-    providers = read('app/integrations/metrics/providers.py')
+    adapter = read('app/integrations/observability/metrics_source/adapter.py')
+    backend_registry = read('app/integrations/observability/metrics_source/backend_registry.py')
+    profiles = read('app/integrations/observability/metrics_source/binding_profiles.py')
+    validation = read('app/integrations/observability/metrics_source/binding_validation.py')
+    registry = read('app/integrations/observability/metrics_source/binding_validators/registry.py')
+    catalog = read('app/definitions/catalogs/integrations/observability/metrics_source/contract.yaml')
+    runtime = read('app/integrations/observability/metrics_source/adapters/prometheus_http/runtime.py')
+    providers = read('app/integrations/observability/metrics_source/providers.py')
     compatibility = read('app/integrations/compatibility.py')
 
     assert 'class MetricsBackendAdapter' in backend_registry
     assert 'def register_metrics_backend(' in backend_registry
     assert 'def metrics_backend_for(' in backend_registry
-    assert 'from app.integrations.metrics.backend_registry import (' in adapter
+    assert 'from app.integrations.observability.metrics_source.backend_registry import (' in adapter
     assert 'MetricsSourceError' in backend_registry
     assert "'validation.session.build'" in adapter
     assert "'client.build'" not in adapter
@@ -82,9 +82,9 @@ def test_metrics_bindings_have_horizon_and_weight_routing_contract() -> None:
     model = read('app/models/integration.py')
     lifecycle = read('app/integrations/lifecycle.py')
     modal = read('app/templates/integrations/components/_observability_binding_modal.html')
-    registry = read('app/templates/metrics/partials/_binding_registry.html')
-    management = read('app/integrations/metrics/binding_management.py')
-    resolver = read('app/metrics/resolver.py')
+    registry = read('app/templates/integrations/observability/metrics_source/partials/_binding_registry.html')
+    management = read('app/integrations/observability/metrics_source/binding_management.py')
+    resolver = read('app/metrics_sources/resolver.py')
 
     assert 'routing_policy: Mapped[dict | None]' in model
     assert 'routing_policy: dict | None = None' in lifecycle
@@ -105,8 +105,8 @@ def test_metrics_bindings_have_horizon_and_weight_routing_contract() -> None:
 
 
 def test_metrics_query_horizon_is_selected_from_actual_query_time_boundary() -> None:
-    routing = read('app/integrations/metrics/routing.py')
-    consumer = read('app/metrics/consumer.py')
+    routing = read('app/integrations/observability/metrics_source/routing.py')
+    consumer = read('app/metrics_sources/consumer.py')
     config = read('app/config/default.py')
     env_example = read('.env.example')
 
@@ -122,8 +122,8 @@ def test_metrics_query_horizon_is_selected_from_actual_query_time_boundary() -> 
 
 def test_metrics_source_workspace_filters_by_provider_key_not_product_category() -> None:
     service = read('app/integrations/service.py')
-    registry = read('app/templates/integrations/metrics/partials/_instance_inventory.html')
-    rows = read('app/templates/integrations/metrics/partials/_inventory_content.html')
+    registry = read('app/templates/integrations/observability/metrics_source/partials/_instance_inventory.html')
+    rows = read('app/templates/integrations/observability/metrics_source/partials/_inventory_content.html')
     domain = read('app/templates/integrations/partials/_domain_workspace.html')
 
     assert "'provider_key': provider.key" in service
@@ -139,7 +139,7 @@ def test_metrics_source_workspace_filters_by_provider_key_not_product_category()
 
 def test_generalization_migration_removes_product_category_from_runtime_schema() -> None:
     migration = read('migrations/versions/20260817_metrics_source_generalization.py')
-    runtime = read('app/integrations/metrics/adapter.py')
+    runtime = read('app/integrations/observability/metrics_source/adapter.py')
     lifecycle = read('app/integrations/lifecycle.py')
 
     assert "revision = '20260817_metrics_source_v2'" in migration

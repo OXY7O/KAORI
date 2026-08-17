@@ -8,13 +8,18 @@ from typing import Any
 import yaml
 from sqlalchemy import func, or_
 
-from app.alertmanager.resolver import resolve_alertmanager_sources
+from app.alert_sources.providers.alertmanager.resolver import resolve_alertmanager_sources
 from app.extensions.db import db
 from app.integrations.deletion import DeletionBlocked, kubernetes_deletion_guard
-from app.integrations.kubernetes.resolver import connection_for_cluster
-from app.integrations.kubernetes.validation import test_cluster_connection, test_cluster_runtime_health
+from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.resolver import (
+    connection_for_cluster,
+)
+from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.validation import (
+    test_cluster_connection,
+    test_cluster_runtime_health,
+)
 from app.jobs.service import acquire_resource_admission_locks
-from app.metrics.repository import resolve_instance_for_cluster
+from app.metrics_sources.repository import resolve_instance_for_cluster
 from app.models import Cluster, ClusterInventory, ClusterStatus, NamespaceInventory, Report, ReportSchedule
 from app.models.integration import IntegrationBinding, IntegrationInstance
 from app.models.kubernetes import KubernetesConnection

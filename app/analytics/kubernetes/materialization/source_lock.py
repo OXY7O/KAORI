@@ -10,8 +10,8 @@ from typing import Any
 from flask import current_app
 from sqlalchemy import text
 
-from app.alertmanager.consumer import KUBERNETES_CLUSTER_SCOPE
-from app.alertmanager.resolver import resolve_alertmanager_sources
+from app.alert_sources.providers.alertmanager.consumer import KUBERNETES_CLUSTER_SCOPE
+from app.alert_sources.providers.alertmanager.resolver import resolve_alertmanager_sources
 from app.analytics.kubernetes.materialization.catalog import (
     canonical_parameters,
     get_dataset,
@@ -20,7 +20,7 @@ from app.analytics.kubernetes.materialization.catalog import (
 )
 from app.analytics.kubernetes.materialization.errors import AnalyticsSourceBusyError
 from app.extensions.db import db
-from app.metrics.resolver import resolve_metrics_sources
+from app.metrics_sources.resolver import resolve_metrics_sources
 
 _fallback_locks: dict[str, Lock] = {}
 

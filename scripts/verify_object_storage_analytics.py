@@ -22,16 +22,18 @@ def main() -> int:
     alert_sources = read('app/analytics/object_storage/alert_sources.py')
     alert_table_service = read('app/analytics/object_storage/alert_table.py')
     presentation = read('app/analytics/object_storage/presentation.py')
-    adapter = read('app/analytics/object_storage/sources/minio_metrics.py')
+    adapter = read('app/analytics/object_storage/sources/providers/minio/metrics.py')
     resolver = read('app/analytics/object_storage/sources/resolver.py')
     contracts = read('app/analytics/shared/metrics/contracts.py')
-    profile = read('app/integrations/metrics/query_profiles/object_storage_v1.py')
-    audit = read('app/integrations/metrics/query_profiles/object_storage_audit.py')
-    metrics_catalog = read('app/definitions/catalogs/integrations/metrics_source.yaml')
-    alertmanager_catalog = read('app/definitions/catalogs/integrations/alertmanager.yaml')
+    profile = read('app/integrations/observability/metrics_source/query_profiles/object_storage_v1.py')
+    audit = read('app/integrations/observability/metrics_source/query_profiles/object_storage_audit.py')
+    metrics_catalog = read('app/definitions/catalogs/integrations/observability/metrics_source/contract.yaml')
+    alertmanager_catalog = read(
+        'app/definitions/catalogs/integrations/observability/alert_source/providers/alertmanager.yaml'
+    )
     alertmanager_profile_migration = read('migrations/versions/20260814_object_storage_alert_profile.py')
-    binding_validation = read('app/integrations/metrics/binding_validation.py')
-    binding_validator = read('app/integrations/metrics/binding_validators/object_storage.py')
+    binding_validation = read('app/integrations/observability/metrics_source/binding_validation.py')
+    binding_validator = read('app/integrations/observability/metrics_source/binding_validators/object_storage.py')
     menu = read('app/templates/components/navigation/analytics_menu.html')
     template = read('app/templates/analytics/object_storage/index.html')
     alerts_summary = read('app/templates/analytics/object_storage/partials/_alerts_summary.html')
@@ -126,7 +128,7 @@ def main() -> int:
     assert 'profile_key: object-storage-metrics-v1' in metrics_catalog
     assert 'validation_strategy: custom' in metrics_catalog
     assert "register_binding_validator(PROMETHEUS_HTTP_ADAPTER, 'object_storage_system'" in read(
-        'app/integrations/metrics/binding_validators/__init__.py'
+        'app/integrations/observability/metrics_source/binding_validators/__init__.py'
     )
     assert 'ObjectStorageMetricsProfileAuditor' in binding_validator
     assert 'return system.minio_connection is not None' in binding_validator

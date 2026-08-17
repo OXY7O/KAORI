@@ -17,8 +17,10 @@ def test_observability_coverage_uses_asset_language_and_route_owned_authorizatio
 
 
 def test_observability_empty_registry_actions_do_not_duplicate_route_authz() -> None:
-    metrics_source = read('app/templates/integrations/metrics/partials/_inventory_content.html')
-    alertmanager = read('app/templates/integrations/alertmanager/partials/_inventory_content.html')
+    metrics_source = read('app/templates/integrations/observability/metrics_source/partials/_inventory_content.html')
+    alertmanager = read(
+        'app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_inventory_content.html'
+    )
 
     assert 'Register Metrics Source' in metrics_source
     assert 'integrations.select_metrics_source_provider' in metrics_source
@@ -29,8 +31,8 @@ def test_observability_empty_registry_actions_do_not_duplicate_route_authz() -> 
 
 
 def test_minio_registration_matches_connection_test_interaction_contract() -> None:
-    template = read('app/templates/minio/instance_form.html')
-    routes = read('app/minio/routes.py')
+    template = read('app/templates/integrations/storage/object_storage/providers/minio/instance_form.html')
+    routes = read('app/object_storage/providers/minio/routes.py')
     assert 'connection_validation_header.render(' in template
     assert 'minio-connection-test-loading' in template
     assert 'minio-connection-test-result' in template
@@ -46,9 +48,11 @@ def test_provider_registration_heroes_share_one_canonical_contract() -> None:
     shared = read('app/templates/integrations/components/_provider_registration_hero.html')
     registrations = {
         'Kubernetes': read('app/templates/cluster/add.html'),
-        'Metrics Source': read('app/templates/metrics/instance_form.html'),
-        'Alertmanager': read('app/templates/alertmanager/instance_form.html'),
-        'MinIO': read('app/templates/minio/instance_form.html'),
+        'Metrics Source': read('app/templates/integrations/observability/metrics_source/instance_form.html'),
+        'Alertmanager': read(
+            'app/templates/integrations/observability/alert_source/providers/alertmanager/instance_form.html'
+        ),
+        'MinIO': read('app/templates/integrations/storage/object_storage/providers/minio/instance_form.html'),
     }
 
     for marker in (
@@ -81,9 +85,11 @@ def test_provider_registration_context_is_shared_and_limited_to_two_context_surf
     shared = read('app/templates/integrations/components/_provider_registration_context.html')
     registrations = {
         'Kubernetes': read('app/templates/cluster/add.html'),
-        'Metrics Source': read('app/templates/metrics/instance_form.html'),
-        'Alertmanager': read('app/templates/alertmanager/instance_form.html'),
-        'MinIO': read('app/templates/minio/instance_form.html'),
+        'Metrics Source': read('app/templates/integrations/observability/metrics_source/instance_form.html'),
+        'Alertmanager': read(
+            'app/templates/integrations/observability/alert_source/providers/alertmanager/instance_form.html'
+        ),
+        'MinIO': read('app/templates/integrations/storage/object_storage/providers/minio/instance_form.html'),
     }
 
     assert 'data-kaori-provider-registration-context' in shared
@@ -108,7 +114,7 @@ def test_provider_registration_context_is_shared_and_limited_to_two_context_surf
 
 def test_frontpage_refactor_keeps_overview_and_kubernetes_filter_contracts_typed() -> None:
     routes = read('app/integrations/routes.py')
-    frontpage = read('app/integrations/kubernetes_frontpage.py')
+    frontpage = read('app/integrations/orchestration/container_orchestrator/frontpage.py')
 
     overview_call = routes.split('def overview()', 1)[1].split('def _render_domain_page', 1)[0]
     for retired_argument in (
@@ -129,11 +135,13 @@ def test_frontpage_refactor_keeps_overview_and_kubernetes_filter_contracts_typed
 def test_provider_registration_actions_and_placeholders_are_consistent() -> None:
     kubernetes = read('app/templates/cluster/add.html') + read('app/templates/cluster/partials/_form.html')
     kubernetes_form = read('app/cluster/forms.py')
-    metrics_source = read('app/templates/metrics/instance_form.html')
-    metrics_source_form = read('app/metrics/forms.py')
-    alertmanager = read('app/templates/alertmanager/instance_form.html')
-    minio = read('app/templates/minio/instance_form.html')
-    minio_form = read('app/minio/forms.py')
+    metrics_source = read('app/templates/integrations/observability/metrics_source/instance_form.html')
+    metrics_source_form = read('app/metrics_sources/forms.py')
+    alertmanager = read(
+        'app/templates/integrations/observability/alert_source/providers/alertmanager/instance_form.html'
+    )
+    minio = read('app/templates/integrations/storage/object_storage/providers/minio/instance_form.html')
+    minio_form = read('app/object_storage/providers/minio/forms.py')
 
     shared_actions = read('app/templates/integrations/components/_provider_registration_actions.html')
     for marker in (
@@ -195,12 +203,14 @@ def test_provider_registration_actions_and_placeholders_are_consistent() -> None
 
 
 def test_minio_connection_test_separates_s3_access_from_product_identity() -> None:
-    client = read('app/integrations/minio/client.py')
-    service = read('app/minio/service.py')
-    routes = read('app/minio/routes.py')
-    adapter = read('app/integrations/minio/adapter.py')
+    client = read('app/integrations/storage/object_storage/providers/minio/client.py')
+    s3_adapter = read('app/integrations/storage/object_storage/adapters/s3/client.py')
+    service = read('app/object_storage/providers/minio/service.py')
+    routes = read('app/object_storage/providers/minio/routes.py')
+    adapter = read('app/integrations/storage/object_storage/providers/minio/adapter.py')
 
-    assert 'client.list_buckets()' in client
+    assert 'client.list_buckets()' in s3_adapter
+    assert 'list_s3_buckets(' in client
     assert 's3:ListAllMyBuckets' in client
     assert '/minio/health/live' in client
     assert 'identity_evidence' in client
@@ -215,9 +225,11 @@ def test_minio_connection_test_separates_s3_access_from_product_identity() -> No
 def test_edit_connection_pages_keep_only_flow_and_related_workspace_context() -> None:
     edit_templates = {
         'Kubernetes': read('app/templates/cluster/edit.html'),
-        'Metrics Source': read('app/templates/metrics/instance_form.html'),
-        'Alertmanager': read('app/templates/alertmanager/instance_form.html'),
-        'MinIO': read('app/templates/minio/instance_form.html'),
+        'Metrics Source': read('app/templates/integrations/observability/metrics_source/instance_form.html'),
+        'Alertmanager': read(
+            'app/templates/integrations/observability/alert_source/providers/alertmanager/instance_form.html'
+        ),
+        'MinIO': read('app/templates/integrations/storage/object_storage/providers/minio/instance_form.html'),
     }
     for provider, source in edit_templates.items():
         assert 'provider_registration_context.render(' in source, provider
@@ -226,11 +238,13 @@ def test_edit_connection_pages_keep_only_flow_and_related_workspace_context() ->
 
 
 def test_metrics_source_and_alertmanager_detail_configuration_link_to_edit_pages() -> None:
-    metrics_source = read('app/templates/metrics/partials/_detail_configuration.html')
-    alertmanager = read('app/templates/alertmanager/partials/_detail_configuration.html')
+    metrics_source = read('app/templates/integrations/observability/metrics_source/partials/_detail_configuration.html')
+    alertmanager = read(
+        'app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_detail_configuration.html'
+    )
     shared = read('app/templates/integrations/components/_provider_configuration_contract.html')
-    prom_routes = read('app/metrics/routes.py')
-    am_routes = read('app/alertmanager/routes.py')
+    prom_routes = read('app/metrics_sources/routes.py')
+    am_routes = read('app/alert_sources/providers/alertmanager/routes.py')
 
     assert 'Configure Connection' in shared
     assert 'url_for("metrics.edit_instance"' in metrics_source

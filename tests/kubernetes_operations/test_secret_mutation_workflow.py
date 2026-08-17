@@ -46,9 +46,9 @@ def _install_base_modules(monkeypatch: pytest.MonkeyPatch) -> dict[str, ModuleTy
         'app.governance.tls_certificates',
         'app.governance.tls_certificates.certificate',
         'app.integrations',
-        'app.integrations.kubernetes',
-        'app.integrations.kubernetes.resolver',
-        'app.integrations.kubernetes.tls',
+        'app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api',
+        'app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.resolver',
+        'app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.tls',
         'app.kubernetes_operations',
         'app.kubernetes_operations.secrets',
         'app.kubernetes_operations.secrets.live_service',
@@ -86,8 +86,8 @@ def _install_base_modules(monkeypatch: pytest.MonkeyPatch) -> dict[str, ModuleTy
     modules['contracts'] = contracts
     modules['validation'] = validation
 
-    modules['app.integrations.kubernetes.resolver'].tls_policy_for_cluster = lambda cluster: (None, False)
-    modules['app.integrations.kubernetes.tls'].weak_tls_context = lambda **kwargs: nullcontext()
+    modules['app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.resolver'].tls_policy_for_cluster = lambda cluster: (None, False)
+    modules['app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.tls'].weak_tls_context = lambda **kwargs: nullcontext()
     modules['app.governance.tls_certificates.certificate'].validate_certificate_pair = lambda *args: None
 
     class ApiException(Exception):

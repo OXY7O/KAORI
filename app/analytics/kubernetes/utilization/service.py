@@ -7,10 +7,10 @@ from app.analytics.kubernetes.common.clusters import get_selected_cluster as res
 from app.analytics.kubernetes.common.presentation import present_metrics_source_status
 from app.analytics.shared.coercion import safe_float
 from app.integrations.consumer.contracts import ConsumerResult
-from app.integrations.metrics.exceptions import MetricsSourceError
-from app.integrations.metrics.query_profiles import get_kubernetes_query_expression
-from app.metrics.consumer import MetricsConsumer
-from app.metrics.service import MetricsService
+from app.integrations.observability.metrics_source.exceptions import MetricsSourceError
+from app.integrations.observability.metrics_source.query_profiles import get_kubernetes_query_expression
+from app.metrics_sources.consumer import MetricsConsumer
+from app.metrics_sources.service import MetricsService
 from app.models import Cluster
 
 CPU_CAPACITY = get_kubernetes_query_expression('analytics.utilization.queries.CPU_CAPACITY')

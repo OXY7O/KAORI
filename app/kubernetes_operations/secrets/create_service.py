@@ -12,8 +12,10 @@ from urllib3.exceptions import HTTPError as Urllib3HTTPError
 from app.common.kubernetes_secrets import scrub_secret_payload
 from app.common.sensitive_uploads import decode_utf8
 from app.governance.tls_certificates.certificate import validate_certificate_pair
-from app.integrations.kubernetes.resolver import tls_policy_for_cluster
-from app.integrations.kubernetes.tls import weak_tls_context
+from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.resolver import (
+    tls_policy_for_cluster,
+)
+from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.tls import weak_tls_context
 from app.kubernetes_operations.secrets.contracts import SecretOperationResult
 from app.kubernetes_operations.secrets.live_service import core_api, get_cluster, verify_live_namespace
 from app.kubernetes_operations.secrets.validation import (

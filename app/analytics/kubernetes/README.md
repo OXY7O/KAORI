@@ -266,7 +266,7 @@ context instead of synthetic zeroes.
 | `routes.py` | Full-page and HTMX-only transport boundary. |
 
 PromQL is registered in
-`app/integrations/metrics/query_profiles/kubernetes_v1.py`; the expression
+`app/integrations/observability/metrics_source/query_profiles/kubernetes_v1.py`; the expression
 family is owned by `query_profiles/alerts_v1.py`. Domain modules do not embed
 raw PromQL.
 
@@ -308,7 +308,7 @@ page. Namespace matching is exact rather than substring-based.
 
 ## Cross-asset rule
 
-Provider-neutral Alertmanager API behavior remains under `app/alertmanager`.
+Provider-neutral Alertmanager API behavior remains under `app/alert_sources/providers/alertmanager`.
 Kubernetes identity and workload interpretation remain in this package. Future
 Server, HCI, or Storage alert analytics must consume provider-neutral records and
 own their asset-specific enrichment separately; they must not add asset branches
@@ -338,7 +338,7 @@ reasons to change. These are review triggers, not hard coding rules.
 ## Consumer migration rule
 
 Metrics Source reads must enter analytics through
-`app.metrics.consumer.MetricsConsumer`, directly or through the temporary
+`app.metrics_sources.consumer.MetricsConsumer`, directly or through the temporary
 canonical Metrics Source consumer contract. New analytics code must declare the
 capabilities required by a query when the requirement is more specific than the
 base Instant Query or Range Query API.

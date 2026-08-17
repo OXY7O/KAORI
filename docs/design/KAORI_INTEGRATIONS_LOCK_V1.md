@@ -139,7 +139,7 @@ Optional Secret access is a separate namespace-scoped `Role + RoleBinding`, visi
 The final lock removes obsolete presentation paths that were no longer referenced after modal/runtime/capability consolidation:
 
 - `app/templates/integrations/partials/_runtime_detail_content.html`
-- `app/templates/metrics/partials/_analytics_readiness.html`
+- `app/templates/integrations/observability/metrics_source/partials/_analytics_readiness.html`
 
 Previously retired Integration compatibility paths remain registered in `scripts/cleanup_obsolete_files.sh` and are protected by the final verifier.
 

@@ -93,7 +93,7 @@ def test_inventory_read_side_has_no_live_provider_or_network_client_boundary() -
         'httpx.',
         'urllib.request',
         'boto3.client',
-        'app.integrations.kubernetes.resolver',
+        'app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.resolver',
     )
 
     assert all(token not in source for token in forbidden)

@@ -6,7 +6,9 @@ from threading import Lock
 from typing import Any
 
 from app.extensions.db import db
-from app.integrations.kubernetes.resolver import kubeconfig_for_cluster
+from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.resolver import (
+    kubeconfig_for_cluster,
+)
 from app.kubernetes_operations.secrets.live_service import (
     list_live_namespaces,
     list_verified_namespaces,

@@ -43,7 +43,7 @@ def test_topology_cluster_identity_uses_eager_loaded_database_relationship_not_r
 
     assert 'joinedload(Cluster.kubernetes_connection)' in repository
     assert 'cluster.kubernetes_connection.server' in builder
-    assert 'app.integrations.kubernetes.resolver' not in builder
+    assert 'app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.resolver' not in builder
 
 
 def test_inventory_resource_template_registry_uses_the_canonical_kubernetes_namespace() -> None:

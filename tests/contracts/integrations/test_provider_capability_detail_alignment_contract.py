@@ -1,9 +1,15 @@
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
-KUBERNETES = ROOT / 'app/templates/integrations/kubernetes/partials/_capability_workspace.html'
-PROMETHEUS = ROOT / 'app/templates/metrics/partials/_capability_registry.html'
-ALERTMANAGER = ROOT / 'app/templates/alertmanager/partials/_capability_registry.html'
+KUBERNETES = (
+    ROOT
+    / 'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_capability_workspace.html'
+)
+PROMETHEUS = ROOT / 'app/templates/integrations/observability/metrics_source/partials/_capability_registry.html'
+ALERTMANAGER = (
+    ROOT
+    / 'app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_capability_registry.html'
+)
 DETAIL = ROOT / 'app/templates/integrations/components/_provider_capability_detail.html'
 ACTIONS = ROOT / 'app/templates/integrations/components/_record_actions.html'
 

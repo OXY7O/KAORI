@@ -11,9 +11,13 @@ def test_runtime_observations_share_one_provider_neutral_lifecycle() -> None:
     domain = read('app/retention/domains/runtime_observation.py')
     presentation = read('app/retention/presentation.py')
     shared_history = read('app/templates/integrations/partials/_runtime_history.html')
-    metrics_source = read('app/templates/metrics/partials/_runtime_history.html')
-    alertmanager = read('app/templates/alertmanager/partials/_runtime_history.html')
-    kubernetes = read('app/templates/integrations/kubernetes/detail.html')
+    metrics_source = read('app/templates/integrations/observability/metrics_source/partials/_runtime_history.html')
+    alertmanager = read(
+        'app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_runtime_history.html'
+    )
+    kubernetes = read(
+        'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/detail.html'
+    )
 
     assert 'IntegrationRuntimeObservation' in domain
     assert 'IntegrationRuntimeObservation.provider ==' not in domain

@@ -8,8 +8,10 @@ from kubernetes.config.config_exception import ConfigException
 from urllib3.exceptions import HTTPError as Urllib3HTTPError
 
 from app.common.kubernetes_secrets import scrub_mapping_values
-from app.integrations.kubernetes.resolver import tls_policy_for_cluster
-from app.integrations.kubernetes.tls import weak_tls_context
+from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.resolver import (
+    tls_policy_for_cluster,
+)
+from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.tls import weak_tls_context
 from app.kubernetes_operations.secrets.contracts import SecretOperationResult
 from app.kubernetes_operations.secrets.live_service import (
     LiveSecretSnapshot,

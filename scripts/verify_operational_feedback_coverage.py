@@ -63,14 +63,14 @@ def main() -> int:
             "event_type='cluster_update'",
             "event_type='cluster_delete'",
         ),
-        'app/metrics/registration_web.py': ("event_type='metrics_source_created'",),
-        'app/metrics/routes.py': ("event_type='metrics_source_deleted'",),
-        'app/metrics/edit_web.py': ("event_type='metrics_source_updated'",),
-        'app/alertmanager/routes.py': (
+        'app/metrics_sources/registration_web.py': ("event_type='metrics_source_created'",),
+        'app/metrics_sources/routes.py': ("event_type='metrics_source_deleted'",),
+        'app/metrics_sources/edit_web.py': ("event_type='metrics_source_updated'",),
+        'app/alert_sources/providers/alertmanager/routes.py': (
             "event_type='alertmanager_instance_created'",
             "event_type='alertmanager_instance_deleted'",
         ),
-        'app/alertmanager/edit_web.py': ("event_type='alertmanager_instance_updated'",),
+        'app/alert_sources/providers/alertmanager/edit_web.py': ("event_type='alertmanager_instance_updated'",),
     }.items():
         require(path, *tokens)
     require(

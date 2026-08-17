@@ -8,7 +8,9 @@ from app.cluster.individual_sync_state import register_individual_sync_task
 from app.cluster.sync_state import store_cluster_sync_metadata
 from app.cluster.tasks import sync_all_clusters_task, sync_single_cluster_task
 from app.common.job_execution_contract import KUBERNETES_INVENTORY_SYNC_OPERATION
-from app.integrations.kubernetes.resolver import connection_for_cluster
+from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.resolver import (
+    connection_for_cluster,
+)
 from app.jobs.constants import WORKLOAD_STANDARD
 from app.jobs.dispatcher import enqueue_canonical_job
 from app.jobs.service import acquire_resource_admission_locks

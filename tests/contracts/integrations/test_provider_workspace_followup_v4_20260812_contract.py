@@ -15,10 +15,10 @@ def test_validation_polling_is_isolated_from_nested_registry_indicators() -> Non
     assert 'hx-swap="outerHTML"' in poller
 
     targets = {
-        'app/templates/integrations/kubernetes/partials/_capability_workspace.html': '#kubernetes-capability-workspace',
-        'app/templates/metrics/partials/_detail_validation_content.html': '#metrics-source-validation-workspace',
-        'app/templates/alertmanager/partials/_detail_validation_content.html': '#alertmanager-validation-workspace',
-        'app/templates/minio/partials/_detail_validation.html': '#minio-core-validation',
+        'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_capability_workspace.html': '#kubernetes-capability-workspace',
+        'app/templates/integrations/observability/metrics_source/partials/_detail_validation_content.html': '#metrics-source-validation-workspace',
+        'app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_detail_validation_content.html': '#alertmanager-validation-workspace',
+        'app/templates/integrations/storage/object_storage/providers/minio/partials/_detail_validation.html': '#minio-core-validation',
     }
     for relative, target in targets.items():
         text = read(relative)
@@ -31,10 +31,10 @@ def test_validation_polling_is_isolated_from_nested_registry_indicators() -> Non
 
 def test_validation_has_one_provider_job_loading_surface_but_registry_keeps_own_action_loader() -> None:
     pages = {
-        'app/templates/integrations/kubernetes/partials/_capability_workspace.html': 'kubernetes-validation-loading',
-        'app/templates/metrics/partials/_detail_validation_content.html': 'metrics-source-validation-loading',
-        'app/templates/alertmanager/partials/_detail_validation_content.html': 'alertmanager-validation-loading',
-        'app/templates/minio/partials/_detail_validation.html': 'minio-validation-loading',
+        'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_capability_workspace.html': 'kubernetes-validation-loading',
+        'app/templates/integrations/observability/metrics_source/partials/_detail_validation_content.html': 'metrics-source-validation-loading',
+        'app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_detail_validation_content.html': 'alertmanager-validation-loading',
+        'app/templates/integrations/storage/object_storage/providers/minio/partials/_detail_validation.html': 'minio-validation-loading',
     }
     for relative, loading_id in pages.items():
         text = read(relative)
@@ -43,16 +43,22 @@ def test_validation_has_one_provider_job_loading_surface_but_registry_keeps_own_
 
     # Capability Registry action loaders stay independent for search/filter/pagination only.
     assert 'kubernetes-capability-loading' in read(
-        'app/templates/integrations/kubernetes/partials/_capability_registry.html'
+        'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_capability_registry.html'
     )
-    assert 'metrics-source-capability-loading' in read('app/templates/metrics/partials/_capability_registry.html')
-    assert 'alertmanager-capability-loading' in read('app/templates/alertmanager/partials/_capability_registry.html')
-    assert 'minio-capability-loading' in read('app/templates/minio/partials/_capability_registry.html')
+    assert 'metrics-source-capability-loading' in read(
+        'app/templates/integrations/observability/metrics_source/partials/_capability_registry.html'
+    )
+    assert 'alertmanager-capability-loading' in read(
+        'app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_capability_registry.html'
+    )
+    assert 'minio-capability-loading' in read(
+        'app/templates/integrations/storage/object_storage/providers/minio/partials/_capability_registry.html'
+    )
 
 
 def test_observability_edit_success_queues_registry_toast_even_for_htmx_redirect() -> None:
-    metrics_source = read('app/metrics/edit_web.py')
-    alertmanager = read('app/alertmanager/edit_web.py')
+    metrics_source = read('app/metrics_sources/edit_web.py')
+    alertmanager = read('app/alert_sources/providers/alertmanager/edit_web.py')
 
     p_success = metrics_source.split("event_type='metrics_source_updated'", 1)[1].split('if is_htmx:', 1)[0]
     a_success = alertmanager.split("event_type='alertmanager_instance_updated'", 1)[1].split('if is_htmx:', 1)[0]
@@ -65,7 +71,9 @@ def test_observability_edit_success_queues_registry_toast_even_for_htmx_redirect
 
 
 def test_minio_authority_boundary_keeps_only_authority_metadata() -> None:
-    configuration = read('app/templates/minio/partials/_detail_configuration.html')
+    configuration = read(
+        'app/templates/integrations/storage/object_storage/providers/minio/partials/_detail_configuration.html'
+    )
     metadata = configuration.split('{% set operational_metadata = [', 1)[1].split('] %}', 1)[0]
 
     assert 'S3 API Authority' in metadata
@@ -77,7 +85,9 @@ def test_minio_authority_boundary_keeps_only_authority_metadata() -> None:
 
 
 def test_minio_readiness_keeps_range_readable_without_long_range_badge() -> None:
-    validation = read('app/templates/minio/partials/_detail_validation.html')
+    validation = read(
+        'app/templates/integrations/storage/object_storage/providers/minio/partials/_detail_validation.html'
+    )
     metadata = validation.split('{% set capability_metadata = [', 1)[1].split('] %}', 1)[0]
     shared = read('app/templates/integrations/components/_capability_readiness.html')
 

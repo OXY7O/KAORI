@@ -2,8 +2,11 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
 SHARED = ROOT / 'app/integrations/capability_registry.py'
-PROM = ROOT / 'app/templates/metrics/partials/_capability_registry.html'
-ALERT = ROOT / 'app/templates/alertmanager/partials/_capability_registry.html'
+PROM = ROOT / 'app/templates/integrations/observability/metrics_source/partials/_capability_registry.html'
+ALERT = (
+    ROOT
+    / 'app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_capability_registry.html'
+)
 
 
 def test_provider_capability_registries_share_server_side_filtering_contract():

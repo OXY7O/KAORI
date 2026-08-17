@@ -58,4 +58,7 @@ def test_standalone_functional_module_loaders_restore_sys_modules() -> None:
 
     assert "sys.modules['app.common.inventory_generation'] =" not in dashboard
     assert "sys.modules['flask'] =" not in topology
-    assert "sys.modules['app.integrations.kubernetes.resolver'] =" not in topology
+    assert (
+        "sys.modules['app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.resolver'] ="
+        not in topology
+    )

@@ -71,7 +71,7 @@ def test_on_demand_request_only_attaches_to_matching_fleet_work_item() -> None:
 
 
 def test_metrics_source_consumer_reduces_domain_capabilities_to_query_transport() -> None:
-    from app.metrics.consumer import MetricsConsumer
+    from app.metrics_sources.consumer import MetricsConsumer
 
     assert MetricsConsumer._execution_capabilities(
         (
@@ -158,7 +158,7 @@ def test_non_live_context_still_returns_utilization_service(monkeypatch) -> None
 
 
 def test_explicit_analytics_query_timeout_can_exceed_instance_default() -> None:
-    from app.integrations.metrics.prometheus_http_client import PrometheusHttpQueryClient
+    from app.integrations.observability.metrics_source.adapters.prometheus_http.client import PrometheusHttpQueryClient
 
     client = object.__new__(PrometheusHttpQueryClient)
     client.request_timeout_seconds = 300

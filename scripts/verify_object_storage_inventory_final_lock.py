@@ -71,7 +71,11 @@ def main() -> int:
         if token not in routes:
             errors.append(f'Object Storage route boundary missing: {token}')
 
-    if 'app.integrations.minio' in routes or 'MinioClient' in routes or 'MinIOClient' in routes:
+    if (
+        'app.integrations.storage.object_storage.providers.minio' in routes
+        or 'MinioClient' in routes
+        or 'MinIOClient' in routes
+    ):
         errors.append('Object Storage inventory routes must not query the live MinIO provider')
 
     for include in (

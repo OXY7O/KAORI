@@ -8,11 +8,13 @@ def read(path: str) -> str:
 
 
 def test_alertmanager_provider_core_is_consumer_neutral() -> None:
-    registration = read('app/integrations/alertmanager/__init__.py')
-    validation = read('app/integrations/alertmanager/validation.py')
-    capabilities = read('app/integrations/alertmanager/capabilities.py')
-    capability_catalog = read('app/definitions/catalogs/integrations/alertmanager.yaml')
-    requirements = read('app/integrations/alertmanager/requirements.py')
+    registration = read('app/integrations/observability/alert_source/providers/alertmanager/__init__.py')
+    validation = read('app/integrations/observability/alert_source/providers/alertmanager/validation.py')
+    capabilities = read('app/integrations/observability/alert_source/providers/alertmanager/capabilities.py')
+    capability_catalog = read(
+        'app/definitions/catalogs/integrations/observability/alert_source/providers/alertmanager.yaml'
+    )
+    requirements = read('app/integrations/observability/alert_source/providers/alertmanager/requirements.py')
 
     assert 'CORE_CAPABILITY_KEYS' in registration
     assert "integration_provider_document('alertmanager')" in capabilities
@@ -28,10 +30,16 @@ def test_alertmanager_provider_core_is_consumer_neutral() -> None:
 
 
 def test_alertmanager_consumer_profiles_are_asset_scoped() -> None:
-    profiles = read('app/integrations/alertmanager/binding_profiles.py')
-    profile_catalog = read('app/definitions/catalogs/integrations/alertmanager.yaml')
-    binding_validation = read('app/integrations/alertmanager/binding_validation.py')
-    binding_management = read('app/integrations/alertmanager/binding_management.py')
+    profiles = read('app/integrations/observability/alert_source/providers/alertmanager/binding_profiles.py')
+    profile_catalog = read(
+        'app/definitions/catalogs/integrations/observability/alert_source/providers/alertmanager.yaml'
+    )
+    binding_validation = read(
+        'app/integrations/observability/alert_source/providers/alertmanager/binding_validation.py'
+    )
+    binding_management = read(
+        'app/integrations/observability/alert_source/providers/alertmanager/binding_management.py'
+    )
 
     assert "integration_provider_document('alertmanager')" in profiles
     assert 'profile_key: kubernetes-alerts-v1' in profile_catalog
@@ -49,7 +57,7 @@ def test_alertmanager_consumer_profiles_are_asset_scoped() -> None:
 
 
 def test_alertmanager_binding_evidence_drives_consumer_resolution() -> None:
-    resolver = read('app/alertmanager/resolver.py')
+    resolver = read('app/alert_sources/providers/alertmanager/resolver.py')
     evaluator = resolver.split('def _evaluate_binding', 1)[1].split('def _operational_rank', 1)[0]
 
     assert 'binding.validation_evidence or {}' in evaluator
@@ -58,10 +66,10 @@ def test_alertmanager_binding_evidence_drives_consumer_resolution() -> None:
 
 
 def test_alertmanager_supports_object_storage_consumers_without_special_binding_table() -> None:
-    forms = read('app/alertmanager/forms.py')
-    service = read('app/alertmanager/service.py')
-    routes = read('app/alertmanager/routes.py')
-    minio_service = read('app/minio/service.py')
+    forms = read('app/alert_sources/providers/alertmanager/forms.py')
+    service = read('app/alert_sources/providers/alertmanager/service.py')
+    routes = read('app/alert_sources/providers/alertmanager/routes.py')
+    minio_service = read('app/object_storage/providers/minio/service.py')
     consumer_assets = read('app/integrations/consumer_assets.py')
     taxonomy_catalog = read('app/definitions/catalogs/integrations/taxonomy.yaml')
 
@@ -78,9 +86,15 @@ def test_alertmanager_supports_object_storage_consumers_without_special_binding_
 
 
 def test_alertmanager_ui_exposes_consumer_profile_and_core_boundary() -> None:
-    validation = read('app/templates/alertmanager/partials/_detail_validation_content.html')
-    scope = read('app/templates/alertmanager/partials/_detail_scope.html')
-    registry = read('app/templates/alertmanager/partials/_binding_registry.html')
+    validation = read(
+        'app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_detail_validation_content.html'
+    )
+    scope = read(
+        'app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_detail_scope.html'
+    )
+    registry = read(
+        'app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_binding_registry.html'
+    )
     binding_modal = read('app/templates/integrations/components/_observability_binding_modal.html')
 
     assert 'Alertmanager Full Validation' in validation
@@ -96,7 +110,7 @@ def test_alertmanager_ui_exposes_consumer_profile_and_core_boundary() -> None:
 
 
 def test_alertmanager_consumer_profile_contract_is_documented() -> None:
-    readme = read('app/integrations/alertmanager/README.md')
+    readme = read('app/integrations/observability/alert_source/providers/alertmanager/README.md')
     compatibility = read('docs/INTEGRATION_COMPATIBILITY.md')
     module_map = read('docs/architecture/integration-module-map.md')
 
@@ -109,9 +123,11 @@ def test_alertmanager_consumer_profile_contract_is_documented() -> None:
 
 
 def test_object_storage_alert_profile_direct_cutover_is_migration_guarded() -> None:
-    profiles = read('app/integrations/alertmanager/binding_profiles.py')
-    profile_catalog = read('app/definitions/catalogs/integrations/alertmanager.yaml')
-    resolver = read('app/alertmanager/resolver.py')
+    profiles = read('app/integrations/observability/alert_source/providers/alertmanager/binding_profiles.py')
+    profile_catalog = read(
+        'app/definitions/catalogs/integrations/observability/alert_source/providers/alertmanager.yaml'
+    )
+    resolver = read('app/alert_sources/providers/alertmanager/resolver.py')
     migration = read('migrations/versions/20260814_object_storage_alert_profile.py')
 
     assert 'profile_key: object-storage-alerts-v1' in profile_catalog

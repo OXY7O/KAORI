@@ -36,7 +36,7 @@ def test_provider_routes_return_the_owning_partial_for_htmx() -> None:
     assert "'integrations/partials/_coverage_card.html'" in routes
     assert "if target == 'metrics-source-coverage-content':" in routes
     assert "if target == 'metrics-source-inventory-card':" in routes
-    assert "'integrations/metrics/partials/_inventory_content.html'" in routes
+    assert "'integrations/observability/metrics_source/partials/_inventory_content.html'" in routes
     assert "if target == 'alertmanager-coverage-content':" in routes
     assert "if target == 'alertmanager-inventory-card':" in routes
-    assert "'integrations/alertmanager/partials/_inventory_content.html'" in routes
+    assert "'integrations/observability/alert_source/providers/alertmanager/partials/_inventory_content.html'" in routes

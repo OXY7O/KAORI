@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from app.analytics.kubernetes.common.presentation import present_metrics_source_status
-from app.integrations.metrics.exceptions import MetricsSourceError
+from app.integrations.observability.metrics_source.exceptions import MetricsSourceError
 
 
 def bytes_to_gib(

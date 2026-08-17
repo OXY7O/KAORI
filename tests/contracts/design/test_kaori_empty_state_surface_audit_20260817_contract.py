@@ -39,14 +39,14 @@ def test_reviewed_product_surfaces_use_the_canonical_state_components() -> None:
 
 def test_reviewed_registry_empty_rows_do_not_keep_page_local_visual_shells() -> None:
     templates = {
-        'app/templates/minio/partials/_capability_registry.html': 'No Capability Records Match the Current Filters',
+        'app/templates/integrations/storage/object_storage/providers/minio/partials/_capability_registry.html': 'No Capability Records Match the Current Filters',
         'app/templates/analytics/object_storage/partials/_alert_records.html': 'No Alert Records Match the Current Filters',
         'app/templates/analytics/object_storage/partials/_bucket_table.html': 'No Bucket Records Match the Current Filters',
         'app/templates/intelligence/partials/_alert_intelligence_records.html': 'No Alert Records Match the Current Filters',
         'app/templates/reports/generated/index.html': 'No Generated Reports Match the Current Filters',
         'app/templates/reports/report_templates/index.html': 'No Templates Match the Current Filters',
         'app/templates/reports/schedules/index.html': 'No Schedules Match the Current Filters',
-        'app/templates/integrations/kubernetes/partials/_capability_registry.html': 'No Capability Records Match the Current Filters',
+        'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_capability_registry.html': 'No Capability Records Match the Current Filters',
         'app/templates/integrations/notification_channels/index.html': 'No Notification Channels Configured',
     }
     for relative, title in templates.items():
@@ -88,7 +88,7 @@ def test_reviewed_web_tables_do_not_reintroduce_plain_text_empty_rows() -> None:
         'app/templates/inventory/kubernetes',
         'app/templates/kubernetes_operations',
         'app/templates/inventory/object_storage',
-        'app/templates/minio',
+        'app/templates/integrations/storage/object_storage/providers/minio',
         'app/templates/analytics/kubernetes',
         'app/templates/analytics/object_storage',
         'app/templates/intelligence',

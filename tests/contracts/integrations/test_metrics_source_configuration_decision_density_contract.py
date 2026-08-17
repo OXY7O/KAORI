@@ -19,7 +19,7 @@ def test_shared_provider_configuration_contract_is_compact_and_read_only() -> No
 
 
 def test_metrics_source_configuration_exposes_provider_and_consumer_boundary() -> None:
-    template = read('app/templates/metrics/partials/_detail_configuration.html')
+    template = read('app/templates/integrations/observability/metrics_source/partials/_detail_configuration.html')
     assert 'provider_configuration_contract.render(' in template
     assert "metrics_source_label ~ ' Metrics Endpoint'" in template
     assert 'metrics_source_label ~ " Query API"' in template

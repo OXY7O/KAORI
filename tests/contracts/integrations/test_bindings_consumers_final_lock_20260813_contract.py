@@ -9,8 +9,10 @@ def read(path: str) -> str:
 
 def test_binding_decision_is_shared_and_keeps_readiness_dimensions_independent() -> None:
     shared = read('app/templates/integrations/components/_binding_readiness_boundary.html')
-    prom = read('app/templates/metrics/partials/_detail_scope.html')
-    alert = read('app/templates/alertmanager/partials/_detail_scope.html')
+    prom = read('app/templates/integrations/observability/metrics_source/partials/_detail_scope.html')
+    alert = read(
+        'app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_detail_scope.html'
+    )
 
     assert 'data-kaori-binding-readiness-boundary' in shared
     for marker in (
@@ -36,8 +38,10 @@ def test_binding_decision_is_shared_and_keeps_readiness_dimensions_independent()
 
 
 def test_metrics_source_and_alertmanager_binding_registries_share_final_column_contract() -> None:
-    prom = read('app/templates/metrics/partials/_binding_registry.html')
-    alert = read('app/templates/alertmanager/partials/_binding_registry.html')
+    prom = read('app/templates/integrations/observability/metrics_source/partials/_binding_registry.html')
+    alert = read(
+        'app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_binding_registry.html'
+    )
 
     columns = (
         'Consumer Asset',
@@ -92,8 +96,8 @@ def test_shared_add_binding_modal_locks_workflow_roles_and_source_ownership() ->
 
 
 def test_binding_runtime_contract_keeps_validation_required_transition_and_roles() -> None:
-    prom = read('app/integrations/metrics/binding_management.py')
-    alert = read('app/integrations/alertmanager/binding_management.py')
+    prom = read('app/integrations/observability/metrics_source/binding_management.py')
+    alert = read('app/integrations/observability/alert_source/providers/alertmanager/binding_management.py')
 
     for source in (prom, alert):
         assert "{'primary', 'secondary', 'fallback'}" in source
@@ -121,8 +125,8 @@ def test_final_lock_templates_do_not_add_page_local_style_debt() -> None:
     paths = (
         'app/templates/integrations/components/_observability_binding_modal.html',
         'app/templates/integrations/components/_binding_readiness_boundary.html',
-        'app/templates/metrics/partials/_binding_registry.html',
-        'app/templates/alertmanager/partials/_binding_registry.html',
+        'app/templates/integrations/observability/metrics_source/partials/_binding_registry.html',
+        'app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_binding_registry.html',
     )
     for path in paths:
         source = read(path)

@@ -81,7 +81,7 @@ def test_provider_specific_metadata_does_not_leak_into_the_general_table_contrac
 
 
 def test_minio_inventory_collector_emits_provider_neutral_namespace_contract() -> None:
-    client = read('app/integrations/minio/client.py')
+    client = read('app/integrations/storage/object_storage/providers/minio/client.py')
     sync = read('app/inventory/object_storage/sync.py')
 
     assert "native_type: str = 'bucket'" in client

@@ -12,17 +12,17 @@ FILES = (
     'app/integrations/binding_service.py',
     'app/integrations/resolver.py',
     'app/integrations/validation/tasks.py',
-    'app/integrations/kubernetes/__init__.py',
-    'app/integrations/metrics/__init__.py',
-    'app/integrations/metrics/adapter.py',
-    'app/integrations/metrics/binding_management.py',
-    'app/integrations/metrics/binding_profiles.py',
-    'app/integrations/metrics/binding_validation.py',
-    'app/integrations/alertmanager/__init__.py',
-    'app/integrations/alertmanager/adapter.py',
-    'app/integrations/alertmanager/binding_management.py',
-    'app/integrations/minio/__init__.py',
-    'app/integrations/minio/adapter.py',
+    'app/integrations/orchestration/container_orchestrator/adapters/kubernetes_api/__init__.py',
+    'app/integrations/observability/metrics_source/__init__.py',
+    'app/integrations/observability/metrics_source/adapter.py',
+    'app/integrations/observability/metrics_source/binding_management.py',
+    'app/integrations/observability/metrics_source/binding_profiles.py',
+    'app/integrations/observability/metrics_source/binding_validation.py',
+    'app/integrations/observability/alert_source/providers/alertmanager/__init__.py',
+    'app/integrations/observability/alert_source/providers/alertmanager/adapter.py',
+    'app/integrations/observability/alert_source/providers/alertmanager/binding_management.py',
+    'app/integrations/storage/object_storage/providers/minio/__init__.py',
+    'app/integrations/storage/object_storage/providers/minio/adapter.py',
     'app/integrations/service.py',
 )
 
@@ -84,7 +84,7 @@ def main() -> None:
     require('for module in registry.all()' in catalog, 'provider catalog must be registry-driven')
     require('S3-compatible Storage' not in catalog, 'storage must be a domain, not a fake S3 provider entry')
 
-    profiles = read('app/integrations/metrics/binding_profiles.py')
+    profiles = read('app/integrations/observability/metrics_source/binding_profiles.py')
     require(
         'register_binding_validation_profile' in profiles,
         'Metrics Source binding validation must expose asset-specific profile registration',

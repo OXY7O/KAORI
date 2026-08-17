@@ -15,11 +15,11 @@
     },
     {
       "domains": [
-        "alertmanager",
+        "alert_sources",
         "cluster",
         "integrations",
         "inventory",
-        "metrics"
+        "metrics_sources"
       ],
       "reason": "Cross-domain integration presentation and Kubernetes runtime orchestration still connect cluster, inventory, and provider web modules. Metrics Source and Alertmanager provider packages no longer import their web/domain packages.",
       "exit_plan": "Move remaining provider presentation and Kubernetes runtime orchestration behind canonical integration application contracts, then shrink this envelope as each reverse edge is removed."
@@ -27,8 +27,8 @@
   ],
   "service_form_imports": [
     {
-      "source": "app/alertmanager/service.py",
-      "target": "app.alertmanager.forms",
+      "source": "app/alert_sources/providers/alertmanager/service.py",
+      "target": "app.alert_sources.providers.alertmanager.forms",
       "exit_plan": "Replace form objects with provider-neutral command/input contracts."
     },
     {

@@ -73,9 +73,9 @@ def test_core_identity_and_binding_schema_are_provider_neutral() -> None:
 
 
 def test_query_profiles_are_adapter_scoped_not_product_scoped() -> None:
-    profiles = read('app/integrations/metrics/query_profiles/__init__.py')
-    registry = read('app/integrations/metrics/query_profiles/registry.py')
-    metrics_module = read('app/integrations/metrics/__init__.py')
+    profiles = read('app/integrations/observability/metrics_source/query_profiles/__init__.py')
+    registry = read('app/integrations/observability/metrics_source/query_profiles/registry.py')
+    metrics_module = read('app/integrations/observability/metrics_source/__init__.py')
 
     assert "register_query_profile(adapter_key='prometheus_http'" in profiles
     assert 'def resolve_query_reference(' in registry

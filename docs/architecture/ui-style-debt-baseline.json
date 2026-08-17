@@ -10,7 +10,7 @@
     "app/templates/access/roles/partials/_role_detail.html": {
       "semantic_border_utilities": 2
     },
-    "app/templates/alertmanager/partials/_delete_confirmation_modal.html": {
+    "app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_delete_confirmation_modal.html": {
       "semantic_border_utilities": 2
     },
     "app/templates/analytics/kubernetes/components/_status_notice.html": {
@@ -107,11 +107,11 @@
     "app/templates/integrations/components/_workspace.html": {
       "semantic_border_utilities": 5
     },
-    "app/templates/integrations/kubernetes/partials/_registry_detail_content.html": {
+    "app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_registry_detail_content.html": {
       "copied_standard_surface_shells": 1,
       "semantic_border_utilities": 3
     },
-    "app/templates/integrations/kubernetes/partials/_runtime_workspace.html": {
+    "app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_runtime_workspace.html": {
       "copied_standard_surface_shells": 1
     },
     "app/templates/integrations/partials/_runtime_history.html": {
@@ -208,16 +208,16 @@
       "copied_standard_surface_shells": 2,
       "semantic_border_utilities": 7
     },
-    "app/templates/metrics/instance_form.html": {
+    "app/templates/integrations/observability/metrics_source/instance_form.html": {
       "copied_standard_surface_shells": 1
     },
-    "app/templates/metrics/partials/_delete_confirmation_modal.html": {
+    "app/templates/integrations/observability/metrics_source/partials/_delete_confirmation_modal.html": {
       "semantic_border_utilities": 2
     },
-    "app/templates/metrics/partials/_detail_scope.html": {
+    "app/templates/integrations/observability/metrics_source/partials/_detail_scope.html": {
       "copied_standard_surface_shells": 1
     },
-    "app/templates/metrics/partials/_runtime_panel.html": {
+    "app/templates/integrations/observability/metrics_source/partials/_runtime_panel.html": {
       "copied_standard_surface_shells": 1
     }
   },

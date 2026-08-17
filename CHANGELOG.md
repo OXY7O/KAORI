@@ -24,7 +24,7 @@ All notable KAORI changes are recorded here. KAORI uses Semantic Versioning for 
 ### Fixed
 - Clarified Object Storage Analytics dependency gating so retired consumer-validation evidence is reported as `Consumer Validation Stale`, blocked pages hide analysis controls, and the Hero no longer exposes verbose provider/profile internals as primary posture text.
 - Aligned Prometheus Integration contract assertions with canonical djLint double-quote Jinja tags and Ruff-formatted the consumer-profile verifier so quality gates no longer fail on formatting-only drift.
-- Normalized the MinIO provider detail template to the canonical djLint format so the global template-format gate no longer stops on `app/templates/minio/instance_detail.html`.
+- Normalized the MinIO provider detail template to the canonical djLint format so the global template-format gate no longer stops on `app/templates/integrations/storage/object_storage/providers/minio/instance_detail.html`.
 - Repaired Integration domain route ownership so Flask application boot and `flask db upgrade` import `build_integration_domain_page` directly from `domain_service` instead of a removed `service.py` re-export.
 
 ### Changed

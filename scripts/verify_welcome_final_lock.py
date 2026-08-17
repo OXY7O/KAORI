@@ -13,7 +13,7 @@ EXPECTED_HERO_DESCRIPTION = 'Operate and govern infrastructure through unified v
 EXPECTED_GROUP_KEYS = ('visibility', 'operations', 'assurance', 'platform')
 UNIVERSAL_TARGET = ('Settings', None, 'settings.account')
 FORBIDDEN_WELCOME_IMPORT_FRAGMENTS = (
-    'app.alertmanager',
+    'app.alert_sources.providers.alertmanager',
     'app.analytics',
     'app.cluster',
     'app.extensions',
@@ -21,7 +21,7 @@ FORBIDDEN_WELCOME_IMPORT_FRAGMENTS = (
     'app.inventory',
     'app.kubernetes',
     'app.models',
-    'app.metrics',
+    'app.metrics_sources',
     'sqlalchemy',
 )
 

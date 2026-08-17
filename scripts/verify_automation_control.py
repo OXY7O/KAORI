@@ -28,7 +28,9 @@ def main() -> int:
     resolver_operations = read('app/resolver/operations.py')
     resolver_orchestration = read('app/resolver/orchestration.py')
     resolver_registry = read('app/resolver/registry.py')
-    resolver_adapter = read('app/integrations/kubernetes/resolver_adapter.py')
+    resolver_adapter = read(
+        'app/integrations/orchestration/container_orchestrator/adapters/kubernetes_api/resolver_adapter.py'
+    )
     config = read('app/config/default.py')
     env_example = read('.env.example')
     env_production = read('.env.production.example')

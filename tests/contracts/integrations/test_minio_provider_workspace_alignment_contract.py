@@ -8,9 +8,9 @@ def read(path: str) -> str:
 
 
 def test_minio_index_uses_canonical_provider_registry_shell() -> None:
-    index = read('app/templates/minio/index.html')
+    index = read('app/templates/integrations/storage/object_storage/providers/minio/index.html')
     tabs = read('app/templates/components/integration_workspace_tabs.html')
-    registry = read('app/templates/minio/partials/_registry_content.html')
+    registry = read('app/templates/integrations/storage/object_storage/providers/minio/partials/_registry_content.html')
 
     assert 'MinIO Integrations' in index
     assert 'provider_front.hero(' in index
@@ -23,7 +23,7 @@ def test_minio_index_uses_canonical_provider_registry_shell() -> None:
 
 
 def test_minio_registration_matches_shared_connection_workflow() -> None:
-    form = read('app/templates/minio/instance_form.html')
+    form = read('app/templates/integrations/storage/object_storage/providers/minio/instance_form.html')
 
     assert 'Register MinIO Connection' in form
     assert 'Connection Configuration' in form
@@ -36,7 +36,7 @@ def test_minio_registration_matches_shared_connection_workflow() -> None:
 
 
 def test_minio_detail_uses_same_four_provider_workspace_domains() -> None:
-    detail = read('app/templates/minio/instance_detail.html')
+    detail = read('app/templates/integrations/storage/object_storage/providers/minio/instance_detail.html')
 
     assert 'x-data="integrationWorkspaceTabs(' in detail
     assert 'framed_workspace_tabs.render' in detail
@@ -49,9 +49,13 @@ def test_minio_detail_uses_same_four_provider_workspace_domains() -> None:
 
 
 def test_minio_bindings_expose_metrics_and_alert_consumer_profiles() -> None:
-    scope = read('app/templates/minio/partials/_detail_scope.html')
-    binding_registry = read('app/templates/minio/partials/_binding_registry.html')
-    validation = read('app/templates/minio/partials/_detail_validation.html')
+    scope = read('app/templates/integrations/storage/object_storage/providers/minio/partials/_detail_scope.html')
+    binding_registry = read(
+        'app/templates/integrations/storage/object_storage/providers/minio/partials/_binding_registry.html'
+    )
+    validation = read(
+        'app/templates/integrations/storage/object_storage/providers/minio/partials/_detail_validation.html'
+    )
 
     assert 'Bound Observability Sources' in binding_registry
     assert 'Binding mutation belongs to the Observability source workspace' in binding_registry
@@ -60,24 +64,28 @@ def test_minio_bindings_expose_metrics_and_alert_consumer_profiles() -> None:
     assert 'Alertmanager Alert Consumer' not in scope
     assert 'MinIO Full Validation' in validation
     assert 'MinIO Capability Readiness' in validation
-    assert 'Capability Registry' in read('app/templates/minio/partials/_capability_registry.html')
+    assert 'Capability Registry' in read(
+        'app/templates/integrations/storage/object_storage/providers/minio/partials/_capability_registry.html'
+    )
     assert 'bindings own consumer evidence' in validation.lower()
 
 
 def test_minio_detail_matches_asset_owner_lifecycle_contract() -> None:
-    detail = read('app/templates/minio/instance_detail.html')
-    configuration = read('app/templates/minio/partials/_detail_configuration.html')
+    detail = read('app/templates/integrations/storage/object_storage/providers/minio/instance_detail.html')
+    configuration = read(
+        'app/templates/integrations/storage/object_storage/providers/minio/partials/_detail_configuration.html'
+    )
     shared_configuration = read('app/templates/integrations/components/_provider_configuration_contract.html')
-    scope = read('app/templates/minio/partials/_detail_scope.html')
-    runtime = read('app/templates/minio/partials/_detail_runtime.html')
-    modal = read('app/templates/minio/partials/_delete_modal.html')
+    scope = read('app/templates/integrations/storage/object_storage/providers/minio/partials/_detail_scope.html')
+    runtime = read('app/templates/integrations/storage/object_storage/providers/minio/partials/_detail_runtime.html')
+    modal = read('app/templates/integrations/storage/object_storage/providers/minio/partials/_delete_modal.html')
     shared_modal = read('app/templates/integrations/components/_asset_owner_delete_modal.html')
     tabs_js = read('app/static/js/integration_workspace_tabs.js')
 
     assert 'MinIO API Readiness' in detail
     assert 'Validated Capabilities' in detail
     assert 'Inventory & Lifecycle' in detail
-    assert 'minio/partials/_delete_modal.html' in detail
+    assert 'integrations/storage/object_storage/providers/minio/partials/_delete_modal.html' in detail
     assert 'provider_configuration_contract.render(' in configuration
     assert 'Configure Connection' in shared_configuration
     assert 'Operational Context' in read('app/templates/integrations/components/_provider_operational_context.html')
@@ -94,8 +102,8 @@ def test_minio_detail_matches_asset_owner_lifecycle_contract() -> None:
 
 
 def test_minio_asset_owner_deletion_removes_asset_bindings_not_shared_sources() -> None:
-    service = read('app/minio/service.py')
-    routes = read('app/minio/routes.py')
+    service = read('app/object_storage/providers/minio/service.py')
+    routes = read('app/object_storage/providers/minio/routes.py')
     deletion = read('app/integrations/deletion.py')
 
     assert 'def delete_minio_instance(' in service
@@ -110,14 +118,14 @@ def test_minio_asset_owner_deletion_removes_asset_bindings_not_shared_sources() 
 
 
 def test_minio_configuration_and_runtime_have_provider_parity_routes() -> None:
-    routes = read('app/minio/routes.py')
-    workspace_web = read('app/minio/workspace_web.py')
-    form = read('app/templates/minio/instance_form.html')
-    service = read('app/minio/service.py')
+    routes = read('app/object_storage/providers/minio/routes.py')
+    workspace_web = read('app/object_storage/providers/minio/workspace_web.py')
+    form = read('app/templates/integrations/storage/object_storage/providers/minio/instance_form.html')
+    service = read('app/object_storage/providers/minio/service.py')
 
     assert "@minio_bp.route('/instances/<int:instance_id>/edit', methods=['GET', 'POST'])" in routes
     assert 'def update_minio_instance(' in service
-    assert 'Leave blank to keep the current secret key' in read('app/minio/forms.py')
+    assert 'Leave blank to keep the current secret key' in read('app/object_storage/providers/minio/forms.py')
     assert 'Edit MinIO Connection' in form
     assert 'Save Changes' in form
     assert "url_for('minio.test_instance_configuration'" in form
@@ -128,12 +136,16 @@ def test_minio_configuration_and_runtime_have_provider_parity_routes() -> None:
 
 
 def test_minio_validation_runtime_and_binding_tables_match_kubernetes_workspace_contract() -> None:
-    detail = read('app/templates/minio/instance_detail.html')
-    validation = read('app/templates/minio/partials/_detail_validation.html')
-    capability_registry = read('app/templates/minio/partials/_capability_registry.html')
-    runtime = read('app/templates/minio/partials/_detail_runtime.html')
-    bindings = read('app/templates/minio/partials/_binding_registry.html')
-    routes = read('app/minio/routes.py')
+    detail = read('app/templates/integrations/storage/object_storage/providers/minio/instance_detail.html')
+    validation = read(
+        'app/templates/integrations/storage/object_storage/providers/minio/partials/_detail_validation.html'
+    )
+    capability_registry = read(
+        'app/templates/integrations/storage/object_storage/providers/minio/partials/_capability_registry.html'
+    )
+    runtime = read('app/templates/integrations/storage/object_storage/providers/minio/partials/_detail_runtime.html')
+    bindings = read('app/templates/integrations/storage/object_storage/providers/minio/partials/_binding_registry.html')
+    routes = read('app/object_storage/providers/minio/routes.py')
 
     assert 'Validation & Capabilities' in detail
     assert 'connection_validation_header.render(' in validation

@@ -20,7 +20,7 @@ def test_quota_diagnostics_are_persisted_as_canonical_evidence() -> None:
 
 
 def test_minio_quota_collector_distinguishes_operational_failure_modes() -> None:
-    client = read('app/integrations/minio/client.py')
+    client = read('app/integrations/storage/object_storage/providers/minio/client.py')
 
     assert "api_versions = ('v3', 'v4')" in client
     assert "for field_name in ('size', 'quota')" in client

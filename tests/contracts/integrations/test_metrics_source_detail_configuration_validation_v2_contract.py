@@ -1,11 +1,13 @@
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
-CONFIG = ROOT / 'app/templates/metrics/partials/_detail_configuration.html'
-VALIDATION = ROOT / 'app/templates/metrics/partials/_detail_validation_content.html'
-DETAIL = ROOT / 'app/templates/metrics/instance_detail.html'
-CAPABILITY_REGISTRY = ROOT / 'app/templates/metrics/partials/_capability_registry.html'
-METRICS_ROUTES = ROOT / 'app/metrics/routes.py'
+CONFIG = ROOT / 'app/templates/integrations/observability/metrics_source/partials/_detail_configuration.html'
+VALIDATION = ROOT / 'app/templates/integrations/observability/metrics_source/partials/_detail_validation_content.html'
+DETAIL = ROOT / 'app/templates/integrations/observability/metrics_source/instance_detail.html'
+CAPABILITY_REGISTRY = (
+    ROOT / 'app/templates/integrations/observability/metrics_source/partials/_capability_registry.html'
+)
+METRICS_ROUTES = ROOT / 'app/metrics_sources/routes.py'
 
 
 def test_configuration_uses_shared_read_only_contract_and_edit_route():
@@ -35,7 +37,7 @@ def test_validation_uses_kubernetes_style_capability_readiness_before_full_width
     assert 'Metrics Source Provider Readiness' in text
     assert 'integrations/components/_capability_readiness.html' in text
     assert 'capability_readiness.render(' in text
-    assert 'include "metrics/partials/_capability_registry.html"' in text
+    assert 'include "integrations/observability/metrics_source/partials/_capability_registry.html"' in text
     assert 'Capability Registry' in registry
     assert 'data-kaori-provider-capability-matrix' in text
     assert 'Validation Decision' not in text

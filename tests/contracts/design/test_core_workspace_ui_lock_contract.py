@@ -9,9 +9,9 @@ def read(relative: str) -> str:
 
 def test_provider_details_use_shared_framed_tabs():
     for relative in (
-        'app/templates/integrations/kubernetes/detail.html',
-        'app/templates/metrics/instance_detail.html',
-        'app/templates/alertmanager/instance_detail.html',
+        'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/detail.html',
+        'app/templates/integrations/observability/metrics_source/instance_detail.html',
+        'app/templates/integrations/observability/alert_source/providers/alertmanager/instance_detail.html',
     ):
         source = read(relative)
         assert 'components/framed_workspace_tabs.html' in source
@@ -31,9 +31,9 @@ def test_dynamic_progress_uses_shared_component_in_reviewed_integration_surfaces
     assert 'kaori-loading-bar-segment' in loading_bar
 
     for relative in (
-        'app/templates/integrations/kubernetes/partials/_capability_workspace.html',
-        'app/templates/metrics/partials/_detail_validation_content.html',
-        'app/templates/alertmanager/partials/_detail_validation_content.html',
+        'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_capability_workspace.html',
+        'app/templates/integrations/observability/metrics_source/partials/_detail_validation_content.html',
+        'app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_detail_validation_content.html',
     ):
         source = read(relative)
         assert 'components/connection_validation_header.html' in source
@@ -42,7 +42,9 @@ def test_dynamic_progress_uses_shared_component_in_reviewed_integration_surfaces
 
 
 def test_minimum_validation_rbac_excludes_cluster_wide_secrets():
-    source = read('app/templates/integrations/kubernetes/partials/_minimum_validation_rbac.html')
+    source = read(
+        'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_minimum_validation_rbac.html'
+    )
     baseline = source.split('kind: ClusterRoleBinding', 1)[0]
     assert '"secrets"' not in baseline
 

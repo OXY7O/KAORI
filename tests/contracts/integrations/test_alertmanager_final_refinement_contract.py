@@ -1,8 +1,11 @@
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
-ALERT_REGISTRY = ROOT / 'app/templates/alertmanager/partials/_capability_registry.html'
-ALERT_ROUTES = ROOT / 'app/alertmanager/routes.py'
+ALERT_REGISTRY = (
+    ROOT
+    / 'app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_capability_registry.html'
+)
+ALERT_ROUTES = ROOT / 'app/alert_sources/providers/alertmanager/routes.py'
 
 
 def read(path: str) -> str:
@@ -10,7 +13,9 @@ def read(path: str) -> str:
 
 
 def test_alertmanager_validation_matches_kubernetes_capability_matrix_and_registry_loading():
-    content = read('app/templates/alertmanager/partials/_detail_validation_content.html')
+    content = read(
+        'app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_detail_validation_content.html'
+    )
     registry = ALERT_REGISTRY.read_text()
     routes = ALERT_ROUTES.read_text()
     assert 'Alertmanager Full Validation' in content
@@ -20,7 +25,10 @@ def test_alertmanager_validation_matches_kubernetes_capability_matrix_and_regist
     )
     assert 'data-kaori-provider-capability-matrix' in content
     assert 'capability_readiness.render(' in content
-    assert 'include "alertmanager/partials/_capability_registry.html"' in content
+    assert (
+        'include "integrations/observability/alert_source/providers/alertmanager/partials/_capability_registry.html"'
+        in content
+    )
     assert 'Validation Decision' not in content
     assert 'alertmanager-capability-loading' in registry
     assert 'active=validation_job and validation_job.is_active' not in registry
@@ -59,7 +67,9 @@ def test_alertmanager_validation_modal_matches_kubernetes_capability_evidence_co
 
 
 def test_alertmanager_runtime_matches_kubernetes_full_width_runtime_pattern():
-    content = read('app/templates/alertmanager/partials/_runtime_panel.html')
+    content = read(
+        'app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_runtime_panel.html'
+    )
     assert 'data-kaori-provider-runtime-kubernetes-pattern' in content
     assert 'integrations/components/_runtime_decision.html' in content
     assert 'runtime_decision.render(' in content
@@ -74,8 +84,12 @@ def test_alertmanager_runtime_matches_kubernetes_full_width_runtime_pattern():
 
 
 def test_alertmanager_binding_workspace_is_full_width_and_lifecycle_action_is_secondary():
-    content = read('app/templates/alertmanager/partials/_detail_scope.html')
-    registry = read('app/templates/alertmanager/partials/_binding_registry.html')
+    content = read(
+        'app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_detail_scope.html'
+    )
+    registry = read(
+        'app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_binding_registry.html'
+    )
     assert 'data-kaori-alertmanager-binding-decision-horizontal' in content
     assert 'data-kaori-alertmanager-consumer-resolution-full-width' in content
     assert 'data-kaori-alertmanager-lifecycle-horizontal' in content

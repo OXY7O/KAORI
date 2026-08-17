@@ -7,7 +7,7 @@ from types import ModuleType
 
 from app.analytics.object_storage.analysis import metric_risk_signals
 from app.analytics.object_storage.runtime import EvidenceReader
-from app.analytics.object_storage.sources import minio_metrics as metrics_source
+from app.analytics.object_storage.sources.providers.minio import metrics as metrics_source
 from app.analytics.shared.metrics import (
     MetricsSourceError,
     MetricsSourceFailureKind,

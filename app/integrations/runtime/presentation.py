@@ -6,7 +6,9 @@ from typing import Any
 from app.common.presentation import present_count, present_key_label, present_milliseconds, present_user_datetime
 from app.integrations.compatibility import kubernetes_lifecycle_policy
 from app.integrations.contracts import RuntimeState
-from app.integrations.kubernetes.messages import compact_readiness_reason
+from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.messages import (
+    compact_readiness_reason,
+)
 from app.models.runtime import IntegrationRuntimeObservation
 
 

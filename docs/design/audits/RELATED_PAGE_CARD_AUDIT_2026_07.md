@@ -38,9 +38,9 @@ Integrations Overview was not given a Related Page Card because it is itself the
 Removed from provider landing pages:
 
 ```text
-app/templates/integrations/kubernetes.html
+app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/frontpage.html
 app/templates/integrations/prometheus.html
-app/templates/integrations/alertmanager.html
+app/templates/integrations/observability/alert_source/providers/alertmanager/frontpage.html
 ```
 
 Applied to contextual subpages:
@@ -48,13 +48,13 @@ Applied to contextual subpages:
 ```text
 app/templates/cluster/add.html
 app/templates/cluster/edit.html
-app/templates/integrations/kubernetes/detail.html
+app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/detail.html
 app/templates/prometheus/instance_form.html
 app/templates/prometheus/instance_detail.html
 app/templates/prometheus/config.html
-app/templates/alertmanager/instance_form.html
-app/templates/alertmanager/config.html
-app/templates/alertmanager/partials/_detail_configuration.html
+app/templates/integrations/observability/alert_source/providers/alertmanager/instance_form.html
+app/templates/integrations/observability/alert_source/providers/alertmanager/config.html
+app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_detail_configuration.html
 ```
 
 The Roles & Access exception remains valid.

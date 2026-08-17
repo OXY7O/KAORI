@@ -8,8 +8,8 @@ def read(relative: str) -> str:
 
 
 def test_metrics_source_empty_states_match_alertmanager_binding_style() -> None:
-    registry = read('app/templates/metrics/partials/_binding_registry.html')
-    scope = read('app/templates/metrics/partials/_detail_scope.html')
+    registry = read('app/templates/integrations/observability/metrics_source/partials/_binding_registry.html')
+    scope = read('app/templates/integrations/observability/metrics_source/partials/_detail_scope.html')
 
     assert 'No Consumer Bindings' in registry
     assert 'components/states/_empty_state.html' in registry
@@ -26,9 +26,11 @@ def test_metrics_source_empty_states_match_alertmanager_binding_style() -> None:
 def test_provider_edit_heroes_share_one_kaori_contract() -> None:
     shared = read('app/templates/integrations/components/_provider_edit_hero.html')
     templates = {
-        'Metrics Source': read('app/templates/metrics/instance_form.html'),
-        'Alertmanager': read('app/templates/alertmanager/instance_form.html'),
-        'MinIO': read('app/templates/minio/instance_form.html'),
+        'Metrics Source': read('app/templates/integrations/observability/metrics_source/instance_form.html'),
+        'Alertmanager': read(
+            'app/templates/integrations/observability/alert_source/providers/alertmanager/instance_form.html'
+        ),
+        'MinIO': read('app/templates/integrations/storage/object_storage/providers/minio/instance_form.html'),
     }
 
     for marker in (
@@ -53,9 +55,9 @@ def test_provider_edit_heroes_share_one_kaori_contract() -> None:
 
 
 def test_observability_edit_success_returns_to_registry_for_browser_and_htmx() -> None:
-    metrics_source = read('app/metrics/edit_web.py')
-    alertmanager = read('app/alertmanager/edit_web.py')
-    minio = read('app/minio/routes.py')
+    metrics_source = read('app/metrics_sources/edit_web.py')
+    alertmanager = read('app/alert_sources/providers/alertmanager/edit_web.py')
+    minio = read('app/object_storage/providers/minio/routes.py')
 
     assert "registry_url = url_for('integrations.metrics_sources')" in metrics_source
     assert "response.headers['HX-Redirect'] = registry_url" in metrics_source
@@ -77,8 +79,8 @@ def test_observability_edit_success_returns_to_registry_for_browser_and_htmx() -
 
 
 def test_minio_edit_secret_can_preserve_existing_credential() -> None:
-    forms = read('app/minio/forms.py')
-    template = read('app/templates/minio/instance_form.html')
+    forms = read('app/object_storage/providers/minio/forms.py')
+    template = read('app/templates/integrations/storage/object_storage/providers/minio/instance_form.html')
 
     secret_field = forms.split('secret_key = PasswordField(', 1)[1].split('region = StringField(', 1)[0]
     assert 'DataRequired()' not in secret_field
@@ -90,13 +92,17 @@ def test_minio_edit_secret_can_preserve_existing_credential() -> None:
 
 
 def test_minio_compatibility_is_product_specific_and_range_aware() -> None:
-    compatibility = read('app/integrations/minio/compatibility.py')
-    capabilities = read('app/integrations/minio/capabilities.py')
-    provider_catalog = read('app/definitions/catalogs/integrations/object_storage.yaml')
-    client = read('app/integrations/minio/client.py')
-    adapter = read('app/integrations/minio/adapter.py')
-    configuration = read('app/templates/minio/partials/_detail_configuration.html')
-    validation = read('app/templates/minio/partials/_detail_validation.html')
+    compatibility = read('app/integrations/storage/object_storage/providers/minio/compatibility.py')
+    capabilities = read('app/integrations/storage/object_storage/providers/minio/capabilities.py')
+    provider_catalog = read('app/definitions/catalogs/integrations/storage/object_storage/contract.yaml')
+    client = read('app/integrations/storage/object_storage/providers/minio/client.py')
+    adapter = read('app/integrations/storage/object_storage/providers/minio/adapter.py')
+    configuration = read(
+        'app/templates/integrations/storage/object_storage/providers/minio/partials/_detail_configuration.html'
+    )
+    validation = read(
+        'app/templates/integrations/storage/object_storage/providers/minio/partials/_detail_validation.html'
+    )
 
     for marker in (
         'SUPPORTED_RELEASE_MIN',
@@ -121,6 +127,9 @@ def test_minio_compatibility_is_product_specific_and_range_aware() -> None:
 
 
 def test_kubernetes_compact_readiness_import_is_wired() -> None:
-    adapter = read('app/integrations/kubernetes/adapter.py')
-    assert 'from app.integrations.kubernetes.messages import compact_readiness_reasons' in adapter
+    adapter = read('app/integrations/orchestration/container_orchestrator/adapters/kubernetes_api/adapter.py')
+    assert (
+        'from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.messages import compact_readiness_reasons'
+        in adapter
+    )
     assert 'compact_readiness_reasons(discovery.get(' in adapter

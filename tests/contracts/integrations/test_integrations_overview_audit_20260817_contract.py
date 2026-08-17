@@ -34,7 +34,7 @@ def test_overview_only_builds_the_selected_deep_workspace() -> None:
 def test_runtime_overview_reuses_one_latest_observation_snapshot_and_avoids_core_n_plus_one() -> None:
     service = read('app/integrations/service.py')
     workspace = read('app/integrations/overview_workspace.py')
-    minio = read('app/integrations/minio/presentation.py')
+    minio = read('app/integrations/storage/object_storage/providers/minio/presentation.py')
 
     overview_builder = workspace.split('def build_integrations_overview(', 1)[1]
     runtime_builder = service.split('def _runtime_overview_rows(', 1)[1].split(

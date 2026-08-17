@@ -5,8 +5,8 @@ KAORI separates provider-neutral orchestration from presentation and backend-spe
 ## Metrics Source
 
 ```text
-app/metrics/                       web/forms/presentation and application-facing Metrics Source service
-app/integrations/metrics/          provider-neutral metrics adapter registry and backend implementations
+app/metrics_sources/                       web/forms/presentation and application-facing Metrics Source service
+app/integrations/observability/metrics_source/          provider-neutral metrics adapter registry and backend implementations
 app/models/metrics_source.py       provider-neutral persisted Metrics Source record
 ```
 
@@ -19,8 +19,8 @@ Public application operations include connection testing, runtime validation/hea
 ## Alertmanager
 
 ```text
-app/alertmanager/                  web/forms/presentation
-app/integrations/alertmanager/     provider transport/runtime/binding operations
+app/alert_sources/providers/alertmanager/                  web/forms/presentation
+app/integrations/observability/alert_source/providers/alertmanager/     provider transport/runtime/binding operations
 ```
 
 ## Dependency direction

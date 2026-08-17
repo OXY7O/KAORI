@@ -129,7 +129,7 @@ def test_fragment_routes_require_htmx_and_disable_cache() -> None:
 
 
 def test_worker_utilization_queries_use_allocatable_capacity_and_role_boundary() -> None:
-    profile = read('app/integrations/metrics/query_profiles/kubernetes_v1.py')
+    profile = read('app/integrations/observability/metrics_source/query_profiles/kubernetes_v1.py')
 
     for key in (
         'analytics.utilization.queries.CPU_CAPACITY',

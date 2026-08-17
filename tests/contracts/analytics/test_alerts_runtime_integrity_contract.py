@@ -54,8 +54,8 @@ def test_alert_and_anomaly_pagination_state_is_independent() -> None:
 
 
 def test_alert_queries_deduplicate_and_scope_anomalies_to_active_pods() -> None:
-    profile = read('app/integrations/metrics/query_profiles/kubernetes_v1.py')
-    alert_queries = read('app/integrations/metrics/query_profiles/alerts_v1.py')
+    profile = read('app/integrations/observability/metrics_source/query_profiles/kubernetes_v1.py')
+    alert_queries = read('app/integrations/observability/metrics_source/query_profiles/alerts_v1.py')
 
     assert 'expression=alerts_v1.ACTIVE_ALERTS_EXPRESSION' in profile
     assert 'expression=alerts_v1.POD_RESTART_ANOMALY_QUERY' in profile

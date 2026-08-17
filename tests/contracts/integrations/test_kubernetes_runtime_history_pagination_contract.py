@@ -18,10 +18,16 @@ def test_numeric_pagination_preserves_route_view_arguments() -> None:
 
 def test_runtime_history_pagination_uses_provider_owned_routing() -> None:
     runtime = read('app/templates/integrations/partials/_runtime_history.html')
-    kubernetes_detail = read('app/templates/integrations/kubernetes/detail.html')
-    kubernetes_workspace = read('app/templates/integrations/kubernetes/partials/_runtime_workspace.html')
-    metrics_source = read('app/templates/metrics/partials/_runtime_history.html')
-    alertmanager = read('app/templates/alertmanager/partials/_runtime_history.html')
+    kubernetes_detail = read(
+        'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/detail.html'
+    )
+    kubernetes_workspace = read(
+        'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_runtime_workspace.html'
+    )
+    metrics_source = read('app/templates/integrations/observability/metrics_source/partials/_runtime_history.html')
+    alertmanager = read(
+        'app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_runtime_history.html'
+    )
 
     assert 'runtime_history_route_args_value.copy()' in runtime
     assert 'endpoint=runtime_history_endpoint_name' in runtime
@@ -50,7 +56,7 @@ def test_full_page_kubernetes_detail_reads_requested_history_page() -> None:
 
 def test_runtime_history_full_page_fallback_opens_runtime_tab() -> None:
     runtime = read('app/templates/integrations/partials/_runtime_history.html')
-    detail = read('app/templates/integrations/kubernetes/detail.html')
+    detail = read('app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/detail.html')
     workspace_tabs = read('app/static/js/integration_workspace_tabs.js')
 
     assert 'name="tab" value="{{ runtime_history_tab_name }}"' in runtime

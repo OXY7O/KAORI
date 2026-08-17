@@ -68,7 +68,7 @@ FORBIDDEN_PATHS = (
 
 REQUIRED_PATHS = (
     'app/analytics/kubernetes',
-    'app/analytics/object_storage/sources/minio_metrics.py',
+    'app/analytics/object_storage/sources/providers/minio/metrics.py',
     'app/analytics/object_storage/sources/resolver.py',
     'app/analytics/shared/metrics/contracts.py',
     'app/inventory/kubernetes',
@@ -169,8 +169,8 @@ def main() -> int:
     for forbidden in (
         'MetricsConsumer',
         'MetricsSourceError',
-        'app.metrics',
-        'app.integrations.metrics',
+        'app.metrics_sources',
+        'app.integrations.observability.metrics_source',
         'get_object_storage_query_expression',
     ):
         if forbidden in service:
@@ -181,7 +181,7 @@ def main() -> int:
         if required not in contracts:
             errors.append(f'provider-neutral metrics contract is incomplete: missing {required}')
 
-    metrics_adapter = _read('app/analytics/object_storage/sources/minio_metrics.py')
+    metrics_adapter = _read('app/analytics/object_storage/sources/providers/minio/metrics.py')
     for required in ('MetricsConsumer', 'get_object_storage_query_expression', 'retry_count=0'):
         if required not in metrics_adapter:
             errors.append(f'Object Storage Metrics Source adapter is missing provider ownership marker: {required}')

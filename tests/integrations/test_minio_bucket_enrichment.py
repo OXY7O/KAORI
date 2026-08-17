@@ -1,4 +1,4 @@
-from app.integrations.minio.client import (
+from app.integrations.storage.object_storage.providers.minio.client import (
     _bucket_policy_exposure,
     _minio_admin_bucket_quota,
     _minio_admin_data_usage,
@@ -49,7 +49,7 @@ def _quota(**overrides):
 
 def test_minio_admin_bucket_quota_reads_madmin_size_field(monkeypatch) -> None:
     monkeypatch.setattr(
-        'app.integrations.minio.client.requests.get',
+        'app.integrations.storage.object_storage.providers.minio.client.requests.get',
         lambda *args, **kwargs: _QuotaResponse(200, {'size': 20 * 1024**3, 'quotatype': 'hard'}),
     )
 
@@ -63,7 +63,7 @@ def test_minio_admin_bucket_quota_reads_madmin_size_field(monkeypatch) -> None:
 
 def test_minio_admin_bucket_quota_keeps_legacy_quota_key_fallback(monkeypatch) -> None:
     monkeypatch.setattr(
-        'app.integrations.minio.client.requests.get',
+        'app.integrations.storage.object_storage.providers.minio.client.requests.get',
         lambda *args, **kwargs: _QuotaResponse(200, {'quota': 10 * 1024**3}),
     )
 
@@ -72,7 +72,7 @@ def test_minio_admin_bucket_quota_keeps_legacy_quota_key_fallback(monkeypatch) -
 
 def test_minio_admin_bucket_quota_uses_legacy_value_when_size_is_zero(monkeypatch) -> None:
     monkeypatch.setattr(
-        'app.integrations.minio.client.requests.get',
+        'app.integrations.storage.object_storage.providers.minio.client.requests.get',
         lambda *args, **kwargs: _QuotaResponse(
             200,
             {'quota': 25 * 1024**3, 'size': 0, 'quotatype': 'hard'},
@@ -88,7 +88,7 @@ def test_minio_admin_bucket_quota_uses_legacy_value_when_size_is_zero(monkeypatc
 
 def test_minio_admin_bucket_quota_prefers_positive_size_over_legacy_value(monkeypatch) -> None:
     monkeypatch.setattr(
-        'app.integrations.minio.client.requests.get',
+        'app.integrations.storage.object_storage.providers.minio.client.requests.get',
         lambda *args, **kwargs: _QuotaResponse(
             200,
             {'quota': 10 * 1024**3, 'size': 40 * 1024**3, 'quotatype': 'hard'},
@@ -100,7 +100,7 @@ def test_minio_admin_bucket_quota_prefers_positive_size_over_legacy_value(monkey
 
 def test_minio_admin_bucket_quota_maps_zero_to_not_configured(monkeypatch) -> None:
     monkeypatch.setattr(
-        'app.integrations.minio.client.requests.get',
+        'app.integrations.storage.object_storage.providers.minio.client.requests.get',
         lambda *args, **kwargs: _QuotaResponse(200, {'size': 0}),
     )
 
@@ -112,7 +112,7 @@ def test_minio_admin_bucket_quota_maps_zero_to_not_configured(monkeypatch) -> No
 
 def test_minio_admin_bucket_quota_records_access_denied_without_failing_inventory(monkeypatch) -> None:
     monkeypatch.setattr(
-        'app.integrations.minio.client.requests.get',
+        'app.integrations.storage.object_storage.providers.minio.client.requests.get',
         lambda *args, **kwargs: _QuotaResponse(403, {'Code': 'AccessDenied'}),
     )
 
@@ -125,7 +125,7 @@ def test_minio_admin_bucket_quota_records_access_denied_without_failing_inventor
 
 def test_minio_admin_bucket_quota_records_signature_mismatch(monkeypatch) -> None:
     monkeypatch.setattr(
-        'app.integrations.minio.client.requests.get',
+        'app.integrations.storage.object_storage.providers.minio.client.requests.get',
         lambda *args, **kwargs: _QuotaResponse(403, {'Code': 'SignatureDoesNotMatch'}),
     )
 
@@ -142,7 +142,7 @@ def test_minio_admin_bucket_quota_falls_forward_to_v4_when_v3_is_absent(monkeypa
         ]
     )
     monkeypatch.setattr(
-        'app.integrations.minio.client.requests.get',
+        'app.integrations.storage.object_storage.providers.minio.client.requests.get',
         lambda *args, **kwargs: next(responses),
     )
 
@@ -153,7 +153,7 @@ def test_minio_admin_bucket_quota_falls_forward_to_v4_when_v3_is_absent(monkeypa
 
 def test_minio_admin_bucket_quota_marks_both_admin_generations_unsupported(monkeypatch) -> None:
     monkeypatch.setattr(
-        'app.integrations.minio.client.requests.get',
+        'app.integrations.storage.object_storage.providers.minio.client.requests.get',
         lambda *args, **kwargs: _QuotaResponse(404, {'Code': 'NotFound'}),
     )
 
@@ -178,7 +178,7 @@ def _usage(**overrides):
 
 def test_minio_admin_data_usage_collects_per_bucket_usage(monkeypatch) -> None:
     monkeypatch.setattr(
-        'app.integrations.minio.client.requests.get',
+        'app.integrations.storage.object_storage.providers.minio.client.requests.get',
         lambda *args, **kwargs: _QuotaResponse(
             200,
             {
@@ -203,7 +203,7 @@ def test_minio_admin_data_usage_collects_per_bucket_usage(monkeypatch) -> None:
 
 def test_minio_admin_data_usage_skips_invalid_usage_counters(monkeypatch) -> None:
     monkeypatch.setattr(
-        'app.integrations.minio.client.requests.get',
+        'app.integrations.storage.object_storage.providers.minio.client.requests.get',
         lambda *args, **kwargs: _QuotaResponse(
             200,
             {
@@ -225,7 +225,7 @@ def test_minio_admin_data_usage_skips_invalid_usage_counters(monkeypatch) -> Non
 
 def test_minio_admin_data_usage_records_access_denied_without_full_scan(monkeypatch) -> None:
     monkeypatch.setattr(
-        'app.integrations.minio.client.requests.get',
+        'app.integrations.storage.object_storage.providers.minio.client.requests.get',
         lambda *args, **kwargs: _QuotaResponse(403, {'Code': 'AccessDenied'}),
     )
 
@@ -251,7 +251,7 @@ def test_minio_admin_data_usage_falls_forward_to_v4_when_v3_is_absent(monkeypatc
         ]
     )
     monkeypatch.setattr(
-        'app.integrations.minio.client.requests.get',
+        'app.integrations.storage.object_storage.providers.minio.client.requests.get',
         lambda *args, **kwargs: next(responses),
     )
 

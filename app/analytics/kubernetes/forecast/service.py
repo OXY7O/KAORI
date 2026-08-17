@@ -33,7 +33,7 @@ from app.analytics.kubernetes.forecast.resource import build_resource_forecast_p
 from app.analytics.kubernetes.utilization.service import UtilizationService
 from app.analytics.shared.params import get_query_value
 from app.common.dependencies import metrics_source_connection_blocker
-from app.integrations.metrics.query_profiles import get_kubernetes_query_expression
+from app.integrations.observability.metrics_source.query_profiles import get_kubernetes_query_expression
 from app.intelligence.recommendation_engine import (
     build_forecast_actionable_recommendations,
     count_actionable_recommendations,
