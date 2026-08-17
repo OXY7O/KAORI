@@ -123,7 +123,7 @@
                         </dl>
                     {% endcall %}
                 {% else %}
-                    {{ intelligence_ui.empty_state('Decision Queue Clear', 'No decision candidate currently requires review.', 'circle-check') }}
+                    {{ intelligence_ui.empty_state('Decision Queue Clear', 'No decision candidate currently requires review.', 'circle-check', 'Queue Clear', 'normal') }}
                 {% endfor %}
                 <a href="{{ url_for('automation_control.index', workspace='decisions') }}" class="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary transition hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary-dark"><i data-lucide="clipboard-check" class="h-3.5 w-3.5"></i>Open Decision Review</a>
             </div>

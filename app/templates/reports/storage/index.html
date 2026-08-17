@@ -41,11 +41,14 @@
                         </div>
                         <div class="{{ page_hero.context_actions_classes(2) }}"
                              data-storage-hero-actions="balanced-two">
-                            <a href="{{ url_for('reports.storage', verify='1', workspace='overview') }}"
-                               class="{{ page_hero.context_action_classes() }}">
-                                <i data-lucide="shield-check" class="h-4 w-4" aria-hidden="true"></i>
-                                Verify Storage
-                            </a>
+                            <form method="post" action="{{ url_for('reports.verify_storage') }}">
+                                {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+                                <input type="hidden" name="workspace" value="{{ payload.workspace }}">
+                                <button type="submit" class="{{ page_hero.context_action_classes() }}">
+                                    <i data-lucide="shield-check" class="h-4 w-4" aria-hidden="true"></i>
+                                    Verify Storage
+                                </button>
+                            </form>
                             <a href="{{ url_for('reports.generated_reports') }}"
                                class="{{ page_hero.context_action_classes() }}">
                                 <i data-lucide="files" class="h-4 w-4" aria-hidden="true"></i>
@@ -184,11 +187,15 @@
                             <p class="mt-1 max-w-4xl text-xs leading-5 text-content-secondary">{{ backend_status.description }}</p>
                         </div>
                     </div>
-                    <a href="{{ url_for('reports.storage', verify='1', workspace=payload.workspace) }}"
-                       class="inline-flex min-h-9 shrink-0 items-center justify-center gap-2 rounded-lg border {{ operational_callout.semantic_border_classes('warning') }} bg-surface-card px-3 py-2 text-xs font-semibold text-status-warning-text transition hover:bg-status-warning-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-kaori-primary focus-visible:ring-offset-2">
-                        <i data-lucide="refresh-cw" class="h-4 w-4" aria-hidden="true"></i>
-                        Retry Connection
-                    </a>
+                    <form method="post" action="{{ url_for('reports.verify_storage') }}" class="shrink-0">
+                        {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+                        <input type="hidden" name="workspace" value="{{ payload.workspace }}">
+                        <button type="submit"
+                                class="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border {{ operational_callout.semantic_border_classes('warning') }} bg-surface-card px-3 py-2 text-xs font-semibold text-status-warning-text transition hover:bg-status-warning-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-kaori-primary focus-visible:ring-offset-2">
+                            <i data-lucide="refresh-cw" class="h-4 w-4" aria-hidden="true"></i>
+                            Verify Connection
+                        </button>
+                    </form>
                 </div>
             </section>
         {% endif %}
@@ -203,7 +210,7 @@
                     </span>
                     <div class="min-w-0">
                         <h2 class="text-base font-semibold text-content-primary">Storage Operations</h2>
-                        <p class="mt-1 text-xs leading-5 text-content-muted">Inspect backend configuration, verify artifact integrity, and review retention controls without changing protected storage configuration.</p>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">Inspect backend configuration, verify retained artifact references, and review lifecycle ownership without changing protected storage configuration.</p>
                     </div>
                 </div>
             </header>
@@ -211,7 +218,7 @@
                         [
                         ('overview', 'Storage Overview', 'hard-drive', overview_href) ,
             ('integrity', 'Integrity & Verification', 'shield-check', integrity_href),
-            ('retention', 'Retention & Cleanup', 'archive', retention_href)
+            ('retention', 'Lifecycle Governance', 'archive-restore', retention_href)
             ],
             payload.workspace,
             'Report Storage Sections',
@@ -378,6 +385,34 @@
                                 </div>
                             </div>
                         </div>
+                        <div class="mt-5 border-t border-outline-subtle pt-5" data-storage-artifact-evidence="metadata-first">
+                            <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                                <div>
+                                    <p class="text-xs font-semibold text-kaori-primary">Tracked Artifact Evidence</p>
+                                    <h4 class="mt-1 text-sm font-semibold text-content-primary">Report Reference Coverage</h4>
+                                    <p class="mt-1 text-xs leading-5 text-content-muted">Metadata-first counts from the Reports database; this is not a bucket or filesystem inventory scan.</p>
+                                </div>
+                                {{ table_label.status_indicator_label(payload.artifact_summary.reports_with_files ~ ' References', 'info') }}
+                            </div>
+                            <dl class="mt-4 grid border-y border-outline-subtle sm:grid-cols-2 xl:grid-cols-4 xl:divide-x xl:divide-outline-subtle">
+                                <div class="py-3 sm:pr-4 xl:px-4 xl:first:pl-0">
+                                    <dt class="text-xs text-content-muted">Ready Reports</dt>
+                                    <dd class="mt-1 text-sm font-semibold text-content-primary">{{ payload.artifact_summary.ready_reports }}</dd>
+                                </div>
+                                <div class="border-t border-outline-subtle py-3 sm:border-t-0 sm:pl-4 xl:px-4">
+                                    <dt class="text-xs text-content-muted">Tracked Size</dt>
+                                    <dd class="mt-1 text-sm font-semibold text-content-primary">{{ payload.artifact_summary.total_size }}</dd>
+                                </div>
+                                <div class="border-t border-outline-subtle py-3 sm:pr-4 xl:border-t-0 xl:px-4">
+                                    <dt class="text-xs text-content-muted">Local References</dt>
+                                    <dd class="mt-1 text-sm font-semibold text-content-primary">{{ payload.artifact_summary.local_reports }}</dd>
+                                </div>
+                                <div class="border-t border-outline-subtle py-3 sm:pl-4 xl:border-t-0 xl:px-4 xl:last:pr-0">
+                                    <dt class="text-xs text-content-muted">S3 References</dt>
+                                    <dd class="mt-1 text-sm font-semibold text-content-primary">{{ payload.artifact_summary.s3_reports }}</dd>
+                                </div>
+                            </dl>
+                        </div>
                     </section>
                 </div>
             {% elif payload.workspace == 'integrity' %}
@@ -395,11 +430,15 @@
                                         <p class="mt-2 text-xs font-medium text-content-secondary">Write → confirm → delete verification object</p>
                                     </div>
                                 </div>
-                                <a href="{{ url_for('reports.storage', verify='1', workspace='integrity') }}"
-                                   class="mt-4 inline-flex min-h-9 items-center justify-center gap-2 rounded-md bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-dark">
-                                    <i data-lucide="play-circle" class="h-4 w-4" aria-hidden="true"></i>
-                                    Verify Active Backend
-                                </a>
+                                <form method="post" action="{{ url_for('reports.verify_storage') }}" class="mt-4">
+                                    {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+                                    <input type="hidden" name="workspace" value="integrity">
+                                    <button type="submit"
+                                            class="inline-flex min-h-9 items-center justify-center gap-2 rounded-md bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-dark">
+                                        <i data-lucide="play-circle" class="h-4 w-4" aria-hidden="true"></i>
+                                        Verify Active Backend
+                                    </button>
+                                </form>
                             </div>
                             <div class="border-t border-outline-subtle pt-5 lg:border-t-0 lg:pl-6 lg:pt-0">
                                 <div class="flex items-start gap-3">
@@ -412,12 +451,15 @@
                                         <p class="mt-2 text-xs font-medium text-content-secondary">Read only · Up to {{ payload.integrity_check.max_items }} records</p>
                                     </div>
                                 </div>
-                                {% if payload.storage_actions_enabled %}
-                                    <a href="{{ url_for('reports.storage', integrity='1', workspace='integrity') }}"
-                                       class="mt-4 inline-flex min-h-9 items-center justify-center gap-2 rounded-md border border-brand-outline bg-kaori-soft px-4 text-sm font-semibold text-kaori-primary transition hover:bg-surface-hover">
-                                        <i data-lucide="shield-check" class="h-4 w-4" aria-hidden="true"></i>
-                                        Check Artifact Integrity
-                                    </a>
+                                {% if payload.integrity_actions_enabled %}
+                                    <form method="post" action="{{ url_for('reports.scan_storage_integrity') }}" class="mt-4">
+                                        {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+                                        <button type="submit"
+                                                class="inline-flex min-h-9 items-center justify-center gap-2 rounded-md border border-brand-outline bg-kaori-soft px-4 text-sm font-semibold text-kaori-primary transition hover:bg-surface-hover">
+                                            <i data-lucide="shield-check" class="h-4 w-4" aria-hidden="true"></i>
+                                            Check Artifact Integrity
+                                        </button>
+                                    </form>
                                 {% else %}
                                     <span aria-disabled="true"
                                           class="mt-4 inline-flex min-h-9 cursor-not-allowed items-center justify-center gap-2 rounded-md border border-outline-subtle bg-surface-card px-4 text-sm font-semibold text-content-muted opacity-70">
@@ -477,15 +519,15 @@
                 </div>
             {% else %}
                 <div class="p-5 sm:p-6">
-                    <section data-storage-retention-layout="editorial-policy">
-                        <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                            <div>
-                                <p class="text-xs font-semibold text-kaori-primary">Retention Governance</p>
+                    <section data-storage-retention-layout="lifecycle-governance">
+                        <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                            <div class="max-w-3xl">
+                                <p class="text-xs font-semibold text-kaori-primary">Lifecycle Governance</p>
                                 <h3 class="mt-1 text-base font-semibold text-content-primary">Generated Report Lifecycle Policy</h3>
-                                <p class="mt-1 max-w-3xl text-sm leading-6 text-content-muted">Reports Storage mirrors the canonical lifecycle policy; archive and cleanup execution is governed from Platform Operations → Data Lifecycle.</p>
+                                <p class="mt-1 text-sm leading-6 text-content-muted">{{ payload.retention_policy.description }}</p>
                             </div>
                             <div class="flex flex-wrap items-center gap-2">
-                                {{ table_label.status_indicator_label(payload.retention_policy.status, 'normal' if payload.retention_policy.auto_cleanup_enabled else 'warning') }}
+                                {{ table_label.status_indicator_label(payload.retention_policy.status, payload.retention_policy.status_tone) }}
                                 {% if current_user.has_permission('platform_operations.view_data_lifecycle') %}
                                     <a href="{{ url_for('platform_operations.data_lifecycle.index', tab='policies', domain='generated_report') }}"
                                        class="{{ table_ui.action_classes() }}">
@@ -499,140 +541,71 @@
                             data-storage-retention-summary="policy-strip">
                             <div class="py-3 sm:pr-4 xl:px-4 xl:first:pl-0">
                                 <dt class="text-xs text-content-muted">Lifecycle Mode</dt>
-                                <dd class="mt-1 text-sm font-semibold text-content-primary">
-                                    {{ payload.retention_policy.mode }}
-                                </dd>
+                                <dd class="mt-1 text-sm font-semibold text-content-primary">{{ payload.retention_policy.mode }}</dd>
                             </div>
                             <div class="border-t border-outline-subtle py-3 sm:border-t-0 sm:pl-4 xl:px-4">
                                 <dt class="text-xs text-content-muted">Ready Hot Retention</dt>
-                                <dd class="mt-1 text-sm font-semibold text-content-primary">
-                                    {{ payload.retention_policy.retention_days }} Days
-                                </dd>
+                                <dd class="mt-1 text-sm font-semibold text-content-primary">{{ payload.retention_policy.retention_days }} Days</dd>
                             </div>
                             <div class="border-t border-outline-subtle py-3 sm:pr-4 xl:border-t-0 xl:px-4">
                                 <dt class="text-xs text-content-muted">Archive Retention</dt>
-                                <dd class="mt-1 text-sm font-semibold text-content-primary">
-                                    {{ payload.retention_policy.archive_retention_days }} Days
-                                </dd>
+                                <dd class="mt-1 text-sm font-semibold text-content-primary">{{ payload.retention_policy.archive_retention_days }} Days</dd>
                             </div>
                             <div class="border-t border-outline-subtle py-3 sm:pl-4 xl:border-t-0 xl:px-4 xl:last:pr-0">
-                                <dt class="text-xs text-content-muted">Orphan Detection</dt>
-                                <dd class="mt-1 text-sm font-semibold text-content-primary">
-                                    {{ 'Enabled' if payload.retention_policy.orphan_detection_enabled else 'Disabled' }}
-                                </dd>
+                                <dt class="text-xs text-content-muted">Execution</dt>
+                                <dd class="mt-1 text-sm font-semibold text-content-primary">{{ payload.retention_policy.schedule_label }}</dd>
                             </div>
                         </dl>
                         <div class="mt-5 grid gap-5 lg:grid-cols-2 lg:divide-x lg:divide-outline-subtle"
                              data-storage-retention-governance="split-boundary">
                             <section class="lg:pr-6">
                                 <div class="flex items-center gap-2">
-                                    <i data-lucide="shield-check"
-                                       class="h-4 w-4 text-kaori-primary"
-                                       aria-hidden="true"></i>
-                                    <h4 class="text-sm font-semibold text-content-primary">Policy Guardrails</h4>
+                                    <i data-lucide="shield-check" class="h-4 w-4 text-kaori-primary" aria-hidden="true"></i>
+                                    <h4 class="text-sm font-semibold text-content-primary">Lifecycle Guardrails</h4>
                                 </div>
                                 <div class="mt-3 space-y-2.5">
                                     {% for rule in payload.retention_policy.policy_rules %}
-                                        <div class="flex items-start gap-2 text-xs leading-5 text-content-muted"><i data-lucide="check"
-   class="mt-0.5 h-3.5 w-3.5 shrink-0 text-kaori-primary"
-   aria-hidden="true"></i><span>{{ rule }}</span></div>
+                                        <div class="flex items-start gap-2 text-xs leading-5 text-content-muted">
+                                            <i data-lucide="check" class="mt-0.5 h-3.5 w-3.5 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+                                            <span>{{ rule }}</span>
+                                        </div>
                                     {% endfor %}
                                 </div>
                             </section>
                             <section class="border-t border-outline-subtle pt-5 lg:border-t-0 lg:pl-6 lg:pt-0">
                                 <div class="flex items-center gap-2">
-                                    <i data-lucide="rotate-cw"
-                                       class="h-4 w-4 text-kaori-primary"
-                                       aria-hidden="true"></i>
-                                    <h4 class="text-sm font-semibold text-content-primary">Lifecycle Control Plane</h4>
+                                    <i data-lucide="split" class="h-4 w-4 text-kaori-primary" aria-hidden="true"></i>
+                                    <h4 class="text-sm font-semibold text-content-primary">Ownership Boundary</h4>
                                 </div>
+                                <dl class="mt-3 divide-y divide-outline-subtle border-y border-outline-subtle">
+                                    <div class="py-3">
+                                        <dt class="text-xs font-medium text-content-muted">Reports Storage</dt>
+                                        <dd class="mt-1 text-xs leading-5 text-content-secondary">Active artifact backend readiness, downloads, strong verification, and retained-reference integrity.</dd>
+                                    </div>
+                                    <div class="py-3">
+                                        <dt class="text-xs font-medium text-content-muted">Data Lifecycle</dt>
+                                        <dd class="mt-1 text-xs leading-5 text-content-secondary">Eligibility preview, archive storage, checksum verification, cleanup execution, scheduling, and archive history.</dd>
+                                    </div>
+                                </dl>
                                 <p class="mt-3 text-xs leading-5 text-content-muted">{{ payload.retention_policy.safe_regenerate_behavior }}</p>
-                                <p class="mt-4 text-xs font-semibold text-content-primary">Operational Guidance</p>
-                                <div class="mt-2 space-y-2">
-                                    {% for step in payload.retention_policy.next_steps %}
-                                        <div class="flex items-start gap-2 text-xs leading-5 text-content-muted"><i data-lucide="chevron-right"
-   class="mt-0.5 h-3.5 w-3.5 shrink-0 text-kaori-primary"
-   aria-hidden="true"></i><span>{{ step }}</span></div>
-                                    {% endfor %}
-                                </div>
                             </section>
                         </div>
-                    </section>
-                    <section class="mt-5 border-t border-outline-subtle pt-5"
-                             data-storage-cleanup-action="inline-boundary">
-                        <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                            <div class="flex min-w-0 items-start gap-3">
-                                <i data-lucide="scan-search"
-                                   class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary"
-                                   aria-hidden="true"></i>
-                                <div class="min-w-0">
-                                    <div class="flex flex-wrap items-center gap-2">
-                                        <h3 class="text-sm font-semibold text-content-primary">Storage Candidate Preview</h3>
-                                        {{ table_label.status_indicator_label('Read Only', 'info') }}
-                                    </div>
-                                    <p class="mt-1 max-w-3xl text-xs leading-5 text-content-muted">{{ payload.cleanup_dry_run.description }}</p>
+                        <div class="mt-5 border-t border-outline-subtle pt-5" data-storage-lifecycle-handoff="authoritative">
+                            <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                                <div class="max-w-3xl">
+                                    <p class="text-xs font-semibold text-content-primary">Lifecycle Actions Live in Data Lifecycle</p>
+                                    <p class="mt-1 text-xs leading-5 text-content-muted">Reports Storage intentionally does not calculate cleanup candidates or execute retention jobs. This prevents a second eligibility engine from disagreeing with status-specific policy and active-job protection.</p>
                                 </div>
+                                {% if current_user.has_permission('platform_operations.view_data_lifecycle') %}
+                                    <a href="{{ url_for('platform_operations.data_lifecycle.index', tab='policies', domain='generated_report') }}"
+                                       class="inline-flex min-h-9 shrink-0 items-center justify-center gap-2 rounded-md border border-brand-outline bg-kaori-soft px-4 text-sm font-semibold text-kaori-primary transition hover:bg-surface-hover">
+                                        <i data-lucide="scan-search" class="h-4 w-4" aria-hidden="true"></i>
+                                        Preview in Data Lifecycle
+                                    </a>
+                                {% endif %}
                             </div>
-                            {% if payload.storage_actions_enabled %}
-                                <a href="{{ url_for('reports.storage', cleanup_dry_run='1', workspace='retention') }}"
-                                   class="inline-flex min-h-9 shrink-0 items-center justify-center gap-2 rounded-md border border-brand-outline bg-kaori-soft px-4 text-sm font-semibold text-kaori-primary transition hover:bg-surface-hover">
-                                    <i data-lucide="scan-search" class="h-4 w-4" aria-hidden="true"></i>
-                                    Preview Storage Candidates
-                                </a>
-                            {% else %}
-                                <span aria-disabled="true"
-                                      class="inline-flex min-h-9 shrink-0 cursor-not-allowed items-center justify-center gap-2 rounded-md border border-outline-subtle bg-surface-card px-4 text-sm font-semibold text-content-muted opacity-70"><i data-lucide="pause-circle" class="h-4 w-4" aria-hidden="true"></i>Lifecycle Preview Paused</span>
-                            {% endif %}
                         </div>
                     </section>
-                    {% if payload.cleanup_dry_run_result %}
-                        {% set cleanup = payload.cleanup_dry_run_result %}
-                        <section class="mt-5 overflow-hidden rounded-xl border border-outline-subtle">
-                            <header class="border-b border-outline-subtle bg-surface-subtle px-5 py-4">
-                                <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                                    <div>
-                                        <h3 class="text-sm font-semibold text-content-primary">Storage Candidate Preview Result</h3>
-                                        <p class="mt-1 text-xs text-content-muted">{{ cleanup.candidate_count }} candidates · {{ cleanup.candidate_size }} total · {{ cleanup.missing_reference_count }} missing references · {{ cleanup.error_count }} errors.</p>
-                                    </div>
-                                    {{ table_label.status_indicator_label('Preview Complete', 'info') }}
-                                </div>
-                            </header>
-                            {% if cleanup.sample_candidates %}
-                                <div class="overflow-x-auto">
-                                    <table class="{{ table_ui.table_classes('min-w-[900px]') }}">
-                                        <thead class="{{ table_ui.head_classes() }}">
-                                            <tr>
-                                                <th class="{{ table_ui.header_cell_classes() }}">Report</th>
-                                                <th class="{{ table_ui.header_cell_classes() }}">State</th>
-                                                <th class="{{ table_ui.header_cell_classes() }}">Backend</th>
-                                                <th class="{{ table_ui.header_cell_classes() }}">Size</th>
-                                                <th class="{{ table_ui.header_cell_classes() }}">Storage Reference</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody class="{{ table_ui.body_classes() }}">
-                                            {% for item in cleanup.sample_candidates %}
-                                                <tr class="{{ table_ui.row_classes() }}">
-                                                    <td class="{{ table_ui.cell_classes() }}">{{ table_ui.title_cell(item.name, 'Report #' ~ item.report_id, 'file-archive') }}</td>
-                                                    <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_indicator_label(item.status, item.status) }}</td>
-                                                    <td class="{{ table_ui.cell_classes() }}">{{ table_label.metadata_label(item.backend|upper, 'database') }}</td>
-                                                    <td class="{{ table_ui.cell_classes() }}">
-                                                        <span class="text-sm font-semibold text-content-primary">{{ item.file_size }}</span>
-                                                        <p class="mt-0.5 text-xs text-content-muted">Updated {{ item.updated_at }}</p>
-                                                    </td>
-                                                    <td class="{{ table_ui.cell_classes() }}">
-                                                        <p class="max-w-[360px] truncate text-xs text-content-muted"
-                                                           title="{{ item.file_path }}">{{ item.file_path }}</p>
-                                                    </td>
-                                                </tr>
-                                            {% endfor %}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            {% else %}
-                                <div class="px-5 py-6 text-sm text-content-muted">No cleanup candidates matched the current retention boundary.</div>
-                            {% endif %}
-                        </section>
-                    {% endif %}
                 </div>
             {% endif %}
         </section>

@@ -67,20 +67,24 @@
                             {% if selected_panel.value %}
                                 {{ ranked_evidence.render(selected_panel.value) }}
                             {% else %}
-                                <div class="{{ analysis_surface.empty_evidence_classes('flex min-h-[280px] flex-col items-center justify-center px-5 py-8 text-center') }}">
-                                    <i data-lucide="{{ resource_icon }}" class="h-6 w-6 text-kaori-primary"></i>
-                                    <h3 class="mt-3 text-sm font-semibold text-content-primary">No {{ resource_label }} Ranking Evidence</h3>
-                                </div>
+                                {% set empty_state_icon = resource_icon %}
+                                {% set empty_state_label = 'No Data' %}
+                                {% set empty_state_title %}No {{ resource_label }} Ranking Evidence{% endset %}
+                                {% set empty_state_description = 'The selected materialized snapshot does not contain ranking evidence for this resource.' %}
+                                {% set empty_state_min_height = 'min-h-[220px]' %}
+                                {% include 'components/states/_empty_state.html' %}
                             {% endif %}
                         </div>
                     {% endfor %}
                 </div>
             {% else %}
-                <div class="{{ analysis_surface.empty_evidence_classes('flex min-h-[280px] flex-col items-center justify-center px-5 py-8 text-center') }}">
-                    <i data-lucide="database-zap" class="h-6 w-6 text-kaori-primary"></i>
-                    <h3 class="mt-3 text-sm font-semibold text-content-primary">No Ranked Consumer Evidence Available</h3>
-                    <p class="mt-1 max-w-xl text-xs leading-5 text-content-muted">{{ payload.message|default('Refresh or materialize Top Consumers after Prometheus evidence becomes available.', true) }}</p>
-                </div>
+                {% set empty_state_icon = 'database-zap' %}
+                {% set empty_state_label = 'Sync Required' %}
+                {% set empty_state_tone = 'warning' %}
+                {% set empty_state_title = 'No Ranked Consumer Evidence Available' %}
+                {% set empty_state_description = payload.message|default('Refresh or materialize Top Consumers after Prometheus evidence becomes available.', true) %}
+                {% set empty_state_min_height = 'min-h-[220px]' %}
+                {% include 'components/states/_empty_state.html' %}
             {% endif %}
             <div class="{{ analysis_surface.interpretation_grid_classes() }}">
                 {{ analysis_surface.interpretation_callout('How To Read',
@@ -155,10 +159,13 @@
                     {{ recommendation_pager.controls(recommendation_cards|length, 'Recommendations', 3) }}
                 </div>
             {% else %}
-                <div class="{{ analysis_surface.empty_evidence_classes('flex min-h-44 flex-col items-center justify-center px-5 py-8 text-center') }}">
-                    <i data-lucide="list-checks" class="h-5 w-5 text-kaori-primary"></i>
-                    <p class="mt-3 text-sm font-semibold text-content-primary">No Consumer Recommendations Available</p>
-                </div>
+                {% set empty_state_icon = 'list-checks' %}
+                {% set empty_state_label = 'No Findings' %}
+                {% set empty_state_tone = 'normal' %}
+                {% set empty_state_title = 'No Consumer Recommendations Available' %}
+                {% set empty_state_description = 'No current consumer evidence produces a governed recommendation.' %}
+                {% set empty_state_min_height = 'min-h-[160px]' %}
+                {% include 'components/states/_empty_state.html' %}
             {% endif %}
         </div>
     </section>

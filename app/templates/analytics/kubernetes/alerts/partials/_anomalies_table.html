@@ -60,7 +60,7 @@
                     {% include "analytics/kubernetes/alerts/partials/_anomalies_table_row.html" %}
                 {% endfor %}
             {% else %}
-                {{ evidence_list.empty('No Anomalies Detected', 'No anomaly candidate matches the current source and local filters.', 'radar') }}
+                {{ evidence_list.empty('No Anomalies Detected', 'No anomaly candidate matches the current source and local filters.', 'radar', 'No Findings', 'normal') }}
             {% endif %}
         </div>
         {% set pagination_query = {

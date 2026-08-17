@@ -23,7 +23,7 @@ def test_reports_recovery_view_uses_one_unified_operational_incident_panel() -> 
     assert 'Raw Error Hidden' in source
     assert 'What Happened' not in source
     assert 'xl:grid-cols-[minmax(0,1fr)_340px]' not in source
-    assert "'storage_verify_url': url_for('reports.storage', verify=1)" in web
+    assert "'storage_verify_url': url_for('reports.verify_storage')" in web
 
 
 def test_reports_overview_surfaces_s3_disconnect_as_compact_operational_incident() -> None:
@@ -50,6 +50,7 @@ def test_reports_storage_surfaces_s3_disconnect_with_safe_retry_banner() -> None
     assert 'data-report-storage-connectivity="disconnected"' in source
     assert '{{ backend_status.title }}' in source
     assert '{{ backend_status.description }}' in source
-    assert "url_for('reports.storage', verify='1', workspace=payload.workspace)" in source
-    assert 'Retry Connection' in source
+    assert "url_for('reports.verify_storage')" in source
+    assert 'Verify Connection' in source
+    assert 'method="post"' in source
     assert 'backend_status.error' not in source

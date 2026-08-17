@@ -8,18 +8,19 @@
 {% import "reports/components/_record_detail_modal.html" as record_modal %}
 {% import "components/operational_callout.html" as operational_callout %}
 {% block title %}Report Schedules{% endblock title %}
-{% macro schedule_form(form_state, form_action, submit_label, loading_label) -%}
+{% macro schedule_form(form_state, form_action, submit_label, loading_label, return_url) -%}
     <form method="POST"
           action="{{ form_action }}"
           data-schedule-form
           class="space-y-5">
         {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+        <input type="hidden" name="next" value="{{ return_url }}">
         <section>
             <div class="flex items-start gap-3">
                 <span class="{{ table_ui.block_icon_classes() }}" aria-hidden="true"><i data-lucide="badge-info" class="h-4 w-4"></i></span>
                 <div>
-                    <h3 class="text-sm font-bold text-content-primary">Schedule Identity & Scope</h3>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">Name the automation and bind it to the infrastructure asset required by the selected report contract.</p>
+                    <h3 class="text-sm font-bold text-content-primary">Schedule Identity</h3>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Name the recurring automation and describe the operational purpose before defining its report contract.</p>
                 </div>
             </div>
             <div class="mt-4 grid gap-4 sm:grid-cols-2">
@@ -36,39 +37,7 @@
                 <label class="block sm:col-span-2">
                     <span class="text-xs font-semibold text-content-muted">Description</span><textarea name="description" rows="2" maxlength="1000" placeholder="Describe the recurring reporting purpose." class="mt-1.5 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary outline-none focus:border-kaori-primary focus:ring-2 focus:ring-kaori-primary/20">{{ form_state.description }}</textarea>
                 </label>
-                <div class="contents" data-schedule-kubernetes-scope>
-                    <label class="block">
-                        <span class="text-xs font-semibold text-content-muted">Kubernetes Cluster</span>
-                        <select name="cluster_id"
-                                data-schedule-cluster
-                                class="mt-1.5 min-h-9 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary outline-none focus:border-kaori-primary focus:ring-2 focus:ring-kaori-primary/20">
-                            <option value="" disabled {% if not form_state.cluster_id %}selected{% endif %}>Select Cluster</option>
-                            {% for option in payload.clusters %}
-                                <option value="{{ option.value }}" {% if form_state.cluster_id == option.value %}selected{% endif %}>{{ option.label }}</option>
-                            {% endfor %}
-                        </select>
-                    </label>
-                    <label class="block">
-                        <span class="text-xs font-semibold text-content-muted">Namespace</span>
-                        <input type="text"
-                               name="namespace"
-                               data-schedule-namespace
-                               value="{{ form_state.namespace }}"
-                               placeholder="All Namespaces"
-                               class="mt-1.5 min-h-9 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary outline-none focus:border-kaori-primary focus:ring-2 focus:ring-kaori-primary/20">
-                    </label>
-                </div>
-                <label class="hidden sm:col-span-2" data-schedule-object-storage-scope>
-                    <span class="text-xs font-semibold text-content-muted">Object Storage System</span>
-                    <select name="object_storage_system_id"
-                            data-schedule-object-storage-system
-                            class="mt-1.5 min-h-9 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary outline-none focus:border-kaori-primary focus:ring-2 focus:ring-kaori-primary/20">
-                        <option value="" disabled {% if not form_state.object_storage_system_id %}selected{% endif %}>Select Object Storage System</option>
-                        {% for option in payload.object_storage_systems %}
-                            <option value="{{ option.value }}" {% if form_state.object_storage_system_id == option.value %}selected{% endif %}>{{ option.label }}</option>
-                        {% endfor %}
-                    </select>
-                </label>
+
             </div>
         </section>
         <section class="border-t border-outline-subtle pt-5">
@@ -169,6 +138,50 @@
                         {% endif %}
                     </div>
                 {% endfor %}
+            </div>
+        </section>
+        <section class="border-t border-outline-subtle pt-5">
+            <div class="flex items-start gap-3">
+                <span class="{{ table_ui.block_icon_classes() }}" aria-hidden="true"><i data-lucide="boxes" class="h-4 w-4"></i></span>
+                <div>
+                    <h3 class="text-sm font-bold text-content-primary">Infrastructure Scope</h3>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Bind the schedule to the infrastructure asset required by the selected report contract. Scope changes automatically when the report type changes.</p>
+                </div>
+            </div>
+            <div class="mt-4 grid gap-4 sm:grid-cols-2">
+                <div class="contents" data-schedule-kubernetes-scope>
+                    <label class="block">
+                        <span class="text-xs font-semibold text-content-muted">Kubernetes Cluster</span>
+                        <select name="cluster_id"
+                                data-schedule-cluster
+                                class="mt-1.5 min-h-9 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary outline-none focus:border-kaori-primary focus:ring-2 focus:ring-kaori-primary/20">
+                            <option value="" disabled {% if not form_state.cluster_id %}selected{% endif %}>Select Cluster</option>
+                            {% for option in payload.clusters %}
+                                <option value="{{ option.value }}" {% if form_state.cluster_id == option.value %}selected{% endif %}>{{ option.label }}</option>
+                            {% endfor %}
+                        </select>
+                    </label>
+                    <label class="block">
+                        <span class="text-xs font-semibold text-content-muted">Namespace</span>
+                        <input type="text"
+                               name="namespace"
+                               data-schedule-namespace
+                               value="{{ form_state.namespace }}"
+                               placeholder="All Namespaces"
+                               class="mt-1.5 min-h-9 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary outline-none focus:border-kaori-primary focus:ring-2 focus:ring-kaori-primary/20">
+                    </label>
+                </div>
+                <label class="hidden sm:col-span-2" data-schedule-object-storage-scope>
+                    <span class="text-xs font-semibold text-content-muted">Object Storage System</span>
+                    <select name="object_storage_system_id"
+                            data-schedule-object-storage-system
+                            class="mt-1.5 min-h-9 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary outline-none focus:border-kaori-primary focus:ring-2 focus:ring-kaori-primary/20">
+                        <option value="" disabled {% if not form_state.object_storage_system_id %}selected{% endif %}>Select Object Storage System</option>
+                        {% for option in payload.object_storage_systems %}
+                            <option value="{{ option.value }}" {% if form_state.object_storage_system_id == option.value %}selected{% endif %}>{{ option.label }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
             </div>
         </section>
         <section class="border-t border-outline-subtle pt-5">
@@ -532,7 +545,7 @@
                             </div>
                             <div class="flex flex-wrap items-center gap-2">
                                 {{ table_label.metadata_label(payload.pagination.total_items ~ ' Schedules', 'calendar-clock') }}
-                                {% if payload.selected_filters.search or payload.selected_filters.status or payload.selected_filters.cadence or payload.selected_filters.report_type or payload.selected_filters.cluster or payload.selected_filters.delivery %}
+                                {% if payload.selected_filters.search or payload.selected_filters.status or payload.selected_filters.cadence or payload.selected_filters.report_type or payload.selected_filters.asset or payload.selected_filters.delivery %}
                                     {{ registry_ui.clear_filters_link('reports.schedules', 'schedule-registry', 'schedule-registry-loading', payload.pagination.per_page, table_ui.action_classes() , query_params={'workspace': 'registry'}) }}
                                 {% endif %}
                             </div>
@@ -582,11 +595,11 @@
                                 </select>
                             </label>
                             <label class="block">
-                                <span class="{{ table_ui.filter_label_classes() }}">Kubernetes Cluster</span>
-                                <select name="cluster" class="mt-1.5 {{ table_ui.filter_select_classes() }}">
-                                    {% for option in payload.filter_options.clusters %}
+                                <span class="{{ table_ui.filter_label_classes() }}">Infrastructure Asset</span>
+                                <select name="asset" class="mt-1.5 {{ table_ui.filter_select_classes() }}">
+                                    {% for option in payload.filter_options.assets %}
                                         <option value="{{ option.value }}"
-                                                {% if payload.selected_filters.cluster == option.value %}selected{% endif %}>{{ option.label }}</option>
+                                                {% if payload.selected_filters.asset == option.value %}selected{% endif %}>{{ option.label }}</option>
                                     {% endfor %}
                                 </select>
                             </label>
@@ -630,7 +643,7 @@
                                             </td>
                                             <td class="{{ table_ui.cell_classes() }}">
                                                 <p class="text-sm font-semibold text-content-primary">{{ schedule.scope }}</p>
-                                                <p class="mt-0.5 text-xs text-content-muted">{{ schedule.namespace }}</p>
+                                                <p class="mt-0.5 text-xs text-content-muted">{{ schedule.scope_detail }}</p>
                                             </td>
                                             <td class="{{ table_ui.cell_classes() }}">
                                                 <p class="text-sm font-semibold text-content-primary">{{ schedule.report_type }}</p>
@@ -658,7 +671,15 @@
                                     {% endfor %}
                                 {% else %}
                                     <tr>
-                                        <td colspan="7" class="px-6 py-12 text-center text-sm text-content-muted">No schedules match the selected filters.</td>
+                                        <td colspan="7" class="p-0">
+                                            {% set schedule_filters_active = payload.selected_filters.search or payload.selected_filters.status or payload.selected_filters.cadence or payload.selected_filters.report_type or payload.selected_filters.asset or payload.selected_filters.delivery %}
+                                            {% set empty_state_icon = 'calendar-clock' %}
+                                            {% set empty_state_label = 'No Results' if schedule_filters_active else 'No Data' %}
+                                            {% set empty_state_title = 'No Schedules Match the Current Filters' if schedule_filters_active else 'No Report Schedules Yet' %}
+                                            {% set empty_state_description = 'Clear or adjust the schedule filters to review another recurring report contract.' if schedule_filters_active else 'Create a schedule to queue a governed report contract on a recurring cadence.' %}
+                                            {% set empty_state_min_height = 'min-h-[160px]' %}
+                                            {% include 'components/states/_empty_state.html' %}
+                                        </td>
                                     </tr>
                                 {% endif %}
                             </tbody>
@@ -732,6 +753,7 @@
                                     <form method="POST"
                                           action="{{ url_for('reports.toggle_schedule', schedule_id=schedule.id) }}">
                                         {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+                                        <input type="hidden" name="next" value="{{ request.full_path.rstrip('?') }}">
                                         <button type="submit"
                                                 data-operation-submit
                                                 data-loading-label="Updating Schedule..."
@@ -746,6 +768,7 @@
                                     <form method="POST"
                                           action="{{ url_for('reports.run_schedule', schedule_id=schedule.id) }}">
                                         {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+                                        <input type="hidden" name="next" value="{{ request.full_path.rstrip('?') }}">
                                         <button type="submit"
                                                 data-operation-submit
                                                 data-loading-label="Queueing Report..."
@@ -755,7 +778,7 @@
                                 </div>
                             </div>
                         {% endcall %}
-                        {% call record_modal.render('schedule-delete-' ~ loop.index, 'Schedule Lifecycle', 'Delete Report Schedule', 'Remove this recurring definition from future scheduler execution.', 'trash-2', 'Existing generated reports and retained artifacts are not deleted with the schedule.', 'standard') %}
+                        {% call record_modal.render('schedule-delete-' ~ loop.index, 'Schedule Lifecycle', 'Delete Report Schedule', 'Remove this recurring definition from future scheduler execution.', 'trash-2', 'Existing generated reports, retained artifacts, and schedule-run contract snapshots remain available after deletion.', 'standard') %}
                             <div class="space-y-4">
                                 <div class="rounded-xl border {{ operational_callout.semantic_border_classes('warning') }} bg-status-warning-soft px-4 py-3">
                                     <p class="text-sm font-bold text-status-warning-text">Confirm Schedule Deletion</p>
@@ -765,6 +788,7 @@
                                       action="{{ url_for('reports.delete_schedule', schedule_id=schedule.id) }}"
                                       class="flex justify-end">
                                     {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+                                    <input type="hidden" name="next" value="{{ request.full_path.rstrip('?') }}">
                                     <button type="submit"
                                             data-operation-submit
                                             data-loading-label="Deleting Schedule..."
@@ -918,7 +942,14 @@
                                     {% endfor %}
                                 {% else %}
                                     <tr>
-                                        <td colspan="6" class="px-6 py-12 text-center text-sm text-content-muted">No schedule run lifecycle records match the selected filters.</td>
+                                        <td colspan="6" class="p-0">
+                                            {% set empty_state_icon = 'history' %}
+                                            {% set empty_state_label = 'No Results' if run_filters_active else 'No Data' %}
+                                            {% set empty_state_title = 'No Schedule Runs Match the Current Filters' if run_filters_active else 'No Schedule Runs Yet' %}
+                                            {% set empty_state_description = 'Clear or adjust the run filters to review another execution evidence set.' if run_filters_active else 'Execution evidence will appear after a schedule runs or is triggered manually.' %}
+                                            {% set empty_state_min_height = 'min-h-[160px]' %}
+                                            {% include 'components/states/_empty_state.html' %}
+                                        </td>
                                     </tr>
                                 {% endif %}
                             </tbody>
@@ -960,6 +991,34 @@
                                         <div>
                                             <p class="text-xs font-semibold text-content-muted">Duration</p>
                                             <p class="mt-1 text-sm font-semibold text-content-primary">{{ run.duration }}</p>
+                                        </div>
+                                    </div>
+                                </section>
+                                <section class="rounded-xl border border-outline-subtle px-4 py-4">
+                                    <div class="flex items-start justify-between gap-3">
+                                        <div>
+                                            <p class="text-sm font-bold text-content-primary">Retained Schedule Contract</p>
+                                            <p class="mt-1 text-xs leading-5 text-content-muted">Snapshot evidence remains available even if the current schedule definition is later deleted or changed.</p>
+                                        </div>
+                                        {{ table_label.metadata_label(run.schedule_evidence.output_format, 'file-output') }}
+                                    </div>
+                                    <div class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                                        <div>
+                                            <p class="text-xs font-semibold text-content-muted">Report Type</p>
+                                            <p class="mt-1 text-sm font-semibold text-content-primary">{{ run.schedule_evidence.report_type }}</p>
+                                        </div>
+                                        <div>
+                                            <p class="text-xs font-semibold text-content-muted">Scope</p>
+                                            <p class="mt-1 text-sm font-semibold text-content-primary">{{ run.schedule_evidence.scope }}</p>
+                                        </div>
+                                        <div>
+                                            <p class="text-xs font-semibold text-content-muted">Period</p>
+                                            <p class="mt-1 text-sm font-semibold text-content-primary">{{ run.schedule_evidence.period }}</p>
+                                        </div>
+                                        <div>
+                                            <p class="text-xs font-semibold text-content-muted">Cadence</p>
+                                            <p class="mt-1 text-sm font-semibold text-content-primary">{{ run.schedule_evidence.cadence }}</p>
+                                            <p class="mt-0.5 text-xs text-content-muted">{{ run.schedule_evidence.timezone }}</p>
                                         </div>
                                     </div>
                                 </section>
@@ -1006,7 +1065,7 @@
             {% endif %}
         </section>
         {% call record_modal.render('schedule-form-dialog', 'Schedule Workspace', 'Edit Report Schedule' if schedule_form_is_edit else 'Create Report Schedule', 'Define one recurring report contract, execution cadence, and delivery policy.', 'calendar-plus', 'Schedule management remains available independently from generated artifacts; execution is storage-aware.', 'standard') %}
-            {{ schedule_form(schedule_form_state, schedule_form_action, 'Save Schedule' if schedule_form_is_edit else 'Create Schedule', 'Saving Schedule...' if schedule_form_is_edit else 'Creating Schedule...') }}
+            {{ schedule_form(schedule_form_state, schedule_form_action, 'Save Schedule' if schedule_form_is_edit else 'Create Schedule', 'Saving Schedule...' if schedule_form_is_edit else 'Creating Schedule...', request.full_path.rstrip('?')) }}
         {% endcall %}
     </div>
     <script src="{{ url_for('static', filename='js/report_schedules.js') }}"></script>

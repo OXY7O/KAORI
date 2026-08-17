@@ -122,12 +122,16 @@ def test_report_storage_reads_generated_lifecycle_policy_as_the_canonical_retent
 
     assert "DataLifecyclePolicy.query.filter_by(domain='generated_report').first()" in health
     assert "'status': 'Lifecycle Managed' if lifecycle_enabled else 'Lifecycle Paused'" in health
-    assert 'Platform Operations → Data Lifecycle is the canonical owner for Generated Reports retention.' in health
-    assert 'get_generated_report_hot_retention_days' in service
+    assert (
+        'Platform Operations → Data Lifecycle is the authoritative control plane for Generated Reports retention'
+        in health
+    )
     assert 'Generated Report Lifecycle Policy' in storage_template
     assert 'Open Data Lifecycle' in storage_template
-    assert 'Storage Candidate Preview' in storage_template
-    assert 'Data Lifecycle Preview remains authoritative' in service
+    assert 'Lifecycle Actions Live in Data Lifecycle' in storage_template
+    assert 'Storage Candidate Preview' not in storage_template
+    assert 'build_report_cleanup_dry_run' not in service
+    assert 'cleanup_dry_run' not in service
 
 
 def test_generated_report_archives_surface_binary_evidence_in_archive_history() -> None:

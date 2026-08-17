@@ -163,8 +163,13 @@
                         </tr>
                     {% else %}
                         <tr>
-                            <td colspan="{{ 7 if page_key == 'top_consumers' else 5 }}" class="px-5 py-10 text-center text-sm text-content-muted">
-                                No bucket records match the selected scope and filter.
+                            <td colspan="{{ 7 if page_key == 'top_consumers' else 5 }}" class="p-0">
+                                {% set empty_state_icon = 'database' %}
+                                {% set empty_state_label = 'No Results' %}
+                                {% set empty_state_title = 'No Bucket Records Match the Current Filters' %}
+                                {% set empty_state_description = 'Adjust the selected Object Storage scope or local filters to review another bucket set.' %}
+                                {% set empty_state_min_height = 'min-h-[160px]' %}
+                                {% include 'components/states/_empty_state.html' %}
                             </td>
                         </tr>
                     {% endfor %}

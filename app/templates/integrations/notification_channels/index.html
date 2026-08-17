@@ -347,8 +347,14 @@
                             </tr>
                         {% else %}
                             <tr>
-                                <td colspan="8" class="px-4 py-10 text-center text-sm text-content-muted">
-                                    No notification channels configured. Add Telegram, email, or Microsoft Teams above.
+                                <td colspan="8" class="p-0">
+                                    {% set empty_state_icon = 'send' %}
+                                    {% set empty_state_label = 'Setup Required' %}
+                                    {% set empty_state_tone = 'warning' %}
+                                    {% set empty_state_title = 'No Notification Channels Configured' %}
+                                    {% set empty_state_description = 'Add Telegram, Email, or Microsoft Teams to establish governed platform delivery.' %}
+                                    {% set empty_state_min_height = 'min-h-[170px]' %}
+                                    {% include 'components/states/_empty_state.html' %}
                                 </td>
                             </tr>
                         {% endfor %}

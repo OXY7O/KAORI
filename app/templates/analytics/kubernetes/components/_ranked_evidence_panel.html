@@ -87,15 +87,12 @@
                     </div>
                 </article>
             {% else %}
-                <div class="p-4">
-                    <div class="{{ analysis_surface.empty_evidence_classes('flex min-h-44 flex-col items-center justify-center px-5 py-8 text-center') }}">
-                        <i data-lucide="database-zap"
-                           class="h-5 w-5 text-kaori-primary"
-                           aria-hidden="true"></i>
-                        <p class="mt-3 text-sm font-semibold text-content-primary">No Ranked Evidence Available</p>
-                        <p class="mt-1 text-xs leading-5 text-content-muted">The selected snapshot does not contain ranked {{ panel.title|lower }} evidence.</p>
-                    </div>
-                </div>
+                {% set empty_state_icon = 'database-zap' %}
+                {% set empty_state_label = 'No Data' %}
+                {% set empty_state_title = 'No Ranked Evidence Available' %}
+                {% set empty_state_description = 'The selected snapshot does not contain ranked ' ~ panel.title|lower ~ ' evidence.' %}
+                {% set empty_state_min_height = 'min-h-[160px]' %}
+                {% include 'components/states/_empty_state.html' %}
             {% endfor %}
         </div>
     </section>

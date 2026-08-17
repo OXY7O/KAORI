@@ -108,7 +108,7 @@
                     {% if pv.inventory_evidence_available %}
                         {{ evidence_list.empty('No PV Records Found', 'No volumes matched the current local filters.', 'database') }}
                     {% else %}
-                        {{ evidence_list.empty('PV Evidence Unavailable', 'Committed PV inventory evidence is not available for the selected cluster.', 'database') }}
+                        {{ evidence_list.empty('PV Evidence Unavailable', 'Committed PV inventory evidence is not available for the selected cluster.', 'database', 'Sync Required', 'warning') }}
                     {% endif %}
                 {% endfor %}
             </div>

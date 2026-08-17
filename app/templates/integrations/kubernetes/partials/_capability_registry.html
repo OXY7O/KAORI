@@ -157,17 +157,14 @@
                     </tr>
                 {% else %}
                     <tr>
-                        <td colspan="6" class="px-5 py-10 text-center">
-                            <div class="mx-auto flex max-w-md flex-col items-center">
-                                {{ integration_ui.palette_icon('scan-search', 'neutral', size='lg') }}
-                                {% if registry.total_contracts %}
-                                    <p class="mt-3 text-sm font-semibold text-content-primary">No Capability Records Match the Current Filters</p>
-                                    <p class="mt-1 text-sm leading-6 text-content-secondary">Adjust Search Capability, Requirement, or Validation Status to broaden the registry results.</p>
-                                {% else %}
-                                    <p class="mt-3 text-sm font-semibold text-content-primary">Capability Evidence Not Available</p>
-                                    <p class="mt-1 text-sm leading-6 text-content-secondary">Run Full Validation to discover stable APIs, legacy fallbacks, effective RBAC, and blocked features.</p>
-                                {% endif %}
-                            </div>
+                        <td colspan="6" class="p-0">
+                            {% set empty_state_icon = 'scan-search' %}
+                            {% set empty_state_label = 'No Results' if registry.total_contracts else 'Sync Required' %}
+                            {% set empty_state_tone = 'unknown' if registry.total_contracts else 'warning' %}
+                            {% set empty_state_title = 'No Capability Records Match the Current Filters' if registry.total_contracts else 'Capability Evidence Not Available' %}
+                            {% set empty_state_description = 'Adjust Search Capability, Requirement, or Validation Status to broaden the registry results.' if registry.total_contracts else 'Run Full Validation to discover stable APIs, legacy fallbacks, effective RBAC, and blocked features.' %}
+                            {% set empty_state_min_height = 'min-h-[160px]' %}
+                            {% include 'components/states/_empty_state.html' %}
                         </td>
                     </tr>
                 {% endfor %}

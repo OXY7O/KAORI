@@ -109,14 +109,15 @@
         {% endif %}
     </div>
 {%- endmacro %}
-{% macro empty_state(title, description, icon='inbox') -%}
-    <div class="rounded-lg border border-dashed border-outline-strong bg-surface-hover px-4 py-9 text-center">
-        <i data-lucide="{{ icon }}"
-           class="mx-auto h-6 w-6 text-content-disabled"
-           aria-hidden="true"></i>
-        <p class="mt-2 text-sm font-semibold leading-5 text-content-primary">{{ title }}</p>
-        <p class="mx-auto mt-1 max-w-xl text-xs leading-5 text-content-muted">{{ description }}</p>
-    </div>
+{% macro empty_state(title, description, icon='inbox', label='No Data', tone='unknown') -%}
+    {% set empty_state_icon = icon %}
+    {% set empty_state_label = label %}
+    {% set empty_state_tone = tone %}
+    {% set empty_state_title = title %}
+    {% set empty_state_description = description %}
+    {% set empty_state_variant = 'panel' %}
+    {% set empty_state_min_height = 'min-h-[160px]' %}
+    {% include 'components/states/_empty_state.html' %}
 {%- endmacro %}
 {% macro subsection(title, description='', icon='circle-dot') -%}
     <div class="flex min-w-0 items-start gap-2.5">

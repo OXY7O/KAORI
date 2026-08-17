@@ -141,7 +141,7 @@
                     {% if pvc.inventory_evidence_available %}
                         {{ evidence_list.empty('No PVC Records Found', 'No claims matched the current namespace and local filters.', 'box') }}
                     {% else %}
-                        {{ evidence_list.empty('PVC Evidence Unavailable', 'Committed PVC inventory evidence is not available for the selected cluster.', 'box') }}
+                        {{ evidence_list.empty('PVC Evidence Unavailable', 'Committed PVC inventory evidence is not available for the selected cluster.', 'box', 'Sync Required', 'warning') }}
                     {% endif %}
                 {% endfor %}
             </div>

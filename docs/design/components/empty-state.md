@@ -13,6 +13,13 @@ Use `app/templates/components/states/_empty_state.html` for full table, registry
 - Initial setup, filtered results, blocked prerequisites, unavailable dependencies, and healthy zero-result states must not share the same wording.
 - Permission checks remain server-side. The component may hide actions and show `Admin Required`, but it does not replace route authorization.
 
+
+## Scope and reviewed surfaces
+
+This standard owns **web application surfaces** in Welcome, Kubernetes Dashboard, Kubernetes Inventory, Kubernetes Operations, Object Storage Inventory and Integrations, Kubernetes Analytics, Object Storage Analytics, Intelligence, Reports, and Operations Center. Reviewed surfaces may use a thin domain macro only when that macro delegates visual ownership to the canonical component.
+
+PDF and exported artifacts keep their report-publication layout contract and do not embed the web empty-state component. Topology canvas selection placeholders remain canvas-owned interaction states because they are not table, registry, workspace, or major-card zero states. Small field-level values such as `No Evidence` may remain inline when they are values rather than an empty region.
+
 ## Parameters
 
 ```jinja

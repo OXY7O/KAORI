@@ -335,7 +335,7 @@ def _domain_description(name: str) -> str:
     return {
         'operational_activity': 'Activity Audit and persistent user notifications.',
         'job_execution': 'Canonical queue, progress, results, and worker metadata.',
-        'runtime_observation': 'Kubernetes, Prometheus, and Alertmanager runtime evidence.',
+        'runtime_observation': 'Kubernetes, Object Storage, Prometheus, and Alertmanager runtime evidence.',
         'analytics_snapshot': 'Reusable analytics and forecast materialization snapshots.',
         'generated_report': generated_report_ui.GENERATED_REPORT_DESCRIPTION,
     }.get(name, 'KAORI operational data domain.')
@@ -383,6 +383,11 @@ def _domain_coverage(name: str) -> tuple[dict[str, str], ...]:
                 'label': 'Alertmanager',
                 'description': 'Recent Runtime Observations for Alertmanager integration targets.',
             },
+            {
+                'icon': 'database',
+                'label': 'Object Storage · MinIO',
+                'description': 'Recent Runtime Observations for managed MinIO Object Storage integration targets.',
+            },
         ),
         'generated_report': generated_report_ui.GENERATED_REPORT_COVERAGE,
         'analytics_snapshot': (
@@ -409,7 +414,7 @@ def _domain_coverage_note(name: str) -> str | None:
     return {
         'operational_activity': 'One retention policy governs the shared notifications table; the user inbox and Activity Audit are different views over the same persisted records.',
         'job_execution': 'Execution payloads remain domain-owned; lifecycle archives canonical execution metadata and result references.',
-        'runtime_observation': 'The policy is provider-neutral. Future integrations using IntegrationRuntimeObservation inherit the same lifecycle boundary.',
+        'runtime_observation': 'The policy is provider-neutral. Kubernetes, Object Storage, Prometheus, Alertmanager, and future integrations using IntegrationRuntimeObservation share the same lifecycle boundary.',
         'analytics_snapshot': 'Cleanup applies only after a snapshot is outside both its stale-serve window and the configured hot-retention boundary.',
         'generated_report': generated_report_ui.GENERATED_REPORT_COVERAGE_NOTE,
     }.get(name)
@@ -452,8 +457,7 @@ def _domain_storage_contract(
         archive_detail = 'Ready and manually Archived report binaries are copied and checksum-verified.'
     elif name == 'runtime_observation':
         archive_detail = (
-            'Runtime observations do not own a separate archive bucket. Provider-neutral evidence rows are serialized '
-            'to the shared Data Lifecycle archive target.'
+            'Provider-neutral runtime evidence uses the shared archive target; no integration-specific archive bucket is created.'
         )
     elif name == 'analytics_snapshot':
         archive_detail = (

@@ -35,14 +35,15 @@ def test_storage_page_stays_available_and_shows_reconnect_guidance() -> None:
     template = read(STORAGE_TEMPLATE)
 
     assert 'payload = get_report_storage_payload(workspace=workspace)' in route_source
-    assert "if payload['storage_actions_enabled']" in route_source
+    assert "if payload['integrity_actions_enabled']" in route_source
     assert 'report-storage-connectivity-title' in template
     assert 'Storage Operations Posture' in template
     assert 'data-report-storage-readiness-monitor="true"' in template
-    assert 'Retry Connection' in template
-    assert "url_for('reports.storage', verify='1', workspace=payload.workspace)" in template
+    assert 'Verify Connection' in template
+    assert "url_for('reports.verify_storage')" in template
+    assert 'method="post"' in template
     assert 'Integrity Check Paused' in template
-    assert 'Lifecycle Preview Paused' in template
+    assert 'Lifecycle Actions Live in Data Lifecycle' in template
     assert 'Traceback' not in template
     assert 'EndpointConnectionError' not in template
 
@@ -95,6 +96,6 @@ def test_integrity_results_do_not_expose_raw_storage_exception_text() -> None:
     source = read(STORAGE_SERVICE)
 
     assert "'error': 'Storage backend was unavailable during this integrity check.'" in source
-    assert "error='Storage backend was unavailable during this cleanup preview.'" in source
+    assert 'cleanup preview' not in source.lower()
     assert "'error': str(" not in source
     assert 'error=str(' not in source

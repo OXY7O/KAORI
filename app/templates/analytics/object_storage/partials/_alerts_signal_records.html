@@ -23,7 +23,12 @@
                 </div>
             </article>
         {% else %}
-            <div class="px-5 py-10 text-center text-sm text-content-muted sm:px-6">No metric-derived signal definitions are available for the selected scope.</div>
+            {% set empty_state_icon = 'list-tree' %}
+            {% set empty_state_label = 'No Data' %}
+            {% set empty_state_title = 'No Metric-Derived Signal Definitions' %}
+            {% set empty_state_description = 'No metric-derived signal definition is available for the selected Object Storage scope.' %}
+            {% set empty_state_min_height = 'min-h-[160px]' %}
+            {% include 'components/states/_empty_state.html' %}
         {% endfor %}
     </div>
 </section>

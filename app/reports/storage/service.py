@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 from threading import Lock
@@ -17,8 +17,6 @@ from app.reports.storage.health import (
     build_s3_storage_health,
     build_storage_artifact_summary,
     build_storage_retention_policy,
-    build_storage_summary_cards,
-    get_generated_report_hot_retention_days,
 )
 from app.reports.storage.local import build_local_report_storage
 from app.reports.storage.s3 import build_s3_report_storage
@@ -722,28 +720,9 @@ def parse_report_storage_uri(
 
 def get_report_storage_payload(*, workspace: str | None = None) -> dict[str, Any]:
     backend_name = get_configured_storage_backend_name()
-    local_health = build_local_storage_health()
-    s3_health = build_s3_storage_health()
+    backend_status = get_report_storage_backend_status(backend_name)
     artifact_summary = build_storage_artifact_summary()
     retention_policy = build_storage_retention_policy()
-    backend_status = get_report_storage_backend_status(backend_name)
-    summary_cards = build_storage_summary_cards(backend_name)
-    if summary_cards:
-        summary_cards[0] = {
-            **summary_cards[0],
-            'value': str(backend_status['status']),
-            'caption': str(backend_status['label']),
-            'icon': str(backend_status['icon']),
-            'tone': str(backend_status['tone']),
-        }
-    lifecycle_summary = build_storage_lifecycle_summary(
-        backend_name=backend_name,
-        local_health=local_health,
-        s3_health=s3_health,
-        artifact_summary=artifact_summary,
-        retention_policy=retention_policy,
-        backend_status=backend_status,
-    )
     readiness_monitor = {
         'enabled': bool(current_app.config.get('REPORT_STORAGE_HEALTH_MONITOR_ENABLED', True)),
         'interval_minutes': int(current_app.config.get('REPORT_STORAGE_HEALTH_INTERVAL_MINUTES', 1) or 1),
@@ -762,250 +741,41 @@ def get_report_storage_payload(*, workspace: str | None = None) -> dict[str, Any
 
     return {
         'page_title': 'Reports Storage',
-        'page_subtitle': 'Review report artifact storage, integrity, retention readiness, and backend health before generation or retrieval operations.',
+        'page_subtitle': (
+            'Review generated-report artifact storage readiness, retained-reference integrity, and lifecycle ownership.'
+        ),
         'active_backend': backend_name,
         'workspace': normalize_storage_workspace(workspace),
         'backend_status': backend_status,
-        'storage_actions_enabled': bool(backend_status.get('reachable', False)),
+        'integrity_actions_enabled': bool(backend_status.get('read_available', False)),
         'readiness_monitor': readiness_monitor,
         'storage_posture': storage_posture,
-        'summary_cards': summary_cards,
-        'supported_backends': [
-            {
-                'value': 'local',
-                'label': 'Local filesystem',
-                'description': 'Store generated report PDF and Excel artifacts in the application filesystem.',
-                'is_active': backend_name == 'local',
-                'tone': 'green' if backend_name == 'local' else 'slate',
-            },
-            {
-                'value': 's3',
-                'label': 'S3-compatible storage',
-                'description': 'Store generated report PDF and Excel artifacts in AWS S3, MinIO, or another S3-compatible backend.',
-                'is_active': backend_name == 's3',
-                'tone': 'green' if backend_name == 's3' else 'slate',
-            },
-        ],
-        'local': local_health,
-        's3': s3_health,
+        'local': build_local_storage_health() if backend_name == 'local' else None,
+        's3': build_s3_storage_health() if backend_name == 's3' else None,
         'artifact_summary': artifact_summary,
         'retention_policy': retention_policy,
-        'lifecycle_summary': lifecycle_summary,
         'configuration_source': 'Environment / config.py',
         'is_mutable_from_ui': False,
         'object_key_format': (
-            'reports/YYYY/MM/<cluster_slug>/<report_type_slug>/'
-            'report-<id>-<type>-<cluster>-<namespace>-<period>-<timestamp>-<uuid>.<ext>'
+            'reports/<domain>/<source_kind>/YYYY/MM/<asset_slug>/<report_type_slug>/'
+            'report-<reference>-<asset>-<scope>-<period>-<timestamp>-<uuid>.<ext>'
         ),
         'verification': {
-            'mode': 'Manual verification',
-            'description': 'Use Test Storage to write, check, and delete a small verification object using the active backend.',  # noqa: E501
-            'action_query': 'verify=1',
+            'mode': 'Strong backend verification',
+            'description': (
+                'Write, confirm, and delete a small verification object on the active backend. '
+                'This is an operator action and never runs from a GET request.'
+            ),
         },
         'integrity_check': {
             'mode': 'Manual integrity scan',
             'description': (
-                'Validate stored report references against the active backend. Read-only; nothing is deleted.'
+                'Validate the newest retained report references against their recorded backend prefix. '
+                'Read-only; nothing is deleted.'
             ),
-            'action_query': 'integrity=1',
             'max_items': 500,
         },
-        'integrity_result': None,
-        'cleanup_dry_run': {
-            'mode': 'Read-only storage preview',
-            'description': (
-                'Preview Ready and Archived artifact references against the main Ready hot-retention boundary. '
-                'Platform Operations → Data Lifecycle Preview remains authoritative for status-specific eligibility.'
-            ),
-            'action_query': 'cleanup_dry_run=1',
-            'default_retention_days': get_generated_report_hot_retention_days(),
-            'max_items': 500,
-        },
-        'cleanup_dry_run_result': None,
-        'notes': [
-            'Storage configuration is read from environment variables and application configuration.',
-            'Secrets should be provided through environment variables or Kubernetes Secrets.',
-            'The UI is read-only for configuration; it only displays status and can run a verification check.',
-            'Existing report records keep their backend prefix, so local and S3 artifacts can coexist.',
-            'Reports Storage only previews storage candidates; lifecycle archive and cleanup execution is owned by Data Lifecycle.',  # noqa: E501
-        ],
-        'recommended_actions': build_storage_recommended_actions(
-            backend_name,
-            local_health,
-            s3_health,
-        ),
     }
-
-
-def build_storage_lifecycle_summary(
-    *,
-    backend_name: str,
-    local_health: dict[str, Any],
-    s3_health: dict[str, Any],
-    artifact_summary: dict[str, Any],
-    retention_policy: dict[str, Any],
-    backend_status: dict[str, Any] | None = None,
-) -> dict[str, Any]:
-    resolved_backend_status = dict(backend_status or {})
-    backend_ready = bool(resolved_backend_status.get('available', False))
-    backend_label = str(resolved_backend_status.get('title') or 'Storage backend needs review')
-    backend_description = str(
-        resolved_backend_status.get('description') or 'The active storage backend is configured but needs verification.'
-    )
-
-    if not resolved_backend_status:
-        if backend_name == 'local':
-            backend_ready = bool(local_health.get('root_writable', False))
-        elif backend_name == 's3':
-            backend_ready = bool(s3_health.get('configuration_complete', False))
-
-    reports_with_files = int(
-        artifact_summary.get(
-            'reports_with_files',
-            0,
-        )
-        or 0
-    )
-    ready_reports = int(
-        artifact_summary.get(
-            'ready_reports',
-            0,
-        )
-        or 0
-    )
-
-    if not backend_ready:
-        level = 'warning'
-        label = backend_label
-        description = backend_description
-        icon = 'circle-alert'
-        class_name = 'bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300'
-    else:
-        level = 'healthy'
-        label = 'Storage lifecycle healthy'
-        description = 'Generated report storage is active and current artifact records use backend-aware storage URIs.'
-        icon = 'shield-check'
-        class_name = 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300'
-
-    checks = [
-        {
-            'label': 'Active backend',
-            'value': backend_name.upper(),
-            'status': 'pass' if backend_ready else 'warning',
-            'description': backend_description,
-        },
-        {
-            'label': 'Stored artifacts',
-            'value': str(
-                reports_with_files,
-            ),
-            'status': 'pass' if reports_with_files > 0 else 'info',
-            'description': 'Generated report records with a canonical storage URI.',
-        },
-        {
-            'label': 'Ready reports',
-            'value': str(
-                ready_reports,
-            ),
-            'status': 'pass' if ready_reports > 0 else 'info',
-            'description': 'Reports marked ready in the database.',
-        },
-        {
-            'label': 'Cleanup mode',
-            'value': str(
-                retention_policy.get(
-                    'mode',
-                    'Disabled',
-                )
-            ),
-            'status': 'info',
-            'description': 'Retention is defined; destructive cleanup remains guarded by configuration and approval workflow.',  # noqa: E501
-        },
-    ]
-
-    return {
-        'level': level,
-        'label': label,
-        'description': description,
-        'icon': icon,
-        'class': class_name,
-        'backend_ready': backend_ready,
-        'checks': checks,
-    }
-
-
-def build_storage_recommended_actions(
-    backend_name: str,
-    local_health: dict[str, Any],
-    s3_health: dict[str, Any],
-) -> list[dict[str, str]]:
-    actions = [
-        {
-            'label': 'Generate a fresh report',
-            'description': 'Create a new report and confirm the file_path uses the active backend prefix.',
-            'href': '/reports/generate',
-        },
-        {
-            'label': 'Run storage verification',
-            'description': 'Use Test Storage after changing ENV values or switching backend.',
-            'href': '#storage-verification',
-        },
-        {
-            'label': 'Check artifact integrity',
-            'description': 'Run a read-only scan to confirm DB storage URIs still point to existing artifacts.',
-            'href': '#artifact-integrity',
-        },
-    ]
-
-    if backend_name == 'local' and not local_health.get(
-        'root_writable',
-        False,
-    ):
-        actions.append(
-            {
-                'label': 'Fix local path permission',
-                'description': 'The local storage root is not writable by the running application user.',
-                'href': '#local-storage',
-            }
-        )
-
-    if backend_name == 's3' and not s3_health.get(
-        'configuration_complete',
-        False,
-    ):
-        actions.append(
-            {
-                'label': 'Complete S3 configuration',
-                'description': 'Confirm bucket, boto3 dependency, credentials, endpoint, and path-style setting.',
-                'href': '#s3-storage',
-            }
-        )
-
-    actions.append(
-        {
-            'label': 'Run cleanup dry run',
-            'description': 'Preview retention candidates without deleting local or S3 artifacts.',
-            'href': '#cleanup-dry-run',
-        }
-    )
-
-    actions.append(
-        {
-            'label': 'Review retention policy',
-            'description': 'Review defined retention age, cleanup scope, orphan detection, and audit requirements before enabling destructive deletes.',  # noqa: E501
-            'href': '#retention-policy',
-        }
-    )
-
-    actions.append(
-        {
-            'label': 'Review generated artifacts',
-            'description': 'Open Generated Reports to validate download state and artifact metadata.',
-            'href': '/reports/generated',
-        }
-    )
-
-    return actions
 
 
 def verify_active_report_storage() -> dict[str, Any]:
@@ -1183,220 +953,3 @@ def scan_report_storage_integrity(
         'is_limited': checked_count >= max_items,
         'is_healthy': missing_count == 0 and error_count == 0,
     }
-
-
-def build_report_cleanup_dry_run(
-    retention_days: int | None = None,
-    max_items: int = 500,
-) -> dict[str, Any]:
-    effective_retention_days = retention_days or get_generated_report_hot_retention_days()
-    cutoff_at = datetime.now(
-        UTC,
-    ) - timedelta(
-        days=effective_retention_days,
-    )
-
-    candidate_reports = (
-        db.session.execute(
-            select(
-                Report,
-            )
-            .where(
-                Report.file_path.is_not(
-                    None,
-                ),
-                Report.file_path != '',
-                Report.status.in_(
-                    ['ready', 'archived'],
-                ),
-                Report.updated_at <= cutoff_at,
-            )
-            .order_by(
-                Report.updated_at.asc(),
-                Report.id.asc(),
-            )
-            .limit(
-                max_items,
-            )
-        )
-        .scalars()
-        .all()
-    )
-
-    total_candidates = 0
-    available_candidates = 0
-    missing_reference_candidates = 0
-    error_candidates = 0
-    candidate_size_bytes = 0
-    status_counts: dict[str, int] = {}
-    backend_counts: dict[str, int] = {
-        'local': 0,
-        's3': 0,
-        'unknown': 0,
-    }
-    sample_candidates: list[dict[str, str]] = []
-    missing_samples: list[dict[str, str]] = []
-    error_samples: list[dict[str, str]] = []
-
-    for report in candidate_reports:
-        stored_path = report.file_path or ''
-        total_candidates += 1
-        status_counts[report.status] = (
-            status_counts.get(
-                report.status,
-                0,
-            )
-            + 1
-        )
-        candidate_size_bytes += report.file_size_bytes or 0
-
-        try:
-            backend_name, _object_key = parse_report_storage_uri(
-                stored_path,
-            )
-        except Exception:
-            backend_name = 'unknown'
-
-        backend_counts[backend_name] = (
-            backend_counts.get(
-                backend_name,
-                0,
-            )
-            + 1
-        )
-
-        try:
-            exists = report_file_exists(
-                stored_path,
-            )
-        except Exception:
-            error_candidates += 1
-
-            if (
-                len(
-                    error_samples,
-                )
-                < 10
-            ):
-                error_samples.append(
-                    build_cleanup_sample(
-                        report,
-                        stored_path,
-                        backend_name,
-                        error='Storage backend was unavailable during this cleanup preview.',
-                    )
-                )
-
-            continue
-
-        if exists:
-            available_candidates += 1
-
-            if (
-                len(
-                    sample_candidates,
-                )
-                < 10
-            ):
-                sample_candidates.append(
-                    build_cleanup_sample(
-                        report,
-                        stored_path,
-                        backend_name,
-                    )
-                )
-
-            continue
-
-        missing_reference_candidates += 1
-
-        if (
-            len(
-                missing_samples,
-            )
-            < 10
-        ):
-            missing_samples.append(
-                build_cleanup_sample(
-                    report,
-                    stored_path,
-                    backend_name,
-                )
-            )
-
-    return {
-        'mode': 'dry_run',
-        'cleanup_enabled': False,
-        'cleanup_scope': 'ready-and-archived-artifacts',
-        'retention_days': effective_retention_days,
-        'cutoff_at': cutoff_at.strftime(
-            '%d %b %Y %H:%M UTC',
-        ),
-        'max_items': max_items,
-        'is_limited': len(
-            candidate_reports,
-        )
-        >= max_items,
-        'candidate_count': total_candidates,
-        'available_candidate_count': available_candidates,
-        'missing_reference_count': missing_reference_candidates,
-        'error_count': error_candidates,
-        'candidate_size': format_cleanup_file_size(
-            candidate_size_bytes,
-        ),
-        'candidate_size_bytes': candidate_size_bytes,
-        'status_counts': status_counts,
-        'backend_counts': backend_counts,
-        'sample_candidates': sample_candidates,
-        'missing_samples': missing_samples,
-        'error_samples': error_samples,
-        'is_empty': total_candidates == 0,
-    }
-
-
-def build_cleanup_sample(
-    report: Report,
-    stored_path: str,
-    backend_name: str,
-    error: str | None = None,
-) -> dict[str, str]:
-    item = {
-        'report_id': str(
-            report.id,
-        ),
-        'name': report.name,
-        'status': report.status,
-        'backend': backend_name,
-        'file_path': stored_path,
-        'updated_at': report.updated_at.strftime(
-            '%d %b %Y %H:%M UTC',
-        )
-        if report.updated_at
-        else '-',
-        'file_size': format_cleanup_file_size(
-            report.file_size_bytes or 0,
-        ),
-    }
-
-    if error:
-        item['error'] = error
-
-    return item
-
-
-def format_cleanup_file_size(
-    value: int | None,
-) -> str:
-    if value is None:
-        return 'Not available'
-
-    if value < 1024:
-        return f'{value} B'
-
-    if value < 1024 * 1024:
-        return f'{value / 1024:.2f} KB'
-
-    if value < 1024 * 1024 * 1024:
-        return f'{value / (1024 * 1024):.2f} MB'
-
-    return f'{value / (1024 * 1024 * 1024):.2f} GB'

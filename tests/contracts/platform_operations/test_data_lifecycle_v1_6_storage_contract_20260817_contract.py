@@ -19,13 +19,13 @@ def test_policy_workspace_explains_hot_and_archive_storage_ownership() -> None:
     assert '_probe_storage_endpoint' not in contract_body
     assert "selected_context['storage_contract'] = _build_selected_storage_contract(selected)" in presentation
     assert "elif name == 'runtime_observation':" in presentation
-    assert 'Runtime observations do not own a separate archive bucket.' in presentation
+    assert 'no integration-specific archive bucket is created' in presentation
 
     for token in (
         'Storage Boundary',
         'Hot Source',
-        'Archive Target',
-        'Archive Payload',
+        'Verified Archive',
+        'Payload:',
         'Shared Archive Control Plane',
         'Open Archive Storage',
     ):
@@ -40,7 +40,7 @@ def test_runtime_observation_storage_contract_is_shared_and_provider_neutral() -
     assert "source_model = 'integration_runtime_observations'" in runtime_domain
     assert "source_label = 'PostgreSQL'" in presentation
     assert "archive_content = 'JSONL.GZ data + manifest JSON'" in presentation
-    assert 'shared Data Lifecycle archive target' in presentation
+    assert 'shared archive target' in presentation
     assert 'do not configure independent archive buckets' in readme
     assert 'do not carry supplemental binary artifacts' in readme
 
@@ -53,5 +53,36 @@ def test_lifecycle_migration_chain_restores_schedule_evidence_revision() -> None
     assert "down_revision = '20260816_report_lifecycle'" in schedule_migration
     assert "down_revision = '20260816_schedule_run_evidence'" in lifecycle_seed
     assert "sa.inspect(bind).get_columns('report_schedule_runs')" in schedule_migration
-    assert "if not _has_schedule_snapshot(bind):" in schedule_migration
-    assert "if _has_schedule_snapshot(bind):" in schedule_migration
+    assert 'if not _has_schedule_snapshot(bind):' in schedule_migration
+    assert 'if _has_schedule_snapshot(bind):' in schedule_migration
+
+
+def test_runtime_observation_lifecycle_includes_object_storage_runtime_history() -> None:
+    presentation = read('app/retention/presentation.py')
+    runtime_domain = read('app/retention/domains/runtime_observation.py')
+    minio_adapter = read('app/integrations/minio/adapter.py')
+    validation_tasks = read('app/integrations/validation/tasks.py')
+    readme = read('app/retention/README.md')
+    runtime_history = read('app/templates/integrations/partials/_runtime_history.html')
+
+    assert "'label': 'Object Storage · MinIO'" in presentation
+    assert 'MinIO Object Storage integration targets' in presentation
+    assert "source_model = 'integration_runtime_observations'" in runtime_domain
+    assert 'IntegrationRuntimeObservation.provider ==' not in runtime_domain
+    assert '.filter_by(provider=' not in runtime_domain
+    assert 'return RuntimeState(' in minio_adapter
+    assert 'persist_runtime_state(' in validation_tasks
+    assert 'MinIO Object Storage' in readme
+    assert 'Provider-neutral history is retained and cleaned by the shared Data Lifecycle policy.' in runtime_history
+
+
+def test_storage_boundary_is_a_compact_hot_to_archive_path() -> None:
+    workspace = read('app/templates/platform_operations/data_lifecycle/partials/_domain_workspace.html')
+
+    assert 'grid gap-3 px-4 py-3.5 lg:grid-cols-[minmax(0,1fr)_2rem_minmax(0,1fr)]' in workspace
+    assert 'Verified Archive' in workspace
+    assert 'Payload:' in workspace
+    assert 'Ownership:' in workspace
+    storage_section = workspace.split('data-lifecycle-storage-boundary-title', 2)[-1].split('</section>', 1)[0]
+    assert 'xl:grid-cols-4' not in storage_section
+    assert 'rounded-lg border border-outline-default bg-surface-subtle' not in storage_section

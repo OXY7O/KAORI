@@ -194,7 +194,9 @@ def test_top_consumers_use_calm_ranked_surfaces_without_divider_noise() -> None:
     assert 'Working Set' in source
     assert 'Persistent Storage' in source
     assert 'Workload Density' in source
-    assert "overview_surface.empty_evidence_classes('m-3 px-4 py-6 text-center sm:m-4')" in source
+    assert "components/states/_empty_state.html" in source
+    assert "empty_state_label = 'Sync Required'" in source
+    assert "overview_surface.empty_evidence_classes('m-3 px-4 py-6 text-center sm:m-4')" not in source
     assert 'break-words text-sm font-semibold' in source
     assert 'progress_bar' not in source
     assert 'divide-y divide-outline-subtle' not in source

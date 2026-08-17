@@ -374,22 +374,16 @@
                             {% endfor %}
                         {% else %}
                             <tr>
-                                <td colspan="{{ 7 if can_manage_storage else 6 }}" class="px-6 py-14 text-center">
-                                    <div class="mx-auto max-w-md">
-                                        <span class="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"
-                                              aria-hidden="true">
-                                            <i data-lucide="files" class="h-5 w-5"></i>
-                                        </span>
-                                        <h3 class="mt-4 text-base font-semibold text-content-primary">No Generated Reports Found</h3>
-                                        <p class="mt-2 text-sm leading-6 text-content-muted">Adjust the filters or create a governed report request.</p>
-                                        {% if can_generate_reports %}
-                                            <a href="{{ url_for('reports.generate_report') }}"
-                                               class="mt-4 {{ table_ui.action_classes() }}">
-                                                <i data-lucide="plus" class="h-4 w-4" aria-hidden="true"></i>
-                                                Generate Report
-                                            </a>
-                                        {% endif %}
-                                    </div>
+                                <td colspan="{{ 7 if can_manage_storage else 6 }}" class="p-0">
+                                    {% set empty_state_icon = 'files' %}
+                                    {% set empty_state_label = 'No Results' if payload.active_filter_count > 0 else 'No Data' %}
+                                    {% set empty_state_title = 'No Generated Reports Match the Current Filters' if payload.active_filter_count > 0 else 'No Generated Reports Yet' %}
+                                    {% set empty_state_description = 'Clear or adjust the registry filters to review another report set.' if payload.active_filter_count > 0 else 'Create the first governed report request to establish artifact history.' %}
+                                    {% set empty_state_action_url = url_for('reports.generate_report') if can_generate_reports and not payload.active_filter_count > 0 else none %}
+                                    {% set empty_state_action_label = 'Generate Report' if empty_state_action_url else none %}
+                                    {% set empty_state_action_icon = 'plus' %}
+                                    {% set empty_state_min_height = 'min-h-[180px]' %}
+                                    {% include 'components/states/_empty_state.html' %}
                                 </td>
                             </tr>
                         {% endif %}

@@ -49,8 +49,8 @@ def test_semantic_attention_and_storage_states_use_operational_callout() -> None
     assert "operational_callout.semantic_border_classes('warning')" in storage
     assert 'aria-labelledby="report-storage-connectivity-title"' in storage
     assert 'id="report-storage-connectivity-title"' in storage
-    assert 'Retry Connection' in storage
-    assert "url_for('reports.storage', verify='1'" in storage
+    assert 'Verify Connection' in storage
+    assert "url_for('reports.verify_storage')" in storage
 
 
 def test_operational_callout_owns_semantic_action_and_supporting_content() -> None:

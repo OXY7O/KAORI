@@ -91,12 +91,13 @@
                             </div>
                         </article>
                     {% else %}
-                        <div class="px-4 py-8 text-center sm:px-5">
-                            <span class="{{ analysis_surface.role_icon_classes('evidence') }} mx-auto"
-                                  aria-hidden="true"><i data-lucide="shield-check" class="h-4 w-4"></i></span>
-                            <p class="mt-3 text-sm font-semibold text-content-primary">No Governance Findings</p>
-                            <p class="mt-1 text-xs leading-5 text-content-muted">No actionable allocation or policy finding is present in the committed evidence.</p>
-                        </div>
+                        {% set empty_state_icon = 'shield-check' %}
+                        {% set empty_state_label = 'No Findings' %}
+                        {% set empty_state_tone = 'normal' %}
+                        {% set empty_state_title = 'No Governance Findings' %}
+                        {% set empty_state_description = 'No actionable allocation or policy finding is present in the committed evidence.' %}
+                        {% set empty_state_min_height = 'min-h-[150px]' %}
+                        {% include 'components/states/_empty_state.html' %}
                     {% endfor %}
                 </div>
             </section>

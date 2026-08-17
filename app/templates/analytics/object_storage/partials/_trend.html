@@ -29,15 +29,14 @@
                 <canvas data-object-storage-chart width="1200" height="340"></canvas>
             </div>
         {% else %}
-            <div class="flex min-h-[340px] items-center justify-center rounded-lg border border-dashed border-outline-strong bg-surface-muted p-6 text-center">
-                <div>
-                    <i data-lucide="line-chart" class="mx-auto h-6 w-6 text-content-muted"></i>
-                    <p class="mt-3 text-sm font-semibold text-content-primary">Historical Evidence Not Available</p>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">
-                        {% if page_key == 'forecast' %}The forecasting worker has not committed usable history for this window.{% else %}The active metrics source returned no range samples for this metric and time window.{% endif %}
-                    </p>
-                </div>
-            </div>
+            {% set empty_state_icon = 'line-chart' %}
+            {% set empty_state_label = 'Sync Required' %}
+            {% set empty_state_tone = 'warning' %}
+            {% set empty_state_title = 'Historical Evidence Not Available' %}
+            {% set empty_state_description = 'The forecasting worker has not committed usable history for this window.' if page_key == 'forecast' else 'The active metrics source returned no range samples for this metric and time window.' %}
+            {% set empty_state_variant = 'panel' %}
+            {% set empty_state_min_height = 'min-h-[220px]' %}
+            {% include 'components/states/_empty_state.html' %}
         {% endif %}
     </div>
 </section>

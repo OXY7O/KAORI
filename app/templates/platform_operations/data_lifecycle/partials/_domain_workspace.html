@@ -80,28 +80,32 @@
                 <a href="{{ url_for('platform_operations.data_lifecycle.index', tab='storage') }}"
                    class="{{ table_ui.action_classes() }}"><i data-lucide="hard-drive" class="h-4 w-4"></i>Open Archive Storage</a>
             </header>
-            <div class="grid gap-3 p-4 sm:grid-cols-2 xl:grid-cols-4">
-                <article class="rounded-lg border border-outline-default bg-surface-subtle p-3.5">
-                    <p class="text-xs font-semibold text-content-muted">Hot Source</p>
-                    <p class="mt-2 text-sm font-semibold text-content-primary">{{ lifecycle.storage_contract.hot_source_label }}</p>
-                    <p class="mt-1 break-words font-mono text-xs leading-5 text-content-muted">{{ lifecycle.storage_contract.hot_source_detail }}</p>
-                </article>
-                <article class="rounded-lg border border-outline-default bg-surface-subtle p-3.5">
-                    <p class="text-xs font-semibold text-content-muted">Archive Target</p>
-                    <p class="mt-2 text-sm font-semibold text-content-primary">{{ lifecycle.storage_contract.archive_provider_label }}</p>
-                    <p class="mt-1 break-all font-mono text-xs leading-5 text-content-muted">{{ lifecycle.storage_contract.archive_location }}</p>
-                </article>
-                <article class="rounded-lg border border-outline-default bg-surface-subtle p-3.5">
-                    <p class="text-xs font-semibold text-content-muted">Archive Payload</p>
-                    <p class="mt-2 text-sm font-semibold text-content-primary">{{ lifecycle.storage_contract.archive_content }}</p>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">{{ lifecycle.storage_contract.archive_detail }}</p>
-                </article>
-                <article class="rounded-lg border border-outline-default bg-surface-subtle p-3.5">
-                    <p class="text-xs font-semibold text-content-muted">Storage Ownership</p>
-                    <p class="mt-2 text-sm font-semibold text-content-primary">Shared Archive Control Plane</p>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">Storage provider, readiness, verification evidence, and purge posture are managed once under Archive Storage.</p>
-                </article>
+            <div class="grid gap-3 px-4 py-3.5 lg:grid-cols-[minmax(0,1fr)_2rem_minmax(0,1fr)] lg:items-center">
+                <div class="flex min-w-0 items-start gap-3">
+                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary dark:text-kaori-accent" aria-hidden="true"><i data-lucide="database" class="h-4 w-4"></i></span>
+                    <div class="min-w-0">
+                        <p class="text-xs font-semibold text-content-muted">Hot Source</p>
+                        <p class="mt-0.5 text-sm font-semibold text-content-primary">{{ lifecycle.storage_contract.hot_source_label }}</p>
+                        <p class="mt-0.5 break-words font-mono text-xs leading-5 text-content-muted">{{ lifecycle.storage_contract.hot_source_detail }}</p>
+                    </div>
+                </div>
+                <div class="hidden items-center justify-center text-content-disabled lg:flex" aria-hidden="true"><i data-lucide="arrow-right" class="h-4 w-4"></i></div>
+                <div class="flex min-w-0 items-start gap-3">
+                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary dark:text-kaori-accent" aria-hidden="true"><i data-lucide="archive" class="h-4 w-4"></i></span>
+                    <div class="min-w-0">
+                        <p class="text-xs font-semibold text-content-muted">Verified Archive</p>
+                        <p class="mt-0.5 text-sm font-semibold text-content-primary">{{ lifecycle.storage_contract.archive_provider_label }}</p>
+                        <p class="mt-0.5 break-all font-mono text-xs leading-5 text-content-muted">{{ lifecycle.storage_contract.archive_location }}</p>
+                    </div>
+                </div>
             </div>
+            <footer class="border-t border-outline-subtle bg-surface-subtle px-4 py-2.5">
+                <div class="flex flex-col gap-1 text-xs leading-5 text-content-secondary sm:flex-row sm:flex-wrap sm:gap-x-5">
+                    <p><span class="font-semibold text-content-primary">Payload:</span> {{ lifecycle.storage_contract.archive_content }}</p>
+                    <p><span class="font-semibold text-content-primary">Ownership:</span> Shared Archive Control Plane</p>
+                    <p class="text-content-muted">{{ lifecycle.storage_contract.archive_detail }}</p>
+                </div>
+            </footer>
         </section>
         {% if selected.name == 'analytics_snapshot' %}
             <section class="rounded-xl border border-outline-default bg-surface-subtle p-4">

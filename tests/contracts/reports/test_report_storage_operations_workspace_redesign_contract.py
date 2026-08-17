@@ -46,10 +46,10 @@ def test_storage_page_uses_balanced_hero_and_one_state_aware_posture() -> None:
     assert 'data-storage-decision-list="true"' in template
     assert 'data-storage-readiness-strip="true"' in template
 
-    assert 'Tracked Artifacts' not in template
-    assert 'Ready Reports' not in template
-    assert 'Tracked Size' not in template
-    assert 'Report Metadata' not in template
+    assert 'data-storage-artifact-evidence="metadata-first"' in template
+    assert 'Report Reference Coverage' in template
+    assert 'Tracked Size' in template
+    assert 'Metadata-first counts from the Reports database' in template
     assert 'reports/components/_summary_strip.html' not in template
     assert 'xl:grid-cols-[minmax(0,1fr)_380px]' not in template
     for raw_palette in ('emerald-', 'amber-', 'rose-', 'slate-'):
@@ -64,7 +64,7 @@ def test_storage_workspace_reuses_analytics_style_content_tabs_and_canonical_tab
     assert "data_namespace='storage'" in template
     assert "('overview', 'Storage Overview'" in template
     assert "('integrity', 'Integrity & Verification'" in template
-    assert "('retention', 'Retention & Cleanup'" in template
+    assert "('retention', 'Lifecycle Governance'" in template
     assert 'components/table.html' in template
     assert 'components/table_label.html' in template
     assert 'table_ui.table_classes' in template
@@ -75,12 +75,13 @@ def test_storage_workspace_is_server_owned_and_action_results_return_to_the_righ
     routes = read('app/reports/storage/routes.py')
     service = read('app/reports/storage/service.py')
 
-    assert "get_report_storage_payload(workspace='integrity')" in routes
-    assert "get_report_storage_payload(workspace='retention')" in routes
     assert "workspace = normalize_storage_workspace(request.args.get('workspace'))" in routes
     assert 'get_report_storage_payload(workspace=workspace)' in routes
+    assert "get_report_storage_payload(workspace='integrity')" in routes
     assert "redirect(url_for('reports.storage', workspace=workspace))" in routes
     assert 'build_storage_integrity_presentation' in routes
+    assert "request.args.get('verify')" not in routes
+    assert "request.args.get('cleanup_dry_run')" not in routes
 
     assert 'STORAGE_WORKSPACES' in service
     assert 'normalize_storage_workspace' in service
@@ -195,27 +196,24 @@ def test_integrity_samples_are_presented_as_registry_rows_not_freeform_cards() -
     assert result['review_samples'][1]['tone'] == 'warning'
 
 
-def test_storage_integrity_and_retention_use_editorial_boundaries_not_card_grids() -> None:
+def test_storage_integrity_and_retention_have_single_authoritative_ownership_boundary() -> None:
     template = read('app/templates/reports/storage/index.html')
     service = read('app/reports/storage/service.py')
 
     assert 'data-storage-integrity-actions="split-workspace"' in template
-    assert 'Validate stored report references against the active backend. Read-only; nothing is deleted.' in service
-    assert 'Use Check Artifact Integrity to validate database file_path references' not in service
+    assert 'Validate the newest retained report references against their recorded backend prefix.' in service
+    assert 'Read-only; nothing is deleted.' in service
+    assert "url_for('reports.scan_storage_integrity')" in template
 
-    assert 'data-storage-retention-layout="editorial-policy"' in template
+    assert 'data-storage-retention-layout="lifecycle-governance"' in template
     assert 'data-storage-retention-summary="policy-strip"' in template
     assert 'data-storage-retention-governance="split-boundary"' in template
-    assert 'data-storage-cleanup-action="inline-boundary"' in template
-    assert 'Reports Storage mirrors the canonical lifecycle policy' in template
+    assert 'data-storage-lifecycle-handoff="authoritative"' in template
+    assert 'Lifecycle Actions Live in Data Lifecycle' in template
     assert 'Open Data Lifecycle' in template
-    assert 'Data Lifecycle Preview remains authoritative for status-specific eligibility.' in service
-
-    # Regression guards against the previous card-heavy retention layout only.
-    retention = template.split('data-storage-retention-layout="editorial-policy"', 1)[1]
-    assert '<div class="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">' not in retention
-    assert '<div class="mt-4 grid gap-4 lg:grid-cols-2">' not in retention
-    assert 'rounded-xl border border-outline-subtle bg-surface-subtle p-4' not in retention
+    assert 'Storage Candidate Preview' not in template
+    assert 'build_report_cleanup_dry_run' not in service
+    assert 'cleanup_dry_run' not in service
 
 
 def test_storage_overview_uses_active_backend_connection_contract_not_field_cards() -> None:
@@ -240,3 +238,33 @@ def test_storage_overview_uses_active_backend_connection_contract_not_field_card
     assert '{% set active_items = [' not in overview
     assert 'Backend Contract' not in overview
     assert 'rounded-xl border border-outline-subtle bg-surface-subtle px-4 py-3' not in overview
+
+
+def test_storage_verification_is_post_only_and_object_key_copy_is_generic_asset_aware() -> None:
+    routes = read('app/reports/routes.py')
+    storage_routes = read('app/reports/storage/routes.py')
+    storage_service = read('app/reports/storage/service.py')
+    template = read('app/templates/reports/storage/index.html')
+
+    assert "'/storage/verify'" in routes
+    assert "endpoint='verify_storage'" in routes
+    verify_rule = routes.split("endpoint='verify_storage'", 1)[1].split("reports_bp.add_url_rule(", 1)[0]
+    assert "'POST'" in verify_rule
+    assert "request.args.get('verify')" not in storage_routes
+    assert "url_for('reports.verify_storage')" in template
+    assert '<domain>' in storage_service
+    assert '<source_kind>' in storage_service
+    assert '<asset_slug>' in storage_service
+    assert '<cluster_slug>' not in storage_service
+
+
+def test_storage_payload_avoids_inactive_backend_walks_and_duplicate_summary_queries() -> None:
+    service = read('app/reports/storage/service.py')
+    health = read('app/reports/storage/health.py')
+
+    payload = service.split('def get_report_storage_payload(', 1)[1].split('def verify_active_report_storage(', 1)[0]
+    assert "build_local_storage_health() if backend_name == 'local' else None" in payload
+    assert "build_s3_storage_health() if backend_name == 's3' else None" in payload
+    assert 'build_storage_summary_cards' not in service
+    assert 'func.sum(case(' in health
+    assert 'def count_reports_with_file_path' not in health

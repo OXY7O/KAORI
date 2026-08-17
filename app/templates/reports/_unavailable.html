@@ -132,11 +132,15 @@
                         Open Storage
                     </a>
                     {% if current_user.has_permission('reports.manage_storage') %}
-                        <a href="{{ payload.storage_verify_url }}"
-                           class="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3.5 text-xs font-semibold text-content-primary transition hover:border-brand-outline hover:text-kaori-primary">
-                            <i data-lucide="refresh-cw" class="h-3.5 w-3.5" aria-hidden="true"></i>
-                            Retry Storage Check
-                        </a>
+                        <form method="post" action="{{ payload.storage_verify_url }}">
+                            {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+                            <input type="hidden" name="workspace" value="overview">
+                            <button type="submit"
+                                    class="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3.5 text-xs font-semibold text-content-primary transition hover:border-brand-outline hover:text-kaori-primary">
+                                <i data-lucide="refresh-cw" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                Retry Storage Check
+                            </button>
+                        </form>
                     {% endif %}
                     <a href="{{ payload.retry_url }}"
                        class="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3.5 text-xs font-semibold text-content-primary transition hover:border-brand-outline hover:text-kaori-primary">

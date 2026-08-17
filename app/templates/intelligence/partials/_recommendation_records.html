@@ -99,11 +99,11 @@
         {% endfor %}
     </div>
 {% else %}
-    <div class="px-4 py-10 text-center sm:px-5">
-        <div class="rounded-xl border border-dashed border-outline-strong bg-surface-hover px-4 py-10">
-            <i data-lucide="search-x" class="mx-auto h-7 w-7 text-kaori-primary"></i>
-            <p class="mt-2 text-sm font-semibold text-content-primary">No Recommendations Match The Current Filters</p>
-            <p class="mt-1 text-xs leading-5 text-content-muted">Adjust the filters or continue monitoring current inventory and signal evidence.</p>
-        </div>
-    </div>
+    {% set empty_state_icon = 'search-x' %}
+    {% set empty_state_label = 'No Results' %}
+    {% set empty_state_title = 'No Recommendations Match the Current Filters' %}
+    {% set empty_state_description = 'Adjust the filters or continue monitoring current inventory and signal evidence.' %}
+    {% set empty_state_variant = 'panel' %}
+    {% set empty_state_min_height = 'min-h-[170px]' %}
+    {% include 'components/states/_empty_state.html' %}
 {% endif %}

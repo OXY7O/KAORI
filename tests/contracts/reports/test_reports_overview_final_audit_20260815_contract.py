@@ -39,7 +39,7 @@ def test_report_workspace_hero_descriptions_keep_consistent_operational_depth() 
         'generated_detail': 'selected scope, retained artifact, execution evidence, and delivery readiness',
         'templates': 'preserving the canonical reporting contract',
         'schedules': 'timezone-aware contracts with retained execution evidence',
-        'storage': 'retention readiness, and backend health before generation or retrieval operations',
+        'storage': 'retained-reference integrity, and lifecycle ownership',
     }
     for key, fragment in expected_fragments.items():
         assert fragment in files[key]

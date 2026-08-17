@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Any
 
 from flask import current_app
-from sqlalchemy import func, select
+from sqlalchemy import case, func, select
 
 from app.extensions.db import db
 from app.models.lifecycle import DataLifecyclePolicy
@@ -267,39 +267,38 @@ def build_storage_retention_policy() -> dict[str, Any]:
         else parse_bool_config(current_app.config.get('GENERATED_REPORT_RETENTION_ENABLED', False))
     )
     schedule_enabled = bool(stored.schedule_enabled) if stored is not None else False
+    batch_size = max(int(stored.batch_size), 1) if stored is not None else 250
 
     return {
         'status': 'Lifecycle Managed' if lifecycle_enabled else 'Lifecycle Paused',
-        'mode': (
-            str(stored.operation_mode).replace('_', ' ').title() if stored is not None else 'Archive Then Cleanup'
-        ),
-        'auto_cleanup_enabled': lifecycle_enabled and schedule_enabled,
-        'manual_cleanup_enabled': lifecycle_enabled,
-        'orphan_detection_enabled': parse_bool_config(current_app.config.get('REPORT_ORPHAN_DETECTION_ENABLED', True)),
-        'orphan_cleanup_enabled': False,
-        'destructive_actions_enabled': lifecycle_enabled,
+        'status_tone': 'normal' if lifecycle_enabled else 'warning',
+        'mode': str(stored.operation_mode).replace('_', ' ').title() if stored is not None else 'Archive Then Cleanup',
+        'schedule_enabled': schedule_enabled,
+        'schedule_label': 'Scheduled' if lifecycle_enabled and schedule_enabled else 'Manual / Paused',
+        'batch_size': batch_size,
         'retention_days': retention_days,
+        'failed_retention_days': failed_retention_days,
+        'archived_retention_days': archived_retention_days,
         'archive_retention_days': archive_retention_days,
-        'cleanup_scope': 'Generated Reports lifecycle domain',
-        'audit_status': 'Archive verification required before cleanup',
-        'safe_regenerate_behavior': (
-            'Regeneration refreshes the report hot-retention age. Active generation is protected from lifecycle cleanup.'
-        ),
         'description': (
-            'Platform Operations → Data Lifecycle is the canonical owner for Generated Reports retention. '
-            'Ready and Archived binary artifacts are copied and checksum-verified before source cleanup.'
+            'Platform Operations → Data Lifecycle is the authoritative control plane for Generated Reports retention, '
+            'verified archive creation, cleanup execution, and archive history.'
+        ),
+        'safe_regenerate_behavior': (
+            'Regeneration refreshes the report hot-retention age. Requested, Queued, Generating, and active '
+            'regeneration jobs remain protected from lifecycle cleanup.'
         ),
         'policy_rules': [
             f'Ready reports remain in the hot registry for {retention_days} days.',
             f'Failed report metadata remains hot for {failed_retention_days} days.',
             f'Manually Archived reports remain hot for {archived_retention_days} days.',
             f'Verified lifecycle archives are retained for {archive_retention_days} days.',
-            'Requested, Queued, Generating, and active regeneration jobs are excluded from cleanup.',
+            'Ready and Archived binary artifacts are checksum-verified in the lifecycle archive before source cleanup.',
         ],
         'next_steps': [
-            'Open Platform Operations → Data Lifecycle to preview or edit the Generated Reports policy.',
-            'Use Reports Storage integrity checks to investigate missing or unreachable source artifacts.',
-            'Keep archive storage independently backed up when Generated Reports are operational evidence.',
+            'Use Reports Storage Integrity & Verification to validate source artifact references and active-backend health.',
+            'Use Platform Operations → Data Lifecycle to preview eligibility, edit policy, run archive jobs, and verify history.',
+            'Treat the Reports Storage backend and lifecycle archive backend as separate operational boundaries.',
         ],
     }
 
@@ -325,164 +324,28 @@ def _safe_int_config(
 
 
 def build_storage_artifact_summary() -> dict[str, Any]:
-    total_reports = count_reports()
-    ready_reports = count_reports_by_status(
-        'ready',
-    )
-    local_reports = count_reports_by_file_prefix(
-        'local:',
-    )
-    s3_reports = count_reports_by_file_prefix(
-        's3:',
-    )
-    reports_with_files = count_reports_with_file_path()
-    total_size_bytes = sum_report_file_size_bytes()
-    retention_policy = build_storage_retention_policy()
+    has_reference = Report.file_path.is_not(None) & (Report.file_path != '')
+    row = db.session.execute(
+        select(
+            func.count(Report.id),
+            func.coalesce(func.sum(case((Report.status == 'ready', 1), else_=0)), 0),
+            func.coalesce(func.sum(case((has_reference, 1), else_=0)), 0),
+            func.coalesce(func.sum(case((Report.file_path.ilike('local:%'), 1), else_=0)), 0),
+            func.coalesce(func.sum(case((Report.file_path.ilike('s3:%'), 1), else_=0)), 0),
+            func.coalesce(func.sum(Report.file_size_bytes), 0),
+        )
+    ).one()
+    total_reports, ready_reports, reports_with_files, local_reports, s3_reports, total_size_bytes = row
 
     return {
-        'total_reports': total_reports,
-        'ready_reports': ready_reports,
-        'reports_with_files': reports_with_files,
-        'local_reports': local_reports,
-        's3_reports': s3_reports,
-        'total_size': format_file_size(
-            total_size_bytes,
-        ),
-        'total_size_bytes': total_size_bytes,
-        'retention_policy': retention_policy,
-        'cleanup_mode': retention_policy['mode'],
-        'auto_cleanup_enabled': retention_policy['auto_cleanup_enabled'],
-        'orphan_detection_enabled': retention_policy['orphan_detection_enabled'],
+        'total_reports': int(total_reports or 0),
+        'ready_reports': int(ready_reports or 0),
+        'reports_with_files': int(reports_with_files or 0),
+        'local_reports': int(local_reports or 0),
+        's3_reports': int(s3_reports or 0),
+        'total_size': format_file_size(int(total_size_bytes or 0)),
+        'total_size_bytes': int(total_size_bytes or 0),
     }
-
-
-def build_storage_summary_cards(
-    active_backend: str,
-) -> list[dict[str, str]]:
-    artifact_summary = build_storage_artifact_summary()
-    local_health = build_local_storage_health()
-    s3_health = build_s3_storage_health()
-
-    s3_status = 'Configured' if s3_health['configuration_complete'] else 'Incomplete'
-    s3_caption = (
-        'Bucket and boto3 are ready' if s3_health['configuration_complete'] else 'Complete S3 config before use'
-    )
-
-    return [
-        {
-            'label': 'Active Backend',
-            'value': active_backend.upper(),
-            'caption': 'Resolved from ENV / config.py',
-            'icon': 'hard-drive',
-            'tone': 'green' if active_backend in {'local', 's3'} else 'amber',
-        },
-        {
-            'label': 'Stored Reports',
-            'value': str(
-                artifact_summary['reports_with_files'],
-            ),
-            'caption': f'{artifact_summary["total_size"]} tracked in database',
-            'icon': 'files',
-            'tone': 'blue',
-        },
-        {
-            'label': 'Local Path',
-            'value': 'Writable' if local_health['root_writable'] else 'Check path',
-            'caption': 'Local filesystem backend status',
-            'icon': 'folder-check',
-            'tone': 'green' if local_health['root_writable'] else 'red',
-        },
-        {
-            'label': 'S3 Compatible',
-            'value': s3_status,
-            'caption': s3_caption,
-            'icon': 'cloud',
-            'tone': 'green' if s3_health['configuration_complete'] else 'amber',
-        },
-    ]
-
-
-def count_reports() -> int:
-    return (
-        db.session.scalar(
-            select(
-                func.count(
-                    Report.id,
-                )
-            )
-        )
-        or 0
-    )
-
-
-def count_reports_by_status(
-    status: str,
-) -> int:
-    return (
-        db.session.scalar(
-            select(
-                func.count(
-                    Report.id,
-                )
-            ).where(
-                Report.status == status,
-            )
-        )
-        or 0
-    )
-
-
-def count_reports_with_file_path() -> int:
-    return (
-        db.session.scalar(
-            select(
-                func.count(
-                    Report.id,
-                )
-            ).where(
-                Report.file_path.is_not(
-                    None,
-                ),
-                Report.file_path != '',
-            )
-        )
-        or 0
-    )
-
-
-def count_reports_by_file_prefix(
-    prefix: str,
-) -> int:
-    return (
-        db.session.scalar(
-            select(
-                func.count(
-                    Report.id,
-                )
-            ).where(
-                Report.file_path.ilike(
-                    f'{prefix}%',
-                )
-            )
-        )
-        or 0
-    )
-
-
-def sum_report_file_size_bytes() -> int:
-    return (
-        db.session.scalar(
-            select(
-                func.coalesce(
-                    func.sum(
-                        Report.file_size_bytes,
-                    ),
-                    0,
-                )
-            )
-        )
-        or 0
-    )
 
 
 def count_files_safe(

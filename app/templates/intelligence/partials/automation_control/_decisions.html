@@ -110,7 +110,7 @@
                 {% endif %}
             {% endcall %}
         {% else %}
-            {{ intelligence_ui.empty_state('Decision Queue Clear', 'No recommendation or alert evidence is currently awaiting decision review.', 'circle-check') }}
+            {{ intelligence_ui.empty_state('Decision Queue Clear', 'No recommendation or alert evidence is currently awaiting decision review.', 'circle-check', 'Queue Clear', 'normal') }}
         {% endfor %}
     </div>
     {% set query_params = {"workspace": "decisions"} %}

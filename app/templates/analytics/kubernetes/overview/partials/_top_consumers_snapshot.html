@@ -96,10 +96,15 @@
                             {% endfor %}
                         </ol>
                     {% else %}
-                        <div class="{{ overview_surface.empty_evidence_classes('m-3 px-4 py-6 text-center sm:m-4') }}">
-                            <i data-lucide="users" class="mx-auto h-6 w-6 text-content-disabled"></i>
-                            <p class="mt-2 text-sm font-semibold text-content-secondary">No Consumer Data Available</p>
-                            <p class="mt-1 text-xs leading-5 text-content-secondary">Rankings appear after utilization metrics are committed.</p>
+                        <div class="m-3 sm:m-4">
+                            {% set empty_state_icon = 'users' %}
+                            {% set empty_state_label = 'Sync Required' %}
+                            {% set empty_state_tone = 'warning' %}
+                            {% set empty_state_title = 'No Consumer Data Available' %}
+                            {% set empty_state_description = 'Rankings appear after utilization metrics are committed.' %}
+                            {% set empty_state_variant = 'panel' %}
+                            {% set empty_state_min_height = 'min-h-[150px]' %}
+                            {% include 'components/states/_empty_state.html' %}
                         </div>
                     {% endif %}
                 </article>

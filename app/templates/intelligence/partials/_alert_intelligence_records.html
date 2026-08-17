@@ -61,8 +61,13 @@
                     </tr>
                 {% else %}
                     <tr>
-                        <td colspan="7" class="px-4 py-10 text-center text-sm text-content-muted">
-                            No alert records match the current scope and filters.
+                        <td colspan="7" class="p-0">
+                            {% set empty_state_icon = 'search-x' %}
+                            {% set empty_state_label = 'No Results' %}
+                            {% set empty_state_title = 'No Alert Records Match the Current Filters' %}
+                            {% set empty_state_description = 'Adjust the Intelligence scope, source, severity, state, or search filters.' %}
+                            {% set empty_state_min_height = 'min-h-[160px]' %}
+                            {% include 'components/states/_empty_state.html' %}
                         </td>
                     </tr>
                 {% endfor %}

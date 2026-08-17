@@ -63,9 +63,14 @@
                                 </div>
                             </div>
                         {% else %}
-                            <div class="rounded-lg border border-dashed border-outline-default bg-surface-card px-4 py-5 text-center md:col-span-2 2xl:col-span-3">
-                                <p class="text-sm font-semibold text-content-primary">No Report Contracts Yet</p>
-                                <p class="mt-1 text-xs leading-5 text-content-muted">No report type is available for this data domain yet.</p>
+                            <div class="md:col-span-2 2xl:col-span-3">
+                                {% set empty_state_icon = 'files' %}
+                                {% set empty_state_label = 'No Data' %}
+                                {% set empty_state_title = 'No Report Contracts Yet' %}
+                                {% set empty_state_description = 'No report type is available for this data domain yet.' %}
+                                {% set empty_state_variant = 'panel' %}
+                                {% set empty_state_min_height = 'min-h-[150px]' %}
+                                {% include 'components/states/_empty_state.html' %}
                             </div>
                         {% endfor %}
                     </div>

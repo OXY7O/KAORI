@@ -14,9 +14,16 @@ def require(source: str, needle: str, message: str) -> None:
         raise SystemExit(message)
 
 
+def forbid(source: str, needle: str, message: str) -> None:
+    if needle in source:
+        raise SystemExit(message)
+
+
 def main() -> None:
     storage_service = read('app/reports/storage/service.py')
     storage_template = read('app/templates/reports/storage/index.html')
+    storage_routes = read('app/reports/storage/routes.py')
+    report_routes = read('app/reports/routes.py')
     generated_service = read('app/reports/generated/service.py')
     export_service = read('app/reports/export/service.py')
     s3_storage = read('app/storage/s3.py')
@@ -54,8 +61,38 @@ def main() -> None:
     )
     require(
         storage_template,
-        'Retry Connection',
-        'Reports Storage is missing the explicit reconnect action.',
+        'Verify Connection',
+        'Reports Storage is missing the explicit strong-verification reconnect action.',
+    )
+    require(
+        storage_template,
+        "url_for('reports.verify_storage')",
+        'Reports Storage verification must target the POST-only verification endpoint.',
+    )
+    require(
+        report_routes,
+        "'/storage/verify'",
+        'Reports Storage is missing the dedicated verification route.',
+    )
+    require(
+        report_routes.split("endpoint='verify_storage'", 1)[1].split('reports_bp.add_url_rule(', 1)[0],
+        "'POST'",
+        'Reports Storage strong verification must be POST-only.',
+    )
+    forbid(
+        storage_routes,
+        "request.args.get('verify')",
+        'Reports Storage must not execute strong verification from a GET query parameter.',
+    )
+    forbid(
+        storage_service,
+        'build_report_cleanup_dry_run',
+        'Reports Storage must not maintain a second Generated Reports lifecycle eligibility engine.',
+    )
+    require(
+        storage_template,
+        'Lifecycle Actions Live in Data Lifecycle',
+        'Reports Storage must hand lifecycle preview and cleanup execution to Data Lifecycle.',
     )
     require(
         storage_template,

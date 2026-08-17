@@ -19,14 +19,14 @@
         {% set blocked_state_tone = "warning" %}
         {% include 'components/states/_blocked_state.html' %}
     {% elif dashboard.forecast_snapshot.source_status != 'Available' %}
-        {% set empty_state_icon = "chart-spline" %}
-        {% set empty_state_label = "Unavailable" %}
-        {% set empty_state_tone = "unknown" %}
-        {% set empty_state_title = "Forecast Data Not Available" %}
-        {% set empty_state_description = dashboard.forecast_snapshot.insight %}
-        {% set empty_state_variant = "panel" %}
-        {% set empty_state_min_height = "min-h-[180px]" %}
-        {% include 'components/states/_empty_state.html' %}
+        {% set blocked_state_icon = 'chart-spline' %}
+        {% set blocked_state_label = 'Source Unavailable' %}
+        {% set blocked_state_title = 'Forecast Data Not Available' %}
+        {% set blocked_state_description = dashboard.forecast_snapshot.insight %}
+        {% set blocked_state_tone = 'warning' %}
+        {% set blocked_state_variant = 'table' %}
+        {% set blocked_state_min_height = 'min-h-[180px]' %}
+        {% include 'components/states/_blocked_state.html' %}
     {% else %}
         {% set overall_tone = 'critical' if dashboard.forecast_snapshot.critical_count > 0 else ('warning' if dashboard.forecast_snapshot.at_risk_count > 0 else 'normal') %}
         <div class="grid gap-3 sm:grid-cols-3">

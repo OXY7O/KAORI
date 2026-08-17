@@ -108,11 +108,15 @@
                         Open Storage
                     </a>
                     {% if current_user.has_permission('reports.manage_storage') %}
-                        <a href="{{ url_for('reports.storage', verify=1) }}"
-                           class="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border {{ operational_callout.semantic_border_classes('warning') }} bg-surface-card px-3.5 text-xs font-semibold text-content-primary transition hover:border-brand-outline hover:text-kaori-primary">
-                            <i data-lucide="shield-check" class="h-3.5 w-3.5" aria-hidden="true"></i>
-                            Verify Now
-                        </a>
+                        <form method="post" action="{{ url_for('reports.verify_storage') }}">
+                            {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+                            <input type="hidden" name="workspace" value="overview">
+                            <button type="submit"
+                                    class="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border {{ operational_callout.semantic_border_classes('warning') }} bg-surface-card px-3.5 text-xs font-semibold text-content-primary transition hover:border-brand-outline hover:text-kaori-primary">
+                                <i data-lucide="shield-check" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                Verify Now
+                            </button>
+                        </form>
                     {% endif %}
                 </div>
             </div>

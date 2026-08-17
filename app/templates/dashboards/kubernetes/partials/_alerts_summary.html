@@ -56,22 +56,16 @@
                 {% set empty_state_min_height = "min-h-[170px]" %}
                 {% include 'components/states/_empty_state.html' %}
             {% else %}
-                <div class="rounded-lg border border-status-warning-border bg-status-warning-soft p-4">
-                    <div class="flex items-start gap-3">
-                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-card text-status-warning-text"
-                              aria-hidden="true">
-                            <i data-lucide="wifi-off" class="h-4 w-4"></i>
-                        </span>
-                        <div class="min-w-0">
-                            <h3 class="text-sm font-semibold text-status-warning-text">Alert Sources Temporarily Unavailable</h3>
-                            <p class="mt-1 text-xs leading-5 text-content-secondary">{{ dashboard.alerts_snapshot.message }}</p>
-                            <div class="mt-3 flex flex-wrap gap-2">
-                                {{ table_label.special_label('Automatic Retry Enabled', 'warning', 'refresh-cw') }}
-                                {{ table_label.metadata_label('Fallback Checked', icon='git-compare-arrows') }}
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                {% set blocked_state_icon = 'wifi-off' %}
+                {% set blocked_state_label = 'Source Unavailable' %}
+                {% set blocked_state_title = 'Alert Sources Temporarily Unavailable' %}
+                {% set blocked_state_description %}{{ dashboard.alerts_snapshot.message }}{% endset %}
+                {% set blocked_state_tone = 'warning' %}
+                {% set blocked_state_badge = 'Automatic Retry Enabled' %}
+                {% set blocked_state_badge_icon = 'refresh-cw' %}
+                {% set blocked_state_variant = 'table' %}
+                {% set blocked_state_min_height = 'min-h-[170px]' %}
+                {% include 'components/states/_blocked_state.html' %}
             {% endif %}
         </div>
         <div class="mt-4 rounded-lg border border-outline-subtle bg-surface-elevated p-4">

@@ -66,13 +66,15 @@
                         ) }}
                     </div>
                 {% else %}
-                    <div class="{{ overview_surface.empty_evidence_classes('mt-4 flex h-64 items-center justify-center') }}">
-                        <div class="text-center">
-                            <i data-lucide="line-chart"
-                               class="mx-auto h-8 w-8 text-content-disabled"></i>
-                            <p class="mt-2 text-sm font-semibold text-content-secondary">Forecast Chart Not Available</p>
-                            <p class="mt-1 text-xs text-content-muted">Forecast series will appear after a committed model snapshot is available.</p>
-                        </div>
+                    <div class="mt-4">
+                        {% set empty_state_icon = 'line-chart' %}
+                        {% set empty_state_label = 'Sync Required' %}
+                        {% set empty_state_tone = 'warning' %}
+                        {% set empty_state_title = 'Forecast Chart Not Available' %}
+                        {% set empty_state_description = 'Forecast series will appear after a committed model snapshot is available.' %}
+                        {% set empty_state_variant = 'panel' %}
+                        {% set empty_state_min_height = 'min-h-[220px]' %}
+                        {% include 'components/states/_empty_state.html' %}
                     </div>
                 {% endif %}
             </article>

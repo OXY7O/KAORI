@@ -160,8 +160,8 @@ def main() -> int:
         'Excluded:',
         'Storage Boundary',
         'Hot Source',
-        'Archive Target',
-        'Archive Payload',
+        'Verified Archive',
+        'Payload:',
         'Shared Archive Control Plane',
         'Open Archive Storage',
     ):
@@ -176,7 +176,8 @@ def main() -> int:
         "'label': 'Kubernetes'",
         "'label': 'Prometheus'",
         "'label': 'Alertmanager'",
-        'Future integrations using IntegrationRuntimeObservation inherit the same lifecycle boundary.',
+        "'label': 'Object Storage · MinIO'",
+        'future integrations using IntegrationRuntimeObservation share the same lifecycle boundary.',
         'Transient toasts are not persisted and therefore are not lifecycle-managed.',
     ):
         if required not in retention_presentation:
@@ -222,7 +223,7 @@ def main() -> int:
         errors.append('Runtime Observation archive domain must read the canonical integration runtime model')
     if 'IntegrationRuntimeObservation.provider ==' in runtime_domain or 'filter_by(provider=' in runtime_domain:
         errors.append(
-            'Runtime Observation lifecycle must remain provider-neutral; do not split Kubernetes/Prometheus/Alertmanager retention'
+            'Runtime Observation lifecycle must remain provider-neutral; do not split Kubernetes/Object Storage/Prometheus/Alertmanager retention'
         )
 
     activity_domain = read('app/retention/domains/operational_activity.py')
@@ -324,7 +325,7 @@ def main() -> int:
     storage_presentation = read('app/retention/storage_presentation.py')
     if 'def build_storage_contract_context(' not in storage_presentation:
         errors.append('Retention Policies must expose configuration-only archive storage ownership without probing')
-    if 'Runtime observations do not own a separate archive bucket.' not in retention_presentation:
+    if 'no integration-specific archive bucket is created' not in retention_presentation:
         errors.append('Runtime Observation storage ownership must remain explicit and provider-neutral')
 
     schedule_evidence_migration = read('migrations/versions/20260816_schedule_run_evidence.py')

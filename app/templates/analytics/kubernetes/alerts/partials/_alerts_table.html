@@ -61,7 +61,7 @@
                     {% include "analytics/kubernetes/alerts/partials/_alerts_table_row.html" %}
                 {% endfor %}
             {% else %}
-                {{ evidence_list.empty('No Alerts Detected', 'No alert records match the selected source and local filters.', 'bell-off') }}
+                {{ evidence_list.empty('No Alerts Detected', 'No alert records match the selected source and local filters.', 'bell-off', 'No Findings', 'normal') }}
             {% endif %}
         </div>
         {% set pagination_query = {

@@ -82,7 +82,7 @@ The readiness lifecycle is:
 1. Celery Beat dispatches `app.reports.storage.tasks.refresh_report_storage_readiness_task` on the maintenance queue every `REPORT_STORAGE_HEALTH_INTERVAL_MINUTES` (default: 1 minute).
 2. The periodic task performs a lightweight connectivity/readiness probe (`head_bucket` for S3-compatible storage) and publishes a sanitized state to Redis.
 3. Shared readiness includes `checked_at`, source, age/staleness metadata, backend state, and read/write availability. The Redis key is configuration-fingerprinted so stale state from a previous endpoint/bucket/credential configuration cannot be reused after configuration changes.
-4. Manual **Test Storage** remains the strong validation path: connect, write a temporary verification object, confirm it exists, delete it, then publish the resulting shared state immediately.
+4. Manual **Verify Storage** remains the strong validation path: an explicit CSRF-protected POST connects, writes a temporary verification object, confirms it exists, deletes it, then publishes the resulting shared state immediately. GET requests never execute this write path.
 5. Artifact read/write failures publish an immediate unavailable state so all Reports pages converge on degraded mode without waiting for the next periodic probe.
 6. If Redis/shared state is unavailable or stale, request-time probing remains the fail-safe fallback; the short process cache is only a request-load optimization, not the canonical multi-process state.
 
@@ -101,7 +101,7 @@ S3/MinIO unavailability degrades artifact capabilities; it does **not** make the
 - **Generated Reports / detail:** database registry and metadata remain available. Download availability is evaluated per artifact/backend, so historical local artifacts are not disabled merely because the active S3 backend is unavailable.
 - **Templates:** remain available because template/catalog management does not require artifact storage.
 - **Schedules:** definitions and history remain available. **Run Now** and due artifact execution are paused/fail-closed before creating a report artifact request while storage is unavailable.
-- **Storage:** remains available for diagnostics and strong manual verification.
+- **Storage:** remains available for active-backend diagnostics, metadata-first artifact-reference coverage, retained-reference integrity, and strong manual verification. Generated Report retention eligibility, archive storage, cleanup execution, scheduling, and archive history remain exclusively owned by Platform Operations → Data Lifecycle.
 
 Raw S3 exceptions, access keys, secret keys, tokens, and credential values are never written into the shared readiness payload or rendered in Reports UI. Technical exceptions remain server-side evidence.
 
