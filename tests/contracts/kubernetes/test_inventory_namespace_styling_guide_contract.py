@@ -8,9 +8,9 @@ def read(relative: str) -> str:
 
 
 def test_namespace_inventory_applies_resource_page_pattern() -> None:
-    hero = read('app/templates/inventory/kubernetes/namespaces/partials/_hero.html')
-    summary = read('app/templates/inventory/kubernetes/namespaces/partials/_summary_cards.html')
-    table = read('app/templates/inventory/kubernetes/namespaces/partials/_table_content.html')
+    hero = read('app/templates/kubernetes/inventory/namespaces/partials/_hero.html')
+    summary = read('app/templates/kubernetes/inventory/namespaces/partials/_summary_cards.html')
+    table = read('app/templates/kubernetes/inventory/namespaces/partials/_table_content.html')
 
     assert 'page_hero.context_card(' in hero
     assert 'Namespace Control Posture' in summary
@@ -29,8 +29,8 @@ def test_namespace_inventory_applies_resource_page_pattern() -> None:
 
 
 def test_namespace_lifecycle_and_policy_semantics_are_factual() -> None:
-    service = read('app/inventory/kubernetes/resources/namespaces.py')
-    detail = read('app/templates/inventory/kubernetes/namespaces/partials/_namespace_detail_content.html')
+    service = read('app/kubernetes/inventory/resources/namespaces.py')
+    detail = read('app/templates/kubernetes/inventory/namespaces/partials/_namespace_detail_content.html')
 
     assert "'Transitioning', 'info'" in service
     assert "'Review Required', 'warning'" in service
@@ -41,7 +41,7 @@ def test_namespace_lifecycle_and_policy_semantics_are_factual() -> None:
 
 
 def test_namespace_detail_uses_shared_metadata_and_operational_context() -> None:
-    detail = read('app/templates/inventory/kubernetes/namespaces/partials/_namespace_detail_content.html')
+    detail = read('app/templates/kubernetes/inventory/namespaces/partials/_namespace_detail_content.html')
     component = read('app/templates/components/technical_metadata_collection.html')
 
     assert 'data-kaori-detail-variant="full-workspace-modal"' in detail
@@ -55,7 +55,7 @@ def test_namespace_detail_uses_shared_metadata_and_operational_context() -> None
 
 
 def test_namespace_pagination_stays_htmx_aware() -> None:
-    table = read('app/templates/inventory/kubernetes/namespaces/partials/_table_content.html')
+    table = read('app/templates/kubernetes/inventory/namespaces/partials/_table_content.html')
     assert '>Rows</label>' in table
     assert "endpoint='inventory.namespaces'" in table
     assert "hx_target='#namespaces-table-content'" in table

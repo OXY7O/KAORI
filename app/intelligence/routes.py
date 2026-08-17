@@ -3,13 +3,13 @@ from __future__ import annotations
 from flask import Blueprint, abort, render_template, request
 from flask.typing import ResponseReturnValue
 
+from app.access.rbac.decorators import permission_required
 from app.intelligence.overview import get_intelligence_overview_payload
 from app.intelligence.service import (
     get_catalog_rule,
     get_recommendation_finding,
     get_recommendations_payload,
 )
-from app.rbac.decorators import permission_required
 
 intelligence_bp = Blueprint(
     'intelligence',

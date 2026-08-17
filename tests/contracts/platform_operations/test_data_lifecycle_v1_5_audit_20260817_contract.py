@@ -8,24 +8,24 @@ def read(relative: str) -> str:
 
 
 def test_archive_selection_uses_one_frozen_selection_timestamp_end_to_end() -> None:
-    types = read('app/retention/types.py')
-    service = read('app/retention/service.py')
+    types = read('app/platform_operations/data_lifecycle/retention/types.py')
+    service = read('app/platform_operations/data_lifecycle/retention/service.py')
 
     assert 'selected_at: datetime' in types
     assert "'selection_as_of': _isoformat(boundary.selected_at)" in service
     assert "'selected_at': _isoformat(boundary.selected_at)" in service
 
     for relative in (
-        'app/retention/domains/operational_activity.py',
-        'app/retention/domains/job_execution.py',
-        'app/retention/domains/runtime_observation.py',
-        'app/retention/domains/analytics_snapshot.py',
-        'app/retention/domains/generated_report.py',
+        'app/platform_operations/data_lifecycle/retention/domains/operational_activity.py',
+        'app/platform_operations/data_lifecycle/retention/domains/job_execution.py',
+        'app/platform_operations/data_lifecycle/retention/domains/runtime_observation.py',
+        'app/platform_operations/data_lifecycle/retention/domains/analytics_snapshot.py',
+        'app/platform_operations/data_lifecycle/retention/domains/generated_report.py',
     ):
         assert 'selected_at=now' in read(relative)
 
-    job_execution = read('app/retention/domains/job_execution.py')
-    generated_report = read('app/retention/domains/generated_report.py')
+    job_execution = read('app/platform_operations/data_lifecycle/retention/domains/job_execution.py')
+    generated_report = read('app/platform_operations/data_lifecycle/retention/domains/generated_report.py')
     assert 'selection_now = boundary.selected_at' in job_execution
     assert job_execution.count('now=selection_now') >= 1
     assert generated_report.count('selection_now = boundary.selected_at') >= 3
@@ -33,9 +33,9 @@ def test_archive_selection_uses_one_frozen_selection_timestamp_end_to_end() -> N
 
 
 def test_data_lifecycle_reads_do_not_create_policy_rows_and_all_runtime_domains_are_seeded() -> None:
-    presentation = read('app/retention/presentation.py')
-    tasks = read('app/retention/tasks.py')
-    policy_service = read('app/retention/policy_service.py')
+    presentation = read('app/platform_operations/data_lifecycle/retention/presentation.py')
+    tasks = read('app/platform_operations/data_lifecycle/retention/tasks.py')
+    policy_service = read('app/platform_operations/data_lifecycle/retention/policy_service.py')
     migration = read('migrations/versions/20260817_lifecycle_policy_seed.py')
 
     assert 'def get_policy(domain: str) -> DataLifecyclePolicy | None:' in policy_service
@@ -51,7 +51,7 @@ def test_data_lifecycle_reads_do_not_create_policy_rows_and_all_runtime_domains_
 
 def test_data_lifecycle_top_level_workspaces_are_server_owned_and_demand_loaded() -> None:
     index = read('app/templates/platform_operations/data_lifecycle/index.html')
-    presentation = read('app/retention/presentation.py')
+    presentation = read('app/platform_operations/data_lifecycle/retention/presentation.py')
 
     assert 'framed_workspace_tabs.render_navigation(' in index
     assert "hx_target='#data-lifecycle-workspace-shell'" in index
@@ -64,8 +64,8 @@ def test_data_lifecycle_top_level_workspaces_are_server_owned_and_demand_loaded(
 
 
 def test_shared_archive_storage_uses_verified_evidence_from_current_storage_profile() -> None:
-    presentation = read('app/retention/presentation.py')
-    storage_presentation = read('app/retention/storage_presentation.py')
+    presentation = read('app/platform_operations/data_lifecycle/retention/presentation.py')
+    storage_presentation = read('app/platform_operations/data_lifecycle/retention/storage_presentation.py')
 
     assert 'def _latest_verified_archive_for_profile(' in presentation
     assert 'ArchiveArtifact.domain.in_(domain_names)' in presentation
@@ -77,7 +77,7 @@ def test_shared_archive_storage_uses_verified_evidence_from_current_storage_prof
 
 def test_manual_execution_is_fail_closed_for_invalid_mode_missing_policy_or_paused_policy() -> None:
     service = read('app/platform_operations/data_lifecycle/service.py')
-    presentation = read('app/retention/presentation.py')
+    presentation = read('app/platform_operations/data_lifecycle/retention/presentation.py')
     workspace = read('app/templates/platform_operations/data_lifecycle/partials/_domain_workspace.html')
 
     assert "normalized_mode not in {'archive_only', 'archive_and_cleanup'}" in service
@@ -120,8 +120,8 @@ def test_archive_history_preserves_registry_context_after_verification() -> None
 
 def test_archive_purge_is_bounded_retryable_and_never_advertises_partial_objects_as_downloadable() -> None:
     model = read('app/models/archive.py')
-    service = read('app/retention/service.py')
-    tasks = read('app/retention/tasks.py')
+    service = read('app/platform_operations/data_lifecycle/retention/service.py')
+    tasks = read('app/platform_operations/data_lifecycle/retention/tasks.py')
     storage = read('app/templates/platform_operations/data_lifecycle/partials/_storage.html')
     history = read('app/templates/platform_operations/data_lifecycle/partials/_history.html')
     config = read('app/config/default.py')
@@ -144,7 +144,7 @@ def test_archive_purge_is_bounded_retryable_and_never_advertises_partial_objects
 
 def test_persisted_policy_scheduler_is_not_disabled_by_legacy_domain_environment_booleans() -> None:
     config = read('app/config/default.py')
-    presentation = read('app/retention/presentation.py')
+    presentation = read('app/platform_operations/data_lifecycle/retention/presentation.py')
     workspace = read('app/templates/platform_operations/data_lifecycle/partials/_domain_workspace.html')
     storage = read('app/templates/platform_operations/data_lifecycle/partials/_storage.html')
 

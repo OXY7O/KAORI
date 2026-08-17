@@ -16,10 +16,10 @@ def test_job_configuration_statuses_use_dot_indicator_labels() -> None:
     assert 'data-lucide' not in indicator
 
     for relative in (
-        'app/templates/jobs/configuration/_workspace.html',
-        'app/templates/jobs/configuration/definitions/inventory_sync.html',
-        'app/templates/jobs/configuration/definitions/_materialization_job.html',
-        'app/templates/jobs/configuration/definitions/tls_certificate_sync.html',
+        'app/templates/platform_operations/jobs/configuration/_workspace.html',
+        'app/templates/platform_operations/jobs/configuration/definitions/inventory_sync.html',
+        'app/templates/platform_operations/jobs/configuration/definitions/_materialization_job.html',
+        'app/templates/platform_operations/jobs/configuration/definitions/tls_certificate_sync.html',
     ):
         content = _read(relative)
         assert 'table_label.status_indicator_label' in content
@@ -31,7 +31,9 @@ def test_active_progress_is_determinate_without_restarting_animation() -> None:
     assert '<progress' in progress
     assert 'transition-all' not in _read('app/templates/components/navigation/_quick_sync_status.html')
 
-    assert 'progress_bar.job_progress' in _read('app/templates/jobs/configuration/_execution_activity.html')
+    assert 'progress_bar.job_progress' in _read(
+        'app/templates/platform_operations/jobs/configuration/_execution_activity.html'
+    )
     quick_sync = _read('app/templates/components/navigation/_quick_sync_status.html')
     shared_progress = _read('app/templates/components/operational_progress_toast.html')
     assert 'components/operational_progress_toast.html' in quick_sync
@@ -41,20 +43,20 @@ def test_active_progress_is_determinate_without_restarting_animation() -> None:
     assert 'progress_bar.determinate' not in shared_progress
 
     for relative in (
-        'app/templates/jobs/configuration/definitions/inventory_sync.html',
-        'app/templates/jobs/configuration/definitions/_materialization_job.html',
-        'app/templates/jobs/configuration/definitions/tls_certificate_sync.html',
+        'app/templates/platform_operations/jobs/configuration/definitions/inventory_sync.html',
+        'app/templates/platform_operations/jobs/configuration/definitions/_materialization_job.html',
+        'app/templates/platform_operations/jobs/configuration/definitions/tls_certificate_sync.html',
     ):
-        assert 'jobs/configuration/_execution_activity.html' in _read(relative)
+        assert 'platform_operations/jobs/configuration/_execution_activity.html' in _read(relative)
 
 
 def test_job_catalog_status_refreshes_out_of_band() -> None:
-    workspace = _read('app/templates/jobs/configuration/_workspace.html')
-    job_workspace = _read('app/templates/jobs/configuration/_job_workspace.html')
-    poller = _read('app/templates/jobs/configuration/_live_poller.html')
-    response = _read('app/templates/jobs/configuration/_live_status_response.html')
-    oob = _read('app/templates/jobs/configuration/_catalog_status_oob.html')
-    routes = _read('app/jobs/routes.py')
+    workspace = _read('app/templates/platform_operations/jobs/configuration/_workspace.html')
+    job_workspace = _read('app/templates/platform_operations/jobs/configuration/_job_workspace.html')
+    poller = _read('app/templates/platform_operations/jobs/configuration/_live_poller.html')
+    response = _read('app/templates/platform_operations/jobs/configuration/_live_status_response.html')
+    oob = _read('app/templates/platform_operations/jobs/configuration/_catalog_status_oob.html')
+    routes = _read('app/platform_operations/jobs/routes.py')
 
     assert 'job-catalog-status-' in workspace
     assert 'job-catalog-activity-' in workspace
@@ -71,7 +73,7 @@ def test_job_catalog_status_refreshes_out_of_band() -> None:
 
 
 def test_registered_job_descriptions_are_compact() -> None:
-    content = _read('app/definitions/catalogs/jobs/registered_jobs.yaml')
+    content = _read('app/definitions/catalogs/platform_operations/jobs/registered_jobs.yaml')
     for phrase in (
         'Refresh Kubernetes inventory across eligible clusters.',
         'Refresh shared Kubernetes analytics snapshots.',

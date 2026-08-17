@@ -165,7 +165,7 @@ Deletion is permanent. Use deactivation when the role may be needed for recovery
 ## 11. Permission registry change
 
 ```text
-engineer adds permission to app/rbac/defaults.py
+engineer adds permission to app/access/rbac/defaults.py
   -> add server-side route/service guard
   -> update default-role mapping if required
   -> update navigation visibility

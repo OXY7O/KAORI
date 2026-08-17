@@ -15,18 +15,18 @@ def require(condition: bool, message: str, errors: list[str]) -> None:
 def main() -> int:
     errors: list[str] = []
 
-    collector = read('app/inventory/kubernetes/collectors/services.py')
-    persistence = read('app/inventory/kubernetes/persistence.py')
-    backend = read('app/inventory/kubernetes/resources/services.py')
-    semantics = read('app/inventory/kubernetes/resources/service_semantics.py')
-    routes = read('app/inventory/kubernetes/routes.py')
+    collector = read('app/kubernetes/inventory/collectors/services.py')
+    persistence = read('app/kubernetes/inventory/persistence.py')
+    backend = read('app/kubernetes/inventory/resources/services.py')
+    semantics = read('app/kubernetes/inventory/resources/service_semantics.py')
+    routes = read('app/kubernetes/inventory/routes.py')
     payload = read('app/reports/export/payloads/inventory.py')
     xlsx = read('app/reports/export/xlsx/standard.py')
-    workspace = read('app/templates/inventory/kubernetes/services/partials/_page_workspace.html')
-    card = read('app/templates/inventory/kubernetes/services/partials/_table_card.html')
-    table = read('app/templates/inventory/kubernetes/services/partials/_table_content.html')
-    summary = read('app/templates/inventory/kubernetes/services/partials/_summary_cards.html')
-    detail = read('app/templates/inventory/kubernetes/services/partials/_service_detail_content.html')
+    workspace = read('app/templates/kubernetes/inventory/services/partials/_page_workspace.html')
+    card = read('app/templates/kubernetes/inventory/services/partials/_table_card.html')
+    table = read('app/templates/kubernetes/inventory/services/partials/_table_content.html')
+    summary = read('app/templates/kubernetes/inventory/services/partials/_summary_cards.html')
+    detail = read('app/templates/kubernetes/inventory/services/partials/_service_detail_content.html')
     standard = read('docs/design/patterns/KUBERNETES_SERVICE_INVENTORY.md')
     audit = read('docs/design/audits/KUBERNETES_SERVICE_INVENTORY_ALIGNMENT_AUDIT_2026_08.md')
     quality_gate = read('scripts/quality_gate.sh')
@@ -85,7 +85,7 @@ def main() -> int:
     )
     require(
         'id="services-page-workspace"' in workspace
-        and 'inventory/kubernetes/components/_data_freshness.html' in workspace,
+        and 'kubernetes/inventory/components/_data_freshness.html' in workspace,
         'Service workspace must own Hero and Snapshot Context.',
         errors,
     )

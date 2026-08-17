@@ -4,7 +4,7 @@ import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
-DASHBOARD_TEMPLATES = ROOT / 'app' / 'templates' / 'dashboards' / 'kubernetes'
+DASHBOARD_TEMPLATES = ROOT / 'app' / 'templates' / 'kubernetes' / 'dashboard'
 
 
 def read(relative: str) -> str:
@@ -12,10 +12,10 @@ def read(relative: str) -> str:
 
 
 def test_dashboard_uses_shared_workspace_tabs_and_persists_url_state() -> None:
-    source = read('app/templates/dashboards/kubernetes/partials/_content.html')
-    selector = read('app/templates/dashboards/kubernetes/partials/_signal_overview.html')
-    routes = read('app/dashboards/kubernetes/routes.py')
-    schema = read('app/dashboards/kubernetes/schema.py')
+    source = read('app/templates/kubernetes/dashboard/partials/_content.html')
+    selector = read('app/templates/kubernetes/dashboard/partials/_signal_overview.html')
+    routes = read('app/kubernetes/dashboard/routes.py')
+    schema = read('app/kubernetes/dashboard/schema.py')
 
     assert '{% import "components/workspace_tabs.html" as workspace_tabs %}' in source
     assert 'workspace_tabs.render(' in source
@@ -28,7 +28,7 @@ def test_dashboard_uses_shared_workspace_tabs_and_persists_url_state() -> None:
 
 
 def test_dashboard_uses_integrated_tabs_and_equal_height_peer_content() -> None:
-    source = read('app/templates/dashboards/kubernetes/partials/_content.html')
+    source = read('app/templates/kubernetes/dashboard/partials/_content.html')
     grid = read('app/templates/components/peer_content_grid.html')
     tabs = read('app/templates/components/workspace_tabs.html')
 
@@ -84,9 +84,9 @@ def test_dashboard_sections_use_the_canonical_operational_section_card() -> None
 def test_primary_and_peer_operational_flows_are_static() -> None:
     info_flow = read('app/templates/components/info_flow.html')
     flow_steps = read('app/templates/components/operational_flow_steps.html')
-    alert_guidance = read('app/templates/dashboards/kubernetes/partials/_alert_response_guidance.html')
-    reporting_guidance = read('app/templates/dashboards/kubernetes/partials/_reporting_guidance.html')
-    capacity = read('app/templates/dashboards/kubernetes/partials/_capacity_snapshot.html')
+    alert_guidance = read('app/templates/kubernetes/dashboard/partials/_alert_response_guidance.html')
+    reporting_guidance = read('app/templates/kubernetes/dashboard/partials/_reporting_guidance.html')
+    capacity = read('app/templates/kubernetes/dashboard/partials/_capacity_snapshot.html')
     contract = read('docs/design/components/OPERATIONAL_FLOW_STEPS.md')
 
     assert '<section' in info_flow
@@ -102,8 +102,8 @@ def test_primary_and_peer_operational_flows_are_static() -> None:
 
 
 def test_dashboard_and_analytics_share_the_forecast_projection_chart() -> None:
-    dashboard = read('app/templates/dashboards/kubernetes/partials/_forecast_risk.html')
-    analytics = read('app/templates/analytics/kubernetes/overview/partials/_forecast_snapshot.html')
+    dashboard = read('app/templates/kubernetes/dashboard/partials/_forecast_risk.html')
+    analytics = read('app/templates/kubernetes/analytics/overview/partials/_forecast_snapshot.html')
     component = read('app/templates/components/forecast_projection_chart.html')
 
     assert 'components/forecast_projection_chart.html' in dashboard
@@ -118,8 +118,8 @@ def test_dashboard_and_analytics_share_the_forecast_projection_chart() -> None:
 
 
 def test_cluster_health_uses_canonical_table_and_pagination_contract() -> None:
-    source = read('app/templates/dashboards/kubernetes/partials/_cluster_health.html')
-    routes = read('app/dashboards/kubernetes/routes.py')
+    source = read('app/templates/kubernetes/dashboard/partials/_cluster_health.html')
+    routes = read('app/kubernetes/dashboard/routes.py')
 
     assert '{% import "components/table.html" as table_ui %}' in source
     assert '{% import "components/pagination.html" as pagination_ui %}' in source
@@ -175,10 +175,10 @@ def test_dashboard_copy_uses_canonical_casing() -> None:
 
 
 def test_dashboard_uses_local_skeletons_and_section_owned_loading_bar() -> None:
-    content = read('app/templates/dashboards/kubernetes/partials/_content.html')
-    selector = read('app/templates/dashboards/kubernetes/partials/_signal_overview.html')
-    loading = read('app/templates/dashboards/kubernetes/partials/_section_loading.html')
-    cluster_health = read('app/templates/dashboards/kubernetes/partials/_cluster_health.html')
+    content = read('app/templates/kubernetes/dashboard/partials/_content.html')
+    selector = read('app/templates/kubernetes/dashboard/partials/_signal_overview.html')
+    loading = read('app/templates/kubernetes/dashboard/partials/_section_loading.html')
+    cluster_health = read('app/templates/kubernetes/dashboard/partials/_cluster_health.html')
     section_card = read('app/templates/components/operational_section_card.html')
     contract = read('docs/design/components/LOADING.md')
 
@@ -194,10 +194,10 @@ def test_dashboard_uses_local_skeletons_and_section_owned_loading_bar() -> None:
 
 
 def test_dashboard_restores_card_grid_freshness_and_visible_action_flows() -> None:
-    freshness = read('app/templates/dashboards/kubernetes/partials/_data_freshness.html')
-    capacity = read('app/templates/dashboards/kubernetes/partials/_capacity_snapshot.html')
-    alert = read('app/templates/dashboards/kubernetes/partials/_alert_response_guidance.html')
-    reporting = read('app/templates/dashboards/kubernetes/partials/_reporting_guidance.html')
+    freshness = read('app/templates/kubernetes/dashboard/partials/_data_freshness.html')
+    capacity = read('app/templates/kubernetes/dashboard/partials/_capacity_snapshot.html')
+    alert = read('app/templates/kubernetes/dashboard/partials/_alert_response_guidance.html')
+    reporting = read('app/templates/kubernetes/dashboard/partials/_reporting_guidance.html')
 
     assert "body_classes='grid gap-3 p-5 sm:grid-cols-2'" in freshness
     assert 'bg-surface-elevated p-3.5' in freshness
@@ -216,7 +216,7 @@ def test_dashboard_restores_card_grid_freshness_and_visible_action_flows() -> No
 
 
 def test_dashboard_tabs_support_canonical_keyboard_navigation() -> None:
-    source = read('app/templates/dashboards/kubernetes/partials/_content.html')
+    source = read('app/templates/kubernetes/dashboard/partials/_content.html')
     tabs = read('app/templates/components/workspace_tabs.html')
     contract = read('docs/design/components/WORKSPACE_TABS.md')
 
@@ -230,7 +230,7 @@ def test_dashboard_tabs_support_canonical_keyboard_navigation() -> None:
 
 def test_dashboard_metric_card_has_no_unused_tone_api() -> None:
     metric_card = read('app/templates/components/operational_metric_card.html')
-    kpi_cards = read('app/templates/dashboards/kubernetes/partials/_kpi_cards.html')
+    kpi_cards = read('app/templates/kubernetes/dashboard/partials/_kpi_cards.html')
 
     assert (
         "macro render(label, value, description, icon, source_label='Operational', "

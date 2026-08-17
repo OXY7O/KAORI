@@ -1,0 +1,20 @@
+<div id="job-configuration-workspace">
+    {% if selected_job %}
+        {% include selected_job.definition.configuration_template %}
+        {% include 'platform_operations/jobs/configuration/_live_poller.html' %}
+    {% else %}
+        {% set empty_state_icon = 'workflow' %}
+        {% set empty_state_label = 'Selection Required' %}
+        {% set empty_state_title = 'Select a Registered Job' %}
+        {% set empty_state_description = 'Select a registered job definition to review its policy and execution controls.' %}
+        {% set empty_state_min_height = 'min-h-[220px]' %}
+        {% set empty_state_variant = 'panel' %}
+        {% include 'components/states/_empty_state.html' %}
+    {% endif %}
+</div>
+{% if request.headers.get('HX-Request') == 'true' %}
+    {% include "platform_operations/jobs/configuration/_catalog_status_oob.html" %}
+{% endif %}
+{% if operation_feedback %}
+    {% include 'components/operation_feedback_oob.html' %}
+{% endif %}

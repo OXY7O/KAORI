@@ -9,7 +9,7 @@ def read(relative: str) -> str:
 
 def test_authentication_surface_final_lock_is_release_gated_and_documented() -> None:
     quality_gate = read('scripts/quality_gate.sh')
-    readme = read('app/auth/README.md')
+    readme = read('app/access/authentication/README.md')
     lock = read('docs/design/KAORI_AUTHENTICATION_SURFACE_LOCK_V1.md')
 
     assert 'python scripts/verify_authentication_surface_final_lock.py' in quality_gate
@@ -20,7 +20,7 @@ def test_authentication_surface_final_lock_is_release_gated_and_documented() -> 
 
 
 def test_authentication_presentation_uses_canonical_typography_and_external_runtime() -> None:
-    auth_templates = sorted((ROOT / 'app/templates/auth').rglob('*.html'))
+    auth_templates = sorted((ROOT / 'app/templates/access/authentication').rglob('*.html'))
     layout = read('app/templates/layouts/auth.html')
 
     assert auth_templates
@@ -37,9 +37,9 @@ def test_authentication_presentation_uses_canonical_typography_and_external_runt
 
 
 def test_authentication_security_and_compact_login_contract_remain_locked() -> None:
-    routes = read('app/auth/routes.py')
-    session_source = read('app/auth/session.py')
-    login = read('app/templates/auth/partials/_login_form.html')
+    routes = read('app/access/authentication/routes.py')
+    session_source = read('app/access/authentication/session.py')
+    login = read('app/templates/access/authentication/partials/_login_form.html')
     css = read('app/static/css/auth-login.css')
 
     assert "@auth_bp.route('/login', methods=['GET', 'POST'])" in routes

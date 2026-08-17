@@ -5,7 +5,7 @@ from pathlib import Path
 from jinja2 import Environment
 
 ROOT = Path(__file__).resolve().parents[3]
-TEMPLATES = ROOT / 'app/templates/governance'
+TEMPLATES = ROOT / 'app/templates/kubernetes/governance'
 
 
 def test_governance_templates_parse_without_page_local_inline_handlers() -> None:

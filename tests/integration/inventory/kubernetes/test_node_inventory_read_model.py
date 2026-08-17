@@ -6,7 +6,7 @@ import pytest
 from flask import Flask
 
 from app.extensions.db import db
-from app.inventory.kubernetes.resources.nodes import get_node_inventory
+from app.kubernetes.inventory.resources.nodes import get_node_inventory
 from app.models import Cluster, ClusterInventory, NodeInventory
 
 

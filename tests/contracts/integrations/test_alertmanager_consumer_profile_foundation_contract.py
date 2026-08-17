@@ -57,7 +57,7 @@ def test_alertmanager_consumer_profiles_are_asset_scoped() -> None:
 
 
 def test_alertmanager_binding_evidence_drives_consumer_resolution() -> None:
-    resolver = read('app/alert_sources/providers/alertmanager/resolver.py')
+    resolver = read('app/integrations/observability/alert_source/providers/alertmanager/application/resolver.py')
     evaluator = resolver.split('def _evaluate_binding', 1)[1].split('def _operational_rank', 1)[0]
 
     assert 'binding.validation_evidence or {}' in evaluator
@@ -66,10 +66,10 @@ def test_alertmanager_binding_evidence_drives_consumer_resolution() -> None:
 
 
 def test_alertmanager_supports_object_storage_consumers_without_special_binding_table() -> None:
-    forms = read('app/alert_sources/providers/alertmanager/forms.py')
-    service = read('app/alert_sources/providers/alertmanager/service.py')
-    routes = read('app/alert_sources/providers/alertmanager/routes.py')
-    minio_service = read('app/object_storage/providers/minio/service.py')
+    forms = read('app/integrations/observability/alert_source/providers/alertmanager/application/forms.py')
+    service = read('app/integrations/observability/alert_source/providers/alertmanager/application/service.py')
+    routes = read('app/integrations/observability/alert_source/providers/alertmanager/application/routes.py')
+    minio_service = read('app/integrations/storage/object_storage/providers/minio/application/service.py')
     consumer_assets = read('app/integrations/consumer_assets.py')
     taxonomy_catalog = read('app/definitions/catalogs/integrations/taxonomy.yaml')
 
@@ -127,7 +127,7 @@ def test_object_storage_alert_profile_direct_cutover_is_migration_guarded() -> N
     profile_catalog = read(
         'app/definitions/catalogs/integrations/observability/alert_source/providers/alertmanager.yaml'
     )
-    resolver = read('app/alert_sources/providers/alertmanager/resolver.py')
+    resolver = read('app/integrations/observability/alert_source/providers/alertmanager/application/resolver.py')
     migration = read('migrations/versions/20260814_object_storage_alert_profile.py')
 
     assert 'profile_key: object-storage-alerts-v1' in profile_catalog

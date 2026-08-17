@@ -3,13 +3,13 @@ from __future__ import annotations
 from collections import defaultdict
 from typing import Any
 
-from app.models import IdentityProvider, Permission, Role
-from app.rbac.defaults import (
+from app.access.rbac.defaults import (
     ACCESS_ADMINISTRATION_PERMISSIONS,
     DEFAULT_PERMISSION_DEPENDENCIES,
     DEFAULT_PERMISSIONS,
     PERMISSION_MODULE_LABELS,
 )
+from app.models import IdentityProvider, Permission, Role
 
 REGISTRY_STATE_PRESENTATION: dict[str, dict[str, str]] = {
     'canonical': {'label': 'Canonical', 'tone': 'normal', 'icon': 'circle-check'},

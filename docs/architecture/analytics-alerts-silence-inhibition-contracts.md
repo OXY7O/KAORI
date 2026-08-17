@@ -14,7 +14,7 @@ colors, or incident-readiness penalties.
 
 ## Canonical Contracts
 
-The source of truth is `app/analytics/kubernetes/alerts/contracts.py`.
+The source of truth is `app/kubernetes/analytics/alerts/contracts.py`.
 
 ### Silence boundary
 
@@ -69,7 +69,7 @@ items
 
 ## Updated Ownership
 
-`app/analytics/kubernetes/alerts/silences.py` owns:
+`app/kubernetes/analytics/alerts/silences.py` owns:
 
 - Alertmanager silence loading;
 - Alertmanager datetime normalization;
@@ -79,7 +79,7 @@ items
 - matched-alert and namespace summaries;
 - empty and unavailable silence states.
 
-`app/analytics/kubernetes/alerts/inhibition.py` owns:
+`app/kubernetes/analytics/alerts/inhibition.py` owns:
 
 - inhibition visibility availability;
 - inhibited-alert detection from `inhibited` and `inhibited_by` metadata;

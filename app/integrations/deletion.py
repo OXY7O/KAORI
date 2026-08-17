@@ -5,9 +5,9 @@ from dataclasses import dataclass
 from sqlalchemy import or_
 
 from app.common.job_execution_contract import KUBERNETES_INVENTORY_SYNC_OPERATION
-from app.jobs.constants import ACTIVE_JOB_STATUSES
 from app.models.job import JobExecution
 from app.models.secret_reveal import SecretRevealRequest
+from app.platform_operations.jobs.constants import ACTIVE_JOB_STATUSES
 
 
 @dataclass(frozen=True)

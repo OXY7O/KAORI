@@ -8,10 +8,10 @@ def read(relative: str) -> str:
 
 
 def test_rbac_dependencies_and_access_admin_boundary_are_source_controlled() -> None:
-    catalog = read('app/definitions/catalogs/rbac/access.yaml')
-    defaults = read('app/rbac/defaults.py')
-    service = read('app/rbac/service.py')
-    policy = read('app/rbac/policy.py')
+    catalog = read('app/definitions/catalogs/access/rbac/access.yaml')
+    defaults = read('app/access/rbac/defaults.py')
+    service = read('app/access/rbac/service.py')
+    policy = read('app/access/rbac/policy.py')
 
     assert 'permission_dependencies:' in catalog
     assert 'access_administration_permissions:' in catalog
@@ -28,7 +28,7 @@ def test_rbac_dependencies_and_access_admin_boundary_are_source_controlled() -> 
 def test_role_mutation_uses_reserved_defaults_and_delegation_ceiling() -> None:
     service = read('app/access/roles/service.py')
     routes = read('app/access/roles/routes.py')
-    policy = read('app/rbac/policy.py')
+    policy = read('app/access/rbac/policy.py')
     form = read('app/access/roles/forms.py')
     template = read('app/templates/access/roles/form.html')
 
@@ -71,13 +71,13 @@ def test_protected_default_integrity_is_catalog_authoritative_and_visible() -> N
 
 
 def test_administrator_level_is_capability_based_not_role_slug_based() -> None:
-    policy = read('app/rbac/policy.py')
+    policy = read('app/access/rbac/policy.py')
     user_model = read('app/models/user.py')
-    user_service = read('app/users/service.py')
-    user_summary = read('app/users/access_summary.py')
-    provider_service = read('app/identity_providers/service.py')
-    provisioning = read('app/identity_providers/provisioning.py')
-    sso = read('app/auth/sso.py')
+    user_service = read('app/access/users/service.py')
+    user_summary = read('app/access/users/access_summary.py')
+    provider_service = read('app/access/identity_providers/service.py')
+    provisioning = read('app/access/identity_providers/provisioning.py')
+    sso = read('app/access/authentication/sso.py')
 
     assert 'def role_is_access_admin_level' in policy
     assert 'role.permission_keys() & ACCESS_ADMINISTRATION_PERMISSIONS' in policy
@@ -94,10 +94,10 @@ def test_administrator_level_is_capability_based_not_role_slug_based() -> None:
 
 def test_access_admin_audit_helper_is_not_owned_by_user_service() -> None:
     helper = read('app/common/admin_audit.py')
-    users_service = read('app/users/service.py')
-    users_routes = read('app/users/routes.py')
+    users_service = read('app/access/users/service.py')
+    users_routes = read('app/access/users/routes.py')
     role_service = read('app/access/roles/service.py')
-    provider_routes = read('app/identity_providers/routes.py')
+    provider_routes = read('app/access/identity_providers/routes.py')
 
     assert 'def record_admin_event' in helper
     assert 'AuditEvent()' in helper
@@ -108,8 +108,8 @@ def test_access_admin_audit_helper_is_not_owned_by_user_service() -> None:
 
 
 def test_identity_provider_catalog_optional_presentation_fields_do_not_break_bootstrap() -> None:
-    catalog = read('app/auth/identity_provider/catalog.py')
-    definitions = read('app/definitions/catalogs/auth/identity_provider/providers.yaml')
+    catalog = read('app/access/authentication/identity_provider/catalog.py')
+    definitions = read('app/definitions/catalogs/access/authentication/identity_provider/providers.yaml')
 
     assert "client_secret_placeholder=require_str(raw, 'client_secret_placeholder', path, allow_empty=True)" in catalog
     assert "guidance_partial=require_str(raw, 'guidance_partial', path, allow_empty=True)" in catalog
@@ -118,13 +118,13 @@ def test_identity_provider_catalog_optional_presentation_fields_do_not_break_boo
 
 
 def test_role_delegation_boundary_applies_to_user_and_identity_provider_assignment() -> None:
-    policy = read('app/rbac/policy.py')
-    rbac_service = read('app/rbac/service.py')
-    user_service = read('app/users/service.py')
-    user_routes = read('app/users/routes.py')
-    provider_service = read('app/identity_providers/service.py')
-    provider_routes = read('app/identity_providers/routes.py')
-    provisioning = read('app/identity_providers/provisioning.py')
+    policy = read('app/access/rbac/policy.py')
+    rbac_service = read('app/access/rbac/service.py')
+    user_service = read('app/access/users/service.py')
+    user_routes = read('app/access/users/routes.py')
+    provider_service = read('app/access/identity_providers/service.py')
+    provider_routes = read('app/access/identity_providers/routes.py')
+    provisioning = read('app/access/identity_providers/provisioning.py')
 
     assert 'def role_is_delegable_by_actor' in policy
     assert 'ACCESS_ADMINISTRATION_PERMISSIONS' in policy
@@ -142,8 +142,8 @@ def test_role_delegation_boundary_applies_to_user_and_identity_provider_assignme
 
 
 def test_identity_provider_permissions_are_independent_from_user_management() -> None:
-    catalog = read('app/definitions/catalogs/rbac/access.yaml')
-    routes = read('app/identity_providers/routes.py')
+    catalog = read('app/definitions/catalogs/access/rbac/access.yaml')
+    routes = read('app/access/identity_providers/routes.py')
     overview = read('app/access/overview/presentation.py')
     sidebar = read('app/templates/components/navigation/access_management_menu.html')
     migration = read('migrations/versions/20260817_identity_provider_rbac_split.py')

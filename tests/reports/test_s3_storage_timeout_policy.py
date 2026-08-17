@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import boto3
 
-from app.storage.s3 import S3ArtifactStorage
+from app.artifact_storage.s3 import S3ArtifactStorage
 
 
 def test_s3_client_receives_bounded_timeout_and_retry_policy(monkeypatch, tmp_path) -> None:

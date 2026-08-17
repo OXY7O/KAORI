@@ -8,17 +8,20 @@ def read(relative: str) -> str:
 
 
 def test_analytics_snapshots_are_a_registered_lifecycle_domain() -> None:
-    registry = read('app/retention/domains/__init__.py')
-    adapter = read('app/retention/domains/analytics_snapshot.py')
+    registry = read('app/platform_operations/data_lifecycle/retention/domains/__init__.py')
+    adapter = read('app/platform_operations/data_lifecycle/retention/domains/analytics_snapshot.py')
 
-    assert 'from app.retention.domains.analytics_snapshot import AnalyticsSnapshotArchiveDomain' in registry
+    assert (
+        'from app.platform_operations.data_lifecycle.retention.domains.analytics_snapshot import AnalyticsSnapshotArchiveDomain'
+        in registry
+    )
     assert "'analytics_snapshot': AnalyticsSnapshotArchiveDomain" in registry
     assert "name = 'analytics_snapshot'" in adapter
     assert "source_model = 'analytics_snapshots'" in adapter
 
 
 def test_analytics_snapshot_cleanup_preserves_pending_and_serveable_rows() -> None:
-    adapter = read('app/retention/domains/analytics_snapshot.py')
+    adapter = read('app/platform_operations/data_lifecycle/retention/domains/analytics_snapshot.py')
 
     assert "AnalyticsSnapshot.status != 'pending'" in adapter
     assert "if snapshot.status == 'pending':" in adapter
@@ -31,8 +34,8 @@ def test_analytics_snapshot_cleanup_preserves_pending_and_serveable_rows() -> No
 
 def test_analytics_snapshot_policy_is_scheduled_on_existing_maintenance_boundary() -> None:
     config = read('app/config/default.py')
-    tasks = read('app/retention/tasks.py')
-    policy = read('app/retention/policy_service.py')
+    tasks = read('app/platform_operations/data_lifecycle/retention/tasks.py')
+    policy = read('app/platform_operations/data_lifecycle/retention/policy_service.py')
 
     assert "'analytics_snapshot'" in tasks
     assert 'ANALYTICS_SNAPSHOT_RETENTION_ENABLED' in config
@@ -45,7 +48,7 @@ def test_analytics_snapshot_policy_is_scheduled_on_existing_maintenance_boundary
 
 
 def test_analytics_snapshot_lifecycle_is_explained_in_data_lifecycle_ui() -> None:
-    presentation = read('app/retention/presentation.py')
+    presentation = read('app/platform_operations/data_lifecycle/retention/presentation.py')
     workspace = read('app/templates/platform_operations/data_lifecycle/partials/_domain_workspace.html')
 
     assert "'analytics_snapshot': 'Analytics Snapshots'" in presentation

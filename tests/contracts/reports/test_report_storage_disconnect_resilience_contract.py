@@ -9,7 +9,7 @@ STORAGE_TEMPLATE = ROOT / 'app/templates/reports/storage/index.html'
 GENERATED_SERVICE = ROOT / 'app/reports/generated/service.py'
 GENERATED_TEMPLATE = ROOT / 'app/templates/reports/generated/index.html'
 EXPORT_SERVICE = ROOT / 'app/reports/export/service.py'
-S3_STORAGE = ROOT / 'app/storage/s3.py'
+S3_STORAGE = ROOT / 'app/artifact_storage/s3.py'
 CONFIG = ROOT / 'app/config/default.py'
 
 

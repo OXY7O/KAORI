@@ -98,13 +98,13 @@ adapter/profile. See `domain-namespace-and-metrics-source-boundary.md`.
 
 | KAORI domain | Owns | Must not own |
 |---|---|---|
-| `app/cluster/` | Managed Kubernetes asset lifecycle and UI workflow. | Kubernetes transport, compatibility implementation, or duplicated kubeconfig. |
+| `app/kubernetes/cluster/` | Managed Kubernetes asset lifecycle and UI workflow. | Kubernetes transport, compatibility implementation, or duplicated kubeconfig. |
 | `app/inventory/` | Capability root with explicit `kubernetes/` and `object_storage/` domain ownership for committed inventory state. | Mixed-domain implementation at the capability root, provider credentials, or client construction. |
 | `app/analytics/` | Capability root with explicit `kubernetes/` and `object_storage/` domains plus genuinely provider-neutral `shared/` contracts. | Mixed-domain implementation, provider credentials, or provider query/payload semantics in domain services. |
-| `app/kubernetes_operations/` | ConfigMap/Secret operational policy, authorization, confirmation, and audit. | Kubernetes transport construction. |
-| `app/governance/` | Governance policy and interpretation. | Kubernetes credential persistence. |
-| `app/metrics_sources/` | Metrics Source registration forms, provider selection, domain services, source resolution, bindings UI, and presentation. | Backend transport, query profiles, compatibility implementation, or runtime adapter implementation. |
-| `app/alert_sources/providers/alertmanager/` | Alertmanager registration forms, domain services, source resolution, bindings UI, and presentation. | Transport, normalizers, compatibility implementation, or runtime adapter implementation. |
+| `app/kubernetes/operations/` | ConfigMap/Secret operational policy, authorization, confirmation, and audit. | Kubernetes transport construction. |
+| `app/kubernetes/governance/` | Governance policy and interpretation. | Kubernetes credential persistence. |
+| `app/integrations/observability/metrics_source/application/` | Metrics Source registration forms, provider selection, domain services, source resolution, bindings UI, and presentation. | Backend transport, query profiles, compatibility implementation, or runtime adapter implementation. |
+| `app/integrations/observability/alert_source/providers/alertmanager/application/` | Alertmanager registration forms, domain services, source resolution, bindings UI, and presentation. | Transport, normalizers, compatibility implementation, or runtime adapter implementation. |
 
 SQLAlchemy models remain centralized under `app/models/`. Provider packages do
 not define mapped database models.

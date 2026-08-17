@@ -16,13 +16,13 @@ PYTHON_FILES = (
     'app/integrations/storage/object_storage/providers/minio/compatibility.py',
     'app/integrations/observability/metrics_source/binding_profiles.py',
     'app/integrations/observability/metrics_source/binding_validators/object_storage.py',
-    'app/object_storage/providers/minio/contracts.py',
-    'app/object_storage/providers/minio/forms.py',
-    'app/object_storage/providers/minio/presentation.py',
-    'app/object_storage/providers/minio/registration.py',
-    'app/object_storage/providers/minio/routes.py',
-    'app/object_storage/providers/minio/service.py',
-    'app/object_storage/providers/minio/workspace_web.py',
+    'app/integrations/storage/object_storage/providers/minio/application/contracts.py',
+    'app/integrations/storage/object_storage/providers/minio/application/forms.py',
+    'app/integrations/storage/object_storage/providers/minio/application/presentation.py',
+    'app/integrations/storage/object_storage/providers/minio/application/registration.py',
+    'app/integrations/storage/object_storage/providers/minio/application/routes.py',
+    'app/integrations/storage/object_storage/providers/minio/application/service.py',
+    'app/integrations/storage/object_storage/providers/minio/application/workspace_web.py',
     'migrations/versions/20260812_minio_object_storage_provider.py',
     'migrations/versions/20260812_remove_minio_owner_self_binding.py',
 )
@@ -54,8 +54,8 @@ def main() -> None:
     compatibility = read('app/integrations/storage/object_storage/providers/minio/compatibility.py')
     provider_catalog = read('app/definitions/catalogs/integrations/storage/object_storage/contract.yaml')
     client = read('app/integrations/storage/object_storage/providers/minio/client.py')
-    service = read('app/object_storage/providers/minio/service.py')
-    registration_service = read('app/object_storage/providers/minio/registration.py')
+    service = read('app/integrations/storage/object_storage/providers/minio/application/service.py')
+    registration_service = read('app/integrations/storage/object_storage/providers/minio/application/registration.py')
     validation_web = read('app/integrations/validation/web.py')
     monitoring = read('app/integrations/runtime/monitoring.py')
     blueprints = read('app/bootstrap/blueprints.py')
@@ -83,7 +83,7 @@ def main() -> None:
     minio_binding_registry = read(
         'app/templates/integrations/storage/object_storage/providers/minio/partials/_binding_registry.html'
     )
-    minio_routes = read('app/object_storage/providers/minio/routes.py')
+    minio_routes = read('app/integrations/storage/object_storage/providers/minio/application/routes.py')
     deletion = read('app/integrations/deletion.py')
 
     require(
@@ -166,9 +166,12 @@ def main() -> None:
     )
     require('create_source_binding' not in service, 'MinIO asset-owner service must not mutate observability bindings')
     require('IntegrationBinding' not in minio_model, 'MinIO model must not own direct observability source bindings')
-    require('app.object_storage.providers.minio.forms' not in service, 'MinIO service layer must not depend on WTForms')
     require(
-        'app.object_storage.providers.minio.forms' not in registration_service,
+        'app.integrations.storage.object_storage.providers.minio.application.forms' not in service,
+        'MinIO service layer must not depend on WTForms',
+    )
+    require(
+        'app.integrations.storage.object_storage.providers.minio.application.forms' not in registration_service,
         'MinIO registration proof must not depend on WTForms',
     )
     require('MinioRegistrationInput' in service, 'MinIO service must consume the registration input contract')
@@ -194,7 +197,8 @@ def main() -> None:
         require(legacy not in monitoring, f'runtime monitoring hard-codes provider model {legacy}')
 
     require(
-        'from app.object_storage.providers.minio.routes import minio_bp' in blueprints, 'MinIO blueprint import missing'
+        'from app.integrations.storage.object_storage.providers.minio.application.routes import minio_bp' in blueprints,
+        'MinIO blueprint import missing',
     )
     require('        minio_bp,' in blueprints, 'MinIO blueprint registration missing')
     require(

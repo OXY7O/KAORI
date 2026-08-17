@@ -45,7 +45,7 @@ It does not redesign identity-provider administration, User Management, Roles & 
 | Static Quality | `verify_authentication_surface_final_lock.py`, Ruff, djLint, Pyright, UI debt guards, JS syntax |
 | Contract | `tests/contracts/auth/` |
 | Unit | `tests/unit/auth/test_auth_session_policy.py` |
-| Functional | `tests/auth/test_login_characterization.py` |
+| Functional | `tests/access/authentication/test_login_characterization.py` |
 | Security Regression | `tests/security/auth/test_authentication_security.py` |
 | Rendering/UI | `tests/rendering/auth/test_authentication_rendering.py` |
 | E2E Smoke | `tests/e2e/auth/test_authentication_smoke.py` |

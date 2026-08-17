@@ -6,7 +6,7 @@
 
 ## Scope
 
-Activity Audit was rebuilt as the system-wide administrative evidence workspace while preserving `app/notifications` as the canonical persistence/query owner and Access as navigation/control-plane ownership.
+Activity Audit was rebuilt as the system-wide administrative evidence workspace while preserving `app/platform_operations/notifications` as the canonical persistence/query owner and Access as navigation/control-plane ownership.
 
 ## Decisions
 

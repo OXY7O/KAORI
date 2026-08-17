@@ -34,7 +34,7 @@ def test_consumer_validation_profiles_are_asset_scoped() -> None:
     object_storage_validator = read(
         'app/integrations/observability/metrics_source/binding_validators/object_storage.py'
     )
-    resolver = read('app/metrics_sources/resolver.py')
+    resolver = read('app/integrations/observability/metrics_source/application/resolver.py')
 
     assert 'profile_key: kubernetes-metrics-v1' in profile_catalog
     assert 'profile_key: object-storage-metrics-v1' in profile_catalog

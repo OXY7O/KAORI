@@ -8,8 +8,8 @@ def read(relative: str) -> str:
 
 
 def test_new_request_keeps_step_up_out_of_request_creation() -> None:
-    page = read('app/templates/kubernetes_operations/secrets/reveal.html')
-    step_up = read('app/templates/kubernetes_operations/secrets/_reveal_step_up.html')
+    page = read('app/templates/kubernetes/operations/secrets/reveal.html')
+    step_up = read('app/templates/kubernetes/operations/secrets/_reveal_step_up.html')
 
     new_panel = page.split('data-secret-reveal-panel="new"', 1)[1].split('data-secret-reveal-panel="mine"', 1)[0]
     mine_panel = page.split('data-secret-reveal-panel="mine"', 1)[1]
@@ -21,7 +21,7 @@ def test_new_request_keeps_step_up_out_of_request_creation() -> None:
 
 
 def test_request_form_explains_policy_specific_next_step() -> None:
-    request_form = read('app/templates/kubernetes_operations/secrets/_reveal_request_form.html')
+    request_form = read('app/templates/kubernetes/operations/secrets/_reveal_request_form.html')
 
     assert "selected_namespace_policy == 'approval_required'" in request_form
     assert "table_label.status_label('Approval Required'" in request_form
@@ -31,8 +31,8 @@ def test_request_form_explains_policy_specific_next_step() -> None:
 
 
 def test_protected_reveal_flow_matches_backend_policy_order() -> None:
-    page = read('app/templates/kubernetes_operations/secrets/reveal.html')
-    service = read('app/kubernetes_operations/secrets/reveal_service.py')
+    page = read('app/templates/kubernetes/operations/secrets/reveal.html')
+    service = read('app/kubernetes/operations/secrets/reveal_service.py')
 
     assert "('Choose Target'," in page
     assert "('Submit Context'," in page
@@ -47,7 +47,7 @@ def test_protected_reveal_flow_matches_backend_policy_order() -> None:
 
 
 def test_approved_request_links_back_to_step_up_when_session_is_not_verified() -> None:
-    request_status = read('app/templates/kubernetes_operations/secrets/_reveal_request_status.html')
+    request_status = read('app/templates/kubernetes/operations/secrets/_reveal_request_status.html')
 
     assert 'href="#reveal-session-step-up"' in request_status
     assert 'Verify Session' in request_status
@@ -55,7 +55,7 @@ def test_approved_request_links_back_to_step_up_when_session_is_not_verified() -
 
 
 def test_one_time_reveal_locks_only_the_request_row() -> None:
-    service = read('app/kubernetes_operations/secrets/reveal_service.py')
+    service = read('app/kubernetes/operations/secrets/reveal_service.py')
 
     assert 'query.enable_eagerloads(False).with_for_update(of=SecretRevealRequest)' in service
     assert 'query = query.with_for_update()' not in service
@@ -63,7 +63,7 @@ def test_one_time_reveal_locks_only_the_request_row() -> None:
 
 
 def test_reveal_step_up_keeps_password_and_action_on_one_control_baseline() -> None:
-    step_up = read('app/templates/kubernetes_operations/secrets/_reveal_step_up.html')
+    step_up = read('app/templates/kubernetes/operations/secrets/_reveal_step_up.html')
 
     assert 'components/form_field.html' in step_up
     assert 'sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end' in step_up

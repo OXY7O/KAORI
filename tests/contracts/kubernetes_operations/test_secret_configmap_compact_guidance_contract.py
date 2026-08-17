@@ -2,13 +2,13 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
 OPERATION_TEMPLATES = (
-    'app/templates/kubernetes_operations/configmaps/create.html',
-    'app/templates/kubernetes_operations/configmaps/update.html',
-    'app/templates/kubernetes_operations/configmaps/delete.html',
-    'app/templates/kubernetes_operations/secrets/create.html',
-    'app/templates/kubernetes_operations/secrets/replace.html',
-    'app/templates/kubernetes_operations/secrets/delete.html',
-    'app/templates/kubernetes_operations/secrets/reveal.html',
+    'app/templates/kubernetes/operations/configmaps/create.html',
+    'app/templates/kubernetes/operations/configmaps/update.html',
+    'app/templates/kubernetes/operations/configmaps/delete.html',
+    'app/templates/kubernetes/operations/secrets/create.html',
+    'app/templates/kubernetes/operations/secrets/replace.html',
+    'app/templates/kubernetes/operations/secrets/delete.html',
+    'app/templates/kubernetes/operations/secrets/reveal.html',
 )
 
 
@@ -36,6 +36,6 @@ def test_reviewed_configmap_secret_crud_and_reveal_use_form_with_right_context()
 
 
 def test_tls_rotation_keeps_its_dedicated_full_width_workflow() -> None:
-    template = (ROOT / 'app/templates/kubernetes_operations/secrets/tls_rotation.html').read_text(encoding='utf-8')
+    template = (ROOT / 'app/templates/kubernetes/operations/secrets/tls_rotation.html').read_text(encoding='utf-8')
     assert 'data-kubernetes-operation-layout="full-width-v2"' in template
     assert 'workflow_control(' in template

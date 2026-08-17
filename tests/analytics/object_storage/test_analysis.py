@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from app.analytics.object_storage.analysis import (
+from app.storage.object_storage.analytics.analysis import (
     capacity_posture,
     compare_evidence,
     derive_headroom,

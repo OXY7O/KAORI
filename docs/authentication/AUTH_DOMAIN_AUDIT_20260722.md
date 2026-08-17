@@ -11,7 +11,7 @@ The Auth domain now has two explicit protocol families:
 - **credential providers** through `CredentialAuthProvider` and `CredentialProviderRegistry`;
 - **browser SSO providers** through `BrowserSsoProvider` and the explicit browser strategy registry.
 
-`app/auth` has no import dependency on `app/users`. User Management maps WTForms into an Auth-owned DTO and consumes Auth services. Provider-specific protocol branches are absent from the login and provider-administration routes.
+`app/access/authentication` has no import dependency on `app/access/users`. User Management maps WTForms into an Auth-owned DTO and consumes Auth services. Provider-specific protocol branches are absent from the login and provider-administration routes.
 
 ## Findings and Changes
 
@@ -23,15 +23,15 @@ Database and LDAP used a credential registry while Google/GitHub SSO used direct
 
 ### 2. LDAP protocol ownership was inverted
 
-Authentication imported LDAP protocol behavior from `app/users/providers/ldap.py`.
+Authentication imported LDAP protocol behavior from `app/access/users/providers/ldap.py`.
 
-**Change:** LDAP connection, TLS, search, service bind, and user bind now live in `app/auth/providers/ldap.py`. The obsolete Users provider package was removed.
+**Change:** LDAP connection, TLS, search, service bind, and user bind now live in `app/access/authentication/providers/ldap.py`. The obsolete Users provider package was removed.
 
 ### 3. Auth still depended on a Users WTForms class
 
 Provider model projection had been moved to Auth but its function accepted `IdentityProviderForm`, leaving the core domain coupled to the administration UI.
 
-**Change:** introduced `IdentityProviderConfiguration` as an Auth-owned DTO. `app/users/provider_forms.py` performs the UI-to-domain mapping. Static dependency inspection now reports zero Auth-to-Users imports.
+**Change:** introduced `IdentityProviderConfiguration` as an Auth-owned DTO. `app/access/users/provider_forms.py` performs the UI-to-domain mapping. Static dependency inspection now reports zero Auth-to-Users imports.
 
 ### 4. SSO family filtering was incorrect
 
@@ -125,7 +125,7 @@ Provider keys could contain spaces or path-like characters even though they are 
 
 ## New Function Test Gate
 
-`tests/auth/` covers:
+`tests/access/authentication/` covers:
 
 - provider catalog, family mapping, and catalog/registry consistency;
 - credential orchestration and Local Database authority;
@@ -155,8 +155,8 @@ The complete runtime suite requires the KAORI dev-container dependencies (`Flask
 ```bash
 flask db current
 flask db upgrade
-pytest -q tests/auth
-pytest -q tests/auth --cov=app.auth --cov=app.users.identity --cov-report=term-missing
+pytest -q tests/access/authentication
+pytest -q tests/access/authentication --cov=app.access.authentication --cov=app.access.users.identity --cov-report=term-missing
 ```
 
 Then execute the Local Database, LDAP, Google OIDC, and GitHub OAuth manual matrix in the patch validation guide.

@@ -1,8 +1,8 @@
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
-SERVICE_SOURCE = ROOT / 'app/inventory/kubernetes/resources/services.py'
-STORAGE_SOURCE = ROOT / 'app/inventory/kubernetes/resources/storage.py'
+SERVICE_SOURCE = ROOT / 'app/kubernetes/inventory/resources/services.py'
+STORAGE_SOURCE = ROOT / 'app/kubernetes/inventory/resources/storage.py'
 
 
 def test_service_selector_matching_uses_postgresql_jsonb_containment() -> None:

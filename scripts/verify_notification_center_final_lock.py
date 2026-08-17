@@ -13,16 +13,16 @@ REQUIRED = (
     'docs/design/audits/KAORI_NOTIFICATION_CENTER_FINAL_LOCK_V1_1_AUDIT_2026_08_08.md',
     'docs/design/audits/KAORI_NOTIFICATION_CENTER_FINAL_LOCK_V1_2_AUDIT_2026_08_08.md',
     'docs/design/KAORI_OPERATIONAL_FEEDBACK_COVERAGE_V1.md',
-    'app/templates/notifications/index.html',
-    'app/templates/notifications/partials/_center_page_content.html',
-    'app/templates/notifications/components/_activity_center_items.html',
+    'app/templates/platform_operations/notifications/index.html',
+    'app/templates/platform_operations/notifications/partials/_center_page_content.html',
+    'app/templates/platform_operations/notifications/components/_activity_center_items.html',
     'app/templates/components/navigation/_notification_center.html',
     'app/templates/components/framed_workspace_tabs.html',
-    'app/notifications/routes.py',
-    'app/notifications/queries.py',
-    'app/notifications/event_catalog.py',
-    'app/notifications/presentation.py',
-    'app/notifications/service.py',
+    'app/platform_operations/notifications/routes.py',
+    'app/platform_operations/notifications/queries.py',
+    'app/platform_operations/notifications/event_catalog.py',
+    'app/platform_operations/notifications/presentation.py',
+    'app/platform_operations/notifications/service.py',
 )
 
 
@@ -36,16 +36,16 @@ def main() -> int:
         if not (ROOT / relative).exists():
             errors.append(f'missing Notification Center lock artifact: {relative}')
 
-    page = read('app/templates/notifications/index.html')
-    content = read('app/templates/notifications/partials/_center_page_content.html')
-    items = read('app/templates/notifications/components/_activity_center_items.html')
+    page = read('app/templates/platform_operations/notifications/index.html')
+    content = read('app/templates/platform_operations/notifications/partials/_center_page_content.html')
+    items = read('app/templates/platform_operations/notifications/components/_activity_center_items.html')
     deck = read('app/templates/components/navigation/_notification_center.html')
     framed_tabs = read('app/templates/components/framed_workspace_tabs.html')
-    routes = read('app/notifications/routes.py')
-    queries = read('app/notifications/queries.py')
-    catalog = read('app/definitions/catalogs/notifications/event_categories.yaml')
-    catalog_code = read('app/notifications/event_catalog.py')
-    presentation = read('app/notifications/presentation.py')
+    routes = read('app/platform_operations/notifications/routes.py')
+    queries = read('app/platform_operations/notifications/queries.py')
+    catalog = read('app/definitions/catalogs/platform_operations/notifications/event_categories.yaml')
+    catalog_code = read('app/platform_operations/notifications/event_catalog.py')
+    presentation = read('app/platform_operations/notifications/presentation.py')
     navigation = read('app/common/navigation.py')
     quality_gate = read('scripts/quality_gate.sh')
 

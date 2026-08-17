@@ -8,8 +8,8 @@ def read(relative: str) -> str:
 
 
 def test_policy_workspace_explains_hot_and_archive_storage_ownership() -> None:
-    presentation = read('app/retention/presentation.py')
-    storage_presentation = read('app/retention/storage_presentation.py')
+    presentation = read('app/platform_operations/data_lifecycle/retention/presentation.py')
+    storage_presentation = read('app/platform_operations/data_lifecycle/retention/storage_presentation.py')
     workspace = read('app/templates/platform_operations/data_lifecycle/partials/_domain_workspace.html')
 
     assert 'def build_storage_contract_context(' in storage_presentation
@@ -33,9 +33,9 @@ def test_policy_workspace_explains_hot_and_archive_storage_ownership() -> None:
 
 
 def test_runtime_observation_storage_contract_is_shared_and_provider_neutral() -> None:
-    runtime_domain = read('app/retention/domains/runtime_observation.py')
-    presentation = read('app/retention/presentation.py')
-    readme = read('app/retention/README.md')
+    runtime_domain = read('app/platform_operations/data_lifecycle/retention/domains/runtime_observation.py')
+    presentation = read('app/platform_operations/data_lifecycle/retention/presentation.py')
+    readme = read('app/platform_operations/data_lifecycle/retention/README.md')
 
     assert "source_model = 'integration_runtime_observations'" in runtime_domain
     assert "source_label = 'PostgreSQL'" in presentation
@@ -58,11 +58,11 @@ def test_lifecycle_migration_chain_restores_schedule_evidence_revision() -> None
 
 
 def test_runtime_observation_lifecycle_includes_object_storage_runtime_history() -> None:
-    presentation = read('app/retention/presentation.py')
-    runtime_domain = read('app/retention/domains/runtime_observation.py')
+    presentation = read('app/platform_operations/data_lifecycle/retention/presentation.py')
+    runtime_domain = read('app/platform_operations/data_lifecycle/retention/domains/runtime_observation.py')
     minio_adapter = read('app/integrations/storage/object_storage/providers/minio/adapter.py')
     validation_tasks = read('app/integrations/validation/tasks.py')
-    readme = read('app/retention/README.md')
+    readme = read('app/platform_operations/data_lifecycle/retention/README.md')
     runtime_history = read('app/templates/integrations/partials/_runtime_history.html')
 
     assert "'label': 'Object Storage · MinIO'" in presentation

@@ -69,7 +69,7 @@ The rules are deliberate:
 - a reusable protocol/API belongs under `adapters/<adapter_key>/`;
 - providers that share an adapter reuse that adapter rather than copying transport code;
 - provider-neutral routing, bindings, query profiles, and consumer contracts stay at the integration-type level;
-- application workspaces mirror the same intent: `app/metrics_sources`, `app/alert_sources/providers/<provider>`, and `app/object_storage/providers/<provider>`;
+- application workspaces mirror the same intent: `app/integrations/observability/metrics_source/application`, `app/integrations/observability/alert_source/providers/<provider>/application`, and `app/integrations/storage/object_storage/providers/<provider>/application`;
 - templates and definition catalogs mirror the same domain/integration-type/provider hierarchy.
 
 For example, Prometheus and Thanos share `prometheus_http`; MinIO, Garage, and AWS S3 can share the `s3` adapter; Rancher and Sangfor Kubernetes Engine can reuse `kubernetes_api` after producing or resolving a Kubernetes API connection. Adding a provider must not create a new product directory directly under `app/integrations`.

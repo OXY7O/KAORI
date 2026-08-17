@@ -84,7 +84,7 @@ Cluster Health rules:
 Removed:
 
 - `app/templates/analytics/components/_overview_surfaces.html`
-- `app/templates/analytics/kubernetes/overview/partials/_prometheus_status.html`
+- `app/templates/kubernetes/analytics/overview/partials/_prometheus_status.html`
 - synthetic `_empty_*_snapshot` adapters used only to convert missing evidence
   into zero-value snapshots
 - `app/analytics/common/cache.py`, an unreferenced Redis/local cache from the
@@ -93,7 +93,7 @@ Removed:
   `actionable-recommendations`, and `recommendations`
 
 The shared Prometheus card remains canonical at
-`app/templates/analytics/kubernetes/components/_prometheus_status.html` and is rendered by
+`app/templates/kubernetes/analytics/components/_prometheus_status.html` and is rendered by
 Analytics Controls & Data Readiness.
 
 ## Regression contract
@@ -137,7 +137,7 @@ limitation rather than an assertion failure.
 Architecture and import-cycle verification still report the same repository
 baseline cycles outside this change. No new cycle, boundary exception, or debt
 baseline entry was added for Analytics Overview. Module reachability now reports
-only `app/knowledge/remediation_workflow.py` and `app/users/identity.py`, both
+only `app/intelligence/knowledge/remediation_workflow.py` and `app/access/users/identity.py`, both
 outside this audit scope.
 
 ## Neutral visual hierarchy redesign — 2026-08-06

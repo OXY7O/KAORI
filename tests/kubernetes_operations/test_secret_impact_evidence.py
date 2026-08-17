@@ -10,7 +10,7 @@ import pytest
 pytestmark = pytest.mark.functional
 
 ROOT = Path(__file__).resolve().parents[2]
-SECRET_ROOT = ROOT / 'app/kubernetes_operations/secrets'
+SECRET_ROOT = ROOT / 'app/kubernetes/operations/secrets'
 
 
 def _module(name: str, monkeypatch: pytest.MonkeyPatch) -> ModuleType:
@@ -55,18 +55,18 @@ def load_impact(
         'app.common',
         'app.common.inventory_generation',
         'app.inventory',
-        'app.inventory.kubernetes.resources',
-        'app.inventory.kubernetes.resources.configuration_semantics',
-        'app.inventory.kubernetes.resources.pod_semantics',
-        'app.kubernetes_operations',
-        'app.kubernetes_operations.secrets',
-        'app.kubernetes_operations.secrets.live_service',
+        'app.kubernetes.inventory.resources',
+        'app.kubernetes.inventory.resources.configuration_semantics',
+        'app.kubernetes.inventory.resources.pod_semantics',
+        'app.kubernetes.operations',
+        'app.kubernetes.operations.secrets',
+        'app.kubernetes.operations.secrets.live_service',
         'app.models',
     ):
         _module(name, monkeypatch)
 
     contracts = _load(
-        'app.kubernetes_operations.secrets.contracts',
+        'app.kubernetes.operations.secrets.contracts',
         SECRET_ROOT / 'contracts.py',
         monkeypatch,
     )
@@ -74,16 +74,16 @@ def load_impact(
     sys.modules['app.common.inventory_generation'].filter_current_generation = lambda query, model: (
         current_generation_calls.append(model) or query
     )
-    semantics = sys.modules['app.inventory.kubernetes.resources.configuration_semantics']
+    semantics = sys.modules['app.kubernetes.inventory.resources.configuration_semantics']
     semantics.COLLECTED = 'Collected'
     semantics.POD_EVIDENCE_KEY = 'inventory.pods'
     semantics.collection_state = lambda evidence, key: evidence.get(key, 'Not Reported')
-    sys.modules['app.inventory.kubernetes.resources.pod_semantics'].pod_operational_state = lambda phase, ready: (
+    sys.modules['app.kubernetes.inventory.resources.pod_semantics'].pod_operational_state = lambda phase, ready: (
         'Stable',
         'normal',
         f'{phase} · {ready}',
     )
-    sys.modules['app.kubernetes_operations.secrets.live_service'].LiveSecretSnapshot = type(
+    sys.modules['app.kubernetes.operations.secrets.live_service'].LiveSecretSnapshot = type(
         'LiveSecretSnapshot',
         (),
         {},

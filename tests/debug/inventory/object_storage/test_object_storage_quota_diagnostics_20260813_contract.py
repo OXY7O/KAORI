@@ -9,7 +9,7 @@ def read(path: str) -> str:
 
 def test_quota_diagnostics_are_persisted_as_canonical_evidence() -> None:
     model = read('app/models/object_storage.py')
-    sync = read('app/inventory/object_storage/sync.py')
+    sync = read('app/storage/object_storage/inventory/sync.py')
     migration = read('migrations/versions/20260813_object_storage_quota_diagnostics.py')
 
     for field in ('quota_source', 'quota_evidence_code', 'quota_checked_at'):
@@ -42,8 +42,8 @@ def test_minio_quota_collector_distinguishes_operational_failure_modes() -> None
 
 
 def test_bucket_modal_surfaces_quota_source_result_and_operator_guidance() -> None:
-    template = read('app/templates/inventory/object_storage/buckets/partials/_table_content.html')
-    presentation = read('app/inventory/object_storage/presentation.py')
+    template = read('app/templates/storage/object_storage/inventory/buckets/partials/_table_content.html')
+    presentation = read('app/storage/object_storage/inventory/presentation.py')
 
     assert "status_row('Quota Evidence', asset.quota_evidence.label, asset.quota_evidence.tone)" in template
     assert "detail_row('Quota Checked'" in template
@@ -55,7 +55,7 @@ def test_bucket_modal_surfaces_quota_source_result_and_operator_guidance() -> No
 
 
 def test_quota_source_remains_distinct_from_quota_result() -> None:
-    presentation = read('app/inventory/object_storage/presentation.py')
+    presentation = read('app/storage/object_storage/inventory/presentation.py')
 
     assert 'MinIO Admin API v3' in presentation
     assert 'MinIO Admin API v4' in presentation

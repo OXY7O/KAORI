@@ -7,8 +7,8 @@ from flask_login import UserMixin
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from werkzeug.security import check_password_hash, generate_password_hash
 
+from app.access.rbac.policy import role_is_access_admin_level
 from app.extensions.db import db
-from app.rbac.policy import role_is_access_admin_level
 
 if TYPE_CHECKING:
     from app.models.rbac import Role

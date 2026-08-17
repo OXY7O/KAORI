@@ -7,8 +7,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 ANALYTICS_TEMPLATES = ROOT / 'app/templates/analytics'
-ROUTE_FILES = tuple(sorted((ROOT / 'app/analytics/kubernetes').glob('*/routes.py'))) + (
-    ROOT / 'app/analytics/object_storage/routes.py',
+ROUTE_FILES = tuple(sorted((ROOT / 'app/kubernetes/analytics').glob('*/routes.py'))) + (
+    ROOT / 'app/storage/object_storage/analytics/routes.py',
     ROOT / 'app/analytics/routes.py',
 )
 RELEASE_EVIDENCE = (
@@ -35,16 +35,16 @@ def main() -> int:
     errors: list[str] = []
     runtime = read('app/static/js/analytics/controls.js')
     shared_tabs = read('app/templates/components/content_tabs.html')
-    workspace = read('app/templates/analytics/kubernetes/components/_analysis_workspace.html')
-    overview = read('app/templates/analytics/kubernetes/overview/index.html')
-    top_consumers = read('app/templates/analytics/kubernetes/top_consumers/partials/_top_consumers_section.html')
-    top_consumer_summary = read('app/templates/analytics/kubernetes/top_consumers/partials/_summary.html')
-    record_detail_modal = read('app/templates/analytics/kubernetes/components/_record_detail_modal.html')
-    forecast_index = read('app/templates/analytics/kubernetes/forecast/index.html')
-    forecast_hero = read('app/templates/analytics/kubernetes/forecast/partials/_hero.html')
+    workspace = read('app/templates/kubernetes/analytics/components/_analysis_workspace.html')
+    overview = read('app/templates/kubernetes/analytics/overview/index.html')
+    top_consumers = read('app/templates/kubernetes/analytics/top_consumers/partials/_top_consumers_section.html')
+    top_consumer_summary = read('app/templates/kubernetes/analytics/top_consumers/partials/_summary.html')
+    record_detail_modal = read('app/templates/kubernetes/analytics/components/_record_detail_modal.html')
+    forecast_index = read('app/templates/kubernetes/analytics/forecast/index.html')
+    forecast_hero = read('app/templates/kubernetes/analytics/forecast/partials/_hero.html')
     quality_gate = read('scripts/quality_gate.sh')
     coverage = read('scripts/verify_feature_test_coverage.py')
-    analytics_readme = read('app/analytics/kubernetes/README.md')
+    analytics_readme = read('app/kubernetes/analytics/README.md')
     tracker = read('docs/reviews/2026-08-10-final-recheck.md')
     content_tabs_standard = read('docs/design/components/CONTENT_TABS.md')
     tab_registry = read('docs/design/components/TAB_STYLES.md')
@@ -123,7 +123,7 @@ def main() -> int:
     for retired in (
         'app/templates/analytics/components/_content_tabs.html',
         'app/templates/analytics/components/_snapshot_panel.html',
-        'app/templates/analytics/kubernetes/materialization/_freshness.html',
+        'app/templates/kubernetes/analytics/materialization/_freshness.html',
     ):
         require(
             not (ROOT / retired).exists(),
@@ -167,7 +167,7 @@ def main() -> int:
         require(token in record_detail_modal, f'Analytics record-detail modal contract missing: {token}', errors)
 
     require(
-        '{% include "analytics/kubernetes/forecast/partials/_hero.html" %}' in forecast_index,
+        '{% include "kubernetes/analytics/forecast/partials/_hero.html" %}' in forecast_index,
         'Forecast page must consume the canonical Forecast hero partial.',
         errors,
     )
@@ -196,14 +196,14 @@ def main() -> int:
         )
 
     top_level_pages = (
-        'app/templates/analytics/kubernetes/overview/index.html',
-        'app/templates/analytics/kubernetes/utilization/index.html',
-        'app/templates/analytics/kubernetes/capacity/index.html',
-        'app/templates/analytics/kubernetes/storage/index.html',
-        'app/templates/analytics/kubernetes/workload/index.html',
-        'app/templates/analytics/kubernetes/forecast/index.html',
-        'app/templates/analytics/kubernetes/top_consumers/index.html',
-        'app/templates/analytics/kubernetes/alerts/index.html',
+        'app/templates/kubernetes/analytics/overview/index.html',
+        'app/templates/kubernetes/analytics/utilization/index.html',
+        'app/templates/kubernetes/analytics/capacity/index.html',
+        'app/templates/kubernetes/analytics/storage/index.html',
+        'app/templates/kubernetes/analytics/workload/index.html',
+        'app/templates/kubernetes/analytics/forecast/index.html',
+        'app/templates/kubernetes/analytics/top_consumers/index.html',
+        'app/templates/kubernetes/analytics/alerts/index.html',
     )
     for relative in top_level_pages:
         source = read(relative)
@@ -223,7 +223,7 @@ def main() -> int:
         read(str(path.relative_to(ROOT))).count("@permission_required('analytics.view')")
         for path in kubernetes_route_files
     )
-    object_storage_permission_guards = read('app/analytics/object_storage/routes.py').count(
+    object_storage_permission_guards = read('app/storage/object_storage/analytics/routes.py').count(
         "@permission_required('object_storage_analytics.view')"
     )
     require(
@@ -270,8 +270,8 @@ def main() -> int:
         'Analytics README must document single native tab ownership.',
         errors,
     )
-    identity = read('app/analytics/kubernetes/materialization/identity.py')
-    materialization_service = read('app/analytics/kubernetes/materialization/service.py')
+    identity = read('app/kubernetes/analytics/materialization/identity.py')
+    materialization_service = read('app/kubernetes/analytics/materialization/service.py')
     require(
         'def normalize_parameters' in identity and 'def parameter_fingerprint' in identity,
         'Analytics snapshot identity must be owned by the dependency-light materialization identity module.',
@@ -282,8 +282,8 @@ def main() -> int:
         'Materialization service must not duplicate snapshot identity helpers.',
         errors,
     )
-    serialization = read('app/analytics/kubernetes/materialization/serialization.py')
-    forecast_presentation = read('app/analytics/kubernetes/forecast/presentation.py')
+    serialization = read('app/kubernetes/analytics/materialization/serialization.py')
+    forecast_presentation = read('app/kubernetes/analytics/forecast/presentation.py')
     require(
         'load_cluster_reference' not in serialization,
         'Analytics snapshot decode must not use a database-backed compatibility fallback.',

@@ -3,7 +3,7 @@ from __future__ import annotations
 from flask import Blueprint, render_template
 
 from app.access.overview.presentation import build_access_overview
-from app.rbac.decorators import any_permission_required
+from app.access.rbac.decorators import any_permission_required
 
 bp = Blueprint('overview', __name__)
 

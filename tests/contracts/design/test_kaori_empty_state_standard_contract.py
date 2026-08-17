@@ -23,17 +23,18 @@ def test_empty_and_blocked_states_have_canonical_shared_owners() -> None:
 
 
 def test_jobs_execution_zero_states_use_canonical_empty_state_without_oob_leak() -> None:
-    routes = read('app/jobs/routes.py')
-    active = read('app/templates/jobs/executions/partials/_active_jobs.html')
-    registry = read('app/templates/jobs/executions/partials/_registry.html')
-    queues = read('app/templates/jobs/executions/partials/_queue_activity.html')
-    configuration = read('app/templates/jobs/configuration/_job_workspace.html')
-    execution_activity = read('app/templates/jobs/configuration/_execution_activity.html')
+    routes = read('app/platform_operations/jobs/routes.py')
+    active = read('app/templates/platform_operations/jobs/executions/partials/_active_jobs.html')
+    registry = read('app/templates/platform_operations/jobs/executions/partials/_registry.html')
+    queues = read('app/templates/platform_operations/jobs/executions/partials/_queue_activity.html')
+    configuration = read('app/templates/platform_operations/jobs/configuration/_job_workspace.html')
+    execution_activity = read('app/templates/platform_operations/jobs/configuration/_execution_activity.html')
 
     assert "fragment_context['include_status_oob'] = fragment == 'active'" in routes
     assert '{% if include_status_oob|default(false) %}' in active
     assert (
-        "{% if embedded|default(false) %}\n    {% include 'jobs/executions/partials/_status_oob.html' %}" not in active
+        "{% if embedded|default(false) %}\n    {% include 'platform_operations/jobs/executions/partials/_status_oob.html' %}"
+        not in active
     )
     assert 'hx-on::before-request="if (document.hidden) event.preventDefault()"' in active
 

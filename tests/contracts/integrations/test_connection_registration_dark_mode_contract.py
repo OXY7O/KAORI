@@ -35,9 +35,9 @@ def test_shared_connection_guidance_uses_accent_violet_not_bright_supporting_tex
 
 
 def test_kubernetes_connection_forms_follow_integration_dark_mode_and_shared_actions() -> None:
-    add = read('app/templates/cluster/add.html')
-    edit = read('app/templates/cluster/edit.html')
-    form = read('app/templates/cluster/partials/_form.html')
+    add = read('app/templates/kubernetes/cluster/add.html')
+    edit = read('app/templates/kubernetes/cluster/edit.html')
+    form = read('app/templates/kubernetes/cluster/partials/_form.html')
 
     assert 'kaori-integration-semantic space-y-6' in add
     assert 'kaori-integration-semantic space-y-6' in edit

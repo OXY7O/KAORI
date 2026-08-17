@@ -12,7 +12,7 @@ Platform Operations → Jobs & Executions
 └── Job Configuration
 ```
 
-`app.jobs` owns registration, generic policy, admission, canonical dispatch, `JobExecution`, progress, cancellation, recovery, and UI orchestration. Feature logic remains in its source domain. Inventory collection and generation promotion therefore remain under `app.inventory` and `app.cluster`.
+`app.platform_operations.jobs` owns registration, generic policy, admission, canonical dispatch, `JobExecution`, progress, cancellation, recovery, and UI orchestration. Feature logic remains in its source domain. Inventory collection and generation promotion therefore remain under `app.inventory` and `app.kubernetes.cluster`.
 
 ## Canonical Dispatch
 
@@ -101,11 +101,11 @@ The downgrade cannot preserve future non-inventory policies because the legacy t
 
 ## Changed Areas
 
-- `app/jobs/`: registry, definitions, policies, scheduler, routes, configuration UI, dispatcher.
-- `app/inventory/` and `app/cluster/`: Inventory Sync domain adapter and Quick Action dispatch.
+- `app/platform_operations/jobs/`: registry, definitions, policies, scheduler, routes, configuration UI, dispatcher.
+- `app/inventory/` and `app/kubernetes/cluster/`: Inventory Sync domain adapter and Quick Action dispatch.
 - `app/models/job.py`: generic `JobPolicy`.
-- `app/rbac/`: execution and configuration permissions.
-- `app/templates/jobs/`: Executions and Job Configuration tabs.
+- `app/access/rbac/`: execution and configuration permissions.
+- `app/templates/platform_operations/jobs/`: Executions and Job Configuration tabs.
 - `.devcontainer/compose.devcontainer.yml`, `.devcontainer/devcontainer.json`, and `compose.production.yml`: dedicated inventory and maintenance worker topology.
 - navigation, Welcome catalog, deployment environment examples, and architecture documentation.
 

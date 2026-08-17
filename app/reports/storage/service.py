@@ -9,6 +9,7 @@ from typing import Any
 from flask import current_app, g
 from sqlalchemy import select
 
+from app.artifact_storage.base import ArtifactStorageBackend, StoredArtifact
 from app.extensions.db import db
 from app.models.report import Report
 from app.reports.storage.health import (
@@ -26,7 +27,6 @@ from app.reports.storage.state import (
     get_shared_report_storage_status,
     publish_shared_report_storage_status,
 )
-from app.storage.base import ArtifactStorageBackend, StoredArtifact
 
 SUPPORTED_REPORT_STORAGE_BACKENDS = {
     'local',

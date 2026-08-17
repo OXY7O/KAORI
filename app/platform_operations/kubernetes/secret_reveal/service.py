@@ -6,7 +6,7 @@ from typing import Any
 from flask import current_app
 
 from app.common.presentation import present_user_datetime
-from app.kubernetes_operations.secrets.reveal_policy import (
+from app.kubernetes.operations.secrets.reveal_policy import (
     REVEAL_NAMESPACE_POLICIES,
     build_namespace_policy_rows,
     cluster_reveal_readiness_evidence,

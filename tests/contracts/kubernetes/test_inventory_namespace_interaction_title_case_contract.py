@@ -8,15 +8,15 @@ def read(relative: str) -> str:
 
 
 def test_inventory_pagination_copy_uses_resource_aware_title_case():
-    cluster = read('app/templates/inventory/kubernetes/overview/partials/_resources_by_cluster_content.html')
-    namespace = read('app/templates/inventory/kubernetes/namespaces/partials/_table_content.html')
+    cluster = read('app/templates/kubernetes/inventory/overview/partials/_resources_by_cluster_content.html')
+    namespace = read('app/templates/kubernetes/inventory/namespaces/partials/_table_content.html')
     assert "'Cluster' if" in cluster and "'Clusters'" in cluster
     assert "pagination_ui.resource_name('Namespaces', pagination.total_items)" in namespace
     assert '>Rows</label>' in namespace
 
 
 def test_namespace_summary_uses_control_posture_and_sentence_case_descriptions():
-    template = read('app/templates/inventory/kubernetes/namespaces/partials/_summary_cards.html')
+    template = read('app/templates/kubernetes/inventory/namespaces/partials/_summary_cards.html')
     assert 'Namespace Control Posture' in template
     assert 'resource-control, and security evidence' in template
     for label in (

@@ -8,8 +8,8 @@ from sqlalchemy import func, select
 
 from app.common.celery_queue_health import get_queue_readiness
 from app.extensions.db import db
+from app.integrations.delivery.notification_channels.service import notification_channel_summary
 from app.models.report import Report, ReportSchedule, ReportTemplate
-from app.notification_channels.service import notification_channel_summary
 from app.reports.catalog import (
     REPORT_COVERAGE_DOMAINS,
     REPORT_FAMILY_ANALYTICS,

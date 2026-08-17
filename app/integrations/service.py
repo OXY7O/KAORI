@@ -421,7 +421,9 @@ def build_alertmanager_page(
     coverage_page: int = 1,
     coverage_per_page: int = 5,
 ) -> dict[str, Any]:
-    from app.alert_sources.providers.alertmanager.presentation import build_inventory_context
+    from app.integrations.observability.alert_source.providers.alertmanager.application.presentation import (
+        build_inventory_context,
+    )
 
     return build_inventory_context(
         query=query,

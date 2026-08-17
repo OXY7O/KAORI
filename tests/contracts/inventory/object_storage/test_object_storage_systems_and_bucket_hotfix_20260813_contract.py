@@ -6,14 +6,14 @@ def read(path: str) -> str:
 
 
 def test_bucket_detail_does_not_reference_missing_snapshot_state():
-    template = read('app/templates/inventory/object_storage/buckets/partials/_table_content.html')
+    template = read('app/templates/storage/object_storage/inventory/buckets/partials/_table_content.html')
     assert 'asset.snapshot_state' not in template
     assert 'asset.snapshot_status_label' in template
     assert 'asset.snapshot_status_tone' in template
 
 
 def test_bucket_presentation_exposes_modal_contract_fields():
-    presentation = read('app/inventory/object_storage/presentation.py')
+    presentation = read('app/storage/object_storage/inventory/presentation.py')
     assert "'snapshot_state': {'label': snapshot_status_label, 'tone': snapshot_status_tone}" in presentation
     assert "'public_exposure': exposure" in presentation
     assert "'data_boundary':" in presentation
@@ -21,8 +21,8 @@ def test_bucket_presentation_exposes_modal_contract_fields():
 
 
 def test_systems_page_uses_drawer_not_resource_detail_modal():
-    index = read('app/templates/inventory/object_storage/systems/index.html')
-    table = read('app/templates/inventory/object_storage/systems/partials/_table_content.html')
+    index = read('app/templates/storage/object_storage/inventory/systems/index.html')
+    table = read('app/templates/storage/object_storage/inventory/systems/partials/_table_content.html')
     assert 'resource_detail_modal' not in index
     assert 'resource_detail_modal' not in table
     assert 'side_drawer.render' in table
@@ -30,7 +30,7 @@ def test_systems_page_uses_drawer_not_resource_detail_modal():
 
 
 def test_systems_table_uses_canonical_provider_and_snapshot_columns():
-    table = read('app/templates/inventory/object_storage/systems/partials/_table_content.html')
+    table = read('app/templates/storage/object_storage/inventory/systems/partials/_table_content.html')
     for heading in (
         'System',
         'Provider',
@@ -48,7 +48,7 @@ def test_systems_table_uses_canonical_provider_and_snapshot_columns():
 
 
 def test_systems_workspace_points_manual_sync_to_job_execution():
-    card = read('app/templates/inventory/object_storage/systems/partials/_table_card.html')
+    card = read('app/templates/storage/object_storage/inventory/systems/partials/_table_card.html')
     assert "job_key='object_storage.inventory.sync'" in card
     assert 'Manage Inventory Jobs' in card
     assert 'No live provider query is issued by this page.' in card

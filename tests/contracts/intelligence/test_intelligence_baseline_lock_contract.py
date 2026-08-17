@@ -19,12 +19,12 @@ def test_intelligence_baseline_lock_distinguishes_safe_current_state_from_featur
 
 
 def test_automation_control_keeps_infrastructure_execution_fail_closed_without_blocking_governance():
-    routes = read('app/automation_control/routes.py')
-    presentation = read('app/automation_control/presentation.py')
+    routes = read('app/intelligence/automation_control/routes.py')
+    presentation = read('app/intelligence/automation_control/presentation.py')
     default_config = read('app/config/default.py')
     enablement = read('app/common/automation_execution.py')
     workflow = read('app/intelligence/workflow.py')
-    resolver_tasks = read('app/resolver/tasks.py')
+    resolver_tasks = read('app/intelligence/resolver/tasks.py')
 
     governance = routes.split('def _handle_governance_mutation(', 1)[1].split('def _handle_execution_action(', 1)[0]
     execution = routes.split('def _handle_execution_action(', 1)[1].split('def _handle_control_operation(', 1)[0]
@@ -38,12 +38,12 @@ def test_automation_control_keeps_infrastructure_execution_fail_closed_without_b
     assert 'AUTOMATION_CONTROL_MUTATIONS_ENABLED' not in routes + presentation + default_config
     assert 'detail=str(exc)' not in routes
     assert "'posture': overview_state['posture']" in presentation
-    assert 'Governance Only' in read('app/automation_control/overview.py')
+    assert 'Governance Only' in read('app/intelligence/automation_control/overview.py')
     assert 'DOMAIN_DEFINITIONS' not in presentation
 
 
 def test_alert_intelligence_uses_supported_multi_domain_alert_sources():
-    module = read('app/alert_intelligence/service.py')
+    module = read('app/intelligence/alert_intelligence/service.py')
     alerts = read('app/templates/intelligence/partials/_alert_intelligence_alerts.html')
     correlation = read('app/templates/intelligence/partials/_alert_intelligence_correlation.html')
 

@@ -1,0 +1,39 @@
+<aside class="kaori-login-brand relative hidden min-h-full overflow-hidden bg-surface-sidebar p-6 text-brand-foreground lg:col-span-5 lg:flex lg:flex-col xl:p-7">
+    <div class="kaori-login-brand__ambient pointer-events-none absolute inset-0"
+         aria-hidden="true"></div>
+    <div class="relative z-10 flex items-center gap-3">
+        <span class="flex h-9 w-9 items-center justify-center rounded-xl border border-brand-outline bg-brand-surface-strong shadow-lg shadow-black/20 backdrop-blur">
+            <img src="{{ url_for('static', filename='images/kaori-logo.svg') }}"
+                 alt=""
+                 class="h-6 w-6 brightness-0 invert" />
+        </span>
+        <div class="min-w-0 flex-1">
+            <div class="text-lg font-bold tracking-widest">KAORI</div>
+            <p class="kaori-login-brand__acronym mt-0.5 font-semibold text-brand-foreground-muted">
+                Knowledge · Automation · Operations · Resilience · Intelligence
+            </p>
+        </div>
+    </div>
+    <div class="relative z-10 mt-7">
+        <p class="kaori-login-brand__eyebrow font-semibold text-kaori-accent">Infrastructure Operations Platform</p>
+        <h1 class="mt-2 max-w-md text-2xl font-bold leading-tight tracking-tight xl:text-3xl">
+            Operate with <span class="kaori-login-brand__clarity">Clarity</span>.
+        </h1>
+        <p class="kaori-login-brand__description mt-2 max-w-md leading-5 text-brand-foreground-muted">
+            Unified visibility and governed operations across your infrastructure estate.
+        </p>
+    </div>
+    <div class="relative z-10 mt-5 flex min-h-0 flex-1 flex-col justify-center">
+        <figure class="kaori-operations-fabric" aria-hidden="true">
+            <img src="{{ url_for('static', filename='images/kaori-login-operations-fabric.svg') }}"
+                 alt=""
+                 class="block h-auto w-full" />
+        </figure>
+        {% include "access/authentication/partials/_feature_cards.html" %}
+    </div>
+    <div class="kaori-login-brand__footer relative z-10 mt-5 flex items-center gap-2 font-medium text-brand-foreground-muted">
+        <span class="h-1.5 w-1.5 rounded-full bg-kaori-accent shadow-sm shadow-kaori-accent"
+              aria-hidden="true"></span>
+        Governed Operations · Observable Evidence · Accountable Access
+    </div>
+</aside>

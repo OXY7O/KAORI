@@ -11,9 +11,9 @@ from flask.typing import ResponseReturnValue
 from flask_login import current_user
 from werkzeug.exceptions import HTTPException
 
-from app.auth.session import safe_next_url
-from app.notifications.service import queue_transient_feedback, record_operational_activity
-from app.rbac.decorators import permission_required
+from app.access.authentication.session import safe_next_url
+from app.access.rbac.decorators import permission_required
+from app.platform_operations.notifications.service import queue_transient_feedback, record_operational_activity
 from app.reports.report_templates.service import (
     create_custom_template,
     delete_custom_template,

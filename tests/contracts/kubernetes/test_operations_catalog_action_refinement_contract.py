@@ -9,8 +9,8 @@ def _read(relative: str) -> str:
 
 def test_management_catalog_actions_are_compact_and_not_filled_blocks() -> None:
     component = _read('app/templates/components/operational_workflow_card.html')
-    configmap = _read('app/templates/kubernetes_operations/configmaps/index.html')
-    secret = _read('app/templates/kubernetes_operations/secrets/index.html')
+    configmap = _read('app/templates/kubernetes/operations/configmaps/index.html')
+    secret = _read('app/templates/kubernetes/operations/secrets/index.html')
     assert "action_button.classes('secondary', false)" in component
     assert "action_button.classes('primary', true)" not in component
     assert 'lg:w-48' not in component
@@ -33,7 +33,7 @@ def test_form_action_bar_supports_standalone_and_embedded_workspace_controls() -
 
 
 def test_bulk_tls_flow_uses_always_visible_shared_workflow_control() -> None:
-    template = _read('app/templates/kubernetes_operations/secrets/tls_rotation.html')
+    template = _read('app/templates/kubernetes/operations/secrets/tls_rotation.html')
     component = _read('app/templates/components/kubernetes_operation_ui.html')
     point_flow = _read('app/templates/components/operational_point_flow.html')
     assert 'secret_ui.workflow_control(' in template

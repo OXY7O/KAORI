@@ -1,6 +1,6 @@
 # Domain 18 — End-to-End Remediation Workflow Integration
 
-> **Current release status (2026-08-10): Historical design reference.** The dormant `app/knowledge/remediation_workflow.py` orchestrator was removed from the release source because it had no runtime/test/entrypoint consumer. Intelligence remediation is held for the next controlled redesign; this document must not be read as an enabled current-release execution path.
+> **Current release status (2026-08-10): Historical design reference.** The dormant `app/intelligence/knowledge/remediation_workflow.py` orchestrator was removed from the release source because it had no runtime/test/entrypoint consumer. Intelligence remediation is held for the next controlled redesign; this document must not be read as an enabled current-release execution path.
 
 ## Purpose
 
@@ -14,7 +14,7 @@ Alert → Runbook match → Candidate → Review promotion → Decision
 
 ## Production Changes
 
-### Historical `app/knowledge/remediation_workflow.py`
+### Historical `app/intelligence/knowledge/remediation_workflow.py`
 
 The retired prototype provided three application-level entry points:
 
@@ -24,7 +24,7 @@ The retired prototype provided three application-level entry points:
 
 The module deliberately does not import or call `dispatch_resolver_execution()`. Provider mutation stays worker-side.
 
-### `app/resolver/tasks.py`
+### `app/intelligence/resolver/tasks.py`
 
 Adds the `execute_authorized_resolution` Celery task on the dedicated `resolver-execution` queue. The worker:
 
@@ -53,7 +53,7 @@ No migration is added. Apply after Domain 17, then restart web, Celery worker, a
 Route the task explicitly:
 
 ```python
-'app.resolver.tasks.execute_authorized_resolution': {
+'app.intelligence.resolver.tasks.execute_authorized_resolution': {
     'queue': 'resolver-execution',
 }
 ```

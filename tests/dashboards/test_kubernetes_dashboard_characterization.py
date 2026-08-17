@@ -41,7 +41,7 @@ def _load_routes(monkeypatch, *, authorized: bool = True, has_clusters: bool = T
         'render_calls': [],
     }
 
-    for package in ('app', 'app.cluster', 'app.dashboards', 'app.dashboards.kubernetes', 'app.rbac'):
+    for package in ('app', 'app.kubernetes.cluster', 'app.dashboards', 'app.kubernetes.dashboard', 'app.access.rbac'):
         module = ModuleType(package)
         module.__path__ = []
         monkeypatch.setitem(sys.modules, package, module)
@@ -62,7 +62,7 @@ def _load_routes(monkeypatch, *, authorized: bool = True, has_clusters: bool = T
     flask.render_template = render_template
     monkeypatch.setitem(sys.modules, 'flask', flask)
 
-    onboarding = ModuleType('app.cluster.onboarding')
+    onboarding = ModuleType('app.kubernetes.cluster.onboarding')
 
     def has_registered_clusters() -> bool:
         state['cluster_checks'] += 1
@@ -71,7 +71,7 @@ def _load_routes(monkeypatch, *, authorized: bool = True, has_clusters: bool = T
     onboarding.has_registered_clusters = has_registered_clusters
     monkeypatch.setitem(sys.modules, onboarding.__name__, onboarding)
 
-    service = ModuleType('app.dashboards.kubernetes.service')
+    service = ModuleType('app.kubernetes.dashboard.service')
 
     def get_dashboard_overview(**kwargs: Any):
         state['overview_calls'].append(kwargs)
@@ -85,7 +85,7 @@ def _load_routes(monkeypatch, *, authorized: bool = True, has_clusters: bool = T
     service.get_dashboard_section = get_dashboard_section
     monkeypatch.setitem(sys.modules, service.__name__, service)
 
-    decorators = ModuleType('app.rbac.decorators')
+    decorators = ModuleType('app.access.rbac.decorators')
 
     def permission_required(permission: str):
         def decorator(function):
@@ -104,8 +104,8 @@ def _load_routes(monkeypatch, *, authorized: bool = True, has_clusters: bool = T
     decorators.permission_required = permission_required
     monkeypatch.setitem(sys.modules, decorators.__name__, decorators)
 
-    module_name = 'app.dashboards.kubernetes.routes'
-    spec = importlib.util.spec_from_file_location(module_name, ROOT / 'app/dashboards/kubernetes/routes.py')
+    module_name = 'app.kubernetes.dashboard.routes'
+    spec = importlib.util.spec_from_file_location(module_name, ROOT / 'app/kubernetes/dashboard/routes.py')
     assert spec and spec.loader
     module = importlib.util.module_from_spec(spec)
     monkeypatch.setitem(sys.modules, module_name, module)
@@ -181,7 +181,7 @@ def test_authorized_section_reads_dashboard_only_after_cluster_readiness(monkeyp
             },
         )
     ]
-    assert response['template'] == 'dashboards/kubernetes/partials/_cluster_health.html'
+    assert response['template'] == 'kubernetes/dashboard/partials/_cluster_health.html'
 
 
 def test_dashboard_tab_selection_is_bounded_to_canonical_tabs(monkeypatch) -> None:

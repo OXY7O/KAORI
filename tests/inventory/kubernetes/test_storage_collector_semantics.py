@@ -11,18 +11,18 @@ import pytest
 pytestmark = pytest.mark.functional
 
 ROOT = Path(__file__).resolve().parents[3]
-COLLECTOR_PATH = ROOT / 'app/inventory/kubernetes/collectors/storage.py'
-SEMANTICS_PATH = ROOT / 'app/inventory/kubernetes/resources/storage_semantics.py'
+COLLECTOR_PATH = ROOT / 'app/kubernetes/inventory/collectors/storage.py'
+SEMANTICS_PATH = ROOT / 'app/kubernetes/inventory/resources/storage_semantics.py'
 
 
 def _load_collector(monkeypatch: pytest.MonkeyPatch):
     app_module = ModuleType('app')
     inventory_module = ModuleType('app.inventory')
-    collectors_module = ModuleType('app.inventory.kubernetes.collectors')
+    collectors_module = ModuleType('app.kubernetes.inventory.collectors')
 
     common_spec = importlib.util.spec_from_file_location(
-        'app.inventory.kubernetes.collectors.common',
-        ROOT / 'app/inventory/kubernetes/collectors/common.py',
+        'app.kubernetes.inventory.collectors.common',
+        ROOT / 'app/kubernetes/inventory/collectors/common.py',
     )
     assert common_spec and common_spec.loader
     common_module = importlib.util.module_from_spec(common_spec)
@@ -48,8 +48,8 @@ def _load_collector(monkeypatch: pytest.MonkeyPatch):
     for name, module in {
         'app': app_module,
         'app.inventory': inventory_module,
-        'app.inventory.kubernetes.collectors': collectors_module,
-        'app.inventory.kubernetes.collectors.common': common_module,
+        'app.kubernetes.inventory.collectors': collectors_module,
+        'app.kubernetes.inventory.collectors.common': common_module,
         'kubernetes': kubernetes_module,
         'kubernetes.client': client_module,
         'kubernetes.client.exceptions': exceptions_module,
@@ -67,18 +67,18 @@ def _load_collector(monkeypatch: pytest.MonkeyPatch):
 def _load_semantics(monkeypatch: pytest.MonkeyPatch):
     app_module = ModuleType('app')
     inventory_module = ModuleType('app.inventory')
-    resources_module = ModuleType('app.inventory.kubernetes.resources')
+    resources_module = ModuleType('app.kubernetes.inventory.resources')
     formatting_spec = importlib.util.spec_from_file_location(
-        'app.inventory.kubernetes.formatting',
-        ROOT / 'app/inventory/kubernetes/formatting.py',
+        'app.kubernetes.inventory.formatting',
+        ROOT / 'app/kubernetes/inventory/formatting.py',
     )
     assert formatting_spec and formatting_spec.loader
     formatting_module = importlib.util.module_from_spec(formatting_spec)
     for name, module in {
         'app': app_module,
         'app.inventory': inventory_module,
-        'app.inventory.kubernetes.resources': resources_module,
-        'app.inventory.kubernetes.formatting': formatting_module,
+        'app.kubernetes.inventory.resources': resources_module,
+        'app.kubernetes.inventory.formatting': formatting_module,
     }.items():
         monkeypatch.setitem(sys.modules, name, module)
     formatting_spec.loader.exec_module(formatting_module)

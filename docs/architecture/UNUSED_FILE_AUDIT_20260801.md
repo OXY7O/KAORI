@@ -15,25 +15,25 @@ These files are obsolete because their canonical replacements are already active
 - `app/static/js/analytics_capacity.js`
 - `app/static/js/analytics_forecast.js`
 - `app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_operation_feedback_oob.html`
-- `app/templates/analytics/kubernetes/alerts/partials/_pagination.html`
-- `app/templates/analytics/kubernetes/alerts/partials/_source_status.html`
+- `app/templates/kubernetes/analytics/alerts/partials/_pagination.html`
+- `app/templates/kubernetes/analytics/alerts/partials/_source_status.html`
 - `app/templates/analytics/components/_controls.html`
 - `app/templates/analytics/components/_overview_surfaces.html`
-- `app/templates/analytics/kubernetes/forecast/partials/_methodology.html`
-- `app/templates/analytics/kubernetes/overview/partials/_empty_state.html`
-- `app/templates/analytics/kubernetes/overview/partials/_prometheus_status_loading.html`
-- `app/templates/analytics/kubernetes/storage/partials/_persistent_pagination.html`
-- `app/templates/analytics/kubernetes/storage/partials/_record_pagination.html`
-- `app/templates/analytics/kubernetes/top_consumers/partials/_consumer_detail_pagination.html`
-- `app/templates/analytics/kubernetes/workload/partials/_record_pagination.html`
+- `app/templates/kubernetes/analytics/forecast/partials/_methodology.html`
+- `app/templates/kubernetes/analytics/overview/partials/_empty_state.html`
+- `app/templates/kubernetes/analytics/overview/partials/_prometheus_status_loading.html`
+- `app/templates/kubernetes/analytics/storage/partials/_persistent_pagination.html`
+- `app/templates/kubernetes/analytics/storage/partials/_record_pagination.html`
+- `app/templates/kubernetes/analytics/top_consumers/partials/_consumer_detail_pagination.html`
+- `app/templates/kubernetes/analytics/workload/partials/_record_pagination.html`
 - `app/templates/components/footer.html`
-- `app/templates/governance/tls_certificates/partials/_operation_feedback_oob.html`
-- `app/templates/governance/tls_certificates/partials/_sync_toast_oob.html`
+- `app/templates/kubernetes/governance/tls_certificates/partials/_operation_feedback_oob.html`
+- `app/templates/kubernetes/governance/tls_certificates/partials/_sync_toast_oob.html`
 - `app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_runtime_history.html`
 - `app/templates/integrations/partials/_binding_validation_posture.html`
 - `app/templates/integrations/partials/_status_badge.html`
-- `app/templates/jobs/executions/partials/_hero_context_metrics.html`
-- `app/templates/jobs/executions/partials/_hero_metadata.html`
+- `app/templates/platform_operations/jobs/executions/partials/_hero_context_metrics.html`
+- `app/templates/platform_operations/jobs/executions/partials/_hero_metadata.html`
 - `app/templates/prometheus/partials/_validation_response.html`
 - `app/templates/reports/overview/partials/_recommended_actions.html`
 - `app/templates/settings/reports/index.html`
@@ -86,9 +86,9 @@ These are local/generated artifacts and must not be included in source ZIP deliv
 
 ## Architecture Decision Update — 2026-08-10
 
-`app/knowledge/remediation_workflow.py` was formally retired from the current release after module-reachability validation confirmed that it had no runtime import, configured entrypoint, permanent test, or script consumer. Intelligence remediation remains held for a future controlled redesign. Historical Domain 18 documentation is retained only as design history and is explicitly marked non-current.
+`app/intelligence/knowledge/remediation_workflow.py` was formally retired from the current release after module-reachability validation confirmed that it had no runtime import, configured entrypoint, permanent test, or script consumer. Intelligence remediation remains held for a future controlled redesign. Historical Domain 18 documentation is retained only as design history and is explicitly marked non-current.
 
-`app/users/identity.py` was also removed after the same reachability check confirmed that its identity-source helpers were unused and duplicated provider-family ownership already held by the authentication provider catalog.
+`app/access/users/identity.py` was also removed after the same reachability check confirmed that its identity-source helpers were unused and duplicated provider-family ownership already held by the authentication provider catalog.
 
 ## Intentionally Retained
 
@@ -108,7 +108,7 @@ These are local/generated artifacts and must not be included in source ZIP deliv
 The following approved legacy files are now removed from the audited source:
 
 - `app/templates/analytics/components/_overview_surfaces.html`
-- `app/templates/analytics/kubernetes/overview/partials/_prometheus_status.html`
+- `app/templates/kubernetes/analytics/overview/partials/_prometheus_status.html`
 
 Analytics Overview now uses `_analysis_surfaces.html` and the Health Summary-owned
 canonical Prometheus readiness card. No compatibility wrapper remains.

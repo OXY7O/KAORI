@@ -4,9 +4,12 @@ from typing import Any
 
 from flask import current_app
 
+from app.integrations.delivery.notification_channels.contracts import NotificationEvent, NotificationMessage
+from app.integrations.delivery.notification_channels.service import (
+    dispatch_notification_event,
+    list_event_channel_options,
+)
 from app.models.report import Report
-from app.notification_channels.contracts import NotificationEvent, NotificationMessage
-from app.notification_channels.service import dispatch_notification_event, list_event_channel_options
 
 REPORT_NOTIFICATION_EVENT = 'report.generated'
 

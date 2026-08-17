@@ -40,7 +40,7 @@ Resolver tasks existed in source but were absent from Celery startup imports, ta
 
 Corrected by:
 
-- registering `app.resolver.tasks` in Celery imports;
+- registering `app.intelligence.resolver.tasks` in Celery imports;
 - adding explicit routes for execution and lease reconciliation;
 - adding dedicated execution and maintenance workers;
 - adding Beat lease recovery;
@@ -139,7 +139,7 @@ Current Inventory size:
 - 28 modules;
 - approximately 8,167 lines;
 - `app/inventory/routes.py`: 1,195 lines;
-- `app/inventory/kubernetes/topology/service.py`: 1,109 lines;
+- `app/kubernetes/inventory/topology/service.py`: 1,109 lines;
 - `build_topology_graph()`: 766 lines and approximately 148 branch points;
 - `get_workloads()`: 317 lines;
 - `get_pods()`: 251 lines.
@@ -149,7 +149,7 @@ There is no behavior test for topology graph construction, relationship directio
 Required decomposition:
 
 ```text
-app/inventory/kubernetes/topology/
+app/kubernetes/inventory/topology/
 ├── application.py       # request/use-case orchestration
 ├── index.py             # canonical resource and relation indexes
 ├── hierarchy.py         # hierarchy-mode graph builder

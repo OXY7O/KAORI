@@ -12,15 +12,15 @@ def read(path: str) -> str:
 
 def main() -> int:
     errors: list[str] = []
-    routes = read('app/notification_channels/routes.py')
-    service = read('app/notification_channels/service.py')
-    lifecycle = read('app/notification_channels/lifecycle.py')
-    catalog = read('app/notification_channels/catalog.py')
-    definition = read('app/definitions/catalogs/notifications/outbound_delivery.yaml')
+    routes = read('app/integrations/delivery/notification_channels/routes.py')
+    service = read('app/integrations/delivery/notification_channels/service.py')
+    lifecycle = read('app/integrations/delivery/notification_channels/lifecycle.py')
+    catalog = read('app/integrations/delivery/notification_channels/catalog.py')
+    definition = read('app/definitions/catalogs/platform_operations/notifications/outbound_delivery.yaml')
     model = read('app/models/notification_channel.py')
-    forms = read('app/notification_channels/forms.py')
-    providers = read('app/notification_channels/providers/__init__.py')
-    template = read('app/templates/integrations/notification_channels/index.html')
+    forms = read('app/integrations/delivery/notification_channels/forms.py')
+    providers = read('app/integrations/delivery/notification_channels/providers/__init__.py')
+    template = read('app/templates/integrations/delivery/notification_channels/index.html')
     integration_nav = read('app/templates/components/navigation/integrations_menu.html')
     intelligence_nav = read('app/templates/components/navigation/intelligence_menu.html')
     report_notifications = read('app/reports/notifications.py')
@@ -29,7 +29,7 @@ def main() -> int:
     checks = {
         'route ownership': "url_prefix='/integrations/notification-channels'" in routes,
         'integration permission': routes.count("@permission_required('integrations.manage')") >= 5,
-        'integration template': 'integrations/notification_channels/index.html' in routes,
+        'integration template': 'integrations/delivery/notification_channels/index.html' in routes,
         'integration navigation': 'notification_channels.index' in integration_nav,
         'removed from intelligence navigation': 'notification_channels.index' not in intelligence_nav,
         'encrypted credential': 'EncryptedText()' in model,

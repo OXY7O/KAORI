@@ -44,8 +44,8 @@ def test_secret_type_selection_uses_one_native_checked_authority() -> None:
 
 def test_delete_action_oob_fragments_only_render_for_htmx_responses() -> None:
     for relative in (
-        'app/templates/kubernetes_operations/secrets/_delete_operation_result.html',
-        'app/templates/kubernetes_operations/configmaps/_operation_response.html',
+        'app/templates/kubernetes/operations/secrets/_delete_operation_result.html',
+        'app/templates/kubernetes/operations/configmaps/_operation_response.html',
     ):
         source = read(relative)
         assert 'operation_feedback_oob.html' in source

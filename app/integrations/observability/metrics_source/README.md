@@ -117,7 +117,7 @@ Historical runtime observations and Activity Audit records remain available.
 
 ## Canonical application boundary
 
-The web/domain package under `app/metrics_sources` calls provider operations only
+The web/domain package under `app/integrations/observability/metrics_source/application` calls provider operations only
 through the Integration Registry. Backend implementation belongs in this
 package and must not leak into Kubernetes, Object Storage, Reports,
 Intelligence, Dashboard, or other consumer domains.

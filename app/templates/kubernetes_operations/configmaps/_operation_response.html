@@ -1,8 +1,0 @@
-{% include 'components/operation_feedback_oob.html' %}
-{% set validation_preview_oob = true %}
-{% include 'kubernetes_operations/configmaps/_validation_preview.html' %}
-{% if form_id == 'configmap-delete-form' %}
-    {% import 'components/kubernetes_operation_ui.html' as configmap_ui %}
-    {% set oob = true %}
-    {% include 'kubernetes_operations/configmaps/_delete_actions.html' %}
-{% endif %}

@@ -11,8 +11,8 @@ pytestmark = pytest.mark.functional
 
 ROOT = Path(__file__).resolve().parents[3]
 PAYLOAD_PATH = ROOT / 'app/reports/export/payloads/inventory.py'
-INGRESS_SEMANTICS_PATH = ROOT / 'app/inventory/kubernetes/resources/ingress_semantics.py'
-SERVICE_SEMANTICS_PATH = ROOT / 'app/inventory/kubernetes/resources/service_semantics.py'
+INGRESS_SEMANTICS_PATH = ROOT / 'app/kubernetes/inventory/resources/ingress_semantics.py'
+SERVICE_SEMANTICS_PATH = ROOT / 'app/kubernetes/inventory/resources/service_semantics.py'
 
 
 def _load_payload(monkeypatch: pytest.MonkeyPatch):
@@ -23,8 +23,8 @@ def _load_payload(monkeypatch: pytest.MonkeyPatch):
         'app.extensions',
         'app.extensions.db',
         'app.inventory',
-        'app.inventory.kubernetes.formatting',
-        'app.inventory.kubernetes.resources',
+        'app.kubernetes.inventory.formatting',
+        'app.kubernetes.inventory.resources',
         'app.models',
         'app.models.report',
         'app.reports',
@@ -39,7 +39,7 @@ def _load_payload(monkeypatch: pytest.MonkeyPatch):
         'app.common',
         'app.extensions',
         'app.inventory',
-        'app.inventory.kubernetes.resources',
+        'app.kubernetes.inventory.resources',
         'app.models',
         'app.reports',
         'app.reports.export',
@@ -48,7 +48,7 @@ def _load_payload(monkeypatch: pytest.MonkeyPatch):
         modules[name].__path__ = []
     modules['app.common.inventory_generation'].filter_current_generation = lambda query, _model: query
     modules['app.extensions.db'].db = SimpleNamespace()
-    modules['app.inventory.kubernetes.formatting'].format_kubernetes_size = lambda value: '-' if value is None else str(value)
+    modules['app.kubernetes.inventory.formatting'].format_kubernetes_size = lambda value: '-' if value is None else str(value)
     for name in (
         'Cluster',
         'ClusterInventory',
@@ -69,8 +69,8 @@ def _load_payload(monkeypatch: pytest.MonkeyPatch):
         monkeypatch.setitem(sys.modules, name, module)
 
     for module_name, path in (
-        ('app.inventory.kubernetes.resources.ingress_semantics', INGRESS_SEMANTICS_PATH),
-        ('app.inventory.kubernetes.resources.service_semantics', SERVICE_SEMANTICS_PATH),
+        ('app.kubernetes.inventory.resources.ingress_semantics', INGRESS_SEMANTICS_PATH),
+        ('app.kubernetes.inventory.resources.service_semantics', SERVICE_SEMANTICS_PATH),
     ):
         spec = importlib.util.spec_from_file_location(module_name, path)
         assert spec and spec.loader

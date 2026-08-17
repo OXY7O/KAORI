@@ -11,7 +11,7 @@ PARTIALS = [
 
 
 def test_overview_domain_guidance_uses_shared_interpretation_callout():
-    base = Path('app/templates/analytics/kubernetes/overview/partials')
+    base = Path('app/templates/kubernetes/analytics/overview/partials')
     for name in PARTIALS:
         text = (base / name).read_text()
         assert 'overview_surface.interpretation_callout(' in text, name

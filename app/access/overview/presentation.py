@@ -7,7 +7,7 @@ from flask_login import current_user
 from app.access.activity_audit.service import get_activity_audit_summary
 from app.access.permissions.service import build_permission_registry_snapshot
 from app.access.roles.presentation import build_roles_index_context
-from app.users.access_summary import build_identity_provider_summary, build_user_access_summary
+from app.access.users.access_summary import build_identity_provider_summary, build_user_access_summary
 
 
 def _can(permission: str) -> bool:

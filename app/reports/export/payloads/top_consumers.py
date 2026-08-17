@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from typing import Any
 
-from app.analytics.kubernetes.top_consumers.contracts import TopConsumersSelection
-from app.analytics.kubernetes.top_consumers.service import TopConsumersService
-from app.analytics.kubernetes.utilization.service import UtilizationService
-from app.cluster.constants import get_environment_label
-from app.metrics_sources.service import MetricsService
+from app.integrations.observability.metrics_source.application.service import MetricsService
+from app.kubernetes.analytics.top_consumers.contracts import TopConsumersSelection
+from app.kubernetes.analytics.top_consumers.service import TopConsumersService
+from app.kubernetes.analytics.utilization.service import UtilizationService
+from app.kubernetes.cluster.constants import get_environment_label
 from app.models.report import Report
 from app.reports.export.payloads.common import get_report_selected_cluster, report_payload_error
 

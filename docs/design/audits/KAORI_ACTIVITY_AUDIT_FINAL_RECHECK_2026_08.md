@@ -5,8 +5,8 @@ Status: **PASS — Activity Audit Final Lock v1**
 ## Locked ownership
 
 - `app/access/activity_audit/` owns the Access HTTP and presentation workspace.
-- `app/notifications/` owns the shared persisted operational evidence store and query/presentation kernel.
-- `app/retention/domains/operational_activity.py` owns archive-first lifecycle and cleanup.
+- `app/platform_operations/notifications/` owns the shared persisted operational evidence store and query/presentation kernel.
+- `app/platform_operations/data_lifecycle/retention/domains/operational_activity.py` owns archive-first lifecycle and cleanup.
 - No `/notifications/activity` compatibility route or Notification-owned Activity template remains.
 
 ## Evidence boundaries

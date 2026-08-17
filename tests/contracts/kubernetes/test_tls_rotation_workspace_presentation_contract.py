@@ -1,8 +1,8 @@
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
-TEMPLATE = ROOT / 'app/templates/kubernetes_operations/secrets/tls_rotation.html'
-ROTATE_TEMPLATE = ROOT / 'app/templates/kubernetes_operations/secrets/tls_rotate.html'
+TEMPLATE = ROOT / 'app/templates/kubernetes/operations/secrets/tls_rotation.html'
+ROTATE_TEMPLATE = ROOT / 'app/templates/kubernetes/operations/secrets/tls_rotate.html'
 
 
 def _template() -> str:

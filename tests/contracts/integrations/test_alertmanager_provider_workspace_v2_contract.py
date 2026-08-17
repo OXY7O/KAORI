@@ -21,7 +21,7 @@ def test_alertmanager_configuration_uses_read_only_contract_and_edit_link():
         'app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_detail_configuration.html'
     )
     shared = read('app/templates/integrations/components/_provider_configuration_contract.html')
-    routes = read('app/alert_sources/providers/alertmanager/routes.py')
+    routes = read('app/integrations/observability/alert_source/providers/alertmanager/application/routes.py')
     assert 'provider_configuration_contract.render(' in content
     assert 'Alertmanager API Endpoint' in content
     assert 'Configure Connection' in shared
@@ -84,8 +84,10 @@ def test_alertmanager_bindings_use_standard_table_and_native_dialog():
 
 
 def test_alertmanager_runtime_history_accepts_server_side_filters():
-    routes = read('app/alert_sources/providers/alertmanager/routes.py')
-    presentation = read('app/alert_sources/providers/alertmanager/presentation.py')
+    routes = read('app/integrations/observability/alert_source/providers/alertmanager/application/routes.py')
+    presentation = read(
+        'app/integrations/observability/alert_source/providers/alertmanager/application/presentation.py'
+    )
     assert "history_trigger = request.args.get('history_trigger'" in routes
     assert "history_health = request.args.get('history_health'" in routes
     assert "history_readiness = request.args.get('history_readiness'" in routes

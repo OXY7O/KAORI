@@ -24,4 +24,4 @@ bash scripts/quality_gate.sh
 
 ## Rollback
 
-Revert `app/cluster/sync_jobs.py` and `app/cluster/tasks.py` together with the tests and this document. No schema or data rollback is required.
+Revert `app/kubernetes/cluster/sync_jobs.py` and `app/kubernetes/cluster/tasks.py` together with the tests and this document. No schema or data rollback is required.

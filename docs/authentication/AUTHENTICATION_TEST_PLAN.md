@@ -2,7 +2,7 @@
 
 ## Automated Function Tests
 
-The canonical suite is `tests/auth/`.
+The canonical suite is `tests/access/authentication/`.
 
 ### Provider Core
 
@@ -57,7 +57,7 @@ The canonical suite is `tests/auth/`.
 
 ### Architecture Contracts
 
-- LDAP protocol code belongs to `app/auth`.
+- LDAP protocol code belongs to `app/access/authentication`.
 - Combined OAuth module and Users-owned LDAP package remain absent.
 - User routes delegate provider projection/validation to Authentication.
 - Routes use strategy lookup and shared SSO flow validation rather than provider branches.
@@ -68,8 +68,8 @@ The canonical suite is `tests/auth/`.
 Run inside the KAORI dev container:
 
 ```bash
-pytest -q tests/auth
-pytest -q tests/auth --cov=app.auth --cov-report=term-missing
+pytest -q tests/access/authentication
+pytest -q tests/access/authentication --cov=app.access.authentication --cov-report=term-missing
 ```
 
 Route/integration coverage must verify CSRF, login GET/POST, authenticated redirect, login metadata, normalized flashes, rate-limit responses, SSO start/callback, POST-only logout, and Activity Audit records.

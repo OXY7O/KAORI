@@ -24,7 +24,7 @@ def test_storage_navigation_is_domain_first_and_vendor_neutral() -> None:
 
 def test_object_storage_inventory_is_registered_as_read_only_inventory_domain() -> None:
     blueprints = read('app/bootstrap/blueprints.py')
-    routes = read('app/inventory/object_storage/routes.py')
+    routes = read('app/storage/object_storage/inventory/routes.py')
 
     assert 'object_storage_inventory_bp' in blueprints
     assert "url_prefix='/storage/object-storage'" in routes
@@ -36,32 +36,32 @@ def test_object_storage_inventory_is_registered_as_read_only_inventory_domain() 
 
 def test_bucket_inventory_is_committed_snapshot_not_live_page_discovery() -> None:
     model = read('app/models/object_storage.py')
-    sync = read('app/inventory/object_storage/sync.py')
+    sync = read('app/storage/object_storage/inventory/sync.py')
     adapter = read('app/integrations/storage/object_storage/providers/minio/adapter.py')
-    overview = read('app/templates/inventory/object_storage/overview/partials/_snapshot_boundary.html')
-    buckets = read('app/templates/inventory/object_storage/buckets/partials/_table_card.html')
+    overview = read('app/templates/storage/object_storage/inventory/overview/partials/_snapshot_boundary.html')
+    buckets = read('app/templates/storage/object_storage/inventory/buckets/partials/_table_card.html')
 
     assert 'class ObjectStorageBucket' in model
     assert 'object_storage_buckets' in model
     assert 'inventory_observed_at' in model
     assert 'commit_bucket_inventory' in sync
     assert "if operation == 'inventory.sync'" not in adapter
-    assert 'app.inventory.object_storage' not in adapter
+    assert 'app.storage.object_storage.inventory' not in adapter
     assert 'commit_bucket_inventory(' not in adapter
     assert 'Job Execution owns this operation' in sync
     assert 'sync_object_storage_inventory' in sync
     assert 'object_storage_snapshot.render(overview.snapshot)' in overview
-    snapshot_component = read('app/templates/inventory/object_storage/components/_snapshot_context.html')
+    snapshot_component = read('app/templates/storage/object_storage/inventory/components/_snapshot_context.html')
     assert 'snapshot_context_bar.render' in snapshot_component
     assert 'source_label=snapshot.source_label' in snapshot_component
     assert 'No live provider query' in buckets
 
 
 def test_object_storage_inventory_keeps_kaori_table_and_pagination_standard() -> None:
-    systems = read('app/templates/inventory/object_storage/systems/partials/_table_content.html')
-    buckets = read('app/templates/inventory/object_storage/buckets/partials/_table_content.html')
-    systems_filters = read('app/templates/inventory/object_storage/systems/partials/_table_card.html')
-    buckets_filters = read('app/templates/inventory/object_storage/buckets/partials/_table_card.html')
+    systems = read('app/templates/storage/object_storage/inventory/systems/partials/_table_content.html')
+    buckets = read('app/templates/storage/object_storage/inventory/buckets/partials/_table_content.html')
+    systems_filters = read('app/templates/storage/object_storage/inventory/systems/partials/_table_card.html')
+    buckets_filters = read('app/templates/storage/object_storage/inventory/buckets/partials/_table_card.html')
 
     for template in (systems, buckets):
         assert 'table_ui.table_classes(' in template
@@ -81,7 +81,7 @@ def test_object_storage_inventory_keeps_kaori_table_and_pagination_standard() ->
 
 
 def test_bucket_container_detail_is_provider_aware_and_canonical() -> None:
-    detail = read('app/templates/inventory/object_storage/buckets/partials/_bucket_detail_content.html')
+    detail = read('app/templates/storage/object_storage/inventory/buckets/partials/_bucket_detail_content.html')
 
     assert 'Identity & Location' in detail
     assert 'Data Protection' in detail
@@ -101,15 +101,15 @@ def test_object_storage_bucket_migration_follows_minio_provider_branch() -> None
 
 
 def test_object_storage_inventory_uses_dedicated_rbac_and_preserves_existing_role_access() -> None:
-    defaults = read('app/rbac/defaults.py')
-    access = read('app/definitions/catalogs/rbac/access.yaml')
-    service = read('app/rbac/service.py')
+    defaults = read('app/access/rbac/defaults.py')
+    access = read('app/definitions/catalogs/access/rbac/access.yaml')
+    service = read('app/access/rbac/service.py')
     migration = read('migrations/versions/20260814_object_storage_rbac_split.py')
     sidebar = read('app/templates/components/navigation/sidebar.html')
 
     assert 'key: object_storage_inventory.view' in access
     assert 'module: storage_inventory' in access
-    assert "load_definition_document('rbac/access.yaml'" in defaults
+    assert "load_definition_document('access/rbac/access.yaml'" in defaults
     import yaml
 
     access_document = yaml.safe_load(access)

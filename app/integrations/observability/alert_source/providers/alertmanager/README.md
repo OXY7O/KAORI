@@ -109,5 +109,5 @@ Core Readiness or another consumer binding.
 Provider runtime and binding behavior is implemented in `runtime.py`,
 `binding_management.py`, and `binding_validation.py`. The adapter dispatches
 every operation directly to those modules. This package must not import
-`app.alert_sources.providers.alertmanager`; the web/domain package calls it only through the Integration
+`app.integrations.observability.alert_source.providers.alertmanager.application`; the web/domain package calls it only through the Integration
 Registry.

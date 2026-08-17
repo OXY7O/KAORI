@@ -25,7 +25,7 @@ Revert the service and associated tests/documentation in the same commit. No dat
 
 ## Changed files
 
-- `app/jobs/service.py`
+- `app/platform_operations/jobs/service.py`
 - `tests/jobs/test_job_terminal_state_monotonicity.py`
 - `tests/contracts/jobs/test_job_terminal_state_contract.py`
 - `docs/architecture/domain-2-job-terminal-state-monotonicity.md`

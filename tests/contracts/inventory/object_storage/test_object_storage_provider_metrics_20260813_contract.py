@@ -9,7 +9,7 @@ def read(relative: str) -> str:
 
 def test_provider_metrics_is_safe_explicit_usage_strategy() -> None:
     config = read('app/config/default.py')
-    sync = read('app/inventory/object_storage/sync.py')
+    sync = read('app/storage/object_storage/inventory/sync.py')
     client = read('app/integrations/storage/object_storage/providers/minio/client.py')
 
     assert "{'disabled', 'provider_metrics', 'full_scan'}" in config
@@ -47,8 +47,8 @@ def test_provider_metrics_never_silently_falls_back_to_full_scan() -> None:
 
 
 def test_bucket_modal_surfaces_usage_strategy_and_source() -> None:
-    presentation = read('app/inventory/object_storage/presentation.py')
-    template = read('app/templates/inventory/object_storage/buckets/partials/_table_content.html')
+    presentation = read('app/storage/object_storage/inventory/presentation.py')
+    template = read('app/templates/storage/object_storage/inventory/buckets/partials/_table_content.html')
 
     assert "return 'Provider Metrics'" in presentation
     assert "return 'MinIO Admin Data Usage v3'" in presentation

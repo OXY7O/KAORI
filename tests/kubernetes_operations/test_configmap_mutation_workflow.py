@@ -10,8 +10,8 @@ import pytest
 pytestmark = pytest.mark.functional
 
 ROOT = Path(__file__).resolve().parents[2]
-SERVICE_PATH = ROOT / 'app/kubernetes_operations/configmaps/service.py'
-CONTRACTS_PATH = ROOT / 'app/kubernetes_operations/configmaps/contracts.py'
+SERVICE_PATH = ROOT / 'app/kubernetes/operations/configmaps/service.py'
+CONTRACTS_PATH = ROOT / 'app/kubernetes/operations/configmaps/contracts.py'
 
 
 def _simple_type(name: str):
@@ -30,13 +30,13 @@ def load_service(monkeypatch: pytest.MonkeyPatch):
         'app.common',
         'app.common.inventory_generation',
         'app.inventory',
-        'app.inventory.kubernetes.resources.configuration_semantics',
-        'app.inventory.kubernetes.resources',
-        'app.inventory.kubernetes.resources.pod_semantics',
-        'app.kubernetes_operations',
-        'app.kubernetes_operations.configmaps',
-        'app.kubernetes_operations.configmaps.runtime',
-        'app.kubernetes_operations.configmaps.validation',
+        'app.kubernetes.inventory.resources.configuration_semantics',
+        'app.kubernetes.inventory.resources',
+        'app.kubernetes.inventory.resources.pod_semantics',
+        'app.kubernetes.operations',
+        'app.kubernetes.operations.configmaps',
+        'app.kubernetes.operations.configmaps.runtime',
+        'app.kubernetes.operations.configmaps.validation',
         'app.models',
         'kubernetes',
         'kubernetes.client',
@@ -45,36 +45,36 @@ def load_service(monkeypatch: pytest.MonkeyPatch):
         modules[name] = ModuleType(name)
         monkeypatch.setitem(sys.modules, name, modules[name])
 
-    evidence = modules['app.inventory.kubernetes.resources.configuration_semantics']
+    evidence = modules['app.kubernetes.inventory.resources.configuration_semantics']
     evidence.COLLECTED = 'Collected'
     evidence.POD_EVIDENCE_KEY = 'inventory.pods'
     evidence.collection_state = lambda payload, key: payload.get(key, 'Not Reported')
     modules['app.common.inventory_generation'].filter_current_generation = lambda query, model: query
-    modules['app.inventory.kubernetes.resources.pod_semantics'].pod_operational_state = lambda phase, ready: (
+    modules['app.kubernetes.inventory.resources.pod_semantics'].pod_operational_state = lambda phase, ready: (
         'Ready',
         'normal',
         'Running · 1/1 Ready',
     )
 
     contracts_spec = importlib.util.spec_from_file_location(
-        'app.kubernetes_operations.configmaps.contracts',
+        'app.kubernetes.operations.configmaps.contracts',
         CONTRACTS_PATH,
     )
     assert contracts_spec and contracts_spec.loader
     contracts = importlib.util.module_from_spec(contracts_spec)
     monkeypatch.setitem(
         sys.modules,
-        'app.kubernetes_operations.configmaps.contracts',
+        'app.kubernetes.operations.configmaps.contracts',
         contracts,
     )
     contracts_spec.loader.exec_module(contracts)
 
-    runtime = modules['app.kubernetes_operations.configmaps.runtime']
+    runtime = modules['app.kubernetes.operations.configmaps.runtime']
     runtime.authorization_call = lambda cluster, operation, callback: callback(None)
     runtime.live_call = lambda cluster, operation, callback: callback(None)
     runtime.safe_api_error = lambda exc, operation: ValueError(f'{operation} failed')
 
-    validation = modules['app.kubernetes_operations.configmaps.validation']
+    validation = modules['app.kubernetes.operations.configmaps.validation']
     validation.diff_entries = lambda existing, proposed: {}
     validation.merge_entries = lambda existing, submitted, mode: submitted
     validation.normalize_update_mode = lambda value: value or 'merge'

@@ -8,7 +8,7 @@ def read(path: str) -> str:
 
 
 def test_bucket_table_prefers_quota_over_usage_metrics() -> None:
-    template = read('app/templates/inventory/object_storage/buckets/partials/_table_content.html')
+    template = read('app/templates/storage/object_storage/inventory/buckets/partials/_table_content.html')
     table_head = template.split('<thead', 1)[1].split('</thead>', 1)[0]
 
     assert '>Quota<' in table_head
@@ -18,7 +18,7 @@ def test_bucket_table_prefers_quota_over_usage_metrics() -> None:
 
 
 def test_bucket_detail_modal_uses_dense_operational_information_architecture() -> None:
-    template = read('app/templates/inventory/object_storage/buckets/partials/_table_content.html')
+    template = read('app/templates/storage/object_storage/inventory/buckets/partials/_table_content.html')
 
     assert 'max-w-[88rem]' in template
     assert 'Inventory Snapshot' in template
@@ -36,7 +36,7 @@ def test_bucket_detail_modal_uses_dense_operational_information_architecture() -
 
 def test_quota_collection_is_minio_specific_and_optional_to_snapshot_success() -> None:
     client = read('app/integrations/storage/object_storage/providers/minio/client.py')
-    presentation = read('app/inventory/object_storage/presentation.py')
+    presentation = read('app/storage/object_storage/inventory/presentation.py')
 
     assert "f'/minio/admin/{api_version}/get-bucket-quota'" in client
     assert 'admin:GetBucketQuota' in presentation
@@ -52,7 +52,7 @@ def test_quota_collection_is_minio_specific_and_optional_to_snapshot_success() -
 
 def test_usage_full_scan_remains_separate_from_quota_collection() -> None:
     client = read('app/integrations/storage/object_storage/providers/minio/client.py')
-    template = read('app/templates/inventory/object_storage/buckets/partials/_table_content.html')
+    template = read('app/templates/storage/object_storage/inventory/buckets/partials/_table_content.html')
 
     assert 'collect_quota: bool = True' in client
     assert 'collect_usage_stats: bool = False' in client

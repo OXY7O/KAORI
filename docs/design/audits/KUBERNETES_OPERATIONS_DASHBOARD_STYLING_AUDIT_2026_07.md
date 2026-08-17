@@ -4,7 +4,7 @@
 
 ## Scope
 
-Reviewed `app/templates/dashboards/kubernetes/`, the dashboard route/service contract, shared dashboard components, and the duplicated forecast implementation in Kubernetes Analytics.
+Reviewed `app/templates/kubernetes/dashboard/`, the dashboard route/service contract, shared dashboard components, and the duplicated forecast implementation in Kubernetes Analytics.
 
 ## Approved decisions
 

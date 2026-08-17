@@ -44,7 +44,7 @@ All operator guidance is rendered through the canonical callout contract documen
 
 ## Resource Pressure Lane
 
-Implementation: `app/templates/analytics/kubernetes/components/_resource_pressure_lane.html`
+Implementation: `app/templates/kubernetes/analytics/components/_resource_pressure_lane.html`
 
 The lane includes resource identity, semantic status, current percentage, used/capacity, progress, headroom, and operational reading. Use it for Utilization Summary, Utilization Node Detail, and other analytics pages that need the same pressure evidence.
 
@@ -59,7 +59,7 @@ Summary and lightweight action lists may render with the page. Heavy evidence su
 
 ## Multi-Series Chart Legend
 
-Implementation: `app/templates/analytics/kubernetes/components/_chart_legend.html`
+Implementation: `app/templates/kubernetes/analytics/components/_chart_legend.html`
 
 Every multi-series chart with the native Chart.js legend disabled must render a compact visible legend using the same semantic/CSS tokens as the plotted series.
 
@@ -73,7 +73,7 @@ Progress color follows meaning. Status-bearing utilization, pressure, risk, and 
 
 ## Evidence Record Collection
 
-Implementation: `app/templates/analytics/kubernetes/components/_evidence_record_list.html` and `app/templates/analytics/kubernetes/components/_record_filter_bar.html`.
+Implementation: `app/templates/kubernetes/analytics/components/_evidence_record_list.html` and `app/templates/kubernetes/analytics/components/_record_filter_bar.html`.
 
 Use this pattern for record-oriented analytical evidence with desktop columns, responsive mobile labels, semantic state, local filtering, and server pagination. The owning panel remains bright. Filters and pagination update only that panel, retain a full-page URL, and use the global 5/10/25/50 page-size contract.
 

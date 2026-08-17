@@ -6,7 +6,7 @@ from types import SimpleNamespace
 from typing import Any
 
 ROOT = Path(__file__).resolve().parents[3]
-SOURCE = ROOT / 'app' / 'inventory' / 'kubernetes' / 'collectors' / 'configuration.py'
+SOURCE = ROOT / 'app' / 'kubernetes' / 'inventory' / 'collectors' / 'configuration.py'
 
 
 class FakeApiException(Exception):

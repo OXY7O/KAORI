@@ -16,42 +16,42 @@ def require(condition: bool, message: str, errors: list[str]) -> None:
 
 def main() -> int:
     errors: list[str] = []
-    create = read('app/kubernetes_operations/secrets/create_service.py')
-    replace = read('app/kubernetes_operations/secrets/replace_service.py')
-    delete = read('app/kubernetes_operations/secrets/delete_service.py')
-    impact = read('app/kubernetes_operations/secrets/impact.py')
-    receipts = read('app/kubernetes_operations/secrets/receipts.py')
-    live = read('app/kubernetes_operations/secrets/live_service.py')
-    overview = read('app/kubernetes_operations/secrets/service.py')
-    crud_routes = read('app/kubernetes_operations/secrets/crud_routes.py')
-    reveal_routes = read('app/kubernetes_operations/secrets/reveal_routes.py')
-    tls_routes = read('app/kubernetes_operations/secrets/tls_routes.py')
-    tls_service = read('app/governance/tls_certificates/service.py')
-    tls_updates = read('app/governance/tls_certificates/updates.py')
-    tls_mutation = read('app/governance/tls_certificates/mutation.py')
-    rbac_defaults = read('app/rbac/defaults.py')
-    rbac_service = read('app/rbac/service.py')
-    governance_routes = read('app/governance/routes.py')
-    tls_governance_routes = read('app/governance/tls_certificates/routes.py')
-    tls_collector = read('app/governance/tls_certificates/collector.py')
+    create = read('app/kubernetes/operations/secrets/create_service.py')
+    replace = read('app/kubernetes/operations/secrets/replace_service.py')
+    delete = read('app/kubernetes/operations/secrets/delete_service.py')
+    impact = read('app/kubernetes/operations/secrets/impact.py')
+    receipts = read('app/kubernetes/operations/secrets/receipts.py')
+    live = read('app/kubernetes/operations/secrets/live_service.py')
+    overview = read('app/kubernetes/operations/secrets/service.py')
+    crud_routes = read('app/kubernetes/operations/secrets/crud_routes.py')
+    reveal_routes = read('app/kubernetes/operations/secrets/reveal_routes.py')
+    tls_routes = read('app/kubernetes/operations/secrets/tls_routes.py')
+    tls_service = read('app/kubernetes/governance/tls_certificates/service.py')
+    tls_updates = read('app/kubernetes/governance/tls_certificates/updates.py')
+    tls_mutation = read('app/kubernetes/governance/tls_certificates/mutation.py')
+    rbac_defaults = read('app/access/rbac/defaults.py')
+    rbac_service = read('app/access/rbac/service.py')
+    governance_routes = read('app/kubernetes/governance/routes.py')
+    tls_governance_routes = read('app/kubernetes/governance/tls_certificates/routes.py')
+    tls_collector = read('app/kubernetes/governance/tls_certificates/collector.py')
     permission_migration = read('migrations/versions/20260805_secret_ops_v2.py')
-    operation_routes = read('app/kubernetes_operations/routes.py')
-    delete_target = read('app/templates/kubernetes_operations/secrets/_delete_target.html')
-    delete_actions = read('app/templates/kubernetes_operations/secrets/_delete_actions.html')
-    landing = read('app/templates/kubernetes_operations/secrets/index.html')
-    reveal_value = read('app/templates/kubernetes_operations/secrets/_reveal_value.html')
+    operation_routes = read('app/kubernetes/operations/routes.py')
+    delete_target = read('app/templates/kubernetes/operations/secrets/_delete_target.html')
+    delete_actions = read('app/templates/kubernetes/operations/secrets/_delete_actions.html')
+    landing = read('app/templates/kubernetes/operations/secrets/index.html')
+    reveal_value = read('app/templates/kubernetes/operations/secrets/_reveal_value.html')
     delete_js = read('app/static/js/secret_delete.js')
     standard = read('docs/design/patterns/KUBERNETES_CONFIGMAP_SECRET_OPERATIONS.md')
     quality_gate = read('scripts/quality_gate.sh')
 
     require(
-        not (ROOT / 'app/kubernetes_operations/secrets/routes.py').exists(),
+        not (ROOT / 'app/kubernetes/operations/secrets/routes.py').exists(),
         'Monolithic Secret routes.py must remain removed.',
         errors,
     )
     for module in ('crud_routes', 'reveal_routes', 'tls_routes'):
         require(
-            f'app.kubernetes_operations.secrets.{module}' in operation_routes,
+            f'app.kubernetes.operations.secrets.{module}' in operation_routes,
             f'Kubernetes operation routing must import canonical {module}.',
             errors,
         )
@@ -69,7 +69,7 @@ def main() -> int:
     for token in ('pod_collection_state != COLLECTED', 'pod_operational_state(pod.phase, pod.ready)'):
         require(token in impact, f'Secret impact contract missing token: {token}', errors)
 
-    replace_payloads = read('app/kubernetes_operations/secrets/replace_payloads.py')
+    replace_payloads = read('app/kubernetes/operations/secrets/replace_payloads.py')
     require(
         'validate_secret_size' in create and 'validate_secret_size' in replace_payloads,
         'Create and Replace must share the canonical Secret validation boundary.',
@@ -132,7 +132,7 @@ def main() -> int:
     )
     for template in ('create.html', 'replace.html', 'delete.html', 'tls_rotate.html', 'tls_rotation.html'):
         require(
-            'name="csrf_token"' in read(f'app/templates/kubernetes_operations/secrets/{template}'),
+            'name="csrf_token"' in read(f'app/templates/kubernetes/operations/secrets/{template}'),
             f'Secret mutation form missing CSRF token: {template}',
             errors,
         )
@@ -210,14 +210,14 @@ def main() -> int:
         require(token in tls_mutation, f'TLS mutation boundary missing token: {token}', errors)
 
     require(
-        'from app.governance.tls_certificates.service import ' in tls_routes
+        'from app.kubernetes.governance.tls_certificates.service import ' in tls_routes
         and 'get_tls_certificate_detail' in tls_routes
         and 'get_tls_certificate_page' in tls_routes,
         'TLS routes must import the canonical Governance read service directly.',
         errors,
     )
     require(
-        'from app.governance.tls_certificates.updates import ' in tls_routes
+        'from app.kubernetes.governance.tls_certificates.updates import ' in tls_routes
         and 'apply_bulk_update' in tls_routes
         and 'apply_certificate_update' in tls_routes
         and 'preview_uploaded_pair' in tls_routes,
@@ -272,7 +272,7 @@ def main() -> int:
     )
     require(
         'components/operation_feedback_oob.html'
-        in read('app/templates/kubernetes_operations/secrets/_create_operation_result.html'),
+        in read('app/templates/kubernetes/operations/secrets/_create_operation_result.html'),
         'Secret HTMX operations must use canonical operational feedback OOB.',
         errors,
     )

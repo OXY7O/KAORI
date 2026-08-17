@@ -4,7 +4,7 @@ from flask import Blueprint, render_template, request
 from flask.typing import ResponseReturnValue
 
 from app.access.activity_audit.service import build_activity_audit_context, get_activity_audit_detail
-from app.rbac.decorators import permission_required
+from app.access.rbac.decorators import permission_required
 
 bp = Blueprint('activity_audit', __name__)
 

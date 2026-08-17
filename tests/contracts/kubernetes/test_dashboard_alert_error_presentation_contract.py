@@ -1,7 +1,7 @@
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
-TEMPLATE = ROOT / 'app/templates/dashboards/kubernetes/partials/_alerts_summary.html'
+TEMPLATE = ROOT / 'app/templates/kubernetes/dashboard/partials/_alerts_summary.html'
 
 
 def test_alert_summary_distinguishes_no_alerts_from_source_failure() -> None:
@@ -21,7 +21,7 @@ def test_alert_summary_does_not_repeat_raw_snapshot_message_in_insight_footer() 
 
 
 def test_alert_snapshot_builder_sanitizes_legacy_snapshot_errors() -> None:
-    source = (ROOT / 'app/dashboards/kubernetes/sections/alerts.py').read_text()
+    source = (ROOT / 'app/kubernetes/dashboard/sections/alerts.py').read_text()
 
     assert 'else friendly_combined_alert_error()' in source
     assert "message=str(context.get('message') or unavailable_reason)" not in source

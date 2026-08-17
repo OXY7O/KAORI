@@ -11,7 +11,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 def _load_repository(filter_current_generation, monkeypatch: pytest.MonkeyPatch):
-    for package in ('app', 'app.common', 'app.extensions', 'app.dashboards', 'app.dashboards.kubernetes'):
+    for package in ('app', 'app.common', 'app.extensions', 'app.dashboards', 'app.kubernetes.dashboard'):
         module = ModuleType(package)
         module.__path__ = []
         monkeypatch.setitem(sys.modules, package, module)
@@ -25,10 +25,10 @@ def _load_repository(filter_current_generation, monkeypatch: pytest.MonkeyPatch)
     db_module.db = SimpleNamespace(session=SimpleNamespace(query=lambda model: raw_query))
     monkeypatch.setitem(sys.modules, 'app.extensions.db', db_module)
 
-    name = 'app.dashboards.kubernetes.repository'
+    name = 'app.kubernetes.dashboard.repository'
     spec = importlib.util.spec_from_file_location(
         name,
-        ROOT / 'app/dashboards/kubernetes/repository.py',
+        ROOT / 'app/kubernetes/dashboard/repository.py',
     )
     assert spec and spec.loader
     module = importlib.util.module_from_spec(spec)

@@ -11,7 +11,7 @@ def read(relative: str) -> str:
 
 
 def test_storage_removes_nonfunctional_composite_tracker() -> None:
-    index = read('app/templates/analytics/kubernetes/storage/index.html')
+    index = read('app/templates/kubernetes/analytics/storage/index.html')
 
     assert 'storage-load-tracker' not in index
     assert 'analytics/partials/_load_tracker.html' not in index
@@ -19,7 +19,7 @@ def test_storage_removes_nonfunctional_composite_tracker() -> None:
 
 
 def test_storage_heavy_record_tabs_load_on_first_activation() -> None:
-    section = read('app/templates/analytics/kubernetes/storage/partials/_storage_section.html')
+    section = read('app/templates/kubernetes/analytics/storage/partials/_storage_section.html')
 
     assert section.count('kaori:analytics-tab-activated once') == 3
     assert 'storage_filesystem_summary' in section
@@ -30,10 +30,10 @@ def test_storage_heavy_record_tabs_load_on_first_activation() -> None:
 
 
 def test_storage_uses_canonical_tab_and_mixed_scope_ownership() -> None:
-    routes = read('app/analytics/kubernetes/storage/routes.py')
-    presentation = read('app/analytics/kubernetes/storage/presentation.py')
-    controls = read('app/templates/analytics/kubernetes/storage/partials/_controls_readiness.html')
-    filesystem = read('app/templates/analytics/kubernetes/storage/partials/_filesystem_panel.html')
+    routes = read('app/kubernetes/analytics/storage/routes.py')
+    presentation = read('app/kubernetes/analytics/storage/presentation.py')
+    controls = read('app/templates/kubernetes/analytics/storage/partials/_controls_readiness.html')
+    filesystem = read('app/templates/kubernetes/analytics/storage/partials/_filesystem_panel.html')
     contract = read('docs/design/components/ANALYTICS_STORAGE_ANALYSIS.md')
 
     assert "STORAGE_TABS = ('capacity', 'filesystem', 'pvc', 'pv', 'recommendations')" in presentation
@@ -49,11 +49,11 @@ def test_storage_uses_canonical_tab_and_mixed_scope_ownership() -> None:
 
 
 def test_storage_primary_evidence_and_operational_reading_use_neutral_cards() -> None:
-    overview = read('app/templates/analytics/kubernetes/storage/partials/_overview.html')
-    capacity = read('app/templates/analytics/kubernetes/storage/partials/_capacity_utilization_panel.html')
-    filesystem = read('app/templates/analytics/kubernetes/storage/partials/_filesystem_panel.html')
-    pvc = read('app/templates/analytics/kubernetes/storage/partials/_persistent_volume_claims_panel.html')
-    pv = read('app/templates/analytics/kubernetes/storage/partials/_persistent_volumes_panel.html')
+    overview = read('app/templates/kubernetes/analytics/storage/partials/_overview.html')
+    capacity = read('app/templates/kubernetes/analytics/storage/partials/_capacity_utilization_panel.html')
+    filesystem = read('app/templates/kubernetes/analytics/storage/partials/_filesystem_panel.html')
+    pvc = read('app/templates/kubernetes/analytics/storage/partials/_persistent_volume_claims_panel.html')
+    pv = read('app/templates/kubernetes/analytics/storage/partials/_persistent_volumes_panel.html')
 
     assert 'analysis_surface.evidence_shell_classes()' in overview
     assert 'analysis_surface.guidance_card_classes()' in overview
@@ -69,11 +69,11 @@ def test_storage_primary_evidence_and_operational_reading_use_neutral_cards() ->
 
 
 def test_storage_record_panels_use_shared_filter_and_record_components() -> None:
-    filesystem = read('app/templates/analytics/kubernetes/storage/partials/_filesystem_panel.html')
-    pvc = read('app/templates/analytics/kubernetes/storage/partials/_persistent_volume_claims_panel.html')
-    pv = read('app/templates/analytics/kubernetes/storage/partials/_persistent_volumes_panel.html')
-    record_component = read('app/templates/analytics/kubernetes/components/_evidence_record_list.html')
-    filter_component = read('app/templates/analytics/kubernetes/components/_record_filter_bar.html')
+    filesystem = read('app/templates/kubernetes/analytics/storage/partials/_filesystem_panel.html')
+    pvc = read('app/templates/kubernetes/analytics/storage/partials/_persistent_volume_claims_panel.html')
+    pv = read('app/templates/kubernetes/analytics/storage/partials/_persistent_volumes_panel.html')
+    record_component = read('app/templates/kubernetes/analytics/components/_evidence_record_list.html')
+    filter_component = read('app/templates/kubernetes/analytics/components/_record_filter_bar.html')
 
     for source, record_key in (
         (filesystem, 'filesystem'),
@@ -98,9 +98,9 @@ def test_storage_record_panels_use_shared_filter_and_record_components() -> None
 def test_storage_pagination_owns_full_href_and_partial_htmx_endpoint() -> None:
     pagination = read('app/templates/analytics/components/_record_pagination.html')
     shared = read('app/templates/components/pagination.html')
-    filesystem = read('app/templates/analytics/kubernetes/storage/partials/_filesystem_panel.html')
-    pvc = read('app/templates/analytics/kubernetes/storage/partials/_persistent_volume_claims_panel.html')
-    pv = read('app/templates/analytics/kubernetes/storage/partials/_persistent_volumes_panel.html')
+    filesystem = read('app/templates/kubernetes/analytics/storage/partials/_filesystem_panel.html')
+    pvc = read('app/templates/kubernetes/analytics/storage/partials/_persistent_volume_claims_panel.html')
+    pv = read('app/templates/kubernetes/analytics/storage/partials/_persistent_volumes_panel.html')
 
     assert 'href_endpoint' in pagination
     assert 'partial_endpoint' in pagination
@@ -112,14 +112,14 @@ def test_storage_pagination_owns_full_href_and_partial_htmx_endpoint() -> None:
     assert "'analytics.storage'" in pv
     assert 'href_endpoint=None' in shared
     assert 'page_hx_url' in shared
-    assert "response.headers['HX-Push-Url']" in read('app/analytics/kubernetes/storage/routes.py')
+    assert "response.headers['HX-Push-Url']" in read('app/kubernetes/analytics/storage/routes.py')
 
 
 def test_storage_lifecycle_tones_are_domain_semantics_not_css_parsing() -> None:
-    domain = read('app/analytics/kubernetes/storage/domain.py')
-    filesystem = read('app/templates/analytics/kubernetes/storage/partials/_filesystem_panel.html')
-    pvc = read('app/templates/analytics/kubernetes/storage/partials/_persistent_volume_claims_panel.html')
-    pv = read('app/templates/analytics/kubernetes/storage/partials/_persistent_volumes_panel.html')
+    domain = read('app/kubernetes/analytics/storage/domain.py')
+    filesystem = read('app/templates/kubernetes/analytics/storage/partials/_filesystem_panel.html')
+    pvc = read('app/templates/kubernetes/analytics/storage/partials/_persistent_volume_claims_panel.html')
+    pv = read('app/templates/kubernetes/analytics/storage/partials/_persistent_volumes_panel.html')
 
     assert "'Bound': 'normal'" in domain
     assert "'Pending': 'warning'" in domain
@@ -134,13 +134,13 @@ def test_storage_lifecycle_tones_are_domain_semantics_not_css_parsing() -> None:
 
 def test_storage_templates_remove_local_micro_typography_debt() -> None:
     paths = [
-        'app/templates/analytics/kubernetes/storage/partials/_hero.html',
-        'app/templates/analytics/kubernetes/storage/partials/_overview.html',
-        'app/templates/analytics/kubernetes/storage/partials/_capacity_utilization_panel.html',
-        'app/templates/analytics/kubernetes/storage/partials/_filesystem_panel.html',
-        'app/templates/analytics/kubernetes/storage/partials/_persistent_volume_claims_panel.html',
-        'app/templates/analytics/kubernetes/storage/partials/_persistent_volumes_panel.html',
-        'app/templates/analytics/kubernetes/storage/partials/_recommendations.html',
+        'app/templates/kubernetes/analytics/storage/partials/_hero.html',
+        'app/templates/kubernetes/analytics/storage/partials/_overview.html',
+        'app/templates/kubernetes/analytics/storage/partials/_capacity_utilization_panel.html',
+        'app/templates/kubernetes/analytics/storage/partials/_filesystem_panel.html',
+        'app/templates/kubernetes/analytics/storage/partials/_persistent_volume_claims_panel.html',
+        'app/templates/kubernetes/analytics/storage/partials/_persistent_volumes_panel.html',
+        'app/templates/kubernetes/analytics/storage/partials/_recommendations.html',
     ]
     for path in paths:
         source = read(path)
@@ -164,11 +164,11 @@ def test_storage_standard_is_documented_and_registered() -> None:
 
 
 def test_storage_pvc_partial_coverage_is_visible_without_hiding_valid_totals() -> None:
-    domain = read('app/analytics/kubernetes/storage/domain.py')
-    overview = read('app/templates/analytics/kubernetes/storage/partials/_overview.html')
-    pvc = read('app/templates/analytics/kubernetes/storage/partials/_persistent_volume_claims_panel.html')
-    hero = read('app/templates/analytics/kubernetes/storage/partials/_hero.html')
-    presentation = read('app/analytics/kubernetes/storage/presentation.py')
+    domain = read('app/kubernetes/analytics/storage/domain.py')
+    overview = read('app/templates/kubernetes/analytics/storage/partials/_overview.html')
+    pvc = read('app/templates/kubernetes/analytics/storage/partials/_persistent_volume_claims_panel.html')
+    hero = read('app/templates/kubernetes/analytics/storage/partials/_hero.html')
+    presentation = read('app/kubernetes/analytics/storage/presentation.py')
 
     assert "'capacity_evidence_complete': capacity_complete" in domain
     assert "'pressure_evidence_complete': pressure_complete" in domain
@@ -187,11 +187,11 @@ def test_storage_pvc_partial_coverage_is_visible_without_hiding_valid_totals() -
 
 
 def test_storage_pv_partial_usage_and_filesystem_context_are_visible() -> None:
-    domain = read('app/analytics/kubernetes/storage/domain.py')
-    payloads = read('app/analytics/kubernetes/common/payloads.py')
-    overview = read('app/templates/analytics/kubernetes/storage/partials/_overview.html')
-    capacity = read('app/templates/analytics/kubernetes/storage/partials/_capacity_utilization_panel.html')
-    pv_panel = read('app/templates/analytics/kubernetes/storage/partials/_persistent_volumes_panel.html')
+    domain = read('app/kubernetes/analytics/storage/domain.py')
+    payloads = read('app/kubernetes/analytics/common/payloads.py')
+    overview = read('app/templates/kubernetes/analytics/storage/partials/_overview.html')
+    capacity = read('app/templates/kubernetes/analytics/storage/partials/_capacity_utilization_panel.html')
+    pv_panel = read('app/templates/kubernetes/analytics/storage/partials/_persistent_volumes_panel.html')
 
     assert "'observed_claim_usage_evidence_complete': used_complete" in domain
     assert "'observed_claim_usage_coverage_display'" in domain

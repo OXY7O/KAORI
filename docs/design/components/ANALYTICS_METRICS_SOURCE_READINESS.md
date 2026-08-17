@@ -5,7 +5,7 @@
 Every Kubernetes Analytics workspace that depends on Metrics Source-backed metrics uses one canonical readiness component:
 
 ```text
-app/templates/analytics/kubernetes/components/_metrics_source_status.html
+app/templates/kubernetes/analytics/components/_metrics_source_status.html
 ```
 
 The component owns both visual geometry and the data labels shown to operators. Pages must not rename the fields, substitute snapshot timestamps for provider checks, or rebuild the card locally.
@@ -39,7 +39,7 @@ Every card displays exactly:
 Analytics services normalize provider data through:
 
 ```text
-app.analytics.kubernetes.common.presentation.present_metrics_source_status
+app.kubernetes.analytics.common.presentation.present_metrics_source_status
 ```
 
 The function preserves provider diagnostics while returning the canonical keys:

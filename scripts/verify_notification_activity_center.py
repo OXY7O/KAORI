@@ -13,19 +13,19 @@ def read(relative: str) -> str:
 
 required_files = (
     'app/templates/components/navigation/_notification_center.html',
-    'app/templates/notifications/partials/_notification_deck_activity.html',
-    'app/templates/notifications/partials/_notification_deck_activity_jobs.html',
-    'app/templates/notifications/partials/_notification_deck_notifications.html',
-    'app/templates/notifications/partials/_notification_deck_oob.html',
-    'app/templates/notifications/components/_activity_center_items.html',
+    'app/templates/platform_operations/notifications/partials/_notification_deck_activity.html',
+    'app/templates/platform_operations/notifications/partials/_notification_deck_activity_jobs.html',
+    'app/templates/platform_operations/notifications/partials/_notification_deck_notifications.html',
+    'app/templates/platform_operations/notifications/partials/_notification_deck_oob.html',
+    'app/templates/platform_operations/notifications/components/_activity_center_items.html',
     'app/templates/components/progress_bar.html',
-    'app/notifications/routes.py',
-    'app/notifications/queries.py',
-    'app/notifications/service.py',
+    'app/platform_operations/notifications/routes.py',
+    'app/platform_operations/notifications/queries.py',
+    'app/platform_operations/notifications/service.py',
     'app/common/job_execution_presentation.py',
-    'app/jobs/presentation.py',
-    'app/templates/notifications/index.html',
-    'app/templates/notifications/partials/_center_page_content.html',
+    'app/platform_operations/jobs/presentation.py',
+    'app/templates/platform_operations/notifications/index.html',
+    'app/templates/platform_operations/notifications/partials/_center_page_content.html',
     'app/templates/layouts/app.html',
     'app/templates/components/navigation/navbar.html',
     'app/static/js/navbar.js',
@@ -36,19 +36,19 @@ for relative in required_files:
 shell = read('app/templates/components/navigation/_notification_center.html')
 navbar = read('app/templates/components/navigation/navbar.html')
 navbar_js = read('app/static/js/navbar.js')
-activity = read('app/templates/notifications/partials/_notification_deck_activity.html')
-activity_jobs = read('app/templates/notifications/partials/_notification_deck_activity_jobs.html')
-notifications = read('app/templates/notifications/partials/_notification_deck_notifications.html')
-oob = read('app/templates/notifications/partials/_notification_deck_oob.html')
-component = read('app/templates/notifications/components/_activity_center_items.html')
+activity = read('app/templates/platform_operations/notifications/partials/_notification_deck_activity.html')
+activity_jobs = read('app/templates/platform_operations/notifications/partials/_notification_deck_activity_jobs.html')
+notifications = read('app/templates/platform_operations/notifications/partials/_notification_deck_notifications.html')
+oob = read('app/templates/platform_operations/notifications/partials/_notification_deck_oob.html')
+component = read('app/templates/platform_operations/notifications/components/_activity_center_items.html')
 progress_component = read('app/templates/components/progress_bar.html')
-routes = read('app/notifications/routes.py')
+routes = read('app/platform_operations/notifications/routes.py')
 presentation = read('app/common/job_execution_presentation.py')
 layout = read('app/templates/layouts/app.html')
-page_tabs = read('app/templates/notifications/partials/_center_page_content.html')
-readme = read('app/notifications/README.md')
-quick_sync = read('app/cluster/quick_sync.py')
-queries = read('app/notifications/queries.py')
+page_tabs = read('app/templates/platform_operations/notifications/partials/_center_page_content.html')
+readme = read('app/platform_operations/notifications/README.md')
+quick_sync = read('app/kubernetes/cluster/quick_sync.py')
+queries = read('app/platform_operations/notifications/queries.py')
 
 if shell.count('aria-label="Open notification deck"') != 1:
     raise SystemExit('Top bar must expose exactly one Notification Deck trigger.')
@@ -299,8 +299,8 @@ if oob.count('hx-swap-oob="outerHTML"') != 4:
 if 'showOperationalProgressToast' in layout:
     raise SystemExit('Legacy operational progress toast remains active in app layout.')
 for legacy_path in (
-    'app/templates/notifications/partials/_notification_deck_content.html',
-    'app/templates/notifications/partials/_notification_deck_refresh.html',
+    'app/templates/platform_operations/notifications/partials/_notification_deck_content.html',
+    'app/templates/platform_operations/notifications/partials/_notification_deck_refresh.html',
 ):
     if (ROOT / legacy_path).exists():
         raise SystemExit(f'Legacy self-replacing Notification Deck fragment remains: {legacy_path}')

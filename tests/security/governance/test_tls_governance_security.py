@@ -4,8 +4,8 @@ import ast
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
-GOVERNANCE_ROUTES = ROOT / 'app/governance/routes.py'
-TLS_ROUTES = ROOT / 'app/governance/tls_certificates/routes.py'
+GOVERNANCE_ROUTES = ROOT / 'app/kubernetes/governance/routes.py'
+TLS_ROUTES = ROOT / 'app/kubernetes/governance/tls_certificates/routes.py'
 
 
 def _called_name(decorator: ast.expr) -> str | None:
@@ -45,8 +45,8 @@ def test_tls_routes_keep_view_and_sync_permissions_as_explicit_boundaries() -> N
 
 def test_tls_security_boundary_keeps_user_scoped_job_visibility_and_secret_data_minimization() -> None:
     routes = TLS_ROUTES.read_text(encoding='utf-8')
-    collector = (ROOT / 'app/governance/tls_certificates/collector.py').read_text(encoding='utf-8')
-    mutation = (ROOT / 'app/governance/tls_certificates/mutation.py').read_text(encoding='utf-8')
+    collector = (ROOT / 'app/kubernetes/governance/tls_certificates/collector.py').read_text(encoding='utf-8')
+    mutation = (ROOT / 'app/kubernetes/governance/tls_certificates/mutation.py').read_text(encoding='utf-8')
 
     assert 'get_visible_tls_sync_job(public_id=public_id, user_id=int(current_user.id))' in routes
     assert '(secret.data or {}).get(TLS_CRT_KEY)' in collector

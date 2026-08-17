@@ -8,9 +8,9 @@ def read(relative: str) -> str:
 
 
 def test_node_inventory_uses_canonical_resource_page_structure() -> None:
-    hero = read('app/templates/inventory/kubernetes/nodes/partials/_hero.html')
-    summary = read('app/templates/inventory/kubernetes/nodes/partials/_summary_cards.html')
-    table = read('app/templates/inventory/kubernetes/nodes/partials/_table_card.html')
+    hero = read('app/templates/kubernetes/inventory/nodes/partials/_hero.html')
+    summary = read('app/templates/kubernetes/inventory/nodes/partials/_summary_cards.html')
+    table = read('app/templates/kubernetes/inventory/nodes/partials/_table_card.html')
 
     assert 'page_hero.context_card' in hero
     assert 'Total CPU' not in hero
@@ -26,7 +26,7 @@ def test_node_inventory_uses_canonical_resource_page_structure() -> None:
 
 
 def test_node_table_is_compact_and_uses_canonical_labels_and_values() -> None:
-    content = read('app/templates/inventory/kubernetes/nodes/partials/_table_content.html')
+    content = read('app/templates/kubernetes/inventory/nodes/partials/_table_content.html')
 
     for header in ('Node', 'Cluster', 'Readiness', 'Role', 'Capacity', 'Network', 'Details'):
         assert f'>{header}<' in content
@@ -43,7 +43,7 @@ def test_node_table_is_compact_and_uses_canonical_labels_and_values() -> None:
 
 
 def test_node_readiness_semantics_and_posture_signals_are_normalized_in_service() -> None:
-    service = read('app/inventory/kubernetes/resources/nodes.py')
+    service = read('app/kubernetes/inventory/resources/nodes.py')
 
     assert 'if not_ready_nodes == total_nodes:' in service
     assert "fleet_posture_tone, fleet_posture_label = 'critical', 'Critical'" in service
@@ -56,7 +56,7 @@ def test_node_readiness_semantics_and_posture_signals_are_normalized_in_service(
 
 
 def test_node_detail_uses_inline_detail_style_shared_primitives_and_operational_context() -> None:
-    detail = read('app/templates/inventory/kubernetes/nodes/partials/_node_detail_content.html')
+    detail = read('app/templates/kubernetes/inventory/nodes/partials/_node_detail_content.html')
     shared = read('app/templates/components/details/_detail_content.html')
 
     assert 'data-kaori-detail-variant="full-workspace-modal"' in detail

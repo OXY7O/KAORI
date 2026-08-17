@@ -1,0 +1,23 @@
+{% extends "layouts/app.html" %}
+{% import "components/page_hero.html" as page_hero %}
+{% block title %}{{ materialization_title }}{% endblock title %}
+{% block dashboard_content %}
+    <div id="{{ materialization_page_id }}" class="space-y-6">
+        <section class="{{ page_hero.shell_classes() }}">
+            <div class="{{ page_hero.layout_classes() }}">
+                <div class="{{ page_hero.content_classes() }}">
+                    {% call page_hero.intro('database-zap', 'Kubernetes Analytics', materialization_icon) %}
+                        <h1 class="{{ page_hero.title_classes() }}">{{ materialization_title }}</h1>
+                        <p class="mt-2 {{ page_hero.description_classes() }}">{{ materialization_description }}</p>
+                    {% endcall %}
+                </div>
+                <aside class="{{ page_hero.aside_classes() }}"
+                       aria-label="Analytics readiness">
+                    {% set analytics_posture_label = materialization_title ~ ' Readiness' %}
+                    {% include "kubernetes/analytics/components/_blocked_posture.html" %}
+                </aside>
+            </div>
+        </section>
+        {% include "components/dependencies/_blocker.html" %}
+    </div>
+{% endblock dashboard_content %}

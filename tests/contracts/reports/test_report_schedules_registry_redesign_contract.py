@@ -210,7 +210,7 @@ def test_schedule_actions_preserve_safe_registry_context_and_form_order() -> Non
     template = read(TEMPLATE)
     routes = read(ROUTES)
 
-    assert 'from app.auth.session import safe_next_url' in routes
+    assert 'from app.access.authentication.session import safe_next_url' in routes
     assert 'def _schedule_return_url(value: str | None) -> str:' in routes
     assert "key != 'edit_schedule_id'" in routes
     assert "request.form.get('next')" in routes

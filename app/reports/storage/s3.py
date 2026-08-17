@@ -5,9 +5,9 @@ from pathlib import Path
 
 from flask import current_app
 
-from app.storage.base import StoredArtifact
-from app.storage.s3 import S3ArtifactStorage, normalize_optional_string, normalize_s3_prefix
-from app.storage.service import parse_bool_config, resolve_app_path
+from app.artifact_storage.base import StoredArtifact
+from app.artifact_storage.s3 import S3ArtifactStorage, normalize_optional_string, normalize_s3_prefix
+from app.artifact_storage.service import parse_bool_config, resolve_app_path
 
 
 class S3ReportStorage(S3ArtifactStorage):

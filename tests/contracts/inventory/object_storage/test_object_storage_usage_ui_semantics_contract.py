@@ -15,7 +15,7 @@ def test_minio_usage_state_distinguishes_disabled_from_collection_failure():
 
 
 def test_bucket_modal_keeps_usage_detail_out_of_the_inventory_table():
-    template = read('app/templates/inventory/object_storage/buckets/partials/_table_content.html')
+    template = read('app/templates/storage/object_storage/inventory/buckets/partials/_table_content.html')
     table_head = template.split('<thead', 1)[1].split('</thead>', 1)[0]
     assert '>Quota<' in table_head
     assert '>Size<' not in table_head
@@ -26,14 +26,14 @@ def test_bucket_modal_keeps_usage_detail_out_of_the_inventory_table():
 
 
 def test_provider_api_endpoint_keeps_horizontal_key_value_alignment():
-    template = read('app/templates/inventory/object_storage/buckets/partials/_table_content.html')
+    template = read('app/templates/storage/object_storage/inventory/buckets/partials/_table_content.html')
     assert "detail_row('API Endpoint', asset.endpoint, break_all=true)" in template
     assert "stacked_detail_row('API Endpoint'" not in template
 
 
 def test_modal_replaces_sparse_native_evidence_with_curated_provider_context():
-    template = read('app/templates/inventory/object_storage/buckets/partials/_table_content.html')
-    presentation = read('app/inventory/object_storage/presentation.py')
+    template = read('app/templates/storage/object_storage/inventory/buckets/partials/_table_content.html')
+    presentation = read('app/storage/object_storage/inventory/presentation.py')
     assert 'Provider Context' in template
     assert 'Enrichment Profile' in template
     assert 'Usage Stats Mode' in template

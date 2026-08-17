@@ -362,7 +362,7 @@ def test_analytics_overview_snapshot_and_composite_loading_contract_are_document
     guide = _read('docs/design/KAORI_STYLING_GUIDE.md')
     contract = _read('docs/design/components/ANALYTICS_ANALYSIS_SURFACES.md')
     surfaces = _read('app/templates/analytics/components/_analysis_surfaces.html')
-    analytics_readme = _read('app/analytics/kubernetes/README.md')
+    analytics_readme = _read('app/kubernetes/analytics/README.md')
 
     assert 'Capacity is the reference composition for Analytics pages and Analytics Overview' in guide
     assert 'Analytics Overview may add one compact composite progress strip' in guide

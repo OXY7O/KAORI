@@ -6,12 +6,12 @@ from typing import Any
 from flask import current_app, url_for
 
 from app.extensions.db import db
-from app.jobs.dispatcher import enqueue_canonical_job
-from app.notifications.service import record_operational_activity
-from app.retention.domains import get_archive_domain
-from app.retention.policy_service import get_policy, update_policy
-from app.retention.service import get_archive_download_path, verify_archive_artifact
-from app.retention.tasks import run_domain_retention_task
+from app.platform_operations.data_lifecycle.retention.domains import get_archive_domain
+from app.platform_operations.data_lifecycle.retention.policy_service import get_policy, update_policy
+from app.platform_operations.data_lifecycle.retention.service import get_archive_download_path, verify_archive_artifact
+from app.platform_operations.data_lifecycle.retention.tasks import run_domain_retention_task
+from app.platform_operations.jobs.dispatcher import enqueue_canonical_job
+from app.platform_operations.notifications.service import record_operational_activity
 
 
 def _int_value(values: Mapping[str, Any], name: str, default: int) -> int:

@@ -102,8 +102,8 @@ def test_minio_detail_matches_asset_owner_lifecycle_contract() -> None:
 
 
 def test_minio_asset_owner_deletion_removes_asset_bindings_not_shared_sources() -> None:
-    service = read('app/object_storage/providers/minio/service.py')
-    routes = read('app/object_storage/providers/minio/routes.py')
+    service = read('app/integrations/storage/object_storage/providers/minio/application/service.py')
+    routes = read('app/integrations/storage/object_storage/providers/minio/application/routes.py')
     deletion = read('app/integrations/deletion.py')
 
     assert 'def delete_minio_instance(' in service
@@ -118,14 +118,16 @@ def test_minio_asset_owner_deletion_removes_asset_bindings_not_shared_sources() 
 
 
 def test_minio_configuration_and_runtime_have_provider_parity_routes() -> None:
-    routes = read('app/object_storage/providers/minio/routes.py')
-    workspace_web = read('app/object_storage/providers/minio/workspace_web.py')
+    routes = read('app/integrations/storage/object_storage/providers/minio/application/routes.py')
+    workspace_web = read('app/integrations/storage/object_storage/providers/minio/application/workspace_web.py')
     form = read('app/templates/integrations/storage/object_storage/providers/minio/instance_form.html')
-    service = read('app/object_storage/providers/minio/service.py')
+    service = read('app/integrations/storage/object_storage/providers/minio/application/service.py')
 
     assert "@minio_bp.route('/instances/<int:instance_id>/edit', methods=['GET', 'POST'])" in routes
     assert 'def update_minio_instance(' in service
-    assert 'Leave blank to keep the current secret key' in read('app/object_storage/providers/minio/forms.py')
+    assert 'Leave blank to keep the current secret key' in read(
+        'app/integrations/storage/object_storage/providers/minio/application/forms.py'
+    )
     assert 'Edit MinIO Connection' in form
     assert 'Save Changes' in form
     assert "url_for('minio.test_instance_configuration'" in form
@@ -145,7 +147,7 @@ def test_minio_validation_runtime_and_binding_tables_match_kubernetes_workspace_
     )
     runtime = read('app/templates/integrations/storage/object_storage/providers/minio/partials/_detail_runtime.html')
     bindings = read('app/templates/integrations/storage/object_storage/providers/minio/partials/_binding_registry.html')
-    routes = read('app/object_storage/providers/minio/routes.py')
+    routes = read('app/integrations/storage/object_storage/providers/minio/application/routes.py')
 
     assert 'Validation & Capabilities' in detail
     assert 'connection_validation_header.render(' in validation

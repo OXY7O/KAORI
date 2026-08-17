@@ -1,0 +1,20 @@
+{% import "components/operational_section_card.html" as operational_section_card %}
+{% import "components/resource_posture_grid.html" as posture_grid %}
+{% set coverage_exceptions = (payload.summary.coverage_partial or 0) + (payload.summary.coverage_uncovered or 0) + (payload.summary.coverage_not_reported or 0) %}
+{% set metrics = [
+    ('circle-check', 'Valid', payload.summary.healthy, 'Certificates outside the renewal window.', 'normal'),
+    ('calendar-clock', 'Renewal Window', payload.summary.warning, 'Certificates within ' ~ payload.validity_policy.renewal_window_days ~ ' days of expiry.', 'warning' if payload.summary.warning else 'normal'),
+    ('triangle-alert', 'Critical Window', payload.summary.critical, 'Certificates within ' ~ payload.validity_policy.critical_window_days ~ ' days of expiry.', 'critical' if payload.summary.critical else 'normal'),
+    ('circle-x', 'Expired', payload.summary.expired, 'Certificates past their exact validity timestamp.', 'critical' if payload.summary.expired else 'normal'),
+    ('badge-x', 'Invalid', payload.summary.invalid, 'Certificates that could not be parsed or validated.', 'critical' if payload.summary.invalid else 'normal'),
+    ('shield-alert', 'Host Coverage Exceptions', coverage_exceptions, 'Partial, uncovered, or unavailable host mapping evidence.', 'warning' if coverage_exceptions else 'normal')
+] %}
+{% call operational_section_card.render(
+    'Certificate Validity & Operations',
+    'Lifecycle, declared-host coverage, and TLS inventory synchronization for the active governance filters.',
+    'gauge',
+    body_classes='p-0'
+    ) %}
+    {% include "kubernetes/governance/tls_certificates/partials/_sync_panel.html" %}
+    {{ posture_grid.render(metrics, columns=3) }}
+{% endcall %}

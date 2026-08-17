@@ -7,7 +7,7 @@ import pytest
 from flask import Flask
 
 from app.extensions.db import db
-from app.governance.tls_certificates import service, sync_state
+from app.kubernetes.governance.tls_certificates import service, sync_state
 from app.models.cluster import Cluster
 from app.models.governance import TLSCertificateCollectionState, TLSCertificateInventory
 

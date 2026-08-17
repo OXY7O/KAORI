@@ -1,0 +1,93 @@
+{% import "components/table.html" as table_ui %}
+{% import "components/table_registry.html" as registry_ui %}
+<section id="workloads-table-card" class="{{ table_ui.block_classes() }}">
+    {{ table_ui.inventory_block_header('layout-grid',
+        'Workload Inventory',
+        'Kubernetes controller and batch workloads collected from connected clusters.',
+        'workloads-table-loading',
+        'Refreshing Workload Inventory',
+        url_for('integrations.kubernetes') ,
+    'Open Cluster List'
+    ) }}
+    <div class="{{ table_ui.inventory_filter_bar_classes() }}">
+        {% if selected_cluster_id or selected_namespace or selected_type or selected_status or search %}
+            <div class="mb-3 flex justify-end">
+                {{ registry_ui.clear_filters_action(
+                    url_for('inventory.workloads', per_page=pagination.per_page),
+                    table_ui.action_classes(),
+                    hx_get=url_for('inventory.workloads', per_page=pagination.per_page, partial_mode='page_workspace'),
+                    target='#workloads-page-workspace',
+                    indicator='#workloads-table-loading'
+                ) }}
+            </div>
+        {% endif %}
+        <form hx-get="{{ url_for('inventory.workloads') }}"
+              hx-target="#workloads-page-workspace"
+              hx-swap="outerHTML"
+              hx-trigger="change, keyup changed delay:500ms from:find input[name='search']"
+              hx-indicator="#workloads-table-loading"
+              aria-label="Workload inventory filters"
+              class="grid gap-4 md:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,0.85fr)_minmax(0,0.85fr)_minmax(16rem,1.4fr)] xl:items-end">
+            <input type="hidden" name="page" value="1" />
+            <input type="hidden" name="per_page" value="{{ pagination.per_page }}" />
+            <input type="hidden" name="partial_mode" value="page_workspace" />
+            <div>
+                <label for="workloads-cluster-filter"
+                       class="{{ table_ui.filter_label_classes() }}">Cluster</label>
+                <select id="workloads-cluster-filter"
+                        name="cluster_id"
+                        class="{{ table_ui.filter_select_classes() }}">
+                    <option value="">All Clusters</option>
+                    {% for cluster in clusters %}
+                        <option value="{{ cluster.id }}"
+                                {% if selected_cluster_id == cluster.id|string or selected_cluster_id == cluster.id %}selected{% endif %}>{{ cluster.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="workloads-namespace-filter"
+                       class="{{ table_ui.filter_label_classes() }}">Namespace</label>
+                <select id="workloads-namespace-filter"
+                        name="namespace"
+                        class="{{ table_ui.filter_select_classes() }}">
+                    <option value="" {% if not selected_namespace %}selected{% endif %}>All Namespaces</option>
+                    {% for namespace_name in inventory.namespaces %}
+                        <option value="{{ namespace_name }}"
+                                {% if selected_namespace == namespace_name %}selected{% endif %}>{{ namespace_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="workloads-type-filter"
+                       class="{{ table_ui.filter_label_classes() }}">Type</label>
+                <select id="workloads-type-filter"
+                        name="type"
+                        class="{{ table_ui.filter_select_classes() }}">
+                    <option value="" {% if not selected_type %}selected{% endif %}>All Types</option>
+                    {% for type_name in inventory.workload_types %}
+                        <option value="{{ type_name }}"
+                                {% if selected_type == type_name %}selected{% endif %}>{{ type_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="workloads-status-filter"
+                       class="{{ table_ui.filter_label_classes() }}">Operational State</label>
+                <select id="workloads-status-filter"
+                        name="status"
+                        class="{{ table_ui.filter_select_classes() }}">
+                    <option value="" {% if not selected_status %}selected{% endif %}>All Operational States</option>
+                    {% for status_option in inventory.workload_statuses %}
+                        <option value="{{ status_option.value }}"
+                                {% if selected_status == status_option.value %}selected{% endif %}>{{ status_option.label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="workloads-search" class="{{ table_ui.filter_label_classes() }}">Search Workloads</label>
+                {{ table_ui.search_field('search', search, 'Search workload name', id='workloads-search') }}
+            </div>
+        </form>
+    </div>
+    <div id="workloads-table-content">{% include "kubernetes/inventory/workloads/partials/_table_content.html" %}</div>
+</section>

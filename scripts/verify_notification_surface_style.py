@@ -23,7 +23,7 @@ def main() -> int:
     progress = read('app/templates/components/progress_bar.html')
     progress_toast = read('app/templates/components/operational_progress_toast.html')
     operational_toast = read('app/templates/components/operational_toast.html')
-    activity_items = read('app/templates/notifications/components/_activity_center_items.html')
+    activity_items = read('app/templates/platform_operations/notifications/components/_activity_center_items.html')
     loading = read('app/templates/components/loading_bar.html')
     general = read('app/templates/settings/general/partials/_page_content.html')
     account = read('app/templates/settings/account/partials/_page_content.html')

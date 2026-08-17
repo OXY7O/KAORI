@@ -1,14 +1,14 @@
 from pathlib import Path
 
 HERO_FILES = [
-    'app/templates/analytics/kubernetes/overview/partials/_hero_posture.html',
-    'app/templates/analytics/kubernetes/utilization/partials/_hero.html',
-    'app/templates/analytics/kubernetes/capacity/partials/_hero.html',
-    'app/templates/analytics/kubernetes/storage/partials/_hero.html',
-    'app/templates/analytics/kubernetes/workload/partials/_hero.html',
-    'app/templates/analytics/kubernetes/top_consumers/partials/_hero.html',
-    'app/templates/analytics/kubernetes/alerts/partials/_hero.html',
-    'app/templates/analytics/kubernetes/forecast/partials/_hero.html',
+    'app/templates/kubernetes/analytics/overview/partials/_hero_posture.html',
+    'app/templates/kubernetes/analytics/utilization/partials/_hero.html',
+    'app/templates/kubernetes/analytics/capacity/partials/_hero.html',
+    'app/templates/kubernetes/analytics/storage/partials/_hero.html',
+    'app/templates/kubernetes/analytics/workload/partials/_hero.html',
+    'app/templates/kubernetes/analytics/top_consumers/partials/_hero.html',
+    'app/templates/kubernetes/analytics/alerts/partials/_hero.html',
+    'app/templates/kubernetes/analytics/forecast/partials/_hero.html',
 ]
 
 
@@ -34,14 +34,14 @@ def test_every_analytics_hero_uses_shared_context_card_contract() -> None:
 
 def test_analytics_hero_metadata_remains_capped_at_three() -> None:
     intro_files = [
-        'app/templates/analytics/kubernetes/overview/partials/_hero.html',
-        'app/templates/analytics/kubernetes/utilization/partials/_hero.html',
-        'app/templates/analytics/kubernetes/capacity/partials/_hero.html',
-        'app/templates/analytics/kubernetes/storage/partials/_hero.html',
-        'app/templates/analytics/kubernetes/workload/partials/_hero.html',
-        'app/templates/analytics/kubernetes/top_consumers/partials/_hero.html',
-        'app/templates/analytics/kubernetes/alerts/partials/_hero.html',
-        'app/templates/analytics/kubernetes/forecast/partials/_hero.html',
+        'app/templates/kubernetes/analytics/overview/partials/_hero.html',
+        'app/templates/kubernetes/analytics/utilization/partials/_hero.html',
+        'app/templates/kubernetes/analytics/capacity/partials/_hero.html',
+        'app/templates/kubernetes/analytics/storage/partials/_hero.html',
+        'app/templates/kubernetes/analytics/workload/partials/_hero.html',
+        'app/templates/kubernetes/analytics/top_consumers/partials/_hero.html',
+        'app/templates/kubernetes/analytics/alerts/partials/_hero.html',
+        'app/templates/kubernetes/analytics/forecast/partials/_hero.html',
     ]
     for filename in intro_files:
         template = Path(filename).read_text()

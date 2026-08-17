@@ -1,4 +1,4 @@
-from app.inventory.object_storage.tasks import _build_result
+from app.storage.object_storage.inventory.tasks import _build_result
 
 
 def _result(*, total: int, synced: int, failed: list[str], buckets: int = 0):

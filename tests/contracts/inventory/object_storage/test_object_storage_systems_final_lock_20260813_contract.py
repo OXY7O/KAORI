@@ -6,7 +6,7 @@ def read(path: str) -> str:
 
 
 def test_systems_table_is_final_canonical_inventory_contract() -> None:
-    table = read('app/templates/inventory/object_storage/systems/partials/_table_content.html')
+    table = read('app/templates/storage/object_storage/inventory/systems/partials/_table_content.html')
     for heading in (
         'System',
         'Provider',
@@ -27,7 +27,7 @@ def test_systems_table_is_final_canonical_inventory_contract() -> None:
 
 
 def test_systems_drawer_has_operational_reading_and_authority_boundary() -> None:
-    table = read('app/templates/inventory/object_storage/systems/partials/_table_content.html')
+    table = read('app/templates/storage/object_storage/inventory/systems/partials/_table_content.html')
     assert "'Operational Reading'" in table
     assert 'Provider Ready' in table
     assert 'Snapshot Current' in table
@@ -41,9 +41,9 @@ def test_systems_drawer_has_operational_reading_and_authority_boundary() -> None
 
 
 def test_systems_workspace_keeps_kaori_hero_summary_filter_and_job_ownership() -> None:
-    hero = read('app/templates/inventory/object_storage/systems/partials/_hero.html')
-    summary = read('app/templates/inventory/object_storage/systems/partials/_summary_cards.html')
-    table_card = read('app/templates/inventory/object_storage/systems/partials/_table_card.html')
+    hero = read('app/templates/storage/object_storage/inventory/systems/partials/_hero.html')
+    summary = read('app/templates/storage/object_storage/inventory/systems/partials/_summary_cards.html')
+    table_card = read('app/templates/storage/object_storage/inventory/systems/partials/_table_card.html')
     assert 'page_hero.shell_classes()' in hero
     assert 'Object Storage Systems Posture' in hero
     assert 'operational_section_card.render(' in summary
@@ -55,8 +55,8 @@ def test_systems_workspace_keeps_kaori_hero_summary_filter_and_job_ownership() -
 
 
 def test_object_storage_templates_do_not_add_local_style_debt() -> None:
-    systems = read('app/templates/inventory/object_storage/systems/partials/_table_content.html')
-    buckets = read('app/templates/inventory/object_storage/buckets/partials/_table_content.html')
+    systems = read('app/templates/storage/object_storage/inventory/systems/partials/_table_content.html')
+    buckets = read('app/templates/storage/object_storage/inventory/buckets/partials/_table_content.html')
     assert 'text-[' not in systems
     assert 'text-[' not in buckets
     assert 'tracking-[' not in buckets

@@ -11,7 +11,7 @@
 | Auditor | 16 | Read-only operational, security, user, role, system, audit, and export visibility. |
 | Super Admin flag | All | Emergency/platform authority outside normal role assignment. |
 
-Counts reflect the current registry in `app/rbac/defaults.py` and must be revalidated whenever permissions change.
+Counts reflect the current registry in `app/access/rbac/defaults.py` and must be revalidated whenever permissions change.
 
 ## 2. Viewer
 

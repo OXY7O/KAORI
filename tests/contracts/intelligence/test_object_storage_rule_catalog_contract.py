@@ -16,7 +16,7 @@ def test_object_storage_rule_catalog_is_domain_owned_and_minio_covered():
 
 def test_object_storage_metric_signal_catalog_matches_analytics_boundaries():
     catalog = read('app/definitions/catalogs/intelligence/rules.yaml')
-    analysis = read('app/analytics/object_storage/analysis.py')
+    analysis = read('app/storage/object_storage/analytics/analysis.py')
 
     for rule_key in (
         'object_storage.metric.capacity_pressure',

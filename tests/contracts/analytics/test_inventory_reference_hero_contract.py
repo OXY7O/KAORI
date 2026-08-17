@@ -1,13 +1,13 @@
 from pathlib import Path
 
 ANALYTICS_HERO_FILES = [
-    Path('app/templates/analytics/kubernetes/utilization/partials/_hero.html'),
-    Path('app/templates/analytics/kubernetes/capacity/partials/_hero.html'),
-    Path('app/templates/analytics/kubernetes/storage/partials/_hero.html'),
-    Path('app/templates/analytics/kubernetes/workload/partials/_hero.html'),
-    Path('app/templates/analytics/kubernetes/top_consumers/partials/_hero.html'),
-    Path('app/templates/analytics/kubernetes/alerts/partials/_hero.html'),
-    Path('app/templates/analytics/kubernetes/forecast/partials/_hero.html'),
+    Path('app/templates/kubernetes/analytics/utilization/partials/_hero.html'),
+    Path('app/templates/kubernetes/analytics/capacity/partials/_hero.html'),
+    Path('app/templates/kubernetes/analytics/storage/partials/_hero.html'),
+    Path('app/templates/kubernetes/analytics/workload/partials/_hero.html'),
+    Path('app/templates/kubernetes/analytics/top_consumers/partials/_hero.html'),
+    Path('app/templates/kubernetes/analytics/alerts/partials/_hero.html'),
+    Path('app/templates/kubernetes/analytics/forecast/partials/_hero.html'),
 ]
 
 
@@ -25,8 +25,8 @@ def test_analytics_heroes_use_inventory_context_card_contract():
 
 
 def test_overview_lazy_posture_uses_same_context_card_body():
-    posture = Path('app/templates/analytics/kubernetes/overview/partials/_hero_posture.html').read_text()
-    loading = Path('app/templates/analytics/kubernetes/overview/partials/_hero_posture_loading.html').read_text()
+    posture = Path('app/templates/kubernetes/analytics/overview/partials/_hero_posture.html').read_text()
+    loading = Path('app/templates/kubernetes/analytics/overview/partials/_hero_posture_loading.html').read_text()
     assert 'page_hero.context_card_body(' in posture
     assert 'page_hero.context_card_body(' in loading
     assert 'context_panel_classes()' not in posture
@@ -46,15 +46,15 @@ def test_analytics_hero_helper_is_removed():
 
 
 def test_blocked_posture_uses_same_recovery_action_contract() -> None:
-    template = Path('app/templates/analytics/kubernetes/components/_blocked_posture.html').read_text()
+    template = Path('app/templates/kubernetes/analytics/components/_blocked_posture.html').read_text()
     assert 'page_hero.context_card_body(' in template
     assert "'Manage Clusters'" in template
     assert "url_for('integrations.kubernetes')" in template
 
 
 def test_storage_and_capacity_hero_helpers_are_concise_and_semantic() -> None:
-    storage = Path('app/templates/analytics/kubernetes/storage/partials/_hero.html').read_text()
-    capacity = Path('app/templates/analytics/kubernetes/capacity/partials/_hero.html').read_text()
+    storage = Path('app/templates/kubernetes/analytics/storage/partials/_hero.html').read_text()
+    capacity = Path('app/templates/kubernetes/analytics/capacity/partials/_hero.html').read_text()
 
     assert "('server', 'Node Pressure'" in storage
     assert "'Node filesystem'" in storage

@@ -13,7 +13,7 @@ Access Final Lock v1 covers:
 - Permission Catalog;
 - Activity Audit.
 
-Runtime ownership remains explicit: `app/users` owns account lifecycle, `app/identity_providers` owns provider administration, `app/auth` owns authentication/session admission, `app/rbac` owns authorization policy, `app/access/activity_audit` owns the Activity Audit workspace, and `app/notifications` owns its shared operational evidence store/query kernel. `app/access` is the control-plane composition owner.
+Runtime ownership remains explicit: `app/access/users` owns account lifecycle, `app/access/identity_providers` owns provider administration, `app/access/authentication` owns authentication/session admission, `app/access/rbac` owns authorization policy, `app/access/activity_audit` owns the Activity Audit workspace, and `app/platform_operations/notifications` owns its shared operational evidence store/query kernel. `app/access` is the control-plane composition owner.
 
 ## Locked security boundaries
 

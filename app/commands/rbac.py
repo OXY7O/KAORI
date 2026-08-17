@@ -1,7 +1,7 @@
 import click
 from flask.cli import with_appcontext
 
-from app.rbac.service import seed_default_rbac
+from app.access.rbac.service import seed_default_rbac
 
 
 @click.command(

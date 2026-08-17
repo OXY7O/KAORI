@@ -66,7 +66,7 @@ def test_kubernetes_dashboard_scopes_central_recommendations_explicitly():
 
 def test_object_storage_recommendation_thresholds_match_analytics_capacity_boundaries():
     evaluator = read('app/intelligence/object_storage_recommendations.py')
-    capacity = read('app/analytics/object_storage/presentation.py')
+    capacity = read('app/storage/object_storage/analytics/presentation.py')
 
     assert 'QUOTA_WARNING_PERCENT = 85.0' in evaluator
     assert 'QUOTA_CRITICAL_PERCENT = 95.0' in evaluator

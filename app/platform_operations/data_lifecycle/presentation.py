@@ -13,8 +13,8 @@ from app.models.archive import (
 )
 from app.models.job import JobExecution
 from app.models.lifecycle import DataLifecyclePolicy
-from app.retention.domains import DOMAIN_FACTORIES
-from app.retention.presentation import build_data_lifecycle_context
+from app.platform_operations.data_lifecycle.retention.domains import DOMAIN_FACTORIES
+from app.platform_operations.data_lifecycle.retention.presentation import build_data_lifecycle_context
 
 
 def build_workspace_context(

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from app.kubernetes_operations.operation_flow import validate_then_apply
+from app.kubernetes.operations.operation_flow import validate_then_apply
 
 
 def test_validate_then_apply_runs_validation_before_mutation() -> None:

@@ -1,7 +1,7 @@
 from importlib.util import module_from_spec, spec_from_file_location
 from pathlib import Path
 
-MODULE_PATH = Path(__file__).resolve().parents[2] / 'app/inventory/kubernetes/formatting.py'
+MODULE_PATH = Path(__file__).resolve().parents[3] / 'app/kubernetes/inventory/formatting.py'
 SPEC = spec_from_file_location('kaori_inventory_formatting', MODULE_PATH)
 assert SPEC is not None and SPEC.loader is not None
 FORMATTING = module_from_spec(SPEC)

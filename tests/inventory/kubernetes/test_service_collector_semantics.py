@@ -11,15 +11,15 @@ import pytest
 pytestmark = pytest.mark.functional
 
 ROOT = Path(__file__).resolve().parents[3]
-COLLECTOR_PATH = ROOT / 'app/inventory/kubernetes/collectors/services.py'
-SEMANTICS_PATH = ROOT / 'app/inventory/kubernetes/resources/service_semantics.py'
+COLLECTOR_PATH = ROOT / 'app/kubernetes/inventory/collectors/services.py'
+SEMANTICS_PATH = ROOT / 'app/kubernetes/inventory/resources/service_semantics.py'
 
 
 def _load_collector(monkeypatch: pytest.MonkeyPatch):
     app_module = ModuleType('app')
     inventory_module = ModuleType('app.inventory')
-    collectors_module = ModuleType('app.inventory.kubernetes.collectors')
-    common_module = ModuleType('app.inventory.kubernetes.collectors.common')
+    collectors_module = ModuleType('app.kubernetes.inventory.collectors')
+    common_module = ModuleType('app.kubernetes.inventory.collectors.common')
 
     common_module._string_value = lambda value, default='-': default if value in (None, '') else str(value)
     common_module._metadata_details = lambda metadata: {
@@ -49,8 +49,8 @@ def _load_collector(monkeypatch: pytest.MonkeyPatch):
     modules = {
         'app': app_module,
         'app.inventory': inventory_module,
-        'app.inventory.kubernetes.collectors': collectors_module,
-        'app.inventory.kubernetes.collectors.common': common_module,
+        'app.kubernetes.inventory.collectors': collectors_module,
+        'app.kubernetes.inventory.collectors.common': common_module,
         'kubernetes': kubernetes_module,
         'kubernetes.client': client_module,
         'kubernetes.client.exceptions': exceptions_module,

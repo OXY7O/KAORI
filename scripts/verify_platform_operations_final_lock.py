@@ -61,7 +61,7 @@ CORE_UI_LOCK = ROOT / 'scripts/verify_core_workspace_ui_lock.py'
 
 TEMPLATE_ROOTS = (
     ROOT / 'app/templates/platform_operations',
-    ROOT / 'app/templates/jobs',
+    ROOT / 'app/templates/platform_operations/jobs',
 )
 
 RAW_PALETTE = re.compile(
@@ -78,8 +78,8 @@ TABLIST = re.compile(r'role=["\']tablist["\']', re.I)
 
 OBSOLETE = (
     'app/templates/platform_operations/kubernetes/_tabs.html',
-    'app/templates/jobs/executions/partials/_hero_context_metrics.html',
-    'app/templates/jobs/executions/partials/_hero_metadata.html',
+    'app/templates/platform_operations/jobs/executions/partials/_hero_context_metrics.html',
+    'app/templates/platform_operations/jobs/executions/partials/_hero_metadata.html',
 )
 
 
@@ -259,7 +259,7 @@ def main() -> int:
         if keyboard not in shared:
             errors.append(f'Framed Workspace Tabs lost keyboard contract: {keyboard}')
 
-    jobs_index = read('app/templates/jobs/index.html')
+    jobs_index = read('app/templates/platform_operations/jobs/index.html')
     if (
         'components/framed_workspace_tabs.html' not in jobs_index
         or 'framed_workspace_tabs.render_navigation(' not in jobs_index
@@ -280,7 +280,7 @@ def main() -> int:
     data_lifecycle_workspace = read('app/templates/platform_operations/data_lifecycle/partials/_domain_workspace.html')
     if 'Lifecycle Coverage' not in data_lifecycle_workspace:
         errors.append('Data Lifecycle v1.2 must expose lifecycle coverage evidence')
-    retention_presentation = read('app/retention/presentation.py')
+    retention_presentation = read('app/platform_operations/data_lifecycle/retention/presentation.py')
     for required in (
         "'label': 'Activity Audit Table'",
         "'label': 'Notification Center'",
@@ -291,8 +291,8 @@ def main() -> int:
         if required not in retention_presentation:
             errors.append(f'Platform Operations Data Lifecycle coverage lock missing: {required}')
 
-    analytics_domain = read('app/retention/domains/analytics_snapshot.py')
-    analytics_registry = read('app/retention/domains/__init__.py')
+    analytics_domain = read('app/platform_operations/data_lifecycle/retention/domains/analytics_snapshot.py')
+    analytics_registry = read('app/platform_operations/data_lifecycle/retention/domains/__init__.py')
     for required in (
         "'analytics_snapshot': AnalyticsSnapshotArchiveDomain",
         "AnalyticsSnapshot.status != 'pending'",
@@ -308,7 +308,7 @@ def main() -> int:
     ):
         errors.append('Platform Operations Data Lifecycle must expose Analytics Snapshots and Serve Window Protection')
 
-    execution_workspace = read('app/templates/jobs/executions/_workspace.html')
+    execution_workspace = read('app/templates/platform_operations/jobs/executions/_workspace.html')
     shared_tabs = read('app/templates/components/workspace_tabs.html')
     if (
         'components/workspace_tabs.html' not in execution_workspace
@@ -320,15 +320,15 @@ def main() -> int:
     if 'integrations/components/' in execution_workspace:
         errors.append('Jobs must not depend on Integration-specific presentation components')
 
-    status_refresh = read('app/templates/jobs/executions/partials/_status_refresh.html')
-    status_oob = read('app/templates/jobs/executions/partials/_status_oob.html')
+    status_refresh = read('app/templates/platform_operations/jobs/executions/partials/_status_refresh.html')
+    status_oob = read('app/templates/platform_operations/jobs/executions/partials/_status_oob.html')
     if '_status_oob.html' not in status_refresh:
         errors.append('Execution status refresh must compose the shared OOB counter fragment')
     for key in ('active', 'registry', 'queues'):
         if f'id="execution-tab-count-{key}"' not in status_oob:
             errors.append(f'Execution live OOB count missing: {key}')
 
-    active_jobs = read('app/templates/jobs/executions/partials/_active_jobs.html')
+    active_jobs = read('app/templates/platform_operations/jobs/executions/partials/_active_jobs.html')
     if 'hx-trigger="every 15s"' not in active_jobs or '{% if active_job_rows %}hx-get=' in active_jobs:
         errors.append('Active Work polling must remain live even when no active execution is rendered')
     if "('Active Attention', job_stats.active_attention)" not in active_jobs:
@@ -342,13 +342,13 @@ def main() -> int:
         or "empty_state_label = 'Queue Clear'" not in active_jobs
     ):
         errors.append('Active Work healthy zero state must use the canonical KAORI empty-state component')
-    status_poller = read('app/templates/jobs/executions/partials/_status_poller.html')
+    status_poller = read('app/templates/platform_operations/jobs/executions/partials/_status_poller.html')
     if "if selected_job_tab != 'active'" not in execution_workspace or 'document.hidden' not in status_poller:
         errors.append(
             'Execution summary polling must not overlap Active Work and must pause while the browser is hidden'
         )
 
-    job_presentation = read('app/jobs/presentation.py')
+    job_presentation = read('app/platform_operations/jobs/presentation.py')
     for required in (
         "_ACTIVE_ATTENTION_STATUSES = ('retrying', 'cancel_requested')",
         "_RECENT_ATTENTION_STATUSES = ('failed', 'partially_succeeded', 'expired')",
@@ -362,7 +362,7 @@ def main() -> int:
         if required not in job_presentation:
             errors.append(f'Jobs v1.1 operational semantics missing: {required}')
 
-    registry = read('app/templates/jobs/executions/partials/_registry.html')
+    registry = read('app/templates/platform_operations/jobs/executions/partials/_registry.html')
     for required in (
         'components/loading_bar.html',
         'components/pagination.html',
@@ -382,7 +382,7 @@ def main() -> int:
     if "('Total Records', job_stats.total)" in registry:
         errors.append('Execution Registry must not reintroduce unfiltered global metric strips')
 
-    execution_detail = read('app/templates/jobs/executions/partials/_execution_details.html')
+    execution_detail = read('app/templates/platform_operations/jobs/executions/partials/_execution_details.html')
     for required in (
         'Execution Identity',
         'Scope & Ownership',
@@ -395,7 +395,7 @@ def main() -> int:
     if 'payload_json' in execution_detail:
         errors.append('Execution detail must not render raw execution payloads')
 
-    queue_activity = read('app/templates/jobs/executions/partials/_queue_activity.html')
+    queue_activity = read('app/templates/platform_operations/jobs/executions/partials/_queue_activity.html')
     for required in ('Worker Readiness', "fragment='queues'", 'worker_readiness.description'):
         if required not in queue_activity:
             errors.append(f'Queue Activity worker-readiness contract missing: {required}')
@@ -406,7 +406,7 @@ def main() -> int:
     ):
         errors.append('Jobs hero must present combined Operational Attention')
 
-    job_routes = read('app/jobs/routes.py')
+    job_routes = read('app/platform_operations/jobs/routes.py')
     for required in (
         "if active_section == 'configuration':",
         'build_job_configuration_summary_context',
@@ -416,21 +416,23 @@ def main() -> int:
             errors.append(f'Jobs demand-loading contract missing: {required}')
     if 'include_queue_activity' in job_routes:
         errors.append('Jobs must not rebuild inactive Queue Activity data')
-    job_workspace = read('app/templates/jobs/configuration/_job_workspace.html')
+    job_workspace = read('app/templates/platform_operations/jobs/configuration/_job_workspace.html')
     if 'sync_progress' in job_workspace or '_quick_sync_status.html' in job_workspace or 'sync_progress' in job_routes:
         errors.append('Job Configuration must not reintroduce Inventory Sync progress toasts')
-    configuration_workspace = read('app/templates/jobs/configuration/_workspace.html')
+    configuration_workspace = read('app/templates/platform_operations/jobs/configuration/_workspace.html')
     if 'Planned Job Definitions' in configuration_workspace:
         errors.append('Job Configuration must list registered jobs only; Planned Job Definitions is retired')
     if 'Centralized orchestration with domain-owned execution.' not in configuration_workspace:
         errors.append('Job Configuration compact orchestration helper copy is missing')
-    materialization_job = read('app/templates/jobs/configuration/definitions/_materialization_job.html')
+    materialization_job = read(
+        'app/templates/platform_operations/jobs/configuration/definitions/_materialization_job.html'
+    )
     if 'Keep the last successful result available.' not in materialization_job:
         errors.append('Materialization stale-fallback helper copy must remain compact')
     for relative in (
-        'app/templates/jobs/configuration/definitions/inventory_sync.html',
-        'app/templates/jobs/configuration/definitions/tls_certificate_sync.html',
-        'app/templates/jobs/configuration/definitions/_materialization_job.html',
+        'app/templates/platform_operations/jobs/configuration/definitions/inventory_sync.html',
+        'app/templates/platform_operations/jobs/configuration/definitions/tls_certificate_sync.html',
+        'app/templates/platform_operations/jobs/configuration/definitions/_materialization_job.html',
     ):
         source = read(relative)
         if (
@@ -438,7 +440,7 @@ def main() -> int:
             or 'overflow-hidden rounded-xl border border-outline-subtle bg-surface-card' not in source
         ):
             errors.append(f'Job Configuration clear Policy Timeline surface missing: {relative}')
-    report_schedule = read('app/templates/jobs/configuration/definitions/report_schedule.html')
+    report_schedule = read('app/templates/platform_operations/jobs/configuration/definitions/report_schedule.html')
     if 'article class="rounded-xl border border-outline-subtle bg-surface-card p-4"' not in report_schedule:
         errors.append('Report delivery-channel cards must use the clear KAORI card surface')
 
@@ -467,7 +469,7 @@ def main() -> int:
     ):
         errors.append('Secret Reveal global guardrail guidance must remain visible when disabled')
 
-    reveal_policy = read('app/kubernetes_operations/secrets/reveal_policy.py')
+    reveal_policy = read('app/kubernetes/operations/secrets/reveal_policy.py')
     for required in (
         'class NamespaceSourceSnapshot:',
         'def cluster_reveal_readiness_evidence(',
@@ -561,7 +563,7 @@ def main() -> int:
         if evidence.lower() not in cluster_workspace.lower() and evidence.lower() not in secret_workspace.lower():
             errors.append(f'Secret Reveal protected boundary evidence missing: {evidence}')
 
-    protected_reveal_service = read('app/kubernetes_operations/secrets/reveal_service.py')
+    protected_reveal_service = read('app/kubernetes/operations/secrets/reveal_service.py')
     for required in (
         'cluster_reveal_readiness,',
         'get_configured_enabled_namespace_names,',
@@ -576,7 +578,7 @@ def main() -> int:
         if required not in protected_reveal_service:
             errors.append(f'Secret Reveal v1.5 cross-workspace authority missing: {required}')
 
-    protected_live_service = read('app/kubernetes_operations/secrets/live_service.py')
+    protected_live_service = read('app/kubernetes/operations/secrets/live_service.py')
     verified_namespace_block = (
         protected_live_service.split('def list_verified_namespaces(', 1)[1].split('def list_live_secrets(', 1)[0]
         if 'def list_verified_namespaces(' in protected_live_service
@@ -606,7 +608,7 @@ def main() -> int:
     if '<span class="font-semibold text-content-secondary">Rows</span>' not in namespace_table:
         errors.append('Secret Reveal Namespace Policies pagination must include the visible Rows label')
 
-    request_status = read('app/templates/kubernetes_operations/secrets/_reveal_request_status.html')
+    request_status = read('app/templates/kubernetes/operations/secrets/_reveal_request_status.html')
     if "{{ 'Request' if my_reveal_pagination.total == 1 else 'Requests' }}" not in request_status:
         errors.append('Protected Reveal pagination must use Title Case Request/Requests')
     if 'aria-label="Rows Per Page"' not in request_status:
@@ -614,14 +616,14 @@ def main() -> int:
     if 'uppercase tracking-wide' in request_status or 'hover:bg-kaori-soft' in request_status:
         errors.append('Protected Reveal request registry must remain Title Case and neutral-first in dark mode')
 
-    request_form = read('app/templates/kubernetes_operations/secrets/_reveal_request_form.html')
+    request_form = read('app/templates/kubernetes/operations/secrets/_reveal_request_form.html')
     if 'rounded-xl bg-kaori-primary text-white' in request_form:
         errors.append('Protected Reveal informational request icon must not use a solid Bright Violet surface')
     if 'space-y-1 text-xs leading-5 text-content-secondary' not in request_form:
         errors.append('Protected Reveal request guidance must use neutral content text')
 
-    protected_reveal_page = read('app/templates/kubernetes_operations/secrets/reveal.html')
-    protected_reveal_service = read('app/kubernetes_operations/secrets/reveal_service.py')
+    protected_reveal_page = read('app/templates/kubernetes/operations/secrets/reveal.html')
+    protected_reveal_service = read('app/kubernetes/operations/secrets/reveal_service.py')
     context_rail = read('app/templates/components/context_rail.html')
     form_context = read('app/templates/components/form_with_context_rail.html')
     for required in (
@@ -706,7 +708,7 @@ def main() -> int:
         errors.append('Platform Operations final-lock verifier is not release-gated')
 
     core_ui_lock = CORE_UI_LOCK.read_text(encoding='utf-8')
-    for prefix in ("'app/templates/platform_operations/'", "'app/templates/jobs/'"):
+    for prefix in ("'app/templates/platform_operations/'", "'app/templates/platform_operations/jobs/'"):
         if prefix not in core_ui_lock:
             errors.append(f'generic locked-template verifier missing Platform Operations prefix: {prefix}')
 
@@ -714,7 +716,8 @@ def main() -> int:
     platform_debt = [
         path
         for path in style_baseline
-        if path.startswith('app/templates/platform_operations/') or path.startswith('app/templates/jobs/')
+        if path.startswith('app/templates/platform_operations/')
+        or path.startswith('app/templates/platform_operations/jobs/')
     ]
     if platform_debt:
         errors.append(

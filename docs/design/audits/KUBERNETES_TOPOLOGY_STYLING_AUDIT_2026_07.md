@@ -43,7 +43,7 @@ Topology payload cache key includes the committed generation signature and norma
 
 ## Validation Targets
 
-- zero raw hex values in `app/static/js/inventory/kubernetes/topology.js`;
+- zero raw hex values in `app/static/js/kubernetes/inventory/topology.js`;
 - no page-local arbitrary font sizes in Topology hero/workspace/inspector templates;
 - no page-local `role="tablist"` outside shared tab components;
 - no inline style in Topology templates;

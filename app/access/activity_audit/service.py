@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from app.notifications.queries import (
+from app.platform_operations.notifications.queries import (
     get_notification_activity_context,
     get_notification_activity_detail,
     get_notification_activity_summary,

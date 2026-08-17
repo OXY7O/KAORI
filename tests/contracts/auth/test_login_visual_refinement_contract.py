@@ -1,7 +1,7 @@
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
-TEMPLATES = ROOT / 'app' / 'templates' / 'auth' / 'partials'
+TEMPLATES = ROOT / 'app' / 'templates' / 'access' / 'authentication' / 'partials'
 CSS = ROOT / 'app' / 'static' / 'css' / 'auth-login.css'
 FABRIC = ROOT / 'app' / 'static' / 'images' / 'kaori-login-operations-fabric.svg'
 LOGIN_FORM = TEMPLATES / '_login_form.html'

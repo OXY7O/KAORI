@@ -42,7 +42,7 @@ def main() -> int:
 
     ui_lock = read('scripts/verify_core_workspace_ui_lock.py')
     require(
-        "'app/templates/dashboards/kubernetes/'" in ui_lock,
+        "'app/templates/kubernetes/dashboard/'" in ui_lock,
         'Kubernetes Dashboard templates must be protected by the core UI lock.',
         errors,
     )
@@ -81,10 +81,10 @@ def main() -> int:
     )
 
     # Kubernetes Dashboard: canonical snapshot-only composition and no obsolete builder.
-    dashboard = read('app/templates/dashboards/kubernetes/index.html')
-    dashboard_content = read('app/templates/dashboards/kubernetes/partials/_content.html')
+    dashboard = read('app/templates/kubernetes/dashboard/index.html')
+    dashboard_content = read('app/templates/kubernetes/dashboard/partials/_content.html')
     require(
-        'dashboards/kubernetes/partials/_content.html' in dashboard,
+        'kubernetes/dashboard/partials/_content.html' in dashboard,
         'Kubernetes Dashboard must use the canonical content partial.',
         errors,
     )
@@ -94,18 +94,18 @@ def main() -> int:
         errors,
     )
     require(
-        not (ROOT / 'app/dashboards/kubernetes/snapshot_builder.py').exists(),
+        not (ROOT / 'app/kubernetes/dashboard/snapshot_builder.py').exists(),
         'Obsolete Kubernetes dashboard snapshot_builder.py must remain removed.',
         errors,
     )
 
     # Inventory: canonical workspaces, snapshot semantics, topology drawer contract, no compatibility scopes.
     for resource in ('nodes', 'namespaces', 'configuration', 'workloads', 'pods', 'services', 'ingresses', 'storage'):
-        workspace = ROOT / f'app/templates/inventory/kubernetes/{resource}/partials/_page_workspace.html'
+        workspace = ROOT / f'app/templates/kubernetes/inventory/{resource}/partials/_page_workspace.html'
         require(workspace.exists(), f'Inventory {resource} canonical workspace is missing.', errors)
-        legacy = ROOT / f'app/templates/inventory/kubernetes/{resource}/partials/_inventory_scope.html'
+        legacy = ROOT / f'app/templates/kubernetes/inventory/{resource}/partials/_inventory_scope.html'
         require(not legacy.exists(), f'Inventory {resource} legacy _inventory_scope.html must remain removed.', errors)
-    topology = read('app/templates/inventory/kubernetes/topology/partials/_workspace.html')
+    topology = read('app/templates/kubernetes/inventory/topology/partials/_workspace.html')
     require('visualization_workspace.render(' in topology, 'Topology must use shared visualization workspace.', errors)
     require(
         'topology-controls-panel' in topology and 'topology-details-panel' in topology,
@@ -115,7 +115,7 @@ def main() -> int:
 
     # Analytics: shared token scope, canonical guidance ownership, and obsolete local assets removed.
     for domain in ('overview', 'utilization', 'capacity', 'storage', 'workload', 'forecast', 'top_consumers', 'alerts'):
-        index = read(f'app/templates/analytics/kubernetes/{domain}/index.html')
+        index = read(f'app/templates/kubernetes/analytics/{domain}/index.html')
         require(
             'kaori-analytics-page' in index, f'Analytics {domain} must use the shared analytics token scope.', errors
         )
@@ -138,12 +138,12 @@ def main() -> int:
 
     # Operations: live-operation feedback remains shared and legacy wrappers stay removed.
     for obsolete in (
-        'app/templates/kubernetes_operations/_components.html',
-        'app/templates/kubernetes_operations/configmaps/_operation_notification.html',
-        'app/kubernetes_operations/secrets/routes.py',
+        'app/templates/kubernetes/operations/_components.html',
+        'app/templates/kubernetes/operations/configmaps/_operation_notification.html',
+        'app/kubernetes/operations/secrets/routes.py',
     ):
         require(not (ROOT / obsolete).exists(), f'Obsolete Operations path must remain removed: {obsolete}', errors)
-    configmap_create = read('app/templates/kubernetes_operations/configmaps/create.html')
+    configmap_create = read('app/templates/kubernetes/operations/configmaps/create.html')
     require(
         'data-operational-toast' in read('app/templates/components/operational_toast.html'),
         'Shared operational toast component must remain available.',
@@ -156,23 +156,23 @@ def main() -> int:
     )
 
     # Governance: canonical TLS workspace + guarded mutation and no legacy feedback wrappers.
-    governance = read('app/templates/governance/tls_certificates/index.html')
+    governance = read('app/templates/kubernetes/governance/tls_certificates/index.html')
     require('tls_certificates' in governance.lower(), 'TLS Governance canonical workspace is missing.', errors)
     for obsolete in (
-        'app/templates/governance/tls_certificates/partials/_operation_feedback_oob.html',
-        'app/templates/governance/tls_certificates/partials/_sync_toast_oob.html',
-        'app/templates/governance/tls_certificates/partials/_inventory_scope.html',
-        'app/governance/tls_certificates/toast.py',
+        'app/templates/kubernetes/governance/tls_certificates/partials/_operation_feedback_oob.html',
+        'app/templates/kubernetes/governance/tls_certificates/partials/_sync_toast_oob.html',
+        'app/templates/kubernetes/governance/tls_certificates/partials/_inventory_scope.html',
+        'app/kubernetes/governance/tls_certificates/toast.py',
     ):
         require(not (ROOT / obsolete).exists(), f'Obsolete Governance path must remain removed: {obsolete}', errors)
 
     cleanup = read('scripts/cleanup_obsolete_files.sh')
     for obsolete in (
-        'app/dashboards/kubernetes/snapshot_builder.py',
+        'app/kubernetes/dashboard/snapshot_builder.py',
         'app/static/js/analytics_capacity.js',
         'app/static/js/analytics_forecast.js',
-        'app/templates/kubernetes_operations/_components.html',
-        'app/templates/governance/tls_certificates/partials/_inventory_scope.html',
+        'app/templates/kubernetes/operations/_components.html',
+        'app/templates/kubernetes/governance/tls_certificates/partials/_inventory_scope.html',
         'app/static/js/inventory/topology_bootstrap.js',
     ):
         require(f"'{obsolete}'" in cleanup, f'Cleanup script must retain obsolete-path guard: {obsolete}', errors)

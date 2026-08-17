@@ -16,7 +16,8 @@ from flask import (
 )
 from flask_login import current_user, login_required
 
-from app.auth.forms import ChangePasswordForm
+from app.access.authentication.forms import ChangePasswordForm
+from app.access.users.directory import build_user_identity_context
 from app.common.timezone import (
     format_user_datetime,
     is_valid_timezone_name,
@@ -33,7 +34,6 @@ from app.settings.account.actions import process_password_change
 from app.settings.general.actions import save_regional_format_preference, save_timezone_preference
 from app.settings.general.forms import RegionalFormatForm, TimezonePreferenceForm
 from app.settings.system_information import build_system_information
-from app.users.directory import build_user_identity_context
 
 bp = Blueprint(
     'settings',

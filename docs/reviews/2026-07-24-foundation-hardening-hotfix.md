@@ -34,18 +34,18 @@ Revert the hotfix commit. No migration, configuration, or persistent-data rollba
 
 ## Files Changed
 
-- `app/analytics/kubernetes/capacity/service.py`
-- `app/analytics/kubernetes/forecast/service.py`
-- `app/analytics/kubernetes/storage/service.py`
-- `app/analytics/kubernetes/top_consumers/service.py`
-- `app/analytics/kubernetes/workload/service.py`
+- `app/kubernetes/analytics/capacity/service.py`
+- `app/kubernetes/analytics/forecast/service.py`
+- `app/kubernetes/analytics/storage/service.py`
+- `app/kubernetes/analytics/top_consumers/service.py`
+- `app/kubernetes/analytics/workload/service.py`
 - `app/bootstrap/blueprints.py`
-- `app/cluster/service.py`
+- `app/kubernetes/cluster/service.py`
 - `app/commands/integrations.py`
 - `app/integrations/runtime/__init__.py`
 - `app/inventory/resources/common.py`
 - `app/models/resolver.py`
-- `app/resolver/orchestration.py`
+- `app/intelligence/resolver/orchestration.py`
 - `tests/contracts/architecture/test_foundation_hardening_hotfix_contract.py`
 - `tests/intelligence/test_decision_candidate_review.py`
 - `tests/knowledge/test_alert_runbook_matching.py`

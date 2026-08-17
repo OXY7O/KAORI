@@ -9,7 +9,7 @@ def read(path: str) -> str:
 
 
 def test_bucket_modal_width_contract_matches_current_professional_surface() -> None:
-    template = read('app/templates/inventory/object_storage/buckets/partials/_table_content.html')
+    template = read('app/templates/storage/object_storage/inventory/buckets/partials/_table_content.html')
     assert 'max-w-[88rem]' in template
     assert 'max-w-6xl' not in template
 

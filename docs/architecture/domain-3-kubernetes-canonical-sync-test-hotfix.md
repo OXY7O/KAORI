@@ -6,7 +6,7 @@ The functional test attempted to monkeypatch `Cluster.query` directly. In Flask-
 
 ## Resolution
 
-The test now replaces the module-level `Cluster` symbol in `app.cluster.sync_jobs` with a lightweight model stub exposing the expected query chain. This keeps the test focused on admission behavior and avoids coupling the unit test to Flask application-context setup.
+The test now replaces the module-level `Cluster` symbol in `app.kubernetes.cluster.sync_jobs` with a lightweight model stub exposing the expected query chain. This keeps the test focused on admission behavior and avoids coupling the unit test to Flask application-context setup.
 
 ## Production impact
 

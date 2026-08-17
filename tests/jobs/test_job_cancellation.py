@@ -5,7 +5,7 @@ from types import SimpleNamespace
 
 from flask import Flask
 
-from app.jobs import service
+from app.platform_operations.jobs import service
 
 
 class _JobStub(SimpleNamespace):

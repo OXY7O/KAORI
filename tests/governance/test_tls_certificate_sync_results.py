@@ -1,7 +1,7 @@
 from importlib.util import module_from_spec, spec_from_file_location
 from pathlib import Path
 
-MODULE_PATH = Path(__file__).resolve().parents[2] / 'app/governance/tls_certificates/results.py'
+MODULE_PATH = Path(__file__).resolve().parents[2] / 'app/kubernetes/governance/tls_certificates/results.py'
 SPEC = spec_from_file_location('tls_certificate_sync_results', MODULE_PATH)
 assert SPEC is not None and SPEC.loader is not None
 MODULE = module_from_spec(SPEC)

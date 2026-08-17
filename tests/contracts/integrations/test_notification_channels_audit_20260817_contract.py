@@ -8,8 +8,8 @@ def read(relative: str) -> str:
 
 
 def test_notification_channels_use_three_canonical_workspace_tabs() -> None:
-    routes = read('app/notification_channels/routes.py')
-    page = read('app/templates/integrations/notification_channels/index.html')
+    routes = read('app/integrations/delivery/notification_channels/routes.py')
+    page = read('app/templates/integrations/delivery/notification_channels/index.html')
 
     assert "_WORKSPACE_TABS = {'overview', 'channels', 'delivery'}" in routes
     assert "('overview', 'Overview', 'layout-dashboard'" in page
@@ -20,9 +20,9 @@ def test_notification_channels_use_three_canonical_workspace_tabs() -> None:
 
 
 def test_notification_channel_registries_follow_kaori_rows_contract() -> None:
-    routes = read('app/notification_channels/routes.py')
-    service = read('app/notification_channels/service.py')
-    page = read('app/templates/integrations/notification_channels/index.html')
+    routes = read('app/integrations/delivery/notification_channels/routes.py')
+    service = read('app/integrations/delivery/notification_channels/service.py')
+    page = read('app/templates/integrations/delivery/notification_channels/index.html')
 
     assert "request.args.get('channel_per_page', default=5, type=int)" in routes
     assert "request.args.get('delivery_per_page', default=5, type=int)" in routes
@@ -36,8 +36,8 @@ def test_notification_channel_registries_follow_kaori_rows_contract() -> None:
 
 
 def test_delivery_activity_exposes_persisted_retry_and_dedup_evidence() -> None:
-    service = read('app/notification_channels/service.py')
-    page = read('app/templates/integrations/notification_channels/index.html')
+    service = read('app/integrations/delivery/notification_channels/service.py')
+    page = read('app/templates/integrations/delivery/notification_channels/index.html')
 
     assert 'NotificationDelivery.query.order_by(' in service
     assert "'attempt_count': delivery.attempt_count" in service
@@ -49,10 +49,10 @@ def test_delivery_activity_exposes_persisted_retry_and_dedup_evidence() -> None:
 
 
 def test_delivery_policy_catalog_is_source_controlled_and_not_duplicated_in_forms() -> None:
-    catalog = read('app/notification_channels/catalog.py')
-    definition = read('app/definitions/catalogs/notifications/outbound_delivery.yaml')
-    forms = read('app/notification_channels/forms.py')
-    service = read('app/notification_channels/service.py')
+    catalog = read('app/integrations/delivery/notification_channels/catalog.py')
+    definition = read('app/definitions/catalogs/platform_operations/notifications/outbound_delivery.yaml')
+    forms = read('app/integrations/delivery/notification_channels/forms.py')
+    service = read('app/integrations/delivery/notification_channels/service.py')
 
     assert "expected_kind='notification_delivery_contract'" in catalog
     assert 'domains:' in definition
@@ -68,8 +68,8 @@ def test_delivery_policy_catalog_is_source_controlled_and_not_duplicated_in_form
 
 
 def test_provider_registry_owns_transport_presentation_and_model_has_no_product_default() -> None:
-    providers = read('app/notification_channels/providers/__init__.py')
-    service = read('app/notification_channels/service.py')
+    providers = read('app/integrations/delivery/notification_channels/providers/__init__.py')
+    service = read('app/integrations/delivery/notification_channels/service.py')
     model = read('app/models/notification_channel.py')
 
     assert 'transport: str' in providers
@@ -84,9 +84,9 @@ def test_provider_registry_owns_transport_presentation_and_model_has_no_product_
 
 
 def test_provider_form_contract_is_adapter_owned_and_workspace_has_no_product_default() -> None:
-    providers = read('app/notification_channels/providers/__init__.py')
-    forms = read('app/notification_channels/forms.py')
-    page = read('app/templates/integrations/notification_channels/index.html')
+    providers = read('app/integrations/delivery/notification_channels/providers/__init__.py')
+    forms = read('app/integrations/delivery/notification_channels/forms.py')
+    page = read('app/templates/integrations/delivery/notification_channels/index.html')
 
     assert 'form_partial: str' in providers
     assert 'form_parser: ProviderFormParser' in providers
@@ -102,9 +102,9 @@ def test_provider_form_contract_is_adapter_owned_and_workspace_has_no_product_de
 
 
 def test_delivery_event_severity_scope_is_catalog_driven() -> None:
-    catalog = read('app/notification_channels/catalog.py')
-    service = read('app/notification_channels/service.py')
-    definition = read('app/definitions/catalogs/notifications/outbound_delivery.yaml')
+    catalog = read('app/integrations/delivery/notification_channels/catalog.py')
+    service = read('app/integrations/delivery/notification_channels/service.py')
+    definition = read('app/definitions/catalogs/platform_operations/notifications/outbound_delivery.yaml')
 
     assert 'def event_severity_scoped(key: str) -> bool:' in catalog
     assert 'severity_scoped: true' in definition
@@ -113,9 +113,9 @@ def test_delivery_event_severity_scope_is_catalog_driven() -> None:
 
 
 def test_channel_deletion_preserves_delivery_evidence_and_schedule_references() -> None:
-    lifecycle = read('app/notification_channels/lifecycle.py')
-    routes = read('app/notification_channels/routes.py')
-    page = read('app/templates/integrations/notification_channels/index.html')
+    lifecycle = read('app/integrations/delivery/notification_channels/lifecycle.py')
+    routes = read('app/integrations/delivery/notification_channels/routes.py')
+    page = read('app/templates/integrations/delivery/notification_channels/index.html')
 
     assert 'class NotificationChannelDeletionBlocked(ValueError):' in lifecycle
     assert 'NotificationDelivery.query.filter_by(channel_id=channel_id).count()' in lifecycle

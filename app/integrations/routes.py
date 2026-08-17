@@ -2,6 +2,7 @@ from flask import Blueprint, abort, current_app, redirect, render_template, requ
 from flask.typing import ResponseReturnValue
 from flask_login import current_user
 
+from app.access.rbac.decorators import permission_required
 from app.common.http import htmx_target, is_htmx_request
 from app.common.presentation import present_key_label
 from app.integrations.binding_service import SourceBindingSpec, create_source_binding
@@ -10,6 +11,10 @@ from app.integrations.domain_service import (
     BindingRegistryFilters,
     ProviderRegistryFilters,
     build_integration_domain_page,
+)
+from app.integrations.observability.metrics_source.application.registration_web import (
+    new_instance_response,
+    test_new_instance_connection_response,
 )
 from app.integrations.observability.metrics_source.providers import provider_definitions
 from app.integrations.orchestration.container_orchestrator.frontpage import (
@@ -41,9 +46,10 @@ from app.integrations.validation.web import (
     snapshot_feedback_for_user,
     validate_snapshot_access,
 )
-from app.metrics_sources.registration_web import new_instance_response, test_new_instance_connection_response
-from app.notifications.service import get_navigation_notification_context, record_operational_activity
-from app.rbac.decorators import permission_required
+from app.platform_operations.notifications.service import (
+    get_navigation_notification_context,
+    record_operational_activity,
+)
 
 integrations_bp = Blueprint('integrations', __name__, url_prefix='/integrations')
 

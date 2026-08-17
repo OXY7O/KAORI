@@ -9,8 +9,8 @@ from pathlib import Path
 from types import SimpleNamespace
 from uuid import UUID
 
-from app.jobs import service
-from app.jobs.serialization import to_json_compatible
+from app.platform_operations.jobs import service
+from app.platform_operations.jobs.serialization import to_json_compatible
 
 
 class _Status(Enum):

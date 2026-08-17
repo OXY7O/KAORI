@@ -7,7 +7,7 @@ DETAIL = ROOT / 'app/templates/integrations/observability/metrics_source/instanc
 CAPABILITY_REGISTRY = (
     ROOT / 'app/templates/integrations/observability/metrics_source/partials/_capability_registry.html'
 )
-METRICS_ROUTES = ROOT / 'app/metrics_sources/routes.py'
+METRICS_ROUTES = ROOT / 'app/integrations/observability/metrics_source/application/routes.py'
 
 
 def test_configuration_uses_shared_read_only_contract_and_edit_route():

@@ -8,7 +8,7 @@ def read(relative: str) -> str:
 
 
 def test_alert_intelligence_is_asset_scoped_multi_domain_and_keeps_source_authority_explicit():
-    module = read('app/alert_intelligence/service.py')
+    module = read('app/intelligence/alert_intelligence/service.py')
     workspace = read('app/templates/intelligence/partials/_alert_intelligence_workspace.html')
     correlation = read('app/templates/intelligence/partials/_alert_intelligence_correlation.html')
 
@@ -30,8 +30,8 @@ def test_alert_intelligence_is_asset_scoped_multi_domain_and_keeps_source_author
 
 def test_notification_channel_persistence_is_provider_neutral_and_secrets_are_encrypted():
     model = read('app/models/notification_channel.py')
-    service = read('app/notification_channels/service.py')
-    providers = read('app/notification_channels/providers/__init__.py')
+    service = read('app/integrations/delivery/notification_channels/service.py')
+    providers = read('app/integrations/delivery/notification_channels/providers/__init__.py')
 
     assert 'credential_payload: Mapped[str | None] = mapped_column(EncryptedText()' in model
     assert 'destination: Mapped[str | None]' in model
@@ -43,8 +43,8 @@ def test_notification_channel_persistence_is_provider_neutral_and_secrets_are_en
 
 
 def test_telegram_provider_uses_fixed_bot_api_and_template_never_echoes_token():
-    provider = read('app/notification_channels/providers/telegram.py')
-    page = read('app/templates/integrations/notification_channels/providers/telegram/_form.html')
+    provider = read('app/integrations/delivery/notification_channels/providers/telegram.py')
+    page = read('app/templates/integrations/delivery/notification_channels/providers/telegram/_form.html')
 
     assert "_TELEGRAM_API = 'https://api.telegram.org'" in provider
     assert "f'{_TELEGRAM_API}/bot{bot_token}/sendMessage'" in provider
@@ -57,12 +57,15 @@ def test_telegram_provider_uses_fixed_bot_api_and_template_never_echoes_token():
 
 
 def test_notification_dispatch_runs_on_existing_maintenance_queue_and_retries_failed_delivery():
-    schedule = read('app/notification_channels/config.py')
-    tasks = read('app/alert_delivery/tasks.py')
-    service = read('app/notification_channels/service.py')
+    schedule = read('app/integrations/delivery/notification_channels/config.py')
+    tasks = read('app/platform_operations/notifications/alert_delivery/tasks.py')
+    service = read('app/integrations/delivery/notification_channels/service.py')
 
     assert "os.getenv('JOB_MAINTENANCE_CELERY_QUEUE') or 'maintenance'" in schedule
-    assert "name='app.alert_delivery.tasks.dispatch_alert_intelligence_notifications'" in tasks
+    assert (
+        "name='app.platform_operations.notifications.alert_delivery.tasks.dispatch_alert_intelligence_notifications'"
+        in tasks
+    )
     assert "'retried': 0" in tasks
     assert 'notification_delivery_max_attempts()' in service
     assert "event_type='alert_intelligence.active_alert'" in service

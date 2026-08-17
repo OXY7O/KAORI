@@ -1,14 +1,14 @@
 from pathlib import Path
 
 HERO_TEMPLATES = [
-    Path('app/templates/analytics/kubernetes/overview/partials/_hero.html'),
-    Path('app/templates/analytics/kubernetes/utilization/partials/_hero.html'),
-    Path('app/templates/analytics/kubernetes/capacity/partials/_hero.html'),
-    Path('app/templates/analytics/kubernetes/storage/partials/_hero.html'),
-    Path('app/templates/analytics/kubernetes/workload/partials/_hero.html'),
-    Path('app/templates/analytics/kubernetes/top_consumers/partials/_hero.html'),
-    Path('app/templates/analytics/kubernetes/alerts/partials/_hero.html'),
-    Path('app/templates/analytics/kubernetes/forecast/partials/_hero.html'),
+    Path('app/templates/kubernetes/analytics/overview/partials/_hero.html'),
+    Path('app/templates/kubernetes/analytics/utilization/partials/_hero.html'),
+    Path('app/templates/kubernetes/analytics/capacity/partials/_hero.html'),
+    Path('app/templates/kubernetes/analytics/storage/partials/_hero.html'),
+    Path('app/templates/kubernetes/analytics/workload/partials/_hero.html'),
+    Path('app/templates/kubernetes/analytics/top_consumers/partials/_hero.html'),
+    Path('app/templates/kubernetes/analytics/alerts/partials/_hero.html'),
+    Path('app/templates/kubernetes/analytics/forecast/partials/_hero.html'),
 ]
 
 

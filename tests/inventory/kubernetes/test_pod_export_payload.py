@@ -21,10 +21,10 @@ def _load_payload(monkeypatch: pytest.MonkeyPatch):
         'app.extensions',
         'app.extensions.db',
         'app.inventory',
-        'app.inventory.kubernetes.resources',
-        'app.inventory.kubernetes.formatting',
-        'app.inventory.kubernetes.resources.ingress_semantics',
-        'app.inventory.kubernetes.resources.service_semantics',
+        'app.kubernetes.inventory.resources',
+        'app.kubernetes.inventory.formatting',
+        'app.kubernetes.inventory.resources.ingress_semantics',
+        'app.kubernetes.inventory.resources.service_semantics',
         'app.models',
         'app.models.report',
         'app.reports',
@@ -39,7 +39,7 @@ def _load_payload(monkeypatch: pytest.MonkeyPatch):
         'app.common',
         'app.extensions',
         'app.inventory',
-        'app.inventory.kubernetes.resources',
+        'app.kubernetes.inventory.resources',
         'app.models',
         'app.reports',
         'app.reports.export',
@@ -50,8 +50,8 @@ def _load_payload(monkeypatch: pytest.MonkeyPatch):
 
     modules['app.common.inventory_generation'].filter_current_generation = lambda query, _model: query
     modules['app.extensions.db'].db = SimpleNamespace()
-    modules['app.inventory.kubernetes.formatting'].format_kubernetes_size = lambda value: '-' if value is None else str(value)
-    ingress_semantics = modules['app.inventory.kubernetes.resources.ingress_semantics']
+    modules['app.kubernetes.inventory.formatting'].format_kubernetes_size = lambda value: '-' if value is None else str(value)
+    ingress_semantics = modules['app.kubernetes.inventory.resources.ingress_semantics']
     ingress_semantics.ingress_class_presentation = lambda value, source=None: (
         value or 'Not Explicitly Set',
         source or 'Not Explicitly Set',
@@ -66,7 +66,7 @@ def _load_payload(monkeypatch: pytest.MonkeyPatch):
         'exception': True,
         'reported': False,
     }
-    service_semantics = modules['app.inventory.kubernetes.resources.service_semantics']
+    service_semantics = modules['app.kubernetes.inventory.resources.service_semantics']
     service_semantics.effective_service_type = lambda service_type, cluster_ip: (
         'Headless' if service_type == 'ClusterIP' and cluster_ip == 'None' else (service_type or 'Unknown')
     )
@@ -101,12 +101,12 @@ def _load_payload(monkeypatch: pytest.MonkeyPatch):
         monkeypatch.setitem(sys.modules, name, module)
 
     storage_spec = importlib.util.spec_from_file_location(
-        'app.inventory.kubernetes.resources.storage_semantics',
-        ROOT / 'app/inventory/kubernetes/resources/storage_semantics.py',
+        'app.kubernetes.inventory.resources.storage_semantics',
+        ROOT / 'app/kubernetes/inventory/resources/storage_semantics.py',
     )
     assert storage_spec and storage_spec.loader
     storage_semantics = importlib.util.module_from_spec(storage_spec)
-    monkeypatch.setitem(sys.modules, 'app.inventory.kubernetes.resources.storage_semantics', storage_semantics)
+    monkeypatch.setitem(sys.modules, 'app.kubernetes.inventory.resources.storage_semantics', storage_semantics)
     storage_spec.loader.exec_module(storage_semantics)
 
     spec = importlib.util.spec_from_file_location('pod_export_payload_under_test', PAYLOAD_PATH)

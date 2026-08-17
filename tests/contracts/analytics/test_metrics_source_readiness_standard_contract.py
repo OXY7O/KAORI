@@ -10,12 +10,12 @@ def read(relative: str) -> str:
 
 def test_all_metrics_source_backed_analytics_pages_use_shared_readiness_workspace() -> None:
     for relative in (
-        'app/templates/analytics/kubernetes/utilization/partials/_readiness_scope.html',
-        'app/templates/analytics/kubernetes/capacity/partials/_controls_readiness.html',
-        'app/templates/analytics/kubernetes/storage/partials/_controls_readiness.html',
-        'app/templates/analytics/kubernetes/workload/partials/_controls_readiness.html',
-        'app/templates/analytics/kubernetes/forecast/partials/_controls_readiness.html',
-        'app/templates/analytics/kubernetes/top_consumers/partials/_controls_readiness.html',
+        'app/templates/kubernetes/analytics/utilization/partials/_readiness_scope.html',
+        'app/templates/kubernetes/analytics/capacity/partials/_controls_readiness.html',
+        'app/templates/kubernetes/analytics/storage/partials/_controls_readiness.html',
+        'app/templates/kubernetes/analytics/workload/partials/_controls_readiness.html',
+        'app/templates/kubernetes/analytics/forecast/partials/_controls_readiness.html',
+        'app/templates/kubernetes/analytics/top_consumers/partials/_controls_readiness.html',
     ):
         source = read(relative)
         assert 'analytics_workspace.controls_readiness(' in source
@@ -24,7 +24,7 @@ def test_all_metrics_source_backed_analytics_pages_use_shared_readiness_workspac
 
 
 def test_shared_metrics_source_card_owns_canonical_data_and_geometry() -> None:
-    source = read('app/templates/analytics/kubernetes/components/_metrics_source_status.html')
+    source = read('app/templates/kubernetes/analytics/components/_metrics_source_status.html')
 
     for marker in (
         'Metrics Source Status',
@@ -47,8 +47,8 @@ def test_shared_metrics_source_card_owns_canonical_data_and_geometry() -> None:
 
 
 def test_overview_reuses_same_metrics_source_card_and_snapshot_card() -> None:
-    source = read('app/templates/analytics/kubernetes/overview/partials/_health_summary.html')
-    workspace = read('app/templates/analytics/kubernetes/components/_analysis_workspace.html')
+    source = read('app/templates/kubernetes/analytics/overview/partials/_health_summary.html')
+    workspace = read('app/templates/kubernetes/analytics/components/_analysis_workspace.html')
 
     assert 'analytics_workspace.metrics_source_card(payload.metrics_source)' in source
     assert 'analytics_workspace.snapshot_card(' in source
@@ -57,8 +57,8 @@ def test_overview_reuses_same_metrics_source_card_and_snapshot_card() -> None:
 
 
 def test_forecast_control_groups_are_equal_peer_surfaces() -> None:
-    source = read('app/templates/analytics/kubernetes/forecast/partials/_controls_readiness.html')
-    workspace = read('app/templates/analytics/kubernetes/components/_analysis_workspace.html')
+    source = read('app/templates/kubernetes/analytics/forecast/partials/_controls_readiness.html')
+    workspace = read('app/templates/kubernetes/analytics/components/_analysis_workspace.html')
 
     assert 'xl:grid-cols-2' in source
     assert source.count('analytics_workspace.control_group(') == 2
@@ -74,12 +74,12 @@ def test_legacy_analytics_controls_component_is_removed() -> None:
 
 def test_metrics_source_status_builders_use_the_canonical_presenter() -> None:
     for relative in (
-        'app/analytics/kubernetes/common/base_service.py',
-        'app/analytics/kubernetes/common/context.py',
-        'app/analytics/kubernetes/capacity/service.py',
-        'app/analytics/kubernetes/storage/service.py',
-        'app/analytics/kubernetes/utilization/service.py',
-        'app/analytics/kubernetes/workload/service.py',
-        'app/analytics/kubernetes/overview/service.py',
+        'app/kubernetes/analytics/common/base_service.py',
+        'app/kubernetes/analytics/common/context.py',
+        'app/kubernetes/analytics/capacity/service.py',
+        'app/kubernetes/analytics/storage/service.py',
+        'app/kubernetes/analytics/utilization/service.py',
+        'app/kubernetes/analytics/workload/service.py',
+        'app/kubernetes/analytics/overview/service.py',
     ):
         assert 'present_metrics_source_status' in read(relative)

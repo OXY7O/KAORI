@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Enforce direct-cutover domain namespaces and provider-neutral analytics boundaries."""
+"""Enforce KAORI bounded-context namespaces after the application package cutover."""
 
 from __future__ import annotations
 
@@ -11,103 +11,108 @@ APP = ROOT / 'app'
 
 FORBIDDEN_PATHS = (
     'app/storage_inventory',
-    'app/inventory/collectors',
-    'app/inventory/resources',
-    'app/inventory/topology',
-    'app/inventory/formatting.py',
-    'app/inventory/job_adapter.py',
-    'app/inventory/overview.py',
-    'app/inventory/persistence.py',
-    'app/inventory/routes.py',
-    'app/inventory/synchronization.py',
-    'app/analytics/alerts',
-    'app/analytics/capacity',
-    'app/analytics/common',
-    'app/analytics/forecast',
-    'app/analytics/materialization',
-    'app/analytics/overview',
-    'app/analytics/storage',
-    'app/analytics/top_consumers',
-    'app/analytics/utilization',
-    'app/analytics/workload',
-    'app/analytics/job_adapter.py',
-    'app/analytics/tasks.py',
-    'app/analytics/object_storage/metrics.py',
-    'app/analytics/object_storage/parsing.py',
-    'app/templates/object_storage_inventory',
-    'app/templates/inventory/components',
-    'app/templates/inventory/configuration',
-    'app/templates/inventory/ingresses',
-    'app/templates/inventory/namespaces',
-    'app/templates/inventory/nodes',
-    'app/templates/inventory/overview',
-    'app/templates/inventory/pods',
-    'app/templates/inventory/services',
-    'app/templates/inventory/storage',
-    'app/templates/inventory/topology',
-    'app/templates/inventory/workloads',
-    'app/templates/analytics/alerts',
-    'app/templates/analytics/capacity',
-    'app/templates/analytics/forecast',
-    'app/templates/analytics/materialization',
-    'app/templates/analytics/overview',
-    'app/templates/analytics/storage',
-    'app/templates/analytics/top_consumers',
-    'app/templates/analytics/utilization',
-    'app/templates/analytics/workload',
-    'app/static/js/analytics_controls.js',
-    'app/static/js/analytics_forecast_chart.js',
-    'app/static/js/analytics_overview.js',
-    'app/static/js/analytics_utilization.js',
-    'app/static/js/object_storage_analytics.js',
-    'app/static/js/inventory/topology.js',
-    'tests/storage_inventory',
-    'tests/contracts/storage_inventory',
-    'tests/debug/storage_inventory',
+    'app/inventory',
+    'app/cluster',
+    'app/governance',
+    'app/kubernetes_operations',
+    'app/metrics_sources',
+    'app/alert_sources',
+    'app/object_storage',
+    'app/auth',
+    'app/users',
+    'app/rbac',
+    'app/identity_providers',
+    'app/jobs',
+    'app/notifications',
+    'app/retention',
+    'app/knowledge',
+    'app/resolver',
+    'app/automation_control',
+    'app/alert_intelligence',
+    'app/notification_channels',
+    'app/utils',
+    'app/storage/base.py',
+    'app/storage/local.py',
+    'app/storage/s3.py',
+    'app/storage/service.py',
+    'app/templates/auth',
+    'app/templates/users',
+    'app/templates/cluster',
+    'app/templates/governance',
+    'app/templates/kubernetes_operations',
+    'app/templates/inventory',
+    'app/templates/jobs',
+    'app/templates/notifications',
+    'app/templates/analytics/kubernetes',
+    'app/templates/analytics/object_storage',
+    'app/templates/dashboards/kubernetes',
 )
 
 REQUIRED_PATHS = (
-    'app/analytics/kubernetes',
-    'app/analytics/object_storage/sources/providers/minio/metrics.py',
-    'app/analytics/object_storage/sources/resolver.py',
-    'app/analytics/shared/metrics/contracts.py',
-    'app/inventory/kubernetes',
-    'app/inventory/object_storage',
-    'app/templates/analytics/kubernetes',
-    'app/templates/analytics/object_storage',
-    'app/templates/inventory/kubernetes',
-    'app/templates/inventory/object_storage',
-    'app/static/js/analytics/kubernetes',
-    'app/static/js/analytics/object_storage.js',
-    'app/static/js/inventory/kubernetes/topology.js',
-    'tests/inventory/kubernetes',
-    'tests/inventory/object_storage',
-    'tests/contracts/inventory/object_storage',
+    'app/access/authentication',
+    'app/access/identity_providers',
+    'app/access/users',
+    'app/access/rbac',
+    'app/integrations/observability/metrics_source/application',
+    'app/integrations/observability/alert_source/providers/alertmanager/application',
+    'app/integrations/storage/object_storage/providers/minio/application',
+    'app/integrations/delivery/notification_channels',
+    'app/kubernetes/analytics',
+    'app/kubernetes/inventory',
+    'app/kubernetes/cluster',
+    'app/kubernetes/governance',
+    'app/kubernetes/operations',
+    'app/kubernetes/dashboard',
+    'app/storage/object_storage/analytics',
+    'app/storage/object_storage/inventory',
+    'app/common/analytics/metrics/contracts.py',
+    'app/platform_operations/jobs',
+    'app/platform_operations/notifications',
+    'app/platform_operations/data_lifecycle/retention',
+    'app/platform_operations/health',
+    'app/intelligence/alert_intelligence',
+    'app/intelligence/automation_control',
+    'app/intelligence/knowledge',
+    'app/intelligence/resolver',
+    'app/artifact_storage',
+    'app/templates/access/authentication',
+    'app/templates/access/users',
+    'app/templates/kubernetes/analytics',
+    'app/templates/kubernetes/inventory',
+    'app/templates/kubernetes/cluster',
+    'app/templates/kubernetes/governance',
+    'app/templates/kubernetes/operations',
+    'app/templates/kubernetes/dashboard',
+    'app/templates/storage/object_storage/analytics',
+    'app/templates/storage/object_storage/inventory',
+    'app/templates/platform_operations/jobs',
+    'app/templates/platform_operations/notifications',
+    'app/static/js/kubernetes/analytics',
+    'app/static/js/kubernetes/inventory',
+    'app/static/js/storage/object_storage/analytics.js',
 )
 
 RETIRED_IMPORT_PREFIXES = (
     'app.storage_inventory',
-    'app.inventory.collectors',
-    'app.inventory.resources',
-    'app.inventory.topology',
-    'app.inventory.formatting',
-    'app.inventory.job_adapter',
-    'app.inventory.overview',
-    'app.inventory.persistence',
-    'app.inventory.routes',
-    'app.inventory.synchronization',
-    'app.analytics.alerts',
-    'app.analytics.capacity',
-    'app.analytics.common',
-    'app.analytics.forecast',
-    'app.analytics.materialization',
-    'app.analytics.overview',
-    'app.analytics.storage',
-    'app.analytics.top_consumers',
-    'app.analytics.utilization',
-    'app.analytics.workload',
-    'app.analytics.job_adapter',
-    'app.analytics.tasks',
+    'app.inventory',
+    'app.cluster',
+    'app.governance',
+    'app.kubernetes_operations',
+    'app.metrics_sources',
+    'app.alert_sources',
+    'app.object_storage',
+    'app.auth',
+    'app.users',
+    'app.rbac',
+    'app.identity_providers',
+    'app.jobs',
+    'app.notifications',
+    'app.retention',
+    'app.knowledge',
+    'app.resolver',
+    'app.automation_control',
+    'app.alert_intelligence',
+    'app.notification_channels',
 )
 
 
@@ -115,12 +120,15 @@ def _read(relative: str) -> str:
     return (ROOT / relative).read_text(encoding='utf-8')
 
 
-def _import_target(node: ast.AST) -> list[str]:
-    if isinstance(node, ast.Import):
-        return [alias.name for alias in node.names]
-    if isinstance(node, ast.ImportFrom) and node.level == 0:
-        return [node.module or '']
-    return []
+def _absolute_imports(path: Path) -> tuple[str, ...]:
+    tree = ast.parse(path.read_text(encoding='utf-8'), filename=str(path))
+    targets: list[str] = []
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            targets.extend(alias.name for alias in node.names)
+        elif isinstance(node, ast.ImportFrom) and node.level == 0 and node.module:
+            targets.append(node.module)
+    return tuple(targets)
 
 
 def main() -> int:
@@ -136,73 +144,54 @@ def main() -> int:
 
     analytics_root = ROOT / 'app/analytics'
     allowed_analytics_files = {'__init__.py', 'README.md', 'routes.py'}
-    allowed_analytics_dirs = {'kubernetes', 'object_storage', 'shared', '__pycache__'}
-    for child in analytics_root.iterdir():
-        if child.is_file() and child.name not in allowed_analytics_files:
-            errors.append(f'analytics capability root contains domain implementation file: {child.relative_to(ROOT)}')
-        if child.is_dir() and child.name not in allowed_analytics_dirs:
-            errors.append(
-                f'analytics capability root contains non-canonical domain directory: {child.relative_to(ROOT)}'
-            )
-
-    inventory_root = ROOT / 'app/inventory'
-    allowed_inventory_files = {'__init__.py', 'README.md'}
-    allowed_inventory_dirs = {'kubernetes', 'object_storage', '__pycache__'}
-    for child in inventory_root.iterdir():
-        if child.is_file() and child.name not in allowed_inventory_files:
-            errors.append(f'inventory capability root contains domain implementation file: {child.relative_to(ROOT)}')
-        if child.is_dir() and child.name not in allowed_inventory_dirs:
-            errors.append(
-                f'inventory capability root contains non-canonical domain directory: {child.relative_to(ROOT)}'
-            )
+    allowed_analytics_dirs = {'__pycache__'}
+    if analytics_root.exists():
+        for child in analytics_root.iterdir():
+            if child.is_file() and child.name not in allowed_analytics_files:
+                errors.append(f'analytics coordinator contains domain implementation file: {child.relative_to(ROOT)}')
+            if child.is_dir() and child.name not in allowed_analytics_dirs:
+                errors.append(
+                    f'analytics coordinator contains domain implementation directory: {child.relative_to(ROOT)}'
+                )
 
     for path in APP.rglob('*.py'):
-        tree = ast.parse(path.read_text(encoding='utf-8'), filename=str(path))
-        for node in ast.walk(tree):
-            for target in _import_target(node):
-                if any(target == prefix or target.startswith(f'{prefix}.') for prefix in RETIRED_IMPORT_PREFIXES):
-                    errors.append(
-                        f'{path.relative_to(ROOT)}:{getattr(node, "lineno", 0)} imports retired namespace {target}'
-                    )
+        for target in _absolute_imports(path):
+            if any(target == prefix or target.startswith(f'{prefix}.') for prefix in RETIRED_IMPORT_PREFIXES):
+                errors.append(f'{path.relative_to(ROOT)} imports retired namespace {target}')
 
-    service = _read('app/analytics/object_storage/service.py')
+    service = _read('app/storage/object_storage/analytics/service.py')
     for forbidden in (
         'MetricsConsumer',
         'MetricsSourceError',
-        'app.metrics_sources',
-        'app.integrations.observability.metrics_source',
+        'app.integrations.observability.metrics_source.application',
         'get_object_storage_query_expression',
     ):
         if forbidden in service:
             errors.append(f'Object Storage analytics service leaks provider-specific dependency: {forbidden}')
 
-    contracts = _read('app/analytics/shared/metrics/contracts.py')
+    contracts = _read('app/common/analytics/metrics/contracts.py')
     for required in ('class MetricsSource(Protocol)', 'class MetricsSourceError', 'class MetricsSourceIdentity'):
         if required not in contracts:
             errors.append(f'provider-neutral metrics contract is incomplete: missing {required}')
 
-    metrics_adapter = _read('app/analytics/object_storage/sources/providers/minio/metrics.py')
+    metrics_adapter = _read('app/storage/object_storage/analytics/sources/providers/minio/metrics.py')
     for required in ('MetricsConsumer', 'get_object_storage_query_expression', 'retry_count=0'):
         if required not in metrics_adapter:
             errors.append(f'Object Storage Metrics Source adapter is missing provider ownership marker: {required}')
 
-    source_resolver = _read('app/analytics/object_storage/sources/resolver.py')
-    for required in (
-        '_SOURCE_ADAPTERS',
-        "asset_profile='minio-v2'",
-        'MinioMetricsSourceAdapter.supports',
-    ):
+    source_resolver = _read('app/storage/object_storage/analytics/sources/resolver.py')
+    for required in ('_SOURCE_ADAPTERS', "asset_profile='minio-v2'", 'MinioMetricsSourceAdapter.supports'):
         if required not in source_resolver:
             errors.append(f'Object Storage metrics source resolver is missing qualified adapter marker: {required}')
 
-    object_storage_presentation = _read('app/inventory/object_storage/presentation.py')
+    object_storage_presentation = _read('app/storage/object_storage/inventory/presentation.py')
     for forbidden in ('product_key', 'product_label', 'Compatibility aliases'):
         if forbidden in object_storage_presentation:
             errors.append(f'Object Storage Inventory still exposes retired compatibility field: {forbidden}')
 
     object_storage_inventory_templates = '\n'.join(
         path.read_text(encoding='utf-8')
-        for path in sorted((ROOT / 'app/templates/inventory/object_storage').rglob('*.html'))
+        for path in sorted((ROOT / 'app/templates/storage/object_storage/inventory').rglob('*.html'))
     )
     for forbidden in ('name="product"', 'selected_product', 'filters.product', 'inventory.products'):
         if forbidden in object_storage_inventory_templates:
@@ -210,7 +199,7 @@ def main() -> int:
 
     object_storage_templates = '\n'.join(
         path.read_text(encoding='utf-8')
-        for path in sorted((ROOT / 'app/templates/analytics/object_storage').rglob('*.html'))
+        for path in sorted((ROOT / 'app/templates/storage/object_storage/analytics').rglob('*.html'))
     )
     if 'Prometheus Binding Required' in object_storage_templates:
         errors.append('Object Storage analytics UI still exposes a Prometheus-specific dependency blocker.')

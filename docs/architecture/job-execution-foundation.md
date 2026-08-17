@@ -74,7 +74,7 @@ canceled
 expired
 ```
 
-Workers update `heartbeat_at` and progress. Beat runs `app.jobs.tasks.reconcile_stale_jobs` to expire running records with stale heartbeats, explicitly expired queued jobs, and orphan queued records that were never assigned a Celery task ID. A valid forecasting backlog is never expired merely because it waited in the queue. Redis restart therefore does not erase the operational history or active-job registry.
+Workers update `heartbeat_at` and progress. Beat runs `app.platform_operations.jobs.tasks.reconcile_stale_jobs` to expire running records with stale heartbeats, explicitly expired queued jobs, and orphan queued records that were never assigned a Celery task ID. A valid forecasting backlog is never expired merely because it waited in the queue. Redis restart therefore does not erase the operational history or active-job registry.
 
 ## Workload isolation
 
@@ -103,7 +103,7 @@ JOB_MAX_ACTIVE_PER_RESOURCE=2
 
 A user can still attach to an existing identical job even after reaching a quota because no additional work is created. New distinct work is rejected when the relevant user or resource budget is exhausted.
 
-Future analytics jobs must use `app.jobs.dispatcher.enqueue_canonical_job()` rather than calling `apply_async()` directly. Admission is serialized by PostgreSQL advisory locks across all KAORI web replicas.
+Future analytics jobs must use `app.platform_operations.jobs.dispatcher.enqueue_canonical_job()` rather than calling `apply_async()` directly. Admission is serialized by PostgreSQL advisory locks across all KAORI web replicas.
 
 ## Cancellation
 
@@ -150,7 +150,7 @@ Inventory Sync is the first registered configuration. Future report, analytics, 
 ## Implementation boundaries
 
 ```text
-app/jobs/
+app/platform_operations/jobs/
 ├── routes.py            # Executions and Job Configuration workspaces
 ├── registry.py          # static registered-job catalog
 ├── configuration.py     # generic catalog and selected-job presentation
@@ -164,7 +164,7 @@ app/jobs/
 └── tasks.py             # policy dispatch and maintenance/recovery tasks
 ```
 
-Provider and feature domains own their collectors, report builders, analytics processors, and retention adapters. `app.jobs` owns registration, policy, lifecycle, dispatch, deduplication, quotas, progress, cancellation, and recovery. Definitions may resolve a domain adapter dynamically, but business logic must not move into the jobs package.
+Provider and feature domains own their collectors, report builders, analytics processors, and retention adapters. `app.platform_operations.jobs` owns registration, policy, lifecycle, dispatch, deduplication, quotas, progress, cancellation, and recovery. Definitions may resolve a domain adapter dynamically, but business logic must not move into the jobs package.
 
 
 ## Celery priority contract

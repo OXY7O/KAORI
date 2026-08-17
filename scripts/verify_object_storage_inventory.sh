@@ -8,19 +8,19 @@ fi
 
 printf '[1/6] Ruff\n'
 python -m ruff check \
-  app/inventory/object_storage \
+  app/storage/object_storage/inventory \
   app/models/object_storage.py \
   app/models/__init__.py \
   app/integrations/storage/object_storage/providers/minio/client.py \
   app/integrations/storage/object_storage/providers/minio/adapter.py \
   app/integrations/storage/object_storage/providers/minio/__init__.py \
-  app/jobs/configuration.py \
-  app/jobs/definitions/object_storage_inventory_sync.py \
-  app/inventory/object_storage/job_adapter.py \
-  app/inventory/object_storage/sync_jobs.py \
-  app/inventory/object_storage/tasks.py \
-  app/rbac/defaults.py \
-  app/rbac/service.py \
+  app/platform_operations/jobs/configuration.py \
+  app/platform_operations/jobs/definitions/object_storage_inventory_sync.py \
+  app/storage/object_storage/inventory/job_adapter.py \
+  app/storage/object_storage/inventory/sync_jobs.py \
+  app/storage/object_storage/inventory/tasks.py \
+  app/access/rbac/defaults.py \
+  app/access/rbac/service.py \
   migrations/versions/20260813_object_storage_inventory_jobs.py \
   migrations/versions/20260813_object_storage_bucket_container_contract.py \
   migrations/versions/20260813_object_storage_bucket_enrichment.py \
@@ -34,10 +34,10 @@ python -m ruff check \
 
 printf '\n[2/6] djLint\n'
 python -m djlint \
-  app/templates/inventory/object_storage \
+  app/templates/storage/object_storage/inventory \
   app/templates/components/navigation/object_storage_menu.html \
   app/templates/components/navigation/sidebar.html \
-  app/templates/jobs/configuration/definitions/object_storage_inventory_sync.html \
+  app/templates/platform_operations/jobs/configuration/definitions/object_storage_inventory_sync.html \
   app/templates/integrations/storage/object_storage/providers/minio/partials/_detail_validation.html \
   app/templates/integrations/storage/object_storage/providers/minio/partials/_detail_runtime.html \
   app/templates/integrations/storage/object_storage/providers/minio/partials/_detail_scope.html \

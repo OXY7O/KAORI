@@ -40,13 +40,13 @@ def _sample(metric: dict[str, str], value: float) -> dict[str, Any]:
 
 
 def _load_domain() -> ModuleType:
-    package_names = ('app', 'app.analytics', 'app.analytics.kubernetes.common', 'app.analytics.kubernetes.storage')
+    package_names = ('app', 'app.analytics', 'app.kubernetes.analytics.common', 'app.kubernetes.analytics.storage')
     original = {name: sys.modules.get(name) for name in package_names}
     module_names = (
-        'app.analytics.kubernetes.common.base_service',
-        'app.analytics.kubernetes.storage.evidence',
-        'app.analytics.kubernetes.storage.parsing',
-        'app.analytics.kubernetes.storage.domain',
+        'app.kubernetes.analytics.common.base_service',
+        'app.kubernetes.analytics.storage.evidence',
+        'app.kubernetes.analytics.storage.parsing',
+        'app.kubernetes.analytics.storage.domain',
     )
     original_modules = {name: sys.modules.get(name) for name in module_names}
     try:
@@ -55,12 +55,12 @@ def _load_domain() -> ModuleType:
             package.__path__ = []  # type: ignore[attr-defined]
             sys.modules[name] = package
 
-        base = ModuleType('app.analytics.kubernetes.common.base_service')
+        base = ModuleType('app.kubernetes.analytics.common.base_service')
         base.raw_percent = lambda value, total: value / total * 100 if total else 0
         base.safe_round = round
         sys.modules[base.__name__] = base
 
-        evidence = ModuleType('app.analytics.kubernetes.storage.evidence')
+        evidence = ModuleType('app.kubernetes.analytics.storage.evidence')
         evidence.VectorEvidence = VectorEvidence
         evidence.StorageEvidence = StorageEvidence
         evidence.sample_metric = lambda item: item.get('metric', {})
@@ -68,13 +68,13 @@ def _load_domain() -> ModuleType:
         sys.modules[evidence.__name__] = evidence
 
         parsing = _load_file(
-            'app.analytics.kubernetes.storage.parsing',
-            ROOT / 'app/analytics/kubernetes/storage/parsing.py',
+            'app.kubernetes.analytics.storage.parsing',
+            ROOT / 'app/kubernetes/analytics/storage/parsing.py',
         )
         sys.modules[parsing.__name__] = parsing
         return _load_file(
-            'app.analytics.kubernetes.storage.domain',
-            ROOT / 'app/analytics/kubernetes/storage/domain.py',
+            'app.kubernetes.analytics.storage.domain',
+            ROOT / 'app/kubernetes/analytics/storage/domain.py',
         )
     finally:
         for name, value in {**original, **original_modules}.items():

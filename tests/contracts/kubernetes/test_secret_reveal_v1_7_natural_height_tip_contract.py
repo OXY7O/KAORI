@@ -8,7 +8,7 @@ def read(relative: str) -> str:
 
 
 def test_global_gate_guidance_uses_compact_activation_tip() -> None:
-    page = read('app/templates/kubernetes_operations/secrets/reveal.html')
+    page = read('app/templates/kubernetes/operations/secrets/reveal.html')
 
     assert 'Activation Tip' in page
     assert (
@@ -21,7 +21,7 @@ def test_global_gate_guidance_uses_compact_activation_tip() -> None:
 
 
 def test_protected_reveal_new_request_uses_form_with_right_context() -> None:
-    page = read('app/templates/kubernetes_operations/secrets/reveal.html')
+    page = read('app/templates/kubernetes/operations/secrets/reveal.html')
     assert 'data-kubernetes-operation-layout="form-context-v1"' in page
     assert 'components/form_with_context_rail.html' in page
     assert 'form_context.layout_classes()' in page
@@ -46,7 +46,7 @@ def test_administration_readiness_and_boundary_cards_use_content_height() -> Non
 
 
 def test_secret_reveal_v17_keeps_neutral_dark_mode_surfaces() -> None:
-    protected = read('app/templates/kubernetes_operations/secrets/reveal.html')
+    protected = read('app/templates/kubernetes/operations/secrets/reveal.html')
     administration = read('app/templates/platform_operations/kubernetes/secret_reveal/_cluster_workspace.html')
 
     for source in (protected, administration):

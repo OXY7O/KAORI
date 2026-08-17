@@ -2,10 +2,7 @@ from __future__ import annotations
 
 from datetime import UTC
 
-from app.common.admin_audit import record_admin_event
-from app.extensions.db import db
-from app.models import Permission, Role, User
-from app.rbac.policy import (
+from app.access.rbac.policy import (
     actor_delegable_permission_keys,
     is_local_break_glass,
     permission_keys_are_delegable_by_actor,
@@ -13,13 +10,16 @@ from app.rbac.policy import (
     role_is_mutation_protected,
     role_slug_is_reserved,
 )
-from app.rbac.service import (
+from app.access.rbac.service import (
     expand_permission_ids,
     get_role_delete_blockers,
     normalize_role_slug,
     replace_role_permissions,
     role_slug_exists,
 )
+from app.common.admin_audit import record_admin_event
+from app.extensions.db import db
+from app.models import Permission, Role, User
 
 
 class RoleInputError(ValueError):

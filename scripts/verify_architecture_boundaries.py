@@ -12,32 +12,32 @@ _PROVIDER_DOMAIN_BOUNDARIES = (
     (
         'metrics_source',
         Path('integrations/observability/metrics_source'),
-        'app.metrics_sources',
+        'app.integrations.observability.metrics_source.application',
     ),
     (
         'alertmanager',
         Path('integrations/observability/alert_source/providers/alertmanager'),
-        'app.alert_sources.providers.alertmanager',
+        'app.integrations.observability.alert_source.providers.alertmanager.application',
     ),
     (
         'minio',
         Path('integrations/storage/object_storage/providers/minio'),
-        'app.object_storage.providers.minio',
+        'app.integrations.storage.object_storage.providers.minio.application',
     ),
 )
 
 _RETIRED_PYTHON_MODULES = {
-    'app.analytics.kubernetes.alerts.queries',
-    'app.analytics.kubernetes.alerts.service',
-    'app.analytics.kubernetes.capacity.helpers',
-    'app.analytics.kubernetes.capacity.queries',
-    'app.analytics.kubernetes.common.dependencies',
-    'app.analytics.kubernetes.forecast.queries',
-    'app.analytics.kubernetes.overview.queries',
-    'app.analytics.kubernetes.storage.queries',
-    'app.analytics.kubernetes.top_consumers.queries',
-    'app.analytics.kubernetes.utilization.queries',
-    'app.analytics.kubernetes.workload.queries',
+    'app.kubernetes.analytics.alerts.queries',
+    'app.kubernetes.analytics.alerts.service',
+    'app.kubernetes.analytics.capacity.helpers',
+    'app.kubernetes.analytics.capacity.queries',
+    'app.kubernetes.analytics.common.dependencies',
+    'app.kubernetes.analytics.forecast.queries',
+    'app.kubernetes.analytics.overview.queries',
+    'app.kubernetes.analytics.storage.queries',
+    'app.kubernetes.analytics.top_consumers.queries',
+    'app.kubernetes.analytics.utilization.queries',
+    'app.kubernetes.analytics.workload.queries',
     'app.integrations.observability.alert_source.providers.alertmanager.alerts',
     'app.integrations.observability.alert_source.providers.alertmanager.schemas',
     'app.integrations.observability.alert_source.providers.alertmanager.silences',
@@ -53,14 +53,14 @@ _RETIRED_PYTHON_MODULES = {
     'app.integrations.runtime.contracts',
     'app.integrations.runtime.dispatcher',
     'app.integrations.runtime.service',
-    'app.jobs.query_execution',
-    'app.jobs.query_planning',
-    'app.jobs.resource_limits',
-    'app.inventory.kubernetes.collector',
-    'app.inventory.kubernetes.service',
-    'app.metrics_sources.binding_contract',
+    'app.platform_operations.jobs.query_execution',
+    'app.platform_operations.jobs.query_planning',
+    'app.platform_operations.jobs.resource_limits',
+    'app.kubernetes.inventory.collector',
+    'app.kubernetes.inventory.service',
+    'app.integrations.observability.metrics_source.application.binding_contract',
     'app.reports.storage.base',
-    'app.users.lifecycle',
+    'app.access.users.lifecycle',
     'app.utils.formatters',
     'app.utils.helpers',
 }
@@ -122,18 +122,54 @@ def scan_imports(app_root: Path) -> list[ImportRecord]:
     return records
 
 
-def _top_level_domain(module: str) -> str | None:
+def _logical_domain(module: str) -> str | None:
+    """Map physical packages to stable architecture domains used by debt baselines.
+
+    Physical package consolidation must not turn pre-existing logical boundaries into one
+    giant graph node. The mapping deliberately preserves the prior bounded-context names
+    while allowing their code to live under clearer domain-first folders.
+    """
     if module == 'app':
         return '__root__'
     if not module.startswith('app.'):
         return None
+
+    prefix_domains = (
+        ('app.access.authentication', 'auth'),
+        ('app.access.rbac', 'rbac'),
+        ('app.access.users', 'users'),
+        ('app.access.identity_providers', 'identity_providers'),
+        ('app.platform_operations.notifications.alert_delivery', 'alert_delivery'),
+        ('app.platform_operations.notifications', 'notifications'),
+        ('app.platform_operations.jobs', 'jobs'),
+        ('app.platform_operations.data_lifecycle.retention', 'retention'),
+        ('app.integrations.delivery.notification_channels', 'notification_channels'),
+        ('app.integrations.observability.metrics_source.application', 'metrics_sources'),
+        ('app.integrations.observability.alert_source.providers.alertmanager.application', 'alert_sources'),
+        ('app.integrations.storage.object_storage.providers.minio.application', 'object_storage'),
+        ('app.kubernetes.cluster', 'cluster'),
+        ('app.kubernetes.inventory', 'inventory'),
+        ('app.kubernetes.analytics', 'analytics'),
+        ('app.storage.object_storage.analytics', 'analytics'),
+        ('app.storage.object_storage.inventory', 'inventory'),
+        ('app.kubernetes.dashboard', 'dashboards'),
+        ('app.kubernetes.governance', 'governance'),
+        ('app.kubernetes.operations', 'kubernetes_operations'),
+        ('app.intelligence.alert_intelligence', 'alert_intelligence'),
+        ('app.intelligence.automation_control', 'automation_control'),
+        ('app.intelligence.knowledge', 'knowledge'),
+        ('app.intelligence.resolver', 'resolver'),
+    )
+    for prefix, domain in prefix_domains:
+        if module == prefix or module.startswith(f'{prefix}.'):
+            return domain
+
     parts = module.split('.')
     return parts[1] if len(parts) > 1 else '__root__'
 
 
 def _source_domain(app_root: Path, source: Path) -> str:
-    relative = source.relative_to(app_root)
-    return relative.parts[0] if len(relative.parts) > 1 else '__root__'
+    return _logical_domain(_module_name(app_root, source)) or '__root__'
 
 
 def _strongly_connected_components(graph: dict[str, set[str]]) -> list[set[str]]:
@@ -211,6 +247,9 @@ def validate_boundaries(
         for provider, kernel_root, forbidden_domain in _PROVIDER_DOMAIN_BOUNDARIES:
             if not relative_to_app.is_relative_to(kernel_root):
                 continue
+            application_root = kernel_root / 'application'
+            if relative_to_app.is_relative_to(application_root):
+                continue
             if record.target == forbidden_domain or record.target.startswith(f'{forbidden_domain}.'):
                 errors.append(
                     f'{relative_source}:{record.line}: canonical {provider.replace("_", " ").title()} kernel '
@@ -232,7 +271,7 @@ def validate_boundaries(
         imports_routes = 'routes' in target_parts
         imports_forms = 'forms' in target_parts
         source_domain = _source_domain(app_root, record.source)
-        target_domain = _top_level_domain(record.target)
+        target_domain = _logical_domain(record.target)
         source_is_bootstrap = (
             record.source
             in {

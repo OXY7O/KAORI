@@ -114,7 +114,7 @@ Data Lifecycle is no longer owned by Settings. The canonical operator workspace 
 
 ## Background Job Boundary
 
-Automatic schedules and manual background-job controls are owned by `app.jobs` under **Platform Operations → Jobs & Executions → Job Configuration**. Settings must not introduce job-specific scheduler pages or direct Celery dispatch routes.
+Automatic schedules and manual background-job controls are owned by `app.platform_operations.jobs` under **Platform Operations → Jobs & Executions → Job Configuration**. Settings must not introduce job-specific scheduler pages or direct Celery dispatch routes.
 
 ## Access ownership boundary
 

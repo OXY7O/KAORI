@@ -10,7 +10,7 @@ def read(relative: str) -> str:
 
 
 def test_object_storage_hero_copy_is_specific_without_becoming_verbose() -> None:
-    service = read('app/analytics/object_storage/service.py')
+    service = read('app/storage/object_storage/analytics/service.py')
 
     expected = (
         'Review usable capacity, consumption trends, bucket pressure, quota posture, and growth across the selected system.',
@@ -24,9 +24,9 @@ def test_object_storage_hero_copy_is_specific_without_becoming_verbose() -> None
 
 
 def test_object_storage_blocker_reuses_kubernetes_analytics_dependency_surface() -> None:
-    object_blocker = read('app/templates/analytics/object_storage/partials/_dependency_blocker.html')
+    object_blocker = read('app/templates/storage/object_storage/analytics/partials/_dependency_blocker.html')
     shared_blocker = read('app/templates/components/dependencies/_blocker.html')
-    blocked_hero = read('app/templates/analytics/object_storage/partials/_hero_blocked_posture.html')
+    blocked_hero = read('app/templates/storage/object_storage/analytics/partials/_hero_blocked_posture.html')
 
     assert 'components/dependencies/_blocker.html' in object_blocker
     assert 'Object Storage → Metrics' in object_blocker
@@ -42,8 +42,8 @@ def test_object_storage_blocker_reuses_kubernetes_analytics_dependency_surface()
 
 
 def test_object_storage_analytics_requires_committed_inventory_before_metrics_analysis() -> None:
-    dependencies = read('app/analytics/object_storage/dependencies.py')
-    service = read('app/analytics/object_storage/service.py')
+    dependencies = read('app/storage/object_storage/analytics/dependencies.py')
+    service = read('app/storage/object_storage/analytics/service.py')
 
     assert "'inventory_required'" in dependencies
     assert 'Object Storage Inventory Sync Required' in dependencies
@@ -53,10 +53,10 @@ def test_object_storage_analytics_requires_committed_inventory_before_metrics_an
 
 
 def test_object_storage_runtime_boundary_stays_provider_neutral_and_fail_fast() -> None:
-    routes = read('app/analytics/object_storage/routes.py')
-    service = read('app/analytics/object_storage/service.py')
-    runtime = read('app/analytics/object_storage/runtime.py')
-    materialization = read('app/analytics/object_storage/materialization.py')
+    routes = read('app/storage/object_storage/analytics/routes.py')
+    service = read('app/storage/object_storage/analytics/service.py')
+    runtime = read('app/storage/object_storage/analytics/runtime.py')
+    materialization = read('app/storage/object_storage/analytics/materialization.py')
 
     assert routes.count("@permission_required('object_storage_analytics.view')") == 8
     for forbidden in ('MetricsConsumer(', 'MinioClient(', 'boto3', 'minio.client'):
@@ -71,9 +71,9 @@ def test_object_storage_runtime_boundary_stays_provider_neutral_and_fail_fast() 
 
 
 def test_object_storage_alert_and_metric_evidence_paths_remain_independent() -> None:
-    service = read('app/analytics/object_storage/service.py')
-    alerts = read('app/analytics/object_storage/alert_sources.py')
-    workspace = read('app/templates/analytics/object_storage/partials/_alerts_workspace.html')
+    service = read('app/storage/object_storage/analytics/service.py')
+    alerts = read('app/storage/object_storage/analytics/alert_sources.py')
+    workspace = read('app/templates/storage/object_storage/analytics/partials/_alerts_workspace.html')
 
     assert 'alerts_evidence_available' in service
     assert 'alerts_degraded' in service
@@ -84,9 +84,9 @@ def test_object_storage_alert_and_metric_evidence_paths_remain_independent() -> 
 
 
 def test_object_storage_htmx_record_fragments_fail_closed_on_dependency_loss() -> None:
-    bucket_table = read('app/templates/analytics/object_storage/partials/_bucket_table.html')
-    alert_records = read('app/templates/analytics/object_storage/partials/_alert_records.html')
-    notice = read('app/templates/analytics/object_storage/partials/_dependency_notice.html')
+    bucket_table = read('app/templates/storage/object_storage/analytics/partials/_bucket_table.html')
+    alert_records = read('app/templates/storage/object_storage/analytics/partials/_alert_records.html')
+    notice = read('app/templates/storage/object_storage/analytics/partials/_dependency_notice.html')
 
     assert '{% if dependency_blocker %}' in bucket_table
     assert '_dependency_notice.html' in bucket_table

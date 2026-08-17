@@ -3,8 +3,8 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 
-from app.cluster.quick_sync import sync_snapshot_visible_to_user
-from app.jobs.policies import service
+from app.kubernetes.cluster.quick_sync import sync_snapshot_visible_to_user
+from app.platform_operations.jobs.policies import service
 
 
 def _definition() -> SimpleNamespace:

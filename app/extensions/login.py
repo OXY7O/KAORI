@@ -4,9 +4,9 @@ from flask import redirect, request, session, url_for
 from flask_login import LoginManager
 from sqlalchemy.exc import SQLAlchemyError
 
-from app.auth.admission import session_admission_reason
-from app.auth.readiness import check_authentication_database_readiness
-from app.auth.session import parse_authenticated_user_identifier
+from app.access.authentication.admission import session_admission_reason
+from app.access.authentication.readiness import check_authentication_database_readiness
+from app.access.authentication.session import parse_authenticated_user_identifier
 from app.common.flashes import flash_once
 from app.models.user import User
 

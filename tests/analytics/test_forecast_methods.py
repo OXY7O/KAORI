@@ -2,12 +2,12 @@ from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
 
-from app.analytics.kubernetes.forecast.calculation import (
+from app.kubernetes.analytics.forecast.calculation import (
     _calculate_conservative_forecast,
     _calculate_holt_winters_forecast,
     _format_weekly_trend,
 )
-from app.analytics.kubernetes.forecast.contracts import ForecastPoint
+from app.kubernetes.analytics.forecast.contracts import ForecastPoint
 
 
 def make_points(count: int = 28) -> list[ForecastPoint]:

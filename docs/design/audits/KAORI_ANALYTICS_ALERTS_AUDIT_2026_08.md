@@ -61,7 +61,7 @@ When one family succeeds, its records remain available and the workspace shows a
 ## Runtime ownership
 
 ```text
-app/analytics/kubernetes/alerts/
+app/kubernetes/analytics/alerts/
 ├── application.py   # materialization orchestration and committed presentation
 ├── anomalies.py     # independent anomaly collection
 ├── contracts.py     # typed selection and payload contracts

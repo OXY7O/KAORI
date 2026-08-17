@@ -123,7 +123,7 @@ Existing security boundaries remain mandatory:
 
 ## Legacy and maintainability
 
-The retired Blueprint cluster guard and request-label helper are removed rather than wrapped. `app/kubernetes_operations/secrets/routes.py` and the old domain component wrapper remain absent. Shared `context_rail`, `info_flow`, and information-guide components remain valid for other domains but are no longer imported by the reviewed mutation pages.
+The retired Blueprint cluster guard and request-label helper are removed rather than wrapped. `app/kubernetes/operations/secrets/routes.py` and the old domain component wrapper remain absent. Shared `context_rail`, `info_flow`, and information-guide components remain valid for other domains but are no longer imported by the reviewed mutation pages.
 
 ## Performance and reliability
 

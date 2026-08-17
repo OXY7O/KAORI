@@ -12,9 +12,9 @@ from app.integrations.validation.state import (
     release_validation_job,
 )
 from app.integrations.validation.tasks import refresh_integration_runtime_instance
-from app.jobs.constants import WORKLOAD_RUNTIME
-from app.jobs.fingerprint import build_deduplication_key
-from app.jobs.service import create_or_attach_job, mark_job_failed
+from app.platform_operations.jobs.constants import WORKLOAD_RUNTIME
+from app.platform_operations.jobs.fingerprint import build_deduplication_key
+from app.platform_operations.jobs.service import create_or_attach_job, mark_job_failed
 
 
 def _runtime_queue_name() -> str:

@@ -8,7 +8,7 @@ def read(relative: str) -> str:
 
 
 def test_capacity_removes_nonfunctional_composite_tracker_and_dead_chart_runtime() -> None:
-    index = read('app/templates/analytics/kubernetes/capacity/index.html')
+    index = read('app/templates/kubernetes/analytics/capacity/index.html')
 
     assert 'capacity-load-tracker' not in index
     assert 'analytics/partials/_load_tracker.html' not in index
@@ -18,10 +18,10 @@ def test_capacity_removes_nonfunctional_composite_tracker_and_dead_chart_runtime
 
 
 def test_capacity_uses_shared_surface_and_control_contracts() -> None:
-    controls = read('app/templates/analytics/kubernetes/capacity/partials/_controls_readiness.html')
-    overview = read('app/templates/analytics/kubernetes/capacity/partials/_overview.html')
-    allocation = read('app/templates/analytics/kubernetes/capacity/partials/_allocation.html')
-    worker = read('app/templates/analytics/kubernetes/capacity/partials/_worker_summary.html')
+    controls = read('app/templates/kubernetes/analytics/capacity/partials/_controls_readiness.html')
+    overview = read('app/templates/kubernetes/analytics/capacity/partials/_overview.html')
+    allocation = read('app/templates/kubernetes/analytics/capacity/partials/_allocation.html')
+    worker = read('app/templates/kubernetes/analytics/capacity/partials/_worker_summary.html')
 
     assert 'analytics_workspace.control_select_classes()' in controls
     assert 'analytics_workspace.control_label_classes()' in controls
@@ -35,10 +35,10 @@ def test_capacity_uses_shared_surface_and_control_contracts() -> None:
 
 
 def test_capacity_unavailable_state_is_unknown_na_and_suppresses_progress() -> None:
-    presenter = read('app/analytics/kubernetes/capacity/presentation.py')
-    domain = read('app/analytics/kubernetes/capacity/domain.py')
-    lane = read('app/templates/analytics/kubernetes/components/_resource_pressure_lane.html')
-    overview = read('app/templates/analytics/kubernetes/capacity/partials/_overview.html')
+    presenter = read('app/kubernetes/analytics/capacity/presentation.py')
+    domain = read('app/kubernetes/analytics/capacity/domain.py')
+    lane = read('app/templates/kubernetes/analytics/components/_resource_pressure_lane.html')
+    overview = read('app/templates/kubernetes/analytics/capacity/partials/_overview.html')
     contract = read('docs/design/components/ANALYTICS_CAPACITY_ANALYSIS.md')
 
     assert "'utilization_percent': utilization" in presenter
@@ -51,11 +51,11 @@ def test_capacity_unavailable_state_is_unknown_na_and_suppresses_progress() -> N
 
 
 def test_capacity_semantic_status_is_owned_by_domain_not_css_or_jinja() -> None:
-    domain = read('app/analytics/kubernetes/capacity/domain.py')
-    service = read('app/analytics/kubernetes/capacity/service.py')
-    payloads = read('app/analytics/kubernetes/common/payloads.py')
-    allocation = read('app/templates/analytics/kubernetes/capacity/partials/_allocation.html')
-    risk = read('app/templates/analytics/kubernetes/capacity/partials/_risk.html')
+    domain = read('app/kubernetes/analytics/capacity/domain.py')
+    service = read('app/kubernetes/analytics/capacity/service.py')
+    payloads = read('app/kubernetes/analytics/common/payloads.py')
+    allocation = read('app/templates/kubernetes/analytics/capacity/partials/_allocation.html')
+    risk = read('app/templates/kubernetes/analytics/capacity/partials/_risk.html')
 
     for tone in ("'critical'", "'warning'", "'normal'", "'unknown'"):
         assert tone in domain
@@ -76,9 +76,9 @@ def test_capacity_semantic_status_is_owned_by_domain_not_css_or_jinja() -> None:
 
 
 def test_capacity_progress_uses_semantic_status_and_primary_evidence_is_bright() -> None:
-    overview = read('app/templates/analytics/kubernetes/capacity/partials/_overview.html')
-    allocation = read('app/templates/analytics/kubernetes/capacity/partials/_allocation.html')
-    risk = read('app/templates/analytics/kubernetes/capacity/partials/_risk.html')
+    overview = read('app/templates/kubernetes/analytics/capacity/partials/_overview.html')
+    allocation = read('app/templates/kubernetes/analytics/capacity/partials/_allocation.html')
+    risk = read('app/templates/kubernetes/analytics/capacity/partials/_risk.html')
     contract = read('docs/design/components/ANALYTICS_CAPACITY_ANALYSIS.md')
 
     assert 'progress_bar.semantic_bar(item.utilization_percent, item.tone' in overview
@@ -88,9 +88,9 @@ def test_capacity_progress_uses_semantic_status_and_primary_evidence_is_bright()
 
 
 def test_capacity_separates_findings_from_review_navigation_and_storage_actions() -> None:
-    domain = read('app/analytics/kubernetes/capacity/domain.py')
-    service = read('app/analytics/kubernetes/capacity/service.py')
-    risk = read('app/templates/analytics/kubernetes/capacity/partials/_risk.html')
+    domain = read('app/kubernetes/analytics/capacity/domain.py')
+    service = read('app/kubernetes/analytics/capacity/service.py')
+    risk = read('app/templates/kubernetes/analytics/capacity/partials/_risk.html')
 
     governance_function = domain.split('def build_governance_findings', 1)[1]
     assert "for resource in ('cpu', 'memory', 'pods')" in governance_function
@@ -104,9 +104,9 @@ def test_capacity_separates_findings_from_review_navigation_and_storage_actions(
 
 
 def test_capacity_is_cluster_level_and_recommendations_deep_link_to_tabs() -> None:
-    routes = read('app/analytics/kubernetes/capacity/routes.py')
-    index = read('app/templates/analytics/kubernetes/capacity/index.html')
-    recommendations = read('app/templates/analytics/kubernetes/capacity/partials/_recommendations.html')
+    routes = read('app/kubernetes/analytics/capacity/routes.py')
+    index = read('app/templates/kubernetes/analytics/capacity/index.html')
+    recommendations = read('app/templates/kubernetes/analytics/capacity/partials/_recommendations.html')
     contract = read('docs/design/components/ANALYTICS_CAPACITY_ANALYSIS.md')
 
     assert "_ALLOWED_TABS = {'summary', 'allocation', 'risk', 'recommendations'}" in routes
@@ -120,12 +120,12 @@ def test_capacity_is_cluster_level_and_recommendations_deep_link_to_tabs() -> No
 
 def test_capacity_templates_remove_local_micro_typography_debt() -> None:
     paths = [
-        'app/templates/analytics/kubernetes/capacity/partials/_hero.html',
-        'app/templates/analytics/kubernetes/capacity/partials/_overview.html',
-        'app/templates/analytics/kubernetes/capacity/partials/_worker_summary.html',
-        'app/templates/analytics/kubernetes/capacity/partials/_allocation.html',
-        'app/templates/analytics/kubernetes/capacity/partials/_risk.html',
-        'app/templates/analytics/kubernetes/capacity/partials/_recommendations.html',
+        'app/templates/kubernetes/analytics/capacity/partials/_hero.html',
+        'app/templates/kubernetes/analytics/capacity/partials/_overview.html',
+        'app/templates/kubernetes/analytics/capacity/partials/_worker_summary.html',
+        'app/templates/kubernetes/analytics/capacity/partials/_allocation.html',
+        'app/templates/kubernetes/analytics/capacity/partials/_risk.html',
+        'app/templates/kubernetes/analytics/capacity/partials/_recommendations.html',
     ]
     for path in paths:
         source = read(path)

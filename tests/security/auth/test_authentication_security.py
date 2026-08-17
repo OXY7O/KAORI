@@ -10,8 +10,8 @@ def read(relative: str) -> str:
 
 
 def test_login_and_logout_keep_csrf_and_post_only_boundaries() -> None:
-    routes = read('app/auth/routes.py')
-    login = read('app/templates/auth/partials/_login_form.html')
+    routes = read('app/access/authentication/routes.py')
+    login = read('app/templates/access/authentication/partials/_login_form.html')
 
     assert "@auth_bp.route('/login', methods=['GET', 'POST'])" in routes
     assert "@auth_bp.route('/logout', methods=['POST'])" in routes
@@ -35,8 +35,8 @@ def test_production_authentication_cookies_are_secure_http_only_and_same_site() 
 
 
 def test_authentication_failures_do_not_claim_target_as_actor_or_expose_provider_state() -> None:
-    audit = read('app/auth/audit.py')
-    services = read('app/auth/services.py')
+    audit = read('app/access/authentication/audit.py')
+    services = read('app/access/authentication/services.py')
 
     assert 'authenticated_actor = user if user is not None and (success or is_logout) else None' in audit
     assert 'return INVALID_LOGIN_MESSAGE' in services

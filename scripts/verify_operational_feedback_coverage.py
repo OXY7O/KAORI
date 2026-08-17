@@ -27,7 +27,7 @@ def require(path: str, *tokens: str) -> None:
 def main() -> int:
     # Kubernetes operational CRUD surfaces.
     require(
-        'app/kubernetes_operations/configmaps/routes.py',
+        'app/kubernetes/operations/configmaps/routes.py',
         "'kubernetes_configmap_created'",
         "'kubernetes_configmap_updated'",
         "'kubernetes_configmap_deleted'",
@@ -36,43 +36,53 @@ def main() -> int:
         'record_operational_activity(',
     )
     require(
-        'app/kubernetes_operations/secrets/route_support.py',
+        'app/kubernetes/operations/secrets/route_support.py',
         'OperationalDeliveryPolicy.DECK_ON_FAILURE',
         'OperationalDeliveryPolicy.PERSISTENT',
         "event_type == 'kubernetes_secret_revealed'",
         'record_operational_activity(',
     )
     require(
-        'app/kubernetes_operations/secrets/crud_routes.py',
+        'app/kubernetes/operations/secrets/crud_routes.py',
         "'kubernetes_secret_created'",
         "'kubernetes_secret_data_replaced'",
         "'kubernetes_secret_deleted'",
     )
     require(
-        'app/kubernetes_operations/secrets/tls_routes.py',
+        'app/kubernetes/operations/secrets/tls_routes.py',
         "event_type='kubernetes_tls_secret_rotation'",
         "event_type='kubernetes_tls_secret_bulk_rotation'",
     )
     require(
-        'app/governance/tls_certificates/routes.py',
+        'app/kubernetes/governance/tls_certificates/routes.py',
         'record_operational_activity(',
         "event_type='governance_tls_secret_sync_dispatch'",
     )
 
     # Provider and integration CRUD/action surfaces.
     for path, tokens in {
-        'app/cluster/routes.py': (
+        'app/kubernetes/cluster/routes.py': (
             "event_type='cluster_create'",
             "event_type='cluster_update'",
             "event_type='cluster_delete'",
         ),
-        'app/metrics_sources/registration_web.py': ("event_type='metrics_source_created'",),
-        'app/metrics_sources/routes.py': ("event_type='metrics_source_deleted'",),
-        'app/metrics_sources/edit_web.py': ("event_type='metrics_source_updated'",),
-        'app/alert_sources/providers/alertmanager/registration_web.py': ("event_type='alertmanager_instance_created'",),
-        'app/alert_sources/providers/alertmanager/routes.py': ("event_type='alertmanager_instance_deleted'",),
-        'app/alert_sources/providers/alertmanager/edit_web.py': ("event_type='alertmanager_instance_updated'",),
-        'app/object_storage/providers/minio/routes.py': (
+        'app/integrations/observability/metrics_source/application/registration_web.py': (
+            "event_type='metrics_source_created'",
+        ),
+        'app/integrations/observability/metrics_source/application/routes.py': ("event_type='metrics_source_deleted'",),
+        'app/integrations/observability/metrics_source/application/edit_web.py': (
+            "event_type='metrics_source_updated'",
+        ),
+        'app/integrations/observability/alert_source/providers/alertmanager/application/registration_web.py': (
+            "event_type='alertmanager_instance_created'",
+        ),
+        'app/integrations/observability/alert_source/providers/alertmanager/application/routes.py': (
+            "event_type='alertmanager_instance_deleted'",
+        ),
+        'app/integrations/observability/alert_source/providers/alertmanager/application/edit_web.py': (
+            "event_type='alertmanager_instance_updated'",
+        ),
+        'app/integrations/storage/object_storage/providers/minio/application/routes.py': (
             "event_type='minio_provider_registered'",
             "event_type='minio_provider_updated'",
             "event_type='minio_instance_deleted'",
@@ -81,7 +91,7 @@ def main() -> int:
         require(path, *tokens)
 
     require(
-        'app/notification_channels/routes.py',
+        'app/integrations/delivery/notification_channels/routes.py',
         "event_type='integration.notification_channel.delete_blocked'",
         "event_type='integration.notification_channel.deleted'",
         "event_type=f'integration.notification_channel.{action}'",
@@ -127,7 +137,7 @@ def main() -> int:
 
     # Platform Operations and Jobs.
     require(
-        'app/jobs/routes.py',
+        'app/platform_operations/jobs/routes.py',
         "event_type='job_policy_updated'",
         "event_type='job_manual_dispatch'",
         "'job_cancellation_requested'",
@@ -148,7 +158,7 @@ def main() -> int:
 
     # Access administration and user lifecycle.
     require(
-        'app/users/routes.py',
+        'app/access/users/routes.py',
         "event_type='user_created'",
         "event_type='user_updated'",
         "event_type='user_activated'",
@@ -159,19 +169,19 @@ def main() -> int:
         'user_management_feedback(',
     )
     require(
-        'app/users/notifications.py',
+        'app/access/users/notifications.py',
         'queue_feedback: bool = True',
         'queue_feedback=queue_feedback',
     )
     require(
-        'app/identity_providers/routes.py',
+        'app/access/identity_providers/routes.py',
         "event_type='identity_provider_created'",
         "event_type='identity_provider_updated'",
         "event_type='identity_provider_validated'",
         "event_type='external_identity_provisioned'",
     )
     require(
-        'app/identity_providers/notifications.py',
+        'app/access/identity_providers/notifications.py',
         'queue_feedback: bool = True',
         'queue_feedback=queue_feedback',
     )
@@ -203,14 +213,14 @@ def main() -> int:
 
     # Canonical event/category ownership and documentation.
     require(
-        'app/notifications/event_catalog.py',
-        "'notifications/event_categories.yaml'",
+        'app/platform_operations/notifications/event_catalog.py',
+        "'platform_operations/notifications/event_categories.yaml'",
         'CATEGORY_LABELS =',
         'CATEGORY_ICONS =',
         'event_category_key(',
     )
     require(
-        'app/definitions/catalogs/notifications/event_categories.yaml',
+        'app/definitions/catalogs/platform_operations/notifications/event_categories.yaml',
         'configmap_management:',
         'label: ConfigMap Management',
         'label: TLS Certificate',

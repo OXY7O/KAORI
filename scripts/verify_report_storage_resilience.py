@@ -26,7 +26,7 @@ def main() -> None:
     report_routes = read('app/reports/routes.py')
     generated_service = read('app/reports/generated/service.py')
     export_service = read('app/reports/export/service.py')
-    s3_storage = read('app/storage/s3.py')
+    s3_storage = read('app/artifact_storage/s3.py')
     config = read('app/config/default.py')
 
     require(

@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from app.access.rbac.defaults import DEFAULT_ROLE_DEFINITIONS, DEFAULT_ROLE_PERMISSIONS
+from app.access.rbac.policy import role_is_protected_default
 from app.models import Role
-from app.rbac.defaults import DEFAULT_ROLE_DEFINITIONS, DEFAULT_ROLE_PERMISSIONS
-from app.rbac.policy import role_is_protected_default
 
 
 @dataclass(frozen=True, slots=True)

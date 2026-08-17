@@ -12,8 +12,8 @@ def test_configmap_and_secret_delete_use_final_confirmation_modal() -> None:
         ('configmaps', 'configmap-delete-confirmation', 'configmap-delete-submit'),
         ('secrets', 'secret-delete-confirmation', 'secret-delete-submit'),
     ):
-        page = read(f'app/templates/kubernetes_operations/{domain}/delete.html')
-        actions = read(f'app/templates/kubernetes_operations/{domain}/_delete_actions.html')
+        page = read(f'app/templates/kubernetes/operations/{domain}/delete.html')
+        actions = read(f'app/templates/kubernetes/operations/{domain}/_delete_actions.html')
 
         assert 'components/destructive_confirmation_modal.html' in page
         assert modal_id in page

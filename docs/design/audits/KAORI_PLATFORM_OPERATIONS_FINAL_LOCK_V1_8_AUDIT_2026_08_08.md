@@ -8,7 +8,7 @@ Platform Operations now owns three stable operational control planes: Jobs & Exe
 
 - Jobs & Executions remains the canonical JobExecution runtime surface.
 - Data Lifecycle owns retention intent, archive storage posture, verified archive evidence, and cleanup controls.
-- `app/retention` remains the shared archive-first engine used by web, CLI, scheduler, and workers.
+- `app/platform_operations/data_lifecycle/retention` remains the shared archive-first engine used by web, CLI, scheduler, and workers.
 - Data Lifecycle permissions are classified under Platform Operations while preserving existing role assignments through migration.
 - Settings retains redirect-only compatibility for the former URL and no longer owns lifecycle templates or mutation code.
 - Platform Operations navigation order is Jobs & Executions → Data Lifecycle → Kubernetes Administration.

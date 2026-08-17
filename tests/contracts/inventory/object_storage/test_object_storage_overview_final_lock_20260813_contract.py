@@ -8,9 +8,9 @@ def read(path: str) -> str:
 
 
 def test_overview_final_lock_uses_fleet_posture_and_committed_snapshot_boundary() -> None:
-    index = read('app/templates/inventory/object_storage/overview/index.html')
-    fleet = read('app/templates/inventory/object_storage/overview/partials/_fleet_posture.html')
-    presentation = read('app/inventory/object_storage/presentation.py')
+    index = read('app/templates/storage/object_storage/inventory/overview/index.html')
+    fleet = read('app/templates/storage/object_storage/inventory/overview/partials/_fleet_posture.html')
+    presentation = read('app/storage/object_storage/inventory/presentation.py')
 
     assert '_snapshot_boundary.html' in index
     assert '_fleet_posture.html' in index
@@ -25,7 +25,7 @@ def test_overview_final_lock_uses_fleet_posture_and_committed_snapshot_boundary(
 
 
 def test_overview_fleet_posture_covers_quota_protection_exposure_and_usage() -> None:
-    presentation = read('app/inventory/object_storage/presentation.py')
+    presentation = read('app/storage/object_storage/inventory/presentation.py')
 
     assert "'quota_assessed': quota_assessed" in presentation
     assert "'quota_configured': quota_configured" in presentation
@@ -39,7 +39,7 @@ def test_overview_fleet_posture_covers_quota_protection_exposure_and_usage() -> 
 
 
 def test_overview_system_drawer_matches_systems_final_authority_boundary() -> None:
-    overview = read('app/templates/inventory/object_storage/overview/partials/_systems_snapshot_content.html')
+    overview = read('app/templates/storage/object_storage/inventory/overview/partials/_systems_snapshot_content.html')
 
     assert "width='2xl'" in overview
     assert 'x_show="openDrawer === \'" ~ system.id ~ "\'"' in overview
@@ -54,10 +54,10 @@ def test_overview_system_drawer_matches_systems_final_authority_boundary() -> No
 
 def test_overview_final_lock_avoids_new_page_local_style_debt() -> None:
     templates = [
-        read('app/templates/inventory/object_storage/overview/partials/_hero.html'),
-        read('app/templates/inventory/object_storage/overview/partials/_fleet_posture.html'),
-        read('app/templates/inventory/object_storage/overview/partials/_systems_snapshot.html'),
-        read('app/templates/inventory/object_storage/overview/partials/_systems_snapshot_content.html'),
+        read('app/templates/storage/object_storage/inventory/overview/partials/_hero.html'),
+        read('app/templates/storage/object_storage/inventory/overview/partials/_fleet_posture.html'),
+        read('app/templates/storage/object_storage/inventory/overview/partials/_systems_snapshot.html'),
+        read('app/templates/storage/object_storage/inventory/overview/partials/_systems_snapshot_content.html'),
     ]
     source = '\n'.join(templates)
     assert 'text-[' not in source

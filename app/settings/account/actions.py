@@ -5,12 +5,12 @@ from typing import Any
 
 from flask import url_for
 
-from app.auth.forms import ChangePasswordForm
-from app.auth.session import preserve_current_session_after_password_change
+from app.access.authentication.forms import ChangePasswordForm
+from app.access.authentication.session import preserve_current_session_after_password_change
 from app.extensions.db import db
 from app.models import User
-from app.notifications.feedback import OperationalDeliveryPolicy
-from app.notifications.service import create_transient_feedback, record_operational_activity
+from app.platform_operations.notifications.feedback import OperationalDeliveryPolicy
+from app.platform_operations.notifications.service import create_transient_feedback, record_operational_activity
 
 
 @dataclass(slots=True)

@@ -37,12 +37,12 @@ Page, Analytics Overview, recommendations, and report export
 
 Canonical ownership:
 
-- `app/analytics/kubernetes/storage/evidence.py` — one query per signal and query error representation.
-- `app/analytics/kubernetes/storage/parsing.py` — label normalization and duplicate-series handling.
-- `app/analytics/kubernetes/storage/domain.py` — pressure, lifecycle, availability, summaries, and posture.
-- `app/analytics/kubernetes/storage/service.py` — materialization/context facade only.
-- `app/analytics/kubernetes/storage/presentation.py` — tab, scope, local filters, pagination, and view model.
-- `app/analytics/kubernetes/storage/routes.py` — full-page/fragment transport boundary.
+- `app/kubernetes/analytics/storage/evidence.py` — one query per signal and query error representation.
+- `app/kubernetes/analytics/storage/parsing.py` — label normalization and duplicate-series handling.
+- `app/kubernetes/analytics/storage/domain.py` — pressure, lifecycle, availability, summaries, and posture.
+- `app/kubernetes/analytics/storage/service.py` — materialization/context facade only.
+- `app/kubernetes/analytics/storage/presentation.py` — tab, scope, local filters, pagination, and view model.
+- `app/kubernetes/analytics/storage/routes.py` — full-page/fragment transport boundary.
 
 ## Accuracy Decisions
 

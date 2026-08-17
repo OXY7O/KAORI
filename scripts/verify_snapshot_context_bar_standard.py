@@ -23,9 +23,9 @@ def forbid(source: str, token: str, label: str, errors: list[str]) -> None:
 def main() -> int:
     errors: list[str] = []
     component = read('app/templates/components/snapshot_context_bar.html')
-    inventory_partial = read('app/templates/inventory/kubernetes/components/_data_freshness.html')
-    inventory_service = read('app/inventory/kubernetes/overview.py')
-    tls_partial = read('app/templates/governance/tls_certificates/partials/_snapshot_context.html')
+    inventory_partial = read('app/templates/kubernetes/inventory/components/_data_freshness.html')
+    inventory_service = read('app/kubernetes/inventory/overview.py')
+    tls_partial = read('app/templates/kubernetes/governance/tls_certificates/partials/_snapshot_context.html')
     contract = read('docs/design/components/SNAPSHOT_CONTEXT_BAR.md')
     pattern = read('docs/design/patterns/KUBERNETES_INVENTORY_OVERVIEW.md')
     quality_gate = read('scripts/quality_gate.sh')

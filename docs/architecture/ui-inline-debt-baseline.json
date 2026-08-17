@@ -5,17 +5,17 @@
       "inline_scripts": 1,
       "inline_styles": 0
     },
-    "app/templates/analytics/kubernetes/partials/_load_tracker.html": {
+    "app/templates/kubernetes/analytics/partials/_load_tracker.html": {
       "inline_event_handlers": 0,
       "inline_scripts": 1,
       "inline_styles": 0
     },
-    "app/templates/analytics/kubernetes/utilization/partials/_trend.html": {
+    "app/templates/kubernetes/analytics/utilization/partials/_trend.html": {
       "inline_event_handlers": 0,
       "inline_scripts": 1,
       "inline_styles": 0
     },
-    "app/templates/inventory/kubernetes/topology/index.html": {
+    "app/templates/kubernetes/inventory/topology/index.html": {
       "inline_event_handlers": 0,
       "inline_scripts": 1,
       "inline_styles": 0

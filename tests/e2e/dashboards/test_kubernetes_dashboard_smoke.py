@@ -7,8 +7,8 @@ from flask_login import UserMixin
 
 from app import create_app
 from app.bootstrap import presentation as bootstrap_presentation
-from app.dashboards.kubernetes import routes as dashboard_routes
-from app.dashboards.kubernetes.schema import DashboardOverview
+from app.kubernetes.dashboard import routes as dashboard_routes
+from app.kubernetes.dashboard.schema import DashboardOverview
 from app.extensions import login as login_extension
 from app.extensions import login_manager
 

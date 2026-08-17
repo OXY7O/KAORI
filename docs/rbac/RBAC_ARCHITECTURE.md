@@ -22,9 +22,9 @@ UI visibility is not an authorization boundary. A hidden menu, disabled button, 
 |---|---|
 | `app/models/rbac.py` | Central SQLAlchemy models for Role, Permission, and RolePermission. |
 | `app/models/user.py` | User-to-role relation, role display helpers, and runtime `has_permission()`. |
-| `app/rbac/defaults.py` | Canonical permission registry and protected default-role definitions. |
-| `app/rbac/service.py` | Seeding, slug normalization, dependency expansion, permission replacement, and delete blockers. |
-| `app/rbac/decorators.py` | `permission_required()` and `any_permission_required()` route guards. |
+| `app/access/rbac/defaults.py` | Canonical permission registry and protected default-role definitions. |
+| `app/access/rbac/service.py` | Seeding, slug normalization, dependency expansion, permission replacement, and delete blockers. |
+| `app/access/rbac/decorators.py` | `permission_required()` and `any_permission_required()` route guards. |
 | `app/access/roles/routes.py` / `app/access/permissions/routes.py` | Role and Permission Catalog HTTP lifecycle. |
 | `app/access/roles/forms.py` | CSRF-protected role create/update/delete forms. |
 | `app/templates/access/roles/` | Roles & Access list, detail, clone, and custom-role editor. |
@@ -141,7 +141,7 @@ kubernetes_configmaps.update -> kubernetes_configmaps.view
 settings.export_operational_activity -> activity_audit.view
 ```
 
-Dependency expansion is performed in `app/rbac/service.py` before replacing a custom role's assignments. It is a consistency rule, not a substitute for route guards.
+Dependency expansion is performed in `app/access/rbac/service.py` before replacing a custom role's assignments. It is a consistency rule, not a substitute for route guards.
 
 
 ### 6.1 Job orchestration permissions

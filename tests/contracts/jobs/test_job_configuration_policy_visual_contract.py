@@ -1,7 +1,7 @@
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
-DEFINITIONS = ROOT / 'app' / 'templates' / 'jobs' / 'configuration' / 'definitions'
+DEFINITIONS = ROOT / 'app' / 'templates' / 'platform_operations' / 'jobs' / 'configuration' / 'definitions'
 
 
 def _read(name: str) -> str:

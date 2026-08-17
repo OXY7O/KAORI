@@ -1,4 +1,4 @@
-from app.inventory.object_storage.presentation import (
+from app.storage.object_storage.inventory.presentation import (
     _native_type_label,
     _protection_posture,
     _provider_detail_sections,

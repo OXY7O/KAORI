@@ -6,8 +6,8 @@ def read(path: str) -> str:
 
 
 def test_capacity_allocation_items_own_resolved_tones_and_missing_evidence() -> None:
-    domain = read('app/analytics/kubernetes/capacity/domain.py')
-    template = read('app/templates/analytics/kubernetes/capacity/partials/_allocation.html')
+    domain = read('app/kubernetes/analytics/capacity/domain.py')
+    template = read('app/templates/kubernetes/analytics/capacity/partials/_allocation.html')
 
     assert "'tone': tone if available else 'unknown'" in domain
     assert "'available': available" in domain
@@ -17,7 +17,7 @@ def test_capacity_allocation_items_own_resolved_tones_and_missing_evidence() -> 
 
 
 def test_capacity_domain_preserves_initialisms_and_distinct_pressure_thresholds() -> None:
-    domain = read('app/analytics/kubernetes/capacity/domain.py')
+    domain = read('app/kubernetes/analytics/capacity/domain.py')
 
     assert "'cpu': 'CPU'" in domain
     assert "'Remaining Pod Slots'" in domain
@@ -29,8 +29,8 @@ def test_capacity_domain_preserves_initialisms_and_distinct_pressure_thresholds(
 
 
 def test_capacity_templates_use_backend_status_and_semantic_progress() -> None:
-    allocation = read('app/templates/analytics/kubernetes/capacity/partials/_allocation.html')
-    risk = read('app/templates/analytics/kubernetes/capacity/partials/_risk.html')
+    allocation = read('app/templates/kubernetes/analytics/capacity/partials/_allocation.html')
+    risk = read('app/templates/kubernetes/analytics/capacity/partials/_risk.html')
 
     assert "section['status']" in allocation
     assert 'progress_bar.pressure_tone' not in allocation
@@ -41,8 +41,8 @@ def test_capacity_templates_use_backend_status_and_semantic_progress() -> None:
 
 
 def test_capacity_pod_profile_has_no_duplicate_usage_row() -> None:
-    domain = read('app/analytics/kubernetes/capacity/domain.py')
-    allocation = read('app/templates/analytics/kubernetes/capacity/partials/_allocation.html')
+    domain = read('app/kubernetes/analytics/capacity/domain.py')
+    allocation = read('app/templates/kubernetes/analytics/capacity/partials/_allocation.html')
 
     assert "_allocation_item('Current Pods'" in domain
     assert "'Remaining Pod Slots'" in domain

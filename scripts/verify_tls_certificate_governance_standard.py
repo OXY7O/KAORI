@@ -16,21 +16,21 @@ def require(condition: bool, message: str, errors: list[str]) -> None:
 
 def main() -> int:
     errors: list[str] = []
-    collector = read('app/governance/tls_certificates/collector.py')
-    service = read('app/governance/tls_certificates/service.py')
-    mutation = read('app/governance/tls_certificates/mutation.py')
-    updates = read('app/governance/tls_certificates/updates.py')
-    routes = read('app/governance/tls_certificates/routes.py')
-    tasks = read('app/governance/tls_certificates/tasks.py')
-    presentation = read('app/governance/tls_certificates/job_presentation.py')
-    workspace = read('app/templates/governance/tls_certificates/partials/_page_workspace.html')
-    progress = read('app/templates/governance/tls_certificates/partials/_sync_progress_toast.html')
-    table = read('app/templates/governance/tls_certificates/partials/_table.html')
-    detail = read('app/templates/governance/tls_certificates/partials/_detail_content.html')
-    single_rotation = read('app/templates/kubernetes_operations/secrets/tls_rotate.html')
-    bulk_rotation = read('app/templates/kubernetes_operations/secrets/tls_rotation.html')
-    tls_routes = read('app/kubernetes_operations/secrets/tls_routes.py')
-    readme = read('app/governance/tls_certificates/README.md')
+    collector = read('app/kubernetes/governance/tls_certificates/collector.py')
+    service = read('app/kubernetes/governance/tls_certificates/service.py')
+    mutation = read('app/kubernetes/governance/tls_certificates/mutation.py')
+    updates = read('app/kubernetes/governance/tls_certificates/updates.py')
+    routes = read('app/kubernetes/governance/tls_certificates/routes.py')
+    tasks = read('app/kubernetes/governance/tls_certificates/tasks.py')
+    presentation = read('app/kubernetes/governance/tls_certificates/job_presentation.py')
+    workspace = read('app/templates/kubernetes/governance/tls_certificates/partials/_page_workspace.html')
+    progress = read('app/templates/kubernetes/governance/tls_certificates/partials/_sync_progress_toast.html')
+    table = read('app/templates/kubernetes/governance/tls_certificates/partials/_table.html')
+    detail = read('app/templates/kubernetes/governance/tls_certificates/partials/_detail_content.html')
+    single_rotation = read('app/templates/kubernetes/operations/secrets/tls_rotate.html')
+    bulk_rotation = read('app/templates/kubernetes/operations/secrets/tls_rotation.html')
+    tls_routes = read('app/kubernetes/operations/secrets/tls_routes.py')
+    readme = read('app/kubernetes/governance/tls_certificates/README.md')
     standard = read('docs/design/patterns/KUBERNETES_TLS_CERTIFICATE_GOVERNANCE.md')
     audit = read('docs/design/audits/KUBERNETES_TLS_NOTIFICATION_DELIVERY_AUDIT_2026_08.md')
     quality_gate = read('scripts/quality_gate.sh')
@@ -214,10 +214,10 @@ def main() -> int:
     )
 
     obsolete = (
-        'app/governance/tls_certificates/toast.py',
-        'app/templates/governance/tls_certificates/partials/_inventory_scope.html',
-        'app/templates/governance/tls_certificates/partials/_content.html',
-        'app/templates/governance/tls_certificates/partials/_sync_toast.html',
+        'app/kubernetes/governance/tls_certificates/toast.py',
+        'app/templates/kubernetes/governance/tls_certificates/partials/_inventory_scope.html',
+        'app/templates/kubernetes/governance/tls_certificates/partials/_content.html',
+        'app/templates/kubernetes/governance/tls_certificates/partials/_sync_toast.html',
     )
     for relative in obsolete:
         require(not (ROOT / relative).exists(), f'Legacy TLS file must remain removed: {relative}', errors)

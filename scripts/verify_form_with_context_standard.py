@@ -3,13 +3,13 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 
 FORM_CONTEXT_CONSUMERS = (
-    'app/templates/kubernetes_operations/configmaps/create.html',
-    'app/templates/kubernetes_operations/configmaps/update.html',
-    'app/templates/kubernetes_operations/configmaps/delete.html',
-    'app/templates/kubernetes_operations/secrets/create.html',
-    'app/templates/kubernetes_operations/secrets/replace.html',
-    'app/templates/kubernetes_operations/secrets/delete.html',
-    'app/templates/kubernetes_operations/secrets/reveal.html',
+    'app/templates/kubernetes/operations/configmaps/create.html',
+    'app/templates/kubernetes/operations/configmaps/update.html',
+    'app/templates/kubernetes/operations/configmaps/delete.html',
+    'app/templates/kubernetes/operations/secrets/create.html',
+    'app/templates/kubernetes/operations/secrets/replace.html',
+    'app/templates/kubernetes/operations/secrets/delete.html',
+    'app/templates/kubernetes/operations/secrets/reveal.html',
 )
 
 
@@ -78,7 +78,7 @@ def main() -> int:
             require(copied not in source, f'{relative} must not copy shared form-context geometry: {copied}', errors)
 
     references = (
-        'app/templates/cluster/add.html',
+        'app/templates/kubernetes/cluster/add.html',
         'app/templates/integrations/observability/metrics_source/instance_form.html',
         'app/templates/integrations/observability/alert_source/providers/alertmanager/instance_form.html',
     )

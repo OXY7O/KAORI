@@ -12,25 +12,25 @@ def _load_records_module():
     names = [
         'app',
         'app.analytics',
-        'app.analytics.kubernetes.alerts',
-        'app.analytics.kubernetes.alerts.contracts',
-        'app.analytics.kubernetes.alerts.metrics',
-        'app.analytics.kubernetes.alerts.ownership',
+        'app.kubernetes.analytics.alerts',
+        'app.kubernetes.analytics.alerts.contracts',
+        'app.kubernetes.analytics.alerts.metrics',
+        'app.kubernetes.analytics.alerts.ownership',
     ]
     previous = {name: sys.modules.get(name) for name in names}
     try:
         for package in names[:3]:
             sys.modules[package] = ModuleType(package)
 
-        contracts = ModuleType('app.analytics.kubernetes.alerts.contracts')
+        contracts = ModuleType('app.kubernetes.analytics.alerts.contracts')
         contracts.NormalizedAlert = dict
         sys.modules[contracts.__name__] = contracts
 
-        metrics = ModuleType('app.analytics.kubernetes.alerts.metrics')
+        metrics = ModuleType('app.kubernetes.analytics.alerts.metrics')
         metrics.get_metric_labels = lambda item: dict(item.get('metric') or {})
         sys.modules[metrics.__name__] = metrics
 
-        ownership = ModuleType('app.analytics.kubernetes.alerts.ownership')
+        ownership = ModuleType('app.kubernetes.analytics.alerts.ownership')
         ownership.extract_alert_contact_from_payload = lambda **_: ''
         ownership.extract_alert_owner_from_payload = lambda **_: 'Unassigned'
         ownership.extract_alert_runbook_from_payload = lambda **_: ''
@@ -38,7 +38,7 @@ def _load_records_module():
 
         spec = importlib.util.spec_from_file_location(
             'alerts_records_under_test',
-            ROOT / 'app/analytics/kubernetes/alerts/records.py',
+            ROOT / 'app/kubernetes/analytics/alerts/records.py',
         )
         assert spec and spec.loader
         module = importlib.util.module_from_spec(spec)

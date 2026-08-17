@@ -6,19 +6,19 @@ from types import SimpleNamespace
 import pytest
 from flask import Flask
 
-from app.analytics.kubernetes import tasks
-from app.analytics.kubernetes.common import context as common_context
-from app.analytics.kubernetes.forecast import presentation as forecast_presentation
-from app.analytics.kubernetes.materialization import requests as materialization_requests
-from app.analytics.kubernetes.materialization.catalog import canonical_parameters, get_dataset
-from app.analytics.kubernetes.materialization.presentation import pending_page_context
-from app.analytics.kubernetes.materialization.requests import MaterializedRequest
-from app.analytics.kubernetes.materialization.service import SnapshotResult, store_snapshot
+from app.kubernetes.analytics import tasks
+from app.kubernetes.analytics.common import context as common_context
+from app.kubernetes.analytics.forecast import presentation as forecast_presentation
+from app.kubernetes.analytics.materialization import requests as materialization_requests
+from app.kubernetes.analytics.materialization.catalog import canonical_parameters, get_dataset
+from app.kubernetes.analytics.materialization.presentation import pending_page_context
+from app.kubernetes.analytics.materialization.requests import MaterializedRequest
+from app.kubernetes.analytics.materialization.service import SnapshotResult, store_snapshot
 from app.integrations.observability.metrics_source.capabilities import PROVIDER_CAPABILITY_KEYS
 from app.integrations.observability.metrics_source.capabilities import definition as metrics_source_capability_definition
 from app.integrations.observability.metrics_source.query_profiles.audit import PromQLProfileAuditor
-from app.jobs.definitions.forecast_refresh import FORECAST_REFRESH_DEFINITION
-from app.metrics_sources.presentation import _RESOLUTION_CONSUMERS, _module_readiness_rows
+from app.platform_operations.jobs.definitions.forecast_refresh import FORECAST_REFRESH_DEFINITION
+from app.integrations.observability.metrics_source.application.presentation import _RESOLUTION_CONSUMERS, _module_readiness_rows
 
 
 def test_snapshot_parameters_exclude_view_only_filters() -> None:
@@ -129,14 +129,14 @@ def test_storage_and_workload_capability_contracts_match_worker_services() -> No
 def test_metrics_source_provider_readiness_is_independent_from_kubernetes_query_gaps() -> None:
     persisted = PromQLProfileAuditor._module_readiness(
         {
-            'app.analytics.kubernetes.storage': {
+            'app.kubernetes.analytics.storage': {
                 'ready_count': 0,
                 'query_count': 4,
                 'blocked_count': 4,
             }
         }
     )
-    assert persisted['app.analytics.kubernetes.storage']['status'] == 'degraded'
+    assert persisted['app.kubernetes.analytics.storage']['status'] == 'degraded'
 
     instance = SimpleNamespace(
         module_readiness=persisted,

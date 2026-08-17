@@ -1,0 +1,63 @@
+{% import "components/content_tabs.html" as content_tabs %}
+{% set consumer_tabs = [
+    ('storage', 'Storage Leaders', 'hard-drive'),
+    ('activity', 'Request Activity', 'activity'),
+    ('records', 'Consumer Records', 'table-2'),
+    ('evidence', 'Evidence', 'list-checks')
+] %}
+<section id="object-storage-top-consumers-workspace"
+         data-analytics-tabset
+         data-analytics-tabset-id="object-storage-top-consumers-content"
+         data-default-tab="storage"
+         class="{{ analysis_surface.snapshot_shell_classes() }}">
+    <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+        <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+            <div class="flex min-w-0 items-start gap-3">
+                <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="scan-search" class="h-5 w-5"></i></span>
+                <div class="min-w-0">
+                    <h2 class="text-lg font-semibold text-content-primary">Top Consumers Analysis Workspace</h2>
+                    <p class="mt-1 text-sm leading-6 text-content-secondary">Review storage concentration, request activity, detailed bucket records, and evidence coverage as separate ownership questions.</p>
+                </div>
+            </div>
+            <div class="flex flex-wrap items-center gap-2">
+                {{ table_label.metadata_label(system.name|default('Selected System'), 'server', size='compact') }}
+                {{ table_label.metadata_label(selected_time_range|upper ~ ' Window', 'clock-3', size='compact') }}
+            </div>
+        </div>
+    </header>
+    {{ content_tabs.render_buttons('object-storage-top-consumers-content', consumer_tabs, 'Top Consumers Analysis Workspace', embedded=true, data_namespace='analytics', active_key='storage', show_badges=false, nowrap=true) }}
+    <div class="p-4 sm:p-5">
+        <div id="object-storage-top-consumers-content-panel-storage"
+             role="tabpanel"
+             aria-labelledby="object-storage-top-consumers-content-tab-storage"
+             data-analytics-tab-panel="storage"
+             class="space-y-4">
+            {% include "storage/object_storage/analytics/partials/_top_consumers_storage.html" %}
+        </div>
+        <div id="object-storage-top-consumers-content-panel-activity"
+             role="tabpanel"
+             aria-labelledby="object-storage-top-consumers-content-tab-activity"
+             data-analytics-tab-panel="activity"
+             hidden
+             class="space-y-4">
+            {% include "storage/object_storage/analytics/partials/_top_consumers_activity.html" %}
+        </div>
+        <div id="object-storage-top-consumers-content-panel-records"
+             role="tabpanel"
+             aria-labelledby="object-storage-top-consumers-content-tab-records"
+             data-analytics-tab-panel="records"
+             hidden
+             class="space-y-4">
+            {% include "storage/object_storage/analytics/partials/_bucket_table.html" %}
+        </div>
+        <div id="object-storage-top-consumers-content-panel-evidence"
+             role="tabpanel"
+             aria-labelledby="object-storage-top-consumers-content-tab-evidence"
+             data-analytics-tab-panel="evidence"
+             hidden
+             class="space-y-4">
+            {% include "storage/object_storage/analytics/partials/_metrics_readiness.html" %}
+            {% include "storage/object_storage/analytics/partials/_evidence_boundary.html" %}
+        </div>
+    </div>
+</section>

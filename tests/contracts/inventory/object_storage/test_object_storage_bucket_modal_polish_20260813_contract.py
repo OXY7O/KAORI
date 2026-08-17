@@ -6,7 +6,7 @@ def read(path: str) -> str:
 
 
 def test_bucket_detail_modal_uses_wide_responsive_surface_without_nested_key_value_grids() -> None:
-    template = read('app/templates/inventory/object_storage/buckets/partials/_table_content.html')
+    template = read('app/templates/storage/object_storage/inventory/buckets/partials/_table_content.html')
     assert 'max-w-[88rem]' in template
     assert "side_drawer.section('Asset Context'" in template
     assert "side_drawer.section('Provider Context'" in template
@@ -15,14 +15,14 @@ def test_bucket_detail_modal_uses_wide_responsive_surface_without_nested_key_val
 
 
 def test_provider_configuration_uses_compact_evidence_tiles() -> None:
-    template = read('app/templates/inventory/object_storage/buckets/partials/_table_content.html')
+    template = read('app/templates/storage/object_storage/inventory/buckets/partials/_table_content.html')
     assert 'sm:grid-cols-2 xl:grid-cols-4' in template
     assert 'rounded-lg border border-outline-subtle bg-surface-elevated' in template
     assert "detail_row('API Endpoint', asset.endpoint, break_all=true)" in template
 
 
 def test_bucket_modal_adds_kaori_operational_reading_with_semantic_guidance() -> None:
-    template = read('app/templates/inventory/object_storage/buckets/partials/_table_content.html')
+    template = read('app/templates/storage/object_storage/inventory/buckets/partials/_table_content.html')
 
     assert 'Operational Reading' in template
     assert 'components/operational_section_card.html' in template

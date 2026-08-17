@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
-from app.dashboards.kubernetes.schema import ReportingSnapshot
-from app.dashboards.kubernetes.sections.freshness import build_data_freshness
+from app.kubernetes.dashboard.schema import ReportingSnapshot
+from app.kubernetes.dashboard.sections.freshness import build_data_freshness
 
 
 def test_selected_cluster_freshness_uses_specific_status_labels() -> None:

@@ -9,7 +9,7 @@ def read(relative_path: str) -> str:
 
 def test_type_safety_verifier_owns_canonical_forecast_recommendation_boundary() -> None:
     verifier = read('scripts/verify_pre_release_type_safety.py')
-    forecast = read('app/analytics/kubernetes/forecast/presentation.py')
+    forecast = read('app/kubernetes/analytics/forecast/presentation.py')
 
     assert "'actionable_recommendations = ['" in verifier
     assert 'forecast recommendation normalization' in verifier

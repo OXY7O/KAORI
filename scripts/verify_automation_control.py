@@ -17,17 +17,17 @@ def require(condition: bool, message: str, errors: list[str]) -> None:
 
 def main() -> int:
     errors: list[str] = []
-    routes = read('app/automation_control/routes.py')
-    presentation = read('app/automation_control/presentation.py')
-    overview_logic = read('app/automation_control/overview.py')
-    candidates = read('app/automation_control/candidates.py')
-    automation_tasks = read('app/automation_control/tasks.py')
+    routes = read('app/intelligence/automation_control/routes.py')
+    presentation = read('app/intelligence/automation_control/presentation.py')
+    overview_logic = read('app/intelligence/automation_control/overview.py')
+    candidates = read('app/intelligence/automation_control/candidates.py')
+    automation_tasks = read('app/intelligence/automation_control/tasks.py')
     workflow = read('app/intelligence/workflow.py')
-    resolver_tasks = read('app/resolver/tasks.py')
-    resolver_service = read('app/resolver/service.py')
-    resolver_operations = read('app/resolver/operations.py')
-    resolver_orchestration = read('app/resolver/orchestration.py')
-    resolver_registry = read('app/resolver/registry.py')
+    resolver_tasks = read('app/intelligence/resolver/tasks.py')
+    resolver_service = read('app/intelligence/resolver/service.py')
+    resolver_operations = read('app/intelligence/resolver/operations.py')
+    resolver_orchestration = read('app/intelligence/resolver/orchestration.py')
+    resolver_registry = read('app/intelligence/resolver/registry.py')
     resolver_adapter = read(
         'app/integrations/orchestration/container_orchestrator/adapters/kubernetes_api/resolver_adapter.py'
     )
@@ -40,13 +40,13 @@ def main() -> int:
     decisions = read('app/templates/intelligence/partials/automation_control/_decisions.html')
     operations = read('app/templates/intelligence/partials/automation_control/_operations.html')
     readiness = read('app/templates/intelligence/partials/automation_control/_readiness.html')
-    notification_forms = read('app/notification_channels/forms.py')
-    notification_service = read('app/notification_channels/service.py')
-    decision_notifications = read('app/automation_control/notifications.py')
-    execution_notifications = read('app/resolver/notifications.py')
-    system_runbook_catalog = read('app/knowledge/system_catalog.py')
-    knowledge_service = read('app/knowledge/service.py')
-    knowledge_matching = read('app/knowledge/matching.py')
+    notification_forms = read('app/integrations/delivery/notification_channels/forms.py')
+    notification_service = read('app/integrations/delivery/notification_channels/service.py')
+    decision_notifications = read('app/intelligence/automation_control/notifications.py')
+    execution_notifications = read('app/intelligence/resolver/notifications.py')
+    system_runbook_catalog = read('app/intelligence/knowledge/system_catalog.py')
+    knowledge_service = read('app/intelligence/knowledge/service.py')
+    knowledge_matching = read('app/intelligence/knowledge/matching.py')
     resolver_bootstrap = read('app/integrations/resolver_bootstrap.py')
 
     # Default-deny execution boundary is explicit and independent from governance writes.
@@ -88,12 +88,13 @@ def main() -> int:
     )
     require('automation-candidate-materialization' in config, 'Candidate materializer must be scheduled', errors)
     require(
-        'minimum_outcome=PolicyOutcome(revision.approval_policy)' in read('app/knowledge/candidate_review.py'),
+        'minimum_outcome=PolicyOutcome(revision.approval_policy)'
+        in read('app/intelligence/knowledge/candidate_review.py'),
         'Promotion policy must derive from immutable runbook policy',
         errors,
     )
     require(
-        'actor_can_execute' not in read('app/knowledge/candidate_review.py'),
+        'actor_can_execute' not in read('app/intelligence/knowledge/candidate_review.py'),
         'Reviewer execute permission must not determine decision policy',
         errors,
     )
@@ -156,7 +157,7 @@ def main() -> int:
     require("'dry_run':" in resolver_service, 'Server-side dry-run evidence must be persisted', errors)
     require('def verify_resolver_execution(' in resolver_service, 'Post-action verification service is missing', errors)
     require(
-        "name='app.resolver.tasks.verify_authorized_resolution'" in resolver_tasks,
+        "name='app.intelligence.resolver.tasks.verify_authorized_resolution'" in resolver_tasks,
         'Post-action verification task is missing',
         errors,
     )

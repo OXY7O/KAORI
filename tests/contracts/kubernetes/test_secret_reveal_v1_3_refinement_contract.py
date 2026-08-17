@@ -8,7 +8,7 @@ def read(relative: str) -> str:
 
 
 def test_secret_reveal_readiness_exposes_cluster_credential() -> None:
-    policy = read('app/kubernetes_operations/secrets/reveal_policy.py')
+    policy = read('app/kubernetes/operations/secrets/reveal_policy.py')
     service = read('app/platform_operations/kubernetes/secret_reveal/service.py')
     template = read('app/templates/platform_operations/kubernetes/secret_reveal/_cluster_workspace.html')
 
@@ -21,7 +21,7 @@ def test_secret_reveal_readiness_exposes_cluster_credential() -> None:
 
 
 def test_secret_reveal_namespace_source_is_snapshot_backed_and_tri_state() -> None:
-    policy = read('app/kubernetes_operations/secrets/reveal_policy.py')
+    policy = read('app/kubernetes/operations/secrets/reveal_policy.py')
     service = read('app/platform_operations/kubernetes/secret_reveal/service.py')
     section = read('app/templates/platform_operations/kubernetes/secret_reveal/_namespace_policy_section.html')
     table = read('app/templates/platform_operations/kubernetes/secret_reveal/_namespace_policy_table_content.html')
@@ -51,7 +51,7 @@ def test_secret_reveal_filtering_does_not_request_live_refresh() -> None:
 
 
 def test_secret_reveal_policy_mutation_keeps_fresh_live_guardrail() -> None:
-    policy = read('app/kubernetes_operations/secrets/reveal_policy.py')
+    policy = read('app/kubernetes/operations/secrets/reveal_policy.py')
     table = read('app/templates/platform_operations/kubernetes/secret_reveal/_namespace_policy_table_content.html')
 
     assert 'verify_live_namespace(cluster, normalized_namespace)' in policy

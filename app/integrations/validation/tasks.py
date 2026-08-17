@@ -18,14 +18,14 @@ from app.integrations.validation.state import (
     release_validation_job,
     store_validation_metadata,
 )
-from app.jobs.service import (
+from app.models.integration import IntegrationBinding
+from app.platform_operations.jobs.service import (
     get_job_by_task_id,
     mark_job_running,
     subscriber_user_ids,
     update_job_progress,
 )
-from app.models.integration import IntegrationBinding
-from app.notifications.service import record_operational_activity
+from app.platform_operations.notifications.service import record_operational_activity
 
 logger = logging.getLogger(__name__)
 

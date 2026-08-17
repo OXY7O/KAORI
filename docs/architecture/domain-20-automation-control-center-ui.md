@@ -8,7 +8,7 @@ Route: `GET /intelligence/automation-control`
 
 Navigation: **Intelligence → Automation Control**
 
-Ownership boundary: `app/automation_control/` remains an application orchestration layer. Knowledge, Intelligence, Resolver, Notification Channels, and Integration domains do not import it. Automation Control may consume their public read/service contracts without creating reverse dependencies.
+Ownership boundary: `app/intelligence/automation_control/` remains an application orchestration layer. Knowledge, Intelligence, Resolver, Notification Channels, and Integration domains do not import it. Automation Control may consume their public read/service contracts without creating reverse dependencies.
 
 ## Workspace structure
 

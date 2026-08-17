@@ -5,10 +5,10 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
 ROUTE_FILES = (
-    ROOT / 'app/kubernetes_operations/configmaps/routes.py',
-    ROOT / 'app/kubernetes_operations/secrets/crud_routes.py',
-    ROOT / 'app/kubernetes_operations/secrets/reveal_routes.py',
-    ROOT / 'app/kubernetes_operations/secrets/tls_routes.py',
+    ROOT / 'app/kubernetes/operations/configmaps/routes.py',
+    ROOT / 'app/kubernetes/operations/secrets/crud_routes.py',
+    ROOT / 'app/kubernetes/operations/secrets/reveal_routes.py',
+    ROOT / 'app/kubernetes/operations/secrets/tls_routes.py',
 )
 
 
@@ -22,7 +22,7 @@ def _decorator_name(node: ast.expr) -> str:
 
 
 def test_cluster_readiness_is_never_a_blueprint_before_request_shortcut() -> None:
-    root_routes = (ROOT / 'app/kubernetes_operations/routes.py').read_text(encoding='utf-8')
+    root_routes = (ROOT / 'app/kubernetes/operations/routes.py').read_text(encoding='utf-8')
 
     assert '.before_request' not in root_routes
     assert 'has_registered_clusters' not in root_routes
@@ -51,9 +51,9 @@ def test_protected_operations_authorize_before_cluster_prerequisite() -> None:
 
 
 def test_secret_security_boundaries_keep_sensitive_values_out_of_persistence_and_reveal() -> None:
-    create_service = (ROOT / 'app/kubernetes_operations/secrets/create_service.py').read_text(encoding='utf-8')
-    replace_service = (ROOT / 'app/kubernetes_operations/secrets/replace_service.py').read_text(encoding='utf-8')
-    reveal_service = (ROOT / 'app/kubernetes_operations/secrets/reveal_service.py').read_text(encoding='utf-8')
+    create_service = (ROOT / 'app/kubernetes/operations/secrets/create_service.py').read_text(encoding='utf-8')
+    replace_service = (ROOT / 'app/kubernetes/operations/secrets/replace_service.py').read_text(encoding='utf-8')
+    reveal_service = (ROOT / 'app/kubernetes/operations/secrets/reveal_service.py').read_text(encoding='utf-8')
 
     assert 'scrub_secret_payload(created)' in create_service
     assert 'scrub_mapping_values(encoded_data)' in replace_service

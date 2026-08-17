@@ -57,8 +57,8 @@ def test_validation_has_one_provider_job_loading_surface_but_registry_keeps_own_
 
 
 def test_observability_edit_success_queues_registry_toast_even_for_htmx_redirect() -> None:
-    metrics_source = read('app/metrics_sources/edit_web.py')
-    alertmanager = read('app/alert_sources/providers/alertmanager/edit_web.py')
+    metrics_source = read('app/integrations/observability/metrics_source/application/edit_web.py')
+    alertmanager = read('app/integrations/observability/alert_source/providers/alertmanager/application/edit_web.py')
 
     p_success = metrics_source.split("event_type='metrics_source_updated'", 1)[1].split('if is_htmx:', 1)[0]
     a_success = alertmanager.split("event_type='alertmanager_instance_updated'", 1)[1].split('if is_htmx:', 1)[0]

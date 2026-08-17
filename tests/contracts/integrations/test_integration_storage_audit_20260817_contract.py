@@ -26,7 +26,7 @@ def test_storage_domain_keeps_owner_and_observability_source_boundaries_explicit
 
 def test_storage_asset_owner_projection_uses_metrics_provider_registry() -> None:
     projection = read('app/integrations/asset_owner_sources.py')
-    coverage = read('app/object_storage/providers/minio/presentation.py')
+    coverage = read('app/integrations/storage/object_storage/providers/minio/application/presentation.py')
     coverage_template = read(
         'app/templates/integrations/storage/object_storage/providers/minio/partials/_coverage_content.html'
     )
@@ -44,8 +44,8 @@ def test_storage_asset_owner_projection_uses_metrics_provider_registry() -> None
 
 def test_minio_registration_test_does_not_claim_product_identity_authority() -> None:
     form = read('app/templates/integrations/storage/object_storage/providers/minio/instance_form.html')
-    routes = read('app/object_storage/providers/minio/routes.py')
-    service = read('app/object_storage/providers/minio/service.py')
+    routes = read('app/integrations/storage/object_storage/providers/minio/application/routes.py')
+    service = read('app/integrations/storage/object_storage/providers/minio/application/service.py')
 
     assert 'Verify S3 API reachability, credential access, and read-only bucket discovery' in form
     assert 'Verify MinIO identity and API reachability' not in form

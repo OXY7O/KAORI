@@ -179,7 +179,7 @@ app/integrations/validation/
 ├── tasks.py                 # full, binding, and lightweight runtime jobs
 └── web.py                   # canonical job enqueue and polling boundary
 
-app/jobs/
+app/platform_operations/jobs/
 ├── service.py               # PostgreSQL lifecycle, deduplication, quotas, subscribers
 ├── dispatcher.py            # provider-neutral job dispatch
 ├── execution.py             # cooperative progress and cancellation
@@ -187,7 +187,7 @@ app/jobs/
 
 app/integrations/runtime/kubernetes_adapter.py
 app/integrations/observability/metrics_source/adapter.py
-app/alert_sources/providers/alertmanager/runtime_adapter.py
+app/integrations/observability/alert_source/providers/alertmanager/application/runtime_adapter.py
 ```
 
 Kubernetes, Metrics Source, and Alertmanager implement the provider-neutral runtime contract. Provider-specific probes remain inside their owning domains.

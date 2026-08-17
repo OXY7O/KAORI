@@ -39,7 +39,7 @@ def test_kubernetes_administration_posture_is_factual_not_hardcoded_available() 
 
 
 def test_secret_reveal_readiness_fails_closed_when_canonical_connection_is_missing() -> None:
-    policy = read('app/kubernetes_operations/secrets/reveal_policy.py')
+    policy = read('app/kubernetes/operations/secrets/reveal_policy.py')
 
     readiness = policy.split('def cluster_reveal_readiness_evidence(', 1)[1].split('def cluster_reveal_readiness(', 1)[
         0

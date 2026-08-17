@@ -13,15 +13,15 @@ EXPECTED_HERO_DESCRIPTION = 'Operate and govern infrastructure through unified v
 EXPECTED_GROUP_KEYS = ('visibility', 'operations', 'assurance', 'platform')
 UNIVERSAL_TARGET = ('Settings', None, 'settings.account')
 FORBIDDEN_WELCOME_IMPORT_FRAGMENTS = (
-    'app.alert_sources.providers.alertmanager',
+    'app.integrations.observability.alert_source.providers.alertmanager.application',
     'app.analytics',
-    'app.cluster',
+    'app.kubernetes.cluster',
     'app.extensions',
     'app.integrations',
     'app.inventory',
     'app.kubernetes',
     'app.models',
-    'app.metrics_sources',
+    'app.integrations.observability.metrics_source.application',
     'sqlalchemy',
 )
 
@@ -46,7 +46,7 @@ def _literal_assignment(path: str, name: str) -> Any:
 
 
 def _default_permissions() -> set[str]:
-    document = yaml.safe_load(read('app/definitions/catalogs/rbac/access.yaml'))
+    document = yaml.safe_load(read('app/definitions/catalogs/access/rbac/access.yaml'))
     return {str(item['key']) for item in document['permissions']}
 
 

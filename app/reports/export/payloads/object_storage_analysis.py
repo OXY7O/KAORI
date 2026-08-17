@@ -5,11 +5,11 @@ from typing import Any
 
 from werkzeug.datastructures import MultiDict
 
-from app.analytics.object_storage.service import get_object_storage_analytics_context
 from app.extensions.db import db
 from app.models.object_storage import ObjectStorageSystem
 from app.models.report import Report
 from app.reports.catalog import require_object_storage_system, validate_report_instance
+from app.storage.object_storage.analytics.service import get_object_storage_analytics_context
 
 
 def _blocker_detail(context: dict[str, Any]) -> str:

@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-MODULE_PATH = Path(__file__).resolve().parents[2] / 'app' / 'kubernetes_operations' / 'operation_flow.py'
+MODULE_PATH = Path(__file__).resolve().parents[2] / 'app' / 'kubernetes' / 'operations' / 'operation_flow.py'
 SPEC = importlib.util.spec_from_file_location('kaori_operation_flow', MODULE_PATH)
 assert SPEC and SPEC.loader
 MODULE = importlib.util.module_from_spec(SPEC)

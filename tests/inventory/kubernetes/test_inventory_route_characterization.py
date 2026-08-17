@@ -11,7 +11,7 @@ from app import create_app
 from app.bootstrap import presentation as bootstrap_presentation
 from app.extensions import login as login_extension
 from app.extensions import login_manager
-from app.inventory.kubernetes import routes as inventory_routes
+from app.kubernetes.inventory import routes as inventory_routes
 
 
 class InventoryRouteUser(UserMixin):
@@ -157,7 +157,7 @@ def test_inventory_resource_template_registry_targets_existing_kubernetes_templa
     template_root = Path(inventory_routes.__file__).resolve().parents[2] / 'templates' / 'inventory' / 'kubernetes'
     resources = ('nodes', 'namespaces', 'configuration', 'workloads', 'pods', 'services', 'ingresses', 'storage')
 
-    assert "f'inventory/kubernetes/{resource}/index.html'" in routes
+    assert "f'kubernetes/inventory/{resource}/index.html'" in routes
     for resource in resources:
         assert (template_root / resource / 'index.html').is_file(), resource
         assert (template_root / resource / 'partials' / '_page_workspace.html').is_file(), resource

@@ -1,0 +1,93 @@
+{% import "components/table.html" as table_ui %}
+{% import "components/table_registry.html" as registry_ui %}
+<section id="storage-inventory-card" class="{{ table_ui.block_classes() }}">
+    {{ table_ui.inventory_block_header('database',
+        'Storage Inventory',
+        'Committed Kubernetes storage provisioning, capacity, access, binding, and lifecycle evidence collected from connected clusters.',
+        'storage-table-loading',
+        'Refreshing Storage Inventory',
+        url_for('integrations.kubernetes') ,
+    'Open Cluster List'
+    ) }}
+    <div class="{{ table_ui.inventory_filter_bar_classes() }}">
+        {% if selected_cluster_id or selected_namespace or selected_type or selected_status or search %}
+            <div class="mb-3 flex justify-end">
+                {{ registry_ui.clear_filters_action(
+                    url_for('inventory.storage', per_page=pagination.per_page),
+                    table_ui.action_classes(),
+                    hx_get=url_for('inventory.storage', per_page=pagination.per_page, partial_mode='page_workspace'),
+                    target='#storage-page-workspace',
+                    indicator='#storage-table-loading'
+                ) }}
+            </div>
+        {% endif %}
+        <form hx-get="{{ url_for('inventory.storage') }}"
+              hx-target="#storage-page-workspace"
+              hx-swap="outerHTML"
+              hx-indicator="#storage-table-loading"
+              hx-trigger="change, keyup changed delay:500ms from:find input[name='search']"
+              aria-label="Storage inventory filters"
+              class="grid gap-4 md:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,0.9fr)_minmax(0,0.9fr)_minmax(16rem,1.35fr)] lg:items-end">
+            <input type="hidden" name="page" value="1">
+            <input type="hidden" name="per_page" value="{{ pagination.per_page }}">
+            <input type="hidden" name="partial_mode" value="page_workspace">
+            <div>
+                <label for="storage-cluster-filter"
+                       class="{{ table_ui.filter_label_classes() }}">Cluster</label>
+                <select id="storage-cluster-filter"
+                        name="cluster_id"
+                        class="{{ table_ui.filter_select_classes() }}">
+                    <option value="">All Clusters</option>
+                    {% for cluster in clusters %}
+                        <option value="{{ cluster.id }}"
+                                {% if selected_cluster_id == cluster.id|string or selected_cluster_id == cluster.id %}selected{% endif %}>{{ cluster.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="storage-namespace-filter"
+                       class="{{ table_ui.filter_label_classes() }}">Namespace</label>
+                <select id="storage-namespace-filter"
+                        name="namespace"
+                        class="{{ table_ui.filter_select_classes() }}">
+                    <option value="">All Namespaces</option>
+                    {% for ns in inventory.namespaces %}
+                        <option value="{{ ns }}" {% if selected_namespace == ns %}selected{% endif %}>{{ ns }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="storage-type-filter"
+                       class="{{ table_ui.filter_label_classes() }}">Storage Type</label>
+                <select id="storage-type-filter"
+                        name="type"
+                        class="{{ table_ui.filter_select_classes() }}">
+                    <option value="">All Types</option>
+                    {% for type_name in inventory.storage_filter_types %}
+                        <option value="{{ type_name }}"
+                                {% if selected_type == type_name %}selected{% endif %}>{{ type_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="storage-lifecycle-filter"
+                       class="{{ table_ui.filter_label_classes() }}">Lifecycle</label>
+                <select id="storage-lifecycle-filter"
+                        name="status"
+                        class="{{ table_ui.filter_select_classes() }}">
+                    <option value="">All Lifecycle States</option>
+                    {% for option in inventory.storage_filter_statuses %}
+                        <option value="{{ option.value }}"
+                                {% if selected_status == option.value %}selected{% endif %}>{{ option.label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="storage-search"
+                       class="{{ table_ui.filter_label_classes() }} whitespace-nowrap">Search Storage Objects</label>
+                {{ table_ui.search_field('search', search, 'Search object, namespace, class, provisioner, source, or binding', id='storage-search') }}
+            </div>
+        </form>
+    </div>
+    <div id="storage-table-content">{% include "kubernetes/inventory/storage/partials/_table_content.html" %}</div>
+</section>

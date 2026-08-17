@@ -153,9 +153,9 @@ class PromQLProfileAuditor:
         feature_contract_summary = self._feature_contract_summary(feature_contracts)
         module_readiness = self._module_readiness(domain_summary)
         core_domains = {
-            'app.metrics_sources',
-            'app.analytics.kubernetes.capacity',
-            'app.analytics.kubernetes.utilization',
+            'app.integrations.observability.metrics_source.application',
+            'app.kubernetes.analytics.capacity',
+            'app.kubernetes.analytics.utilization',
         }
         critical_blocked = sum(
             item['blocked_count'] for domain, item in domain_summary.items() if domain in core_domains
@@ -681,13 +681,13 @@ class PromQLProfileAuditor:
     @staticmethod
     def _module_readiness(domain_summary: dict[str, dict[str, int]]) -> dict[str, dict[str, object]]:
         labels = {
-            'app.metrics_sources': 'Kubernetes Overview',
-            'app.analytics.kubernetes.utilization': 'Utilization Analytics',
-            'app.analytics.kubernetes.capacity': 'Capacity Analytics',
-            'app.analytics.kubernetes.storage': 'Storage Analytics',
-            'app.analytics.kubernetes.workload': 'Workload Analytics',
-            'app.analytics.kubernetes.forecast': 'Forecast',
-            'app.analytics.kubernetes.top_consumers': 'Top Consumers',
+            'app.integrations.observability.metrics_source.application': 'Kubernetes Overview',
+            'app.kubernetes.analytics.utilization': 'Utilization Analytics',
+            'app.kubernetes.analytics.capacity': 'Capacity Analytics',
+            'app.kubernetes.analytics.storage': 'Storage Analytics',
+            'app.kubernetes.analytics.workload': 'Workload Analytics',
+            'app.kubernetes.analytics.forecast': 'Forecast',
+            'app.kubernetes.analytics.top_consumers': 'Top Consumers',
         }
         output: dict[str, dict[str, object]] = {}
         for domain, values in domain_summary.items():

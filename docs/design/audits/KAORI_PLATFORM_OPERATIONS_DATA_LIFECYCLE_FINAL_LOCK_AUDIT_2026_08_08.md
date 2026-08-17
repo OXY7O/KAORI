@@ -2,7 +2,7 @@
 
 ## Decision
 
-Data Lifecycle is moved from Settings to Platform Operations as an ownership refactor, not a navigation-only change. The archive-first engine remains shared under `app/retention`, while HTTP orchestration and UI ownership move to a dedicated Platform Operations package. Jobs & Executions remains the canonical runtime evidence surface.
+Data Lifecycle is moved from Settings to Platform Operations as an ownership refactor, not a navigation-only change. The archive-first engine remains shared under `app/platform_operations/data_lifecycle/retention`, while HTTP orchestration and UI ownership move to a dedicated Platform Operations package. Jobs & Executions remains the canonical runtime evidence surface.
 
 ## Audit Findings Resolved
 
@@ -21,7 +21,7 @@ Data Lifecycle is moved from Settings to Platform Operations as an ownership ref
 - Legacy Settings URL is redirect-only compatibility.
 - No duplicate lifecycle templates remain under `app/templates/settings/`.
 - New Platform Operations package owns route/service/presentation boundaries.
-- Shared `app/retention/` engine remains reusable by CLI and workers.
+- Shared `app/platform_operations/data_lifecycle/retention/` engine remains reusable by CLI and workers.
 - No direct `.delay()`/`.apply_async()` execution path was introduced.
 - Archive-first checksum verification still gates cleanup.
 - Role mappings are preserved by permission-row rename migration.

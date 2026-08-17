@@ -73,8 +73,8 @@ The following patterns already align with the standard:
 Replace manual compact label markup with the canonical shared component in:
 
 ```text
-app/templates/analytics/kubernetes/overview/partials/_top_consumers_snapshot.html
-app/templates/analytics/kubernetes/top_consumers/partials/_summary.html
+app/templates/kubernetes/analytics/overview/partials/_top_consumers_snapshot.html
+app/templates/kubernetes/analytics/top_consumers/partials/_summary.html
 ```
 
 Current issues:
@@ -95,15 +95,15 @@ Target:
 Remove icons from count-only metadata unless the count represents a distinct external source or scope. Priority templates:
 
 ```text
-app/templates/analytics/kubernetes/overview/partials/_top_consumers_snapshot.html
-app/templates/analytics/kubernetes/overview/partials/_workload_snapshot.html
-app/templates/analytics/kubernetes/overview/partials/_alerts_snapshot.html
-app/templates/analytics/kubernetes/overview/partials/_forecast_snapshot.html
-app/templates/analytics/kubernetes/overview/partials/_recommendations.html
-app/templates/analytics/kubernetes/alerts/partials/_ownership_summary.html
-app/templates/analytics/kubernetes/alerts/partials/_incident_readiness.html
-app/templates/analytics/kubernetes/capacity/partials/_risk.html
-app/templates/analytics/kubernetes/workload/partials/_tenant_quota_section.html
+app/templates/kubernetes/analytics/overview/partials/_top_consumers_snapshot.html
+app/templates/kubernetes/analytics/overview/partials/_workload_snapshot.html
+app/templates/kubernetes/analytics/overview/partials/_alerts_snapshot.html
+app/templates/kubernetes/analytics/overview/partials/_forecast_snapshot.html
+app/templates/kubernetes/analytics/overview/partials/_recommendations.html
+app/templates/kubernetes/analytics/alerts/partials/_ownership_summary.html
+app/templates/kubernetes/analytics/alerts/partials/_incident_readiness.html
+app/templates/kubernetes/analytics/capacity/partials/_risk.html
+app/templates/kubernetes/analytics/workload/partials/_tenant_quota_section.html
 ```
 
 Examples that should normally be iconless:
@@ -122,14 +122,14 @@ Examples that should normally be iconless:
 Dense record lists should prefer `status_indicator_label(...)` for repeated operational states. Review:
 
 ```text
-app/templates/analytics/kubernetes/alerts/partials/_alerts_table_row.html
-app/templates/analytics/kubernetes/alerts/partials/_anomalies_table_row.html
-app/templates/analytics/kubernetes/workload/partials/_workload_mapping_section.html
-app/templates/analytics/kubernetes/workload/partials/_tenant_quota_section.html
-app/templates/analytics/kubernetes/storage/partials/_filesystem_panel.html
-app/templates/analytics/kubernetes/storage/partials/_persistent_volume_claims_panel.html
-app/templates/analytics/kubernetes/storage/partials/_persistent_volumes_panel.html
-app/templates/analytics/kubernetes/top_consumers/partials/_consumer_detail_results.html
+app/templates/kubernetes/analytics/alerts/partials/_alerts_table_row.html
+app/templates/kubernetes/analytics/alerts/partials/_anomalies_table_row.html
+app/templates/kubernetes/analytics/workload/partials/_workload_mapping_section.html
+app/templates/kubernetes/analytics/workload/partials/_tenant_quota_section.html
+app/templates/kubernetes/analytics/storage/partials/_filesystem_panel.html
+app/templates/kubernetes/analytics/storage/partials/_persistent_volume_claims_panel.html
+app/templates/kubernetes/analytics/storage/partials/_persistent_volumes_panel.html
+app/templates/kubernetes/analytics/top_consumers/partials/_consumer_detail_results.html
 ```
 
 Use dots only where they improve scanning. Risk/severity labels that are already visually distinct and not repeated in a dense status column may remain text-first.
@@ -139,9 +139,9 @@ Use dots only where they improve scanning. Risk/severity labels that are already
 Remove the icon from metadata when the same concept is already represented by the row/card identity icon. Review:
 
 ```text
-app/templates/analytics/kubernetes/top_consumers/partials/_consumer_detail_results.html
-app/templates/analytics/kubernetes/workload/partials/_workload_mapping_section.html
-app/templates/analytics/kubernetes/workload/partials/_tenant_quota_section.html
+app/templates/kubernetes/analytics/top_consumers/partials/_consumer_detail_results.html
+app/templates/kubernetes/analytics/workload/partials/_workload_mapping_section.html
+app/templates/kubernetes/analytics/workload/partials/_tenant_quota_section.html
 ```
 
 Examples include resource/category labels directly beside a resource icon or repeated QoS/provider labels in the same identity group.
@@ -151,9 +151,9 @@ Examples include resource/category labels directly beside a resource icon or rep
 Matcher and label-pair tokens in Alert Intelligence are metadata, not health status:
 
 ```text
-app/templates/analytics/kubernetes/alerts/partials/_alerts_table_row.html
-app/templates/analytics/kubernetes/alerts/partials/_silence_inhibition_summary.html
-app/templates/analytics/kubernetes/alerts/partials/_routing_summary.html
+app/templates/kubernetes/analytics/alerts/partials/_alerts_table_row.html
+app/templates/kubernetes/analytics/alerts/partials/_silence_inhibition_summary.html
+app/templates/kubernetes/analytics/alerts/partials/_routing_summary.html
 ```
 
 They should remain iconless. Use either canonical metadata labels or plain compact technical tokens based on density; do not add semantic status icons.

@@ -24,12 +24,12 @@ def _forbid(relative_path: str, needle: str, description: str) -> None:
 
 def main() -> None:
     _require(
-        'app/analytics/kubernetes/utilization/service.py',
+        'app/kubernetes/analytics/utilization/service.py',
         'from app.integrations.observability.metrics_source.exceptions import MetricsSourceError',
         'canonical MetricsSourceError import',
     )
     _require(
-        'app/kubernetes_operations/secrets/reveal_service.py',
+        'app/kubernetes/operations/secrets/reveal_service.py',
         'from app.common.kubernetes_secrets import scrub_mapping_values, scrub_secret_payload',
         'secret scrubber imports',
     )
@@ -39,7 +39,7 @@ def main() -> None:
         'minimal cluster dependency protocol',
     )
     _require(
-        'app/analytics/kubernetes/top_consumers/domain.py',
+        'app/kubernetes/analytics/top_consumers/domain.py',
         '-> TypeGuard[dict[str, Any]]:',
         'Top Consumers payload type guard',
     )
@@ -60,19 +60,19 @@ def main() -> None:
             'forecast normalized recommendation consumption',
         ),
     ):
-        _require('app/analytics/kubernetes/forecast/presentation.py', needle, description)
+        _require('app/kubernetes/analytics/forecast/presentation.py', needle, description)
     _forbid(
-        'app/analytics/kubernetes/forecast/presentation.py',
+        'app/kubernetes/analytics/forecast/presentation.py',
         "count_actionable_recommendations(\n            forecast_payload.get('actionable_recommendations')",
         'forecast snapshot recommendation count bypasses normalized boundary',
     )
     _require(
-        'app/analytics/kubernetes/overview/snapshot_summary.py',
+        'app/kubernetes/analytics/overview/snapshot_summary.py',
         'snapshots: Sequence[Any],',
         'sequence-compatible snapshot summary boundary',
     )
     _require(
-        'app/dashboards/kubernetes/service.py',
+        'app/kubernetes/dashboard/service.py',
         '_cluster_health_rows, pagination = paginate_sequence(',
         'dashboard pagination result separation',
     )
@@ -102,7 +102,7 @@ def main() -> None:
         'private Flask LocalProxy access remains in report storage cache code',
     )
     _forbid(
-        'app/jobs/policies/service.py',
+        'app/platform_operations/jobs/policies/service.py',
         'return JobPolicy(',
         'JobPolicy still relies on untyped declarative constructor kwargs',
     )

@@ -21,7 +21,7 @@ def test_topbar_uses_one_stable_bell_and_viewport_slider() -> None:
 
 def test_deck_and_page_tabs_use_quiet_kaori_surfaces() -> None:
     shell = read('app/templates/components/navigation/_notification_center.html')
-    page = read('app/templates/notifications/partials/_center_page_content.html')
+    page = read('app/templates/platform_operations/notifications/partials/_center_page_content.html')
     framed_tabs = read('app/templates/components/framed_workspace_tabs.html')
 
     expected_track = 'rounded-xl border border-outline-default bg-surface-hover p-1'
@@ -42,7 +42,7 @@ def test_deck_auto_refreshes_one_snapshot_every_15_seconds() -> None:
     navbar = read('app/templates/components/navigation/navbar.html')
     navbar_js = read('app/static/js/navbar.js')
     layout = read('app/templates/layouts/app.html')
-    routes = read('app/notifications/routes.py')
+    routes = read('app/platform_operations/notifications/routes.py')
 
     assert 'data-notification-deck-root' in shell
     assert "url_for('notifications.panel_snapshot')" in shell
@@ -115,7 +115,7 @@ def test_footer_exposes_quiet_auto_refresh_status() -> None:
 
 def test_snapshot_updates_stable_slots_without_replacing_deck() -> None:
     navbar_js = read('app/static/js/navbar.js')
-    routes = read('app/notifications/routes.py')
+    routes = read('app/platform_operations/notifications/routes.py')
 
     for needle in (
         "document.getElementById('notification-deck-active-job-list')",
@@ -143,7 +143,7 @@ def test_snapshot_updates_stable_slots_without_replacing_deck() -> None:
 
 
 def test_unused_legacy_panel_routes_and_helpers_are_removed() -> None:
-    routes = read('app/notifications/routes.py')
+    routes = read('app/platform_operations/notifications/routes.py')
 
     for legacy in (
         "@notifications_bp.get('/panel/refresh')",
@@ -159,8 +159,8 @@ def test_unused_legacy_panel_routes_and_helpers_are_removed() -> None:
 
 
 def test_activity_panel_uses_stable_local_and_server_slots() -> None:
-    activity = read('app/templates/notifications/partials/_notification_deck_activity.html')
-    jobs = read('app/templates/notifications/partials/_notification_deck_activity_jobs.html')
+    activity = read('app/templates/platform_operations/notifications/partials/_notification_deck_activity.html')
+    jobs = read('app/templates/platform_operations/notifications/partials/_notification_deck_activity_jobs.html')
 
     assert 'data-activity-surface' in activity
     assert 'data-local-activity-list' in activity
@@ -172,7 +172,7 @@ def test_activity_panel_uses_stable_local_and_server_slots() -> None:
 
 
 def test_queued_jobs_do_not_look_like_a_never_ending_refresh() -> None:
-    component = read('app/templates/notifications/components/_activity_center_items.html')
+    component = read('app/templates/platform_operations/notifications/components/_activity_center_items.html')
     progress = read('app/templates/components/progress_bar.html')
     presentation = read('app/common/job_execution_presentation.py')
 
@@ -185,7 +185,7 @@ def test_queued_jobs_do_not_look_like_a_never_ending_refresh() -> None:
 
 def test_activity_reconciliation_counts_stable_items_without_dynamic_pollers() -> None:
     layout = read('app/templates/layouts/app.html')
-    page = read('app/templates/notifications/partials/_center_page_content.html')
+    page = read('app/templates/platform_operations/notifications/partials/_center_page_content.html')
 
     assert "surface.querySelectorAll('[data-server-activity-item]').length" in layout
     assert "document.getElementById('notification-deck-active-count')" in layout
@@ -195,9 +195,11 @@ def test_activity_reconciliation_counts_stable_items_without_dynamic_pollers() -
 
 
 def test_notification_mutations_target_only_stable_notification_content() -> None:
-    component = read('app/templates/notifications/components/_activity_center_items.html')
-    notifications = read('app/templates/notifications/partials/_notification_deck_notifications.html')
-    routes = read('app/notifications/routes.py')
+    component = read('app/templates/platform_operations/notifications/components/_activity_center_items.html')
+    notifications = read(
+        'app/templates/platform_operations/notifications/partials/_notification_deck_notifications.html'
+    )
+    routes = read('app/platform_operations/notifications/routes.py')
 
     assert 'hx-swap="{{ swap }}"' in component
     assert "target='#notification-deck-notifications-content'" in notifications
@@ -207,7 +209,7 @@ def test_notification_mutations_target_only_stable_notification_content() -> Non
 
 
 def test_oob_badges_remain_available_for_notification_mutations() -> None:
-    oob = read('app/templates/notifications/partials/_notification_deck_oob.html')
+    oob = read('app/templates/platform_operations/notifications/partials/_notification_deck_oob.html')
 
     assert oob.count('hx-swap-oob="outerHTML"') == 4
     assert 'notification-bell-badge' in oob
@@ -217,7 +219,7 @@ def test_oob_badges_remain_available_for_notification_mutations() -> None:
 
 
 def test_full_notifications_page_keeps_15_second_auto_refresh() -> None:
-    page = read('app/templates/notifications/partials/_center_page_content.html')
+    page = read('app/templates/platform_operations/notifications/partials/_center_page_content.html')
 
     assert 'hx-trigger="kaori:notifications-changed from:body, every 15s"' in page
     assert 'hx-target="this"' in page
@@ -225,12 +227,16 @@ def test_full_notifications_page_keeps_15_second_auto_refresh() -> None:
 
 
 def test_legacy_self_replacing_deck_fragments_are_removed() -> None:
-    assert not (ROOT / 'app/templates/notifications/partials/_notification_deck_content.html').exists()
-    assert not (ROOT / 'app/templates/notifications/partials/_notification_deck_refresh.html').exists()
+    assert not (
+        ROOT / 'app/templates/platform_operations/notifications/partials/_notification_deck_content.html'
+    ).exists()
+    assert not (
+        ROOT / 'app/templates/platform_operations/notifications/partials/_notification_deck_refresh.html'
+    ).exists()
 
 
 def test_refresh_standard_is_documented() -> None:
-    readme = read('app/notifications/README.md')
+    readme = read('app/platform_operations/notifications/README.md')
 
     assert '/notifications/panel/snapshot' in readme
     assert 'The deck has no manual refresh button, spinner, or manual-refresh state.' in readme
@@ -239,8 +245,8 @@ def test_refresh_standard_is_documented() -> None:
 
 def test_inventory_quick_action_relies_on_canonical_auto_refresh() -> None:
     navbar = read('app/templates/components/navigation/navbar.html')
-    quick_sync = read('app/cluster/quick_sync.py')
-    queries = read('app/notifications/queries.py')
+    quick_sync = read('app/kubernetes/cluster/quick_sync.py')
+    queries = read('app/platform_operations/notifications/queries.py')
 
     assert 'hx-swap="none"' in navbar
     assert 'hx-target="#quick-sync-feedback"' not in navbar

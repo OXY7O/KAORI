@@ -6,6 +6,10 @@ from flask import Blueprint, current_app, redirect, render_template, request, ur
 from flask_login import current_user
 from sqlalchemy.exc import SQLAlchemyError
 
+from app.access.rbac.decorators import permission_required
+from app.access.rbac.notifications import role_access_feedback
+from app.access.rbac.policy import role_is_mutation_protected, role_is_protected_default
+from app.access.rbac.service import expand_permission_ids, get_role_delete_blockers
 from app.access.roles.forms import DeleteRoleForm, RoleForm
 from app.access.roles.presentation import (
     build_role_detail_context,
@@ -27,10 +31,6 @@ from app.access.roles.service import (
 from app.common.admin_audit import record_admin_event
 from app.extensions.db import db
 from app.models import Role, User
-from app.rbac.decorators import permission_required
-from app.rbac.notifications import role_access_feedback
-from app.rbac.policy import role_is_mutation_protected, role_is_protected_default
-from app.rbac.service import expand_permission_ids, get_role_delete_blockers
 
 bp = Blueprint('roles', __name__)
 

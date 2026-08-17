@@ -1,7 +1,7 @@
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
-TEMPLATE = ROOT / 'app/templates/inventory/kubernetes/workloads/partials/_table_content.html'
+TEMPLATE = ROOT / 'app/templates/kubernetes/inventory/workloads/partials/_table_content.html'
 
 
 def test_workload_table_uses_compact_operational_columns() -> None:

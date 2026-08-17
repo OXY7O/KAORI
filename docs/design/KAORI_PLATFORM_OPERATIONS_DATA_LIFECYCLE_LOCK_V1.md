@@ -26,8 +26,8 @@ Platform Operations
 
 - `app/platform_operations/data_lifecycle/` owns routes, operator mutation orchestration, feedback, and workspace presentation.
 - `app/templates/platform_operations/data_lifecycle/` owns the UI.
-- `app/retention/` remains the domain-neutral lifecycle engine, adapters, archive writer, verification, cleanup safety, lock, task, and policy persistence layer.
-- `app/jobs/` remains the canonical worker execution ledger. Data Lifecycle may enqueue canonical jobs only through the shared dispatcher.
+- `app/platform_operations/data_lifecycle/retention/` remains the domain-neutral lifecycle engine, adapters, archive writer, verification, cleanup safety, lock, task, and policy persistence layer.
+- `app/platform_operations/jobs/` remains the canonical worker execution ledger. Data Lifecycle may enqueue canonical jobs only through the shared dispatcher.
 - `app/settings/data_lifecycle_compat.py` is redirect-only compatibility. It must not render templates, mutate lifecycle data, or import retention execution services.
 
 ## URL Contract

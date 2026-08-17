@@ -1,6 +1,6 @@
 from pathlib import Path
 
-TEMPLATE = Path('app/templates/jobs/configuration/_execution_activity.html')
+TEMPLATE = Path('app/templates/platform_operations/jobs/configuration/_execution_activity.html')
 
 
 def test_current_execution_uses_visual_status_workspace():

@@ -15,16 +15,16 @@ def require(condition: bool, message: str, errors: list[str]) -> None:
 def main() -> int:
     errors: list[str] = []
 
-    backend = read('app/inventory/kubernetes/resources/nodes.py')
-    routes = read('app/inventory/kubernetes/routes.py')
-    hero = read('app/templates/inventory/kubernetes/nodes/partials/_hero.html')
-    summary = read('app/templates/inventory/kubernetes/nodes/partials/_summary_cards.html')
-    table_card = read('app/templates/inventory/kubernetes/nodes/partials/_table_card.html')
-    table_content = read('app/templates/inventory/kubernetes/nodes/partials/_table_content.html')
-    detail = read('app/templates/inventory/kubernetes/nodes/partials/_node_detail_content.html')
-    workspace = read('app/templates/inventory/kubernetes/nodes/partials/_page_workspace.html')
-    persistence = read('app/inventory/kubernetes/persistence.py')
-    formatting = read('app/inventory/kubernetes/formatting.py')
+    backend = read('app/kubernetes/inventory/resources/nodes.py')
+    routes = read('app/kubernetes/inventory/routes.py')
+    hero = read('app/templates/kubernetes/inventory/nodes/partials/_hero.html')
+    summary = read('app/templates/kubernetes/inventory/nodes/partials/_summary_cards.html')
+    table_card = read('app/templates/kubernetes/inventory/nodes/partials/_table_card.html')
+    table_content = read('app/templates/kubernetes/inventory/nodes/partials/_table_content.html')
+    detail = read('app/templates/kubernetes/inventory/nodes/partials/_node_detail_content.html')
+    workspace = read('app/templates/kubernetes/inventory/nodes/partials/_page_workspace.html')
+    persistence = read('app/kubernetes/inventory/persistence.py')
+    formatting = read('app/kubernetes/inventory/formatting.py')
     table_component = read('app/templates/components/table.html')
     standard = read('docs/design/patterns/KUBERNETES_NODE_INVENTORY.md')
     audit = read('docs/design/audits/KUBERNETES_NODE_INVENTORY_ALIGNMENT_AUDIT_2026_08.md')
@@ -114,7 +114,7 @@ def main() -> int:
     )
     require('id="nodes-page-workspace"' in workspace, 'Node filtering must own a complete page workspace.', errors)
     require(
-        'inventory/kubernetes/components/_data_freshness.html' in workspace,
+        'kubernetes/inventory/components/_data_freshness.html' in workspace,
         'The workspace must refresh snapshot context with filtered scope.',
         errors,
     )

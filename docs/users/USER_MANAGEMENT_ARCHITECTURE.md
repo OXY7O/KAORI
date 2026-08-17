@@ -22,6 +22,6 @@ Local users are native identities. LDAP and SSO users are external identity proj
 
 ## Repository ownership
 
-User Management is a standalone application domain under `app/users/` and is registered through the `users` blueprint. It is not mounted through `app/settings` and does not retain compatibility routes under `/settings/users`.
+User Management is a standalone application domain under `app/access/users/` and is registered through the `users` blueprint. It is not mounted through `app/settings` and does not retain compatibility routes under `/settings/users`.
 
 Database models remain centralized under `app/models/`. The domain owns orchestration and policy; the shared model package owns ORM declarations and migration registration.

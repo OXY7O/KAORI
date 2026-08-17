@@ -10,7 +10,7 @@ import pytest
 pytestmark = pytest.mark.functional
 
 ROOT = Path(__file__).resolve().parents[2]
-MUTATION_PATH = ROOT / 'app/governance/tls_certificates/mutation.py'
+MUTATION_PATH = ROOT / 'app/kubernetes/governance/tls_certificates/mutation.py'
 COMMON_ROOT = ROOT / 'app/common'
 
 
@@ -35,10 +35,10 @@ def load_mutation(monkeypatch: pytest.MonkeyPatch):
         'app.common',
         'app.extensions',
         'app.extensions.db',
-        'app.governance',
-        'app.governance.tls_certificates',
-        'app.governance.tls_certificates.collector',
-        'app.governance.tls_certificates.constants',
+        'app.kubernetes.governance',
+        'app.kubernetes.governance.tls_certificates',
+        'app.kubernetes.governance.tls_certificates.collector',
+        'app.kubernetes.governance.tls_certificates.constants',
         'app.models',
     ):
         _module(name, monkeypatch)
@@ -53,11 +53,11 @@ def load_mutation(monkeypatch: pytest.MonkeyPatch):
         COMMON_ROOT / 'sensitive_uploads.py',
         monkeypatch,
     )
-    constants = sys.modules['app.governance.tls_certificates.constants']
+    constants = sys.modules['app.kubernetes.governance.tls_certificates.constants']
     constants.TLS_CRT_KEY = 'tls.crt'
     constants.TLS_KEY_KEY = 'tls.key'
     constants.TLS_SECRET_TYPE = 'kubernetes.io/tls'
-    collector = sys.modules['app.governance.tls_certificates.collector']
+    collector = sys.modules['app.kubernetes.governance.tls_certificates.collector']
     collector.build_kubernetes_client = lambda cluster: None
     cluster_model = type('Cluster', (), {})
     sys.modules['app.models'].Cluster = cluster_model

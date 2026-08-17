@@ -1,7 +1,7 @@
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
-WORKLOAD_TEMPLATES = ROOT / 'app/templates/analytics/kubernetes/workload'
+WORKLOAD_TEMPLATES = ROOT / 'app/templates/kubernetes/analytics/workload'
 
 
 def read(relative: str) -> str:
@@ -9,7 +9,7 @@ def read(relative: str) -> str:
 
 
 def test_workload_workspace_uses_local_loading_ownership_and_lazy_mapping() -> None:
-    index = read('app/templates/analytics/kubernetes/workload/index.html')
+    index = read('app/templates/kubernetes/analytics/workload/index.html')
 
     assert 'workload-load-tracker' not in index
     assert 'analytics/partials/_load_tracker.html' not in index
@@ -20,7 +20,7 @@ def test_workload_workspace_uses_local_loading_ownership_and_lazy_mapping() -> N
 
 
 def test_workload_hero_uses_canonical_context_card() -> None:
-    hero = read('app/templates/analytics/kubernetes/workload/partials/_hero.html')
+    hero = read('app/templates/kubernetes/analytics/workload/partials/_hero.html')
 
     assert 'page_hero.context_card(' in hero
     assert "('shield-alert', 'Findings'" in hero
@@ -32,8 +32,8 @@ def test_workload_hero_uses_canonical_context_card() -> None:
 
 
 def test_workload_mapping_uses_extended_filters_closed_by_default() -> None:
-    component = read('app/templates/analytics/kubernetes/components/_record_filter_bar.html')
-    mapping = read('app/templates/analytics/kubernetes/workload/partials/_workload_mapping_section.html')
+    component = read('app/templates/kubernetes/analytics/components/_record_filter_bar.html')
+    mapping = read('app/templates/kubernetes/analytics/workload/partials/_workload_mapping_section.html')
 
     assert 'macro extended_form' in component
     assert 'macro advanced_toggle' in component
@@ -51,11 +51,11 @@ def test_workload_mapping_uses_extended_filters_closed_by_default() -> None:
 
 
 def test_workload_sections_use_inventory_aligned_overview_and_record_cards() -> None:
-    page = read('app/templates/analytics/kubernetes/workload/index.html')
+    page = read('app/templates/kubernetes/analytics/workload/index.html')
     for relative in (
-        'app/templates/analytics/kubernetes/workload/partials/_overview.html',
-        'app/templates/analytics/kubernetes/workload/partials/_tenant_quota_section.html',
-        'app/templates/analytics/kubernetes/workload/partials/_workload_mapping_section.html',
+        'app/templates/kubernetes/analytics/workload/partials/_overview.html',
+        'app/templates/kubernetes/analytics/workload/partials/_tenant_quota_section.html',
+        'app/templates/kubernetes/analytics/workload/partials/_workload_mapping_section.html',
     ):
         source = read(relative)
         assert 'analytics/components/_analysis_surfaces.html' in source
@@ -65,12 +65,12 @@ def test_workload_sections_use_inventory_aligned_overview_and_record_cards() -> 
         assert 'text-[' not in source
         assert 'tracking-[' not in source
 
-    tenant = read('app/templates/analytics/kubernetes/workload/partials/_tenant_quota_section.html')
-    mapping = read('app/templates/analytics/kubernetes/workload/partials/_workload_mapping_section.html')
-    assert 'analytics/kubernetes/components/_evidence_record_list.html' in tenant
-    assert 'analytics/kubernetes/components/_record_filter_bar.html' in tenant
-    assert 'analytics/kubernetes/components/_evidence_record_list.html' in mapping
-    assert 'analytics/kubernetes/components/_record_filter_bar.html' in mapping
+    tenant = read('app/templates/kubernetes/analytics/workload/partials/_tenant_quota_section.html')
+    mapping = read('app/templates/kubernetes/analytics/workload/partials/_workload_mapping_section.html')
+    assert 'kubernetes/analytics/components/_evidence_record_list.html' in tenant
+    assert 'kubernetes/analytics/components/_record_filter_bar.html' in tenant
+    assert 'kubernetes/analytics/components/_evidence_record_list.html' in mapping
+    assert 'kubernetes/analytics/components/_record_filter_bar.html' in mapping
     assert tenant.count('analysis_surface.snapshot_shell_classes') >= 1
     assert mapping.count('analysis_surface.snapshot_shell_classes') >= 1
     assert 'border-b border-outline-subtle pb-5' in tenant
@@ -106,7 +106,7 @@ def test_workload_sections_use_inventory_aligned_overview_and_record_cards() -> 
     assert 'detached=true' not in page
     assert "['quotas', 'mapping', 'recommendations']" in page
 
-    recommendations = read('app/templates/analytics/kubernetes/workload/partials/_recommendations.html')
+    recommendations = read('app/templates/kubernetes/analytics/workload/partials/_recommendations.html')
     assert 'analysis_surface.evidence_shell_classes()' in recommendations
     assert 'analysis_surface.snapshot_shell_classes()' not in recommendations
     assert 'analysis_surface.snapshot_header_classes()' not in recommendations
@@ -115,8 +115,8 @@ def test_workload_sections_use_inventory_aligned_overview_and_record_cards() -> 
 
 
 def test_workload_workspace_matches_storage_integrated_tabbed_composition() -> None:
-    workload = read('app/templates/analytics/kubernetes/workload/index.html')
-    storage = read('app/templates/analytics/kubernetes/storage/partials/_storage_section.html')
+    workload = read('app/templates/kubernetes/analytics/workload/index.html')
+    storage = read('app/templates/kubernetes/analytics/storage/partials/_storage_section.html')
 
     assert 'analytics_workspace.tabbed(' in workload
     assert 'analytics_workspace.tabbed(' in storage
@@ -127,10 +127,10 @@ def test_workload_workspace_matches_storage_integrated_tabbed_composition() -> N
 
 
 def test_workload_summary_is_top_level_scope_owned() -> None:
-    service = read('app/analytics/kubernetes/workload/presentation.py')
+    service = read('app/kubernetes/analytics/workload/presentation.py')
     pagination = read('app/templates/analytics/components/_record_pagination.html')
-    tenant = read('app/templates/analytics/kubernetes/workload/partials/_tenant_quota_section.html')
-    mapping = read('app/templates/analytics/kubernetes/workload/partials/_workload_mapping_section.html')
+    tenant = read('app/templates/kubernetes/analytics/workload/partials/_tenant_quota_section.html')
+    mapping = read('app/templates/kubernetes/analytics/workload/partials/_workload_mapping_section.html')
 
     assert 'tenant_summary = {' in service
     assert '**build_tenant_scope_summary(tenant_scope_rows)' in service
@@ -145,8 +145,8 @@ def test_workload_summary_is_top_level_scope_owned() -> None:
 
 def test_workload_public_contract_removes_retired_aliases() -> None:
     files = [
-        read('app/analytics/kubernetes/workload/service.py'),
-        read('app/analytics/kubernetes/common/payloads.py'),
+        read('app/kubernetes/analytics/workload/service.py'),
+        read('app/kubernetes/analytics/common/payloads.py'),
         read('app/templates/analytics/components/_record_pagination.html'),
     ]
     retired = (
@@ -166,7 +166,7 @@ def test_workload_design_contract_is_registered() -> None:
     guide = read('docs/design/KAORI_STYLING_GUIDE.md')
     design_readme = read('docs/design/README.md')
     contract = read('docs/design/components/ANALYTICS_WORKLOAD_ANALYSIS.md')
-    analytics_readme = read('app/analytics/kubernetes/README.md')
+    analytics_readme = read('app/kubernetes/analytics/README.md')
 
     assert 'Analytics Workload Analysis Standard' in guide
     assert 'components/ANALYTICS_WORKLOAD_ANALYSIS.md' in guide

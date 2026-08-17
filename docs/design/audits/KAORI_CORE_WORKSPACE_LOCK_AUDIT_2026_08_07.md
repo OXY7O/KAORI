@@ -31,8 +31,8 @@ The existing core cleanup verifier confirms that reviewed Welcome, Inventory, Op
 
 Repository-wide reachability still identifies two unrelated modules outside this lock scope:
 
-- `app/knowledge/remediation_workflow.py`
-- `app/users/identity.py`
+- `app/intelligence/knowledge/remediation_workflow.py`
+- `app/access/users/identity.py`
 
 They are intentionally not removed by this patch because their ownership belongs to the later Intelligence and Identity reviews. They are not imported by the locked workspaces.
 

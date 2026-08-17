@@ -10,7 +10,9 @@ SYNC_ALL_INVENTORY_ACTION = 'sync_all_inventory'
 
 
 def _registered_operation_labels() -> dict[str, str]:
-    document = load_definition_document('jobs/registered_jobs.yaml', expected_kind='registered_jobs')
+    document = load_definition_document(
+        'platform_operations/jobs/registered_jobs.yaml', expected_kind='registered_jobs'
+    )
     return {
         require_str(require_mapping(item, f'jobs[{index}]'), 'operation', f'jobs[{index}]'): require_str(
             require_mapping(item, f'jobs[{index}]'), 'name', f'jobs[{index}]'

@@ -69,7 +69,7 @@ def test_tls_summary_renders_with_canonical_inventory_component() -> None:
     environment.globals['url_for'] = lambda endpoint, **values: f'/{endpoint}'
 
     current_user = SimpleNamespace(has_permission=lambda _permission: False)
-    rendered = environment.get_template('governance/tls_certificates/partials/_summary_cards.html').render(
+    rendered = environment.get_template('kubernetes/governance/tls_certificates/partials/_summary_cards.html').render(
         payload=_payload(), current_user=current_user
     )
 
@@ -80,7 +80,7 @@ def test_tls_summary_renders_with_canonical_inventory_component() -> None:
 
 
 def test_tls_page_does_not_load_retired_request_progress_toast_script() -> None:
-    index = (ROOT / 'app/templates/governance/tls_certificates/index.html').read_text()
+    index = (ROOT / 'app/templates/kubernetes/governance/tls_certificates/index.html').read_text()
 
     assert 'tls_certificate_management.js' not in index
     assert not (ROOT / 'app/static/js/tls_certificate_management.js').exists()
@@ -101,7 +101,7 @@ def test_tls_pagination_uses_inventory_navigation_contract() -> None:
     environment.globals['url_for'] = url_for
     environment.globals['request'] = SimpleNamespace(view_args={})
 
-    rendered = environment.get_template('governance/tls_certificates/partials/_table.html').render(payload=_payload())
+    rendered = environment.get_template('kubernetes/governance/tls_certificates/partials/_table.html').render(payload=_payload())
 
     assert 'aria-label="Rows Per Page"' in rendered
     assert 'data-kaori-numeric-pagination' in rendered
@@ -126,7 +126,7 @@ def test_bulk_tls_target_table_uses_inventory_pagination_contract() -> None:
     environment.globals['url_for'] = url_for
     environment.globals['request'] = SimpleNamespace(view_args={})
 
-    rendered = environment.get_template('kubernetes_operations/secrets/_bulk_target_table.html').render(
+    rendered = environment.get_template('kubernetes/operations/secrets/_bulk_target_table.html').render(
         payload=_payload(), selected_ids=[]
     )
 

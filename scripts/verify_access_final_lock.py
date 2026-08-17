@@ -43,7 +43,7 @@ def require(condition: bool, message: str, errors: list[str]) -> None:
 
 def access_templates() -> list[Path]:
     paths = list((ROOT / 'app/templates/access').rglob('*.html'))
-    paths.extend((ROOT / 'app/templates/users').rglob('*.html'))
+    paths.extend((ROOT / 'app/templates/access/users').rglob('*.html'))
     paths.extend(ROOT / relative for relative in ACTIVITY_TEMPLATES)
     return sorted(set(paths))
 
@@ -164,9 +164,9 @@ def main() -> int:
     require('xl:sticky xl:top-5' in roles_form, 'Role form sticky context rail contract drifted', errors)
     for required in ('Delegation Boundary', 'Outside Ceiling', 'impact_acknowledged'):
         require(required in roles_form, f'Role form delegation/impact guardrail missing: {required}', errors)
-    rbac_defaults = read('app/rbac/defaults.py')
-    rbac_policy = read('app/rbac/policy.py')
-    rbac_catalog = read('app/definitions/catalogs/rbac/access.yaml')
+    rbac_defaults = read('app/access/rbac/defaults.py')
+    rbac_policy = read('app/access/rbac/policy.py')
+    rbac_catalog = read('app/definitions/catalogs/access/rbac/access.yaml')
     for required in ('control_modules:', 'permission_dependencies:', 'access_administration_permissions:'):
         require(required in rbac_catalog, f'RBAC source-controlled policy contract missing: {required}', errors)
     for required in (
@@ -229,14 +229,14 @@ def main() -> int:
     )
 
     # User lifecycle and last-super-admin protections.
-    users_routes = read('app/users/routes.py')
-    users_service = read('app/users/service.py')
-    users_directory = read('app/users/directory.py')
-    user_access_summary = read('app/users/access_summary.py')
+    users_routes = read('app/access/users/routes.py')
+    users_service = read('app/access/users/service.py')
+    users_directory = read('app/access/users/directory.py')
+    user_access_summary = read('app/access/users/access_summary.py')
     user_model = read('app/models/user.py')
-    user_provisioning_proof = read('app/identity_providers/provisioning_proof.py')
-    users_index = read('app/templates/users/index.html')
-    users_hero = read('app/templates/users/partials/_hero.html')
+    user_provisioning_proof = read('app/access/identity_providers/provisioning_proof.py')
+    users_index = read('app/templates/access/users/index.html')
+    users_hero = read('app/templates/access/users/partials/_hero.html')
     for permission in ('users.view', 'users.manage', 'users.activate', 'users.reset_password', 'users.delete'):
         require(
             f"@permission_required('{permission}')" in users_routes,
@@ -295,10 +295,10 @@ def main() -> int:
     # Identity Providers: provider-neutral administration, adapter-owned protocol behavior, external secrets.
     provider_detail = read('app/templates/access/identity_providers/partials/_provider_detail.html')
     provider_overview = read('app/templates/access/identity_providers/partials/_overview.html')
-    provider_routes = read('app/identity_providers/routes.py')
+    provider_routes = read('app/access/identity_providers/routes.py')
     provider_model = read('app/models/identity.py')
-    provider_catalog = read('app/auth/identity_provider/catalog.py')
-    provider_registry = read('app/auth/identity_provider/registry.py')
+    provider_catalog = read('app/access/authentication/identity_provider/catalog.py')
+    provider_registry = read('app/access/authentication/identity_provider/registry.py')
     for required in (
         "bp = Blueprint('identity_providers'",
         "url_prefix='/access/identity-providers'",
@@ -355,8 +355,8 @@ def main() -> int:
 
     # Authentication/session boundary: bounded remember-me and super-admin default deny.
     auth_config = read('app/config/default.py')
-    auth_session = read('app/auth/session.py')
-    auth_audit = read('app/auth/audit.py')
+    auth_session = read('app/access/authentication/session.py')
+    auth_audit = read('app/access/authentication/audit.py')
     for required in (
         'AUTH_REMEMBER_ME_DAYS = _bounded_env_int(',
         "'AUTH_REMEMBER_ME_DAYS',",
@@ -381,10 +381,10 @@ def main() -> int:
 
     # Activity Audit: Access-owned workspace over the shared Notification evidence store.
     activity_routes = read('app/access/activity_audit/routes.py')
-    notification_routes = read('app/notifications/routes.py')
-    notification_queries = read('app/notifications/queries.py')
+    notification_routes = read('app/platform_operations/notifications/routes.py')
+    notification_queries = read('app/platform_operations/notifications/queries.py')
     notification_model = read('app/models/notification.py')
-    activity_actors = read('app/notifications/actors.py')
+    activity_actors = read('app/platform_operations/notifications/actors.py')
     activity_page = read('app/templates/access/activity_audit/index.html')
     for required in (
         "@permission_required('activity_audit.view')",

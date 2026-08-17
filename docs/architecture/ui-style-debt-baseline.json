@@ -13,35 +13,35 @@
     "app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_delete_confirmation_modal.html": {
       "semantic_border_utilities": 2
     },
-    "app/templates/analytics/kubernetes/components/_status_notice.html": {
+    "app/templates/kubernetes/analytics/components/_status_notice.html": {
       "semantic_border_utilities": 3
     },
-    "app/templates/analytics/kubernetes/materialization/_pending.html": {
+    "app/templates/kubernetes/analytics/materialization/_pending.html": {
       "semantic_border_utilities": 2
     },
-    "app/templates/analytics/kubernetes/overview/index.html": {
+    "app/templates/kubernetes/analytics/overview/index.html": {
       "copied_standard_surface_shells": 1
     },
-    "app/templates/analytics/kubernetes/overview/partials/_health_summary.html": {
+    "app/templates/kubernetes/analytics/overview/partials/_health_summary.html": {
       "copied_standard_surface_shells": 2
     },
-    "app/templates/analytics/kubernetes/overview/partials/_load_tracker.html": {
+    "app/templates/kubernetes/analytics/overview/partials/_load_tracker.html": {
       "copied_standard_surface_shells": 1
     },
-    "app/templates/analytics/kubernetes/partials/_load_tracker.html": {
+    "app/templates/kubernetes/analytics/partials/_load_tracker.html": {
       "copied_standard_surface_shells": 1
     },
-    "app/templates/auth/partials/_brand_panel.html": {
+    "app/templates/access/authentication/partials/_brand_panel.html": {
       "custom_hero_titles": 1
     },
-    "app/templates/auth/partials/_login_alerts.html": {
+    "app/templates/access/authentication/partials/_login_alerts.html": {
       "semantic_border_utilities": 2
     },
-    "app/templates/auth/setup_required.html": {
+    "app/templates/access/authentication/setup_required.html": {
       "custom_hero_titles": 1,
       "semantic_border_utilities": 3
     },
-    "app/templates/cluster/partials/_form.html": {
+    "app/templates/kubernetes/cluster/partials/_form.html": {
       "copied_standard_surface_shells": 1,
       "semantic_border_utilities": 3
     },
@@ -117,40 +117,37 @@
     "app/templates/integrations/partials/_runtime_history.html": {
       "copied_standard_surface_shells": 1
     },
-    "app/templates/inventory/kubernetes/components/_summary.html": {
+    "app/templates/kubernetes/inventory/components/_summary.html": {
       "semantic_border_utilities": 5
     },
-    "app/templates/inventory/kubernetes/topology/partials/_workspace.html": {
+    "app/templates/kubernetes/inventory/topology/partials/_workspace.html": {
       "semantic_border_utilities": 3
     },
-    "app/templates/kubernetes_operations/secrets/_delete_target.html": {
+    "app/templates/kubernetes/operations/secrets/_delete_target.html": {
       "semantic_border_utilities": 3
     },
-    "app/templates/kubernetes_operations/secrets/_replace_content_form.html": {
+    "app/templates/kubernetes/operations/secrets/_replace_content_form.html": {
       "semantic_border_utilities": 7
     },
-    "app/templates/kubernetes_operations/secrets/_reveal_pending_approvals.html": {
+    "app/templates/kubernetes/operations/secrets/_reveal_pending_approvals.html": {
       "copied_standard_surface_shells": 1,
       "semantic_border_utilities": 1
     },
-    "app/templates/kubernetes_operations/secrets/_reveal_request_form.html": {
+    "app/templates/kubernetes/operations/secrets/_reveal_request_form.html": {
       "copied_standard_surface_shells": 1
     },
-    "app/templates/kubernetes_operations/secrets/_reveal_value.html": {
+    "app/templates/kubernetes/operations/secrets/_reveal_value.html": {
       "semantic_border_utilities": 1
     },
-    "app/templates/kubernetes_operations/secrets/_update_preview.html": {
+    "app/templates/kubernetes/operations/secrets/_update_preview.html": {
       "semantic_border_utilities": 4
     },
-    "app/templates/kubernetes_operations/secrets/create.html": {
+    "app/templates/kubernetes/operations/secrets/create.html": {
       "copied_standard_surface_shells": 1,
       "semantic_border_utilities": 2
     },
-    "app/templates/kubernetes_operations/secrets/tls_rotation.html": {
+    "app/templates/kubernetes/operations/secrets/tls_rotation.html": {
       "copied_standard_surface_shells": 1,
-      "semantic_border_utilities": 1
-    },
-    "app/templates/notifications/components/_activity_center_items.html": {
       "semantic_border_utilities": 1
     },
     "app/templates/reports/generate/index.html": {
@@ -177,11 +174,11 @@
     "app/templates/access/identity_providers/directory_provisioning.html": {
       "copied_standard_surface_shells": 2
     },
-    "app/templates/users/form.html": {
+    "app/templates/access/users/form.html": {
       "copied_standard_surface_shells": 5,
       "semantic_border_utilities": 7
     },
-    "app/templates/users/partials/_content.html": {
+    "app/templates/access/users/partials/_content.html": {
       "copied_standard_surface_shells": 1
     },
     "app/templates/access/identity_providers/form.html": {
@@ -204,7 +201,7 @@
       "copied_standard_surface_shells": 2,
       "semantic_border_utilities": 1
     },
-    "app/templates/users/reset_password.html": {
+    "app/templates/access/users/reset_password.html": {
       "copied_standard_surface_shells": 2,
       "semantic_border_utilities": 7
     },

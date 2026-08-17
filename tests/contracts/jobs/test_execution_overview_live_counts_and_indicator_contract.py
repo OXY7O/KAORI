@@ -3,7 +3,7 @@ from pathlib import Path
 from jinja2 import Environment
 
 ROOT = Path(__file__).resolve().parents[3]
-EXECUTIONS = ROOT / 'app' / 'templates' / 'jobs' / 'executions'
+EXECUTIONS = ROOT / 'app' / 'templates' / 'platform_operations' / 'jobs' / 'executions'
 
 
 def _read(relative: str) -> str:

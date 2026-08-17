@@ -8,7 +8,7 @@ def read(path: str) -> str:
 
 
 def test_job_catalog_uses_page_scroll_instead_of_nested_scroll() -> None:
-    workspace = read('app/templates/jobs/configuration/_workspace.html')
+    workspace = read('app/templates/platform_operations/jobs/configuration/_workspace.html')
 
     assert 'max-h-[620px]' not in workspace
     assert 'overflow-y-auto' not in workspace
@@ -17,9 +17,9 @@ def test_job_catalog_uses_page_scroll_instead_of_nested_scroll() -> None:
 
 def test_kubernetes_inventory_job_is_named_explicitly() -> None:
     labels = read('app/common/job_execution_contract.py')
-    job_catalog = read('app/definitions/catalogs/jobs/registered_jobs.yaml')
-    template = read('app/templates/jobs/configuration/definitions/inventory_sync.html')
-    configuration = read('app/jobs/configuration.py')
+    job_catalog = read('app/definitions/catalogs/platform_operations/jobs/registered_jobs.yaml')
+    template = read('app/templates/platform_operations/jobs/configuration/definitions/inventory_sync.html')
+    configuration = read('app/platform_operations/jobs/configuration.py')
 
     assert "KUBERNETES_INVENTORY_SYNC_OPERATION = 'sync_kubernetes_inventory'" in labels
     assert 'operation: sync_kubernetes_inventory' in job_catalog
@@ -31,7 +31,7 @@ def test_kubernetes_inventory_job_is_named_explicitly() -> None:
 
 def test_quick_sync_all_inventory_dispatches_all_authorized_inventory_domains() -> None:
     navbar = read('app/templates/components/navigation/navbar.html')
-    routes = read('app/jobs/routes.py')
+    routes = read('app/platform_operations/jobs/routes.py')
 
     assert "url_for('jobs.quick_sync_all_inventory')" in navbar
     assert 'Sync All Inventory' in navbar

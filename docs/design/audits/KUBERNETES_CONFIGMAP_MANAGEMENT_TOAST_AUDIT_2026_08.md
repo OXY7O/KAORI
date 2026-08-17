@@ -32,8 +32,8 @@ This audit covers ConfigMap Management landing, create, update, delete, live loo
 
 ## Legacy removals
 
-- `app/templates/kubernetes_operations/_components.html`
-- `app/templates/kubernetes_operations/configmaps/_operation_notification.html`
+- `app/templates/kubernetes/operations/_components.html`
+- `app/templates/kubernetes/operations/configmaps/_operation_notification.html`
 - `app/templates/components/navigation/_quick_sync_result.html`
 - `app/templates/components/navigation/_operation_feedback_oob.html`
 - `dismissQuickActionToast` layout handlers

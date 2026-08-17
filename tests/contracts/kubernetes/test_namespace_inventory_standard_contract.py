@@ -8,10 +8,10 @@ def read(relative: str) -> str:
 
 
 def test_namespace_filters_refresh_complete_scope_and_include_unknown() -> None:
-    routes = read('app/inventory/kubernetes/routes.py')
-    backend = read('app/inventory/kubernetes/resources/namespaces.py')
-    table = read('app/templates/inventory/kubernetes/namespaces/partials/_table_card.html')
-    workspace = read('app/templates/inventory/kubernetes/namespaces/partials/_page_workspace.html')
+    routes = read('app/kubernetes/inventory/routes.py')
+    backend = read('app/kubernetes/inventory/resources/namespaces.py')
+    table = read('app/templates/kubernetes/inventory/namespaces/partials/_table_card.html')
+    workspace = read('app/templates/kubernetes/inventory/namespaces/partials/_page_workspace.html')
 
     assert (
         "for resource in ('nodes', 'namespaces', 'configuration', 'workloads', 'pods', 'services', 'ingresses', 'storage')"
@@ -20,15 +20,15 @@ def test_namespace_filters_refresh_complete_scope_and_include_unknown() -> None:
     assert 'hx-target="#namespaces-page-workspace"' in table
     assert 'name="partial_mode" value="page_workspace"' in table
     assert 'id="namespaces-page-workspace"' in workspace
-    assert 'inventory/kubernetes/components/_data_freshness.html' in workspace
+    assert 'kubernetes/inventory/components/_data_freshness.html' in workspace
     assert '_normalise_namespace_status(row[0])[0]' in backend
     assert "if status == 'Unknown'" in backend
     assert 'NamespaceInventory.status.is_(None)' in backend
 
 
 def test_namespace_scope_label_does_not_depend_on_filtered_rows() -> None:
-    routes = read('app/inventory/kubernetes/routes.py')
-    backend = read('app/inventory/kubernetes/resources/namespaces.py')
+    routes = read('app/kubernetes/inventory/routes.py')
+    backend = read('app/kubernetes/inventory/resources/namespaces.py')
 
     assert "inventory['scope_label'] = _inventory_scope_label(clusters, cluster_id)" in routes
     assert 'def _inventory_scope_label(' in routes
@@ -36,10 +36,10 @@ def test_namespace_scope_label_does_not_depend_on_filtered_rows() -> None:
 
 
 def test_namespace_control_evidence_distinguishes_zero_from_not_reported() -> None:
-    backend = read('app/inventory/kubernetes/resources/namespaces.py')
-    summary = read('app/templates/inventory/kubernetes/namespaces/partials/_summary_cards.html')
-    detail = read('app/templates/inventory/kubernetes/namespaces/partials/_namespace_detail_content.html')
-    persistence = read('app/inventory/kubernetes/persistence.py')
+    backend = read('app/kubernetes/inventory/resources/namespaces.py')
+    summary = read('app/templates/kubernetes/inventory/namespaces/partials/_summary_cards.html')
+    detail = read('app/templates/kubernetes/inventory/namespaces/partials/_namespace_detail_content.html')
+    persistence = read('app/kubernetes/inventory/persistence.py')
 
     assert "RESOURCE_QUOTA_EVIDENCE_KEY = 'inventory.resourcequotas'" in backend
     assert 'quota_count = quota_counts.get(key, 0) if quota_state == COLLECTED else None' in backend
@@ -52,8 +52,8 @@ def test_namespace_control_evidence_distinguishes_zero_from_not_reported() -> No
 
 
 def test_namespace_psa_copy_does_not_infer_cluster_defaults() -> None:
-    backend = read('app/inventory/kubernetes/resources/namespaces.py')
-    detail = read('app/templates/inventory/kubernetes/namespaces/partials/_namespace_detail_content.html')
+    backend = read('app/kubernetes/inventory/resources/namespaces.py')
+    detail = read('app/templates/kubernetes/inventory/namespaces/partials/_namespace_detail_content.html')
 
     assert "return normalized.title() if normalized else 'Not Explicitly Set'" in backend
     assert "'Inherited'" not in backend[backend.index('def _psa_label') :]
@@ -61,8 +61,8 @@ def test_namespace_psa_copy_does_not_infer_cluster_defaults() -> None:
 
 
 def test_namespace_compact_table_keeps_age_in_detail_only() -> None:
-    table = read('app/templates/inventory/kubernetes/namespaces/partials/_table_content.html')
-    detail = read('app/templates/inventory/kubernetes/namespaces/partials/_namespace_detail_content.html')
+    table = read('app/templates/kubernetes/inventory/namespaces/partials/_table_content.html')
+    detail = read('app/templates/kubernetes/inventory/namespaces/partials/_namespace_detail_content.html')
 
     assert '<caption class="sr-only">' in table
     assert table.count('scope="col"') == 6
@@ -71,7 +71,7 @@ def test_namespace_compact_table_keeps_age_in_detail_only() -> None:
 
 
 def test_namespace_resourcequota_collector_uses_configured_spec_and_evidence() -> None:
-    collector = read('app/inventory/kubernetes/collectors/configuration.py')
+    collector = read('app/kubernetes/inventory/collectors/configuration.py')
 
     assert 'with_evidence: bool = False' in collector
     assert 'evidence = COLLECTED' in collector
@@ -93,8 +93,8 @@ def test_namespace_inventory_standard_is_documented_and_gated() -> None:
 
 
 def test_namespace_detail_distinguishes_configuration_zero_from_unreported() -> None:
-    detail = read('app/templates/inventory/kubernetes/namespaces/partials/_namespace_detail_content.html')
-    resource = read('app/inventory/kubernetes/resources/namespaces.py')
+    detail = read('app/templates/kubernetes/inventory/namespaces/partials/_namespace_detail_content.html')
+    resource = read('app/kubernetes/inventory/resources/namespaces.py')
 
     assert 'Configuration Object Evidence Not Reported' in detail
     assert "'config_maps': None" not in resource

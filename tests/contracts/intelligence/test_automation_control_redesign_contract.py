@@ -7,8 +7,8 @@ def read(path: str) -> str:
 
 def test_automation_overview_is_operational_control_cockpit_not_foundation_map():
     overview = read('app/templates/intelligence/partials/automation_control/_overview.html')
-    presentation = read('app/automation_control/presentation.py')
-    posture = read('app/automation_control/overview.py')
+    presentation = read('app/intelligence/automation_control/presentation.py')
+    posture = read('app/intelligence/automation_control/overview.py')
 
     for label in (
         'Control Path',
@@ -25,7 +25,7 @@ def test_automation_overview_is_operational_control_cockpit_not_foundation_map()
 def test_decision_and_execution_ownership_are_separate():
     decisions = read('app/templates/intelligence/partials/automation_control/_decisions.html')
     operations = read('app/templates/intelligence/partials/automation_control/_operations.html')
-    presentation = read('app/automation_control/presentation.py')
+    presentation = read('app/intelligence/automation_control/presentation.py')
 
     assert 'Decision Contract' in decisions
     assert 'Candidate Review Queue' in decisions
@@ -53,8 +53,8 @@ def test_production_readiness_separates_enablement_gates():
 
 
 def test_notification_channels_can_be_reserved_for_automation_lifecycle_events():
-    definition = read('app/definitions/catalogs/notifications/outbound_delivery.yaml')
-    catalog = read('app/notification_channels/catalog.py')
+    definition = read('app/definitions/catalogs/platform_operations/notifications/outbound_delivery.yaml')
+    catalog = read('app/integrations/delivery/notification_channels/catalog.py')
     for event_type in (
         'automation.approval_required',
         'automation.decision_approved',
@@ -69,7 +69,7 @@ def test_notification_channels_can_be_reserved_for_automation_lifecycle_events()
 
 
 def test_governance_configuration_is_enabled_while_infrastructure_execution_remains_gated():
-    routes = read('app/automation_control/routes.py')
+    routes = read('app/intelligence/automation_control/routes.py')
     enablement = read('app/common/automation_execution.py')
     decisions = read('app/templates/intelligence/partials/automation_control/_decisions.html')
 
@@ -88,17 +88,17 @@ def test_governance_configuration_is_enabled_while_infrastructure_execution_rema
 
 
 def test_automation_decision_notifications_are_async_and_provider_neutral():
-    routes = read('app/automation_control/routes.py')
-    notifications = read('app/automation_control/notifications.py')
-    tasks = read('app/automation_control/tasks.py')
-    channel_service = read('app/notification_channels/service.py')
+    routes = read('app/intelligence/automation_control/routes.py')
+    notifications = read('app/intelligence/automation_control/notifications.py')
+    tasks = read('app/intelligence/automation_control/tasks.py')
+    channel_service = read('app/integrations/delivery/notification_channels/service.py')
     config = read('app/config/default.py')
 
     assert '_queue_decision_notification' in routes
     assert 'dispatch_matching_notification_event' in notifications
     assert 'dispatch_notification_event(channel_ids=channel_ids, event=event)' in channel_service
-    assert "name='app.automation_control.tasks.dispatch_automation_decision_notification'" in tasks
-    assert "'app.automation_control.tasks'" in config
-    assert "'app.automation_control.tasks.dispatch_automation_decision_notification'" in config
+    assert "name='app.intelligence.automation_control.tasks.dispatch_automation_decision_notification'" in tasks
+    assert "'app.intelligence.automation_control.tasks'" in config
+    assert "'app.intelligence.automation_control.tasks.dispatch_automation_decision_notification'" in config
     for provider_token in ('telegram', 'smtp', 'teams'):
         assert provider_token not in notifications.lower()

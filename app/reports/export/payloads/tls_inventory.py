@@ -8,9 +8,9 @@ from flask import current_app
 from sqlalchemy import case
 from sqlalchemy.orm import joinedload
 
-from app.governance.tls_certificates.certificate import validity_policy_from_config
-from app.governance.tls_certificates.constants import TLS_COLLECTION_COLLECTED
-from app.governance.tls_certificates.readiness import check_tls_governance_schema_readiness
+from app.kubernetes.governance.tls_certificates.certificate import validity_policy_from_config
+from app.kubernetes.governance.tls_certificates.constants import TLS_COLLECTION_COLLECTED
+from app.kubernetes.governance.tls_certificates.readiness import check_tls_governance_schema_readiness
 from app.models.cluster import Cluster
 from app.models.governance import TLSCertificateCollectionState, TLSCertificateInventory
 from app.models.report import Report

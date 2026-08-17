@@ -13,15 +13,15 @@ def load(path: str) -> dict:
 def test_definition_registry_has_versioned_yaml_for_growing_system_catalogs():
     expected = {
         'intelligence/rules.yaml': 'intelligence_rules',
-        'rbac/access.yaml': 'rbac_access',
-        'knowledge/system_runbooks.yaml': 'system_runbooks',
-        'automation/production_readiness.yaml': 'automation_production_readiness',
-        'auth/identity_provider/providers.yaml': 'identity_providers',
-        'jobs/registered_jobs.yaml': 'registered_jobs',
-        'analytics/kubernetes_datasets.yaml': 'kubernetes_analytics_datasets',
+        'access/rbac/access.yaml': 'rbac_access',
+        'intelligence/knowledge/system_runbooks.yaml': 'system_runbooks',
+        'intelligence/automation/production_readiness.yaml': 'automation_production_readiness',
+        'access/authentication/identity_provider/providers.yaml': 'identity_providers',
+        'platform_operations/jobs/registered_jobs.yaml': 'registered_jobs',
+        'kubernetes/analytics/datasets.yaml': 'kubernetes_analytics_datasets',
         'reports/catalog.yaml': 'report_catalog',
         'reports/coverage.yaml': 'report_coverage_catalog',
-        'notifications/event_categories.yaml': 'notification_event_categories',
+        'platform_operations/notifications/event_categories.yaml': 'notification_event_categories',
         'integrations/taxonomy.yaml': 'integration_taxonomy',
         'integrations/compatibility.yaml': 'integration_compatibility',
         'integrations/orchestration/container_orchestrator/providers/kubernetes.yaml': 'integration_provider_contract',
@@ -38,14 +38,14 @@ def test_definition_registry_has_versioned_yaml_for_growing_system_catalogs():
 def test_runtime_modules_consume_registry_instead_of_embedding_catalog_growth():
     modules = [
         'app/intelligence/catalog.py',
-        'app/rbac/defaults.py',
-        'app/knowledge/system_catalog.py',
-        'app/resolver/production_readiness.py',
-        'app/auth/identity_provider/catalog.py',
-        'app/jobs/definition_catalog.py',
-        'app/analytics/kubernetes/materialization/catalog.py',
+        'app/access/rbac/defaults.py',
+        'app/intelligence/knowledge/system_catalog.py',
+        'app/intelligence/resolver/production_readiness.py',
+        'app/access/authentication/identity_provider/catalog.py',
+        'app/platform_operations/jobs/definition_catalog.py',
+        'app/kubernetes/analytics/materialization/catalog.py',
         'app/reports/catalog.py',
-        'app/notifications/event_catalog.py',
+        'app/platform_operations/notifications/event_catalog.py',
         'app/integrations/taxonomy.py',
         'app/integrations/compatibility.py',
         'app/integrations/orchestration/container_orchestrator/adapters/kubernetes_api/capabilities.py',
@@ -70,8 +70,8 @@ def test_definition_loader_rejects_duplicate_keys_and_unknown_schema_versions():
 
 
 def test_rbac_and_jobs_reference_canonical_permissions():
-    access = load('rbac/access.yaml')
-    jobs = load('jobs/registered_jobs.yaml')
+    access = load('access/rbac/access.yaml')
+    jobs = load('platform_operations/jobs/registered_jobs.yaml')
     permission_keys = {item['key'] for item in access['permissions']}
     for role in access['system_roles']:
         assert set(role['permissions']) <= permission_keys

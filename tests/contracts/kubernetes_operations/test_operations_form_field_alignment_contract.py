@@ -17,31 +17,31 @@ def test_shared_form_field_owns_target_alignment_geometry() -> None:
 
 def test_configmap_and_secret_target_rows_use_shared_form_field_contract() -> None:
     consumers = (
-        'app/templates/kubernetes_operations/configmaps/create.html',
-        'app/templates/kubernetes_operations/configmaps/_namespace_options.html',
-        'app/templates/kubernetes_operations/configmaps/_workspace.html',
-        'app/templates/kubernetes_operations/secrets/create.html',
-        'app/templates/kubernetes_operations/secrets/_namespace_field.html',
-        'app/templates/kubernetes_operations/secrets/replace.html',
-        'app/templates/kubernetes_operations/secrets/_replace_target_workspace.html',
-        'app/templates/kubernetes_operations/secrets/delete.html',
-        'app/templates/kubernetes_operations/secrets/_delete_target_workspace.html',
-        'app/templates/kubernetes_operations/secrets/reveal.html',
-        'app/templates/kubernetes_operations/secrets/_reveal_target_workspace.html',
-        'app/templates/kubernetes_operations/secrets/_reveal_step_up.html',
+        'app/templates/kubernetes/operations/configmaps/create.html',
+        'app/templates/kubernetes/operations/configmaps/_namespace_options.html',
+        'app/templates/kubernetes/operations/configmaps/_workspace.html',
+        'app/templates/kubernetes/operations/secrets/create.html',
+        'app/templates/kubernetes/operations/secrets/_namespace_field.html',
+        'app/templates/kubernetes/operations/secrets/replace.html',
+        'app/templates/kubernetes/operations/secrets/_replace_target_workspace.html',
+        'app/templates/kubernetes/operations/secrets/delete.html',
+        'app/templates/kubernetes/operations/secrets/_delete_target_workspace.html',
+        'app/templates/kubernetes/operations/secrets/reveal.html',
+        'app/templates/kubernetes/operations/secrets/_reveal_target_workspace.html',
+        'app/templates/kubernetes/operations/secrets/_reveal_step_up.html',
     )
     for relative in consumers:
         assert 'components/form_field.html' in read(relative), relative
 
-    secret_create = read('app/templates/kubernetes_operations/secrets/create.html')
+    secret_create = read('app/templates/kubernetes/operations/secrets/create.html')
     assert 'form_field.help(' in secret_create and 'DNS-compatible resource name' in secret_create
     assert 'form_field.help(' in secret_create and 'Control future updates' in secret_create
     assert 'DNS-compatible resource name</span>\n                        <input' not in secret_create
 
 
 def test_secret_replace_actions_live_in_htmx_swapped_target_content() -> None:
-    page = read('app/templates/kubernetes_operations/secrets/replace.html')
-    partial = read('app/templates/kubernetes_operations/secrets/_replace_content_form.html')
+    page = read('app/templates/kubernetes/operations/secrets/replace.html')
+    partial = read('app/templates/kubernetes/operations/secrets/_replace_content_form.html')
     assert '{% if target and not target.immutable %}' not in page
     assert 'replace-secret-apply-button' in partial
     assert 'Validate Replacement' in partial
@@ -51,7 +51,7 @@ def test_secret_replace_actions_live_in_htmx_swapped_target_content() -> None:
 
 
 def test_secret_reveal_step_up_aligns_password_and_verify_action() -> None:
-    step_up = read('app/templates/kubernetes_operations/secrets/_reveal_step_up.html')
+    step_up = read('app/templates/kubernetes/operations/secrets/_reveal_step_up.html')
 
     assert 'sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end' in step_up
     assert 'form_field.label_row(' in step_up and 'Current KAORI Password' in step_up

@@ -49,7 +49,7 @@ Celery Beat
 → inventory queue worker
 ```
 
-- Celery Beat publishes `app.jobs.tasks.dispatch_scheduled_jobs` once per minute.
+- Celery Beat publishes `app.platform_operations.jobs.tasks.dispatch_scheduled_jobs` once per minute.
 - The maintenance worker claims due `job_policies` rows and dispatches registered jobs.
 - The inventory worker executes Kubernetes inventory tasks recorded by `JobExecution`; it must not consume maintenance, validation, runtime, analytics, or forecasting queues.
 - Set `JOB_POLICY_SCHEDULER_ENABLED=true` on the Beat deployment. Policy intervals remain database-backed and do not require a Beat restart.

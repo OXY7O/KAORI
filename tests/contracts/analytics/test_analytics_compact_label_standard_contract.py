@@ -20,7 +20,7 @@ def test_analytics_compact_label_verifier_is_release_gated() -> None:
 
 
 def test_capacity_pressure_status_is_text_first_and_keeps_semantic_icon_outside_label() -> None:
-    pressure_lane = read('app/templates/analytics/kubernetes/components/_resource_pressure_lane.html')
+    pressure_lane = read('app/templates/kubernetes/analytics/components/_resource_pressure_lane.html')
 
     assert "table_label.status_label(resolved_status, resolved_tone, size='compact')" in pressure_lane
     assert 'status_label(resolved_status, resolved_tone, resolved_icon' not in pressure_lane
@@ -29,11 +29,11 @@ def test_capacity_pressure_status_is_text_first_and_keeps_semantic_icon_outside_
 
 
 def test_dense_analytics_record_states_use_semantic_dots() -> None:
-    alerts = read('app/templates/analytics/kubernetes/alerts/partials/_alerts_table_row.html')
-    workloads = read('app/templates/analytics/kubernetes/workload/partials/_workload_mapping_section.html')
-    quotas = read('app/templates/analytics/kubernetes/workload/partials/_tenant_quota_section.html')
-    pvc = read('app/templates/analytics/kubernetes/storage/partials/_persistent_volume_claims_panel.html')
-    pv = read('app/templates/analytics/kubernetes/storage/partials/_persistent_volumes_panel.html')
+    alerts = read('app/templates/kubernetes/analytics/alerts/partials/_alerts_table_row.html')
+    workloads = read('app/templates/kubernetes/analytics/workload/partials/_workload_mapping_section.html')
+    quotas = read('app/templates/kubernetes/analytics/workload/partials/_tenant_quota_section.html')
+    pvc = read('app/templates/kubernetes/analytics/storage/partials/_persistent_volume_claims_panel.html')
+    pv = read('app/templates/kubernetes/analytics/storage/partials/_persistent_volumes_panel.html')
 
     assert 'status_indicator_label(alert.status|title' in alerts
     assert 'status_indicator_label(row.configuration_status.label' in workloads

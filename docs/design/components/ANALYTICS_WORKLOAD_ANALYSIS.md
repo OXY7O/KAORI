@@ -4,13 +4,13 @@ Status: Canonical KAORI Workload Analysis presentation, evidence, and runtime co
 
 Implementation:
 
-- `app/analytics/kubernetes/workload/service.py`
-- `app/analytics/kubernetes/workload/quota.py`
-- `app/analytics/kubernetes/workload/mapping.py`
-- `app/analytics/kubernetes/workload/domain.py`
-- `app/analytics/kubernetes/workload/presentation.py`
-- `app/analytics/kubernetes/workload/routes.py`
-- `app/templates/analytics/kubernetes/workload/`
+- `app/kubernetes/analytics/workload/service.py`
+- `app/kubernetes/analytics/workload/quota.py`
+- `app/kubernetes/analytics/workload/mapping.py`
+- `app/kubernetes/analytics/workload/domain.py`
+- `app/kubernetes/analytics/workload/presentation.py`
+- `app/kubernetes/analytics/workload/routes.py`
+- `app/templates/kubernetes/analytics/workload/`
 - `app/integrations/observability/metrics_source/query_profiles/kubernetes_v1.py`
 
 ## Purpose

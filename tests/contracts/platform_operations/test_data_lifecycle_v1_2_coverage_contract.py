@@ -8,8 +8,8 @@ def read(relative: str) -> str:
 
 
 def test_runtime_observations_share_one_provider_neutral_lifecycle() -> None:
-    domain = read('app/retention/domains/runtime_observation.py')
-    presentation = read('app/retention/presentation.py')
+    domain = read('app/platform_operations/data_lifecycle/retention/domains/runtime_observation.py')
+    presentation = read('app/platform_operations/data_lifecycle/retention/presentation.py')
     shared_history = read('app/templates/integrations/partials/_runtime_history.html')
     metrics_source = read('app/templates/integrations/observability/metrics_source/partials/_runtime_history.html')
     alertmanager = read(
@@ -31,11 +31,11 @@ def test_runtime_observations_share_one_provider_neutral_lifecycle() -> None:
 
 
 def test_activity_audit_and_user_notifications_share_one_lifecycle_source() -> None:
-    domain = read('app/retention/domains/operational_activity.py')
-    queries = read('app/notifications/queries.py')
-    presentation = read('app/retention/presentation.py')
+    domain = read('app/platform_operations/data_lifecycle/retention/domains/operational_activity.py')
+    queries = read('app/platform_operations/notifications/queries.py')
+    presentation = read('app/platform_operations/data_lifecycle/retention/presentation.py')
     activity = read('app/templates/access/activity_audit/index.html')
-    center = read('app/templates/notifications/partials/_center_page_content.html')
+    center = read('app/templates/platform_operations/notifications/partials/_center_page_content.html')
 
     assert "source_model = 'notifications'" in domain
     assert 'schema_version = 2' in domain
@@ -55,7 +55,7 @@ def test_activity_audit_and_user_notifications_share_one_lifecycle_source() -> N
 
 def test_data_lifecycle_exposes_coverage_instead_of_new_parallel_domains() -> None:
     workspace = read('app/templates/platform_operations/data_lifecycle/partials/_domain_workspace.html')
-    registry = read('app/retention/domains/__init__.py')
+    registry = read('app/platform_operations/data_lifecycle/retention/domains/__init__.py')
 
     assert 'Lifecycle Coverage' in workspace
     assert 'Records covered by this retention, archive, and cleanup policy.' in workspace

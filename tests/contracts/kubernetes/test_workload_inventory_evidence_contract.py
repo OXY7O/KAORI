@@ -8,7 +8,7 @@ def _read(relative: str) -> str:
 
 
 def test_workload_collector_uses_canonical_operational_posture() -> None:
-    source = _read('app/inventory/kubernetes/collectors/workloads.py')
+    source = _read('app/kubernetes/inventory/collectors/workloads.py')
 
     assert "workload_status = 'Unknown'" in source
     assert "workload_status = 'Stable'" in source
@@ -23,7 +23,7 @@ def test_workload_collector_uses_canonical_operational_posture() -> None:
 
 
 def test_workload_collector_commits_flat_export_and_condition_evidence() -> None:
-    source = _read('app/inventory/kubernetes/collectors/workloads.py')
+    source = _read('app/kubernetes/inventory/collectors/workloads.py')
 
     for token in (
         "'desired_replicas': desired",
@@ -45,17 +45,17 @@ def test_workload_collector_commits_flat_export_and_condition_evidence() -> None
 
 
 def test_workload_filters_refresh_complete_workspace_and_use_canonical_state() -> None:
-    routes = _read('app/inventory/kubernetes/routes.py')
-    table = _read('app/templates/inventory/kubernetes/workloads/partials/_table_card.html')
-    workspace = _read('app/templates/inventory/kubernetes/workloads/partials/_page_workspace.html')
-    service = _read('app/inventory/kubernetes/resources/workloads.py')
+    routes = _read('app/kubernetes/inventory/routes.py')
+    table = _read('app/templates/kubernetes/inventory/workloads/partials/_table_card.html')
+    workspace = _read('app/templates/kubernetes/inventory/workloads/partials/_page_workspace.html')
+    service = _read('app/kubernetes/inventory/resources/workloads.py')
 
     assert (
         "for resource in ('nodes', 'namespaces', 'configuration', 'workloads', 'pods', 'services', 'ingresses', 'storage')"
         in routes
     )
     assert 'id="workloads-page-workspace"' in workspace
-    assert 'inventory/kubernetes/components/_data_freshness.html' in workspace
+    assert 'kubernetes/inventory/components/_data_freshness.html' in workspace
     assert 'hx-target="#workloads-page-workspace"' in table
     assert 'name="partial_mode" value="page_workspace"' in table
     assert '>Operational State<' in table
@@ -66,8 +66,8 @@ def test_workload_filters_refresh_complete_workspace_and_use_canonical_state() -
 
 
 def test_workload_detail_distinguishes_missing_template_and_conditions() -> None:
-    service = _read('app/inventory/kubernetes/resources/workloads.py')
-    template = _read('app/templates/inventory/kubernetes/workloads/partials/_workload_detail_content.html')
+    service = _read('app/kubernetes/inventory/resources/workloads.py')
+    template = _read('app/templates/kubernetes/inventory/workloads/partials/_workload_detail_content.html')
 
     assert "return 'Not Configured' if not_configured else 'Not Reported'" in service
     assert "'placement_evidence_reported': pod_template_reported" in service
@@ -81,8 +81,8 @@ def test_workload_detail_distinguishes_missing_template_and_conditions() -> None
 
 
 def test_workload_table_keeps_age_in_detail_and_update_strategy_in_row() -> None:
-    table = _read('app/templates/inventory/kubernetes/workloads/partials/_table_content.html')
-    service = _read('app/inventory/kubernetes/resources/workloads.py')
+    table = _read('app/templates/kubernetes/inventory/workloads/partials/_table_content.html')
+    service = _read('app/kubernetes/inventory/resources/workloads.py')
 
     assert '>Update Strategy<' in table
     assert '{{ workload.update_strategy }}' in table

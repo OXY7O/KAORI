@@ -6,8 +6,8 @@ This audit covers structural ownership only. It intentionally does not approve f
 
 ## Before
 
-- User/provider administration lived under `app/users`.
-- RBAC policy lived under `app/rbac`.
+- User/provider administration lived under `app/access/users`.
+- RBAC policy lived under `app/access/rbac`.
 - Roles & Access and Permission Catalog HTTP/template ownership still lived under Settings.
 - The sidebar already presented all of these as one Access domain.
 

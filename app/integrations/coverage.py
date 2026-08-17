@@ -4,9 +4,9 @@ from typing import Any
 
 from sqlalchemy.orm import contains_eager
 
-from app.cluster.constants import get_environment_label
 from app.integrations.binding_selectors import selector_is_configured, selector_summary
 from app.integrations.consumer_assets import registered_consumer_asset_definitions
+from app.kubernetes.cluster.constants import get_environment_label
 from app.models.cluster import Cluster
 from app.models.integration import IntegrationBinding, IntegrationInstance
 

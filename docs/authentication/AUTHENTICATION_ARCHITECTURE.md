@@ -48,7 +48,7 @@ flowchart LR
 
 ## Canonical Provider Vocabulary
 
-`app/definitions/catalogs/auth/identity_provider/providers.yaml` is the source-controlled provider catalog. `app/auth/identity_provider/catalog.py` is its runtime vocabulary loader.
+`app/definitions/catalogs/access/authentication/identity_provider/providers.yaml` is the source-controlled provider catalog. `app/access/authentication/identity_provider/catalog.py` is its runtime vocabulary loader.
 
 Every provider definition separates:
 
@@ -74,23 +74,23 @@ Product identity must not be encoded in core form branches, route branches, or O
 
 ### Authentication Kernel
 
-`app/auth/identity_provider/` owns provider vocabulary, adapter protocols, adapter registries, provider-specific protocol implementations, and normalized authentication/directory outcomes.
+`app/access/authentication/identity_provider/` owns provider vocabulary, adapter protocols, adapter registries, provider-specific protocol implementations, and normalized authentication/directory outcomes.
 
 Reusable protocols live under:
 
 ```text
-app/auth/identity_provider/adapters/<adapter>/
+app/access/authentication/identity_provider/adapters/<adapter>/
 ```
 
 Provider-specific behavior lives under:
 
 ```text
-app/auth/identity_provider/providers/<provider>/
+app/access/authentication/identity_provider/providers/<provider>/
 ```
 
 ### Identity Provider Workspace
 
-`app/identity_providers/` owns provider administration, validation, directory search, signed administrative identity projection, and workspace presentation.
+`app/access/identity_providers/` owns provider administration, validation, directory search, signed administrative identity projection, and workspace presentation.
 
 Its canonical UI is `/access/identity-providers` with:
 
@@ -100,7 +100,7 @@ Overview · Providers · Directory Provisioning
 
 ### User Management
 
-`app/users/` owns KAORI user lifecycle, effective access presentation, and role assignment. It does not own provider configuration.
+`app/access/users/` owns KAORI user lifecycle, effective access presentation, and role assignment. It does not own provider configuration.
 
 ### RBAC
 

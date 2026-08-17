@@ -32,7 +32,7 @@ capabilities to continue development behind explicit Reserved Plan/fail-closed b
 
 ### Automation Control
 
-- Application-layer orchestration surface under `app/automation_control/`.
+- Application-layer orchestration surface under `app/intelligence/automation_control/`.
 - Read surface requires `intelligence.view`.
 - Candidate promotion/dismissal and decision approval/rejection are active governance operations; they are not infrastructure mutation.
 - Approval-required, decision-approved, and decision-rejected events are asynchronously delivered through Notification Channels after the governance transaction commits.

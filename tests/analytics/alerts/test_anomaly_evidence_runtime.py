@@ -16,26 +16,26 @@ def _load_anomalies_module():
     names = [
         'app',
         'app.analytics',
-        'app.analytics.kubernetes.alerts',
-        'app.analytics.kubernetes.alerts.metrics',
+        'app.kubernetes.analytics.alerts',
+        'app.kubernetes.analytics.alerts.metrics',
         'app.integrations',
         'app.integrations.observability.metrics_source.exceptions',
         'app.integrations.observability.metrics_source.query_profiles',
         'app.models',
-        'app.metrics_sources.repository',
-        'app.metrics_sources.service',
+        'app.integrations.observability.metrics_source.application.repository',
+        'app.integrations.observability.metrics_source.application.service',
     ]
     previous = {name: sys.modules.get(name) for name in names}
     try:
         for package in (
             'app',
             'app.analytics',
-            'app.analytics.kubernetes.alerts',
+            'app.kubernetes.analytics.alerts',
             'app.integrations',
         ):
             sys.modules[package] = ModuleType(package)
 
-        metrics = ModuleType('app.analytics.kubernetes.alerts.metrics')
+        metrics = ModuleType('app.kubernetes.analytics.alerts.metrics')
         metrics.get_metric_labels = lambda item: dict(item.get('metric') or {})
         metrics.get_metric_value = lambda item: float((item.get('value') or [0, 0])[1])
         sys.modules[metrics.__name__] = metrics
@@ -52,17 +52,17 @@ def _load_anomalies_module():
         models.Cluster = object
         sys.modules[models.__name__] = models
 
-        repository = ModuleType('app.metrics_sources.repository')
+        repository = ModuleType('app.integrations.observability.metrics_source.application.repository')
         repository.resolve_instance_for_cluster = lambda cluster_id: object()
         sys.modules[repository.__name__] = repository
 
-        service = ModuleType('app.metrics_sources.service')
+        service = ModuleType('app.integrations.observability.metrics_source.application.service')
         service.MetricsService = object
         sys.modules[service.__name__] = service
 
         spec = importlib.util.spec_from_file_location(
             'alerts_anomalies_under_test',
-            ROOT / 'app/analytics/kubernetes/alerts/anomalies.py',
+            ROOT / 'app/kubernetes/analytics/alerts/anomalies.py',
         )
         assert spec and spec.loader
         module = importlib.util.module_from_spec(spec)

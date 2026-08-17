@@ -24,7 +24,7 @@ def main() -> int:
     object_storage_validator = read(
         'app/integrations/observability/metrics_source/binding_validators/object_storage.py'
     )
-    resolver = read('app/metrics_sources/resolver.py')
+    resolver = read('app/integrations/observability/metrics_source/application/resolver.py')
     model = read('app/models/integration.py')
     migration = read('migrations/versions/20260812_prometheus_consumer_validation_profiles.py')
     generalization = read('migrations/versions/20260817_metrics_source_generalization.py')

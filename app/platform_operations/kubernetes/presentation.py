@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from flask import current_app
 
-from app.kubernetes_operations.secrets.reveal_policy import cluster_reveal_readiness
+from app.kubernetes.operations.secrets.reveal_policy import cluster_reveal_readiness
 from app.models import Cluster, SecretRevealNamespacePolicy
 
 

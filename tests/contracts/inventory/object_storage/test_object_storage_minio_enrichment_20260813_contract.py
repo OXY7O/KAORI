@@ -9,7 +9,7 @@ def read(path: str) -> str:
 
 def test_minio_inventory_collects_normalized_bucket_configuration_evidence() -> None:
     client = read('app/integrations/storage/object_storage/providers/minio/client.py')
-    sync = read('app/inventory/object_storage/sync.py')
+    sync = read('app/storage/object_storage/inventory/sync.py')
     model = read('app/models/object_storage.py')
 
     for method in (
@@ -40,8 +40,8 @@ def test_bucket_usage_stats_are_optional_and_persisted_canonically() -> None:
     client = read('app/integrations/storage/object_storage/providers/minio/client.py')
     config = read('app/config/default.py')
     model = read('app/models/object_storage.py')
-    presentation = read('app/inventory/object_storage/presentation.py')
-    template = read('app/templates/inventory/object_storage/buckets/partials/_table_content.html')
+    presentation = read('app/storage/object_storage/inventory/presentation.py')
+    template = read('app/templates/storage/object_storage/inventory/buckets/partials/_table_content.html')
 
     assert 'OBJECT_STORAGE_INVENTORY_USAGE_STATS_MODE' in config
     assert "{'disabled', 'provider_metrics', 'full_scan'}" in config
@@ -61,8 +61,8 @@ def test_bucket_usage_stats_are_optional_and_persisted_canonically() -> None:
 
 
 def test_bucket_detail_surface_is_modal_and_system_detail_surface_is_drawer() -> None:
-    buckets = read('app/templates/inventory/object_storage/buckets/partials/_table_content.html')
-    systems = read('app/templates/inventory/object_storage/systems/partials/_table_content.html')
+    buckets = read('app/templates/storage/object_storage/inventory/buckets/partials/_table_content.html')
+    systems = read('app/templates/storage/object_storage/inventory/systems/partials/_table_content.html')
     assert 'x-teleport="body"' in buckets
     assert 'max-w-[88rem]' in buckets
     assert 'side_drawer.render(' not in buckets
@@ -82,8 +82,8 @@ def test_enrichment_migration_extends_current_bucket_container_head() -> None:
 def test_minio_bucket_quota_is_canonical_inventory_evidence() -> None:
     client = read('app/integrations/storage/object_storage/providers/minio/client.py')
     model = read('app/models/object_storage.py')
-    sync = read('app/inventory/object_storage/sync.py')
-    presentation = read('app/inventory/object_storage/presentation.py')
+    sync = read('app/storage/object_storage/inventory/sync.py')
+    presentation = read('app/storage/object_storage/inventory/presentation.py')
     migration = read('migrations/versions/20260813_object_storage_bucket_quota.py')
 
     assert "f'/minio/admin/{api_version}/get-bucket-quota'" in client

@@ -8,9 +8,9 @@ def read(relative: str) -> str:
 
 
 def test_service_inventory_uses_canonical_resource_page_pattern() -> None:
-    hero = read('app/templates/inventory/kubernetes/services/partials/_hero.html')
-    summary = read('app/templates/inventory/kubernetes/services/partials/_summary_cards.html')
-    table = read('app/templates/inventory/kubernetes/services/partials/_table_content.html')
+    hero = read('app/templates/kubernetes/inventory/services/partials/_hero.html')
+    summary = read('app/templates/kubernetes/inventory/services/partials/_summary_cards.html')
+    table = read('app/templates/kubernetes/inventory/services/partials/_table_content.html')
 
     assert 'page_hero.context_card(' in hero
     assert 'Service Network Posture' in summary
@@ -23,8 +23,8 @@ def test_service_inventory_uses_canonical_resource_page_pattern() -> None:
 
 
 def test_service_detail_uses_adaptive_stacks_and_factual_network_configuration() -> None:
-    detail = read('app/templates/inventory/kubernetes/services/partials/_service_detail_content.html')
-    semantics = read('app/inventory/kubernetes/resources/service_semantics.py')
+    detail = read('app/templates/kubernetes/inventory/services/partials/_service_detail_content.html')
+    semantics = read('app/kubernetes/inventory/resources/service_semantics.py')
 
     assert 'data-kaori-detail-density="adaptive-stacks"' in detail
     assert 'detail.expanded_workspace_shell_classes()' in detail
@@ -39,8 +39,8 @@ def test_service_detail_uses_adaptive_stacks_and_factual_network_configuration()
 
 
 def test_service_collection_prefers_endpoint_slice_with_endpoints_fallback() -> None:
-    collector = read('app/inventory/kubernetes/collectors/services.py')
-    sync = read('app/inventory/kubernetes/synchronization.py')
+    collector = read('app/kubernetes/inventory/collectors/services.py')
+    sync = read('app/kubernetes/inventory/synchronization.py')
 
     assert 'list_endpoint_slice_for_all_namespaces' in collector
     assert "'EndpointSlice'" in collector
@@ -50,8 +50,8 @@ def test_service_collection_prefers_endpoint_slice_with_endpoints_fallback() -> 
 
 
 def test_service_filters_and_page_size_refresh_the_complete_workspace() -> None:
-    table = read('app/templates/inventory/kubernetes/services/partials/_table_content.html')
-    card = read('app/templates/inventory/kubernetes/services/partials/_table_card.html')
+    table = read('app/templates/kubernetes/inventory/services/partials/_table_content.html')
+    card = read('app/templates/kubernetes/inventory/services/partials/_table_card.html')
 
     assert 'hx-target="#services-table-content"' in table
     assert 'name="partial_mode" value="table_content"' in table

@@ -4,7 +4,7 @@ from flask import Blueprint, render_template, url_for
 from flask.typing import ResponseReturnValue
 from werkzeug.exceptions import HTTPException
 
-from app.rbac.decorators import permission_required
+from app.access.rbac.decorators import permission_required
 from app.reports.export.routes import (
     download_report_artifact,
     generate_report_output,

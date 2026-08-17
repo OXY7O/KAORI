@@ -22,10 +22,10 @@ def main() -> int:
     binding_validation = read(
         'app/integrations/observability/alert_source/providers/alertmanager/binding_validation.py'
     )
-    resolver = read('app/alert_sources/providers/alertmanager/resolver.py')
+    resolver = read('app/integrations/observability/alert_source/providers/alertmanager/application/resolver.py')
     object_storage_profile_migration = read('migrations/versions/20260814_object_storage_alert_profile.py')
-    forms = read('app/alert_sources/providers/alertmanager/forms.py')
-    minio_service = read('app/object_storage/providers/minio/service.py')
+    forms = read('app/integrations/observability/alert_source/providers/alertmanager/application/forms.py')
+    minio_service = read('app/integrations/storage/object_storage/providers/minio/application/service.py')
     consumer_assets = read('app/integrations/consumer_assets.py')
     taxonomy_catalog = read('app/definitions/catalogs/integrations/taxonomy.yaml')
     validation_template = read(

@@ -10,11 +10,11 @@ def read(relative: str) -> str:
 
 
 def test_inventory_and_analytics_use_explicit_domain_namespaces() -> None:
-    assert (ROOT / 'app/inventory/kubernetes').is_dir()
-    assert (ROOT / 'app/inventory/object_storage').is_dir()
-    assert (ROOT / 'app/analytics/kubernetes').is_dir()
-    assert (ROOT / 'app/analytics/object_storage').is_dir()
-    assert (ROOT / 'app/analytics/shared').is_dir()
+    assert (ROOT / 'app/kubernetes/inventory').is_dir()
+    assert (ROOT / 'app/storage/object_storage/inventory').is_dir()
+    assert (ROOT / 'app/kubernetes/analytics').is_dir()
+    assert (ROOT / 'app/storage/object_storage/analytics').is_dir()
+    assert (ROOT / 'app/common/analytics').is_dir()
 
     for retired in (
         'app/storage_inventory',
@@ -28,10 +28,10 @@ def test_inventory_and_analytics_use_explicit_domain_namespaces() -> None:
 
 
 def test_object_storage_analytics_domain_is_metrics_backend_neutral() -> None:
-    service = read('app/analytics/object_storage/service.py')
-    contracts = read('app/analytics/shared/metrics/contracts.py')
-    adapter = read('app/analytics/object_storage/sources/providers/minio/metrics.py')
-    resolver = read('app/analytics/object_storage/sources/resolver.py')
+    service = read('app/storage/object_storage/analytics/service.py')
+    contracts = read('app/common/analytics/metrics/contracts.py')
+    adapter = read('app/storage/object_storage/analytics/sources/providers/minio/metrics.py')
+    resolver = read('app/storage/object_storage/analytics/sources/resolver.py')
 
     assert 'class MetricsSource(Protocol)' in contracts
     assert 'MetricsConsumer' not in service
@@ -44,8 +44,8 @@ def test_object_storage_analytics_domain_is_metrics_backend_neutral() -> None:
 
 
 def test_retired_object_storage_metrics_domain_modules_are_deleted() -> None:
-    assert not (ROOT / 'app/analytics/object_storage/metrics.py').exists()
-    assert not (ROOT / 'app/analytics/object_storage/parsing.py').exists()
+    assert not (ROOT / 'app/storage/object_storage/analytics/metrics.py').exists()
+    assert not (ROOT / 'app/storage/object_storage/analytics/parsing.py').exists()
 
 
 def test_platform_operations_category_uses_distinct_workspace_name() -> None:

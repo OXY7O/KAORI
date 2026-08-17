@@ -21,19 +21,19 @@ def test_authentication_templates_compile_with_shared_layout() -> None:
 
     for template_name in (
         'layouts/auth.html',
-        'auth/index.html',
-        'auth/setup_required.html',
-        'auth/partials/_brand_panel.html',
-        'auth/partials/_login_form.html',
-        'auth/partials/_login_alerts.html',
+        'access/authentication/index.html',
+        'access/authentication/setup_required.html',
+        'access/authentication/partials/_brand_panel.html',
+        'access/authentication/partials/_login_form.html',
+        'access/authentication/partials/_login_alerts.html',
     ):
         environment.get_template(template_name)
 
 
 def test_login_rendering_keeps_accessibility_compactness_and_no_page_local_handlers() -> None:
-    index = (TEMPLATE_ROOT / 'auth/index.html').read_text(encoding='utf-8')
-    form = (TEMPLATE_ROOT / 'auth/partials/_login_form.html').read_text(encoding='utf-8')
-    alerts = (TEMPLATE_ROOT / 'auth/partials/_login_alerts.html').read_text(encoding='utf-8')
+    index = (TEMPLATE_ROOT / 'access/authentication/index.html').read_text(encoding='utf-8')
+    form = (TEMPLATE_ROOT / 'access/authentication/partials/_login_form.html').read_text(encoding='utf-8')
+    alerts = (TEMPLATE_ROOT / 'access/authentication/partials/_login_alerts.html').read_text(encoding='utf-8')
     css = (ROOT / 'app/static/css/auth-login.css').read_text(encoding='utf-8')
 
     assert 'aria-label="KAORI sign in"' in index

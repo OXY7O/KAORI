@@ -33,14 +33,14 @@ The current baseline contains **60 navigation links** across the authenticated a
 
 The retired standalone Cluster Management listing chain must not return:
 
-- `app/templates/cluster/index.html`
+- `app/templates/kubernetes/cluster/index.html`
 - standalone cluster table/pagination/status/inventory/delete-modal partials used only by that retired listing
 - `cluster.list_clusters`
 
 The active registration/edit surfaces remain:
 
-- `app/templates/cluster/add.html`
-- `app/templates/cluster/edit.html`
+- `app/templates/kubernetes/cluster/add.html`
+- `app/templates/kubernetes/cluster/edit.html`
 - shared form/connection-test/page-header partials
 
 ## General Release Commands

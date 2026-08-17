@@ -21,18 +21,18 @@ def _load_module(name: str, relative: str, monkeypatch: pytest.MonkeyPatch):
 
 
 def _topology_modules(monkeypatch: pytest.MonkeyPatch):
-    for package in ('app', 'app.inventory', 'app.inventory.kubernetes.topology'):
+    for package in ('app', 'app.inventory', 'app.kubernetes.inventory.topology'):
         module = ModuleType(package)
         module.__path__ = []
         monkeypatch.setitem(sys.modules, package, module)
     contracts = _load_module(
-        'app.inventory.kubernetes.topology.contracts',
-        'app/inventory/kubernetes/topology/contracts.py',
+        'app.kubernetes.inventory.topology.contracts',
+        'app/kubernetes/inventory/topology/contracts.py',
         monkeypatch,
     )
     presentation = _load_module(
-        'app.inventory.kubernetes.topology.presentation',
-        'app/inventory/kubernetes/topology/presentation.py',
+        'app.kubernetes.inventory.topology.presentation',
+        'app/kubernetes/inventory/topology/presentation.py',
         monkeypatch,
     )
     return contracts, presentation
@@ -126,52 +126,52 @@ def _topology_builder_modules(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setitem(sys.modules, 'flask', flask)
 
     for package in (
-        'app.cluster',
+        'app.kubernetes.cluster',
         'app.integrations',
         'app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api',
-        'app.inventory.kubernetes.resources',
+        'app.kubernetes.inventory.resources',
     ):
         module = ModuleType(package)
         module.__path__ = []
         monkeypatch.setitem(sys.modules, package, module)
 
-    constants = ModuleType('app.cluster.constants')
+    constants = ModuleType('app.kubernetes.cluster.constants')
     constants.get_environment_label = lambda value: str(value or 'Not Reported').title()
-    monkeypatch.setitem(sys.modules, 'app.cluster.constants', constants)
+    monkeypatch.setitem(sys.modules, 'app.kubernetes.cluster.constants', constants)
 
     resolver = ModuleType('app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.resolver')
     resolver.server_for_cluster = lambda cluster: getattr(cluster, 'server', None)
     monkeypatch.setitem(sys.modules, 'app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.resolver', resolver)
 
     _load_module(
-        'app.inventory.kubernetes.formatting',
-        'app/inventory/kubernetes/formatting.py',
+        'app.kubernetes.inventory.formatting',
+        'app/kubernetes/inventory/formatting.py',
         monkeypatch,
     )
     _load_module(
-        'app.inventory.kubernetes.resources.ingress_semantics',
-        'app/inventory/kubernetes/resources/ingress_semantics.py',
+        'app.kubernetes.inventory.resources.ingress_semantics',
+        'app/kubernetes/inventory/resources/ingress_semantics.py',
         monkeypatch,
     )
     _load_module(
-        'app.inventory.kubernetes.resources.storage_semantics',
-        'app/inventory/kubernetes/resources/storage_semantics.py',
+        'app.kubernetes.inventory.resources.storage_semantics',
+        'app/kubernetes/inventory/resources/storage_semantics.py',
         monkeypatch,
     )
 
     node_builder = _load_module(
-        'app.inventory.kubernetes.topology.node_builder',
-        'app/inventory/kubernetes/topology/node_builder.py',
+        'app.kubernetes.inventory.topology.node_builder',
+        'app/kubernetes/inventory/topology/node_builder.py',
         monkeypatch,
     )
     edge_builder = _load_module(
-        'app.inventory.kubernetes.topology.edge_builder',
-        'app/inventory/kubernetes/topology/edge_builder.py',
+        'app.kubernetes.inventory.topology.edge_builder',
+        'app/kubernetes/inventory/topology/edge_builder.py',
         monkeypatch,
     )
     graph_builder = _load_module(
-        'app.inventory.kubernetes.topology.graph_builder',
-        'app/inventory/kubernetes/topology/graph_builder.py',
+        'app.kubernetes.inventory.topology.graph_builder',
+        'app/kubernetes/inventory/topology/graph_builder.py',
         monkeypatch,
     )
     return contracts, presentation, node_builder, edge_builder, graph_builder

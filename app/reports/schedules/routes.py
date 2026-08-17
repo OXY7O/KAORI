@@ -11,10 +11,10 @@ from flask.typing import ResponseReturnValue
 from flask_login import current_user
 from werkzeug.exceptions import HTTPException
 
-from app.auth.session import safe_next_url
-from app.notifications.feedback import OperationalDeliveryPolicy
-from app.notifications.service import queue_transient_feedback, record_operational_activity
-from app.rbac.decorators import permission_required
+from app.access.authentication.session import safe_next_url
+from app.access.rbac.decorators import permission_required
+from app.platform_operations.notifications.feedback import OperationalDeliveryPolicy
+from app.platform_operations.notifications.service import queue_transient_feedback, record_operational_activity
 from app.reports.schedules.job_adapter import run_schedule_now
 from app.reports.schedules.service import (
     create_report_schedule,

@@ -8,7 +8,7 @@ def read(relative: str) -> str:
 
 
 def test_forecast_controls_separate_scope_and_projection_configuration() -> None:
-    content = read('app/templates/analytics/kubernetes/forecast/partials/_controls_readiness.html')
+    content = read('app/templates/kubernetes/analytics/forecast/partials/_controls_readiness.html')
     assert 'Scope' in content
     assert 'Projection Configuration' in content
     assert 'data-analytics-preserve-tab' in content
@@ -20,8 +20,8 @@ def test_forecast_controls_separate_scope_and_projection_configuration() -> None
 
 
 def test_forecast_hero_uses_canonical_context_card() -> None:
-    content = read('app/templates/analytics/kubernetes/forecast/partials/_hero.html')
-    index = read('app/templates/analytics/kubernetes/forecast/index.html')
+    content = read('app/templates/kubernetes/analytics/forecast/partials/_hero.html')
+    index = read('app/templates/kubernetes/analytics/forecast/index.html')
     assert 'page_hero.context_card(' in content
     assert "('gauge', 'Highest Projection'" in content
     assert "('list-checks', 'Actionable'" in content
@@ -29,12 +29,12 @@ def test_forecast_hero_uses_canonical_context_card() -> None:
     assert 'context_posture_header' not in content
     assert 'context_posture_note' not in content
     assert 'context_bottom_notice' not in content
-    assert 'js/analytics/kubernetes/forecast_chart.js' in index
+    assert 'js/kubernetes/analytics/forecast_chart.js' in index
     assert 'analytics_forecast.js' not in index
 
 
 def test_forecast_workspace_uses_capacity_surface_grammar() -> None:
-    content = read('app/templates/analytics/kubernetes/forecast/partials/_forecast_section.html')
+    content = read('app/templates/kubernetes/analytics/forecast/partials/_forecast_section.html')
     assert 'analysis_surface.evidence_shell_classes()' in content
     assert 'analysis_surface.metric_grid_classes(4)' in content
     assert 'grid gap-4 lg:grid-cols-2' in content
@@ -48,8 +48,8 @@ def test_forecast_workspace_uses_capacity_surface_grammar() -> None:
 
 
 def test_interactive_chart_contract_uses_tokens_and_visible_legend() -> None:
-    template = read('app/templates/analytics/kubernetes/components/_interactive_forecast_chart.html')
-    script = read('app/static/js/analytics/kubernetes/forecast_chart.js')
+    template = read('app/templates/kubernetes/analytics/components/_interactive_forecast_chart.html')
+    script = read('app/static/js/kubernetes/analytics/forecast_chart.js')
     assert 'bg-status-info' in template
     assert 'bg-kaori-primary' in template
     assert 'bg-status-normal' in template
@@ -65,12 +65,12 @@ def test_interactive_chart_contract_uses_tokens_and_visible_legend() -> None:
 
 def test_forecast_direct_cutover_removes_legacy_assets_and_methodology() -> None:
     assert not (ROOT / 'app/static/js/analytics_forecast.js').exists()
-    assert not (ROOT / 'app/templates/analytics/kubernetes/forecast/partials/_methodology.html').exists()
-    service = read('app/analytics/kubernetes/forecast/service.py')
-    contracts = read('app/analytics/kubernetes/forecast/contracts.py')
-    calculation = read('app/analytics/kubernetes/forecast/calculation.py')
-    presentation = read('app/analytics/kubernetes/forecast/presentation.py')
-    routes = read('app/analytics/kubernetes/forecast/routes.py')
+    assert not (ROOT / 'app/templates/kubernetes/analytics/forecast/partials/_methodology.html').exists()
+    service = read('app/kubernetes/analytics/forecast/service.py')
+    contracts = read('app/kubernetes/analytics/forecast/contracts.py')
+    calculation = read('app/kubernetes/analytics/forecast/calculation.py')
+    presentation = read('app/kubernetes/analytics/forecast/presentation.py')
+    routes = read('app/kubernetes/analytics/forecast/routes.py')
     analytics_routes = read('app/analytics/routes.py')
     assert 'RESOURCE_OPTIONS' not in service
     assert 'moving_average' not in service
@@ -86,11 +86,11 @@ def test_forecast_direct_cutover_removes_legacy_assets_and_methodology() -> None
 
 def test_forecast_templates_have_no_page_local_arbitrary_microcopy() -> None:
     for relative in (
-        'app/templates/analytics/kubernetes/forecast/index.html',
-        'app/templates/analytics/kubernetes/forecast/partials/_hero.html',
-        'app/templates/analytics/kubernetes/forecast/partials/_controls_readiness.html',
-        'app/templates/analytics/kubernetes/forecast/partials/_overview_methodology.html',
-        'app/templates/analytics/kubernetes/forecast/partials/_forecast_section.html',
+        'app/templates/kubernetes/analytics/forecast/index.html',
+        'app/templates/kubernetes/analytics/forecast/partials/_hero.html',
+        'app/templates/kubernetes/analytics/forecast/partials/_controls_readiness.html',
+        'app/templates/kubernetes/analytics/forecast/partials/_overview_methodology.html',
+        'app/templates/kubernetes/analytics/forecast/partials/_forecast_section.html',
     ):
         content = read(relative)
         assert 'text-[' not in content
@@ -98,8 +98,8 @@ def test_forecast_templates_have_no_page_local_arbitrary_microcopy() -> None:
 
 
 def test_forecast_guidance_uses_white_standalone_cards() -> None:
-    overview = read('app/templates/analytics/kubernetes/forecast/partials/_overview_methodology.html')
-    section = read('app/templates/analytics/kubernetes/forecast/partials/_forecast_section.html')
+    overview = read('app/templates/kubernetes/analytics/forecast/partials/_overview_methodology.html')
+    section = read('app/templates/kubernetes/analytics/forecast/partials/_forecast_section.html')
 
     assert 'Forecast Operating Boundary' in overview
     assert 'analysis_surface.guidance_card_classes()' in overview

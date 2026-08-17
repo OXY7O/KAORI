@@ -8,11 +8,11 @@ def _read(relative: str) -> str:
 
 
 def test_tls_registry_uses_governance_resource_registry_pattern() -> None:
-    page = _read('app/templates/governance/tls_certificates/partials/_page_content.html')
-    scope = _read('app/templates/governance/tls_certificates/partials/_page_workspace.html')
-    summary = _read('app/templates/governance/tls_certificates/partials/_summary_cards.html')
-    table = _read('app/templates/governance/tls_certificates/partials/_table.html')
-    index = _read('app/templates/governance/tls_certificates/index.html')
+    page = _read('app/templates/kubernetes/governance/tls_certificates/partials/_page_content.html')
+    scope = _read('app/templates/kubernetes/governance/tls_certificates/partials/_page_workspace.html')
+    summary = _read('app/templates/kubernetes/governance/tls_certificates/partials/_summary_cards.html')
+    table = _read('app/templates/kubernetes/governance/tls_certificates/partials/_table.html')
+    index = _read('app/templates/kubernetes/governance/tls_certificates/index.html')
 
     assert 'partials/_hero.html' in page
     assert 'partials/_snapshot_context.html' in scope
@@ -45,14 +45,14 @@ def test_tls_registry_uses_governance_resource_registry_pattern() -> None:
     assert "size='body'" not in table
     assert 'static_detail_row' not in table
     assert 'resource_detail_modal.host(' in index
-    detail = _read('app/templates/governance/tls_certificates/partials/_detail_content.html')
+    detail = _read('app/templates/kubernetes/governance/tls_certificates/partials/_detail_content.html')
     assert 'detail.header_badge_row()' in detail
 
 
 def test_tls_registry_status_and_pagination_are_canonical() -> None:
-    status = _read('app/templates/governance/tls_certificates/partials/_status_badge.html')
-    filters = _read('app/templates/governance/tls_certificates/partials/_filters.html')
-    table = _read('app/templates/governance/tls_certificates/partials/_table.html')
+    status = _read('app/templates/kubernetes/governance/tls_certificates/partials/_status_badge.html')
+    filters = _read('app/templates/kubernetes/governance/tls_certificates/partials/_filters.html')
+    table = _read('app/templates/kubernetes/governance/tls_certificates/partials/_table.html')
 
     assert "status == 'critical'" in status
     assert "status == 'expired'" in status
@@ -67,11 +67,11 @@ def test_tls_registry_status_and_pagination_are_canonical() -> None:
 
 
 def test_tls_governance_uses_canonical_permissions_and_evidence() -> None:
-    panel = _read('app/templates/governance/tls_certificates/partials/_sync_panel.html')
-    collector = _read('app/governance/tls_certificates/collector.py')
+    panel = _read('app/templates/kubernetes/governance/tls_certificates/partials/_sync_panel.html')
+    collector = _read('app/kubernetes/governance/tls_certificates/collector.py')
     model = _read('app/models/governance.py')
     migration = _read('migrations/versions/20260731_tls_governance_evidence.py')
-    detail_template = _read('app/templates/governance/tls_certificates/partials/_detail_content.html')
+    detail_template = _read('app/templates/kubernetes/governance/tls_certificates/partials/_detail_content.html')
 
     assert "current_user.has_permission('tls_certificates.sync')" in panel
     assert "current_user.has_permission('kubernetes_secrets.bulk_rotate_tls')" in panel

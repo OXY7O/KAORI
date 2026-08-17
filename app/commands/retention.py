@@ -5,8 +5,8 @@ import json
 import click
 from flask.cli import with_appcontext
 
-from app.retention.domains import DOMAIN_FACTORIES, get_archive_domain
-from app.retention.service import (
+from app.platform_operations.data_lifecycle.retention.domains import DOMAIN_FACTORIES, get_archive_domain
+from app.platform_operations.data_lifecycle.retention.service import (
     preview_retention,
     purge_expired_archives,
     run_retention_archive,

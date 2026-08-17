@@ -37,9 +37,9 @@ def test_feedback_coverage_matrix_is_documented_and_release_gated() -> None:
 
 
 def test_configmap_and_secret_crud_use_canonical_operational_feedback() -> None:
-    configmaps = read('app/kubernetes_operations/configmaps/routes.py')
-    secret_support = read('app/kubernetes_operations/secrets/route_support.py')
-    secret_crud = read('app/kubernetes_operations/secrets/crud_routes.py')
+    configmaps = read('app/kubernetes/operations/configmaps/routes.py')
+    secret_support = read('app/kubernetes/operations/secrets/route_support.py')
+    secret_crud = read('app/kubernetes/operations/secrets/crud_routes.py')
 
     for event in ('kubernetes_configmap_created', 'kubernetes_configmap_updated', 'kubernetes_configmap_deleted'):
         assert event in configmaps
@@ -55,19 +55,29 @@ def test_configmap_and_secret_crud_use_canonical_operational_feedback() -> None:
 
 def test_tls_integrations_platform_operations_access_and_settings_are_covered() -> None:
     sources = {
-        'app/kubernetes_operations/secrets/tls_routes.py': (
+        'app/kubernetes/operations/secrets/tls_routes.py': (
             'kubernetes_tls_secret_rotation',
             'kubernetes_tls_secret_bulk_rotation',
         ),
-        'app/governance/tls_certificates/routes.py': ('governance_tls_secret_sync_dispatch',),
-        'app/cluster/routes.py': ('cluster_create', 'cluster_update', 'cluster_delete'),
-        'app/metrics_sources/registration_web.py': ('metrics_source_created',),
-        'app/metrics_sources/routes.py': ('metrics_source_deleted',),
-        'app/metrics_sources/edit_web.py': ('metrics_source_updated',),
-        'app/alert_sources/providers/alertmanager/registration_web.py': ('alertmanager_instance_created',),
-        'app/alert_sources/providers/alertmanager/routes.py': ('alertmanager_instance_deleted',),
-        'app/alert_sources/providers/alertmanager/edit_web.py': ('alertmanager_instance_updated',),
-        'app/jobs/routes.py': ('job_policy_updated', 'job_manual_dispatch', 'job_cancellation_requested'),
+        'app/kubernetes/governance/tls_certificates/routes.py': ('governance_tls_secret_sync_dispatch',),
+        'app/kubernetes/cluster/routes.py': ('cluster_create', 'cluster_update', 'cluster_delete'),
+        'app/integrations/observability/metrics_source/application/registration_web.py': ('metrics_source_created',),
+        'app/integrations/observability/metrics_source/application/routes.py': ('metrics_source_deleted',),
+        'app/integrations/observability/metrics_source/application/edit_web.py': ('metrics_source_updated',),
+        'app/integrations/observability/alert_source/providers/alertmanager/application/registration_web.py': (
+            'alertmanager_instance_created',
+        ),
+        'app/integrations/observability/alert_source/providers/alertmanager/application/routes.py': (
+            'alertmanager_instance_deleted',
+        ),
+        'app/integrations/observability/alert_source/providers/alertmanager/application/edit_web.py': (
+            'alertmanager_instance_updated',
+        ),
+        'app/platform_operations/jobs/routes.py': (
+            'job_policy_updated',
+            'job_manual_dispatch',
+            'job_cancellation_requested',
+        ),
         'app/platform_operations/data_lifecycle/service.py': (
             'data_lifecycle_policy_updated',
             'data_lifecycle_execution_requested',
@@ -76,12 +86,12 @@ def test_tls_integrations_platform_operations_access_and_settings_are_covered() 
             'kubernetes_secret_reveal_cluster_readiness_updated',
             'kubernetes_secret_reveal_namespace_policy_updated',
         ),
-        'app/users/routes.py': (
+        'app/access/users/routes.py': (
             'user_created',
             'user_updated',
             'user_deleted',
         ),
-        'app/identity_providers/routes.py': (
+        'app/access/identity_providers/routes.py': (
             'identity_provider_created',
             'identity_provider_updated',
             'identity_provider_validated',
@@ -107,7 +117,7 @@ def test_general_settings_preference_save_has_toast_and_audit_without_inbox_nois
 
 
 def test_notification_channel_crud_and_settings_failures_reach_canonical_toast_stack() -> None:
-    channels = read('app/notification_channels/routes.py')
+    channels = read('app/integrations/delivery/notification_channels/routes.py')
     settings = read('app/settings/account/actions.py')
 
     assert "event_type=f'integration.notification_channel.{action}'" in channels

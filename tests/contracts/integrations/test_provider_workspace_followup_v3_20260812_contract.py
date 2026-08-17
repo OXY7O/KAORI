@@ -55,9 +55,9 @@ def test_provider_edit_heroes_share_one_kaori_contract() -> None:
 
 
 def test_observability_edit_success_returns_to_registry_for_browser_and_htmx() -> None:
-    metrics_source = read('app/metrics_sources/edit_web.py')
-    alertmanager = read('app/alert_sources/providers/alertmanager/edit_web.py')
-    minio = read('app/object_storage/providers/minio/routes.py')
+    metrics_source = read('app/integrations/observability/metrics_source/application/edit_web.py')
+    alertmanager = read('app/integrations/observability/alert_source/providers/alertmanager/application/edit_web.py')
+    minio = read('app/integrations/storage/object_storage/providers/minio/application/routes.py')
 
     assert "registry_url = url_for('integrations.metrics_sources')" in metrics_source
     assert "response.headers['HX-Redirect'] = registry_url" in metrics_source
@@ -79,7 +79,7 @@ def test_observability_edit_success_returns_to_registry_for_browser_and_htmx() -
 
 
 def test_minio_edit_secret_can_preserve_existing_credential() -> None:
-    forms = read('app/object_storage/providers/minio/forms.py')
+    forms = read('app/integrations/storage/object_storage/providers/minio/application/forms.py')
     template = read('app/templates/integrations/storage/object_storage/providers/minio/instance_form.html')
 
     secret_field = forms.split('secret_key = PasswordField(', 1)[1].split('region = StringField(', 1)[0]

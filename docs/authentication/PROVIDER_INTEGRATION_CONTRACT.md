@@ -16,7 +16,7 @@ Access
 → RBAC
 ```
 
-Provider definitions are source-controlled in `app/definitions/catalogs/auth/identity_provider/providers.yaml`. Runtime vocabulary is loaded by `app/auth/identity_provider/catalog.py`.
+Provider definitions are source-controlled in `app/definitions/catalogs/access/authentication/identity_provider/providers.yaml`. Runtime vocabulary is loaded by `app/access/authentication/identity_provider/catalog.py`.
 
 Core code uses these independent identifiers:
 
@@ -34,7 +34,7 @@ Adding a provider that reuses an existing adapter must not require schema, route
 Authentication kernel code lives under:
 
 ```text
-app/auth/identity_provider/
+app/access/authentication/identity_provider/
 ├── catalog.py
 ├── configuration.py
 ├── credential.py
@@ -50,11 +50,11 @@ Provider-specific behavior belongs under `providers/<provider>/`. Reusable proto
 The administrative workspace is separate:
 
 ```text
-app/identity_providers/
+app/access/identity_providers/
 app/templates/access/identity_providers/
 ```
 
-User lifecycle remains in `app/users/`. Identity-provider administration must not be reintroduced into User Management.
+User lifecycle remains in `app/access/users/`. Identity-provider administration must not be reintroduced into User Management.
 
 ## Common Normalized Outcome
 
@@ -66,7 +66,7 @@ Credential adapters return `AuthResult` with:
 - optional resolved KAORI user;
 - safe user-facing message.
 
-Browser adapters return a normalized SSO identity. `app/auth/sso.py` owns identity-link resolution, controlled JIT admission, and conversion to `AuthResult`. Raw protocol exceptions never cross the HTTP boundary.
+Browser adapters return a normalized SSO identity. `app/access/authentication/sso.py` owns identity-link resolution, controlled JIT admission, and conversion to `AuthResult`. Raw protocol exceptions never cross the HTTP boundary.
 
 Directory adapters return a normalized `ExternalIdentity`. Administrative provisioning consumes this generic contract and never calls an LDAP implementation directly.
 

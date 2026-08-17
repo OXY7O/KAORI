@@ -4,7 +4,7 @@ import importlib.util
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
-IDENTITY_MODULE = ROOT / 'app/analytics/kubernetes/materialization/identity.py'
+IDENTITY_MODULE = ROOT / 'app/kubernetes/analytics/materialization/identity.py'
 
 spec = importlib.util.spec_from_file_location('kaori_analytics_materialization_identity', IDENTITY_MODULE)
 assert spec is not None and spec.loader is not None

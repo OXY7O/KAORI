@@ -26,7 +26,7 @@ def test_intelligence_overview_is_committed_evidence_only() -> None:
     assert 'IntelligenceDecisionCandidate.query' in overview
     assert 'IntelligenceDecision.query' in overview
     assert 'KnowledgeRunbookRevision.query' in overview
-    assert 'from app.automation_control' not in overview
+    assert 'from app.intelligence.automation_control' not in overview
     for forbidden in (
         'load_alerts_by_source',
         'load_alert_stream',

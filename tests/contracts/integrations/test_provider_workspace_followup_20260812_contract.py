@@ -33,7 +33,7 @@ def test_minio_capability_registry_matches_modal_detail_standard() -> None:
     registry = read(
         'app/templates/integrations/storage/object_storage/providers/minio/partials/_capability_registry.html'
     )
-    presentation = read('app/object_storage/providers/minio/presentation.py')
+    presentation = read('app/integrations/storage/object_storage/providers/minio/application/presentation.py')
 
     assert '_record_detail_modal.html' in registry
     assert '_provider_capability_detail.html' in registry
@@ -50,7 +50,7 @@ def test_minio_capability_registry_matches_modal_detail_standard() -> None:
 
 def test_minio_runtime_refresh_isolated_from_history_loader() -> None:
     runtime = read('app/templates/integrations/storage/object_storage/providers/minio/partials/_detail_runtime.html')
-    routes = read('app/object_storage/providers/minio/routes.py')
+    routes = read('app/integrations/storage/object_storage/providers/minio/application/routes.py')
 
     refresh_surface = runtime.split('{% if runtime_history_oob|default(false) %}', 1)[0]
     assert 'data-kaori-minio-runtime-refresh-surface' in refresh_surface

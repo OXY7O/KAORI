@@ -8,9 +8,9 @@ def read(path: str) -> str:
 
 
 def test_identity_provider_workspace_is_separate_from_user_lifecycle() -> None:
-    routes = read('app/identity_providers/routes.py')
-    users_routes = read('app/users/routes.py')
-    service = read('app/identity_providers/service.py')
+    routes = read('app/access/identity_providers/routes.py')
+    users_routes = read('app/access/users/routes.py')
+    service = read('app/access/identity_providers/service.py')
     assert "bp = Blueprint('identity_providers'" in routes
     assert "url_prefix='/access/identity-providers'" in routes
     assert "@permission_required('identity_providers.view')" in routes
@@ -67,7 +67,7 @@ def test_provider_registry_uses_dynamic_provider_filter_and_shared_kaori_table()
 
 def test_provider_model_and_forms_are_provider_neutral() -> None:
     model = read('app/models/identity.py')
-    form = read('app/identity_providers/forms.py')
+    form = read('app/access/identity_providers/forms.py')
     selector = read('app/templates/access/identity_providers/partials/_provider_selector.html')
     js = read('app/static/js/identity_provider_form.js')
     for required in ('provider_key:', 'adapter_key:', 'configuration_json:', 'admission_policy_json:'):
@@ -83,8 +83,8 @@ def test_provider_model_and_forms_are_provider_neutral() -> None:
 
 
 def test_directory_provisioning_dispatches_by_adapter_and_uses_signed_evidence() -> None:
-    routes = read('app/identity_providers/routes.py')
-    proof = read('app/identity_providers/provisioning_proof.py')
+    routes = read('app/access/identity_providers/routes.py')
+    proof = read('app/access/identity_providers/provisioning_proof.py')
     template = read('app/templates/access/identity_providers/directory_provisioning.html')
     assert 'get_directory_provider_adapter(selected_provider.adapter_key)' in routes
     assert 'LdapDirectoryClient(selected_provider)' not in routes
@@ -96,7 +96,7 @@ def test_directory_provisioning_dispatches_by_adapter_and_uses_signed_evidence()
 
 def test_identity_provider_secret_and_validation_evidence_remain_safe() -> None:
     detail = read('app/templates/access/identity_providers/partials/_provider_detail.html')
-    service = read('app/identity_providers/service.py')
+    service = read('app/access/identity_providers/service.py')
     assert "'label': 'On Demand'" in service
     assert 'Validation runs live and is not stored as durable provider readiness evidence.' in service
     assert 'Credential Reference' in detail

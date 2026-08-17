@@ -42,7 +42,7 @@ def test_access_overview_composes_domain_owned_posture_contracts() -> None:
         assert forbidden not in presentation
     assert "permission_summary['drift_count']" in presentation
     assert "users['active_super_admins']" in presentation
-    user_summary = read('app/users/access_summary.py')
+    user_summary = read('app/access/users/access_summary.py')
     assert "'unassigned_active_users': unassigned_active_users" in user_summary
     assert "summary['inactive_assigned_users']" in presentation
     assert "activity['attention_24h']" in presentation

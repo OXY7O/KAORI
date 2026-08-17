@@ -5,8 +5,8 @@ This package owns the KAORI **Data Lifecycle** operator workspace at `/platform-
 Ownership is intentionally split:
 
 - `app/platform_operations/data_lifecycle/` owns HTTP routes, mutation orchestration, operator feedback, and workspace presentation.
-- `app/retention/` remains the shared archive-first lifecycle engine, policy persistence layer, domain adapters, scheduling tasks, locking, verification, and cleanup safety boundary.
-- `app/jobs/` remains the canonical execution ledger. Data Lifecycle may enqueue a canonical `JobExecution`, but it does not implement a second job registry.
+- `app/platform_operations/data_lifecycle/retention/` remains the shared archive-first lifecycle engine, policy persistence layer, domain adapters, scheduling tasks, locking, verification, and cleanup safety boundary.
+- `app/platform_operations/jobs/` remains the canonical execution ledger. Data Lifecycle may enqueue a canonical `JobExecution`, but it does not implement a second job registry.
 
 The former `/settings/data-lifecycle/` route is compatibility-only and redirects to this workspace. Settings no longer owns lifecycle policy UI or mutation logic.
 

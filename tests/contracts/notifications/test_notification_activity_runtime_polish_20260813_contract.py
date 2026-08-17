@@ -16,9 +16,11 @@ def test_notification_activity_verifier_is_release_gated() -> None:
 
 
 def test_notification_deck_operator_actions_use_final_title_case() -> None:
-    activity = read('app/templates/notifications/partials/_notification_deck_activity.html')
-    notifications = read('app/templates/notifications/partials/_notification_deck_notifications.html')
-    items = read('app/templates/notifications/components/_activity_center_items.html')
+    activity = read('app/templates/platform_operations/notifications/partials/_notification_deck_activity.html')
+    notifications = read(
+        'app/templates/platform_operations/notifications/partials/_notification_deck_notifications.html'
+    )
+    items = read('app/templates/platform_operations/notifications/components/_activity_center_items.html')
     shell = read('app/templates/components/navigation/_notification_center.html')
 
     for token in ('Processes in Progress', 'No Process Is Running', '&nbsp;Active'):

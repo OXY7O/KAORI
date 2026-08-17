@@ -7,7 +7,7 @@ def read(path: str) -> str:
 
 def test_automation_control_uses_standalone_summary_and_shared_kaori_tabs():
     page = read('app/templates/intelligence/automation_control.html')
-    presentation = read('app/automation_control/presentation.py')
+    presentation = read('app/intelligence/automation_control/presentation.py')
 
     assert 'Automation Control Summary' in page
     assert page.index('Automation Control Summary') < page.index('Automation Control Workspace')
@@ -45,7 +45,7 @@ def test_automation_control_long_form_content_is_owned_by_one_workspace_surface(
 
 
 def test_automation_control_preserves_governance_execution_boundaries_after_redesign():
-    routes = read('app/automation_control/routes.py')
+    routes = read('app/intelligence/automation_control/routes.py')
     enablement = read('app/common/automation_execution.py')
     runbooks = read('app/templates/intelligence/partials/automation_control/_runbooks.html')
     decisions = read('app/templates/intelligence/partials/automation_control/_decisions.html')

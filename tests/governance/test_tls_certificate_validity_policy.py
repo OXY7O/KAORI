@@ -7,7 +7,7 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-PACKAGE_NAME = 'app.governance.tls_certificates'
+PACKAGE_NAME = 'app.kubernetes.governance.tls_certificates'
 
 
 def _load_module(module_name: str, path: Path):
@@ -22,7 +22,7 @@ def _load_module(module_name: str, path: Path):
 def _load_certificate_module():
     module_names = (
         'app',
-        'app.governance',
+        'app.kubernetes.governance',
         PACKAGE_NAME,
         f'{PACKAGE_NAME}.constants',
         f'{PACKAGE_NAME}.certificate',
@@ -31,7 +31,7 @@ def _load_certificate_module():
     previous_modules = {name: sys.modules.get(name, missing) for name in module_names}
 
     try:
-        for name in ('app', 'app.governance', PACKAGE_NAME):
+        for name in ('app', 'app.kubernetes.governance', PACKAGE_NAME):
             if name not in sys.modules:
                 package = types.ModuleType(name)
                 package.__path__ = []  # type: ignore[attr-defined]
@@ -39,11 +39,11 @@ def _load_certificate_module():
 
         _load_module(
             f'{PACKAGE_NAME}.constants',
-            ROOT / 'app/governance/tls_certificates/constants.py',
+            ROOT / 'app/kubernetes/governance/tls_certificates/constants.py',
         )
         return _load_module(
             f'{PACKAGE_NAME}.certificate',
-            ROOT / 'app/governance/tls_certificates/certificate.py',
+            ROOT / 'app/kubernetes/governance/tls_certificates/certificate.py',
         )
     finally:
         for name in reversed(module_names):

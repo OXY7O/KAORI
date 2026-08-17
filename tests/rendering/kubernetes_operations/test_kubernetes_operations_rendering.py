@@ -5,7 +5,7 @@ from pathlib import Path
 from jinja2 import Environment
 
 ROOT = Path(__file__).resolve().parents[3]
-TEMPLATES = ROOT / 'app/templates/kubernetes_operations'
+TEMPLATES = ROOT / 'app/templates/kubernetes/operations'
 FORM_CONTEXT_TEMPLATES = (
     TEMPLATES / 'configmaps/create.html',
     TEMPLATES / 'configmaps/update.html',

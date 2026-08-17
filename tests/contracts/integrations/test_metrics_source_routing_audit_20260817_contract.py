@@ -17,7 +17,7 @@ def test_metrics_source_is_provider_neutral_first_class_integration() -> None:
 
     assert "__tablename__ = 'metrics_sources'" in model
     assert 'creator=_metrics_source_identity' not in model
-    service = read('app/metrics_sources/service.py')
+    service = read('app/integrations/observability/metrics_source/application/service.py')
     assert "integration_type='metrics_source'" in service
     assert 'provider_key=provider.key' in service
     assert 'adapter_key=provider.adapter_key' in service
@@ -84,7 +84,7 @@ def test_metrics_bindings_have_horizon_and_weight_routing_contract() -> None:
     modal = read('app/templates/integrations/components/_observability_binding_modal.html')
     registry = read('app/templates/integrations/observability/metrics_source/partials/_binding_registry.html')
     management = read('app/integrations/observability/metrics_source/binding_management.py')
-    resolver = read('app/metrics_sources/resolver.py')
+    resolver = read('app/integrations/observability/metrics_source/application/resolver.py')
 
     assert 'routing_policy: Mapped[dict | None]' in model
     assert 'routing_policy: dict | None = None' in lifecycle
@@ -106,7 +106,7 @@ def test_metrics_bindings_have_horizon_and_weight_routing_contract() -> None:
 
 def test_metrics_query_horizon_is_selected_from_actual_query_time_boundary() -> None:
     routing = read('app/integrations/observability/metrics_source/routing.py')
-    consumer = read('app/metrics_sources/consumer.py')
+    consumer = read('app/integrations/observability/metrics_source/application/consumer.py')
     config = read('app/config/default.py')
     env_example = read('.env.example')
 

@@ -6,7 +6,7 @@ Owner: Platform Operations
 
 ## Purpose
 
-v1.1 refines the locked Data Lifecycle workspace after operational review. Ownership remains unchanged: Platform Operations owns lifecycle policy and archive evidence, `app/retention/` owns the archive-first engine, and Jobs & Executions owns canonical asynchronous runtime evidence.
+v1.1 refines the locked Data Lifecycle workspace after operational review. Ownership remains unchanged: Platform Operations owns lifecycle policy and archive evidence, `app/platform_operations/data_lifecycle/retention/` owns the archive-first engine, and Jobs & Executions owns canonical asynchronous runtime evidence.
 
 ## Workspace Order
 

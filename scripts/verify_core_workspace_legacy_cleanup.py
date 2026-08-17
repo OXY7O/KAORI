@@ -19,18 +19,18 @@ def main() -> int:
 
     obsolete_paths = (
         'app/static/js/inventory/topology_bootstrap.js',
-        'app/dashboards/kubernetes/snapshot_builder.py',
-        'app/analytics/kubernetes/common/cache.py',
-        'app/templates/inventory/kubernetes/components/_detail_macros.html',
-        'app/templates/inventory/kubernetes/nodes/partials/_inventory_scope.html',
-        'app/templates/inventory/kubernetes/namespaces/partials/_inventory_scope.html',
-        'app/templates/inventory/kubernetes/workloads/partials/_inventory_scope.html',
-        'app/templates/inventory/kubernetes/pods/partials/_inventory_scope.html',
-        'app/templates/inventory/kubernetes/services/partials/_inventory_scope.html',
-        'app/templates/inventory/kubernetes/ingresses/partials/_inventory_scope.html',
-        'app/templates/inventory/kubernetes/configuration/partials/_inventory_scope.html',
-        'app/templates/inventory/kubernetes/storage/partials/_inventory_scope.html',
-        'app/kubernetes_operations/secrets/routes.py',
+        'app/kubernetes/dashboard/snapshot_builder.py',
+        'app/kubernetes/analytics/common/cache.py',
+        'app/templates/kubernetes/inventory/components/_detail_macros.html',
+        'app/templates/kubernetes/inventory/nodes/partials/_inventory_scope.html',
+        'app/templates/kubernetes/inventory/namespaces/partials/_inventory_scope.html',
+        'app/templates/kubernetes/inventory/workloads/partials/_inventory_scope.html',
+        'app/templates/kubernetes/inventory/pods/partials/_inventory_scope.html',
+        'app/templates/kubernetes/inventory/services/partials/_inventory_scope.html',
+        'app/templates/kubernetes/inventory/ingresses/partials/_inventory_scope.html',
+        'app/templates/kubernetes/inventory/configuration/partials/_inventory_scope.html',
+        'app/templates/kubernetes/inventory/storage/partials/_inventory_scope.html',
+        'app/kubernetes/operations/secrets/routes.py',
         'app/templates/integrations/partials/_runtime_detail_content.html',
         'app/templates/integrations/observability/metrics_source/partials/_analytics_readiness.html',
         'tests/kubernetes_operations/test_secret_delete_workflow.py',
@@ -50,10 +50,10 @@ def main() -> int:
         errors,
     )
 
-    dashboard_repository = read('app/dashboards/kubernetes/repository.py')
-    dashboard_service = read('app/dashboards/kubernetes/service.py')
-    dashboard_reporting = read('app/dashboards/kubernetes/sections/reporting.py')
-    dashboard_kpis = read('app/dashboards/kubernetes/sections/kpis.py')
+    dashboard_repository = read('app/kubernetes/dashboard/repository.py')
+    dashboard_service = read('app/kubernetes/dashboard/service.py')
+    dashboard_reporting = read('app/kubernetes/dashboard/sections/reporting.py')
+    dashboard_kpis = read('app/kubernetes/dashboard/sections/kpis.py')
     require('load_models' not in dashboard_repository, 'Dashboard dynamic model loader must be removed.', errors)
     require(
         'import_module' not in dashboard_repository,
@@ -86,11 +86,11 @@ def main() -> int:
         errors,
     )
 
-    analytics_catalog = read('app/definitions/catalogs/analytics/kubernetes_datasets.yaml')
-    analytics_job_adapter = read('app/analytics/kubernetes/job_adapter.py')
-    dashboard_snapshots = read('app/dashboards/kubernetes/snapshots.py')
+    analytics_catalog = read('app/definitions/catalogs/kubernetes/analytics/datasets.yaml')
+    analytics_job_adapter = read('app/kubernetes/analytics/job_adapter.py')
+    dashboard_snapshots = read('app/kubernetes/dashboard/snapshots.py')
     require(
-        'builder_path: app.analytics.kubernetes.materialization.dashboard_alerts:build_dashboard_alerts_context'
+        'builder_path: app.kubernetes.analytics.materialization.dashboard_alerts:build_dashboard_alerts_context'
         in analytics_catalog,
         'Dashboard alert materialization must be owned by Analytics.',
         errors,
@@ -100,9 +100,9 @@ def main() -> int:
         'Analytics must not import Dashboard implementation modules.',
         errors,
     )
-    dashboard_service = read('app/dashboards/kubernetes/service.py')
+    dashboard_service = read('app/kubernetes/dashboard/service.py')
     require(
-        'from app.analytics.kubernetes.materialization.keys import (' in dashboard_service
+        'from app.kubernetes.analytics.materialization.keys import (' in dashboard_service
         and 'DASHBOARD_ALERTS_DATASET_KEY' in dashboard_service
         and 'CAPACITY_DATASET_KEY' in dashboard_service
         and 'FORECAST_DATASET_KEY' in dashboard_service
@@ -111,25 +111,25 @@ def main() -> int:
         errors,
     )
     require(
-        'app.analytics.kubernetes.materialization.keys' not in dashboard_snapshots,
+        'app.kubernetes.analytics.materialization.keys' not in dashboard_snapshots,
         'Dashboard snapshot reader must not re-export Analytics dataset keys.',
         errors,
     )
 
     runtime_recovery = read('app/integrations/runtime/recovery.py')
-    inventory_job_adapter = read('app/inventory/kubernetes/job_adapter.py')
-    notifications_queries = read('app/notifications/queries.py')
+    inventory_job_adapter = read('app/kubernetes/inventory/job_adapter.py')
+    notifications_queries = read('app/platform_operations/notifications/queries.py')
     shared_job_presentation = read('app/common/job_execution_presentation.py')
-    shared_job_definitions = read('app/definitions/catalogs/jobs/registered_jobs.yaml')
+    shared_job_definitions = read('app/definitions/catalogs/platform_operations/jobs/registered_jobs.yaml')
     require(
-        'from app.jobs.registry import get_job_definition' in runtime_recovery,
+        'from app.platform_operations.jobs.registry import get_job_definition' in runtime_recovery,
         'Integration recovery must dispatch through the registered job boundary.',
         errors,
     )
     for forbidden in (
-        'from app.cluster.sync_jobs import',
-        'from app.governance.tls_certificates.sync_jobs import',
-        'from app.analytics.kubernetes.job_adapter import',
+        'from app.kubernetes.cluster.sync_jobs import',
+        'from app.kubernetes.governance.tls_certificates.sync_jobs import',
+        'from app.kubernetes.analytics.job_adapter import',
     ):
         require(
             forbidden not in runtime_recovery,
@@ -148,9 +148,9 @@ def main() -> int:
         errors,
     )
     require(
-        'app.jobs.presentation' not in notifications_queries
-        and 'app.jobs.service' not in shared_job_presentation
-        and 'app.jobs.registry' not in shared_job_presentation,
+        'app.platform_operations.jobs.presentation' not in notifications_queries
+        and 'app.platform_operations.jobs.service' not in shared_job_presentation
+        and 'app.platform_operations.jobs.registry' not in shared_job_presentation,
         'Shared job presentation must not recreate the Notifications-Jobs dependency cycle.',
         errors,
     )
@@ -162,7 +162,7 @@ def main() -> int:
         errors,
     )
 
-    overview_content = read('app/templates/inventory/kubernetes/overview/partials/_resources_by_cluster_content.html')
+    overview_content = read('app/templates/kubernetes/inventory/overview/partials/_resources_by_cluster_content.html')
     require(
         'hx-target="#resources-by-cluster-content"' in overview_content,
         'Inventory Overview pagination must use its canonical cluster-content boundary.',
@@ -174,7 +174,7 @@ def main() -> int:
         errors,
     )
 
-    routes = read('app/inventory/kubernetes/routes.py')
+    routes = read('app/kubernetes/inventory/routes.py')
     require(
         "for resource in ('nodes', 'namespaces', 'configuration', 'workloads', 'pods', 'services', 'ingresses', 'storage')"
         in routes,
@@ -193,18 +193,18 @@ def main() -> int:
     )
 
     for resource in ('nodes', 'namespaces', 'configuration', 'workloads', 'pods', 'services', 'ingresses', 'storage'):
-        workspace = read(f'app/templates/inventory/kubernetes/{resource}/partials/_page_workspace.html')
-        table = read(f'app/templates/inventory/kubernetes/{resource}/partials/_table_content.html')
+        workspace = read(f'app/templates/kubernetes/inventory/{resource}/partials/_page_workspace.html')
+        table = read(f'app/templates/kubernetes/inventory/{resource}/partials/_table_content.html')
         require(
             f'id="{resource}-page-workspace"' in workspace, f'{resource} must own one canonical page workspace.', errors
         )
         require(
-            f'inventory/kubernetes/{resource}/partials/_summary_cards.html' in workspace,
+            f'kubernetes/inventory/{resource}/partials/_summary_cards.html' in workspace,
             f'{resource} workspace must call summary directly.',
             errors,
         )
         require(
-            f'inventory/kubernetes/{resource}/partials/_table_card.html' in workspace,
+            f'kubernetes/inventory/{resource}/partials/_table_card.html' in workspace,
             f'{resource} workspace must call table card directly.',
             errors,
         )
@@ -219,10 +219,10 @@ def main() -> int:
             errors,
         )
 
-    topology_index = read('app/templates/inventory/kubernetes/topology/index.html')
-    topology_script = read('app/static/js/inventory/kubernetes/topology.js')
+    topology_index = read('app/templates/kubernetes/inventory/topology/index.html')
+    topology_script = read('app/static/js/kubernetes/inventory/topology.js')
     require(
-        "filename='js/inventory/kubernetes/topology.js'" in topology_index,
+        "filename='js/kubernetes/inventory/topology.js'" in topology_index,
         'Topology must load its canonical module directly.',
         errors,
     )
@@ -237,10 +237,10 @@ def main() -> int:
         'Topology must not bridge the renderer through a global compatibility alias.',
         errors,
     )
-    topology_service = read('app/inventory/kubernetes/topology/service.py')
-    topology_repository = read('app/inventory/kubernetes/topology/repository.py')
-    topology_node_builder = read('app/inventory/kubernetes/topology/node_builder.py')
-    topology_edge_builder = read('app/inventory/kubernetes/topology/edge_builder.py')
+    topology_service = read('app/kubernetes/inventory/topology/service.py')
+    topology_repository = read('app/kubernetes/inventory/topology/repository.py')
+    topology_node_builder = read('app/kubernetes/inventory/topology/node_builder.py')
+    topology_edge_builder = read('app/kubernetes/inventory/topology/edge_builder.py')
     require(
         'TopologyGraphBuilder' in topology_service and '_node_element' not in topology_service,
         'Topology service must orchestrate the canonical graph builder without the legacy node wrapper.',
@@ -262,9 +262,9 @@ def main() -> int:
         errors,
     )
 
-    workload_backend = read('app/inventory/kubernetes/resources/workloads.py')
+    workload_backend = read('app/kubernetes/inventory/resources/workloads.py')
     export_payload = read('app/reports/export/payloads/inventory.py')
-    namespace_backend = read('app/inventory/kubernetes/resources/namespaces.py')
+    namespace_backend = read('app/kubernetes/inventory/resources/namespaces.py')
     require(
         "'running': ('Stable', 'normal')" not in workload_backend,
         'Legacy Workload state aliases must not be accepted internally.',
@@ -310,7 +310,7 @@ def main() -> int:
         )
 
     service_model = read('app/models/inventory.py')
-    service_collector = read('app/inventory/kubernetes/collectors/services.py')
+    service_collector = read('app/kubernetes/inventory/collectors/services.py')
     service_migration = read('migrations/versions/20260805_service_inventory_v2.py')
     service_class = service_model.split('class ServiceInventory', 1)[1].split('class IngressInventory', 1)[0]
     require(
@@ -337,7 +337,7 @@ def main() -> int:
     configuration_class = service_model.split('class ConfigurationInventory', 1)[1].split(
         'class ResourceQuotaInventory', 1
     )[0]
-    configuration_collector = read('app/inventory/kubernetes/collectors/configuration.py')
+    configuration_collector = read('app/kubernetes/inventory/collectors/configuration.py')
     configuration_migration = read('migrations/versions/20260805_config_inventory_v2.py')
     require(
         'key_count:' not in configuration_class and 'payload_size_bytes:' not in configuration_class,
@@ -361,7 +361,7 @@ def main() -> int:
     )
 
     ingress_class = service_model.split('class IngressInventory', 1)[1].split('class StorageInventory', 1)[0]
-    ingress_collector = read('app/inventory/kubernetes/collectors/ingresses.py')
+    ingress_collector = read('app/kubernetes/inventory/collectors/ingresses.py')
     ingress_migration = read('migrations/versions/20260805_ingress_inventory_v2.py')
     require(
         'host:' not in ingress_class and 'address:' not in ingress_class,

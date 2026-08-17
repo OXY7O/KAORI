@@ -5,7 +5,6 @@ from typing import Any
 
 from sqlalchemy.orm import contains_eager
 
-from app.cluster.constants import get_environment_label
 from app.common.pagination import paginate_sequence
 from app.common.presentation import present_user_datetime
 from app.integrations.coverage import bound_source_for_scope, bound_sources_for_scopes
@@ -14,6 +13,7 @@ from app.integrations.readiness import (
     resolve_binding_operational_status,
     resolve_cluster_coverage,
 )
+from app.kubernetes.cluster.constants import get_environment_label
 from app.models import Cluster
 from app.models.kubernetes import KubernetesConnection
 

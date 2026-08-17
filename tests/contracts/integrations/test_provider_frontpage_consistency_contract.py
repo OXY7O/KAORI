@@ -88,8 +88,8 @@ def test_minio_empty_and_populated_states_keep_registry_geometry() -> None:
     registry_content = read(
         'app/templates/integrations/storage/object_storage/providers/minio/partials/_registry_content.html'
     )
-    routes = read('app/object_storage/providers/minio/routes.py')
-    presentation = read('app/object_storage/providers/minio/presentation.py')
+    routes = read('app/integrations/storage/object_storage/providers/minio/application/routes.py')
+    presentation = read('app/integrations/storage/object_storage/providers/minio/application/presentation.py')
 
     assert 'MinIO Integration Overview' in index
     assert '{% include "integrations/storage/object_storage/providers/minio/partials/_coverage.html" %}' in index

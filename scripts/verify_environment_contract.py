@@ -113,7 +113,7 @@ def assert_documented(relative: str, required: set[str]) -> None:
 
 def verify() -> None:
     default_keys = accessed_env_keys('app/config/default.py')
-    notification_keys = accessed_env_keys('app/notification_channels/config.py')
+    notification_keys = accessed_env_keys('app/integrations/delivery/notification_channels/config.py')
     common_keys = default_keys | notification_keys | COMMON_EXTRA_KEYS
 
     development_compose_keys = compose_env_keys(

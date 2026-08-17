@@ -41,7 +41,7 @@ This removes newly detected dependency cycles without broadening architecture ex
 
 ### Removed legacy files
 
-- `app/dashboards/kubernetes/snapshot_builder.py`
+- `app/kubernetes/dashboard/snapshot_builder.py`
 - `app/analytics/common/cache.py`
 - `app/templates/analytics/components/_overview_surfaces.html` (replaced by the canonical `_analysis_surfaces.html`)
 
@@ -84,6 +84,6 @@ npm run build-css
 
 Functional pytest and browser validation run in the KAORI development container with Python
 requirements installed. The module reachability verifier still identifies two pre-existing,
-unreferenced modules outside this review scope: `app/knowledge/remediation_workflow.py` and
-`app/users/identity.py`. They were not removed because their ownership and product lifecycle require
+unreferenced modules outside this review scope: `app/intelligence/knowledge/remediation_workflow.py` and
+`app/access/users/identity.py`. They were not removed because their ownership and product lifecycle require
 a separate Intelligence and Identity review rather than an unrelated core-page patch.

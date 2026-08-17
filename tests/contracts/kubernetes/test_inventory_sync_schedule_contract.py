@@ -11,19 +11,19 @@ def test_inventory_schedule_is_registered_and_database_backed() -> None:
     model = _source('app/models/job.py')
     migration = _source('migrations/versions/20260724_job_orchestration.py')
     config = _source('app/config/default.py')
-    definition = _source('app/jobs/definitions/inventory_sync.py')
+    definition = _source('app/platform_operations/jobs/definitions/inventory_sync.py')
 
     assert "__tablename__ = 'job_policies'" in model
     assert "'kubernetes.inventory.sync'" in definition
-    assert "'app.jobs.tasks.dispatch_scheduled_jobs'" in config
+    assert "'app.platform_operations.jobs.tasks.dispatch_scheduled_jobs'" in config
     assert "crontab(minute='*')" in config
     assert "'job_policies'" in migration
 
 
 def test_scheduled_and_manual_fleet_sync_share_registered_dispatch() -> None:
-    scheduler = _source('app/jobs/scheduler.py')
-    jobs_routes = _source('app/jobs/routes.py')
-    sync_jobs = _source('app/cluster/sync_jobs.py')
+    scheduler = _source('app/platform_operations/jobs/scheduler.py')
+    jobs_routes = _source('app/platform_operations/jobs/routes.py')
+    sync_jobs = _source('app/kubernetes/cluster/sync_jobs.py')
 
     assert 'dispatch_registered_job(' in scheduler
     assert "job_keys.append('kubernetes.inventory.sync')" in jobs_routes
@@ -33,8 +33,8 @@ def test_scheduled_and_manual_fleet_sync_share_registered_dispatch() -> None:
 
 
 def test_schedule_claim_and_inventory_commit_boundaries_are_explicit() -> None:
-    scheduler = _source('app/jobs/scheduler.py')
-    synchronization = _source('app/inventory/kubernetes/synchronization.py')
+    scheduler = _source('app/platform_operations/jobs/scheduler.py')
+    synchronization = _source('app/kubernetes/inventory/synchronization.py')
 
     assert '.with_for_update(skip_locked=True)' in scheduler
     assert 'policy.next_run_at = now + timedelta' in scheduler
@@ -44,7 +44,7 @@ def test_schedule_claim_and_inventory_commit_boundaries_are_explicit() -> None:
 
 
 def test_fleet_targets_use_canonical_kubernetes_resolution() -> None:
-    sync_jobs = _source('app/cluster/sync_jobs.py')
+    sync_jobs = _source('app/kubernetes/cluster/sync_jobs.py')
 
     assert 'connection_for_cluster(cluster)' in sync_jobs
     assert 'Skipping cluster %s from fleet inventory sync' in sync_jobs
@@ -60,11 +60,11 @@ def test_quick_action_wording_describes_inventory_scope() -> None:
 
 
 def test_registered_inventory_dispatch_supports_recovery_for_one_cluster() -> None:
-    adapter = _source('app/inventory/kubernetes/job_adapter.py')
+    adapter = _source('app/kubernetes/inventory/job_adapter.py')
     recovery = _source('app/integrations/runtime/recovery.py')
 
     assert "cluster_id = str((parameters or {}).get('cluster_id') or '').strip()" in adapter
     assert 'enqueue_cluster_inventory_sync(' in adapter
     assert "_INVENTORY_JOB_KEY = 'kubernetes.inventory.sync'" in recovery
     assert "parameters={'cluster_id': cluster_id}" in recovery
-    assert 'from app.cluster.sync_jobs import enqueue_cluster_inventory_sync' not in recovery
+    assert 'from app.kubernetes.cluster.sync_jobs import enqueue_cluster_inventory_sync' not in recovery

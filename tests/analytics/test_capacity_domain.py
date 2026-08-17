@@ -20,9 +20,9 @@ def _load_capacity_modules() -> tuple[ModuleType, ModuleType]:
     names = (
         'app.integrations.observability.metrics_source.exceptions',
         'app.integrations.observability.metrics_source.query_profiles',
-        'app.metrics_sources.consumer',
-        'app.analytics.kubernetes.common.base_service',
-        'app.analytics.kubernetes.capacity.evidence',
+        'app.integrations.observability.metrics_source.application.consumer',
+        'app.kubernetes.analytics.common.base_service',
+        'app.kubernetes.analytics.capacity.evidence',
         'capacity_domain_under_test',
     )
     previous = {name: sys.modules.get(name) for name in names}
@@ -49,10 +49,10 @@ def _load_capacity_modules() -> tuple[ModuleType, ModuleType]:
 
     try:
         evidence = _load_module(
-            'app.analytics.kubernetes.capacity.evidence',
-            'app/analytics/kubernetes/capacity/evidence.py',
+            'app.kubernetes.analytics.capacity.evidence',
+            'app/kubernetes/analytics/capacity/evidence.py',
         )
-        domain = _load_module('capacity_domain_under_test', 'app/analytics/kubernetes/capacity/domain.py')
+        domain = _load_module('capacity_domain_under_test', 'app/kubernetes/analytics/capacity/domain.py')
         return evidence, domain
     finally:
         for name, module in previous.items():

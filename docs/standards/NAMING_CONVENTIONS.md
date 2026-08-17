@@ -49,4 +49,4 @@ Official technology names and established technical identifiers are exempt, incl
 
 ## Ownership
 
-`app/cluster/constants.py` owns environment canonicalization and display names until the shared integration foundation introduces a broader scope registry. Provider modules and templates must not maintain separate environment maps.
+`app/kubernetes/cluster/constants.py` owns environment canonicalization and display names until the shared integration foundation introduces a broader scope registry. Provider modules and templates must not maintain separate environment maps.

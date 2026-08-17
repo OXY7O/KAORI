@@ -68,8 +68,8 @@ def test_report_workspaces_surface_actual_worker_queue_readiness() -> None:
     schedule_template = read('app/templates/reports/schedules/index.html')
     overview = read('app/reports/overview/service.py')
     generate = read('app/reports/generate/service.py')
-    notifications = read('app/notifications/queries.py')
-    activity_item = read('app/templates/notifications/components/_activity_center_items.html')
+    notifications = read('app/platform_operations/notifications/queries.py')
+    activity_item = read('app/templates/platform_operations/notifications/components/_activity_center_items.html')
 
     assert 'get_queue_readiness(get_reports_queue_name())' in schedules
     assert 'payload.worker_context.show_warning' in schedule_template

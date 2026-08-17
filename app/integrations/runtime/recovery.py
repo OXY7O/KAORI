@@ -62,7 +62,7 @@ def _bound_cluster_ids(instance: Any) -> list[str]:
 
 
 def _get_job_definition(job_key: str) -> Any:
-    from app.jobs.registry import get_job_definition
+    from app.platform_operations.jobs.registry import get_job_definition
 
     return get_job_definition(job_key)
 

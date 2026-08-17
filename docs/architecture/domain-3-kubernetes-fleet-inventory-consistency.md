@@ -38,4 +38,4 @@ bash scripts/quality_gate.sh
 
 ## Rollback
 
-Restore `app/cluster/sync_jobs.py` and `app/cluster/tasks.py` from the previous commit. No database migration or data rollback is required.
+Restore `app/kubernetes/cluster/sync_jobs.py` and `app/kubernetes/cluster/tasks.py` from the previous commit. No database migration or data rollback is required.

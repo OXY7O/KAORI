@@ -4,22 +4,22 @@ ROOT = Path(__file__).resolve().parents[3]
 
 
 def test_tls_sync_is_registered_and_routed_to_inventory_worker() -> None:
-    definition = (ROOT / 'app/definitions/catalogs/jobs/registered_jobs.yaml').read_text()
-    registry = (ROOT / 'app/jobs/registry.py').read_text()
+    definition = (ROOT / 'app/definitions/catalogs/platform_operations/jobs/registered_jobs.yaml').read_text()
+    registry = (ROOT / 'app/platform_operations/jobs/registry.py').read_text()
     config = (ROOT / 'app/config/default.py').read_text()
 
     assert 'key: governance.tls_certificates.sync' in definition
     assert 'operation: tls_certificate_sync' in definition
     assert 'queue_name: inventory' in definition
     assert 'load_job_definitions()' in registry
-    assert "'app.governance.tls_certificates.tasks'" in config
-    assert "'app.governance.tls_certificates.tasks.sync_tls_certificates'" in config
+    assert "'app.kubernetes.governance.tls_certificates.tasks'" in config
+    assert "'app.kubernetes.governance.tls_certificates.tasks.sync_tls_certificates'" in config
     assert "'queue': 'inventory'" in config
 
 
 def test_tls_manual_route_dispatches_worker_job_instead_of_collecting_inline() -> None:
-    routes = (ROOT / 'app/governance/tls_certificates/routes.py').read_text()
-    service = (ROOT / 'app/governance/tls_certificates/service.py').read_text()
+    routes = (ROOT / 'app/kubernetes/governance/tls_certificates/routes.py').read_text()
+    service = (ROOT / 'app/kubernetes/governance/tls_certificates/service.py').read_text()
 
     assert "job_key='governance.tls_certificates.sync'" in routes
     assert 'dispatch_registered_job(' in routes
@@ -28,17 +28,21 @@ def test_tls_manual_route_dispatches_worker_job_instead_of_collecting_inline() -
 
 
 def test_tls_worker_progress_is_owned_by_inventory_operations_loading_bar() -> None:
-    scope = (ROOT / 'app/templates/governance/tls_certificates/partials/_page_workspace.html').read_text()
-    sync_panel = (ROOT / 'app/templates/governance/tls_certificates/partials/_sync_panel.html').read_text()
-    sync_response = (ROOT / 'app/templates/governance/tls_certificates/partials/_sync_panel_response.html').read_text()
+    scope = (ROOT / 'app/templates/kubernetes/governance/tls_certificates/partials/_page_workspace.html').read_text()
+    sync_panel = (ROOT / 'app/templates/kubernetes/governance/tls_certificates/partials/_sync_panel.html').read_text()
+    sync_response = (
+        ROOT / 'app/templates/kubernetes/governance/tls_certificates/partials/_sync_panel_response.html'
+    ).read_text()
     layout = (ROOT / 'app/templates/layouts/app.html').read_text()
-    routes = (ROOT / 'app/governance/tls_certificates/routes.py').read_text()
+    routes = (ROOT / 'app/kubernetes/governance/tls_certificates/routes.py').read_text()
 
     assert 'hx-trigger="every 4s"' not in scope
     assert 'hx-trigger="tlsInventorySyncFinished from:body"' in scope
     assert 'id="tls-certificates-background-refresh-trigger"' in scope
     assert 'class="htmx-indicator hidden"' in scope
-    live_state = (ROOT / 'app/templates/governance/tls_certificates/partials/_sync_live_state.html').read_text()
+    live_state = (
+        ROOT / 'app/templates/kubernetes/governance/tls_certificates/partials/_sync_live_state.html'
+    ).read_text()
     assert '{% import "components/progress_bar.html" as progress_bar %}' not in sync_panel
     assert '{% import "components/progress_bar.html" as progress_bar %}' in live_state
     assert 'progress_bar.bar(payload.sync_state.progress_percent' in live_state
@@ -54,7 +58,7 @@ def test_tls_worker_progress_is_owned_by_inventory_operations_loading_bar() -> N
     assert '_sync_progress_toast.html' in scope
     assert 'tls-sync-feedback' not in layout
     assert "url_for('governance.tls_certificates_active_sync')" not in layout
-    governance_routes = (ROOT / 'app/governance/routes.py').read_text()
+    governance_routes = (ROOT / 'app/kubernetes/governance/routes.py').read_text()
     assert 'tls_certificates_active_sync' not in governance_routes
     assert 'def tls_certificates_active_sync' not in routes
     assert "'tlsInventorySyncFinished': True" in routes
@@ -64,10 +68,10 @@ def test_tls_worker_progress_is_owned_by_inventory_operations_loading_bar() -> N
 
 
 def test_tls_filter_state_keeps_one_canonical_workspace_boundary() -> None:
-    scope = (ROOT / 'app/templates/governance/tls_certificates/partials/_page_workspace.html').read_text()
-    filters = (ROOT / 'app/templates/governance/tls_certificates/partials/_filters.html').read_text()
-    sync_panel = (ROOT / 'app/templates/governance/tls_certificates/partials/_sync_panel.html').read_text()
-    table = (ROOT / 'app/templates/governance/tls_certificates/partials/_table.html').read_text()
+    scope = (ROOT / 'app/templates/kubernetes/governance/tls_certificates/partials/_page_workspace.html').read_text()
+    filters = (ROOT / 'app/templates/kubernetes/governance/tls_certificates/partials/_filters.html').read_text()
+    sync_panel = (ROOT / 'app/templates/kubernetes/governance/tls_certificates/partials/_sync_panel.html').read_text()
+    table = (ROOT / 'app/templates/kubernetes/governance/tls_certificates/partials/_table.html').read_text()
 
     assert 'id="tls-certificates-page-workspace"' in scope
     assert "partial_mode='page_workspace'" in scope
@@ -80,7 +84,7 @@ def test_tls_filter_state_keeps_one_canonical_workspace_boundary() -> None:
 
 
 def test_tls_operation_buttons_share_the_same_kaori_component() -> None:
-    sync_panel = (ROOT / 'app/templates/governance/tls_certificates/partials/_sync_panel.html').read_text()
+    sync_panel = (ROOT / 'app/templates/kubernetes/governance/tls_certificates/partials/_sync_panel.html').read_text()
     action_button = (ROOT / 'app/templates/components/action_button.html').read_text()
 
     assert '{% import "components/action_button.html" as action_button %}' in sync_panel
@@ -97,7 +101,7 @@ def test_tls_operation_buttons_share_the_same_kaori_component() -> None:
 
 
 def test_tls_dispatch_attempts_are_written_to_activity_audit() -> None:
-    routes = (ROOT / 'app/governance/tls_certificates/routes.py').read_text()
+    routes = (ROOT / 'app/kubernetes/governance/tls_certificates/routes.py').read_text()
 
     assert 'from app.models.audit import AuditEvent' in routes
     assert 'def _record_dispatch_audit(' in routes
@@ -109,7 +113,7 @@ def test_tls_dispatch_attempts_are_written_to_activity_audit() -> None:
 
 
 def test_tls_terminal_outcomes_are_written_to_activity_audit() -> None:
-    tasks = (ROOT / 'app/governance/tls_certificates/tasks.py').read_text()
+    tasks = (ROOT / 'app/kubernetes/governance/tls_certificates/tasks.py').read_text()
 
     assert 'from app.models.audit import AuditEvent' in tasks
     assert 'def _record_terminal_audit(' in tasks
@@ -121,8 +125,10 @@ def test_tls_terminal_outcomes_are_written_to_activity_audit() -> None:
 
 
 def test_tls_page_exposes_automatic_freshness_with_scoped_worker_progress() -> None:
-    sync_panel = (ROOT / 'app/templates/governance/tls_certificates/partials/_sync_panel.html').read_text()
-    live_state = (ROOT / 'app/templates/governance/tls_certificates/partials/_sync_live_state.html').read_text()
+    sync_panel = (ROOT / 'app/templates/kubernetes/governance/tls_certificates/partials/_sync_panel.html').read_text()
+    live_state = (
+        ROOT / 'app/templates/kubernetes/governance/tls_certificates/partials/_sync_live_state.html'
+    ).read_text()
 
     assert 'Automatic Sync' in live_state
     assert 'Last Successful' in live_state
@@ -134,9 +140,9 @@ def test_tls_page_exposes_automatic_freshness_with_scoped_worker_progress() -> N
 
 
 def test_tls_worker_reports_granular_progress_for_single_cluster_jobs() -> None:
-    tasks = (ROOT / 'app/governance/tls_certificates/tasks.py').read_text()
-    collector = (ROOT / 'app/governance/tls_certificates/collector.py').read_text()
-    service = (ROOT / 'app/governance/tls_certificates/service.py').read_text()
+    tasks = (ROOT / 'app/kubernetes/governance/tls_certificates/tasks.py').read_text()
+    collector = (ROOT / 'app/kubernetes/governance/tls_certificates/collector.py').read_text()
+    service = (ROOT / 'app/kubernetes/governance/tls_certificates/service.py').read_text()
 
     assert 'progress_total = 100' in tasks
     assert 'def report_cluster_progress(local_percent: int, message: str)' in tasks
@@ -152,20 +158,24 @@ def test_tls_worker_reports_granular_progress_for_single_cluster_jobs() -> None:
 
 
 def test_tls_live_progress_polling_does_not_replace_the_whole_operations_panel() -> None:
-    panel = (ROOT / 'app/templates/governance/tls_certificates/partials/_sync_panel.html').read_text()
-    live_state = (ROOT / 'app/templates/governance/tls_certificates/partials/_sync_live_state.html').read_text()
-    response = (ROOT / 'app/templates/governance/tls_certificates/partials/_sync_panel_response.html').read_text()
+    panel = (ROOT / 'app/templates/kubernetes/governance/tls_certificates/partials/_sync_panel.html').read_text()
+    live_state = (
+        ROOT / 'app/templates/kubernetes/governance/tls_certificates/partials/_sync_live_state.html'
+    ).read_text()
+    response = (
+        ROOT / 'app/templates/kubernetes/governance/tls_certificates/partials/_sync_panel_response.html'
+    ).read_text()
 
     assert 'hx-trigger="every 1s"' not in panel
     assert 'hx-trigger="every 1s"' in live_state
     assert 'id="tls-sync-live-state"' in live_state
-    assert '{% include "governance/tls_certificates/partials/_sync_live_state.html" %}' in response
-    assert '{% include "governance/tls_certificates/partials/_sync_panel.html" %}' not in response
+    assert '{% include "kubernetes/governance/tls_certificates/partials/_sync_live_state.html" %}' in response
+    assert '{% include "kubernetes/governance/tls_certificates/partials/_sync_panel.html" %}' not in response
     assert 'notification-progress-indeterminate' not in live_state
 
 
 def test_tls_sync_visibility_query_avoids_distinct_across_json_columns() -> None:
-    presentation = (ROOT / 'app/governance/tls_certificates/job_presentation.py').read_text()
+    presentation = (ROOT / 'app/kubernetes/governance/tls_certificates/job_presentation.py').read_text()
 
     assert 'JobExecution.subscribers.any(' in presentation
     assert 'JobExecutionSubscriber.user_id == user_id' in presentation

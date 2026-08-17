@@ -5,19 +5,19 @@ Updated: 2026-08-06
 
 Implementation:
 
-- `app/analytics/kubernetes/forecast/contracts.py`
-- `app/analytics/kubernetes/forecast/calculation.py`
-- `app/analytics/kubernetes/forecast/presentation.py`
-- `app/analytics/kubernetes/forecast/resource.py`
-- `app/analytics/kubernetes/forecast/service.py`
-- `app/analytics/kubernetes/forecast/routes.py`
-- `app/templates/analytics/kubernetes/forecast/index.html`
-- `app/templates/analytics/kubernetes/forecast/partials/_hero.html`
-- `app/templates/analytics/kubernetes/forecast/partials/_controls_readiness.html`
-- `app/templates/analytics/kubernetes/forecast/partials/_overview_methodology.html`
-- `app/templates/analytics/kubernetes/forecast/partials/_forecast_section.html`
-- `app/templates/analytics/kubernetes/components/_interactive_forecast_chart.html`
-- `app/static/js/analytics/kubernetes/forecast_chart.js`
+- `app/kubernetes/analytics/forecast/contracts.py`
+- `app/kubernetes/analytics/forecast/calculation.py`
+- `app/kubernetes/analytics/forecast/presentation.py`
+- `app/kubernetes/analytics/forecast/resource.py`
+- `app/kubernetes/analytics/forecast/service.py`
+- `app/kubernetes/analytics/forecast/routes.py`
+- `app/templates/kubernetes/analytics/forecast/index.html`
+- `app/templates/kubernetes/analytics/forecast/partials/_hero.html`
+- `app/templates/kubernetes/analytics/forecast/partials/_controls_readiness.html`
+- `app/templates/kubernetes/analytics/forecast/partials/_overview_methodology.html`
+- `app/templates/kubernetes/analytics/forecast/partials/_forecast_section.html`
+- `app/templates/kubernetes/analytics/components/_interactive_forecast_chart.html`
+- `app/static/js/kubernetes/analytics/forecast_chart.js`
 
 ## Purpose
 
@@ -185,7 +185,7 @@ Recommendations deep-link to the owning resource tab or Trend Analysis. Links pr
 Removed legacy surfaces:
 
 - `app/static/js/analytics_forecast.js`;
-- `app/templates/analytics/kubernetes/forecast/partials/_methodology.html`;
+- `app/templates/kubernetes/analytics/forecast/partials/_methodology.html`;
 - `/analytics/kubernetes/forecast/section` and endpoint `analytics.forecast_section`.
 
 Do not add wrappers, fallback imports, Resource Focus aliases, Moving Average aliases, confidence-field aliases, or a duplicate Forecast fragment route.

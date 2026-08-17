@@ -1,6 +1,6 @@
 from pathlib import Path
 
-OVERVIEW_ROOT = Path('app/templates/analytics/kubernetes/overview')
+OVERVIEW_ROOT = Path('app/templates/kubernetes/analytics/overview')
 
 
 def read(relative: str) -> str:
@@ -27,7 +27,7 @@ def test_overview_controls_and_readiness_follow_shared_analytics_standard() -> N
 
 
 def test_metrics_source_status_uses_one_canonical_card_contract() -> None:
-    source = Path('app/templates/analytics/kubernetes/components/_metrics_source_status.html').read_text(
+    source = Path('app/templates/kubernetes/analytics/components/_metrics_source_status.html').read_text(
         encoding='utf-8'
     )
 
@@ -303,12 +303,12 @@ def test_overview_loading_tracker_reports_real_lazy_section_progress() -> None:
     hero = read('partials/_hero.html')
     tracker = read('partials/_load_tracker.html')
     oob = read('partials/_composite_tabs_oob.html')
-    runtime = Path('app/static/js/analytics/kubernetes/overview.js').read_text(encoding='utf-8')
+    runtime = Path('app/static/js/kubernetes/analytics/overview.js').read_text(encoding='utf-8')
     health = read('partials/_health_summary.html')
     loading_bar = Path('app/templates/components/loading_bar.html').read_text(encoding='utf-8')
     stylesheet = Path('frontend/styles.css').read_text(encoding='utf-8')
 
-    assert 'analytics/kubernetes/overview/partials/_load_tracker.html' in index
+    assert 'kubernetes/analytics/overview/partials/_load_tracker.html' in index
     assert 'data-overview-lazy-section="true"' in index
     assert 'data-overview-lazy-section="true"' not in hero
     assert 'data-overview-load-state="idle"' in index
@@ -322,7 +322,7 @@ def test_overview_loading_tracker_reports_real_lazy_section_progress() -> None:
     assert "document.body.addEventListener('htmx:afterSettle'" in runtime
     assert 'Requested Sections' in runtime
     assert "section.dataset.overviewLoadState = 'failed'" in runtime
-    assert "filename='js/analytics/kubernetes/overview.js'" in index
+    assert "filename='js/kubernetes/analytics/overview.js'" in index
     assert 'kaori-loading-bar-segment' in loading_bar
     assert '@keyframes kaori-loading-bar-indeterminate' in stylesheet
 

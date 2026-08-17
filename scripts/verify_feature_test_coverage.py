@@ -14,7 +14,7 @@ _REQUIRED_TEST_FILES = {
     'tests/rendering/welcome/test_welcome_rendering.py': 2,
     'tests/e2e/welcome/test_welcome_smoke.py': 2,
     'tests/unit/auth/test_auth_session_policy.py': 3,
-    'tests/auth/test_login_characterization.py': 3,
+    'tests/access/authentication/test_login_characterization.py': 3,
     'tests/security/auth/test_authentication_security.py': 3,
     'tests/rendering/auth/test_authentication_rendering.py': 2,
     'tests/e2e/auth/test_authentication_smoke.py': 2,

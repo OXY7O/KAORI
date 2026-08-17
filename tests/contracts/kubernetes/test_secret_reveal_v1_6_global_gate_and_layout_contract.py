@@ -8,8 +8,8 @@ def read(relative: str) -> str:
 
 
 def test_protected_reveal_global_gate_is_explicit_without_bypassing_policy() -> None:
-    service = read('app/kubernetes_operations/secrets/reveal_service.py')
-    page = read('app/templates/kubernetes_operations/secrets/reveal.html')
+    service = read('app/kubernetes/operations/secrets/reveal_service.py')
+    page = read('app/templates/kubernetes/operations/secrets/reveal.html')
 
     clusters_block = service.split('def get_reveal_clusters(', 1)[1].split('def get_reveal_workspace(', 1)[0]
     assert 'if not _global_enabled():' in clusters_block
@@ -31,8 +31,8 @@ def test_protected_reveal_global_gate_is_explicit_without_bypassing_policy() -> 
 
 
 def test_protected_reveal_reports_configured_policy_count_while_global_gate_is_off() -> None:
-    service = read('app/kubernetes_operations/secrets/reveal_service.py')
-    page = read('app/templates/kubernetes_operations/secrets/reveal.html')
+    service = read('app/kubernetes/operations/secrets/reveal_service.py')
+    page = read('app/templates/kubernetes/operations/secrets/reveal.html')
 
     assert 'SecretRevealNamespacePolicy' in service
     assert "SecretRevealNamespacePolicy.policy.in_(('step_up', 'approval_required'))" in service
@@ -51,7 +51,7 @@ def test_secret_reveal_v16_layout_refinement_is_explicitly_superseded_by_v17() -
 
 
 def test_secret_reveal_v16_keeps_neutral_dark_mode_surfaces() -> None:
-    protected = read('app/templates/kubernetes_operations/secrets/reveal.html')
+    protected = read('app/templates/kubernetes/operations/secrets/reveal.html')
     administration = read('app/templates/platform_operations/kubernetes/secret_reveal/_cluster_workspace.html')
 
     for source in (protected, administration):

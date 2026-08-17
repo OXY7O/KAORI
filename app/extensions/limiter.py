@@ -28,7 +28,7 @@ def register_rate_limit_handlers(app: Flask) -> None:
     @app.errorhandler(RateLimitExceeded)
     def handle_rate_limit(error: Exception):
         if request.endpoint == 'auth.login':
-            from app.auth.audit import record_authentication_activity
+            from app.access.authentication.audit import record_authentication_activity
 
             record_authentication_activity(
                 action='login',
@@ -47,7 +47,7 @@ def register_rate_limit_handlers(app: Flask) -> None:
             return redirect(url_for('auth.login'))
 
         if request.endpoint in {'auth.sso_start', 'auth.sso_callback'}:
-            from app.auth.audit import record_authentication_activity
+            from app.access.authentication.audit import record_authentication_activity
 
             provider_key = str((request.view_args or {}).get('provider_key') or 'sso')
             record_authentication_activity(
@@ -75,7 +75,7 @@ def register_rate_limit_handlers(app: Flask) -> None:
             }
             and current_user.is_authenticated
         ):
-            from app.notifications.service import record_operational_activity
+            from app.platform_operations.notifications.service import record_operational_activity
 
             record_operational_activity(
                 user_id=current_user.id,

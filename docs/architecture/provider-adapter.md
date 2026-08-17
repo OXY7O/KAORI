@@ -49,7 +49,7 @@ app/<provider>/runtime_adapter.py
 Examples:
 
 ```text
-app/alert_sources/providers/alertmanager/runtime_adapter.py
+app/integrations/observability/alert_source/providers/alertmanager/application/runtime_adapter.py
 app/integrations/observability/metrics_source/adapter.py
 app/harbor/runtime_adapter.py
 app/vault/runtime_adapter.py

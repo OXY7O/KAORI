@@ -6,7 +6,7 @@ def read(path: str) -> str:
 
 
 def test_notification_channel_registry_supports_telegram_email_and_microsoft_teams():
-    providers = read('app/notification_channels/providers/__init__.py')
+    providers = read('app/integrations/delivery/notification_channels/providers/__init__.py')
     for key in ("'telegram'", "'email'", "'microsoft_teams'"):
         assert key in providers
     assert 'send_email_message' in providers
@@ -14,7 +14,7 @@ def test_notification_channel_registry_supports_telegram_email_and_microsoft_tea
 
 
 def test_email_provider_supports_smtp_tls_modes_without_global_credentials():
-    provider = read('app/notification_channels/providers/email.py')
+    provider = read('app/integrations/delivery/notification_channels/providers/email.py')
     assert 'smtplib.SMTP_SSL' in provider
     assert 'client.starttls(' in provider
     assert 'client.send_message(email)' in provider
@@ -24,8 +24,8 @@ def test_email_provider_supports_smtp_tls_modes_without_global_credentials():
 
 
 def test_microsoft_teams_uses_workflows_webhook_and_keeps_url_secret():
-    provider = read('app/notification_channels/providers/microsoft_teams.py')
-    page = read('app/templates/integrations/notification_channels/providers/microsoft_teams/_form.html')
+    provider = read('app/integrations/delivery/notification_channels/providers/microsoft_teams.py')
+    page = read('app/templates/integrations/delivery/notification_channels/providers/microsoft_teams/_form.html')
     assert "body = json.dumps({'text': _render_message(message)}" in provider
     assert "method='POST'" in provider
     assert "('.environment.api.powerplatform.com', '.logic.azure.com')" in provider
@@ -35,7 +35,7 @@ def test_microsoft_teams_uses_workflows_webhook_and_keeps_url_secret():
 
 
 def test_notification_channels_redesign_surfaces_delivery_governance():
-    page = read('app/templates/integrations/notification_channels/index.html')
+    page = read('app/templates/integrations/delivery/notification_channels/index.html')
     for label in (
         'Delivery Providers',
         'Channel Configuration',
@@ -44,11 +44,11 @@ def test_notification_channels_redesign_surfaces_delivery_governance():
         'Delivery Ownership',
     ):
         assert label in page
-    providers = read('app/notification_channels/providers/__init__.py')
+    providers = read('app/integrations/delivery/notification_channels/providers/__init__.py')
     for provider in ('Telegram', 'Email', 'Microsoft Teams'):
         assert provider in providers
     assert 'platform delivery capability' in page.lower()
-    definition = read('app/definitions/catalogs/notifications/outbound_delivery.yaml')
+    definition = read('app/definitions/catalogs/platform_operations/notifications/outbound_delivery.yaml')
     assert 'report.generated:' in definition
     assert 'automation.approval_required:' in definition
     assert 'automation.decision_approved:' in definition

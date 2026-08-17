@@ -11,9 +11,9 @@ def test_workload_domain_modules_emit_semantic_payloads_without_css_classes() ->
     source = '\n'.join(
         read(path)
         for path in (
-            'app/analytics/kubernetes/workload/domain.py',
-            'app/analytics/kubernetes/workload/quota.py',
-            'app/analytics/kubernetes/workload/mapping.py',
+            'app/kubernetes/analytics/workload/domain.py',
+            'app/kubernetes/analytics/workload/quota.py',
+            'app/kubernetes/analytics/workload/mapping.py',
         )
     )
 
@@ -25,7 +25,7 @@ def test_workload_domain_modules_emit_semantic_payloads_without_css_classes() ->
 
 
 def test_configured_zero_quota_key_is_not_classified_as_missing() -> None:
-    source = read('app/analytics/kubernetes/workload/quota.py')
+    source = read('app/kubernetes/analytics/workload/quota.py')
 
     assert 'configured_keys = {key for values in hard_objects.values() for key in values}' in source
     assert 'missing_keys = [key for key in REQUIRED_QUOTA_KEYS if key not in configured_keys]' in source
@@ -33,8 +33,8 @@ def test_configured_zero_quota_key_is_not_classified_as_missing() -> None:
 
 
 def test_workload_runtime_terms_are_factual_and_composite_efficiency_is_removed() -> None:
-    service = read('app/analytics/kubernetes/workload/service.py')
-    mapping = read('app/templates/analytics/kubernetes/workload/partials/_workload_mapping_section.html')
+    service = read('app/kubernetes/analytics/workload/service.py')
+    mapping = read('app/templates/kubernetes/analytics/workload/partials/_workload_mapping_section.html')
     query_profile = read('app/integrations/observability/metrics_source/query_profiles/kubernetes_v1.py')
 
     assert 'WORKLOAD_CPU_CURRENT_QUERY' in service
@@ -53,10 +53,10 @@ def test_workload_runtime_terms_are_factual_and_composite_efficiency_is_removed(
 
 
 def test_workload_snapshot_separates_cpu_limit_policy_from_memory_limit_gaps() -> None:
-    workload = read('app/analytics/kubernetes/workload/service.py')
-    overview = read('app/analytics/kubernetes/overview/service.py')
-    schema = read('app/analytics/kubernetes/overview/schema.py')
-    template = read('app/templates/analytics/kubernetes/overview/partials/_workload_snapshot.html')
+    workload = read('app/kubernetes/analytics/workload/service.py')
+    overview = read('app/kubernetes/analytics/overview/service.py')
+    schema = read('app/kubernetes/analytics/overview/schema.py')
+    template = read('app/templates/kubernetes/analytics/overview/partials/_workload_snapshot.html')
 
     for source in (workload, overview, schema, template):
         assert 'missing_cpu_limits' not in source

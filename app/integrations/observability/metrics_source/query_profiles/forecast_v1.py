@@ -6,7 +6,7 @@ FORECAST_QUERIES: dict[str, QueryDefinition] = {
     'analytics.forecast.queries.NAMESPACE_ACTIVE_QUERY': QueryDefinition(
         key='analytics.forecast.queries.NAMESPACE_ACTIVE_QUERY',
         expression='max by (namespace) (kube_namespace_status_phase{phase="Active"} == 1)',
-        domain='app.analytics.kubernetes.forecast',
+        domain='app.kubernetes.analytics.forecast',
         required_metrics=('kube_namespace_status_phase',),
         required_labels=(('kube_namespace_status_phase', ('namespace', 'phase')),),
     ),
@@ -33,7 +33,7 @@ FORECAST_QUERIES: dict[str, QueryDefinition] = {
     )
   )
 )""",
-        domain='app.analytics.kubernetes.forecast',
+        domain='app.kubernetes.analytics.forecast',
         required_metrics=(
             'container_cpu_usage_seconds_total',
             'kube_pod_info',
@@ -71,7 +71,7 @@ FORECAST_QUERIES: dict[str, QueryDefinition] = {
     )
   )
 )""",
-        domain='app.analytics.kubernetes.forecast',
+        domain='app.kubernetes.analytics.forecast',
         required_metrics=(
             'container_cpu_usage_seconds_total',
             'kube_pod_info',
@@ -109,7 +109,7 @@ FORECAST_QUERIES: dict[str, QueryDefinition] = {
     )
   )
 )""",
-        domain='app.analytics.kubernetes.forecast',
+        domain='app.kubernetes.analytics.forecast',
         required_metrics=(
             'container_memory_working_set_bytes',
             'kube_pod_info',
@@ -147,7 +147,7 @@ FORECAST_QUERIES: dict[str, QueryDefinition] = {
     )
   )
 )""",
-        domain='app.analytics.kubernetes.forecast',
+        domain='app.kubernetes.analytics.forecast',
         required_metrics=(
             'container_memory_working_set_bytes',
             'kube_pod_info',
@@ -169,7 +169,7 @@ FORECAST_QUERIES: dict[str, QueryDefinition] = {
     kubelet_volume_stats_used_bytes{persistentvolumeclaim!=""}
   )
 )""",
-        domain='app.analytics.kubernetes.forecast',
+        domain='app.kubernetes.analytics.forecast',
         required_metrics=('kubelet_volume_stats_used_bytes',),
         required_labels=(('kubelet_volume_stats_used_bytes', ('namespace', 'persistentvolumeclaim')),),
         required_history='90d',
@@ -181,7 +181,7 @@ FORECAST_QUERIES: dict[str, QueryDefinition] = {
     kubelet_volume_stats_used_bytes{persistentvolumeclaim!="",namespace="$namespace"}
   )
 )""",
-        domain='app.analytics.kubernetes.forecast',
+        domain='app.kubernetes.analytics.forecast',
         required_metrics=('kubelet_volume_stats_used_bytes',),
         required_labels=(('kubelet_volume_stats_used_bytes', ('namespace', 'persistentvolumeclaim')),),
         required_history='90d',
@@ -209,7 +209,7 @@ FORECAST_QUERIES: dict[str, QueryDefinition] = {
     )
   )
 )""",
-        domain='app.analytics.kubernetes.forecast',
+        domain='app.kubernetes.analytics.forecast',
         required_metrics=('kube_pod_status_phase', 'kube_pod_info', 'kube_node_status_condition', 'kube_node_role'),
         required_labels=(
             ('kube_pod_status_phase', ('namespace', 'pod', 'phase')),
@@ -242,7 +242,7 @@ FORECAST_QUERIES: dict[str, QueryDefinition] = {
     )
   )
 )""",
-        domain='app.analytics.kubernetes.forecast',
+        domain='app.kubernetes.analytics.forecast',
         required_metrics=('kube_pod_status_phase', 'kube_pod_info', 'kube_node_status_condition', 'kube_node_role'),
         required_labels=(
             ('kube_pod_status_phase', ('namespace', 'pod', 'phase')),
@@ -269,7 +269,7 @@ FORECAST_QUERIES: dict[str, QueryDefinition] = {
     kube_node_status_condition{condition="Ready",status="true"} == 1
   )
 )""",
-        domain='app.analytics.kubernetes.forecast',
+        domain='app.kubernetes.analytics.forecast',
         required_metrics=('kube_node_status_allocatable', 'kube_node_role', 'kube_node_status_condition'),
         required_labels=(
             ('kube_node_status_allocatable', ('node', 'resource', 'unit')),
@@ -295,7 +295,7 @@ FORECAST_QUERIES: dict[str, QueryDefinition] = {
     kube_node_status_condition{condition="Ready",status="true"} == 1
   )
 )""",
-        domain='app.analytics.kubernetes.forecast',
+        domain='app.kubernetes.analytics.forecast',
         required_metrics=('kube_node_status_allocatable', 'kube_node_role', 'kube_node_status_condition'),
         required_labels=(
             ('kube_node_status_allocatable', ('node', 'resource', 'unit')),
@@ -321,7 +321,7 @@ FORECAST_QUERIES: dict[str, QueryDefinition] = {
     kube_node_status_condition{condition="Ready",status="true"} == 1
   )
 )""",
-        domain='app.analytics.kubernetes.forecast',
+        domain='app.kubernetes.analytics.forecast',
         required_metrics=('kube_node_status_allocatable', 'kube_node_role', 'kube_node_status_condition'),
         required_labels=(
             ('kube_node_status_allocatable', ('node', 'resource', 'unit')),
@@ -337,7 +337,7 @@ FORECAST_QUERIES: dict[str, QueryDefinition] = {
     kubelet_volume_stats_capacity_bytes{persistentvolumeclaim!=""}
   )
 )""",
-        domain='app.analytics.kubernetes.forecast',
+        domain='app.kubernetes.analytics.forecast',
         required_metrics=('kubelet_volume_stats_capacity_bytes',),
         required_labels=(('kubelet_volume_stats_capacity_bytes', ('namespace', 'persistentvolumeclaim')),),
         required_history='90d',
@@ -349,7 +349,7 @@ FORECAST_QUERIES: dict[str, QueryDefinition] = {
     kubelet_volume_stats_capacity_bytes{persistentvolumeclaim!="",namespace="$namespace"}
   )
 )""",
-        domain='app.analytics.kubernetes.forecast',
+        domain='app.kubernetes.analytics.forecast',
         required_metrics=('kubelet_volume_stats_capacity_bytes',),
         required_labels=(('kubelet_volume_stats_capacity_bytes', ('namespace', 'persistentvolumeclaim')),),
         required_history='90d',

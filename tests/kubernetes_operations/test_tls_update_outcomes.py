@@ -11,7 +11,7 @@ from sqlalchemy.exc import SQLAlchemyError
 pytestmark = pytest.mark.functional
 
 ROOT = Path(__file__).resolve().parents[2]
-UPDATES_PATH = ROOT / 'app/governance/tls_certificates/updates.py'
+UPDATES_PATH = ROOT / 'app/kubernetes/governance/tls_certificates/updates.py'
 
 
 def _module(name: str, monkeypatch: pytest.MonkeyPatch) -> ModuleType:
@@ -25,11 +25,11 @@ def _load_updates(monkeypatch: pytest.MonkeyPatch, *, commit_error: bool = False
         'app',
         'app.extensions',
         'app.extensions.db',
-        'app.governance',
-        'app.governance.tls_certificates',
-        'app.governance.tls_certificates.certificate',
-        'app.governance.tls_certificates.constants',
-        'app.governance.tls_certificates.mutation',
+        'app.kubernetes.governance',
+        'app.kubernetes.governance.tls_certificates',
+        'app.kubernetes.governance.tls_certificates.certificate',
+        'app.kubernetes.governance.tls_certificates.constants',
+        'app.kubernetes.governance.tls_certificates.mutation',
         'app.models',
         'flask',
         'flask_login',
@@ -70,13 +70,13 @@ def _load_updates(monkeypatch: pytest.MonkeyPatch, *, commit_error: bool = False
         risk_level='normal',
     )
     validation = SimpleNamespace(is_valid=True, parsed_certificate=parsed, errors=[])
-    certificate = sys.modules['app.governance.tls_certificates.certificate']
+    certificate = sys.modules['app.kubernetes.governance.tls_certificates.certificate']
     certificate.find_uncovered_hosts = lambda hosts, candidate: []
     certificate.matching_certificate_pattern = lambda host, names, common_name: common_name
     certificate.validate_certificate_pair = lambda *args, **kwargs: validation
     certificate.validity_policy_from_config = lambda config: None
 
-    constants = sys.modules['app.governance.tls_certificates.constants']
+    constants = sys.modules['app.kubernetes.governance.tls_certificates.constants']
     constants.TLS_COLLECTION_COLLECTED = 'collected'
     constants.TLS_COVERAGE_FULL = 'full'
     constants.TLS_COVERAGE_NONE = 'none'
@@ -84,7 +84,7 @@ def _load_updates(monkeypatch: pytest.MonkeyPatch, *, commit_error: bool = False
     constants.TLS_COVERAGE_PARTIAL = 'partial'
     constants.TLS_COVERAGE_UNCOVERED = 'uncovered'
 
-    mutation = sys.modules['app.governance.tls_certificates.mutation']
+    mutation = sys.modules['app.kubernetes.governance.tls_certificates.mutation']
     mutation.patch_tls_secret = lambda record, cert, key: None
     mutation.read_uploaded_pair = lambda files: (b'certificate', b'private-key')
 

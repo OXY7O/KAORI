@@ -4,8 +4,8 @@ import ast
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
-ROUTES = ROOT / 'app/dashboards/kubernetes/routes.py'
-DASHBOARD_PACKAGE = ROOT / 'app/dashboards/kubernetes'
+ROUTES = ROOT / 'app/kubernetes/dashboard/routes.py'
+DASHBOARD_PACKAGE = ROOT / 'app/kubernetes/dashboard'
 
 
 def _function(tree: ast.AST, name: str) -> ast.FunctionDef:

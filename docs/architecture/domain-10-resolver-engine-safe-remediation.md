@@ -37,4 +37,4 @@ No database migration is required. Apply the files, then run focused resolver an
 
 ## Rollback
 
-Remove the `app/resolver` package and Domain 10 tests/documentation. No database downgrade is necessary. Existing Domain 9 decision and execution journal rows remain valid.
+Remove the `app/intelligence/resolver` package and Domain 10 tests/documentation. No database downgrade is necessary. Existing Domain 9 decision and execution journal rows remain valid.

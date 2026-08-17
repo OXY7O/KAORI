@@ -32,7 +32,7 @@ def test_inventory_asset_identity_icons_use_the_kaori_violet_palette() -> None:
 
 
 def test_inventory_snapshot_icons_are_brand_identity_while_status_remains_semantic() -> None:
-    freshness = read('app/templates/inventory/kubernetes/components/_data_freshness.html')
+    freshness = read('app/templates/kubernetes/inventory/components/_data_freshness.html')
     snapshot = read('app/templates/components/snapshot_context_bar.html')
 
     assert "metric_icon_palette='brand'" in freshness

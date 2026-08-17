@@ -10,17 +10,17 @@ def read(relative: str) -> str:
 def test_reviewed_core_workspaces_do_not_restore_internal_compatibility_bridges() -> None:
     obsolete = (
         'app/static/js/inventory/topology_bootstrap.js',
-        'app/dashboards/kubernetes/snapshot_builder.py',
-        'app/analytics/kubernetes/common/cache.py',
-        'app/templates/inventory/kubernetes/components/_detail_macros.html',
-        'app/templates/inventory/kubernetes/nodes/partials/_inventory_scope.html',
-        'app/templates/inventory/kubernetes/namespaces/partials/_inventory_scope.html',
-        'app/templates/inventory/kubernetes/workloads/partials/_inventory_scope.html',
-        'app/templates/inventory/kubernetes/pods/partials/_inventory_scope.html',
-        'app/templates/inventory/kubernetes/services/partials/_inventory_scope.html',
-        'app/templates/inventory/kubernetes/ingresses/partials/_inventory_scope.html',
-        'app/templates/inventory/kubernetes/configuration/partials/_inventory_scope.html',
-        'app/templates/inventory/kubernetes/storage/partials/_inventory_scope.html',
+        'app/kubernetes/dashboard/snapshot_builder.py',
+        'app/kubernetes/analytics/common/cache.py',
+        'app/templates/kubernetes/inventory/components/_detail_macros.html',
+        'app/templates/kubernetes/inventory/nodes/partials/_inventory_scope.html',
+        'app/templates/kubernetes/inventory/namespaces/partials/_inventory_scope.html',
+        'app/templates/kubernetes/inventory/workloads/partials/_inventory_scope.html',
+        'app/templates/kubernetes/inventory/pods/partials/_inventory_scope.html',
+        'app/templates/kubernetes/inventory/services/partials/_inventory_scope.html',
+        'app/templates/kubernetes/inventory/ingresses/partials/_inventory_scope.html',
+        'app/templates/kubernetes/inventory/configuration/partials/_inventory_scope.html',
+        'app/templates/kubernetes/inventory/storage/partials/_inventory_scope.html',
     )
     assert all(not (ROOT / relative).exists() for relative in obsolete)
 
@@ -29,34 +29,34 @@ def test_reviewed_core_workspaces_do_not_restore_internal_compatibility_bridges(
     assert "@welcome_bp.route('/welcome')" in welcome_routes
     assert 'redirect(' not in welcome_routes
 
-    dashboard_repository = read('app/dashboards/kubernetes/repository.py')
+    dashboard_repository = read('app/kubernetes/dashboard/repository.py')
     assert 'load_models' not in dashboard_repository
     assert 'import_module' not in dashboard_repository
     assert 'filter_current_generation(query, model)' in dashboard_repository
 
-    overview_route = read('app/inventory/kubernetes/routes.py')
-    overview_content = read('app/templates/inventory/kubernetes/overview/partials/_resources_by_cluster_content.html')
-    assert "'inventory/kubernetes/overview/partials/_resources_by_cluster_content.html'" in overview_route
+    overview_route = read('app/kubernetes/inventory/routes.py')
+    overview_content = read('app/templates/kubernetes/inventory/overview/partials/_resources_by_cluster_content.html')
+    assert "'kubernetes/inventory/overview/partials/_resources_by_cluster_content.html'" in overview_route
     assert 'hx-target="#resources-by-cluster-content"' in overview_content
 
-    topology_index = read('app/templates/inventory/kubernetes/topology/index.html')
-    topology_script = read('app/static/js/inventory/kubernetes/topology.js')
-    assert "filename='js/inventory/kubernetes/topology.js'" in topology_index
+    topology_index = read('app/templates/kubernetes/inventory/topology/index.html')
+    topology_script = read('app/static/js/kubernetes/inventory/topology.js')
+    assert "filename='js/kubernetes/inventory/topology.js'" in topology_index
     assert 'await import(config.renderer_url)' in topology_script
     assert 'window.cytoscape' not in topology_script
 
-    topology_service = read('app/inventory/kubernetes/topology/service.py')
+    topology_service = read('app/kubernetes/inventory/topology/service.py')
     assert '_node_element' not in topology_service
     assert 'TopologyGraphBuilder' in topology_service
-    assert (ROOT / 'app/inventory/kubernetes/topology/repository.py').exists()
-    assert (ROOT / 'app/inventory/kubernetes/topology/node_builder.py').exists()
-    assert (ROOT / 'app/inventory/kubernetes/topology/edge_builder.py').exists()
+    assert (ROOT / 'app/kubernetes/inventory/topology/repository.py').exists()
+    assert (ROOT / 'app/kubernetes/inventory/topology/node_builder.py').exists()
+    assert (ROOT / 'app/kubernetes/inventory/topology/edge_builder.py').exists()
 
 
 def test_reviewed_inventory_resources_use_canonical_workspace_and_table_boundaries() -> None:
     for resource in ('nodes', 'namespaces', 'configuration', 'workloads', 'pods', 'services', 'ingresses', 'storage'):
-        workspace = read(f'app/templates/inventory/kubernetes/{resource}/partials/_page_workspace.html')
-        table = read(f'app/templates/inventory/kubernetes/{resource}/partials/_table_content.html')
+        workspace = read(f'app/templates/kubernetes/inventory/{resource}/partials/_page_workspace.html')
+        table = read(f'app/templates/kubernetes/inventory/{resource}/partials/_table_content.html')
 
         assert f'id="{resource}-page-workspace"' in workspace
         assert f'hx-target="#{resource}-table-content"' in table
@@ -79,7 +79,7 @@ def test_service_inventory_uses_json_evidence_without_duplicate_columns() -> Non
 def test_ingress_inventory_uses_json_evidence_without_duplicate_columns() -> None:
     model = read('app/models/inventory.py')
     ingress_class = model.split('class IngressInventory', 1)[1].split('class StorageInventory', 1)[0]
-    collector = read('app/inventory/kubernetes/collectors/ingresses.py')
+    collector = read('app/kubernetes/inventory/collectors/ingresses.py')
     migration = read('migrations/versions/20260805_ingress_inventory_v2.py')
 
     assert 'host:' not in ingress_class
@@ -95,7 +95,7 @@ def test_ingress_inventory_uses_json_evidence_without_duplicate_columns() -> Non
 def test_configuration_inventory_derives_key_count_without_synthetic_payload_columns() -> None:
     model = read('app/models/inventory.py')
     configuration_class = model.split('class ConfigurationInventory', 1)[1].split('class ResourceQuotaInventory', 1)[0]
-    collector = read('app/inventory/kubernetes/collectors/configuration.py')
+    collector = read('app/kubernetes/inventory/collectors/configuration.py')
     migration = read('migrations/versions/20260805_config_inventory_v2.py')
 
     assert 'key_count:' not in configuration_class
@@ -107,34 +107,34 @@ def test_configuration_inventory_derives_key_count_without_synthetic_payload_col
 
 
 def test_dashboard_materialization_and_recovery_use_canonical_domain_boundaries() -> None:
-    catalog = read('app/definitions/catalogs/analytics/kubernetes_datasets.yaml')
-    analytics_adapter = read('app/analytics/kubernetes/job_adapter.py')
-    dashboard_service = read('app/dashboards/kubernetes/service.py')
-    dashboard_snapshots = read('app/dashboards/kubernetes/snapshots.py')
+    catalog = read('app/definitions/catalogs/kubernetes/analytics/datasets.yaml')
+    analytics_adapter = read('app/kubernetes/analytics/job_adapter.py')
+    dashboard_service = read('app/kubernetes/dashboard/service.py')
+    dashboard_snapshots = read('app/kubernetes/dashboard/snapshots.py')
     recovery = read('app/integrations/runtime/recovery.py')
-    notifications = read('app/notifications/queries.py')
+    notifications = read('app/platform_operations/notifications/queries.py')
     shared_presentation = read('app/common/job_execution_presentation.py')
 
     assert (
-        'builder_path: app.analytics.kubernetes.materialization.dashboard_alerts:build_dashboard_alerts_context'
+        'builder_path: app.kubernetes.analytics.materialization.dashboard_alerts:build_dashboard_alerts_context'
         in catalog
     )
     assert (
-        'from app.analytics.kubernetes.materialization.dashboard_alerts import build_dashboard_alerts_context'
+        'from app.kubernetes.analytics.materialization.dashboard_alerts import build_dashboard_alerts_context'
         not in catalog
     )
     assert 'app.dashboards' not in catalog
     assert 'app.dashboards' not in analytics_adapter
-    assert 'from app.analytics.kubernetes.materialization.keys import (' in dashboard_service
+    assert 'from app.kubernetes.analytics.materialization.keys import (' in dashboard_service
     assert 'read_dashboard_snapshot(' in dashboard_service
     assert (
-        'from app.analytics.kubernetes.materialization.service import SnapshotResult, read_snapshot'
+        'from app.kubernetes.analytics.materialization.service import SnapshotResult, read_snapshot'
         in dashboard_snapshots
     )
-    assert 'from app.jobs.registry import get_job_definition' in recovery
-    assert 'from app.cluster.sync_jobs import' not in recovery
-    assert 'from app.governance.tls_certificates.sync_jobs import' not in recovery
-    assert 'from app.analytics.kubernetes.job_adapter import' not in recovery
+    assert 'from app.platform_operations.jobs.registry import get_job_definition' in recovery
+    assert 'from app.kubernetes.cluster.sync_jobs import' not in recovery
+    assert 'from app.kubernetes.governance.tls_certificates.sync_jobs import' not in recovery
+    assert 'from app.kubernetes.analytics.job_adapter import' not in recovery
     assert 'from app.common.job_execution_presentation import present_job_execution' in notifications
-    assert 'app.jobs.presentation' not in notifications
-    assert 'app.jobs.service' not in shared_presentation
+    assert 'app.platform_operations.jobs.presentation' not in notifications
+    assert 'app.platform_operations.jobs.service' not in shared_presentation

@@ -8,8 +8,8 @@ def read(relative: str) -> str:
 
 
 def test_platform_configuration_and_protected_reveal_share_policy_authority() -> None:
-    policy = read('app/kubernetes_operations/secrets/reveal_policy.py')
-    protected = read('app/kubernetes_operations/secrets/reveal_service.py')
+    policy = read('app/kubernetes/operations/secrets/reveal_policy.py')
+    protected = read('app/kubernetes/operations/secrets/reveal_service.py')
 
     assert 'def cluster_reveal_readiness(' in policy
     assert 'def get_namespace_policy(' in policy
@@ -27,7 +27,7 @@ def test_platform_configuration_and_protected_reveal_share_policy_authority() ->
 
 
 def test_protected_reveal_revalidates_policy_at_every_security_boundary() -> None:
-    protected = read('app/kubernetes_operations/secrets/reveal_service.py')
+    protected = read('app/kubernetes/operations/secrets/reveal_service.py')
 
     create_block = protected.split('def create_reveal_request(', 1)[1].split('def decide_reveal_request(', 1)[0]
     approve_block = protected.split('def decide_reveal_request(', 1)[1].split('def get_reveal_request_for_user(', 1)[0]
@@ -49,7 +49,7 @@ def test_protected_reveal_revalidates_policy_at_every_security_boundary() -> Non
 
 
 def test_configuration_changes_invalidate_active_protected_reveal_requests() -> None:
-    policy = read('app/kubernetes_operations/secrets/reveal_policy.py')
+    policy = read('app/kubernetes/operations/secrets/reveal_policy.py')
 
     readiness_block = policy.split('def update_cluster_reveal_readiness(', 1)[1].split(
         'def set_namespace_reveal_policy(', 1
@@ -66,7 +66,7 @@ def test_configuration_changes_invalidate_active_protected_reveal_requests() -> 
 
 
 def test_protected_reveal_pagination_uses_title_case_resource_label() -> None:
-    request_status = read('app/templates/kubernetes_operations/secrets/_reveal_request_status.html')
+    request_status = read('app/templates/kubernetes/operations/secrets/_reveal_request_status.html')
 
     assert "{{ 'Request' if my_reveal_pagination.total == 1 else 'Requests' }}" in request_status
     assert "{{ 'request' if my_reveal_pagination.total == 1 else 'requests' }}" not in request_status
@@ -82,8 +82,8 @@ def test_secret_reveal_dark_mode_keeps_violet_for_accents_and_actions() -> None:
     namespace_table = read(
         'app/templates/platform_operations/kubernetes/secret_reveal/_namespace_policy_table_content.html'
     )
-    request_form = read('app/templates/kubernetes_operations/secrets/_reveal_request_form.html')
-    request_status = read('app/templates/kubernetes_operations/secrets/_reveal_request_status.html')
+    request_form = read('app/templates/kubernetes/operations/secrets/_reveal_request_form.html')
+    request_status = read('app/templates/kubernetes/operations/secrets/_reveal_request_status.html')
 
     assert 'bg-white/70' not in administration
     assert 'bg-surface-card text-status-warning-text' in administration

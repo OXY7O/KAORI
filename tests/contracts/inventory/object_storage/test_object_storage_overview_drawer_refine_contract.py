@@ -6,13 +6,13 @@ def read(path: str) -> str:
 
 
 def test_object_storage_overview_drawer_uses_balanced_width():
-    template = read('app/templates/inventory/object_storage/overview/partials/_systems_snapshot_content.html')
+    template = read('app/templates/storage/object_storage/inventory/overview/partials/_systems_snapshot_content.html')
     assert "width='2xl'" in template
     assert "width='3xl'" not in template
 
 
 def test_provider_context_keeps_endpoint_inline():
-    template = read('app/templates/inventory/object_storage/overview/partials/_systems_snapshot_content.html')
+    template = read('app/templates/storage/object_storage/inventory/overview/partials/_systems_snapshot_content.html')
     assert "detail_row('Endpoint', system.endpoint, break_all=true)" in template
     assert "stacked_detail_row('Endpoint'" not in template
     assert "detail_row('Region', system.region)" in template

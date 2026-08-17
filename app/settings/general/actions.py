@@ -15,8 +15,8 @@ from app.common.timezone import (
 )
 from app.extensions.db import db
 from app.models import User
-from app.notifications.feedback import OperationalDeliveryPolicy
-from app.notifications.service import create_transient_feedback, record_operational_activity
+from app.platform_operations.notifications.feedback import OperationalDeliveryPolicy
+from app.platform_operations.notifications.service import create_transient_feedback, record_operational_activity
 from app.settings.general.forms import RegionalFormatForm, TimezonePreferenceForm
 
 

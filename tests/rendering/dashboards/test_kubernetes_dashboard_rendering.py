@@ -5,7 +5,7 @@ from pathlib import Path
 from jinja2 import Environment
 
 ROOT = Path(__file__).resolve().parents[3]
-DASHBOARD_TEMPLATES = ROOT / 'app/templates/dashboards/kubernetes'
+DASHBOARD_TEMPLATES = ROOT / 'app/templates/kubernetes/dashboard'
 
 
 def test_all_kubernetes_dashboard_templates_parse_as_valid_jinja() -> None:

@@ -3,13 +3,13 @@ from __future__ import annotations
 from collections.abc import Mapping
 from typing import Any
 
-from app.cluster.constants import get_environment_label
 from app.integrations.compatibility import (
     KUBERNETES_CURRENT_VERSION_LABEL,
     KUBERNETES_SUPPORTED_VERSION_LABEL,
     PROFILES,
 )
 from app.integrations.observability.metrics_source.providers import provider_definitions
+from app.kubernetes.cluster.constants import get_environment_label
 
 _RELEASE_HIGHLIGHTS: tuple[dict[str, str], ...] = (
     {

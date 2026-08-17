@@ -22,9 +22,9 @@ def test_access_final_lock_is_release_gated_and_documented() -> None:
 
 def test_access_final_lock_preserves_authentication_actor_and_session_security() -> None:
     config = read('app/config/default.py')
-    queries = read('app/notifications/queries.py')
-    actors = read('app/notifications/actors.py')
-    session = read('app/auth/session.py')
+    queries = read('app/platform_operations/notifications/queries.py')
+    actors = read('app/platform_operations/notifications/actors.py')
+    session = read('app/access/authentication/session.py')
 
     assert 'AUTH_REMEMBER_ME_DAYS = _bounded_env_int(' in config
     assert "'AUTH_REMEMBER_ME_DAYS'," in config
@@ -54,7 +54,7 @@ def test_access_final_lock_protects_content_driven_modal_formatter_boundary() ->
 def test_current_access_documents_do_not_reopen_the_locked_ui() -> None:
     current_docs = (
         read('app/access/README.md'),
-        read('app/users/README.md'),
+        read('app/access/users/README.md'),
         read('docs/architecture/ACCESS_OWNERSHIP.md'),
         read('docs/design/KAORI_ACCESS_LOCK_V1.md'),
     )

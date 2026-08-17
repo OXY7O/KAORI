@@ -2,7 +2,7 @@
 
 ## Ownership
 
-Identity provider configuration belongs to the standalone `app/users` domain because it supports identity discovery, projection, lifecycle administration, and synchronization. Authentication adapters consume the configuration but do not own user administration.
+Identity provider configuration belongs to the standalone `app/access/users` domain because it supports identity discovery, projection, lifecycle administration, and synchronization. Authentication adapters consume the configuration but do not own user administration.
 
 SQLAlchemy models remain centralized in `app/models/identity.py`.
 

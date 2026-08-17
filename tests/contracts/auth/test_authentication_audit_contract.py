@@ -1,7 +1,7 @@
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
-AUDIT = ROOT / 'app' / 'auth' / 'audit.py'
+AUDIT = ROOT / 'app' / 'access' / 'authentication' / 'audit.py'
 
 
 def read(relative: str) -> str:
@@ -23,7 +23,7 @@ def test_authentication_audit_uses_immutable_actor_and_target_semantics() -> Non
 
 def test_failed_attempts_do_not_claim_target_account_as_actor() -> None:
     source = AUDIT.read_text(encoding='utf-8')
-    actors = read('app/notifications/actors.py')
+    actors = read('app/platform_operations/notifications/actors.py')
 
     assert 'else unauthenticated_actor_snapshot()' in source
     assert "key='unauthenticated'" in actors
@@ -54,7 +54,7 @@ def test_authentication_audit_bounds_untrusted_request_metadata() -> None:
 
 def test_authentication_audit_has_security_reason_codes_without_secret_payloads() -> None:
     audit = AUDIT.read_text(encoding='utf-8')
-    results = read('app/auth/results.py')
+    results = read('app/access/authentication/results.py')
 
     assert "'access_not_permitted'" in audit
     assert "'rate_limited'" in audit
@@ -67,8 +67,8 @@ def test_authentication_audit_has_security_reason_codes_without_secret_payloads(
 
 
 def test_activity_presentation_uses_snapshot_instead_of_live_target_user_identity() -> None:
-    presentation = read('app/notifications/presentation.py')
-    queries = read('app/notifications/queries.py')
+    presentation = read('app/platform_operations/notifications/presentation.py')
+    queries = read('app/platform_operations/notifications/queries.py')
 
     assert 'actor_snapshot = notification.actor_snapshot_json or {}' in presentation
     assert 'notification.actor_label' in presentation

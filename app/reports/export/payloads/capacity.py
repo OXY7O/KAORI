@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from typing import Any
 
-from app.analytics.kubernetes.capacity.service import CapacityService
-from app.analytics.kubernetes.utilization.service import UtilizationService
-from app.cluster.constants import get_environment_label
-from app.metrics_sources.consumer import MetricsConsumer
-from app.metrics_sources.service import MetricsService
+from app.integrations.observability.metrics_source.application.consumer import MetricsConsumer
+from app.integrations.observability.metrics_source.application.service import MetricsService
+from app.kubernetes.analytics.capacity.service import CapacityService
+from app.kubernetes.analytics.utilization.service import UtilizationService
+from app.kubernetes.cluster.constants import get_environment_label
 from app.models.report import Report
 from app.reports.export.payloads.common import get_report_selected_cluster, report_payload_error
 
@@ -92,7 +92,7 @@ def _collect_forecast(
     period: str,
 ) -> dict[str, Any]:
     try:
-        from app.analytics.kubernetes.materialization.service import read_snapshot
+        from app.kubernetes.analytics.materialization.service import read_snapshot
 
         result = read_snapshot(
             cluster_id=str(getattr(cluster, 'id', '')),

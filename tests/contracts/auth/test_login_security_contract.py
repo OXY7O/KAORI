@@ -8,9 +8,9 @@ def read(relative: str) -> str:
 
 
 def test_session_admission_is_shared_by_credentials_sso_and_existing_sessions() -> None:
-    admission = read('app/auth/admission.py')
-    services = read('app/auth/services.py')
-    routes = read('app/auth/routes.py')
+    admission = read('app/access/authentication/admission.py')
+    services = read('app/access/authentication/services.py')
+    routes = read('app/access/authentication/routes.py')
     login_extension = read('app/extensions/login.py')
 
     assert 'def session_admission_reason(' in admission
@@ -26,9 +26,9 @@ def test_session_admission_is_shared_by_credentials_sso_and_existing_sessions() 
 
 
 def test_credential_failures_do_not_expose_account_provider_or_role_state() -> None:
-    services = read('app/auth/services.py')
-    routes = read('app/auth/routes.py')
-    results = read('app/auth/results.py')
+    services = read('app/access/authentication/services.py')
+    routes = read('app/access/authentication/routes.py')
+    results = read('app/access/authentication/results.py')
 
     assert 'def credential_failure_message(' in services
     assert "if result.reason == 'database_unavailable':" in services
@@ -42,10 +42,10 @@ def test_credential_failures_do_not_expose_account_provider_or_role_state() -> N
 
 
 def test_post_login_redirects_accept_only_internal_absolute_paths() -> None:
-    session_source = read('app/auth/session.py')
-    routes = read('app/auth/routes.py')
-    forms = read('app/auth/forms.py')
-    template = read('app/templates/auth/partials/_login_form.html')
+    session_source = read('app/access/authentication/session.py')
+    routes = read('app/access/authentication/routes.py')
+    forms = read('app/access/authentication/forms.py')
+    template = read('app/templates/access/authentication/partials/_login_form.html')
 
     assert 'def safe_next_url(' in session_source
     assert "not candidate.startswith('/')" in session_source
@@ -62,9 +62,9 @@ def test_post_login_redirects_accept_only_internal_absolute_paths() -> None:
 
 
 def test_logout_and_revocation_clear_persistent_remember_cookie() -> None:
-    session_source = read('app/auth/session.py')
+    session_source = read('app/access/authentication/session.py')
     login_extension = read('app/extensions/login.py')
-    routes = read('app/auth/routes.py')
+    routes = read('app/access/authentication/routes.py')
 
     assert "remember_instruction = session.get('_remember')" in session_source
     assert "session['_remember'] = 'clear'" in session_source
@@ -95,8 +95,8 @@ def test_authentication_rate_limits_are_audited() -> None:
 
 
 def test_login_form_bounds_untrusted_credential_input() -> None:
-    forms = read('app/auth/forms.py')
-    results = read('app/auth/results.py')
+    forms = read('app/access/authentication/forms.py')
+    results = read('app/access/authentication/results.py')
 
     assert "username = StringField('Username', validators=[DataRequired(), Length(max=100)])" in forms
     assert "password = PasswordField('Password', validators=[DataRequired(), Length(max=1024)])" in forms

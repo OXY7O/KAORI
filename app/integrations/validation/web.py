@@ -19,15 +19,15 @@ from app.integrations.validation.tasks import (
     validate_integration_binding,
     validate_integration_instance,
 )
-from app.jobs.constants import WORKLOAD_RUNTIME, WORKLOAD_VALIDATION
-from app.jobs.fingerprint import build_deduplication_key
-from app.jobs.service import (
+from app.models.job import JobExecutionSubscriber
+from app.platform_operations.jobs.constants import WORKLOAD_RUNTIME, WORKLOAD_VALIDATION
+from app.platform_operations.jobs.fingerprint import build_deduplication_key
+from app.platform_operations.jobs.service import (
     acquire_resource_admission_locks,
     create_or_attach_job,
     find_active_job,
     mark_job_failed,
 )
-from app.models.job import JobExecutionSubscriber
 
 
 def _now_iso() -> str:

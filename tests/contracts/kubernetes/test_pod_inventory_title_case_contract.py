@@ -8,7 +8,7 @@ def read(rel: str) -> str:
 
 
 def test_pod_inventory_posture_copy_uses_canonical_sentence_case() -> None:
-    source = read('app/templates/inventory/kubernetes/pods/partials/_summary_cards.html')
+    source = read('app/templates/kubernetes/inventory/pods/partials/_summary_cards.html')
 
     assert 'Pod Runtime Posture' in source
     assert 'Lifecycle exceptions, completion evidence, restart activity, and image diversity' in source
@@ -17,7 +17,7 @@ def test_pod_inventory_posture_copy_uses_canonical_sentence_case() -> None:
 
 
 def test_pod_inventory_footer_uses_resource_aware_count_and_rows_label() -> None:
-    source = read('app/templates/inventory/kubernetes/pods/partials/_table_content.html')
+    source = read('app/templates/kubernetes/inventory/pods/partials/_table_content.html')
 
     assert "pagination_ui.resource_name('Pods', pagination.total_items)" in source
     assert 'for="pods-per-page"' in source
@@ -27,7 +27,7 @@ def test_pod_inventory_footer_uses_resource_aware_count_and_rows_label() -> None
 
 
 def test_pod_detail_uses_canonical_section_names_and_operational_context() -> None:
-    source = read('app/templates/inventory/kubernetes/pods/partials/_pod_detail_content.html')
+    source = read('app/templates/kubernetes/inventory/pods/partials/_pod_detail_content.html')
 
     assert 'Placement & Network' in source
     assert 'Pod Specification' in source

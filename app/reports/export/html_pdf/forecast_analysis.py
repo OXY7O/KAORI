@@ -5,7 +5,7 @@ from datetime import UTC, date, datetime
 from html import escape
 from typing import Any
 
-from app.analytics.kubernetes.forecast.contracts import CRITICAL_THRESHOLD, WARNING_THRESHOLD
+from app.kubernetes.analytics.forecast.contracts import CRITICAL_THRESHOLD, WARNING_THRESHOLD
 from app.reports.export.html_pdf.analytics_publication_standard import (
     ANALYTICS_CANONICAL_REFERENCE,
     ANALYTICS_PUBLICATION_FAMILY,

@@ -1,4 +1,4 @@
-from app.inventory.object_storage.system_presentation import _provider_label, _status
+from app.storage.object_storage.inventory.system_presentation import _provider_label, _status
 
 
 def test_provider_labels_are_provider_neutral() -> None:

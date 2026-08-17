@@ -46,8 +46,8 @@ app/templates/integrations/observability/alert_source/providers/alertmanager/fro
 Applied to contextual subpages:
 
 ```text
-app/templates/cluster/add.html
-app/templates/cluster/edit.html
+app/templates/kubernetes/cluster/add.html
+app/templates/kubernetes/cluster/edit.html
 app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/detail.html
 app/templates/prometheus/instance_form.html
 app/templates/prometheus/instance_detail.html

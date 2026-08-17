@@ -6,8 +6,8 @@ def read(path: str) -> str:
 
 
 def test_system_runbook_catalog_is_source_controlled_and_starts_with_validated_restart():
-    catalog = read('app/definitions/catalogs/knowledge/system_runbooks.yaml')
-    adapter = read('app/knowledge/system_catalog.py')
+    catalog = read('app/definitions/catalogs/intelligence/knowledge/system_runbooks.yaml')
+    adapter = read('app/intelligence/knowledge/system_catalog.py')
 
     assert 'schema_version: 1' in catalog
     assert 'kind: system_runbooks' in catalog
@@ -19,13 +19,13 @@ def test_system_runbook_catalog_is_source_controlled_and_starts_with_validated_r
     assert '- kubernetes-v1' in catalog
     assert 'mode: manual_compensating_recovery' in catalog
     assert 'post-action rollout verification' in catalog.lower()
-    assert "load_definition_document('knowledge/system_runbooks.yaml'" in adapter
+    assert "load_definition_document('intelligence/knowledge/system_runbooks.yaml'" in adapter
     assert 'SYSTEM_RUNBOOK_CATALOG = _load_system_runbooks()' in adapter
 
 
 def test_system_catalog_activation_is_idempotent_and_fails_closed_on_contract_drift():
-    service = read('app/knowledge/service.py')
-    routes = read('app/automation_control/routes.py')
+    service = read('app/intelligence/knowledge/service.py')
+    routes = read('app/intelligence/automation_control/routes.py')
     bootstrap = read('app/integrations/resolver_bootstrap.py')
     assert 'def activate_system_runbook(' in service
     assert 'revision.content_hash != definition.content_hash' in service
@@ -40,7 +40,7 @@ def test_system_catalog_activation_is_idempotent_and_fails_closed_on_contract_dr
 
 def test_custom_authoring_is_locked_but_legacy_endpoints_fail_closed():
     config = read('app/config/default.py')
-    routes = read('app/automation_control/routes.py')
+    routes = read('app/intelligence/automation_control/routes.py')
     template = read('app/templates/intelligence/partials/automation_control/_runbooks.html')
     validator = read('scripts/validate_production_env.py')
     assert "CUSTOM_RUNBOOK_AUTHORING_ENABLED = _env_bool('CUSTOM_RUNBOOK_AUTHORING_ENABLED', False)" in config
@@ -54,8 +54,8 @@ def test_custom_authoring_is_locked_but_legacy_endpoints_fail_closed():
 
 
 def test_system_runbook_bindings_can_be_paused_without_deleting_governance_evidence():
-    routes = read('app/automation_control/routes.py')
-    matching = read('app/knowledge/matching.py')
+    routes = read('app/intelligence/automation_control/routes.py')
+    matching = read('app/intelligence/knowledge/matching.py')
     template = read('app/templates/intelligence/partials/automation_control/_runbooks.html')
     assert "'/automation-control/bindings/<int:binding_id>/status'" in routes
     assert 'set_alert_binding_status(' in routes

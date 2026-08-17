@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from flask import Flask
 
-from app.analytics.kubernetes.materialization.service import read_snapshot, store_snapshot
+from app.kubernetes.analytics.materialization.service import read_snapshot, store_snapshot
 from app.extensions.db import db
 from app.models import AnalyticsSnapshot, Cluster
 

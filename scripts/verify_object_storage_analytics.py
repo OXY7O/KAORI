@@ -11,20 +11,20 @@ def read(path: str) -> str:
 
 
 def main() -> int:
-    routes = read('app/analytics/object_storage/routes.py')
-    analysis = read('app/analytics/object_storage/analysis.py')
-    service = read('app/analytics/object_storage/service.py')
-    runtime = read('app/analytics/object_storage/runtime.py')
-    materialization = read('app/analytics/object_storage/materialization.py')
-    forecast_task = read('app/analytics/object_storage/tasks.py')
-    forecast_job_adapter = read('app/analytics/object_storage/job_adapter.py')
-    bucket_table_service = read('app/analytics/object_storage/bucket_table.py')
-    alert_sources = read('app/analytics/object_storage/alert_sources.py')
-    alert_table_service = read('app/analytics/object_storage/alert_table.py')
-    presentation = read('app/analytics/object_storage/presentation.py')
-    adapter = read('app/analytics/object_storage/sources/providers/minio/metrics.py')
-    resolver = read('app/analytics/object_storage/sources/resolver.py')
-    contracts = read('app/analytics/shared/metrics/contracts.py')
+    routes = read('app/storage/object_storage/analytics/routes.py')
+    analysis = read('app/storage/object_storage/analytics/analysis.py')
+    service = read('app/storage/object_storage/analytics/service.py')
+    runtime = read('app/storage/object_storage/analytics/runtime.py')
+    materialization = read('app/storage/object_storage/analytics/materialization.py')
+    forecast_task = read('app/storage/object_storage/analytics/tasks.py')
+    forecast_job_adapter = read('app/storage/object_storage/analytics/job_adapter.py')
+    bucket_table_service = read('app/storage/object_storage/analytics/bucket_table.py')
+    alert_sources = read('app/storage/object_storage/analytics/alert_sources.py')
+    alert_table_service = read('app/storage/object_storage/analytics/alert_table.py')
+    presentation = read('app/storage/object_storage/analytics/presentation.py')
+    adapter = read('app/storage/object_storage/analytics/sources/providers/minio/metrics.py')
+    resolver = read('app/storage/object_storage/analytics/sources/resolver.py')
+    contracts = read('app/common/analytics/metrics/contracts.py')
     profile = read('app/integrations/observability/metrics_source/query_profiles/object_storage_v1.py')
     audit = read('app/integrations/observability/metrics_source/query_profiles/object_storage_audit.py')
     metrics_catalog = read('app/definitions/catalogs/integrations/observability/metrics_source/contract.yaml')
@@ -35,46 +35,56 @@ def main() -> int:
     binding_validation = read('app/integrations/observability/metrics_source/binding_validation.py')
     binding_validator = read('app/integrations/observability/metrics_source/binding_validators/object_storage.py')
     menu = read('app/templates/components/navigation/analytics_menu.html')
-    template = read('app/templates/analytics/object_storage/index.html')
-    alerts_summary = read('app/templates/analytics/object_storage/partials/_alerts_summary.html')
-    alerts_signals = read('app/templates/analytics/object_storage/partials/_alerts_signal_records.html')
-    alert_records = read('app/templates/analytics/object_storage/partials/_alert_records.html')
-    alert_source_evidence = read('app/templates/analytics/object_storage/partials/_alerts_source_evidence.html')
-    alerts_workspace = read('app/templates/analytics/object_storage/partials/_alerts_workspace.html')
-    boundary = read('app/templates/analytics/object_storage/partials/_evidence_boundary.html')
-    readiness = read('app/templates/analytics/object_storage/partials/_metrics_readiness.html')
-    controls = read('app/templates/analytics/object_storage/partials/_controls.html')
-    bucket_table_template = read('app/templates/analytics/object_storage/partials/_bucket_table.html')
-    dependency_blocker = read('app/templates/analytics/object_storage/partials/_dependency_blocker.html')
-    dependency_notice = read('app/templates/analytics/object_storage/partials/_dependency_notice.html')
+    template = read('app/templates/storage/object_storage/analytics/index.html')
+    alerts_summary = read('app/templates/storage/object_storage/analytics/partials/_alerts_summary.html')
+    alerts_signals = read('app/templates/storage/object_storage/analytics/partials/_alerts_signal_records.html')
+    alert_records = read('app/templates/storage/object_storage/analytics/partials/_alert_records.html')
+    alert_source_evidence = read('app/templates/storage/object_storage/analytics/partials/_alerts_source_evidence.html')
+    alerts_workspace = read('app/templates/storage/object_storage/analytics/partials/_alerts_workspace.html')
+    boundary = read('app/templates/storage/object_storage/analytics/partials/_evidence_boundary.html')
+    readiness = read('app/templates/storage/object_storage/analytics/partials/_metrics_readiness.html')
+    controls = read('app/templates/storage/object_storage/analytics/partials/_controls.html')
+    bucket_table_template = read('app/templates/storage/object_storage/analytics/partials/_bucket_table.html')
+    dependency_blocker = read('app/templates/storage/object_storage/analytics/partials/_dependency_blocker.html')
+    dependency_notice = read('app/templates/storage/object_storage/analytics/partials/_dependency_notice.html')
     shared_dependency_blocker = read('app/templates/components/dependencies/_blocker.html')
-    hero = read('app/templates/analytics/object_storage/partials/_hero.html')
-    hero_posture = read('app/templates/analytics/object_storage/partials/_hero_posture.html')
-    hero_blocked = read('app/templates/analytics/object_storage/partials/_hero_blocked_posture.html')
-    forecast_worker_status = read('app/templates/analytics/object_storage/partials/_forecast_worker_status.html')
-    materialization_template = read('app/templates/jobs/configuration/definitions/_materialization_job.html')
-    overview_workspace = read('app/templates/analytics/object_storage/partials/_overview_workspace.html')
-    overview_capacity = read('app/templates/analytics/object_storage/partials/_overview_capacity_snapshot.html')
-    overview_performance = read('app/templates/analytics/object_storage/partials/_overview_performance_snapshot.html')
-    overview_forecast = read('app/templates/analytics/object_storage/partials/_overview_forecast_snapshot.html')
-    overview_consumer = read('app/templates/analytics/object_storage/partials/_overview_consumer_snapshot.html')
+    hero = read('app/templates/storage/object_storage/analytics/partials/_hero.html')
+    hero_posture = read('app/templates/storage/object_storage/analytics/partials/_hero_posture.html')
+    hero_blocked = read('app/templates/storage/object_storage/analytics/partials/_hero_blocked_posture.html')
+    forecast_worker_status = read(
+        'app/templates/storage/object_storage/analytics/partials/_forecast_worker_status.html'
+    )
+    materialization_template = read(
+        'app/templates/platform_operations/jobs/configuration/definitions/_materialization_job.html'
+    )
+    overview_workspace = read('app/templates/storage/object_storage/analytics/partials/_overview_workspace.html')
+    overview_capacity = read('app/templates/storage/object_storage/analytics/partials/_overview_capacity_snapshot.html')
+    overview_performance = read(
+        'app/templates/storage/object_storage/analytics/partials/_overview_performance_snapshot.html'
+    )
+    overview_forecast = read('app/templates/storage/object_storage/analytics/partials/_overview_forecast_snapshot.html')
+    overview_consumer = read('app/templates/storage/object_storage/analytics/partials/_overview_consumer_snapshot.html')
     record_pagination = read('app/templates/analytics/components/_record_pagination.html')
-    overview_analysis = read('app/templates/analytics/object_storage/partials/_overview_analysis.html')
-    capacity_analysis = read('app/templates/analytics/object_storage/partials/_capacity_analysis.html')
-    capacity_workspace = read('app/templates/analytics/object_storage/partials/_capacity_workspace.html')
-    capacity_pressure = read('app/templates/analytics/object_storage/partials/_capacity_pressure.html')
-    performance_analysis = read('app/templates/analytics/object_storage/partials/_performance_analysis.html')
-    performance_workspace = read('app/templates/analytics/object_storage/partials/_performance_workspace.html')
-    performance_traffic = read('app/templates/analytics/object_storage/partials/_performance_traffic.html')
-    forecast_analysis = read('app/templates/analytics/object_storage/partials/_forecast_analysis.html')
-    forecast_workspace = read('app/templates/analytics/object_storage/partials/_forecast_workspace.html')
-    forecast_methodology = read('app/templates/analytics/object_storage/partials/_forecast_methodology.html')
-    top_consumers_workspace = read('app/templates/analytics/object_storage/partials/_top_consumers_workspace.html')
-    top_consumers_storage = read('app/templates/analytics/object_storage/partials/_top_consumers_storage.html')
-    top_consumers_activity = read('app/templates/analytics/object_storage/partials/_top_consumers_activity.html')
-    reconciliation = read('app/templates/analytics/object_storage/partials/_reconciliation.html')
-    trend = read('app/templates/analytics/object_storage/partials/_trend.html')
-    javascript = read('app/static/js/analytics/object_storage.js')
+    overview_analysis = read('app/templates/storage/object_storage/analytics/partials/_overview_analysis.html')
+    capacity_analysis = read('app/templates/storage/object_storage/analytics/partials/_capacity_analysis.html')
+    capacity_workspace = read('app/templates/storage/object_storage/analytics/partials/_capacity_workspace.html')
+    capacity_pressure = read('app/templates/storage/object_storage/analytics/partials/_capacity_pressure.html')
+    performance_analysis = read('app/templates/storage/object_storage/analytics/partials/_performance_analysis.html')
+    performance_workspace = read('app/templates/storage/object_storage/analytics/partials/_performance_workspace.html')
+    performance_traffic = read('app/templates/storage/object_storage/analytics/partials/_performance_traffic.html')
+    forecast_analysis = read('app/templates/storage/object_storage/analytics/partials/_forecast_analysis.html')
+    forecast_workspace = read('app/templates/storage/object_storage/analytics/partials/_forecast_workspace.html')
+    forecast_methodology = read('app/templates/storage/object_storage/analytics/partials/_forecast_methodology.html')
+    top_consumers_workspace = read(
+        'app/templates/storage/object_storage/analytics/partials/_top_consumers_workspace.html'
+    )
+    top_consumers_storage = read('app/templates/storage/object_storage/analytics/partials/_top_consumers_storage.html')
+    top_consumers_activity = read(
+        'app/templates/storage/object_storage/analytics/partials/_top_consumers_activity.html'
+    )
+    reconciliation = read('app/templates/storage/object_storage/analytics/partials/_reconciliation.html')
+    trend = read('app/templates/storage/object_storage/analytics/partials/_trend.html')
+    javascript = read('app/static/js/storage/object_storage/analytics.js')
     analytics_controls = read('app/static/js/analytics/controls.js')
     layout = read('app/templates/layouts/app.html')
 
@@ -240,11 +250,11 @@ def main() -> int:
         'Authentication Failed',
         'Runtime Query Failed',
     ):
-        assert label in runtime or label in read('app/analytics/object_storage/dependencies.py')
+        assert label in runtime or label in read('app/storage/object_storage/analytics/dependencies.py')
     assert 'required_contract_ready' in runtime
     assert 'metrics_runtime_blocker' in runtime
     assert 'metrics_query_blocker' in runtime
-    assert "'inventory_required'" in read('app/analytics/object_storage/dependencies.py')
+    assert "'inventory_required'" in read('app/storage/object_storage/analytics/dependencies.py')
     assert 'inventory_required_blocker(system)' in service
     assert service.count('inventory_required_blocker(system)') >= 3
     assert 'build_bucket_table_view' in bucket_table_service
@@ -334,10 +344,10 @@ def main() -> int:
     assert '_overview_consumer_snapshot.html' in overview_workspace
     assert '_bucket_table.html' not in overview_workspace
     assert 'partials/_overview_workspaces.html' not in template
-    assert not (ROOT / 'app/templates/analytics/object_storage/partials/_overview_workspaces.html').exists()
+    assert not (ROOT / 'app/templates/storage/object_storage/analytics/partials/_overview_workspaces.html').exists()
     assert 'analyticsTabStorageKey' in analytics_controls
     assert 'js/analytics/controls.js' in layout
-    assert not (ROOT / 'app/static/js/analytics/kubernetes/controls.js').exists()
+    assert not (ROOT / 'app/static/js/kubernetes/analytics/controls.js').exists()
     assert 'Canonical Inventory-aligned full-page + HTMX pagination' in record_pagination
     assert 'registry_ui.clear_filters_action(' in bucket_table_template
     assert 'Bucket Consumption Evidence' not in bucket_table_template
@@ -369,10 +379,10 @@ def main() -> int:
     assert '_alerts_source_evidence.html' in alerts_workspace
     assert "'Alert Posture'" in hero_posture
     assert "'Active Alert State'" in hero_posture
-    assert not (ROOT / 'app/templates/analytics/object_storage/partials/_alerts_lifecycle.html').exists()
+    assert not (ROOT / 'app/templates/storage/object_storage/analytics/partials/_alerts_lifecycle.html').exists()
 
     for retired in ('_summary.html', '_top_consumers_analysis.html', '_alerts.html'):
-        assert not (ROOT / 'app/templates/analytics/object_storage/partials' / retired).exists()
+        assert not (ROOT / 'app/templates/storage/object_storage/analytics/partials' / retired).exists()
 
     assert 'Consumer Validation Stale' in adapter
     assert 'object-storage-metrics-v1' in adapter
@@ -391,8 +401,8 @@ def main() -> int:
     assert (ROOT / 'migrations/versions/20260814_object_storage_forecast_snapshots.py').exists()
     assert (ROOT / 'migrations/versions/20260814_object_storage_metrics_profile.py').exists()
 
-    assert not (ROOT / 'app/analytics/object_storage/parsing.py').exists()
-    assert not (ROOT / 'app/analytics/object_storage/metrics.py').exists()
+    assert not (ROOT / 'app/storage/object_storage/analytics/parsing.py').exists()
+    assert not (ROOT / 'app/storage/object_storage/analytics/metrics.py').exists()
 
     print(
         'PASS — KAORI Object Storage Analytics · '

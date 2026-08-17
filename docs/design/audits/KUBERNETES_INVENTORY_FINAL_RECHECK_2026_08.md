@@ -17,7 +17,7 @@ The final recheck found and corrected three release-relevant residuals:
 5. **Canonical template routing:** the shared resource-template registry had regressed to `inventory/<resource>/...` while committed templates live under `inventory/kubernetes/<resource>/...`, causing full-page `TemplateNotFound` failures such as `/inventory/nodes`. The registry and release contracts now validate the canonical namespace for every resource page and HTMX partial.
 6. **Blocker-safe evidence visibility:** `Inventory Data Snapshot` is now rendered only after the cluster onboarding blocker clears. Overview, Topology, and every resource workspace show Hero + onboarding guidance while blocked; snapshot/posture/table content remains hidden.
 7. **Storage scope parity:** Storage Inventory now populates the same `scope_label` Hero evidence used by the other resource pages.
-8. **Rendering-test ownership:** Inventory rendering coverage now points to `app/templates/inventory/kubernetes`, preventing a stale test namespace from silently missing the committed template tree.
+8. **Rendering-test ownership:** Inventory rendering coverage now points to `app/templates/kubernetes/inventory`, preventing a stale test namespace from silently missing the committed template tree.
 9. **Shared setup-blocked Hero:** Inventory Overview, all resource pages, and Topology now inherit the Kubernetes Operations Dashboard blocker pattern through `components/cluster/_hero_blocked_context.html`. Hero geometry remains stable while normal posture evidence is replaced by `Inventory Readiness / Cluster Setup Required`.
 10. **Hero purpose copy refinement:** resource Hero descriptions now give slightly richer committed-inventory context while remaining inside the global 7–12 word target.
 
@@ -53,9 +53,9 @@ Resource rows use SQL pagination before materialization. Dependent filter option
 Retired in this recheck:
 
 ```text
-app.inventory.kubernetes.formatting.format_byte_count
-app.inventory.kubernetes.formatting.format_gib
-app.inventory.kubernetes.resources.common._split_inventory_values
+app.kubernetes.inventory.formatting.format_byte_count
+app.kubernetes.inventory.formatting.format_gib
+app.kubernetes.inventory.resources.common._split_inventory_values
 app/templates/inventory/partials/_README.md
 Blueprint-level Inventory clusterless before_request
 Topology integration-resolver presentation dependency

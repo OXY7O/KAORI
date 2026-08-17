@@ -2,7 +2,7 @@ from pathlib import Path
 
 
 def test_tls_rotation_flow_and_posture_share_one_full_width_section() -> None:
-    template = Path('app/templates/kubernetes_operations/secrets/tls_rotate.html').read_text()
+    template = Path('app/templates/kubernetes/operations/secrets/tls_rotate.html').read_text()
 
     assert 'Controlled Rotation & Governance Posture' in template
     assert 'Controlled TLS Rotation Flow' in template

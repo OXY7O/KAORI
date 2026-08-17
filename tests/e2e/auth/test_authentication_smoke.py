@@ -6,7 +6,7 @@ import pytest
 from flask import url_for
 
 from app import create_app
-from app.auth import routes as auth_routes
+from app.access.authentication import routes as auth_routes
 from app.bootstrap import presentation as bootstrap_presentation
 
 

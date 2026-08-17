@@ -5,10 +5,10 @@ import sys
 from pathlib import Path
 from types import ModuleType
 
-from app.analytics.object_storage.analysis import metric_risk_signals
-from app.analytics.object_storage.runtime import EvidenceReader
-from app.analytics.object_storage.sources.providers.minio import metrics as metrics_source
-from app.analytics.shared.metrics import (
+from app.storage.object_storage.analytics.analysis import metric_risk_signals
+from app.storage.object_storage.analytics.runtime import EvidenceReader
+from app.storage.object_storage.analytics.sources.providers.minio import metrics as metrics_source
+from app.common.analytics.metrics import (
     MetricsSourceError,
     MetricsSourceFailureKind,
     MetricsSourceIdentity,
@@ -142,7 +142,7 @@ def test_object_storage_signal_does_not_claim_healthy_without_metric_evidence() 
 
 
 def test_object_storage_forecast_projects_growth_without_claiming_capacity_eta_on_decline() -> None:
-    forecasting = load_module('object_storage_forecasting_under_test', 'app/analytics/object_storage/forecasting.py')
+    forecasting = load_module('object_storage_forecasting_under_test', 'app/storage/object_storage/analytics/forecasting.py')
     growing = forecasting.linear_forecast(
         [
             {'timestamp': 0.0, 'value': 100.0},
@@ -166,7 +166,7 @@ def test_object_storage_forecast_projects_growth_without_claiming_capacity_eta_o
 
 
 def test_object_storage_capacity_presentation_uses_kaori_thresholds() -> None:
-    presentation = load_module('object_storage_presentation_under_test', 'app/analytics/object_storage/presentation.py')
+    presentation = load_module('object_storage_presentation_under_test', 'app/storage/object_storage/analytics/presentation.py')
 
     assert presentation.format_bytes(1024) == '1.0 KiB'
     assert presentation.utilization_percent(850, 1000) == 85.0
@@ -178,7 +178,7 @@ def test_object_storage_capacity_presentation_uses_kaori_thresholds() -> None:
 def test_object_storage_capacity_usage_view_separates_physical_and_quota_boundaries() -> None:
     presentation = load_module(
         'object_storage_capacity_presentation_under_test',
-        'app/analytics/object_storage/presentation.py',
+        'app/storage/object_storage/analytics/presentation.py',
     )
 
     view = presentation.build_capacity_usage_view(
@@ -219,7 +219,7 @@ def test_object_storage_capacity_usage_view_separates_physical_and_quota_boundar
 
 
 def test_object_storage_performance_posture_does_not_claim_healthy_with_partial_evidence() -> None:
-    analysis = load_module('object_storage_analysis_performance_under_test', 'app/analytics/object_storage/analysis.py')
+    analysis = load_module('object_storage_analysis_performance_under_test', 'app/storage/object_storage/analytics/analysis.py')
 
     posture = analysis.performance_posture(
         error_percent=1.0,
@@ -235,7 +235,7 @@ def test_object_storage_performance_posture_does_not_claim_healthy_with_partial_
 def test_object_storage_performance_view_keeps_demand_and_reliability_semantics_separate() -> None:
     presentation = load_module(
         'object_storage_performance_presentation_under_test',
-        'app/analytics/object_storage/presentation.py',
+        'app/storage/object_storage/analytics/presentation.py',
     )
 
     view = presentation.build_performance_view(

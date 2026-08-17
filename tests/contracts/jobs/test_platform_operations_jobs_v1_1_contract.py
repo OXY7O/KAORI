@@ -10,7 +10,7 @@ def _read(relative: str) -> str:
 
 
 def test_active_work_keeps_polling_after_empty_state() -> None:
-    source = _read('app/templates/jobs/executions/partials/_active_jobs.html')
+    source = _read('app/templates/platform_operations/jobs/executions/partials/_active_jobs.html')
 
     assert 'hx-trigger="every 15s"' in source
     assert 'hx-sync="this:replace"' in source
@@ -19,7 +19,7 @@ def test_active_work_keeps_polling_after_empty_state() -> None:
 
 
 def test_attention_posture_is_active_plus_recent_terminal_only() -> None:
-    source = _read('app/jobs/presentation.py')
+    source = _read('app/platform_operations/jobs/presentation.py')
 
     assert "_ACTIVE_ATTENTION_STATUSES = ('retrying', 'cancel_requested')" in source
     assert "_RECENT_ATTENTION_STATUSES = ('failed', 'partially_succeeded', 'expired')" in source
@@ -29,9 +29,9 @@ def test_attention_posture_is_active_plus_recent_terminal_only() -> None:
 
 
 def test_registry_details_expand_below_row_without_raw_payload() -> None:
-    registry = _read('app/templates/jobs/executions/partials/_registry.html')
-    detail = _read('app/templates/jobs/executions/partials/_execution_details.html')
-    routes = _read('app/jobs/routes.py')
+    registry = _read('app/templates/platform_operations/jobs/executions/partials/_registry.html')
+    detail = _read('app/templates/platform_operations/jobs/executions/partials/_execution_details.html')
+    routes = _read('app/platform_operations/jobs/routes.py')
 
     assert 'components/details/_expandable_row.html' in registry
     assert 'expandable_row.toggle_button(' in registry
@@ -53,7 +53,7 @@ def test_registry_details_expand_below_row_without_raw_payload() -> None:
 
 
 def test_registry_does_not_mix_filtered_count_with_global_metrics() -> None:
-    source = _read('app/templates/jobs/executions/partials/_registry.html')
+    source = _read('app/templates/platform_operations/jobs/executions/partials/_registry.html')
 
     assert 'job_pagination.total_items' in source
     assert "('Total Records', job_stats.total)" not in source
@@ -61,21 +61,21 @@ def test_registry_does_not_mix_filtered_count_with_global_metrics() -> None:
 
 
 def test_queue_worker_readiness_uses_one_shared_topology_snapshot() -> None:
-    presentation = _read('app/jobs/presentation.py')
-    queue = _read('app/templates/jobs/executions/partials/_queue_activity.html')
-    routes = _read('app/jobs/routes.py')
+    presentation = _read('app/platform_operations/jobs/presentation.py')
+    queue = _read('app/templates/platform_operations/jobs/executions/partials/_queue_activity.html')
+    routes = _read('app/platform_operations/jobs/routes.py')
 
     assert 'topology = inspect_celery_topology() if aggregates else None' in presentation
     assert 'get_queue_readiness(queue_name, topology=topology)' in presentation
     assert 'Worker Readiness' in queue
     assert 'worker_readiness.description' in queue
     assert "fragment='queues'" in queue
-    assert "'queues': 'jobs/executions/partials/_queue_activity.html'" in routes
+    assert "'queues': 'platform_operations/jobs/executions/partials/_queue_activity.html'" in routes
     assert "tab_override=fragment if fragment in {'active', 'registry', 'queues'} else None" in routes
 
 
 def test_jobs_hero_uses_combined_operational_attention() -> None:
-    source = _read('app/templates/jobs/index.html')
+    source = _read('app/templates/platform_operations/jobs/index.html')
 
     assert '{% set operational_attention = job_stats.attention + configuration_stats.attention %}' in source
     assert 'Operational Attention' in source
@@ -85,11 +85,11 @@ def test_jobs_hero_uses_combined_operational_attention() -> None:
 def test_v1_1_templates_parse() -> None:
     environment = Environment()
     for relative in (
-        'app/templates/jobs/index.html',
-        'app/templates/jobs/executions/_workspace.html',
-        'app/templates/jobs/executions/partials/_active_jobs.html',
-        'app/templates/jobs/executions/partials/_registry.html',
-        'app/templates/jobs/executions/partials/_execution_details.html',
-        'app/templates/jobs/executions/partials/_queue_activity.html',
+        'app/templates/platform_operations/jobs/index.html',
+        'app/templates/platform_operations/jobs/executions/_workspace.html',
+        'app/templates/platform_operations/jobs/executions/partials/_active_jobs.html',
+        'app/templates/platform_operations/jobs/executions/partials/_registry.html',
+        'app/templates/platform_operations/jobs/executions/partials/_execution_details.html',
+        'app/templates/platform_operations/jobs/executions/partials/_queue_activity.html',
     ):
         environment.parse(_read(relative))

@@ -36,13 +36,13 @@ The summary materializer must not build report-only summary tables, node selecto
 
 Summary is not a duplicate KPI grid. It uses the shared Resource Pressure Lane to explain current percentage, absolute usage against allocatable evidence, and operational interpretation.
 
-Presentation derivation belongs to `app/analytics/kubernetes/utilization/presentation.py`. Templates consume ready-to-render resource rows, tone, status, labels, and evidence availability. They do not calculate highest pressure, health posture, percentage status, or trend-window wording in Jinja.
+Presentation derivation belongs to `app/kubernetes/analytics/utilization/presentation.py`. Templates consume ready-to-render resource rows, tone, status, labels, and evidence availability. They do not calculate highest pressure, health posture, percentage status, or trend-window wording in Jinja.
 
 ## Trend Analysis
 
 Trend Analysis loads on first activation. It contains a semantic header, peer metrics, one bright chart evidence panel, one visible CPU/Memory/Pods legend, a Resource Trend Outlook, and interpretation/action guidance.
 
-Chart behavior belongs in `app/static/js/analytics/kubernetes/utilization.js`:
+Chart behavior belongs in `app/static/js/kubernetes/analytics/utilization.js`:
 
 - series are aligned by the union of timestamps;
 - a missing point remains `null`, not synthetic zero;

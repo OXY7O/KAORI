@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 
-from app.inventory.object_storage.presentation import (
+from app.storage.object_storage.inventory.presentation import (
     OBJECT_STORAGE_INVENTORY_FRESHNESS_HOURS,
     _inventory_guidance,
     _inventory_signals,

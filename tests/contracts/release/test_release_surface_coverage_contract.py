@@ -70,13 +70,13 @@ def test_cluster_listing_legacy_chain_is_retired_and_guarded() -> None:
     )
 
     for relative in (
-        'app/templates/cluster/index.html',
-        'app/templates/cluster/partials/_delete_modal.html',
-        'app/templates/cluster/partials/_inventory_badge.html',
-        'app/templates/cluster/partials/_loading_bar.html',
-        'app/templates/cluster/partials/_pagination.html',
-        'app/templates/cluster/partials/_status_badge.html',
-        'app/templates/cluster/partials/_table.html',
+        'app/templates/kubernetes/cluster/index.html',
+        'app/templates/kubernetes/cluster/partials/_delete_modal.html',
+        'app/templates/kubernetes/cluster/partials/_inventory_badge.html',
+        'app/templates/kubernetes/cluster/partials/_loading_bar.html',
+        'app/templates/kubernetes/cluster/partials/_pagination.html',
+        'app/templates/kubernetes/cluster/partials/_status_badge.html',
+        'app/templates/kubernetes/cluster/partials/_table.html',
     ):
         assert not (ROOT / relative).exists()
         assert relative in coverage

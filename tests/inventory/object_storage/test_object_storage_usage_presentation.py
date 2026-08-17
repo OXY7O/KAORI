@@ -1,4 +1,4 @@
-from app.inventory.object_storage.presentation import (
+from app.storage.object_storage.inventory.presentation import (
     _format_bytes,
     _format_count,
     _quota_view,
@@ -29,7 +29,7 @@ def test_bucket_quota_presentation_distinguishes_configuration_states() -> None:
 
 
 def test_quota_evidence_presentation_maps_access_denied_to_actionable_guidance() -> None:
-    from app.inventory.object_storage.presentation import _quota_evidence_view
+    from app.storage.object_storage.inventory.presentation import _quota_evidence_view
 
     evidence = _quota_evidence_view(
         'access_denied',
@@ -44,7 +44,7 @@ def test_quota_evidence_presentation_maps_access_denied_to_actionable_guidance()
 
 
 def test_quota_evidence_presentation_maps_provider_routing_failure() -> None:
-    from app.inventory.object_storage.presentation import _quota_evidence_view
+    from app.storage.object_storage.inventory.presentation import _quota_evidence_view
 
     evidence = _quota_evidence_view(
         'admin_api_unreachable',

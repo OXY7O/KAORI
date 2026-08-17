@@ -34,8 +34,8 @@ def test_metrics_source_and_alertmanager_own_binding_mutation_through_one_shared
     alert_scope = read(
         'app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_detail_scope.html'
     )
-    prom_routes = read('app/metrics_sources/routes.py')
-    alert_forms = read('app/alert_sources/providers/alertmanager/forms.py')
+    prom_routes = read('app/integrations/observability/metrics_source/application/routes.py')
+    alert_forms = read('app/integrations/observability/alert_source/providers/alertmanager/application/forms.py')
 
     assert 'data-kaori-observability-binding-modal' in modal
     assert 'Consumer Type' in modal
@@ -66,9 +66,9 @@ def test_asset_owner_pages_inventory_bound_sources_without_owning_binding_mutati
     minio_binding_registry = read(
         'app/templates/integrations/storage/object_storage/providers/minio/partials/_binding_registry.html'
     )
-    minio_routes = read('app/object_storage/providers/minio/routes.py')
-    minio_forms = read('app/object_storage/providers/minio/forms.py')
-    minio_service = read('app/object_storage/providers/minio/service.py')
+    minio_routes = read('app/integrations/storage/object_storage/providers/minio/application/routes.py')
+    minio_forms = read('app/integrations/storage/object_storage/providers/minio/application/forms.py')
+    minio_service = read('app/integrations/storage/object_storage/providers/minio/application/service.py')
 
     for marker in ('Source', 'Source Readiness', 'Binding Validation', 'Effective Resolution'):
         assert marker in shared_inventory

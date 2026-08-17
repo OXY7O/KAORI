@@ -2,7 +2,7 @@ import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
-ANALYTICS_TEMPLATES = ROOT / 'app/templates/analytics/kubernetes'
+ANALYTICS_TEMPLATES = ROOT / 'app/templates/kubernetes/analytics'
 INCIDENT_TEMPLATE = ANALYTICS_TEMPLATES / 'alerts/partials/_incident_readiness.html'
 
 

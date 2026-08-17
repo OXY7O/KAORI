@@ -8,7 +8,7 @@ def read(relative: str) -> str:
 
 
 def test_capacity_allocation_uses_explicit_mapping_keys() -> None:
-    template = read('app/templates/analytics/kubernetes/capacity/partials/_allocation.html')
+    template = read('app/templates/kubernetes/analytics/capacity/partials/_allocation.html')
 
     assert 'section.items' not in template
     assert "section['items']|default([], true)" in template
@@ -18,7 +18,7 @@ def test_capacity_allocation_uses_explicit_mapping_keys() -> None:
 
 
 def test_shared_tabs_have_native_controller_contract() -> None:
-    workspace = read('app/templates/analytics/kubernetes/components/_analysis_workspace.html')
+    workspace = read('app/templates/kubernetes/analytics/components/_analysis_workspace.html')
     tabs = read('app/templates/components/content_tabs.html')
     controls = read('app/static/js/analytics/controls.js')
 
@@ -35,25 +35,25 @@ def test_shared_tabs_have_native_controller_contract() -> None:
 
 def test_target_analytics_pages_expose_native_tab_panels() -> None:
     targets = {
-        'app/templates/analytics/kubernetes/capacity/index.html': (
+        'app/templates/kubernetes/analytics/capacity/index.html': (
             'summary',
             'allocation',
             'risk',
             'recommendations',
         ),
-        'app/templates/analytics/kubernetes/storage/partials/_storage_section.html': (
+        'app/templates/kubernetes/analytics/storage/partials/_storage_section.html': (
             'capacity',
             'filesystem',
             'pvc',
             'pv',
             'recommendations',
         ),
-        'app/templates/analytics/kubernetes/workload/index.html': (
+        'app/templates/kubernetes/analytics/workload/index.html': (
             'quotas',
             'mapping',
             'recommendations',
         ),
-        'app/templates/analytics/kubernetes/utilization/index.html': (
+        'app/templates/kubernetes/analytics/utilization/index.html': (
             'summary',
             'trend',
             'nodes',
@@ -73,10 +73,10 @@ def test_target_analytics_pages_expose_native_tab_panels() -> None:
 
 def test_non_default_panels_have_native_hidden_fallback() -> None:
     for relative in (
-        'app/templates/analytics/kubernetes/capacity/index.html',
-        'app/templates/analytics/kubernetes/storage/partials/_storage_section.html',
-        'app/templates/analytics/kubernetes/workload/index.html',
-        'app/templates/analytics/kubernetes/utilization/index.html',
+        'app/templates/kubernetes/analytics/capacity/index.html',
+        'app/templates/kubernetes/analytics/storage/partials/_storage_section.html',
+        'app/templates/kubernetes/analytics/workload/index.html',
+        'app/templates/kubernetes/analytics/utilization/index.html',
     ):
         template = read(relative)
         assert 'hidden' in template
@@ -84,8 +84,8 @@ def test_non_default_panels_have_native_hidden_fallback() -> None:
 
 
 def test_utilization_tabset_uses_shared_runtime_boundary() -> None:
-    template = read('app/templates/analytics/kubernetes/utilization/index.html')
-    shared = read('app/templates/analytics/kubernetes/components/_analysis_workspace.html')
+    template = read('app/templates/kubernetes/analytics/utilization/index.html')
+    shared = read('app/templates/kubernetes/analytics/components/_analysis_workspace.html')
 
     assert 'analytics_workspace.tabbed(' in template
     assert "'utilization-content'" in template

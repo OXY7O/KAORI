@@ -15,7 +15,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-_readiness = import_module('app.resolver.production_readiness')
+_readiness = import_module('app.intelligence.resolver.production_readiness')
 ProductionReadinessError = _readiness.ProductionReadinessError
 assess_readiness = _readiness.assess_readiness
 

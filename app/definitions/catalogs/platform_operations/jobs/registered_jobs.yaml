@@ -1,0 +1,202 @@
+schema_version: 1
+kind: registered_jobs
+jobs:
+- key: kubernetes.inventory.sync
+  name: Kubernetes Inventory Sync
+  domain: Kubernetes Inventory
+  description: Refresh Kubernetes inventory across eligible clusters.
+  icon: database-zap
+  queue_name: inventory
+  workload_class: standard
+  job_type: kubernetes_inventory
+  operation: sync_kubernetes_inventory
+  scope_type: kubernetes_fleet
+  scope_key: all
+  configure_permission: jobs.configure
+  execute_permission: jobs.execute
+  domain_execute_permission: clusters.sync
+  dispatcher_path: app.kubernetes.inventory.job_adapter:dispatch_inventory_sync
+  context_builder_path: app.kubernetes.inventory.job_adapter:build_inventory_sync_context
+  configuration_template: jobs/configuration/definitions/inventory_sync.html
+  default_enabled: true
+  default_interval_minutes: 60
+  safety_summary: Each cluster promotes inventory only after a complete generation commits successfully.
+  execution_summary: Run a fleet inventory refresh and monitor the canonical execution without leaving this page.
+  recent_execution_summary: Latest scheduled and manual fleet inventory synchronizations.
+  legacy_module: inventory_sync
+- key: object_storage.inventory.sync
+  name: Object Storage Inventory Sync
+  domain: Object Storage Inventory
+  description: Refresh committed bucket inventory across eligible managed object-storage systems.
+  icon: database-zap
+  queue_name: inventory
+  workload_class: standard
+  job_type: object_storage_inventory
+  operation: sync_object_storage_inventory
+  scope_type: object_storage_fleet
+  scope_key: all
+  configure_permission: jobs.configure
+  execute_permission: jobs.execute
+  domain_execute_permission: storage.sync
+  dispatcher_path: app.storage.object_storage.inventory.job_adapter:dispatch_object_storage_inventory_sync
+  context_builder_path: app.storage.object_storage.inventory.job_adapter:build_object_storage_inventory_sync_context
+  configuration_template: jobs/configuration/definitions/object_storage_inventory_sync.html
+  default_enabled: true
+  default_interval_minutes: 60
+  safety_summary: Each system replaces its committed bucket snapshot only after collection succeeds.
+  execution_summary: Run an object-storage inventory refresh and monitor the canonical execution without leaving this page.
+  recent_execution_summary: Latest scheduled and manual object-storage inventory synchronizations.
+  legacy_module: object_storage_inventory_sync
+- key: object_storage.forecast.materialize
+  name: Object Storage Forecast Data Refresh
+  domain: Object Storage Analytics
+  description: Generate persistent Object Storage capacity forecasts on the forecasting worker.
+  icon: chart-spline
+  queue_name: forecasting
+  workload_class: forecasting
+  job_type: object_storage_forecast_materialization
+  operation: materialize_object_storage_forecast
+  scope_type: object_storage_forecast_fleet
+  scope_key: all
+  configure_permission: jobs.configure
+  execute_permission: jobs.execute
+  domain_execute_permission: analytics.view
+  dispatcher_path: app.storage.object_storage.analytics.job_adapter:dispatch_object_storage_forecast_materialization
+  context_builder_path: app.storage.object_storage.analytics.job_adapter:build_object_storage_forecast_materialization_context
+  configuration_template: jobs/configuration/definitions/forecast_refresh.html
+  default_enabled: true
+  default_interval_minutes: 120
+  minimum_interval_minutes: 30
+  maximum_interval_minutes: 1440
+  safety_summary: Forecast range queries run on the forecasting queue. The last usable committed result remains available
+    when a refresh fails inside its stale-grace window.
+  execution_summary: Generate reusable Object Storage forecast snapshots and monitor the forecasting worker.
+  recent_execution_summary: Latest Object Storage forecast materialization runs.
+  default_configuration:
+    history_windows:
+    - 7d
+    - 30d
+    - 90d
+    freshness_minutes: 120
+    stale_grace_minutes: 4320
+  legacy_module: object_storage_forecast_refresh
+- key: reports.schedule.dispatch
+  name: Report Schedule Dispatcher
+  domain: Reports
+  description: Dispatch due report schedules through the Reports worker.
+  icon: file-clock
+  queue_name: reports
+  workload_class: standard
+  job_type: report_schedule
+  operation: dispatch_due_reports
+  scope_type: report_schedule
+  scope_key: due
+  configure_permission: jobs.configure
+  execute_permission: jobs.execute
+  domain_execute_permission: reports.manage_schedules
+  dispatcher_path: app.reports.schedules.job_adapter:dispatch_report_schedule_job
+  context_builder_path: app.reports.schedules.job_adapter:build_report_schedule_context
+  configuration_template: jobs/configuration/definitions/report_schedule.html
+  default_enabled: true
+  default_interval_minutes: 5
+  minimum_interval_minutes: 1
+  maximum_interval_minutes: 60
+  safety_summary: Each schedule creates a normal report record, stores its artifact through the configured backend, and records
+    delivery results.
+  execution_summary: Process due report schedules or run the dispatcher manually through the dedicated Reports queue.
+  recent_execution_summary: Latest scheduled and manual report dispatcher executions.
+  default_configuration:
+    batch_limit: 20
+  legacy_module: report_schedule
+- key: governance.tls_certificates.sync
+  name: TLS Certificate Sync
+  domain: Kubernetes Governance
+  description: Refresh TLS Secret inventory, Ingress usage, expiry, and freshness.
+  icon: shield-check
+  queue_name: inventory
+  workload_class: standard
+  job_type: tls_certificate_inventory
+  operation: tls_certificate_sync
+  scope_type: kubernetes_fleet
+  scope_key: all
+  configure_permission: jobs.configure
+  execute_permission: jobs.execute
+  domain_execute_permission: tls_certificates.sync
+  dispatcher_path: app.kubernetes.governance.tls_certificates.job_adapter:dispatch_tls_certificate_sync
+  context_builder_path: app.kubernetes.governance.tls_certificates.job_adapter:build_tls_certificate_sync_context
+  configuration_template: jobs/configuration/definitions/tls_certificate_sync.html
+  default_enabled: true
+  default_interval_minutes: 360
+  minimum_interval_minutes: 30
+  maximum_interval_minutes: 1440
+  safety_summary: Each cluster is collected independently and replaces only its committed TLS inventory after the Kubernetes
+    API read completes.
+  execution_summary: Refresh TLS Secret inventory across eligible clusters and monitor the active worker run.
+  recent_execution_summary: Latest scheduled and manual TLS Secret inventory refreshes.
+  legacy_module: tls_certificate_sync
+- key: analytics.materialize
+  name: Analytics Data Refresh
+  domain: Kubernetes Analytics
+  description: Refresh shared Kubernetes analytics snapshots.
+  icon: chart-no-axes-combined
+  queue_name: analytics-batch
+  workload_class: analytics
+  job_type: analytics_materialization
+  operation: materialize_analytics
+  scope_type: analytics_fleet
+  scope_key: all
+  configure_permission: jobs.configure
+  execute_permission: jobs.execute
+  domain_execute_permission: analytics.view
+  dispatcher_path: app.kubernetes.analytics.job_adapter:dispatch_analytics_materialization
+  context_builder_path: app.kubernetes.analytics.job_adapter:build_analytics_materialization_context
+  configuration_template: jobs/configuration/definitions/analytics_refresh.html
+  default_enabled: true
+  default_interval_minutes: 15
+  minimum_interval_minutes: 5
+  maximum_interval_minutes: 1440
+  safety_summary: Long-range results are generated once per cluster and parameter set, then shared by every user.
+  execution_summary: Materialize shared analytics snapshots and monitor worker progress from one execution workspace.
+  recent_execution_summary: Latest shared analytics snapshot materialization runs.
+  default_configuration:
+    time_ranges:
+    - 24h
+    - 7d
+    - 30d
+    - 60d
+    freshness_minutes: 15
+    stale_grace_minutes: 1440
+  legacy_module: analytics_refresh
+- key: analytics.forecast.materialize
+  name: Forecast Data Refresh
+  domain: Kubernetes Analytics
+  description: Generate persistent capacity forecasts on the forecasting worker.
+  icon: chart-spline
+  queue_name: forecasting
+  workload_class: forecasting
+  job_type: forecast_materialization
+  operation: materialize_forecast
+  scope_type: forecast_fleet
+  scope_key: all
+  configure_permission: jobs.configure
+  execute_permission: jobs.execute
+  domain_execute_permission: analytics.view
+  dispatcher_path: app.kubernetes.analytics.job_adapter:dispatch_forecast_materialization
+  context_builder_path: app.kubernetes.analytics.job_adapter:build_forecast_materialization_context
+  configuration_template: jobs/configuration/definitions/forecast_refresh.html
+  default_enabled: true
+  default_interval_minutes: 120
+  minimum_interval_minutes: 30
+  maximum_interval_minutes: 1440
+  safety_summary: Forecast range queries run in the forecasting queue and the last successful result remains available during
+    refresh.
+  execution_summary: Generate reusable forecast history snapshots and monitor the forecasting worker.
+  recent_execution_summary: Latest forecast history materialization runs.
+  default_configuration:
+    history_windows:
+    - 7d
+    - 30d
+    - 90d
+    freshness_minutes: 120
+    stale_grace_minutes: 4320
+  legacy_module: forecast_refresh

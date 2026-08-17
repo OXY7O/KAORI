@@ -1,11 +1,11 @@
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-SERVICE = (ROOT / 'app/analytics/kubernetes/forecast/service.py').read_text(encoding='utf-8')
-RESOURCE = (ROOT / 'app/analytics/kubernetes/forecast/resource.py').read_text(encoding='utf-8')
-CALCULATION = (ROOT / 'app/analytics/kubernetes/forecast/calculation.py').read_text(encoding='utf-8')
-PRESENTATION = (ROOT / 'app/analytics/kubernetes/forecast/presentation.py').read_text(encoding='utf-8')
-TEMPLATE = (ROOT / 'app/templates/analytics/kubernetes/forecast/partials/_forecast_section.html').read_text(encoding='utf-8')
+SERVICE = (ROOT / 'app/kubernetes/analytics/forecast/service.py').read_text(encoding='utf-8')
+RESOURCE = (ROOT / 'app/kubernetes/analytics/forecast/resource.py').read_text(encoding='utf-8')
+CALCULATION = (ROOT / 'app/kubernetes/analytics/forecast/calculation.py').read_text(encoding='utf-8')
+PRESENTATION = (ROOT / 'app/kubernetes/analytics/forecast/presentation.py').read_text(encoding='utf-8')
+TEMPLATE = (ROOT / 'app/templates/kubernetes/analytics/forecast/partials/_forecast_section.html').read_text(encoding='utf-8')
 
 
 def test_unavailable_forecast_is_unknown_and_uses_na() -> None:
@@ -32,7 +32,7 @@ def test_summary_ignores_unavailable_and_marks_limited_evidence() -> None:
 
 
 def test_overview_snapshot_preserves_unavailable_forecast_semantics() -> None:
-    overview = (ROOT / 'app/templates/analytics/kubernetes/overview/partials/_forecast_snapshot.html').read_text(encoding='utf-8')
+    overview = (ROOT / 'app/templates/kubernetes/analytics/overview/partials/_forecast_snapshot.html').read_text(encoding='utf-8')
     assert "'highest_projected_percent': None" in PRESENTATION
     assert "return 'Low' if has_forecast_evidence else 'Unknown'" in PRESENTATION
     assert "if forecast_risk == 'Unknown'" in PRESENTATION

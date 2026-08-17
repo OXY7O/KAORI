@@ -9,20 +9,20 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 
 MUTATION_TEMPLATES = (
-    'app/templates/kubernetes_operations/configmaps/create.html',
-    'app/templates/kubernetes_operations/configmaps/update.html',
-    'app/templates/kubernetes_operations/configmaps/delete.html',
-    'app/templates/kubernetes_operations/secrets/create.html',
-    'app/templates/kubernetes_operations/secrets/replace.html',
-    'app/templates/kubernetes_operations/secrets/delete.html',
-    'app/templates/kubernetes_operations/secrets/reveal.html',
-    'app/templates/kubernetes_operations/secrets/tls_rotation.html',
+    'app/templates/kubernetes/operations/configmaps/create.html',
+    'app/templates/kubernetes/operations/configmaps/update.html',
+    'app/templates/kubernetes/operations/configmaps/delete.html',
+    'app/templates/kubernetes/operations/secrets/create.html',
+    'app/templates/kubernetes/operations/secrets/replace.html',
+    'app/templates/kubernetes/operations/secrets/delete.html',
+    'app/templates/kubernetes/operations/secrets/reveal.html',
+    'app/templates/kubernetes/operations/secrets/tls_rotation.html',
 )
 ROUTE_FILES = (
-    'app/kubernetes_operations/configmaps/routes.py',
-    'app/kubernetes_operations/secrets/crud_routes.py',
-    'app/kubernetes_operations/secrets/reveal_routes.py',
-    'app/kubernetes_operations/secrets/tls_routes.py',
+    'app/kubernetes/operations/configmaps/routes.py',
+    'app/kubernetes/operations/secrets/crud_routes.py',
+    'app/kubernetes/operations/secrets/reveal_routes.py',
+    'app/kubernetes/operations/secrets/tls_routes.py',
 )
 RELEASE_EVIDENCE = (
     'tests/contracts/kubernetes_operations/test_kubernetes_operations_final_release_contract.py',
@@ -56,16 +56,16 @@ def _decorator_name(node: ast.expr) -> str:
 def main() -> int:
     errors: list[str] = []
 
-    root_routes = read('app/kubernetes_operations/routes.py')
-    operation_flow = read('app/kubernetes_operations/operation_flow.py')
-    cluster_required_template = read('app/templates/kubernetes_operations/cluster_required.html')
+    root_routes = read('app/kubernetes/operations/routes.py')
+    operation_flow = read('app/kubernetes/operations/operation_flow.py')
+    cluster_required_template = read('app/templates/kubernetes/operations/cluster_required.html')
     shared_ui = read('app/templates/components/kubernetes_operation_ui.html')
     form_context = read('app/templates/components/form_with_context_rail.html')
     quality_gate = read('scripts/quality_gate.sh')
     coverage = read('scripts/verify_feature_test_coverage.py')
     pattern = read('docs/design/patterns/KUBERNETES_CONFIGMAP_SECRET_OPERATIONS.md')
-    configmap_readme = read('app/kubernetes_operations/configmaps/README.md')
-    secret_readme = read('app/kubernetes_operations/secrets/README.md')
+    configmap_readme = read('app/kubernetes/operations/configmaps/README.md')
+    secret_readme = read('app/kubernetes/operations/secrets/README.md')
 
     require(
         '.before_request' not in root_routes,
@@ -101,20 +101,20 @@ def main() -> int:
         require(token in operation_flow, f'Operations cluster prerequisite is missing: {token}', errors)
 
     primary_identity_tokens = {
-        'app/kubernetes_operations/configmaps/routes.py': (
+        'app/kubernetes/operations/configmaps/routes.py': (
             "page_title='ConfigMap Management'",
             "page_title='Create Kubernetes ConfigMap'",
             "page_title='Update ConfigMap'",
             "page_title='Delete ConfigMap'",
         ),
-        'app/kubernetes_operations/secrets/crud_routes.py': (
+        'app/kubernetes/operations/secrets/crud_routes.py': (
             "page_title='Secret Management'",
             "page_title='Create Kubernetes Secret'",
             "page_title='Replace Kubernetes Secret Data'",
             "page_title='Delete Kubernetes Secret'",
         ),
-        'app/kubernetes_operations/secrets/reveal_routes.py': ("page_title='Protected Kubernetes Secret Reveal'",),
-        'app/kubernetes_operations/secrets/tls_routes.py': (
+        'app/kubernetes/operations/secrets/reveal_routes.py': ("page_title='Protected Kubernetes Secret Reveal'",),
+        'app/kubernetes/operations/secrets/tls_routes.py': (
             "page_title='Rotate TLS Secret'",
             "page_title='Bulk TLS Secret Rotation'",
         ),
@@ -172,13 +172,13 @@ def main() -> int:
         require(token in form_context, f'Form + Right Context component missing canonical geometry: {token}', errors)
 
     form_context_pages = (
-        'app/templates/kubernetes_operations/configmaps/create.html',
-        'app/templates/kubernetes_operations/configmaps/update.html',
-        'app/templates/kubernetes_operations/configmaps/delete.html',
-        'app/templates/kubernetes_operations/secrets/create.html',
-        'app/templates/kubernetes_operations/secrets/replace.html',
-        'app/templates/kubernetes_operations/secrets/delete.html',
-        'app/templates/kubernetes_operations/secrets/reveal.html',
+        'app/templates/kubernetes/operations/configmaps/create.html',
+        'app/templates/kubernetes/operations/configmaps/update.html',
+        'app/templates/kubernetes/operations/configmaps/delete.html',
+        'app/templates/kubernetes/operations/secrets/create.html',
+        'app/templates/kubernetes/operations/secrets/replace.html',
+        'app/templates/kubernetes/operations/secrets/delete.html',
+        'app/templates/kubernetes/operations/secrets/reveal.html',
     )
     for relative in form_context_pages:
         source = read(relative)
@@ -198,7 +198,7 @@ def main() -> int:
             errors,
         )
 
-    bulk_tls = read('app/templates/kubernetes_operations/secrets/tls_rotation.html')
+    bulk_tls = read('app/templates/kubernetes/operations/secrets/tls_rotation.html')
     require(
         'data-kubernetes-operation-layout="full-width-v2"' in bulk_tls,
         'Bulk TLS rotation must retain its dedicated full-width reviewed workspace.',
@@ -210,7 +210,7 @@ def main() -> int:
         errors,
     )
 
-    single_tls = read('app/templates/kubernetes_operations/secrets/tls_rotate.html')
+    single_tls = read('app/templates/kubernetes/operations/secrets/tls_rotate.html')
     require(
         'context_rail.html' not in single_tls,
         'Single TLS rotation must remain free of the retired content rail.',
@@ -222,12 +222,12 @@ def main() -> int:
         errors,
     )
 
-    reveal_page = read('app/templates/kubernetes_operations/secrets/reveal.html')
+    reveal_page = read('app/templates/kubernetes/operations/secrets/reveal.html')
     reveal_tabs = read('app/templates/components/workspace_tabs.html')
     reveal_script = read('app/static/js/secret_reveal_workspace.js')
-    reveal_routes = read('app/kubernetes_operations/secrets/reveal_routes.py')
-    reveal_service = read('app/kubernetes_operations/secrets/reveal_service.py')
-    reveal_step_up = read('app/templates/kubernetes_operations/secrets/_reveal_step_up.html')
+    reveal_routes = read('app/kubernetes/operations/secrets/reveal_routes.py')
+    reveal_service = read('app/kubernetes/operations/secrets/reveal_service.py')
+    reveal_step_up = read('app/templates/kubernetes/operations/secrets/_reveal_step_up.html')
     for token in (
         'components/workspace_tabs.html',
         'workspace_tabs.render(reveal_tabs',
@@ -322,8 +322,8 @@ def main() -> int:
     )
 
     for obsolete in (
-        'app/kubernetes_operations/secrets/routes.py',
-        'app/templates/kubernetes_operations/_components.html',
+        'app/kubernetes/operations/secrets/routes.py',
+        'app/templates/kubernetes/operations/_components.html',
     ):
         require(not (ROOT / obsolete).exists(), f'Legacy Operations file must remain removed: {obsolete}', errors)
 
@@ -361,8 +361,8 @@ def main() -> int:
     )
 
     form_field = read('app/templates/components/form_field.html')
-    replace_page = read('app/templates/kubernetes_operations/secrets/replace.html')
-    replace_content = read('app/templates/kubernetes_operations/secrets/_replace_content_form.html')
+    replace_page = read('app/templates/kubernetes/operations/secrets/replace.html')
+    replace_content = read('app/templates/kubernetes/operations/secrets/_replace_content_form.html')
     require(
         'min-h-6' in form_field and 'mt-2 h-10 w-full' in form_field,
         'Form Field Alignment contract drifted.',

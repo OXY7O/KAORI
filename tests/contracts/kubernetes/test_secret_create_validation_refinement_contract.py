@@ -8,8 +8,8 @@ def read(relative: str) -> str:
 
 
 def test_create_secret_route_uses_create_service_dry_run_keyword() -> None:
-    route = read('app/kubernetes_operations/secrets/crud_routes.py')
-    create_service = read('app/kubernetes_operations/secrets/create_service.py')
+    route = read('app/kubernetes/operations/secrets/crud_routes.py')
+    create_service = read('app/kubernetes/operations/secrets/create_service.py')
     assert 'def execute_secret_operation(form: Any, files: Any, *, dry_run: bool)' in create_service
     assert 'execute_secret_operation(request.form, request.files, dry_run=True)' in route
     assert 'execute_secret_operation(request.form, request.files, dry_run=False)' in route
@@ -26,8 +26,8 @@ def test_operation_action_bar_separates_title_from_helper_copy() -> None:
 
 
 def test_secret_creation_uses_integrated_sensitive_data_guardrails_and_delete_actions_do_not_leak() -> None:
-    create = read('app/templates/kubernetes_operations/secrets/create.html')
-    delete_result = read('app/templates/kubernetes_operations/secrets/_delete_operation_result.html')
+    create = read('app/templates/kubernetes/operations/secrets/create.html')
+    delete_result = read('app/templates/kubernetes/operations/secrets/_delete_operation_result.html')
     assert 'Controlled Secret Creation' in create
     assert 'No KAORI Value Persistence' in create
     assert 'Secret values stay in request memory and are not stored by KAORI.' in create

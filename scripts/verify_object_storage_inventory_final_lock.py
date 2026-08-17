@@ -8,18 +8,18 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 
 REQUIRED = (
-    'app/inventory/object_storage/routes.py',
-    'app/inventory/object_storage/presentation.py',
+    'app/storage/object_storage/inventory/routes.py',
+    'app/storage/object_storage/inventory/presentation.py',
     'app/templates/components/navigation/object_storage_menu.html',
-    'app/templates/inventory/object_storage/overview/index.html',
-    'app/templates/inventory/object_storage/components/_hero_blocked_context.html',
-    'app/templates/inventory/object_storage/components/_onboarding_banner.html',
-    'app/templates/inventory/object_storage/components/_snapshot_context.html',
+    'app/templates/storage/object_storage/inventory/overview/index.html',
+    'app/templates/storage/object_storage/inventory/components/_hero_blocked_context.html',
+    'app/templates/storage/object_storage/inventory/components/_onboarding_banner.html',
+    'app/templates/storage/object_storage/inventory/components/_snapshot_context.html',
     'migrations/versions/20260814_object_storage_rbac_split.py',
-    'app/templates/inventory/object_storage/systems/partials/_snapshot_boundary.html',
-    'app/templates/inventory/object_storage/buckets/partials/_snapshot_boundary.html',
-    'app/templates/inventory/object_storage/systems/partials/_table_content.html',
-    'app/templates/inventory/object_storage/buckets/partials/_table_content.html',
+    'app/templates/storage/object_storage/inventory/systems/partials/_snapshot_boundary.html',
+    'app/templates/storage/object_storage/inventory/buckets/partials/_snapshot_boundary.html',
+    'app/templates/storage/object_storage/inventory/systems/partials/_table_content.html',
+    'app/templates/storage/object_storage/inventory/buckets/partials/_table_content.html',
     'tests/contracts/inventory/object_storage',
 )
 
@@ -40,18 +40,18 @@ def main() -> int:
             print(f'- {error}')
         return 1
 
-    routes = read('app/inventory/object_storage/routes.py')
+    routes = read('app/storage/object_storage/inventory/routes.py')
     menu = read('app/templates/components/navigation/object_storage_menu.html')
-    overview = read('app/templates/inventory/object_storage/overview/index.html')
-    systems_workspace = read('app/templates/inventory/object_storage/systems/partials/_page_workspace.html')
-    buckets_workspace = read('app/templates/inventory/object_storage/buckets/partials/_page_workspace.html')
-    systems_snapshot = read('app/templates/inventory/object_storage/systems/partials/_snapshot_boundary.html')
-    buckets_snapshot = read('app/templates/inventory/object_storage/buckets/partials/_snapshot_boundary.html')
-    blocker = read('app/templates/inventory/object_storage/components/_hero_blocked_context.html')
-    onboarding = read('app/templates/inventory/object_storage/components/_onboarding_banner.html')
-    systems = read('app/templates/inventory/object_storage/systems/partials/_table_content.html')
-    buckets = read('app/templates/inventory/object_storage/buckets/partials/_table_content.html')
-    presentation = read('app/inventory/object_storage/presentation.py')
+    overview = read('app/templates/storage/object_storage/inventory/overview/index.html')
+    systems_workspace = read('app/templates/storage/object_storage/inventory/systems/partials/_page_workspace.html')
+    buckets_workspace = read('app/templates/storage/object_storage/inventory/buckets/partials/_page_workspace.html')
+    systems_snapshot = read('app/templates/storage/object_storage/inventory/systems/partials/_snapshot_boundary.html')
+    buckets_snapshot = read('app/templates/storage/object_storage/inventory/buckets/partials/_snapshot_boundary.html')
+    blocker = read('app/templates/storage/object_storage/inventory/components/_hero_blocked_context.html')
+    onboarding = read('app/templates/storage/object_storage/inventory/components/_onboarding_banner.html')
+    systems = read('app/templates/storage/object_storage/inventory/systems/partials/_table_content.html')
+    buckets = read('app/templates/storage/object_storage/inventory/buckets/partials/_table_content.html')
+    presentation = read('app/storage/object_storage/inventory/presentation.py')
 
     for endpoint in (
         "url_for('object_storage_inventory.overview')",
@@ -79,17 +79,17 @@ def main() -> int:
         errors.append('Object Storage inventory routes must not query the live MinIO provider')
 
     for include in (
-        'inventory/object_storage/overview/partials/_snapshot_boundary.html',
-        'inventory/object_storage/overview/partials/_fleet_posture.html',
-        'inventory/object_storage/overview/partials/_summary_cards.html',
-        'inventory/object_storage/overview/partials/_systems_snapshot.html',
+        'storage/object_storage/inventory/overview/partials/_snapshot_boundary.html',
+        'storage/object_storage/inventory/overview/partials/_fleet_posture.html',
+        'storage/object_storage/inventory/overview/partials/_summary_cards.html',
+        'storage/object_storage/inventory/overview/partials/_systems_snapshot.html',
     ):
         if include not in overview:
             errors.append(f'Object Storage Overview composition missing: {include}')
 
     for token in (
         'overview.setup.is_blocked',
-        'inventory/object_storage/components/_onboarding_banner.html',
+        'storage/object_storage/inventory/components/_onboarding_banner.html',
     ):
         if token not in overview:
             errors.append(f'Object Storage setup-blocked Overview contract missing: {token}')
@@ -108,9 +108,9 @@ def main() -> int:
             errors.append(f'Object Storage blocked Hero contract missing: {token}')
 
     for relative in (
-        'app/templates/inventory/object_storage/overview/partials/_hero.html',
-        'app/templates/inventory/object_storage/systems/partials/_hero.html',
-        'app/templates/inventory/object_storage/buckets/partials/_hero.html',
+        'app/templates/storage/object_storage/inventory/overview/partials/_hero.html',
+        'app/templates/storage/object_storage/inventory/systems/partials/_hero.html',
+        'app/templates/storage/object_storage/inventory/buckets/partials/_hero.html',
     ):
         hero_source = read(relative)
         if 'page_hero.aside_classes()' not in hero_source:

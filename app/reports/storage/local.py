@@ -5,9 +5,9 @@ from pathlib import Path
 
 from flask import current_app
 
-from app.storage.base import StoredArtifact
-from app.storage.local import LocalArtifactStorage
-from app.storage.service import resolve_app_path
+from app.artifact_storage.base import StoredArtifact
+from app.artifact_storage.local import LocalArtifactStorage
+from app.artifact_storage.service import resolve_app_path
 
 
 class LocalReportStorage(LocalArtifactStorage):

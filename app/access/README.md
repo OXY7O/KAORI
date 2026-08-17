@@ -28,12 +28,12 @@ Access
 - `app/access/roles/` owns role-management HTTP routes, forms, presentation context, and role mutation orchestration.
 - `app/access/permissions/` owns the read-only Permission Catalog HTTP/presentation boundary.
 - `app/access/activity_audit/` owns the system-wide Activity Audit HTTP/workspace boundary.
-- `app/users/` remains authoritative for user lifecycle and effective-access presentation.
-- `app/identity_providers/` owns Identity Provider administration and directory projection workflows.
-- `app/auth/identity_provider/` owns provider catalog, adapter registries, protocol validation, and external authentication contracts.
-- `app/auth/` owns session admission and authentication orchestration.
-- `app/rbac/` remains authoritative for the code-owned permission registry, protected default roles, authorization rules, role mutation guardrails, and route decorators.
-- `app/notifications/` remains authoritative for Notification Center persistence and the shared operational evidence store/query kernel. Activity Audit presentation and HTTP orchestration belong to `app/access/activity_audit/`.
+- `app/access/users/` remains authoritative for user lifecycle and effective-access presentation.
+- `app/access/identity_providers/` owns Identity Provider administration and directory projection workflows.
+- `app/access/authentication/identity_provider/` owns provider catalog, adapter registries, protocol validation, and external authentication contracts.
+- `app/access/authentication/` owns session admission and authentication orchestration.
+- `app/access/rbac/` remains authoritative for the code-owned permission registry, protected default roles, authorization rules, role mutation guardrails, and route decorators.
+- `app/platform_operations/notifications/` remains authoritative for Notification Center persistence and the shared operational evidence store/query kernel. Activity Audit presentation and HTTP orchestration belong to `app/access/activity_audit/`.
 
 The Access menu groups these capabilities; it does not duplicate their domain logic.
 

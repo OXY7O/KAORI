@@ -8,8 +8,8 @@ def read(relative: str) -> str:
 
 
 def test_job_progress_metadata_is_canonical_without_schema_expansion() -> None:
-    service = read('app/jobs/service.py')
-    execution = read('app/jobs/execution.py')
+    service = read('app/platform_operations/jobs/service.py')
+    execution = read('app/platform_operations/jobs/execution.py')
     presentation = read('app/common/job_execution_presentation.py')
 
     assert "payload['_progress'] = metadata" in service
@@ -34,11 +34,11 @@ def test_all_job_execution_surfaces_use_shared_progress_renderer() -> None:
     assert 'style="width: {{ safe_secondary_value }}%"' in component
 
     for relative in (
-        'app/templates/jobs/configuration/_execution_activity.html',
-        'app/templates/jobs/executions/partials/_active_jobs.html',
-        'app/templates/jobs/executions/partials/_registry.html',
-        'app/templates/jobs/executions/partials/_execution_details.html',
-        'app/templates/notifications/components/_activity_center_items.html',
+        'app/templates/platform_operations/jobs/configuration/_execution_activity.html',
+        'app/templates/platform_operations/jobs/executions/partials/_active_jobs.html',
+        'app/templates/platform_operations/jobs/executions/partials/_registry.html',
+        'app/templates/platform_operations/jobs/executions/partials/_execution_details.html',
+        'app/templates/platform_operations/notifications/components/_activity_center_items.html',
         'app/templates/reports/generated/detail.html',
     ):
         source = read(relative)
@@ -47,11 +47,11 @@ def test_all_job_execution_surfaces_use_shared_progress_renderer() -> None:
 
 
 def test_domain_progress_reports_real_work_boundaries() -> None:
-    kubernetes = read('app/inventory/kubernetes/synchronization.py')
-    cluster_tasks = read('app/cluster/tasks.py')
-    storage_tasks = read('app/inventory/object_storage/tasks.py')
+    kubernetes = read('app/kubernetes/inventory/synchronization.py')
+    cluster_tasks = read('app/kubernetes/cluster/tasks.py')
+    storage_tasks = read('app/storage/object_storage/inventory/tasks.py')
     minio_client = read('app/integrations/storage/object_storage/providers/minio/client.py')
-    analytics = read('app/analytics/kubernetes/tasks.py')
+    analytics = read('app/kubernetes/analytics/tasks.py')
 
     for stage in (
         'Collecting Nodes',
@@ -70,8 +70,8 @@ def test_domain_progress_reports_real_work_boundaries() -> None:
 
 def test_job_related_specialized_bars_share_the_same_low_level_violet_primitive() -> None:
     operational = read('app/templates/components/operational_progress_toast.html')
-    tls_live = read('app/templates/governance/tls_certificates/partials/_sync_live_state.html')
-    analytics_pending = read('app/templates/analytics/kubernetes/materialization/_pending.html')
+    tls_live = read('app/templates/kubernetes/governance/tls_certificates/partials/_sync_live_state.html')
+    analytics_pending = read('app/templates/kubernetes/analytics/materialization/_pending.html')
 
     assert 'progress_bar.notification_progress' in operational
     assert 'progress_bar.notification_indeterminate' in operational
@@ -84,12 +84,12 @@ def test_job_related_specialized_bars_share_the_same_low_level_violet_primitive(
 def test_navigation_inventory_sync_toasts_surface_real_worker_progress() -> None:
     quick = read('app/templates/components/navigation/_quick_sync_status.html')
     individual = read('app/templates/components/navigation/_individual_sync_status.html')
-    individual_state = read('app/cluster/individual_sync_state.py')
+    individual_state = read('app/kubernetes/cluster/individual_sync_state.py')
 
     assert 'progress_percent=sync.progress_percent' in quick
     assert 'sync.progress_stage' in quick
     assert 'sync.message' in quick
-    global_state = read('app/cluster/sync_state.py')
+    global_state = read('app/kubernetes/cluster/sync_state.py')
     assert "payload.setdefault('progress_percent', progress_metadata.get('percent'))" in global_state
     assert 'progress_percent=sync.progress_percent' in individual
     assert 'sync.progress_stage' in individual

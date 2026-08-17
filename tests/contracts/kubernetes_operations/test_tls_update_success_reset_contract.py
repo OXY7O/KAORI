@@ -1,6 +1,6 @@
 from pathlib import Path
 
-ROUTES = Path('app/kubernetes_operations/secrets/tls_routes.py')
+ROUTES = Path('app/kubernetes/operations/secrets/tls_routes.py')
 
 
 def test_successful_single_tls_update_redirects_to_fresh_rotation_workspace():
@@ -20,5 +20,5 @@ def test_successful_bulk_tls_update_queues_toast_and_resets_workspace():
 def test_partial_or_failed_bulk_update_keeps_diagnostic_result_in_place():
     source = ROUTES.read_text()
     success_redirect = source.index('if is_success:\n        return _tls_workspace_redirect(')
-    feedback_render = source.index("'kubernetes_operations/secrets/_bulk_feedback.html'", success_redirect)
+    feedback_render = source.index("'kubernetes/operations/secrets/_bulk_feedback.html'", success_redirect)
     assert feedback_render > success_redirect

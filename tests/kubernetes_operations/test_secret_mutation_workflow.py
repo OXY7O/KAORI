@@ -11,7 +11,7 @@ import pytest
 pytestmark = pytest.mark.functional
 
 ROOT = Path(__file__).resolve().parents[2]
-SECRET_ROOT = ROOT / 'app/kubernetes_operations/secrets'
+SECRET_ROOT = ROOT / 'app/kubernetes/operations/secrets'
 
 
 def _module(name: str, monkeypatch: pytest.MonkeyPatch) -> ModuleType:
@@ -42,17 +42,17 @@ def _install_base_modules(monkeypatch: pytest.MonkeyPatch) -> dict[str, ModuleTy
     names = (
         'app',
         'app.common',
-        'app.governance',
-        'app.governance.tls_certificates',
-        'app.governance.tls_certificates.certificate',
+        'app.kubernetes.governance',
+        'app.kubernetes.governance.tls_certificates',
+        'app.kubernetes.governance.tls_certificates.certificate',
         'app.integrations',
         'app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api',
         'app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.resolver',
         'app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.tls',
-        'app.kubernetes_operations',
-        'app.kubernetes_operations.secrets',
-        'app.kubernetes_operations.secrets.live_service',
-        'app.kubernetes_operations.secrets.impact',
+        'app.kubernetes.operations',
+        'app.kubernetes.operations.secrets',
+        'app.kubernetes.operations.secrets.live_service',
+        'app.kubernetes.operations.secrets.impact',
         'app.models',
         'kubernetes',
         'kubernetes.client',
@@ -74,12 +74,12 @@ def _install_base_modules(monkeypatch: pytest.MonkeyPatch) -> dict[str, ModuleTy
     )
 
     contracts = _load_file(
-        'app.kubernetes_operations.secrets.contracts',
+        'app.kubernetes.operations.secrets.contracts',
         SECRET_ROOT / 'contracts.py',
         monkeypatch,
     )
     validation = _load_file(
-        'app.kubernetes_operations.secrets.validation',
+        'app.kubernetes.operations.secrets.validation',
         SECRET_ROOT / 'validation.py',
         monkeypatch,
     )
@@ -88,7 +88,7 @@ def _install_base_modules(monkeypatch: pytest.MonkeyPatch) -> dict[str, ModuleTy
 
     modules['app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.resolver'].tls_policy_for_cluster = lambda cluster: (None, False)
     modules['app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.tls'].weak_tls_context = lambda **kwargs: nullcontext()
-    modules['app.governance.tls_certificates.certificate'].validate_certificate_pair = lambda *args: None
+    modules['app.kubernetes.governance.tls_certificates.certificate'].validate_certificate_pair = lambda *args: None
 
     class ApiException(Exception):
         def __init__(self, status=None, reason=''):
@@ -115,7 +115,7 @@ def _install_base_modules(monkeypatch: pytest.MonkeyPatch) -> dict[str, ModuleTy
         setattr(client, name, _value_type(name))
     modules['kubernetes'].client = client
 
-    live = modules['app.kubernetes_operations.secrets.live_service']
+    live = modules['app.kubernetes.operations.secrets.live_service']
     live.LiveSecretSnapshot = type('LiveSecretSnapshot', (), {})
     live.core_api = lambda cluster: None
     live.authorization_api = lambda cluster: None
@@ -128,7 +128,7 @@ def _install_base_modules(monkeypatch: pytest.MonkeyPatch) -> dict[str, ModuleTy
     )
     live.verify_live_namespace = lambda cluster, namespace: None
 
-    modules['app.kubernetes_operations.secrets.impact'].get_secret_impact_context = lambda target: (
+    modules['app.kubernetes.operations.secrets.impact'].get_secret_impact_context = lambda target: (
         contracts.SecretImpactContext(
             items=[],
             collection_state='Collected',
@@ -220,7 +220,7 @@ def test_replace_service_executes_exactly_one_resource_version_bound_patch_per_m
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     _install_base_modules(monkeypatch)
-    payloads = _module('app.kubernetes_operations.secrets.replace_payloads', monkeypatch)
+    payloads = _module('app.kubernetes.operations.secrets.replace_payloads', monkeypatch)
     payloads.build_replace_patch = lambda form, files, target: {'username': 'new-user'}
     service = _load_file('secret_replace_under_test', SECRET_ROOT / 'replace_service.py', monkeypatch)
     calls: list[dict[str, object]] = []

@@ -34,9 +34,9 @@ def test_integration_kernel_follows_domain_type_provider_adapter_hierarchy() -> 
 
 def test_application_templates_and_definitions_mirror_integration_hierarchy() -> None:
     required = (
-        'app/metrics_sources',
-        'app/alert_sources/providers/alertmanager',
-        'app/object_storage/providers/minio',
+        'app/integrations/observability/metrics_source/application',
+        'app/integrations/observability/alert_source/providers/alertmanager/application',
+        'app/integrations/storage/object_storage/providers/minio/application',
         'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes',
         'app/templates/integrations/observability/metrics_source',
         'app/templates/integrations/observability/alert_source/providers/alertmanager',

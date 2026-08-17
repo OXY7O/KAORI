@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from app.jobs.presentation import build_job_execution_status_context
 from app.platform_operations.data_lifecycle.presentation import build_data_lifecycle_overview_summary
+from app.platform_operations.jobs.presentation import build_job_execution_status_context
 from app.platform_operations.kubernetes.presentation import build_kubernetes_administration_summary
 
 

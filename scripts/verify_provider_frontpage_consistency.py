@@ -55,7 +55,7 @@ def main() -> int:
     shared_configuration_contract = read('app/templates/integrations/components/_provider_configuration_contract.html')
     coverage_service = read('app/integrations/coverage.py')
     provider_registration_pages = {
-        'Kubernetes': read('app/templates/cluster/add.html'),
+        'Kubernetes': read('app/templates/kubernetes/cluster/add.html'),
         'Metrics Source': read('app/templates/integrations/observability/metrics_source/instance_form.html'),
         'Alertmanager': read(
             'app/templates/integrations/observability/alert_source/providers/alertmanager/instance_form.html'
@@ -189,7 +189,8 @@ def main() -> int:
     assert 'Register Alertmanager Connection' in provider_registration_pages['Alertmanager']
 
     registration_forms = {
-        'Kubernetes': read('app/templates/cluster/add.html') + read('app/templates/cluster/partials/_form.html'),
+        'Kubernetes': read('app/templates/kubernetes/cluster/add.html')
+        + read('app/templates/kubernetes/cluster/partials/_form.html'),
         'Metrics Source': provider_registration_pages['Metrics Source'],
         'Alertmanager': provider_registration_pages['Alertmanager'],
         'MinIO': provider_registration_pages['MinIO'],
@@ -221,7 +222,7 @@ def main() -> int:
     minio_form = (
         ROOT / 'app/templates/integrations/storage/object_storage/providers/minio/instance_form.html'
     ).read_text()
-    minio_routes = (ROOT / 'app/object_storage/providers/minio/routes.py').read_text()
+    minio_routes = (ROOT / 'app/integrations/storage/object_storage/providers/minio/application/routes.py').read_text()
     assert 'Consumer Asset' in registry
     assert "item_label='Assets'" in coverage or 'item_label="Assets"' in coverage
     assert 'empty_state_show_admin_required' not in coverage
@@ -229,7 +230,7 @@ def main() -> int:
     assert 'minio.test_new_instance_connection' in minio_form
     assert 'minio-connection-tested' in minio_routes
     minio_client = read('app/integrations/storage/object_storage/providers/minio/client.py')
-    minio_service = read('app/object_storage/providers/minio/service.py')
+    minio_service = read('app/integrations/storage/object_storage/providers/minio/application/service.py')
     assert 's3:ListAllMyBuckets' in minio_client
     assert '/minio/health/live' in minio_client
     assert 'identity_evidence' in minio_client

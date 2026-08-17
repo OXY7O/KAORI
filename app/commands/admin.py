@@ -5,11 +5,11 @@ import os
 import click
 from flask.cli import with_appcontext
 
-from app.auth.password_policy import local_password_policy_error
+from app.access.authentication.password_policy import local_password_policy_error
+from app.access.rbac.policy import role_is_access_admin_level
+from app.access.rbac.service import seed_default_rbac
 from app.extensions.db import db
 from app.models import Role, User
-from app.rbac.policy import role_is_access_admin_level
-from app.rbac.service import seed_default_rbac
 
 
 def _clean_env_value(value: str | None) -> str:

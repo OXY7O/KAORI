@@ -10,11 +10,11 @@ from flask import (
 from flask.typing import ResponseReturnValue
 from flask_login import current_user
 
-from app.auth.session import safe_next_url
+from app.access.authentication.session import safe_next_url
+from app.access.rbac.decorators import permission_required
 from app.extensions.db import db
 from app.models.report import Report
-from app.notifications.service import queue_transient_feedback, record_operational_activity
-from app.rbac.decorators import permission_required
+from app.platform_operations.notifications.service import queue_transient_feedback, record_operational_activity
 from app.reports.export.artifacts import get_report_artifact_format
 from app.reports.export.service import get_download_file_path
 from app.reports.jobs.service import ReportJobEnqueueError, enqueue_report_generation

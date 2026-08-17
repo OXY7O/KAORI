@@ -8,12 +8,12 @@ def read(relative_path: str) -> str:
 
 
 def test_local_database_password_policy_is_shared_and_matches_settings_copy() -> None:
-    policy = read('app/auth/password_policy.py')
-    auth_forms = read('app/auth/forms.py')
-    user_forms = read('app/users/forms.py')
+    policy = read('app/access/authentication/password_policy.py')
+    auth_forms = read('app/access/authentication/forms.py')
+    user_forms = read('app/access/users/forms.py')
     settings_template = read('app/templates/settings/account/partials/_change_password.html')
-    user_template = read('app/templates/users/form.html')
-    reset_template = read('app/templates/users/reset_password.html')
+    user_template = read('app/templates/access/users/form.html')
+    reset_template = read('app/templates/access/users/reset_password.html')
     admin_command = read('app/commands/admin.py')
 
     assert 'LOCAL_PASSWORD_MIN_LENGTH = 12' in policy
@@ -31,7 +31,7 @@ def test_local_database_password_policy_is_shared_and_matches_settings_copy() ->
 
 def test_password_change_advances_session_generation_and_preserves_only_current_browser() -> None:
     model = read('app/models/user.py')
-    session_source = read('app/auth/session.py')
+    session_source = read('app/access/authentication/session.py')
     login_extension = read('app/extensions/login.py')
     account_actions = read('app/settings/account/actions.py')
     migration = read('migrations/versions/20260809_auth_session_generation.py')
@@ -84,9 +84,9 @@ def test_credential_workspace_explains_session_effect_without_reopening_external
 
 
 def test_administrative_reset_now_revokes_target_sessions_and_no_longer_claims_they_remain_active() -> None:
-    routes = read('app/users/routes.py')
-    reset_template = read('app/templates/users/reset_password.html')
-    readme = read('app/users/README.md')
+    routes = read('app/access/users/routes.py')
+    reset_template = read('app/templates/access/users/reset_password.html')
+    readme = read('app/access/users/README.md')
 
     assert 'user.set_password(' in routes
     assert 'existing sessions were revoked' in routes

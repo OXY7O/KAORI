@@ -8,7 +8,7 @@ def read(relative: str) -> str:
 
 
 def test_login_theme_toggle_exposes_the_next_theme_action() -> None:
-    login = read('app/templates/auth/partials/_login_form.html')
+    login = read('app/templates/access/authentication/partials/_login_form.html')
     runtime = read('app/static/js/auth_login.js')
 
     assert 'aria-label="Switch to Dark Mode"' in login
@@ -19,8 +19,8 @@ def test_login_theme_toggle_exposes_the_next_theme_action() -> None:
 
 
 def test_authentication_release_labels_keep_kaori_title_case() -> None:
-    index = read('app/templates/auth/index.html')
-    setup = read('app/templates/auth/setup_required.html')
+    index = read('app/templates/access/authentication/index.html')
+    setup = read('app/templates/access/authentication/setup_required.html')
 
     assert '{% block title %}Sign In · KAORI{% endblock title %}' in index
     for token in (

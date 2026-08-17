@@ -5,7 +5,7 @@ from importlib.util import module_from_spec, spec_from_file_location
 from pathlib import Path
 from types import ModuleType, SimpleNamespace
 
-MODULE_PATH = Path(__file__).resolve().parents[2] / 'app/inventory/kubernetes/job_adapter.py'
+MODULE_PATH = Path(__file__).resolve().parents[3] / 'app/kubernetes/inventory/job_adapter.py'
 
 
 class _DispatchResult:
@@ -35,16 +35,17 @@ class _ClusterQuery:
 
 def _load_adapter(monkeypatch, *, cluster, enqueue_cluster, enqueue_fleet):
     app_module = ModuleType('app')
-    cluster_package = ModuleType('app.cluster')
-    sync_jobs = ModuleType('app.cluster.sync_jobs')
+    cluster_package = ModuleType('app.kubernetes.cluster')
+    sync_jobs = ModuleType('app.kubernetes.cluster.sync_jobs')
     common_package = ModuleType('app.common')
+    common_contract = ModuleType('app.common.job_execution_contract')
     common_presentation = ModuleType('app.common.job_execution_presentation')
-    jobs_package = ModuleType('app.jobs')
-    jobs_constants = ModuleType('app.jobs.constants')
-    jobs_definitions = ModuleType('app.jobs.definitions')
-    jobs_definition_base = ModuleType('app.jobs.definitions.base')
-    jobs_policies = ModuleType('app.jobs.policies')
-    jobs_policy_presentation = ModuleType('app.jobs.policies.presentation')
+    jobs_package = ModuleType('app.platform_operations.jobs')
+    jobs_constants = ModuleType('app.platform_operations.jobs.constants')
+    jobs_definitions = ModuleType('app.platform_operations.jobs.definitions')
+    jobs_definition_base = ModuleType('app.platform_operations.jobs.definitions.base')
+    jobs_policies = ModuleType('app.platform_operations.jobs.policies')
+    jobs_policy_presentation = ModuleType('app.platform_operations.jobs.policies.presentation')
     models_package = ModuleType('app.models')
     models_cluster = ModuleType('app.models.cluster')
     models_job = ModuleType('app.models.job')
@@ -57,6 +58,7 @@ def _load_adapter(monkeypatch, *, cluster, enqueue_cluster, enqueue_fleet):
     sync_jobs.build_fleet_inventory_targets = lambda **_kwargs: []
     sync_jobs.enqueue_all_cluster_inventory_sync = enqueue_fleet
     sync_jobs.enqueue_cluster_inventory_sync = enqueue_cluster
+    common_contract.KUBERNETES_INVENTORY_SYNC_OPERATION = 'kubernetes_inventory_sync'
     common_presentation.present_job_execution = lambda _job: {}
     jobs_constants.ACTIVE_JOB_STATUSES = ()
     jobs_definition_base.RegisteredJobDispatchResult = _DispatchResult
@@ -67,16 +69,17 @@ def _load_adapter(monkeypatch, *, cluster, enqueue_cluster, enqueue_fleet):
 
     modules = {
         'app': app_module,
-        'app.cluster': cluster_package,
-        'app.cluster.sync_jobs': sync_jobs,
+        'app.kubernetes.cluster': cluster_package,
+        'app.kubernetes.cluster.sync_jobs': sync_jobs,
         'app.common': common_package,
+        'app.common.job_execution_contract': common_contract,
         'app.common.job_execution_presentation': common_presentation,
-        'app.jobs': jobs_package,
-        'app.jobs.constants': jobs_constants,
-        'app.jobs.definitions': jobs_definitions,
-        'app.jobs.definitions.base': jobs_definition_base,
-        'app.jobs.policies': jobs_policies,
-        'app.jobs.policies.presentation': jobs_policy_presentation,
+        'app.platform_operations.jobs': jobs_package,
+        'app.platform_operations.jobs.constants': jobs_constants,
+        'app.platform_operations.jobs.definitions': jobs_definitions,
+        'app.platform_operations.jobs.definitions.base': jobs_definition_base,
+        'app.platform_operations.jobs.policies': jobs_policies,
+        'app.platform_operations.jobs.policies.presentation': jobs_policy_presentation,
         'app.models': models_package,
         'app.models.cluster': models_cluster,
         'app.models.job': models_job,

@@ -8,7 +8,7 @@ def read(relative: str) -> str:
 
 
 def test_protected_reveal_uses_integrated_workspace_tabs() -> None:
-    page = read('app/templates/kubernetes_operations/secrets/reveal.html')
+    page = read('app/templates/kubernetes/operations/secrets/reveal.html')
     tabs = read('app/templates/components/workspace_tabs.html')
 
     assert 'components/workspace_tabs.html' in page
@@ -26,8 +26,8 @@ def test_protected_reveal_uses_integrated_workspace_tabs() -> None:
 
 
 def test_reveal_tab_state_uses_canonical_alpine_workspace_controller() -> None:
-    page = read('app/templates/kubernetes_operations/secrets/reveal.html')
-    routes = read('app/kubernetes_operations/secrets/reveal_routes.py')
+    page = read('app/templates/kubernetes/operations/secrets/reveal.html')
+    routes = read('app/kubernetes/operations/secrets/reveal_routes.py')
 
     assert "'active_reveal_view': active_reveal_view" in routes
     assert "request.args.get('reveal_view')" in routes
@@ -40,7 +40,7 @@ def test_reveal_tab_state_uses_canonical_alpine_workspace_controller() -> None:
 
 
 def test_reveal_tabs_switch_client_side_with_server_navigation_fallback() -> None:
-    page = read('app/templates/kubernetes_operations/secrets/reveal.html')
+    page = read('app/templates/kubernetes/operations/secrets/reveal.html')
     tabs = read('app/templates/components/workspace_tabs.html')
 
     assert '@click.prevent="setTab(' in tabs
@@ -55,14 +55,14 @@ def test_reveal_tabs_switch_client_side_with_server_navigation_fallback() -> Non
 
 
 def test_reveal_safety_contract_is_collapsed_by_default() -> None:
-    page = read('app/templates/kubernetes_operations/secrets/reveal.html')
+    page = read('app/templates/kubernetes/operations/secrets/reveal.html')
 
     assert "information_guide_card.render('Reveal Safety Contract'" in page
     assert "protected_reveal_guardrails, icon='shield-check', open_by_default=false" in page
 
 
 def test_reveal_redirects_preserve_the_next_workspace_view() -> None:
-    routes = read('app/kubernetes_operations/secrets/reveal_routes.py')
+    routes = read('app/kubernetes/operations/secrets/reveal_routes.py')
 
     assert "reveal_view='mine'" in routes
     assert "_anchor='my-secret-reveal-requests'" in routes
@@ -72,8 +72,8 @@ def test_reveal_redirects_preserve_the_next_workspace_view() -> None:
 
 def test_reveal_polling_only_runs_for_the_active_replaceable_panel() -> None:
     script = read('app/static/js/secret_reveal_workspace.js')
-    request_status = read('app/templates/kubernetes_operations/secrets/_reveal_request_status.html')
-    approvals = read('app/templates/kubernetes_operations/secrets/_reveal_pending_approvals.html')
+    request_status = read('app/templates/kubernetes/operations/secrets/_reveal_request_status.html')
+    approvals = read('app/templates/kubernetes/operations/secrets/_reveal_pending_approvals.html')
 
     assert 'const activePanel = (root) =>' in script
     assert '!panel.hidden' in script
@@ -87,8 +87,8 @@ def test_reveal_polling_only_runs_for_the_active_replaceable_panel() -> None:
 
 
 def test_reveal_pagination_is_scoped_to_its_partial_owner() -> None:
-    request_status = read('app/templates/kubernetes_operations/secrets/_reveal_request_status.html')
-    approvals = read('app/templates/kubernetes_operations/secrets/_reveal_pending_approvals.html')
+    request_status = read('app/templates/kubernetes/operations/secrets/_reveal_request_status.html')
+    approvals = read('app/templates/kubernetes/operations/secrets/_reveal_pending_approvals.html')
 
     assert "'kubernetes_operations.reveal_secret_status'" in request_status
     assert "'#secret-reveal-request-status'" in request_status
@@ -97,7 +97,7 @@ def test_reveal_pagination_is_scoped_to_its_partial_owner() -> None:
 
 
 def test_one_time_value_uses_protected_value_panel_and_clearing_script() -> None:
-    partial = read('app/templates/kubernetes_operations/secrets/_reveal_value.html')
+    partial = read('app/templates/kubernetes/operations/secrets/_reveal_value.html')
     panel = read('app/templates/components/protected_value_panel.html')
     script = read('app/static/js/secret_reveal_value.js')
 

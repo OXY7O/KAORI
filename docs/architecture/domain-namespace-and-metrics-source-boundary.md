@@ -31,8 +31,8 @@ not justify retaining a retired Python namespace.
 
 ## Inventory boundary
 
-`app.inventory.kubernetes` owns Kubernetes collection, committed-generation
-persistence, topology, and read models. `app.inventory.object_storage` owns
+`app.kubernetes.inventory` owns Kubernetes collection, committed-generation
+persistence, topology, and read models. `app.storage.object_storage.inventory` owns
 Object Storage collection, synchronization, committed snapshot presentation,
 and inventory job integration.
 
@@ -45,10 +45,10 @@ product/provider counters are not part of the canonical contract.
 
 ## Analytics boundary
 
-`app.analytics.kubernetes` owns Kubernetes-specific analytics and its committed
-`AnalyticsSnapshot` materialization model. `app.analytics.object_storage` owns
+`app.kubernetes.analytics` owns Kubernetes-specific analytics and its committed
+`AnalyticsSnapshot` materialization model. `app.storage.object_storage.analytics` owns
 Object Storage analytics semantics. Only genuinely cross-domain contracts and
-helpers may live in `app.analytics.shared`.
+helpers may live in `app.common.analytics`.
 
 A module is not shared merely because several domains could theoretically use
 it. Shared code must be provider-neutral and asset-domain-neutral in both

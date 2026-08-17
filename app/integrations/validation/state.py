@@ -8,7 +8,7 @@ from typing import Any, cast
 from flask import current_app
 from redis import Redis
 
-from app.jobs.constants import ACTIVE_JOB_STATUSES
+from app.platform_operations.jobs.constants import ACTIVE_JOB_STATUSES
 
 logger = logging.getLogger(__name__)
 
@@ -90,7 +90,7 @@ def _release_stale_validation_lock(client: Redis, key: str) -> bool:
         return False
     owner_task_id = str(owner_task_id)
     try:
-        from app.jobs.service import get_job_by_task_id
+        from app.platform_operations.jobs.service import get_job_by_task_id
 
         job = get_job_by_task_id(owner_task_id)
     except Exception:
@@ -170,7 +170,7 @@ def get_active_validation_task_id(
     integration_instance_id: int | str,
     binding_id: int | str | None = None,
 ) -> str | None:
-    from app.jobs.service import find_active_job
+    from app.platform_operations.jobs.service import find_active_job
 
     scope_key = f'binding:{binding_id}' if binding_id is not None else None
     job = find_active_job(
@@ -246,7 +246,7 @@ def build_validation_snapshot(task_id: str) -> dict[str, Any]:
     payload = get_validation_metadata(task_id)
     canonical: dict[str, Any] = {}
     try:
-        from app.jobs.service import get_job_by_task_id, job_snapshot
+        from app.platform_operations.jobs.service import get_job_by_task_id, job_snapshot
 
         job = get_job_by_task_id(task_id)
         if job is not None:

@@ -31,11 +31,11 @@ Server-rendered KAORI workspace
 
 Canonical ownership:
 
-- `app/analytics/kubernetes/capacity/evidence.py` — query registry consumption, exact evidence availability, and query-once collection;
-- `app/analytics/kubernetes/capacity/domain.py` — capacity, allocation, overcommit, headroom, risk, and governance semantics;
-- `app/analytics/kubernetes/capacity/service.py` — orchestration and recommendation assembly only;
-- `app/analytics/kubernetes/capacity/presentation.py` — display normalization and bottleneck selection;
-- `app/analytics/kubernetes/capacity/routes.py` — committed snapshot resolution and selected-tab restoration.
+- `app/kubernetes/analytics/capacity/evidence.py` — query registry consumption, exact evidence availability, and query-once collection;
+- `app/kubernetes/analytics/capacity/domain.py` — capacity, allocation, overcommit, headroom, risk, and governance semantics;
+- `app/kubernetes/analytics/capacity/service.py` — orchestration and recommendation assembly only;
+- `app/kubernetes/analytics/capacity/presentation.py` — display normalization and bottleneck selection;
+- `app/kubernetes/analytics/capacity/routes.py` — committed snapshot resolution and selected-tab restoration.
 
 A materialization run collects every required Capacity signal once. The service must not rebuild the same CPU, memory, pod, request, limit, or peak query through Utilization helpers.
 

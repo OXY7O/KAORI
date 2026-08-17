@@ -22,12 +22,12 @@ class KubernetesRuntimeAdapter:
         return instance.cluster if isinstance(instance, KubernetesConnection) else instance
 
     def refresh(self, instance: KubernetesConnection | Any):
-        from app.cluster.service import run_test_cluster
+        from app.kubernetes.cluster.service import run_test_cluster
 
         return run_test_cluster(self._cluster(instance))
 
     def refresh_health(self, instance: KubernetesConnection | Any):
-        from app.cluster.service import refresh_cluster_runtime_health
+        from app.kubernetes.cluster.service import refresh_cluster_runtime_health
 
         return refresh_cluster_runtime_health(self._cluster(instance))
 
@@ -54,7 +54,7 @@ class KubernetesRuntimeAdapter:
         if operation == 'runtime.state':
             return self.get_state(instance, validation_result=kwargs.get('validation_result'))
         if operation == 'inventory.sync':
-            from app.inventory.kubernetes.synchronization import sync_inventory
+            from app.kubernetes.inventory.synchronization import sync_inventory
 
             connection = instance if isinstance(instance, KubernetesConnection) else instance.kubernetes_connection
             if connection is None:

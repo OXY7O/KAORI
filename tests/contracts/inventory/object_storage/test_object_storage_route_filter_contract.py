@@ -8,8 +8,8 @@ def read(path: str) -> str:
 
 
 def test_systems_route_only_passes_fields_owned_by_system_filters() -> None:
-    routes = read('app/inventory/object_storage/routes.py')
-    presentation = read('app/inventory/object_storage/presentation.py')
+    routes = read('app/storage/object_storage/inventory/routes.py')
+    presentation = read('app/storage/object_storage/inventory/presentation.py')
 
     systems_block = routes.split('def systems() -> ResponseReturnValue:', 1)[1].split(
         "@object_storage_inventory_bp.get('/systems/<string:system_id>/details')", 1
@@ -22,8 +22,8 @@ def test_systems_route_only_passes_fields_owned_by_system_filters() -> None:
 
 
 def test_bucket_route_keeps_native_type_filter_for_bucket_and_container_inventory() -> None:
-    routes = read('app/inventory/object_storage/routes.py')
-    presentation = read('app/inventory/object_storage/presentation.py')
+    routes = read('app/storage/object_storage/inventory/routes.py')
+    presentation = read('app/storage/object_storage/inventory/presentation.py')
 
     buckets_block = routes.split('def buckets() -> ResponseReturnValue:', 1)[1].split(
         "@object_storage_inventory_bp.get('/buckets/<int:bucket_id>/details')", 1

@@ -28,7 +28,7 @@ def test_background_progress_uses_shared_operational_toast_contract() -> None:
 def test_notification_badges_follow_rectangular_kaori_label_geometry() -> None:
     for relative in (
         'app/templates/components/navigation/_notification_center.html',
-        'app/templates/notifications/partials/_notification_deck_oob.html',
+        'app/templates/platform_operations/notifications/partials/_notification_deck_oob.html',
     ):
         source = read(relative)
         assert 'notification-bell-badge' in source
@@ -38,8 +38,8 @@ def test_notification_badges_follow_rectangular_kaori_label_geometry() -> None:
 
 def test_semantic_attention_and_storage_states_use_operational_callout() -> None:
     for relative in (
-        'app/templates/notifications/partials/_center_page_content.html',
-        'app/templates/notifications/partials/_notification_deck_notifications.html',
+        'app/templates/platform_operations/notifications/partials/_center_page_content.html',
+        'app/templates/platform_operations/notifications/partials/_notification_deck_notifications.html',
         'app/templates/reports/storage/index.html',
     ):
         source = read(relative)

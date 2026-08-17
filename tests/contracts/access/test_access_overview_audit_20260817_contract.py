@@ -29,7 +29,7 @@ def test_access_overview_is_a_domain_summary_composer_not_a_persistence_owner() 
 
 
 def test_user_and_identity_provider_access_summaries_enforce_operational_guardrails() -> None:
-    summary = read('app/users/access_summary.py')
+    summary = read('app/access/users/access_summary.py')
     assert 'User.is_super_admin.is_(True)' in summary
     assert 'User.role_id.is_(None)' in summary
     assert "'active_super_admins': active_super_admins" in summary
@@ -45,7 +45,7 @@ def test_permission_and_activity_posture_reuse_authoritative_evidence() -> None:
     presentation = read('app/access/overview/presentation.py')
     permission_service = read('app/access/permissions/service.py')
     activity_service = read('app/access/activity_audit/service.py')
-    notification_queries = read('app/notifications/queries.py')
+    notification_queries = read('app/platform_operations/notifications/queries.py')
     assert "permission_summary['drift_count']" in presentation
     assert "'posture_label': 'Synchronized' if not drift_contracts else 'Review Required'" in permission_service
     assert 'def get_activity_audit_summary()' in activity_service

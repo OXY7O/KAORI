@@ -19,8 +19,8 @@ def test_management_landings_use_flat_operational_workflow_catalog() -> None:
     assert 'Authority Boundary' not in component
 
     for relative in (
-        'app/templates/kubernetes_operations/configmaps/index.html',
-        'app/templates/kubernetes_operations/secrets/index.html',
+        'app/templates/kubernetes/operations/configmaps/index.html',
+        'app/templates/kubernetes/operations/secrets/index.html',
     ):
         source = read(relative)
         assert 'operation_evidence_boundary.html' in source
@@ -41,7 +41,7 @@ def test_reviewed_crud_and_protected_reveal_use_form_with_right_context() -> Non
         'secrets/reveal.html',
     )
     for relative in pages:
-        source = (TEMPLATES / 'kubernetes_operations' / relative).read_text(encoding='utf-8')
+        source = (TEMPLATES / 'kubernetes' / 'operations' / relative).read_text(encoding='utf-8')
         assert 'operation_evidence_boundary.html' in source
         assert 'data-kubernetes-operation-layout="form-context-v1"' in source
         assert 'components/form_with_context_rail.html' in source
@@ -53,13 +53,13 @@ def test_reviewed_crud_and_protected_reveal_use_form_with_right_context() -> Non
 
 def test_reviewed_crud_moves_workflow_guidance_to_right_context() -> None:
     for relative in (
-        'app/templates/kubernetes_operations/configmaps/create.html',
-        'app/templates/kubernetes_operations/configmaps/update.html',
-        'app/templates/kubernetes_operations/configmaps/delete.html',
-        'app/templates/kubernetes_operations/secrets/create.html',
-        'app/templates/kubernetes_operations/secrets/replace.html',
-        'app/templates/kubernetes_operations/secrets/delete.html',
-        'app/templates/kubernetes_operations/secrets/reveal.html',
+        'app/templates/kubernetes/operations/configmaps/create.html',
+        'app/templates/kubernetes/operations/configmaps/update.html',
+        'app/templates/kubernetes/operations/configmaps/delete.html',
+        'app/templates/kubernetes/operations/secrets/create.html',
+        'app/templates/kubernetes/operations/secrets/replace.html',
+        'app/templates/kubernetes/operations/secrets/delete.html',
+        'app/templates/kubernetes/operations/secrets/reveal.html',
     ):
         source = read(relative)
         assert 'workflow_control(' not in source
@@ -74,7 +74,7 @@ def test_reviewed_crud_moves_workflow_guidance_to_right_context() -> None:
 
 
 def test_single_tls_rotation_uses_full_width_integrated_workspace() -> None:
-    source = read('app/templates/kubernetes_operations/secrets/tls_rotate.html')
+    source = read('app/templates/kubernetes/operations/secrets/tls_rotate.html')
     assert 'context_rail.html' not in source
     assert 'Replacement Certificate Pair & Validation' in source
     assert 'embedded=true' in source
@@ -85,8 +85,8 @@ def test_single_tls_rotation_uses_full_width_integrated_workspace() -> None:
 
 
 def test_secret_create_uses_reusable_choice_and_entry_components() -> None:
-    source = read('app/templates/kubernetes_operations/secrets/create.html')
-    configmap_editor = read('app/templates/kubernetes_operations/configmaps/_entries_editor.html')
+    source = read('app/templates/kubernetes/operations/secrets/create.html')
+    configmap_editor = read('app/templates/kubernetes/operations/configmaps/_entries_editor.html')
     assert 'components/choice_card_group.html' in source
     assert 'choice_cards.option(' in source
     assert 'lg:grid-cols-3' in source
@@ -106,7 +106,7 @@ def test_operation_permission_and_classification_are_separate() -> None:
 
 
 def test_operation_templates_use_canonical_control_geometry() -> None:
-    operation_root = TEMPLATES / 'kubernetes_operations'
+    operation_root = TEMPLATES / 'kubernetes' / 'operations'
     for template in operation_root.rglob('*.html'):
         source = template.read_text(encoding='utf-8')
         assert 'min-h-[23rem]' not in source, template
@@ -116,7 +116,7 @@ def test_operation_templates_use_canonical_control_geometry() -> None:
 
 
 def test_bulk_tls_rotation_uses_full_width_workflow_control() -> None:
-    source = read('app/templates/kubernetes_operations/secrets/tls_rotation.html')
+    source = read('app/templates/kubernetes/operations/secrets/tls_rotation.html')
     assert 'secret_ui.workflow_control(' in source
     assert 'Controlled Bulk TLS Rotation' in source
     assert 'view_more_content.html' not in source

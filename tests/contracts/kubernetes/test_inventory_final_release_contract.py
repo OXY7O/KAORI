@@ -29,8 +29,8 @@ def test_inventory_final_standard_documents_authz_snapshot_and_shared_ui_contrac
 
 def test_inventory_read_side_no_longer_owns_obsolete_template_or_helpers() -> None:
     assert not (ROOT / 'app/templates/inventory/partials/_README.md').exists()
-    formatting = read('app/inventory/kubernetes/formatting.py')
-    common = read('app/inventory/kubernetes/resources/common.py')
+    formatting = read('app/kubernetes/inventory/formatting.py')
+    common = read('app/kubernetes/inventory/resources/common.py')
 
     assert 'def format_byte_count(' not in formatting
     assert 'def format_gib(' not in formatting
@@ -38,8 +38,8 @@ def test_inventory_read_side_no_longer_owns_obsolete_template_or_helpers() -> No
 
 
 def test_topology_cluster_identity_uses_eager_loaded_database_relationship_not_runtime_resolver() -> None:
-    repository = read('app/inventory/kubernetes/topology/repository.py')
-    builder = read('app/inventory/kubernetes/topology/node_builder.py')
+    repository = read('app/kubernetes/inventory/topology/repository.py')
+    builder = read('app/kubernetes/inventory/topology/node_builder.py')
 
     assert 'joinedload(Cluster.kubernetes_connection)' in repository
     assert 'cluster.kubernetes_connection.server' in builder
@@ -47,17 +47,17 @@ def test_topology_cluster_identity_uses_eager_loaded_database_relationship_not_r
 
 
 def test_inventory_resource_template_registry_uses_the_canonical_kubernetes_namespace() -> None:
-    routes = read('app/inventory/kubernetes/routes.py')
+    routes = read('app/kubernetes/inventory/routes.py')
     resources = ('nodes', 'namespaces', 'configuration', 'workloads', 'pods', 'services', 'ingresses', 'storage')
 
-    assert "f'inventory/kubernetes/{resource}/index.html'" in routes
-    assert "f'inventory/kubernetes/{resource}/partials/_page_workspace.html'" in routes
-    assert "f'inventory/kubernetes/{resource}/partials/_table_card.html'" in routes
-    assert "f'inventory/kubernetes/{resource}/partials/_table_content.html'" in routes
+    assert "f'kubernetes/inventory/{resource}/index.html'" in routes
+    assert "f'kubernetes/inventory/{resource}/partials/_page_workspace.html'" in routes
+    assert "f'kubernetes/inventory/{resource}/partials/_table_card.html'" in routes
+    assert "f'kubernetes/inventory/{resource}/partials/_table_content.html'" in routes
     assert "f'inventory/{resource}/index.html'" not in routes
 
     for resource in resources:
-        base = ROOT / 'app/templates/inventory/kubernetes' / resource
+        base = ROOT / 'app/templates/kubernetes/inventory' / resource
         assert (base / 'index.html').is_file(), resource
         assert (base / 'partials/_page_workspace.html').is_file(), resource
         assert (base / 'partials/_table_card.html').is_file(), resource
@@ -65,7 +65,7 @@ def test_inventory_resource_template_registry_uses_the_canonical_kubernetes_name
 
 
 def test_storage_inventory_populates_the_shared_scope_label_used_by_its_hero() -> None:
-    routes = read('app/inventory/kubernetes/routes.py')
+    routes = read('app/kubernetes/inventory/routes.py')
     storage_block = routes[routes.index('def storage():') : routes.index('def storage_details(')]
 
     assert "inventory['scope_label'] = _inventory_scope_label(clusters, cluster_id)" in storage_block

@@ -8,8 +8,8 @@ def read(relative: str) -> str:
 
 
 def test_permission_catalog_source_controls_module_and_delegation_taxonomy() -> None:
-    catalog = read('app/definitions/catalogs/rbac/access.yaml')
-    defaults = read('app/rbac/defaults.py')
+    catalog = read('app/definitions/catalogs/access/rbac/access.yaml')
+    defaults = read('app/access/rbac/defaults.py')
     service = read('app/access/permissions/service.py')
 
     assert 'control_modules:' in catalog
@@ -53,7 +53,7 @@ def test_permission_catalog_exposes_delegation_impact_and_transitive_dependencie
 
 
 def test_permission_contract_keys_follow_current_domain_ownership_without_runtime_aliases() -> None:
-    catalog = read('app/definitions/catalogs/rbac/access.yaml')
+    catalog = read('app/definitions/catalogs/access/rbac/access.yaml')
     migration = read('migrations/versions/20260817_permission_contract_ownership.py')
     sidebar = read('app/templates/components/navigation/sidebar.html')
     activity_routes = read('app/access/activity_audit/routes.py')

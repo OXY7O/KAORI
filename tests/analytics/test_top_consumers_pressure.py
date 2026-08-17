@@ -8,7 +8,7 @@ def read(relative: str) -> str:
 
 
 def test_compute_policy_matches_workload_request_and_limit_contract() -> None:
-    rows = read('app/analytics/kubernetes/top_consumers/rows.py')
+    rows = read('app/kubernetes/analytics/top_consumers/rows.py')
 
     assert "return semantic_state('critical', 'Request Missing')" in rows
     assert "return semantic_state('warning', 'Memory Limit Missing')" in rows
@@ -17,7 +17,7 @@ def test_compute_policy_matches_workload_request_and_limit_contract() -> None:
 
 
 def test_top_consumers_does_not_compare_heterogeneous_absolute_values() -> None:
-    presentation = read('app/analytics/kubernetes/top_consumers/presentation.py')
+    presentation = read('app/kubernetes/analytics/top_consumers/presentation.py')
 
     assert "if selected_sort == 'absolute' and selected_resource != 'all'" in presentation
     assert "if selected_sort == 'contribution'" in presentation

@@ -21,28 +21,28 @@ def test_forecast_builder_accepts_latest_daily_average_payload_without_flask() -
         for key in (
             'app',
             'app.dashboards',
-            'app.dashboards.kubernetes',
-            'app.dashboards.kubernetes.schema',
-            'app.dashboards.kubernetes.sections',
-            'app.dashboards.kubernetes.sections.forecast',
-            'app.dashboards.kubernetes.utils',
+            'app.kubernetes.dashboard',
+            'app.kubernetes.dashboard.schema',
+            'app.kubernetes.dashboard.sections',
+            'app.kubernetes.dashboard.sections.forecast',
+            'app.kubernetes.dashboard.utils',
         )
     }
     try:
         sys.modules['app'] = types.ModuleType('app')
         sys.modules['app.dashboards'] = types.ModuleType('app.dashboards')
-        sys.modules['app.dashboards.kubernetes'] = types.ModuleType('app.dashboards.kubernetes')
+        sys.modules['app.kubernetes.dashboard'] = types.ModuleType('app.kubernetes.dashboard')
         schema = _load_module(
-            'app.dashboards.kubernetes.schema',
-            ROOT / 'app/dashboards/kubernetes/schema.py',
+            'app.kubernetes.dashboard.schema',
+            ROOT / 'app/kubernetes/dashboard/schema.py',
         )
-        utils = types.ModuleType('app.dashboards.kubernetes.utils')
+        utils = types.ModuleType('app.kubernetes.dashboard.utils')
         utils.forecast_insight = lambda items: 'Forecast insight'
         sys.modules[utils.__name__] = utils
-        sys.modules['app.dashboards.kubernetes.sections'] = types.ModuleType('app.dashboards.kubernetes.sections')
+        sys.modules['app.kubernetes.dashboard.sections'] = types.ModuleType('app.kubernetes.dashboard.sections')
         forecast = _load_module(
-            'app.dashboards.kubernetes.sections.forecast',
-            ROOT / 'app/dashboards/kubernetes/sections/forecast.py',
+            'app.kubernetes.dashboard.sections.forecast',
+            ROOT / 'app/kubernetes/dashboard/sections/forecast.py',
         )
 
         snapshot = forecast.build_forecast_snapshot(

@@ -37,14 +37,14 @@ app/analytics/
 
 ### Kubernetes
 
-`app.analytics.kubernetes` owns Kubernetes-specific analytics, committed
+`app.kubernetes.analytics` owns Kubernetes-specific analytics, committed
 `AnalyticsSnapshot` materialization, worker orchestration, Kubernetes identity,
 and Kubernetes/Metrics Source/Alertmanager interpretation. Its web request path is
 worker-first and reads committed generations.
 
 ### Object Storage
 
-`app.analytics.object_storage` owns provider-neutral Object Storage analytics.
+`app.storage.object_storage.analytics` owns provider-neutral Object Storage analytics.
 Committed Object Storage Inventory supplies current-state evidence. Operational
 time-series evidence is obtained through `MetricsSource`, resolved from the
 asset's integration bindings. Concrete Metrics Source products are resolved through the integration adapter registry and are not the analytics

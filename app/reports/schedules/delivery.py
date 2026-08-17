@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from app.notification_channels.service import notification_channel_summary
+from app.integrations.delivery.notification_channels.service import notification_channel_summary
 
 
 def get_scheduler_context(

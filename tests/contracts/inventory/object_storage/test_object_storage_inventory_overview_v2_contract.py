@@ -8,12 +8,12 @@ def read(path: str) -> str:
 
 
 def test_object_storage_overview_matches_final_inventory_composition() -> None:
-    index = read('app/templates/inventory/object_storage/overview/index.html')
-    hero = read('app/templates/inventory/object_storage/overview/partials/_hero.html')
-    snapshot = read('app/templates/inventory/object_storage/overview/partials/_snapshot_boundary.html')
-    fleet = read('app/templates/inventory/object_storage/overview/partials/_fleet_posture.html')
-    catalog = read('app/templates/inventory/object_storage/overview/partials/_summary_cards.html')
-    summary = read('app/templates/inventory/object_storage/overview/partials/_systems_snapshot.html')
+    index = read('app/templates/storage/object_storage/inventory/overview/index.html')
+    hero = read('app/templates/storage/object_storage/inventory/overview/partials/_hero.html')
+    snapshot = read('app/templates/storage/object_storage/inventory/overview/partials/_snapshot_boundary.html')
+    fleet = read('app/templates/storage/object_storage/inventory/overview/partials/_fleet_posture.html')
+    catalog = read('app/templates/storage/object_storage/inventory/overview/partials/_summary_cards.html')
+    summary = read('app/templates/storage/object_storage/inventory/overview/partials/_systems_snapshot.html')
 
     assert 'resource_detail_modal' not in index
     assert '_fleet_posture.html' in index
@@ -33,7 +33,7 @@ def test_object_storage_overview_matches_final_inventory_composition() -> None:
 
 
 def test_overview_summary_uses_canonical_table_and_side_drawer() -> None:
-    content = read('app/templates/inventory/object_storage/overview/partials/_systems_snapshot_content.html')
+    content = read('app/templates/storage/object_storage/inventory/overview/partials/_systems_snapshot_content.html')
 
     for heading in (
         'System',
@@ -62,9 +62,9 @@ def test_overview_summary_uses_canonical_table_and_side_drawer() -> None:
 
 
 def test_overview_summary_uses_kaori_pagination_and_section_loader() -> None:
-    shell = read('app/templates/inventory/object_storage/overview/partials/_systems_snapshot.html')
-    content = read('app/templates/inventory/object_storage/overview/partials/_systems_snapshot_content.html')
-    routes = read('app/inventory/object_storage/routes.py')
+    shell = read('app/templates/storage/object_storage/inventory/overview/partials/_systems_snapshot.html')
+    content = read('app/templates/storage/object_storage/inventory/overview/partials/_systems_snapshot_content.html')
+    routes = read('app/storage/object_storage/inventory/routes.py')
 
     assert "loading_bar_id='object-storage-inventory-summary-loading'" in shell
     assert 'object-storage-inventory-summary-content' in shell
@@ -78,8 +78,8 @@ def test_overview_summary_uses_kaori_pagination_and_section_loader() -> None:
 
 
 def test_overview_snapshot_and_signals_are_committed_inventory_only() -> None:
-    presentation = read('app/inventory/object_storage/presentation.py')
-    content = read('app/templates/inventory/object_storage/overview/partials/_systems_snapshot_content.html')
+    presentation = read('app/storage/object_storage/inventory/presentation.py')
+    content = read('app/templates/storage/object_storage/inventory/overview/partials/_systems_snapshot_content.html')
 
     assert 'OBJECT_STORAGE_INVENTORY_FRESHNESS_HOURS = 24' in presentation
     assert "'source_label': 'Committed Snapshot'" in presentation
@@ -92,9 +92,9 @@ def test_overview_snapshot_and_signals_are_committed_inventory_only() -> None:
 
 
 def test_overview_asset_catalog_stays_vendor_neutral() -> None:
-    presentation = read('app/inventory/object_storage/presentation.py')
-    catalog = read('app/templates/inventory/object_storage/overview/partials/_summary_cards.html')
-    fleet = read('app/templates/inventory/object_storage/overview/partials/_fleet_posture.html')
+    presentation = read('app/storage/object_storage/inventory/presentation.py')
+    catalog = read('app/templates/storage/object_storage/inventory/overview/partials/_summary_cards.html')
+    fleet = read('app/templates/storage/object_storage/inventory/overview/partials/_fleet_posture.html')
 
     assert "'title': 'Systems'" in presentation
     assert "'title': 'Buckets & Containers'" in presentation
@@ -105,8 +105,8 @@ def test_overview_asset_catalog_stays_vendor_neutral() -> None:
 
 
 def test_object_storage_drawer_uses_compact_release_and_profile_labels() -> None:
-    presentation = read('app/inventory/object_storage/presentation.py')
-    overview = read('app/templates/inventory/object_storage/overview/partials/_systems_snapshot_content.html')
+    presentation = read('app/storage/object_storage/inventory/presentation.py')
+    overview = read('app/templates/storage/object_storage/inventory/overview/partials/_systems_snapshot_content.html')
 
     assert '_release_display' in presentation
     assert '_compatibility_profile_display' in presentation

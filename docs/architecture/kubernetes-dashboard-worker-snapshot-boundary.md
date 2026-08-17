@@ -42,7 +42,7 @@ alert processing.
    `analytics.materialize` through the existing analytics snapshot model; no
    schema migration is required.
 9. Dataset keys and the dashboard-alert context builder are owned by
-   `app.analytics.kubernetes.materialization`. Dashboard modules import only the read contract; Analytics never
+   `app.kubernetes.analytics.materialization`. Dashboard modules import only the read contract; Analytics never
    imports Dashboard implementation modules.
 10. Integration recovery dispatches refreshes through registered Job Registry definitions. It does
     not import Inventory, Governance, or Analytics job implementations directly.

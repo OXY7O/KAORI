@@ -11,7 +11,7 @@ def test_permission_catalog_get_paths_are_read_only_and_seed_is_command_owned() 
     permission_routes = read('app/access/permissions/routes.py')
     permission_presentation = read('app/access/permissions/presentation.py')
     role_routes = read('app/access/roles/routes.py')
-    user_routes = read('app/users/routes.py')
+    user_routes = read('app/access/users/routes.py')
     command = read('app/commands/rbac.py')
 
     for source in (permission_routes, permission_presentation, role_routes, user_routes):
@@ -118,7 +118,7 @@ def test_permission_catalog_exposes_drift_dependency_and_cross_role_coverage() -
 
 
 def test_permission_module_metadata_matches_current_kaori_ownership_without_renaming_keys() -> None:
-    defaults = read('app/definitions/catalogs/rbac/access.yaml')
+    defaults = read('app/definitions/catalogs/access/rbac/access.yaml')
     assert 'key: kubernetes_secrets.manage_reveal' in defaults
     assert 'key: jobs.view' in defaults
     assert 'key: platform_operations.view_data_lifecycle' in defaults

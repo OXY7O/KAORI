@@ -4,7 +4,7 @@ import importlib.util
 import sys
 from pathlib import Path
 
-MODULE_PATH = Path(__file__).resolve().parents[3] / 'app/inventory/kubernetes/topology/contracts.py'
+MODULE_PATH = Path(__file__).resolve().parents[4] / 'app/kubernetes/inventory/topology/contracts.py'
 SPEC = importlib.util.spec_from_file_location('kaori_inventory_topology_contracts', MODULE_PATH)
 assert SPEC is not None and SPEC.loader is not None
 MODULE = importlib.util.module_from_spec(SPEC)

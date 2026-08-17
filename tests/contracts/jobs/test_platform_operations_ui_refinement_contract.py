@@ -36,9 +36,9 @@ def test_namespace_policy_uses_title_case_and_inventory_pagination_contract() ->
 
 
 def test_jobs_reuse_shared_metadata_status_and_pagination_components() -> None:
-    activity = _read('app/templates/jobs/configuration/_execution_activity.html')
-    registry = _read('app/templates/jobs/executions/partials/_registry.html')
-    empty_state = _read('app/templates/jobs/configuration/_job_workspace.html')
+    activity = _read('app/templates/platform_operations/jobs/configuration/_execution_activity.html')
+    registry = _read('app/templates/platform_operations/jobs/executions/partials/_registry.html')
+    empty_state = _read('app/templates/platform_operations/jobs/configuration/_job_workspace.html')
 
     assert 'table_label.metadata_label(definition.queue_name)' in activity
     assert "status_indicator_label('Ready for Execution', 'normal')" in activity
@@ -54,8 +54,8 @@ def test_changed_platform_operations_templates_parse() -> None:
         'app/templates/platform_operations/kubernetes/secret_reveal/_cluster_workspace.html',
         'app/templates/platform_operations/kubernetes/secret_reveal/_namespace_policy_section.html',
         'app/templates/platform_operations/kubernetes/secret_reveal/_namespace_policy_table_content.html',
-        'app/templates/jobs/configuration/_execution_activity.html',
-        'app/templates/jobs/configuration/_job_workspace.html',
-        'app/templates/jobs/executions/partials/_registry.html',
+        'app/templates/platform_operations/jobs/configuration/_execution_activity.html',
+        'app/templates/platform_operations/jobs/configuration/_job_workspace.html',
+        'app/templates/platform_operations/jobs/executions/partials/_registry.html',
     ):
         environment.parse(_read(relative))

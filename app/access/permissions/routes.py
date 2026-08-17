@@ -7,7 +7,7 @@ from app.access.permissions.presentation import (
     build_permission_detail_context,
     normalize_permission_filters,
 )
-from app.rbac.decorators import permission_required
+from app.access.rbac.decorators import permission_required
 
 bp = Blueprint('permissions', __name__)
 

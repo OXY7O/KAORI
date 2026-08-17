@@ -1,6 +1,6 @@
 /*
  * KAORI authentication presentation layer.
- * Scope: visual refinement only. Authentication behavior remains in app/auth/.
+ * Scope: visual refinement only. Authentication behavior remains in app/access/authentication/.
  */
 
 .kaori-login-shell {

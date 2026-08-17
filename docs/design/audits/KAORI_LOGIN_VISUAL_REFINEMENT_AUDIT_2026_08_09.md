@@ -24,7 +24,7 @@ This batch intentionally does not change authentication routes, provider behavio
 
 - `app/static/images/kaori-login-operations-fabric.svg`
 - `app/static/css/auth-login.css`
-- `app/templates/auth/partials/_brand_panel.html`
+- `app/templates/access/authentication/partials/_brand_panel.html`
 - `tests/contracts/auth/test_login_visual_refinement_contract.py`
 
 ## Security Boundary

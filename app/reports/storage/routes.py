@@ -5,8 +5,8 @@ from flask.typing import ResponseReturnValue
 from flask_login import current_user
 from werkzeug.exceptions import HTTPException
 
-from app.notifications.service import record_operational_activity
-from app.rbac.decorators import permission_required
+from app.access.rbac.decorators import permission_required
+from app.platform_operations.notifications.service import record_operational_activity
 from app.reports.storage.service import (
     build_storage_integrity_presentation,
     clear_report_storage_status_cache,

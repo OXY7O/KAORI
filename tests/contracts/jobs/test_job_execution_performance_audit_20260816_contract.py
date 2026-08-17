@@ -8,8 +8,8 @@ def read(path: str) -> str:
 
 
 def test_parent_jobs_workspaces_are_server_owned_and_not_built_together() -> None:
-    page = read('app/templates/jobs/index.html')
-    routes = read('app/jobs/routes.py')
+    page = read('app/templates/platform_operations/jobs/index.html')
+    routes = read('app/platform_operations/jobs/routes.py')
 
     assert 'framed_workspace_tabs.render_navigation' in page
     assert "{% if active_jobs_section == 'configuration' %}" in page
@@ -20,9 +20,9 @@ def test_parent_jobs_workspaces_are_server_owned_and_not_built_together() -> Non
 
 
 def test_execution_subworkspaces_are_demand_loaded() -> None:
-    workspace = read('app/templates/jobs/executions/_workspace.html')
-    routes = read('app/jobs/routes.py')
-    presentation = read('app/jobs/presentation.py')
+    workspace = read('app/templates/platform_operations/jobs/executions/_workspace.html')
+    routes = read('app/platform_operations/jobs/routes.py')
+    presentation = read('app/platform_operations/jobs/presentation.py')
 
     assert 'workspace_tabs.render_navigation' in workspace
     assert "selected_job_tab == 'registry'" in workspace
@@ -36,7 +36,7 @@ def test_execution_subworkspaces_are_demand_loaded() -> None:
 
 
 def test_execution_summary_and_queue_activity_use_aggregate_queries() -> None:
-    presentation = read('app/jobs/presentation.py')
+    presentation = read('app/platform_operations/jobs/presentation.py')
 
     assert 'def _execution_summary(' in presentation
     assert "func.count(func.distinct(JobExecution.queue_name)).label('queues')" in presentation
@@ -48,18 +48,20 @@ def test_execution_summary_and_queue_activity_use_aggregate_queries() -> None:
 
 
 def test_live_polling_is_bounded_and_configuration_has_no_idle_poller() -> None:
-    active = read('app/templates/jobs/executions/partials/_active_jobs.html')
-    status = read('app/templates/jobs/executions/partials/_status_poller.html')
-    configuration = read('app/templates/jobs/configuration/_live_poller.html')
-    configuration_service = read('app/jobs/configuration.py')
-    workspace = read('app/templates/jobs/executions/_workspace.html')
+    active = read('app/templates/platform_operations/jobs/executions/partials/_active_jobs.html')
+    status = read('app/templates/platform_operations/jobs/executions/partials/_status_poller.html')
+    configuration = read('app/templates/platform_operations/jobs/configuration/_live_poller.html')
+    configuration_service = read('app/platform_operations/jobs/configuration.py')
+    workspace = read('app/templates/platform_operations/jobs/executions/_workspace.html')
 
     assert 'hx-trigger="every 15s"' in active
     assert 'every 30s' in status
     assert "if selected_job_tab != 'active'" in workspace
     assert '_status_oob.html' in active
     assert '{% if include_status_oob|default(false) %}' in active
-    assert "fragment_context['include_status_oob'] = fragment == 'active'" in read('app/jobs/routes.py')
+    assert "fragment_context['include_status_oob'] = fragment == 'active'" in read(
+        'app/platform_operations/jobs/routes.py'
+    )
     assert active.count('document.hidden') >= 2
     assert 'document.hidden' in status
     assert '{% if selected_job.active_job %}' in configuration
@@ -71,7 +73,7 @@ def test_live_polling_is_bounded_and_configuration_has_no_idle_poller() -> None:
 
 
 def test_execution_registry_uses_canonical_clear_filters_contract() -> None:
-    registry = read('app/templates/jobs/executions/partials/_registry.html')
+    registry = read('app/templates/platform_operations/jobs/executions/partials/_registry.html')
 
     assert 'components/table_registry.html' in registry
     assert 'table_registry.filter_form' in registry
@@ -81,7 +83,7 @@ def test_execution_registry_uses_canonical_clear_filters_contract() -> None:
 
 
 def test_jobs_readme_locks_demand_loaded_performance_boundary() -> None:
-    readme = read('app/jobs/README.md')
+    readme = read('app/platform_operations/jobs/README.md')
 
     assert '## Operations UI Performance Contract' in readme
     assert 'must not build hidden workspaces' in readme

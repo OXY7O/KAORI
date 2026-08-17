@@ -16,17 +16,17 @@ from flask_login import current_user
 from flask_wtf.csrf import validate_csrf
 from wtforms.validators import ValidationError
 
+from app.access.rbac.decorators import permission_required
 from app.extensions.db import db
-from app.kubernetes_operations.secrets.reveal_policy import (
+from app.kubernetes.operations.secrets.reveal_policy import (
     cluster_reveal_readiness_evidence,
     set_namespace_reveal_policy,
     update_cluster_reveal_readiness,
 )
 from app.models import Cluster
-from app.notifications.feedback import queue_operational_feedback
-from app.notifications.service import record_operational_activity
 from app.platform_operations.kubernetes.secret_reveal.service import build_secret_reveal_settings_context
-from app.rbac.decorators import permission_required
+from app.platform_operations.notifications.feedback import queue_operational_feedback
+from app.platform_operations.notifications.service import record_operational_activity
 
 bp = Blueprint('secret_reveal', __name__)
 

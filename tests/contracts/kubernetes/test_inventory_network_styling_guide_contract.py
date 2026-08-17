@@ -8,8 +8,8 @@ def read(relative: str) -> str:
 
 
 def test_service_and_ingress_use_shared_network_inventory_contracts() -> None:
-    service_detail = read('app/templates/inventory/kubernetes/services/partials/_service_detail_content.html')
-    ingress_detail = read('app/templates/inventory/kubernetes/ingresses/partials/_ingress_detail_content.html')
+    service_detail = read('app/templates/kubernetes/inventory/services/partials/_service_detail_content.html')
+    ingress_detail = read('app/templates/kubernetes/inventory/ingresses/partials/_ingress_detail_content.html')
     pattern = read('docs/design/patterns/KUBERNETES_NETWORK_INVENTORY.md')
 
     for source in (service_detail, ingress_detail):
@@ -36,7 +36,7 @@ def test_shared_evidence_tiles_do_not_render_empty_gray_grid_cells() -> None:
 
 def test_metadata_collection_avoids_nested_vertical_scroll() -> None:
     metadata = read('app/templates/components/technical_metadata_collection.html')
-    pod_detail = read('app/templates/inventory/kubernetes/pods/partials/_pod_detail_content.html')
+    pod_detail = read('app/templates/kubernetes/inventory/pods/partials/_pod_detail_content.html')
 
     assert 'max-h-56 overflow-y-auto' not in metadata
     assert 'overflow-hidden rounded-lg border' in metadata
@@ -44,7 +44,7 @@ def test_metadata_collection_avoids_nested_vertical_scroll() -> None:
 
 
 def test_volume_source_uses_body_typography() -> None:
-    pod_detail = read('app/templates/inventory/kubernetes/pods/partials/_pod_detail_content.html')
+    pod_detail = read('app/templates/kubernetes/inventory/pods/partials/_pod_detail_content.html')
     technical = read('app/templates/components/technical_value.html')
 
     assert "technical_value.render(volume.source, break_all=true, size='body')" in pod_detail
@@ -53,8 +53,8 @@ def test_volume_source_uses_body_typography() -> None:
 
 
 def test_node_scheduling_and_namespace_security_use_available_space() -> None:
-    node = read('app/templates/inventory/kubernetes/nodes/partials/_node_detail_content.html')
-    namespace = read('app/templates/inventory/kubernetes/namespaces/partials/_namespace_detail_content.html')
+    node = read('app/templates/kubernetes/inventory/nodes/partials/_node_detail_content.html')
+    namespace = read('app/templates/kubernetes/inventory/namespaces/partials/_namespace_detail_content.html')
 
     assert 'columns=5' in node
     assert 'Scheduling Taints' in node

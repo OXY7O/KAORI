@@ -8,8 +8,8 @@ def read(path: str) -> str:
 
 
 def test_user_restore_returns_to_inactive_administration() -> None:
-    service = read('app/users/service.py')
-    routes = read('app/users/routes.py')
+    service = read('app/access/users/service.py')
+    routes = read('app/access/users/routes.py')
     assert 'def restore_user(target: User)' in service
     restore_block = service.split('def restore_user(target: User)', 1)[1]
     assert 'target.deleted_at = None' in restore_block
@@ -19,8 +19,8 @@ def test_user_restore_returns_to_inactive_administration() -> None:
 
 
 def test_last_super_admin_mutations_use_transaction_safe_boundary() -> None:
-    service = read('app/users/service.py')
-    routes = read('app/users/routes.py')
+    service = read('app/access/users/service.py')
+    routes = read('app/access/users/routes.py')
     assert 'def lock_active_super_admin_boundary(target: User)' in service
     assert '.with_for_update()' in service
     assert 'db.session.refresh(target)' in service
@@ -32,9 +32,9 @@ def test_last_super_admin_mutations_use_transaction_safe_boundary() -> None:
 
 
 def test_user_management_hero_matches_inventory_hero_contract() -> None:
-    template = read('app/templates/users/partials/_hero.html')
-    directory = read('app/users/directory.py')
-    routes = read('app/users/routes.py')
+    template = read('app/templates/access/users/partials/_hero.html')
+    directory = read('app/access/users/directory.py')
+    routes = read('app/access/users/routes.py')
     assert 'page_hero.context_card(' in template
     assert 'page_hero.context_panel_classes()' not in template
     assert "'Identity & Access'" in template
@@ -52,8 +52,8 @@ def test_user_management_hero_matches_inventory_hero_contract() -> None:
 
 
 def test_user_management_posture_matches_permission_registry_overview_structure() -> None:
-    summary = read('app/templates/users/partials/_summary_cards.html')
-    directory = read('app/users/directory.py')
+    summary = read('app/templates/access/users/partials/_summary_cards.html')
+    directory = read('app/access/users/directory.py')
     assert 'Account &amp; Identity Posture' in summary
     assert 'grid gap-px bg-outline-subtle md:grid-cols-2 xl:grid-cols-4' in summary
     assert 'border-t border-outline-subtle bg-surface-hover' in summary
@@ -67,10 +67,10 @@ def test_user_management_posture_matches_permission_registry_overview_structure(
 
 
 def test_user_directory_uses_shared_kaori_loading_filters_labels_and_expand_details() -> None:
-    content = read('app/templates/users/partials/_content.html')
-    filters = read('app/templates/users/partials/_filters.html')
-    table = read('app/templates/users/partials/_table.html')
-    detail = read('app/templates/users/partials/_user_detail.html')
+    content = read('app/templates/access/users/partials/_content.html')
+    filters = read('app/templates/access/users/partials/_filters.html')
+    table = read('app/templates/access/users/partials/_table.html')
+    detail = read('app/templates/access/users/partials/_user_detail.html')
     assert '{% import "components/loading_bar.html" as loading_bar %}' in content
     assert "loading_bar.render('users-refresh-indicator'" in content
     assert '{% import "components/table.html" as table_ui %}' in filters
@@ -91,7 +91,7 @@ def test_user_directory_uses_shared_kaori_loading_filters_labels_and_expand_deta
 
 
 def test_user_directory_pagination_uses_current_kaori_rows_and_previous_next_contract() -> None:
-    table = read('app/templates/users/partials/_table.html')
+    table = read('app/templates/access/users/partials/_table.html')
     assert (
         "Showing {{ pagination.start_item }}–{{ pagination.end_item }} of {{ pagination.total_items }} {{ pagination_ui.resource_name('Users', pagination.total_items) }}"
         in table
@@ -105,11 +105,11 @@ def test_user_directory_pagination_uses_current_kaori_rows_and_previous_next_con
 
 
 def test_user_delete_uses_shared_destructive_confirmation_component() -> None:
-    index = read('app/templates/users/index.html')
-    detail = read('app/templates/users/partials/_user_detail.html')
+    index = read('app/templates/access/users/index.html')
+    detail = read('app/templates/access/users/partials/_user_detail.html')
     modal = read('app/templates/components/destructive_confirmation_modal.html')
     script = read('app/static/js/destructive_confirmation_modal.js')
-    assert not (ROOT / 'app/templates/users/partials/_delete_modal.html').exists()
+    assert not (ROOT / 'app/templates/access/users/partials/_delete_modal.html').exists()
     assert '{% import "components/destructive_confirmation_modal.html" as destructive_confirmation %}' in index
     assert 'destructive_confirmation.render(' in index
     assert 'destructive_confirmation_modal.js' in index
@@ -121,10 +121,10 @@ def test_user_delete_uses_shared_destructive_confirmation_component() -> None:
 
 
 def test_access_administration_uses_shared_persisted_audit_helper() -> None:
-    service = read('app/users/service.py')
-    routes = read('app/users/routes.py')
+    service = read('app/access/users/service.py')
+    routes = read('app/access/users/routes.py')
     helper = read('app/common/admin_audit.py')
-    readme = read('app/users/README.md')
+    readme = read('app/access/users/README.md')
     assert 'def record_admin_event(' not in service
     assert 'from app.common.admin_audit import record_admin_event' in routes
     assert 'AuditEvent()' in helper
@@ -133,7 +133,7 @@ def test_access_administration_uses_shared_persisted_audit_helper() -> None:
 
 
 def test_password_reset_revokes_existing_sessions_through_credential_generation() -> None:
-    readme = read('app/users/README.md')
+    readme = read('app/access/users/README.md')
     model = read('app/models/user.py')
     login_extension = read('app/extensions/login.py')
     assert 'Password Reset Session Boundary' in readme
@@ -144,7 +144,7 @@ def test_password_reset_revokes_existing_sessions_through_credential_generation(
 
 
 def test_reset_password_matches_kaori_hero_impact_and_secure_delivery_contract() -> None:
-    template = read('app/templates/users/reset_password.html')
+    template = read('app/templates/access/users/reset_password.html')
     assert 'page_hero.context_card(' in template
     assert 'page_hero.context_panel_classes()' not in template
     assert "'Identity & Access'" in template
@@ -171,8 +171,8 @@ def test_access_main_right_rails_are_sticky_with_shared_desktop_offset() -> None
     # Sticky is required when a page intentionally keeps a main-content right rail.
     # Full-width registry pages must not retain an empty rail only to satisfy this contract.
     required = {
-        'app/templates/users/form.html': 2,
-        'app/templates/users/reset_password.html': 1,
+        'app/templates/access/users/form.html': 2,
+        'app/templates/access/users/reset_password.html': 1,
         'app/templates/access/identity_providers/partials/_provider_guidance.html': 1,
         'app/templates/access/identity_providers/directory_provisioning.html': 1,
         'app/templates/access/roles/form.html': 1,

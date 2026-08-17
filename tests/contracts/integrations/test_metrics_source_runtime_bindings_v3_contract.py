@@ -45,8 +45,8 @@ def test_metrics_bindings_use_kaori_table_and_native_create_dialog() -> None:
 
 
 def test_metrics_source_runtime_history_filters_are_server_side() -> None:
-    routes = read('app/metrics_sources/routes.py')
-    presentation = read('app/metrics_sources/presentation.py')
+    routes = read('app/integrations/observability/metrics_source/application/routes.py')
+    presentation = read('app/integrations/observability/metrics_source/application/presentation.py')
 
     for token in ['history_trigger', 'history_health', 'history_readiness']:
         assert token in routes

@@ -3,7 +3,7 @@ from pathlib import Path
 from jinja2 import Environment
 
 ROOT = Path(__file__).resolve().parents[3]
-TEMPLATES = ROOT / 'app' / 'templates' / 'jobs' / 'executions'
+TEMPLATES = ROOT / 'app' / 'templates' / 'platform_operations' / 'jobs' / 'executions'
 
 
 def _read(relative_path: str) -> str:
@@ -75,7 +75,7 @@ def test_changed_execution_templates_parse_and_follow_source_hygiene() -> None:
 
 
 def test_htmx_fragments_remain_embedded_after_refresh() -> None:
-    source = (ROOT / 'app' / 'jobs' / 'routes.py').read_text(encoding='utf-8')
+    source = (ROOT / 'app' / 'platform_operations' / 'jobs' / 'routes.py').read_text(encoding='utf-8')
 
     assert "if fragment in {'active', 'registry', 'queues'}" in source
     assert "fragment_context['embedded'] = True" in source

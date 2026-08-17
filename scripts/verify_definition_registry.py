@@ -11,15 +11,15 @@ CATALOG_ROOT = ROOT / 'app' / 'definitions' / 'catalogs'
 
 EXPECTED = {
     'intelligence/rules.yaml': 'intelligence_rules',
-    'rbac/access.yaml': 'rbac_access',
-    'knowledge/system_runbooks.yaml': 'system_runbooks',
-    'automation/production_readiness.yaml': 'automation_production_readiness',
-    'auth/identity_provider/providers.yaml': 'identity_providers',
-    'jobs/registered_jobs.yaml': 'registered_jobs',
-    'analytics/kubernetes_datasets.yaml': 'kubernetes_analytics_datasets',
+    'access/rbac/access.yaml': 'rbac_access',
+    'intelligence/knowledge/system_runbooks.yaml': 'system_runbooks',
+    'intelligence/automation/production_readiness.yaml': 'automation_production_readiness',
+    'access/authentication/identity_provider/providers.yaml': 'identity_providers',
+    'platform_operations/jobs/registered_jobs.yaml': 'registered_jobs',
+    'kubernetes/analytics/datasets.yaml': 'kubernetes_analytics_datasets',
     'reports/catalog.yaml': 'report_catalog',
     'reports/coverage.yaml': 'report_coverage_catalog',
-    'notifications/event_categories.yaml': 'notification_event_categories',
+    'platform_operations/notifications/event_categories.yaml': 'notification_event_categories',
     'integrations/taxonomy.yaml': 'integration_taxonomy',
     'integrations/compatibility.yaml': 'integration_compatibility',
     'integrations/orchestration/container_orchestrator/providers/kubernetes.yaml': 'integration_provider_contract',
@@ -74,7 +74,7 @@ def main() -> int:
         rules = docs['intelligence/rules.yaml']['rules']
         unique(rules, 'rule_key', 'intelligence rules')
 
-        access = docs['rbac/access.yaml']
+        access = docs['access/rbac/access.yaml']
         permission_keys = unique(access['permissions'], 'key', 'permissions')
         unique(access['system_roles'], 'key', 'system roles')
         for role in access['system_roles']:
@@ -82,7 +82,7 @@ def main() -> int:
             if unknown:
                 raise ValueError(f'role {role["key"]} references unknown permissions: {", ".join(unknown)}')
 
-        jobs = docs['jobs/registered_jobs.yaml']['jobs']
+        jobs = docs['platform_operations/jobs/registered_jobs.yaml']['jobs']
         unique(jobs, 'key', 'registered jobs')
         unique(jobs, 'operation', 'registered jobs')
         for job in jobs:
@@ -95,13 +95,13 @@ def main() -> int:
                 if ':' not in value:
                     raise ValueError(f'job {job["key"]} has invalid {field}')
 
-        runbooks = docs['knowledge/system_runbooks.yaml']['runbooks']
+        runbooks = docs['intelligence/knowledge/system_runbooks.yaml']['runbooks']
         unique(runbooks, 'runbook_key', 'system runbooks')
         for runbook in runbooks:
             if runbook.get('approval_policy') == 'allowed' and not runbook.get('recovery'):
                 raise ValueError(f'runbook {runbook["runbook_key"]} cannot auto-allow without recovery metadata')
 
-        readiness = docs['automation/production_readiness.yaml']
+        readiness = docs['intelligence/automation/production_readiness.yaml']
         checks = readiness.get('required_checks') or []
         stages = readiness.get('rollout_stages') or []
         if len(checks) != len(set(checks)) or len(stages) != len(set(stages)):
@@ -109,10 +109,10 @@ def main() -> int:
         if not stages or stages[0] != 'disabled' or stages[-1] != 'production':
             raise ValueError('automation rollout must start disabled and end production')
 
-        providers = docs['auth/identity_provider/providers.yaml']['providers']
+        providers = docs['access/authentication/identity_provider/providers.yaml']['providers']
         unique(providers, 'provider_key', 'identity providers')
 
-        analytics = docs['analytics/kubernetes_datasets.yaml']
+        analytics = docs['kubernetes/analytics/datasets.yaml']
         datasets = list(analytics['datasets']) + [analytics['forecast_dataset']]
         unique(datasets, 'key', 'analytics datasets')
         for dataset in datasets:
@@ -142,7 +142,7 @@ def main() -> int:
                 'Object Storage report coverage must be Published after canonical contracts are registered'
             )
 
-        notifications = docs['notifications/event_categories.yaml']
+        notifications = docs['platform_operations/notifications/event_categories.yaml']
         category_keys = set(notifications['categories'])
         if notifications.get('default_category') not in category_keys:
             raise ValueError('notification default_category is unknown')

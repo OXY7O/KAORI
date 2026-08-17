@@ -2,7 +2,7 @@ import re
 from pathlib import Path
 
 ANALYTICS_ROOT = Path('app/templates/analytics')
-KUBERNETES_ROOT = ANALYTICS_ROOT / 'kubernetes'
+KUBERNETES_ROOT = Path('app/templates/kubernetes/analytics')
 RAW_GUIDANCE_PATTERN = re.compile(
     r'>\s*(How To Read|What To Do|What To Watch|Operational Reading|Recommended Action|Recommended Review Path|Forecast Decision|Operational Guidance)\s*<',
     re.IGNORECASE,

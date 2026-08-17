@@ -14,6 +14,7 @@ run_static() {
     python scripts/verify_engineering_standard.py
     python scripts/verify_definition_registry.py
     python scripts/verify_domain_namespace_architecture.py
+    python scripts/verify_application_package_architecture.py
     python scripts/verify_welcome_final_lock.py
     python scripts/verify_python_syntax.py
     python scripts/verify_single_pdf_engine.py
@@ -94,6 +95,7 @@ run_static() {
     python scripts/verify_code_health.py
     python scripts/verify_code_health_baseline_integrity.py
     python scripts/verify_migration_graph.py
+    python scripts/verify_test_source_paths.py
     python scripts/verify_test_taxonomy.py
     python scripts/verify_feature_test_coverage.py
     python scripts/verify_ui_reuse.py

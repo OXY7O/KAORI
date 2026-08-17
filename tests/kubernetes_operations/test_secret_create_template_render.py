@@ -42,7 +42,7 @@ def _template_environment() -> Environment:
 def test_create_secret_template_renders_form_context_creation_controls() -> None:
     rendered = (
         _template_environment()
-        .get_template('kubernetes_operations/secrets/create.html')
+        .get_template('kubernetes/operations/secrets/create.html')
         .render(
             submitted={},
             opaque_entries=[{'key': '', 'value': '', 'visible': False}],

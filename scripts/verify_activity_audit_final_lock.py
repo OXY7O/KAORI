@@ -19,18 +19,18 @@ def main() -> int:
     errors: list[str] = []
     routes = read('app/access/activity_audit/routes.py')
     service = read('app/access/activity_audit/service.py')
-    notification_routes = read('app/notifications/routes.py')
-    queries = read('app/notifications/queries.py')
+    notification_routes = read('app/platform_operations/notifications/routes.py')
+    queries = read('app/platform_operations/notifications/queries.py')
     model = read('app/models/notification.py')
-    actors = read('app/notifications/actors.py')
-    writer = read('app/notifications/writer.py')
-    auth_audit = read('app/auth/audit.py')
-    event_catalog = read('app/notifications/event_catalog.py')
+    actors = read('app/platform_operations/notifications/actors.py')
+    writer = read('app/platform_operations/notifications/writer.py')
+    auth_audit = read('app/access/authentication/audit.py')
+    event_catalog = read('app/platform_operations/notifications/event_catalog.py')
     page = read('app/templates/access/activity_audit/index.html')
     summary = read('app/templates/access/activity_audit/partials/_activity_summary_cards.html')
     table = read('app/templates/access/activity_audit/partials/_activity_table_card.html')
     migration = read('migrations/versions/20260817_activity_audit_evidence_foundation.py')
-    retention = read('app/retention/domains/operational_activity.py')
+    retention = read('app/platform_operations/data_lifecycle/retention/domains/operational_activity.py')
 
     for required in (
         "@permission_required('activity_audit.view')",
@@ -45,11 +45,11 @@ def main() -> int:
         errors,
     )
     for legacy in (
-        'app/templates/notifications/activity.html',
-        'app/templates/notifications/partials/_activity_detail.html',
-        'app/templates/notifications/partials/_activity_summary_cards.html',
-        'app/templates/notifications/partials/_activity_table_card.html',
-        'app/templates/notifications/partials/_activity_table_content.html',
+        'app/templates/platform_operations/notifications/activity.html',
+        'app/templates/platform_operations/notifications/partials/_activity_detail.html',
+        'app/templates/platform_operations/notifications/partials/_activity_summary_cards.html',
+        'app/templates/platform_operations/notifications/partials/_activity_table_card.html',
+        'app/templates/platform_operations/notifications/partials/_activity_table_content.html',
     ):
         require(not (ROOT / legacy).exists(), f'Legacy Activity Audit template remains: {legacy}', errors)
 

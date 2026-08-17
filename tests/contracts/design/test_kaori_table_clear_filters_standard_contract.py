@@ -46,13 +46,13 @@ def test_shared_kaori_filter_surfaces_expose_clear_filters() -> None:
 
 def test_specialized_filtered_tables_follow_the_same_clear_contract() -> None:
     specialized = (
-        'analytics/kubernetes/alerts/partials/_alerts_table.html',
-        'analytics/kubernetes/alerts/partials/_anomalies_table.html',
+        'kubernetes/analytics/alerts/partials/_alerts_table.html',
+        'kubernetes/analytics/alerts/partials/_anomalies_table.html',
         'platform_operations/data_lifecycle/partials/_history.html',
         'platform_operations/kubernetes/secret_reveal/_namespace_policy_section.html',
         'reports/report_templates/index.html',
         'reports/schedules/index.html',
-        'users/partials/_content.html',
+        'access/users/partials/_content.html',
     )
     for relative in specialized:
         source = read(TEMPLATES / relative)

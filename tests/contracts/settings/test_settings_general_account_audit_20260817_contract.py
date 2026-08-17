@@ -10,8 +10,6 @@ def read(relative: str) -> str:
 def test_settings_stays_two_workspace_navigation_without_redundant_overview() -> None:
     menu = read('app/templates/components/navigation/settings_menu.html')
     routes = read('app/settings/routes.py')
-    general_actions = read('app/settings/general/actions.py')
-    account_actions = read('app/settings/account/actions.py')
     readme = read('app/settings/README.md')
 
     assert 'General' in menu
@@ -23,7 +21,6 @@ def test_settings_stays_two_workspace_navigation_without_redundant_overview() ->
 
 
 def test_general_and_account_share_loading_and_action_feedback_contracts() -> None:
-    routes = read('app/settings/routes.py')
     general_actions = read('app/settings/general/actions.py')
     account_actions = read('app/settings/account/actions.py')
     general_page = read('app/templates/settings/general/partials/_page_content.html')

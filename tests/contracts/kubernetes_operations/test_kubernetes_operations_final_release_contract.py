@@ -11,13 +11,13 @@ def read(relative: str) -> str:
 
 def test_operations_ordinary_crud_and_protected_reveal_use_form_with_right_context() -> None:
     paths = (
-        'app/templates/kubernetes_operations/configmaps/create.html',
-        'app/templates/kubernetes_operations/configmaps/update.html',
-        'app/templates/kubernetes_operations/configmaps/delete.html',
-        'app/templates/kubernetes_operations/secrets/create.html',
-        'app/templates/kubernetes_operations/secrets/replace.html',
-        'app/templates/kubernetes_operations/secrets/delete.html',
-        'app/templates/kubernetes_operations/secrets/reveal.html',
+        'app/templates/kubernetes/operations/configmaps/create.html',
+        'app/templates/kubernetes/operations/configmaps/update.html',
+        'app/templates/kubernetes/operations/configmaps/delete.html',
+        'app/templates/kubernetes/operations/secrets/create.html',
+        'app/templates/kubernetes/operations/secrets/replace.html',
+        'app/templates/kubernetes/operations/secrets/delete.html',
+        'app/templates/kubernetes/operations/secrets/reveal.html',
     )
 
     for relative in paths:
@@ -30,7 +30,7 @@ def test_operations_ordinary_crud_and_protected_reveal_use_form_with_right_conte
 
 
 def test_special_tls_rotation_retains_reviewed_full_width_workspace() -> None:
-    source = read('app/templates/kubernetes_operations/secrets/tls_rotation.html')
+    source = read('app/templates/kubernetes/operations/secrets/tls_rotation.html')
     assert 'data-kubernetes-operation-layout="full-width-v2"' in source
     assert 'workflow_control(' in source
 
@@ -44,8 +44,8 @@ def test_shared_operation_component_keeps_special_workflow_and_embedded_action_p
 
 
 def test_operations_authorization_and_cluster_prerequisite_are_owned_inside_route_permissions() -> None:
-    root_routes = read('app/kubernetes_operations/routes.py')
-    operation_flow = read('app/kubernetes_operations/operation_flow.py')
+    root_routes = read('app/kubernetes/operations/routes.py')
+    operation_flow = read('app/kubernetes/operations/operation_flow.py')
 
     assert '.before_request' not in root_routes
     assert 'has_registered_clusters' not in root_routes

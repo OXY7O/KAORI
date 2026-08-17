@@ -18,24 +18,24 @@ def _load(monkeypatch, name: str, relative: str):
 
 
 def _load_workload_modules(monkeypatch):
-    for name in ('app', 'app.analytics', 'app.analytics.kubernetes.common', 'app.analytics.kubernetes.workload'):
+    for name in ('app', 'app.analytics', 'app.kubernetes.analytics.common', 'app.kubernetes.analytics.workload'):
         monkeypatch.setitem(sys.modules, name, ModuleType(name))
 
-    base_service = ModuleType('app.analytics.kubernetes.common.base_service')
+    base_service = ModuleType('app.kubernetes.analytics.common.base_service')
     base_service.bytes_to_gib = lambda value: round(value / 1024**3, 2)
     base_service.safe_round = round
     base_service.safe_percent = lambda value, total: max(0, min(value / total * 100, 100)) if total else 0
     base_service.raw_percent = lambda value, total: value / total * 100 if total else 0
-    monkeypatch.setitem(sys.modules, 'app.analytics.kubernetes.common.base_service', base_service)
+    monkeypatch.setitem(sys.modules, 'app.kubernetes.analytics.common.base_service', base_service)
 
-    coercion = ModuleType('app.analytics.shared.coercion')
+    coercion = ModuleType('app.common.analytics.coercion')
     coercion.safe_float = lambda value: float(value or 0)
-    monkeypatch.setitem(sys.modules, 'app.analytics.shared.coercion', coercion)
+    monkeypatch.setitem(sys.modules, 'app.common.analytics.coercion', coercion)
 
-    _load(monkeypatch, 'app.analytics.kubernetes.workload.formatting', 'app/analytics/kubernetes/workload/formatting.py')
-    quota = _load(monkeypatch, 'app.analytics.kubernetes.workload.quota', 'app/analytics/kubernetes/workload/quota.py')
-    mapping = _load(monkeypatch, 'app.analytics.kubernetes.workload.mapping', 'app/analytics/kubernetes/workload/mapping.py')
-    domain = _load(monkeypatch, 'app.analytics.kubernetes.workload.domain', 'app/analytics/kubernetes/workload/domain.py')
+    _load(monkeypatch, 'app.kubernetes.analytics.workload.formatting', 'app/kubernetes/analytics/workload/formatting.py')
+    quota = _load(monkeypatch, 'app.kubernetes.analytics.workload.quota', 'app/kubernetes/analytics/workload/quota.py')
+    mapping = _load(monkeypatch, 'app.kubernetes.analytics.workload.mapping', 'app/kubernetes/analytics/workload/mapping.py')
+    domain = _load(monkeypatch, 'app.kubernetes.analytics.workload.domain', 'app/kubernetes/analytics/workload/domain.py')
     return quota, mapping, domain
 
 

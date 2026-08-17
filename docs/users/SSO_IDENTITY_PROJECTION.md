@@ -9,7 +9,7 @@ User
 Role
 ```
 
-No ORM model is located inside `app/auth/` or `app/users/`.
+No ORM model is located inside `app/access/authentication/` or `app/access/users/`.
 
 ## Projection identity
 

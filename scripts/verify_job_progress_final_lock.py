@@ -18,9 +18,9 @@ def main() -> int:
 
     component = read('app/templates/components/progress_bar.html')
     presentation = read('app/common/job_execution_presentation.py')
-    service = read('app/jobs/service.py')
-    execution = read('app/jobs/execution.py')
-    jobs_readme = read('app/jobs/README.md')
+    service = read('app/platform_operations/jobs/service.py')
+    execution = read('app/platform_operations/jobs/execution.py')
+    jobs_readme = read('app/platform_operations/jobs/README.md')
 
     for required in (
         'macro job_progress(',
@@ -78,11 +78,11 @@ def main() -> int:
             errors.append(f'Job identity/progress presentation missing: {required}')
 
     shared_surfaces = (
-        'app/templates/jobs/configuration/_execution_activity.html',
-        'app/templates/jobs/executions/partials/_active_jobs.html',
-        'app/templates/jobs/executions/partials/_registry.html',
-        'app/templates/jobs/executions/partials/_execution_details.html',
-        'app/templates/notifications/components/_activity_center_items.html',
+        'app/templates/platform_operations/jobs/configuration/_execution_activity.html',
+        'app/templates/platform_operations/jobs/executions/partials/_active_jobs.html',
+        'app/templates/platform_operations/jobs/executions/partials/_registry.html',
+        'app/templates/platform_operations/jobs/executions/partials/_execution_details.html',
+        'app/templates/platform_operations/notifications/components/_activity_center_items.html',
         'app/templates/reports/generated/detail.html',
     )
     for relative in shared_surfaces:
@@ -92,13 +92,13 @@ def main() -> int:
         if 'progress_bar.determinate' in source:
             errors.append(f'{relative}: legacy determinate renderer remains')
 
-    notification_item = read('app/templates/notifications/components/_activity_center_items.html')
+    notification_item = read('app/templates/platform_operations/notifications/components/_activity_center_items.html')
     if '<div class="mt-2 w-full">{{ progress_bar.job_progress(' not in notification_item:
         errors.append('Notification Active Work must give Job Progress the full available track width')
 
-    active_jobs = read('app/templates/jobs/executions/partials/_active_jobs.html')
-    queue_activity = read('app/templates/jobs/executions/partials/_queue_activity.html')
-    registry = read('app/templates/jobs/executions/partials/_registry.html')
+    active_jobs = read('app/templates/platform_operations/jobs/executions/partials/_active_jobs.html')
+    queue_activity = read('app/templates/platform_operations/jobs/executions/partials/_queue_activity.html')
+    registry = read('app/templates/platform_operations/jobs/executions/partials/_registry.html')
     for source, required in (
         (active_jobs, "loading_bar.render('active-job-loading', label='Refreshing Active Work')"),
         (

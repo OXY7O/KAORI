@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
-from app.analytics.kubernetes import job_adapter
-from app.analytics.kubernetes.materialization.catalog import (
+from app.kubernetes.analytics import job_adapter
+from app.kubernetes.analytics.materialization.catalog import (
     source_binding_capabilities,
     source_technical_capabilities,
 )
@@ -71,7 +71,7 @@ def test_on_demand_request_only_attaches_to_matching_fleet_work_item() -> None:
 
 
 def test_metrics_source_consumer_reduces_domain_capabilities_to_query_transport() -> None:
-    from app.metrics_sources.consumer import MetricsConsumer
+    from app.integrations.observability.metrics_source.application.consumer import MetricsConsumer
 
     assert MetricsConsumer._execution_capabilities(
         (
@@ -85,7 +85,7 @@ def test_metrics_source_consumer_reduces_domain_capabilities_to_query_transport(
 
 
 def test_non_live_context_still_returns_utilization_service(monkeypatch) -> None:
-    from app.analytics.kubernetes.common import context as analytics_context
+    from app.kubernetes.analytics.common import context as analytics_context
 
     cluster = SimpleNamespace(
         id='cluster-b',

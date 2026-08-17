@@ -14,20 +14,20 @@ def main() -> int:
     errors: list[str] = []
 
     required_paths = (
-        'app/auth/identity_provider/catalog.py',
-        'app/auth/identity_provider/configuration.py',
-        'app/auth/identity_provider/registry.py',
-        'app/auth/identity_provider/credential.py',
-        'app/auth/identity_provider/directory.py',
-        'app/auth/identity_provider/adapters/ldap/client.py',
-        'app/auth/identity_provider/adapters/ldap/credential.py',
-        'app/auth/identity_provider/adapters/ldap/directory.py',
-        'app/auth/identity_provider/providers/google/browser.py',
-        'app/auth/identity_provider/providers/github/browser.py',
-        'app/identity_providers/routes.py',
-        'app/identity_providers/forms.py',
-        'app/identity_providers/service.py',
-        'app/definitions/catalogs/auth/identity_provider/providers.yaml',
+        'app/access/authentication/identity_provider/catalog.py',
+        'app/access/authentication/identity_provider/configuration.py',
+        'app/access/authentication/identity_provider/registry.py',
+        'app/access/authentication/identity_provider/credential.py',
+        'app/access/authentication/identity_provider/directory.py',
+        'app/access/authentication/identity_provider/adapters/ldap/client.py',
+        'app/access/authentication/identity_provider/adapters/ldap/credential.py',
+        'app/access/authentication/identity_provider/adapters/ldap/directory.py',
+        'app/access/authentication/identity_provider/providers/google/browser.py',
+        'app/access/authentication/identity_provider/providers/github/browser.py',
+        'app/access/identity_providers/routes.py',
+        'app/access/identity_providers/forms.py',
+        'app/access/identity_providers/service.py',
+        'app/definitions/catalogs/access/authentication/identity_provider/providers.yaml',
         'app/templates/access/identity_providers/index.html',
     )
     for path in required_paths:
@@ -35,14 +35,14 @@ def main() -> int:
             errors.append(f'missing canonical Identity Provider path: {path}')
 
     forbidden_paths = (
-        'app/auth/providers',
-        'app/auth/provider_configuration.py',
-        'app/users/provider_forms.py',
-        'app/users/external.py',
-        'app/users/provisioning_proof.py',
-        'app/templates/users/providers',
-        'app/templates/users/external_identities.html',
-        'app/definitions/catalogs/auth/providers.yaml',
+        'app/access/authentication/providers',
+        'app/access/authentication/provider_configuration.py',
+        'app/access/users/provider_forms.py',
+        'app/access/users/external.py',
+        'app/access/users/provisioning_proof.py',
+        'app/templates/access/users/providers',
+        'app/templates/access/users/external_identities.html',
+        'app/definitions/catalogs/access/authentication/providers.yaml',
     )
     for path in forbidden_paths:
         if (ROOT / path).exists():
@@ -56,13 +56,13 @@ def main() -> int:
         if forbidden in model:
             errors.append(f'IdentityProvider model retains adapter/product-specific field: {forbidden}')
 
-    catalog = read('app/auth/identity_provider/catalog.py')
+    catalog = read('app/access/authentication/identity_provider/catalog.py')
     if 'load_definition_document(' not in catalog:
         errors.append('Identity Provider provider definitions must be loaded from the source-controlled catalog')
     if 'AuthProviderType' in catalog:
         errors.append('Identity Provider core must not restore a product enum')
 
-    routes = read('app/identity_providers/routes.py')
+    routes = read('app/access/identity_providers/routes.py')
     if "url_prefix='/access/identity-providers'" not in routes:
         errors.append('Identity Provider administrative workspace must own /access/identity-providers')
     if 'get_directory_provider_adapter(selected_provider.adapter_key)' not in routes:
@@ -71,7 +71,7 @@ def main() -> int:
         if forbidden in routes:
             errors.append(f'Identity Provider application route contains provider-specific dispatch: {forbidden}')
 
-    registry = read('app/auth/identity_provider/registry.py')
+    registry = read('app/access/authentication/identity_provider/registry.py')
     for required in ('_CREDENTIAL_ADAPTERS', '_DIRECTORY_ADAPTERS', '_BROWSER_ADAPTERS'):
         if required not in registry:
             errors.append(f'Identity Provider adapter registry missing: {required}')
@@ -81,7 +81,7 @@ def main() -> int:
         if forbidden in form_js:
             errors.append(f'Identity Provider core form JS contains product/adapter-specific branch: {forbidden}')
 
-    login = read('app/templates/auth/partials/_login_form.html')
+    login = read('app/templates/access/authentication/partials/_login_form.html')
     if 'provider.provider_type' in login:
         errors.append('Login surface must render provider identity from catalog, not provider_type branches')
     if 'row.definition.icon' not in login:

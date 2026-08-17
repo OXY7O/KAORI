@@ -8,16 +8,16 @@ ROOT = Path(__file__).resolve().parents[1]
 
 LOCKED_TEMPLATE_PREFIXES = (
     'app/templates/welcome/',
-    'app/templates/dashboards/kubernetes/',
+    'app/templates/kubernetes/dashboard/',
     'app/templates/inventory/',
     'app/templates/analytics/',
-    'app/templates/kubernetes_operations/',
-    'app/templates/governance/',
+    'app/templates/kubernetes/operations/',
+    'app/templates/kubernetes/governance/',
     'app/templates/integrations/',
     'app/templates/integrations/observability/metrics_source/',
     'app/templates/integrations/observability/alert_source/providers/alertmanager/',
     'app/templates/platform_operations/',
-    'app/templates/jobs/',
+    'app/templates/platform_operations/jobs/',
 )
 
 # Shared domain components may legitimately own a tablist. Page templates may not.
@@ -133,10 +133,10 @@ def main() -> int:
     # Core obsolete compatibility paths are not allowed to return.
     obsolete = (
         'app/static/js/inventory/topology_bootstrap.js',
-        'app/dashboards/kubernetes/snapshot_builder.py',
-        'app/analytics/kubernetes/common/cache.py',
-        'app/templates/inventory/kubernetes/components/_detail_macros.html',
-        'app/kubernetes_operations/secrets/routes.py',
+        'app/kubernetes/dashboard/snapshot_builder.py',
+        'app/kubernetes/analytics/common/cache.py',
+        'app/templates/kubernetes/inventory/components/_detail_macros.html',
+        'app/kubernetes/operations/secrets/routes.py',
     )
     for relative in obsolete:
         if (ROOT / relative).exists():

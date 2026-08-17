@@ -2,12 +2,12 @@ from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
 
-from app.governance.tls_certificates.certificate import (
+from app.kubernetes.governance.tls_certificates.certificate import (
     TLSValidityPolicy,
     classify_certificate_validity,
     hostname_matches_pattern,
 )
-from app.governance.tls_certificates.results import classify_tls_sync_outcome
+from app.kubernetes.governance.tls_certificates.results import classify_tls_sync_outcome
 
 
 def test_validity_policy_preserves_expired_critical_warning_and_healthy_boundaries() -> None:

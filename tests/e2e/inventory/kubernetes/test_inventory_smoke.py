@@ -9,7 +9,7 @@ from app import create_app
 from app.bootstrap import presentation as bootstrap_presentation
 from app.extensions import login as login_extension
 from app.extensions import login_manager
-from app.inventory.kubernetes import routes as inventory_routes
+from app.kubernetes.inventory import routes as inventory_routes
 
 
 class InventorySmokeUser(UserMixin):

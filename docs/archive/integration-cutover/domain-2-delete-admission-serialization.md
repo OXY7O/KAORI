@@ -40,10 +40,10 @@ Revert this patch. No database rollback is required.
 
 ## Changed files
 
-- `app/jobs/service.py`
+- `app/platform_operations/jobs/service.py`
 - `app/integrations/validation/web.py`
-- `app/cluster/sync_jobs.py`
+- `app/kubernetes/cluster/sync_jobs.py`
 - `app/prometheus/service.py`
-- `app/alert_sources/providers/alertmanager/service.py`
-- `app/cluster/service.py`
+- `app/integrations/observability/alert_source/providers/alertmanager/application/service.py`
+- `app/kubernetes/cluster/service.py`
 - corresponding functional test, contract test, and this document

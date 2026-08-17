@@ -8,7 +8,7 @@ def _read(relative: str) -> str:
 
 
 def test_job_configuration_does_not_inspect_queue_activity_on_initial_render() -> None:
-    routes = _read('app/jobs/routes.py')
+    routes = _read('app/platform_operations/jobs/routes.py')
 
     assert "if active_section == 'configuration':" in routes
     assert 'build_job_configuration_summary_context' in routes
@@ -17,8 +17,8 @@ def test_job_configuration_does_not_inspect_queue_activity_on_initial_render() -
 
 
 def test_inventory_manual_dispatch_uses_activity_center_without_progress_toast() -> None:
-    routes = _read('app/jobs/routes.py')
-    workspace = _read('app/templates/jobs/configuration/_job_workspace.html')
+    routes = _read('app/platform_operations/jobs/routes.py')
+    workspace = _read('app/templates/platform_operations/jobs/configuration/_job_workspace.html')
 
     assert 'sync_progress' not in routes
     assert 'sync_progress' not in workspace
@@ -27,8 +27,10 @@ def test_inventory_manual_dispatch_uses_activity_center_without_progress_toast()
 
 
 def test_job_configuration_copy_is_compact_and_planned_catalog_is_removed() -> None:
-    workspace = _read('app/templates/jobs/configuration/_workspace.html')
-    materialization = _read('app/templates/jobs/configuration/definitions/_materialization_job.html')
+    workspace = _read('app/templates/platform_operations/jobs/configuration/_workspace.html')
+    materialization = _read(
+        'app/templates/platform_operations/jobs/configuration/definitions/_materialization_job.html'
+    )
 
     assert 'Centralized orchestration with domain-owned execution.' in workspace
     assert 'Job orchestration is centralized here while execution logic remains in its owning domain.' not in workspace
@@ -39,13 +41,13 @@ def test_job_configuration_copy_is_compact_and_planned_catalog_is_removed() -> N
 
 def test_policy_timeline_and_delivery_channel_cards_use_clear_surfaces() -> None:
     for relative in (
-        'app/templates/jobs/configuration/definitions/inventory_sync.html',
-        'app/templates/jobs/configuration/definitions/tls_certificate_sync.html',
-        'app/templates/jobs/configuration/definitions/_materialization_job.html',
+        'app/templates/platform_operations/jobs/configuration/definitions/inventory_sync.html',
+        'app/templates/platform_operations/jobs/configuration/definitions/tls_certificate_sync.html',
+        'app/templates/platform_operations/jobs/configuration/definitions/_materialization_job.html',
     ):
         source = _read(relative)
         assert 'overflow-hidden rounded-xl border border-outline-subtle bg-surface-card' in source
 
-    report = _read('app/templates/jobs/configuration/definitions/report_schedule.html')
+    report = _read('app/templates/platform_operations/jobs/configuration/definitions/report_schedule.html')
     assert 'article class="rounded-xl border border-outline-subtle bg-surface-card p-4"' in report
     assert 'article class="rounded-xl border border-outline-subtle bg-surface-hover p-4"' not in report

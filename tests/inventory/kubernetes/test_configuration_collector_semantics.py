@@ -11,7 +11,7 @@ import pytest
 pytestmark = pytest.mark.functional
 
 ROOT = Path(__file__).resolve().parents[3]
-COLLECTOR_PATH = ROOT / 'app/inventory/kubernetes/collectors/configuration.py'
+COLLECTOR_PATH = ROOT / 'app/kubernetes/inventory/collectors/configuration.py'
 
 
 def _load_collector(monkeypatch: pytest.MonkeyPatch):

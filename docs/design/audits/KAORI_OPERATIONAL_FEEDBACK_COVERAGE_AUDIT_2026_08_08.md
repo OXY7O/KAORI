@@ -31,7 +31,7 @@ Routine success is deliberately not synonymous with a Notification Center row. K
 
 ## Category Verification
 
-Notification Center category presentation is normalized in `app/notifications/event_catalog.py` without changing stored event keys. The audited categories are:
+Notification Center category presentation is normalized in `app/platform_operations/notifications/event_catalog.py` without changing stored event keys. The audited categories are:
 
 - ConfigMap Management
 - TLS Certificate

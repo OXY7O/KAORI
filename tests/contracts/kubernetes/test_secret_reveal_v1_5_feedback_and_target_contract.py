@@ -31,9 +31,9 @@ def test_htmx_secret_reveal_mutations_deliver_feedback_immediately() -> None:
 
 
 def test_protected_reveal_discovers_only_configured_namespaces_without_namespace_list() -> None:
-    live_service = read('app/kubernetes_operations/secrets/live_service.py')
-    policy = read('app/kubernetes_operations/secrets/reveal_policy.py')
-    protected = read('app/kubernetes_operations/secrets/reveal_service.py')
+    live_service = read('app/kubernetes/operations/secrets/live_service.py')
+    policy = read('app/kubernetes/operations/secrets/reveal_policy.py')
+    protected = read('app/kubernetes/operations/secrets/reveal_service.py')
 
     assert 'def list_verified_namespaces(' in live_service
     verify_block = live_service.split('def list_verified_namespaces(', 1)[1].split('def list_live_secrets(', 1)[0]
@@ -55,8 +55,8 @@ def test_protected_reveal_discovers_only_configured_namespaces_without_namespace
 
 
 def test_protected_reveal_explains_empty_namespace_and_cluster_states() -> None:
-    target = read('app/templates/kubernetes_operations/secrets/_reveal_target_workspace.html')
-    page = read('app/templates/kubernetes_operations/secrets/reveal.html')
+    target = read('app/templates/kubernetes/operations/secrets/_reveal_target_workspace.html')
+    page = read('app/templates/kubernetes/operations/secrets/reveal.html')
 
     assert 'Policy-enabled namespaces are configured, but none is currently available in Kubernetes.' in target
     assert 'Enable a namespace policy under Platform Operations → Secret Reveal first.' in target

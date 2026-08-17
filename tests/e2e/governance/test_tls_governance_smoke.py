@@ -9,7 +9,7 @@ from app import create_app
 from app.bootstrap import presentation as bootstrap_presentation
 from app.extensions import login as login_extension
 from app.extensions import login_manager
-from app.governance.tls_certificates import routes as tls_routes
+from app.kubernetes.governance.tls_certificates import routes as tls_routes
 
 
 class GovernanceSmokeUser(UserMixin):

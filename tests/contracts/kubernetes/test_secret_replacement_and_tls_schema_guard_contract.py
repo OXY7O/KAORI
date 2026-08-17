@@ -8,8 +8,8 @@ def read(relative: str) -> str:
 
 
 def test_secret_replacement_route_uses_the_service_dry_run_contract() -> None:
-    route = read('app/kubernetes_operations/secrets/crud_routes.py')
-    service = read('app/kubernetes_operations/secrets/replace_service.py')
+    route = read('app/kubernetes/operations/secrets/crud_routes.py')
+    service = read('app/kubernetes/operations/secrets/replace_service.py')
 
     assert 'def execute_secret_replacement(' in service
     assert 'dry_run: bool' in service
@@ -19,8 +19,8 @@ def test_secret_replacement_route_uses_the_service_dry_run_contract() -> None:
 
 
 def test_tls_inventory_checks_schema_before_querying_the_evolving_model() -> None:
-    readiness = read('app/governance/tls_certificates/readiness.py')
-    service = read('app/governance/tls_certificates/service.py')
+    readiness = read('app/kubernetes/governance/tls_certificates/readiness.py')
+    service = read('app/kubernetes/governance/tls_certificates/service.py')
     migration = read('migrations/versions/20260731_tls_governance_evidence.py')
 
     for column in ('coverage_state', 'declared_host_count', 'covered_host_count', 'uncovered_hosts'):
@@ -33,11 +33,11 @@ def test_tls_inventory_checks_schema_before_querying_the_evolving_model() -> Non
 
 
 def test_tls_rotation_renders_an_operator_blocker_instead_of_a_500() -> None:
-    route = read('app/kubernetes_operations/secrets/tls_routes.py')
-    governance_route = read('app/governance/tls_certificates/routes.py')
-    service = read('app/governance/tls_certificates/service.py')
-    page = read('app/templates/kubernetes_operations/secrets/tls_rotation.html')
-    blocker = read('app/templates/governance/tls_certificates/partials/_schema_blocker.html')
+    route = read('app/kubernetes/operations/secrets/tls_routes.py')
+    governance_route = read('app/kubernetes/governance/tls_certificates/routes.py')
+    service = read('app/kubernetes/governance/tls_certificates/service.py')
+    page = read('app/templates/kubernetes/operations/secrets/tls_rotation.html')
+    blocker = read('app/templates/kubernetes/governance/tls_certificates/partials/_schema_blocker.html')
 
     assert 'get_tls_certificate_page(request.args)' in route
     assert 'return _schema_blocked_payload(args, schema_readiness)' in service
@@ -51,7 +51,7 @@ def test_tls_rotation_renders_an_operator_blocker_instead_of_a_500() -> None:
     assert 'docker compose -f compose.production.yml run --rm migrate' in blocker
     assert (
         route.count(
-            "'kubernetes_operations/secrets/tls_rotation.html',\n        'kubernetes_operations/secrets/tls_rotation.html'"
+            "'kubernetes/operations/secrets/tls_rotation.html',\n        'kubernetes/operations/secrets/tls_rotation.html'"
         )
         == 0
     )

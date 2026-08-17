@@ -5,7 +5,7 @@ ALERT_REGISTRY = (
     ROOT
     / 'app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_capability_registry.html'
 )
-ALERT_ROUTES = ROOT / 'app/alert_sources/providers/alertmanager/routes.py'
+ALERT_ROUTES = ROOT / 'app/integrations/observability/alert_source/providers/alertmanager/application/routes.py'
 
 
 def read(path: str) -> str:

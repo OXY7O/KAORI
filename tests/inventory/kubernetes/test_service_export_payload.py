@@ -11,9 +11,9 @@ pytestmark = pytest.mark.functional
 
 ROOT = Path(__file__).resolve().parents[3]
 PAYLOAD_PATH = ROOT / 'app/reports/export/payloads/inventory.py'
-INGRESS_SEMANTICS_PATH = ROOT / 'app/inventory/kubernetes/resources/ingress_semantics.py'
-SEMANTICS_PATH = ROOT / 'app/inventory/kubernetes/resources/service_semantics.py'
-STORAGE_SEMANTICS_PATH = ROOT / 'app/inventory/kubernetes/resources/storage_semantics.py'
+INGRESS_SEMANTICS_PATH = ROOT / 'app/kubernetes/inventory/resources/ingress_semantics.py'
+SEMANTICS_PATH = ROOT / 'app/kubernetes/inventory/resources/service_semantics.py'
+STORAGE_SEMANTICS_PATH = ROOT / 'app/kubernetes/inventory/resources/storage_semantics.py'
 
 
 def _load_payload(monkeypatch: pytest.MonkeyPatch):
@@ -24,8 +24,8 @@ def _load_payload(monkeypatch: pytest.MonkeyPatch):
         'app.extensions',
         'app.extensions.db',
         'app.inventory',
-        'app.inventory.kubernetes.formatting',
-        'app.inventory.kubernetes.resources',
+        'app.kubernetes.inventory.formatting',
+        'app.kubernetes.inventory.resources',
         'app.models',
         'app.models.report',
         'app.reports',
@@ -40,7 +40,7 @@ def _load_payload(monkeypatch: pytest.MonkeyPatch):
         'app.common',
         'app.extensions',
         'app.inventory',
-        'app.inventory.kubernetes.resources',
+        'app.kubernetes.inventory.resources',
         'app.models',
         'app.reports',
         'app.reports.export',
@@ -50,7 +50,7 @@ def _load_payload(monkeypatch: pytest.MonkeyPatch):
 
     modules['app.common.inventory_generation'].filter_current_generation = lambda query, _model: query
     modules['app.extensions.db'].db = SimpleNamespace()
-    modules['app.inventory.kubernetes.formatting'].format_kubernetes_size = lambda value: '-' if value is None else str(value)
+    modules['app.kubernetes.inventory.formatting'].format_kubernetes_size = lambda value: '-' if value is None else str(value)
 
     model_names = (
         'Cluster',
@@ -74,30 +74,30 @@ def _load_payload(monkeypatch: pytest.MonkeyPatch):
         monkeypatch.setitem(sys.modules, name, module)
 
     ingress_spec = importlib.util.spec_from_file_location(
-        'app.inventory.kubernetes.resources.ingress_semantics',
+        'app.kubernetes.inventory.resources.ingress_semantics',
         INGRESS_SEMANTICS_PATH,
     )
     assert ingress_spec and ingress_spec.loader
     ingress_semantics = importlib.util.module_from_spec(ingress_spec)
-    monkeypatch.setitem(sys.modules, 'app.inventory.kubernetes.resources.ingress_semantics', ingress_semantics)
+    monkeypatch.setitem(sys.modules, 'app.kubernetes.inventory.resources.ingress_semantics', ingress_semantics)
     ingress_spec.loader.exec_module(ingress_semantics)
 
     semantics_spec = importlib.util.spec_from_file_location(
-        'app.inventory.kubernetes.resources.service_semantics',
+        'app.kubernetes.inventory.resources.service_semantics',
         SEMANTICS_PATH,
     )
     assert semantics_spec and semantics_spec.loader
     semantics = importlib.util.module_from_spec(semantics_spec)
-    monkeypatch.setitem(sys.modules, 'app.inventory.kubernetes.resources.service_semantics', semantics)
+    monkeypatch.setitem(sys.modules, 'app.kubernetes.inventory.resources.service_semantics', semantics)
     semantics_spec.loader.exec_module(semantics)
 
     storage_spec = importlib.util.spec_from_file_location(
-        'app.inventory.kubernetes.resources.storage_semantics',
+        'app.kubernetes.inventory.resources.storage_semantics',
         STORAGE_SEMANTICS_PATH,
     )
     assert storage_spec and storage_spec.loader
     storage_semantics = importlib.util.module_from_spec(storage_spec)
-    monkeypatch.setitem(sys.modules, 'app.inventory.kubernetes.resources.storage_semantics', storage_semantics)
+    monkeypatch.setitem(sys.modules, 'app.kubernetes.inventory.resources.storage_semantics', storage_semantics)
     storage_spec.loader.exec_module(storage_semantics)
 
     spec = importlib.util.spec_from_file_location('service_export_payload_under_test', PAYLOAD_PATH)

@@ -61,13 +61,13 @@ def test_platform_operations_final_lock_is_documented_and_release_gated() -> Non
 def test_platform_operations_is_inside_generic_locked_template_scope() -> None:
     verifier = read('scripts/verify_core_workspace_ui_lock.py')
     assert "'app/templates/platform_operations/'" in verifier
-    assert "'app/templates/jobs/'" in verifier
+    assert "'app/templates/platform_operations/jobs/'" in verifier
 
 
 def test_platform_operations_uses_shared_tab_contracts() -> None:
     kubernetes = read('app/templates/platform_operations/kubernetes/index.html')
-    jobs = read('app/templates/jobs/index.html')
-    executions = read('app/templates/jobs/executions/_workspace.html')
+    jobs = read('app/templates/platform_operations/jobs/index.html')
+    executions = read('app/templates/platform_operations/jobs/executions/_workspace.html')
 
     assert 'components/framed_workspace_tabs.html' in kubernetes
     assert 'framed_workspace_tabs.render(' in kubernetes
@@ -89,7 +89,7 @@ def test_namespace_policy_table_does_not_force_horizontal_desktop_scroll() -> No
 
 
 def test_job_registry_filters_are_htmx_owned_without_inline_handlers() -> None:
-    source = read('app/templates/jobs/executions/partials/_registry.html')
+    source = read('app/templates/platform_operations/jobs/executions/partials/_registry.html')
     assert 'components/table_registry.html' in source
     assert 'table_registry.filter_form' in source
     assert 'table_registry.clear_filters_link' in source
@@ -112,5 +112,6 @@ def test_platform_operations_has_no_accepted_ui_style_debt() -> None:
     assert not [
         path
         for path in baseline
-        if path.startswith('app/templates/platform_operations/') or path.startswith('app/templates/jobs/')
+        if path.startswith('app/templates/platform_operations/')
+        or path.startswith('app/templates/platform_operations/jobs/')
     ]

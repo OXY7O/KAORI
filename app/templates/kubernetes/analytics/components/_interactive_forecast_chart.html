@@ -1,0 +1,55 @@
+{% import "kubernetes/analytics/components/_chart_legend.html" as chart_legend %}
+{% macro resource_legend(resource_key, resource_label) -%}
+    {% set resource_class = 'bg-status-info' if resource_key == 'cpu' else ('bg-kaori-primary' if resource_key == 'memory' else ('bg-status-normal' if resource_key == 'storage' else 'bg-status-warning')) %}
+    {{ chart_legend.render([
+        (resource_label, resource_class) ,
+    ('Warning Threshold', 'bg-status-warning'),
+    ('Critical Threshold', 'bg-status-critical')
+    ], aria_label=resource_label ~ ' Forecast Legend') }}
+    <div class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs font-semibold text-content-secondary"
+         aria-label="Forecast Line Style Legend">
+        <span class="inline-flex items-center gap-2"><span class="h-0.5 w-7 rounded-full bg-content-secondary"></span>Historical</span>
+        <span class="inline-flex items-center gap-2"><span class="w-7 border-t-2 border-dashed border-content-secondary"></span>Projection</span>
+    </div>
+{%- endmacro %}
+{% macro combined_legend() -%}
+    {{ chart_legend.render([
+        ('CPU', 'bg-status-info') ,
+    ('Memory', 'bg-kaori-primary'),
+    ('Storage', 'bg-status-normal'),
+    ('Pods', 'bg-status-warning')
+    ], aria_label='Resource Forecast Legend') }}
+    <div class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs font-semibold text-content-secondary"
+         aria-label="Forecast Line and Threshold Legend">
+        <span class="inline-flex items-center gap-2"><span class="h-0.5 w-7 rounded-full bg-content-secondary"></span>Historical</span>
+        <span class="inline-flex items-center gap-2"><span class="w-7 border-t-2 border-dashed border-content-secondary"></span>Projection</span>
+        <span class="inline-flex items-center gap-2"><span class="w-7 border-t border-dashed border-status-warning"></span>Warning</span>
+        <span class="inline-flex items-center gap-2"><span class="w-7 border-t border-dashed border-status-critical"></span>Critical</span>
+    </div>
+{%- endmacro %}
+{% macro render(chart_id, data_id, title, description, mode='resource', resource_key='', resource_label='', height_class='h-[340px]') -%}
+    <section class="overflow-hidden rounded-lg border border-outline-subtle bg-surface-card"
+             data-kaori-interactive-forecast-chart>
+        <header class="flex flex-col gap-3 border-b border-outline-subtle px-4 py-3 lg:flex-row lg:items-start lg:justify-between">
+            <div class="min-w-0">
+                <h4 class="text-base font-semibold text-content-primary">{{ title }}</h4>
+                <p class="mt-1 text-xs leading-5 text-content-muted">{{ description }}</p>
+            </div>
+            <div class="shrink-0">
+                {% if mode == 'combined' %}
+                    {{ combined_legend() }}
+                {% else %}
+                    {{ resource_legend(resource_key, resource_label) }}
+                {% endif %}
+            </div>
+        </header>
+        <div class="{{ height_class }} p-4" data-kaori-forecast-chart-container>
+            <canvas id="{{ chart_id }}"
+                    data-kaori-forecast-chart
+                    data-chart-mode="{{ mode }}"
+                    data-resource-key="{{ resource_key }}"
+                    data-chart-data-id="{{ data_id }}"
+                    aria-label="{{ title }}"></canvas>
+        </div>
+    </section>
+{%- endmacro %}

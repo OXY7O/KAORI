@@ -8,8 +8,8 @@ def read(relative: str) -> str:
 
 
 def test_notification_center_is_personal_and_distinct_from_activity_audit() -> None:
-    page = read('app/templates/notifications/index.html')
-    content = read('app/templates/notifications/partials/_center_page_content.html')
+    page = read('app/templates/platform_operations/notifications/index.html')
+    content = read('app/templates/platform_operations/notifications/partials/_center_page_content.html')
     navigation = read('app/common/navigation.py')
 
     assert '<h1 class="{{ page_hero.title_classes() }}">Notification Center</h1>' in page
@@ -25,9 +25,9 @@ def test_notification_center_is_personal_and_distinct_from_activity_audit() -> N
 
 
 def test_full_center_uses_standard_filters_loading_and_pagination() -> None:
-    routes = read('app/notifications/routes.py')
-    queries = read('app/notifications/queries.py')
-    content = read('app/templates/notifications/partials/_center_page_content.html')
+    routes = read('app/platform_operations/notifications/routes.py')
+    queries = read('app/platform_operations/notifications/queries.py')
+    content = read('app/templates/platform_operations/notifications/partials/_center_page_content.html')
 
     assert 'get_notification_center_page_context(' in routes
     assert "per_page=_request_int('per_page', 5)" in routes
@@ -52,7 +52,7 @@ def test_full_center_uses_standard_filters_loading_and_pagination() -> None:
 
 
 def test_notification_center_evidence_context_precedes_register() -> None:
-    content = read('app/templates/notifications/partials/_center_page_content.html')
+    content = read('app/templates/platform_operations/notifications/partials/_center_page_content.html')
 
     for token in (
         'Notification Evidence',
@@ -68,8 +68,8 @@ def test_notification_center_evidence_context_precedes_register() -> None:
 
 
 def test_notification_center_uses_quiet_kaori_surfaces() -> None:
-    content = read('app/templates/notifications/partials/_center_page_content.html')
-    items = read('app/templates/notifications/components/_activity_center_items.html')
+    content = read('app/templates/platform_operations/notifications/partials/_center_page_content.html')
+    items = read('app/templates/platform_operations/notifications/components/_activity_center_items.html')
     deck = read('app/templates/components/navigation/_notification_center.html')
     framed_tabs = read('app/templates/components/framed_workspace_tabs.html')
 
@@ -85,7 +85,7 @@ def test_notification_center_uses_quiet_kaori_surfaces() -> None:
 
 
 def test_notification_center_history_uses_kaori_table_contract() -> None:
-    content = read('app/templates/notifications/partials/_center_page_content.html')
+    content = read('app/templates/platform_operations/notifications/partials/_center_page_content.html')
 
     for token in (
         'components/table.html',
@@ -103,10 +103,10 @@ def test_notification_center_history_uses_kaori_table_contract() -> None:
 
 
 def test_notification_center_title_case_and_category_contract() -> None:
-    presentation = read('app/notifications/presentation.py')
-    catalog = read('app/definitions/catalogs/notifications/event_categories.yaml')
-    catalog_py = read('app/notifications/event_catalog.py')
-    content = read('app/templates/notifications/partials/_center_page_content.html')
+    presentation = read('app/platform_operations/notifications/presentation.py')
+    catalog = read('app/definitions/catalogs/platform_operations/notifications/event_categories.yaml')
+    catalog_py = read('app/platform_operations/notifications/event_catalog.py')
+    content = read('app/templates/platform_operations/notifications/partials/_center_page_content.html')
 
     assert 'standardize_activity_title(' in presentation
     for token in (
@@ -137,7 +137,7 @@ def test_notification_center_title_case_and_category_contract() -> None:
 
 
 def test_notification_center_exposes_canonical_runtime_and_lifecycle_boundaries() -> None:
-    content = read('app/templates/notifications/partials/_center_page_content.html')
+    content = read('app/templates/platform_operations/notifications/partials/_center_page_content.html')
 
     assert "url_for('jobs.executions')" in content
     assert 'Canonical queued and running work mirrored from Jobs &amp; Executions.' in content
@@ -154,9 +154,9 @@ def test_notification_center_final_lock_is_documented_and_release_gated() -> Non
 
 
 def test_notification_categories_use_persisted_source_controlled_classification() -> None:
-    queries = read('app/notifications/queries.py')
-    catalog = read('app/definitions/catalogs/notifications/event_categories.yaml')
-    writer = read('app/notifications/writer.py')
+    queries = read('app/platform_operations/notifications/queries.py')
+    catalog = read('app/definitions/catalogs/platform_operations/notifications/event_categories.yaml')
+    writer = read('app/platform_operations/notifications/writer.py')
     assert 'Notification.category_key == normalized_category' in queries
     assert 'kubernetes_tls_secret_' in catalog
     assert 'kubernetes_secret_' in catalog
@@ -164,7 +164,7 @@ def test_notification_categories_use_persisted_source_controlled_classification(
 
 
 def test_notification_center_service_forwards_all_filter_arguments() -> None:
-    service = read('app/notifications/service.py')
+    service = read('app/platform_operations/notifications/service.py')
 
     signature = service.split('def get_notification_center_page_context(', 1)[1].split(') -> dict[str, Any]:', 1)[0]
     body = service.split('def get_notification_center_page_context(', 1)[1].split('def mark_notification_read(', 1)[0]

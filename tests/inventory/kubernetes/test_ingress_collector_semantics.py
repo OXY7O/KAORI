@@ -11,18 +11,18 @@ import pytest
 pytestmark = pytest.mark.functional
 
 ROOT = Path(__file__).resolve().parents[3]
-COLLECTOR_PATH = ROOT / 'app/inventory/kubernetes/collectors/ingresses.py'
-SEMANTICS_PATH = ROOT / 'app/inventory/kubernetes/resources/ingress_semantics.py'
+COLLECTOR_PATH = ROOT / 'app/kubernetes/inventory/collectors/ingresses.py'
+SEMANTICS_PATH = ROOT / 'app/kubernetes/inventory/resources/ingress_semantics.py'
 
 
 def _load_collector(monkeypatch: pytest.MonkeyPatch):
     app_module = ModuleType('app')
     inventory_module = ModuleType('app.inventory')
-    collectors_module = ModuleType('app.inventory.kubernetes.collectors')
+    collectors_module = ModuleType('app.kubernetes.inventory.collectors')
 
     common_spec = importlib.util.spec_from_file_location(
-        'app.inventory.kubernetes.collectors.common',
-        ROOT / 'app/inventory/kubernetes/collectors/common.py',
+        'app.kubernetes.inventory.collectors.common',
+        ROOT / 'app/kubernetes/inventory/collectors/common.py',
     )
     assert common_spec and common_spec.loader
     common_module = importlib.util.module_from_spec(common_spec)
@@ -42,8 +42,8 @@ def _load_collector(monkeypatch: pytest.MonkeyPatch):
     for name, module in {
         'app': app_module,
         'app.inventory': inventory_module,
-        'app.inventory.kubernetes.collectors': collectors_module,
-        'app.inventory.kubernetes.collectors.common': common_module,
+        'app.kubernetes.inventory.collectors': collectors_module,
+        'app.kubernetes.inventory.collectors.common': common_module,
         'kubernetes': kubernetes_module,
         'kubernetes.client': client_module,
         'kubernetes.client.exceptions': exceptions_module,

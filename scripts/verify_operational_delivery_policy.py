@@ -16,19 +16,19 @@ def require(condition: bool, message: str, errors: list[str]) -> None:
 
 def main() -> int:
     errors: list[str] = []
-    feedback = read('app/notifications/feedback.py')
-    service = read('app/notifications/service.py')
-    writer = read('app/notifications/writer.py')
-    queries = read('app/notifications/queries.py')
+    feedback = read('app/platform_operations/notifications/feedback.py')
+    service = read('app/platform_operations/notifications/service.py')
+    writer = read('app/platform_operations/notifications/writer.py')
+    queries = read('app/platform_operations/notifications/queries.py')
     model = read('app/models/notification.py')
     migration = read('migrations/versions/20260805_notification_deck_v2.py')
     toast = read('app/templates/components/operational_toast.html')
-    configmap_routes = read('app/kubernetes_operations/configmaps/routes.py')
-    secret_feedback = read('app/kubernetes_operations/secrets/route_support.py')
-    tls_routes = read('app/governance/tls_certificates/routes.py')
-    tls_tasks = read('app/governance/tls_certificates/tasks.py')
-    tls_presentation = read('app/governance/tls_certificates/job_presentation.py')
-    tls_workspace = read('app/templates/governance/tls_certificates/partials/_page_workspace.html')
+    configmap_routes = read('app/kubernetes/operations/configmaps/routes.py')
+    secret_feedback = read('app/kubernetes/operations/secrets/route_support.py')
+    tls_routes = read('app/kubernetes/governance/tls_certificates/routes.py')
+    tls_tasks = read('app/kubernetes/governance/tls_certificates/tasks.py')
+    tls_presentation = read('app/kubernetes/governance/tls_certificates/job_presentation.py')
+    tls_workspace = read('app/templates/kubernetes/governance/tls_certificates/partials/_page_workspace.html')
     quality_gate = read('scripts/quality_gate.sh')
 
     for token in (
@@ -151,10 +151,10 @@ def main() -> int:
     )
 
     obsolete = (
-        'app/governance/tls_certificates/toast.py',
-        'app/templates/governance/tls_certificates/partials/_inventory_scope.html',
-        'app/templates/governance/tls_certificates/partials/_content.html',
-        'app/templates/governance/tls_certificates/partials/_sync_toast.html',
+        'app/kubernetes/governance/tls_certificates/toast.py',
+        'app/templates/kubernetes/governance/tls_certificates/partials/_inventory_scope.html',
+        'app/templates/kubernetes/governance/tls_certificates/partials/_content.html',
+        'app/templates/kubernetes/governance/tls_certificates/partials/_sync_toast.html',
     )
     for relative in obsolete:
         require(not (ROOT / relative).exists(), f'Legacy TLS file must remain removed: {relative}', errors)

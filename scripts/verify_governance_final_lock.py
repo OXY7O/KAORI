@@ -7,8 +7,8 @@ import ast
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-GOVERNANCE_ROUTES = ROOT / 'app/governance/routes.py'
-TLS_ROUTES = ROOT / 'app/governance/tls_certificates/routes.py'
+GOVERNANCE_ROUTES = ROOT / 'app/kubernetes/governance/routes.py'
+TLS_ROUTES = ROOT / 'app/kubernetes/governance/tls_certificates/routes.py'
 
 
 def read(relative: str) -> str:
@@ -84,8 +84,8 @@ def main() -> int:
         errors,
     )
 
-    collector = read('app/governance/tls_certificates/collector.py')
-    mutation = read('app/governance/tls_certificates/mutation.py')
+    collector = read('app/kubernetes/governance/tls_certificates/collector.py')
+    mutation = read('app/kubernetes/governance/tls_certificates/mutation.py')
     require(
         '(secret.data or {}).get(TLS_CRT_KEY)' in collector,
         'TLS collector must read certificate data only.',
@@ -107,17 +107,17 @@ def main() -> int:
         errors,
     )
 
-    job_presentation = read('app/governance/tls_certificates/job_presentation.py')
+    job_presentation = read('app/kubernetes/governance/tls_certificates/job_presentation.py')
     require(
         'def get_active_tls_sync_job(' not in job_presentation,
         'Orphan TLS active-job helper must remain removed.',
         errors,
     )
 
-    overview = read('app/templates/governance/overview/index.html')
-    hero = read('app/templates/governance/tls_certificates/partials/_hero.html')
-    table = read('app/templates/governance/tls_certificates/partials/_table.html')
-    page = read('app/templates/governance/tls_certificates/index.html')
+    overview = read('app/templates/kubernetes/governance/overview/index.html')
+    hero = read('app/templates/kubernetes/governance/tls_certificates/partials/_hero.html')
+    table = read('app/templates/kubernetes/governance/tls_certificates/partials/_table.html')
+    page = read('app/templates/kubernetes/governance/tls_certificates/index.html')
     require(
         'page_hero.context_header(' in overview,
         'Governance Overview Hero must use the Context Icon Box.',
@@ -143,7 +143,7 @@ def main() -> int:
         'TLS Governance Hero must use the canonical Kubernetes setup-blocked Hero context.',
         errors,
     )
-    page_content = read('app/templates/governance/tls_certificates/partials/_page_content.html')
+    page_content = read('app/templates/kubernetes/governance/tls_certificates/partials/_page_content.html')
     require(
         page_content.find('{% if cluster_onboarding.is_blocked %}')
         < page_content.find('{% elif not payload.schema_readiness.ready %}')
@@ -163,9 +163,9 @@ def main() -> int:
         'TLS detail disclosure must remain the Full Workspace Modal.',
         errors,
     )
-    detail = read('app/templates/governance/tls_certificates/partials/_detail_content.html')
-    summary = read('app/templates/governance/tls_certificates/partials/_summary_cards.html')
-    rotate = read('app/templates/kubernetes_operations/secrets/tls_rotate.html')
+    detail = read('app/templates/kubernetes/governance/tls_certificates/partials/_detail_content.html')
+    summary = read('app/templates/kubernetes/governance/tls_certificates/partials/_summary_cards.html')
+    rotate = read('app/templates/kubernetes/operations/secrets/tls_rotate.html')
     require(
         'detail.header_badge_row()' in detail
         and 'data-kaori-tls-detail-layout="evidence-workspace-v2"' in detail
@@ -196,7 +196,7 @@ def main() -> int:
         'Single TLS rotation must retain the compact target identity strip and posture evidence grid.',
         errors,
     )
-    constants = read('app/governance/tls_certificates/constants.py')
+    constants = read('app/kubernetes/governance/tls_certificates/constants.py')
     for option in ('5', '10', '25', '50'):
         require(option in constants, f'TLS pagination standard must retain {option}.', errors)
 

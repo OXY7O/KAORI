@@ -22,7 +22,7 @@ recommendation rules directly in analytics routes or templates.
 ## Cross-domain automation orchestration
 
 The **Automation Control Center** is intentionally owned by the application layer
-under `app/automation_control/`, not by this domain. It coordinates read models
+under `app/intelligence/automation_control/`, not by this domain. It coordinates read models
 and governed commands across Knowledge, Intelligence, Resolver, and Production
 Readiness without making those domains import one another. The application layer
 may call Intelligence public use cases; Intelligence must not import the

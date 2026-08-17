@@ -1,0 +1,26 @@
+{% extends "layouts/app.html" %}
+{% import "kubernetes/analytics/components/_status_notice.html" as status_notice %}
+{% block title %}Storage Analysis{% endblock title %}
+{% block dashboard_content %}
+    <div id="storage-page"
+         class="kaori-analytics-page space-y-6"
+         data-analytics-page-request-tracking="false">
+        {% include "kubernetes/analytics/storage/partials/_hero.html" %}
+        {% if dependency_blocker %}
+            {% include "components/dependencies/_blocker.html" %}
+        {% else %}
+            {% if error %}{{ status_notice.render('Storage Data Unavailable', error, tone='warning') }}{% endif %}
+            {% include "kubernetes/analytics/storage/partials/_controls_readiness.html" %}
+            {% if storage_capability_contract.degraded|default(false) %}
+                {{ status_notice.render('Storage Evidence Is Partially Available',
+                                'Unavailable advisory capabilities: ' ~ storage_capability_contract.missing_labels|join(', ') ~ '. Available filesystem, PVC, and PV domains remain visible; missing evidence stays Unknown.',
+                tone='warning'
+                ) }}
+            {% endif %}
+            {% if cluster %}
+                {% include "kubernetes/analytics/storage/partials/_overview.html" %}
+                {% include "kubernetes/analytics/storage/partials/_storage_section.html" %}
+            {% endif %}
+        {% endif %}
+    </div>
+{% endblock dashboard_content %}

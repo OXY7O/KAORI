@@ -54,7 +54,7 @@ def test_alert_intelligence_workspace_places_tabs_before_compact_operational_con
 
 
 def test_alert_intelligence_tabs_are_section_owned_and_informative() -> None:
-    service = read('app/alert_intelligence/service.py')
+    service = read('app/intelligence/alert_intelligence/service.py')
     workspace = read('app/templates/intelligence/partials/_alert_intelligence_workspace.html')
     alerts = read('app/templates/intelligence/partials/_alert_intelligence_alerts.html')
     correlation = read('app/templates/intelligence/partials/_alert_intelligence_correlation.html')
@@ -121,7 +121,7 @@ def test_alert_intelligence_keeps_provider_lifecycle_and_correlation_boundaries_
 
 
 def test_alert_intelligence_htmx_refreshes_full_page_context_for_scope_changes() -> None:
-    routes = read('app/alert_intelligence/routes.py')
+    routes = read('app/intelligence/alert_intelligence/routes.py')
     workspace = read('app/templates/intelligence/partials/_alert_intelligence_workspace.html')
     alerts = read('app/templates/intelligence/partials/_alert_intelligence_alerts.html')
 

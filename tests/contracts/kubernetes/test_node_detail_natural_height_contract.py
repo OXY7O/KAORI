@@ -8,7 +8,7 @@ def _read(relative_path: str) -> str:
 
 
 def test_node_detail_cards_follow_tallest_card_without_fixed_min_height() -> None:
-    detail = _read('app/templates/inventory/kubernetes/nodes/partials/_node_detail_content.html')
+    detail = _read('app/templates/kubernetes/inventory/nodes/partials/_node_detail_content.html')
     shared = _read('app/templates/components/details/_detail_content.html')
 
     assert 'data-kaori-detail-variant="full-workspace-modal"' in detail

@@ -5,7 +5,7 @@ from datetime import UTC, datetime, timedelta
 import pytest
 from flask import Flask
 
-from app.dashboards.kubernetes import repository
+from app.kubernetes.dashboard import repository
 from app.extensions.db import db
 
 

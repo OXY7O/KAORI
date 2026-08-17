@@ -7,7 +7,7 @@ import ast
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-ROUTES = ROOT / 'app/inventory/kubernetes/routes.py'
+ROUTES = ROOT / 'app/kubernetes/inventory/routes.py'
 RESOURCE_NAMES = ('nodes', 'namespaces', 'configuration', 'workloads', 'pods', 'services', 'ingresses', 'storage')
 READ_VIEWS = {
     'overview',
@@ -103,14 +103,14 @@ def main() -> int:
     )
 
     read_side = '\n'.join(
-        [read('app/inventory/kubernetes/overview.py')]
+        [read('app/kubernetes/inventory/overview.py')]
         + [
             path.read_text(encoding='utf-8')
-            for path in sorted((ROOT / 'app/inventory/kubernetes/resources').rglob('*.py'))
+            for path in sorted((ROOT / 'app/kubernetes/inventory/resources').rglob('*.py'))
         ]
         + [
             path.read_text(encoding='utf-8')
-            for path in sorted((ROOT / 'app/inventory/kubernetes/topology').rglob('*.py'))
+            for path in sorted((ROOT / 'app/kubernetes/inventory/topology').rglob('*.py'))
         ]
     )
     for token in (
@@ -126,8 +126,8 @@ def main() -> int:
     ):
         require(token not in read_side, f'Inventory read side must remain provider-free: {token}', errors)
 
-    topology_repository = read('app/inventory/kubernetes/topology/repository.py')
-    topology_builder = read('app/inventory/kubernetes/topology/node_builder.py')
+    topology_repository = read('app/kubernetes/inventory/topology/repository.py')
+    topology_builder = read('app/kubernetes/inventory/topology/node_builder.py')
     require(
         'joinedload(Cluster.kubernetes_connection)' in topology_repository,
         'Topology cluster identity must eager-load the canonical Kubernetes connection relationship.',
@@ -139,8 +139,8 @@ def main() -> int:
         errors,
     )
 
-    formatting = read('app/inventory/kubernetes/formatting.py')
-    common = read('app/inventory/kubernetes/resources/common.py')
+    formatting = read('app/kubernetes/inventory/formatting.py')
+    common = read('app/kubernetes/inventory/resources/common.py')
     for retired in ('def format_byte_count(', 'def format_gib('):
         require(retired not in formatting, f'Retired Inventory helper must remain removed: {retired}', errors)
     require(
@@ -155,10 +155,10 @@ def main() -> int:
     )
 
     require(
-        "f'inventory/kubernetes/{resource}/index.html'" in routes_source
-        and "f'inventory/kubernetes/{resource}/partials/_page_workspace.html'" in routes_source
-        and "f'inventory/kubernetes/{resource}/partials/_table_card.html'" in routes_source
-        and "f'inventory/kubernetes/{resource}/partials/_table_content.html'" in routes_source,
+        "f'kubernetes/inventory/{resource}/index.html'" in routes_source
+        and "f'kubernetes/inventory/{resource}/partials/_page_workspace.html'" in routes_source
+        and "f'kubernetes/inventory/{resource}/partials/_table_card.html'" in routes_source
+        and "f'kubernetes/inventory/{resource}/partials/_table_content.html'" in routes_source,
         'Inventory resource template registry must use the canonical inventory/kubernetes namespace.',
         errors,
     )
@@ -176,8 +176,8 @@ def main() -> int:
             errors,
         )
 
-    overview_hero = read('app/templates/inventory/kubernetes/overview/partials/_hero.html')
-    topology_hero = read('app/templates/inventory/kubernetes/topology/partials/_hero.html')
+    overview_hero = read('app/templates/kubernetes/inventory/overview/partials/_hero.html')
+    topology_hero = read('app/templates/kubernetes/inventory/topology/partials/_hero.html')
     blocked_hero = read('app/templates/components/cluster/_hero_blocked_context.html')
     require(
         "page_hero.context_metric('boxes', 'Connected Clusters', '0', 'No Kubernetes connection available')"
@@ -208,12 +208,12 @@ def main() -> int:
             f'{page_name} Hero must replace blocked numeric metadata with setup-safe inventory metadata.',
             errors,
         )
-    overview_page = read('app/templates/inventory/kubernetes/overview/index.html')
-    topology_page = read('app/templates/inventory/kubernetes/topology/index.html')
+    overview_page = read('app/templates/kubernetes/inventory/overview/index.html')
+    topology_page = read('app/templates/kubernetes/inventory/topology/index.html')
     for page_name, page_source in (('overview', overview_page), ('topology', topology_page)):
         blocker = page_source.find('{% if cluster_onboarding.is_blocked %}')
         blocker_else = page_source.find('{% else %}', blocker)
-        snapshot = page_source.find('inventory/kubernetes/components/_data_freshness.html')
+        snapshot = page_source.find('kubernetes/inventory/components/_data_freshness.html')
         require(
             blocker >= 0 and blocker < blocker_else < snapshot,
             f'{page_name} must hide Inventory Data Snapshot behind the onboarding blocker.',
@@ -221,12 +221,12 @@ def main() -> int:
         )
 
     for resource in RESOURCE_NAMES:
-        hero = read(f'app/templates/inventory/kubernetes/{resource}/partials/_hero.html')
-        table = read(f'app/templates/inventory/kubernetes/{resource}/partials/_table_content.html')
-        workspace = read(f'app/templates/inventory/kubernetes/{resource}/partials/_page_workspace.html')
+        hero = read(f'app/templates/kubernetes/inventory/{resource}/partials/_hero.html')
+        table = read(f'app/templates/kubernetes/inventory/{resource}/partials/_table_content.html')
+        workspace = read(f'app/templates/kubernetes/inventory/{resource}/partials/_page_workspace.html')
         blocker = workspace.find('{% if cluster_onboarding.is_blocked %}')
         blocker_else = workspace.find('{% else %}', blocker)
-        snapshot = workspace.find('inventory/kubernetes/components/_data_freshness.html')
+        snapshot = workspace.find('kubernetes/inventory/components/_data_freshness.html')
         require(
             blocker >= 0 and blocker < blocker_else < snapshot,
             f'{resource} must hide Inventory Data Snapshot behind the onboarding blocker.',
@@ -265,7 +265,7 @@ def main() -> int:
             'ingresses': '_ingress_detail_content.html',
             'storage': '_storage_detail_content.html',
         }[resource]
-        detail_source = read(f'app/templates/inventory/kubernetes/{resource}/partials/{detail_partial}')
+        detail_source = read(f'app/templates/kubernetes/inventory/{resource}/partials/{detail_partial}')
         require(
             'detail.header_badge_row()' in detail_source,
             f'{resource} detail header must align state labels with the text-content column.',

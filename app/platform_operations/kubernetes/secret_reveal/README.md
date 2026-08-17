@@ -20,7 +20,7 @@ The kubeconfig prerequisite is read-only in Secret Reveal and is managed from cl
 
 ## Ownership
 
-- `app/kubernetes_operations/secrets/reveal_policy.py`: canonical policy, readiness, and live namespace snapshot rules.
+- `app/kubernetes/operations/secrets/reveal_policy.py`: canonical policy, readiness, and live namespace snapshot rules.
 - `app/platform_operations/kubernetes/secret_reveal/service.py`: workspace context, summaries, filtering, and pagination.
 - `app/platform_operations/kubernetes/secret_reveal/routes.py`: RBAC, CSRF, Activity Audit, operational toast, and save actions.
 - `app/templates/platform_operations/kubernetes/_secret_reveal_workspace.html`: protection posture and compact authorization boundary.

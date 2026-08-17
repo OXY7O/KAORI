@@ -10,7 +10,7 @@ Platform Operations v1.3 remains the Secret Reveal readiness/live-source baselin
 
 ## Secret Reveal v1.4 Contract
 
-1. **One policy authority.** Platform Operations configuration and Protected Kubernetes Secret Reveal use `app/kubernetes_operations/secrets/reveal_policy.py` as the shared source of truth for cluster readiness and namespace policy.
+1. **One policy authority.** Platform Operations configuration and Protected Kubernetes Secret Reveal use `app/kubernetes/operations/secrets/reveal_policy.py` as the shared source of truth for cluster readiness and namespace policy.
 2. **Protected Reveal revalidates configuration.** Request creation, approval, and one-time reveal re-check current cluster readiness and namespace policy; a stale request can never bypass a later configuration change.
 3. **Configuration mutation invalidates active requests.** Disabling readiness or changing a namespace policy expires matching pending/approved requests before they can be consumed.
 4. **Operational target discovery remains live.** Protected Reveal intersects policy-enabled namespaces with current Kubernetes namespaces and reads the selected Secret from the live API before request creation.

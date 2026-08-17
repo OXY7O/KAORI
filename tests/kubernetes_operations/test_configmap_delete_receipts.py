@@ -10,7 +10,7 @@ import pytest
 pytestmark = pytest.mark.functional
 
 ROOT = Path(__file__).resolve().parents[2]
-RECEIPTS_PATH = ROOT / 'app/kubernetes_operations/configmaps/receipts.py'
+RECEIPTS_PATH = ROOT / 'app/kubernetes/operations/configmaps/receipts.py'
 
 
 def load_receipts(monkeypatch: pytest.MonkeyPatch):

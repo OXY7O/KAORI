@@ -5,8 +5,8 @@ Platform Operations contains cross-cutting operational control planes that are n
 ## Navigation
 
 - Overview is owned by `app/platform_operations/overview/` and composes read-only posture from permitted Platform Operations domains.
-- Jobs & Executions remains owned by `app/jobs/`.
-- Data Lifecycle is owned by `app/platform_operations/data_lifecycle/` and uses `app/retention/` as its shared archive-first engine.
+- Jobs & Executions remains owned by `app/platform_operations/jobs/`.
+- Data Lifecycle is owned by `app/platform_operations/data_lifecycle/` and uses `app/platform_operations/data_lifecycle/retention/` as its shared archive-first engine.
 - Kubernetes Administration is owned by `app/platform_operations/kubernetes/`.
 - Advanced Kubernetes controls are exposed as tabs inside Kubernetes Administration.
 
@@ -30,7 +30,7 @@ The first advanced control is Secret Reveal administration:
 - namespace reveal policy;
 - links to the protected one-time reveal workflow.
 
-Operational Secret values remain owned by `app/kubernetes_operations/secrets/`. Platform Operations only owns the setup and policy boundary.
+Operational Secret values remain owned by `app/kubernetes/operations/secrets/`. Platform Operations only owns the setup and policy boundary.
 
 ## Architecture Rules
 

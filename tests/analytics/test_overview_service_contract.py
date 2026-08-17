@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from inspect import signature
 
-from app.analytics.kubernetes.overview.service import get_analytics_overview
+from app.kubernetes.analytics.overview.service import get_analytics_overview
 
 
 def test_overview_service_accepts_worker_snapshot_hydration_boundary() -> None:
@@ -15,14 +15,14 @@ def test_overview_service_accepts_worker_snapshot_hydration_boundary() -> None:
 def test_overview_service_keeps_top_pods_snapshot_projection() -> None:
     from pathlib import Path
 
-    source = Path('app/analytics/kubernetes/overview/service.py').read_text()
+    source = Path('app/kubernetes/analytics/overview/service.py').read_text()
 
     assert "'pods': _normalize_consumer_items(raw.get('pods', []))" in source
     assert 'get_or_set_cache' not in source
 
 
 def test_overview_prefers_cluster_with_committed_snapshot(monkeypatch) -> None:
-    from app.analytics.kubernetes.overview import service
+    from app.kubernetes.analytics.overview import service
 
     class ScalarRows:
         def all(self):
@@ -48,7 +48,7 @@ def test_overview_prefers_cluster_with_committed_snapshot(monkeypatch) -> None:
 
 
 def test_overview_keeps_explicit_cluster_authoritative(monkeypatch) -> None:
-    from app.analytics.kubernetes.overview import service
+    from app.kubernetes.analytics.overview import service
 
     def unexpected_scalars(_statement):
         raise AssertionError('explicit cluster selection must not query fallback readiness')
@@ -72,7 +72,7 @@ def test_snapshot_summary_reports_latest_committed_generation() -> None:
     from datetime import UTC, datetime, timedelta
     from types import SimpleNamespace
 
-    from app.analytics.kubernetes.overview.snapshot_summary import (
+    from app.kubernetes.analytics.overview.snapshot_summary import (
         OVERVIEW_SNAPSHOT_DATASETS,
         present_snapshot_summary,
     )
@@ -111,7 +111,7 @@ def test_snapshot_summary_distinguishes_stale_and_pending_datasets() -> None:
     from datetime import UTC, datetime, timedelta
     from types import SimpleNamespace
 
-    from app.analytics.kubernetes.overview.snapshot_summary import present_snapshot_summary
+    from app.kubernetes.analytics.overview.snapshot_summary import present_snapshot_summary
 
     now = datetime(2026, 7, 27, 12, 0, tzinfo=UTC)
     snapshots = [

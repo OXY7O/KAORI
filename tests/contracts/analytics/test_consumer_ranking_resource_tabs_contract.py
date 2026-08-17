@@ -2,7 +2,7 @@ from pathlib import Path
 
 
 def test_consumer_rankings_are_separated_by_resource_tabs():
-    template = Path('app/templates/analytics/kubernetes/top_consumers/partials/_top_consumers_section.html').read_text()
+    template = Path('app/templates/kubernetes/analytics/top_consumers/partials/_top_consumers_section.html').read_text()
     for label in ["('cpu', 'CPU'", "('memory', 'Memory'", "('pvc', 'PVC'", "('pods', 'Pods'"]:
         assert label in template
     assert 'xl:grid-cols-2' not in template

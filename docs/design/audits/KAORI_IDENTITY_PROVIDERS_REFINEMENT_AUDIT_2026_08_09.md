@@ -2,7 +2,7 @@
 
 ## Scope
 
-Identity Providers remains under the Access control-plane composition while `app/users` owns provider administration and identity projection, `app/auth` owns LDAP/OIDC/OAuth protocol behavior, and `app/rbac` owns authorization. This review does not final-lock the Access domain.
+Identity Providers remains under the Access control-plane composition while `app/access/users` owns provider administration and identity projection, `app/access/authentication` owns LDAP/OIDC/OAuth protocol behavior, and `app/access/rbac` owns authorization. This review does not final-lock the Access domain.
 
 ## Accepted Refinements
 

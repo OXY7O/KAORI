@@ -15,22 +15,22 @@ def require(condition: bool, message: str, errors: list[str]) -> None:
 def main() -> int:
     errors: list[str] = []
 
-    collector = read('app/inventory/kubernetes/collectors/ingresses.py')
-    common = read('app/inventory/kubernetes/collectors/common.py')
-    persistence = read('app/inventory/kubernetes/persistence.py')
+    collector = read('app/kubernetes/inventory/collectors/ingresses.py')
+    common = read('app/kubernetes/inventory/collectors/common.py')
+    persistence = read('app/kubernetes/inventory/persistence.py')
     model = read('app/models/inventory.py')
     migration = read('migrations/versions/20260805_ingress_inventory_v2.py')
-    backend = read('app/inventory/kubernetes/resources/ingresses.py')
-    semantics = read('app/inventory/kubernetes/resources/ingress_semantics.py')
-    routes = read('app/inventory/kubernetes/routes.py')
-    topology = read('app/inventory/kubernetes/topology/node_builder.py')
+    backend = read('app/kubernetes/inventory/resources/ingresses.py')
+    semantics = read('app/kubernetes/inventory/resources/ingress_semantics.py')
+    routes = read('app/kubernetes/inventory/routes.py')
+    topology = read('app/kubernetes/inventory/topology/node_builder.py')
     payload = read('app/reports/export/payloads/inventory.py')
     xlsx = read('app/reports/export/xlsx/standard.py')
-    workspace = read('app/templates/inventory/kubernetes/ingresses/partials/_page_workspace.html')
-    card = read('app/templates/inventory/kubernetes/ingresses/partials/_table_card.html')
-    table = read('app/templates/inventory/kubernetes/ingresses/partials/_table_content.html')
-    summary = read('app/templates/inventory/kubernetes/ingresses/partials/_summary_cards.html')
-    detail = read('app/templates/inventory/kubernetes/ingresses/partials/_ingress_detail_content.html')
+    workspace = read('app/templates/kubernetes/inventory/ingresses/partials/_page_workspace.html')
+    card = read('app/templates/kubernetes/inventory/ingresses/partials/_table_card.html')
+    table = read('app/templates/kubernetes/inventory/ingresses/partials/_table_content.html')
+    summary = read('app/templates/kubernetes/inventory/ingresses/partials/_summary_cards.html')
+    detail = read('app/templates/kubernetes/inventory/ingresses/partials/_ingress_detail_content.html')
     standard = read('docs/design/patterns/KUBERNETES_INGRESS_INVENTORY.md')
     audit = read('docs/design/audits/KUBERNETES_INGRESS_INVENTORY_ALIGNMENT_AUDIT_2026_08.md')
     quality_gate = read('scripts/quality_gate.sh')
@@ -138,7 +138,7 @@ def main() -> int:
     )
     require(
         'id="ingresses-page-workspace"' in workspace
-        and 'inventory/kubernetes/components/_data_freshness.html' in workspace,
+        and 'kubernetes/inventory/components/_data_freshness.html' in workspace,
         'Ingress workspace must own Hero and Snapshot Context.',
         errors,
     )

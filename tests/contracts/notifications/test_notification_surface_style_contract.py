@@ -10,7 +10,7 @@ def read(relative: str) -> str:
 def test_notification_progress_surfaces_share_one_height_contract() -> None:
     progress = read('app/templates/components/progress_bar.html')
     progress_toast = read('app/templates/components/operational_progress_toast.html')
-    activity_center = read('app/templates/notifications/components/_activity_center_items.html')
+    activity_center = read('app/templates/platform_operations/notifications/components/_activity_center_items.html')
     operational_toast = read('app/templates/components/operational_toast.html')
 
     assert '{% macro notification_track_classes()' in progress

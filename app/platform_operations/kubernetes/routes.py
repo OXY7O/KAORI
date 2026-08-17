@@ -9,9 +9,9 @@ from flask import (
     url_for,
 )
 
+from app.access.rbac.decorators import permission_required
 from app.platform_operations.kubernetes.presentation import build_kubernetes_administration_summary
 from app.platform_operations.kubernetes.secret_reveal.service import build_secret_reveal_settings_context
-from app.rbac.decorators import permission_required
 
 bp = Blueprint('kubernetes', __name__)
 

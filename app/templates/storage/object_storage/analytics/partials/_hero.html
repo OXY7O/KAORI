@@ -1,0 +1,34 @@
+{% import "components/page_hero.html" as page_hero %}
+<section class="{{ page_hero.shell_classes() }}">
+    <div class="{{ page_hero.layout_classes() }}">
+        <div class="{{ page_hero.content_classes() }}">
+            {% call page_hero.intro('database-zap', page.eyebrow, page.icon) %}
+                <h1 class="{{ page_hero.title_classes() }}">{{ page.title }}</h1>
+                <p class="mt-2 {{ page_hero.description_classes() }}">{{ page.description }}</p>
+                <div class="{{ page_hero.metadata_row_classes() }}">
+                    {{ page_hero.meta_label('server', system.name if system else 'No System Selected') }}
+                    {% if dependency_blocker %}
+                        {{ page_hero.meta_label('lock-keyhole', 'Step ' ~ dependency_blocker.stage ~ ' · ' ~ dependency_blocker.badge) }}
+                    {% else %}
+                        {% if page_key == 'alerts' %}
+                            {{ page_hero.meta_label('radio-tower', alert_source.resolved_label ~ ' Alerts' if alert_source.connected else ('Automatic Alert Source' if selected_alert_source == 'auto' else selected_alert_source|title ~ ' Alert Source')) }}
+                        {% else %}
+                            {{ page_hero.meta_label('clock-3', selected_forecast_history_window|upper ~ ' History' if page_key == 'forecast' else selected_time_range|upper ~ ' Window') }}
+                        {% endif %}
+                        {% if inventory_observed_at %}
+                            {{ page_hero.meta_label('database-clock', inventory_observed_at|user_datetime('Inventory Not Collected')) }}
+                        {% endif %}
+                    {% endif %}
+                </div>
+            {% endcall %}
+        </div>
+        <aside class="{{ page_hero.aside_classes() }}"
+               aria-label="{{ page.title }} Operational Posture">
+            {% if dependency_blocker %}
+                {% include "storage/object_storage/analytics/partials/_hero_blocked_posture.html" %}
+            {% else %}
+                {% include "storage/object_storage/analytics/partials/_hero_posture.html" %}
+            {% endif %}
+        </aside>
+    </div>
+</section>

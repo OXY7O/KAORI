@@ -1,1 +1,1 @@
-"""Artifact storage backends and storage profiles."""
+"""Infrastructure storage managed-asset domains."""

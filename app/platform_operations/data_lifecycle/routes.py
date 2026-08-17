@@ -4,15 +4,15 @@ from flask import Blueprint, render_template, request, send_file
 from flask.typing import ResponseReturnValue
 from flask_login import current_user
 
+from app.access.rbac.decorators import permission_required
 from app.platform_operations.data_lifecycle.presentation import build_workspace_context
+from app.platform_operations.data_lifecycle.retention.domains import DOMAIN_FACTORIES
 from app.platform_operations.data_lifecycle.service import (
     lifecycle_archive_download,
     queue_lifecycle_execution,
     update_lifecycle_policy,
     verify_lifecycle_archive,
 )
-from app.rbac.decorators import permission_required
-from app.retention.domains import DOMAIN_FACTORIES
 
 bp = Blueprint('data_lifecycle', __name__)
 

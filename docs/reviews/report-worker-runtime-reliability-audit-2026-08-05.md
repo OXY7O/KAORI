@@ -66,7 +66,7 @@ Manual generation:
 
 Scheduled generation:
 
-1. Celery Beat publishes `app.jobs.tasks.dispatch_scheduled_jobs` to the maintenance queue.
+1. Celery Beat publishes `app.platform_operations.jobs.tasks.dispatch_scheduled_jobs` to the maintenance queue.
 2. The maintenance worker evaluates the `reports.schedule.dispatch` job policy.
 3. The canonical dispatcher publishes `app.reports.schedules.tasks.run_report_schedule_job` to the Reports queue.
 4. The Reports worker claims due schedule definitions and creates report records.

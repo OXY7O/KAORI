@@ -23,7 +23,7 @@ REQUIRED = (
     'docs/design/audits/KAORI_PLATFORM_OPERATIONS_DATA_LIFECYCLE_FINAL_LOCK_V1_1_AUDIT_2026_08_08.md',
     'docs/design/audits/KAORI_PLATFORM_OPERATIONS_DATA_LIFECYCLE_FINAL_LOCK_V1_2_AUDIT_2026_08_08.md',
     'docs/design/audits/KAORI_PLATFORM_OPERATIONS_DATA_LIFECYCLE_FINAL_LOCK_V1_3_AUDIT_2026_08_08.md',
-    'app/retention/domains/analytics_snapshot.py',
+    'app/platform_operations/data_lifecycle/retention/domains/analytics_snapshot.py',
     'migrations/versions/20260808_data_lifecycle_platform_operations.py',
     'migrations/versions/20260816_schedule_run_evidence.py',
     'migrations/versions/20260817_lifecycle_policy_seed.py',
@@ -97,7 +97,12 @@ def main() -> int:
     ):
         if required not in compatibility:
             errors.append(f'legacy Settings redirect contract missing: {required}')
-    for forbidden in ('render_template', 'app.retention', 'enqueue_canonical_job', 'record_operational_activity'):
+    for forbidden in (
+        'render_template',
+        'app.platform_operations.data_lifecycle.retention',
+        'enqueue_canonical_job',
+        'record_operational_activity',
+    ):
         if forbidden in compatibility:
             errors.append(f'legacy Settings compatibility route regained ownership: {forbidden}')
 
@@ -168,7 +173,7 @@ def main() -> int:
         if required not in domain_workspace:
             errors.append(f'Data Lifecycle v1.2 coverage presentation missing: {required}')
 
-    retention_presentation = read('app/retention/presentation.py')
+    retention_presentation = read('app/platform_operations/data_lifecycle/retention/presentation.py')
     for required in (
         "'label': 'Activity Audit Table'",
         "'label': 'Notification Center'",
@@ -183,15 +188,15 @@ def main() -> int:
         if required not in retention_presentation:
             errors.append(f'Data Lifecycle v1.2 coverage semantics missing: {required}')
 
-    registry = read('app/retention/domains/__init__.py')
+    registry = read('app/platform_operations/data_lifecycle/retention/domains/__init__.py')
     for required in (
-        'from app.retention.domains.analytics_snapshot import AnalyticsSnapshotArchiveDomain',
+        'from app.platform_operations.data_lifecycle.retention.domains.analytics_snapshot import AnalyticsSnapshotArchiveDomain',
         "'analytics_snapshot': AnalyticsSnapshotArchiveDomain",
     ):
         if required not in registry:
             errors.append(f'Analytics Snapshot lifecycle adapter registration missing: {required}')
 
-    analytics_domain = read('app/retention/domains/analytics_snapshot.py')
+    analytics_domain = read('app/platform_operations/data_lifecycle/retention/domains/analytics_snapshot.py')
     for required in (
         "name = 'analytics_snapshot'",
         "source_model = 'analytics_snapshots'",
@@ -218,7 +223,7 @@ def main() -> int:
     ):
         errors.append('Analytics Snapshots must expose Serve Window Protection in Retention Policies')
 
-    runtime_domain = read('app/retention/domains/runtime_observation.py')
+    runtime_domain = read('app/platform_operations/data_lifecycle/retention/domains/runtime_observation.py')
     if 'IntegrationRuntimeObservation.query.filter(' not in runtime_domain:
         errors.append('Runtime Observation archive domain must read the canonical integration runtime model')
     if 'IntegrationRuntimeObservation.provider ==' in runtime_domain or 'filter_by(provider=' in runtime_domain:
@@ -226,7 +231,7 @@ def main() -> int:
             'Runtime Observation lifecycle must remain provider-neutral; do not split retention by concrete integration provider'
         )
 
-    activity_domain = read('app/retention/domains/operational_activity.py')
+    activity_domain = read('app/platform_operations/data_lifecycle/retention/domains/operational_activity.py')
     if 'Notification.query.filter(Notification.id.in_(record_ids))' not in activity_domain:
         errors.append('Operational Activity lifecycle must continue cleaning the canonical Notification source table')
     if 'deck_visible' in activity_domain:
@@ -300,8 +305,8 @@ def main() -> int:
     if "endpoint.startswith('platform_operations.data_lifecycle.')" not in breadcrumb:
         errors.append('Data Lifecycle breadcrumb must resolve under Platform Operations')
 
-    defaults = read('app/definitions/catalogs/rbac/access.yaml')
-    dependencies = read('app/rbac/service.py')
+    defaults = read('app/definitions/catalogs/access/rbac/access.yaml')
+    dependencies = read('app/access/rbac/service.py')
     for key in (
         'platform_operations.view_data_lifecycle',
         'platform_operations.manage_data_lifecycle',
@@ -331,7 +336,7 @@ def main() -> int:
         if required not in migration:
             errors.append(f'Data Lifecycle ownership migration missing: {required}')
 
-    storage_presentation = read('app/retention/storage_presentation.py')
+    storage_presentation = read('app/platform_operations/data_lifecycle/retention/storage_presentation.py')
     if 'def build_storage_contract_context(' not in storage_presentation:
         errors.append('Retention Policies must expose configuration-only archive storage ownership without probing')
     if 'no integration-specific archive bucket is created' not in retention_presentation:
@@ -351,7 +356,7 @@ def main() -> int:
 
     activity = read('app/templates/access/activity_audit/index.html')
     runtime_history = read('app/templates/integrations/partials/_runtime_history.html')
-    retention_tasks = read('app/retention/tasks.py')
+    retention_tasks = read('app/platform_operations/data_lifecycle/retention/tasks.py')
     for source_name, source in (
         ('Activity Audit', activity),
         ('Integration Runtime', runtime_history),

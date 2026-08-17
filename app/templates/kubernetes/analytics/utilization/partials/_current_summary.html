@@ -1,0 +1,38 @@
+{% import "analytics/components/_analysis_surfaces.html" as analysis_surface %}
+{% import "kubernetes/analytics/components/_resource_pressure_lane.html" as pressure_lane %}
+{% import "components/table_label.html" as table_label %}
+{% set presentation = utilization_presentation|default({}) %}
+<section class="space-y-5">
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div class="flex items-start gap-3">
+            <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="gauge" class="h-4 w-4"></i></span>
+            <div>
+                <h3 class="text-lg font-semibold text-content-primary">Resource Pressure Detail</h3>
+                <p class="mt-1 text-sm leading-6 text-content-muted">Compare current percentage, absolute consumption, remaining headroom, and the operational meaning of each resource signal.</p>
+            </div>
+        </div>
+        {{ table_label.metadata_label(analytics_materialization.generated_at|user_datetime('Snapshot Unavailable') , 'database-clock', false, 'detail') }}
+    </div>
+    <section class="{{ analysis_surface.evidence_shell_classes() }}">
+        <div class="divide-y divide-outline-subtle">
+            {% for metric in presentation.resource_rows|default([]) %}
+                {{ pressure_lane.render(metric.label, metric.icon, metric.value if metric.available else none, metric.detail, metric.description, tone=metric.tone, available=metric.available) }}
+            {% endfor %}
+        </div>
+        <div class="{{ analysis_surface.interpretation_grid_classes() }}">
+            {{ analysis_surface.interpretation_callout('How To Read',
+                        'Compare Percentage Pressure With Absolute Consumption',
+                        'Compare percentage pressure with absolute used and allocatable values. Missing denominator evidence remains N/A and must not be interpreted as spare capacity.',
+                        icon='chart-column',
+                        role='insight') }}
+            {{ analysis_surface.interpretation_callout('What To Do',
+                        'Validate Trend And Node Concentration Before Resizing',
+                        'Open Trend Analysis for sustained pressure and Node Detail for concentration. Resize workloads or expand capacity only after both views confirm the risk.',
+                        icon='scan-search',
+                        role='brand',
+                        tone=presentation.posture_tone|default('unknown') ,
+            extra='border-t border-outline-subtle lg:border-t-0'
+            ) }}
+        </div>
+    </section>
+</section>

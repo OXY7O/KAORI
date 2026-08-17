@@ -10,8 +10,8 @@ import pytest
 pytestmark = pytest.mark.functional
 
 ROOT = Path(__file__).resolve().parents[2]
-CONTRACTS_PATH = ROOT / 'app/kubernetes_operations/configmaps/contracts.py'
-VALIDATION_PATH = ROOT / 'app/kubernetes_operations/configmaps/validation.py'
+CONTRACTS_PATH = ROOT / 'app/kubernetes/operations/configmaps/contracts.py'
+VALIDATION_PATH = ROOT / 'app/kubernetes/operations/configmaps/validation.py'
 
 
 class FormData(dict):
@@ -29,21 +29,21 @@ class FormData(dict):
 
 def load_validation(monkeypatch: pytest.MonkeyPatch):
     app_module = ModuleType('app')
-    operations_module = ModuleType('app.kubernetes_operations')
-    configmaps_module = ModuleType('app.kubernetes_operations.configmaps')
+    operations_module = ModuleType('app.kubernetes.operations')
+    configmaps_module = ModuleType('app.kubernetes.operations.configmaps')
     monkeypatch.setitem(sys.modules, 'app', app_module)
-    monkeypatch.setitem(sys.modules, 'app.kubernetes_operations', operations_module)
-    monkeypatch.setitem(sys.modules, 'app.kubernetes_operations.configmaps', configmaps_module)
+    monkeypatch.setitem(sys.modules, 'app.kubernetes.operations', operations_module)
+    monkeypatch.setitem(sys.modules, 'app.kubernetes.operations.configmaps', configmaps_module)
 
     contract_spec = importlib.util.spec_from_file_location(
-        'app.kubernetes_operations.configmaps.contracts',
+        'app.kubernetes.operations.configmaps.contracts',
         CONTRACTS_PATH,
     )
     assert contract_spec and contract_spec.loader
     contracts = importlib.util.module_from_spec(contract_spec)
     monkeypatch.setitem(
         sys.modules,
-        'app.kubernetes_operations.configmaps.contracts',
+        'app.kubernetes.operations.configmaps.contracts',
         contracts,
     )
     contract_spec.loader.exec_module(contracts)

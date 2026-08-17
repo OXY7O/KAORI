@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
-from app.dashboards.kubernetes.schema import DashboardClusterOption
-from app.dashboards.kubernetes.sections.cluster_health import paginate_sequence
-from app.dashboards.kubernetes.sections.top_consumers import build_top_consumers_snapshot
-from app.dashboards.kubernetes.utils import get_selected_cluster, normalize_selected_cluster
+from app.kubernetes.dashboard.schema import DashboardClusterOption
+from app.kubernetes.dashboard.sections.cluster_health import paginate_sequence
+from app.kubernetes.dashboard.sections.top_consumers import build_top_consumers_snapshot
+from app.kubernetes.dashboard.utils import get_selected_cluster, normalize_selected_cluster
 
 
 def test_dashboard_pagination_is_bounded_and_clamps_invalid_pages() -> None:

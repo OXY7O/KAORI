@@ -18,4 +18,4 @@ Usernames, passwords, authorization codes, OAuth state, nonce values, raw provid
 
 ## Rollback
 
-Restore `app/auth/routes.py` and `app/templates/layouts/auth.html`. No database migration or stored-data rollback is required.
+Restore `app/access/authentication/routes.py` and `app/templates/layouts/auth.html`. No database migration or stored-data rollback is required.

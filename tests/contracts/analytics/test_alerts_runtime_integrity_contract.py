@@ -8,7 +8,7 @@ def read(relative: str) -> str:
 
 
 def test_snapshot_dimensions_exclude_local_record_controls() -> None:
-    routes = read('app/analytics/kubernetes/alerts/routes.py')
+    routes = read('app/kubernetes/analytics/alerts/routes.py')
     snapshot_parameters = routes.split('def _snapshot_parameters', 1)[1].split('def _present', 1)[0]
 
     assert "'source': normalize_option(" in snapshot_parameters
@@ -29,7 +29,7 @@ def test_snapshot_dimensions_exclude_local_record_controls() -> None:
 
 
 def test_fragment_transport_is_htmx_only_and_no_store() -> None:
-    routes = read('app/analytics/kubernetes/alerts/routes.py')
+    routes = read('app/kubernetes/analytics/alerts/routes.py')
 
     assert "request.headers.get('HX-Request', '').lower() == 'true'" in routes
     assert "return redirect(_full_page_url('alerts'))" in routes
@@ -40,10 +40,10 @@ def test_fragment_transport_is_htmx_only_and_no_store() -> None:
 
 
 def test_alert_and_anomaly_pagination_state_is_independent() -> None:
-    routes = read('app/analytics/kubernetes/alerts/routes.py')
-    alerts_table = read('app/templates/analytics/kubernetes/alerts/partials/_alerts_table.html')
-    anomalies_table = read('app/templates/analytics/kubernetes/alerts/partials/_anomalies_table.html')
-    filters = read('app/templates/analytics/kubernetes/alerts/partials/_table_filters.html')
+    routes = read('app/kubernetes/analytics/alerts/routes.py')
+    alerts_table = read('app/templates/kubernetes/analytics/alerts/partials/_alerts_table.html')
+    anomalies_table = read('app/templates/kubernetes/analytics/alerts/partials/_anomalies_table.html')
+    filters = read('app/templates/kubernetes/analytics/alerts/partials/_table_filters.html')
 
     assert "request.args.get('alerts_page', '1')" in routes
     assert "request.args.get('anomalies_page', '1')" in routes
@@ -68,8 +68,8 @@ def test_alert_queries_deduplicate_and_scope_anomalies_to_active_pods() -> None:
 
 
 def test_source_normalization_and_deduplication_have_canonical_ownership() -> None:
-    sources = read('app/analytics/kubernetes/alerts/sources.py')
-    records = read('app/analytics/kubernetes/alerts/records.py')
+    sources = read('app/kubernetes/analytics/alerts/sources.py')
+    records = read('app/kubernetes/analytics/alerts/records.py')
     baseline = read('docs/architecture/code-health-debt-baseline.json')
 
     assert 'def normalize_alertmanager_item(' not in sources
@@ -81,11 +81,11 @@ def test_source_normalization_and_deduplication_have_canonical_ownership() -> No
     assert "'alertstate'" in records
     assert 'strip().lower() == namespace_query' in records
     assert len(sources.splitlines()) <= 800
-    assert 'app/analytics/kubernetes/alerts/sources.py::normalize_alertmanager_item' not in baseline
+    assert 'app/kubernetes/analytics/alerts/sources.py::normalize_alertmanager_item' not in baseline
 
 
 def test_anomaly_queries_fail_independently_and_expose_partial_evidence() -> None:
-    anomalies = read('app/analytics/kubernetes/alerts/anomalies.py')
+    anomalies = read('app/kubernetes/analytics/alerts/anomalies.py')
 
     assert 'def _query_anomaly_candidates(' in anomalies
     assert "signal_name='restart'" in anomalies
@@ -96,7 +96,7 @@ def test_anomaly_queries_fail_independently_and_expose_partial_evidence() -> Non
 
 
 def test_local_record_filters_do_not_rewrite_global_page_posture() -> None:
-    application = read('app/analytics/kubernetes/alerts/application.py')
+    application = read('app/kubernetes/analytics/alerts/application.py')
 
     assert "global_summary = presented.get('summary')" in application
     assert "'record_summary': record_summary" in application
@@ -119,8 +119,8 @@ def test_report_reads_committed_snapshot_instead_of_live_providers() -> None:
 
 
 def test_overview_does_not_present_incomplete_evidence_as_stable() -> None:
-    snapshots = read('app/analytics/kubernetes/alerts/snapshots.py')
-    overview = read('app/templates/analytics/kubernetes/overview/partials/_alerts_snapshot.html')
+    snapshots = read('app/kubernetes/analytics/alerts/snapshots.py')
+    overview = read('app/templates/kubernetes/analytics/overview/partials/_alerts_snapshot.html')
 
     assert "return 'Limited Evidence', 'unknown'" in snapshots
     assert "'evidence_complete': evidence_complete" in snapshots
@@ -129,7 +129,7 @@ def test_overview_does_not_present_incomplete_evidence_as_stable() -> None:
 
 
 def test_alert_overview_fields_do_not_leak_into_workload_projection() -> None:
-    overview = read('app/analytics/kubernetes/overview/service.py')
+    overview = read('app/kubernetes/analytics/overview/service.py')
     workload_projection = overview.split('def _get_workload_snapshot', 1)[1].split(
         'def _get_top_consumers_snapshot', 1
     )[0]
@@ -141,8 +141,8 @@ def test_alert_overview_fields_do_not_leak_into_workload_projection() -> None:
 
 
 def test_signal_overview_cannot_report_normal_when_evidence_is_incomplete() -> None:
-    signals = read('app/analytics/kubernetes/alerts/signals.py')
-    application = read('app/analytics/kubernetes/alerts/application.py')
+    signals = read('app/kubernetes/analytics/alerts/signals.py')
+    application = read('app/kubernetes/analytics/alerts/application.py')
 
     assert 'if not evidence_complete:' in signals
     assert "'label': 'Limited Evidence'" in signals

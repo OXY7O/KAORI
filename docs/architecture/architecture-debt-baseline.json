@@ -27,13 +27,13 @@
   ],
   "service_form_imports": [
     {
-      "source": "app/alert_sources/providers/alertmanager/service.py",
-      "target": "app.alert_sources.providers.alertmanager.forms",
+      "source": "app/integrations/observability/alert_source/providers/alertmanager/application/service.py",
+      "target": "app.integrations.observability.alert_source.providers.alertmanager.application.forms",
       "exit_plan": "Replace form objects with provider-neutral command/input contracts."
     },
     {
-      "source": "app/users/service.py",
-      "target": "app.users.forms",
+      "source": "app/access/users/service.py",
+      "target": "app.access.users.forms",
       "exit_plan": "Map WTForms data to user commands in the route layer."
     }
   ]

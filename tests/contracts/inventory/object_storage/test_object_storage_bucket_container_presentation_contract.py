@@ -9,8 +9,8 @@ def read(path: str) -> str:
 
 def test_bucket_container_page_keeps_one_vendor_neutral_inventory_surface() -> None:
     menu = read('app/templates/components/navigation/object_storage_menu.html')
-    hero = read('app/templates/inventory/object_storage/buckets/partials/_hero.html')
-    table = read('app/templates/inventory/object_storage/buckets/partials/_table_content.html')
+    hero = read('app/templates/storage/object_storage/inventory/buckets/partials/_hero.html')
+    table = read('app/templates/storage/object_storage/inventory/buckets/partials/_table_content.html')
 
     assert 'Buckets &amp; Containers' in menu
     assert 'Buckets &amp; Containers' in hero
@@ -33,9 +33,9 @@ def test_bucket_container_page_keeps_one_vendor_neutral_inventory_surface() -> N
 
 
 def test_list_table_stays_canonical_while_modal_is_provider_aware() -> None:
-    index = read('app/templates/inventory/object_storage/buckets/index.html')
-    table = read('app/templates/inventory/object_storage/buckets/partials/_table_content.html')
-    presentation = read('app/inventory/object_storage/presentation.py')
+    index = read('app/templates/storage/object_storage/inventory/buckets/index.html')
+    table = read('app/templates/storage/object_storage/inventory/buckets/partials/_table_content.html')
+    presentation = read('app/storage/object_storage/inventory/presentation.py')
 
     assert 'resource_detail_modal' not in index
     assert 'resource_detail_modal' not in table
@@ -55,8 +55,8 @@ def test_list_table_stays_canonical_while_modal_is_provider_aware() -> None:
 
 def test_provider_specific_metadata_does_not_leak_into_the_general_table_contract() -> None:
     model = read('app/models/object_storage.py')
-    presentation = read('app/inventory/object_storage/presentation.py')
-    table = read('app/templates/inventory/object_storage/buckets/partials/_table_content.html')
+    presentation = read('app/storage/object_storage/inventory/presentation.py')
+    table = read('app/templates/storage/object_storage/inventory/buckets/partials/_table_content.html')
 
     for field in (
         'native_type',
@@ -82,7 +82,7 @@ def test_provider_specific_metadata_does_not_leak_into_the_general_table_contrac
 
 def test_minio_inventory_collector_emits_provider_neutral_namespace_contract() -> None:
     client = read('app/integrations/storage/object_storage/providers/minio/client.py')
-    sync = read('app/inventory/object_storage/sync.py')
+    sync = read('app/storage/object_storage/inventory/sync.py')
 
     assert "native_type: str = 'bucket'" in client
     assert 'location: str | None = None' in client
@@ -106,9 +106,9 @@ def test_bucket_container_schema_migration_follows_current_inventory_job_head() 
 
 
 def test_bucket_container_filters_use_system_provider_type_and_search() -> None:
-    routes = read('app/inventory/object_storage/routes.py')
-    card = read('app/templates/inventory/object_storage/buckets/partials/_table_card.html')
-    presentation = read('app/inventory/object_storage/presentation.py')
+    routes = read('app/storage/object_storage/inventory/routes.py')
+    card = read('app/templates/storage/object_storage/inventory/buckets/partials/_table_card.html')
+    presentation = read('app/storage/object_storage/inventory/presentation.py')
 
     assert "native_type=request.args.get('native_type'" in routes
     assert 'selected_native_type=filters.native_type' in routes

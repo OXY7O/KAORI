@@ -10,10 +10,10 @@ def read(relative: str) -> str:
 
 
 def test_storage_runtime_has_explicit_evidence_domain_and_presentation_ownership() -> None:
-    service = read('app/analytics/kubernetes/storage/service.py')
-    evidence = read('app/analytics/kubernetes/storage/evidence.py')
-    domain = read('app/analytics/kubernetes/storage/domain.py')
-    presentation = read('app/analytics/kubernetes/storage/presentation.py')
+    service = read('app/kubernetes/analytics/storage/service.py')
+    evidence = read('app/kubernetes/analytics/storage/evidence.py')
+    domain = read('app/kubernetes/analytics/storage/domain.py')
+    presentation = read('app/kubernetes/analytics/storage/presentation.py')
 
     assert 'class StorageEvidenceCollector' in evidence
     assert 'def build_storage_payload' in domain
@@ -24,7 +24,7 @@ def test_storage_runtime_has_explicit_evidence_domain_and_presentation_ownership
 
 
 def test_storage_collector_queries_each_canonical_signal_once() -> None:
-    evidence = read('app/analytics/kubernetes/storage/evidence.py')
+    evidence = read('app/kubernetes/analytics/storage/evidence.py')
     query_profile = read('app/integrations/observability/metrics_source/query_profiles/kubernetes_v1.py')
 
     assert 'PVC_CAPACITY_BY_CLAIM_QUERY' in evidence
@@ -42,7 +42,7 @@ def test_storage_collector_queries_each_canonical_signal_once() -> None:
 
 
 def test_storage_partial_endpoints_are_htmx_only_and_not_cacheable() -> None:
-    routes = read('app/analytics/kubernetes/storage/routes.py')
+    routes = read('app/kubernetes/analytics/storage/routes.py')
 
     assert "request.headers.get('HX-Request'" in routes
     assert "return redirect(_full_storage_url('filesystem'))" in routes
@@ -52,8 +52,8 @@ def test_storage_partial_endpoints_are_htmx_only_and_not_cacheable() -> None:
 
 
 def test_storage_filters_preserve_tab_and_lazy_urls_preserve_local_state() -> None:
-    controls = read('app/templates/analytics/kubernetes/storage/partials/_controls_readiness.html')
-    section = read('app/templates/analytics/kubernetes/storage/partials/_storage_section.html')
+    controls = read('app/templates/kubernetes/analytics/storage/partials/_controls_readiness.html')
+    section = read('app/templates/kubernetes/analytics/storage/partials/_storage_section.html')
 
     assert 'data-analytics-preserve-tab' in controls
     assert 'filesystem_page=storage_summary.node_filesystem.pagination.page' in section
@@ -65,9 +65,9 @@ def test_storage_filters_preserve_tab_and_lazy_urls_preserve_local_state() -> No
 
 def test_storage_templates_render_domain_status_without_local_threshold_logic() -> None:
     paths = (
-        'app/templates/analytics/kubernetes/storage/partials/_hero.html',
-        'app/templates/analytics/kubernetes/storage/partials/_overview.html',
-        'app/templates/analytics/kubernetes/storage/partials/_capacity_utilization_panel.html',
+        'app/templates/kubernetes/analytics/storage/partials/_hero.html',
+        'app/templates/kubernetes/analytics/storage/partials/_overview.html',
+        'app/templates/kubernetes/analytics/storage/partials/_capacity_utilization_panel.html',
     )
     for path in paths:
         source = read(path)
@@ -75,12 +75,12 @@ def test_storage_templates_render_domain_status_without_local_threshold_logic() 
         assert '>= 75' not in source, path
         assert 'pressure_tone(' not in source, path
     assert 'table_label.status_label(posture.label' in read(
-        'app/templates/analytics/kubernetes/storage/partials/_overview.html'
+        'app/templates/kubernetes/analytics/storage/partials/_overview.html'
     )
 
 
 def test_pvc_ui_and_report_use_observed_capacity_as_pressure_denominator() -> None:
-    pvc = read('app/templates/analytics/kubernetes/storage/partials/_persistent_volume_claims_panel.html')
+    pvc = read('app/templates/kubernetes/analytics/storage/partials/_persistent_volume_claims_panel.html')
     report = read('app/reports/export/html_pdf/storage_analysis.py')
 
     assert 'of observed capacity' in pvc

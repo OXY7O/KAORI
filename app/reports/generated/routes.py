@@ -10,9 +10,9 @@ from flask.typing import ResponseReturnValue
 from flask_login import current_user
 from werkzeug.exceptions import HTTPException
 
-from app.auth.session import safe_next_url
-from app.notifications.service import record_operational_activity
-from app.rbac.decorators import permission_required
+from app.access.authentication.session import safe_next_url
+from app.access.rbac.decorators import permission_required
+from app.platform_operations.notifications.service import record_operational_activity
 from app.reports.generated.service import (
     archive_report_record,
     bulk_archive_report_records,

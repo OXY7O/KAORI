@@ -7,8 +7,6 @@ from flask import Flask, request
 from flask_login import current_user
 from flask_wtf.csrf import generate_csrf
 
-from app.cluster.constants import get_environment_label
-from app.cluster.onboarding import build_cluster_onboarding_context
 from app.common.navigation import build_navigation_breadcrumb
 from app.common.timezone import (
     format_user_date,
@@ -21,8 +19,10 @@ from app.common.timezone import (
     normalize_timezone_name,
 )
 from app.integrations.navigation import build_integration_navigation_context, integration_endpoint_owner
-from app.notifications.feedback import pop_operational_feedback
-from app.notifications.service import get_navigation_notification_context
+from app.kubernetes.cluster.constants import get_environment_label
+from app.kubernetes.cluster.onboarding import build_cluster_onboarding_context
+from app.platform_operations.notifications.feedback import pop_operational_feedback
+from app.platform_operations.notifications.service import get_navigation_notification_context
 
 _DEFAULT_PREFERENCES = {
     'timezone_name': 'UTC',

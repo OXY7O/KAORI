@@ -11,8 +11,8 @@ from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_a
     KubernetesDeploymentRestartAdapter,
     NamespaceGuardrail,
 )
-from app.resolver.contracts import ResolverError
-from app.resolver.registry import ResolverRegistry
+from app.intelligence.resolver.contracts import ResolverError
+from app.intelligence.resolver.registry import ResolverRegistry
 
 EXTENSION_KEY = 'kaori_resolver_registry'
 FINGERPRINT_KEY = 'kaori_resolver_registry_fingerprint'

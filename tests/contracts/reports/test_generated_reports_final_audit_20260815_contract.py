@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -183,7 +184,8 @@ def test_generated_service_removed_unrendered_legacy_presentation_debt() -> None
         assert f'def {function_name}(' not in service
 
     assert 'app/reports/generated/service.py::get_report_detail_recommended_actions' not in baseline
-    assert '"app/reports/generated/service.py": 1688' in baseline
+    debt = json.loads(baseline)['module_line_limits']['app/reports/generated/service.py']
+    assert 800 < debt <= 1688
 
 
 def test_generated_artifact_actions_preserve_registry_context_end_to_end() -> None:

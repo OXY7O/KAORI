@@ -17,7 +17,7 @@ This stabilization pass consolidates the Domain 2 patches for Prometheus, Alertm
 
 ## Patch-overlap correction
 
-The delete/admission serialization batch also changed `app/jobs/service.py`. Applied after the terminal-state batch, it replaced the terminal finalizer guards. This stabilization pass merges both changes into one source:
+The delete/admission serialization batch also changed `app/platform_operations/jobs/service.py`. Applied after the terminal-state batch, it replaced the terminal finalizer guards. This stabilization pass merges both changes into one source:
 
 - `acquire_resource_admission_locks()` remains active for admission serialization.
 - `mark_job_succeeded()`, `mark_job_failed()`, `mark_job_retrying()`, and `mark_job_canceled()` preserve terminal-state monotonicity.
@@ -53,14 +53,14 @@ Revert the stabilization commit and redeploy all KAORI web and worker processes 
 
 ## Changed production files
 
-- `app/alert_sources/providers/alertmanager/service.py`
-- `app/cluster/service.py`
-- `app/cluster/sync_jobs.py`
+- `app/integrations/observability/alert_source/providers/alertmanager/application/service.py`
+- `app/kubernetes/cluster/service.py`
+- `app/kubernetes/cluster/sync_jobs.py`
 - `app/integrations/observability/alert_source/providers/alertmanager/binding_management.py`
 - `app/integrations/deletion.py`
 - `app/integrations/prometheus/binding_management.py`
 - `app/integrations/runtime/repository.py`
 - `app/integrations/validation/state.py`
 - `app/integrations/validation/web.py`
-- `app/jobs/service.py`
+- `app/platform_operations/jobs/service.py`
 - `app/prometheus/service.py`

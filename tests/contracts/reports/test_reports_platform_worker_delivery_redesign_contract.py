@@ -143,9 +143,11 @@ def test_generated_registry_surfaces_storage_outage_without_breaking_list() -> N
 
 
 def test_report_schedule_dispatcher_uses_canonical_worker_job() -> None:
-    definition = read(ROOT / 'app' / 'jobs' / 'definitions' / 'report_schedule.py')
-    job_catalog = yaml.safe_load(read(ROOT / 'app' / 'definitions' / 'catalogs' / 'jobs' / 'registered_jobs.yaml'))
-    registry = read(ROOT / 'app' / 'jobs' / 'registry.py')
+    definition = read(ROOT / 'app' / 'platform_operations' / 'jobs' / 'definitions' / 'report_schedule.py')
+    job_catalog = yaml.safe_load(
+        read(ROOT / 'app' / 'definitions' / 'catalogs' / 'platform_operations' / 'jobs' / 'registered_jobs.yaml')
+    )
+    registry = read(ROOT / 'app' / 'platform_operations' / 'jobs' / 'registry.py')
     adapter = read(ROOT / 'app' / 'reports' / 'schedules' / 'job_adapter.py')
     task = read(ROOT / 'app' / 'reports' / 'schedules' / 'tasks.py')
     config = read(ROOT / 'app' / 'config' / 'default.py')
@@ -179,7 +181,7 @@ def test_report_delivery_uses_platform_notification_channels_by_identity() -> No
     model = read(ROOT / 'app' / 'models' / 'report.py')
     migration = read(ROOT / 'migrations' / 'versions' / '20260814_report_notification_channels.py')
     delivery = read(ROOT / 'app' / 'reports' / 'notifications.py')
-    channel_service = read(ROOT / 'app' / 'notification_channels' / 'service.py')
+    channel_service = read(ROOT / 'app' / 'integrations' / 'delivery' / 'notification_channels' / 'service.py')
     report_worker = read(ROOT / 'app' / 'reports' / 'jobs' / 'tasks.py')
     schedule_template = read(REPORT_TEMPLATES / 'schedules' / 'index.html')
 

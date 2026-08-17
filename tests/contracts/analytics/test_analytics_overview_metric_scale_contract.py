@@ -2,7 +2,7 @@ from pathlib import Path
 
 
 def test_overview_posture_metrics_use_inventory_compact_scale() -> None:
-    posture = Path('app/templates/analytics/kubernetes/overview/partials/_hero_posture.html').read_text()
+    posture = Path('app/templates/kubernetes/analytics/overview/partials/_hero_posture.html').read_text()
     shared = Path('app/templates/components/page_hero.html').read_text()
 
     assert 'page_hero.context_card_body(' in posture

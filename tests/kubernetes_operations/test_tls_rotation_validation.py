@@ -5,7 +5,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 ROOT = Path(__file__).resolve().parents[2]
-MODULE = ROOT / 'app/kubernetes_operations/secrets/tls_validation.py'
+MODULE = ROOT / 'app/kubernetes/operations/secrets/tls_validation.py'
 
 
 def load_validation_module():

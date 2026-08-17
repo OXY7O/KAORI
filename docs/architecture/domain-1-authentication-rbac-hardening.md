@@ -20,12 +20,12 @@ No database migration is required. Deploy the application code normally. Existin
 
 ## Rollback
 
-Revert `app/models/user.py` and `app/users/service.py` together with their tests and this document. Rollback restores the previous fallback behavior and is therefore not recommended after inactive roles are used as an access-revocation control.
+Revert `app/models/user.py` and `app/access/users/service.py` together with their tests and this document. Rollback restores the previous fallback behavior and is therefore not recommended after inactive roles are used as an access-revocation control.
 
 ## Changed files
 
 - `app/models/user.py`
-- `app/users/service.py`
+- `app/access/users/service.py`
 - `tests/users/test_authorization_guardrails.py`
 - `tests/contracts/rbac/test_authorization_boundary_contract.py`
 - `docs/architecture/domain-1-authentication-rbac-hardening.md`

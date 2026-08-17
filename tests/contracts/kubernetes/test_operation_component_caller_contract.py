@@ -39,7 +39,7 @@ def test_shared_operation_action_bar_renders_call_block_directly() -> None:
 
 
 def test_operation_templates_do_not_use_domain_component_wrappers() -> None:
-    templates = ROOT / 'app' / 'templates' / 'kubernetes_operations'
+    templates = ROOT / 'app' / 'templates' / 'kubernetes' / 'operations'
     wrapper_paths = (
         templates / 'configmaps' / '_components.html',
         templates / 'secrets' / '_components.html',
@@ -49,5 +49,5 @@ def test_operation_templates_do_not_use_domain_component_wrappers() -> None:
 
     for template in templates.rglob('*.html'):
         source = template.read_text()
-        assert 'kubernetes_operations/configmaps/_components.html' not in source
-        assert 'kubernetes_operations/secrets/_components.html' not in source
+        assert 'kubernetes/operations/configmaps/_components.html' not in source
+        assert 'kubernetes/operations/secrets/_components.html' not in source

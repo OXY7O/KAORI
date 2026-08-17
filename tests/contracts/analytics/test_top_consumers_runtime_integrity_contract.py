@@ -8,7 +8,7 @@ def read(relative: str) -> str:
 
 
 def test_snapshot_dimensions_exclude_local_record_controls() -> None:
-    routes = read('app/analytics/kubernetes/top_consumers/routes.py')
+    routes = read('app/kubernetes/analytics/top_consumers/routes.py')
     snapshot_parameters = routes.split('def _snapshot_parameters', 1)[1].split('def _context_or_state', 1)[0]
 
     assert "request.args.get('cluster_id'" in snapshot_parameters
@@ -18,7 +18,7 @@ def test_snapshot_dimensions_exclude_local_record_controls() -> None:
 
 
 def test_fragment_transport_is_htmx_only_and_no_store() -> None:
-    routes = read('app/analytics/kubernetes/top_consumers/routes.py')
+    routes = read('app/kubernetes/analytics/top_consumers/routes.py')
 
     assert "request.headers.get('HX-Request', '').lower() == 'true'" in routes
     assert 'return redirect(_full_page_url())' in routes
@@ -29,7 +29,7 @@ def test_fragment_transport_is_htmx_only_and_no_store() -> None:
 
 def test_legacy_top_consumers_section_surface_is_removed() -> None:
     analytics_routes = read('app/analytics/routes.py')
-    domain_routes = read('app/analytics/kubernetes/top_consumers/routes.py')
+    domain_routes = read('app/kubernetes/analytics/top_consumers/routes.py')
     navigation = read('app/templates/components/navigation/analytics_menu.html')
 
     assert 'top_consumers_section' not in analytics_routes
@@ -55,7 +55,7 @@ def test_promql_normalizes_series_and_uses_ready_worker_capacity() -> None:
 
 
 def test_missing_advisory_capability_does_not_become_confirmed_zero() -> None:
-    evidence = read('app/analytics/kubernetes/top_consumers/evidence.py')
+    evidence = read('app/kubernetes/analytics/top_consumers/evidence.py')
 
     assert 'TOP_CONSUMERS_ADVISORY_CAPABILITIES' in evidence
     assert 'if not rows and advisory_capability in advisory_missing:' in evidence
@@ -66,7 +66,7 @@ def test_missing_advisory_capability_does_not_become_confirmed_zero() -> None:
 
 
 def test_namespace_snapshot_mismatch_is_not_projected_as_cluster_data() -> None:
-    presentation = read('app/analytics/kubernetes/top_consumers/presentation.py')
+    presentation = read('app/kubernetes/analytics/top_consumers/presentation.py')
 
     assert 'if selected_namespace and snapshot_namespace != selected_namespace:' in presentation
     assert "payload['snapshot_scope_mismatch'] = True" in presentation
@@ -75,8 +75,8 @@ def test_namespace_snapshot_mismatch_is_not_projected_as_cluster_data() -> None:
 
 def test_report_uses_canonical_selection_contract() -> None:
     report = read('app/reports/export/payloads/top_consumers.py')
-    contracts = read('app/analytics/kubernetes/top_consumers/contracts.py')
-    service = read('app/analytics/kubernetes/top_consumers/service.py')
+    contracts = read('app/kubernetes/analytics/top_consumers/contracts.py')
+    service = read('app/kubernetes/analytics/top_consumers/service.py')
 
     assert 'class TopConsumersSelection:' in contracts
     assert 'TopConsumersSelection(' in report
@@ -98,10 +98,10 @@ def test_top_consumers_runtime_modules_remain_bounded() -> None:
         'service.py',
     )
     for module in modules:
-        source = read(f'app/analytics/kubernetes/top_consumers/{module}')
+        source = read(f'app/kubernetes/analytics/top_consumers/{module}')
         assert len(source.splitlines()) <= 800, module
 
-    service = read('app/analytics/kubernetes/top_consumers/service.py')
-    rows = read('app/analytics/kubernetes/top_consumers/rows.py')
+    service = read('app/kubernetes/analytics/top_consumers/service.py')
+    rows = read('app/kubernetes/analytics/top_consumers/rows.py')
     assert 'def build_consumer_row(' not in service
     assert 'def build_consumer_row(spec: ConsumerRowSpec)' in rows

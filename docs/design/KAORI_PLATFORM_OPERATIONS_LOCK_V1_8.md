@@ -21,7 +21,7 @@ Platform Operations
 
 1. Data Lifecycle is not a Settings-owned workspace.
 2. Navigation, breadcrumbs, route namespace, template namespace, RBAC namespace, activity links, and integration-runtime links all resolve to Platform Operations ownership.
-3. The shared retention engine stays under `app/retention`; the Platform Operations package owns HTTP/UI orchestration.
+3. The shared retention engine stays under `app/platform_operations/data_lifecycle/retention`; the Platform Operations package owns HTTP/UI orchestration.
 4. Legacy Settings routes are redirect-only compatibility and may not regain mutation/rendering logic.
 5. Data Lifecycle uses shared Framed Workspace Tabs and the generic Platform Operations UI lock.
 6. Archive History is archive evidence only; canonical worker execution evidence remains in Jobs & Executions.

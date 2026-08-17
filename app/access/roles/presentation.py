@@ -5,20 +5,20 @@ from typing import Any
 
 from sqlalchemy import func
 
+from app.access.rbac.defaults import DEFAULT_PERMISSION_DEPENDENCIES
+from app.access.rbac.policy import (
+    actor_delegable_permission_keys,
+    role_is_delegable_by_actor,
+    role_is_mutation_protected,
+    role_is_protected_default,
+)
+from app.access.rbac.service import get_permissions_grouped_by_module
 from app.access.roles.baseline import role_baseline_snapshot, role_baseline_state
 from app.access.roles.forms import RoleForm
 from app.access.roles.service import delegable_permission_ids, role_version_token
 from app.common.pagination import PER_PAGE_OPTIONS, build_pagination_window, normalize_per_page, positive_int
 from app.extensions.db import db
 from app.models import IdentityProvider, Permission, Role, User
-from app.rbac.defaults import DEFAULT_PERMISSION_DEPENDENCIES
-from app.rbac.policy import (
-    actor_delegable_permission_keys,
-    role_is_delegable_by_actor,
-    role_is_mutation_protected,
-    role_is_protected_default,
-)
-from app.rbac.service import get_permissions_grouped_by_module
 
 ROLE_TYPE_OPTIONS = ('all', 'system', 'custom')
 ROLE_STATE_OPTIONS = ('all', 'active', 'inactive')

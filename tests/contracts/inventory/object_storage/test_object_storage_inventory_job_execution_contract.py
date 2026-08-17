@@ -8,10 +8,12 @@ def read(path: str) -> str:
 
 
 def test_object_storage_inventory_is_a_registered_periodic_job() -> None:
-    definition = read('app/definitions/catalogs/jobs/registered_jobs.yaml')
-    registry = read('app/jobs/registry.py')
-    template = read('app/templates/jobs/configuration/definitions/object_storage_inventory_sync.html')
-    scheduler = read('app/jobs/scheduler.py')
+    definition = read('app/definitions/catalogs/platform_operations/jobs/registered_jobs.yaml')
+    registry = read('app/platform_operations/jobs/registry.py')
+    template = read(
+        'app/templates/platform_operations/jobs/configuration/definitions/object_storage_inventory_sync.html'
+    )
+    scheduler = read('app/platform_operations/jobs/scheduler.py')
 
     assert 'key: object_storage.inventory.sync' in definition
     assert 'domain: Object Storage Inventory' in definition
@@ -27,10 +29,10 @@ def test_object_storage_inventory_is_a_registered_periodic_job() -> None:
 
 
 def test_object_storage_job_uses_canonical_job_execution_and_inventory_worker() -> None:
-    sync_jobs = read('app/inventory/object_storage/sync_jobs.py')
-    tasks = read('app/inventory/object_storage/tasks.py')
+    sync_jobs = read('app/storage/object_storage/inventory/sync_jobs.py')
+    tasks = read('app/storage/object_storage/inventory/tasks.py')
     config = read('app/config/default.py')
-    adapter = read('app/inventory/object_storage/job_adapter.py')
+    adapter = read('app/storage/object_storage/inventory/job_adapter.py')
 
     assert 'enqueue_canonical_job(' in sync_jobs
     assert "job_type='object_storage_inventory'" in sync_jobs
@@ -38,12 +40,12 @@ def test_object_storage_job_uses_canonical_job_execution_and_inventory_worker() 
     assert 'operation=OBJECT_STORAGE_INVENTORY_SYNC_OPERATION' in sync_jobs
     assert "resource_group='object-storage-inventory:global'" in sync_jobs
     assert "instance.readiness_status != 'ready'" in sync_jobs
-    assert "name='app.inventory.object_storage.tasks.sync_all_object_storage'" in tasks
+    assert "name='app.storage.object_storage.inventory.tasks.sync_all_object_storage'" in tasks
     assert 'sync_object_storage_inventory(' in tasks
     assert "get_integration('minio').execute(" not in tasks
     assert 'progress_callback=report_bucket_progress' in tasks
-    assert "'app.inventory.object_storage.tasks'" in config
-    assert "'app.inventory.object_storage.tasks.sync_all_object_storage'" in config
+    assert "'app.storage.object_storage.inventory.tasks'" in config
+    assert "'app.storage.object_storage.inventory.tasks.sync_all_object_storage'" in config
     assert "'queue': 'inventory'" in config
     assert "'eligible_target_count': eligible_system_count" in adapter
 
@@ -52,7 +54,7 @@ def test_minio_validation_runtime_and_inventory_ownership_are_separated() -> Non
     integration = read('app/integrations/storage/object_storage/providers/minio/__init__.py')
     adapter = read('app/integrations/storage/object_storage/providers/minio/adapter.py')
     client = read('app/integrations/storage/object_storage/providers/minio/client.py')
-    sync = read('app/inventory/object_storage/sync.py')
+    sync = read('app/storage/object_storage/inventory/sync.py')
     validation = read(
         'app/templates/integrations/storage/object_storage/providers/minio/partials/_detail_validation.html'
     )
@@ -66,7 +68,7 @@ def test_minio_validation_runtime_and_inventory_ownership_are_separated() -> Non
     assert 'probe_instance_runtime_health(instance)' in adapter
     assert "instance.object_storage_system.status = 'connected'" in adapter
     assert "if operation == 'inventory.sync'" not in adapter
-    assert 'app.inventory.object_storage' not in adapter
+    assert 'app.storage.object_storage.inventory' not in adapter
     assert 'collect_instance_bucket_inventory(' in sync
     assert 'usage_stats_mode=usage_stats_mode' in sync
     assert '_lock_system_inventory_sync(' in sync
@@ -80,9 +82,9 @@ def test_minio_validation_runtime_and_inventory_ownership_are_separated() -> Non
 
 
 def test_inventory_pages_and_minio_lifecycle_read_only_committed_job_snapshot() -> None:
-    minio_presentation = read('app/object_storage/providers/minio/presentation.py')
+    minio_presentation = read('app/integrations/storage/object_storage/providers/minio/application/presentation.py')
     scope = read('app/templates/integrations/storage/object_storage/providers/minio/partials/_detail_scope.html')
-    storage_presentation = read('app/inventory/object_storage/presentation.py')
+    storage_presentation = read('app/storage/object_storage/inventory/presentation.py')
 
     assert 'len(instance.object_storage_system.buckets or ())' in minio_presentation
     assert 'instance.object_storage_system.inventory_observed_at' in minio_presentation
@@ -93,18 +95,18 @@ def test_inventory_pages_and_minio_lifecycle_read_only_committed_job_snapshot() 
     assert 'latest completed MinIO Full Validation' not in scope
     assert 'Run Object Storage Inventory Sync from Job Execution' in storage_presentation
     assert "'source_label': 'Committed Snapshot'" in storage_presentation
-    bucket_detail = read('app/templates/inventory/object_storage/buckets/partials/_bucket_detail_content.html')
-    bucket_table = read('app/templates/inventory/object_storage/buckets/partials/_table_content.html')
+    bucket_detail = read('app/templates/storage/object_storage/inventory/buckets/partials/_bucket_detail_content.html')
+    bucket_table = read('app/templates/storage/object_storage/inventory/buckets/partials/_table_content.html')
     assert 'Object Storage Inventory Sync snapshot' in bucket_detail
     assert 'Object Storage Inventory Sync from Job Execution' in bucket_table
     assert 'Full Validation snapshot' not in bucket_detail
 
 
 def test_object_storage_manual_execution_has_domain_permission_and_migration() -> None:
-    defaults = read('app/definitions/catalogs/rbac/access.yaml')
-    service = read('app/rbac/service.py')
+    defaults = read('app/definitions/catalogs/access/rbac/access.yaml')
+    service = read('app/access/rbac/service.py')
     migration = read('migrations/versions/20260813_object_storage_inventory_jobs.py')
-    jobs_readme = read('app/jobs/README.md')
+    jobs_readme = read('app/platform_operations/jobs/README.md')
 
     assert 'key: storage.sync' in defaults
     assert '- key: operator' in defaults and '- key: editor' in defaults

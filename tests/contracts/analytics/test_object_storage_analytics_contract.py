@@ -8,11 +8,11 @@ def read(relative: str) -> str:
 
 
 def test_object_storage_analytics_domain_is_metrics_backend_neutral() -> None:
-    service = read('app/analytics/object_storage/service.py')
-    runtime = read('app/analytics/object_storage/runtime.py')
-    resolver = read('app/analytics/object_storage/sources/resolver.py')
-    adapter = read('app/analytics/object_storage/sources/providers/minio/metrics.py')
-    contracts = read('app/analytics/shared/metrics/contracts.py')
+    service = read('app/storage/object_storage/analytics/service.py')
+    runtime = read('app/storage/object_storage/analytics/runtime.py')
+    resolver = read('app/storage/object_storage/analytics/sources/resolver.py')
+    adapter = read('app/storage/object_storage/analytics/sources/providers/minio/metrics.py')
+    contracts = read('app/common/analytics/metrics/contracts.py')
 
     assert 'MetricsSource' in runtime
     assert 'resolve_object_storage_metrics_source' in runtime
@@ -34,15 +34,15 @@ def test_object_storage_analytics_domain_is_metrics_backend_neutral() -> None:
 
 
 def test_metrics_adapter_payload_parsing_is_owned_by_adapter_not_domain_service() -> None:
-    service = read('app/analytics/object_storage/service.py')
-    adapter = read('app/analytics/object_storage/sources/providers/minio/metrics.py')
+    service = read('app/storage/object_storage/analytics/service.py')
+    adapter = read('app/storage/object_storage/analytics/sources/providers/minio/metrics.py')
 
     assert '_vector_scalar' in adapter
     assert '_vector_by_label' in adapter
     assert '_matrix_points' in adapter
     assert "payload.get('data')" not in service
-    assert not (ROOT / 'app/analytics/object_storage/parsing.py').exists()
-    assert not (ROOT / 'app/analytics/object_storage/metrics.py').exists()
+    assert not (ROOT / 'app/storage/object_storage/analytics/parsing.py').exists()
+    assert not (ROOT / 'app/storage/object_storage/analytics/metrics.py').exists()
 
 
 def test_object_storage_analytics_exposes_kubernetes_style_surface_set() -> None:
@@ -64,9 +64,9 @@ def test_object_storage_analytics_exposes_kubernetes_style_surface_set() -> None
 def test_object_storage_analytics_uses_dedicated_rbac_and_sidebar_visibility() -> None:
     import yaml
 
-    routes = read('app/analytics/object_storage/routes.py')
-    access = yaml.safe_load(read('app/definitions/catalogs/rbac/access.yaml'))
-    defaults = read('app/rbac/defaults.py')
+    routes = read('app/storage/object_storage/analytics/routes.py')
+    access = yaml.safe_load(read('app/definitions/catalogs/access/rbac/access.yaml'))
+    defaults = read('app/access/rbac/defaults.py')
     sidebar = read('app/templates/components/navigation/sidebar.html')
     menu = read('app/templates/components/navigation/analytics_menu.html')
     migration = read('migrations/versions/20260814_object_storage_rbac_split.py')
@@ -76,7 +76,7 @@ def test_object_storage_analytics_uses_dedicated_rbac_and_sidebar_visibility() -
 
     assert routes.count("@permission_required('object_storage_analytics.view')") == 8
     assert object_storage_permission['module'] == 'storage_analytics'
-    assert "load_definition_document('rbac/access.yaml'" in defaults
+    assert "load_definition_document('access/rbac/access.yaml'" in defaults
     assert "has_permission('object_storage_analytics.view')" in sidebar
     assert '{% if can_object_storage_analytics %}' in menu
     assert '{% if can_kubernetes_analytics %}' in menu
@@ -85,9 +85,9 @@ def test_object_storage_analytics_uses_dedicated_rbac_and_sidebar_visibility() -
 
 
 def test_object_storage_alert_sources_are_alertmanager_first_with_metrics_source_fallback() -> None:
-    source = read('app/analytics/object_storage/alert_sources.py')
-    boundary = read('app/templates/analytics/object_storage/partials/_evidence_boundary.html')
-    controls = read('app/templates/analytics/object_storage/partials/_controls.html')
+    source = read('app/storage/object_storage/analytics/alert_sources.py')
+    boundary = read('app/templates/storage/object_storage/analytics/partials/_evidence_boundary.html')
+    controls = read('app/templates/storage/object_storage/analytics/partials/_controls.html')
 
     assert "ALERT_SOURCE_OPTIONS = ('auto', 'alertmanager', 'metrics_source')" in source
     assert "required_capabilities=('alerts_v2',)" in source
@@ -103,8 +103,8 @@ def test_object_storage_alert_sources_are_alertmanager_first_with_metrics_source
 
 
 def test_metrics_source_transport_failure_is_request_fail_fast() -> None:
-    runtime = read('app/analytics/object_storage/runtime.py')
-    adapter = read('app/analytics/object_storage/sources/providers/minio/metrics.py')
+    runtime = read('app/storage/object_storage/analytics/runtime.py')
+    adapter = read('app/storage/object_storage/analytics/sources/providers/minio/metrics.py')
 
     assert 'source_wide_failure' in runtime
     assert 'if self.source_wide_failure is not None' in runtime
@@ -113,7 +113,7 @@ def test_metrics_source_transport_failure_is_request_fail_fast() -> None:
 
 
 def test_metrics_source_transport_capability_ownership_is_provider_core() -> None:
-    resolver = read('app/metrics_sources/resolver.py')
+    resolver = read('app/integrations/observability/metrics_source/application/resolver.py')
 
     assert 'def _available_technical_capabilities' in resolver
     assert 'provider_payload = instance.capabilities or {}' in resolver
@@ -122,8 +122,8 @@ def test_metrics_source_transport_capability_ownership_is_provider_core() -> Non
 
 
 def test_object_storage_metrics_readiness_is_validation_owned_and_provider_qualified() -> None:
-    contracts = read('app/analytics/shared/metrics/contracts.py')
-    adapter = read('app/analytics/object_storage/sources/providers/minio/metrics.py')
+    contracts = read('app/common/analytics/metrics/contracts.py')
+    adapter = read('app/storage/object_storage/analytics/sources/providers/minio/metrics.py')
     binding_profile_catalog = read('app/definitions/catalogs/integrations/observability/metrics_source/contract.yaml')
     binding_validation = read('app/integrations/observability/metrics_source/binding_validation.py')
     validator_registry = read('app/integrations/observability/metrics_source/binding_validators/__init__.py')
@@ -131,7 +131,7 @@ def test_object_storage_metrics_readiness_is_validation_owned_and_provider_quali
         'app/integrations/observability/metrics_source/binding_validators/object_storage.py'
     )
     audit = read('app/integrations/observability/metrics_source/query_profiles/object_storage_audit.py')
-    readiness_template = read('app/templates/analytics/object_storage/partials/_metrics_readiness.html')
+    readiness_template = read('app/templates/storage/object_storage/analytics/partials/_metrics_readiness.html')
 
     assert 'class MetricsReadinessSnapshot' in contracts
     assert 'def readiness(self) -> MetricsReadinessSnapshot' in contracts
@@ -166,10 +166,10 @@ def test_object_storage_query_profile_classifies_required_recommended_and_option
 
 
 def test_object_storage_analysis_semantics_are_provider_neutral_and_page_specific() -> None:
-    index = read('app/templates/analytics/object_storage/index.html')
-    analysis = read('app/analytics/object_storage/analysis.py')
-    presentation = read('app/analytics/object_storage/presentation.py')
-    service = read('app/analytics/object_storage/service.py')
+    index = read('app/templates/storage/object_storage/analytics/index.html')
+    analysis = read('app/storage/object_storage/analytics/analysis.py')
+    presentation = read('app/storage/object_storage/analytics/presentation.py')
+    service = read('app/storage/object_storage/analytics/service.py')
 
     for symbol in (
         'derive_headroom',
@@ -195,30 +195,30 @@ def test_object_storage_analysis_semantics_are_provider_neutral_and_page_specifi
 
     assert 'Prometheus' not in analysis
     assert 'MinIO' not in analysis
-    assert 'object_storage/partials/_overview_analysis.html' in index
-    assert 'object_storage/partials/_overview_workspace.html' in index
-    assert 'object_storage/partials/_capacity_workspace.html' in index
-    assert 'object_storage/partials/_performance_workspace.html' in index
-    assert 'object_storage/partials/_forecast_workspace.html' in index
-    assert 'object_storage/partials/_top_consumers_workspace.html' in index
-    assert 'object_storage/partials/_alerts_workspace.html' in index
-    capacity_workspace = read('app/templates/analytics/object_storage/partials/_capacity_workspace.html')
-    assert 'object_storage/partials/_reconciliation.html' in capacity_workspace
+    assert 'storage/object_storage/analytics/partials/_overview_analysis.html' in index
+    assert 'storage/object_storage/analytics/partials/_overview_workspace.html' in index
+    assert 'storage/object_storage/analytics/partials/_capacity_workspace.html' in index
+    assert 'storage/object_storage/analytics/partials/_performance_workspace.html' in index
+    assert 'storage/object_storage/analytics/partials/_forecast_workspace.html' in index
+    assert 'storage/object_storage/analytics/partials/_top_consumers_workspace.html' in index
+    assert 'storage/object_storage/analytics/partials/_alerts_workspace.html' in index
+    capacity_workspace = read('app/templates/storage/object_storage/analytics/partials/_capacity_workspace.html')
+    assert 'storage/object_storage/analytics/partials/_reconciliation.html' in capacity_workspace
 
 
 def test_object_storage_analysis_distinguishes_operational_domains_and_provenance() -> None:
-    overview = read('app/templates/analytics/object_storage/partials/_overview_analysis.html')
-    capacity = read('app/templates/analytics/object_storage/partials/_capacity_analysis.html')
-    performance = read('app/templates/analytics/object_storage/partials/_performance_analysis.html')
-    forecast = read('app/templates/analytics/object_storage/partials/_forecast_analysis.html')
-    consumer_storage = read('app/templates/analytics/object_storage/partials/_top_consumers_storage.html')
-    consumer_activity = read('app/templates/analytics/object_storage/partials/_top_consumers_activity.html')
-    reconciliation = read('app/templates/analytics/object_storage/partials/_reconciliation.html')
-    bucket_table = read('app/templates/analytics/object_storage/partials/_bucket_table.html')
+    overview = read('app/templates/storage/object_storage/analytics/partials/_overview_analysis.html')
+    capacity = read('app/templates/storage/object_storage/analytics/partials/_capacity_analysis.html')
+    performance = read('app/templates/storage/object_storage/analytics/partials/_performance_analysis.html')
+    forecast = read('app/templates/storage/object_storage/analytics/partials/_forecast_analysis.html')
+    consumer_storage = read('app/templates/storage/object_storage/analytics/partials/_top_consumers_storage.html')
+    consumer_activity = read('app/templates/storage/object_storage/analytics/partials/_top_consumers_activity.html')
+    reconciliation = read('app/templates/storage/object_storage/analytics/partials/_reconciliation.html')
+    bucket_table = read('app/templates/storage/object_storage/analytics/partials/_bucket_table.html')
 
     assert 'Operational Health Summary' in overview
     assert 'Bucket Concentration' in overview
-    capacity_pressure = read('app/templates/analytics/object_storage/partials/_capacity_pressure.html')
+    capacity_pressure = read('app/templates/storage/object_storage/analytics/partials/_capacity_pressure.html')
 
     assert 'Capacity Operating Boundary' in capacity
     assert 'Physical Capacity Utilization' in capacity
@@ -227,7 +227,7 @@ def test_object_storage_analysis_distinguishes_operational_domains_and_provenanc
     assert 'Quota Pressure &amp; Usage Concentration' in capacity_pressure
     assert 'Quota Evidence Coverage' in capacity_pressure
     assert 'Critical Quota' in capacity_pressure
-    performance_traffic = read('app/templates/analytics/object_storage/partials/_performance_traffic.html')
+    performance_traffic = read('app/templates/storage/object_storage/analytics/partials/_performance_traffic.html')
 
     assert 'Request Path Operating Boundary' in performance
     assert 'Request Reliability' in performance
@@ -238,13 +238,15 @@ def test_object_storage_analysis_distinguishes_operational_domains_and_provenanc
     assert 'Bucket Request Path Records' in bucket_table
     assert 'row.request_source' in bucket_table
     assert 'row.error_source' in bucket_table
-    assert "include_capacity_detail=page_key != 'performance'" in read('app/analytics/object_storage/service.py')
+    assert "include_capacity_detail=page_key != 'performance'" in read(
+        'app/storage/object_storage/analytics/service.py'
+    )
     assert 'Forecast Operating Boundary' in forecast
-    methodology = read('app/templates/analytics/object_storage/partials/_forecast_methodology.html')
+    methodology = read('app/templates/storage/object_storage/analytics/partials/_forecast_methodology.html')
     assert 'Linear baseline' in methodology
-    alerts_summary = read('app/templates/analytics/object_storage/partials/_alerts_summary.html')
-    alert_records = read('app/templates/analytics/object_storage/partials/_alert_records.html')
-    alert_source_evidence = read('app/templates/analytics/object_storage/partials/_alerts_source_evidence.html')
+    alerts_summary = read('app/templates/storage/object_storage/analytics/partials/_alerts_summary.html')
+    alert_records = read('app/templates/storage/object_storage/analytics/partials/_alert_records.html')
+    alert_source_evidence = read('app/templates/storage/object_storage/analytics/partials/_alerts_source_evidence.html')
 
     assert 'Storage Consumer Leaders' in consumer_storage
     assert 'Request Activity Leaders' in consumer_activity
@@ -264,8 +266,8 @@ def test_object_storage_analysis_distinguishes_operational_domains_and_provenanc
 
 
 def test_object_storage_performance_chart_keeps_request_and_error_series_separate() -> None:
-    trend = read('app/templates/analytics/object_storage/partials/_trend.html')
-    javascript = read('app/static/js/analytics/object_storage.js')
+    trend = read('app/templates/storage/object_storage/analytics/partials/_trend.html')
+    javascript = read('app/static/js/storage/object_storage/analytics.js')
 
     assert 'data-object-storage-secondary-trend-points' in trend
     assert 'Request & Error Trend' in trend
@@ -293,14 +295,14 @@ def test_kubernetes_navigation_uses_full_product_name_instead_of_k8s_abbreviatio
 
 
 def test_object_storage_analytics_uses_explicit_runtime_states_and_blocking() -> None:
-    index = read('app/templates/analytics/object_storage/index.html')
-    runtime = read('app/analytics/object_storage/runtime.py')
-    dependencies = read('app/analytics/object_storage/dependencies.py')
-    controls = read('app/templates/analytics/object_storage/partials/_controls.html')
-    blocker = read('app/templates/analytics/object_storage/partials/_dependency_blocker.html')
-    dependency_notice = read('app/templates/analytics/object_storage/partials/_dependency_notice.html')
-    hero = read('app/templates/analytics/object_storage/partials/_hero.html')
-    hero_blocked = read('app/templates/analytics/object_storage/partials/_hero_blocked_posture.html')
+    index = read('app/templates/storage/object_storage/analytics/index.html')
+    runtime = read('app/storage/object_storage/analytics/runtime.py')
+    dependencies = read('app/storage/object_storage/analytics/dependencies.py')
+    controls = read('app/templates/storage/object_storage/analytics/partials/_controls.html')
+    blocker = read('app/templates/storage/object_storage/analytics/partials/_dependency_blocker.html')
+    dependency_notice = read('app/templates/storage/object_storage/analytics/partials/_dependency_notice.html')
+    hero = read('app/templates/storage/object_storage/analytics/partials/_hero.html')
+    hero_blocked = read('app/templates/storage/object_storage/analytics/partials/_hero_blocked_posture.html')
 
     for status in (
         'Not Configured',
@@ -319,7 +321,7 @@ def test_object_storage_analytics_uses_explicit_runtime_states_and_blocking() ->
     assert 'metrics_runtime_blocker' in runtime
     assert 'metrics_query_blocker' in runtime
     assert "'inventory_required'" in dependencies
-    service = read('app/analytics/object_storage/service.py')
+    service = read('app/storage/object_storage/analytics/service.py')
     assert service.count('inventory_required_blocker(system)') >= 3
     assert 'object-storage-analytics-refresh-indicator' in controls
     shared_blocker = read('app/templates/components/dependencies/_blocker.html')
@@ -347,9 +349,9 @@ def test_object_storage_analytics_uses_explicit_runtime_states_and_blocking() ->
 
 def test_object_storage_bucket_records_use_shared_kaori_table_contract() -> None:
     routes = read('app/analytics/routes.py')
-    table = read('app/templates/analytics/object_storage/partials/_bucket_table.html')
+    table = read('app/templates/storage/object_storage/analytics/partials/_bucket_table.html')
     pagination = read('app/templates/analytics/components/_record_pagination.html')
-    table_service = read('app/analytics/object_storage/bucket_table.py')
+    table_service = read('app/storage/object_storage/analytics/bucket_table.py')
 
     assert "endpoint='object_storage_bucket_table'" in routes
     assert 'components/table_primitives.html' in table
@@ -371,12 +373,12 @@ def test_object_storage_bucket_records_use_shared_kaori_table_contract() -> None
 
 
 def test_object_storage_overview_matches_kubernetes_overview_hero_and_tab_contract() -> None:
-    index = read('app/templates/analytics/object_storage/index.html')
-    service = read('app/analytics/object_storage/service.py')
-    hero = read('app/templates/analytics/object_storage/partials/_hero.html')
-    hero_posture = read('app/templates/analytics/object_storage/partials/_hero_posture.html')
-    hero_blocked = read('app/templates/analytics/object_storage/partials/_hero_blocked_posture.html')
-    workspace = read('app/templates/analytics/object_storage/partials/_overview_workspace.html')
+    index = read('app/templates/storage/object_storage/analytics/index.html')
+    service = read('app/storage/object_storage/analytics/service.py')
+    hero = read('app/templates/storage/object_storage/analytics/partials/_hero.html')
+    hero_posture = read('app/templates/storage/object_storage/analytics/partials/_hero_posture.html')
+    hero_blocked = read('app/templates/storage/object_storage/analytics/partials/_hero_blocked_posture.html')
+    workspace = read('app/templates/storage/object_storage/analytics/partials/_overview_workspace.html')
     layout = read('app/templates/layouts/app.html')
 
     assert "'Analytics Overview'" in service
@@ -396,7 +398,9 @@ def test_object_storage_overview_matches_kubernetes_overview_hero_and_tab_contra
     assert 'components/content_tabs.html' in workspace
     assert 'data-analytics-tabset' in workspace
     assert 'data-analytics-tabset-id="object-storage-overview-content"' in workspace
-    assert 'data-analytics-preserve-tab' in read('app/templates/analytics/object_storage/partials/_controls.html')
+    assert 'data-analytics-preserve-tab' in read(
+        'app/templates/storage/object_storage/analytics/partials/_controls.html'
+    )
     for label in ('Capacity', 'Performance', 'Consumers', 'Forecast', 'Evidence'):
         assert f"'{label}'" in workspace
     for partial in (
@@ -411,7 +415,7 @@ def test_object_storage_overview_matches_kubernetes_overview_hero_and_tab_contra
         assert partial in workspace
 
     assert 'Consumer Concentration Snapshot' in read(
-        'app/templates/analytics/object_storage/partials/_overview_consumer_snapshot.html'
+        'app/templates/storage/object_storage/analytics/partials/_overview_consumer_snapshot.html'
     )
     assert '_bucket_table.html' not in workspace
 
@@ -420,23 +424,23 @@ def test_object_storage_overview_matches_kubernetes_overview_hero_and_tab_contra
     workspace_index = index.index('partials/_overview_workspace.html')
     assert controls_index < health_index < workspace_index
     assert 'partials/_overview_workspaces.html' not in index
-    assert not (ROOT / 'app/templates/analytics/object_storage/partials/_overview_workspaces.html').exists()
+    assert not (ROOT / 'app/templates/storage/object_storage/analytics/partials/_overview_workspaces.html').exists()
 
     assert 'js/analytics/controls.js' in layout
-    assert 'js/analytics/kubernetes/controls.js' not in layout
+    assert 'js/kubernetes/analytics/controls.js' not in layout
     assert (ROOT / 'app/static/js/analytics/controls.js').exists()
-    assert not (ROOT / 'app/static/js/analytics/kubernetes/controls.js').exists()
+    assert not (ROOT / 'app/static/js/kubernetes/analytics/controls.js').exists()
 
 
 def test_object_storage_capacity_and_performance_match_shared_analytics_hero_and_tab_contract() -> None:
-    index = read('app/templates/analytics/object_storage/index.html')
-    service = read('app/analytics/object_storage/service.py')
-    hero_posture = read('app/templates/analytics/object_storage/partials/_hero_posture.html')
-    controls = read('app/templates/analytics/object_storage/partials/_controls.html')
-    capacity_workspace = read('app/templates/analytics/object_storage/partials/_capacity_workspace.html')
-    performance_workspace = read('app/templates/analytics/object_storage/partials/_performance_workspace.html')
-    table_service = read('app/analytics/object_storage/bucket_table.py')
-    javascript = read('app/static/js/analytics/object_storage.js')
+    index = read('app/templates/storage/object_storage/analytics/index.html')
+    service = read('app/storage/object_storage/analytics/service.py')
+    hero_posture = read('app/templates/storage/object_storage/analytics/partials/_hero_posture.html')
+    controls = read('app/templates/storage/object_storage/analytics/partials/_controls.html')
+    capacity_workspace = read('app/templates/storage/object_storage/analytics/partials/_capacity_workspace.html')
+    performance_workspace = read('app/templates/storage/object_storage/analytics/partials/_performance_workspace.html')
+    table_service = read('app/storage/object_storage/analytics/bucket_table.py')
+    javascript = read('app/static/js/storage/object_storage/analytics.js')
 
     assert "'Object Storage Capacity & Usage'" in service
     assert "'Object Storage Performance'" in service
@@ -466,14 +470,14 @@ def test_object_storage_capacity_and_performance_match_shared_analytics_hero_and
 
 
 def test_object_storage_forecast_consumers_and_alerts_use_shared_tab_workspace_contract() -> None:
-    index = read('app/templates/analytics/object_storage/index.html')
-    hero_posture = read('app/templates/analytics/object_storage/partials/_hero_posture.html')
-    forecast_workspace = read('app/templates/analytics/object_storage/partials/_forecast_workspace.html')
-    forecast_methodology = read('app/templates/analytics/object_storage/partials/_forecast_methodology.html')
-    consumer_workspace = read('app/templates/analytics/object_storage/partials/_top_consumers_workspace.html')
-    alerts_workspace = read('app/templates/analytics/object_storage/partials/_alerts_workspace.html')
-    alert_records = read('app/templates/analytics/object_storage/partials/_alert_records.html')
-    alert_source_evidence = read('app/templates/analytics/object_storage/partials/_alerts_source_evidence.html')
+    index = read('app/templates/storage/object_storage/analytics/index.html')
+    hero_posture = read('app/templates/storage/object_storage/analytics/partials/_hero_posture.html')
+    forecast_workspace = read('app/templates/storage/object_storage/analytics/partials/_forecast_workspace.html')
+    forecast_methodology = read('app/templates/storage/object_storage/analytics/partials/_forecast_methodology.html')
+    consumer_workspace = read('app/templates/storage/object_storage/analytics/partials/_top_consumers_workspace.html')
+    alerts_workspace = read('app/templates/storage/object_storage/analytics/partials/_alerts_workspace.html')
+    alert_records = read('app/templates/storage/object_storage/analytics/partials/_alert_records.html')
+    alert_source_evidence = read('app/templates/storage/object_storage/analytics/partials/_alerts_source_evidence.html')
 
     assert 'partials/_forecast_workspace.html' in index
     assert 'partials/_top_consumers_workspace.html' in index
@@ -501,14 +505,14 @@ def test_object_storage_forecast_consumers_and_alerts_use_shared_tab_workspace_c
     assert '_alerts_source_evidence.html' in alerts_workspace
     assert 'clear_filters_action' in alert_records
     assert 'Metrics Source Fallback' in alert_source_evidence
-    assert not (ROOT / 'app/templates/analytics/object_storage/partials/_alerts_lifecycle.html').exists()
+    assert not (ROOT / 'app/templates/storage/object_storage/analytics/partials/_alerts_lifecycle.html').exists()
 
     for retired in ('_summary.html', '_top_consumers_analysis.html', '_alerts.html'):
-        assert not (ROOT / 'app/templates/analytics/object_storage/partials' / retired).exists()
+        assert not (ROOT / 'app/templates/storage/object_storage/analytics/partials' / retired).exists()
 
 
 def test_object_storage_consumer_profile_staleness_is_explicit_and_direct_cutover() -> None:
-    adapter = read('app/analytics/object_storage/sources/providers/minio/metrics.py')
+    adapter = read('app/storage/object_storage/analytics/sources/providers/minio/metrics.py')
     migration = read('migrations/versions/20260814_object_storage_metrics_profile.py')
 
     assert 'Consumer Validation Stale' in adapter
@@ -536,16 +540,18 @@ def test_metrics_source_full_validation_refreshes_enabled_consumer_bindings() ->
 def test_object_storage_forecast_is_worker_materialized_on_forecasting_queue() -> None:
     import yaml
 
-    service = read('app/analytics/object_storage/service.py')
-    materialization = read('app/analytics/object_storage/materialization.py')
-    task = read('app/analytics/object_storage/tasks.py')
-    adapter = read('app/analytics/object_storage/job_adapter.py')
-    definition = read('app/jobs/definitions/object_storage_forecast_refresh.py')
-    jobs = yaml.safe_load(read('app/definitions/catalogs/jobs/registered_jobs.yaml'))
-    registry = read('app/jobs/registry.py')
+    service = read('app/storage/object_storage/analytics/service.py')
+    materialization = read('app/storage/object_storage/analytics/materialization.py')
+    task = read('app/storage/object_storage/analytics/tasks.py')
+    adapter = read('app/storage/object_storage/analytics/job_adapter.py')
+    definition = read('app/platform_operations/jobs/definitions/object_storage_forecast_refresh.py')
+    jobs = yaml.safe_load(read('app/definitions/catalogs/platform_operations/jobs/registered_jobs.yaml'))
+    registry = read('app/platform_operations/jobs/registry.py')
     config = read('app/config/default.py')
-    materialization_template = read('app/templates/jobs/configuration/definitions/_materialization_job.html')
-    worker_status = read('app/templates/analytics/object_storage/partials/_forecast_worker_status.html')
+    materialization_template = read(
+        'app/templates/platform_operations/jobs/configuration/definitions/_materialization_job.html'
+    )
+    worker_status = read('app/templates/storage/object_storage/analytics/partials/_forecast_worker_status.html')
 
     job = next(item for item in jobs['jobs'] if item['key'] == 'object_storage.forecast.materialize')
 
@@ -559,27 +565,27 @@ def test_object_storage_forecast_is_worker_materialized_on_forecasting_queue() -
     assert job['workload_class'] == 'forecasting'
     assert (
         job['dispatcher_path']
-        == 'app.analytics.object_storage.job_adapter:dispatch_object_storage_forecast_materialization'
+        == 'app.storage.object_storage.analytics.job_adapter:dispatch_object_storage_forecast_materialization'
     )
     assert '_JOB_DEFINITIONS: tuple[JobDefinition, ...] = load_job_definitions()' in registry
-    assert "'app.analytics.object_storage.tasks.materialize_object_storage_forecasts'" in config
+    assert "'app.storage.object_storage.analytics.tasks.materialize_object_storage_forecasts'" in config
     assert 'FORECASTING_CELERY_QUEUE' in config
     assert 'eligible_target_count' in materialization_template
     assert 'materialization_target_label' in materialization_template
     assert 'selected_job.eligible_cluster_count' not in materialization_template
     assert 'Forecast Worker Materialization' in worker_status
-    forecast_workspace = read('app/templates/analytics/object_storage/partials/_forecast_workspace.html')
+    forecast_workspace = read('app/templates/storage/object_storage/analytics/partials/_forecast_workspace.html')
     assert 'forecast_materialization.usable' in forecast_workspace
     assert (ROOT / 'app/models/object_storage_analytics.py').exists()
     assert (ROOT / 'migrations/versions/20260814_object_storage_forecast_snapshots.py').exists()
 
 
 def test_object_storage_alerts_use_independent_alert_and_metric_evidence_paths() -> None:
-    service = read('app/analytics/object_storage/service.py')
-    sources = read('app/analytics/object_storage/alert_sources.py')
-    controls = read('app/templates/analytics/object_storage/partials/_controls.html')
-    records = read('app/templates/analytics/object_storage/partials/_alert_records.html')
-    evidence = read('app/templates/analytics/object_storage/partials/_alerts_source_evidence.html')
+    service = read('app/storage/object_storage/analytics/service.py')
+    sources = read('app/storage/object_storage/analytics/alert_sources.py')
+    controls = read('app/templates/storage/object_storage/analytics/partials/_controls.html')
+    records = read('app/templates/storage/object_storage/analytics/partials/_alert_records.html')
+    evidence = read('app/templates/storage/object_storage/analytics/partials/_alerts_source_evidence.html')
     migration = read('migrations/versions/20260814_object_storage_alert_profile.py')
 
     assert "ALERT_SOURCE_OPTIONS = ('auto', 'alertmanager', 'metrics_source')" in sources

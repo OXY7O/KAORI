@@ -7,7 +7,7 @@ def test_platform_operations_section_contains_operations_center_and_integrations
     sidebar = (ROOT / 'app/templates/components/navigation/sidebar.html').read_text()
     operations_menu = (ROOT / 'app/templates/components/navigation/platform_operations_menu.html').read_text()
     integrations_menu = (ROOT / 'app/templates/components/navigation/integrations_menu.html').read_text()
-    page = (ROOT / 'app/templates/jobs/index.html').read_text()
+    page = (ROOT / 'app/templates/platform_operations/jobs/index.html').read_text()
 
     section = sidebar.split('>Platform Operations</div>', 1)[1].split('>Administration</div>', 1)[0]
     assert 'components/navigation/platform_operations_menu.html' in section

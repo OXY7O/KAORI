@@ -5,7 +5,7 @@ from pathlib import Path
 from celery.schedules import crontab
 from dotenv import dotenv_values
 
-from app.notification_channels.config import build_notification_beat_schedule
+from app.integrations.delivery.notification_channels.config import build_notification_beat_schedule
 
 BASE_DIR = Path(__file__).resolve().parents[2]
 
@@ -66,13 +66,13 @@ def _build_maintenance_beat_schedule() -> dict[str, dict[str, object]]:
     schedule: dict[str, dict[str, object]] = {}
     if _env_bool('DATA_LIFECYCLE_SCHEDULER_ENABLED', True):
         schedule['data-lifecycle-dispatcher'] = {
-            'task': 'app.retention.tasks.run_scheduled_retention',
+            'task': 'app.platform_operations.data_lifecycle.retention.tasks.run_scheduled_retention',
             'schedule': crontab(minute='*/15'),
             'options': {'queue': _retention_queue_name()},
         }
     if _env_bool('JOB_POLICY_SCHEDULER_ENABLED', True):
         schedule['job-policy-dispatcher'] = {
-            'task': 'app.jobs.tasks.dispatch_scheduled_jobs',
+            'task': 'app.platform_operations.jobs.tasks.dispatch_scheduled_jobs',
             'schedule': crontab(minute='*'),
             'options': {
                 'queue': (_env_str('JOB_MAINTENANCE_CELERY_QUEUE', 'maintenance').strip() or 'maintenance'),
@@ -92,7 +92,7 @@ def _build_maintenance_beat_schedule() -> dict[str, dict[str, object]]:
     schedule.update(build_notification_beat_schedule())
     if _env_bool('JOB_RECOVERY_ENABLED', True):
         schedule['job-execution-recovery'] = {
-            'task': 'app.jobs.tasks.reconcile_stale_jobs',
+            'task': 'app.platform_operations.jobs.tasks.reconcile_stale_jobs',
             'schedule': crontab(minute=f'*/{_bounded_env_int("JOB_RECOVERY_INTERVAL_MINUTES", 5, 1, 60)}'),
             'options': {
                 'queue': (_env_str('JOB_MAINTENANCE_CELERY_QUEUE', 'maintenance').strip() or 'maintenance'),
@@ -100,7 +100,7 @@ def _build_maintenance_beat_schedule() -> dict[str, dict[str, object]]:
         }
     if _env_bool('AUTOMATION_CANDIDATE_MATERIALIZATION_ENABLED', True):
         schedule['automation-candidate-materialization'] = {
-            'task': 'app.automation_control.tasks.materialize_automation_candidates',
+            'task': 'app.intelligence.automation_control.tasks.materialize_automation_candidates',
             'schedule': crontab(
                 minute=f'*/{_bounded_env_int("AUTOMATION_CANDIDATE_MATERIALIZATION_INTERVAL_MINUTES", 1, 1, 60)}'
             ),
@@ -108,13 +108,13 @@ def _build_maintenance_beat_schedule() -> dict[str, dict[str, object]]:
         }
     if _env_bool('AUTOMATION_LIFECYCLE_RECONCILIATION_ENABLED', True):
         schedule['automation-lifecycle-reconciliation'] = {
-            'task': 'app.automation_control.tasks.reconcile_automation_lifecycle',
+            'task': 'app.intelligence.automation_control.tasks.reconcile_automation_lifecycle',
             'schedule': crontab(minute='*'),
             'options': {'queue': (_env_str('JOB_MAINTENANCE_CELERY_QUEUE', 'maintenance').strip() or 'maintenance')},
         }
     if _env_bool('RESOLVER_MAINTENANCE_ENABLED', True):
         schedule['resolver-lease-recovery'] = {
-            'task': 'app.resolver.tasks.reconcile_stale_execution_leases',
+            'task': 'app.intelligence.resolver.tasks.reconcile_stale_execution_leases',
             'schedule': crontab(minute=f'*/{_bounded_env_int("RESOLVER_MAINTENANCE_INTERVAL_MINUTES", 1, 1, 60)}'),
             'options': {
                 'queue': _env_str('RESOLVER_MAINTENANCE_CELERY_QUEUE', 'resolver-maintenance').strip()
@@ -339,51 +339,51 @@ class Config:
         'timezone': CELERY_TIMEZONE,
         'enable_utc': True,
         'imports': (
-            'app.alert_delivery.tasks',
-            'app.automation_control.tasks',
-            'app.analytics.kubernetes.tasks',
-            'app.analytics.object_storage.tasks',
-            'app.cluster.tasks',
-            'app.inventory.object_storage.tasks',
-            'app.governance.tls_certificates.tasks',
-            'app.retention.tasks',
+            'app.platform_operations.notifications.alert_delivery.tasks',
+            'app.intelligence.automation_control.tasks',
+            'app.kubernetes.analytics.tasks',
+            'app.storage.object_storage.analytics.tasks',
+            'app.kubernetes.cluster.tasks',
+            'app.storage.object_storage.inventory.tasks',
+            'app.kubernetes.governance.tls_certificates.tasks',
+            'app.platform_operations.data_lifecycle.retention.tasks',
             'app.integrations.runtime.tasks',
             'app.integrations.validation.tasks',
-            'app.jobs.tasks',
+            'app.platform_operations.jobs.tasks',
             'app.reports.schedules.tasks',
             'app.reports.jobs.tasks',
             'app.reports.storage.tasks',
-            'app.resolver.tasks',
+            'app.intelligence.resolver.tasks',
         ),
         'task_routes': {
-            'app.analytics.kubernetes.tasks.materialize_analytics_snapshots': {
+            'app.kubernetes.analytics.tasks.materialize_analytics_snapshots': {
                 'queue': ANALYTICS_CELERY_QUEUE,
             },
-            'app.analytics.kubernetes.tasks.materialize_forecast_snapshots': {
+            'app.kubernetes.analytics.tasks.materialize_forecast_snapshots': {
                 'queue': FORECASTING_CELERY_QUEUE,
             },
-            'app.analytics.object_storage.tasks.materialize_object_storage_forecasts': {
+            'app.storage.object_storage.analytics.tasks.materialize_object_storage_forecasts': {
                 'queue': FORECASTING_CELERY_QUEUE,
             },
-            'app.cluster.tasks.sync_all_clusters': {
+            'app.kubernetes.cluster.tasks.sync_all_clusters': {
                 'queue': 'inventory',
             },
-            'app.cluster.tasks.sync_single_cluster': {
+            'app.kubernetes.cluster.tasks.sync_single_cluster': {
                 'queue': 'inventory',
             },
-            'app.inventory.object_storage.tasks.sync_all_object_storage': {
+            'app.storage.object_storage.inventory.tasks.sync_all_object_storage': {
                 'queue': 'inventory',
             },
-            'app.governance.tls_certificates.tasks.sync_tls_certificates': {
+            'app.kubernetes.governance.tls_certificates.tasks.sync_tls_certificates': {
                 'queue': 'inventory',
             },
-            'app.retention.tasks.run_domain_retention': {
+            'app.platform_operations.data_lifecycle.retention.tasks.run_domain_retention': {
                 'queue': _retention_queue_name(),
             },
-            'app.retention.tasks.run_scheduled_retention': {
+            'app.platform_operations.data_lifecycle.retention.tasks.run_scheduled_retention': {
                 'queue': _retention_queue_name(),
             },
-            'app.jobs.tasks.dispatch_scheduled_jobs': {
+            'app.platform_operations.jobs.tasks.dispatch_scheduled_jobs': {
                 'queue': JOB_MAINTENANCE_CELERY_QUEUE,
             },
             'app.integrations.runtime.tasks.refresh_integration_runtime': {
@@ -398,22 +398,22 @@ class Config:
             'app.integrations.validation.tasks.refresh_integration_runtime_instance': {
                 'queue': INTEGRATION_RUNTIME_CELERY_QUEUE,
             },
-            'app.jobs.tasks.reconcile_stale_jobs': {
+            'app.platform_operations.jobs.tasks.reconcile_stale_jobs': {
                 'queue': JOB_MAINTENANCE_CELERY_QUEUE,
             },
-            'app.alert_delivery.tasks.dispatch_alert_intelligence_notifications': {
+            'app.platform_operations.notifications.alert_delivery.tasks.dispatch_alert_intelligence_notifications': {
                 'queue': JOB_MAINTENANCE_CELERY_QUEUE,
             },
-            'app.automation_control.tasks.dispatch_automation_decision_notification': {
+            'app.intelligence.automation_control.tasks.dispatch_automation_decision_notification': {
                 'queue': JOB_MAINTENANCE_CELERY_QUEUE,
             },
-            'app.resolver.tasks.dispatch_resolver_execution_notification': {
+            'app.intelligence.resolver.tasks.dispatch_resolver_execution_notification': {
                 'queue': JOB_MAINTENANCE_CELERY_QUEUE,
             },
-            'app.automation_control.tasks.materialize_automation_candidates': {
+            'app.intelligence.automation_control.tasks.materialize_automation_candidates': {
                 'queue': JOB_MAINTENANCE_CELERY_QUEUE,
             },
-            'app.automation_control.tasks.reconcile_automation_lifecycle': {
+            'app.intelligence.automation_control.tasks.reconcile_automation_lifecycle': {
                 'queue': JOB_MAINTENANCE_CELERY_QUEUE,
             },
             'app.reports.schedules.tasks.run_report_schedule_job': {
@@ -425,13 +425,13 @@ class Config:
             'app.reports.storage.tasks.refresh_report_storage_readiness_task': {
                 'queue': REPORT_STORAGE_HEALTH_CELERY_QUEUE,
             },
-            'app.resolver.tasks.execute_authorized_resolution': {
+            'app.intelligence.resolver.tasks.execute_authorized_resolution': {
                 'queue': RESOLVER_EXECUTION_CELERY_QUEUE,
             },
-            'app.resolver.tasks.verify_authorized_resolution': {
+            'app.intelligence.resolver.tasks.verify_authorized_resolution': {
                 'queue': RESOLVER_MAINTENANCE_CELERY_QUEUE,
             },
-            'app.resolver.tasks.reconcile_stale_execution_leases': {
+            'app.intelligence.resolver.tasks.reconcile_stale_execution_leases': {
                 'queue': RESOLVER_MAINTENANCE_CELERY_QUEUE,
             },
         },

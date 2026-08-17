@@ -67,8 +67,8 @@ It is registered in `scripts/cleanup_obsolete_files.sh` and checked by the final
 Existing previously removed Jobs hero compatibility partials also remain obsolete:
 
 ```text
-app/templates/jobs/executions/partials/_hero_context_metrics.html
-app/templates/jobs/executions/partials/_hero_metadata.html
+app/templates/platform_operations/jobs/executions/partials/_hero_context_metrics.html
+app/templates/platform_operations/jobs/executions/partials/_hero_metadata.html
 ```
 
 ## Enforcement

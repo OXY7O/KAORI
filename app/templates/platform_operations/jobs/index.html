@@ -1,0 +1,63 @@
+{% extends "layouts/app.html" %}
+{% import "components/page_hero.html" as page_hero %}
+{% import "components/framed_workspace_tabs.html" as framed_workspace_tabs %}
+{% block title %}Jobs &amp; Executions · KAORI{% endblock %}
+{% block dashboard_content %}
+    {% set operational_attention = job_stats.attention + configuration_stats.attention %}
+    {% set top_tabs = [
+        ('executions', 'Executions', 'list-checks', url_for('jobs.executions')),
+        ('configuration', 'Job Configuration', 'sliders-horizontal', url_for('jobs.configuration'))
+    ] %}
+    <div class="space-y-6">
+        <section class="{{ page_hero.shell_classes() }}">
+            <div class="{{ page_hero.layout_classes() }}">
+                <div class="{{ page_hero.content_classes() }}">
+                    {% call page_hero.intro('activity', 'Platform Operations', 'list-checks') %}
+                        <h1 class="{{ page_hero.title_classes() }}">Jobs &amp; Executions</h1>
+                        <p class="mt-2 {{ page_hero.description_classes() }}">
+                            Monitor canonical background executions and configure automatic policies from one operational workspace.
+                        </p>
+                        <div class="{{ page_hero.metadata_row_classes() }}">
+                            {{ page_hero.meta_label('workflow', configuration_stats.registered ~ ' Registered Jobs') }}
+                            {{ page_hero.meta_label('calendar-clock', configuration_stats.enabled ~ ' Schedules Enabled') }}
+                            {{ page_hero.meta_label('activity', job_stats.active ~ ' Active Executions') }}
+                        </div>
+                    {% endcall %}
+                </div>
+                <aside class="{{ page_hero.aside_classes() }}"
+                       aria-label="Platform job posture">
+                    <div class="{{ page_hero.context_panel_classes() }}">
+                        {{ page_hero.context_header('Job Control Plane',
+                                                'Configuration & Execution',
+                                                'workflow') }}
+                        <div class="{{ page_hero.context_panel_metrics_classes() }}">
+                            {{ page_hero.context_metric('loader-circle',
+                                                        'Active',
+                                                        job_stats.active,
+                                                        'Queued, running, and retrying jobs') }}
+                            {{ page_hero.context_metric('triangle-alert',
+                                                        'Operational Attention',
+                                                        operational_attention,
+                                                        'Execution signals and configuration review') }}
+                        </div>
+                        {{ page_hero.context_info('shield-check',
+                                                'Every run follows the JobExecution lifecycle.') }}
+                    </div>
+                </aside>
+            </div>
+        </section>
+        <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
+            {{ framed_workspace_tabs.render_navigation(top_tabs,
+                                                       active_jobs_section,
+                                                       prefix='jobs-platform',
+                                                       aria_label='Jobs and Executions Workspaces') }}
+            <div class="p-5 lg:p-6">
+                {% if active_jobs_section == 'configuration' %}
+                    {% include "platform_operations/jobs/configuration/_workspace.html" %}
+                {% else %}
+                    {% include "platform_operations/jobs/executions/_workspace.html" %}
+                {% endif %}
+            </div>
+        </section>
+    </div>
+{% endblock %}

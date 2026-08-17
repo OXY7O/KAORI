@@ -2,19 +2,19 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
-from app.analytics.kubernetes import job_adapter
-from app.analytics.kubernetes.materialization import dashboard_alerts
-from app.analytics.kubernetes.materialization.dashboard_alerts import build_dashboard_alerts_context
-from app.dashboards.kubernetes import service
-from app.dashboards.kubernetes.schema import (
+from app.kubernetes.analytics import job_adapter
+from app.kubernetes.analytics.materialization import dashboard_alerts
+from app.kubernetes.analytics.materialization.dashboard_alerts import build_dashboard_alerts_context
+from app.kubernetes.dashboard import service
+from app.kubernetes.dashboard.schema import (
     AlertsSnapshot,
     CapacityItem,
     CapacitySnapshot,
     DashboardKpiContext,
     InventorySnapshot,
 )
-from app.dashboards.kubernetes.sections.cluster_health import build_cluster_health
-from app.dashboards.kubernetes.sections.forecast import build_forecast_snapshot
+from app.kubernetes.dashboard.sections.cluster_health import build_cluster_health
+from app.kubernetes.dashboard.sections.forecast import build_forecast_snapshot
 
 
 def _scope_with_selected():
@@ -141,7 +141,7 @@ def test_alert_materialization_builds_compact_worker_payload(monkeypatch) -> Non
         ),
     )
     monkeypatch.setattr(
-        'app.analytics.kubernetes.materialization.dashboard_alerts.load_alerts_by_source',
+        'app.kubernetes.analytics.materialization.dashboard_alerts.load_alerts_by_source',
         lambda **_kwargs: (
             [
                 {'name': 'CriticalA', 'severity': 'critical', 'status': 'firing', 'summary': 'A'},
@@ -446,7 +446,7 @@ def test_dashboard_forecast_snapshot_exposes_chart_values_and_horizon() -> None:
 
 
 def test_dashboard_kpi_display_copy_uses_title_case() -> None:
-    from app.dashboards.kubernetes.sections.kpis import build_kpis
+    from app.kubernetes.dashboard.sections.kpis import build_kpis
 
     clusters_raw = [
         SimpleNamespace(status='healthy'),
@@ -483,7 +483,7 @@ def test_dashboard_kpi_display_copy_uses_title_case() -> None:
 
 
 def test_top_consumer_display_labels_use_title_case() -> None:
-    from app.dashboards.kubernetes.sections.top_consumers import build_top_consumers_snapshot
+    from app.kubernetes.dashboard.sections.top_consumers import build_top_consumers_snapshot
 
     snapshot = build_top_consumers_snapshot(
         context={

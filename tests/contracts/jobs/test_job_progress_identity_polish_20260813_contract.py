@@ -19,7 +19,7 @@ def test_job_identity_uses_canonical_provider_and_scope_labels() -> None:
 
 def test_job_progress_tracks_have_identical_full_width_geometry() -> None:
     progress = read('app/templates/components/progress_bar.html')
-    activity = read('app/templates/notifications/components/_activity_center_items.html')
+    activity = read('app/templates/platform_operations/notifications/components/_activity_center_items.html')
     assert '<div class="w-full min-w-0">' in progress
     assert '{% macro notification_track_classes()' in progress
     assert 'h-1.5 w-full overflow-hidden rounded-full' in progress

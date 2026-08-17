@@ -10,13 +10,13 @@ def read(relative: str) -> str:
 
 
 def test_governance_routes_do_not_short_circuit_authorization_with_blueprint_before_request() -> None:
-    source = read('app/governance/routes.py')
+    source = read('app/kubernetes/governance/routes.py')
     assert '@governance_bp.before_request' not in source
     assert 'block_clusterless_governance_actions' not in source
 
 
 def test_tls_routes_own_authorized_clusterless_handling() -> None:
-    source = read('app/governance/tls_certificates/routes.py')
+    source = read('app/kubernetes/governance/tls_certificates/routes.py')
     assert 'def _clusterless_read_response()' in source
     assert 'def _clusterless_detail_response()' in source
     assert 'def _clusterless_sync_response()' in source
@@ -26,7 +26,7 @@ def test_tls_routes_own_authorized_clusterless_handling() -> None:
 
 
 def test_governance_dead_job_presentation_helper_is_retired() -> None:
-    source = read('app/governance/tls_certificates/job_presentation.py')
+    source = read('app/kubernetes/governance/tls_certificates/job_presentation.py')
     assert 'def get_active_tls_sync_job(' not in source
 
 

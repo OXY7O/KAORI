@@ -4,7 +4,7 @@ Status: UI refinement complete; Access Final Lock remains open.
 
 ## Scope
 
-This refinement keeps `app/access/roles/` as the HTTP and presentation owner while `app/rbac/` remains the authorization-policy and code-owned permission authority.
+This refinement keeps `app/access/roles/` as the HTTP and presentation owner while `app/access/rbac/` remains the authorization-policy and code-owned permission authority.
 
 ## Decisions implemented
 

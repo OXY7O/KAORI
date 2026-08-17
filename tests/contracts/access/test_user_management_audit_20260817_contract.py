@@ -9,9 +9,9 @@ def read(path: str) -> str:
 
 def test_super_admin_is_local_database_break_glass_authority_end_to_end() -> None:
     model = read('app/models/user.py')
-    service = read('app/users/service.py')
-    directory = read('app/users/directory.py')
-    form = read('app/templates/users/form.html')
+    service = read('app/access/users/service.py')
+    directory = read('app/access/users/directory.py')
+    form = read('app/templates/access/users/form.html')
 
     assert "if self.is_super_admin and self.auth_source == 'database':" in model
     assert "return 'unassigned'" in model
@@ -27,10 +27,10 @@ def test_super_admin_is_local_database_break_glass_authority_end_to_end() -> Non
 
 
 def test_user_directory_projects_effective_access_instead_of_lifecycle_only() -> None:
-    directory = read('app/users/directory.py')
-    table = read('app/templates/users/partials/_table.html')
-    detail = read('app/templates/users/partials/_user_detail.html')
-    summary = read('app/templates/users/partials/_summary_cards.html')
+    directory = read('app/access/users/directory.py')
+    table = read('app/templates/access/users/partials/_table.html')
+    detail = read('app/templates/access/users/partials/_user_detail.html')
+    summary = read('app/templates/access/users/partials/_summary_cards.html')
 
     for token in (
         "'label': 'Unassigned'",
@@ -48,7 +48,7 @@ def test_user_directory_projects_effective_access_instead_of_lifecycle_only() ->
 
 
 def test_user_access_summary_detects_rbac_identity_and_invalid_break_glass_findings() -> None:
-    summary = read('app/users/access_summary.py')
+    summary = read('app/access/users/access_summary.py')
     overview = read('app/access/overview/presentation.py')
 
     assert "User.auth_source == 'database'" in summary
@@ -62,9 +62,9 @@ def test_user_access_summary_detects_rbac_identity_and_invalid_break_glass_findi
 
 
 def test_ldap_administrative_projection_requires_short_lived_signed_directory_evidence() -> None:
-    proof = read('app/identity_providers/provisioning_proof.py')
-    routes = read('app/identity_providers/routes.py')
-    forms = read('app/identity_providers/forms.py')
+    proof = read('app/access/identity_providers/provisioning_proof.py')
+    routes = read('app/access/identity_providers/routes.py')
+    forms = read('app/access/identity_providers/forms.py')
     template = read('app/templates/access/identity_providers/directory_provisioning.html')
 
     assert 'URLSafeTimedSerializer' in proof
@@ -85,20 +85,20 @@ def test_ldap_administrative_projection_requires_short_lived_signed_directory_ev
 
 
 def test_user_directory_is_split_from_mutation_service_without_expanding_code_health_debt() -> None:
-    service = read('app/users/service.py')
-    directory = read('app/users/directory.py')
-    routes = read('app/users/routes.py')
+    service = read('app/access/users/service.py')
+    directory = read('app/access/users/directory.py')
+    routes = read('app/access/users/routes.py')
     baseline = read('docs/architecture/code-health-debt-baseline.json')
 
     assert 'def build_users_payload(' not in service
     assert 'def build_users_payload(' in directory
     assert 'def build_user_identity_context(' in directory
-    assert 'from app.users.directory import (' in routes
-    assert '"app/users/service.py":' not in baseline
+    assert 'from app.access.users.directory import (' in routes
+    assert '"app/access/users/service.py":' not in baseline
 
 
 def test_local_user_email_uses_canonical_email_validation() -> None:
-    forms = read('app/users/forms.py')
+    forms = read('app/access/users/forms.py')
     assert 'Email()' in forms
     assert "email = StringField('Email', validators=[DataRequired(), Email(), Length(max=255)])" in forms
 

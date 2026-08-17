@@ -1,6 +1,0 @@
-{% import "notifications/components/_activity_center_items.html" as center_item %}
-{% set center = activity_center|default({}) %}
-{% set active_jobs = center.get('active_jobs', []) %}
-{% for job in active_jobs %}
-    <div data-server-activity-item>{{ center_item.job_item(job, compact=true) }}</div>
-{% endfor %}

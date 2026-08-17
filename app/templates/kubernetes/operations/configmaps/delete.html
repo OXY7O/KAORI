@@ -1,0 +1,110 @@
+{% extends "layouts/app.html" %}
+{% import "components/page_hero.html" as page_hero %}
+{% import "components/operation_evidence_boundary.html" as evidence_boundary %}
+{% import "components/destructive_confirmation_modal.html" as destructive_modal %}
+{% import "components/kubernetes_operation_ui.html" as configmap_ui %}
+{% import "components/info_flow.html" as info_flow %}
+{% import "components/information_guide_card.html" as information_guide_card %}
+{% import "components/form_with_context_rail.html" as form_context %}
+{% block title %}Delete ConfigMap{% endblock title %}
+{% block dashboard_content %}
+    <div class="space-y-6"
+         data-kubernetes-operation-layout="form-context-v1"
+         data-kubernetes-operation-experience="configmap-delete-v1">
+        <section class="{{ page_hero.shell_classes() }}">
+            <div class="{{ page_hero.layout_classes() }}">
+                <div class="{{ page_hero.content_classes() }}">
+                    {% call page_hero.intro('file-cog', 'ConfigMap Management', 'trash-2') %}
+                        <h1 class="{{ page_hero.title_classes() }}">Delete ConfigMap</h1>
+                        <p class="mt-2 {{ page_hero.description_classes() }}">Review impact, validate the exact live target, and explicitly confirm destructive removal.</p>
+                        <div class="{{ page_hero.metadata_row_classes() }}">
+                            {{ page_hero.meta_label('radio-tower', 'Live Kubernetes Target') }}
+                            {{ page_hero.meta_label('shield-check', 'Non-Destructive Preflight') }}
+                            {{ page_hero.meta_label('keyboard', 'Exact-Name Confirmation') }}
+                        </div>
+                    {% endcall %}
+                </div>
+                {{ page_hero.context_card('Delete ConfigMap context', 'Delete Workflow', 'Controlled ConfigMap Removal', 'Destructive', 'critical', [('shield-check', 'Validation', 'Required', 'No delete sent', true) , ('keyboard', 'Confirmation', 'Exact Name', 'Same live object', true)], 'Back to ConfigMap Management', url_for('kubernetes_operations.configmap_management'), 'arrow-left') }}
+            </div>
+        </section>
+        {{ evidence_boundary.render() }}
+        <div id="configmap-operation-feedback" class="hidden" aria-hidden="true"></div>
+        <form id="configmap-delete-form"
+              method="post"
+              hx-post="{{ url_for('kubernetes_operations.delete_configmap') }}"
+              hx-target="#configmap-operation-feedback"
+              hx-swap="innerHTML"
+              hx-sync="this:drop"
+              hx-disabled-elt="find button"
+              class="{{ form_context.layout_classes() }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            {% set configmap_main_classes = form_context.main_classes() %}
+            <section class="{{ configmap_ui.surface_shell_classes(configmap_main_classes) }}"
+                     data-kubernetes-operation-form="configmap-delete">
+                {{ configmap_ui.section_header('trash-2', 'ConfigMap Deletion', 'Select one live ConfigMap, review the represented impact, then validate and confirm removal.', 'critical') }}
+                <div class="divide-y divide-outline-subtle">
+                    <section class="p-5 sm:p-6">
+                        <div class="mb-4 flex items-start gap-3">
+                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                                  aria-hidden="true"><i data-lucide="target" class="h-4 w-4"></i></span>
+                            <div class="min-w-0">
+                                <h3 class="text-sm font-semibold text-content-primary">Live ConfigMap Target</h3>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">Select the exact cluster, namespace, and ConfigMap that may be removed.</p>
+                            </div>
+                        </div>
+                        <div id="configmap-workspace">
+                            {% set namespaces = selected_namespaces %}
+                            {% set configmaps = selected_configmaps %}
+                            {% set workspace_mode = "delete" %}
+                            {% set delete_target_url = url_for('kubernetes_operations.configmap_delete_target') %}
+                            {% include 'kubernetes/operations/configmaps/_workspace.html' %}
+                        </div>
+                    </section>
+                    <section class="p-5 sm:p-6">
+                        <div class="mb-4 flex items-start gap-3">
+                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-status-critical-soft text-status-critical-text"
+                                  aria-hidden="true"><i data-lucide="triangle-alert" class="h-4 w-4"></i></span>
+                            <div class="min-w-0">
+                                <h3 class="text-sm font-semibold text-content-primary">Deletion Impact &amp; Confirmation</h3>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">Review live identity, key count, known consumers, and exact-name confirmation.</p>
+                            </div>
+                        </div>
+                        <div id="configmap-delete-target">
+                            {% if target or target_error %}
+                                {% include 'kubernetes/operations/configmaps/_delete_target.html' %}
+                            {% else %}
+                                {{ configmap_ui.empty_state('file-warning', 'Select a ConfigMap to Review Deletion Impact', 'Live identity, key count, and workload context will appear here.') }}
+                            {% endif %}
+                        </div>
+                    </section>
+                    <section class="p-5 sm:p-6">
+                        <div class="mb-4 flex items-start gap-3">
+                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                                  aria-hidden="true"><i data-lucide="scan-search" class="h-4 w-4"></i></span>
+                            <div class="min-w-0">
+                                <h3 class="text-sm font-semibold text-content-primary">Validation Preview</h3>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">Validation rereads the live target and effective delete permission without sending DELETE.</p>
+                            </div>
+                        </div>
+                        {% set validation_preview = none %}
+                        {% include 'kubernetes/operations/configmaps/_validation_preview.html' %}
+                    </section>
+                </div>
+                {% call configmap_ui.action_bar('scan-search', 'Validate Before Deletion', 'Validate the current target before opening final destructive confirmation.', embedded=true) %}
+                    {% set oob = false %}
+                    {% include 'kubernetes/operations/configmaps/_delete_actions.html' %}
+                {% endcall %}
+            </section>
+            <aside class="{{ form_context.rail_classes() }}"
+                   aria-label="ConfigMap deletion guidance">
+                {% set configmap_delete_flow = [('Select Object', 'Bind one live ConfigMap and its current resourceVersion.'), ('Review Impact', 'Inspect live identity, keys, and best-effort workload references.'), ('Validate Deletion', 'Verify exact name and effective delete authorization without sending DELETE.'), ('Confirm & Delete', 'Use the short-lived validation receipt to remove the same resource once.')] %}
+                {{ info_flow.render('ConfigMap Deletion Flow', 'A destructive path that keeps review, validation, and final confirmation separate.', configmap_delete_flow, icon='trash-2', note='Final deletion is irreversible from KAORI and must target the same validated resourceVersion.', note_icon='triangle-alert', open_by_default=true) }}
+                {% set configmap_delete_guardrails = [('eye', 'Live Review', 'The target is loaded directly from Kubernetes before deletion.'), ('shield-check', 'No DELETE in Validation', 'Preflight checks identity and authorization without mutation.'), ('keyboard', 'Exact Confirmation', 'The selected ConfigMap name must be entered exactly.'), ('history', 'Resource Bound', 'The signed receipt binds deletion to the reviewed resourceVersion.')] %}
+                {{ information_guide_card.render('Deletion Safety Contract', 'Destructive controls that remain mandatory through final confirmation.', configmap_delete_guardrails, icon='shield-alert', open_by_default=true) }}
+            </aside>
+        </form>
+    </div>
+    {{ destructive_modal.render('configmap-delete-confirmation', 'Delete ConfigMap', none, 'The selected live ConfigMap and its data will be removed from Kubernetes. Known consumer evidence is best effort.', 'configmap-delete-submit', 'Delete ConfigMap') }}
+    <script src="{{ url_for('static', filename='js/configmap_delete.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/destructive_confirmation_modal.js') }}"></script>
+{% endblock dashboard_content %}

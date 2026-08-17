@@ -41,7 +41,7 @@ def main() -> None:
     navigation = read('app/common/navigation.py')
     sidebar = read('app/templates/components/navigation/access_management_menu.html')
     welcome = read('app/welcome/shortcuts.py')
-    rbac_notifications = read('app/rbac/notifications.py')
+    rbac_notifications = read('app/access/rbac/notifications.py')
     access_readme = read('app/access/README.md')
     settings_readme = read('app/settings/README.md')
     ownership_doc = read('docs/architecture/ACCESS_OWNERSHIP.md')

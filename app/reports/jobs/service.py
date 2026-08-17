@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 from app.extensions.db import db
-from app.jobs.definitions.base import RegisteredJobDispatchResult
-from app.jobs.dispatcher import enqueue_canonical_job
 from app.models.report import Report
+from app.platform_operations.jobs.definitions.base import RegisteredJobDispatchResult
+from app.platform_operations.jobs.dispatcher import enqueue_canonical_job
 from app.reports.jobs.contract import build_report_job_parameters
 from app.reports.jobs.queue import get_reports_queue_name
 from app.reports.jobs.tasks import generate_report_job

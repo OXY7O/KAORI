@@ -30,7 +30,7 @@ def _load_payload(monkeypatch: pytest.MonkeyPatch):
         'app.extensions',
         'app.extensions.db',
         'app.inventory',
-        'app.inventory.kubernetes.resources',
+        'app.kubernetes.inventory.resources',
         'app.models',
         'app.models.report',
         'app.reports',
@@ -45,7 +45,7 @@ def _load_payload(monkeypatch: pytest.MonkeyPatch):
         'app.common',
         'app.extensions',
         'app.inventory',
-        'app.inventory.kubernetes.resources',
+        'app.kubernetes.inventory.resources',
         'app.models',
         'app.reports',
         'app.reports.export',
@@ -73,20 +73,20 @@ def _load_payload(monkeypatch: pytest.MonkeyPatch):
     for name, module in modules.items():
         monkeypatch.setitem(sys.modules, name, module)
 
-    _load_module_from_file('app.inventory.kubernetes.formatting', ROOT / 'app/inventory/kubernetes/formatting.py', monkeypatch)
+    _load_module_from_file('app.kubernetes.inventory.formatting', ROOT / 'app/kubernetes/inventory/formatting.py', monkeypatch)
     _load_module_from_file(
-        'app.inventory.kubernetes.resources.ingress_semantics',
-        ROOT / 'app/inventory/kubernetes/resources/ingress_semantics.py',
+        'app.kubernetes.inventory.resources.ingress_semantics',
+        ROOT / 'app/kubernetes/inventory/resources/ingress_semantics.py',
         monkeypatch,
     )
     _load_module_from_file(
-        'app.inventory.kubernetes.resources.service_semantics',
-        ROOT / 'app/inventory/kubernetes/resources/service_semantics.py',
+        'app.kubernetes.inventory.resources.service_semantics',
+        ROOT / 'app/kubernetes/inventory/resources/service_semantics.py',
         monkeypatch,
     )
     _load_module_from_file(
-        'app.inventory.kubernetes.resources.storage_semantics',
-        ROOT / 'app/inventory/kubernetes/resources/storage_semantics.py',
+        'app.kubernetes.inventory.resources.storage_semantics',
+        ROOT / 'app/kubernetes/inventory/resources/storage_semantics.py',
         monkeypatch,
     )
     return _load_module_from_file('configuration_export_payload_under_test', PAYLOAD_PATH, monkeypatch)

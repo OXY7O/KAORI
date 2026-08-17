@@ -69,9 +69,9 @@ This closes the previous gap where Domain 17 and Domain 20 state existed but was
 
 | Diagnostic family | Resolution |
 |---|---|
-| Nullable Alertmanager passed to `_binding_row` | Guarded in `app/alert_sources/providers/alertmanager/presentation.py`. |
-| Alert health TypedDict/list invariance | Exact `AlertSourceHealthCheck` and `AlertSourceHealthSummary` annotations in `app/analytics/kubernetes/alerts/health.py`. |
-| Incomplete `AlertSourceStatus` | Central complete empty-status constructor in `app/analytics/kubernetes/alerts/snapshots.py`. |
+| Nullable Alertmanager passed to `_binding_row` | Guarded in `app/integrations/observability/alert_source/providers/alertmanager/application/presentation.py`. |
+| Alert health TypedDict/list invariance | Exact `AlertSourceHealthCheck` and `AlertSourceHealthSummary` annotations in `app/kubernetes/analytics/alerts/health.py`. |
+| Incomplete `AlertSourceStatus` | Central complete empty-status constructor in `app/kubernetes/analytics/alerts/snapshots.py`. |
 | Optional capability/consumer attributes | Explicit narrowing in capacity, utilization, and workload analytics services. |
 | Unknown Kubernetes/provider imports | Correct module paths are used; the symbols exist and compile. |
 | SQLAlchemy “No parameter named …” | Reported constructors changed to `Model()` plus assignments. |
@@ -93,11 +93,11 @@ The committed baseline still contains two cycle envelopes:
 
 It also allows three service-to-form imports:
 
-- `app/alert_sources/providers/alertmanager/service.py → app.alert_sources.providers.alertmanager.forms`
+- `app/integrations/observability/alert_source/providers/alertmanager/application/service.py → app.integrations.observability.alert_source.providers.alertmanager.application.forms`
 - `app/prometheus/service.py → app.prometheus.forms`
-- `app/users/service.py → app.users.forms`
+- `app/access/users/service.py → app.access.users.forms`
 
-No new cycle or service-to-form edge was added. The Automation Control Center was placed in `app/automation_control/` specifically to avoid making Intelligence import Knowledge or Resolver.
+No new cycle or service-to-form edge was added. The Automation Control Center was placed in `app/intelligence/automation_control/` specifically to avoid making Intelligence import Knowledge or Resolver.
 
 ## Prioritized next work
 
@@ -113,11 +113,11 @@ No new cycle or service-to-form edge was added. The Automation Control Center wa
    - Canonical JobExecution status is updated with the same retry or terminal outcome.
 
 3. **Complete stale-worker redelivery.**
-   - Files: `app/resolver/orchestration.py`, `app/resolver/tasks.py`, Celery/broker deployment evidence.
+   - Files: `app/intelligence/resolver/orchestration.py`, `app/intelligence/resolver/tasks.py`, Celery/broker deployment evidence.
    - The unused `due_retry_journals()` scaffold was removed. KAORI now relies on `acks_late`, `reject_on_worker_lost`, broker redelivery, and lease recovery, but production enablement still requires evidence that broker retention/visibility preserves the original token-bearing message after worker loss. The alternative is an encrypted expiring execution envelope; plaintext token persistence is forbidden.
 
 4. **Enforce Canary posture, not only Canary evidence.**
-   - Files: `app/resolver/production_readiness.py`, `app/resolver/operations.py`.
+   - Files: `app/intelligence/resolver/production_readiness.py`, `app/intelligence/resolver/operations.py`.
    - Validate concurrency limit `1`, approved rate limit, circuit breaker, kill-switch presence, and explicit canary scope before entering or executing Canary.
 
 ### P1 — modularity and typed application commands
@@ -125,12 +125,12 @@ No new cycle or service-to-form edge was added. The Automation Control Center wa
 1. Split the largest modules by use case and stable typed contracts:
    - `app/intelligence/recommendation_engine.py` (~94 KB)
    - `app/integrations/prometheus/query_profiles/kubernetes_v1.py` (~89 KB)
-   - `app/analytics/kubernetes/workload/service.py` (~72 KB)
-   - `app/analytics/kubernetes/top_consumers/service.py` (~62 KB)
-   - `app/analytics/kubernetes/overview/service.py` (~57 KB)
+   - `app/kubernetes/analytics/workload/service.py` (~72 KB)
+   - `app/kubernetes/analytics/top_consumers/service.py` (~62 KB)
+   - `app/kubernetes/analytics/overview/service.py` (~57 KB)
    - `app/reports/generated/service.py` (~57 KB)
    - `app/prometheus/routes.py` (~57 KB)
-   - `app/kubernetes_operations/secrets/routes.py` (~56 KB)
+   - `app/kubernetes/operations/secrets/routes.py` (~56 KB)
 
 2. Replace the three service-to-WTForms imports with application command dataclasses. Routes should map form data to commands; services should accept framework-neutral inputs.
 
@@ -191,4 +191,4 @@ After applying the patch:
 5. Run **Developer: Reload Window**.
 6. Re-run the configured Pyright/Pylance analysis and retain file/line details for any remaining diagnostic.
 
-Do not add missing-module ignores for `app.knowledge.*`, `app.models.intelligence`, or `app.resolver.contracts`; those modules are present and should resolve when the correct workspace/interpreter is active.
+Do not add missing-module ignores for `app.intelligence.knowledge.*`, `app.models.intelligence`, or `app.intelligence.resolver.contracts`; those modules are present and should resolve when the correct workspace/interpreter is active.

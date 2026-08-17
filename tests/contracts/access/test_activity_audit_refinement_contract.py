@@ -10,7 +10,7 @@ def read(relative: str) -> str:
 def test_activity_audit_is_access_owned_over_shared_notification_evidence_store() -> None:
     access_init = read('app/access/__init__.py')
     routes = read('app/access/activity_audit/routes.py')
-    notification_routes = read('app/notifications/routes.py')
+    notification_routes = read('app/platform_operations/notifications/routes.py')
     page = read('app/templates/access/activity_audit/index.html')
 
     assert "bp.register_blueprint(activity_audit_bp, url_prefix='/activity-audit')" in access_init
@@ -18,7 +18,7 @@ def test_activity_audit_is_access_owned_over_shared_notification_evidence_store(
     assert "@bp.get('/')" in routes
     assert "@bp.get('/<int:notification_id>/details')" in routes
     assert "@notifications_bp.get('/activity')" not in notification_routes
-    assert 'app/templates/notifications/activity.html' not in routes
+    assert 'app/templates/platform_operations/notifications/activity.html' not in routes
     assert '<h1 class="{{ page_hero.title_classes() }}">Activity Audit</h1>' in page
     assert "url_for('access.activity_audit.detail', notification_id=0)" in page
 
@@ -26,7 +26,7 @@ def test_activity_audit_is_access_owned_over_shared_notification_evidence_store(
 def test_activity_audit_uses_availability_posture_without_treating_warning_events_as_workspace_health() -> None:
     page = read('app/templates/access/activity_audit/index.html')
     summary = read('app/templates/access/activity_audit/partials/_activity_summary_cards.html')
-    queries = read('app/notifications/queries.py')
+    queries = read('app/platform_operations/notifications/queries.py')
 
     assert 'Evidence Availability' in page
     assert 'Events · 24H' in page
@@ -47,8 +47,8 @@ def test_activity_register_uses_immutable_actor_and_persisted_category_filters()
     card = read('app/templates/access/activity_audit/partials/_activity_table_card.html')
     content = read('app/templates/access/activity_audit/partials/_activity_table_content.html')
     routes = read('app/access/activity_audit/routes.py')
-    queries = read('app/notifications/queries.py')
-    catalog = read('app/notifications/event_catalog.py')
+    queries = read('app/platform_operations/notifications/queries.py')
+    catalog = read('app/platform_operations/notifications/event_catalog.py')
 
     for token in (
         'components/table.html',
@@ -93,10 +93,10 @@ def test_activity_register_uses_immutable_actor_and_persisted_category_filters()
 
 def test_activity_actor_snapshot_is_immutable_and_recipient_fk_does_not_own_history() -> None:
     model = read('app/models/notification.py')
-    actors = read('app/notifications/actors.py')
-    writer = read('app/notifications/writer.py')
-    auth_audit = read('app/auth/audit.py')
-    presentation = read('app/notifications/presentation.py')
+    actors = read('app/platform_operations/notifications/actors.py')
+    writer = read('app/platform_operations/notifications/writer.py')
+    auth_audit = read('app/access/authentication/audit.py')
+    presentation = read('app/platform_operations/notifications/presentation.py')
     migration = read('migrations/versions/20260817_activity_audit_evidence_foundation.py')
 
     assert "db.ForeignKey('users.id', ondelete='SET NULL')" in model
@@ -118,8 +118,8 @@ def test_activity_actor_snapshot_is_immutable_and_recipient_fk_does_not_own_hist
 def test_activity_detail_uses_content_driven_curated_and_sensitive_safe_evidence() -> None:
     page = read('app/templates/access/activity_audit/index.html')
     detail = read('app/templates/access/activity_audit/partials/_activity_detail.html')
-    presentation = read('app/notifications/presentation.py')
-    metadata = read('app/notifications/metadata.py')
+    presentation = read('app/platform_operations/notifications/presentation.py')
+    metadata = read('app/platform_operations/notifications/metadata.py')
 
     assert "dialog_max_width='max-w-6xl'" in page
     assert 'content_driven=true' in page
@@ -148,8 +148,8 @@ def test_activity_detail_uses_content_driven_curated_and_sensitive_safe_evidence
 def test_activity_hot_register_is_explicit_about_archive_lifecycle_boundary() -> None:
     summary = read('app/templates/access/activity_audit/partials/_activity_summary_cards.html')
     card = read('app/templates/access/activity_audit/partials/_activity_table_card.html')
-    queries = read('app/notifications/queries.py')
-    retention_domain = read('app/retention/domains/operational_activity.py')
+    queries = read('app/platform_operations/notifications/queries.py')
+    retention_domain = read('app/platform_operations/data_lifecycle/retention/domains/operational_activity.py')
 
     assert 'This register reads hot PostgreSQL records.' in summary
     assert 'Verified older evidence remains available through the archive-first Data Lifecycle history' in summary

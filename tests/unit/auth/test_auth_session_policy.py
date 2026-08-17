@@ -8,7 +8,7 @@ from types import ModuleType, SimpleNamespace
 import pytest
 
 ROOT = Path(__file__).resolve().parents[3]
-SESSION_PATH = ROOT / 'app/auth/session.py'
+SESSION_PATH = ROOT / 'app/access/authentication/session.py'
 
 
 def _load_session(monkeypatch: pytest.MonkeyPatch):

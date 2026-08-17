@@ -18,8 +18,8 @@ def test_job_progress_final_lock_verifier_is_release_gated() -> None:
 
 def test_job_progress_runtime_geometry_and_loading_labels_are_canonical() -> None:
     progress = read('app/templates/components/progress_bar.html')
-    active = read('app/templates/jobs/executions/partials/_active_jobs.html')
-    queue = read('app/templates/jobs/executions/partials/_queue_activity.html')
+    active = read('app/templates/platform_operations/jobs/executions/partials/_active_jobs.html')
+    queue = read('app/templates/platform_operations/jobs/executions/partials/_queue_activity.html')
 
     assert '{% macro notification_track_classes()' in progress
     assert 'h-1.5 w-full overflow-hidden rounded-full' in progress

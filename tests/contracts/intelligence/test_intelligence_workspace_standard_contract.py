@@ -24,8 +24,8 @@ def test_reserved_plan_language_replaces_placeholder_language():
 
 
 def test_automation_control_execution_is_fail_closed_by_default():
-    routes = read('app/automation_control/routes.py')
-    presentation = read('app/automation_control/presentation.py')
+    routes = read('app/intelligence/automation_control/routes.py')
+    presentation = read('app/intelligence/automation_control/presentation.py')
     config = read('app/config/default.py')
     enablement = read('app/common/automation_execution.py')
     assert 'execution_enabled()' in routes
@@ -40,7 +40,7 @@ def test_automation_control_execution_is_fail_closed_by_default():
 def test_automation_workspace_uses_integrated_tabs_and_operational_overview():
     template = read('app/templates/intelligence/automation_control.html')
     overview = read('app/templates/intelligence/partials/automation_control/_overview.html')
-    presentation = read('app/automation_control/presentation.py')
+    presentation = read('app/intelligence/automation_control/presentation.py')
     assert 'components/content_tabs.html' in template
     assert 'content_tabs.render_links(' in template
     assert 'intelligence_ui.link_tabs(' not in template
@@ -90,7 +90,7 @@ def test_shared_productive_typography_uses_named_size_tokens_for_primary_surface
         'app/templates/components/side_drawer.html',
         'app/templates/components/resource_detail_modal.html',
         'app/templates/components/table_label.html',
-        'app/templates/inventory/kubernetes/components/_summary.html',
+        'app/templates/kubernetes/inventory/components/_summary.html',
         'app/templates/intelligence/components/_workspace.html',
         'app/templates/intelligence/partials/_recommendation_detail_content.html',
         'app/templates/intelligence/partials/_catalog_detail_content.html',

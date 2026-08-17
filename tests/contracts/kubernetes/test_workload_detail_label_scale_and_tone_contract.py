@@ -8,7 +8,7 @@ def _read(relative_path: str) -> str:
 
 
 def test_workload_detail_uses_full_workspace_modal_reference_structure() -> None:
-    template = _read('app/templates/inventory/kubernetes/workloads/partials/_workload_detail_content.html')
+    template = _read('app/templates/kubernetes/inventory/workloads/partials/_workload_detail_content.html')
 
     assert 'data-kaori-detail-variant="full-workspace-modal"' in template
     assert "detail.detail_card('Workload Identity'" in template
@@ -24,7 +24,7 @@ def test_workload_detail_uses_full_workspace_modal_reference_structure() -> None
 
 
 def test_workload_configuration_is_factual_not_implicitly_scored() -> None:
-    template = _read('app/templates/inventory/kubernetes/workloads/partials/_workload_detail_content.html')
+    template = _read('app/templates/kubernetes/inventory/workloads/partials/_workload_detail_content.html')
 
     assert 'table_label.status_label(container.pull_policy' not in template
     assert 'normalized_pull_policy' not in template
@@ -35,7 +35,7 @@ def test_workload_configuration_is_factual_not_implicitly_scored() -> None:
 
 
 def test_workload_detail_uses_related_resources_metadata_and_context() -> None:
-    template = _read('app/templates/inventory/kubernetes/workloads/partials/_workload_detail_content.html')
+    template = _read('app/templates/kubernetes/inventory/workloads/partials/_workload_detail_content.html')
 
     assert 'related_collection.render(' in template
     assert "'Associated Pods'" in template

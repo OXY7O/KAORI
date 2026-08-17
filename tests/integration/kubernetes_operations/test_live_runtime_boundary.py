@@ -5,7 +5,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from app.kubernetes_operations.configmaps import runtime
+from app.kubernetes.operations.configmaps import runtime
 
 
 @contextmanager

@@ -6,12 +6,12 @@ from typing import Any
 from celery import shared_task
 
 from app.extensions.db import db
-from app.jobs.execution import JobExecutionContext
-from app.jobs.service import subscriber_user_ids
 from app.models.job import JobExecution
 from app.models.report import Report, ReportSchedule, ReportScheduleRun
-from app.notifications.feedback import OperationalDeliveryPolicy
-from app.notifications.service import record_operational_activity
+from app.platform_operations.jobs.execution import JobExecutionContext
+from app.platform_operations.jobs.service import subscriber_user_ids
+from app.platform_operations.notifications.feedback import OperationalDeliveryPolicy
+from app.platform_operations.notifications.service import record_operational_activity
 from app.reports.export.service import generate_report_artifact
 from app.reports.notifications import deliver_generated_report
 

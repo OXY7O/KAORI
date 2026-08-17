@@ -1,0 +1,122 @@
+{% import "analytics/components/_analysis_surfaces.html" as analysis_surface %}
+{% import "components/progress_bar.html" as progress_bar %}
+{% import "components/table_label.html" as table_label %}
+{% import "kubernetes/analytics/components/_scoped_link.html" as scoped_link %}
+<div class="space-y-5">
+    <div class="flex items-start gap-3">
+        <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="shield-alert" class="h-5 w-5"></i></span>
+        <div>
+            <h3 class="text-lg font-semibold text-content-primary">Capacity Risk Summary</h3>
+            <p class="mt-1 text-sm leading-6 text-content-muted">Rank constrained resource domains, separate actual governance findings, and connect each posture to a clear review path.</p>
+        </div>
+    </div>
+    <div class="grid gap-4 xl:grid-cols-[minmax(0,1.3fr)_minmax(320px,0.7fr)]">
+        <section class="{{ analysis_surface.evidence_shell_classes() }}">
+            <header class="flex items-center justify-between gap-3 border-b border-outline-subtle px-4 py-3 sm:px-5">
+                <div>
+                    <h4 class="{{ analysis_surface.section_title_classes() }}">Resource Risk Queue</h4>
+                    <p class="{{ analysis_surface.section_description_classes() }}">Lower headroom receives higher operational priority. Unavailable evidence remains Unknown instead of being treated as zero utilization.</p>
+                </div>
+                {{ table_label.metadata_label(risk_summary|length ~ ' Resources') }}
+            </header>
+            <div class="divide-y divide-outline-subtle">
+                {% for item in risk_summary %}
+                    {% set tone = item.status.tone|default('unknown') %}
+                    {% set resource_label = item.label %}
+                    <article class="grid gap-4 bg-surface-card px-4 py-4 transition-colors hover:bg-kaori-mist sm:px-5 lg:grid-cols-3 lg:items-center">
+                        <div class="flex items-start gap-3">
+                            <span class="{{ analysis_surface.resource_icon_classes(item.label) }}"><i data-lucide="{{ item.icon }}" class="h-4 w-4"></i></span>
+                            <div>
+                                <p class="text-sm font-semibold text-content-primary">{{ resource_label }}</p>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">{{ item.scope_label }}</p>
+                                <div class="mt-2">{{ table_label.status_label(item.status.label, tone=tone, size='compact') }}</div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex items-center justify-between gap-3 text-xs">
+                                <span class="text-content-muted">Remaining Headroom</span>
+                                <span class="font-semibold tabular-nums {{ 'text-content-primary' if item.evidence_available else analysis_surface.unavailable_value_classes() }}">{{ item.headroom_display }}</span>
+                            </div>
+                            {% if item.evidence_available %}
+                                {{ progress_bar.semantic_bar(item.headroom, tone, track_classes='mt-2 h-2 overflow-hidden rounded-full bg-surface-hover', label=resource_label ~ ' headroom status') }}
+                            {% else %}
+                                <div class="mt-2 flex h-8 items-center rounded-md border border-dashed border-outline-strong bg-surface-hover px-3 text-xs font-medium text-content-muted">Evidence unavailable</div>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <p class="{{ analysis_surface.metric_label_classes() }}">Recommended Response</p>
+                            <p class="mt-1 text-xs leading-5 text-content-secondary">
+                                {% if not item.scheduling_resource %}
+                                    {% if tone in ['critical', 'warning'] %}
+                                        Continue in Storage Analysis and validate node filesystem pressure before changing node pools.
+                                    {% elif tone == 'normal' %}
+                                        Continue filesystem monitoring in Storage Analysis.
+                                    {% else %}
+                                        Restore node filesystem evidence before interpreting this operational reference.
+                                    {% endif %}
+                                {% elif tone == 'critical' %}
+                                    Start remediation now and protect the remaining scheduling margin.
+                                {% elif tone == 'warning' %}
+                                    Plan capacity or workload right-sizing before the next growth event.
+                                {% elif tone == 'normal' %}
+                                    Continue monitoring and validate changes against the Ready-worker baseline.
+                                {% else %}
+                                    Restore committed capacity evidence before making a placement decision.
+                                {% endif %}
+                            </p>
+                        </div>
+                    </article>
+                {% endfor %}
+            </div>
+        </section>
+        <div class="space-y-4">
+            <section class="{{ analysis_surface.evidence_shell_classes() }}">
+                {% set finding_count = governance_findings|length %}
+                <header class="flex items-center justify-between gap-3 border-b border-outline-subtle px-4 py-3 sm:px-5">
+                    <div>
+                        <h4 class="{{ analysis_surface.section_title_classes() }}">Governance Findings</h4>
+                        <p class="{{ analysis_surface.section_description_classes() }}">Allocation and policy signals that can amplify capacity risk.</p>
+                    </div>
+                    {{ table_label.metadata_label(finding_count ~ (' Finding' if finding_count == 1 else ' Findings') ) }}
+                </header>
+                <div class="divide-y divide-outline-subtle">
+                    {% for finding in governance_findings %}
+                        {% set finding_tone = finding.tone|default(finding.severity)|default('unknown') %}
+                        <article class="flex items-start gap-3 bg-surface-card px-4 py-4 transition-colors hover:bg-kaori-mist sm:px-5">
+                            <span class="{{ analysis_surface.semantic_icon_classes(finding_tone, 'compact') }}"
+                                  aria-hidden="true"><i data-lucide="{{ finding.icon }}" class="h-3.5 w-3.5"></i></span>
+                            <div class="min-w-0">
+                                {{ table_label.status_label(finding.severity|title, tone=finding_tone, size='compact') }}
+                                <p class="mt-2 text-sm font-medium leading-5 text-content-primary">{{ finding.label }}</p>
+                            </div>
+                        </article>
+                    {% else %}
+                        {% set empty_state_icon = 'shield-check' %}
+                        {% set empty_state_label = 'No Findings' %}
+                        {% set empty_state_tone = 'normal' %}
+                        {% set empty_state_title = 'No Governance Findings' %}
+                        {% set empty_state_description = 'No actionable allocation or policy finding is present in the committed evidence.' %}
+                        {% set empty_state_min_height = 'min-h-[150px]' %}
+                        {% include 'components/states/_empty_state.html' %}
+                    {% endfor %}
+                </div>
+            </section>
+            <section class="{{ analysis_surface.guidance_card_classes() }}">
+                {{ analysis_surface.interpretation_callout('Recommended Review Path',
+                                'Continue Into The Domain That Owns The Evidence',
+                                'Use the resource-specific review links below to validate the signal before changing capacity or workload placement.',
+                                icon='route',
+                                role='brand') }}
+                <div class="{{ analysis_surface.review_path_grid_classes() }}">
+                    {% for review in review_paths|default([]) %}
+                        {{ analysis_surface.review_path_link(scoped_link.href(review.href, cluster.id, selected_time_range) ,
+                        review.label,
+                        review.description,
+                        review.icon
+                        ) }}
+                    {% endfor %}
+                </div>
+            </section>
+        </div>
+    </div>
+</div>

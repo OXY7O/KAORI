@@ -58,7 +58,7 @@ The hero summary counts workspaces requiring review rather than summing overlapp
 ## Ownership boundaries
 
 - Jobs & Executions owns canonical runtime execution, retries, cancellation, result references, queue state, and worker evidence.
-- Data Lifecycle owns retention intent, archive evidence, and safe cleanup boundaries while the shared retention engine remains under `app/retention/`.
+- Data Lifecycle owns retention intent, archive evidence, and safe cleanup boundaries while the shared retention engine remains under `app/platform_operations/data_lifecycle/retention/`.
 - Kubernetes Administration owns advanced setup/policy boundaries; live Secret value access remains owned by Secret Management.
 
 ## UI standard

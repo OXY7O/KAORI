@@ -8,19 +8,19 @@ def read(relative: str) -> str:
 
 
 def test_ingress_inventory_uses_canonical_resource_page_pattern() -> None:
-    routes = read('app/inventory/kubernetes/routes.py')
-    workspace = read('app/templates/inventory/kubernetes/ingresses/partials/_page_workspace.html')
-    hero = read('app/templates/inventory/kubernetes/ingresses/partials/_hero.html')
-    summary = read('app/templates/inventory/kubernetes/ingresses/partials/_summary_cards.html')
-    card = read('app/templates/inventory/kubernetes/ingresses/partials/_table_card.html')
-    table = read('app/templates/inventory/kubernetes/ingresses/partials/_table_content.html')
+    routes = read('app/kubernetes/inventory/routes.py')
+    workspace = read('app/templates/kubernetes/inventory/ingresses/partials/_page_workspace.html')
+    hero = read('app/templates/kubernetes/inventory/ingresses/partials/_hero.html')
+    summary = read('app/templates/kubernetes/inventory/ingresses/partials/_summary_cards.html')
+    card = read('app/templates/kubernetes/inventory/ingresses/partials/_table_card.html')
+    table = read('app/templates/kubernetes/inventory/ingresses/partials/_table_content.html')
 
     assert (
         "for resource in ('nodes', 'namespaces', 'configuration', 'workloads', 'pods', 'services', 'ingresses', 'storage')"
         in routes
     )
     assert 'id="ingresses-page-workspace"' in workspace
-    assert 'inventory/kubernetes/components/_data_freshness.html' in workspace
+    assert 'kubernetes/inventory/components/_data_freshness.html' in workspace
     assert 'page_hero.context_card(' in hero
     assert 'Ingress Publication Posture' in summary
     assert 'inventory.total_ingresses == 0' in summary
@@ -38,9 +38,9 @@ def test_ingress_inventory_uses_canonical_resource_page_pattern() -> None:
 
 
 def test_ingress_detail_uses_adaptive_stacks_and_factual_reference_evidence() -> None:
-    detail = read('app/templates/inventory/kubernetes/ingresses/partials/_ingress_detail_content.html')
-    service = read('app/inventory/kubernetes/resources/ingresses.py')
-    semantics = read('app/inventory/kubernetes/resources/ingress_semantics.py')
+    detail = read('app/templates/kubernetes/inventory/ingresses/partials/_ingress_detail_content.html')
+    service = read('app/kubernetes/inventory/resources/ingresses.py')
+    semantics = read('app/kubernetes/inventory/resources/ingress_semantics.py')
 
     assert 'data-kaori-detail-density="adaptive-stacks"' in detail
     assert 'detail.expanded_workspace_shell_classes()' in detail
@@ -61,8 +61,8 @@ def test_ingress_detail_uses_adaptive_stacks_and_factual_reference_evidence() ->
 
 
 def test_ingress_reference_resolution_honors_committed_collection_evidence() -> None:
-    service = read('app/inventory/kubernetes/resources/ingresses.py')
-    semantics = read('app/inventory/kubernetes/resources/ingress_semantics.py')
+    service = read('app/kubernetes/inventory/resources/ingresses.py')
+    semantics = read('app/kubernetes/inventory/resources/ingress_semantics.py')
 
     assert 'filter_current_generation(ServiceInventory.query, ServiceInventory)' in service
     assert 'filter_current_generation(ConfigurationInventory.query, ConfigurationInventory)' in service
@@ -75,8 +75,8 @@ def test_ingress_reference_resolution_honors_committed_collection_evidence() -> 
 
 
 def test_ingress_page_size_and_pagination_use_canonical_boundaries() -> None:
-    table = read('app/templates/inventory/kubernetes/ingresses/partials/_table_content.html')
-    card = read('app/templates/inventory/kubernetes/ingresses/partials/_table_card.html')
+    table = read('app/templates/kubernetes/inventory/ingresses/partials/_table_content.html')
+    card = read('app/templates/kubernetes/inventory/ingresses/partials/_table_card.html')
 
     assert 'hx-target="#ingresses-table-content"' in table
     assert 'name="partial_mode" value="table_content"' in table
@@ -87,4 +87,4 @@ def test_ingress_page_size_and_pagination_use_canonical_boundaries() -> None:
 
 
 def test_ingress_legacy_scope_wrapper_is_removed() -> None:
-    assert not (ROOT / 'app/templates/inventory/kubernetes/ingresses/partials/_inventory_scope.html').exists()
+    assert not (ROOT / 'app/templates/kubernetes/inventory/ingresses/partials/_inventory_scope.html').exists()

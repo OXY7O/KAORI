@@ -27,17 +27,17 @@ def test_core_kubernetes_final_lock_is_documented_and_quality_gated() -> None:
     assert '5 / 10 / 25 / 50' in lock
     assert 'verify_core_kubernetes_final_lock.py' in gate
     assert 'verify_analytics_compact_label_standard.py' in gate
-    assert "'app/templates/dashboards/kubernetes/'" in ui_lock
+    assert "'app/templates/kubernetes/dashboard/'" in ui_lock
 
 
 def test_core_kubernetes_final_lock_keeps_obsolete_paths_removed() -> None:
     cleanup = read('scripts/cleanup_obsolete_files.sh')
     obsolete = (
-        'app/dashboards/kubernetes/snapshot_builder.py',
+        'app/kubernetes/dashboard/snapshot_builder.py',
         'app/static/js/analytics_capacity.js',
         'app/static/js/analytics_forecast.js',
-        'app/templates/kubernetes_operations/_components.html',
-        'app/templates/governance/tls_certificates/partials/_inventory_scope.html',
+        'app/templates/kubernetes/operations/_components.html',
+        'app/templates/kubernetes/governance/tls_certificates/partials/_inventory_scope.html',
         'app/static/js/inventory/topology_bootstrap.js',
     )
     for relative in obsolete:

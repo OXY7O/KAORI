@@ -9,7 +9,7 @@ def read(relative: str) -> str:
 
 def test_data_lifecycle_tab_order_and_copy_are_compact_and_operational() -> None:
     index = read('app/templates/platform_operations/data_lifecycle/index.html')
-    presentation = read('app/retention/presentation.py')
+    presentation = read('app/platform_operations/data_lifecycle/retention/presentation.py')
 
     assert 'framed_workspace_tabs.render_navigation(' in index
     tab_tokens = (
@@ -40,7 +40,7 @@ def test_data_lifecycle_uses_shared_kaori_loading_bar() -> None:
 
 def test_retention_policy_explains_schedule_failure_and_worker_semantics() -> None:
     policy = read('app/templates/platform_operations/data_lifecycle/partials/_domain_workspace.html')
-    tasks = read('app/retention/tasks.py')
+    tasks = read('app/platform_operations/data_lifecycle/retention/tasks.py')
     config = read('app/config/default.py')
 
     assert 'Changing retention days only changes eligibility; it does not run a job immediately.' in policy
@@ -48,7 +48,7 @@ def test_retention_policy_explains_schedule_failure_and_worker_semantics() -> No
     assert 'Transient failures retry once; exhausted failures require manual retry.' in policy
     assert 'Queue {{ lifecycle.queue_name }} · {{ lifecycle.worker.label }}.' in policy
     assert "crontab(minute='*/15')" in config
-    assert "name='app.retention.tasks.run_scheduled_retention'" in tasks
+    assert "name='app.platform_operations.data_lifecycle.retention.tasks.run_scheduled_retention'" in tasks
     assert 'acks_late=True' in tasks
     assert 'reject_on_worker_lost=True' in tasks
     assert '_is_retryable_retention_error' in tasks

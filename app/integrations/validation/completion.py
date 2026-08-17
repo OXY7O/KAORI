@@ -5,7 +5,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 from app.extensions.db import db
-from app.jobs.service import mark_job_failed, mark_job_succeeded
+from app.platform_operations.jobs.service import mark_job_failed, mark_job_succeeded
 
 logger = logging.getLogger(__name__)
 

@@ -18,10 +18,10 @@ Every primary panel displays its effective scope. Namespace and Node are present
 
 The browser reads only committed `analytics.storage` snapshots. Provider queries run in the Analytics worker through these boundaries:
 
-1. `app/analytics/kubernetes/storage/evidence.py` collects every registered signal once.
-2. `app/analytics/kubernetes/storage/parsing.py` normalizes Metrics Source labels and duplicate series.
-3. `app/analytics/kubernetes/storage/domain.py` derives rows, evidence availability, lifecycle risk, pressure, and aggregate posture.
-4. `app/analytics/kubernetes/storage/presentation.py` applies Namespace, Node, local filters, independent pagination, and view models.
+1. `app/kubernetes/analytics/storage/evidence.py` collects every registered signal once.
+2. `app/kubernetes/analytics/storage/parsing.py` normalizes Metrics Source labels and duplicate series.
+3. `app/kubernetes/analytics/storage/domain.py` derives rows, evidence availability, lifecycle risk, pressure, and aggregate posture.
+4. `app/kubernetes/analytics/storage/presentation.py` applies Namespace, Node, local filters, independent pagination, and view models.
 5. Jinja templates render the presentation model and do not implement thresholds or business decisions.
 
 The materialized fingerprint is cluster-only:

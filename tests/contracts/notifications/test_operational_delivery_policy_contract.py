@@ -12,7 +12,7 @@ def read(relative: str) -> str:
 
 
 def _load_delivery_policy_class():
-    source = read('app/notifications/feedback.py')
+    source = read('app/platform_operations/notifications/feedback.py')
     tree = ast.parse(source)
     class_node = next(
         node for node in tree.body if isinstance(node, ast.ClassDef) and node.name == 'OperationalDeliveryPolicy'
@@ -36,7 +36,7 @@ def test_delivery_policy_semantics_are_executable() -> None:
 
 def test_notification_deck_reads_only_visible_rows() -> None:
     model = read('app/models/notification.py')
-    queries = read('app/notifications/queries.py')
+    queries = read('app/platform_operations/notifications/queries.py')
     migration = read('migrations/versions/20260805_notification_deck_v2.py')
 
     assert 'deck_visible: Mapped[bool]' in model
@@ -47,10 +47,10 @@ def test_notification_deck_reads_only_visible_rows() -> None:
 
 
 def test_configmap_secret_and_tls_delivery_matrix_is_explicit() -> None:
-    configmap_routes = read('app/kubernetes_operations/configmaps/routes.py')
-    secret_support = read('app/kubernetes_operations/secrets/route_support.py')
-    tls_routes = read('app/governance/tls_certificates/routes.py')
-    tls_tasks = read('app/governance/tls_certificates/tasks.py')
+    configmap_routes = read('app/kubernetes/operations/configmaps/routes.py')
+    secret_support = read('app/kubernetes/operations/secrets/route_support.py')
+    tls_routes = read('app/kubernetes/governance/tls_certificates/routes.py')
+    tls_tasks = read('app/kubernetes/governance/tls_certificates/tasks.py')
 
     assert 'OperationalDeliveryPolicy.DECK_ON_FAILURE' in configmap_routes
     assert "event_type == 'kubernetes_configmap_deleted'" in configmap_routes
@@ -69,11 +69,11 @@ def test_configmap_secret_and_tls_delivery_matrix_is_explicit() -> None:
 
 
 def test_tls_uses_canonical_workspace_and_progress_toast() -> None:
-    workspace = read('app/templates/governance/tls_certificates/partials/_page_workspace.html')
-    progress = read('app/templates/governance/tls_certificates/partials/_sync_progress_toast.html')
+    workspace = read('app/templates/kubernetes/governance/tls_certificates/partials/_page_workspace.html')
+    progress = read('app/templates/kubernetes/governance/tls_certificates/partials/_sync_progress_toast.html')
 
     assert 'id="tls-certificates-page-workspace"' in workspace
     assert '_sync_progress_toast.html' in workspace
     assert 'components/operational_progress_toast.html' in progress
-    assert not (ROOT / 'app/governance/tls_certificates/toast.py').exists()
-    assert not (ROOT / 'app/templates/governance/tls_certificates/partials/_inventory_scope.html').exists()
+    assert not (ROOT / 'app/kubernetes/governance/tls_certificates/toast.py').exists()
+    assert not (ROOT / 'app/templates/kubernetes/governance/tls_certificates/partials/_inventory_scope.html').exists()

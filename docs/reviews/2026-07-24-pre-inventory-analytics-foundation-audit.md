@@ -59,9 +59,9 @@ Contracts remain supporting evidence. The new suites execute calculation, filter
 Removed dormant modules with no runtime, test, configuration, or script consumer:
 
 ```text
-app/jobs/query_execution.py
-app/jobs/query_planning.py
-app/jobs/resource_limits.py
+app/platform_operations/jobs/query_execution.py
+app/platform_operations/jobs/query_planning.py
+app/platform_operations/jobs/resource_limits.py
 ```
 
 They represented a future Analytics worker foundation but were not used by any task. Their names are now retired by the architecture gate so they cannot silently return as unused placeholders.
@@ -112,7 +112,7 @@ Verified in the audited source:
 - Source hygiene scans archives even when `.git` is absent.
 - All 408 Jinja templates parse successfully.
 - Aggregate `app.extensions` imports were removed from domain modules; only application bootstrap uses the aggregate package.
-- The health blueprint cycle was removed by making `app.health.routes` own the blueprint.
+- The health blueprint cycle was removed by making `app.platform_operations.health.routes` own the blueprint.
 
 ### 5. File and folder structure
 
@@ -130,15 +130,15 @@ Residual structural debt remains significant:
 | Module | Lines |
 | --- | ---: |
 | `app/intelligence/recommendation_engine.py` | 2,572 |
-| `app/analytics/kubernetes/workload/service.py` | 2,456 |
-| `app/analytics/kubernetes/top_consumers/service.py` | 2,185 |
-| `app/analytics/kubernetes/forecast/service.py` | 2,119 |
-| `app/analytics/kubernetes/overview/service.py` | 1,938 |
-| `app/analytics/kubernetes/storage/service.py` | 1,592 |
-| `app/analytics/kubernetes/utilization/service.py` | 1,275 |
-| `app/analytics/kubernetes/capacity/service.py` | 1,234 |
+| `app/kubernetes/analytics/workload/service.py` | 2,456 |
+| `app/kubernetes/analytics/top_consumers/service.py` | 2,185 |
+| `app/kubernetes/analytics/forecast/service.py` | 2,119 |
+| `app/kubernetes/analytics/overview/service.py` | 1,938 |
+| `app/kubernetes/analytics/storage/service.py` | 1,592 |
+| `app/kubernetes/analytics/utilization/service.py` | 1,275 |
+| `app/kubernetes/analytics/capacity/service.py` | 1,234 |
 | `app/inventory/routes.py` | 1,195 |
-| `app/inventory/kubernetes/topology/service.py` | 1,109 |
+| `app/kubernetes/inventory/topology/service.py` | 1,109 |
 
 Highest-risk functions:
 

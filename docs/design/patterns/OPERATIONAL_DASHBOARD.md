@@ -2,7 +2,7 @@
 
 **Status:** Locked reference pattern
 **Reference implementation:** Kubernetes Operations Dashboard
-**Canonical page:** `app/templates/dashboards/kubernetes/partials/_content.html`
+**Canonical page:** `app/templates/kubernetes/dashboard/partials/_content.html`
 
 ## Purpose
 
@@ -145,7 +145,7 @@ The reference dashboard may evolve only when the change improves a reusable KAOR
 
 1. shared component or canonical dashboard implementation;
 2. this document;
-3. `app/dashboards/kubernetes/README.md` when the data or request boundary changes;
+3. `app/kubernetes/dashboard/README.md` when the data or request boundary changes;
 4. `scripts/verify_operational_dashboard_standard.py`;
 5. dashboard contract tests;
 6. the latest alignment audit when the decision is material.

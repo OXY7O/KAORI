@@ -16,13 +16,13 @@ def require(condition: bool, message: str, errors: list[str]) -> None:
 
 def main() -> int:
     errors: list[str] = []
-    service = read('app/kubernetes_operations/configmaps/service.py')
-    routes = read('app/kubernetes_operations/configmaps/routes.py')
-    validation = read('app/kubernetes_operations/configmaps/validation.py')
-    runtime = read('app/kubernetes_operations/configmaps/runtime.py')
-    receipts = read('app/kubernetes_operations/configmaps/receipts.py')
-    feedback = read('app/notifications/feedback.py')
-    notification_service = read('app/notifications/service.py')
+    service = read('app/kubernetes/operations/configmaps/service.py')
+    routes = read('app/kubernetes/operations/configmaps/routes.py')
+    validation = read('app/kubernetes/operations/configmaps/validation.py')
+    runtime = read('app/kubernetes/operations/configmaps/runtime.py')
+    receipts = read('app/kubernetes/operations/configmaps/receipts.py')
+    feedback = read('app/platform_operations/notifications/feedback.py')
+    notification_service = read('app/platform_operations/notifications/service.py')
     presentation = read('app/bootstrap/presentation.py')
     app_layout = read('app/templates/layouts/app.html')
     auth_layout = read('app/templates/layouts/auth.html')
@@ -31,8 +31,8 @@ def main() -> int:
     progress_toast = read('app/templates/components/operational_progress_toast.html')
     editor_js = read('app/static/js/configmap_editor.js')
     delete_js = read('app/static/js/configmap_delete.js')
-    preview = read('app/templates/kubernetes_operations/configmaps/_validation_preview.html')
-    operation_response = read('app/templates/kubernetes_operations/configmaps/_operation_response.html')
+    preview = read('app/templates/kubernetes/operations/configmaps/_validation_preview.html')
+    operation_response = read('app/templates/kubernetes/operations/configmaps/_operation_response.html')
     standard = read('docs/design/patterns/KUBERNETES_CONFIGMAP_SECRET_OPERATIONS.md')
     audit = read('docs/design/audits/KUBERNETES_CONFIGMAP_MANAGEMENT_TOAST_AUDIT_2026_08.md')
     quality_gate = read('scripts/quality_gate.sh')
@@ -90,7 +90,7 @@ def main() -> int:
         require(token in validation, f'ConfigMap validation missing token: {token}', errors)
 
     for page in ('create.html', 'update.html', 'delete.html'):
-        source = read(f'app/templates/kubernetes_operations/configmaps/{page}')
+        source = read(f'app/templates/kubernetes/operations/configmaps/{page}')
         require('_validation_preview.html' in source, f'{page} must include persistent validation evidence.', errors)
         require(
             'hx-sync="this:drop"' in source and 'hx-disabled-elt="find button"' in source,
@@ -134,7 +134,7 @@ def main() -> int:
         'OPERATIONAL_FEEDBACK_SESSION_KEY',
     ):
         require(
-            token in feedback or token in read('app/notifications/constants.py'),
+            token in feedback or token in read('app/platform_operations/notifications/constants.py'),
             f'Operational feedback contract missing token: {token}',
             errors,
         )
@@ -191,7 +191,7 @@ def main() -> int:
     for progress_usage in (
         'app/templates/components/navigation/_quick_sync_status.html',
         'app/templates/components/navigation/_individual_sync_status.html',
-        'app/templates/governance/tls_certificates/partials/_sync_progress_toast.html',
+        'app/templates/kubernetes/governance/tls_certificates/partials/_sync_progress_toast.html',
     ):
         require(
             'components/operational_progress_toast.html' in read(progress_usage),
@@ -208,8 +208,8 @@ def main() -> int:
         require(token in toast_js, f'Operational toast controller missing token: {token}', errors)
 
     obsolete = (
-        'app/templates/kubernetes_operations/_components.html',
-        'app/templates/kubernetes_operations/configmaps/_operation_notification.html',
+        'app/templates/kubernetes/operations/_components.html',
+        'app/templates/kubernetes/operations/configmaps/_operation_notification.html',
         'app/templates/components/navigation/_quick_sync_result.html',
         'app/templates/components/navigation/_operation_feedback_oob.html',
     )
@@ -218,7 +218,7 @@ def main() -> int:
 
     active_roots = (ROOT / 'app',)
     forbidden = (
-        'kubernetes_operations/_components.html',
+        'kubernetes/operations/_components.html',
         'components/navigation/_quick_sync_result.html',
         'components/navigation/_operation_feedback_oob.html',
         'dismissQuickActionToast',

@@ -10,11 +10,11 @@ def read(relative: str) -> str:
 def test_reviewed_product_surfaces_use_the_canonical_state_components() -> None:
     reviewed_empty_state_owners = (
         'app/templates/welcome/index.html',
-        'app/templates/dashboards/kubernetes/partials/_alerts_summary.html',
-        'app/templates/inventory/object_storage/systems/partials/_table_content.html',
+        'app/templates/kubernetes/dashboard/partials/_alerts_summary.html',
+        'app/templates/storage/object_storage/inventory/systems/partials/_table_content.html',
         'app/templates/components/kubernetes_operation_ui.html',
-        'app/templates/analytics/kubernetes/components/_evidence_record_list.html',
-        'app/templates/analytics/object_storage/partials/_bucket_table.html',
+        'app/templates/kubernetes/analytics/components/_evidence_record_list.html',
+        'app/templates/storage/object_storage/analytics/partials/_bucket_table.html',
         'app/templates/intelligence/components/_workspace.html',
         'app/templates/reports/generated/index.html',
         'app/templates/reports/report_templates/index.html',
@@ -29,8 +29,8 @@ def test_reviewed_product_surfaces_use_the_canonical_state_components() -> None:
     assert 'No Data Available' not in overview
 
     reviewed_blocked_state_owners = (
-        'app/templates/dashboards/kubernetes/partials/_forecast_risk.html',
-        'app/templates/analytics/object_storage/partials/_alert_records.html',
+        'app/templates/kubernetes/dashboard/partials/_forecast_risk.html',
+        'app/templates/storage/object_storage/analytics/partials/_alert_records.html',
         'app/templates/platform_operations/kubernetes/secret_reveal/_namespace_policy_table_content.html',
     )
     for relative in reviewed_blocked_state_owners:
@@ -40,14 +40,14 @@ def test_reviewed_product_surfaces_use_the_canonical_state_components() -> None:
 def test_reviewed_registry_empty_rows_do_not_keep_page_local_visual_shells() -> None:
     templates = {
         'app/templates/integrations/storage/object_storage/providers/minio/partials/_capability_registry.html': 'No Capability Records Match the Current Filters',
-        'app/templates/analytics/object_storage/partials/_alert_records.html': 'No Alert Records Match the Current Filters',
-        'app/templates/analytics/object_storage/partials/_bucket_table.html': 'No Bucket Records Match the Current Filters',
+        'app/templates/storage/object_storage/analytics/partials/_alert_records.html': 'No Alert Records Match the Current Filters',
+        'app/templates/storage/object_storage/analytics/partials/_bucket_table.html': 'No Bucket Records Match the Current Filters',
         'app/templates/intelligence/partials/_alert_intelligence_records.html': 'No Alert Records Match the Current Filters',
         'app/templates/reports/generated/index.html': 'No Generated Reports Match the Current Filters',
         'app/templates/reports/report_templates/index.html': 'No Templates Match the Current Filters',
         'app/templates/reports/schedules/index.html': 'No Schedules Match the Current Filters',
         'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_capability_registry.html': 'No Capability Records Match the Current Filters',
-        'app/templates/integrations/notification_channels/index.html': 'No Notification Channels Configured',
+        'app/templates/integrations/delivery/notification_channels/index.html': 'No Notification Channels Configured',
     }
     for relative, title in templates.items():
         source = read(relative)
@@ -61,7 +61,7 @@ def test_reviewed_registry_empty_rows_do_not_keep_page_local_visual_shells() -> 
 
 def test_adapter_macros_delegate_visual_ownership_to_shared_empty_state() -> None:
     intelligence = read('app/templates/intelligence/components/_workspace.html')
-    analytics = read('app/templates/analytics/kubernetes/components/_evidence_record_list.html')
+    analytics = read('app/templates/kubernetes/analytics/components/_evidence_record_list.html')
     operations = read('app/templates/components/kubernetes_operation_ui.html')
 
     for source in (intelligence, analytics, operations):
@@ -84,13 +84,13 @@ def test_web_empty_state_standard_does_not_claim_report_pdf_layout_ownership() -
 
 def test_reviewed_web_tables_do_not_reintroduce_plain_text_empty_rows() -> None:
     roots = (
-        'app/templates/dashboards/kubernetes',
-        'app/templates/inventory/kubernetes',
-        'app/templates/kubernetes_operations',
-        'app/templates/inventory/object_storage',
+        'app/templates/kubernetes/dashboard',
+        'app/templates/kubernetes/inventory',
+        'app/templates/kubernetes/operations',
+        'app/templates/storage/object_storage/inventory',
         'app/templates/integrations/storage/object_storage/providers/minio',
-        'app/templates/analytics/kubernetes',
-        'app/templates/analytics/object_storage',
+        'app/templates/kubernetes/analytics',
+        'app/templates/storage/object_storage/analytics',
         'app/templates/intelligence',
         'app/templates/reports',
         'app/templates/platform_operations',

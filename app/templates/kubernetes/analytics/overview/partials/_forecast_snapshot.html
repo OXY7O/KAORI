@@ -1,0 +1,130 @@
+{% import "components/section_link_button.html" as section_link_button %}
+{% import "components/forecast_projection_chart.html" as forecast_projection_chart %}
+{% import "components/table_label.html" as table_label %}
+{% import "analytics/components/_analysis_surfaces.html" as overview_surface %}
+{% import "kubernetes/analytics/components/_scoped_link.html" as scoped_link %}
+{% if not payload.forecast_snapshot.available|default(false) %}
+    {{ overview_surface.snapshot_unavailable('forecast', 'Forecast & Trend Snapshot', 'The Analytics worker has not committed forecast evidence for the selected cluster and forecast history window.', icon='chart-spline') }}
+{% else %}
+    {% set forecast = payload.forecast_snapshot %}
+    {% set risk_count = forecast.risk_count|default(0)|int %}
+    {% set has_forecast_evidence = forecast.series|default([])|length > 0 %}
+    {% set risk_tone = 'unknown' if not has_forecast_evidence else ('warning' if risk_count > 0 else 'normal') %}
+    {% set highest_resource = forecast.highest_projected_resource|default('N/A', true) %}
+    {% set highest_percent = forecast.highest_projected_percent %}
+    {% set highest_projection = highest_resource ~ ' · ' ~ ((highest_percent|round(1)) ~ '%' if highest_percent is not none else 'N/A') %}
+    <section data-analytics-overview-panel="forecast"
+             class="{{ overview_surface.snapshot_shell_classes() }}">
+        <header class="{{ overview_surface.snapshot_header_classes() }}">
+            <div class="flex min-w-0 items-start gap-3">
+                <span class="{{ overview_surface.snapshot_header_icon_classes() }}">
+                    <i data-lucide="chart-spline" class="h-4 w-4"></i>
+                </span>
+                <div class="min-w-0">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <h2 class="text-base font-semibold text-content-primary">Forecast &amp; Trend Snapshot</h2>
+                        {{ table_label.status_label('Unknown' if not has_forecast_evidence else ('Review Required' if risk_count > 0 else 'Normal') , risk_tone) }}
+                    </div>
+                    <p class="mt-1 text-xs leading-5 text-content-secondary">Historical direction, projected utilization, and threshold risk for core resources.</p>
+                </div>
+            </div>
+            {{ section_link_button.render(scoped_link.href(forecast.href, payload.selected_cluster_id, payload.selected_time_range) ,
+            'View Resource Forecast'
+            ) }}
+        </header>
+        {% set metrics = [
+                    {'label': 'Forecast Risk', 'value': forecast.forecast_risk|default('Unknown'), 'icon': 'shield-alert'},
+                    {'label': 'Risk Resources', 'value': risk_count, 'icon': 'triangle-alert'},
+                    {'label': 'Highest Projection', 'value': highest_projection, 'icon': 'arrow-up-right'},
+                    {'label': 'Forecast Horizon', 'value': forecast.forecast_horizon|default('30 Days')|title, 'icon': 'calendar-range'}
+                ] %}
+        <div class="{{ overview_surface.metric_grid_classes(4) }}">
+            {% for metric in metrics %}
+                <article class="{{ overview_surface.metric_cell_classes() }}">
+                    <span class="{{ overview_surface.resource_icon_classes(metric.label) }}">
+                        <i data-lucide="{{ metric.icon }}" class="h-4 w-4"></i>
+                    </span>
+                    <p class="mt-3 text-xs font-semibold uppercase tracking-wider text-content-muted">{{ metric.label }}</p>
+                    <p class="mt-1.5 break-words text-lg font-semibold text-content-primary">{{ metric.value }}</p>
+                </article>
+            {% endfor %}
+        </div>
+        <div class="grid border-t border-outline-subtle xl:grid-cols-3 xl:divide-x xl:divide-outline-subtle">
+            <article class="px-4 py-4 sm:px-5 xl:col-span-2">
+                <div>
+                    <h3 class="text-sm font-semibold text-content-primary">Combined Forecast Projection</h3>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Historical lines are solid; forward projections are dashed.</p>
+                </div>
+                {% if forecast.series %}
+                    <div class="mt-4">
+                        {{ forecast_projection_chart.render(forecast.series,
+                                                forecast.forecast_horizon|default('30 Days') |replace(' Days', '')|int,
+                        has_historical_series=true,
+                        height_classes='h-64',
+                        surface_classes='bg-surface-card',
+                        aria_label='Historical and projected resource utilization'
+                        ) }}
+                    </div>
+                {% else %}
+                    <div class="mt-4">
+                        {% set empty_state_icon = 'line-chart' %}
+                        {% set empty_state_label = 'Sync Required' %}
+                        {% set empty_state_tone = 'warning' %}
+                        {% set empty_state_title = 'Forecast Chart Not Available' %}
+                        {% set empty_state_description = 'Forecast series will appear after a committed model snapshot is available.' %}
+                        {% set empty_state_variant = 'panel' %}
+                        {% set empty_state_min_height = 'min-h-[220px]' %}
+                        {% include 'components/states/_empty_state.html' %}
+                    </div>
+                {% endif %}
+            </article>
+            <aside class="{{ overview_surface.context_panel_classes('border-t border-outline-subtle px-4 py-4 sm:px-5 xl:border-t-0') }}">
+                <div class="flex items-center justify-between gap-3">
+                    <div>
+                        <h3 class="text-sm font-semibold text-content-primary">Resource Outlook</h3>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">Latest daily averages and projected horizon values by resource.</p>
+                    </div>
+                    {{ table_label.metadata_label((forecast.series|length) ~ ' Series', size='compact') }}
+                </div>
+                {% if forecast.series %}
+                    <div class="mt-4 divide-y divide-outline-subtle border-y border-outline-subtle">
+                        {% for item in forecast.series %}
+                            {% set trend_value = payload.forecast_snapshot[item.key ~ '_trend']|default('Unknown') %}
+                            {% set projected = item.projected_percent|default(0)|float %}
+                            {% set item_tone = 'critical' if projected > 90 else ('warning' if projected >= 75 else 'normal') %}
+                            <div class="py-3">
+                                <div class="flex items-start justify-between gap-3">
+                                    <div class="min-w-0">
+                                        <p class="text-sm font-semibold text-content-primary">{{ item.label }}</p>
+                                        <p class="mt-0.5 text-xs text-content-muted">{{ item.latest_percent }}% Latest Daily Average → {{ item.projected_percent }}% Projected</p>
+                                    </div>
+                                    {{ table_label.status_label(trend_value|replace('_', ' ') |title, item_tone, size='compact') }}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="mt-4 text-xs leading-5 text-content-muted">No resource outlook is available for the current snapshot.</p>
+                {% endif %}
+            </aside>
+        </div>
+        <div class="{{ overview_surface.interpretation_grid_classes('lg:grid-cols-3') }}">
+            {{ overview_surface.interpretation_callout('How To Read',
+                        'Compare Projection With Threshold Timing',
+                        'Compare the dashed projection with warning and critical thresholds. A rising line is actionable when current utilization or headroom is already constrained.',
+                        icon='chart-column',
+                        role='insight') }}
+            {{ overview_surface.interpretation_callout('What To Do',
+                        'Validate Signal Quality Before Capacity Changes',
+                        'Validate historical signal quality, growth drivers, and the nearest threshold ETA before scheduling capacity or workload changes.',
+                        icon='scan-search',
+                        role='brand') }}
+            {{ overview_surface.interpretation_callout('Forecast Decision',
+                        forecast.risk_note,
+                        'Use the current risk posture, projected horizon, and nearest threshold direction to decide whether monitoring is enough or capacity planning should begin now.',
+                        icon='triangle-alert' if risk_count > 0 else 'circle-check',
+                        role='brand',
+                        tone='warning' if risk_count > 0 else 'normal') }}
+        </div>
+    </section>
+{% endif %}

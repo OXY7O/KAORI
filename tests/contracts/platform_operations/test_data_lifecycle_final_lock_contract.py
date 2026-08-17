@@ -33,7 +33,7 @@ def test_settings_data_lifecycle_is_redirect_only_compatibility() -> None:
     assert 'platform_operations.data_lifecycle.index' in compatibility
     assert 'platform_operations.data_lifecycle.save_policy' in compatibility
     assert 'render_template' not in compatibility
-    assert 'app.retention' not in compatibility
+    assert 'app.platform_operations.data_lifecycle.retention' not in compatibility
     assert 'enqueue_canonical_job' not in compatibility
 
 
@@ -73,7 +73,7 @@ def test_data_lifecycle_navigation_and_breadcrumb_are_platform_owned() -> None:
 
 
 def test_data_lifecycle_rbac_cutover_preserves_permission_rows_in_place() -> None:
-    defaults = read('app/definitions/catalogs/rbac/access.yaml')
+    defaults = read('app/definitions/catalogs/access/rbac/access.yaml')
     migration = read('migrations/versions/20260808_data_lifecycle_platform_operations.py')
 
     for key in (
@@ -97,7 +97,7 @@ def test_data_lifecycle_rbac_cutover_preserves_permission_rows_in_place() -> Non
 
 def test_data_lifecycle_keeps_retention_engine_and_jobs_boundaries() -> None:
     service = read('app/platform_operations/data_lifecycle/service.py')
-    retention_readme = read('app/retention/README.md')
+    retention_readme = read('app/platform_operations/data_lifecycle/retention/README.md')
 
     assert 'enqueue_canonical_job(' in service
     assert "job_type='data_lifecycle'" in service

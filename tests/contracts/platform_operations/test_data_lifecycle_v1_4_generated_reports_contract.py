@@ -8,10 +8,13 @@ def read(relative: str) -> str:
 
 
 def test_generated_reports_are_a_registered_lifecycle_domain() -> None:
-    registry = read('app/retention/domains/__init__.py')
-    adapter = read('app/retention/domains/generated_report.py')
+    registry = read('app/platform_operations/data_lifecycle/retention/domains/__init__.py')
+    adapter = read('app/platform_operations/data_lifecycle/retention/domains/generated_report.py')
 
-    assert 'from app.retention.domains.generated_report import GeneratedReportArchiveDomain' in registry
+    assert (
+        'from app.platform_operations.data_lifecycle.retention.domains.generated_report import GeneratedReportArchiveDomain'
+        in registry
+    )
     assert "'generated_report': GeneratedReportArchiveDomain" in registry
     assert "name = 'generated_report'" in adapter
     assert "source_model = 'reports'" in adapter
@@ -19,7 +22,7 @@ def test_generated_reports_are_a_registered_lifecycle_domain() -> None:
 
 
 def test_generated_report_cleanup_is_age_based_and_protects_active_generation() -> None:
-    adapter = read('app/retention/domains/generated_report.py')
+    adapter = read('app/platform_operations/data_lifecycle/retention/domains/generated_report.py')
 
     assert "Report.status == 'ready'" in adapter
     assert "Report.status == 'archived'" in adapter
@@ -33,8 +36,8 @@ def test_generated_report_cleanup_is_age_based_and_protects_active_generation() 
 
 
 def test_generated_report_archive_copies_and_verifies_binary_evidence_before_cleanup() -> None:
-    adapter = read('app/retention/domains/generated_report.py')
-    service = read('app/retention/service.py')
+    adapter = read('app/platform_operations/data_lifecycle/retention/domains/generated_report.py')
+    service = read('app/platform_operations/data_lifecycle/retention/service.py')
 
     assert 'def iter_supplements(' in adapter
     assert 'ArchiveSupplement(' in adapter
@@ -52,8 +55,8 @@ def test_generated_report_archive_copies_and_verifies_binary_evidence_before_cle
 
 def test_generated_report_policy_is_bounded_and_scheduled_separately() -> None:
     config = read('app/config/default.py')
-    tasks = read('app/retention/tasks.py')
-    policy = read('app/retention/policy_service.py')
+    tasks = read('app/platform_operations/data_lifecycle/retention/tasks.py')
+    policy = read('app/platform_operations/data_lifecycle/retention/policy_service.py')
     lifecycle_service = read('app/platform_operations/data_lifecycle/service.py')
     migration = read('migrations/versions/20260816_generated_report_data_lifecycle.py')
 
@@ -83,14 +86,14 @@ def test_generated_report_policy_is_bounded_and_scheduled_separately() -> None:
     assert 'schedule_enabled=False' in migration
     assert "GENERATED_REPORT_RETENTION_ENABLED = _env_bool('GENERATED_REPORT_RETENTION_ENABLED', False)" in config
     assert 'return replace(policy, batch_size=max(100, min(policy.batch_size, 2500)))' in read(
-        'app/retention/domains/generated_report.py'
+        'app/platform_operations/data_lifecycle/retention/domains/generated_report.py'
     )
     assert 'batch_size = max(100, min(batch_size, 2500))' in lifecycle_service
 
 
 def test_data_lifecycle_ui_explains_generated_report_evidence_and_status_windows() -> None:
-    presentation = read('app/retention/presentation.py')
-    generated_presentation = read('app/retention/generated_report_presentation.py')
+    presentation = read('app/platform_operations/data_lifecycle/retention/presentation.py')
+    generated_presentation = read('app/platform_operations/data_lifecycle/retention/generated_report_presentation.py')
     workspace = read('app/templates/platform_operations/data_lifecycle/partials/_domain_workspace.html')
 
     assert "'generated_report': generated_report_ui.GENERATED_REPORT_LABEL" in presentation
@@ -136,7 +139,7 @@ def test_report_storage_reads_generated_lifecycle_policy_as_the_canonical_retent
 
 def test_generated_report_archives_surface_binary_evidence_in_archive_history() -> None:
     history = read('app/templates/platform_operations/data_lifecycle/partials/_history.html')
-    presentation = read('app/retention/presentation.py')
+    presentation = read('app/platform_operations/data_lifecycle/retention/presentation.py')
 
     assert "'supplemental_count': len(metadata.get('supplemental_artifacts') or [])" in presentation
     assert 'retained evidence' in history

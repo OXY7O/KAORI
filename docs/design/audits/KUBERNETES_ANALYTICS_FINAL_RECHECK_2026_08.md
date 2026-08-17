@@ -10,7 +10,7 @@ This final recheck covers Analytics Overview, Resource Utilization, Capacity, St
 
 ### 1. Analytics tab state had two owners
 
-Analytics templates used Alpine `activeTab` visibility bindings while `app/static/js/analytics/kubernetes/controls.js` independently handled click, keyboard navigation, native `hidden`, persistence, lazy activation, and HTMX rehydration. That dual ownership made tab state vulnerable to being reset or visually desynchronized.
+Analytics templates used Alpine `activeTab` visibility bindings while `app/static/js/kubernetes/analytics/controls.js` independently handled click, keyboard navigation, native `hidden`, persistence, lazy activation, and HTMX rehydration. That dual ownership made tab state vulnerable to being reset or visually desynchronized.
 
 **Disposition:** Analytics Content Tabs now have one native controller. Templates provide server-readable initial `hidden` state only; `analytics_controls.js` owns subsequent tab activation.
 
@@ -36,7 +36,7 @@ The following current-release surfaces had no justified owner:
 
 - `app/templates/analytics/components/_content_tabs.html` — backward-compatible wrapper over the shared Content Tabs component;
 - `app/templates/analytics/components/_snapshot_panel.html` — orphan template;
-- `app/templates/analytics/kubernetes/materialization/_freshness.html` — orphan materialization fragment;
+- `app/templates/kubernetes/analytics/materialization/_freshness.html` — orphan materialization fragment;
 - `stabilizeAlertsAfterSwap` / `data-alerts-tabset` — orphan Alpine-era Alerts rehydration bridge.
 
 **Disposition:** all are retired. Analytics consumes shared components directly.
@@ -232,7 +232,7 @@ The audit reconfirmed the current release boundaries:
 
 Source audit evidence for this pass:
 
-- 85 Python modules under `app/analytics/kubernetes` parse successfully;
+- 85 Python modules under `app/kubernetes/analytics` parse successfully;
 - 395 literal Analytics template references resolve with zero missing targets;
 - Kubernetes Analytics contract suite: **298 passed**;
 - `verify_analytics_final_lock.py`: **PASS**;

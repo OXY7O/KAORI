@@ -5,8 +5,8 @@ from typing import Any
 from celery import shared_task
 
 from app.extensions.db import db
-from app.jobs.execution import JobExecutionContext
 from app.models.report import ReportSchedule
+from app.platform_operations.jobs.execution import JobExecutionContext
 from app.reports.schedules.service import execute_schedule, run_due_schedules
 
 

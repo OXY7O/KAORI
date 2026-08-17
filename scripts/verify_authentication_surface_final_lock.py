@@ -33,7 +33,7 @@ def _inline_script_count(source: str) -> int:
 def main() -> int:
     errors: list[str] = []
 
-    templates = sorted((ROOT / 'app/templates/auth').rglob('*.html'))
+    templates = sorted((ROOT / 'app/templates/access/authentication').rglob('*.html'))
     require(bool(templates), 'Authentication templates are missing', errors)
 
     for path in templates:
@@ -45,21 +45,21 @@ def main() -> int:
         require(' uppercase ' not in f' {source} ', f'{relative}: visible uppercase utility is forbidden', errors)
         require(not INLINE_HANDLER.search(source), f'{relative}: inline DOM handler is forbidden', errors)
 
-    routes = read('app/auth/routes.py')
-    session_source = read('app/auth/session.py')
-    forms = read('app/auth/forms.py')
-    services = read('app/auth/services.py')
-    audit = read('app/auth/audit.py')
+    routes = read('app/access/authentication/routes.py')
+    session_source = read('app/access/authentication/session.py')
+    forms = read('app/access/authentication/forms.py')
+    services = read('app/access/authentication/services.py')
+    audit = read('app/access/authentication/audit.py')
     production = read('app/config/production.py')
     default_config = read('app/config/default.py')
-    login = read('app/templates/auth/partials/_login_form.html')
-    alerts = read('app/templates/auth/partials/_login_alerts.html')
-    index = read('app/templates/auth/index.html')
-    setup = read('app/templates/auth/setup_required.html')
+    login = read('app/templates/access/authentication/partials/_login_form.html')
+    alerts = read('app/templates/access/authentication/partials/_login_alerts.html')
+    index = read('app/templates/access/authentication/index.html')
+    setup = read('app/templates/access/authentication/setup_required.html')
     layout = read('app/templates/layouts/auth.html')
     login_css = read('app/static/css/auth-login.css')
     login_js = read('app/static/js/auth_login.js')
-    readme = read('app/auth/README.md')
+    readme = read('app/access/authentication/README.md')
     quality_gate = read('scripts/quality_gate.sh')
     feature_gate = read('scripts/verify_feature_test_coverage.py')
 
@@ -191,7 +191,7 @@ def main() -> int:
 
     for relative in (
         'tests/unit/auth/test_auth_session_policy.py',
-        'tests/auth/test_login_characterization.py',
+        'tests/access/authentication/test_login_characterization.py',
         'tests/security/auth/test_authentication_security.py',
         'tests/rendering/auth/test_authentication_rendering.py',
         'tests/e2e/auth/test_authentication_smoke.py',
