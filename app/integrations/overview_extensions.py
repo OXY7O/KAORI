@@ -2,8 +2,6 @@ from __future__ import annotations
 
 from typing import Any
 
-from sqlalchemy.orm import selectinload
-
 from app.integrations.registry import registry
 from app.models.alertmanager import AlertmanagerInstance
 from app.models.integration import IntegrationInstance
@@ -22,24 +20,46 @@ def build_overview_stats(
     extension_instances: list[IntegrationInstance],
 ) -> dict[str, int]:
     target_states = [
-        *((True, connection.readiness_status or 'validation_required') for connection in kubernetes_connections),
-        *((bool(item.endpoint), item.readiness_status or 'validation_required') for item in prometheus_instances),
-        *((bool(item.endpoint), item.readiness_status or 'validation_required') for item in alertmanager_instances),
-        *((True, item.readiness_status or 'validation_required') for item in extension_instances),
+        *(
+            (True, bool(connection.integration_instance.enabled), connection.readiness_status or 'validation_required')
+            for connection in kubernetes_connections
+        ),
+        *(
+            (bool(item.endpoint), bool(item.enabled), item.readiness_status or 'validation_required')
+            for item in prometheus_instances
+        ),
+        *(
+            (bool(item.endpoint), bool(item.enabled), item.readiness_status or 'validation_required')
+            for item in alertmanager_instances
+        ),
+        *((True, bool(item.enabled), item.readiness_status or 'validation_required') for item in extension_instances),
     ]
     total = len(target_states)
-    configured = sum(1 for is_configured, _ in target_states if is_configured)
-    ready = sum(1 for is_configured, readiness in target_states if is_configured and readiness == 'ready')
-    validation_required = sum(1 for is_configured, readiness in target_states if is_configured and readiness != 'ready')
-    blocked = sum(1 for is_configured, readiness in target_states if is_configured and readiness == 'blocked')
+    configured = sum(1 for is_configured, _, _ in target_states if is_configured)
+    ready = sum(
+        1
+        for is_configured, is_enabled, readiness in target_states
+        if is_configured and is_enabled and readiness == 'ready'
+    )
+    readiness_review = sum(
+        1
+        for is_configured, is_enabled, readiness in target_states
+        if is_configured and (not is_enabled or readiness != 'ready')
+    )
+    blocked = sum(
+        1
+        for is_configured, is_enabled, readiness in target_states
+        if is_configured and is_enabled and readiness == 'blocked'
+    )
     not_configured = max(total - configured, 0)
     return {
         'total': total,
         'configured': configured,
         'ready': ready,
-        'validation_required': validation_required,
+        'validation_required': readiness_review,
+        'readiness_review': readiness_review,
         'not_configured': not_configured,
-        'attention': validation_required + not_configured,
+        'attention': readiness_review + not_configured,
         'blocked': blocked,
     }
 
@@ -51,8 +71,7 @@ def load_extension_integration_instances() -> list[IntegrationInstance]:
     if not provider_types:
         return []
     return (
-        IntegrationInstance.query.options(selectinload(IntegrationInstance.bindings))
-        .filter(IntegrationInstance.provider_type.in_(provider_types))
+        IntegrationInstance.query.filter(IntegrationInstance.provider_type.in_(provider_types))
         .order_by(IntegrationInstance.provider_type.asc(), IntegrationInstance.name.asc())
         .all()
     )

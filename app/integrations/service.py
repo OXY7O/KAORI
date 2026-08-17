@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Mapping
 from typing import Any
 from urllib.parse import urlsplit
 
@@ -16,12 +17,7 @@ from app.integrations.coverage import (
 from app.integrations.deletion import kubernetes_deletion_guard
 from app.integrations.kubernetes.compatibility import FEATURE_CONTRACTS
 from app.integrations.kubernetes.messages import compact_readiness_reasons
-from app.integrations.overview_extensions import (
-    build_extension_runtime_rows,
-    build_overview_stats,
-    load_extension_integration_instances,
-    sort_runtime_rows,
-)
+from app.integrations.overview_extensions import sort_runtime_rows
 from app.integrations.prometheus.scope import cluster_bindings_for_instance
 from app.integrations.registry import get_integration, registry
 from app.integrations.taxonomy import (
@@ -49,112 +45,6 @@ def safe_endpoint(value: str | None) -> str:
     port = f':{parsed.port}' if parsed.port else ''
     path = parsed.path.rstrip('/')
     return f'{parsed.scheme or "http"}://{host}{port}{path}'
-
-
-def build_integrations_overview(
-    *,
-    tab: str = 'catalog',
-    provider: str = '',
-    health: str = '',
-    readiness: str = '',
-    page: int = 1,
-    per_page: int = 5,
-) -> dict[str, Any]:
-    """Build the Integrations landing page from persisted provider records only.
-
-    The landing page must remain available when no provider has been registered.
-    It intentionally avoids provider resolvers, live endpoint calls, and cluster-to-
-    provider assumptions so one absent integration cannot break the overview.
-    """
-    kubernetes_connections = (
-        KubernetesConnection.query.join(Cluster).order_by(Cluster.created_at.asc(), Cluster.id.asc()).all()
-    )
-    prometheus_instances = (
-        PrometheusInstance.query.join(PrometheusInstance.integration_instance)
-        .order_by(IntegrationInstance.name.asc())
-        .all()
-    )
-    alertmanager_instances = (
-        AlertmanagerInstance.query.join(AlertmanagerInstance.integration_instance)
-        .order_by(IntegrationInstance.name.asc())
-        .all()
-    )
-    extension_instances = load_extension_integration_instances()
-
-    stats = build_overview_stats(
-        kubernetes_connections=kubernetes_connections,
-        prometheus_instances=prometheus_instances,
-        alertmanager_instances=alertmanager_instances,
-        extension_instances=extension_instances,
-    )
-    runtime_rows = _runtime_overview_rows(
-        kubernetes_connections=kubernetes_connections,
-        prometheus_instances=prometheus_instances,
-        alertmanager_instances=alertmanager_instances,
-    )
-    runtime_rows.extend(build_extension_runtime_rows(_latest_runtime_observations()))
-    sort_runtime_rows(runtime_rows)
-    filtered_runtime_rows = runtime_rows
-    if provider:
-        filtered_runtime_rows = [row for row in filtered_runtime_rows if row['provider'] == provider]
-    if health:
-        filtered_runtime_rows = [row for row in filtered_runtime_rows if row['health_status'] == health]
-    if readiness:
-        filtered_runtime_rows = [row for row in filtered_runtime_rows if row['readiness'] == readiness]
-
-    page_rows, runtime_pagination = _paginate(filtered_runtime_rows, page=page, per_page=per_page)
-    runtime_global_stats = _runtime_stats(runtime_rows)
-    runtime_stats = _runtime_stats(filtered_runtime_rows)
-    runtime_scope_label = _runtime_scope_label(
-        provider=provider,
-        health=health,
-        readiness=readiness,
-    )
-    catalog = _catalog(
-        kubernetes_connections=kubernetes_connections,
-        prometheus_instances=prometheus_instances,
-        alertmanager_instances=alertmanager_instances,
-        extension_instances=extension_instances,
-    )
-    coverage = _coverage(
-        kubernetes_connections=kubernetes_connections,
-        prometheus_instances=prometheus_instances,
-        alertmanager_instances=alertmanager_instances,
-        extension_instances=extension_instances,
-    )
-    return {
-        'stats': stats,
-        'catalog': catalog,
-        'available_provider_count': sum(1 for item in catalog if item['availability'] == 'available'),
-        'active_tab': tab if tab in {'catalog', 'runtime', 'coverage'} else 'catalog',
-        'coverage': coverage,
-        'coverage_stats': _coverage_stats(coverage),
-        'runtime_rows': page_rows,
-        'runtime_stats': runtime_stats,
-        'runtime_global_stats': runtime_global_stats,
-        'runtime_scope_label': runtime_scope_label,
-        'runtime_pagination': runtime_pagination,
-        'runtime_has_targets': bool(runtime_rows),
-        'runtime_has_active_filters': bool(provider or health or readiness),
-        'selected_provider': provider,
-        'selected_health': health,
-        'selected_readiness': readiness,
-        'provider_options': [
-            {'value': module.provider_type, 'label': module.runtime_label or module.label} for module in registry.all()
-        ],
-        'health_options': [
-            {'value': 'healthy', 'label': 'Healthy'},
-            {'value': 'degraded', 'label': 'Degraded'},
-            {'value': 'unhealthy', 'label': 'Unhealthy'},
-            {'value': 'not_observed', 'label': 'Not Observed'},
-        ],
-        'runtime_readiness_options': [
-            {'value': 'ready', 'label': 'Ready'},
-            {'value': 'degraded', 'label': 'Degraded'},
-            {'value': 'blocked', 'label': 'Blocked'},
-            {'value': 'validation_required', 'label': 'Validation Required'},
-        ],
-    }
 
 
 def _kubernetes_readiness(connection: KubernetesConnection) -> str:
@@ -516,17 +406,21 @@ def _provider_portfolio_counts(
     counts = {
         'kubernetes': {
             'configured': len(kubernetes_connections),
-            'ready': sum(1 for item in kubernetes_connections if _kubernetes_readiness(item) == 'ready'),
+            'ready': sum(
+                1
+                for item in kubernetes_connections
+                if item.integration_instance.enabled and _kubernetes_readiness(item) == 'ready'
+            ),
             'total': len(kubernetes_connections),
         },
         'prometheus': {
             'configured': sum(1 for item in prometheus_instances if item.endpoint),
-            'ready': sum(1 for item in prometheus_instances if item.readiness_status == 'ready'),
+            'ready': sum(1 for item in prometheus_instances if item.enabled and item.readiness_status == 'ready'),
             'total': len(prometheus_instances),
         },
         'alertmanager': {
             'configured': sum(1 for item in alertmanager_instances if item.endpoint),
-            'ready': sum(1 for item in alertmanager_instances if item.readiness_status == 'ready'),
+            'ready': sum(1 for item in alertmanager_instances if item.enabled and item.readiness_status == 'ready'),
             'total': len(alertmanager_instances),
         },
     }
@@ -534,7 +428,7 @@ def _provider_portfolio_counts(
         targets = [item for item in extension_instances if item.provider_type == provider_type]
         counts[provider_type] = {
             'configured': len(targets),
-            'ready': sum(1 for item in targets if item.readiness_status == 'ready'),
+            'ready': sum(1 for item in targets if item.enabled and item.readiness_status == 'ready'),
             'total': len(targets),
         }
     return counts
@@ -566,6 +460,15 @@ def _coverage(
             providers = ' · '.join(module.label for module in domain_modules)
         else:
             providers = ' · '.join(capability.label for capability in capability_definitions_for_domain(domain.key))
+        attention = max(total - ready, 0) if lifecycle == 'available' else 0
+        if lifecycle != 'available':
+            posture_state, posture_label = 'planned', 'Planned'
+        elif total <= 0:
+            posture_state, posture_label = 'not_configured', 'Not Configured'
+        elif attention > 0:
+            posture_state, posture_label = 'validation_required', 'Needs Review'
+        else:
+            posture_state, posture_label = 'ready', 'Ready'
         rows.append(
             {
                 'key': domain.key,
@@ -577,8 +480,10 @@ def _coverage(
                 'ready': ready,
                 'total': total,
                 'lifecycle': lifecycle,
-                'attention': max(total - ready, 0) if lifecycle == 'available' else 0,
+                'attention': attention,
                 'readiness_percent': round((ready / total) * 100, 1) if total else 0.0,
+                'posture_state': posture_state,
+                'posture_label': posture_label,
             }
         )
     return rows
@@ -715,6 +620,17 @@ def _capability_attention_display(count: int) -> str:
     return f'{count} Items Need Attention'
 
 
+def _latest_runtime_observation(provider: str, instance_id: str) -> IntegrationRuntimeObservation | None:
+    return (
+        IntegrationRuntimeObservation.query.filter_by(provider=provider, instance_id=instance_id)
+        .order_by(
+            IntegrationRuntimeObservation.observed_at.desc(),
+            IntegrationRuntimeObservation.id.desc(),
+        )
+        .first()
+    )
+
+
 def _latest_runtime_observations() -> dict[tuple[str, str], IntegrationRuntimeObservation]:
     ranked = select(
         IntegrationRuntimeObservation.id.label('observation_id'),
@@ -745,13 +661,12 @@ def _runtime_overview_rows(
     kubernetes_connections: list[KubernetesConnection],
     prometheus_instances: list[PrometheusInstance],
     alertmanager_instances: list[AlertmanagerInstance],
+    latest: Mapping[tuple[str, str], IntegrationRuntimeObservation],
 ) -> list[dict[str, Any]]:
-    latest = _latest_runtime_observations()
-
     rows: list[dict[str, Any]] = []
     for connection in kubernetes_connections:
         cluster = connection.cluster
-        canonical = db.session.get(IntegrationInstance, connection.integration_instance_id)
+        canonical = connection.integration_instance
         observation = latest.get(('kubernetes', str(connection.id)))
         validation_at = connection.last_validated_at
         readiness = connection.readiness_status or 'validation_required'
@@ -890,7 +805,9 @@ def build_integration_runtime_detail(provider: str, instance_id: str) -> dict[st
             'alertmanager_instances': [],
         }
         runtime_args[collection_key] = [target]
-        rows = _runtime_overview_rows(**runtime_args)
+        observation = _latest_runtime_observation(provider, str(target_id))
+        latest = {(provider, str(target_id)): observation} if observation is not None else {}
+        rows = _runtime_overview_rows(**runtime_args, latest=latest)
     else:
         try:
             module = get_integration(provider)
@@ -898,5 +815,7 @@ def build_integration_runtime_detail(provider: str, instance_id: str) -> dict[st
             return None
         if module.runtime_overview_builder is None:
             return None
-        rows = module.runtime_overview_builder(_latest_runtime_observations(), target_id)
+        observation = _latest_runtime_observation(provider, str(target_id))
+        latest = {(provider, str(target_id)): observation} if observation is not None else {}
+        rows = module.runtime_overview_builder(latest, target_id)
     return rows[0] if rows else None

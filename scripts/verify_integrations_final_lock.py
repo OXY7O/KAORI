@@ -446,6 +446,7 @@ def main() -> int:
 
     integration_overview = read('app/templates/integrations/overview.html')
     integration_service = read('app/integrations/service.py')
+    integration_overview_workspace = read('app/integrations/overview_workspace.py')
     for marker in (
         "available_provider_count ~ ' Providers'",
         'integration_status(item.posture_state, item.posture_label',
@@ -453,6 +454,29 @@ def main() -> int:
         'progress_bar.bar(item.readiness_percent',
     ):
         require(marker in integration_overview, f'Integrations Overview provider catalog missing: {marker}', errors)
+    require(
+        'framed_workspace_tabs.render_navigation(' in integration_overview
+        and "hx_target='#integration-workspace'" in integration_overview,
+        'Integration Overview deep workspaces must be server-owned and demand-loaded',
+        errors,
+    )
+    require(
+        "allowedTabs: ['catalog', 'runtime', 'coverage']" not in integration_overview,
+        'Integration Overview must not eagerly render client-hidden deep workspaces',
+        errors,
+    )
+    require(
+        'No targets registered' in integration_overview
+        and 'integration_status(item.posture_state, item.posture_label' in integration_overview,
+        'Integration Domain Coverage must not report 0-of-0 target domains as Ready',
+        errors,
+    )
+    require(
+        'Runtime Evidence Lifecycle' in runtime_overview
+        and "components/states/_empty_state.html" in runtime_overview,
+        'Runtime Overview must use canonical empty-state ownership and expose shared lifecycle governance',
+        errors,
+    )
     for marker in (
         "'ready': ready",
         "'total': total",
@@ -462,6 +486,26 @@ def main() -> int:
         "'posture_label': posture_label",
     ):
         require(marker in integration_service, f'Integrations provider catalog evidence missing: {marker}', errors)
+    overview_builder = integration_overview_workspace.split('def build_integrations_overview(', 1)[1]
+    require(
+        "if active_tab == 'catalog':" in overview_builder
+        and "if active_tab == 'coverage':" in overview_builder
+        and 'latest = _latest_runtime_observations()' in overview_builder,
+        'Integration Overview selected-workspace build boundary is missing',
+        errors,
+    )
+    require(
+        'build_extension_runtime_rows(latest)' in overview_builder and 'latest=latest' in overview_builder,
+        'Integration Runtime Overview must reuse one latest-observation snapshot per request',
+        errors,
+    )
+    runtime_detail_builder = integration_service.split('def build_integration_runtime_detail(', 1)[1]
+    require(
+        '_latest_runtime_observation(provider, str(target_id))' in runtime_detail_builder
+        and '_latest_runtime_observations()' not in runtime_detail_builder,
+        'Integration Runtime detail must read only the selected target observation',
+        errors,
+    )
 
     # Provider detail lifecycle final-lock contract.
     provider_details = {

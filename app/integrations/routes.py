@@ -13,13 +13,13 @@ from app.integrations.kubernetes_frontpage import (
     build_kubernetes_page,
     build_kubernetes_registry_row,
 )
+from app.integrations.overview_workspace import build_integrations_overview
 from app.integrations.repository import get_cluster, get_kubernetes_connection_by_cluster_id
 from app.integrations.runtime.presentation import runtime_history_view
 from app.integrations.runtime.repository import paginate_runtime_history
 from app.integrations.service import (
     build_alertmanager_page,
     build_integration_runtime_detail,
-    build_integrations_overview,
     build_kubernetes_capability_registry,
     build_kubernetes_detail,
     build_prometheus_page,

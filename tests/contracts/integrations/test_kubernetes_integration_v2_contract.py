@@ -21,8 +21,9 @@ def test_tab_v2_is_shared_by_kubernetes_and_integration_overview() -> None:
     assert 'framed_workspace_tabs.render(' in detail
     assert "prefix='kubernetes'" in detail
     assert 'components/framed_workspace_tabs.html' in overview
-    assert 'framed_workspace_tabs.render(' in overview
+    assert 'framed_workspace_tabs.render_navigation(' in overview
     assert "prefix='integration-overview'" in overview
+    assert 'data-kaori-tab-variant="framed-workspace-v2-server"' in component
     assert 'KAORI Tab Style 1' in tab_v1
     registry = read('docs/design/components/TAB_STYLES.md')
     framed_contract = read('docs/design/components/FRAMED_WORKSPACE_TABS.md')

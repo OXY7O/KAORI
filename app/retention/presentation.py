@@ -456,9 +456,7 @@ def _domain_storage_contract(
         archive_content = 'JSONL.GZ + manifest + report artifacts'
         archive_detail = 'Ready and manually Archived report binaries are copied and checksum-verified.'
     elif name == 'runtime_observation':
-        archive_detail = (
-            'Provider-neutral runtime evidence uses the shared archive target; no integration-specific archive bucket is created.'
-        )
+        archive_detail = 'Provider-neutral runtime evidence uses the shared archive target; no integration-specific archive bucket is created.'
     elif name == 'analytics_snapshot':
         archive_detail = (
             'Materialized analytics payloads are archived as structured evidence after serve-window protection ends.'

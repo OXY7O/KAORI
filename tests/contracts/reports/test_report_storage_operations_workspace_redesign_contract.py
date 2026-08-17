@@ -248,7 +248,7 @@ def test_storage_verification_is_post_only_and_object_key_copy_is_generic_asset_
 
     assert "'/storage/verify'" in routes
     assert "endpoint='verify_storage'" in routes
-    verify_rule = routes.split("endpoint='verify_storage'", 1)[1].split("reports_bp.add_url_rule(", 1)[0]
+    verify_rule = routes.split("endpoint='verify_storage'", 1)[1].split('reports_bp.add_url_rule(', 1)[0]
     assert "'POST'" in verify_rule
     assert "request.args.get('verify')" not in storage_routes
     assert "url_for('reports.verify_storage')" in template

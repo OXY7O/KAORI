@@ -7,27 +7,32 @@ def read(relative: str) -> str:
     return (ROOT / relative).read_text(encoding='utf-8')
 
 
-def test_overview_uses_canonical_accessible_workspace_tabs() -> None:
+def test_overview_uses_server_owned_accessible_workspace_navigation() -> None:
     overview = read('app/templates/integrations/overview.html')
 
     assert 'components/framed_workspace_tabs.html' in overview
-    assert 'framed_workspace_tabs.render(' in overview
-    assert 'data-kaori-tab-variant="framed-workspace-v2"' in read('app/templates/components/framed_workspace_tabs.html')
+    assert 'framed_workspace_tabs.render_navigation(' in overview
+    component = read('app/templates/components/framed_workspace_tabs.html')
+    assert 'data-kaori-tab-variant="framed-workspace-v2-server"' in component
     assert "prefix='integration-overview'" in overview
-    assert "allowedTabs: ['catalog', 'runtime', 'coverage']" in overview
-    assert 'moveTab(currentTab, direction, prefix)' in overview
+    assert "hx_target='#integration-workspace'" in overview
+    assert "hx_select='#integration-workspace'" in overview
+    assert "allowedTabs: ['catalog', 'runtime', 'coverage']" not in overview
+    assert 'moveTab(currentTab, direction, prefix)' not in overview
     for key in ('catalog', 'runtime', 'coverage'):
         assert f'id="integration-overview-panel-{key}"' in overview
-        assert f'aria-labelledby="integration-overview-tab-{key}"' in overview
+        assert f'data-integration-overview-workspace="{key}"' in overview
+        assert f"url_for('integrations.overview', tab='{key}')" in overview
     assert 'rounded-xl border border-kaori-primary/20 bg-kaori-soft p-1.5' not in overview
 
 
 def test_runtime_summary_uses_filtered_scope_and_runtime_health_is_not_inferred() -> None:
     service = read('app/integrations/service.py')
+    workspace = read('app/integrations/overview_workspace.py')
 
-    assert 'runtime_global_stats = _runtime_stats(runtime_rows)' in service
-    assert 'runtime_stats = _runtime_stats(filtered_runtime_rows)' in service
-    assert "'runtime_scope_label': runtime_scope_label" in service
+    assert "'runtime_global_stats': _runtime_stats(runtime_rows)" in workspace
+    assert "'runtime_stats': _runtime_stats(filtered_runtime_rows)" in workspace
+    assert "'runtime_scope_label': runtime_scope_label" in workspace
     assert "else ('healthy' if cluster.status == 'connected' else 'not_observed')" not in service
     assert "'health_status': observation.health_status if observation else 'not_observed'" in service
     assert "'observed_at': observation.observed_at if observation else None" in service
@@ -98,18 +103,20 @@ def test_portfolio_and_domain_coverage_use_neutral_card_semantics() -> None:
     overview = read('app/templates/integrations/overview.html')
     service = read('app/integrations/service.py')
 
-    for label in ('Configured Targets', 'Ready for Use', 'Validation Required', 'Not Configured'):
+    for label in ('Configured Targets', 'Ready for Use', 'Readiness Review', 'Not Configured'):
         assert label in overview
     assert 'Connection and Authority Boundary' in overview
     assert 'Integration Portfolio Overview' not in overview
     assert 'Integration Domain Coverage' in overview
-    assert 'Operational Domains' in overview
+    assert 'Available Domains' in overview
     assert 'Planned Domains' in overview
     assert 'Provider Workspaces' in overview
     assert 'Operational Readiness' in overview
     assert 'Planned Provider Ownership' in overview
     assert 'Coverage Boundary' in overview
     assert "coverage|selectattr('lifecycle', 'equalto', 'available')|list" in overview
+    assert 'No targets registered' in overview
+    assert 'integration_status(item.posture_state, item.posture_label' in overview
     assert "coverage|rejectattr('lifecycle', 'equalto', 'available')|list" in overview
     assert 'coverage_stats.available_domains' in overview
     assert "table_ui.table_classes('min-w-[56rem]')" not in overview
@@ -155,7 +162,7 @@ def test_integration_overview_uses_violet_identity_icons_and_semantic_status_bad
 
     # Summary cards use violet identity icons; condition meaning remains in semantic labels.
     assert "metric_card('Ready for Use'" in overview and "'badge-check', 'brand')" in overview
-    assert "metric_card('Validation Required'" in overview and "'scan-search', 'brand')" in overview
+    assert "metric_card('Readiness Review'" in overview and "'scan-search', 'brand')" in overview
     assert "metric_card('Not Configured'" in overview and "'circle-dashed', 'brand')" in overview
     for label in ('Healthy', 'Degraded', 'Unhealthy', 'Not Observed', 'Capability Attention'):
         assert f"('{label}', runtime_stats." in runtime

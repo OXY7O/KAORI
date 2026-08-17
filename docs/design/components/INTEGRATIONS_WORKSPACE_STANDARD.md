@@ -67,6 +67,29 @@ Managed asset ownership is declared by Integration taxonomy capability metadata 
 
 Provider Core Validation and Binding Validation remain separate evidence boundaries on the domain page. Provider Registry readiness reflects provider Core Validation; the Bindings tab shows the selected consumer profile, selector, and binding validation status.
 
+
+## Integration Overview Landing Contract
+
+The global Integration Overview uses three server-owned deep workspaces:
+
+```text
+Provider Catalog
+Runtime Overview
+Domain Coverage
+```
+
+Only the selected deep workspace is built for a request. The page may always load the lightweight persisted provider portfolio needed by the Hero and Portfolio Snapshot, but it must not eagerly build Runtime observations, Domain Coverage presentation, or client-hidden deep panels that the operator did not open. Runtime Overview may read persisted runtime evidence; it must not imply that opening or refreshing the overview performs a live provider validation.
+
+Operational semantics are explicit:
+
+- `Ready for Use` requires a configured, enabled target with persisted readiness `ready`; a disabled target is never counted as ready for use.
+- an available Integration domain with zero registered targets is `Not Configured`, never `Ready`; workspace availability and target readiness are separate concepts.
+- the Domain Coverage workspace labels implemented domains as `Available Domains`; `Operational Readiness` is derived from their actual targets.
+- Runtime Overview uses the canonical shared Empty State contract: no targets is `Setup Required`, filtered zero is `No Results`.
+- persisted runtime observations are provider-neutral evidence governed by the shared `runtime_observation` Data Lifecycle policy. Integration Overview may link to that policy, but retention execution remains owned by Platform Operations → Data Lifecycle.
+
+Top-level workspace switching uses `framed_workspace_tabs.render_navigation(...)` with URL/HTMX ownership. Client-hidden copies of all three deep workspaces are prohibited.
+
 ## Provider Front Page Contract
 
 Kubernetes, Prometheus, Alertmanager, and MinIO provider landing pages use one canonical front-page hierarchy. Provider-specific technical evidence may differ inside the workspace, but the navigation and visual grammar must not.

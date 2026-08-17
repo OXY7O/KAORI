@@ -35,29 +35,29 @@
                     ) }}
                 {% endif %}
                 <button type="button"
-                    hx-get="{{ url_for('integrations.overview', tab='runtime', provider=selected_provider, health=selected_health, readiness=selected_readiness, per_page=runtime_pagination.per_page) }}"
+                    hx-get="{{ url_for('integrations.overview', tab='runtime', provider=selected_provider, health=selected_health, readiness=selected_readiness, page=runtime_pagination.page, per_page=runtime_pagination.per_page) }}"
                     hx-target="#integration-runtime-overview"
                     hx-swap="outerHTML"
                     hx-indicator="#integration-runtime-loading"
                     hx-push-url="true"
                     class="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary transition hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary dark:hover:text-kaori-accent">
                 <i data-lucide="refresh-cw" class="h-4 w-4" aria-hidden="true"></i>
-                    Refresh View
+                    Reload Evidence
                 </button>
             </div>
         </div>
         {{ loading_bar.render('integration-runtime-loading', label='Refreshing integration runtime overview') }}
     </header>
     {% if not runtime_has_targets %}
-        <div class="px-5 py-12 text-center sm:px-8">
-            <span class="mx-auto {{ integration_ui.palette_icon_classes('brand', size='xl', rounded='xl') }}"
-                  aria-hidden="true"
-                  data-kaori-palette-icon="brand">
-                <i data-lucide="plug-zap" class="h-5 w-5"></i>
-            </span>
-            <h3 class="mt-4 text-base font-semibold text-content-primary">No Runtime Targets Yet</h3>
-            <p class="mx-auto mt-2 max-w-xl text-sm leading-6 text-content-secondary">Register an integration provider such as Kubernetes, Prometheus, Alertmanager, or MinIO. Runtime posture appears after the target exists and an observation is persisted.</p>
-        </div>
+        {% set empty_state_icon = 'plug-zap' %}
+        {% set empty_state_label = 'Setup Required' %}
+        {% set empty_state_title = 'No Integration Targets Registered' %}
+        {% set empty_state_description = 'Register a Kubernetes, Prometheus, Alertmanager, or Object Storage provider target before runtime posture can be reviewed.' %}
+        {% set empty_state_action_url = url_for('integrations.overview', tab='catalog') %}
+        {% set empty_state_action_label = 'Browse Providers' %}
+        {% set empty_state_action_icon = 'package-search' %}
+        {% set empty_state_min_height = 'min-h-[220px]' %}
+        {% include 'components/states/_empty_state.html' %}
     {% else %}
         <div class="{{ integration_ui.metric_grid_classes(5) }} border-b border-outline-subtle">
             {% for label, value, helper, icon, tone in [
@@ -193,9 +193,10 @@
                     {% else %}
                         <tr>
                             <td colspan="6" class="p-0">
-                                {% set empty_state_icon = "search-x" %}
-                                {% set empty_state_title = "No Runtime Targets Match These Filters" %}
-                                {% set empty_state_description = "Change one of the provider, health, or readiness filters to expand the result set." %}
+                                {% set empty_state_icon = 'search-x' %}
+                                {% set empty_state_label = 'No Results' %}
+                                {% set empty_state_title = 'No Runtime Targets Match These Filters' %}
+                                {% set empty_state_description = 'Clear or adjust the provider, health, or readiness filters to expand the result set.' %}
                                 {% set empty_state_min_height = "min-h-[190px]" %}
                                 {% include 'components/states/_empty_state.html' %}
                             </td>
@@ -218,5 +219,23 @@
                 item_label='Integration',
                 swap='outerHTML') }}
     {% endif %}
+    <div class="border-t border-outline-subtle px-5 py-4 sm:px-6">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div class="flex min-w-0 items-start gap-3">
+                {{ integration_ui.palette_icon('archive', 'brand', size='sm') }}
+                <div class="min-w-0">
+                    <p class="text-xs font-semibold text-content-primary">Runtime Evidence Lifecycle</p>
+                    <p class="mt-1 text-xs leading-5 text-content-secondary">Persisted integration runtime observations are provider-neutral operational evidence. Data Lifecycle governs hot retention, verified archive, and cleanup across Kubernetes, Prometheus, Alertmanager, MinIO, and future providers.</p>
+                </div>
+            </div>
+            {% if current_user.has_permission('platform_operations.view_data_lifecycle') %}
+                <a href="{{ url_for('platform_operations.data_lifecycle.index', domain='runtime_observation') }}"
+                   class="{{ table_ui.action_classes() }}">
+                    <i data-lucide="archive" class="h-4 w-4" aria-hidden="true"></i>
+                    Open Data Lifecycle
+                </a>
+            {% endif %}
+        </div>
+    </div>
     <div id="integration-runtime-modal-host"></div>
 </section>

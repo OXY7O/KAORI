@@ -3,6 +3,8 @@ from __future__ import annotations
 from collections.abc import Mapping
 from typing import Any
 
+from sqlalchemy.orm import selectinload
+
 from app.common.presentation import present_user_datetime
 from app.models.integration import IntegrationInstance
 from app.models.minio import MinioInstance
@@ -12,7 +14,9 @@ def build_runtime_overview_rows(
     latest: Mapping[tuple[str, str], Any],
     instance_id: int | None = None,
 ) -> list[dict[str, Any]]:
-    query = MinioInstance.query.join(MinioInstance.integration_instance)
+    query = MinioInstance.query.join(MinioInstance.integration_instance).options(
+        selectinload(MinioInstance.integration_instance).selectinload(IntegrationInstance.bindings)
+    )
     if instance_id is not None:
         query = query.filter(MinioInstance.id == int(instance_id))
     instances = query.order_by(IntegrationInstance.name.asc()).all()

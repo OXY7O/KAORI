@@ -87,7 +87,8 @@ def test_schedule_tables_and_actions_keep_kaori_contracts() -> None:
     for label in [
         'Schedule Registry',
         'Recent Schedule Runs',
-        'Schedule Identity & Scope',
+        'Schedule Identity',
+        'Infrastructure Scope',
         'Report Contract',
         'Schedule Timing',
         'Delivery & State',
@@ -95,6 +96,11 @@ def test_schedule_tables_and_actions_keep_kaori_contracts() -> None:
         'Delete Report Schedule',
     ]:
         assert label in template
+
+    assert template.index('Schedule Identity') < template.index('Report Contract')
+    assert template.index('Report Contract') < template.index('Infrastructure Scope')
+    assert template.index('Infrastructure Scope') < template.index('Schedule Timing')
+    assert template.index('Schedule Timing') < template.index('Delivery & State')
 
     assert 'table_ui.table_classes()' in template
     assert 'table_ui.head_classes()' in template
@@ -180,3 +186,63 @@ def test_schedule_feedback_and_run_now_follow_reports_flow() -> None:
     assert "title='Report Schedule Queued'" in routes
     assert "url_for('reports.generated_reports', focus=report_id, period='all')" in routes
     assert "url_for('reports.generated_report_detail', report_id=report_id)" not in routes
+
+
+def test_schedule_registry_uses_generic_infrastructure_asset_filter() -> None:
+    template = read(TEMPLATE)
+    service = read(SERVICE)
+    registry = read(ROOT / 'app/reports/schedules/registry.py')
+    presentation = read(PRESENTATION)
+
+    assert 'Infrastructure Asset' in template
+    assert 'name="asset"' in template
+    assert 'payload.filter_options.assets' in template
+    assert 'Kubernetes Cluster</span>\n                                <select name="cluster"' not in template
+    assert "asset = str(query_args.get('asset', '') or '').strip()" in registry
+    assert "legacy_cluster = str(query_args.get('cluster', '') or '').strip()" in registry
+    assert "asset = f'{KUBERNETES_CLUSTER_ASSET_TYPE}:{legacy_cluster}'" in registry
+    assert "schedule['scope_asset_filter_key'] != asset" in registry
+    assert "f'{OBJECT_STORAGE_SYSTEM_ASSET_TYPE}:{item[\"value\"]}'" in service
+    assert "'scope_asset_filter_key': f'{scope_asset_type}:{scope_asset_id}'" in presentation
+
+
+def test_schedule_actions_preserve_safe_registry_context_and_form_order() -> None:
+    template = read(TEMPLATE)
+    routes = read(ROUTES)
+
+    assert 'from app.auth.session import safe_next_url' in routes
+    assert 'def _schedule_return_url(value: str | None) -> str:' in routes
+    assert "key != 'edit_schedule_id'" in routes
+    assert "request.form.get('next')" in routes
+    assert 'return redirect(return_url)' in routes
+    assert 'name="next" value="{{ request.full_path.rstrip(\'?\') }}"' in template
+    assert 'name="next" value="{{ return_url }}"' in template
+
+    identity = template.index('Schedule Identity</h3>')
+    contract = template.index('Report Contract</h3>')
+    scope = template.index('Infrastructure Scope</h3>')
+    timing = template.index('Schedule Timing</h3>')
+    delivery = template.index('Delivery & State</h3>')
+    assert identity < contract < scope < timing < delivery
+
+
+def test_schedule_run_history_retains_contract_snapshot_after_schedule_deletion() -> None:
+    model = read(ROOT / 'app/models/report.py')
+    service = read(SERVICE)
+    support = read(ROOT / 'app/reports/schedules/support.py')
+    presentation = read(PRESENTATION)
+    template = read(TEMPLATE)
+    migration = read(ROOT / 'migrations/versions/20260816_schedule_run_evidence.py')
+
+    assert 'schedule_snapshot: Mapped[dict[str, Any] | None]' in model
+    assert 'run.schedule_snapshot = _build_schedule_evidence_snapshot(schedule)' in service
+    assert 'def build_schedule_evidence_snapshot(schedule: ReportSchedule)' in support
+    assert "'scope_asset_label': schedule.scope_asset_label_snapshot" in support
+    assert "raw_snapshot = getattr(run, 'schedule_snapshot', None)" in presentation
+    assert 'snapshot = raw_snapshot if isinstance(raw_snapshot, dict) else {}' in presentation
+    assert "'schedule_evidence': schedule_evidence" in presentation
+    assert 'Retained Schedule Contract' in template
+    assert 'schedule-run contract snapshots remain available after deletion' in template
+    assert "revision = '20260816_schedule_run_evidence'" in migration
+    assert "down_revision = '20260816_report_lifecycle'" in migration
+    assert 'json_build_object(' in migration

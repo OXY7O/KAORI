@@ -57,13 +57,15 @@ This document defines reusable structures. It does not define domain-specific fi
 
 ## Integrations overview portfolio pattern
 
-1. The Integrations domain landing page places an Integration Portfolio Overview directly below the hero.
-2. Portfolio metrics are Available Providers, Configured Targets, Ready for Use, and Needs Attention.
-3. The lower contract row is Connection Contract, Binding Contract, and Authority Boundary.
-4. Provider Catalog, Runtime Overview, and Domain Coverage use one shared Violet tab bar; switching tabs must not reload the full page.
-5. Runtime filters and pagination update only the Runtime Overview region through HTMX and preserve `tab=runtime` in the URL.
-6. Runtime pagination keeps the result summary and compact numeric page-size selector together on the left; Previous, numeric pages, and Next remain grouped on the right.
-7. Planned providers remain visible as compact roadmap entries and do not expose configuration actions.
+1. The Integrations domain landing page places an Integration Portfolio Snapshot directly below the hero.
+2. The Hero reports implemented Provider Workspaces plus persisted configured/ready target counts; it must not imply that an implemented provider is already configured.
+3. Portfolio metrics are Configured Targets, Ready for Use, Readiness Review, and Not Configured. Disabled targets are never counted as Ready for Use.
+4. The lower contract row is one concise Connection and Authority Boundary; do not recreate multiple contract mini-cards below the four portfolio metrics.
+5. Provider Catalog, Runtime Overview, and Domain Coverage use shared server-owned Violet workspace navigation. Switching uses URL/HTMX ownership and replaces only the Integration workspace rather than eagerly rendering client-hidden deep panels.
+6. Runtime filters and pagination update only the Runtime Overview region through HTMX and preserve `tab=runtime` in the URL.
+7. Runtime pagination keeps the result summary and compact numeric page-size selector together on the left; Previous, numeric pages, and Next remain grouped on the right.
+8. Available domains with zero registered targets are Not Configured, never Ready. Planned domains remain visible as compact roadmap entries and do not expose configuration actions.
+9. Runtime Overview is persisted-evidence presentation, not a live validation trigger. Its empty state follows the shared KAORI state contract and its provider-neutral history is governed by Data Lifecycle.
 
 ## Pagination interaction contract
 

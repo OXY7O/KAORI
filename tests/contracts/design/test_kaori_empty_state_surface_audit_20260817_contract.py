@@ -67,7 +67,10 @@ def test_adapter_macros_delegate_visual_ownership_to_shared_empty_state() -> Non
     for source in (intelligence, analytics, operations):
         assert "include 'components/states/_empty_state.html'" in source
 
-    assert 'rounded-lg border border-dashed border-outline-strong bg-surface-hover px-4 py-9 text-center' not in intelligence
+    assert (
+        'rounded-lg border border-dashed border-outline-strong bg-surface-hover px-4 py-9 text-center'
+        not in intelligence
+    )
     assert 'flex min-h-[190px] flex-col items-center justify-center bg-surface-card' not in analytics
     assert "label='Selection Required'" in operations
 
@@ -113,7 +116,11 @@ def test_reviewed_web_tables_do_not_reintroduce_plain_text_empty_rows() -> None:
                     'py-12 text-center text-sm text-content-muted">No ',
                 )
             )
-            if has_plain_zero_copy and 'components/states/_empty_state.html' not in source and 'components/states/_blocked_state.html' not in source:
+            if (
+                has_plain_zero_copy
+                and 'components/states/_empty_state.html' not in source
+                and 'components/states/_blocked_state.html' not in source
+            ):
                 violations.append(relative)
 
     assert violations == []

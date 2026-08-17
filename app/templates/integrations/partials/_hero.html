@@ -6,7 +6,7 @@
                 <h1 class="{{ page_hero.title_classes() }}">{{ title }}</h1>
                 <p class="mt-2 {{ page_hero.description_classes() }}">{{ description }}</p>
                 <div class="{{ page_hero.metadata_row_classes() }}">
-                    {{ page_hero.meta_label('package-search', available_provider_count ~ ' Available Providers') }}
+                    {{ page_hero.meta_label('package-search', available_provider_count ~ ' Provider Workspaces') }}
                     {{ page_hero.meta_label('plug-zap', stats.configured ~ ' Configured Targets') }}
                     {{ page_hero.meta_label('scan-search', stats.ready ~ ' Ready for Use') }}
                 </div>
@@ -27,15 +27,20 @@
                     {{ page_hero.context_metric('badge-check', 'Ready', stats.ready, 'Validated for operational use') }}
                 </div>
                 <div class="{{ page_hero.context_actions_classes() }}">
-                    <a href="#integration-workspace"
-                       @click="setTab('catalog', true)"
+                    <a href="{{ url_for('integrations.overview', tab='catalog') }}#integration-workspace"
+                       hx-get="{{ url_for('integrations.overview', tab='catalog') }}"
+                       hx-target="#integration-workspace"
+                       hx-select="#integration-workspace"
+                       hx-swap="outerHTML"
+                       hx-push-url="true"
                        class="{{ page_hero.context_action_classes() }}"><i data-lucide="package-search" class="h-4 w-4"></i>Browse Providers</a>
-                    <button type="button"
-                            @click="setTab('runtime', true)"
-                            hx-get="{{ url_for('integrations.overview', tab='runtime', provider=selected_provider, health=selected_health, readiness=selected_readiness, per_page=runtime_pagination.per_page) }}"
-                            hx-target="#integration-runtime-overview"
-                            hx-swap="outerHTML"
-                            class="{{ page_hero.context_action_classes() }}"><i data-lucide="refresh-cw" class="h-4 w-4"></i>Refresh Status</button>
+                    <a href="{{ url_for('integrations.overview', tab='runtime') }}#integration-workspace"
+                       hx-get="{{ url_for('integrations.overview', tab='runtime') }}"
+                       hx-target="#integration-workspace"
+                       hx-select="#integration-workspace"
+                       hx-swap="outerHTML"
+                       hx-push-url="true"
+                       class="{{ page_hero.context_action_classes() }}"><i data-lucide="activity" class="h-4 w-4"></i>Review Runtime</a>
                 </div>
             </div>
         </aside>
