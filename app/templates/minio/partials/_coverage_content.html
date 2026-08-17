@@ -24,7 +24,7 @@
                     </td>
                     <td class="{{ table_ui.cell_classes() }}">
                         {{ integration_status(row.metrics_status.status, row.metrics_status.label, display="indicator") }}
-                        <p class="mt-1 break-words text-xs text-content-muted [overflow-wrap:anywhere]">{{ row.metrics_source.name if row.metrics_source else "No Prometheus binding" }}</p>
+                        <p class="mt-1 break-words text-xs text-content-muted [overflow-wrap:anywhere]">{{ (row.metrics_source_label ~ " · " ~ row.metrics_source.name) if row.metrics_source else row.metrics_source_label }}</p>
                     </td>
                     <td class="{{ table_ui.cell_classes() }}">
                         {{ integration_status(row.alert_status.status, row.alert_status.label, display="indicator") }}

@@ -33,6 +33,7 @@ def build_bound_observability_source_rows(*, asset_type: str, asset_key: str) ->
         canonical = binding.instance
         module = get_integration(canonical.provider_type)
         source = module.get_record_for_canonical(canonical.id)
+        provider_label, provider_icon = _source_presentation(canonical, module.label, module.icon, source)
         source_readiness = getattr(source, 'readiness_status', None) or 'validation_required'
         binding_validation = binding.validation_status or 'validation_required'
         effective = resolve_binding_operational_status(
@@ -44,9 +45,9 @@ def build_bound_observability_source_rows(*, asset_type: str, asset_key: str) ->
         rows.append(
             {
                 'binding': binding,
-                'provider': module.label,
+                'provider': provider_label,
                 'provider_type': canonical.provider_type,
-                'icon': module.icon,
+                'icon': provider_icon,
                 'name': getattr(source, 'name', None) or canonical.name,
                 'role': binding.binding_role,
                 'profile_label': binding.validation_profile or 'Validation Required',
@@ -57,3 +58,20 @@ def build_bound_observability_source_rows(*, asset_type: str, asset_key: str) ->
             }
         )
     return rows
+
+
+def _source_presentation(
+    canonical: IntegrationInstance,
+    provider_label: str,
+    provider_icon: str,
+    source: object | None,
+) -> tuple[str, str]:
+    if canonical.provider_type != 'prometheus':
+        return provider_label, provider_icon
+    metadata = canonical.metadata_json or {}
+    source_type = str(
+        getattr(source, 'source_type', None) or metadata.get('metrics_source_type') or 'prometheus'
+    ).strip().lower()
+    if source_type == 'thanos':
+        return 'Thanos Query', 'database-zap'
+    return 'Prometheus', provider_icon

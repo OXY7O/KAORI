@@ -13,7 +13,7 @@
     ("key-round", "info", "Access Contract", instance.access_key, "Secret key remains encrypted; registration and Full Validation use governed S3 discovery."),
     ("database", "success", "Storage Authority", "Object Storage System", "MinIO owns S3 and storage state; observability sources remain independent consumers.")
 ] %}
-{% set flow_items = [('Configure', 'Register S3 identity, credentials, TLS, region, and request policy.', 'settings-2'), ('Validate', 'Resolve MinIO product identity, release compatibility, S3 access, and provider capabilities.', 'badge-check'), ('Observe', 'Persist runtime health and endpoint diagnostics independently from consumer bindings.', 'activity'), ('Bind', 'Associate reusable Prometheus metrics and Alertmanager alert sources only when required.', 'waypoints')] %}
+{% set flow_items = [('Configure', 'Register S3 identity, credentials, TLS, region, and request policy.', 'settings-2'), ('Validate', 'Resolve MinIO product identity, release compatibility, S3 access, and provider capabilities.', 'badge-check'), ('Observe', 'Persist runtime health and endpoint diagnostics independently from consumer bindings.', 'activity'), ('Bind', 'Associate reusable Prometheus or Thanos Query metrics sources and Alertmanager alert sources only when required.', 'waypoints')] %}
 {% set operational_metadata = [
     "S3 API Authority",
     "Read-Only Discovery",
@@ -25,7 +25,7 @@
 readiness,
 summary_items,
 evidence_items,
-"MinIO owns S3 and object-storage state. Prometheus owns metrics history, Alertmanager owns alert delivery, and KAORI correlates independent binding evidence without copying observability credentials into MinIO.",
+"MinIO owns S3 and object-storage state. Prometheus or Thanos Query owns metrics by source identity, Alertmanager owns alert delivery, and KAORI correlates independent binding evidence without copying observability credentials into MinIO.",
 flow_items,
 "Connection-sensitive changes reset readiness until Full Validation confirms the updated MinIO contract. Consumer bindings remain attached to the canonical object-storage asset.",
 url_for("minio.edit_instance", instance_id=instance.id) ,

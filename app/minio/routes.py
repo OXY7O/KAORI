@@ -128,7 +128,7 @@ def new_instance() -> ResponseReturnValue:
                         status='success',
                         title='MinIO Connection Registered',
                         message=f'{instance.name} is registered as a reusable MinIO Object Storage connection.',
-                        detail='Run Core Validation, then add Prometheus metrics or Alertmanager alert consumer bindings only when required.',
+                        detail='Run Core Validation, then add Prometheus or Thanos Query metrics and Alertmanager alert consumer bindings only when required.',
                         action_url=url_for('minio.instance_detail', instance_id=instance.id),
                     )
                     return redirect(url_for('minio.instance_detail', instance_id=instance.id))
@@ -189,10 +189,10 @@ def test_new_instance_connection() -> ResponseReturnValue:
                 user_id=int(current_user.id),
                 event_type='minio_connection_test',
                 status='success',
-                title='MinIO connection verified',
-                message='KAORI reached the submitted MinIO S3 API endpoint.',
+                title='S3 API connection verified',
+                message='KAORI reached the submitted S3-compatible API endpoint with the provided credential.',
                 detail=(
-                    f'MinIO S3 API returned {result.bucket_count} visible bucket(s) in {result.latency_ms} ms. '
+                    f'S3 API returned {result.bucket_count} visible bucket(s) in {result.latency_ms} ms. '
                     + (
                         f'Product identity evidence: {result.identity_evidence}. '
                         if result.product == 'minio'
@@ -514,7 +514,7 @@ def delete_instance(instance_id: int) -> ResponseReturnValue:
         message=f'{instance_name} and its object-storage asset were removed from KAORI.',
         detail=(
             f'Removed {summary["asset_bindings"]} asset-scoped binding(s) for {asset_name}. '
-            'Reusable Prometheus and Alertmanager source connections remain registered; runtime history and Activity Audit evidence are retained.'
+            'Reusable Prometheus, Thanos Query, and Alertmanager source connections remain registered; runtime history and Activity Audit evidence are retained.'
         ),
         action_url=url_for('minio.index', tab='registry'),
         action_label='Open MinIO Registry',

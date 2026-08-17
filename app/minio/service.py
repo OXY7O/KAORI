@@ -171,7 +171,7 @@ def update_minio_instance(instance: MinioInstance, values: MinioRegistrationInpu
 def delete_minio_instance(instance: MinioInstance) -> dict[str, int]:
     """Delete a MinIO asset-owner connection and only its asset-scoped bindings.
 
-    Prometheus and Alertmanager source instances remain reusable. Runtime observation
+    Prometheus/Thanos Query metrics sources and Alertmanager source instances remain reusable. Runtime observation
     and Activity Audit history are intentionally retained by their canonical history
     models. The object-storage asset and every binding that targets it are removed
     together with the MinIO connection identity.
@@ -199,7 +199,7 @@ def delete_minio_instance(instance: MinioInstance) -> dict[str, int]:
 
     # ObjectStorageSystem owns the MinioInstance row through a delete-orphan
     # relationship. Flush that lifecycle first, then remove the canonical provider
-    # identity without touching reusable Prometheus or Alertmanager instances.
+    # identity without touching reusable Prometheus/Thanos Query or Alertmanager source instances.
     db.session.delete(asset)
     db.session.flush()
     if canonical is not None:

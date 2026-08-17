@@ -180,5 +180,5 @@ def test_minio_asset_owner_lifecycle_preserves_observability_sources() -> None:
 
     assert 'def delete_minio_instance(' in service
     assert 'asset_owner_deletion_guard(' in service
-    assert 'reusable Prometheus or Alertmanager connections remain retained' in scope
+    assert 'reusable Prometheus, Thanos Query, or Alertmanager connections remain retained' in scope
     assert 'Inventory & Lifecycle' in detail

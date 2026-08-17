@@ -70,6 +70,7 @@ def build_index_context(query: MinioIndexQuery | None = None) -> dict[str, Any]:
         alert_binding = current_alert_binding(instance)
         alert_source = alert_source_for_binding(alert_binding)
         metrics_status = _source_binding_status(metrics_source, metrics_binding)
+        metrics_source_label = _metrics_source_label(metrics_source)
         alert_status = _source_binding_status(alert_source, alert_binding)
         binding_count = int(metrics_binding is not None) + int(alert_binding is not None)
         total_bindings += binding_count
@@ -98,6 +99,7 @@ def build_index_context(query: MinioIndexQuery | None = None) -> dict[str, Any]:
                 'instance': instance,
                 'api_status': _provider_status(instance),
                 'metrics_source': metrics_source,
+                'metrics_source_label': metrics_source_label,
                 'metrics_status': metrics_status,
                 'alert_source': alert_source,
                 'alert_status': alert_status,
@@ -168,6 +170,12 @@ def build_index_context(query: MinioIndexQuery | None = None) -> dict[str, Any]:
             'uncovered': sum(1 for row in coverage_rows if row['coverage_status'] != 'ready'),
         },
     }
+
+
+def _metrics_source_label(source: object | None) -> str:
+    if source is None:
+        return 'No Metrics Source Binding'
+    return 'Thanos Query' if getattr(source, 'source_type', None) == 'thanos' else 'Prometheus'
 
 
 def _filter_registry_rows(

@@ -79,7 +79,7 @@
                         </div>
                         {{ integration_ui.palette_icon("radio-tower", "info" if binding_total else "unknown", size="md") }}
                     </div>
-                    <p class="mt-2 text-xs leading-5 text-content-secondary">Prometheus and Alertmanager remain reusable source-owned connections with asset-scoped binding evidence.</p>
+                    <p class="mt-2 text-xs leading-5 text-content-secondary">Prometheus, Thanos Query, and Alertmanager remain reusable source-owned connections with asset-scoped binding evidence.</p>
                 </article>
                 <article class="bg-surface-card p-5">
                     <div class="flex items-start justify-between gap-3">
@@ -108,7 +108,7 @@
                         {{ integration_ui.palette_icon("archive-restore", "info", size="sm") }}
                         <div class="min-w-0">
                             <p class="text-sm font-semibold text-content-primary">Retained After Removal</p>
-                            <p class="mt-1 text-xs leading-5 text-content-secondary">Runtime history, JobExecution history, Activity Audit evidence, and reusable Prometheus or Alertmanager connections remain retained.</p>
+                            <p class="mt-1 text-xs leading-5 text-content-secondary">Runtime history, JobExecution history, Activity Audit evidence, and reusable Prometheus, Thanos Query, or Alertmanager connections remain retained.</p>
                         </div>
                     </div>
                 </section>
@@ -157,7 +157,7 @@
                     </div>
                 </header>
                 <div class="divide-y divide-outline-subtle" data-kaori-consumer-list>
-                    {% set consumers = [('scan-search', 'Validation & Capabilities', 'Registered S3 authority', 'Product identity, compatibility, S3 access, and provider capability evidence.'), ('activity', 'Runtime Monitoring', 'Persisted provider runtime', 'Endpoint health, latency, diagnostics, and Recent Runtime Observations.'), ('radio-tower', 'Observability Correlation', 'Source-owned bindings', 'Prometheus metrics and Alertmanager alert evidence remain independently validated per asset binding.'), ('scroll-text', 'Activity Audit', 'Retained lifecycle evidence', 'Registration, validation, runtime, and deletion actions remain traceable after provider lifecycle changes.')] %}
+                    {% set consumers = [('scan-search', 'Validation & Capabilities', 'Registered S3 authority', 'Product identity, compatibility, S3 access, and provider capability evidence.'), ('activity', 'Runtime Monitoring', 'Persisted provider runtime', 'Endpoint health, latency, diagnostics, and Recent Runtime Observations.'), ('radio-tower', 'Observability Correlation', 'Source-owned bindings', 'Prometheus or Thanos Query metrics and Alertmanager alert evidence remain independently validated per asset binding.'), ('scroll-text', 'Activity Audit', 'Retained lifecycle evidence', 'Registration, validation, runtime, and deletion actions remain traceable after provider lifecycle changes.')] %}
                     {% for icon, title, boundary, description in consumers %}
                         <article class="grid gap-3 px-4 py-3.5 transition hover:bg-kaori-mist sm:px-5 lg:grid-cols-[minmax(14rem,0.8fr)_minmax(15rem,0.8fr)_minmax(0,1.4fr)] lg:items-center">
                             <div class="flex min-w-0 items-start gap-3">
@@ -183,7 +183,7 @@
                         {{ integration_ui.palette_icon("waypoints", "brand", size="sm") }}
                         <div class="min-w-0">
                             <p class="text-sm font-semibold text-content-primary">Binding Ownership</p>
-                            <p class="mt-1 text-xs leading-5 text-content-secondary">Create, validate, update, and remove Prometheus or Alertmanager bindings from the selected Observability source. This asset-owner workspace remains read-only for binding mutation.</p>
+                            <p class="mt-1 text-xs leading-5 text-content-secondary">Create, validate, update, and remove Prometheus, Thanos Query, or Alertmanager bindings from the selected Observability source. This asset-owner workspace remains read-only for binding mutation.</p>
                         </div>
                     </div>
                     <a href="{{ url_for('integrations.observability') }}"

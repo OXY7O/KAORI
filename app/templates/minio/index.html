@@ -25,7 +25,7 @@
                 "Asset, Binding, and Runtime Aware",
                 "KAORI resolves metrics and alert consumers independently through asset-scoped bindings and consumer profiles.",
                 "Each Provider Remains Authoritative",
-                "MinIO owns storage state, Prometheus owns metrics, and Alertmanager owns alert delivery; KAORI governs registration and binding evidence.") }}
+                "MinIO owns storage state, Prometheus or Thanos Query owns metrics by source identity, and Alertmanager owns alert delivery; KAORI governs registration and binding evidence.") }}
         {% call(tab_name) integration_tabs.render("minio", active_tab, stats.total, stats.total) %}
             {% if tab_name == "coverage" %}
                 {% include "minio/partials/_coverage.html" %}
