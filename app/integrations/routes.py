@@ -49,7 +49,7 @@ integrations_bp = Blueprint('integrations', __name__, url_prefix='/integrations'
 
 
 @integrations_bp.get('/')
-@permission_required('settings.manage_integrations')
+@permission_required('integrations.manage')
 def overview() -> ResponseReturnValue:
     context = build_integrations_overview(
         tab=request.args.get('tab', 'catalog').strip(),
@@ -94,25 +94,25 @@ def _render_domain_page(domain_key: str) -> ResponseReturnValue:
 
 
 @integrations_bp.get('/orchestration')
-@permission_required('settings.manage_integrations')
+@permission_required('integrations.manage')
 def orchestration() -> ResponseReturnValue:
     return _render_domain_page('orchestration')
 
 
 @integrations_bp.get('/observability')
-@permission_required('settings.manage_integrations')
+@permission_required('integrations.manage')
 def observability() -> ResponseReturnValue:
     return _render_domain_page('observability')
 
 
 @integrations_bp.get('/storage')
-@permission_required('settings.manage_integrations')
+@permission_required('integrations.manage')
 def storage() -> ResponseReturnValue:
     return _render_domain_page('storage')
 
 
 @integrations_bp.get('/runtime/<string:detail_key>/details')
-@permission_required('settings.manage_integrations')
+@permission_required('integrations.manage')
 def runtime_overview_details(detail_key: str) -> ResponseReturnValue:
     integration_type, separator, instance_id = detail_key.partition(':')
     if not separator or not integration_type or not instance_id:
@@ -127,7 +127,7 @@ def runtime_overview_details(detail_key: str) -> ResponseReturnValue:
 
 
 @integrations_bp.get('/kubernetes')
-@permission_required('settings.manage_integrations')
+@permission_required('integrations.manage')
 def kubernetes() -> ResponseReturnValue:
     context = build_kubernetes_page(
         KubernetesFrontPageFilters(
@@ -217,7 +217,7 @@ def _kubernetes_detail_context(
 
 
 @integrations_bp.get('/kubernetes/<string:cluster_id>/registry-details')
-@permission_required('settings.manage_integrations')
+@permission_required('integrations.manage')
 def kubernetes_registry_details(cluster_id: str) -> ResponseReturnValue:
     row = build_kubernetes_registry_row(cluster_id)
     if row is None:
@@ -481,7 +481,7 @@ def kubernetes_runtime_history(cluster_id: str) -> ResponseReturnValue:
 
 
 @integrations_bp.get('/observability/metrics-sources/new')
-@permission_required('settings.manage_integrations')
+@permission_required('integrations.manage')
 def select_metrics_source_provider() -> ResponseReturnValue:
     providers = [
         {
@@ -499,19 +499,19 @@ def select_metrics_source_provider() -> ResponseReturnValue:
 
 
 @integrations_bp.route('/observability/metrics-sources/<string:provider_key>/new', methods=['GET', 'POST'])
-@permission_required('settings.manage_integrations')
+@permission_required('integrations.manage')
 def register_metrics_source(provider_key: str) -> ResponseReturnValue:
     return new_instance_response(provider_key=provider_key)
 
 
 @integrations_bp.post('/observability/metrics-sources/<string:provider_key>/test-connection')
-@permission_required('settings.manage_integrations')
+@permission_required('integrations.manage')
 def test_metrics_source(provider_key: str) -> ResponseReturnValue:
     return test_new_instance_connection_response(provider_key=provider_key)
 
 
 @integrations_bp.get('/observability/metrics-sources')
-@permission_required('settings.manage_integrations')
+@permission_required('integrations.manage')
 def metrics_sources() -> ResponseReturnValue:
     context = build_metrics_source_page(
         filters=MetricsSourceRegistryFilters(
@@ -544,7 +544,7 @@ def metrics_sources() -> ResponseReturnValue:
 
 
 @integrations_bp.get('/alertmanager')
-@permission_required('settings.manage_integrations')
+@permission_required('integrations.manage')
 def alertmanager() -> ResponseReturnValue:
     context = build_alertmanager_page(
         query=request.args.get('q', '').strip(),
@@ -722,7 +722,7 @@ def _binding_response(integration_type: str, *, scope_key: str) -> ResponseRetur
 
 
 @integrations_bp.route('/metrics-sources/bind', methods=['GET', 'POST'])
-@permission_required('settings.manage_integrations')
+@permission_required('integrations.manage')
 def bind_metrics_source() -> ResponseReturnValue:
     scope_key = request.values.get('scope_key', '').strip()
     if not scope_key:
@@ -731,7 +731,7 @@ def bind_metrics_source() -> ResponseReturnValue:
 
 
 @integrations_bp.route('/alertmanager/bind', methods=['GET', 'POST'])
-@permission_required('settings.manage_integrations')
+@permission_required('integrations.manage')
 def bind_alertmanager_source() -> ResponseReturnValue:
     scope_key = request.values.get('scope_key', '').strip()
     if not scope_key:

@@ -18,7 +18,7 @@
 {%- endmacro %}
 {% block title %}Notification Channels{% endblock title %}
 {% block dashboard_content %}
-    {% set can_manage = current_user.has_permission('settings.manage_integrations') %}
+    {% set can_manage = current_user.has_permission('integrations.manage') %}
     {% set selected_provider = form_channel.provider_key if form_channel else '' %}
     {% set hero_metrics = [
         ('send', 'Eligible', payload.summary.eligible, 'Validated channels'),
@@ -337,7 +337,7 @@
                                 {{ 'Update Channel' if form_channel else 'Add Notification Channel' }}
                             </button>
                         {% else %}
-                            <span class="text-xs text-content-muted">Requires settings.manage_integrations permission.</span>
+                            <span class="text-xs text-content-muted">Requires integrations.manage permission.</span>
                         {% endif %}
                         {% if form_channel %}
                             <a href="{{ url_for('notification_channels.index', tab='channels') }}" class="{{ table_ui.action_classes() }} min-h-10">Cancel</a>

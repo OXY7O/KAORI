@@ -14,7 +14,7 @@
         </div>
         <div class="flex flex-wrap items-center gap-2">
             {{ table_label.metadata_label(matching_count ~ ' Matching ' ~ ('Permission' if matching_count == 1 else 'Permissions') , 'key-round') }}
-            {% if filters.search or filters.module != 'all' or filters.role_type != 'all' or filters.role_state != 'all' %}
+            {% if filters.search or filters.module != 'all' or filters.delegation != 'all' or filters.role_type != 'all' or filters.role_state != 'all' %}
                 {{ registry_ui.clear_filters_action(
                     url_for('access.permissions.index', view='coverage', per_page=filters.per_page),
                     table_ui.action_classes(),
@@ -33,16 +33,16 @@
       method="get"
       action="{{ url_for('access.permissions.index') }}"
       hx-get="{{ url_for('access.permissions.index') }}"
-      hx-trigger="keyup changed delay:450ms from:input[name='search'], change from:select[name='module'], change from:select[name='role_type'], change from:select[name='role_state']"
+      hx-trigger="keyup changed delay:450ms from:input[name='search'], change from:select[name='module'], change from:select[name='delegation'], change from:select[name='role_type'], change from:select[name='role_state']"
       hx-target="#permission-workspace"
       hx-swap="outerHTML"
       hx-push-url="true"
       hx-indicator="#permission-coverage-loading">
     <input type="hidden" name="view" value="coverage">
-    <div class="grid w-full gap-3 sm:grid-cols-2 lg:grid-cols-4">
+    <div class="grid w-full gap-3 sm:grid-cols-2 lg:grid-cols-5">
         <label class="block min-w-0">
             <span class="{{ table_ui.filter_label_classes() }}">Search Permission</span>
-            <div class="relative mt-1.5">
+            <div class="relative">
                 <i data-lucide="search"
                    class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-content-muted"
                    aria-hidden="true"></i>
@@ -55,7 +55,7 @@
         </label>
         <label class="block min-w-0">
             <span class="{{ table_ui.filter_label_classes() }}">Control Module</span>
-            <select name="module" class="mt-1.5 {{ table_ui.filter_select_classes() }}">
+            <select name="module" class="{{ table_ui.filter_select_classes() }}">
                 <option value="all"{% if filters.module == 'all' %} selected{% endif %}>All Modules</option>
                 {% for option in module_options %}
                     <option value="{{ option.key }}"
@@ -64,9 +64,17 @@
             </select>
         </label>
         <label class="block min-w-0">
+            <span class="{{ table_ui.filter_label_classes() }}">Delegation Boundary</span>
+            <select name="delegation" class="{{ table_ui.filter_select_classes() }}">
+                <option value="all"{% if filters.delegation == 'all' %} selected{% endif %}>All Delegation Tiers</option>
+                <option value="standard"{% if filters.delegation == 'standard' %} selected{% endif %}>Standard Capability</option>
+                <option value="access_admin"{% if filters.delegation == 'access_admin' %} selected{% endif %}>Access Administration</option>
+            </select>
+        </label>
+        <label class="block min-w-0">
             <span class="{{ table_ui.filter_label_classes() }}">Role Type</span>
             <select name="role_type"
-                    class="mt-1.5 {{ table_ui.filter_select_classes() }}">
+                    class="{{ table_ui.filter_select_classes() }}">
                 <option value="all"{% if filters.role_type == 'all' %} selected{% endif %}>All Types</option>
                 <option value="system"
                         {% if filters.role_type == 'system' %}selected{% endif %}>Default Roles</option>
@@ -77,7 +85,7 @@
         <label class="block min-w-0">
             <span class="{{ table_ui.filter_label_classes() }}">Role State</span>
             <select name="role_state"
-                    class="mt-1.5 {{ table_ui.filter_select_classes() }}">
+                    class="{{ table_ui.filter_select_classes() }}">
                 <option value="all"{% if filters.role_state == 'all' %} selected{% endif %}>All States</option>
                 <option value="active"
                         {% if filters.role_state == 'active' %}selected{% endif %}>Active</option>
@@ -106,7 +114,10 @@
         <tbody class="{{ table_ui.body_classes() }}">
             {% for permission in coverage_rows %}
                 <tr class="{{ table_ui.row_classes() }}">
-                    <td class="sticky left-0 z-10 bg-surface-card {{ table_ui.cell_classes() }}">{{ table_ui.title_cell(permission.title, permission.key, 'key-round') }}</td>
+                    <td class="sticky left-0 z-10 bg-surface-card {{ table_ui.cell_classes() }}">
+                        {{ table_ui.title_cell(permission.title, permission.key, 'key-round') }}
+                        <div class="mt-1.5">{{ table_label.status_label(permission.delegation_tier.label, permission.delegation_tier.tone, permission.delegation_tier.icon) }}</div>
+                    </td>
                     <td class="{{ table_ui.cell_classes() }}">{{ table_label.metadata_label(permission.module_label, 'boxes') }}</td>
                     {% for role in coverage_roles %}
                         <td class="{{ table_ui.cell_classes() }} text-center">
@@ -155,8 +166,8 @@
     <nav class="{{ pagination_ui.navigation_group_classes() }}"
          aria-label="Role Coverage Pagination">
         {% if pagination.has_prev %}
-            <a href="{{ url_for('access.permissions.index', view='coverage', search=filters.search, module=filters.module, role_type=filters.role_type, role_state=filters.role_state, per_page=filters.per_page, page=pagination.prev_page) }}"
-               hx-get="{{ url_for('access.permissions.index', view='coverage', search=filters.search, module=filters.module, role_type=filters.role_type, role_state=filters.role_state, per_page=filters.per_page, page=pagination.prev_page) }}"
+            <a href="{{ url_for('access.permissions.index', view='coverage', search=filters.search, module=filters.module, delegation=filters.delegation, role_type=filters.role_type, role_state=filters.role_state, per_page=filters.per_page, page=pagination.prev_page) }}"
+               hx-get="{{ url_for('access.permissions.index', view='coverage', search=filters.search, module=filters.module, delegation=filters.delegation, role_type=filters.role_type, role_state=filters.role_state, per_page=filters.per_page, page=pagination.prev_page) }}"
                hx-target="#permission-workspace"
                hx-swap="outerHTML"
                hx-push-url="true"
@@ -173,8 +184,8 @@
                 query_params=pagination_query,
                 hx_swap='outerHTML') }}
         {% if pagination.has_next %}
-            <a href="{{ url_for('access.permissions.index', view='coverage', search=filters.search, module=filters.module, role_type=filters.role_type, role_state=filters.role_state, per_page=filters.per_page, page=pagination.next_page) }}"
-               hx-get="{{ url_for('access.permissions.index', view='coverage', search=filters.search, module=filters.module, role_type=filters.role_type, role_state=filters.role_state, per_page=filters.per_page, page=pagination.next_page) }}"
+            <a href="{{ url_for('access.permissions.index', view='coverage', search=filters.search, module=filters.module, delegation=filters.delegation, role_type=filters.role_type, role_state=filters.role_state, per_page=filters.per_page, page=pagination.next_page) }}"
+               hx-get="{{ url_for('access.permissions.index', view='coverage', search=filters.search, module=filters.module, delegation=filters.delegation, role_type=filters.role_type, role_state=filters.role_state, per_page=filters.per_page, page=pagination.next_page) }}"
                hx-target="#permission-workspace"
                hx-swap="outerHTML"
                hx-push-url="true"

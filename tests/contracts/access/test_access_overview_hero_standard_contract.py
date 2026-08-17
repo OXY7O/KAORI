@@ -29,7 +29,7 @@ def test_access_overview_hero_summary_is_permission_aware() -> None:
         "_can('users.view')",
         "_can('identity_providers.view')",
         "_can('roles.view')",
-        "_can('settings.view_operational_activity')",
+        "_can('activity_audit.view')",
     ):
         assert permission in presentation
     assert "'attention_workspace_count': attention_workspace_count" in presentation

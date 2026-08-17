@@ -38,7 +38,7 @@
                 url_for("integrations.kubernetes"),
                 primary_action_label="Review Validation" if current_user.has_permission('clusters.sync') else "Manage Connection",
                 primary_action_tab="validation" if current_user.has_permission('clusters.sync') else "configuration",
-                show_primary_action=current_user.has_permission('clusters.sync') or current_user.has_permission('settings.manage_integrations')
+                show_primary_action=current_user.has_permission('clusters.sync') or current_user.has_permission('integrations.manage')
                 ) }}
             </div>
         </section>

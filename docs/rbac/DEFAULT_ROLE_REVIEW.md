@@ -61,7 +61,7 @@ The permission set is coherent but the name **Editor** is semantically broad. Th
 
 ### Risk to monitor
 
-`clusters.manage` includes create, edit, and delete cluster records. `settings.manage_integrations` can alter authoritative telemetry connections. `reports.manage_storage` can perform storage verification and cleanup. These are materially different responsibilities.
+`clusters.manage` includes create, edit, and delete cluster records. `integrations.manage` can alter authoritative telemetry connections. `reports.manage_storage` can perform storage verification and cleanup. These are materially different responsibilities.
 
 ### Recommendation
 

@@ -65,7 +65,7 @@ metrics_bp = Blueprint(
 
 
 @metrics_bp.post('/instances/<int:instance_id>/test-configuration')
-@permission_required('settings.manage_integrations')
+@permission_required('integrations.manage')
 def test_instance_configuration(instance_id: int) -> ResponseReturnValue:
     """Test submitted edit settings without persisting them."""
     instance = _instance_or_404(instance_id)
@@ -135,13 +135,13 @@ def test_instance_configuration(instance_id: int) -> ResponseReturnValue:
 
 
 @metrics_bp.route('/instances/<int:instance_id>/edit', methods=['GET', 'POST'])
-@permission_required('settings.manage_integrations')
+@permission_required('integrations.manage')
 def edit_instance(instance_id: int) -> ResponseReturnValue:
     return edit_instance_response(instance_id)
 
 
 @metrics_bp.get('/instances/<int:instance_id>')
-@permission_required('settings.manage_integrations')
+@permission_required('integrations.manage')
 def instance_detail(instance_id: int) -> ResponseReturnValue:
     instance = _instance_or_404(instance_id)
     page = request.args.get('page', 1, type=int)
@@ -165,7 +165,7 @@ def instance_detail(instance_id: int) -> ResponseReturnValue:
 
 
 @metrics_bp.get('/instances/<int:instance_id>/bindings/registry')
-@permission_required('settings.manage_integrations')
+@permission_required('integrations.manage')
 def instance_binding_registry(instance_id: int) -> ResponseReturnValue:
     instance = _instance_or_404(instance_id)
     context = _instance_detail_context(
@@ -177,7 +177,7 @@ def instance_binding_registry(instance_id: int) -> ResponseReturnValue:
 
 
 @metrics_bp.post('/instances/<int:instance_id>/bindings')
-@permission_required('settings.manage_integrations')
+@permission_required('integrations.manage')
 def add_instance_binding(instance_id: int) -> ResponseReturnValue:
     instance = _instance_or_404(instance_id)
     asset_type = (request.form.get('asset_type') or 'kubernetes_cluster').strip().lower()
@@ -304,7 +304,7 @@ def add_instance_binding(instance_id: int) -> ResponseReturnValue:
 
 
 @metrics_bp.post('/instances/<int:instance_id>/bindings/<int:binding_id>/selector')
-@permission_required('settings.manage_integrations')
+@permission_required('integrations.manage')
 def update_instance_binding_selector(instance_id: int, binding_id: int) -> ResponseReturnValue:
     instance = _instance_or_404(instance_id)
     binding = db.session.get(IntegrationBinding, binding_id)
@@ -387,7 +387,7 @@ def update_instance_binding_selector(instance_id: int, binding_id: int) -> Respo
 
 
 @metrics_bp.post('/instances/<int:instance_id>/bindings/<int:binding_id>/validate')
-@permission_required('settings.manage_integrations')
+@permission_required('integrations.manage')
 def validate_instance_binding(instance_id: int, binding_id: int) -> ResponseReturnValue:
     instance = _instance_or_404(instance_id)
     binding = db.session.get(IntegrationBinding, binding_id)
@@ -456,7 +456,7 @@ def validate_instance_binding(instance_id: int, binding_id: int) -> ResponseRetu
 
 
 @metrics_bp.get('/instances/<int:instance_id>/bindings/<int:binding_id>/validate/status/<string:task_id>')
-@permission_required('settings.manage_integrations')
+@permission_required('integrations.manage')
 def binding_validation_status(instance_id: int, binding_id: int, task_id: str) -> ResponseReturnValue:
     instance = _instance_or_404(instance_id)
     binding = db.session.get(IntegrationBinding, binding_id)
@@ -479,7 +479,7 @@ def binding_validation_status(instance_id: int, binding_id: int, task_id: str) -
 
 
 @metrics_bp.post('/instances/<int:instance_id>/bindings/<int:binding_id>/delete')
-@permission_required('settings.manage_integrations')
+@permission_required('integrations.manage')
 def delete_instance_binding(instance_id: int, binding_id: int) -> ResponseReturnValue:
     instance = _instance_or_404(instance_id)
     is_htmx = is_htmx_request()
@@ -543,7 +543,7 @@ def delete_instance_binding(instance_id: int, binding_id: int) -> ResponseReturn
     '/instances/<int:instance_id>/delete',
     endpoint='delete_instance',
 )
-@permission_required('settings.manage_integrations')
+@permission_required('integrations.manage')
 def delete_instance(instance_id: int) -> ResponseReturnValue:
     instance = _instance_or_404(instance_id)
     instance_name = instance.name
@@ -637,7 +637,7 @@ def delete_instance(instance_id: int) -> ResponseReturnValue:
 
 
 @metrics_bp.post('/instances/<int:instance_id>/test')
-@permission_required('settings.manage_integrations')
+@permission_required('integrations.manage')
 def instance_test(instance_id: int) -> ResponseReturnValue:
     instance = _instance_or_404(instance_id)
     source_label = provider_definition(instance.provider_key).label
@@ -699,7 +699,7 @@ def instance_test(instance_id: int) -> ResponseReturnValue:
 
 
 @metrics_bp.get('/instances/<int:instance_id>/validation/capabilities')
-@permission_required('settings.manage_integrations')
+@permission_required('integrations.manage')
 def instance_capability_registry(instance_id: int) -> ResponseReturnValue:
     instance = _instance_or_404(instance_id)
     context = _instance_detail_context(instance)
@@ -716,7 +716,7 @@ def instance_capability_registry(instance_id: int) -> ResponseReturnValue:
 
 
 @metrics_bp.post('/instances/<int:instance_id>/validate')
-@permission_required('settings.manage_integrations')
+@permission_required('integrations.manage')
 def instance_validate(instance_id: int) -> ResponseReturnValue:
     instance = _instance_or_404(instance_id)
     is_htmx = is_htmx_request()
@@ -781,7 +781,7 @@ def instance_validate(instance_id: int) -> ResponseReturnValue:
 
 
 @metrics_bp.get('/instances/<int:instance_id>/validate/status/<string:task_id>')
-@permission_required('settings.manage_integrations')
+@permission_required('integrations.manage')
 def instance_validation_status(instance_id: int, task_id: str) -> ResponseReturnValue:
     instance = _instance_or_404(instance_id)
     snapshot = build_validation_snapshot(task_id)
@@ -800,7 +800,7 @@ def instance_validation_status(instance_id: int, task_id: str) -> ResponseReturn
 
 
 @metrics_bp.post('/instances/<int:instance_id>/runtime/refresh')
-@permission_required('settings.manage_integrations')
+@permission_required('integrations.manage')
 def refresh_runtime(instance_id: int) -> ResponseReturnValue:
     instance = _instance_or_404(instance_id)
     is_htmx = is_htmx_request()
@@ -866,7 +866,7 @@ def refresh_runtime(instance_id: int) -> ResponseReturnValue:
 
 
 @metrics_bp.get('/instances/<int:instance_id>/runtime/refresh/status/<string:task_id>')
-@permission_required('settings.manage_integrations')
+@permission_required('integrations.manage')
 def runtime_refresh_status(instance_id: int, task_id: str) -> ResponseReturnValue:
     instance = _instance_or_404(instance_id)
     snapshot = build_validation_snapshot(task_id)
@@ -885,7 +885,7 @@ def runtime_refresh_status(instance_id: int, task_id: str) -> ResponseReturnValu
 
 
 @metrics_bp.get('/instances/<int:instance_id>/runtime/history')
-@permission_required('settings.manage_integrations')
+@permission_required('integrations.manage')
 def instance_runtime_history(instance_id: int) -> ResponseReturnValue:
     instance = _instance_or_404(instance_id)
     page = request.args.get('page', 1, type=int)

@@ -15,7 +15,7 @@
         </div>
         <div class="flex flex-wrap items-center gap-2">
             {{ table_label.metadata_label(matching_count ~ ' Matching ' ~ ('Permission' if matching_count == 1 else 'Permissions') , 'key-round') }}
-            {% if filters.search or filters.module != 'all' or filters.coverage != 'all' %}
+            {% if filters.search or filters.module != 'all' or filters.coverage != 'all' or filters.delegation != 'all' %}
                 {{ registry_ui.clear_filters_action(
                     url_for('access.permissions.index', view='registry', per_page=filters.per_page),
                     table_ui.action_classes(),
@@ -34,13 +34,13 @@
       method="get"
       action="{{ url_for('access.permissions.index') }}"
       hx-get="{{ url_for('access.permissions.index') }}"
-      hx-trigger="keyup changed delay:450ms from:input[name='search'], change from:select[name='module'], change from:select[name='coverage']"
+      hx-trigger="keyup changed delay:450ms from:input[name='search'], change from:select[name='module'], change from:select[name='coverage'], change from:select[name='delegation']"
       hx-target="#permission-workspace"
       hx-swap="outerHTML"
       hx-push-url="true"
       hx-indicator="#permission-registry-loading">
     <input type="hidden" name="view" value="registry">
-    <div class="grid w-full gap-3 sm:grid-cols-2 lg:grid-cols-3">
+    <div class="grid w-full gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <label class="block min-w-0 sm:col-span-2 lg:col-span-1">
             <span class="{{ table_ui.filter_label_classes() }}">Search Permission</span>
             <div class="relative">
@@ -75,15 +75,24 @@
                 <option value="drift"{% if filters.coverage == 'drift' %} selected{% endif %}>Registry Drift</option>
             </select>
         </label>
+        <label class="block min-w-0">
+            <span class="{{ table_ui.filter_label_classes() }}">Delegation Boundary</span>
+            <select name="delegation" class="{{ table_ui.filter_select_classes() }}">
+                <option value="all"{% if filters.delegation == 'all' %} selected{% endif %}>All Delegation Tiers</option>
+                <option value="standard"{% if filters.delegation == 'standard' %} selected{% endif %}>Standard Capability</option>
+                <option value="access_admin"{% if filters.delegation == 'access_admin' %} selected{% endif %}>Access Administration</option>
+            </select>
+        </label>
     </div>
 </form>
 <div class="overflow-x-auto">
-    <table class="{{ table_ui.table_classes('min-w-[72rem]') }}">
+    <table class="{{ table_ui.table_classes('min-w-[82rem]') }}">
         <thead class="{{ table_ui.head_classes() }}">
             <tr>
                 <th class="{{ table_ui.header_cell_classes() }}">Permission</th>
                 <th class="{{ table_ui.header_cell_classes() }}">Module</th>
                 <th class="{{ table_ui.header_cell_classes() }}">Action</th>
+                <th class="{{ table_ui.header_cell_classes() }}">Delegation</th>
                 <th class="{{ table_ui.header_cell_classes() }}">Dependencies</th>
                 <th class="{{ table_ui.header_cell_classes() }}">Role Coverage</th>
                 <th class="{{ table_ui.header_cell_classes() }}">Registry State</th>
@@ -96,6 +105,7 @@
                     <td class="{{ table_ui.cell_classes() }}">{{ table_ui.title_cell(permission.title, permission.key, 'key-round') }}</td>
                     <td class="{{ table_ui.cell_classes() }}">{{ table_label.metadata_label(permission.module_label, 'boxes') }}</td>
                     <td class="{{ table_ui.cell_classes() }}"><span class="text-sm font-medium text-content-primary">{{ permission.action|replace('_', ' ') |title }}</span></td>
+                    <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_label(permission.delegation_tier.label, permission.delegation_tier.tone, permission.delegation_tier.icon) }}</td>
                     <td class="{{ table_ui.cell_classes() }}">
                         {% set dependency_count = permission.requires|length %}
                         {% if dependency_count %}
@@ -107,6 +117,9 @@
                     <td class="{{ table_ui.cell_classes() }}">
                         {% if permission.role_count %}
                             {{ table_label.metadata_label(permission.role_count ~ ' ' ~ ('Role' if permission.role_count == 1 else 'Roles') , 'shield-check') }}
+                            {% if permission.active_user_count or permission.jit_provider_count %}
+                                <p class="mt-1 text-xs leading-5 text-content-muted">{{ permission.active_user_count }} Active User{{ '' if permission.active_user_count == 1 else 's' }} · {{ permission.jit_provider_count }} JIT Path{{ '' if permission.jit_provider_count == 1 else 's' }}</p>
+                            {% endif %}
                         {% else %}
                             <span class="text-sm text-content-muted">Unassigned</span>
                         {% endif %}
@@ -123,7 +136,7 @@
                 </tr>
             {% else %}
                 <tr>
-                    <td colspan="7" class="px-5 py-12 text-center">
+                    <td colspan="8" class="px-5 py-12 text-center">
                         <div class="mx-auto max-w-md">
                             <span class="mx-auto flex h-11 w-11 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"
                                   aria-hidden="true"><i data-lucide="search-x" class="h-5 w-5"></i></span>
@@ -161,8 +174,8 @@
     <nav class="{{ pagination_ui.navigation_group_classes() }}"
          aria-label="Permission Registry Pagination">
         {% if pagination.has_prev %}
-            <a href="{{ url_for('access.permissions.index', view='registry', search=filters.search, module=filters.module, coverage=filters.coverage, per_page=filters.per_page, page=pagination.prev_page) }}"
-               hx-get="{{ url_for('access.permissions.index', view='registry', search=filters.search, module=filters.module, coverage=filters.coverage, per_page=filters.per_page, page=pagination.prev_page) }}"
+            <a href="{{ url_for('access.permissions.index', view='registry', search=filters.search, module=filters.module, coverage=filters.coverage, delegation=filters.delegation, per_page=filters.per_page, page=pagination.prev_page) }}"
+               hx-get="{{ url_for('access.permissions.index', view='registry', search=filters.search, module=filters.module, coverage=filters.coverage, delegation=filters.delegation, per_page=filters.per_page, page=pagination.prev_page) }}"
                hx-target="#permission-workspace"
                hx-swap="outerHTML"
                hx-push-url="true"
@@ -179,8 +192,8 @@
                 query_params=pagination_query,
                 hx_swap='outerHTML') }}
         {% if pagination.has_next %}
-            <a href="{{ url_for('access.permissions.index', view='registry', search=filters.search, module=filters.module, coverage=filters.coverage, per_page=filters.per_page, page=pagination.next_page) }}"
-               hx-get="{{ url_for('access.permissions.index', view='registry', search=filters.search, module=filters.module, coverage=filters.coverage, per_page=filters.per_page, page=pagination.next_page) }}"
+            <a href="{{ url_for('access.permissions.index', view='registry', search=filters.search, module=filters.module, coverage=filters.coverage, delegation=filters.delegation, per_page=filters.per_page, page=pagination.next_page) }}"
+               hx-get="{{ url_for('access.permissions.index', view='registry', search=filters.search, module=filters.module, coverage=filters.coverage, delegation=filters.delegation, per_page=filters.per_page, page=pagination.next_page) }}"
                hx-target="#permission-workspace"
                hx-swap="outerHTML"
                hx-push-url="true"

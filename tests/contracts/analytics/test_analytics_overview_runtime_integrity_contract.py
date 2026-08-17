@@ -55,7 +55,7 @@ def test_workload_overview_propagates_selected_time_range() -> None:
 
 def test_unavailable_domain_snapshots_return_none_not_synthetic_zero_payloads() -> None:
     expectations = {
-        'app/analytics/kubernetes/utilization/service.py': 'if not isinstance(summary, dict):\n        return None',
+        'app/analytics/kubernetes/utilization/snapshots.py': 'if not isinstance(summary, dict):\n        return None',
         'app/analytics/kubernetes/capacity/service.py': 'if not isinstance(capacity_summary, dict):\n        return None',
         'app/analytics/kubernetes/storage/service.py': 'if not storage_summary:\n        return None',
         'app/analytics/kubernetes/workload/service.py': 'if not result.available:\n        return None',
@@ -64,7 +64,7 @@ def test_unavailable_domain_snapshots_return_none_not_synthetic_zero_payloads() 
         'app/analytics/kubernetes/alerts/snapshots.py': 'if not result.available:\n        return None',
     }
     removed_adapters = {
-        'app/analytics/kubernetes/utilization/service.py': '_empty_utilization_snapshot',
+        'app/analytics/kubernetes/utilization/snapshots.py': '_empty_utilization_snapshot',
         'app/analytics/kubernetes/capacity/service.py': '_empty_capacity_snapshot',
         'app/analytics/kubernetes/storage/service.py': '_empty_storage_snapshot',
         'app/analytics/kubernetes/workload/service.py': '_empty_workload_snapshot',

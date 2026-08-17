@@ -8,6 +8,7 @@ from app.common.pagination import PER_PAGE_OPTIONS, build_pagination_window, nor
 
 PERMISSION_VIEW_OPTIONS = ('registry', 'coverage')
 PERMISSION_COVERAGE_OPTIONS = ('all', 'mapped', 'unassigned', 'drift')
+PERMISSION_DELEGATION_OPTIONS = ('all', 'standard', 'access_admin')
 ROLE_TYPE_OPTIONS = ('all', 'system', 'custom')
 ROLE_STATE_OPTIONS = ('all', 'active', 'inactive')
 
@@ -15,6 +16,7 @@ ROLE_STATE_OPTIONS = ('all', 'active', 'inactive')
 def normalize_permission_filters(args: Mapping[str, str | None]) -> dict[str, Any]:
     view = (args.get('view') or 'registry').strip().lower()
     coverage = (args.get('coverage') or 'all').strip().lower()
+    delegation = (args.get('delegation') or 'all').strip().lower()
     role_type = (args.get('role_type') or 'all').strip().lower()
     role_state = (args.get('role_state') or 'all').strip().lower()
     return {
@@ -22,6 +24,7 @@ def normalize_permission_filters(args: Mapping[str, str | None]) -> dict[str, An
         'search': (args.get('search') or '').strip(),
         'module': (args.get('module') or 'all').strip().lower(),
         'coverage': coverage if coverage in PERMISSION_COVERAGE_OPTIONS else 'all',
+        'delegation': delegation if delegation in PERMISSION_DELEGATION_OPTIONS else 'all',
         'role_type': role_type if role_type in ROLE_TYPE_OPTIONS else 'all',
         'role_state': role_state if role_state in ROLE_STATE_OPTIONS else 'all',
         'page': positive_int(args.get('page'), 1),
@@ -57,6 +60,9 @@ def _registry_rows(contracts: list[dict[str, Any]], filters: Mapping[str, Any]) 
         rows = [row for row in rows if row['role_count'] == 0]
     elif coverage == 'drift':
         rows = [row for row in rows if row['state_key'] != 'canonical']
+    delegation = filters['delegation']
+    if delegation != 'all':
+        rows = [row for row in rows if row['delegation_tier_key'] == delegation]
     return rows
 
 
@@ -92,6 +98,8 @@ def build_permission_catalog_context(filters: Mapping[str, Any] | None = None) -
     coverage_matches = [
         row for row in contracts if _contract_matches(row, search=normalized['search'], module=normalized['module'])
     ]
+    if normalized['delegation'] != 'all':
+        coverage_matches = [row for row in coverage_matches if row['delegation_tier_key'] == normalized['delegation']]
     coverage_pagination = build_pagination_window(
         total_items=len(coverage_matches),
         page=normalized['page'],
@@ -128,6 +136,7 @@ def build_permission_catalog_context(filters: Mapping[str, Any] | None = None) -
             'search': normalized['search'],
             'module': normalized['module'],
             'coverage': normalized['coverage'],
+            'delegation': normalized['delegation'],
             'role_type': normalized['role_type'],
             'role_state': normalized['role_state'],
             'per_page': active_pagination.per_page,
@@ -150,6 +159,14 @@ def build_permission_detail_context(permission_key: str) -> dict[str, Any] | Non
         }
         for key in contract['requires']
     ]
+    effective_requires = [
+        {
+            'key': key,
+            'title': contracts_by_key.get(key, {}).get('title') or key,
+            'module_label': contracts_by_key.get(key, {}).get('module_label') or '-',
+        }
+        for key in contract['effective_requires']
+    ]
     required_by = [
         {
             'key': key,
@@ -158,6 +175,7 @@ def build_permission_detail_context(permission_key: str) -> dict[str, Any] | Non
         }
         for key in contract['required_by']
     ]
+    role_usage_by_id = snapshot['role_usage_by_id']
     role_rows = [
         {
             'id': role.id,
@@ -167,6 +185,8 @@ def build_permission_detail_context(permission_key: str) -> dict[str, Any] | Non
             'type_icon': 'shield-check' if role.is_system else 'user-cog',
             'state_label': 'Active' if role.is_active else 'Inactive',
             'state_tone': 'normal' if role.is_active else 'unknown',
+            'active_user_count': role_usage_by_id.get(int(role.id), {}).get('active_user_count', 0),
+            'jit_provider_count': role_usage_by_id.get(int(role.id), {}).get('jit_provider_count', 0),
         }
         for role in contract['roles']
     ]
@@ -174,6 +194,7 @@ def build_permission_detail_context(permission_key: str) -> dict[str, Any] | Non
     return {
         'permission': contract,
         'requires': requires,
+        'effective_requires': effective_requires,
         'required_by': required_by,
         'role_rows': role_rows,
         'summary': snapshot['summary'],

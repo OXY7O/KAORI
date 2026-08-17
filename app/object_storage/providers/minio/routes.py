@@ -62,7 +62,7 @@ def _queue_feedback(*, event_type: str, status: str, title: str, message: str, d
 
 
 @minio_bp.get('/')
-@permission_required('settings.manage_integrations')
+@permission_required('integrations.manage')
 def index() -> ResponseReturnValue:
     context = build_index_context(
         MinioIndexQuery(
@@ -103,7 +103,7 @@ def index() -> ResponseReturnValue:
 
 
 @minio_bp.route('/instances/new', methods=['GET', 'POST'])
-@permission_required('settings.manage_integrations')
+@permission_required('integrations.manage')
 def new_instance() -> ResponseReturnValue:
     form = MinioInstanceForm()
     registration_proof = str(request.form.get('connection_test_proof') or '')
@@ -156,7 +156,7 @@ def new_instance() -> ResponseReturnValue:
 
 
 @minio_bp.post('/instances/test-connection')
-@permission_required('settings.manage_integrations')
+@permission_required('integrations.manage')
 def test_new_instance_connection() -> ResponseReturnValue:
     form = MinioInstanceForm()
     connected = False
@@ -248,7 +248,7 @@ def test_new_instance_connection() -> ResponseReturnValue:
 
 
 @minio_bp.route('/instances/<int:instance_id>/edit', methods=['GET', 'POST'])
-@permission_required('settings.manage_integrations')
+@permission_required('integrations.manage')
 def edit_instance(instance_id: int) -> ResponseReturnValue:
     instance = _instance_or_404(instance_id)
     form = MinioInstanceForm(obj=instance, existing_instance=instance)
@@ -289,7 +289,7 @@ def edit_instance(instance_id: int) -> ResponseReturnValue:
 
 
 @minio_bp.post('/instances/<int:instance_id>/test-configuration')
-@permission_required('settings.manage_integrations')
+@permission_required('integrations.manage')
 def test_instance_configuration(instance_id: int) -> ResponseReturnValue:
     instance = _instance_or_404(instance_id)
     form = MinioInstanceForm(existing_instance=instance)
@@ -351,7 +351,7 @@ def test_instance_configuration(instance_id: int) -> ResponseReturnValue:
 
 
 @minio_bp.get('/instances/<int:instance_id>')
-@permission_required('settings.manage_integrations')
+@permission_required('integrations.manage')
 def instance_detail(instance_id: int) -> ResponseReturnValue:
     instance = _instance_or_404(instance_id)
     validation_task_id = get_active_validation_task_id(
@@ -375,7 +375,7 @@ def instance_detail(instance_id: int) -> ResponseReturnValue:
 
 
 @minio_bp.get('/instances/<int:instance_id>/capabilities/registry')
-@permission_required('settings.manage_integrations')
+@permission_required('integrations.manage')
 def capability_registry(instance_id: int) -> ResponseReturnValue:
     instance = _instance_or_404(instance_id)
     context = build_detail_context(instance, detail_query_from_request())
@@ -391,7 +391,7 @@ def capability_registry(instance_id: int) -> ResponseReturnValue:
 
 
 @minio_bp.post('/instances/<int:instance_id>/validate')
-@permission_required('settings.manage_integrations')
+@permission_required('integrations.manage')
 def validate_instance(instance_id: int) -> ResponseReturnValue:
     instance = _instance_or_404(instance_id)
     is_htmx = request.headers.get('HX-Request') == 'true'
@@ -410,7 +410,7 @@ def validate_instance(instance_id: int) -> ResponseReturnValue:
 
 
 @minio_bp.post('/instances/<int:instance_id>/runtime/refresh')
-@permission_required('settings.manage_integrations')
+@permission_required('integrations.manage')
 def refresh_runtime(instance_id: int) -> ResponseReturnValue:
     instance = _instance_or_404(instance_id)
     is_htmx = request.headers.get('HX-Request') == 'true'
@@ -433,7 +433,7 @@ def refresh_runtime(instance_id: int) -> ResponseReturnValue:
 
 
 @minio_bp.get('/instances/<int:instance_id>/runtime/refresh/status/<string:task_id>')
-@permission_required('settings.manage_integrations')
+@permission_required('integrations.manage')
 def runtime_refresh_status(instance_id: int, task_id: str) -> ResponseReturnValue:
     instance = _instance_or_404(instance_id)
     snapshot = build_validation_snapshot(task_id)
@@ -455,7 +455,7 @@ def runtime_refresh_status(instance_id: int, task_id: str) -> ResponseReturnValu
 
 
 @minio_bp.get('/instances/<int:instance_id>/validation/status/<string:task_id>')
-@permission_required('settings.manage_integrations')
+@permission_required('integrations.manage')
 def validation_status(instance_id: int, task_id: str) -> ResponseReturnValue:
     instance = _instance_or_404(instance_id)
     snapshot = build_validation_snapshot(task_id)
@@ -476,7 +476,7 @@ def validation_status(instance_id: int, task_id: str) -> ResponseReturnValue:
 
 
 @minio_bp.get('/instances/<int:instance_id>/runtime/history')
-@permission_required('settings.manage_integrations')
+@permission_required('integrations.manage')
 def runtime_history(instance_id: int) -> ResponseReturnValue:
     instance = _instance_or_404(instance_id)
     context = build_detail_context(instance, detail_query_from_request())
@@ -496,7 +496,7 @@ def runtime_history(instance_id: int) -> ResponseReturnValue:
 
 
 @minio_bp.get('/instances/<int:instance_id>/bindings/registry')
-@permission_required('settings.manage_integrations')
+@permission_required('integrations.manage')
 def binding_registry(instance_id: int) -> ResponseReturnValue:
     instance = _instance_or_404(instance_id)
     return render_template(
@@ -506,7 +506,7 @@ def binding_registry(instance_id: int) -> ResponseReturnValue:
 
 
 @minio_bp.post('/instances/<int:instance_id>/delete')
-@permission_required('settings.manage_integrations')
+@permission_required('integrations.manage')
 def delete_instance(instance_id: int) -> ResponseReturnValue:
     instance = _instance_or_404(instance_id)
     instance_name = instance.name

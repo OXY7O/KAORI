@@ -17,7 +17,7 @@
     or current_user.has_permission('users.manage')
     or current_user.has_permission('identity_providers.view')
     or current_user.has_permission('roles.view')
-    or current_user.has_permission('settings.view_operational_activity')
+    or current_user.has_permission('activity_audit.view')
 ) %}
 {% if can_access_management %}
     <details class="sidebar-menu space-y-1"
@@ -62,7 +62,7 @@
                     <span class="h-1.5 w-1.5 rounded-full {{ 'bg-kaori-accent' if permission_catalog_active else 'bg-white/20 group-hover:bg-white/[0.45]' }}"></span><i data-lucide="key-round" class="h-3.5 w-3.5"></i><span class="truncate whitespace-nowrap">Permission Catalog</span>
                 </a>
             {% endif %}
-            {% if current_user.has_permission('settings.view_operational_activity') %}
+            {% if current_user.has_permission('activity_audit.view') %}
                 <a href="{{ url_for('notifications.activity_log') }}"
                    class="{{ 'bg-white/[0.08] text-kaori-accent' if activity_audit_active else 'sidebar-item-idle' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm leading-5 transition">
                     <span class="h-1.5 w-1.5 rounded-full {{ 'bg-kaori-accent' if activity_audit_active else 'bg-white/20 group-hover:bg-white/[0.45]' }}"></span><i data-lucide="history" class="h-3.5 w-3.5"></i><span class="truncate whitespace-nowrap">Activity Audit</span>

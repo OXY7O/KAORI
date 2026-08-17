@@ -62,10 +62,8 @@ def test_tls_integrations_platform_operations_access_and_settings_are_covered() 
         'app/metrics_sources/registration_web.py': ('metrics_source_created',),
         'app/metrics_sources/routes.py': ('metrics_source_deleted',),
         'app/metrics_sources/edit_web.py': ('metrics_source_updated',),
-        'app/alert_sources/providers/alertmanager/routes.py': (
-            'alertmanager_instance_created',
-            'alertmanager_instance_deleted',
-        ),
+        'app/alert_sources/providers/alertmanager/registration_web.py': ('alertmanager_instance_created',),
+        'app/alert_sources/providers/alertmanager/routes.py': ('alertmanager_instance_deleted',),
         'app/alert_sources/providers/alertmanager/edit_web.py': ('alertmanager_instance_updated',),
         'app/jobs/routes.py': ('job_policy_updated', 'job_manual_dispatch', 'job_cancellation_requested'),
         'app/platform_operations/data_lifecycle/service.py': (

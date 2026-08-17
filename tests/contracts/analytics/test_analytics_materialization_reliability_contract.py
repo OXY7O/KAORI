@@ -10,6 +10,7 @@ def _read(relative: str) -> str:
 def test_analytics_status_does_not_run_duplicate_health_query() -> None:
     consumer = _read('app/metrics_sources/consumer.py')
     utilization = _read('app/analytics/kubernetes/utilization/service.py')
+    utilization_snapshots = _read('app/analytics/kubernetes/utilization/snapshots.py')
     base = _read('app/analytics/kubernetes/common/base_service.py')
     profile = _read('app/integrations/observability/metrics_source/query_profiles/kubernetes_v1.py')
     presentation = _read('app/analytics/kubernetes/common/presentation.py')
@@ -19,7 +20,7 @@ def test_analytics_status_does_not_run_duplicate_health_query() -> None:
     assert 'consumer.analytics_status()' in utilization
     assert 'consumer.analytics_status()' in base
     assert 'analytics.utilization.queries.PROMETHEUS_HEALTH' not in profile
-    assert 'get_metrics_source_status_snapshot' in utilization
+    assert 'get_metrics_source_status_snapshot' in utilization_snapshots
     assert "'status_label': status_label" in presentation
     assert "status_label = 'Query Ready'" in presentation
 

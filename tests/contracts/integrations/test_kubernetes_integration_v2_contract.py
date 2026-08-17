@@ -138,7 +138,7 @@ def test_kubernetes_actions_are_permission_aware() -> None:
 
     assert "current_user.has_permission('clusters.sync')" in detail
     assert 'show_primary_action' in detail_posture
-    assert "current_user.has_permission('settings.manage_integrations')" in detail
+    assert "current_user.has_permission('integrations.manage')" in detail
     routes = read('app/integrations/routes.py')
     assert "@integrations_bp.get('/kubernetes')" in routes
     assert 'def kubernetes() -> ResponseReturnValue:' in routes

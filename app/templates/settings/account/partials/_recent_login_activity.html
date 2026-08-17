@@ -12,7 +12,7 @@
                 <p class="mt-1 max-w-3xl text-sm leading-6 text-content-muted">Latest five authentication events for this account.</p>
             </div>
         </div>
-        {% if current_user.has_permission('settings.view_operational_activity') %}
+        {% if current_user.has_permission('activity_audit.view') %}
             <a href="{{ url_for('notifications.activity_log', category='access', search=current_user.username) }}"
                class="inline-flex h-10 w-fit items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-semibold text-content-secondary transition hover:border-outline-focus hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
                 <i data-lucide="external-link" class="h-4 w-4"></i>

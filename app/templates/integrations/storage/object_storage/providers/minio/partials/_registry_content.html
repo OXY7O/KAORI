@@ -51,7 +51,7 @@
                         {% set empty_state_action_url = url_for('minio.new_instance') %}
                         {% set empty_state_action_label = "Register Connection" %}
                         {% set empty_state_action_icon = "plus" %}
-                        {% set empty_state_permission = "settings.manage_integrations" %}
+                        {% set empty_state_permission = "integrations.manage" %}
                         {% set empty_state_show_admin_required = true %}
                         {% set empty_state_min_height = "min-h-[210px]" %}
                         {% include "components/states/_empty_state.html" %}

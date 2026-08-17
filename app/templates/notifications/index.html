@@ -33,7 +33,7 @@
                             {{ page_hero.context_metric('bell-dot', 'Unread', activity_center.unread_count, 'Persistent account updates') }}
                             {{ page_hero.context_metric('workflow', 'Active Work', activity_center.active_count, 'Canonical background jobs') }}
                         </div>
-                        {% if current_user.has_permission('settings.view_operational_activity') %}
+                        {% if current_user.has_permission('activity_audit.view') %}
                             <a href="{{ url_for('notifications.activity_log') }}"
                                class="{{ page_hero.context_single_action_classes() }}"><i data-lucide="external-link" class="h-4 w-4"></i>Open Activity Audit</a>
                         {% endif %}

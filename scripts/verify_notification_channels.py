@@ -28,7 +28,7 @@ def main() -> int:
 
     checks = {
         'route ownership': "url_prefix='/integrations/notification-channels'" in routes,
-        'integration permission': routes.count("@permission_required('settings.manage_integrations')") >= 5,
+        'integration permission': routes.count("@permission_required('integrations.manage')") >= 5,
         'integration template': 'integrations/notification_channels/index.html' in routes,
         'integration navigation': 'notification_channels.index' in integration_nav,
         'removed from intelligence navigation': 'notification_channels.index' not in intelligence_nav,

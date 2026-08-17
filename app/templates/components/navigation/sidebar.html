@@ -26,7 +26,7 @@
     or current_user.has_permission('reports.manage_schedules')
     or current_user.has_permission('reports.manage_storage')
 ) %}
-{% set can_integrations = current_user.is_authenticated and current_user.has_permission('settings.manage_integrations') %}
+{% set can_integrations = current_user.is_authenticated and current_user.has_permission('integrations.manage') %}
 {% set can_operations_center = current_user.is_authenticated and (
     current_user.has_permission('jobs.view')
     or current_user.has_permission('platform_operations.view_data_lifecycle')

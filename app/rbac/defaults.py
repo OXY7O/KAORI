@@ -42,12 +42,22 @@ def _validate_permission_dependencies(
 
 def _load_access_defaults() -> tuple[
     list[tuple[str, str, str, str]],
+    dict[str, str],
     dict[str, set[str]],
     set[str],
     dict[str, dict[str, str]],
     dict[str, set[str]],
 ]:
     document = load_definition_document('rbac/access.yaml', expected_kind='rbac_access')
+    raw_modules = [
+        require_mapping(item, f'control_modules[{index}]')
+        for index, item in enumerate(require_list(document.get('control_modules'), 'control_modules'))
+    ]
+    unique_by(raw_modules, 'key', 'control_modules')
+    permission_module_labels = {
+        require_str(item, 'key', f'control_modules[{index}]'): require_str(item, 'label', f'control_modules[{index}]')
+        for index, item in enumerate(raw_modules)
+    }
     raw_permissions = [
         require_mapping(item, f'permissions[{index}]')
         for index, item in enumerate(require_list(document.get('permissions'), 'permissions'))
@@ -63,6 +73,13 @@ def _load_access_defaults() -> tuple[
         for index, item in enumerate(raw_permissions)
     ]
     permission_keys = {item[0] for item in permissions}
+    permission_modules = {item[1] for item in permissions}
+    unknown_modules = sorted(permission_modules - set(permission_module_labels))
+    if unknown_modules:
+        raise DefinitionError('permissions reference unknown control modules: ' + ', '.join(unknown_modules) + '.')
+    unused_modules = sorted(set(permission_module_labels) - permission_modules)
+    if unused_modules:
+        raise DefinitionError('control_modules contains unused module definitions: ' + ', '.join(unused_modules) + '.')
 
     raw_dependencies = require_mapping(document.get('permission_dependencies') or {}, 'permission_dependencies')
     permission_dependencies: dict[str, set[str]] = {}
@@ -109,6 +126,7 @@ def _load_access_defaults() -> tuple[
         role_permissions[key] = grants
     return (
         permissions,
+        permission_module_labels,
         permission_dependencies,
         access_administration_permissions,
         role_definitions,
@@ -118,6 +136,7 @@ def _load_access_defaults() -> tuple[
 
 (
     DEFAULT_PERMISSIONS,
+    PERMISSION_MODULE_LABELS,
     DEFAULT_PERMISSION_DEPENDENCIES,
     ACCESS_ADMINISTRATION_PERMISSIONS,
     DEFAULT_ROLE_DEFINITIONS,

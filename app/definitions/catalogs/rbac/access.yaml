@@ -1,5 +1,38 @@
 schema_version: 1
 kind: rbac_access
+control_modules:
+- key: k8s_dashboard
+  label: Kubernetes Dashboard
+- key: k8s_cluster
+  label: Kubernetes Cluster
+- key: k8s_inventory
+  label: Kubernetes Inventory
+- key: k8s_analytics
+  label: Kubernetes Analytics
+- key: k8s_operations
+  label: Kubernetes Operations
+- key: governance
+  label: Kubernetes Governance
+- key: storage_inventory
+  label: Object Storage Inventory
+- key: storage_analytics
+  label: Object Storage Analytics
+- key: integrations
+  label: Integrations
+- key: platform_operations
+  label: Platform Operations
+- key: reports
+  label: Reports
+- key: intelligence
+  label: Intelligence
+- key: knowledge
+  label: Knowledge
+- key: access
+  label: Access
+- key: settings
+  label: Settings
+- key: system
+  label: System
 permissions:
 - key: dashboard.view
   module: k8s_dashboard
@@ -173,14 +206,14 @@ permissions:
   module: settings
   action: view
   description: View settings pages.
-- key: settings.manage_integrations
+- key: integrations.manage
   module: integrations
   action: manage_integrations
-  description: Manage Metrics Source, Alertmanager, and reporting integrations.
-- key: settings.view_operational_activity
+  description: Manage integration provider registration, bindings, validation, runtime configuration, and delivery channels.
+- key: activity_audit.view
   module: access
   action: view_operational_activity
-  description: View cross-user operational activity and background action audit records.
+  description: View cross-user operational activity, authentication evidence, and background action audit records.
 - key: platform_operations.view_data_lifecycle
   module: platform_operations
   action: view_data_lifecycle
@@ -377,7 +410,7 @@ system_roles:
   - reports.manage_storage
   - reports.manage_templates
   - reports.view
-  - settings.manage_integrations
+  - integrations.manage
   - settings.view
   - storage.sync
   - tls_certificates.sync
@@ -433,9 +466,9 @@ system_roles:
   - identity_providers.view
   - roles.manage
   - roles.view
-  - settings.manage_integrations
+  - integrations.manage
   - settings.view
-  - settings.view_operational_activity
+  - activity_audit.view
   - storage.sync
   - system.manage
   - system.view
@@ -468,7 +501,7 @@ system_roles:
   - reports.view
   - roles.view
   - settings.view
-  - settings.view_operational_activity
+  - activity_audit.view
   - system.view
   - tls_certificates.view
   - users.view

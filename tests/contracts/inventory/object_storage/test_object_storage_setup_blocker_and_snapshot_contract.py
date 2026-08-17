@@ -50,7 +50,7 @@ def test_object_storage_setup_banner_is_integration_owned_and_permission_aware()
     blocker = read('app/templates/inventory/object_storage/components/_hero_blocked_context.html')
     assert 'Register Your First Object Storage System' in banner
     assert "url_for('integrations.storage')" in banner
-    assert 'settings.manage_integrations' in banner
+    assert 'integrations.manage' in banner
     assert 'Registered Systems' in blocker
     assert 'Workspace State' in blocker
     assert 'Blocked' in blocker

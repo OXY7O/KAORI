@@ -437,7 +437,7 @@ def _get_metrics_source_status(*, cluster_id: str) -> dict[str, Any]:
         )
 
     metrics_source_result = _call_optional_snapshot(
-        module_path='app.analytics.kubernetes.utilization.service',
+        module_path='app.analytics.kubernetes.utilization.snapshots',
         function_names=['get_metrics_source_status_snapshot'],
         cluster_id=cluster_id,
     )
@@ -459,7 +459,7 @@ def _get_resource_snapshot(*, cluster_id: str, time_range: str) -> dict[str, Any
         return default
 
     raw = _call_optional_snapshot(
-        module_path='app.analytics.kubernetes.utilization.service',
+        module_path='app.analytics.kubernetes.utilization.snapshots',
         function_names=[
             'get_utilization_snapshot',
             'get_resource_snapshot',

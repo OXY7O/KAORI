@@ -30,7 +30,7 @@ notification_channels_bp = Blueprint(
 
 
 @notification_channels_bp.get('/')
-@permission_required('settings.manage_integrations')
+@permission_required('integrations.manage')
 def index() -> ResponseReturnValue:
     edit_id = request.args.get('edit', type=int)
     requested_tab = str(request.args.get('tab') or 'overview').strip().lower()
@@ -53,7 +53,7 @@ def index() -> ResponseReturnValue:
 
 
 @notification_channels_bp.post('/')
-@permission_required('settings.manage_integrations')
+@permission_required('integrations.manage')
 def create() -> ResponseReturnValue:
     data = parse_channel_form(request.form)
     errors = validate_channel_input(data)
@@ -76,7 +76,7 @@ def create() -> ResponseReturnValue:
 
 
 @notification_channels_bp.post('/<int:channel_id>/update')
-@permission_required('settings.manage_integrations')
+@permission_required('integrations.manage')
 def update(channel_id: int) -> ResponseReturnValue:
     channel = get_channel(channel_id)
     if channel is None:
@@ -103,7 +103,7 @@ def update(channel_id: int) -> ResponseReturnValue:
 
 
 @notification_channels_bp.post('/<int:channel_id>/test')
-@permission_required('settings.manage_integrations')
+@permission_required('integrations.manage')
 def test(channel_id: int) -> ResponseReturnValue:
     channel = get_channel(channel_id)
     if channel is None:
@@ -121,7 +121,7 @@ def test(channel_id: int) -> ResponseReturnValue:
 
 
 @notification_channels_bp.post('/<int:channel_id>/delete')
-@permission_required('settings.manage_integrations')
+@permission_required('integrations.manage')
 def delete(channel_id: int) -> ResponseReturnValue:
     channel = get_channel(channel_id)
     if channel is None:

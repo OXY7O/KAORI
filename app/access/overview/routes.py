@@ -14,7 +14,7 @@ bp = Blueprint('overview', __name__)
     'users.manage',
     'identity_providers.view',
     'roles.view',
-    'settings.view_operational_activity',
+    'activity_audit.view',
 )
 def index():
     return render_template(

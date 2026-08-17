@@ -25,7 +25,7 @@ Runtime ownership remains explicit: `app/users` owns account/provider administra
 6. Remember-me persistence defaults to 7 days and is bounded to 1–30 days. Super-admin remember-me remains default-deny.
 7. Identity Provider administration requires `users.manage`; provider records keep secret values externalized and runtime validation remains on-demand.
 8. Failed authentication attempts may remain linked to a target account for evidence, but never claim that target as the authenticated actor. Activity filters and 24-hour actor counts exclude failed-authentication targets.
-9. Activity Audit requires `settings.view_operational_activity` and remains read-only administrative evidence.
+9. Activity Audit requires `activity_audit.view` and remains read-only administrative evidence.
 
 ## Locked presentation boundaries
 

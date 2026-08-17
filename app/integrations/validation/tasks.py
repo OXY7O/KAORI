@@ -2,10 +2,9 @@ from __future__ import annotations
 
 import logging
 from datetime import UTC, datetime
-from typing import Any, cast
+from typing import Any
 
-from celery import Task, shared_task
-from flask import current_app
+from celery import shared_task
 
 import app.integrations.runtime.refresh as runtime_refresh
 from app.common.presentation import present_key_label
@@ -14,20 +13,14 @@ from app.integrations.lifecycle import ensure_canonical_instance, ensure_provide
 from app.integrations.registry import execute_integration_operation, get_integration
 from app.integrations.runtime.recovery import enqueue_recovery_work, is_runtime_recovery, latest_runtime_health
 from app.integrations.runtime.repository import persist_runtime_state
+from app.integrations.validation.completion import final_payload
 from app.integrations.validation.state import (
-    claim_validation_job,
-    get_active_validation_task_id,
     release_validation_job,
     store_validation_metadata,
 )
-from app.jobs.constants import WORKLOAD_RUNTIME
-from app.jobs.fingerprint import build_deduplication_key
 from app.jobs.service import (
-    create_or_attach_job,
     get_job_by_task_id,
-    mark_job_failed,
     mark_job_running,
-    mark_job_succeeded,
     subscriber_user_ids,
     update_job_progress,
 )
@@ -39,23 +32,10 @@ logger = logging.getLogger(__name__)
 INSTANCE_VALIDATION_TASK_NAME = 'app.integrations.validation.tasks.validate_integration_instance'
 BINDING_VALIDATION_TASK_NAME = 'app.integrations.validation.tasks.validate_integration_binding'
 RUNTIME_REFRESH_TASK_NAME = 'app.integrations.validation.tasks.refresh_integration_runtime_instance'
-VALIDATION_QUEUE_DEFAULT = 'integration-validation'
 
 
 def _now_iso() -> str:
     return datetime.now(UTC).isoformat()
-
-
-def _queue_name() -> str:
-    return (
-        str(current_app.config.get('INTEGRATION_VALIDATION_CELERY_QUEUE') or VALIDATION_QUEUE_DEFAULT).strip()
-        or VALIDATION_QUEUE_DEFAULT
-    )
-
-
-def _runtime_queue_name() -> str:
-    configured = str(current_app.config.get('INTEGRATION_RUNTIME_CELERY_QUEUE') or 'integration-runtime').strip()
-    return configured or 'integration-runtime'
 
 
 def _action_url(integration_type: str, integration_instance_id: int, *, section: str) -> str:
@@ -223,48 +203,6 @@ def _record_completion(
     return selected_feedback
 
 
-def _final_payload(
-    *,
-    base: dict[str, Any],
-    status: str,
-    title: str,
-    message: str,
-    detail: str,
-    feedback: dict[str, Any] | None,
-    result: dict[str, Any] | None = None,
-) -> dict[str, Any]:
-    finished_at = _now_iso()
-    started = datetime.fromisoformat(str(base['started_at']))
-    finished = datetime.fromisoformat(finished_at)
-    payload = {
-        **base,
-        'status': status,
-        'title': title,
-        'message': message,
-        'detail': detail,
-        'feedback': feedback,
-        'result': result or {},
-        'finished_at': finished_at,
-        'duration_seconds': max(int((finished - started).total_seconds()), 0),
-    }
-    task_id = str(base.get('task_id') or '')
-    if task_id:
-        try:
-            if status == 'error':
-                mark_job_failed(task_id, error=detail, error_code='operation_failed')
-            else:
-                mark_job_succeeded(
-                    task_id,
-                    result_summary=result or {},
-                    result_type=str(base.get('operation') or 'job_result'),
-                    partial=status == 'warning',
-                )
-        except Exception:
-            db.session.rollback()
-            logger.exception('Could not finalize canonical job record for task %s.', task_id)
-    return payload
-
-
 @shared_task(
     bind=True,
     name=INSTANCE_VALIDATION_TASK_NAME,
@@ -389,7 +327,7 @@ def validate_integration_instance(
             detail=detail,
             metadata=completion_metadata,
         )
-        payload = _final_payload(
+        payload = final_payload(
             base=base,
             status=status,
             title=title,
@@ -428,7 +366,7 @@ def validate_integration_instance(
                 'trigger_type': trigger_type,
             },
         )
-        payload = _final_payload(
+        payload = final_payload(
             base=base,
             status='error',
             title='Integration validation failed',
@@ -609,7 +547,7 @@ def validate_integration_binding(
                 **result_payload,
             },
         )
-        payload = _final_payload(
+        payload = final_payload(
             base=base,
             status=status,
             title=title,
@@ -642,7 +580,7 @@ def validate_integration_binding(
                 'reason': type(exc).__name__,
             },
         )
-        payload = _final_payload(
+        payload = final_payload(
             base=base,
             status='error',
             title='Binding validation failed',
@@ -765,7 +703,7 @@ def refresh_integration_runtime_instance(
                 **completion_result,
             },
         )
-        payload = _final_payload(
+        payload = final_payload(
             base=base,
             status=completion_status,
             title='Runtime health refresh completed',
@@ -804,7 +742,7 @@ def refresh_integration_runtime_instance(
                 'reason': type(exc).__name__,
             },
         )
-        payload = _final_payload(
+        payload = final_payload(
             base=base,
             status='error',
             title='Runtime health refresh failed',
@@ -821,90 +759,3 @@ def refresh_integration_runtime_instance(
             operation='runtime_refresh',
             integration_instance_id=integration_instance_id,
         )
-
-
-def enqueue_runtime_refresh(*, integration_type: str, integration_instance_id: int) -> str | None:
-    if get_active_validation_task_id(
-        integration_type=integration_type,
-        operation='full_validation',
-        integration_instance_id=integration_instance_id,
-    ):
-        return None
-    deduplication_key = build_deduplication_key(
-        'integration', integration_type, integration_instance_id, 'runtime_refresh'
-    )
-    job, created = create_or_attach_job(
-        job_type='integration_operation',
-        operation='runtime_refresh',
-        queue_name=_runtime_queue_name(),
-        workload_class=WORKLOAD_RUNTIME,
-        requested_by_user_id=None,
-        integration_type=integration_type,
-        integration_instance_id=integration_instance_id,
-        scope_type='integration_instance',
-        resource_group=f'integration:{integration_type}:{integration_instance_id}',
-        parameters={
-            'integration_type': integration_type,
-            'integration_instance_id': integration_instance_id,
-            'operation': 'runtime_refresh',
-            'trigger_type': 'scheduled',
-        },
-        deduplication_key=deduplication_key,
-        max_attempts=3,
-    )
-    if not created or not job.celery_task_id:
-        return None
-    created_at = _now_iso()
-    metadata = {
-        'task_id': job.celery_task_id,
-        'job_execution_id': job.id,
-        'integration_type': integration_type,
-        'operation': 'runtime_refresh',
-        'integration_instance_id': integration_instance_id,
-        'binding_id': None,
-        'requested_by_user_id': None,
-        'created_at': created_at,
-        'status': 'info',
-        'title': 'Runtime health refresh queued',
-        'message': 'KAORI queued a lightweight runtime health refresh.',
-        'detail': 'The runtime worker will process this provider independently.',
-    }
-    if not claim_validation_job(
-        task_id=job.celery_task_id,
-        integration_type=integration_type,
-        operation='runtime_refresh',
-        integration_instance_id=integration_instance_id,
-        binding_id=None,
-        metadata=metadata,
-        conflicting_operations=('full_validation',),
-    ):
-        mark_job_failed(
-            job.celery_task_id,
-            error='Could not acquire the provider runtime lock.',
-            error_code='resource_lock_conflict',
-        )
-        return None
-    try:
-        runtime_refresh_task = cast(Task, refresh_integration_runtime_instance)
-        runtime_refresh_task.apply_async(
-            kwargs={
-                'integration_type': integration_type,
-                'integration_instance_id': integration_instance_id,
-                'requested_by_user_id': None,
-                'trigger_type': 'scheduled',
-                'job_execution_id': job.id,
-            },
-            task_id=job.celery_task_id,
-            queue=_runtime_queue_name(),
-            priority=job.priority,
-        )
-    except Exception as exc:
-        release_validation_job(
-            task_id=job.celery_task_id,
-            integration_type=integration_type,
-            operation='runtime_refresh',
-            integration_instance_id=integration_instance_id,
-        )
-        mark_job_failed(job.celery_task_id, error=exc, error_code='dispatch_failed')
-        raise
-    return job.celery_task_id

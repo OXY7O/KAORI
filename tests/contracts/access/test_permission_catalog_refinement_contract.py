@@ -33,8 +33,8 @@ def test_permission_catalog_uses_kaori_hero_overview_tabs_tables_loading_and_pag
         'Permission Registry Overview',
         'Permission Contracts',
         'Control Modules',
-        'Role Mappings',
-        'Unused Contracts',
+        'Access Administration',
+        'Registry Drift',
         'Code Ownership',
         'Dependency Graph',
         'Role Consumption',
@@ -59,7 +59,7 @@ def test_permission_catalog_uses_kaori_hero_overview_tabs_tables_loading_and_pag
         assert 'hx-indicator=' in template
 
     assert 'table_ui.inventory_filter_bar_classes()' in registry
-    assert 'grid w-full gap-3 sm:grid-cols-2 lg:grid-cols-3' in registry
+    assert 'grid w-full gap-3 sm:grid-cols-2 lg:grid-cols-4' in registry
     assert 'sm:col-span-2 lg:col-span-1' in registry
     # Filter controls share one vertical rhythm. filter_label_classes() already owns
     # the label-to-control spacing, so local mt-* offsets would misalign search
@@ -67,14 +67,16 @@ def test_permission_catalog_uses_kaori_hero_overview_tabs_tables_loading_and_pag
     assert 'relative mt-1.5' not in registry
     assert 'class="mt-1.5 {{ table_ui.filter_select_classes() }}"' not in registry
     assert 'table_ui.inventory_filter_bar_classes()' in coverage
-    assert 'grid w-full gap-3 sm:grid-cols-2 lg:grid-cols-4' in coverage
+    assert 'grid w-full gap-3 sm:grid-cols-2 lg:grid-cols-5' in coverage
     assert 'Search Permission' in registry
     assert 'Control Module' in registry
     assert 'Coverage' in registry
+    assert 'Delegation Boundary' in registry
     assert 'Registry State' in registry
     assert 'View Details' in registry
     assert 'Role Type' in coverage
     assert 'Role State' in coverage
+    assert 'Delegation Boundary' in coverage
     assert 'table-properties' in workspace
     assert 'Toggle all' not in index
     assert 'How RBAC Is Applied' not in index
@@ -120,14 +122,14 @@ def test_permission_module_metadata_matches_current_kaori_ownership_without_rena
     assert 'key: kubernetes_secrets.manage_reveal' in defaults
     assert 'key: jobs.view' in defaults
     assert 'key: platform_operations.view_data_lifecycle' in defaults
-    assert 'key: settings.manage_integrations' in defaults
+    assert 'key: integrations.manage' in defaults
 
     # Permission keys remain stable authorization contracts.
     for key in (
         'kubernetes_secrets.manage_reveal',
         'jobs.view',
         'platform_operations.view_data_lifecycle',
-        'settings.manage_integrations',
+        'integrations.manage',
     ):
         assert key in defaults
 

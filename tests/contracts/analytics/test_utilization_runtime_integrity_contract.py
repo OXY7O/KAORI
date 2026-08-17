@@ -157,9 +157,9 @@ def test_worker_utilization_queries_use_allocatable_capacity_and_role_boundary()
 
 
 def test_overview_snapshot_adapter_preserves_missing_denominator_as_none() -> None:
-    service = read('app/analytics/kubernetes/utilization/service.py')
-    start = service.index('def get_utilization_snapshot(')
-    snapshot_adapter = service[start:]
+    snapshots = read('app/analytics/kubernetes/utilization/snapshots.py')
+    start = snapshots.index('def get_utilization_snapshot(')
+    snapshot_adapter = snapshots[start:]
 
     assert 'if capacity_key not in summary or safe_float(summary.get(capacity_key)) <= 0' in snapshot_adapter
     assert "'cpu_percent': percent('cpu_utilization', 'cpu_capacity')" in snapshot_adapter

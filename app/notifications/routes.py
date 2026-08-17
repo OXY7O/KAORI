@@ -166,7 +166,7 @@ def panel_snapshot() -> ResponseReturnValue:
 
 
 @notifications_bp.get('/activity')
-@permission_required('settings.view_operational_activity')
+@permission_required('activity_audit.view')
 def activity_log() -> ResponseReturnValue:
     is_htmx = request.headers.get('HX-Request') == 'true'
     context = get_notification_activity_context(
@@ -193,7 +193,7 @@ def activity_log() -> ResponseReturnValue:
 
 
 @notifications_bp.get('/activity/<int:notification_id>/details')
-@permission_required('settings.view_operational_activity')
+@permission_required('activity_audit.view')
 def activity_detail(notification_id: int) -> ResponseReturnValue:
     item = get_notification_activity_detail(notification_id=notification_id)
     if item is None:

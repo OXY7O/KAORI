@@ -95,13 +95,7 @@ def main() -> int:
     # Access overview is read-only and permission scoped.
     overview_routes = read('app/access/overview/routes.py')
     overview_template = read('app/templates/access/overview/index.html')
-    for permission in (
-        'users.view',
-        'users.manage',
-        'identity_providers.view',
-        'roles.view',
-        'settings.view_operational_activity',
-    ):
+    for permission in ('users.view', 'users.manage', 'identity_providers.view', 'roles.view', 'activity_audit.view'):
         require(repr(permission) in overview_routes, f'Access Overview permission missing: {permission}', errors)
     require('@any_permission_required(' in overview_routes, 'Access Overview must use any_permission_required', errors)
     require('page_hero.shell_classes()' in overview_template, 'Access Overview must use shared Hero', errors)
@@ -174,9 +168,13 @@ def main() -> int:
     rbac_defaults = read('app/rbac/defaults.py')
     rbac_policy = read('app/rbac/policy.py')
     rbac_catalog = read('app/definitions/catalogs/rbac/access.yaml')
-    for required in ('permission_dependencies:', 'access_administration_permissions:'):
+    for required in ('control_modules:', 'permission_dependencies:', 'access_administration_permissions:'):
         require(required in rbac_catalog, f'RBAC source-controlled policy contract missing: {required}', errors)
-    for required in ('DEFAULT_PERMISSION_DEPENDENCIES', 'ACCESS_ADMINISTRATION_PERMISSIONS'):
+    for required in (
+        'PERMISSION_MODULE_LABELS',
+        'DEFAULT_PERMISSION_DEPENDENCIES',
+        'ACCESS_ADMINISTRATION_PERMISSIONS',
+    ):
         require(required in rbac_defaults, f'RBAC catalog loader contract missing: {required}', errors)
     for required in ('role_is_access_admin_level', 'role_is_mutation_protected', 'role_slug_is_reserved'):
         require(required in rbac_policy, f'RBAC policy boundary missing: {required}', errors)
@@ -203,6 +201,24 @@ def main() -> int:
     require(
         'DEFAULT_PERMISSIONS' in permission_service, 'Permission Catalog must compare code-owned permissions', errors
     )
+    for required in (
+        'DELEGATION_TIER_PRESENTATION',
+        'effective_requires',
+        'active_user_count',
+        'jit_provider_count',
+        'database_only_in_use_count',
+    ):
+        require(required in permission_service, f'Permission Catalog security evidence missing: {required}', errors)
+    permission_registry = read('app/templates/access/permissions/partials/_registry.html')
+    permission_coverage = read('app/templates/access/permissions/partials/_coverage.html')
+    permission_detail = read('app/templates/access/permissions/partials/_permission_detail.html')
+    for template in (permission_registry, permission_coverage):
+        require('Delegation Boundary' in template, 'Permission Catalog delegation filter missing', errors)
+    require('Local Database Super Admin' in permission_detail, 'Permission delegation authority copy missing', errors)
+    for required in ('key: integrations.manage', 'key: activity_audit.view'):
+        require(required in rbac_catalog, f'Permission ownership key missing: {required}', errors)
+    for forbidden in ('key: settings.manage_integrations', 'key: settings.view_operational_activity'):
+        require(forbidden not in rbac_catalog, f'Legacy permission ownership key retained: {forbidden}', errors)
     require(
         'components/resource_detail_modal.html' in permission_index, 'Permission detail must use shared modal', errors
     )
@@ -366,7 +382,7 @@ def main() -> int:
     notification_queries = read('app/notifications/queries.py')
     activity_page = read('app/templates/notifications/activity.html')
     for required in (
-        "@permission_required('settings.view_operational_activity')",
+        "@permission_required('activity_audit.view')",
         "@notifications_bp.get('/activity')",
         "@notifications_bp.get('/activity/<int:notification_id>/details')",
     ):

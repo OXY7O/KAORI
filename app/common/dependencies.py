@@ -63,7 +63,7 @@ def metrics_source_setup_blocker(cluster: ClusterIdentity) -> DependencyBlocker:
         'icon': 'activity',
         'action_label': 'Register Metrics Source',
         'action_url': url_for('integrations.select_metrics_source_provider'),
-        'permission': 'settings.manage_integrations',
+        'permission': 'integrations.manage',
     }
 
 
@@ -84,7 +84,7 @@ def metrics_source_connection_blocker(
         'icon': 'plug-zap',
         'action_label': 'Review Metrics Sources',
         'action_url': url_for('integrations.metrics_sources'),
-        'permission': 'settings.manage_integrations',
+        'permission': 'integrations.manage',
     }
 
 
@@ -111,7 +111,7 @@ def metrics_source_capability_blocker(
         'icon': 'shield-alert',
         'action_label': 'Review Capability',
         'action_url': url_for('integrations.metrics_sources'),
-        'permission': 'settings.manage_integrations',
+        'permission': 'integrations.manage',
     }
 
 
@@ -148,7 +148,7 @@ def alert_source_setup_blocker(
         'icon': 'bell-ring',
         'action_label': action_label,
         'action_url': action_url,
-        'permission': 'settings.manage_integrations',
+        'permission': 'integrations.manage',
     }
 
 
@@ -183,7 +183,7 @@ def alert_source_connection_blocker(
         'icon': 'triangle-alert',
         'action_label': 'Review Integration',
         'action_url': url_for(action_endpoint),
-        'permission': 'settings.manage_integrations',
+        'permission': 'integrations.manage',
     }
 
 

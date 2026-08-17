@@ -122,12 +122,12 @@ def test_welcome_catalog_matches_current_primary_navigation_domains() -> None:
     assert "'title': 'Kubernetes Cluster'" not in shortcuts
     assert "('jobs.view', 'platform_operations.overview.index')" in shortcuts
     assert "('jobs.configure', 'platform_operations.overview.index')" in shortcuts
-    assert "('settings.manage_integrations', 'integrations.overview')" in shortcuts
+    assert "('integrations.manage', 'integrations.overview')" in shortcuts
     assert "'title': 'Integrations'" in shortcuts
     platform_block = shortcuts.split("'title': 'Platform Operations'", 1)[1].split(
         "'title': 'Kubernetes Operations'", 1
     )[0]
-    assert 'settings.manage_integrations' not in platform_block
+    assert 'integrations.manage' not in platform_block
 
 
 def test_welcome_object_storage_cards_use_dedicated_permissions() -> None:

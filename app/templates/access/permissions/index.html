@@ -52,9 +52,9 @@
             <div class="grid gap-px bg-outline-subtle md:grid-cols-2 xl:grid-cols-4">
                 {% set metrics = [
                                     ('key-round', 'Permission Contracts', summary.canonical_permissions, 'Atomic authorization contracts defined by application code.', 'bg-kaori-soft text-kaori-primary'),
-                                    ('boxes', 'Control Modules', summary.control_modules, 'Current operational domains represented by the permission registry.', 'bg-status-info-soft text-status-info-text'),
-                                    ('git-branch', 'Role Mappings', summary.role_mappings, 'Effective permission-to-role mappings in the committed registry.', 'bg-status-normal-soft text-status-normal-text'),
-                                    ('circle-dashed', 'Unused Contracts', summary.unused_contracts, 'Canonical permissions not currently mapped to a role.', 'bg-status-unknown-soft text-status-unknown-text')
+                                    ('boxes', 'Control Modules', summary.control_modules, 'Source-controlled operational ownership represented by the registry.', 'bg-status-info-soft text-status-info-text'),
+                                    ('shield-alert', 'Access Administration', summary.access_administration_contracts, 'Privileged delegation contracts reserved to the Local Database Super Admin boundary.', 'bg-status-warning-soft text-status-warning-text'),
+                                    ('triangle-alert', 'Registry Drift', summary.drift_count, 'Code-to-database permission records requiring operator review.', 'bg-status-unknown-soft text-status-unknown-text')
                                 ] %}
                 {% for icon, label, value, description, tone in metrics %}
                     <article class="flex min-h-[11rem] flex-col bg-surface-card p-5">
@@ -75,10 +75,10 @@
             <div class="border-t border-outline-subtle bg-surface-hover px-5 py-4 lg:px-6">
                 <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
                     {% set boundaries = [
-                                            ('code-xml', 'Code Ownership', 'Application Code', 'Permission keys and canonical metadata are owned by the RBAC baseline.'),
-                                            ('git-merge', 'Dependency Graph', 'Normalized', 'Dependent capabilities require their baseline permissions automatically.'),
-                                            ('shield-check', 'Role Consumption', roles|length ~ ' Roles', 'Roles package permission contracts into reusable access profiles.'),
-                                            ('lock-keyhole', 'Authoritative Enforcement', 'Server Side', 'Route and service guards remain authoritative for protected actions.')
+                                            ('code-xml', 'Code Ownership', 'Application Code', 'Permission keys, module ownership, dependencies, and delegation tiers are source-controlled.'),
+                                            ('git-merge', 'Dependency Graph', 'Normalized', 'Dependent capabilities expand their transitive baseline requirements automatically.'),
+                                            ('shield-check', 'Role Consumption', summary.role_mappings ~ ' Mappings', summary.unused_contracts ~ ' canonical contracts are currently unassigned.'),
+                                            ('lock-keyhole', 'Authoritative Enforcement', 'Server Side', 'Route, service, role delegation, JIT, and provisioning guards remain authoritative.')
                                         ] %}
                     {% for icon, title, value, description in boundaries %}
                         <article class="flex items-start gap-3 rounded-xl border border-outline-subtle bg-surface-card p-3.5">
@@ -104,6 +104,9 @@
                         <div class="min-w-0">
                             <p class="text-sm font-semibold">Registry Drift Detected</p>
                             <p class="mt-1 text-xs leading-5">{{ summary.drift_count }} permission contract{{ '' if summary.drift_count == 1 else 's' }} differ between application code and the persisted RBAC registry. Run the governed <strong>flask seed-rbac</strong> deployment step after reviewing database-only permission usage.</p>
+                            {% if summary.database_only_in_use_count %}
+                                <p class="mt-2 text-xs font-semibold leading-5">{{ summary.database_only_in_use_count }} database-only permission contract{{ '' if summary.database_only_in_use_count == 1 else 's' }} still map to roles and must be reviewed before any controlled cleanup migration.</p>
+                            {% endif %}
                         </div>
                     </div>
                 {% endif %}

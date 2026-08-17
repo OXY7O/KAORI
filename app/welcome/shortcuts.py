@@ -137,7 +137,7 @@ WELCOME_SHORTCUT_DEFINITIONS: tuple[dict[str, Any], ...] = (
         'icon': 'blocks',
         'scope': 'Platform',
         'group': 'operations',
-        'targets': (('settings.manage_integrations', 'integrations.overview'),),
+        'targets': (('integrations.manage', 'integrations.overview'),),
     },
     {
         'title': 'Platform Operations',
@@ -228,7 +228,7 @@ WELCOME_SHORTCUT_DEFINITIONS: tuple[dict[str, Any], ...] = (
             ('users.view', 'access.overview.index'),
             ('users.manage', 'access.overview.index'),
             ('roles.view', 'access.overview.index'),
-            ('settings.view_operational_activity', 'access.overview.index'),
+            ('activity_audit.view', 'access.overview.index'),
         ),
     },
     {

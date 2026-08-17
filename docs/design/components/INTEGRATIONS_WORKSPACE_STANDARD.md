@@ -595,7 +595,7 @@ Validation and Runtime HTMX responses MUST refresh their framed-tab status badge
 
 ### Provider empty-state and registration consistency
 
-- Provider front pages are already protected by `settings.manage_integrations`; registry and coverage empty states MUST NOT repeat the same authorization decision inside the template. If the page is renderable, the canonical `Register Connection` action is renderable when no filters suppress it.
+- Provider front pages are already protected by `integrations.manage`; registry and coverage empty states MUST NOT repeat the same authorization decision inside the template. If the page is renderable, the canonical `Register Connection` action is renderable when no filters suppress it.
 - Cross-provider consumer coverage uses the asset-centric term **Consumer Asset** and pagination uses **Assets**, not provider-specific `Scopes`.
 - Registration workspaces share the same interaction hierarchy: Hero → `Connection Configuration` → `Connection Identity` → `Endpoint & Access` with operation-scoped `Test Connection` → compatibility/request controls → action bar.
 - Registration Hero ownership is shared by `integrations/components/_provider_registration_hero.html`. Kubernetes, Metrics Source, Alertmanager, and MinIO MUST NOT copy their own registration-posture panel. The shared right-side contract is `Registration Posture` / `Pre-save Requirements` / `Draft`, with `Before Save · Test Connection` and `After Save · Core Validation`, followed by `Back to Registry`.

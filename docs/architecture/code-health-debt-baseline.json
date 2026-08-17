@@ -50,7 +50,6 @@
     "app/storage/s3.py::S3ArtifactStorage.__init__": 12
   },
   "function_branch_limits": {
-    "app/access/permissions/service.py::build_permission_registry_snapshot": 37,
     "app/access/roles/presentation.py::build_roles_index_context": 41,
     "app/analytics/kubernetes/alerts/silences.py::build_silence_summary": 35,
     "app/analytics/kubernetes/job_adapter.py::_analytics_work_items": 32,
@@ -85,7 +84,6 @@
   },
   "function_line_limits": {
     "app/access/overview/presentation.py::build_access_overview": 199,
-    "app/analytics/kubernetes/alerts/health.py::build_source_health": 162,
     "app/analytics/kubernetes/alerts/inhibition.py::build_inhibition_summary": 171,
     "app/analytics/kubernetes/alerts/ownership.py::build_ownership_summary": 215,
     "app/analytics/kubernetes/alerts/readiness.py::build_incident_readiness": 197,
@@ -118,14 +116,12 @@
     "app/retention/service.py::_execute_archive": 166
   },
   "module_line_limits": {
-    "app/alert_sources/providers/alertmanager/routes.py": 943,
     "app/analytics/kubernetes/job_adapter.py": 824,
     "app/analytics/kubernetes/overview/service.py": 1715,
-    "app/analytics/kubernetes/utilization/service.py": 1177,
+    "app/analytics/kubernetes/utilization/service.py": 1120,
     "app/cluster/routes.py": 871,
     "app/integrations/observability/metrics_source/query_profiles/kubernetes_v1.py": 1309,
     "app/integrations/service.py": 902,
-    "app/integrations/validation/tasks.py": 909,
     "app/intelligence/recommendation_engine.py": 2460,
     "app/metrics_sources/routes.py": 1156,
     "app/reports/export/html_pdf/analytics_overview.py": 2362,

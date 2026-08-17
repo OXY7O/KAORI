@@ -220,7 +220,7 @@ def build_access_overview() -> dict[str, Any]:
             }
         )
 
-    if _can('settings.view_operational_activity'):
+    if _can('activity_audit.view'):
         activity = get_notification_activity_summary()
         workspaces.append(
             {

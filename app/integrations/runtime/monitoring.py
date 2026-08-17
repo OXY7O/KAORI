@@ -9,7 +9,7 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from app.integrations.contracts import IntegrationNotRegistered
 from app.integrations.registry import get_integration
-from app.integrations.validation.tasks import enqueue_runtime_refresh
+from app.integrations.validation.scheduling import enqueue_runtime_refresh
 from app.models.integration import IntegrationInstance
 
 logger = logging.getLogger(__name__)

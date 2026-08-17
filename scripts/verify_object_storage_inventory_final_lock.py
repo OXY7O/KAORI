@@ -118,7 +118,7 @@ def main() -> int:
 
     for token in (
         "url_for('integrations.storage')",
-        'settings.manage_integrations',
+        'integrations.manage',
         'Register Your First Object Storage System',
     ):
         if token not in onboarding:

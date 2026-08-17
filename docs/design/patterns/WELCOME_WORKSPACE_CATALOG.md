@@ -96,7 +96,7 @@ The canonical quality gate runs the Welcome verifier directly, executes permanen
 
 ## Workspace ownership refinement
 
-Integrations remains a standalone Welcome workspace because it is an independent root menu. It is grouped with **Platform Operations** under the `Act / Infrastructure Operations` capability area, while provider/domain navigation remains inside the Integrations workspace. The Platform Operations card must not inherit `settings.manage_integrations`; each workspace is discovered only through its own authorization boundary.
+Integrations remains a standalone Welcome workspace because it is an independent root menu. It is grouped with **Platform Operations** under the `Act / Infrastructure Operations` capability area, while provider/domain navigation remains inside the Integrations workspace. The Platform Operations card must not inherit `integrations.manage`; each workspace is discovered only through its own authorization boundary.
 
 ## Cross-domain visibility workspaces
 
