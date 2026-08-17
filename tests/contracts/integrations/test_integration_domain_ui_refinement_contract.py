@@ -8,9 +8,10 @@ def read(path: str) -> str:
 
 
 def test_domain_workspace_separates_tabs_from_registry_surface_and_preserves_readability() -> None:
-    template = read('app/templates/integrations/domain.html')
+    template = read('app/templates/integrations/partials/_domain_workspace.html')
     assert 'data-kaori-domain-registry-surface' in template
-    assert 'overflow-x-auto rounded-xl border border-outline-subtle' in template
+    assert 'overflow-hidden rounded-xl border border-outline-subtle' in template
+    assert 'overflow-x-auto' in template
     assert 'min-w-[920px]' in template
     assert '[overflow-wrap:anywhere]' in template
     assert 'table-fixed' not in template

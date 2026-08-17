@@ -619,6 +619,11 @@ class ReportScheduleRun(db.Model):
         nullable=True,
     )
 
+    schedule_snapshot: Mapped[dict[str, Any] | None] = mapped_column(
+        db.JSON,
+        nullable=True,
+    )
+
     def to_dict(self) -> dict[str, Any]:
         return {
             'id': self.id,
@@ -631,4 +636,5 @@ class ReportScheduleRun(db.Model):
             'finished_at': self.finished_at,
             'error_message': self.error_message,
             'delivery_result': self.delivery_result,
+            'schedule_snapshot': self.schedule_snapshot,
         }

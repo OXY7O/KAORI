@@ -27,7 +27,7 @@ def test_overview_only_builds_the_selected_deep_workspace() -> None:
     assert "{% if active_tab == 'catalog' %}" in overview
     assert "{% elif active_tab == 'runtime' %}" in overview
     assert '{% else %}' in overview
-    assert "x-show=\"activeTab === 'catalog'\"" not in overview
+    assert 'x-show="activeTab === \'catalog\'"' not in overview
     assert "allowedTabs: ['catalog', 'runtime', 'coverage']" not in overview
 
 
@@ -60,7 +60,6 @@ def test_runtime_overview_reuses_one_latest_observation_snapshot_and_avoids_core
     assert 'selectinload(MinioInstance.integration_instance).selectinload(IntegrationInstance.bindings)' in minio
 
 
-
 def test_runtime_detail_reads_only_the_selected_target_observation() -> None:
     service = read('app/integrations/service.py')
     detail = service.split('def build_integration_runtime_detail(', 1)[1]
@@ -76,14 +75,14 @@ def test_overview_ready_counts_require_enabled_targets_and_domain_zero_targets_a
     service = read('app/integrations/service.py')
     overview = read('app/templates/integrations/overview.html')
 
-    assert 'if is_configured and is_enabled and readiness == \'ready\'' in extension
-    assert 'if is_configured and (not is_enabled or readiness != \'ready\')' in extension
+    assert "if is_configured and is_enabled and readiness == 'ready'" in extension
+    assert "if is_configured and (not is_enabled or readiness != 'ready')" in extension
     assert "'readiness_review': readiness_review" in extension
-    assert 'item.integration_instance.enabled and _kubernetes_readiness(item) == \'ready\'' in service
+    assert "item.integration_instance.enabled and _kubernetes_readiness(item) == 'ready'" in service
     assert "item.enabled and item.readiness_status == 'ready'" in service
 
     coverage = service.split('def _coverage(', 1)[1].split('def _coverage_stats', 1)[0]
-    assert "elif total <= 0:" in coverage
+    assert 'elif total <= 0:' in coverage
     assert "posture_state, posture_label = 'not_configured', 'Not Configured'" in coverage
     assert "posture_state, posture_label = 'validation_required', 'Needs Review'" in coverage
     assert "posture_state, posture_label = 'ready', 'Ready'" in coverage
@@ -101,10 +100,10 @@ def test_runtime_zero_states_and_lifecycle_use_canonical_kaori_state_ownership()
     assert "empty_state_action_label = 'Browse Providers'" in runtime
     assert "empty_state_label = 'No Results'" in runtime
     assert "empty_state_title = 'No Runtime Targets Match These Filters'" in runtime
-    assert "components/states/_empty_state.html" in runtime
+    assert 'components/states/_empty_state.html' in runtime
     assert 'Runtime Evidence Lifecycle' in runtime
     assert 'provider-neutral operational evidence' in runtime
-    assert "platform_operations.data_lifecycle.index" in runtime
+    assert 'platform_operations.data_lifecycle.index' in runtime
     assert "domain='runtime_observation'" in runtime
 
 

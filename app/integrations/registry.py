@@ -78,11 +78,13 @@ class IntegrationModule:
     def get_record_for_canonical(self, integration_instance_id: int) -> Any | None:
         return self.canonical_record_loader(int(integration_instance_id))
 
-    def detail_url(self, instance_id: int, *, section: str) -> str:
+    def detail_url_for_record(self, record: Any, *, section: str) -> str:
         if self.detail_url_builder is None:
             return '/integrations/'
-        instance = self.get_instance(instance_id)
-        return self.detail_url_builder(instance, section)
+        return self.detail_url_builder(record, section)
+
+    def detail_url(self, instance_id: int, *, section: str) -> str:
+        return self.detail_url_for_record(self.get_instance(instance_id), section=section)
 
     def record_failure(self, instance: Any, error: Exception) -> None:
         if self.failure_recorder is not None:

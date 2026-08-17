@@ -85,7 +85,8 @@ def test_domain_route_does_not_depend_on_service_reexport() -> None:
     routes = read('app/integrations/routes.py')
     service = read('app/integrations/service.py')
 
-    assert 'from app.integrations.domain_service import build_integration_domain_page' in routes
+    assert 'from app.integrations.domain_service import (' in routes
+    assert 'build_integration_domain_page' in routes
     assert 'from app.integrations.domain_service import build_integration_domain_page' not in service
 
 

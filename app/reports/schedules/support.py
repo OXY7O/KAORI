@@ -142,3 +142,23 @@ def get_section_options_by_report_type(section_options: list[dict[str, str]]) ->
         item['value']: [section_map[section] for section in item['default_sections'] if section in section_map]
         for item in REPORT_TYPE_OPTIONS
     }
+
+
+def build_schedule_evidence_snapshot(schedule: ReportSchedule) -> dict[str, Any]:
+    return {
+        'name': schedule.name,
+        'report_type': schedule.report_type,
+        'report_domain': schedule.report_domain,
+        'scope_asset_type': schedule.scope_asset_type,
+        'scope_asset_id': schedule.scope_asset_id or schedule.cluster_id,
+        'scope_asset_label': schedule.scope_asset_label_snapshot,
+        'namespace': schedule.namespace,
+        'period': schedule.period,
+        'output_format': schedule.output_format,
+        'sections': schedule.sections_as_list(),
+        'cadence': schedule.cadence,
+        'run_time': schedule.run_time,
+        'day_of_week': schedule.day_of_week,
+        'day_of_month': schedule.day_of_month,
+        'timezone': schedule.timezone,
+    }

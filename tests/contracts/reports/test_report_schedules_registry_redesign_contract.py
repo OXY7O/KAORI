@@ -202,7 +202,7 @@ def test_schedule_registry_uses_generic_infrastructure_asset_filter() -> None:
     assert "legacy_cluster = str(query_args.get('cluster', '') or '').strip()" in registry
     assert "asset = f'{KUBERNETES_CLUSTER_ASSET_TYPE}:{legacy_cluster}'" in registry
     assert "schedule['scope_asset_filter_key'] != asset" in registry
-    assert "f'{OBJECT_STORAGE_SYSTEM_ASSET_TYPE}:{item[\"value\"]}'" in service
+    assert 'f\'{OBJECT_STORAGE_SYSTEM_ASSET_TYPE}:{item["value"]}\'' in service
     assert "'scope_asset_filter_key': f'{scope_asset_type}:{scope_asset_id}'" in presentation
 
 

@@ -62,10 +62,13 @@ def serialize_schedule(
     delivery_channels = schedule.notification_channel_ids_as_list()
     delivery_labels = [delivery_label_map.get(item, f'Channel {item}') for item in delivery_channels]
     scope = resolve_report_scope(schedule)
+    scope_asset_type = schedule.scope_asset_type or KUBERNETES_CLUSTER_ASSET_TYPE
+    scope_asset_id = schedule.scope_asset_id or schedule.cluster_id or ''
     scope_label = (
-        'Object Storage System'
-        if schedule.scope_asset_type == OBJECT_STORAGE_SYSTEM_ASSET_TYPE
-        else 'Kubernetes Cluster'
+        'Object Storage System' if scope_asset_type == OBJECT_STORAGE_SYSTEM_ASSET_TYPE else 'Kubernetes Cluster'
+    )
+    namespace_label = schedule.namespace or (
+        'System Scope' if scope_asset_type == OBJECT_STORAGE_SYSTEM_ASSET_TYPE else 'All Namespaces'
     )
     return {
         'id': schedule.id,
@@ -80,13 +83,17 @@ def serialize_schedule(
         'object_storage_system_id': (
             schedule.scope_asset_id if schedule.scope_asset_type == OBJECT_STORAGE_SYSTEM_ASSET_TYPE else ''
         ),
-        'scope_asset_type': schedule.scope_asset_type or KUBERNETES_CLUSTER_ASSET_TYPE,
+        'scope_asset_type': scope_asset_type,
+        'scope_asset_id': scope_asset_id,
+        'scope_asset_filter_key': f'{scope_asset_type}:{scope_asset_id}' if scope_asset_id else '',
         'scope': (
             scope.label if scope is not None else (schedule.scope_asset_label_snapshot or 'Asset Selection Required')
         ),
         'scope_label': scope_label,
-        'namespace': schedule.namespace
-        or ('Not Applicable' if schedule.scope_asset_type == OBJECT_STORAGE_SYSTEM_ASSET_TYPE else 'All Namespaces'),
+        'namespace': namespace_label,
+        'scope_detail': (
+            scope_label if scope_asset_type == OBJECT_STORAGE_SYSTEM_ASSET_TYPE else f'{scope_label} · {namespace_label}'
+        ),
         'period': format_period_label(schedule.period),
         'period_value': schedule.period,
         'output_format': str(schedule.output_format or '').upper(),
@@ -141,10 +148,29 @@ def serialize_run(
         delivery_tone = 'pending'
 
     duration = format_run_duration(run.started_at, run.finished_at)
+    raw_snapshot = getattr(run, 'schedule_snapshot', None)
+    snapshot = raw_snapshot if isinstance(raw_snapshot, dict) else {}
+    snapshot_report_type = str(snapshot.get('report_type') or '')
+    snapshot_icon = next(
+        (
+            str(item.get('icon') or 'calendar-clock')
+            for item in REPORT_TYPE_OPTIONS
+            if item['value'] == snapshot_report_type
+        ),
+        'calendar-clock',
+    )
     schedule_context = schedule_context_map.get(
         run.schedule_id or 0,
-        {'name': 'Deleted Schedule', 'icon': 'calendar-clock'},
+        {'name': str(snapshot.get('name') or 'Deleted Schedule'), 'icon': snapshot_icon},
     )
+    schedule_evidence = {
+        'report_type': get_report_type_label(snapshot_report_type) if snapshot_report_type else 'Not Available',
+        'scope': str(snapshot.get('scope_asset_label') or snapshot.get('scope_asset_id') or 'Not Available'),
+        'period': format_period_label(str(snapshot.get('period') or '')) if snapshot.get('period') else 'Not Available',
+        'output_format': str(snapshot.get('output_format') or '').upper() or 'Not Available',
+        'cadence': str(snapshot.get('cadence') or '').replace('_', ' ').title() or 'Not Available',
+        'timezone': str(snapshot.get('timezone') or 'Not Available'),
+    }
     return {
         'id': run.id,
         'schedule_id': run.schedule_id,
@@ -165,6 +191,7 @@ def serialize_run(
         'delivery_label': delivery_label,
         'delivery_tone': delivery_tone,
         'delivery_summary': f'{successful} Sent · {failed} Failed · {skipped} Skipped',
+        'schedule_evidence': schedule_evidence,
     }
 
 

@@ -38,12 +38,15 @@ from app.reports.generate.service import (
 from app.reports.jobs.queue import get_reports_queue_name
 from app.reports.jobs.service import ReportJobEnqueueError, enqueue_report_generation
 from app.reports.notifications import get_report_notification_channel_options
+from app.reports.schedules.registry import filter_schedule_rows as _filter_schedule_rows
+from app.reports.schedules.registry import get_selected_filters as _get_selected_filters
 from app.reports.schedules.delivery import get_recommended_actions, get_scheduler_context
 from app.reports.schedules.failures import mark_schedule_dispatch_failed
 from app.reports.schedules.presentation import DAY_OF_WEEK_OPTIONS
 from app.reports.schedules.presentation import serialize_run as _serialize_run
 from app.reports.schedules.presentation import serialize_schedule as _serialize_schedule
 from app.reports.schedules.presentation import title_case_period_options as _title_case_period_options
+from app.reports.schedules.support import build_schedule_evidence_snapshot as _build_schedule_evidence_snapshot
 from app.reports.schedules.support import ensure_utc as _ensure_utc
 from app.reports.schedules.support import get_cluster_map as _get_cluster_map
 from app.reports.schedules.support import get_cluster_options as _get_cluster_options
@@ -206,7 +209,11 @@ def get_report_schedules_payload(
         'scheduler_context': get_scheduler_context(storage_context, worker_context),
         'recommended_actions': get_recommended_actions(),
         'delivery_channel_options': _get_delivery_channel_options(),
-        'filter_options': _get_schedule_filter_options(all_schedules, cluster_options),
+        'filter_options': _get_schedule_filter_options(
+            all_schedules,
+            cluster_options,
+            object_storage_system_options,
+        ),
         'selected_filters': selected_filters,
         'pagination': pagination,
         'per_page_options': list(PER_PAGE_OPTIONS),
@@ -215,7 +222,7 @@ def get_report_schedules_payload(
             **{
                 key: value
                 for key, value in selected_filters.items()
-                if key in {'search', 'status', 'cadence', 'report_type', 'cluster', 'delivery'} and value
+                if key in {'search', 'status', 'cadence', 'report_type', 'asset', 'delivery'} and value
             },
         },
     }
@@ -446,6 +453,7 @@ def execute_schedule(
     run.status = 'started'
     run.trigger_source = trigger_source
     run.started_at = datetime.now(UTC)
+    run.schedule_snapshot = _build_schedule_evidence_snapshot(schedule)
     db.session.add(run)
 
     storage_status = get_report_storage_backend_status()
@@ -726,63 +734,6 @@ def _create_report_from_schedule(schedule: ReportSchedule) -> Report:
     return report
 
 
-def _get_selected_filters(query_args: Mapping[str, str]) -> dict[str, str]:
-    return {
-        'search': str(query_args.get('search', '') or '').strip(),
-        'status': str(query_args.get('status', '') or '').strip().lower(),
-        'cadence': str(query_args.get('cadence', '') or '').strip().lower(),
-        'report_type': str(query_args.get('report_type', '') or '').strip(),
-        'cluster': str(query_args.get('cluster', '') or '').strip(),
-        'delivery': str(query_args.get('delivery', '') or '').strip().lower(),
-    }
-
-
-def _filter_schedule_rows(
-    schedules: list[dict[str, Any]],
-    selected_filters: dict[str, str],
-) -> list[dict[str, Any]]:
-    search = selected_filters['search'].casefold()
-    status = selected_filters['status']
-    cadence = selected_filters['cadence']
-    report_type = selected_filters['report_type']
-    cluster = selected_filters['cluster']
-    delivery = selected_filters['delivery']
-
-    filtered: list[dict[str, Any]] = []
-    for schedule in schedules:
-        if status and status != ('active' if schedule['is_enabled'] else 'paused'):
-            continue
-        if cadence and schedule['cadence_value'] != cadence:
-            continue
-        if report_type and schedule['report_type_value'] != report_type:
-            continue
-        if cluster and schedule['cluster_id'] != cluster:
-            continue
-        if delivery:
-            channels = {str(item).lower() for item in schedule['notification_channel_ids']}
-            if delivery == 'none':
-                if channels:
-                    continue
-            elif delivery not in channels:
-                continue
-        if search:
-            haystack = ' '.join(
-                [
-                    schedule['name'],
-                    schedule['description'],
-                    schedule['report_type'],
-                    schedule['cluster'],
-                    schedule['namespace'],
-                    schedule['cadence'],
-                    schedule['delivery_label'],
-                ]
-            ).casefold()
-            if search not in haystack:
-                continue
-        filtered.append(schedule)
-    return filtered
-
-
 def _get_run_registry(
     query_args: Mapping[str, str],
     schedules: list[dict[str, Any]],
@@ -885,8 +836,23 @@ def _get_run_filter_options(
 def _get_schedule_filter_options(
     schedules: list[dict[str, Any]],
     cluster_options: list[dict[str, str]],
+    object_storage_system_options: list[dict[str, str]],
 ) -> dict[str, list[dict[str, str]]]:
     delivery_catalog = _get_delivery_channel_options()
+    asset_options: dict[str, str] = {
+        f'{KUBERNETES_CLUSTER_ASSET_TYPE}:{item["value"]}': f'Kubernetes · {item["label"]}'
+        for item in cluster_options
+    }
+    asset_options.update(
+        {
+            f'{OBJECT_STORAGE_SYSTEM_ASSET_TYPE}:{item["value"]}': f'Object Storage · {item["label"]}'
+            for item in object_storage_system_options
+        }
+    )
+    for schedule in schedules:
+        key = str(schedule.get('scope_asset_filter_key') or '')
+        if key and key not in asset_options:
+            asset_options[key] = f'{schedule["scope_label"]} · {schedule["scope"]}'
     return {
         'statuses': [
             {'value': '', 'label': 'All Statuses'},
@@ -901,9 +867,12 @@ def _get_schedule_filter_options(
             {'value': '', 'label': 'All Report Types'},
             *[{'value': item['value'], 'label': item['label']} for item in REPORT_TYPE_OPTIONS],
         ],
-        'clusters': [
-            {'value': '', 'label': 'All Clusters'},
-            *[{'value': item['value'], 'label': item['label']} for item in cluster_options],
+        'assets': [
+            {'value': '', 'label': 'All Infrastructure Assets'},
+            *[
+                {'value': value, 'label': label}
+                for value, label in sorted(asset_options.items(), key=lambda item: item[1].casefold())
+            ],
         ],
         'deliveries': [
             {'value': '', 'label': 'All Delivery'},

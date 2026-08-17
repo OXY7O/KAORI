@@ -61,9 +61,15 @@ The **Bindings** tab is a consumer registry, not a duplicate of provider ownersh
 
 This means Orchestration shows Prometheus/Alertmanager consumer bindings targeting Kubernetes clusters while Kubernetes API ownership remains in Provider Registry. Storage behaves the same way: MinIO owns the `object_storage_system`, while Prometheus and Alertmanager appear only after explicit consumer binding. Observability shows Prometheus/Alertmanager bindings across their consumer assets because those providers own the source side.
 
-The **Provider Registry / Bindings** switch is server-owned but MUST use HTMX replacement of `#domain-workspace` with URL push-state. Tab switching must not perform a full document navigation; the shared content-tab contract owns `hx-get`, `hx-target`, `hx-select`, `hx-swap`, and an operation-scoped loading indicator.
+The **Provider Registry / Consumer Bindings** switch is server-owned and uses HTMX replacement of `#domain-workspace` with URL push-state. HTMX requests targeting that workspace return the workspace partial itself; they must not render the entire domain page and then rely on `hx-select` to discard unused Hero/Capability markup. Only the selected registry is materialized for the request.
 
-Managed asset ownership is declared by Integration taxonomy capability metadata (`asset_types`). Domain landing services must remain provider-neutral and must not query `KubernetesConnection`, `PrometheusInstance`, `AlertmanagerInstance`, `MinioInstance`, or future provider-specific models directly.
+Both domain registries follow the canonical KAORI table interaction contract: Search plus relevant status/provider filters, five-row default with `5 / 10 / 25 / 50`, `Clear Filters` only when filters are active, filter changes reset the active page to 1, and Rows is preserved. Provider Registry and Consumer Bindings keep independent filter/page-size state while switching tabs. Filtered zero uses `No Results`; first-use zero uses the canonical setup/no-data state.
+
+Domain posture and counts are consumer-correct. Native owner attachments are excluded from the `Bindings` badge, Hero binding metric, Capability Registry binding count, and Consumer Bindings table. A registered provider target that is disabled or inactive is `Attention`, not `Not Configured`; `Not Configured` is reserved for a domain/provider with no registered target.
+
+Performance ownership is bounded: Provider Registry reads only lightweight binding fields needed for counts, the Consumer Bindings tab loads binding validation/detail evidence only when selected, and provider-specific detail URLs are resolved only after pagination for the visible page. Domain landing services must not preload `IntegrationInstance.bindings` or resolve provider-specific records for every off-page target.
+
+Managed asset ownership is declared by Integration taxonomy capability metadata (`asset_types`). Domain landing services remain provider-neutral and must not query `KubernetesConnection`, `PrometheusInstance`, `AlertmanagerInstance`, `MinioInstance`, or future provider-specific models directly.
 
 Provider Core Validation and Binding Validation remain separate evidence boundaries on the domain page. Provider Registry readiness reflects provider Core Validation; the Bindings tab shows the selected consumer profile, selector, and binding validation status.
 

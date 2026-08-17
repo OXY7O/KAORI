@@ -65,20 +65,22 @@ def test_domain_landing_routes_share_one_taxonomy_page_builder() -> None:
     assert "'integrations/domain.html'" in routes
     assert 'build_integration_domain_page(' in routes
     assert "active_tab=request.args.get('tab', 'registry').strip()" in routes
-    assert "provider_per_page=request.args.get('provider_per_page', 5, type=int) or 5" in routes
-    assert "binding_per_page=request.args.get('binding_per_page', 5, type=int) or 5" in routes
+    assert "per_page=request.args.get('provider_per_page', 5, type=int) or 5" in routes
+    assert "per_page=request.args.get('binding_per_page', 5, type=int) or 5" in routes
 
-    assert 'from app.integrations.domain_service import build_integration_domain_page' in routes
+    assert 'build_integration_domain_page' in routes
+    assert 'ProviderRegistryFilters' in routes
+    assert 'BindingRegistryFilters' in routes
     assert 'get_domain_definition(domain_key)' in domain_service
     assert 'for module in registry.all() if module.domain_key == domain.key' in domain_service
-    assert 'IntegrationInstance.query.options(selectinload(IntegrationInstance.bindings))' in domain_service
+    assert 'IntegrationInstance.query.filter(IntegrationInstance.provider_type.in_(provider_types))' in domain_service
     assert 'IntegrationInstance.provider_type.in_(provider_types)' in domain_service
     assert 'asset_types_for_domain(domain_key)' in domain_service
     assert 'IntegrationBinding.asset_type.in_(owned_asset_types)' in domain_service
     assert 'domain_key_for_asset_type(binding.asset_type)' in domain_service
     assert 'selector_summary(binding.selector_json' in domain_service
     assert 'paginate_sequence(' in domain_service
-    assert "'bindings': sum(1 for binding in related_bindings if binding.enabled)" in domain_service
+    assert "'bindings': sum(1 for binding in consumer_bindings if binding.enabled)" in domain_service
     assert (
         'consumer_bindings = [binding for binding in related_bindings if not _is_owner_asset_binding(binding)]'
         in domain_service
@@ -93,36 +95,38 @@ def test_domain_landing_routes_share_one_taxonomy_page_builder() -> None:
 
 def test_domain_template_uses_shared_capability_registry_provider_registry_and_bindings() -> None:
     template = read('app/templates/integrations/domain.html')
+    workspace = read('app/templates/integrations/partials/_domain_workspace.html')
     content_tabs = read('app/templates/components/content_tabs.html')
 
     assert 'components/page_hero.html' in template
-    assert 'components/content_tabs.html' in template
-    assert 'components/pagination.html' in template
-    assert 'components/table.html' in template
-    assert 'integrations/components/_workspace.html' in template
+    assert 'integrations/partials/_domain_workspace.html' in template
+    assert 'components/content_tabs.html' in workspace
+    assert 'components/pagination.html' in workspace
+    assert 'components/table.html' in workspace
+    assert 'components/table_registry.html' in workspace
     assert 'Capability Registry' in template
-    assert 'Provider Registry' in template
-    assert 'Bindings' in template
-    assert 'Registry and Consumer Bindings' in template
-    assert 'Registry and Bindings' not in template
-    assert 'data-kaori-domain-provider-registry' in template
-    assert 'data-kaori-domain-binding-registry' in template
-    assert 'No {{ domain.label }} Provider Registered' in template
-    assert 'No {{ domain.label }} Bindings Yet' in template
+    assert 'Provider Registry' in workspace
+    assert 'Consumer Bindings' in workspace
+    assert 'Registry and Consumer Bindings' in workspace
+    assert 'Registry and Bindings' not in workspace
+    assert 'data-kaori-domain-provider-registry' in workspace
+    assert 'data-kaori-domain-binding-registry' in workspace
+    assert 'No {{ domain.label }} Provider Registered' in workspace
+    assert 'No {{ domain.label }} Consumer Bindings Yet' in workspace
     assert 'Core Validation' in template
-    assert 'Add Consumer Binding' in template
-    assert 'Consumer Contract' in template
-    assert 'url_for(row.workspace_endpoint)' in template
-    assert 'Open {{ item.runtime_label }}' in template
-    assert 'hx_target="#domain-workspace"' in template
-    assert 'hx_select="#domain-workspace"' in template
-    assert 'hx_indicator="#integration-domain-workspace-loading"' in template
+    assert 'Consumer Contract' in workspace
+    assert 'url_for(row.workspace_endpoint)' in workspace
+    assert 'Open {{ item.runtime_label }}' in workspace
+    assert 'hx_target="#domain-workspace"' in workspace
+    assert 'hx_select="#domain-workspace"' in workspace
+    assert 'hx_indicator="#integration-domain-workspace-loading"' in workspace
     assert 'hx_indicator=none' in content_tabs
     assert 'hx-indicator="{{ hx_indicator }}"' in content_tabs
     assert 'Domain Operating Boundary' in template
     assert 'data-kaori-integration-domain-workspace' in template
-    assert 'provider_registry_pagination.allowed_per_page' in template
-    assert 'binding_registry_pagination.allowed_per_page' in template
+    assert 'provider_registry_pagination.allowed_per_page' in workspace
+    assert 'binding_registry_pagination.allowed_per_page' in workspace
+    assert 'Clear Filters' not in workspace or 'clear_filters_link' in workspace
     assert '{% call integration_ui.section_header(' not in template
     assert '{{ integration_ui.section_header(' in template
 
@@ -131,7 +135,7 @@ def test_domain_binding_registry_is_cross_domain_and_asset_centric() -> None:
     taxonomy = read('app/integrations/taxonomy.py')
     taxonomy_catalog = read('app/definitions/catalogs/integrations/taxonomy.yaml')
     domain_service = read('app/integrations/domain_service.py')
-    template = read('app/templates/integrations/domain.html')
+    template = read('app/templates/integrations/partials/_domain_workspace.html')
 
     assert 'integration_taxonomy_document()' in taxonomy
     assert '- kubernetes_cluster' in taxonomy_catalog

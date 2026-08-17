@@ -472,8 +472,7 @@ def main() -> int:
         errors,
     )
     require(
-        'Runtime Evidence Lifecycle' in runtime_overview
-        and "components/states/_empty_state.html" in runtime_overview,
+        'Runtime Evidence Lifecycle' in runtime_overview and 'components/states/_empty_state.html' in runtime_overview,
         'Runtime Overview must use canonical empty-state ownership and expose shared lifecycle governance',
         errors,
     )
@@ -504,6 +503,48 @@ def main() -> int:
         '_latest_runtime_observation(provider, str(target_id))' in runtime_detail_builder
         and '_latest_runtime_observations()' not in runtime_detail_builder,
         'Integration Runtime detail must read only the selected target observation',
+        errors,
+    )
+
+    domain_routes = read('app/integrations/routes.py')
+    domain_service = read('app/integrations/domain_service.py')
+    domain_page = read('app/templates/integrations/domain.html')
+    domain_workspace = read('app/templates/integrations/partials/_domain_workspace.html')
+    registry_module = read('app/integrations/registry.py')
+    require(
+        "is_workspace_partial = is_htmx_request() and htmx_target() == 'domain-workspace'" in domain_routes
+        and "return render_template('integrations/partials/_domain_workspace.html', **context)" in domain_routes,
+        'Integration domain workspaces must return the selected HTMX workspace without rendering the full domain page',
+        errors,
+    )
+    require(
+        '{% include "integrations/partials/_domain_workspace.html" %}' in domain_page
+        and domain_workspace.count('registry_ui.filter_form(') == 2
+        and domain_workspace.count('registry_ui.clear_filters_link(') == 2,
+        'Integration domain Provider Registry and Consumer Bindings must use canonical KAORI filter ownership',
+        errors,
+    )
+    require(
+        "'bindings': sum(1 for binding in consumer_bindings if binding.enabled)" in domain_service
+        and 'No {{ domain.label }} Consumer Bindings Yet' in domain_workspace
+        and 'Use Add Consumer Binding' not in domain_workspace,
+        'Integration domain binding metrics must exclude native owner attachments and must not advertise a missing action',
+        errors,
+    )
+    require(
+        "include_details=normalized_tab == 'bindings'" in domain_service
+        and 'load_only(' in domain_service
+        and '_resolve_provider_detail_urls(provider_registry_rows)' in domain_service
+        and '_resolve_binding_detail_urls(binding_registry_rows)' in domain_service
+        and 'detail_url_for_record' in registry_module,
+        'Integration domain registries must keep binding evidence and provider-detail resolution page-bounded',
+        errors,
+    )
+    require(
+        "if registered <= 0:" in domain_service
+        and "if enabled <= 0:" in domain_service
+        and "return 'attention'" in domain_service,
+        'Integration domain posture must not label registered disabled targets as Not Configured',
         errors,
     )
 

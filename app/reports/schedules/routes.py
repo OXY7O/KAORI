@@ -1,4 +1,5 @@
 import logging
+from urllib.parse import parse_qsl, urlencode, urlsplit
 
 from flask import (
     redirect,
@@ -10,6 +11,7 @@ from flask.typing import ResponseReturnValue
 from flask_login import current_user
 from werkzeug.exceptions import HTTPException
 
+from app.auth.session import safe_next_url
 from app.notifications.feedback import OperationalDeliveryPolicy
 from app.notifications.service import queue_transient_feedback, record_operational_activity
 from app.rbac.decorators import permission_required
@@ -31,6 +33,20 @@ def _current_user_id() -> int:
     return int(getattr(current_user, 'id', 0) or 0)
 
 
+def _schedule_return_url(value: str | None) -> str:
+    fallback = url_for('reports.schedules')
+    candidate = safe_next_url(value)
+    if candidate != fallback and not (candidate and candidate.startswith(f'{fallback}?')):
+        return fallback
+    parsed = urlsplit(candidate or fallback)
+    query = [(key, item) for key, item in parse_qsl(parsed.query, keep_blank_values=True) if key != 'edit_schedule_id']
+    return f'{parsed.path}?{urlencode(query)}' if query else parsed.path
+
+
+def _schedule_query_args(value: str | None) -> dict[str, str]:
+    return dict(parse_qsl(urlsplit(_schedule_return_url(value)).query, keep_blank_values=True))
+
+
 def _queue_schedule_validation(errors: list[str]) -> None:
     queue_transient_feedback(
         status='error',
@@ -48,8 +64,9 @@ def _record_schedule_feedback(
     message: str,
     schedule_id: int | None = None,
     report_id: int | None = None,
+    return_url: str | None = None,
 ) -> None:
-    action_url = url_for('reports.schedules')
+    action_url = _schedule_return_url(return_url)
     action_label = 'View Report Schedules'
     if report_id is not None:
         action_url = url_for('reports.generated_reports', focus=report_id, period='all')
@@ -97,6 +114,7 @@ def schedules() -> ResponseReturnValue:
 
 @permission_required('reports.manage_schedules')
 def create_schedule() -> ResponseReturnValue:
+    return_url = _schedule_return_url(request.form.get('next'))
     success, errors, schedule = create_report_schedule(request.form, _current_user_id())
     if success:
         _record_schedule_feedback(
@@ -105,17 +123,23 @@ def create_schedule() -> ResponseReturnValue:
             title='Report Schedule Created',
             message='The report schedule was created successfully.',
             schedule_id=getattr(schedule, 'id', None),
+            return_url=return_url,
         )
-        return redirect(url_for('reports.schedules'))
+        return redirect(return_url)
 
     form_state = get_form_state_from_schedule_form(request.form)
-    payload = get_report_schedules_payload(request.args, form_state=form_state, errors=errors)
+    payload = get_report_schedules_payload(
+        _schedule_query_args(return_url),
+        form_state=form_state,
+        errors=errors,
+    )
     _queue_schedule_validation(errors)
     return render_template('reports/schedules/index.html', payload=payload)
 
 
 @permission_required('reports.manage_schedules')
 def update_schedule(schedule_id: int) -> ResponseReturnValue:
+    return_url = _schedule_return_url(request.form.get('next'))
     success, errors = update_report_schedule(schedule_id, request.form)
     if success:
         _record_schedule_feedback(
@@ -124,12 +148,13 @@ def update_schedule(schedule_id: int) -> ResponseReturnValue:
             title='Report Schedule Updated',
             message='The report schedule was updated successfully.',
             schedule_id=schedule_id,
+            return_url=return_url,
         )
-        return redirect(url_for('reports.schedules'))
+        return redirect(return_url)
 
     form_state = get_form_state_from_schedule_form(request.form)
     payload = get_report_schedules_payload(
-        request.args,
+        _schedule_query_args(return_url),
         errors=errors,
         edit_schedule_id=schedule_id,
         edit_form_state=form_state,
@@ -140,6 +165,7 @@ def update_schedule(schedule_id: int) -> ResponseReturnValue:
 
 @permission_required('reports.manage_schedules')
 def toggle_schedule(schedule_id: int) -> ResponseReturnValue:
+    return_url = _schedule_return_url(request.form.get('next'))
     success, message = toggle_report_schedule(schedule_id)
     _record_schedule_feedback(
         event_type='report_schedule_toggle',
@@ -147,12 +173,14 @@ def toggle_schedule(schedule_id: int) -> ResponseReturnValue:
         title='Report Schedule Status Updated' if success else 'Report Schedule Status Update Failed',
         message=message,
         schedule_id=schedule_id,
+        return_url=return_url,
     )
-    return redirect(url_for('reports.schedules'))
+    return redirect(return_url)
 
 
 @permission_required('reports.manage_schedules')
 def delete_schedule(schedule_id: int) -> ResponseReturnValue:
+    return_url = _schedule_return_url(request.form.get('next'))
     success, message = delete_report_schedule(schedule_id)
     _record_schedule_feedback(
         event_type='report_schedule_delete',
@@ -160,12 +188,14 @@ def delete_schedule(schedule_id: int) -> ResponseReturnValue:
         title='Report Schedule Deleted' if success else 'Report Schedule Deletion Failed',
         message=message,
         schedule_id=schedule_id,
+        return_url=return_url,
     )
-    return redirect(url_for('reports.schedules'))
+    return redirect(return_url)
 
 
 @permission_required('reports.manage_schedules')
 def run_schedule(schedule_id: int) -> ResponseReturnValue:
+    return_url = _schedule_return_url(request.form.get('next'))
     success, message, report_id = run_schedule_now(schedule_id, requested_by_user_id=_current_user_id())
     _record_schedule_feedback(
         event_type='report_schedule_run',
@@ -174,7 +204,8 @@ def run_schedule(schedule_id: int) -> ResponseReturnValue:
         message=message,
         schedule_id=schedule_id,
         report_id=report_id,
+        return_url=return_url,
     )
     if success and report_id is not None:
         return redirect(url_for('reports.generated_reports', focus=report_id, period='all'))
-    return redirect(url_for('reports.schedules'))
+    return redirect(return_url)

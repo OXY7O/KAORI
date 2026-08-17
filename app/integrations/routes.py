@@ -5,7 +5,11 @@ from flask_login import current_user
 from app.common.http import htmx_target, is_htmx_request
 from app.integrations.binding_service import SourceBindingSpec, create_source_binding
 from app.integrations.coverage import build_binding_workspace
-from app.integrations.domain_service import build_integration_domain_page
+from app.integrations.domain_service import (
+    BindingRegistryFilters,
+    ProviderRegistryFilters,
+    build_integration_domain_page,
+)
 from app.integrations.kubernetes_frontpage import (
     KubernetesCoverageFilters,
     KubernetesFrontPageFilters,
@@ -60,17 +64,29 @@ def overview() -> ResponseReturnValue:
 
 
 def _render_domain_page(domain_key: str) -> ResponseReturnValue:
-    return render_template(
-        'integrations/domain.html',
-        **build_integration_domain_page(
-            domain_key,
-            active_tab=request.args.get('tab', 'registry').strip(),
-            provider_page=request.args.get('provider_page', 1, type=int) or 1,
-            provider_per_page=request.args.get('provider_per_page', 5, type=int) or 5,
-            binding_page=request.args.get('binding_page', 1, type=int) or 1,
-            binding_per_page=request.args.get('binding_per_page', 5, type=int) or 5,
+    is_workspace_partial = is_htmx_request() and htmx_target() == 'domain-workspace'
+    context = build_integration_domain_page(
+        domain_key,
+        active_tab=request.args.get('tab', 'registry').strip(),
+        provider_filters=ProviderRegistryFilters(
+            query=request.args.get('provider_q', '').strip(),
+            provider_type=request.args.get('provider_type', '').strip(),
+            readiness=request.args.get('provider_readiness', '').strip(),
+            page=request.args.get('provider_page', 1, type=int) or 1,
+            per_page=request.args.get('provider_per_page', 5, type=int) or 5,
         ),
+        binding_filters=BindingRegistryFilters(
+            query=request.args.get('binding_q', '').strip(),
+            provider=request.args.get('binding_provider', '').strip(),
+            status=request.args.get('binding_status', '').strip(),
+            page=request.args.get('binding_page', 1, type=int) or 1,
+            per_page=request.args.get('binding_per_page', 5, type=int) or 5,
+        ),
+        include_capabilities=not is_workspace_partial,
     )
+    if is_workspace_partial:
+        return render_template('integrations/partials/_domain_workspace.html', **context)
+    return render_template('integrations/domain.html', **context)
 
 
 @integrations_bp.get('/orchestration')
