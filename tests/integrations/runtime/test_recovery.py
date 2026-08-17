@@ -56,7 +56,7 @@ def test_alert_provider_recovery_queues_dashboard_and_alerts_snapshots(monkeypat
         ),
     )
 
-    result = MODULE.enqueue_recovery_work(provider_type='alertmanager', instance=instance)
+    result = MODULE.enqueue_recovery_work(integration_type='alert_source', instance=instance)
 
     assert result['queued'] == 2
     assert [call['parameters']['dataset_key'] for call in calls] == [
@@ -80,7 +80,7 @@ def test_kubernetes_recovery_queues_inventory_and_tls_sync(monkeypatch) -> None:
     monkeypatch.setattr(MODULE, '_get_job_definition', lambda job_key: Definition(job_key))
 
     result = MODULE.enqueue_recovery_work(
-        provider_type='kubernetes',
+        integration_type='container_orchestrator',
         instance=SimpleNamespace(cluster_id='cluster-1'),
     )
 

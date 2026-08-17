@@ -128,8 +128,6 @@ def test_minio_compatibility_is_product_specific_and_range_aware() -> None:
 
 def test_kubernetes_compact_readiness_import_is_wired() -> None:
     adapter = read('app/integrations/orchestration/container_orchestrator/adapters/kubernetes_api/adapter.py')
-    assert (
-        'from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.messages import compact_readiness_reasons'
-        in adapter
-    )
+    assert 'app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.messages' in adapter
+    assert 'compact_readiness_reasons' in adapter
     assert 'compact_readiness_reasons(discovery.get(' in adapter

@@ -687,9 +687,21 @@ Bindings remain source-owned mutations. Asset-owner workspaces expose observabil
 
 Notification Channels is the platform-wide outbound delivery integration at `/integrations/notification-channels`. It owns encrypted provider credentials, destination validation, provider adapters, retry/deduplication policy, and delivery journaling. Current providers are Telegram, SMTP email, and Microsoft Teams Workflows.
 
+The page uses three canonical workspace tabs so provider setup, channel lifecycle, and runtime delivery evidence do not grow into one long configuration surface:
+
+1. **Overview** — provider catalog, delivery contract, and ownership boundary.
+2. **Channels** — configured channel registry plus add/edit configuration. The registry uses canonical `5/10/25/50` pagination with `5` as the default.
+3. **Delivery Activity** — persisted `NotificationDelivery` evidence including channel/provider identity, event contract, domain/asset scope, severity, delivery status, attempt count, timestamp, provider message evidence, and sanitized failure evidence. The journal also uses canonical `5/10/25/50` pagination.
+
 Consumer capabilities own event meaning and content. Current event contracts are `alert_intelligence.active_alert`, `report.generated`, and the Automation Control lifecycle events `automation.approval_required`, `automation.decision_approved`, `automation.decision_rejected`, `automation.execution_started`, `automation.execution_completed`, `automation.execution_failed`, and `automation.verification_failed`. Alert Intelligence remains responsible for enriched alert context; Reports remains responsible for report completion semantics; Automation Control owns governed decision/execution lifecycle semantics. Report schedules persist configured **channel identities**, not provider names or credentials. Automation Control does not own provider credentials or transport adapters.
 
-A channel must be enabled, successfully tested, allowed for the requested event type, and scoped to the event domain before it is eligible for delivery. Provider choice changes transport only; it must not change the semantic meaning of the emitted event. Automation decision-governance notifications are dispatched asynchronously after the decision transaction commits; transport failure may retry delivery but must never roll back or rewrite the approval outcome.
+Delivery domains and event contracts are source-controlled by `definitions/catalogs/notifications/outbound_delivery.yaml`. Forms and delivery services consume that catalog instead of maintaining duplicate hard-coded domain/event lists. Event metadata also owns whether minimum-severity policy applies, so future severity-scoped events do not require a new matching branch. Adding a future managed domain such as Block Storage therefore extends the catalog and producer contract without changing channel persistence or matching semantics.
+
+Provider-specific form parsing, validation, edit-view projection, configuration partials, and transport delivery belong to the provider adapter contract. The workspace loops over provider definitions and includes each registered provider form partial; the core form service must not branch on Telegram, Email, Teams, or future provider names. New-channel creation has no implicit provider, domain, or allowed-event default: the operator explicitly chooses the transport and delivery policy.
+
+A channel must be enabled, successfully tested, allowed for the requested event type, and scoped to the event domain before it is eligible for delivery. Provider choice changes transport only; it must not change the semantic meaning of the emitted event. Provider-specific transport presentation belongs to the provider adapter registry rather than the page service. The provider-neutral persistence model must not silently default a channel to one concrete provider. Automation decision-governance notifications are dispatched asynchronously after the decision transaction commits; transport failure may retry delivery but must never roll back or rewrite the approval outcome.
+
+Hard deletion is lifecycle-guarded. A channel with persisted `NotificationDelivery` evidence cannot be deleted because cascade deletion would destroy delivery history; disable it instead. A channel referenced by any Report Schedule also cannot be deleted until the schedule removes that channel identity. The delete route must re-check the guard server-side and write Activity Log evidence when deletion is blocked.
 
 ## Observability metrics-source contract
 

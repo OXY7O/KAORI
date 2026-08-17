@@ -61,7 +61,7 @@ def test_metrics_source_adapter_parses_scalar_bucket_vector_and_matrix() -> None
 
 def test_request_reader_stops_after_source_wide_transport_failure() -> None:
     class Source:
-        identity = MetricsSourceIdentity('fake', 'Fake Metrics', 'fake-1', 'Fake Metrics · fake-1')
+        identity = MetricsSourceIdentity('metrics_source', 'fake', 'Fake Metrics', 'fake-1', 'Fake Metrics · fake-1')
 
         def __init__(self) -> None:
             self.calls: list[str] = []
@@ -71,7 +71,7 @@ def test_request_reader_stops_after_source_wide_transport_failure() -> None:
             raise MetricsSourceError(
                 'network unreachable',
                 kind=MetricsSourceFailureKind.TRANSPORT,
-                provider='fake',
+                provider_key='fake',
             )
 
         def vector(self, metric_key: str, label: str) -> dict[str, float]:
@@ -96,7 +96,7 @@ def test_request_reader_stops_after_source_wide_transport_failure() -> None:
 
 def test_query_specific_failure_does_not_trip_source_wide_fail_fast() -> None:
     class Source:
-        identity = MetricsSourceIdentity('fake', 'Fake Metrics', 'fake-1', 'Fake Metrics · fake-1')
+        identity = MetricsSourceIdentity('metrics_source', 'fake', 'Fake Metrics', 'fake-1', 'Fake Metrics · fake-1')
 
         def __init__(self) -> None:
             self.calls = 0
@@ -104,7 +104,7 @@ def test_query_specific_failure_does_not_trip_source_wide_fail_fast() -> None:
         def scalar(self, _metric_key: str) -> float | None:
             self.calls += 1
             if self.calls == 1:
-                raise MetricsSourceError('bad query', kind=MetricsSourceFailureKind.QUERY, provider='fake')
+                raise MetricsSourceError('bad query', kind=MetricsSourceFailureKind.QUERY, provider_key='fake')
             return 42.0
 
         def vector(self, _metric_key: str, _label: str) -> dict[str, float]:

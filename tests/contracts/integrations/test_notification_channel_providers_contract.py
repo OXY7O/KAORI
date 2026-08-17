@@ -15,22 +15,20 @@ def test_notification_channel_registry_supports_telegram_email_and_microsoft_tea
 
 def test_email_provider_supports_smtp_tls_modes_without_global_credentials():
     provider = read('app/notification_channels/providers/email.py')
-    forms = read('app/notification_channels/forms.py')
     assert 'smtplib.SMTP_SSL' in provider
     assert 'client.starttls(' in provider
     assert 'client.send_message(email)' in provider
-    assert "_EMAIL_SECURITY_MODES = {'starttls', 'tls', 'none'}" in forms
-    assert "'smtp_password'" in forms
+    assert "_EMAIL_SECURITY_MODES = {'starttls', 'tls', 'none'}" in provider
+    assert "form.get('smtp_password')" in provider
     assert 'TELEGRAM_BOT_TOKEN' not in provider
 
 
 def test_microsoft_teams_uses_workflows_webhook_and_keeps_url_secret():
     provider = read('app/notification_channels/providers/microsoft_teams.py')
-    forms = read('app/notification_channels/forms.py')
-    page = read('app/templates/integrations/notification_channels/index.html')
+    page = read('app/templates/integrations/notification_channels/providers/microsoft_teams/_form.html')
     assert "body = json.dumps({'text': _render_message(message)}" in provider
     assert "method='POST'" in provider
-    assert "('.environment.api.powerplatform.com', '.logic.azure.com')" in forms
+    assert "('.environment.api.powerplatform.com', '.logic.azure.com')" in provider
     assert 'legacy Office 365 connector webhook URLs' in page
     assert 'name="teams_workflow_url" type="password"' in page
     assert 'form_channel.teams_workflow_url' not in page
@@ -46,12 +44,13 @@ def test_notification_channels_redesign_surfaces_delivery_governance():
         'Delivery Ownership',
     ):
         assert label in page
+    providers = read('app/notification_channels/providers/__init__.py')
     for provider in ('Telegram', 'Email', 'Microsoft Teams'):
-        assert provider in page
-    assert 'platform integration capability' in page.lower()
-    forms = read('app/notification_channels/forms.py')
-    assert "'report.generated'" in forms
-    assert "'automation.approval_required'" in forms
-    assert "'automation.decision_approved'" in forms
-    assert "'automation.decision_rejected'" in forms
-    assert "'automation.execution_failed'" in forms
+        assert provider in providers
+    assert 'platform delivery capability' in page.lower()
+    definition = read('app/definitions/catalogs/notifications/outbound_delivery.yaml')
+    assert 'report.generated:' in definition
+    assert 'automation.approval_required:' in definition
+    assert 'automation.decision_approved:' in definition
+    assert 'automation.decision_rejected:' in definition
+    assert 'automation.execution_failed:' in definition

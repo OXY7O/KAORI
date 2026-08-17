@@ -19,8 +19,8 @@ def test_alert_intelligence_is_asset_scoped_multi_domain_and_keeps_source_author
     assert 'get_active_recommendation_findings' in module
     assert "'label': 'Automatic · Alertmanager Preferred'" in module
     assert (
-        "'detection': 'Metrics Source provides metric-derived alert-state evidence when supported by the selected adapter.'"
-        in module
+        "'detection': 'Metrics Source provides metric-derived alert-state evidence "
+        "when supported by the selected adapter.'" in module
     )
     assert 'Alertmanager owns grouping, inhibition, routing, silences, receivers' in module
     assert 'Alert Source' in workspace
@@ -44,7 +44,7 @@ def test_notification_channel_persistence_is_provider_neutral_and_secrets_are_en
 
 def test_telegram_provider_uses_fixed_bot_api_and_template_never_echoes_token():
     provider = read('app/notification_channels/providers/telegram.py')
-    page = read('app/templates/integrations/notification_channels/index.html')
+    page = read('app/templates/integrations/notification_channels/providers/telegram/_form.html')
 
     assert "_TELEGRAM_API = 'https://api.telegram.org'" in provider
     assert "f'{_TELEGRAM_API}/bot{bot_token}/sendMessage'" in provider

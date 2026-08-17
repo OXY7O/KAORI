@@ -2,6 +2,9 @@
 {% import "components/page_hero.html" as page_hero %}
 {% import "components/table_label.html" as table_label %}
 {% import "components/table_primitives.html" as table_ui %}
+{% import "components/framed_workspace_tabs.html" as framed_workspace_tabs %}
+{% import "components/table_registry.html" as table_registry %}
+{% import "components/loading_bar.html" as loading_bar %}
 {% import "integrations/components/_workspace.html" as integration_ui %}
 {% macro notification_section(title, description, icon='send', badge_text='', badge_tone='info') -%}
 <section class="{{ integration_ui.section_shell_classes() }}">
@@ -16,7 +19,7 @@
 {% block title %}Notification Channels{% endblock title %}
 {% block dashboard_content %}
     {% set can_manage = current_user.has_permission('settings.manage_integrations') %}
-    {% set selected_provider = form_channel.provider_key if form_channel else 'telegram' %}
+    {% set selected_provider = form_channel.provider_key if form_channel else '' %}
     {% set hero_metrics = [
         ('send', 'Eligible', payload.summary.eligible, 'Validated channels'),
         ('radio-tower', 'Operational', payload.summary.operational, 'Successful automatic delivery')
@@ -28,12 +31,12 @@
                     {% call page_hero.intro('send', 'Platform Integrations', 'blocks') %}
                         <h1 class="{{ page_hero.title_classes() }}">Notification Channels</h1>
                         <p class="mt-2 {{ page_hero.description_classes() }}">
-                            Govern reusable outbound delivery across Alert Intelligence, Scheduled Reports, and future KAORI consumers through Telegram, email, and Microsoft Teams.
+                            Govern reusable outbound delivery across Alert Intelligence, Scheduled Reports, Automation Control, and future KAORI consumers through validated provider adapters.
                         </p>
                         <div class="{{ page_hero.metadata_row_classes() }}">
-                            {{ page_hero.meta_label('message-circle', 'Telegram') }}
-                            {{ page_hero.meta_label('mail', 'Email') }}
-                            {{ page_hero.meta_label('messages-square', 'Microsoft Teams') }}
+                            {% for provider in payload.providers %}
+                                {{ page_hero.meta_label(provider.icon, provider.label) }}
+                            {% endfor %}
                         </div>
                     {% endcall %}
                 </div>
@@ -57,6 +60,23 @@
             </div>
         {% endif %}
 
+
+        {% set workspace_tabs = [
+            ('overview', 'Overview', 'layout-dashboard', url_for('notification_channels.index', tab='overview'), payload.providers|length ~ ' Providers'),
+            ('channels', 'Channels', 'send', url_for('notification_channels.index', tab='channels'), payload.summary.total ~ ' Channels'),
+            ('delivery', 'Delivery Activity', 'history', url_for('notification_channels.index', tab='delivery'), payload.delivery_pagination.total_items ~ ' Records')
+        ] %}
+        <section id="notification-channels-workspace" class="{{ integration_ui.section_shell_classes() }}">
+            {{ framed_workspace_tabs.render_navigation(
+                workspace_tabs,
+                active_tab,
+                prefix='notification-channels',
+                aria_label='Notification Channels Workspace',
+                hx_target='#notification-channels-workspace',
+                hx_select='#notification-channels-workspace'
+            ) }}
+            <div class="space-y-6 p-4 sm:p-5 lg:p-6">
+                {% if active_tab == 'overview' %}
         {% call notification_section(
             'Delivery Providers',
             'Choose the transport that fits the operational audience. Provider credentials remain scoped to '
@@ -78,6 +98,138 @@
                 {% endfor %}
             </div>
         {% endcall %}
+
+        {% call notification_section(
+            'Delivery Contract',
+            'Provider choice changes transport only. Consumer capabilities emit governed events and select approved channel instances.',
+            'workflow'
+        ) %}
+            <div class="grid gap-px bg-outline-subtle sm:grid-cols-2 lg:grid-cols-4">
+                {% for label, value, icon in [
+                    ('Events', payload.delivery_contract.events, 'bell-ring'),
+                    ('Retry', payload.delivery_contract.retry, 'refresh-cw'),
+                    ('Deduplication', payload.delivery_contract.deduplication, 'copy-check'),
+                    ('Ownership', payload.delivery_contract.ownership, 'waypoints')
+                ] %}
+                    <div class="bg-surface-card p-4 sm:p-5">
+                        {{ notification_subsection(label, value, icon) }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endcall %}
+
+        {% call notification_section(
+            'Delivery Ownership',
+            'Notification Channels is a platform delivery capability. Consumer capabilities remain responsible for event meaning, policy intent, and content.',
+            'shield-check'
+        ) %}
+            <div class="grid gap-px bg-outline-subtle lg:grid-cols-2">
+                <div class="bg-surface-card p-4 sm:p-5">
+                    {{ notification_subsection('Consumer Capabilities', 'Emit governed events and choose approved destinations', 'workflow') }}
+                    <p class="mt-3 text-sm leading-6 text-content-secondary">
+                        Consumer capabilities emit governed events and select approved destinations. External alert routing, grouping, inhibition, and receiver ownership remain with the selected Alert Source where supported.
+                    </p>
+                </div>
+                <div class="bg-surface-card p-4 sm:p-5">
+                    {{ notification_subsection('Notification Channels', 'Reusable provider delivery infrastructure', 'send') }}
+                    <p class="mt-3 text-sm leading-6 text-content-secondary">
+                        KAORI owns encrypted provider credentials, destination validation, transport adapters, delivery journaling, retries, and per-event deduplication.
+                    </p>
+                </div>
+            </div>
+        {% endcall %}
+                {% elif active_tab == 'channels' %}
+<div id="notification-channel-registry">
+    {{ loading_bar.render('notification-channel-loading', label='Loading notification channels') }}
+        {% call notification_section(
+            'Configured Channels',
+            'Test Delivery validates the provider transport and destination. Allowed Uses controls which KAORI capabilities may select the channel.',
+            'send',
+            payload.posture.label,
+            payload.posture.tone
+        ) %}
+            <div class="overflow-x-auto">
+                <table class="{{ table_ui.table_classes('min-w-[1180px]') }}">
+                    <thead class="{{ table_ui.head_classes() }}">
+                        <tr>
+                            <th class="{{ table_ui.header_cell_classes() }}">Channel</th>
+                            <th class="{{ table_ui.header_cell_classes() }}">Status</th>
+                            <th class="{{ table_ui.header_cell_classes() }}">Destination</th>
+                            <th class="{{ table_ui.header_cell_classes() }}">Policy</th>
+                            <th class="{{ table_ui.header_cell_classes() }}">Domains</th>
+                            <th class="{{ table_ui.header_cell_classes() }}">Uses</th>
+                            <th class="{{ table_ui.header_cell_classes() }}">Last Delivery</th>
+                            <th class="{{ table_ui.header_cell_classes(action=true) }}">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="{{ table_ui.body_classes() }}">
+                        {% for channel in payload.channels %}
+                            <tr class="{{ table_ui.row_classes() }}">
+                                <td class="{{ table_ui.cell_classes() }}">{{ table_ui.title_cell(channel.name, channel.provider_label, channel.provider_icon) }}</td>
+                                <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_label(channel.status, channel.tone, size='compact') }}</td>
+                                <td class="{{ table_ui.cell_classes() }} break-all">{{ channel.destination_label }}</td>
+                                <td class="{{ table_ui.cell_classes() }}">{{ channel.minimum_severity_label }}</td>
+                                <td class="{{ table_ui.cell_classes() }}">{{ channel.domain_labels|join(', ') }}</td>
+                                <td class="{{ table_ui.cell_classes() }}">{{ channel.event_type_labels|join(', ') }}</td>
+                                <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_label(channel.last_delivery_label, channel.last_delivery_tone, size='compact') }}</td>
+                                <td class="{{ table_ui.cell_classes(action=true) }}">
+                                    {% if can_manage %}
+                                        <div class="flex justify-end gap-2">
+                                            <a href="{{ url_for('notification_channels.index', tab='channels', edit=channel.id) }}" class="{{ table_ui.action_classes() }}">Edit</a>
+                                            <form method="post" action="{{ url_for('notification_channels.test', channel_id=channel.id) }}">
+                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                <button class="{{ table_ui.action_classes() }}">Test</button>
+                                            </form>
+                                            {% if channel.delete_blocked %}
+                                                <button type="button"
+                                                        disabled
+                                                        title="{{ channel.delete_reason }}"
+                                                        class="{{ table_ui.action_classes(destructive=true) }} cursor-not-allowed opacity-50">
+                                                    Delete
+                                                </button>
+                                            {% else %}
+                                                <form method="post" action="{{ url_for('notification_channels.delete', channel_id=channel.id) }}">
+                                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                    <button class="{{ table_ui.action_classes(destructive=true) }}">Delete</button>
+                                                </form>
+                                            {% endif %}
+                                        </div>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% else %}
+                            <tr>
+                                <td colspan="8" class="p-0">
+                                    {% set empty_state_icon = 'send' %}
+                                    {% set empty_state_label = 'Setup Required' %}
+                                    {% set empty_state_tone = 'warning' %}
+                                    {% set empty_state_title = 'No Notification Channels Configured' %}
+                                    {% set empty_state_description = 'Add a validated provider destination to establish governed platform delivery.' %}
+                                    {% set empty_state_min_height = 'min-h-[170px]' %}
+                                    {% include 'components/states/_empty_state.html' %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% if payload.channel_pagination.total_items > 0 %}
+                {{ table_registry.footer(
+                    'notification_channels.index',
+                    'notification-channel-registry',
+                    'notification-channel-loading',
+                    payload.channel_pagination,
+                    {'tab': 'channels', 'edit': form_channel.id if form_channel else none},
+                    payload.channel_pagination.allowed_per_page,
+                    resource_label='Channels',
+                    rows_aria_label='Notification channels per page',
+                    control_name='notification-channels',
+                    page_param='channel_page',
+                    per_page_param='channel_per_page'
+                ) }}
+            {% endif %}
+        {% endcall %}
+</div>
 
         {% call notification_section(
             'Channel Configuration',
@@ -120,7 +272,9 @@
                         {% else %}
                             <select name="provider_key"
                                     x-model="provider"
+                                    required
                                     class="{{ table_ui.filter_select_classes() }}">
+                                <option value="">Select provider</option>
                                 {% for provider in payload.providers %}
                                     <option value="{{ provider.key }}">{{ provider.label }}</option>
                                 {% endfor %}
@@ -141,122 +295,17 @@
                     </div>
                 </div>
 
-                <div x-show="provider === 'telegram'" x-cloak class="border-b border-outline-subtle bg-kaori-soft/40 p-4 sm:p-5">
-                    <div class="mb-4 flex items-start gap-3">
-                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary shadow-sm">
-                            <i data-lucide="message-circle" class="h-4 w-4"></i>
-                        </span>
-                        <div>
-                            <p class="text-sm font-semibold text-content-primary">Telegram Bot API</p>
-                            <p class="mt-1 text-xs leading-5 text-content-muted">
-                                Create a bot with BotFather, add it to the intended chat/group/channel, then enter the token and destination. Test Delivery verifies both credential and destination access.
-                            </p>
-                        </div>
+                {% for provider_option in payload.providers %}
+                    <div x-show="provider === '{{ provider_option.key }}'" x-cloak class="border-b border-outline-subtle bg-kaori-soft/40 p-4 sm:p-5">
+                        {% include provider_option.form_partial %}
                     </div>
-                    <div class="grid gap-4 sm:grid-cols-2">
-                        <div>
-                            <label class="{{ table_ui.filter_label_classes() }}">Bot Token</label>
-                            <input name="bot_token"
-                                   type="password"
-                                   autocomplete="new-password"
-                                   class="{{ table_ui.filter_input_classes() }}"
-                                   placeholder="{{ 'Leave blank to keep current token' if form_channel and form_channel.credential_configured else 'BotFather token' }}">
-                        </div>
-                        <div>
-                            <label class="{{ table_ui.filter_label_classes() }}">Chat ID / @Channel</label>
-                            <input name="target_chat_id"
-                                   value="{{ form_channel.target_chat_id if form_channel else '' }}"
-                                   class="{{ table_ui.filter_input_classes() }}"
-                                   placeholder="-1001234567890 or @channel">
-                        </div>
-                    </div>
-                </div>
-
-                <div x-show="provider === 'email'" x-cloak class="border-b border-outline-subtle bg-kaori-soft/40 p-4 sm:p-5">
-                    <div class="mb-4 flex items-start gap-3">
-                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary shadow-sm">
-                            <i data-lucide="mail" class="h-4 w-4"></i>
-                        </span>
-                        <div>
-                            <p class="text-sm font-semibold text-content-primary">SMTP Email</p>
-                            <p class="mt-1 text-xs leading-5 text-content-muted">
-                                Use an internal SMTP relay or authenticated SMTP service. STARTTLS is the recommended default; TLS/SMTPS and trusted-relay mode are also supported.
-                            </p>
-                        </div>
-                    </div>
-                    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                        <div>
-                            <label class="{{ table_ui.filter_label_classes() }}">SMTP Host</label>
-                            <input name="smtp_host" value="{{ form_channel.smtp_host if form_channel else '' }}" class="{{ table_ui.filter_input_classes() }}" placeholder="smtp.example.com">
-                        </div>
-                        <div>
-                            <label class="{{ table_ui.filter_label_classes() }}">SMTP Port</label>
-                            <input name="smtp_port" type="number" min="1" max="65535" value="{{ form_channel.smtp_port if form_channel else 587 }}" class="{{ table_ui.filter_input_classes() }}">
-                        </div>
-                        <div>
-                            <label class="{{ table_ui.filter_label_classes() }}">Transport Security</label>
-                            <select name="smtp_security" class="{{ table_ui.filter_select_classes() }}">
-                                {% for option in payload.smtp_security_options %}
-                                    <option value="{{ option.value }}" {% if (form_channel.smtp_security if form_channel else 'starttls') == option.value %}selected{% endif %}>{{ option.label }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div>
-                            <label class="{{ table_ui.filter_label_classes() }}">SMTP Username</label>
-                            <input name="smtp_username" value="{{ form_channel.smtp_username if form_channel else '' }}" class="{{ table_ui.filter_input_classes() }}" placeholder="Optional for trusted relay">
-                        </div>
-                        <div>
-                            <label class="{{ table_ui.filter_label_classes() }}">SMTP Password</label>
-                            <input name="smtp_password" type="password" autocomplete="new-password" class="{{ table_ui.filter_input_classes() }}" placeholder="{{ 'Leave blank to keep current password' if form_channel and form_channel.credential_configured else 'Required when username is set' }}">
-                        </div>
-                        <div>
-                            <label class="{{ table_ui.filter_label_classes() }}">Sender Name</label>
-                            <input name="sender_name" value="{{ form_channel.sender_name if form_channel else 'KAORI' }}" class="{{ table_ui.filter_input_classes() }}" placeholder="KAORI">
-                        </div>
-                        <div>
-                            <label class="{{ table_ui.filter_label_classes() }}">Sender Email</label>
-                            <input name="sender_email" type="email" value="{{ form_channel.sender_email if form_channel else '' }}" class="{{ table_ui.filter_input_classes() }}" placeholder="kaori@example.com">
-                        </div>
-                        <div class="sm:col-span-2">
-                            <label class="{{ table_ui.filter_label_classes() }}">Recipients</label>
-                            <input name="email_recipients" value="{{ form_channel.email_recipients if form_channel else '' }}" class="{{ table_ui.filter_input_classes() }}" placeholder="noc@example.com, platform@example.com">
-                            <p class="mt-1 text-xs leading-5 text-content-muted">Separate multiple recipients with commas.</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div x-show="provider === 'microsoft_teams'" x-cloak class="border-b border-outline-subtle bg-kaori-soft/40 p-4 sm:p-5">
-                    <div class="mb-4 flex items-start gap-3">
-                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary shadow-sm">
-                            <i data-lucide="messages-square" class="h-4 w-4"></i>
-                        </span>
-                        <div>
-                            <p class="text-sm font-semibold text-content-primary">Microsoft Teams Workflows</p>
-                            <p class="mt-1 text-xs leading-5 text-content-muted">
-                                Create a Teams Workflow using “When a Teams webhook request is received”, copy its webhook URL, and keep at least one co-owner for operational continuity. KAORI does not support legacy Office 365 connector webhook URLs.
-                            </p>
-                            <p class="mt-1 text-xs leading-5 text-content-muted">
-                                Current KAORI delivery uses the Workflow trigger configured for <span class="font-semibold text-content-secondary">Anyone</span> authentication, so no bearer token is sent. Treat the webhook URL as a secret; KAORI encrypts it at rest and never renders it back.
-                            </p>
-                        </div>
-                    </div>
-                    <div class="grid gap-4 sm:grid-cols-2">
-                        <div>
-                            <label class="{{ table_ui.filter_label_classes() }}">Destination Label</label>
-                            <input name="teams_destination" value="{{ form_channel.teams_destination if form_channel else '' }}" class="{{ table_ui.filter_input_classes() }}" placeholder="Platform Ops / Alert Intelligence">
-                        </div>
-                        <div>
-                            <label class="{{ table_ui.filter_label_classes() }}">Workflow Webhook URL</label>
-                            <input name="teams_workflow_url" type="password" autocomplete="new-password" class="{{ table_ui.filter_input_classes() }}" placeholder="{{ 'Leave blank to keep current webhook URL' if form_channel and form_channel.credential_configured else 'https://...environment.api.powerplatform.com/...' }}">
-                        </div>
-                    </div>
-                </div>
+                {% endfor %}
 
                 <div class="grid gap-4 p-4 sm:grid-cols-2 sm:p-5 lg:grid-cols-3">
                     <div class="sm:col-span-2">
                         <span class="{{ table_ui.filter_label_classes() }}">Domains</span>
                         <div class="flex flex-wrap gap-4 rounded-md border border-outline-default bg-surface-card px-3 py-2.5">
-                            {% set selected_domains = form_channel.domains if form_channel else ['kubernetes', 'object_storage'] %}
+                            {% set selected_domains = form_channel.domains if form_channel else [] %}
                             {% for option in payload.domain_options %}
                                 <label class="inline-flex items-center gap-2 text-sm text-content-secondary">
                                     <input type="checkbox" name="domains" value="{{ option.value }}" {% if option.value in selected_domains %}checked{% endif %} class="h-4 w-4 rounded border-outline-default text-kaori-primary">
@@ -267,7 +316,7 @@
                     </div>
                     <div>
                         <span class="{{ table_ui.filter_label_classes() }}">Allowed Uses</span>
-                        {% set selected_events = form_channel.event_types if form_channel else ['alert_intelligence.active_alert'] %}
+                        {% set selected_events = form_channel.event_types if form_channel else [] %}
                         <div class="space-y-2 rounded-md border border-outline-default bg-surface-card px-3 py-2.5">
                             {% for option in payload.event_type_options %}
                                 <label class="flex items-center gap-2 text-sm text-content-secondary">
@@ -291,116 +340,97 @@
                             <span class="text-xs text-content-muted">Requires settings.manage_integrations permission.</span>
                         {% endif %}
                         {% if form_channel %}
-                            <a href="{{ url_for('notification_channels.index') }}" class="{{ table_ui.action_classes() }} min-h-10">Cancel</a>
+                            <a href="{{ url_for('notification_channels.index', tab='channels') }}" class="{{ table_ui.action_classes() }} min-h-10">Cancel</a>
                         {% endif %}
                     </div>
                 </div>
             </form>
         {% endcall %}
-
-        {% call notification_section(
-            'Configured Channels',
-            'Test Delivery validates the provider transport and destination. Allowed Uses controls which KAORI capabilities may select the channel.',
-            'send',
-            payload.posture.label,
-            payload.posture.tone
-        ) %}
-            <div class="overflow-x-auto">
-                <table class="{{ table_ui.table_classes('min-w-[1180px]') }}">
-                    <thead class="{{ table_ui.head_classes() }}">
-                        <tr>
-                            <th class="{{ table_ui.header_cell_classes() }}">Channel</th>
-                            <th class="{{ table_ui.header_cell_classes() }}">Status</th>
-                            <th class="{{ table_ui.header_cell_classes() }}">Destination</th>
-                            <th class="{{ table_ui.header_cell_classes() }}">Policy</th>
-                            <th class="{{ table_ui.header_cell_classes() }}">Domains</th>
-                            <th class="{{ table_ui.header_cell_classes() }}">Uses</th>
-                            <th class="{{ table_ui.header_cell_classes() }}">Last Delivery</th>
-                            <th class="{{ table_ui.header_cell_classes(action=true) }}">Actions</th>
+                {% elif active_tab == 'delivery' %}
+{% call notification_section(
+    'Delivery Activity',
+    'Review the persisted delivery journal used for retry, deduplication, and provider-delivery evidence.',
+    'history',
+    payload.posture.label,
+    payload.posture.tone
+) %}
+    <div id="notification-delivery-registry">
+        {{ loading_bar.render('notification-delivery-loading', label='Loading notification delivery activity') }}
+        <div class="overflow-x-auto">
+            <table class="{{ table_ui.table_classes('min-w-[1120px]') }}">
+                <thead class="{{ table_ui.head_classes() }}">
+                    <tr>
+                        <th class="{{ table_ui.header_cell_classes() }}">Channel</th>
+                        <th class="{{ table_ui.header_cell_classes() }}">Event</th>
+                        <th class="{{ table_ui.header_cell_classes() }}">Scope</th>
+                        <th class="{{ table_ui.header_cell_classes() }}">Severity</th>
+                        <th class="{{ table_ui.header_cell_classes() }}">Status</th>
+                        <th class="{{ table_ui.header_cell_classes() }}">Attempts</th>
+                        <th class="{{ table_ui.header_cell_classes() }}">Recorded</th>
+                        <th class="{{ table_ui.header_cell_classes() }}">Evidence</th>
+                    </tr>
+                </thead>
+                <tbody class="{{ table_ui.body_classes() }}">
+                    {% for delivery in payload.deliveries %}
+                        <tr class="{{ table_ui.row_classes() }}">
+                            <td class="{{ table_ui.cell_classes() }}">{{ table_ui.title_cell(delivery.channel_name, delivery.provider_label, delivery.provider_icon) }}</td>
+                            <td class="{{ table_ui.cell_classes() }}">
+                                <p class="font-semibold text-content-primary">{{ delivery.event_label }}</p>
+                                <p class="mt-0.5 text-xs text-content-muted">{{ delivery.event_type }}</p>
+                            </td>
+                            <td class="{{ table_ui.cell_classes() }}">
+                                <p class="font-medium text-content-secondary">{{ delivery.domain_label }}</p>
+                                <p class="mt-0.5 max-w-[220px] truncate text-xs text-content-muted" title="{{ delivery.asset_key }}">{{ delivery.asset_key }}</p>
+                            </td>
+                            <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_label(delivery.severity_label, 'warning' if delivery.severity == 'warning' else ('critical' if delivery.severity == 'critical' else 'info'), size='compact') }}</td>
+                            <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_label(delivery.status_label, delivery.status_tone, size='compact') }}</td>
+                            <td class="{{ table_ui.cell_classes() }} tabular-nums">{{ delivery.attempt_count }}</td>
+                            <td class="{{ table_ui.cell_classes() }} whitespace-nowrap">{{ delivery.updated_at|user_datetime('-') }}</td>
+                            <td class="{{ table_ui.cell_classes() }}">
+                                {% if delivery.error_message %}
+                                    <span class="text-xs leading-5 text-content-secondary" title="{{ delivery.error_message }}">{{ delivery.error_message|truncate(96, true, '…') }}</span>
+                                {% elif delivery.provider_message_id %}
+                                    <span class="text-xs leading-5 text-content-muted">Provider ID recorded</span>
+                                {% else %}
+                                    <span class="text-xs leading-5 text-content-muted">No additional evidence</span>
+                                {% endif %}
+                            </td>
                         </tr>
-                    </thead>
-                    <tbody class="{{ table_ui.body_classes() }}">
-                        {% for channel in payload.channels %}
-                            <tr class="{{ table_ui.row_classes() }}">
-                                <td class="{{ table_ui.cell_classes() }}">{{ table_ui.title_cell(channel.name, channel.provider_label, channel.provider_icon) }}</td>
-                                <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_label(channel.status, channel.tone, size='compact') }}</td>
-                                <td class="{{ table_ui.cell_classes() }} break-all">{{ channel.destination_label }}</td>
-                                <td class="{{ table_ui.cell_classes() }}">{{ channel.minimum_severity_label }}</td>
-                                <td class="{{ table_ui.cell_classes() }}">{{ channel.domain_labels|join(', ') }}</td>
-                                <td class="{{ table_ui.cell_classes() }}">{{ channel.event_type_labels|join(', ') }}</td>
-                                <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_label(channel.last_delivery_label, channel.last_delivery_tone, size='compact') }}</td>
-                                <td class="{{ table_ui.cell_classes(action=true) }}">
-                                    {% if can_manage %}
-                                        <div class="flex justify-end gap-2">
-                                            <a href="{{ url_for('notification_channels.index', edit=channel.id) }}" class="{{ table_ui.action_classes() }}">Edit</a>
-                                            <form method="post" action="{{ url_for('notification_channels.test', channel_id=channel.id) }}">
-                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                                <button class="{{ table_ui.action_classes() }}">Test</button>
-                                            </form>
-                                            <form method="post" action="{{ url_for('notification_channels.delete', channel_id=channel.id) }}">
-                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                                <button class="{{ table_ui.action_classes(destructive=true) }}">Delete</button>
-                                            </form>
-                                        </div>
-                                    {% endif %}
-                                </td>
-                            </tr>
-                        {% else %}
-                            <tr>
-                                <td colspan="8" class="p-0">
-                                    {% set empty_state_icon = 'send' %}
-                                    {% set empty_state_label = 'Setup Required' %}
-                                    {% set empty_state_tone = 'warning' %}
-                                    {% set empty_state_title = 'No Notification Channels Configured' %}
-                                    {% set empty_state_description = 'Add Telegram, Email, or Microsoft Teams to establish governed platform delivery.' %}
-                                    {% set empty_state_min_height = 'min-h-[170px]' %}
-                                    {% include 'components/states/_empty_state.html' %}
-                                </td>
-                            </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+                    {% else %}
+                        <tr>
+                            <td colspan="8" class="p-0">
+                                {% set empty_state_icon = 'history' %}
+                                {% set empty_state_label = 'No Delivery Evidence' %}
+                                {% set empty_state_tone = 'info' %}
+                                {% set empty_state_title = 'No Notification Deliveries Recorded' %}
+                                {% set empty_state_description = 'Delivery evidence appears after an eligible governed event is sent through a validated channel.' %}
+                                {% set empty_state_min_height = 'min-h-[170px]' %}
+                                {% include 'components/states/_empty_state.html' %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% if payload.delivery_pagination.total_items > 0 %}
+            {{ table_registry.footer(
+                'notification_channels.index',
+                'notification-delivery-registry',
+                'notification-delivery-loading',
+                payload.delivery_pagination,
+                {'tab': 'delivery'},
+                payload.delivery_pagination.allowed_per_page,
+                resource_label='Deliveries',
+                rows_aria_label='Notification deliveries per page',
+                control_name='notification-deliveries',
+                page_param='delivery_page',
+                per_page_param='delivery_per_page'
+            ) }}
+        {% endif %}
+    </div>
+{% endcall %}
+                {% endif %}
             </div>
-        {% endcall %}
-
-        {% call notification_section(
-            'Delivery Contract',
-            'Provider choice changes transport only. Consumer capabilities emit governed events and select approved channel instances.',
-            'workflow'
-        ) %}
-            <div class="grid gap-px bg-outline-subtle sm:grid-cols-2 lg:grid-cols-4">
-                {% for label, value, icon in [
-                    ('Events', payload.delivery_contract.events, 'bell-ring'),
-                    ('Retry', payload.delivery_contract.retry, 'refresh-cw'),
-                    ('Deduplication', payload.delivery_contract.deduplication, 'copy-check'),
-                    ('Ownership', payload.delivery_contract.ownership, 'waypoints')
-                ] %}
-                    <div class="bg-surface-card p-4 sm:p-5">
-                        {{ notification_subsection(label, value, icon) }}
-                    </div>
-                {% endfor %}
-            </div>
-        {% endcall %}
-
-        {% call notification_section(
-            'Delivery Ownership',
-            'Notification Channels is a platform integration capability. Alert Intelligence and Reports remain responsible for event meaning and content.',
-            'shield-check'
-        ) %}
-            <div class="grid gap-px bg-outline-subtle lg:grid-cols-2">
-                <div class="bg-surface-card p-4 sm:p-5">
-                    {{ notification_subsection('Consumer Capabilities', 'Emit governed events and choose approved destinations', 'workflow') }}
-                    <p class="mt-3 text-sm leading-6 text-content-secondary">
-                        Alert Intelligence emits enriched alert events; Scheduled Reports emits report completion events. Alertmanager still owns raw alert routing and receivers.
-                    </p>
-                </div>
-                <div class="bg-surface-card p-4 sm:p-5">
-                    {{ notification_subsection('Notification Channels', 'Reusable provider delivery infrastructure', 'send') }}
-                    <p class="mt-3 text-sm leading-6 text-content-secondary">
-                        KAORI owns encrypted provider credentials, destination validation, transport adapters, delivery journaling, retries, and per-event deduplication.
-                    </p>
-                </div>
-            </div>
-        {% endcall %}
+        </section>
     </div>
 {% endblock dashboard_content %}

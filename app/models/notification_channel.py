@@ -37,18 +37,14 @@ class NotificationChannel(db.Model):
     id: Mapped[int] = mapped_column(primary_key=True)
     public_id: Mapped[str] = mapped_column(db.String(64), nullable=False, unique=True, default=lambda: str(uuid4()))
     name: Mapped[str] = mapped_column(db.String(160), nullable=False)
-    provider_key: Mapped[str] = mapped_column(db.String(40), nullable=False, default='telegram')
+    provider_key: Mapped[str] = mapped_column(db.String(40), nullable=False)
     enabled: Mapped[bool] = mapped_column(db.Boolean, nullable=False, default=True)
     credential_payload: Mapped[str | None] = mapped_column(EncryptedText(), nullable=True)
     destination: Mapped[str | None] = mapped_column(db.String(255), nullable=True)
     provider_config: Mapped[dict[str, Any]] = mapped_column(db.JSON, nullable=False, default=dict)
     minimum_severity: Mapped[str] = mapped_column(db.String(20), nullable=False, default='warning')
-    domains: Mapped[list[str]] = mapped_column(
-        db.JSON, nullable=False, default=lambda: ['kubernetes', 'object_storage']
-    )
-    event_types: Mapped[list[str]] = mapped_column(
-        db.JSON, nullable=False, default=lambda: ['alert_intelligence.active_alert']
-    )
+    domains: Mapped[list[str]] = mapped_column(db.JSON, nullable=False, default=list)
+    event_types: Mapped[list[str]] = mapped_column(db.JSON, nullable=False, default=list)
     test_status: Mapped[str] = mapped_column(db.String(20), nullable=False, default='not_tested')
     test_message: Mapped[str | None] = mapped_column(db.String(500), nullable=True)
     last_tested_at: Mapped[datetime | None] = mapped_column(db.DateTime(timezone=True), nullable=True)

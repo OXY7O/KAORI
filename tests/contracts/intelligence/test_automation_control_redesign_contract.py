@@ -53,8 +53,8 @@ def test_production_readiness_separates_enablement_gates():
 
 
 def test_notification_channels_can_be_reserved_for_automation_lifecycle_events():
-    forms = read('app/notification_channels/forms.py')
-    service = read('app/notification_channels/service.py')
+    definition = read('app/definitions/catalogs/notifications/outbound_delivery.yaml')
+    catalog = read('app/notification_channels/catalog.py')
     for event_type in (
         'automation.approval_required',
         'automation.decision_approved',
@@ -64,8 +64,8 @@ def test_notification_channels_can_be_reserved_for_automation_lifecycle_events()
         'automation.execution_failed',
         'automation.verification_failed',
     ):
-        assert event_type in forms
-        assert event_type in service
+        assert f'{event_type}:' in definition
+    assert 'event_type_keys()' in catalog
 
 
 def test_governance_configuration_is_enabled_while_infrastructure_execution_remains_gated():

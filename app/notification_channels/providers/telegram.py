@@ -1,11 +1,18 @@
 from __future__ import annotations
 
 import json
+from typing import Any
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
-from app.notification_channels.contracts import DeliveryResult, NotificationMessage
+from app.models.notification_channel import NotificationChannel
+from app.notification_channels.contracts import (
+    DeliveryResult,
+    NotificationChannelFormInput,
+    NotificationMessage,
+)
+from app.notification_channels.providers.form_support import credential_map
 
 _TELEGRAM_API = 'https://api.telegram.org'
 _TELEGRAM_TEXT_LIMIT = 4096
@@ -78,3 +85,23 @@ def _truncate(value: str, limit: int) -> str:
     if limit <= 1:
         return value[:limit]
     return f'{value[: limit - 1].rstrip()}…'
+
+
+def parse_form(form: Any, existing: NotificationChannel | None) -> tuple[str, dict[str, str], dict[str, Any], bool]:
+    existing_credentials = credential_map(existing)
+    token = str(form.get('bot_token') or '').strip()
+    destination = str(form.get('target_chat_id') or '').strip()
+    return destination, {'bot_token': token or existing_credentials.get('bot_token', '')}, {}, bool(token)
+
+
+def validate_form(data: NotificationChannelFormInput) -> list[str]:
+    errors: list[str] = []
+    if not data.credentials.get('bot_token'):
+        errors.append('Telegram bot token is required.')
+    if not data.destination:
+        errors.append('Telegram chat ID or @channel username is required.')
+    return errors
+
+
+def form_view(channel: NotificationChannel) -> dict[str, Any]:
+    return {'target_chat_id': channel.destination}

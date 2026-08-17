@@ -6,8 +6,16 @@ from typing import Any
 
 from sqlalchemy.exc import IntegrityError
 
+from app.common.pagination import paginate_query
 from app.extensions.db import db
 from app.models.notification_channel import NotificationChannel, NotificationDelivery
+from app.notification_channels.catalog import (
+    domain_label,
+    domain_options,
+    event_severity_scoped,
+    event_type_label,
+    event_type_options,
+)
 from app.notification_channels.config import (
     notification_delivery_max_attempts,
     notification_delivery_timeout_seconds,
@@ -18,6 +26,7 @@ from app.notification_channels.contracts import (
     NotificationEvent,
     NotificationMessage,
 )
+from app.notification_channels.lifecycle import NotificationChannelUsage, channel_usage_map
 from app.notification_channels.providers import (
     get_notification_provider,
     provider_catalog,
@@ -26,18 +35,6 @@ from app.notification_channels.providers import (
 
 _PROVIDER_LABELS = provider_labels()
 _SEVERITY_RANK = {'info': 1, 'warning': 2, 'critical': 3}
-_DOMAIN_LABELS = {'kubernetes': 'Kubernetes', 'object_storage': 'Object Storage'}
-_EVENT_LABELS = {
-    'alert_intelligence.active_alert': 'Alert Intelligence · Active Alert',
-    'report.generated': 'Scheduled Reports · Report Ready',
-    'automation.approval_required': 'Automation Control · Approval Required',
-    'automation.decision_approved': 'Automation Control · Decision Approved',
-    'automation.decision_rejected': 'Automation Control · Decision Rejected',
-    'automation.execution_started': 'Automation Control · Execution Started',
-    'automation.execution_completed': 'Automation Control · Execution Completed',
-    'automation.execution_failed': 'Automation Control · Execution Failed',
-    'automation.verification_failed': 'Automation Control · Verification Failed',
-}
 
 
 def list_channels() -> list[dict[str, Any]]:
@@ -96,11 +93,6 @@ def update_channel(
     return channel
 
 
-def delete_channel(channel: NotificationChannel) -> None:
-    db.session.delete(channel)
-    db.session.commit()
-
-
 def test_channel(channel: NotificationChannel, *, base_url: str = '') -> DeliveryResult:
     if not channel.configured:
         result = DeliveryResult(False, f'{_provider_label(channel.provider_key)} configuration is incomplete.')
@@ -111,7 +103,8 @@ def test_channel(channel: NotificationChannel, *, base_url: str = '') -> Deliver
                 title=f'Notification Channel Test · {channel.name}',
                 body=(
                     f'KAORI successfully reached this {_provider_label(channel.provider_key)} destination. '
-                    'KAORI can use this channel for the allowed delivery events when it is enabled and its policy matches.'
+                    'KAORI can use this channel for the allowed delivery events when it is enabled '
+                    'and its policy matches.'
                 ),
                 severity='info',
                 action_url=f'{base_url.rstrip("/")}/integrations/notification-channels' if base_url else None,
@@ -156,36 +149,27 @@ def notification_channel_summary() -> dict[str, Any]:
     }
 
 
-def get_notification_channels_payload() -> dict[str, Any]:
-    channels = list_channels()
+def get_notification_channels_payload(
+    *,
+    channel_page: int = 1,
+    channel_per_page: int = 5,
+    delivery_page: int = 1,
+    delivery_per_page: int = 5,
+) -> dict[str, Any]:
+    channel_rows, channel_pagination = _channel_registry_page(page=channel_page, per_page=channel_per_page)
+    delivery_rows, delivery_pagination = _delivery_registry_page(page=delivery_page, per_page=delivery_per_page)
     summary = notification_channel_summary()
-    provider_status = {
-        'telegram': ('Bot API', 'Bot token + chat or channel destination.'),
-        'email': ('SMTP', 'SMTP server + sender + one or more recipients.'),
-        'microsoft_teams': (
-            'Teams Workflows',
-            'Power Automate webhook URL + human-readable Teams destination label.',
-        ),
-    }
-    providers = []
-    for item in provider_catalog():
-        transport, configuration = provider_status[item['key']]
-        providers.append(
-            {
-                **item,
-                'status': 'Available',
-                'tone': 'normal',
-                'transport': transport,
-                'configuration': configuration,
-            }
-        )
+    providers = [{**item, 'status': 'Available', 'tone': 'normal'} for item in provider_catalog()]
     return {
         'summary': summary,
         'posture': {'label': summary['label'], 'tone': summary['tone']},
-        'channels': channels,
+        'channels': channel_rows,
+        'channel_pagination': channel_pagination,
+        'deliveries': delivery_rows,
+        'delivery_pagination': delivery_pagination,
         'providers': providers,
-        'domain_options': [{'value': key, 'label': label} for key, label in _DOMAIN_LABELS.items()],
-        'event_type_options': [{'value': key, 'label': label} for key, label in _EVENT_LABELS.items()],
+        'domain_options': domain_options(),
+        'event_type_options': event_type_options(),
         'severity_options': [
             {'value': 'critical', 'label': 'Critical only'},
             {'value': 'warning', 'label': 'Warning and Critical'},
@@ -197,12 +181,25 @@ def get_notification_channels_payload() -> dict[str, Any]:
             {'value': 'none', 'label': 'None / trusted relay'},
         ],
         'delivery_contract': {
-            'events': 'Alert Intelligence + Scheduled Reports + Automation Control',
+            'events': f'{len(event_type_options())} governed event types',
             'retry': f'Up to {notification_delivery_max_attempts()} attempts',
             'deduplication': 'Per channel and emitted event identity',
             'ownership': 'Consumers emit governed events; Notification Channels owns provider delivery.',
         },
     }
+
+
+def _channel_registry_page(*, page: int, per_page: int) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    query = NotificationChannel.query.order_by(NotificationChannel.name.asc(), NotificationChannel.id.asc())
+    rows, pagination = paginate_query(query, page=page, per_page=per_page)
+    usage_map = channel_usage_map([channel.id for channel in rows])
+    return [_channel_view(channel, usage=usage_map.get(channel.id)) for channel in rows], pagination
+
+
+def _delivery_registry_page(*, page: int, per_page: int) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    query = NotificationDelivery.query.order_by(NotificationDelivery.created_at.desc(), NotificationDelivery.id.desc())
+    rows, pagination = paginate_query(query, page=page, per_page=per_page)
+    return [_delivery_view(row) for row in rows], pagination
 
 
 def _reset_channel_validation(channel: NotificationChannel) -> None:
@@ -315,24 +312,40 @@ def dispatch_matching_notification_event(*, event: NotificationEvent) -> dict[st
     channel_ids = [
         channel.id
         for channel in NotificationChannel.query.filter_by(enabled=True).order_by(NotificationChannel.id.asc()).all()
-        if _channel_matches_event(channel, domain=event.domain, event_type=event.event_type)
+        if _channel_matches_event(
+            channel,
+            domain=event.domain,
+            event_type=event.event_type,
+            severity=event.severity,
+        )
     ]
     return dispatch_notification_event(channel_ids=channel_ids, event=event)
 
 
-def list_event_channel_options(*, event_type: str, domain: str | None = None) -> list[dict[str, Any]]:
+def list_event_channel_options(
+    *,
+    event_type: str,
+    domain: str | None = None,
+    severity: str | None = None,
+) -> list[dict[str, Any]]:
     """Return configured channel instances for one consumer event contract."""
     channels = NotificationChannel.query.order_by(NotificationChannel.name.asc(), NotificationChannel.id.asc()).all()
     options: list[dict[str, Any]] = []
     for channel in channels:
         supports_event = event_type in (channel.event_types or [])
         supports_domain = domain is None or domain in (channel.domains or [])
+        supports_severity = (
+            severity is None
+            or not event_severity_scoped(event_type)
+            or _SEVERITY_RANK.get(_normalize_severity(severity), 0) >= _SEVERITY_RANK.get(channel.minimum_severity, 2)
+        )
         selectable = bool(
             channel.enabled
             and channel.configured
             and channel.test_status == 'success'
             and supports_event
             and supports_domain
+            and supports_severity
         )
         options.append(
             {
@@ -351,6 +364,7 @@ def list_event_channel_options(*, event_type: str, domain: str | None = None) ->
                 'selectable': selectable,
                 'supports_event': supports_event,
                 'supports_domain': supports_domain,
+                'supports_severity': supports_severity,
             }
         )
     return options
@@ -382,7 +396,12 @@ def dispatch_notification_event(*, channel_ids: list[int], event: NotificationEv
                 }
             )
             continue
-        if not _channel_matches_event(channel, domain=event.domain, event_type=event.event_type):
+        if not _channel_matches_event(
+            channel,
+            domain=event.domain,
+            event_type=event.event_type,
+            severity=event.severity,
+        ):
             stats['skipped'] += 1
             stats['results'].append(
                 {
@@ -474,14 +493,24 @@ def dispatch_notification_event(*, channel_ids: list[int], event: NotificationEv
     return stats
 
 
-def _channel_matches_event(channel: NotificationChannel, *, domain: str, event_type: str) -> bool:
-    return bool(
+def _channel_matches_event(
+    channel: NotificationChannel,
+    *,
+    domain: str,
+    event_type: str,
+    severity: str | None = None,
+) -> bool:
+    if not (
         channel.enabled
         and channel.configured
         and channel.test_status == 'success'
         and domain in (channel.domains or [])
         and event_type in (channel.event_types or [])
-    )
+    ):
+        return False
+    if severity is None or not event_severity_scoped(event_type):
+        return True
+    return _SEVERITY_RANK.get(_normalize_severity(severity), 0) >= _SEVERITY_RANK.get(channel.minimum_severity, 2)
 
 
 def recent_delivery_summary(
@@ -505,11 +534,8 @@ def recent_delivery_summary(
             'channel_name': row.channel.name,
             'provider': _PROVIDER_LABELS.get(row.channel.provider_key, row.channel.provider_key.title()),
             'event_type': row.event_type,
-            'event_label': _EVENT_LABELS.get(
-                row.event_type,
-                row.event_type.replace('_', ' ').replace('.', ' ').title(),
-            ),
-            'domain': _DOMAIN_LABELS.get(row.domain, row.domain.replace('_', ' ').title()),
+            'event_label': event_type_label(row.event_type),
+            'domain': domain_label(row.domain),
             'asset_key': row.asset_key,
             'severity': row.severity,
             'status': row.status,
@@ -521,7 +547,46 @@ def recent_delivery_summary(
     ]
 
 
-def _channel_view(channel: NotificationChannel) -> dict[str, Any]:
+def _delivery_view(delivery: NotificationDelivery) -> dict[str, Any]:
+    status_label, status_tone = {
+        'sent': ('Delivered', 'normal'),
+        'failed': ('Failed', 'warning'),
+        'queued': ('Queued', 'info'),
+        'skipped': ('Skipped', 'unknown'),
+    }.get(delivery.status, (delivery.status.replace('_', ' ').title(), 'unknown'))
+    channel = delivery.channel
+    adapter = get_notification_provider(channel.provider_key)
+    return {
+        'id': delivery.id,
+        'channel_name': channel.name,
+        'provider_label': _provider_label(channel.provider_key),
+        'provider_icon': adapter.icon if adapter is not None else 'send',
+        'event_type': delivery.event_type,
+        'event_label': event_type_label(delivery.event_type),
+        'domain': delivery.domain,
+        'domain_label': domain_label(delivery.domain),
+        'asset_type': delivery.asset_type,
+        'asset_key': delivery.asset_key,
+        'severity': delivery.severity,
+        'severity_label': delivery.severity.replace('_', ' ').title(),
+        'status': delivery.status,
+        'status_label': status_label,
+        'status_tone': status_tone,
+        'attempt_count': delivery.attempt_count,
+        'error_message': delivery.error_message or '',
+        'provider_message_id': delivery.provider_message_id or '',
+        'created_at': delivery.created_at,
+        'sent_at': delivery.sent_at,
+        'updated_at': delivery.updated_at,
+    }
+
+
+def _channel_view(
+    channel: NotificationChannel,
+    *,
+    usage: NotificationChannelUsage | None = None,
+) -> dict[str, Any]:
+    usage = usage or NotificationChannelUsage(0, 0, ())
     status = channel.display_status
     if status == 'Operational':
         tone = 'normal'
@@ -555,14 +620,9 @@ def _channel_view(channel: NotificationChannel) -> dict[str, Any]:
         'minimum_severity': channel.minimum_severity,
         'minimum_severity_label': _minimum_severity_label(channel.minimum_severity),
         'domains': list(channel.domains or []),
-        'domain_labels': [
-            _DOMAIN_LABELS.get(value, value.replace('_', ' ').title()) for value in (channel.domains or [])
-        ],
+        'domain_labels': [domain_label(value) for value in (channel.domains or [])],
         'event_types': list(channel.event_types or []),
-        'event_type_labels': [
-            _EVENT_LABELS.get(value, value.replace('_', ' ').replace('.', ' ').title())
-            for value in (channel.event_types or [])
-        ],
+        'event_type_labels': [event_type_label(value) for value in (channel.event_types or [])],
         'status': status,
         'tone': tone,
         'test_message': channel.test_message or '',
@@ -574,6 +634,10 @@ def _channel_view(channel: NotificationChannel) -> dict[str, Any]:
         'last_delivery_attempt_at': channel.last_delivery_attempt_at,
         'last_delivery_at': channel.last_delivery_at,
         'credential_configured': bool(channel.credential_payload),
+        'delete_blocked': usage.blocked,
+        'delete_reason': usage.message,
+        'delivery_record_count': usage.delivery_records,
+        'report_schedule_count': usage.report_schedules,
     }
 
 
@@ -597,13 +661,12 @@ def _channel_matches(
     severity: str,
     event_type: str,
 ) -> bool:
-    if not channel.configured or channel.test_status != 'success':
-        return False
-    if domain not in (channel.domains or []):
-        return False
-    if event_type not in (channel.event_types or []):
-        return False
-    return _SEVERITY_RANK.get(severity, 0) >= _SEVERITY_RANK.get(channel.minimum_severity, 2)
+    return _channel_matches_event(
+        channel,
+        domain=domain,
+        event_type=event_type,
+        severity=severity,
+    )
 
 
 def _event_key(*, domain: str, asset_key: str, alert: dict[str, Any]) -> str:
@@ -642,7 +705,7 @@ def _alert_message(
     source = str(alert.get('source') or '-').strip() or '-'
     summary = str(alert.get('summary') or alert.get('description') or '-').strip()
     lines = [
-        f'Domain: {_DOMAIN_LABELS.get(domain, domain.replace("_", " ").title())}',
+        f'Domain: {domain_label(domain)}',
         f'Asset: {asset_name}',
         f'State: {state}',
         f'Target: {target}',

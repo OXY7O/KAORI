@@ -16,10 +16,10 @@ def test_capability_attention_copy_handles_zero_one_and_many() -> None:
 
 
 def test_runtime_scope_label_describes_active_filters() -> None:
-    assert _runtime_scope_label(provider='', health='', readiness='') == 'All Registered Targets'
+    assert _runtime_scope_label(integration_type='', health='', readiness='') == 'All Registered Targets'
     assert (
         _runtime_scope_label(
-            provider='metrics_source',
+            integration_type='metrics_source',
             health='not_observed',
             readiness='validation_required',
         )
@@ -43,13 +43,18 @@ def test_runtime_stats_are_calculated_from_the_supplied_scope() -> None:
 
 
 def test_portfolio_stats_separate_validation_and_missing_configuration() -> None:
-    kubernetes = [SimpleNamespace(readiness_status='ready')]
+    kubernetes = [
+        SimpleNamespace(
+            readiness_status='ready',
+            integration_instance=SimpleNamespace(enabled=True),
+        )
+    ]
     metrics_sources = [
-        SimpleNamespace(endpoint='https://prometheus.example', readiness_status='degraded'),
-        SimpleNamespace(endpoint='', readiness_status='validation_required'),
+        SimpleNamespace(endpoint='https://prometheus.example', enabled=True, readiness_status='degraded'),
+        SimpleNamespace(endpoint='', enabled=True, readiness_status='validation_required'),
     ]
     alertmanager = [
-        SimpleNamespace(endpoint='https://alertmanager.example', readiness_status='blocked'),
+        SimpleNamespace(endpoint='https://alertmanager.example', enabled=True, readiness_status='blocked'),
     ]
 
     result = build_overview_stats(

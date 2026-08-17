@@ -145,7 +145,8 @@ class KubernetesRuntimeAdapter:
                 ),
                 severity='warning' if lifecycle == 'legacy' else 'info',
                 recommendation=(
-                    f'Plan an upgrade into the KAORI current lifecycle band {lifecycle_policy["current_version_band"]}, then rerun Full Validation.'
+                    'Plan an upgrade into the KAORI current lifecycle band '
+                    f'{lifecycle_policy["current_version_band"]}, then rerun Full Validation.'
                     if lifecycle == 'legacy'
                     else None
                 ),
