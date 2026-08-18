@@ -57,7 +57,9 @@
                 if (namespaceInput) namespaceInput.disabled = usesObjectStorage
                 if (objectStorageSelect) objectStorageSelect.disabled = !usesObjectStorage
                 form.querySelectorAll('[data-schedule-channel-domains]').forEach((input) => {
-                    const domains = String(input.dataset.scheduleChannelDomains || '').split(',').filter(Boolean)
+                    const domains = String(input.dataset.scheduleChannelDomains || '')
+                        .split(',')
+                        .filter(Boolean)
                     const baseSelectable = input.dataset.scheduleChannelSelectable === 'true'
                     const eligible = baseSelectable && domains.includes(reportDomain)
                     input.disabled = !eligible

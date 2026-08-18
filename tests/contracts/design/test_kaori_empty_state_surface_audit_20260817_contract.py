@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -5,6 +6,11 @@ ROOT = Path(__file__).resolve().parents[3]
 
 def read(relative: str) -> str:
     return (ROOT / relative).read_text(encoding='utf-8')
+
+
+def has_jinja_assignment(source: str, variable: str, value: str) -> bool:
+    pattern = r'{%\s*set\s+' + re.escape(variable) + r"\s*=\s*([\"'])" + re.escape(value) + r'\1\s*%}'
+    return re.search(pattern, source) is not None
 
 
 def test_reviewed_product_surfaces_use_the_canonical_state_components() -> None:
@@ -55,7 +61,7 @@ def test_reviewed_registry_empty_rows_do_not_keep_page_local_visual_shells() -> 
         assert 'components/states/_empty_state.html' in source, relative
 
     intelligence = read('app/templates/intelligence/partials/_recommendation_records.html')
-    assert "empty_state_label = 'No Results'" in intelligence
+    assert has_jinja_assignment(intelligence, 'empty_state_label', 'No Results')
     assert 'rounded-xl border border-dashed border-outline-strong bg-surface-hover px-4 py-10' not in intelligence
 
 

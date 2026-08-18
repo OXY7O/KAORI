@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -5,6 +6,11 @@ ROOT = Path(__file__).resolve().parents[3]
 
 def read(relative: str) -> str:
     return (ROOT / relative).read_text(encoding='utf-8')
+
+
+def has_jinja_assignment(source: str, variable: str, value: str) -> bool:
+    pattern = r'{%\s*set\s+' + re.escape(variable) + r"\s*=\s*([\"'])" + re.escape(value) + r'\1\s*%}'
+    return re.search(pattern, source) is not None
 
 
 def test_domain_workspace_is_htmx_partial_and_demand_loads_selected_registry() -> None:
@@ -70,7 +76,7 @@ def test_domain_registries_follow_kaori_filter_and_clear_filter_standard() -> No
     assert "per_page_param='provider_per_page'" in workspace
     assert "page_param='binding_page'" in workspace
     assert "per_page_param='binding_per_page'" in workspace
-    assert "empty_state_label = 'No Results'" in workspace
+    assert has_jinja_assignment(workspace, 'empty_state_label', 'No Results')
     assert 'No {{ domain.label }} Consumer Bindings Yet' in workspace
     assert 'Use Add Consumer Binding' not in workspace
 

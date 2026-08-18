@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 
 
@@ -30,7 +31,7 @@ def test_microsoft_teams_uses_workflows_webhook_and_keeps_url_secret():
     assert "method='POST'" in provider
     assert "('.environment.api.powerplatform.com', '.logic.azure.com')" in provider
     assert 'legacy Office 365 connector webhook URLs' in page
-    assert 'name="teams_workflow_url" type="password"' in page
+    assert re.search(r'<input\b(?=[^>]*\bname="teams_workflow_url")(?=[^>]*\btype="password")[^>]*>', page)
     assert 'form_channel.teams_workflow_url' not in page
 
 

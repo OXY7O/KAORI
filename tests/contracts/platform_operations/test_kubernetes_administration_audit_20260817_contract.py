@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -5,6 +6,11 @@ ROOT = Path(__file__).resolve().parents[3]
 
 def read(relative: str) -> str:
     return (ROOT / relative).read_text(encoding='utf-8')
+
+
+def has_jinja_assignment(source: str, variable: str, value: str) -> bool:
+    pattern = r'{%\s*set\s+' + re.escape(variable) + r"\s*=\s*([\"'])" + re.escape(value) + r'\1\s*%}'
+    return re.search(pattern, source) is not None
 
 
 def test_kubernetes_administration_posture_is_factual_not_hardcoded_available() -> None:
@@ -54,11 +60,11 @@ def test_kubernetes_administration_no_cluster_and_namespace_states_are_canonical
     cluster = read('app/templates/platform_operations/kubernetes/secret_reveal/_cluster_workspace.html')
     namespace = read('app/templates/platform_operations/kubernetes/secret_reveal/_namespace_policy_table_content.html')
 
-    assert "empty_state_title = 'No Kubernetes Cluster Registered'" in cluster
-    assert "empty_state_permission = 'clusters.manage'" in cluster
+    assert has_jinja_assignment(cluster, 'empty_state_title', 'No Kubernetes Cluster Registered')
+    assert has_jinja_assignment(cluster, 'empty_state_permission', 'clusters.manage')
     assert 'empty_state_show_admin_required = true' in cluster
     assert 'p-8 text-center' not in cluster
 
-    assert "empty_state_title = 'No Namespace Matches the Current Filters'" in namespace
-    assert "blocked_state_title = 'Live Namespace Source Unavailable'" in namespace
-    assert "empty_state_title = 'No Live Namespace Available'" in namespace
+    assert has_jinja_assignment(namespace, 'empty_state_title', 'No Namespace Matches the Current Filters')
+    assert has_jinja_assignment(namespace, 'blocked_state_title', 'Live Namespace Source Unavailable')
+    assert has_jinja_assignment(namespace, 'empty_state_title', 'No Live Namespace Available')

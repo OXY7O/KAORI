@@ -19,8 +19,8 @@ def test_metrics_source_is_provider_neutral_first_class_integration() -> None:
     assert 'creator=_metrics_source_identity' not in model
     service = read('app/integrations/observability/metrics_source/application/service.py')
     assert "integration_type='metrics_source'" in service
-    assert 'provider_key=provider.key' in service
-    assert 'adapter_key=provider.adapter_key' in service
+    assert service.count('.provider_key = provider.key') >= 3
+    assert service.count('.adapter_key = provider.adapter_key') >= 3
     assert 'provider_key: AssociationProxy[str]' in model
     assert 'adapter_key: AssociationProxy[str]' in model
     assert 'query_language: Mapped[str]' in model

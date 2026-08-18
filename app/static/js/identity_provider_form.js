@@ -60,11 +60,18 @@
         })
         if (browserCallback) browserCallback.hidden = flow !== 'browser'
         if (typeMeta) typeMeta.textContent = option?.dataset.providerLabel || 'Select Provider'
-        if (enabledCopy) enabledCopy.textContent = option?.dataset.enabledCopy || 'Select a provider before enabling authentication.'
+        if (enabledCopy)
+            enabledCopy.textContent = option?.dataset.enabledCopy || 'Select a provider before enabling authentication.'
         if (admissionLabel) admissionLabel.textContent = option?.dataset.admissionLabel || 'Admission Policy Values'
-        if (admissionHelp) admissionHelp.textContent = option?.dataset.admissionHelp || 'Values are evaluated by the selected admission policy.'
-        if (clientSecretInput) clientSecretInput.placeholder = option?.dataset.clientSecretPlaceholder || 'KAORI_IDP_CLIENT_SECRET'
-        if (browserTitle) browserTitle.textContent = option ? `${option.dataset.providerLabel} Application` : 'Browser SSO Application'
+        if (admissionHelp)
+            admissionHelp.textContent =
+                option?.dataset.admissionHelp || 'Values are evaluated by the selected admission policy.'
+        if (clientSecretInput)
+            clientSecretInput.placeholder = option?.dataset.clientSecretPlaceholder || 'KAORI_IDP_CLIENT_SECRET'
+        if (browserTitle)
+            browserTitle.textContent = option
+                ? `${option.dataset.providerLabel} Application`
+                : 'Browser SSO Application'
         if (providerIcon) providerIcon.dataset.lucide = option?.dataset.providerIcon || 'log-in'
         syncJit(option)
         if (window.lucide) window.lucide.createIcons()

@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 
 OVERVIEW_ROOT = Path('app/templates/kubernetes/analytics/overview')
@@ -5,6 +6,11 @@ OVERVIEW_ROOT = Path('app/templates/kubernetes/analytics/overview')
 
 def read(relative: str) -> str:
     return (OVERVIEW_ROOT / relative).read_text(encoding='utf-8')
+
+
+def has_jinja_assignment(source: str, variable: str, value: str) -> bool:
+    pattern = r'{%\s*set\s+' + re.escape(variable) + r"\s*=\s*([\"'])" + re.escape(value) + r'\1\s*%}'
+    return re.search(pattern, source) is not None
 
 
 def test_overview_controls_and_readiness_follow_shared_analytics_standard() -> None:
@@ -197,7 +203,7 @@ def test_top_consumers_use_calm_ranked_surfaces_without_divider_noise() -> None:
     assert 'Persistent Storage' in source
     assert 'Workload Density' in source
     assert 'components/states/_empty_state.html' in source
-    assert "empty_state_label = 'Sync Required'" in source
+    assert has_jinja_assignment(source, 'empty_state_label', 'Sync Required')
     assert "overview_surface.empty_evidence_classes('m-3 px-4 py-6 text-center sm:m-4')" not in source
     assert 'break-words text-sm font-semibold' in source
     assert 'progress_bar' not in source

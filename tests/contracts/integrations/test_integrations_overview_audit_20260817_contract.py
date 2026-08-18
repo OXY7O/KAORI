@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -5,6 +6,11 @@ ROOT = Path(__file__).resolve().parents[3]
 
 def read(relative: str) -> str:
     return (ROOT / relative).read_text(encoding='utf-8')
+
+
+def has_jinja_assignment(source: str, variable: str, value: str) -> bool:
+    pattern = r'{%\s*set\s+' + re.escape(variable) + r"\s*=\s*([\"'])" + re.escape(value) + r'\1\s*%}'
+    return re.search(pattern, source) is not None
 
 
 def test_overview_only_builds_the_selected_deep_workspace() -> None:
@@ -95,11 +101,11 @@ def test_overview_ready_counts_require_enabled_targets_and_domain_zero_targets_a
 def test_runtime_zero_states_and_lifecycle_use_canonical_kaori_state_ownership() -> None:
     runtime = read('app/templates/integrations/partials/_runtime_overview.html')
 
-    assert "empty_state_label = 'Setup Required'" in runtime
-    assert "empty_state_title = 'No Integration Targets Registered'" in runtime
-    assert "empty_state_action_label = 'Browse Providers'" in runtime
-    assert "empty_state_label = 'No Results'" in runtime
-    assert "empty_state_title = 'No Runtime Targets Match These Filters'" in runtime
+    assert has_jinja_assignment(runtime, 'empty_state_label', 'Setup Required')
+    assert has_jinja_assignment(runtime, 'empty_state_title', 'No Integration Targets Registered')
+    assert has_jinja_assignment(runtime, 'empty_state_action_label', 'Browse Providers')
+    assert has_jinja_assignment(runtime, 'empty_state_label', 'No Results')
+    assert has_jinja_assignment(runtime, 'empty_state_title', 'No Runtime Targets Match These Filters')
     assert 'components/states/_empty_state.html' in runtime
     assert 'Runtime Evidence Lifecycle' in runtime
     assert 'provider-neutral operational evidence' in runtime

@@ -86,7 +86,7 @@ def test_release_coverage_documentation_keeps_explicit_incomplete_feature_state(
     documentation = read('docs/architecture/RELEASE_SURFACE_COVERAGE.md')
     for token in (
         '60 navigation links',
-        '26 registered blueprints',
+        '25 registered blueprints',
         'Intelligence | BASELINE LOCKED',
         'Runtime Health | SYSTEM LOCKED',
         'Cluster Management is intentionally not a separate sidebar menu',
