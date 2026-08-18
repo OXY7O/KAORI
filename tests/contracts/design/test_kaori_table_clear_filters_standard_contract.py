@@ -95,6 +95,8 @@ def test_topology_reuses_clear_filters_and_distinguishes_snapshot_reload() -> No
     assert 'components/table_registry.html' in workspace
     assert 'topology-clear-filters-button' in workspace
     assert "marker='topology-filter-form'" in workspace
+    assert 'hidden=not topology_filters_active' in workspace
+    assert 'clearFiltersButton.hidden = !hasActiveFilters()' in script
     assert "action_label='Reload Snapshot'" in workspace
     assert 'Refresh Graph' not in workspace
     assert "$('topology-reload-button')?.addEventListener('click', fetchGraph)" in script

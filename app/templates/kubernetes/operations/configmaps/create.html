@@ -82,7 +82,7 @@
                                     <option value="">Select cluster</option>
                                     {% for cluster in clusters %}<option value="{{ cluster.id }}">{{ cluster.name }}</option>{% endfor %}
                                 </select>
-                                {{ form_field.help("Registered cluster that owns the target namespace.") }}
+                                {{ form_field.help("Registered cluster for the target namespace.") }}
                             </label>
                             {% include 'kubernetes/operations/configmaps/_namespace_options.html' %}
                         </div>

@@ -14,8 +14,7 @@
     {'icon': 'link-2', 'tone': 'normal', 'label': 'Consumer Bindings', 'value': binding_rows|length, 'description': 'Kubernetes, MinIO, and future consumers validated independently per binding.'}
 ] %}
 {% set capability_metadata = [
-    'Compatibility · ' ~ (instance.compatibility_profile or 'Validation Required'),
-    'Core Profile · ' ~ (instance.capability_profile or instance.query_profile or 'Validation Required')
+    'Profile · ' ~ (instance.compatibility_profile or instance.capability_profile or instance.query_profile or 'Validation Required')
 ] %}
 {% if capability_summary.required_missing %}
     {% set next_action = "Restore blocked core APIs, then rerun Full Validation." %}

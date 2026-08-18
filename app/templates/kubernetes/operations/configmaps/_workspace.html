@@ -20,7 +20,7 @@
                 </option>
             {% endfor %}
         </select>
-        {{ form_field.help("Registered cluster that owns the target namespace.") }}
+        {{ form_field.help("Registered cluster for the target namespace.") }}
     </label>
     <label class="block min-w-0" for="configmap-namespace">
         {{ form_field.label_row("Namespace") }}
@@ -49,7 +49,7 @@
         {% if selected_cluster_id and not selection_error and not namespaces %}
             {{ form_field.help("No live namespace is available for the selected cluster.") }}
         {% elif namespaces and not selection_error %}
-            {{ form_field.help("Loaded directly from the selected Kubernetes API.") }}
+            {{ form_field.help("Loaded from the selected Kubernetes API.") }}
         {% endif %}
     </label>
     <label class="block min-w-0" for="configmap-name">
@@ -79,7 +79,7 @@
         {% if selected_namespace and not configmaps and not selection_error %}
             {{ form_field.help("No ConfigMap currently exists in this live namespace.") }}
         {% elif configmaps and not selection_error %}
-            {{ form_field.help("Existing ConfigMaps are loaded directly from the selected live namespace.") }}
+            {{ form_field.help("Loaded from the selected live namespace.") }}
         {% endif %}
     </label>
 </div>

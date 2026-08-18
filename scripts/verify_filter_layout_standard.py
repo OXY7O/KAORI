@@ -160,6 +160,7 @@ def main() -> int:
         'topology-clear-filters-button',
         "marker='topology-filter-form'",
         "action_label='Reload Snapshot'",
+        'hidden=not topology_filters_active',
     ):
         require(token in topology, f'Topology missing canonical filter/header token: {token}', errors)
     require(
@@ -173,6 +174,7 @@ def main() -> int:
         "scopeSelect.value = 'all'",
         "depthSelect.value = '1'",
         "searchInput.value = ''",
+        'clearFiltersButton.hidden = !hasActiveFilters()',
     ):
         require(token in topology_script, f'Topology Clear Filters/reload behavior missing: {token}', errors)
     require(

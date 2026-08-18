@@ -20,6 +20,9 @@ def test_runtime_history_uses_inventory_table_primitives() -> None:
     assert 'table_ui.cell_classes(action=true)' in template
     assert 'data-kaori-runtime-history-table' in template
     assert 'data-kaori-runtime-history-actions' in template
+    assert 'data-kaori-table-header-actions' in template
+    assert template.count('table_ui.action_classes()') >= 3
+    assert 'components/action_button.html' not in template
     assert 'sm:flex-nowrap sm:self-start' in template
     assert '<thead class="{{ table_ui.head_classes() }}"' in template
 

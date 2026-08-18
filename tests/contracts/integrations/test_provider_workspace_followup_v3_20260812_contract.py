@@ -123,7 +123,9 @@ def test_minio_compatibility_is_product_specific_and_range_aware() -> None:
     assert 'evaluate_minio_release(instance.declared_release, product=result.product)' in adapter
     assert 'Supported Range · ' in configuration
     assert 'Qualified range: ' in validation
-    assert 'Product · ' in validation
+    capability_metadata = validation.split('{% set capability_metadata = [', 1)[1].split('] %}', 1)[0]
+    assert 'Product · ' not in capability_metadata
+    assert 'Profile · ' in capability_metadata
 
 
 def test_kubernetes_compact_readiness_import_is_wired() -> None:

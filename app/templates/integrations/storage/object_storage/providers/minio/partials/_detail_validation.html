@@ -12,7 +12,6 @@
 {% set capability_blocked = capability_total - capability_ready %}
 {% set capability_percent = ((capability_ready * 100 / capability_total) if capability_total else 0) %}
 {% set capability_metadata = [
-    "Product · " ~ compatibility_policy.product_label,
     "Profile · " ~ (instance.compatibility_profile or compatibility_policy.profile_key)
 ] %}
 {% set capability_metrics = [

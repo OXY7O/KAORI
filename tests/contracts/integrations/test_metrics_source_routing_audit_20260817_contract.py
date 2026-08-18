@@ -60,6 +60,8 @@ def test_metrics_source_adapter_and_binding_profiles_are_extension_points() -> N
     assert "'validation.session.build'" in adapter
     assert "'client.build'" not in adapter
     assert "key = 'prometheus_http'" in adapter
+    assert 'def refresh(self, instance: MetricsSource) -> Any:' in adapter
+    assert "return self.execute('runtime.validate', instance)" in adapter
     assert 'adapter_key: str' in profiles
     assert 'expression: str' in profiles
     assert 'signal_key: str' in profiles

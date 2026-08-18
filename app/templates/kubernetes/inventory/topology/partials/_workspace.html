@@ -6,10 +6,11 @@
 {% set topology_filters_active = filters.cluster_id or filters.namespace or filters.scope != 'all' or filters.depth != '1' %}
 {% set topology_header_actions = registry_ui.clear_filters_action(
     url_for('inventory.topology'),
-    table_ui.action_classes() ~ ('' if topology_filters_active else ' hidden'),
+    table_ui.action_classes(),
     marker='topology-filter-form',
     swap='',
-    id='topology-clear-filters-button'
+    id='topology-clear-filters-button',
+    hidden=not topology_filters_active
 ) %}
 {% call visualization_workspace.render(
     'topology-workspace',

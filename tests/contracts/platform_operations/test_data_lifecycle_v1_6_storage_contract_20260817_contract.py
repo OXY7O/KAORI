@@ -73,7 +73,7 @@ def test_runtime_observation_lifecycle_includes_object_storage_runtime_history()
     assert 'return RuntimeState(' in minio_adapter
     assert 'persist_runtime_state(' in validation_tasks
     assert 'MinIO Object Storage' in readme
-    assert 'Provider-neutral history is retained and cleaned by the shared Data Lifecycle policy.' in runtime_history
+    assert 'History follows the shared Data Lifecycle policy.' in runtime_history
 
 
 def test_storage_boundary_is_a_compact_hot_to_archive_path() -> None:

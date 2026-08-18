@@ -84,7 +84,7 @@ def _safe_opaque_entries(form: Any) -> list[dict[str, Any]]:
 @cluster_required(
     'Secret Management',
     page_title='Secret Management',
-    page_description='Create, replace, reveal, delete, and rotate live Kubernetes Secrets.',
+    page_description='Create, replace, reveal, delete, and rotate live Kubernetes Secrets through validated, permission-aware workflows.',
 )
 def secret_management_index():
     return render_template(

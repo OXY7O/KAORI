@@ -34,7 +34,7 @@ Canonical implementation:
 <label class="block min-w-0">
     {{ form_field.label_row('Namespace', 'Live', 'normal', 'radio') }}
     <select class="{{ form_field.select_classes() }}">...</select>
-    {{ form_field.help('Loaded directly from the selected Kubernetes API.') }}
+    {{ form_field.help('Loaded from the selected Kubernetes API.') }}
 </label>
 ```
 

@@ -42,7 +42,8 @@ def test_recent_runtime_observations_use_professional_posture_strip_and_shared_a
     assert "('degraded', 'Attention', runtime_history.posture_counts.attention)" in runtime
     assert "('blocked', 'Blocked', runtime_history.posture_counts.blocked)" in runtime
     assert "('not_observed', 'Not Observed', runtime_history.posture_counts.not_observed)" in runtime
-    assert 'action_button.classes()' in runtime
+    assert 'table_ui.action_classes()' in runtime
+    assert 'data-kaori-table-header-actions' in runtime
     assert 'inline-flex h-10 items-center justify-center gap-2 rounded-md' not in runtime
 
 

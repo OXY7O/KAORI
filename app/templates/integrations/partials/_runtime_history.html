@@ -2,7 +2,6 @@
 {% import "components/table.html" as table_ui %}
 {% import "components/table_registry.html" as registry_ui %}
 {% import "components/loading_bar.html" as loading_bar %}
-{% import "components/action_button.html" as action_button %}
 {% import "integrations/components/_record_actions.html" as record_actions %}
 {% import "integrations/components/_runtime_observation_modal.html" as runtime_observation_modal %}
 {% from "integrations/components/_semantic_status.html" import integration_status %}
@@ -31,22 +30,15 @@
                 </span>
                 <div class="min-w-0">
                     <h2 class="text-base font-semibold text-content-primary">Recent Runtime Observations</h2>
-                    <p class="mt-1 text-sm leading-6 text-content-secondary">Persisted runtime posture, readiness, capability context, and state changes for this integration target. Provider-neutral history is retained and cleaned by the shared Data Lifecycle policy.</p>
+                    <p class="mt-1 text-sm leading-6 text-content-secondary">Persisted runtime posture, readiness, capability context, and state changes. History follows the shared Data Lifecycle policy.</p>
                 </div>
             </div>
             <div class="flex shrink-0 flex-wrap items-center gap-2 sm:flex-nowrap sm:self-start"
-                 data-kaori-runtime-history-actions>
-                {% if runtime_history_filters_enabled|default(false) and (selected_history_trigger or selected_history_health or selected_history_readiness) %}
-                    {{ registry_ui.clear_filters_action(runtime_history_clear_url,
-                                        action_button.classes() ,
-                    hx_get=runtime_history_url ~ '?page=1&per_page=' ~ runtime_history.pagination.per_page,
-                    target='#' ~ runtime_history_id,
-                    indicator='#' ~ runtime_history_loading_id
-                    ) }}
-                {% endif %}
+                 data-kaori-runtime-history-actions
+                 data-kaori-table-header-actions>
                 {% if current_user.has_permission('platform_operations.view_data_lifecycle') %}
                     <a href="{{ url_for('platform_operations.data_lifecycle.index', tab='policies', domain='runtime_observation') }}"
-                       class="{{ action_button.classes() }}">
+                       class="{{ table_ui.action_classes() }}">
                         <i data-lucide="archive" class="h-4 w-4" aria-hidden="true"></i>
                         Manage Lifecycle
                     </a>
@@ -57,10 +49,18 @@
                         hx-swap="outerHTML"
                         hx-disabled-elt="this"
                         hx-indicator="#{{ runtime_history_loading_id }}"
-                        class="{{ action_button.classes() }} disabled:cursor-wait disabled:opacity-70">
+                        class="{{ table_ui.action_classes() }} disabled:cursor-wait disabled:opacity-70">
                     <i data-lucide="refresh-cw" class="h-4 w-4" aria-hidden="true"></i>
                     Refresh History
                 </button>
+                {% if runtime_history_filters_enabled|default(false) and (selected_history_trigger or selected_history_health or selected_history_readiness) %}
+                    {{ registry_ui.clear_filters_action(runtime_history_clear_url,
+                                        table_ui.action_classes() ,
+                    hx_get=runtime_history_url ~ '?page=1&per_page=' ~ runtime_history.pagination.per_page,
+                    target='#' ~ runtime_history_id,
+                    indicator='#' ~ runtime_history_loading_id
+                    ) }}
+                {% endif %}
             </div>
         </div>
         {{ loading_bar.render(runtime_history_loading_id, label='Refreshing ' ~ provider_label ~ ' runtime history') }}

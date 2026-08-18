@@ -16,8 +16,7 @@
     {"icon": "waypoints", "tone": "normal", "label": "Consumer Bindings", "value": binding_rows|length, "description": "Asset-specific alert contracts validated independently after binding."}
 ] %}
 {% set capability_metadata = [
-    "Profile · " ~ (instance.compatibility_profile or "Validation Required"),
-    "Core profile · alertmanager-core-v1"
+    "Profile · " ~ (instance.compatibility_profile or "alertmanager-core-v1")
 ] %}
 {% if capability_summary.required_missing %}
     {% set next_action = "Restore Alertmanager API v2 access, then rerun Full Validation." %}

@@ -68,6 +68,7 @@ Requirements include:
 - canonical filter rows use the shared full-width wrapping geometry (`table_ui.filter_layout_classes()` or `registry_ui.filter_form(...)` ownership): visible fields expand across the available row, incomplete wrap rows do not leave orphan columns, and page-local fixed desktop filter grids/max-width caps are prohibited unless an explicit action/control composition requires them;
 - every canonical filtered table exposes **Clear Filters** only while search/filter state is active; clearing resets the table to page 1, preserves the current Rows selection, and keeps the owning HTMX target/loading contract;
 - use the label **Clear Filters** and the shared `components/table_registry.html` interaction instead of page-local `Reset Filter(s)` controls; headered filter surfaces place that shared action in the existing header action group rather than floating it above the fields, while visualization surfaces reuse the same action semantics and clear only filter/search state;
+- client-driven visualization filters keep **Clear Filters** semantically hidden until filter/search state is active; use the shared action and HTML `hidden` ownership rather than conflicting page-local display classes;
 - canonical compact rectangular status/metadata labels;
 - status never communicated by color alone;
 - table loading, empty, and error states remain inside the table surface;

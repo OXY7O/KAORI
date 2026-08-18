@@ -171,6 +171,7 @@ The canonical layout is full-width and content-aware:
 - hidden inputs do not reserve layout space;
 - explicit action groups may remain content-width when the filter surface includes `Apply`, `Clear Filters`, or another operator action; the filter fields still consume all remaining width;
 - `Clear Filters` keeps one interaction owner (`components/table_registry.html`) across table, registry, and visualization filter surfaces;
+- visualization filters that become active client-side keep the canonical action hidden with the HTML `hidden` state until a real filter/search value is active; JavaScript toggles that semantic state rather than relying on competing display utility classes;
 - when a filtered surface already has a block/header action group, `Clear Filters` belongs in that same header action group beside metadata/context actions; do not float it in a separate row above the filter fields;
 - when no header action group exists, `Clear Filters` may sit beside the filter fields as a compact action while the fields continue to consume the remaining width;
 - filters never use `max-w-*` merely to keep a control visually narrow inside an otherwise empty filter row.

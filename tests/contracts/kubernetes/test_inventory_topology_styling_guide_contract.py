@@ -15,6 +15,7 @@ def _read(relative: str) -> str:
 def test_topology_uses_the_adaptive_visualization_workspace() -> None:
     workspace = _read('app/templates/kubernetes/inventory/topology/partials/_workspace.html')
     component = _read('app/templates/components/visualization_workspace.html')
+    script = _read('app/static/js/kubernetes/inventory/topology.js')
 
     assert '{% import "components/visualization_workspace.html" as visualization_workspace %}' in workspace
     assert 'visualization_workspace.render(' in workspace
@@ -33,6 +34,8 @@ def test_topology_uses_the_adaptive_visualization_workspace() -> None:
     assert 'data-kaori-visualization-header-actions' in component
     assert "action_label='Reload Snapshot'" in workspace
     assert 'topology-clear-filters-button' in workspace
+    assert 'hidden=not topology_filters_active' in workspace
+    assert 'clearFiltersButton.hidden = !hasActiveFilters()' in script
 
 
 def test_topology_side_panes_are_always_on_demand_drawers() -> None:

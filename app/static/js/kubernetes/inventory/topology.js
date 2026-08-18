@@ -717,7 +717,7 @@ const startTopologyWorkspace = () => {
         )
 
     const syncClearFiltersVisibility = () => {
-        clearFiltersButton?.classList.toggle('hidden', !hasActiveFilters())
+        if (clearFiltersButton) clearFiltersButton.hidden = !hasActiveFilters()
     }
 
     const updateUrl = () => {

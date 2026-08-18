@@ -58,12 +58,13 @@ def main() -> int:
     readiness = read('app/templates/integrations/components/_capability_readiness.html')
     require('data-kaori-capability-readiness' in readiness, 'Shared capability readiness marker is missing', errors)
     require('progress_bar.bar(' in readiness, 'Capability readiness must use the shared progress bar', errors)
-    for relative in (
-        'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_capability_workspace.html',
-        'app/templates/integrations/observability/metrics_source/partials/_detail_validation_content.html',
-        'app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_detail_validation_content.html',
-    ):
-        source = read(relative)
+    readiness_templates = []
+    for path in integration_templates():
+        relative = path.relative_to(ROOT).as_posix()
+        source = path.read_text(encoding='utf-8')
+        if 'capability_readiness.render(' not in source:
+            continue
+        readiness_templates.append(relative)
         require(
             'integrations/components/_capability_readiness.html' in source,
             f'{relative}: must import shared capability readiness',
@@ -72,6 +73,23 @@ def main() -> int:
         require(
             'capability_readiness.render(' in source, f'{relative}: must render shared capability readiness', errors
         )
+        metadata = source.split('{% set capability_metadata = [', 1)[1].split('] %}', 1)[0]
+        require(
+            'Profile · ' in metadata,
+            f'{relative}: readiness metadata must expose one concise Profile identity',
+            errors,
+        )
+        for retired_label in ('Compatibility · ', 'Core Profile · ', 'Core profile · ', 'Product · '):
+            require(
+                retired_label not in metadata,
+                f'{relative}: readiness metadata must not expose redundant {retired_label.strip()} identity',
+                errors,
+            )
+    require(
+        len(readiness_templates) >= 4,
+        'Shared provider capability readiness must remain wired across the registered provider families',
+        errors,
+    )
 
     # Capability registries use real HTMX interaction + one shared loading bar.
     registry_contracts = (

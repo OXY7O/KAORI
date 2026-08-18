@@ -91,8 +91,25 @@ def test_minio_readiness_keeps_range_readable_without_long_range_badge() -> None
     metadata = validation.split('{% set capability_metadata = [', 1)[1].split('] %}', 1)[0]
     shared = read('app/templates/integrations/components/_capability_readiness.html')
 
-    assert 'Product · ' in metadata
+    assert 'Product · ' not in metadata
     assert 'Profile · ' in metadata
     assert 'Supported Range · ' not in metadata
     assert 'Qualified range: ' in validation
     assert 'sm:grid-cols-[minmax(12rem,1fr)_minmax(0,24rem)]' in shared
+
+
+def test_provider_readiness_metadata_uses_one_concise_profile_identity() -> None:
+    templates = (
+        'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_capability_workspace.html',
+        'app/templates/integrations/observability/metrics_source/partials/_detail_validation_content.html',
+        'app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_detail_validation_content.html',
+        'app/templates/integrations/storage/object_storage/providers/minio/partials/_detail_validation.html',
+    )
+    for relative in templates:
+        source = read(relative)
+        metadata = source.split('{% set capability_metadata = [', 1)[1].split('] %}', 1)[0]
+        assert 'Profile · ' in metadata, relative
+        assert 'Compatibility · ' not in metadata, relative
+        assert 'Core Profile · ' not in metadata, relative
+        assert 'Core profile · ' not in metadata, relative
+        assert 'Product · ' not in metadata, relative

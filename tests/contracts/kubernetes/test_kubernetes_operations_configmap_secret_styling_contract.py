@@ -142,14 +142,14 @@ def test_live_target_selectors_keep_consistent_helper_context() -> None:
     secret_delete = read('app/templates/kubernetes/operations/secrets/delete.html')
     secret_reveal = read('app/templates/kubernetes/operations/secrets/reveal.html')
 
-    assert 'Registered cluster that owns the target namespace.' in configmap_create
-    assert 'Registered cluster that owns the target namespace.' in configmap_workspace
-    assert 'Loaded directly from the selected Kubernetes API.' in configmap_workspace
-    assert 'Existing ConfigMaps are loaded directly from the selected live namespace.' in configmap_workspace
-    assert 'Registered cluster that owns the target namespace.' in secret_create
-    assert 'Loaded directly from the selected Kubernetes API.' in secret_namespace
-    assert 'Registered cluster that owns the target namespace.' in secret_replace
-    assert 'Registered cluster that owns the target namespace.' in secret_delete
+    assert 'Registered cluster for the target namespace.' in configmap_create
+    assert 'Registered cluster for the target namespace.' in configmap_workspace
+    assert 'Loaded from the selected Kubernetes API.' in configmap_workspace
+    assert 'Loaded from the selected live namespace.' in configmap_workspace
+    assert 'Registered cluster for the target namespace.' in secret_create
+    assert 'Loaded from the selected Kubernetes API.' in secret_namespace
+    assert 'Registered cluster for the target namespace.' in secret_replace
+    assert 'Registered cluster for the target namespace.' in secret_delete
     assert 'Protected clusters are registered live targets for Secret Reveal.' in secret_reveal
 
 
