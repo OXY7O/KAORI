@@ -47,9 +47,7 @@ def _rename_permission(
     source_id = bind.execute(sa.select(permissions.c.id).where(permissions.c.key == source_key)).scalar()
     target_id = bind.execute(sa.select(permissions.c.id).where(permissions.c.key == target_key)).scalar()
     if source_id is not None and target_id is not None and int(source_id) != int(target_id):
-        raise RuntimeError(
-            f'Cannot rename RBAC permission {source_key!r} to {target_key!r}: both keys already exist.'
-        )
+        raise RuntimeError(f'Cannot rename RBAC permission {source_key!r} to {target_key!r}: both keys already exist.')
     permission_id = source_id if source_id is not None else target_id
     if permission_id is None:
         return

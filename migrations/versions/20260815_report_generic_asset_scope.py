@@ -34,11 +34,11 @@ def upgrade() -> None:
     _add_scope_columns('report_schedules')
     op.execute(
         "UPDATE reports SET scope_asset_type='kubernetes_cluster', scope_asset_id=cluster_id "
-        "WHERE cluster_id IS NOT NULL AND scope_asset_id IS NULL"
+        'WHERE cluster_id IS NOT NULL AND scope_asset_id IS NULL'
     )
     op.execute(
         "UPDATE report_schedules SET scope_asset_type='kubernetes_cluster', scope_asset_id=cluster_id "
-        "WHERE cluster_id IS NOT NULL AND scope_asset_id IS NULL"
+        'WHERE cluster_id IS NOT NULL AND scope_asset_id IS NULL'
     )
 
 

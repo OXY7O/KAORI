@@ -144,7 +144,7 @@ def upgrade() -> None:
 
     op.execute(
         sa.text(
-            "UPDATE metrics_sources SET compatibility_profile_override = CASE "
+            'UPDATE metrics_sources SET compatibility_profile_override = CASE '
             "WHEN compatibility_profile_override IN ('2', 'prometheus-v2-kubernetes-v1', 'prometheus-v2') "
             "THEN 'prometheus-http-v2' "
             "WHEN compatibility_profile_override IN ('3', 'prometheus-v3-kubernetes-v1', 'prometheus-v3') "
@@ -166,10 +166,14 @@ def upgrade() -> None:
     )
     if 'integration_runtime_observations' in tables:
         op.execute(
-            sa.text("UPDATE integration_runtime_observations SET provider = 'metrics_source' WHERE provider = 'prometheus'")
+            sa.text(
+                "UPDATE integration_runtime_observations SET provider = 'metrics_source' WHERE provider = 'prometheus'"
+            )
         )
     if 'job_executions' in tables:
-        op.execute(sa.text("UPDATE job_executions SET provider_type = 'metrics_source' WHERE provider_type = 'prometheus'"))
+        op.execute(
+            sa.text("UPDATE job_executions SET provider_type = 'metrics_source' WHERE provider_type = 'prometheus'")
+        )
     if 'notifications' in tables:
         op.execute(
             sa.text(
@@ -200,10 +204,14 @@ def downgrade() -> None:
     _rewrite_metrics_metadata(downgrade=True)
     if 'integration_runtime_observations' in tables:
         op.execute(
-            sa.text("UPDATE integration_runtime_observations SET provider = 'prometheus' WHERE provider = 'metrics_source'")
+            sa.text(
+                "UPDATE integration_runtime_observations SET provider = 'prometheus' WHERE provider = 'metrics_source'"
+            )
         )
     if 'job_executions' in tables:
-        op.execute(sa.text("UPDATE job_executions SET provider_type = 'prometheus' WHERE provider_type = 'metrics_source'"))
+        op.execute(
+            sa.text("UPDATE job_executions SET provider_type = 'prometheus' WHERE provider_type = 'metrics_source'")
+        )
     if 'notifications' in tables:
         op.execute(
             sa.text(
@@ -232,7 +240,7 @@ def downgrade() -> None:
     )
     op.execute(
         sa.text(
-            "UPDATE metrics_sources SET compatibility_profile_override = CASE "
+            'UPDATE metrics_sources SET compatibility_profile_override = CASE '
             "WHEN compatibility_profile_override = 'prometheus-http-v2' THEN '2' "
             "WHEN compatibility_profile_override = 'prometheus-http-v3' THEN '3' "
             'ELSE compatibility_profile_override END'

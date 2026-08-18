@@ -82,11 +82,15 @@ def _unauthenticated_actor() -> dict[str, Any]:
 
 
 def _user_actor(user: dict[str, Any]) -> dict[str, Any]:
-    label = str(user.get('display_name') or '').strip() or str(user.get('username') or f"User #{user['id']}")
-    role = 'Local Database Super Admin' if bool(user.get('is_super_admin')) else str(user.get('role_label') or 'Unassigned')
+    label = str(user.get('display_name') or '').strip() or str(user.get('username') or f'User #{user["id"]}')
+    role = (
+        'Local Database Super Admin'
+        if bool(user.get('is_super_admin'))
+        else str(user.get('role_label') or 'Unassigned')
+    )
     return {
         'schema': 'activity_actor.v1',
-        'key': f"user:{user['id']}",
+        'key': f'user:{user["id"]}',
         'type': 'user',
         'user_id': int(user['id']),
         'label': label,

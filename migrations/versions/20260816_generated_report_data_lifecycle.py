@@ -39,9 +39,7 @@ def upgrade() -> None:
         sa.column('created_at', sa.DateTime(timezone=True)),
         sa.column('updated_at', sa.DateTime(timezone=True)),
     )
-    exists = bind.execute(
-        sa.select(policies.c.domain).where(policies.c.domain == 'generated_report')
-    ).scalar()
+    exists = bind.execute(sa.select(policies.c.domain).where(policies.c.domain == 'generated_report')).scalar()
     if exists is None:
         now = datetime.now(UTC)
         bind.execute(

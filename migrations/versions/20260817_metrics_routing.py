@@ -40,11 +40,11 @@ def upgrade() -> None:
     if bind.dialect.name == 'postgresql':
         op.execute(
             sa.text(
-                "UPDATE integration_instances AS ii "
+                'UPDATE integration_instances AS ii '
                 "SET metadata_json = (COALESCE(ii.metadata_json::jsonb, '{}'::jsonb) "
                 "|| jsonb_build_object('metrics_source_type', pi.source_type))::json "
-                "FROM prometheus_instances AS pi "
-                "WHERE pi.integration_instance_id = ii.id"
+                'FROM prometheus_instances AS pi '
+                'WHERE pi.integration_instance_id = ii.id'
             )
         )
 

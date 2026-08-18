@@ -29,9 +29,7 @@ def _indexes(table_name: str) -> set[str]:
 
 def _unique_constraints(table_name: str) -> set[str]:
     return {
-        str(item['name'])
-        for item in sa.inspect(op.get_bind()).get_unique_constraints(table_name)
-        if item.get('name')
+        str(item['name']) for item in sa.inspect(op.get_bind()).get_unique_constraints(table_name) if item.get('name')
     }
 
 
@@ -108,14 +106,13 @@ def upgrade() -> None:
     # extension before runtime operations are enabled.
     op.execute(
         sa.text(
-            "UPDATE integration_instances SET provider_key = integration_type "
+            'UPDATE integration_instances SET provider_key = integration_type '
             "WHERE provider_key IS NULL OR provider_key = ''"
         )
     )
     op.execute(
         sa.text(
-            "UPDATE integration_instances SET adapter_key = 'extension' "
-            "WHERE adapter_key IS NULL OR adapter_key = ''"
+            "UPDATE integration_instances SET adapter_key = 'extension' WHERE adapter_key IS NULL OR adapter_key = ''"
         )
     )
 
@@ -181,7 +178,7 @@ def upgrade() -> None:
         )
         op.execute(
             sa.text(
-                "UPDATE integration_runtime_observations SET integration_type = CASE integration_type "
+                'UPDATE integration_runtime_observations SET integration_type = CASE integration_type '
                 "WHEN 'kubernetes' THEN 'container_orchestrator' "
                 "WHEN 'alertmanager' THEN 'alert_source' "
                 "WHEN 'minio' THEN 'object_storage' ELSE integration_type END"
@@ -189,7 +186,7 @@ def upgrade() -> None:
         )
         op.execute(
             sa.text(
-                "UPDATE integration_runtime_observations SET provider_key = CASE integration_type "
+                'UPDATE integration_runtime_observations SET provider_key = CASE integration_type '
                 "WHEN 'container_orchestrator' THEN 'kubernetes' "
                 "WHEN 'metrics_source' THEN COALESCE(provider_key, 'prometheus') "
                 "WHEN 'alert_source' THEN 'alertmanager' "
@@ -199,7 +196,7 @@ def upgrade() -> None:
         )
         op.execute(
             sa.text(
-                "UPDATE integration_runtime_observations SET adapter_key = CASE integration_type "
+                'UPDATE integration_runtime_observations SET adapter_key = CASE integration_type '
                 "WHEN 'container_orchestrator' THEN 'kubernetes_api' "
                 "WHEN 'metrics_source' THEN 'prometheus_http' "
                 "WHEN 'alert_source' THEN 'alertmanager_api_v2' "
@@ -240,7 +237,7 @@ def upgrade() -> None:
                 batch.add_column(sa.Column('integration_instance_id', sa.Integer(), nullable=True))
         op.execute(
             sa.text(
-                "UPDATE job_executions SET integration_type = CASE integration_type "
+                'UPDATE job_executions SET integration_type = CASE integration_type '
                 "WHEN 'kubernetes' THEN 'container_orchestrator' "
                 "WHEN 'alertmanager' THEN 'alert_source' "
                 "WHEN 'minio' THEN 'object_storage' ELSE integration_type END"
@@ -249,13 +246,13 @@ def upgrade() -> None:
         if 'provider_instance_id' in job_columns:
             op.execute(
                 sa.text(
-                    "UPDATE job_executions SET integration_instance_id = CASE integration_type "
+                    'UPDATE job_executions SET integration_instance_id = CASE integration_type '
                     "WHEN 'container_orchestrator' THEN (SELECT kc.integration_instance_id FROM kubernetes_connections kc WHERE kc.id = job_executions.provider_instance_id) "
                     "WHEN 'metrics_source' THEN (SELECT ms.integration_instance_id FROM metrics_sources ms WHERE ms.id = job_executions.provider_instance_id) "
                     "WHEN 'alert_source' THEN (SELECT am.integration_instance_id FROM alertmanager_instances am WHERE am.id = job_executions.provider_instance_id) "
                     "WHEN 'object_storage' THEN (SELECT mi.integration_instance_id FROM minio_instances mi WHERE mi.id = job_executions.provider_instance_id) "
-                    "ELSE NULL END "
-                    "WHERE provider_instance_id IS NOT NULL"
+                    'ELSE NULL END '
+                    'WHERE provider_instance_id IS NOT NULL'
                 )
             )
             with op.batch_alter_table('job_executions') as batch:
@@ -281,18 +278,18 @@ def downgrade() -> None:
                 batch.add_column(sa.Column('provider_instance_id', sa.Integer(), nullable=True))
         op.execute(
             sa.text(
-                "UPDATE job_executions SET provider_instance_id = CASE integration_type "
+                'UPDATE job_executions SET provider_instance_id = CASE integration_type '
                 "WHEN 'container_orchestrator' THEN (SELECT kc.id FROM kubernetes_connections kc WHERE kc.integration_instance_id = job_executions.integration_instance_id) "
                 "WHEN 'metrics_source' THEN (SELECT ms.id FROM metrics_sources ms WHERE ms.integration_instance_id = job_executions.integration_instance_id) "
                 "WHEN 'alert_source' THEN (SELECT am.id FROM alertmanager_instances am WHERE am.integration_instance_id = job_executions.integration_instance_id) "
                 "WHEN 'object_storage' THEN (SELECT mi.id FROM minio_instances mi WHERE mi.integration_instance_id = job_executions.integration_instance_id) "
-                "ELSE NULL END "
-                "WHERE integration_instance_id IS NOT NULL"
+                'ELSE NULL END '
+                'WHERE integration_instance_id IS NOT NULL'
             )
         )
         op.execute(
             sa.text(
-                "UPDATE job_executions SET integration_type = CASE integration_type "
+                'UPDATE job_executions SET integration_type = CASE integration_type '
                 "WHEN 'container_orchestrator' THEN 'kubernetes' "
                 "WHEN 'alert_source' THEN 'alertmanager' "
                 "WHEN 'object_storage' THEN 'minio' ELSE integration_type END"
@@ -316,7 +313,7 @@ def downgrade() -> None:
             op.drop_index('ix_integration_runtime_health', table_name='integration_runtime_observations')
         op.execute(
             sa.text(
-                "UPDATE integration_runtime_observations SET integration_type = CASE integration_type "
+                'UPDATE integration_runtime_observations SET integration_type = CASE integration_type '
                 "WHEN 'container_orchestrator' THEN 'kubernetes' "
                 "WHEN 'alert_source' THEN 'alertmanager' "
                 "WHEN 'object_storage' THEN 'minio' ELSE integration_type END"
@@ -375,7 +372,7 @@ def downgrade() -> None:
 
     op.execute(
         sa.text(
-            "UPDATE integration_instances SET integration_type = CASE integration_type "
+            'UPDATE integration_instances SET integration_type = CASE integration_type '
             "WHEN 'container_orchestrator' THEN 'kubernetes' "
             "WHEN 'alert_source' THEN 'alertmanager' "
             "WHEN 'object_storage' THEN 'minio' ELSE integration_type END"

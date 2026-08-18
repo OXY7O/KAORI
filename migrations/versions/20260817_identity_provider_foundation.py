@@ -31,10 +31,10 @@ def upgrade() -> None:
     connection = op.get_bind()
     rows = connection.execute(
         sa.text(
-            "SELECT id, provider_type, server_uri, base_dn, bind_dn, bind_password_env, user_filter, "
-            "tls_mode, connect_timeout_seconds, username_attribute, email_attribute, display_name_attribute, "
-            "stable_id_attribute, oidc_client_id, oidc_client_secret_env, allowed_domains, allowed_subjects "
-            "FROM identity_providers"
+            'SELECT id, provider_type, server_uri, base_dn, bind_dn, bind_password_env, user_filter, '
+            'tls_mode, connect_timeout_seconds, username_attribute, email_attribute, display_name_attribute, '
+            'stable_id_attribute, oidc_client_id, oidc_client_secret_env, allowed_domains, allowed_subjects '
+            'FROM identity_providers'
         )
     ).mappings()
     mapping = {
@@ -73,8 +73,8 @@ def upgrade() -> None:
             policy_values = _values(row['allowed_domains'] if provider_key == 'google' else row['allowed_subjects'])
         connection.execute(
             sa.text(
-                "UPDATE identity_providers SET provider_key=:provider_key, adapter_key=:adapter_key, "
-                "configuration_json=:configuration, admission_policy_json=:policy WHERE id=:provider_id"
+                'UPDATE identity_providers SET provider_key=:provider_key, adapter_key=:adapter_key, '
+                'configuration_json=:configuration, admission_policy_json=:policy WHERE id=:provider_id'
             ).bindparams(
                 sa.bindparam('configuration', type_=sa.JSON()),
                 sa.bindparam('policy', type_=sa.JSON()),
@@ -89,13 +89,13 @@ def upgrade() -> None:
         )
 
     op.execute(
-        "UPDATE users SET auth_source = CASE auth_source "
+        'UPDATE users SET auth_source = CASE auth_source '
         "WHEN 'ldap' THEN 'ldap_directory' "
         "WHEN 'google_oidc' THEN 'google' "
         "WHEN 'github_oauth' THEN 'github' ELSE auth_source END"
     )
     op.execute(
-        "UPDATE users SET last_auth_source = CASE last_auth_source "
+        'UPDATE users SET last_auth_source = CASE last_auth_source '
         "WHEN 'ldap' THEN 'ldap_directory' "
         "WHEN 'google_oidc' THEN 'google' "
         "WHEN 'github_oauth' THEN 'github' ELSE last_auth_source END"
@@ -158,7 +158,9 @@ def downgrade() -> None:
 
     connection = op.get_bind()
     rows = connection.execute(
-        sa.text('SELECT id, provider_key, adapter_key, configuration_json, admission_policy_json FROM identity_providers')
+        sa.text(
+            'SELECT id, provider_key, adapter_key, configuration_json, admission_policy_json FROM identity_providers'
+        )
     ).mappings()
     reverse = {'ldap_directory': 'ldap', 'google': 'google_oidc', 'github': 'github_oauth'}
     for row in rows:
@@ -169,12 +171,12 @@ def downgrade() -> None:
         values_text = '\n'.join(str(item) for item in values or [])
         connection.execute(
             sa.text(
-                "UPDATE identity_providers SET provider_type=:provider_type, server_uri=:server_uri, base_dn=:base_dn, "
-                "bind_dn=:bind_dn, bind_password_env=:bind_password_env, user_filter=:user_filter, tls_mode=:tls_mode, "
-                "connect_timeout_seconds=:timeout, username_attribute=:username_attribute, email_attribute=:email_attribute, "
-                "display_name_attribute=:display_name_attribute, stable_id_attribute=:stable_id_attribute, "
-                "oidc_client_id=:client_id, oidc_client_secret_env=:client_secret_env, allowed_domains=:allowed_domains, "
-                "allowed_subjects=:allowed_subjects WHERE id=:provider_id"
+                'UPDATE identity_providers SET provider_type=:provider_type, server_uri=:server_uri, base_dn=:base_dn, '
+                'bind_dn=:bind_dn, bind_password_env=:bind_password_env, user_filter=:user_filter, tls_mode=:tls_mode, '
+                'connect_timeout_seconds=:timeout, username_attribute=:username_attribute, email_attribute=:email_attribute, '
+                'display_name_attribute=:display_name_attribute, stable_id_attribute=:stable_id_attribute, '
+                'oidc_client_id=:client_id, oidc_client_secret_env=:client_secret_env, allowed_domains=:allowed_domains, '
+                'allowed_subjects=:allowed_subjects WHERE id=:provider_id'
             ),
             {
                 'provider_type': provider_type,
@@ -198,11 +200,11 @@ def downgrade() -> None:
         )
 
     op.execute(
-        "UPDATE users SET auth_source = CASE auth_source "
+        'UPDATE users SET auth_source = CASE auth_source '
         "WHEN 'ldap_directory' THEN 'ldap' WHEN 'google' THEN 'google_oidc' WHEN 'github' THEN 'github_oauth' ELSE auth_source END"
     )
     op.execute(
-        "UPDATE users SET last_auth_source = CASE last_auth_source "
+        'UPDATE users SET last_auth_source = CASE last_auth_source '
         "WHEN 'ldap_directory' THEN 'ldap' WHEN 'google' THEN 'google_oidc' WHEN 'github' THEN 'github_oauth' ELSE last_auth_source END"
     )
 

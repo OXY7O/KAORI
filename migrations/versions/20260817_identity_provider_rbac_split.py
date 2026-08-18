@@ -38,7 +38,9 @@ PERMISSIONS = (
 )
 
 
-def _ensure_permission(bind, permissions, *, key: str, module: str, action: str, description: str, now: datetime) -> int:
+def _ensure_permission(
+    bind, permissions, *, key: str, module: str, action: str, description: str, now: datetime
+) -> int:
     permission_id = bind.execute(sa.select(permissions.c.id).where(permissions.c.key == key)).scalar()
     if permission_id is None:
         bind.execute(
@@ -103,9 +105,7 @@ def upgrade() -> None:
         sa.column('created_at', sa.DateTime(timezone=True)),
     )
 
-    legacy_permission_id = bind.execute(
-        sa.select(permissions.c.id).where(permissions.c.key == 'users.manage')
-    ).scalar()
+    legacy_permission_id = bind.execute(sa.select(permissions.c.id).where(permissions.c.key == 'users.manage')).scalar()
     if legacy_permission_id is None:
         raise RuntimeError('users.manage must exist before Identity Provider RBAC can be split safely.')
 

@@ -16,10 +16,7 @@ def upgrade() -> None:
     # External identities may keep their normal RBAC role, but the explicit
     # break-glass flag belongs only to Local Database accounts. Clean legacy
     # invalid rows before enforcing the invariant at the database boundary.
-    op.execute(
-        "UPDATE users SET is_super_admin = false "
-        "WHERE is_super_admin = true AND auth_source <> 'database'"
-    )
+    op.execute("UPDATE users SET is_super_admin = false WHERE is_super_admin = true AND auth_source <> 'database'")
     op.create_check_constraint(
         'ck_users_super_admin_local_database',
         'users',
