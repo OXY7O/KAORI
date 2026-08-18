@@ -19,6 +19,8 @@ Visualization Workspace Style 1 — Adaptive Explorer
 ├── Display Controls → hidden until requested
 └── Topology Inspector → hidden until requested/selection
     └── Tab Style 2: Details / Relationships
+
+Compact segmented tabs must render the configured `data-*` attribute with the tab key as its value. Topology JavaScript reads those values through `dataset` for Graph/List and Details/Relationships activation; a valueless data attribute is not a valid interaction contract.
 ```
 
 ## Information Ownership

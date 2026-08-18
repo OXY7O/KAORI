@@ -46,7 +46,8 @@ def test_tls_registry_uses_governance_resource_registry_pattern() -> None:
     assert 'static_detail_row' not in table
     assert 'resource_detail_modal.host(' in index
     detail = _read('app/templates/kubernetes/governance/tls_certificates/partials/_detail_content.html')
-    assert 'detail.header_badge_row()' in detail
+    assert 'detail.header_identity_row()' in detail
+    assert 'detail.header_badge_row()' not in detail
 
 
 def test_tls_registry_status_and_pagination_are_canonical() -> None:

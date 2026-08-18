@@ -232,7 +232,7 @@ def _unexpected_failure(
 @cluster_required(
     'ConfigMap Management',
     page_title='ConfigMap Management',
-    page_description='Create, update, and remove live ConfigMaps through validated workflows.',
+    page_description='Create, update, and remove live ConfigMaps through validated, target-aware workflows with explicit preview and audit boundaries.',
 )
 def configmap_management_index():
     return render_template('kubernetes/operations/configmaps/index.html', **get_context())
@@ -410,7 +410,7 @@ def configmap_delete_target():
 @cluster_required(
     'ConfigMap Management',
     page_title='Update ConfigMap',
-    page_description='Load current values, preview the effective diff, and apply one validated live update.',
+    page_description='Load current values, preview the effective diff, and apply one validated live update against the exact selected ConfigMap.',
 )
 def update_configmap_page():
     if request.method == 'POST':
@@ -508,7 +508,7 @@ def update_configmap_page():
 @cluster_required(
     'ConfigMap Management',
     page_title='Delete ConfigMap',
-    page_description='Review impact, validate the exact live target, and explicitly confirm destructive removal.',
+    page_description='Review impact, validate the exact live target and resource version, then explicitly confirm destructive ConfigMap removal.',
 )
 def delete_configmap_page():
     if request.method == 'POST':

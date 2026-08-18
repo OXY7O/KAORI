@@ -12,12 +12,12 @@
                 <span class="{{ detail_ui.expanded_workspace_icon_classes() }}"
                       aria-hidden="true"><i data-lucide="{{ detail.type_icon }}" class="h-5 w-5"></i></span>
                 <div class="min-w-0">
-                    <div class="flex flex-wrap items-center gap-2">
+                    {% call detail_ui.header_identity_row() %}
                         <h3 class="break-words text-base font-semibold leading-6 text-content-primary [overflow-wrap:anywhere]">{{ role.display_name }}</h3>
                         {{ table_label.metadata_label(detail.type_short, detail.type_icon) }}
                         {{ table_label.status_label(detail.state_label, detail.state_tone, detail.state_icon, 'detail') }}
                         {{ table_label.metadata_label(role.name, 'key-round') }}
-                    </div>
+                    {% endcall %}
                     <p class="mt-1 text-xs leading-5 text-content-muted">Role identity, assignment impact, permission coverage, and administrative boundary from the current RBAC registry.</p>
                 </div>
             </div>

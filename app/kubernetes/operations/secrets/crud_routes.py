@@ -119,7 +119,7 @@ def secret_namespace_options():
 @cluster_required(
     'Secret Management',
     page_title='Create Kubernetes Secret',
-    page_description='Create a validated Kubernetes Secret without overwriting existing data.',
+    page_description='Create a validated Kubernetes Secret in one live namespace without overwriting an existing Secret or persisting submitted values.',
 )
 def create_secret():
     operation_feedback = None
@@ -277,7 +277,7 @@ def replace_secret_content():
 @cluster_required(
     'Secret Management',
     page_title='Replace Kubernetes Secret Data',
-    page_description='Replace selected Secret keys without reading or persisting current values.',
+    page_description='Replace selected Secret keys through a validated live update without reading, rendering, or persisting current Secret values.',
 )
 def replace_secret():
     operation_feedback = None
@@ -437,7 +437,7 @@ def delete_secret_target():
 @cluster_required(
     'Secret Management',
     page_title='Delete Kubernetes Secret',
-    page_description='Review live impact, validate the exact target, and explicitly confirm destructive removal.',
+    page_description='Review live impact, validate the exact Secret target and resource version, then explicitly confirm destructive removal.',
 )
 def delete_secret():
     operation_feedback = None

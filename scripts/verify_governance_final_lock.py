@@ -167,7 +167,8 @@ def main() -> int:
     summary = read('app/templates/kubernetes/governance/tls_certificates/partials/_summary_cards.html')
     rotate = read('app/templates/kubernetes/operations/secrets/tls_rotate.html')
     require(
-        'detail.header_badge_row()' in detail
+        'detail.header_identity_row()' in detail
+        and 'detail.header_badge_row()' not in detail
         and 'data-kaori-tls-detail-layout="evidence-workspace-v2"' in detail
         and 'Certificate Identity &amp; Validity' in detail
         and 'Coverage &amp; Consumer Evidence' in detail

@@ -4,6 +4,9 @@ All notable KAORI changes are recorded here. KAORI uses Semantic Versioning for 
 
 ## [Unreleased]
 
+- Refined post-2.3.0 operational UI consistency: Runtime History actions stay aligned, Topology segmented tabs now carry functional dataset values, modal identity/status labels are grouped, and ConfigMap/Secret live selectors share helper context.
+
+
 ### Changed
 - Standardized KAORI filter geometry on one full-width wrapping layout: visible Search/select fields now share all available row width, incomplete wrapped rows expand instead of leaving orphan desktop columns, and compact action groups keep only the space they need.
 

@@ -14,16 +14,14 @@
                 <span class="{{ detail.expanded_workspace_icon_classes() }}"
                       aria-hidden="true"><i data-lucide="network" class="h-5 w-5"></i></span>
                 <div class="min-w-0">
-                    <div class="flex flex-wrap items-center gap-2">
+                    {% call detail.header_identity_row() %}
                         <h3 class="break-words text-base font-semibold leading-6 text-content-primary [overflow-wrap:anywhere]">{{ service.name }}</h3>
                         {{ table_label.metadata_label(service.cluster_name, 'building-2') }}
                         {{ table_label.metadata_label(service.namespace, 'folder-tree') }}
                         {{ table_label.metadata_label(service.type) }}
-                    </div>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">Access model, backend registration, port mapping, selected Pods, and network configuration from the committed snapshot.</p>
-                    {% call detail.header_badge_row() %}
                         {{ table_label.status_indicator_label(service.backend.label, service.backend.tone, size='detail') }}
                     {% endcall %}
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Access model, backend registration, port mapping, selected Pods, and network configuration from the committed snapshot.</p>
                 </div>
             </div>
         </header>

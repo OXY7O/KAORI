@@ -18,15 +18,13 @@
                 <span class="{{ detail.expanded_workspace_icon_classes() }}"
                       aria-hidden="true"><i data-lucide="server" class="h-5 w-5"></i></span>
                 <div class="min-w-0">
-                    <div class="flex flex-wrap items-center gap-2">
+                    {% call detail.header_identity_row() %}
                         <h3 class="break-words text-base font-semibold leading-6 text-content-primary [overflow-wrap:anywhere]">{{ node.node_name }}</h3>
                         {{ table_label.metadata_label(node.cluster_name, 'building-2') }}
                         {{ table_label.metadata_label(node.role_display) }}
-                    </div>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">Node identity, capacity, runtime, connectivity, scheduling, and condition evidence from the latest committed inventory snapshot.</p>
-                    {% call detail.header_badge_row() %}
                         {{ table_label.status_indicator_label(node.status_display, node_status_tone, size='detail') }}
                     {% endcall %}
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Node identity, capacity, runtime, connectivity, scheduling, and condition evidence from the latest committed inventory snapshot.</p>
                 </div>
             </div>
         </header>

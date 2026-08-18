@@ -16,7 +16,7 @@
                 <div class="{{ page_hero.content_classes() }}">
                     {% call page_hero.intro('file-cog', 'ConfigMap Management', 'trash-2') %}
                         <h1 class="{{ page_hero.title_classes() }}">Delete ConfigMap</h1>
-                        <p class="mt-2 {{ page_hero.description_classes() }}">Review impact, validate the exact live target, and explicitly confirm destructive removal.</p>
+                        <p class="mt-2 {{ page_hero.description_classes() }}">Review impact, validate the exact live target and resource version, then explicitly confirm destructive ConfigMap removal.</p>
                         <div class="{{ page_hero.metadata_row_classes() }}">
                             {{ page_hero.meta_label('radio-tower', 'Live Kubernetes Target') }}
                             {{ page_hero.meta_label('shield-check', 'Non-Destructive Preflight') }}

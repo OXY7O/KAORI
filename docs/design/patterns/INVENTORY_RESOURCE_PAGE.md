@@ -75,7 +75,7 @@ Do not add page-local modal markup, local expandable-row JavaScript, nested scro
 
 ### Full Workspace Modal resource-header alignment
 
-The leading resource icon, title/metadata, description, and state evidence form one identity block. Lifecycle/readiness/collection labels rendered beneath the description use the shared `detail.header_badge_row()` primitive and align with the **text-content column after the leading icon**. Do not place the state label as a separate flex child that drops below and aligns with the modal's outer left edge on narrower widths. This keeps Node through Configuration headers visually consistent without changing semantic status treatment.
+The leading resource icon, title, metadata, and primary lifecycle/readiness/collection state form one identity group. Use the shared `detail.header_identity_row()` primitive so operational state such as `Ready`, `Not Ready`, lifecycle posture, backend readiness, and collection evidence sits beside the resource title and metadata instead of floating on a second line beneath the description. The description remains the supporting line below that grouped identity. The same grouped identity primitive is reused by other Full Workspace Modal surfaces such as Access administration, Object Storage Inventory, and TLS Governance so state never drifts onto a detached second line.
 
 ## Architecture and ownership
 

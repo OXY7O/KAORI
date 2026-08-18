@@ -9,10 +9,11 @@
             <div class="flex min-w-0 items-start gap-3">
                 <span class="{{ detail.expanded_workspace_icon_classes() }}"><i data-lucide="server" class="h-5 w-5"></i></span>
                 <div class="min-w-0">
-                    <div class="flex flex-wrap items-center gap-2">
+                    {% call detail.header_identity_row() %}
                         <h3 class="text-base font-semibold text-content-primary">{{ system.name }}</h3>
-                        {{ table_label.metadata_label(system.provider_label) }}{{ table_label.status_indicator_label(system.status_label, system.status_tone, size='detail') }}
-                    </div>
+                        {{ table_label.metadata_label(system.provider_label) }}
+                        {{ table_label.status_indicator_label(system.status_label, system.status_tone, size='detail') }}
+                    {% endcall %}
                     <p class="mt-1 text-xs leading-5 text-content-muted">Provider identity, endpoint, release, readiness, and committed bucket-discovery evidence.</p>
                 </div>
             </div>

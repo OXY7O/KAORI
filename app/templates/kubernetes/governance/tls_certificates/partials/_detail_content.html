@@ -19,16 +19,14 @@
                     <i data-lucide="shield-check" class="h-5 w-5"></i>
                 </span>
                 <div class="min-w-0">
-                    <div class="flex flex-wrap items-center gap-2">
+                    {% call detail.header_identity_row() %}
                         <h3 class="break-words text-base font-semibold leading-6 text-content-primary [overflow-wrap:anywhere]">{{ record.secret_name }}</h3>
                         {{ table_label.metadata_label(record.cluster.name if record.cluster else record.cluster_id, 'building-2') }}
                         {{ table_label.metadata_label(record.namespace, 'folder-tree') }}
-                    </div>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">Certificate identity, validity, host coverage, consumer mapping, and collection evidence from the committed Governance snapshot.</p>
-                    {% call detail.header_badge_row() %}
                         {{ table_label.status_indicator_label(presentation.status_label or 'Unknown', presentation.status_tone or 'unknown', size='detail') }}
                         {{ table_label.status_indicator_label(presentation.coverage_label or 'Not Reported', presentation.coverage_tone or 'unknown', size='detail') }}
                     {% endcall %}
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Certificate identity, validity, host coverage, consumer mapping, and collection evidence from the committed Governance snapshot.</p>
                 </div>
             </div>
         </header>

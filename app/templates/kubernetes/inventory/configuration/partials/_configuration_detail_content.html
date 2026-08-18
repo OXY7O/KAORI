@@ -14,16 +14,14 @@
                       aria-hidden="true"><i data-lucide="{{ 'key-round' if item.type == 'Secret' else 'file-json-2' }}"
    class="h-5 w-5"></i></span>
                 <div class="min-w-0">
-                    <div class="flex flex-wrap items-center gap-2">
+                    {% call detail.header_identity_row() %}
                         <h3 class="break-words text-base font-semibold leading-6 text-content-primary [overflow-wrap:anywhere]">{{ item.name }}</h3>
                         {{ table_label.metadata_label(item.type) }}
                         {{ table_label.metadata_label(item.namespace, 'folder-tree') }}
                         {{ table_label.status_indicator_label(item.mutation_label, item.mutation_tone) }}
-                    </div>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">Protected key-index metadata, collection capability, mutation configuration, and evidence-aware current Pod references.</p>
-                    {% call detail.header_badge_row() %}
                         {{ table_label.metadata_label(item.collection_state, 'database') }}
                     {% endcall %}
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Protected key-index metadata, collection capability, mutation configuration, and evidence-aware current Pod references.</p>
                 </div>
             </div>
         </header>

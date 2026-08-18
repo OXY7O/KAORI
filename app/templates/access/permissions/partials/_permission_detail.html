@@ -11,13 +11,13 @@
                 <span class="{{ detail_ui.expanded_workspace_icon_classes() }}"
                       aria-hidden="true"><i data-lucide="key-round" class="h-5 w-5"></i></span>
                 <div class="min-w-0">
-                    <div class="flex flex-wrap items-center gap-2">
+                    {% call detail_ui.header_identity_row() %}
                         <h3 class="break-words text-base font-semibold leading-6 text-content-primary [overflow-wrap:anywhere]">{{ permission.title }}</h3>
                         {{ table_label.metadata_label(permission.module_label, 'boxes') }}
                         {{ table_label.status_label(permission.state.label, permission.state.tone, permission.state.icon, 'detail') }}
                         {{ table_label.metadata_label(permission.key, 'key-round', true, 'detail') }}
                         {{ table_label.status_label(permission.delegation_tier.label, permission.delegation_tier.tone, permission.delegation_tier.icon, 'detail') }}
-                    </div>
+                    {% endcall %}
                     <p class="mt-1 text-xs leading-5 text-content-muted">Permission identity, dependency contract, role coverage, and code-to-registry alignment.</p>
                 </div>
             </div>

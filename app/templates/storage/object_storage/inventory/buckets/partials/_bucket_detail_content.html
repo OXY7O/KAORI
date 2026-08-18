@@ -11,12 +11,12 @@
                     <i data-lucide="container" class="h-5 w-5" aria-hidden="true"></i>
                 </span>
                 <div class="min-w-0">
-                    <div class="flex flex-wrap items-center gap-2">
+                    {% call detail.header_identity_row() %}
                         <h3 class="break-all text-base font-semibold text-content-primary">{{ bucket.name }}</h3>
                         {{ table_label.metadata_label(bucket.provider_label) }}
                         {{ table_label.metadata_label(bucket.native_type_label) }}
                         {{ table_label.status_label(bucket.protection.label, bucket.protection.tone, none, 'detail') }}
-                    </div>
+                    {% endcall %}
                     <p class="mt-1 text-xs leading-5 text-content-muted">Canonical object-storage fields with provider-aware evidence from the latest committed Object Storage Inventory Sync snapshot.</p>
                 </div>
             </div>

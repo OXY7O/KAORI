@@ -12,7 +12,8 @@ def test_tls_certificate_detail_uses_compact_evidence_workspace() -> None:
     assert 'data-kaori-detail-variant="full-workspace-modal"' in detail
     assert 'data-kaori-tls-detail-layout="evidence-workspace-v2"' in detail
     assert 'data-resource-detail-header' in detail
-    assert 'detail.header_badge_row()' in detail
+    assert 'detail.header_identity_row()' in detail
+    assert 'detail.header_badge_row()' not in detail
     assert 'detail.summary_strip' in detail
     assert 'Certificate Identity &amp; Validity' in detail
     assert 'Coverage &amp; Consumer Evidence' in detail

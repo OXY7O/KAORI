@@ -267,8 +267,13 @@ def main() -> int:
         }[resource]
         detail_source = read(f'app/templates/kubernetes/inventory/{resource}/partials/{detail_partial}')
         require(
-            'detail.header_badge_row()' in detail_source,
-            f'{resource} detail header must align state labels with the text-content column.',
+            'detail.header_identity_row()' in detail_source,
+            f'{resource} detail header must group title, metadata, and primary state in one identity row.',
+            errors,
+        )
+        require(
+            'detail.header_badge_row()' not in detail_source,
+            f'{resource} detail header must not render primary state below the supporting description.',
             errors,
         )
         require(
@@ -279,8 +284,10 @@ def main() -> int:
 
     detail_primitives = read('app/templates/components/details/_detail_content.html')
     require(
-        'macro header_badge_row()' in detail_primitives and 'data-resource-detail-header-state' in detail_primitives,
-        'Shared detail primitives must own Inventory header-state alignment.',
+        'macro header_identity_row()' in detail_primitives
+        and 'data-resource-detail-header-identity' in detail_primitives
+        and 'macro header_badge_row()' not in detail_primitives,
+        'Shared detail primitives must own one grouped Inventory title/metadata/state identity row.',
         errors,
     )
 

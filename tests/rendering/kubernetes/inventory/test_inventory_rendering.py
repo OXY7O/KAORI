@@ -51,5 +51,6 @@ def test_inventory_pages_use_canonical_hero_table_pagination_and_detail_disclosu
         assert 'detail_button(' in table
 
         detail_source = (TEMPLATES / resource / 'partials' / DETAIL_PARTIALS[resource]).read_text(encoding='utf-8')
-        assert 'detail.header_badge_row()' in detail_source
+        assert 'detail.header_identity_row()' in detail_source
+        assert 'detail.header_badge_row()' not in detail_source
         assert 'self-start sm:self-auto' not in detail_source

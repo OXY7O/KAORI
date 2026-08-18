@@ -58,3 +58,26 @@ def test_all_inventory_detail_workspaces_use_modal_extractable_header_and_summar
         assert 'data-resource-detail-header' in source, resource
         assert 'detail.expanded_workspace_outer_classes()' in source, resource
         assert 'detail.expanded_workspace_shell_classes()' in source, resource
+
+
+def test_full_workspace_modal_headers_share_grouped_identity_state_geometry() -> None:
+    templates = (
+        'app/templates/access/activity_audit/partials/_activity_detail.html',
+        'app/templates/access/permissions/partials/_permission_detail.html',
+        'app/templates/access/roles/partials/_role_detail.html',
+        'app/templates/kubernetes/governance/tls_certificates/partials/_detail_content.html',
+        'app/templates/kubernetes/inventory/configuration/partials/_configuration_detail_content.html',
+        'app/templates/kubernetes/inventory/ingresses/partials/_ingress_detail_content.html',
+        'app/templates/kubernetes/inventory/namespaces/partials/_namespace_detail_content.html',
+        'app/templates/kubernetes/inventory/nodes/partials/_node_detail_content.html',
+        'app/templates/kubernetes/inventory/pods/partials/_pod_detail_content.html',
+        'app/templates/kubernetes/inventory/services/partials/_service_detail_content.html',
+        'app/templates/kubernetes/inventory/storage/partials/_storage_detail_content.html',
+        'app/templates/kubernetes/inventory/workloads/partials/_workload_detail_content.html',
+        'app/templates/storage/object_storage/inventory/buckets/partials/_bucket_detail_content.html',
+        'app/templates/storage/object_storage/inventory/systems/partials/_system_detail_content.html',
+    )
+    for relative in templates:
+        source = read(relative)
+        assert 'header_identity_row()' in source, relative
+        assert 'header_badge_row()' not in source, relative

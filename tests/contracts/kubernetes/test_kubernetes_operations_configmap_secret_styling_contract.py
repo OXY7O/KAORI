@@ -131,3 +131,39 @@ def test_operation_catalog_owns_a_stable_action_column() -> None:
     assert 'lg:justify-self-stretch' in component
     assert "action_button.classes('secondary', false) }} w-full justify-center" in component
     assert 'min-h-9 w-full items-center justify-center' in component
+
+
+def test_live_target_selectors_keep_consistent_helper_context() -> None:
+    configmap_create = read('app/templates/kubernetes/operations/configmaps/create.html')
+    configmap_workspace = read('app/templates/kubernetes/operations/configmaps/_workspace.html')
+    secret_create = read('app/templates/kubernetes/operations/secrets/create.html')
+    secret_namespace = read('app/templates/kubernetes/operations/secrets/_namespace_field.html')
+    secret_replace = read('app/templates/kubernetes/operations/secrets/replace.html')
+    secret_delete = read('app/templates/kubernetes/operations/secrets/delete.html')
+    secret_reveal = read('app/templates/kubernetes/operations/secrets/reveal.html')
+
+    assert 'Registered cluster that owns the target namespace.' in configmap_create
+    assert 'Registered cluster that owns the target namespace.' in configmap_workspace
+    assert 'Loaded directly from the selected Kubernetes API.' in configmap_workspace
+    assert 'Existing ConfigMaps are loaded directly from the selected live namespace.' in configmap_workspace
+    assert 'Registered cluster that owns the target namespace.' in secret_create
+    assert 'Loaded directly from the selected Kubernetes API.' in secret_namespace
+    assert 'Registered cluster that owns the target namespace.' in secret_replace
+    assert 'Registered cluster that owns the target namespace.' in secret_delete
+    assert 'Protected clusters are registered live targets for Secret Reveal.' in secret_reveal
+
+
+def test_operation_hero_copy_keeps_explicit_live_validation_boundaries() -> None:
+    configmap_routes = read('app/kubernetes/operations/configmaps/routes.py')
+    secret_routes = read('app/kubernetes/operations/secrets/crud_routes.py')
+    reveal_routes = read('app/kubernetes/operations/secrets/reveal_routes.py')
+    tls_routes = read('app/kubernetes/operations/secrets/tls_routes.py')
+
+    assert 'validated, target-aware workflows with explicit preview and audit boundaries' in configmap_routes
+    assert 'against the exact selected ConfigMap' in configmap_routes
+    assert 'exact live target and resource version' in configmap_routes
+    assert 'without overwriting an existing Secret or persisting submitted values' in secret_routes
+    assert 'without reading, rendering, or persisting current Secret values' in secret_routes
+    assert 'exact Secret target and resource version' in secret_routes
+    assert 'policy, identity, and audit controls enforced' in reveal_routes
+    assert 'before any controlled bulk rotation' in tls_routes
