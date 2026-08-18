@@ -37,8 +37,8 @@ The former standalone `/settings/time-locale` and `/settings/system-info` pages 
 - Time Zone uses one full-width workspace: Selection Mode → Browser Detection / Manual Time Zone → inline Preference Scope & Boundary → Effective Time Zone → Save.
 - Regional Format uses one full-width workspace: Format Controls → Current Presentation Preview → inline Preference Scope & Boundary → Effective Format → Save.
 - Time Zone and Regional Format both embed presentation scope and operational boundaries inside their own workspace. Neither tab uses the shared right-side preference context. Preference UI must never imply that canonical UTC data, schedules, interface language, or external systems are mutated.
-- System Information and Compatibility Versions are read-only workspaces. Use the shared semantic label primitives for read-only and validation posture.
-- Keep long capability catalogs expandable and keep the supported-version matrix on the shared KAORI table primitive.
+- System Information and Compatibility Versions are unified full-width read-only workspaces. Release governance, information boundaries, matrix-reading guidance, and compatibility policy live inline in the active workspace; do not restore dedicated right-side context boxes. Use shared semantic label primitives for read-only and validation posture.
+- Keep long capability catalogs expandable and keep the supported-version matrix on the shared KAORI table primitive. Prefer one calm outer workspace with internal section dividers over stacks of detached cards for read-only reference tabs.
 
 ## Save and notification contract
 

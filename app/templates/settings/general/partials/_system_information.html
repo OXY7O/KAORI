@@ -1,20 +1,27 @@
 {% import "components/table_label.html" as table_label %}
-<section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card">
+<section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card"
+         data-system-information-workspace="unified">
     <header class="flex flex-col gap-4 border-b border-outline-default px-5 py-4 sm:flex-row sm:items-start sm:justify-between">
         <div class="flex items-start gap-3">
             <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary">
                 <i data-lucide="badge-info" class="h-5 w-5"></i>
             </span>
             <div>
-                <h2 class="text-base font-bold text-content-primary">Release Identity</h2>
+                <h2 class="text-base font-bold text-content-primary">System Information</h2>
                 <p class="mt-1 text-sm leading-6 text-content-muted">
-                    Safe product and build metadata for the KAORI instance currently serving this account.
+                    Safe release identity, build traceability, shipped capability scope, and deployment boundaries for this KAORI instance.
                 </p>
             </div>
         </div>
         {{ table_label.special_label('Read-Only Metadata', 'info', 'lock-keyhole') }}
     </header>
     <div class="p-5">
+        <div class="mb-3 flex items-center justify-between gap-3">
+            <div>
+                <h3 class="text-sm font-bold text-content-primary">Release Identity</h3>
+                <p class="mt-1 text-xs leading-5 text-content-muted">Product and build metadata for the currently deployed release.</p>
+            </div>
+        </div>
         <dl class="grid overflow-hidden rounded-xl border border-outline-default bg-surface-subtle sm:grid-cols-2 xl:grid-cols-4">
             {% for icon, label, value in [
                 ('box', 'Product', system_information.product_name),
@@ -33,98 +40,170 @@
                 </div>
             {% endfor %}
         </dl>
-        <div class="mt-4 grid gap-4 rounded-xl border border-kaori-primary/20 bg-kaori-soft/55 p-4 sm:grid-cols-2">
-            <div class="min-w-0">
-                <p class="flex items-center gap-2 text-xs font-semibold text-kaori-primary">
-                    <i data-lucide="git-commit-horizontal" class="h-4 w-4"></i>
+        <dl class="mt-4 grid divide-y divide-outline-subtle rounded-xl border border-outline-default sm:grid-cols-2 sm:divide-x sm:divide-y-0">
+            <div class="min-w-0 p-4">
+                <dt class="flex items-center gap-2 text-xs font-semibold text-content-muted">
+                    <i data-lucide="git-commit-horizontal"
+                       class="h-4 w-4 text-kaori-primary"></i>
                     Build Reference
-                </p>
-                <p class="mt-2 break-all font-mono text-xs font-semibold text-content-primary">{{ system_information.build_sha }}</p>
+                </dt>
+                <dd class="mt-2 break-all font-mono text-xs font-semibold text-content-primary">
+                    {{ system_information.build_sha }}
+                </dd>
             </div>
-            <div>
-                <p class="flex items-center gap-2 text-xs font-semibold text-kaori-primary">
-                    <i data-lucide="calendar-clock" class="h-4 w-4"></i>
+            <div class="p-4">
+                <dt class="flex items-center gap-2 text-xs font-semibold text-content-muted">
+                    <i data-lucide="calendar-clock" class="h-4 w-4 text-kaori-primary"></i>
                     Build Date
-                </p>
-                <p class="mt-2 text-xs font-semibold text-content-primary">{{ system_information.build_date }}</p>
+                </dt>
+                <dd class="mt-2 text-xs font-semibold text-content-primary">
+                    {{ system_information.build_date }}
+                </dd>
             </div>
-        </div>
+        </dl>
     </div>
-</section>
-<section class="mt-5 overflow-hidden rounded-2xl border border-outline-default bg-surface-card">
-    <header class="border-b border-outline-default px-5 py-4">
-        <div class="flex items-start gap-3">
-            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary">
-                <i data-lucide="sparkles" class="h-5 w-5"></i>
-            </span>
-            <div>
-                <h2 class="text-base font-bold text-content-primary">Release {{ system_information.version }} Focus</h2>
-                <p class="mt-1 text-sm leading-6 text-content-muted">
-                    Key operational themes delivered by the currently deployed KAORI release.
-                </p>
-            </div>
-        </div>
-    </header>
-    <div class="grid gap-4 p-5 lg:grid-cols-3">
-        {% for highlight in system_information.release_highlights %}
-            <article class="rounded-xl border border-outline-default bg-surface-subtle p-4 transition hover:border-kaori-accent/60">
-                <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-surface-card text-kaori-primary shadow-sm">
-                    <i data-lucide="{{ highlight.icon }}" class="h-4 w-4"></i>
+    <section class="border-t border-outline-default"
+             aria-labelledby="release-focus-heading">
+        <header class="px-5 pb-3 pt-5">
+            <div class="flex items-start gap-3">
+                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                    <i data-lucide="sparkles" class="h-4 w-4"></i>
                 </span>
-                <h3 class="mt-3 text-sm font-bold text-content-primary">{{ highlight.title }}</h3>
-                <p class="mt-1.5 text-xs leading-5 text-content-muted">{{ highlight.description }}</p>
-            </article>
-        {% endfor %}
-    </div>
-</section>
-<section class="mt-5 overflow-hidden rounded-2xl border border-outline-default bg-surface-card">
-    <header class="flex flex-col gap-3 border-b border-outline-default px-5 py-4 sm:flex-row sm:items-start sm:justify-between">
-        <div class="flex items-start gap-3">
-            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary">
-                <i data-lucide="blocks" class="h-5 w-5"></i>
-            </span>
-            <div>
-                <h2 class="text-base font-bold text-content-primary">Capability Catalog</h2>
-                <p class="mt-1 text-sm leading-6 text-content-muted">
-                    Shipped capabilities in this release. Provider readiness and RBAC still determine which workflows are available to each user.
-                </p>
-            </div>
-        </div>
-        {{ table_label.metadata_label(system_information.feature_count ~ ' Capabilities', 'blocks') }}
-    </header>
-    <div class="grid items-start gap-4 p-5 lg:grid-cols-2">
-        {% for group in system_information.feature_groups %}
-            <details class="group overflow-hidden rounded-xl border border-outline-default bg-surface-subtle transition open:border-kaori-primary/35 open:bg-surface-card open:shadow-sm">
-                <summary class="flex cursor-pointer list-none items-start gap-3 p-4 outline-none transition hover:bg-kaori-soft/45 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-kaori-primary/30 [&::-webkit-details-marker]:hidden">
-                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary shadow-sm">
-                        <i data-lucide="{{ group.icon }}" class="h-4 w-4"></i>
-                    </span>
-                    <span class="min-w-0 flex-1">
-                        <span class="flex flex-wrap items-center gap-2">
-                            <span class="text-sm font-bold text-content-primary">{{ group.title }}</span>
-                            {{ table_label.metadata_label(group.features|length ~ ' Capabilities') }}
-                        </span>
-                        <span class="mt-1 block text-xs leading-5 text-content-muted">{{ group.description }}</span>
-                    </span>
-                    <span class="ml-2 flex shrink-0 items-center gap-1.5 pt-0.5 text-xs font-semibold text-content-muted transition group-hover:text-kaori-primary">
-                        <span class="group-open:hidden">Details</span>
-                        <span class="hidden group-open:inline">Collapse</span>
-                        <i data-lucide="chevron-down"
-                           class="h-4 w-4 transition-transform duration-200 group-open:rotate-180"></i>
-                    </span>
-                </summary>
-                <div class="border-t border-outline-default bg-surface-card px-4 py-4">
-                    <ul class="space-y-2.5">
-                        {% for feature in group.features %}
-                            <li class="flex items-start gap-2.5 text-xs leading-5 text-content-secondary">
-                                <i data-lucide="circle-check"
-                                   class="mt-0.5 h-3.5 w-3.5 shrink-0 text-kaori-primary"></i>
-                                <span>{{ feature }}</span>
-                            </li>
-                        {% endfor %}
-                    </ul>
+                <div>
+                    <h3 id="release-focus-heading"
+                        class="text-sm font-bold text-content-primary">Release {{ system_information.version }} Focus</h3>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Key operational themes delivered by the currently deployed KAORI release.</p>
                 </div>
-            </details>
-        {% endfor %}
-    </div>
+            </div>
+        </header>
+        <div class="grid gap-4 px-5 pb-5 lg:grid-cols-3">
+            {% for highlight in system_information.release_highlights %}
+                <article class="rounded-xl border border-outline-default bg-surface-subtle p-4 transition hover:border-kaori-accent/60">
+                    <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-surface-card text-kaori-primary shadow-sm">
+                        <i data-lucide="{{ highlight.icon }}" class="h-4 w-4"></i>
+                    </span>
+                    <h4 class="mt-3 text-sm font-bold text-content-primary">{{ highlight.title }}</h4>
+                    <p class="mt-1.5 text-xs leading-5 text-content-muted">{{ highlight.description }}</p>
+                </article>
+            {% endfor %}
+        </div>
+    </section>
+    <section class="border-t border-outline-default"
+             aria-labelledby="release-governance-heading">
+        <header class="px-5 pb-3 pt-5">
+            <div class="flex items-start gap-3">
+                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                    <i data-lucide="variable" class="h-4 w-4"></i>
+                </span>
+                <div>
+                    <h3 id="release-governance-heading"
+                        class="text-sm font-bold text-content-primary">Release Governance</h3>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Release identity is deployment metadata, not an editable user preference.</p>
+                </div>
+            </div>
+        </header>
+        <dl class="mx-5 mb-5 grid divide-y divide-outline-subtle overflow-hidden rounded-xl border border-outline-default sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+            <div class="p-4">
+                <dt class="text-xs font-semibold text-content-primary">Required Variable</dt>
+                <dd class="mt-1 break-all font-mono text-xs leading-5 text-kaori-primary">
+                    APP_VERSION={{ system_information.version }}
+                </dd>
+            </div>
+            <div class="p-4">
+                <dt class="text-xs font-semibold text-content-primary">Build Traceability</dt>
+                <dd class="mt-1 text-xs leading-5 text-content-muted">
+                    APP_BUILD_SHA and APP_BUILD_DATE identify the immutable build when supplied by the pipeline.
+                </dd>
+            </div>
+            <div class="p-4">
+                <dt class="text-xs font-semibold text-content-primary">Deployment Rule</dt>
+                <dd class="mt-1 text-xs leading-5 text-content-muted">
+                    Keep APP_VERSION aligned with the immutable KAORI image tag for unambiguous support and rollback decisions.
+                </dd>
+            </div>
+        </dl>
+    </section>
+    <section class="border-t border-outline-default"
+             aria-labelledby="information-boundary-heading">
+        <header class="px-5 pb-3 pt-5">
+            <div class="flex items-start gap-3">
+                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                    <i data-lucide="shield-ellipsis" class="h-4 w-4"></i>
+                </span>
+                <div>
+                    <h3 id="information-boundary-heading"
+                        class="text-sm font-bold text-content-primary">Information Boundary</h3>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Only safe release metadata is exposed in this read-only workspace.</p>
+                </div>
+            </div>
+        </header>
+        <div class="mx-5 mb-5 grid divide-y divide-outline-subtle overflow-hidden rounded-xl border border-outline-default sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+            {% for icon, title, text in [
+                ('eye', 'Visible', 'Product name, release version, environment label, optional build reference, and shipped capability catalog.'),
+                ('eye-off', 'Not Exposed', 'Secrets, provider credentials, database URLs, Redis endpoints, Kubernetes credentials, and internal service addresses.'),
+                ('lock-keyhole', 'Configuration Access', 'Viewing release information does not grant permission to configure integrations, users, roles, or system controls.'),
+                ] %}
+                <div class="flex items-start gap-3 p-4">
+                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                        <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
+                    </span>
+                    <div>
+                        <p class="text-sm font-semibold text-content-primary">{{ title }}</p>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">{{ text }}</p>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </section>
+    <section class="border-t border-outline-default"
+             aria-labelledby="capability-catalog-heading">
+        <header class="flex flex-col gap-3 px-5 pb-3 pt-5 sm:flex-row sm:items-start sm:justify-between">
+            <div class="flex items-start gap-3">
+                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                    <i data-lucide="blocks" class="h-4 w-4"></i>
+                </span>
+                <div>
+                    <h3 id="capability-catalog-heading"
+                        class="text-sm font-bold text-content-primary">Capability Catalog</h3>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Shipped capabilities in this release. Provider readiness and RBAC still determine workflow availability.</p>
+                </div>
+            </div>
+            {{ table_label.metadata_label(system_information.feature_count ~ ' Capabilities', 'blocks') }}
+        </header>
+        <div class="grid items-start gap-4 px-5 pb-5 lg:grid-cols-2">
+            {% for group in system_information.feature_groups %}
+                <details class="group overflow-hidden rounded-xl border border-outline-default bg-surface-subtle transition open:border-kaori-primary/35 open:bg-surface-card open:shadow-sm">
+                    <summary class="flex cursor-pointer list-none items-start gap-3 p-4 outline-none transition hover:bg-kaori-soft/45 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-kaori-primary/30 [&::-webkit-details-marker]:hidden">
+                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary shadow-sm">
+                            <i data-lucide="{{ group.icon }}" class="h-4 w-4"></i>
+                        </span>
+                        <span class="min-w-0 flex-1">
+                            <span class="flex flex-wrap items-center gap-2">
+                                <span class="text-sm font-bold text-content-primary">{{ group.title }}</span>
+                                {{ table_label.metadata_label(group.features|length ~ ' Capabilities') }}
+                            </span>
+                            <span class="mt-1 block text-xs leading-5 text-content-muted">{{ group.description }}</span>
+                        </span>
+                        <span class="ml-2 flex shrink-0 items-center gap-1.5 pt-0.5 text-xs font-semibold text-content-muted transition group-hover:text-kaori-primary">
+                            <span class="group-open:hidden">Details</span>
+                            <span class="hidden group-open:inline">Collapse</span>
+                            <i data-lucide="chevron-down"
+                               class="h-4 w-4 transition-transform duration-200 group-open:rotate-180"></i>
+                        </span>
+                    </summary>
+                    <div class="border-t border-outline-default bg-surface-card px-4 py-4">
+                        <ul class="space-y-2.5">
+                            {% for feature in group.features %}
+                                <li class="flex items-start gap-2.5 text-xs leading-5 text-content-secondary">
+                                    <i data-lucide="circle-check"
+                                       class="mt-0.5 h-3.5 w-3.5 shrink-0 text-kaori-primary"></i>
+                                    <span>{{ feature }}</span>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </details>
+            {% endfor %}
+        </div>
+    </section>
 </section>

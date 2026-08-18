@@ -6,7 +6,7 @@
 
 ## Findings closed
 
-1. Removed three side-context partials that were no longer rendered by the locked General/Account workspaces.
+1. Removed obsolete side-context partials from locked General/Account workspaces; System Information and Compatibility Versions now keep their read-only guidance inline in unified full-width workspaces.
 2. Replaced raw red validation styling with shared semantic status ownership.
 3. Removed page-local arbitrary `10px`/tracking typography and `font-extrabold` drift from active Settings surfaces.
 4. Delegated credential feedback semantic border/surface classes to the shared operational callout component.

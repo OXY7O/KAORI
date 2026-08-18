@@ -12,22 +12,15 @@
             <div class="p-5 xl:p-6" data-regional-format-workspace-layout="full-width">
                 {% include "settings/general/partials/_regional_format.html" %}
             </div>
-        {% else %}
-            <div class="grid gap-6 p-5 xl:grid-cols-12 xl:p-6">
-                <div class="xl:col-span-8">
-                    {% if active_tab == 'system-information' %}
-                        {% include "settings/general/partials/_system_information.html" %}
-                    {% elif active_tab == 'compatibility-versions' %}
-                        {% include "settings/general/partials/_compatibility_versions.html" %}
-                    {% endif %}
-                </div>
-                <aside class="space-y-5 xl:col-span-4">
-                    {% if active_tab == 'system-information' %}
-                        {% include "settings/general/partials/_system_information_context.html" %}
-                    {% elif active_tab == 'compatibility-versions' %}
-                        {% include "settings/general/partials/_compatibility_versions_context.html" %}
-                    {% endif %}
-                </aside>
+        {% elif active_tab == 'system-information' %}
+            <div class="p-5 xl:p-6"
+                 data-system-information-workspace-layout="full-width">
+                {% include "settings/general/partials/_system_information.html" %}
+            </div>
+        {% elif active_tab == 'compatibility-versions' %}
+            <div class="p-5 xl:p-6"
+                 data-compatibility-versions-workspace-layout="full-width">
+                {% include "settings/general/partials/_compatibility_versions.html" %}
             </div>
         {% endif %}
     </section>

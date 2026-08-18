@@ -13,6 +13,8 @@ LOCK_DOCS = (
 
 RETIRED_PARTIALS = (
     'app/templates/settings/general/partials/_impact_information.html',
+    'app/templates/settings/general/partials/_system_information_context.html',
+    'app/templates/settings/general/partials/_compatibility_versions_context.html',
     'app/templates/settings/account/partials/_profile_information.html',
     'app/templates/settings/account/partials/_activity_information.html',
 )
@@ -115,6 +117,8 @@ def main() -> int:
         'settings/general/partials/_tabs.html',
         'data-timezone-workspace-layout="full-width"',
         'data-regional-format-workspace-layout="full-width"',
+        'data-system-information-workspace-layout="full-width"',
+        'data-compatibility-versions-workspace-layout="full-width"',
     ):
         require(required in general_page, f'General Settings composition missing: {required}', errors)
     for source, label in ((timezone, 'Time Zone'), (regional, 'Regional Format')):
@@ -145,6 +149,29 @@ def main() -> int:
     )
     require('components/action_button.html' in timezone, 'Time Zone save must use shared action button', errors)
     require('components/action_button.html' in regional, 'Regional Format save must use shared action button', errors)
+
+    system_information_workspace = read('app/templates/settings/general/partials/_system_information.html')
+    compatibility_workspace = read('app/templates/settings/general/partials/_compatibility_versions.html')
+    require(
+        'data-system-information-workspace="unified"' in system_information_workspace,
+        'System Information must remain one unified full-width read-only workspace',
+        errors,
+    )
+    require(
+        'Release Governance' in system_information_workspace and 'Information Boundary' in system_information_workspace,
+        'System Information governance and exposure boundaries must remain inline',
+        errors,
+    )
+    require(
+        'data-compatibility-versions-workspace="unified"' in compatibility_workspace,
+        'Compatibility Versions must remain one unified full-width read-only workspace',
+        errors,
+    )
+    require(
+        'Reading the Matrix' in compatibility_workspace and 'Policy Boundary' in compatibility_workspace,
+        'Compatibility reading guidance and policy boundary must remain inline',
+        errors,
+    )
 
     account_page = read('app/templates/settings/account/partials/_page_content.html')
     account_tabs = read('app/templates/settings/account/partials/_tabs.html')

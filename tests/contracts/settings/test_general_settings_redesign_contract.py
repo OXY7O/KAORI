@@ -84,27 +84,36 @@ def test_personal_preference_boundaries_live_in_active_workspaces() -> None:
 
 def test_system_information_is_explicitly_read_only_and_traceable() -> None:
     main = read('app/templates/settings/general/partials/_system_information.html')
-    context = read('app/templates/settings/general/partials/_system_information_context.html')
     assert 'Release Identity' in main
     assert 'Read-Only Metadata' in main
     assert 'Build Reference' in main
     assert 'Build Date' in main
     assert 'Capability Catalog' in main
-    assert 'Release Governance' in context
-    assert 'Information Boundary' in context
-    assert 'Not Exposed' in context
+    assert 'Release Governance' in main
+    assert 'Information Boundary' in main
+    assert 'Not Exposed' in main
+    assert 'data-system-information-workspace="unified"' in main
+    assert 'data-system-information-workspace-layout="full-width"' in read(
+        'app/templates/settings/general/partials/_page_content.html'
+    )
+    assert not (ROOT / 'app/templates/settings/general/partials/_system_information_context.html').exists()
 
 
 def test_compatibility_workspace_keeps_version_and_readiness_decisions_separate() -> None:
     main = read('app/templates/settings/general/partials/_compatibility_versions.html')
-    context = read('app/templates/settings/general/partials/_compatibility_versions_context.html')
     assert 'Integration Compatibility' in main
     assert 'Validation Required' in main
     assert 'Qualified Compatibility Matrix' in main
     assert 'upstream support calendar' in main
     assert 'item.version_scheme' in main
     assert 'Capability Validation Basis' in main
-    assert 'Reading the Matrix' in context
-    assert 'Minimum Compatible' in context
-    assert 'Recommended Baseline' in context
-    assert 'Live Readiness' in context
+    assert 'Reading the Matrix' in main
+    assert 'Minimum Compatible' in main
+    assert 'Recommended Baseline' in main
+    assert 'Live Readiness' in main
+    assert 'Policy Boundary' in main
+    assert 'data-compatibility-versions-workspace="unified"' in main
+    assert 'data-compatibility-versions-workspace-layout="full-width"' in read(
+        'app/templates/settings/general/partials/_page_content.html'
+    )
+    assert not (ROOT / 'app/templates/settings/general/partials/_compatibility_versions_context.html').exists()

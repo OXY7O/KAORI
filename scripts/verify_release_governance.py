@@ -28,7 +28,7 @@ def verify() -> None:
     readme = read('README.md')
     settings_readme = read('app/settings/README.md')
     system_information = read('app/settings/system_information.py')
-    system_context = read('app/templates/settings/general/partials/_system_information_context.html')
+    system_information_template = read('app/templates/settings/general/partials/_system_information.html')
     default_config = read('app/config/default.py')
     env_example = read('.env.example')
     env_production = read('.env.production.example')
@@ -100,8 +100,8 @@ def verify() -> None:
     for token in ('APP_VERSION', 'APP_BUILD_SHA', 'APP_BUILD_DATE'):
         if token not in system_information and token != 'APP_VERSION':
             raise AssertionError(f'System Information builder must retain {token} support')
-        if token not in system_context:
-            raise AssertionError(f'System Information release-governance context must mention {token}')
+        if token not in system_information_template:
+            raise AssertionError(f'System Information release-governance workspace must mention {token}')
 
     if 'python scripts/verify_release_governance.py' not in quality_gate:
         raise AssertionError('quality_gate.sh must execute verify_release_governance.py')
