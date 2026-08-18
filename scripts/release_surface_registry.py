@@ -73,7 +73,7 @@ SURFACES: tuple[ReleaseSurface, ...] = (
         ),
         blueprint_vars=('object_storage_inventory_bp',),
         verifiers=('scripts/verify_object_storage_inventory_final_lock.py',),
-        contract_paths=('tests/contracts/inventory/object_storage',),
+        contract_paths=('tests/contracts/storage/object_storage/inventory',),
         notes=(
             'Provider-neutral committed inventory. Live provider configuration, validation, and runtime health '
             'remain integration-owned.'
@@ -90,7 +90,7 @@ SURFACES: tuple[ReleaseSurface, ...] = (
         ),
         blueprint_vars=('kubernetes_operations_bp',),
         verifiers=('scripts/verify_kubernetes_operations_final_lock.py',),
-        contract_paths=('tests/contracts/kubernetes_operations',),
+        contract_paths=('tests/contracts/kubernetes/operations',),
     ),
     ReleaseSurface(
         key='governance',
@@ -100,7 +100,7 @@ SURFACES: tuple[ReleaseSurface, ...] = (
         navigation_endpoints=('governance.tls_certificates',),
         blueprint_vars=('governance_bp',),
         verifiers=('scripts/verify_governance_final_lock.py',),
-        contract_paths=('tests/contracts/governance',),
+        contract_paths=('tests/contracts/kubernetes/governance',),
     ),
     ReleaseSurface(
         key='analytics',
@@ -218,7 +218,7 @@ SURFACES: tuple[ReleaseSurface, ...] = (
             'scripts/verify_platform_operations_final_lock.py',
             'scripts/verify_job_progress_final_lock.py',
         ),
-        contract_paths=('tests/contracts/platform_operations', 'tests/contracts/jobs'),
+        contract_paths=('tests/contracts/platform_operations', 'tests/contracts/platform_operations/jobs'),
     ),
     ReleaseSurface(
         key='access',
@@ -255,7 +255,7 @@ SURFACES: tuple[ReleaseSurface, ...] = (
         navigation_endpoints=(),
         blueprint_vars=('auth_bp',),
         verifiers=('scripts/verify_authentication_surface_final_lock.py',),
-        contract_paths=('tests/contracts/auth',),
+        contract_paths=('tests/contracts/access/authentication',),
         notes='Public/shell surface; intentionally absent from authenticated sidebar navigation.',
     ),
     ReleaseSurface(
@@ -269,7 +269,7 @@ SURFACES: tuple[ReleaseSurface, ...] = (
             'scripts/verify_notification_center_final_lock.py',
             'scripts/verify_notification_activity_center.py',
         ),
-        contract_paths=('tests/contracts/notifications',),
+        contract_paths=('tests/contracts/platform_operations/notifications',),
         notes='Application-shell surface; Activity Audit is separately linked under Access.',
     ),
     ReleaseSurface(

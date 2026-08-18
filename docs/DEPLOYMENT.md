@@ -148,7 +148,7 @@ ORDER BY cluster_id, dataset_key, generated_at DESC;
 Run code validation:
 
 ```bash
-pytest -q tests/dashboards/test_kubernetes_dashboard_snapshot_flow.py
+pytest -q tests/kubernetes/dashboard/test_kubernetes_dashboard_snapshot_flow.py
 python scripts/verify_python_syntax.py
 ```
 

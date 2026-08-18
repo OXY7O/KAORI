@@ -190,11 +190,11 @@ def main() -> int:
     )
 
     for relative in (
-        'tests/unit/auth/test_auth_session_policy.py',
+        'tests/unit/access/authentication/test_auth_session_policy.py',
         'tests/access/authentication/test_login_characterization.py',
-        'tests/security/auth/test_authentication_security.py',
-        'tests/rendering/auth/test_authentication_rendering.py',
-        'tests/e2e/auth/test_authentication_smoke.py',
+        'tests/security/access/authentication/test_authentication_security.py',
+        'tests/rendering/access/authentication/test_authentication_rendering.py',
+        'tests/e2e/access/authentication/test_authentication_smoke.py',
     ):
         require(relative in feature_gate, f'Authentication release evidence is not registered: {relative}', errors)
 

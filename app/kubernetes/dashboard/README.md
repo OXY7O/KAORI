@@ -42,7 +42,7 @@ Examples:
 - Aggregate and set-based database access: `repository.py`
 - Canonical ORM ownership: dashboard services and sections import model classes directly from `app.models`; dynamic loaders and alternate import-path probes are prohibited.
 - Section projection: `sections/`
-- Templates: `templates/dashboards/kubernetes/`
+- Templates: `templates/kubernetes/dashboard/`
 
 ## Operational flow
 
@@ -96,12 +96,12 @@ Celery Beat checks enabled Kubernetes, Metrics Source, and Alertmanager integrat
 
 - Static Quality: `scripts/quality_gate.sh --static` plus Ruff, Ruff Format, djLint, Pyright, JavaScript syntax, and Prettier.
 - Contract Test: Kubernetes Dashboard contracts under `tests/contracts/kubernetes/`.
-- Unit Test: `tests/unit/dashboards/test_kubernetes_dashboard_domain.py`.
-- Functional Test: `tests/dashboards/test_kubernetes_dashboard_characterization.py` and snapshot-flow regressions.
-- Integration Test: `tests/integration/dashboards/test_kubernetes_dashboard_repository.py` validates the SQLAlchemy repository boundary independently of provider integrations.
-- Security Regression: `tests/security/dashboards/test_kubernetes_dashboard_security.py`; authorization-order behavior remains covered by the functional characterization suite.
-- Rendering/UI Contract: `tests/rendering/dashboards/test_kubernetes_dashboard_rendering.py` plus shared-component contracts.
-- End-to-End Smoke: `tests/e2e/dashboards/test_kubernetes_dashboard_smoke.py` exercises real Flask routing, session/RBAC, templates, and application shell with persistence/provider dependencies isolated.
+- Unit Test: `tests/unit/kubernetes/dashboard/test_kubernetes_dashboard_domain.py`.
+- Functional Test: `tests/kubernetes/dashboard/test_kubernetes_dashboard_characterization.py` and snapshot-flow regressions.
+- Integration Test: `tests/integration/kubernetes/dashboard/test_kubernetes_dashboard_repository.py` validates the SQLAlchemy repository boundary independently of provider integrations.
+- Security Regression: `tests/security/kubernetes/dashboard/test_kubernetes_dashboard_security.py`; authorization-order behavior remains covered by the functional characterization suite.
+- Rendering/UI Contract: `tests/rendering/kubernetes/dashboard/test_kubernetes_dashboard_rendering.py` plus shared-component contracts.
+- End-to-End Smoke: `tests/e2e/kubernetes/dashboard/test_kubernetes_dashboard_smoke.py` exercises real Flask routing, session/RBAC, templates, and application shell with persistence/provider dependencies isolated.
 - Final invariant: `scripts/verify_operational_dashboard_standard.py`.
 - Release execution: `scripts/quality_gate.sh` runs all non-E2E layers and the E2E smoke layer explicitly.
 

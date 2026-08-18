@@ -8,7 +8,7 @@ Welcome is intentionally outside this package because it is a platform-wide land
 | Workspace | Python package | Template root | Blueprint | Canonical URL |
 |---|---|---|---|---|
 | Welcome | `app/welcome` | `templates/welcome` | `welcome` | `/welcome` |
-| Kubernetes Dashboard | `app/kubernetes/dashboard` | `templates/dashboards/kubernetes` | `kubernetes_dashboard` | `/dashboards/kubernetes` |
+| Kubernetes Dashboard | `app/kubernetes/dashboard` | `templates/kubernetes/dashboard` | `kubernetes_dashboard` | `/dashboards/kubernetes` |
 | Server Dashboard | `app/dashboards/server` | `templates/dashboards/server` | reserved | reserved |
 | HCI Dashboard | `app/dashboards/hci` | `templates/dashboards/hci` | reserved | reserved |
 

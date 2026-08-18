@@ -13,12 +13,12 @@ ROUTE_FILES = tuple(sorted((ROOT / 'app/kubernetes/analytics').glob('*/routes.py
 )
 RELEASE_EVIDENCE = (
     'tests/contracts/analytics/test_analytics_final_release_contract.py',
-    'tests/unit/analytics/test_materialization_identity.py',
-    'tests/analytics/test_kubernetes_analytics_page_flows.py',
-    'tests/security/analytics/test_analytics_security.py',
-    'tests/rendering/analytics/test_analytics_rendering.py',
-    'tests/integration/analytics/test_materialized_snapshot_read_model.py',
-    'tests/e2e/analytics/test_analytics_smoke.py',
+    'tests/unit/kubernetes/analytics/test_materialization_identity.py',
+    'tests/kubernetes/analytics/test_kubernetes_analytics_page_flows.py',
+    'tests/security/kubernetes/analytics/test_analytics_security.py',
+    'tests/rendering/kubernetes/analytics/test_analytics_rendering.py',
+    'tests/integration/kubernetes/analytics/test_materialized_snapshot_read_model.py',
+    'tests/e2e/kubernetes/analytics/test_analytics_smoke.py',
 )
 
 
@@ -252,12 +252,12 @@ def main() -> int:
         errors,
     )
     require(
-        'tests/analytics' in quality_gate,
+        'tests/kubernetes/analytics' in quality_gate,
         'quality_gate.sh must retain Analytics functional release evidence.',
         errors,
     )
     for relative in RELEASE_EVIDENCE:
-        if relative == 'tests/analytics/test_kubernetes_analytics_page_flows.py':
+        if relative == 'tests/kubernetes/analytics/test_kubernetes_analytics_page_flows.py':
             continue
         require(
             Path(relative).name in coverage,

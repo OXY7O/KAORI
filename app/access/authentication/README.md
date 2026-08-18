@@ -138,11 +138,11 @@ The last two are required because LDAP/SSO identity resolution and authenticatio
 
 ## Test Gate
 
-Functional Auth tests live under `tests/access/authentication/`; architecture ownership checks live under `tests/contracts/auth/`.
+Functional Auth tests live under `tests/access/authentication/`; architecture ownership checks live under `tests/contracts/access/authentication/`.
 
 ```bash
 pytest -q tests/access/authentication -m functional
-pytest -q tests/contracts/auth -m contract
+pytest -q tests/contracts/access/authentication -m contract
 pytest -q tests/access/authentication -m functional --cov=app.access.authentication --cov-report=term-missing
 ```
 
@@ -176,10 +176,10 @@ The interactive password/theme runtime is owned by `app/static/js/auth_login.js`
 Permanent release evidence:
 
 - Static Quality: `scripts/verify_authentication_surface_final_lock.py`, Ruff, djLint, Pyright, UI debt verifiers, and JavaScript syntax.
-- Contract Tests: `tests/contracts/auth/`.
-- Unit Tests: `tests/unit/auth/test_auth_session_policy.py`.
+- Contract Tests: `tests/contracts/access/authentication/`.
+- Unit Tests: `tests/unit/access/authentication/test_auth_session_policy.py`.
 - Functional Tests: `tests/access/authentication/test_login_characterization.py`.
-- Security Regression: `tests/security/auth/test_authentication_security.py`.
-- Rendering/UI Contracts: `tests/rendering/auth/test_authentication_rendering.py`.
-- End-to-End Smoke: `tests/e2e/auth/test_authentication_smoke.py`.
+- Security Regression: `tests/security/access/authentication/test_authentication_security.py`.
+- Rendering/UI Contracts: `tests/rendering/access/authentication/test_authentication_rendering.py`.
+- End-to-End Smoke: `tests/e2e/access/authentication/test_authentication_smoke.py`.
 - Integration: N/A for this presentation lock. Provider/storage integrations are unchanged; this batch does not introduce a new persistence, LDAP, OAuth/OIDC, or external-runtime collaboration boundary.

@@ -86,3 +86,7 @@ Namespace refactors use hard cutover semantics:
 4. do not add compatibility import wrappers;
 5. run architecture, import-symbol, import-cycle, code-health, UI, and contract gates;
 6. commit the refactor atomically while the application is runnable.
+
+## Test package mirror
+
+Functional tests mirror application ownership directly: `tests/kubernetes/analytics/`, `tests/storage/object_storage/inventory/`, `tests/platform_operations/jobs/`, and similar domain paths. Purpose buckets (`tests/unit/`, `tests/integration/`, `tests/security/`, `tests/rendering/`, `tests/e2e/`, and `tests/contracts/`) keep the purpose as the first dimension and mirror the same domain tree underneath it. Retired capability-first paths such as `tests/analytics/`, `tests/inventory/`, `tests/dashboards/`, and `tests/kubernetes_operations/` must not be recreated.

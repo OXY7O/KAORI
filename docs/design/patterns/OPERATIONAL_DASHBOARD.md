@@ -155,7 +155,7 @@ Run:
 
 ```bash
 python3 scripts/verify_operational_dashboard_standard.py
-python3 -m pytest -q tests/dashboards/test_kubernetes_dashboard_characterization.py
-python3 -m pytest -q tests/dashboards/test_kubernetes_dashboard_snapshot_flow.py
+python3 -m pytest -q tests/kubernetes/dashboard/test_kubernetes_dashboard_characterization.py
+python3 -m pytest -q tests/kubernetes/dashboard/test_kubernetes_dashboard_snapshot_flow.py
 python3 -m pytest -q tests/contracts/kubernetes/test_operations_dashboard_styling_guide_contract.py
 ```

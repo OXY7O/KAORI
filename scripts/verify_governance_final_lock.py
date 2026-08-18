@@ -219,13 +219,13 @@ def main() -> int:
         errors,
     )
     for path in (
-        'tests/contracts/governance/test_governance_final_release_contract.py',
-        'tests/unit/governance/test_tls_governance_policy.py',
-        'tests/governance/test_tls_governance_route_characterization.py',
-        'tests/security/governance/test_tls_governance_security.py',
-        'tests/rendering/governance/test_tls_governance_rendering.py',
-        'tests/integration/governance/test_tls_certificate_read_model.py',
-        'tests/e2e/governance/test_tls_governance_smoke.py',
+        'tests/contracts/kubernetes/governance/test_governance_final_release_contract.py',
+        'tests/unit/kubernetes/governance/test_tls_governance_policy.py',
+        'tests/kubernetes/governance/test_tls_governance_route_characterization.py',
+        'tests/security/kubernetes/governance/test_tls_governance_security.py',
+        'tests/rendering/kubernetes/governance/test_tls_governance_rendering.py',
+        'tests/integration/kubernetes/governance/test_tls_certificate_read_model.py',
+        'tests/e2e/kubernetes/governance/test_tls_governance_smoke.py',
     ):
         require(path in coverage, f'Governance release evidence is not permanent: {path}', errors)
 

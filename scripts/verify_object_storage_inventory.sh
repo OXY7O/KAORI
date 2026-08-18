@@ -28,8 +28,8 @@ python -m ruff check \
   migrations/versions/20260813_object_storage_quota_diagnostics.py \
   app/bootstrap/blueprints.py \
   scripts/verify_sidebar_navigation_standard.py \
-  tests/contracts/inventory/object_storage \
-  tests/inventory/object_storage \
+  tests/contracts/storage/object_storage/inventory \
+  tests/storage/object_storage/inventory \
   tests/integrations/test_minio_bucket_enrichment.py
 
 printf '\n[2/6] djLint\n'
@@ -47,10 +47,10 @@ printf '\n[3/6] Sidebar Navigation Standard\n'
 python scripts/verify_sidebar_navigation_standard.py
 
 printf '\n[4/6] Object Storage Inventory Contracts\n'
-pytest -q tests/contracts/inventory/object_storage
+pytest -q tests/contracts/storage/object_storage/inventory
 
 printf '\n[5/6] Object Storage Inventory Unit Tests\n'
-pytest -q tests/inventory/object_storage tests/integrations/test_minio_bucket_enrichment.py
+pytest -q tests/storage/object_storage/inventory tests/integrations/test_minio_bucket_enrichment.py
 
 printf '\n[6/6] Regression Contracts\n'
 if [[ "$FULL" == "true" ]]; then

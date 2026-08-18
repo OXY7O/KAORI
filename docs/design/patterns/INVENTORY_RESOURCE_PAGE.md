@@ -137,22 +137,22 @@ L1 Contract Test
   existing per-resource Inventory contracts
 
 L2 Unit Test
-  tests/unit/inventory/
+  tests/unit/kubernetes/inventory/
 
 L3 Functional Test
-  tests/inventory/
+  tests/kubernetes/inventory/
 
 L4 Integration Test
-  tests/integration/inventory/
+  tests/integration/kubernetes/inventory/
 
 L5 Security Regression
-  tests/security/inventory/
+  tests/security/kubernetes/inventory/
 
 L6 Rendering/UI Contract
-  tests/rendering/inventory/
+  tests/rendering/kubernetes/inventory/
 
 L7 End-to-End Smoke
-  tests/e2e/inventory/
+  tests/e2e/kubernetes/inventory/
 ```
 
 The final-lock verifier protects AuthZ ordering, committed-snapshot/provider boundaries, canonical Hero/table/modal/pagination composition, Topology database ownership, retired residual helpers/files, documentation ownership, and permanent test evidence.

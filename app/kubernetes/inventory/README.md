@@ -230,12 +230,12 @@ Final release evidence is layered:
 ```text
 L0  scripts/verify_inventory_final_lock.py + static quality gate
 L1  tests/contracts/kubernetes/test_inventory_final_release_contract.py
-L2  tests/unit/inventory/
-L3  tests/inventory/
-L4  tests/integration/inventory/
-L5  tests/security/inventory/
-L6  tests/rendering/inventory/
-L7  tests/e2e/inventory/
+L2  tests/unit/kubernetes/inventory/
+L3  tests/kubernetes/inventory/
+L4  tests/integration/kubernetes/inventory/
+L5  tests/security/kubernetes/inventory/
+L6  tests/rendering/kubernetes/inventory/
+L7  tests/e2e/kubernetes/inventory/
 ```
 
 The canonical design contract is `docs/design/patterns/INVENTORY_RESOURCE_PAGE.md`; the current release audit is `docs/design/audits/KUBERNETES_INVENTORY_FINAL_RECHECK_2026_08.md`.

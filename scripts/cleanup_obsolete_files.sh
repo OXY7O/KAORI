@@ -24,7 +24,7 @@ obsolete_paths=(
   'app/templates/kubernetes/operations/_components.html'
   'app/templates/kubernetes/operations/configmaps/_operation_notification.html'
   'app/kubernetes/operations/secrets/routes.py'
-  'tests/kubernetes_operations/test_secret_delete_workflow.py'
+  'tests/kubernetes/operations/test_secret_delete_workflow.py'
   'app/templates/kubernetes/governance/tls_certificates/partials/_operation_feedback_oob.html'
   'app/templates/kubernetes/governance/tls_certificates/partials/_sync_toast_oob.html'
   'app/templates/kubernetes/governance/tls_certificates/partials/_inventory_scope.html'

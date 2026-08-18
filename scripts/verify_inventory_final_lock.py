@@ -319,12 +319,12 @@ def main() -> int:
     )
     for required_test in (
         'tests/contracts/kubernetes/test_inventory_final_release_contract.py',
-        'tests/unit/inventory/kubernetes/test_inventory_topology_selection.py',
-        'tests/inventory/kubernetes/test_inventory_route_characterization.py',
-        'tests/security/inventory/test_inventory_security.py',
-        'tests/rendering/inventory/test_inventory_rendering.py',
-        'tests/integration/inventory/kubernetes/test_node_inventory_read_model.py',
-        'tests/e2e/inventory/kubernetes/test_inventory_smoke.py',
+        'tests/unit/kubernetes/inventory/test_inventory_topology_selection.py',
+        'tests/kubernetes/inventory/test_inventory_route_characterization.py',
+        'tests/security/kubernetes/inventory/test_inventory_security.py',
+        'tests/rendering/kubernetes/inventory/test_inventory_rendering.py',
+        'tests/integration/kubernetes/inventory/test_node_inventory_read_model.py',
+        'tests/e2e/kubernetes/inventory/test_inventory_smoke.py',
     ):
         require(required_test in coverage, f'Inventory release evidence is not permanent: {required_test}', errors)
 

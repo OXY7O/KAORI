@@ -20,7 +20,7 @@ REQUIRED = (
     'app/templates/storage/object_storage/inventory/buckets/partials/_snapshot_boundary.html',
     'app/templates/storage/object_storage/inventory/systems/partials/_table_content.html',
     'app/templates/storage/object_storage/inventory/buckets/partials/_table_content.html',
-    'tests/contracts/inventory/object_storage',
+    'tests/contracts/storage/object_storage/inventory',
 )
 
 

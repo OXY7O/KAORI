@@ -72,7 +72,7 @@ pytest -q -m 'not debug and not e2e'
 Reviewed domain characterization suites that actually exist are invoked explicitly, and the critical smoke layer runs separately:
 
 ```bash
-pytest -q tests/welcome tests/dashboards tests/analytics tests/inventory tests/governance tests/kubernetes_operations -m functional
+pytest -q tests/welcome tests/access tests/integrations tests/kubernetes/dashboard tests/kubernetes/analytics tests/kubernetes/inventory tests/kubernetes/governance tests/kubernetes/operations tests/storage tests/platform_operations tests/reports tests/settings -m functional
 pytest -q tests/e2e -m e2e
 ```
 

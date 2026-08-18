@@ -117,8 +117,37 @@ def _route_persistence_files() -> set[str]:
     for path in APP.rglob('*.py'):
         if path.name != 'routes.py' and not path.name.endswith('_routes.py'):
             continue
-        source = path.read_text(encoding='utf-8')
-        if 'db.session' in source or '.query' in source:
+
+        tree = ast.parse(path.read_text(encoding='utf-8'), filename=str(path))
+        model_names: set[str] = set()
+        db_names = {'db'}
+        for node in ast.walk(tree):
+            if isinstance(node, ast.ImportFrom) and node.module:
+                if node.module == 'app.models' or node.module.startswith('app.models.'):
+                    for alias in node.names:
+                        if alias.name != '*':
+                            model_names.add(alias.asname or alias.name)
+                if node.module == 'app.extensions':
+                    for alias in node.names:
+                        if alias.name == 'db':
+                            db_names.add(alias.asname or alias.name)
+
+        has_persistence = False
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Attribute):
+                continue
+            if (
+                isinstance(node.value, ast.Name)
+                and node.value.id in db_names
+                and node.attr in {'session', 'get_or_404'}
+            ):
+                has_persistence = True
+                break
+            if node.attr == 'query' and isinstance(node.value, ast.Name) and node.value.id in model_names:
+                has_persistence = True
+                break
+
+        if has_persistence:
             result.add(path.relative_to(ROOT).as_posix())
     return result
 

@@ -25,13 +25,13 @@ ROUTE_FILES = (
     'app/kubernetes/operations/secrets/tls_routes.py',
 )
 RELEASE_EVIDENCE = (
-    'tests/contracts/kubernetes_operations/test_kubernetes_operations_final_release_contract.py',
-    'tests/unit/kubernetes_operations/test_operation_flow_unit.py',
-    'tests/kubernetes_operations/test_route_authorization_characterization.py',
-    'tests/integration/kubernetes_operations/test_live_runtime_boundary.py',
-    'tests/security/kubernetes_operations/test_kubernetes_operations_security.py',
-    'tests/rendering/kubernetes_operations/test_kubernetes_operations_rendering.py',
-    'tests/e2e/kubernetes_operations/test_kubernetes_operations_smoke.py',
+    'tests/contracts/kubernetes/operations/test_kubernetes_operations_final_release_contract.py',
+    'tests/unit/kubernetes/operations/test_operation_flow_unit.py',
+    'tests/kubernetes/operations/test_route_authorization_characterization.py',
+    'tests/integration/kubernetes/operations/test_live_runtime_boundary.py',
+    'tests/security/kubernetes/operations/test_kubernetes_operations_security.py',
+    'tests/rendering/kubernetes/operations/test_kubernetes_operations_rendering.py',
+    'tests/e2e/kubernetes/operations/test_kubernetes_operations_smoke.py',
 )
 
 
@@ -355,7 +355,7 @@ def main() -> int:
         errors,
     )
     require(
-        'tests/kubernetes_operations' in quality_gate,
+        'tests/kubernetes/operations' in quality_gate,
         'quality_gate.sh must run Kubernetes Operations functional characterization explicitly.',
         errors,
     )

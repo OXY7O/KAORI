@@ -49,8 +49,8 @@ def test_prerequisite_verifier_owns_concise_pass_and_actionable_failures() -> No
 
 
 def test_standalone_functional_module_loaders_restore_sys_modules() -> None:
-    dashboard = read('tests/dashboards/test_dashboard_canonical_repository.py')
-    topology = read('tests/inventory/kubernetes/test_topology_canonical_builders.py')
+    dashboard = read('tests/kubernetes/dashboard/test_dashboard_canonical_repository.py')
+    topology = read('tests/kubernetes/inventory/test_topology_canonical_builders.py')
 
     for source in (dashboard, topology):
         assert 'monkeypatch.setitem(sys.modules' in source

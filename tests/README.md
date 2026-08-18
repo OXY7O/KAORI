@@ -15,7 +15,7 @@ KAORI separates evidence by purpose so a green test count cannot hide a missing 
 | Migration Test | `tests/migrations/` | `migration` | Upgrade/downgrade/data-transform behavior | Required for persistence/migration changes |
 | Debug | `tests/debug/` | `debug` | Temporary reproduction/diagnostics only | Excluded from release |
 
-`tests/conftest.py` is the only path-based marker-assignment hook. Purpose buckets listed above receive their dedicated marker. Other first-level domain directories such as `tests/welcome/`, `tests/analytics/`, and `tests/inventory/` are functional behavior by default.
+`tests/conftest.py` is the only path-based marker-assignment hook. Purpose buckets listed above receive their dedicated marker. Other first-level domain directories such as `tests/welcome/`, `tests/kubernetes/`, and `tests/storage/` are functional behavior by default.
 
 A fixed defect must finish with the smallest durable regression evidence that proves the behavior. Static/string contracts may supplement business or security behavior but must not be the only proof when executable behavior can be tested.
 
@@ -35,7 +35,7 @@ Primary targeted commands:
 ```bash
 pytest -q tests/unit -m unit
 pytest -q tests/welcome -m functional
-pytest -q tests/dashboards -m functional
+pytest -q tests/kubernetes/dashboard -m functional
 pytest -q tests/integration -m integration
 pytest -q tests/security -m security
 pytest -q tests/rendering -m rendering
@@ -48,12 +48,12 @@ Do not keep a debug reproduction after its permanent regression test exists.
 Inventory final-recheck commands:
 
 ```bash
-pytest -q tests/unit/inventory -m unit
-pytest -q tests/inventory -m functional
-pytest -q tests/integration/inventory -m integration
-pytest -q tests/security/inventory -m security
-pytest -q tests/rendering/inventory -m rendering
-pytest -q tests/e2e/inventory -m e2e
+pytest -q tests/unit/kubernetes/inventory -m unit
+pytest -q tests/kubernetes/inventory -m functional
+pytest -q tests/integration/kubernetes/inventory -m integration
+pytest -q tests/security/kubernetes/inventory -m security
+pytest -q tests/rendering/kubernetes/inventory -m rendering
+pytest -q tests/e2e/kubernetes/inventory -m e2e
 pytest -q tests/contracts/kubernetes/test_inventory_final_release_contract.py -m contract
 ```
 
@@ -65,13 +65,13 @@ The Inventory integration read-model test validates current-generation filtering
 ## Kubernetes Operations final recheck
 
 ```bash
-pytest -q tests/unit/kubernetes_operations -m unit
-pytest -q tests/kubernetes_operations -m functional
-pytest -q tests/integration/kubernetes_operations -m integration
-pytest -q tests/security/kubernetes_operations -m security
-pytest -q tests/rendering/kubernetes_operations -m rendering
-pytest -q tests/e2e/kubernetes_operations -m e2e
-pytest -q tests/contracts/kubernetes_operations -m contract
+pytest -q tests/unit/kubernetes/operations -m unit
+pytest -q tests/kubernetes/operations -m functional
+pytest -q tests/integration/kubernetes/operations -m integration
+pytest -q tests/security/kubernetes/operations -m security
+pytest -q tests/rendering/kubernetes/operations -m rendering
+pytest -q tests/e2e/kubernetes/operations -m e2e
+pytest -q tests/contracts/kubernetes/operations -m contract
 ```
 
 Kubernetes Operations E2E smoke exercises real Flask routing/session/application-shell rendering with Kubernetes infrastructure isolated. Live-provider semantics are covered in Integration and domain Functional tests. The final-lock security contract requires RBAC to execute before the cluster prerequisite on every ConfigMap, Secret, Protected Reveal, and TLS operation route.
@@ -81,12 +81,12 @@ Kubernetes Operations E2E smoke exercises real Flask routing/session/application
 ### Kubernetes Analytics final-recheck evidence
 
 ```bash
-pytest -q tests/unit/analytics -m unit
-pytest -q tests/analytics -m functional
-pytest -q tests/integration/analytics -m integration
-pytest -q tests/security/analytics -m security
-pytest -q tests/rendering/analytics -m rendering
-pytest -q tests/e2e/analytics -m e2e
+pytest -q tests/unit/kubernetes/analytics -m unit
+pytest -q tests/kubernetes/analytics -m functional
+pytest -q tests/integration/kubernetes/analytics -m integration
+pytest -q tests/security/kubernetes/analytics -m security
+pytest -q tests/rendering/kubernetes/analytics -m rendering
+pytest -q tests/e2e/kubernetes/analytics -m e2e
 pytest -q tests/contracts/analytics -m contract
 ```
 

@@ -365,7 +365,7 @@ def verify() -> None:
             'Select a Cluster for Detailed Signals',
             'Reporting guidance must remain format-neutral',
             'Authorization must complete before clusterless onboarding',
-            'tests/dashboards/test_kubernetes_dashboard_characterization.py',
+            'tests/kubernetes/dashboard/test_kubernetes_dashboard_characterization.py',
             'scripts/verify_operational_dashboard_standard.py',
         ),
         'operational dashboard standard',
@@ -387,17 +387,17 @@ def verify() -> None:
 
     if 'python scripts/verify_operational_dashboard_standard.py' not in quality_gate:
         raise AssertionError('scripts/quality_gate.sh does not execute the dashboard standard verifier')
-    if 'tests/dashboards' not in quality_gate:
+    if 'tests/kubernetes/dashboard' not in quality_gate:
         raise AssertionError('scripts/quality_gate.sh does not explicitly execute Dashboard functional tests')
-    if "'tests/dashboards/test_kubernetes_dashboard_characterization.py': 7" not in feature_coverage:
+    if "'tests/kubernetes/dashboard/test_kubernetes_dashboard_characterization.py': 7" not in feature_coverage:
         raise AssertionError('Dashboard behavioral characterization is not protected by the feature coverage gate')
 
     layered_requirements = (
-        "'tests/unit/dashboards/test_kubernetes_dashboard_domain.py': 3",
-        "'tests/security/dashboards/test_kubernetes_dashboard_security.py': 3",
-        "'tests/rendering/dashboards/test_kubernetes_dashboard_rendering.py': 2",
-        "'tests/integration/dashboards/test_kubernetes_dashboard_repository.py': 1",
-        "'tests/e2e/dashboards/test_kubernetes_dashboard_smoke.py': 2",
+        "'tests/unit/kubernetes/dashboard/test_kubernetes_dashboard_domain.py': 3",
+        "'tests/security/kubernetes/dashboard/test_kubernetes_dashboard_security.py': 3",
+        "'tests/rendering/kubernetes/dashboard/test_kubernetes_dashboard_rendering.py': 2",
+        "'tests/integration/kubernetes/dashboard/test_kubernetes_dashboard_repository.py': 1",
+        "'tests/e2e/kubernetes/dashboard/test_kubernetes_dashboard_smoke.py': 2",
     )
     for requirement in layered_requirements:
         if requirement not in feature_coverage:

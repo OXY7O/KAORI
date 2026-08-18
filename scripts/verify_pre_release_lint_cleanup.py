@@ -154,7 +154,7 @@ def main() -> int:
         errors,
     )
     require(
-        'tests/kubernetes_operations/test_configmap_validation_contract.py',
+        'tests/kubernetes/operations/test_configmap_validation_contract.py',
         "len(b'binary.bin') + len(b'hello')",
         errors,
     )

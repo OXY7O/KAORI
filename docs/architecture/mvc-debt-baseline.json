@@ -6,7 +6,6 @@
     "app/access/roles/routes.py",
     "app/access/users/routes.py",
     "app/integrations/observability/metrics_source/application/routes.py",
-    "app/integrations/routes.py",
     "app/integrations/storage/object_storage/providers/minio/application/routes.py",
     "app/intelligence/automation_control/routes.py",
     "app/kubernetes/cluster/routes.py",
@@ -16,8 +15,6 @@
     "app/platform_operations/kubernetes/secret_reveal/routes.py",
     "app/reports/export/routes.py",
     "app/reports/generate/routes.py",
-    "app/reports/report_templates/routes.py",
-    "app/reports/schedules/routes.py",
     "app/settings/routes.py"
   ],
   "presentation_mutation_files": [

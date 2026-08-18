@@ -33,7 +33,7 @@ def main() -> int:
         'app/kubernetes/operations/secrets/routes.py',
         'app/templates/integrations/partials/_runtime_detail_content.html',
         'app/templates/integrations/observability/metrics_source/partials/_analytics_readiness.html',
-        'tests/kubernetes_operations/test_secret_delete_workflow.py',
+        'tests/kubernetes/operations/test_secret_delete_workflow.py',
     )
     for relative in obsolete_paths:
         require(not (ROOT / relative).exists(), f'Obsolete compatibility file still exists: {relative}', errors)
