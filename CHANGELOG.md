@@ -4,6 +4,7 @@ All notable KAORI changes are recorded here. KAORI uses Semantic Versioning for 
 
 ## [Unreleased]
 
+- Hardened Compact Segmented Tabs on one formatter-safe shared controller hook contract so Kubernetes Topology Graph/List and Details/Relationships remain interactive after template formatting; removed dynamic attribute-name ownership from consumers.
 - Standardized Clear Filters placement across headered inventory-style surfaces, added the same canonical Clear Filters behavior to Inventory Relationship Map, and renamed Topology `Refresh Graph` to `Reload Snapshot` to distinguish committed-snapshot re-fetch from automatic filter loading and HTMX navigation.
 - Refined Integration taxonomy/provider copy for clearer orchestration and observability ownership while keeping Metrics Source provider-selection guidance concise.
 - Refined post-2.3.0 operational UI consistency: Runtime History actions stay aligned, Topology segmented tabs now carry functional dataset values, modal identity/status labels are grouped, and ConfigMap/Secret live selectors share helper context.

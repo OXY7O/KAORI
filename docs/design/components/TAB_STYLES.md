@@ -57,6 +57,7 @@ Use Tab Style 2 when the parent workspace shell is part of the information archi
 | Layout | Horizontal segments with roving keyboard focus |
 
 Use Tab Style 3 for local view switching in a visualization, inspector, drawer, or compact component. Do not use it for top-level workspace domains or four-plus peer sections. The detailed contract lives in `SEGMENTED_TABS.md`.
+The shared component also owns the DOM controller hooks (`data-kaori-segmented-group` and `data-kaori-segmented-tab`); consumers must not introduce parallel page-local tab-hook attributes.
 
 ## Tab Style 4 — Content Tabs
 

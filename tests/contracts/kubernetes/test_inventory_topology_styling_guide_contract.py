@@ -3,6 +3,8 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
+from jinja2 import Environment, FileSystemLoader
+
 ROOT = Path(__file__).resolve().parents[3]
 
 
@@ -54,19 +56,44 @@ def test_topology_registers_compact_segmented_tab_style() -> None:
     workspace = _read('app/templates/kubernetes/inventory/topology/partials/_workspace.html')
     inspector = _read('app/templates/kubernetes/inventory/topology/partials/_inspector_templates.html')
     component = _read('app/templates/components/segmented_tabs.html')
+    script = _read('app/static/js/kubernetes/inventory/topology.js')
     registry = _read('docs/design/components/TAB_STYLES.md')
 
     assert 'Tab Style 3 — Compact Segmented Tabs' in registry
     assert '`compact-segmented`' in registry
     assert 'data-kaori-tab-variant="compact-segmented"' in component
-    assert '{{ data_attribute }}="{{ tab_key }}"' in component
-    assert 'None="{{ tab_key }}"' not in component
+    assert 'data-kaori-segmented-group="{{ prefix }}"' in component
+    assert 'data-kaori-segmented-tab="{{ tab_key }}"' in component
+    assert 'data_attribute' not in component
     assert "('graph', 'Graph', 'share-2')" in workspace
     assert "('list', 'Resource List', 'list-tree')" in workspace
     assert "('details', 'Details', 'list-tree')" in inspector
     assert "('relationships', 'Relationships', 'git-branch')" in inspector
+    assert 'data-kaori-segmented-group="topology-view"' in script
+    assert 'data-kaori-segmented-group="topology-inspector"' in script
+    assert 'dataset.kaoriSegmentedTab' in script
+    assert 'dataset.topologyViewTab' not in script
+    assert 'dataset.topologyNodeTab' not in script
     assert 'role="tablist"' not in workspace
     assert 'role="tablist"' not in inspector
+
+
+def test_compact_segmented_tabs_render_stable_controller_hooks() -> None:
+    environment = Environment(loader=FileSystemLoader(ROOT / 'app/templates'))
+    component = environment.get_template('components/segmented_tabs.html').module
+
+    rendered = component.render(
+        [('details', 'Details', 'list-tree'), ('relationships', 'Relationships', 'git-branch')],
+        prefix='topology-inspector',
+        active_key='details',
+        aria_label='Topology Inspector',
+    )
+
+    assert 'data-kaori-segmented-group="topology-inspector"' in rendered
+    assert 'data-kaori-segmented-tab="details"' in rendered
+    assert 'data-kaori-segmented-tab="relationships"' in rendered
+    assert 'aria-selected="true"' in rendered
+    assert 'None=' not in rendered
 
 
 def test_topology_graph_has_an_accessible_resource_list_fallback() -> None:

@@ -40,7 +40,7 @@ const startTopologyWorkspace = () => {
     const listPanel = $('topology-view-panel-list')
     const resourceListBody = $('topology-resource-list-body')
     const resourceListEmpty = $('topology-resource-list-empty')
-    const viewTabs = Array.from(document.querySelectorAll('[data-topology-view-tab]'))
+    const viewTabs = Array.from(document.querySelectorAll('[data-kaori-segmented-group="topology-view"]'))
     const errorPanel = $('topology-error')
     const runtimeStatus = $('topology-runtime-status')
     const emptyState = $('topology-empty-state')
@@ -313,12 +313,12 @@ const startTopologyWorkspace = () => {
     }
 
     const setActiveView = (view, { updateUrl = true } = {}) => {
-        const graphTab = viewTabs.find((button) => button.dataset.topologyViewTab === 'graph')
+        const graphTab = viewTabs.find((button) => button.dataset.kaoriSegmentedTab === 'graph')
         activeView = view === 'list' || graphTab?.disabled ? 'list' : 'graph'
         if (graphPanel) graphPanel.hidden = activeView !== 'graph'
         if (listPanel) listPanel.hidden = activeView !== 'list'
         viewTabs.forEach((button) => {
-            const active = button.dataset.topologyViewTab === activeView
+            const active = button.dataset.kaoriSegmentedTab === activeView
             button.setAttribute('aria-selected', active ? 'true' : 'false')
             button.tabIndex = active ? 0 : -1
             button.classList.toggle('bg-surface-card', active)
@@ -1245,13 +1245,13 @@ const startTopologyWorkspace = () => {
             action.classList.add('inline-flex')
         }
 
-        const tabButtons = Array.from(view.querySelectorAll('[data-topology-node-tab]'))
+        const tabButtons = Array.from(view.querySelectorAll('[data-kaori-segmented-group="topology-inspector"]'))
         const detailsPanelLocal = view.querySelector('#topology-inspector-panel-details')
         const relationshipsPanel = view.querySelector('#topology-inspector-panel-relationships')
         const activateTab = (tab) => {
             activeDrawerTab = tab === 'relationships' ? 'relationships' : 'details'
             tabButtons.forEach((button) => {
-                const active = button.dataset.topologyNodeTab === activeDrawerTab
+                const active = button.dataset.kaoriSegmentedTab === activeDrawerTab
                 button.setAttribute('aria-selected', active ? 'true' : 'false')
                 button.tabIndex = active ? 0 : -1
                 button.classList.toggle('bg-surface-card', active)
@@ -1267,9 +1267,9 @@ const startTopologyWorkspace = () => {
             window.lucide?.createIcons()
         }
         tabButtons.forEach((button) =>
-            button.addEventListener('click', () => activateTab(button.dataset.topologyNodeTab))
+            button.addEventListener('click', () => activateTab(button.dataset.kaoriSegmentedTab))
         )
-        bindSegmentedKeyboard(tabButtons, (button) => activateTab(button.dataset.topologyNodeTab))
+        bindSegmentedKeyboard(tabButtons, (button) => activateTab(button.dataset.kaoriSegmentedTab))
         view.querySelector('#topology-highlight-path-button')?.addEventListener('click', () => {
             if (pathHighlightActive) {
                 clearPathHighlight()
@@ -1401,13 +1401,13 @@ const startTopologyWorkspace = () => {
             action.classList.add('inline-flex')
         }
 
-        const tabButtons = Array.from(view.querySelectorAll('[data-topology-node-tab]'))
+        const tabButtons = Array.from(view.querySelectorAll('[data-kaori-segmented-group="topology-inspector"]'))
         const detailsPanelLocal = view.querySelector('#topology-inspector-panel-details')
         const relationshipsPanel = view.querySelector('#topology-inspector-panel-relationships')
         const activateTab = (tab) => {
             activeDrawerTab = tab === 'relationships' ? 'relationships' : 'details'
             tabButtons.forEach((button) => {
-                const active = button.dataset.topologyNodeTab === activeDrawerTab
+                const active = button.dataset.kaoriSegmentedTab === activeDrawerTab
                 button.setAttribute('aria-selected', active ? 'true' : 'false')
                 button.tabIndex = active ? 0 : -1
                 button.classList.toggle('bg-surface-card', active)
@@ -1423,9 +1423,9 @@ const startTopologyWorkspace = () => {
             window.lucide?.createIcons()
         }
         tabButtons.forEach((button) =>
-            button.addEventListener('click', () => activateTab(button.dataset.topologyNodeTab))
+            button.addEventListener('click', () => activateTab(button.dataset.kaoriSegmentedTab))
         )
-        bindSegmentedKeyboard(tabButtons, (button) => activateTab(button.dataset.topologyNodeTab))
+        bindSegmentedKeyboard(tabButtons, (button) => activateTab(button.dataset.kaoriSegmentedTab))
         detailContent.replaceChildren(view)
         activateTab(activeDrawerTab)
         openPane(detailsPanel)
@@ -1732,7 +1732,7 @@ const startTopologyWorkspace = () => {
         if (cy) cy.destroy()
         if (!topologyRenderer) {
             cy = null
-            const graphTab = viewTabs.find((button) => button.dataset.topologyViewTab === 'graph')
+            const graphTab = viewTabs.find((button) => button.dataset.kaoriSegmentedTab === 'graph')
             if (graphTab) {
                 graphTab.disabled = true
                 graphTab.setAttribute('aria-disabled', 'true')
@@ -1749,7 +1749,7 @@ const startTopologyWorkspace = () => {
             setActiveView('list')
             return
         }
-        const graphTab = viewTabs.find((button) => button.dataset.topologyViewTab === 'graph')
+        const graphTab = viewTabs.find((button) => button.dataset.kaoriSegmentedTab === 'graph')
         if (graphTab) {
             graphTab.disabled = false
             graphTab.removeAttribute('aria-disabled')
@@ -1938,8 +1938,8 @@ const startTopologyWorkspace = () => {
         if (!searchResults?.contains(event.target) && event.target !== searchInput) hideSearchResults()
     })
 
-    viewTabs.forEach((button) => button.addEventListener('click', () => setActiveView(button.dataset.topologyViewTab)))
-    bindSegmentedKeyboard(viewTabs, (button) => setActiveView(button.dataset.topologyViewTab))
+    viewTabs.forEach((button) => button.addEventListener('click', () => setActiveView(button.dataset.kaoriSegmentedTab)))
+    bindSegmentedKeyboard(viewTabs, (button) => setActiveView(button.dataset.kaoriSegmentedTab))
     $('topology-controls-button')?.addEventListener('click', () => openPane(controlsPanel))
     $('topology-details-button')?.addEventListener('click', () => openPane(detailsPanel))
     paneBackdrop?.addEventListener('click', closePanes)
