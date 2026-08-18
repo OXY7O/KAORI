@@ -24,15 +24,14 @@
                         {{ pagination.total_items }} Matching {{ 'User' if pagination.total_items == 1 else 'Users' }}
                     </span>
                     {% if filters.search or filters.status != 'all' or filters.auth_source != 'all' or filters.role_id %}
-                        {{ registry_ui.clear_filters_action(
-                            url_for('users.index', per_page=filters.per_page),
-                            table_ui.action_classes(),
-                            hx_get=url_for('users.index', per_page=filters.per_page),
-                            target='#users-page-content',
-                            indicator='#users-refresh-indicator',
-                            push_url='true',
-                            swap='outerHTML settle:150ms',
-                            sync='#users-filter-form:replace'
+                        {{ registry_ui.clear_filters_action(url_for('users.index', per_page=filters.per_page) ,
+                        table_ui.action_classes(),
+                        hx_get=url_for('users.index', per_page=filters.per_page),
+                        target='#users-page-content',
+                        indicator='#users-refresh-indicator',
+                        push_url='true',
+                        swap='outerHTML settle:150ms',
+                        sync='#users-filter-form:replace'
                         ) }}
                     {% endif %}
                 </div>

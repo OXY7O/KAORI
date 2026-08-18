@@ -5,7 +5,9 @@
     <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
         <header class="flex items-start gap-3 border-b border-outline-default bg-surface-hover px-5 py-4 sm:px-6">
             <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                <i data-provider-icon data-lucide="{{ selected_definition.icon if browser_selected else 'log-in' }}" class="h-5 w-5"></i>
+                <i data-provider-icon
+                   data-lucide="{{ selected_definition.icon if browser_selected else 'log-in' }}"
+                   class="h-5 w-5"></i>
             </span>
             <div>
                 <h2 class="text-sm font-semibold text-content-primary" data-browser-title>
@@ -55,7 +57,9 @@
                     <span class="mt-1 block text-xs leading-5 text-content-muted">Create a KAORI account only after provider identity validation and the selected admission policy both pass.</span>
                 </span>
             </label>
-            {% for error in form.jit_enabled.errors %}<p class="text-xs font-medium text-status-critical">{{ error }}</p>{% endfor %}
+            {% for error in form.jit_enabled.errors %}
+                <p class="text-xs font-medium text-status-critical">{{ error }}</p>
+            {% endfor %}
             <div data-jit-off-note
                  class="rounded-lg border border-status-info-border bg-status-info-soft p-4"
                  {% if form.jit_enabled.data %}hidden{% endif %}>
@@ -64,7 +68,9 @@
                     <p class="text-xs leading-5 text-status-info-text">JIT is disabled. Only an external identity already linked to a KAORI account can use this provider.</p>
                 </div>
             </div>
-            <div class="space-y-5" data-jit-settings {% if not form.jit_enabled.data %}hidden{% endif %}>
+            <div class="space-y-5"
+                 data-jit-settings
+                 {% if not form.jit_enabled.data %}hidden{% endif %}>
                 <label class="block min-w-0">
                     <span class="text-sm font-semibold text-content-primary">{{ form.default_role_id.label.text }}</span>
                     {{ form.default_role_id(class_='mt-2 h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary shadow-sm outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20') }}
@@ -72,9 +78,11 @@
                     {% for error in form.default_role_id.errors %}<span class="mt-1 block text-xs font-medium text-status-critical">{{ error }}</span>{% endfor %}
                 </label>
                 <label class="block min-w-0" data-admission-policy-field>
-                    <span class="text-sm font-semibold text-content-primary" data-admission-label>{{ selected_definition.admission_label if browser_selected else 'Admission Policy Values' }}</span>
+                    <span class="text-sm font-semibold text-content-primary"
+                          data-admission-label>{{ selected_definition.admission_label if browser_selected else 'Admission Policy Values' }}</span>
                     {{ form.admission_values(rows=4, class_='mt-2 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm font-medium text-content-primary shadow-sm outline-none transition placeholder:text-content-disabled focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20', placeholder='One value per line') }}
-                    <span class="mt-2 block text-xs leading-5 text-content-muted" data-admission-help>{{ selected_definition.admission_help if browser_selected else 'Values are evaluated by the selected provider admission policy.' }}</span>
+                    <span class="mt-2 block text-xs leading-5 text-content-muted"
+                          data-admission-help>{{ selected_definition.admission_help if browser_selected else 'Values are evaluated by the selected provider admission policy.' }}</span>
                     {% for error in form.admission_values.errors %}<span class="mt-1 block text-xs font-medium text-status-critical">{{ error }}</span>{% endfor %}
                 </label>
             </div>

@@ -16,28 +16,27 @@
                     {{ table_label.status_label((alerts_pagination.total_items|default(0) ) ~ ' Active', 'critical' if alerts_pagination.total_items|default(0) else 'normal', size='compact') }}
                     {% if selected_severity != 'all' or selected_status != 'all' or selected_namespace or selected_search %}
                         {% set local_clear_query = {
-                            'cluster_id': selected_cluster_id,
-                            'source': selected_source,
-                            'severity': 'all',
-                            'status': 'all',
-                            'namespace': '',
-                            'search': '',
-                            'tab': 'alerts',
-                            'alerts_page': 1,
-                            'anomalies_page': 1,
-                            'alerts_per_page': selected_alerts_per_page,
-                            'anomalies_per_page': selected_anomalies_per_page
-                        } %}
+                                                    'cluster_id': selected_cluster_id,
+                                                    'source': selected_source,
+                                                    'severity': 'all',
+                                                    'status': 'all',
+                                                    'namespace': '',
+                                                    'search': '',
+                                                    'tab': 'alerts',
+                                                    'alerts_page': 1,
+                                                    'anomalies_page': 1,
+                                                    'alerts_per_page': selected_alerts_per_page,
+                                                    'anomalies_per_page': selected_anomalies_per_page
+                                                } %}
                         {% set local_clear_href = url_for('analytics.alerts', **local_clear_query) %}
                         {% set local_clear_url = url_for('analytics.alerts_table', **local_clear_query) %}
-                        {{ registry_ui.clear_filters_action(
-                            local_clear_href,
-                            table_ui.action_classes(),
-                            hx_get=local_clear_url,
-                            target='#alerts-table-container',
-                            indicator='#alerts-table-loading-indicator',
-                            swap='outerHTML',
-                            marker='alerts-table-container'
+                        {{ registry_ui.clear_filters_action(local_clear_href,
+                                                table_ui.action_classes() ,
+                        hx_get=local_clear_url,
+                        target='#alerts-table-container',
+                        indicator='#alerts-table-loading-indicator',
+                        swap='outerHTML',
+                        marker='alerts-table-container'
                         ) }}
                     {% endif %}
                 </div>

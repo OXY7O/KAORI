@@ -19,7 +19,7 @@
         </article>
         <article class="bg-surface-card p-5">
             <p class="{{ analysis_surface.metric_label_classes() }}">Request Evidence Coverage</p>
-            <p class="mt-2 text-xl font-semibold tabular-nums text-content-primary">{{ consumer.request_evidence_coverage_display|default('N/A') }}</p>
+            <p class="mt-2 text-xl font-semibold tabular-nums text-content-primary">{{ consumer.request_evidence_coverage_display|default("N/A") }}</p>
             <p class="mt-1 text-xs leading-5 text-content-muted">{{ consumer.request_evidence_count|default(0) }} of {{ consumer.bucket_count|default(0) }} buckets.</p>
         </article>
         <article class="bg-surface-card p-5">
@@ -29,7 +29,7 @@
         </article>
         <article class="bg-surface-card p-5">
             <p class="{{ analysis_surface.metric_label_classes() }}">Error Evidence Coverage</p>
-            <p class="mt-2 text-xl font-semibold tabular-nums text-content-primary">{{ consumer.error_evidence_coverage_display|default('N/A') }}</p>
+            <p class="mt-2 text-xl font-semibold tabular-nums text-content-primary">{{ consumer.error_evidence_coverage_display|default("N/A") }}</p>
             <p class="mt-1 text-xs leading-5 text-content-muted">{{ consumer.error_evidence_count|default(0) }} of {{ consumer.bucket_count|default(0) }} buckets.</p>
         </article>
     </div>

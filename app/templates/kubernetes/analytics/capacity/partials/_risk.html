@@ -91,12 +91,12 @@
                             </div>
                         </article>
                     {% else %}
-                        {% set empty_state_icon = 'shield-check' %}
-                        {% set empty_state_label = 'No Findings' %}
-                        {% set empty_state_tone = 'normal' %}
-                        {% set empty_state_title = 'No Governance Findings' %}
-                        {% set empty_state_description = 'No actionable allocation or policy finding is present in the committed evidence.' %}
-                        {% set empty_state_min_height = 'min-h-[150px]' %}
+                        {% set empty_state_icon = "shield-check" %}
+                        {% set empty_state_label = "No Findings" %}
+                        {% set empty_state_tone = "normal" %}
+                        {% set empty_state_title = "No Governance Findings" %}
+                        {% set empty_state_description = "No actionable allocation or policy finding is present in the committed evidence." %}
+                        {% set empty_state_min_height = "min-h-[150px]" %}
                         {% include 'components/states/_empty_state.html' %}
                     {% endfor %}
                 </div>

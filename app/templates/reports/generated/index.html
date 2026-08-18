@@ -41,7 +41,7 @@
                                 hero_status,
                                 hero_tone,
                                 [
-                                ('file-check-2', 'Ready', ready_count, 'Records in Ready state'),
+                                ('file-check-2', 'Ready', ready_count, 'Records in Ready state') ,
                 second_metric
                 ],
                 hero_action_label,
@@ -131,13 +131,9 @@
                 </div>
             </footer>
         </section>
-        <section id="generated-report-registry"
-                 data-generated-report-registry="true"
-                 x-data="{ selectedCount: 0, selectableCount: 0, syncSelection(root) { const items = Array.from(root.querySelectorAll('.generated-report-checkbox:not(:disabled)')); this.selectableCount = items.length; this.selectedCount = items.filter((item) => item.checked).length; } }"
-                 x-init="$nextTick(() => syncSelection($root))"
-                 hx-sync="this:abort"
-                 {% if payload.has_pending_reports %} hx-get="{{ url_for('reports.generated_reports', scope=payload.selected_filters.scope, report_type=payload.selected_filters.report_type, status=payload.selected_filters.status, output_format=payload.selected_filters.output_format, period=payload.selected_filters.period, focus=payload.selected_filters.focus, search=payload.selected_filters.search, per_page=payload.selected_filters.per_page, page=payload.pagination.page) }}" hx-trigger="every {{ payload.poll_interval_seconds }}s" hx-target="this" hx-select="#generated-report-registry" hx-swap="outerHTML" hx-on::before-request="if (event.detail.elt === this && this.querySelector('.generated-report-checkbox:checked')) event.preventDefault()" {% endif %}
-                 class="{{ table_ui.block_classes() }}">
+        <section id="generated-report-registry" data-generated-report-registry="true" x-data="{ selectedCount: 0, selectableCount: 0, syncSelection(root) { const items = Array.from(root.querySelectorAll('.generated-report-checkbox:not(:disabled)')); this.selectableCount = items.length; this.selectedCount = items.filter((item) => item.checked).length; } }" x-init="$nextTick(() => syncSelection($root))" hx-sync="this:abort"
+            {% if payload.has_pending_reports %} hx-get="{{ url_for('reports.generated_reports', scope=payload.selected_filters.scope, report_type=payload.selected_filters.report_type, status=payload.selected_filters.status, output_format=payload.selected_filters.output_format, period=payload.selected_filters.period, focus=payload.selected_filters.focus, search=payload.selected_filters.search, per_page=payload.selected_filters.per_page, page=payload.pagination.page) }}" hx-trigger="every {{ payload.poll_interval_seconds }}s" hx-target="this" hx-select="#generated-report-registry" hx-swap="outerHTML" hx-on::before-request="if (event.detail.elt === this && this.querySelector('.generated-report-checkbox:checked')) event.preventDefault()" {% endif %}
+            class="{{ table_ui.block_classes() }}">
             <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
                 <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                     <div class="flex min-w-0 items-start gap-3">
@@ -160,18 +156,20 @@
                         <div class="flex flex-wrap items-center gap-2">
                             {% if payload.active_filter_count > 0 %}
                                 {{ registry_ui.clear_filters_link('reports.generated_reports',
-                                                    'generated-report-registry',
-                                                    'generated-report-loading',
-                                                    payload.pagination.per_page,
-                                                    table_ui.action_classes(),
-                                                    query_params={'period': '30d'}
+                                                                'generated-report-registry',
+                                                                'generated-report-loading',
+                                                                payload.pagination.per_page,
+                                                                table_ui.action_classes() ,
+                                query_params={'period': '30d'}
                                 ) }}
                             {% endif %}
                             {% if can_manage_storage %}
                                 <form id="bulk-archive-reports-form"
                                       method="POST"
                                       action="{{ url_for('reports.bulk_archive_generated_reports') }}">
-                                    {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+                                    {% if csrf_token is defined %}
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    {% endif %}
                                     <input type="hidden" name="next" value="{{ registry_return_url }}">
                                     <button type="submit"
                                             class="{{ table_ui.action_classes() }}"
@@ -219,8 +217,7 @@
                 </label>
                 <label class="block min-w-0">
                     <span class="{{ table_ui.filter_label_classes() }}">Infrastructure Asset</span>
-                    <select name="scope"
-                            class="mt-1.5 {{ table_ui.filter_select_classes() }}">
+                    <select name="scope" class="mt-1.5 {{ table_ui.filter_select_classes() }}">
                         {% for option in payload.filter_options.scopes %}
                             <option value="{{ option.value }}"
                                     {% if payload.selected_filters.scope == option.value %}selected{% endif %}>{{ option.label }}</option>
@@ -280,133 +277,133 @@
                                            :disabled="selectableCount === 0"
                                            aria-label="Select all archiveable reports"
                                            class="h-4 w-4 rounded border-outline-default text-kaori-primary focus:ring-kaori-accent/40">
-                                </th>
-                            {% endif %}
-                            <th class="{{ table_ui.header_cell_classes() }}">Report</th>
-                            <th class="{{ table_ui.header_cell_classes() }}">Scope</th>
-                            <th class="{{ table_ui.header_cell_classes() }}">Artifact</th>
-                            <th class="{{ table_ui.header_cell_classes() }}">Status</th>
-                            <th class="{{ table_ui.header_cell_classes() }}">Updated</th>
-                            <th class="{{ table_ui.header_cell_classes(action=true) }}">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody class="{{ table_ui.body_classes() }}">
-                        {% if payload.reports %}
-                            {% for report in payload.reports %}
-                                <tr class="{{ table_ui.row_classes() }} {% if report.is_focused %}bg-kaori-soft/50{% endif %}"
-                                    {% if report.is_focused %}data-focused-report="true"{% endif %}>
-                                    {% if can_manage_storage %}
-                                        <td class="px-5 py-4 align-top">
-                                            <input type="checkbox"
-                                                   name="report_ids"
-                                                   value="{{ report.id }}"
-                                                   form="bulk-archive-reports-form"
-                                                   {% if not report.can_archive_report %}disabled{% endif %}
-                                                   aria-label="Select {{ report.name }}"
-                                                   @change="syncSelection($root)"
-                                                   class="generated-report-checkbox h-4 w-4 rounded border-outline-default text-kaori-primary focus:ring-kaori-accent/40 disabled:cursor-not-allowed disabled:opacity-40">
-                                        </td>
-                                    {% endif %}
-                                    <td class="{{ table_ui.cell_classes() }} align-top">
-                                        <div class="flex min-w-[16rem] items-start gap-3"
-                                             data-generated-report-identity="true">
-                                            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-kaori-primary/15 bg-kaori-soft text-kaori-primary"
-                                                  data-generated-report-icon="{{ report.report_icon }}"
-                                                  aria-hidden="true">
-                                                <i data-lucide="{{ report.report_icon }}" class="h-4 w-4"></i>
-                                            </span>
-                                            <div class="min-w-0">
-                                                <div class="flex flex-wrap items-center gap-2">
-                                                    <p class="break-words text-sm font-semibold leading-5 text-content-primary">{{ report.name }}</p>
-                                                    {% if report.is_focused %}{{ table_label.metadata_label('Just Queued', 'send') }}{% endif %}
+                                    </th>
+                                {% endif %}
+                                <th class="{{ table_ui.header_cell_classes() }}">Report</th>
+                                <th class="{{ table_ui.header_cell_classes() }}">Scope</th>
+                                <th class="{{ table_ui.header_cell_classes() }}">Artifact</th>
+                                <th class="{{ table_ui.header_cell_classes() }}">Status</th>
+                                <th class="{{ table_ui.header_cell_classes() }}">Updated</th>
+                                <th class="{{ table_ui.header_cell_classes(action=true) }}">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody class="{{ table_ui.body_classes() }}">
+                            {% if payload.reports %}
+                                {% for report in payload.reports %}
+                                    <tr class="{{ table_ui.row_classes() }} {% if report.is_focused %}bg-kaori-soft/50{% endif %}"
+                                        {% if report.is_focused %}data-focused-report="true"{% endif %}>
+                                        {% if can_manage_storage %}
+                                            <td class="px-5 py-4 align-top">
+                                                <input type="checkbox"
+                                                       name="report_ids"
+                                                       value="{{ report.id }}"
+                                                       form="bulk-archive-reports-form"
+                                                       {% if not report.can_archive_report %}disabled{% endif %}
+                                                       aria-label="Select {{ report.name }}"
+                                                       @change="syncSelection($root)"
+                                                       class="generated-report-checkbox h-4 w-4 rounded border-outline-default text-kaori-primary focus:ring-kaori-accent/40 disabled:cursor-not-allowed disabled:opacity-40">
+                                            </td>
+                                        {% endif %}
+                                        <td class="{{ table_ui.cell_classes() }} align-top">
+                                            <div class="flex min-w-[16rem] items-start gap-3"
+                                                 data-generated-report-identity="true">
+                                                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-kaori-primary/15 bg-kaori-soft text-kaori-primary"
+                                                      data-generated-report-icon="{{ report.report_icon }}"
+                                                      aria-hidden="true">
+                                                    <i data-lucide="{{ report.report_icon }}" class="h-4 w-4"></i>
+                                                </span>
+                                                <div class="min-w-0">
+                                                    <div class="flex flex-wrap items-center gap-2">
+                                                        <p class="break-words text-sm font-semibold leading-5 text-content-primary">{{ report.name }}</p>
+                                                        {% if report.is_focused %}{{ table_label.metadata_label('Just Queued', 'send') }}{% endif %}
+                                                    </div>
+                                                    <p class="mt-1 text-xs font-medium leading-5 text-content-secondary">{{ report.report_type }}</p>
+                                                    <p class="mt-0.5 text-xs leading-5 text-content-muted">{{ report.period }}</p>
                                                 </div>
-                                                <p class="mt-1 text-xs font-medium leading-5 text-content-secondary">{{ report.report_type }}</p>
-                                                <p class="mt-0.5 text-xs leading-5 text-content-muted">{{ report.period }}</p>
                                             </div>
-                                        </div>
-                                    </td>
-                                    <td class="{{ table_ui.cell_classes() }} align-top">
-                                        <div class="min-w-[12rem]">
-                                            <p class="text-xs font-semibold leading-5 text-content-muted">{{ report.scope_label }}</p>
-                                            <p class="mt-0.5 text-sm font-semibold leading-5 text-content-primary">{{ report.scope }}</p>
-                                            <p class="mt-1 text-xs leading-5 text-content-muted">{{ report.secondary_scope }}</p>
-                                        </div>
-                                    </td>
-                                    <td class="{{ table_ui.cell_classes() }} align-top">
-                                        <div class="min-w-[9rem]">
-                                            {{ table_label.metadata_label(report.output_format, 'file-text') }}
-                                            <p class="mt-1 text-xs leading-5 text-content-muted">
-                                                {% if report.file_exists %}
-                                                    {{ report.file_size }} · {{ report.storage_backend_label }}
-                                                {% elif report.raw_status in ['requested', 'queued', 'generating'] %}
-                                                    Artifact Pending
-                                                {% else %}
-                                                    No Retained Artifact
+                                        </td>
+                                        <td class="{{ table_ui.cell_classes() }} align-top">
+                                            <div class="min-w-[12rem]">
+                                                <p class="text-xs font-semibold leading-5 text-content-muted">{{ report.scope_label }}</p>
+                                                <p class="mt-0.5 text-sm font-semibold leading-5 text-content-primary">{{ report.scope }}</p>
+                                                <p class="mt-1 text-xs leading-5 text-content-muted">{{ report.secondary_scope }}</p>
+                                            </div>
+                                        </td>
+                                        <td class="{{ table_ui.cell_classes() }} align-top">
+                                            <div class="min-w-[9rem]">
+                                                {{ table_label.metadata_label(report.output_format, 'file-text') }}
+                                                <p class="mt-1 text-xs leading-5 text-content-muted">
+                                                    {% if report.file_exists %}
+                                                        {{ report.file_size }} · {{ report.storage_backend_label }}
+                                                    {% elif report.raw_status in ['requested', 'queued', 'generating'] %}
+                                                        Artifact Pending
+                                                    {% else %}
+                                                        No Retained Artifact
+                                                    {% endif %}
+                                                </p>
+                                            </div>
+                                        </td>
+                                        <td class="{{ table_ui.cell_classes() }} align-top">
+                                            {{ table_label.status_indicator_label(report.status, report.status_tone, none, 'detail') }}
+                                        </td>
+                                        <td class="{{ table_ui.cell_classes() }} align-top">
+                                            <p class="text-sm font-medium leading-5 text-content-secondary">{{ report.updated_at }}</p>
+                                            <p class="mt-1 text-xs leading-5 text-content-muted">Created {{ report.created_at }}</p>
+                                        </td>
+                                        <td class="{{ table_ui.cell_classes(action=true) }} align-top">
+                                            <div class="flex justify-end gap-2">
+                                                {% if report.can_download_artifact %}
+                                                    <a href="{{ url_for('reports.download_report_artifact', report_id=report.id, next=registry_return_url) }}"
+                                                       class="{{ table_ui.action_classes() }}"
+                                                       title="Download {{ report.output_format }}">
+                                                        <i data-lucide="download" class="h-4 w-4" aria-hidden="true"></i>
+                                                        <span class="sr-only">Download</span>
+                                                    </a>
                                                 {% endif %}
-                                            </p>
-                                        </div>
-                                    </td>
-                                    <td class="{{ table_ui.cell_classes() }} align-top">
-                                        {{ table_label.status_indicator_label(report.status, report.status_tone, none, 'detail') }}
-                                    </td>
-                                    <td class="{{ table_ui.cell_classes() }} align-top">
-                                        <p class="text-sm font-medium leading-5 text-content-secondary">{{ report.updated_at }}</p>
-                                        <p class="mt-1 text-xs leading-5 text-content-muted">Created {{ report.created_at }}</p>
-                                    </td>
-                                    <td class="{{ table_ui.cell_classes(action=true) }} align-top">
-                                        <div class="flex justify-end gap-2">
-                                            {% if report.can_download_artifact %}
-                                                <a href="{{ url_for('reports.download_report_artifact', report_id=report.id, next=registry_return_url) }}"
-                                                   class="{{ table_ui.action_classes() }}"
-                                                   title="Download {{ report.output_format }}">
-                                                    <i data-lucide="download" class="h-4 w-4" aria-hidden="true"></i>
-                                                    <span class="sr-only">Download</span>
+                                                <a href="{{ url_for('reports.generated_report_detail', report_id=report.id, next=registry_return_url) }}"
+                                                   class="{{ table_ui.action_classes() }}">
+                                                    View
+                                                    <i data-lucide="arrow-up-right" class="h-4 w-4" aria-hidden="true"></i>
                                                 </a>
-                                            {% endif %}
-                                            <a href="{{ url_for('reports.generated_report_detail', report_id=report.id, next=registry_return_url) }}"
-                                               class="{{ table_ui.action_classes() }}">
-                                                View
-                                                <i data-lucide="arrow-up-right" class="h-4 w-4" aria-hidden="true"></i>
-                                            </a>
-                                        </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="{{ 7 if can_manage_storage else 6 }}" class="p-0">
+                                        {% set empty_state_icon = "files" %}
+                                        {% set empty_state_label = 'No Results' if payload.active_filter_count > 0 else 'No Data' %}
+                                        {% set empty_state_title = 'No Generated Reports Match the Current Filters' if payload.active_filter_count > 0 else 'No Generated Reports Yet' %}
+                                        {% set empty_state_description = 'Clear or adjust the registry filters to review another report set.' if payload.active_filter_count > 0 else 'Create the first governed report request to establish artifact history.' %}
+                                        {% set empty_state_action_url = url_for('reports.generate_report') if can_generate_reports and not payload.active_filter_count > 0 else none %}
+                                        {% set empty_state_action_label = 'Generate Report' if empty_state_action_url else none %}
+                                        {% set empty_state_action_icon = "plus" %}
+                                        {% set empty_state_min_height = "min-h-[180px]" %}
+                                        {% include 'components/states/_empty_state.html' %}
                                     </td>
                                 </tr>
-                            {% endfor %}
-                        {% else %}
-                            <tr>
-                                <td colspan="{{ 7 if can_manage_storage else 6 }}" class="p-0">
-                                    {% set empty_state_icon = 'files' %}
-                                    {% set empty_state_label = 'No Results' if payload.active_filter_count > 0 else 'No Data' %}
-                                    {% set empty_state_title = 'No Generated Reports Match the Current Filters' if payload.active_filter_count > 0 else 'No Generated Reports Yet' %}
-                                    {% set empty_state_description = 'Clear or adjust the registry filters to review another report set.' if payload.active_filter_count > 0 else 'Create the first governed report request to establish artifact history.' %}
-                                    {% set empty_state_action_url = url_for('reports.generate_report') if can_generate_reports and not payload.active_filter_count > 0 else none %}
-                                    {% set empty_state_action_label = 'Generate Report' if empty_state_action_url else none %}
-                                    {% set empty_state_action_icon = 'plus' %}
-                                    {% set empty_state_min_height = 'min-h-[180px]' %}
-                                    {% include 'components/states/_empty_state.html' %}
-                                </td>
-                            </tr>
-                        {% endif %}
-                    </tbody>
-                </table>
-            </div>
-            {% set registry_query = {
-                            'scope': payload.selected_filters.scope,
-                            'report_type': payload.selected_filters.report_type,
-                            'status': payload.selected_filters.status,
-                            'output_format': payload.selected_filters.output_format,
-                            'period': payload.selected_filters.period,
-                            'search': payload.selected_filters.search
-                        } %}
-            {{ registry_ui.footer('reports.generated_reports',
-                        'generated-report-registry',
-                        'generated-report-loading',
-                        payload.pagination,
-                        registry_query,
-                        payload.pagination.per_page_options,
-                        resource_label='Reports',
-                        rows_aria_label='Reports per page',
-                        control_name='generated-reports') }}
-        </section>
-    </div>
-{% endblock dashboard_content %}
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+                {% set registry_query = {
+                                    'scope': payload.selected_filters.scope,
+                                    'report_type': payload.selected_filters.report_type,
+                                    'status': payload.selected_filters.status,
+                                    'output_format': payload.selected_filters.output_format,
+                                    'period': payload.selected_filters.period,
+                                    'search': payload.selected_filters.search
+                                } %}
+                {{ registry_ui.footer('reports.generated_reports',
+                                'generated-report-registry',
+                                'generated-report-loading',
+                                payload.pagination,
+                                registry_query,
+                                payload.pagination.per_page_options,
+                                resource_label='Reports',
+                                rows_aria_label='Reports per page',
+                                control_name='generated-reports') }}
+            </section>
+        </div>
+    {% endblock dashboard_content %}

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 from collections.abc import Callable, Collection
-from typing import Any
+from typing import Any, cast
 
 from flask import (
     Blueprint,
@@ -591,7 +591,7 @@ def _handle_control_operation(
 
 def _queue_decision_notification(decision_id: int, event_type: str) -> bool:
     try:
-        dispatch_automation_decision_notification.delay(decision_id, event_type)
+        cast(Any, dispatch_automation_decision_notification).delay(decision_id, event_type)
     except (RuntimeError, ConnectionError, OSError):
         current_app.logger.exception(
             'Automation Control could not enqueue notification event %s for decision %s.',

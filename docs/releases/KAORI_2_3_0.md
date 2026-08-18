@@ -3,7 +3,7 @@
 **Release date:** 2026-08-18
 **Git tag:** `v2.3.0`
 **Release type:** Minor release
-**Status:** Release tag prepared; publication approval requires the full final gate in the canonical Dev Container
+**Status:** Pre-tag release candidate; tag and publication require the full final gate in the canonical Dev Container
 
 ## Summary
 
@@ -31,6 +31,8 @@ The release also closes pre-tag regressions detected during final review, includ
 - Identity Provider workspace ownership remains separate from user lifecycle and adapter implementations.
 - The release fixes the Jinja component import used by `/access/identity-providers/` and adds a regression contract for that canonical import.
 - Remaining Ruff `F821` defects in Automation Control, TLS Governance, and Protected Secret Reveal are resolved by restoring the canonical type/runtime imports.
+- The Pyright release gate is closed through typed SQLAlchemy construction, ORM-compatible RBAC policy signatures, typed report/analytics payload boundaries, and runtime adapter/recovery contract alignment.
+- Type analysis also caught and fixed the Object Storage `provider_key_key` typo plus stale `record=` calls in Integration Validation recovery/binding refresh paths.
 - Release metadata, running/testing documentation, compatibility presentation, and release-governance references are synchronized to 2.3.0.
 
 ## Compatibility

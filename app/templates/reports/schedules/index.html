@@ -37,7 +37,6 @@
                 <label class="block sm:col-span-2">
                     <span class="text-xs font-semibold text-content-muted">Description</span><textarea name="description" rows="2" maxlength="1000" placeholder="Describe the recurring reporting purpose." class="mt-1.5 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary outline-none focus:border-kaori-primary focus:ring-2 focus:ring-kaori-primary/20">{{ form_state.description }}</textarea>
                 </label>
-
             </div>
         </section>
         <section class="border-t border-outline-subtle pt-5">
@@ -155,9 +154,12 @@
                         <select name="cluster_id"
                                 data-schedule-cluster
                                 class="mt-1.5 min-h-9 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary outline-none focus:border-kaori-primary focus:ring-2 focus:ring-kaori-primary/20">
-                            <option value="" disabled {% if not form_state.cluster_id %}selected{% endif %}>Select Cluster</option>
+                            <option value=""
+                                    disabled
+                                    {% if not form_state.cluster_id %}selected{% endif %}>Select Cluster</option>
                             {% for option in payload.clusters %}
-                                <option value="{{ option.value }}" {% if form_state.cluster_id == option.value %}selected{% endif %}>{{ option.label }}</option>
+                                <option value="{{ option.value }}"
+                                        {% if form_state.cluster_id == option.value %}selected{% endif %}>{{ option.label }}</option>
                             {% endfor %}
                         </select>
                     </label>
@@ -176,9 +178,12 @@
                     <select name="object_storage_system_id"
                             data-schedule-object-storage-system
                             class="mt-1.5 min-h-9 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary outline-none focus:border-kaori-primary focus:ring-2 focus:ring-kaori-primary/20">
-                        <option value="" disabled {% if not form_state.object_storage_system_id %}selected{% endif %}>Select Object Storage System</option>
+                        <option value=""
+                                disabled
+                                {% if not form_state.object_storage_system_id %}selected{% endif %}>Select Object Storage System</option>
                         {% for option in payload.object_storage_systems %}
-                            <option value="{{ option.value }}" {% if form_state.object_storage_system_id == option.value %}selected{% endif %}>{{ option.label }}</option>
+                            <option value="{{ option.value }}"
+                                    {% if form_state.object_storage_system_id == option.value %}selected{% endif %}>{{ option.label }}</option>
                         {% endfor %}
                     </select>
                 </label>
@@ -250,7 +255,8 @@
                     <div>
                         <h3 class="text-sm font-bold text-content-primary">Delivery & State</h3>
                         <p class="mt-1 text-xs leading-5 text-content-muted">Selected Notification Channels are invoked only after the governed artifact reaches Ready state.</p>
-                        <a href="{{ url_for('notification_channels.index') }}" class="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-kaori-primary hover:underline"><i data-lucide="external-link" class="h-3.5 w-3.5"></i>Manage Notification Channels</a>
+                        <a href="{{ url_for('notification_channels.index') }}"
+                           class="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-kaori-primary hover:underline"><i data-lucide="external-link" class="h-3.5 w-3.5"></i>Manage Notification Channels</a>
                     </div>
                 </div>
                 <label class="inline-flex items-center gap-2 text-xs font-semibold text-content-secondary">
@@ -673,11 +679,11 @@
                                     <tr>
                                         <td colspan="7" class="p-0">
                                             {% set schedule_filters_active = payload.selected_filters.search or payload.selected_filters.status or payload.selected_filters.cadence or payload.selected_filters.report_type or payload.selected_filters.asset or payload.selected_filters.delivery %}
-                                            {% set empty_state_icon = 'calendar-clock' %}
+                                            {% set empty_state_icon = "calendar-clock" %}
                                             {% set empty_state_label = 'No Results' if schedule_filters_active else 'No Data' %}
                                             {% set empty_state_title = 'No Schedules Match the Current Filters' if schedule_filters_active else 'No Report Schedules Yet' %}
                                             {% set empty_state_description = 'Clear or adjust the schedule filters to review another recurring report contract.' if schedule_filters_active else 'Create a schedule to queue a governed report contract on a recurring cadence.' %}
-                                            {% set empty_state_min_height = 'min-h-[160px]' %}
+                                            {% set empty_state_min_height = "min-h-[160px]" %}
                                             {% include 'components/states/_empty_state.html' %}
                                         </td>
                                     </tr>
@@ -943,11 +949,11 @@
                                 {% else %}
                                     <tr>
                                         <td colspan="6" class="p-0">
-                                            {% set empty_state_icon = 'history' %}
+                                            {% set empty_state_icon = "history" %}
                                             {% set empty_state_label = 'No Results' if run_filters_active else 'No Data' %}
                                             {% set empty_state_title = 'No Schedule Runs Match the Current Filters' if run_filters_active else 'No Schedule Runs Yet' %}
                                             {% set empty_state_description = 'Clear or adjust the run filters to review another execution evidence set.' if run_filters_active else 'Execution evidence will appear after a schedule runs or is triggered manually.' %}
-                                            {% set empty_state_min_height = 'min-h-[160px]' %}
+                                            {% set empty_state_min_height = "min-h-[160px]" %}
                                             {% include 'components/states/_empty_state.html' %}
                                         </td>
                                     </tr>
@@ -1065,7 +1071,7 @@
             {% endif %}
         </section>
         {% call record_modal.render('schedule-form-dialog', 'Schedule Workspace', 'Edit Report Schedule' if schedule_form_is_edit else 'Create Report Schedule', 'Define one recurring report contract, execution cadence, and delivery policy.', 'calendar-plus', 'Schedule management remains available independently from generated artifacts; execution is storage-aware.', 'standard') %}
-            {{ schedule_form(schedule_form_state, schedule_form_action, 'Save Schedule' if schedule_form_is_edit else 'Create Schedule', 'Saving Schedule...' if schedule_form_is_edit else 'Creating Schedule...', request.full_path.rstrip('?')) }}
+            {{ schedule_form(schedule_form_state, schedule_form_action, 'Save Schedule' if schedule_form_is_edit else 'Create Schedule', 'Saving Schedule...' if schedule_form_is_edit else 'Creating Schedule...', request.full_path.rstrip('?') ) }}
         {% endcall %}
     </div>
     <script src="{{ url_for('static', filename='js/report_schedules.js') }}"></script>

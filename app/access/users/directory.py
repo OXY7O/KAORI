@@ -82,7 +82,7 @@ def build_user_identity_context(user: User) -> dict[str, Any]:
         credential_owner = 'External provider'
         credential_detail = 'The external provider owns authentication; KAORI manages lifecycle and authorization.'
 
-    projection_type = str(matching_link.projection_type) if matching_link is not None else None
+    projection_type = str(matching_link.projection_type) if matching_link is not None else ''
     projection_labels = {
         'administrative': 'Administrative provisioning',
         'jit': 'Controlled JIT provisioning',

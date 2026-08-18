@@ -11,28 +11,28 @@
 } %}
 {% set workspace_tabs = [
     (
-        'alerts',
-        'Alert Records',
-        'triangle-alert',
-        url_for('alert_intelligence.index', tab='alerts', **tab_query)
+    'alerts',
+    'Alert Records',
+    'triangle-alert',
+    url_for('alert_intelligence.index', tab='alerts', **tab_query)
     ),
     (
-        'correlation',
-        'Correlation & Guidance',
-        'git-merge',
-        url_for('alert_intelligence.index', tab='correlation', **tab_query)
+    'correlation',
+    'Correlation & Guidance',
+    'git-merge',
+    url_for('alert_intelligence.index', tab='correlation', **tab_query)
     ),
     (
-        'delivery',
-        'Notification Delivery',
-        'send',
-        url_for('alert_intelligence.index', tab='delivery', **tab_query)
+    'delivery',
+    'Notification Delivery',
+    'send',
+    url_for('alert_intelligence.index', tab='delivery', **tab_query)
     ),
     (
-        'evidence',
-        'Evidence & Ownership',
-        'shield-check',
-        url_for('alert_intelligence.index', tab='evidence', **tab_query)
+    'evidence',
+    'Evidence & Ownership',
+    'shield-check',
+    url_for('alert_intelligence.index', tab='evidence', **tab_query)
     )
 ] %}
 {% call intelligence_ui.section(
@@ -43,9 +43,8 @@
     'normal' if payload.source_status.connected else 'warning',
     indicator_id='alert-intelligence-loading',
     loading_label='Refreshing Alert Intelligence'
-) %}
-    {{ content_tabs.render_links(
-        'alert-intelligence-sections',
+    ) %}
+    {{ content_tabs.render_links('alert-intelligence-sections',
         workspace_tabs,
         payload.tab,
         'Alert Intelligence Sections',
@@ -56,9 +55,7 @@
         hx_push_url='true',
         hx_indicator='#alert-intelligence-loading',
         nowrap=true,
-        hx_sync='#alert-intelligence-page-content:replace'
-    ) }}
-
+        hx_sync='#alert-intelligence-page-content:replace') }}
     <form id="alert-intelligence-context-form"
           action="{{ url_for('alert_intelligence.index') }}"
           method="get"
@@ -73,11 +70,12 @@
           class="border-b border-outline-subtle bg-surface-card px-4 py-3 sm:px-5">
         <input type="hidden" name="tab" value="{{ payload.tab }}">
         <input type="hidden" name="page" value="1">
-        <input type="hidden" name="per_page" value="{{ payload.pagination.per_page }}">
+        <input type="hidden"
+               name="per_page"
+               value="{{ payload.pagination.per_page }}">
         <input type="hidden" name="q" value="{{ payload.filters.q }}">
         <input type="hidden" name="severity" value="{{ payload.filters.severity }}">
         <input type="hidden" name="state" value="{{ payload.filters.state }}">
-
         <div class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
             <div class="min-w-0 lg:max-w-sm">
                 <p class="text-sm font-semibold leading-5 text-content-primary">Operational Context</p>
@@ -88,9 +86,12 @@
             <div class="grid flex-1 gap-3 sm:grid-cols-2 lg:max-w-4xl lg:grid-cols-12">
                 <label class="block lg:col-span-3">
                     <span class="{{ table_ui.filter_label_classes() }}">Domain</span>
-                    <select name="domain" autocomplete="off" class="{{ table_ui.filter_select_classes() }}">
+                    <select name="domain"
+                            autocomplete="off"
+                            class="{{ table_ui.filter_select_classes() }}">
                         {% for option in payload.domain_options %}
-                            <option value="{{ option.value }}" {% if payload.domain == option.value %}selected{% endif %}>
+                            <option value="{{ option.value }}"
+                                    {% if payload.domain == option.value %}selected{% endif %}>
                                 {{ option.label }} · {{ option.count }}
                             </option>
                         {% endfor %}
@@ -98,9 +99,12 @@
                 </label>
                 <label class="block lg:col-span-5">
                     <span class="{{ table_ui.filter_label_classes() }}">Asset</span>
-                    <select name="asset" autocomplete="off" class="{{ table_ui.filter_select_classes() }}">
+                    <select name="asset"
+                            autocomplete="off"
+                            class="{{ table_ui.filter_select_classes() }}">
                         {% for option in payload.assets %}
-                            <option value="{{ option.value }}" {% if payload.selected_asset_key == option.value %}selected{% endif %}>
+                            <option value="{{ option.value }}"
+                                    {% if payload.selected_asset_key == option.value %}selected{% endif %}>
                                 {{ option.label }} · {{ option.environment }}
                             </option>
                         {% else %}
@@ -110,17 +114,20 @@
                 </label>
                 <label class="block lg:col-span-4">
                     <span class="{{ table_ui.filter_label_classes() }}">Alert Source</span>
-                    <select name="source" autocomplete="off" class="{{ table_ui.filter_select_classes() }}">
+                    <select name="source"
+                            autocomplete="off"
+                            class="{{ table_ui.filter_select_classes() }}">
                         {% for option in payload.source_options %}
-                            <option value="{{ option.value }}" {% if payload.source == option.value %}selected{% endif %}>{{ option.label }}</option>
+                            <option value="{{ option.value }}"
+                                    {% if payload.source == option.value %}selected{% endif %}>{{ option.label }}</option>
                         {% endfor %}
                     </select>
                 </label>
             </div>
         </div>
     </form>
-
-    <div data-alert-intelligence-active-section="{{ payload.tab }}" class="bg-surface-card">
+    <div data-alert-intelligence-active-section="{{ payload.tab }}"
+         class="bg-surface-card">
         {% if payload.tab == 'correlation' %}
             {% include 'intelligence/partials/_alert_intelligence_correlation.html' %}
         {% elif payload.tab == 'delivery' %}

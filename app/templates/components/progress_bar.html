@@ -104,7 +104,7 @@
     h-full rounded-full bg-kaori-primary transition-all duration-500 ease-out
 {%- endmacro %}
 {% macro notification_progress(value, label='Progress') -%}
-    {{ bar(value, track_classes=notification_track_classes(), fill_classes=notification_fill_classes(), label=label) }}
+    {{ bar(value, track_classes=notification_track_classes() , fill_classes=notification_fill_classes(), label=label) }}
 {%- endmacro %}
 {% macro notification_indeterminate(label='Progress', queued=false) -%}
     <div class="{{ notification_track_classes() }}"
@@ -135,13 +135,9 @@
             <span class="shrink-0 text-xs font-semibold text-kaori-primary dark:text-kaori-accent">{{ job.progress_label }}</span>
         </div>
         {% if job.progress_mode == 'determinate' %}
-            <div class="mt-2">
-                {{ notification_progress(job.progress, label=label) }}
-            </div>
+            <div class="mt-2">{{ notification_progress(job.progress, label=label) }}</div>
         {% else %}
-            <div class="mt-2">
-                {{ notification_indeterminate(label=label, queued=job.progress_mode == 'queued') }}
-            </div>
+            <div class="mt-2">{{ notification_indeterminate(label=label, queued=job.progress_mode == 'queued') }}</div>
         {% endif %}
         {% if not compact %}
             <div class="mt-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-xs text-content-muted">

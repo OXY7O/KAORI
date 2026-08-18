@@ -87,11 +87,11 @@
                     </div>
                 </article>
             {% else %}
-                {% set empty_state_icon = 'database-zap' %}
-                {% set empty_state_label = 'No Data' %}
-                {% set empty_state_title = 'No Ranked Evidence Available' %}
+                {% set empty_state_icon = "database-zap" %}
+                {% set empty_state_label = "No Data" %}
+                {% set empty_state_title = "No Ranked Evidence Available" %}
                 {% set empty_state_description = 'The selected snapshot does not contain ranked ' ~ panel.title|lower ~ ' evidence.' %}
-                {% set empty_state_min_height = 'min-h-[160px]' %}
+                {% set empty_state_min_height = "min-h-[160px]" %}
                 {% include 'components/states/_empty_state.html' %}
             {% endfor %}
         </div>

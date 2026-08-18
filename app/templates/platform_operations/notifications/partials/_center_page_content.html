@@ -151,14 +151,13 @@
                                 </div>
                             </div>
                             {% if filter_active %}
-                                {{ registry_ui.clear_filters_action(
-                                    url_for('notifications.center', view='notifications', per_page=pager.per_page),
-                                    table_ui.action_classes(),
-                                    hx_get=url_for('notifications.center', view='notifications', per_page=pager.per_page),
-                                    target='#activity-notification-page',
-                                    indicator='#notification-center-loading',
-                                    select='#activity-notification-page',
-                                    push_url='true'
+                                {{ registry_ui.clear_filters_action(url_for('notifications.center', view='notifications', per_page=pager.per_page) ,
+                                table_ui.action_classes(),
+                                hx_get=url_for('notifications.center', view='notifications', per_page=pager.per_page),
+                                target='#activity-notification-page',
+                                indicator='#notification-center-loading',
+                                select='#activity-notification-page',
+                                push_url='true'
                                 ) }}
                             {% endif %}
                         </div>

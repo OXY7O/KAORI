@@ -201,16 +201,16 @@
                 </aside>
             </div>
         {% else %}
-            {% set empty_state_icon = 'server' %}
-            {% set empty_state_label = 'Setup Required' %}
-            {% set empty_state_title = 'No Kubernetes Cluster Registered' %}
-            {% set empty_state_description = 'Register a Kubernetes connection before configuring namespace-level reveal policies.' %}
+            {% set empty_state_icon = "server" %}
+            {% set empty_state_label = "Setup Required" %}
+            {% set empty_state_title = "No Kubernetes Cluster Registered" %}
+            {% set empty_state_description = "Register a Kubernetes connection before configuring namespace-level reveal policies." %}
             {% set empty_state_action_url = url_for('cluster.add_cluster') %}
-            {% set empty_state_action_label = 'Add Cluster' %}
-            {% set empty_state_action_icon = 'plus' %}
-            {% set empty_state_permission = 'clusters.manage' %}
+            {% set empty_state_action_label = "Add Cluster" %}
+            {% set empty_state_action_icon = "plus" %}
+            {% set empty_state_permission = "clusters.manage" %}
             {% set empty_state_show_admin_required = true %}
-            {% set empty_state_min_height = 'min-h-[210px]' %}
+            {% set empty_state_min_height = "min-h-[210px]" %}
             {% include 'components/states/_empty_state.html' %}
         {% endif %}
     </section>

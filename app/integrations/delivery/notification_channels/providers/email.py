@@ -97,7 +97,7 @@ def validate_form(data: NotificationChannelFormInput) -> list[str]:
     config = data.provider_config
     if not str(config.get('smtp_host') or '').strip():
         errors.append('SMTP host is required.')
-    port = int(config.get('smtp_port') or 0)
+    port = positive_int(config.get('smtp_port'), default=0)
     if port < 1 or port > 65535:
         errors.append('SMTP port must be between 1 and 65535.')
     if config.get('smtp_security') not in _EMAIL_SECURITY_MODES:

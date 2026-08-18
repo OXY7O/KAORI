@@ -1,8 +1,9 @@
-<nav class="flex flex-wrap gap-1 rounded-xl border border-outline-default bg-surface-card p-1 shadow-sm" aria-label="Identity Provider workspace">
+<nav class="flex flex-wrap gap-1 rounded-xl border border-outline-default bg-surface-card p-1 shadow-sm"
+     aria-label="Identity Provider workspace">
     {% set tabs = [
-        ('overview', 'layout-dashboard', 'Overview', url_for('identity_providers.index', tab='overview')),
-        ('providers', 'blocks', 'Providers', url_for('identity_providers.index', tab='providers'))
-    ] %}
+            ('overview', 'layout-dashboard', 'Overview', url_for('identity_providers.index', tab='overview')),
+            ('providers', 'blocks', 'Providers', url_for('identity_providers.index', tab='providers'))
+        ] %}
     {% if current_user.has_permission('identity_providers.provision') %}
         {% set tabs = tabs + [('directory', 'contact-round', 'Directory Provisioning', url_for('identity_providers.directory_provisioning'))] %}
     {% endif %}

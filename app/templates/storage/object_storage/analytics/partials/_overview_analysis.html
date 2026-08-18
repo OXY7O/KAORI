@@ -51,25 +51,25 @@
             <p class="mt-3 {{ analysis_surface.metric_label_classes() }}">Bucket Concentration</p>
             <p class="mt-1.5 text-lg font-semibold text-content-primary">{{ metrics.bucket_analysis.top_usage_share_display }}</p>
             <p class="mt-1 text-xs leading-5 text-content-muted">
-                {% if metrics.bucket_analysis.top_usage %}{{ metrics.bucket_analysis.top_usage.name }} share of known usage.{% else %}No bucket usage evidence available.{% endif %}
+                {% if metrics.bucket_analysis.top_usage %}
+                    {{ metrics.bucket_analysis.top_usage.name }} share of known usage.
+                {% else %}
+                    No bucket usage evidence available.
+                {% endif %}
             </p>
         </article>
     </div>
     <div class="{{ analysis_surface.interpretation_grid_classes() }}">
-        {{ analysis_surface.interpretation_callout(
-            'Operational Reading',
-            metrics.operational_posture.detail,
-            'Start with any critical or warning domain, then validate the underlying metric readiness and source provenance before remediation.',
-            icon='scan-search',
-            role='status',
-            tone=metrics.operational_posture.tone
-        ) }}
-        {{ analysis_surface.interpretation_callout(
-            'Review Path',
-            'Capacity → Performance → Top Consumers → Forecast',
-            'Use capacity to confirm headroom, performance to validate request pressure, Top Consumers to identify ownership, and Forecast to plan the next capacity action.',
-            icon='route',
-            role='brand'
-        ) }}
+        {{ analysis_surface.interpretation_callout('Operational Reading',
+                metrics.operational_posture.detail,
+                'Start with any critical or warning domain, then validate the underlying metric readiness and source provenance before remediation.',
+                icon='scan-search',
+                role='status',
+                tone=metrics.operational_posture.tone) }}
+        {{ analysis_surface.interpretation_callout('Review Path',
+                'Capacity → Performance → Top Consumers → Forecast',
+                'Use capacity to confirm headroom, performance to validate request pressure, Top Consumers to identify ownership, and Forecast to plan the next capacity action.',
+                icon='route',
+                role='brand') }}
     </div>
 </section>

@@ -12,12 +12,11 @@
     <div class="{{ table_ui.inventory_filter_bar_classes() }}">
         {% if selected_cluster_id or selected_status or search %}
             <div class="mb-3 flex justify-end">
-                {{ registry_ui.clear_filters_action(
-                    url_for('inventory.namespaces', per_page=pagination.per_page),
-                    table_ui.action_classes(),
-                    hx_get=url_for('inventory.namespaces', per_page=pagination.per_page, partial_mode='page_workspace'),
-                    target='#namespaces-page-workspace',
-                    indicator='#namespaces-table-loading'
+                {{ registry_ui.clear_filters_action(url_for('inventory.namespaces', per_page=pagination.per_page) ,
+                table_ui.action_classes(),
+                hx_get=url_for('inventory.namespaces', per_page=pagination.per_page, partial_mode='page_workspace'),
+                target='#namespaces-page-workspace',
+                indicator='#namespaces-table-loading'
                 ) }}
             </div>
         {% endif %}

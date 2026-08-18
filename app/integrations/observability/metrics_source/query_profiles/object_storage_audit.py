@@ -177,7 +177,7 @@ class ObjectStorageMetricsProfileAuditor:
 
     @staticmethod
     def _summary(items: list[dict[str, Any]]) -> dict[str, Any]:
-        counts = {
+        counts: dict[str, Any] = {
             'total': len(items),
             'ready': sum(item['status'] == 'ready' for item in items),
             'no_data': sum(item['status'] == 'no_data' for item in items),

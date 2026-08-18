@@ -13,7 +13,11 @@
                     {{ 'Request & Error Trend' if page_key == 'performance' else 'Storage Usage Trend' }}
                 </h2>
                 <p class="mt-1 text-sm leading-6 text-content-muted">
-                    {% if page_key == 'forecast' %}Committed forecasting-worker history for {{ selected_forecast_history_window|upper }}. The worker snapshot remains separate from live runtime metrics and Inventory.{% else %}{{ metrics_source.provider_label }} range evidence for {{ selected_time_range }}. Historical operational evidence remains separate from the committed Inventory snapshot.{% endif %}
+                    {% if page_key == 'forecast' %}
+                        Committed forecasting-worker history for {{ selected_forecast_history_window|upper }}. The worker snapshot remains separate from live runtime metrics and Inventory.
+                    {% else %}
+                        {{ metrics_source.provider_label }} range evidence for {{ selected_time_range }}. Historical operational evidence remains separate from the committed Inventory snapshot.
+                    {% endif %}
                 </p>
             </div>
             <div class="flex flex-wrap gap-2">
@@ -29,13 +33,13 @@
                 <canvas data-object-storage-chart width="1200" height="340"></canvas>
             </div>
         {% else %}
-            {% set empty_state_icon = 'line-chart' %}
-            {% set empty_state_label = 'Sync Required' %}
-            {% set empty_state_tone = 'warning' %}
-            {% set empty_state_title = 'Historical Evidence Not Available' %}
+            {% set empty_state_icon = "line-chart" %}
+            {% set empty_state_label = "Sync Required" %}
+            {% set empty_state_tone = "warning" %}
+            {% set empty_state_title = "Historical Evidence Not Available" %}
             {% set empty_state_description = 'The forecasting worker has not committed usable history for this window.' if page_key == 'forecast' else 'The active metrics source returned no range samples for this metric and time window.' %}
-            {% set empty_state_variant = 'panel' %}
-            {% set empty_state_min_height = 'min-h-[220px]' %}
+            {% set empty_state_variant = "panel" %}
+            {% set empty_state_min_height = "min-h-[220px]" %}
             {% include 'components/states/_empty_state.html' %}
         {% endif %}
     </div>

@@ -165,8 +165,7 @@
                                 </div>
                                 <div>
                                     <label class="{{ table_ui.filter_label_classes() }}">Query Horizon</label>
-                                    <select name="query_horizon"
-                                            class="{{ table_ui.filter_select_classes() }}">
+                                    <select name="query_horizon" class="{{ table_ui.filter_select_classes() }}">
                                         {% for value, label in [('recent', 'Recent Preferred'), ('historical', 'Historical Preferred'), ('balanced', 'Balanced')] %}
                                             <option value="{{ value }}"
                                                     {% if row.query_horizon == value %}selected{% endif %}>{{ label }}</option>
@@ -190,11 +189,11 @@
                 {% else %}
                     <tr>
                         <td colspan="7" class="p-0">
-                            {% set empty_state_icon = 'route' %}
-                            {% set empty_state_label = 'No Data' %}
-                            {% set empty_state_title = 'No Consumer Bindings' %}
-                            {% set empty_state_description = 'Create a binding to authorize this reusable metrics source for one managed consumer asset and define its query-routing preference.' %}
-                            {% set empty_state_min_height = 'min-h-[190px]' %}
+                            {% set empty_state_icon = "route" %}
+                            {% set empty_state_label = "No Data" %}
+                            {% set empty_state_title = "No Consumer Bindings" %}
+                            {% set empty_state_description = "Create a binding to authorize this reusable metrics source for one managed consumer asset and define its query-routing preference." %}
+                            {% set empty_state_min_height = "min-h-[190px]" %}
                             {% include 'components/states/_empty_state.html' %}
                         </td>
                     </tr>

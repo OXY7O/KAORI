@@ -64,8 +64,8 @@ def main() -> int:
         'app/kubernetes/cluster/routes.py': (
             "event_type='cluster_create'",
             "event_type='cluster_update'",
-            "event_type='cluster_delete'",
         ),
+        'app/kubernetes/cluster/lifecycle_web.py': ("event_type='cluster_delete'",),
         'app/integrations/observability/metrics_source/application/registration_web.py': (
             "event_type='metrics_source_created'",
         ),

@@ -20,18 +20,18 @@
         {% if overview.setup.is_blocked %}
             <aside class="{{ page_hero.aside_classes() }}"
                    aria-label="Object Storage inventory availability">
-                {% set storage_blocked_scope = 'Inventory Readiness' %}
-                {% set storage_blocked_info = 'Register a Storage integration to activate committed system, bucket, and container inventory.' %}
+                {% set storage_blocked_scope = "Inventory Readiness" %}
+                {% set storage_blocked_info = "Register a Storage integration to activate committed system, bucket, and container inventory." %}
                 {% include 'storage/object_storage/inventory/components/_hero_blocked_context.html' %}
             </aside>
         {% else %}
             {{ page_hero.context_card('Object Storage Inventory Posture',
-                    'Inventory Posture',
-                    'Fleet Posture',
-                    overview.posture_label,
-                    overview.posture_tone,
-                    [
-                    ('database-backup', 'Quota Evidence', overview.bucket_posture.quota_assessed ~ '/' ~ overview.bucket_posture.total_assets, 'Assessed assets') ,
+                        'Inventory Posture',
+                        'Fleet Posture',
+                        overview.posture_label,
+                        overview.posture_tone,
+                        [
+                        ('database-backup', 'Quota Evidence', overview.bucket_posture.quota_assessed ~ '/' ~ overview.bucket_posture.total_assets, 'Assessed assets') ,
             ('scan-search', 'Active Signals', overview.active_signal_count, 'System exceptions')
             ],
             'Manage Storage',

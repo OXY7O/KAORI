@@ -5,9 +5,9 @@
 {% block title %}Intelligence Overview{% endblock title %}
 {% block dashboard_content %}
     {% set hero_metrics = [
-        ('sparkles', 'Active Findings', payload.summary.findings, 'Catalog-backed recommendations'),
-        ('workflow', 'Pending Governance', payload.summary.pending_automation, 'Candidates and approvals')
-    ] %}
+            ('sparkles', 'Active Findings', payload.summary.findings, 'Catalog-backed recommendations'),
+            ('workflow', 'Pending Governance', payload.summary.pending_automation, 'Candidates and approvals')
+        ] %}
     <div class="space-y-6">
         <section class="{{ page_hero.shell_classes() }}">
             <div class="{{ page_hero.layout_classes() }}">
@@ -24,27 +24,25 @@
                         </div>
                     {% endcall %}
                 </div>
-                {{ page_hero.context_card(
-                    'Intelligence overview posture',
-                    'Intelligence Posture',
-                    'Current Operational Context',
-                    payload.posture.label,
-                    payload.posture.tone,
-                    hero_metrics,
-                    'Open Recommendations',
-                    url_for('intelligence.recommendations'),
-                    'sparkles'
+                {{ page_hero.context_card('Intelligence overview posture',
+                                'Intelligence Posture',
+                                'Current Operational Context',
+                                payload.posture.label,
+                                payload.posture.tone,
+                                hero_metrics,
+                                'Open Recommendations',
+                                url_for('intelligence.recommendations') ,
+                'sparkles'
                 ) }}
             </div>
         </section>
-
         {% call intelligence_ui.section(
             'Intelligence Capabilities',
             'Move from committed evidence to interpretation, provider alert context, canonical rule guidance, and governed remediation without collapsing those responsibilities into one workflow.',
             'brain-circuit',
             payload.posture.label,
             payload.posture.tone
-        ) %}
+            ) %}
             <div class="grid gap-4 p-4 md:grid-cols-2 sm:p-5">
                 {% for capability in payload.capabilities %}
                     <article class="flex min-w-0 flex-col rounded-xl border border-outline-subtle bg-surface-card p-4 shadow-sm">
@@ -81,14 +79,13 @@
                 {% endfor %}
             </div>
         {% endcall %}
-
         {% call intelligence_ui.section(
             'Current Priorities',
             'Surface the highest-priority active recommendation findings from committed evidence. Detailed investigation remains in Recommendations and Alert Intelligence.',
             'list-start',
             payload.summary.findings ~ ' Active',
             'critical' if payload.summary.critical else ('warning' if payload.summary.warning else ('info' if payload.summary.findings else 'normal'))
-        ) %}
+            ) %}
             {% if payload.priorities %}
                 <div class="divide-y divide-outline-subtle">
                     {% for item in payload.priorities %}
@@ -116,37 +113,37 @@
                 </div>
             {% else %}
                 <div class="p-4 sm:p-5">
-                    {{ intelligence_ui.empty_state(
-                        'No Active Recommendation Findings',
-                        'No current catalog-backed recommendation finding requires operator action. Rule definitions and governed automation controls remain available.',
-                        'circle-check'
-                    ) }}
+                    {{ intelligence_ui.empty_state('No Active Recommendation Findings',
+                                        'No current catalog-backed recommendation finding requires operator action. Rule definitions and governed automation controls remain available.',
+                                        'circle-check') }}
                 </div>
             {% endif %}
         {% endcall %}
-
         {% call intelligence_ui.section(
             'Evidence & Control Boundaries',
             'Keep detection, interpretation, rule ownership, and infrastructure mutation explicit so Intelligence remains explainable and auditable.',
             'shield-check'
-        ) %}
+            ) %}
             <div class="grid gap-4 p-4 lg:grid-cols-3 sm:p-5">
                 <article class="rounded-xl border border-outline-subtle bg-surface-hover p-4">
-                    <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
+                    <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                          aria-hidden="true">
                         <i data-lucide="database" class="h-4 w-4"></i>
                     </span>
                     <h3 class="mt-3 text-sm font-semibold leading-5 text-content-primary">Committed Intelligence</h3>
                     <p class="mt-1 text-sm leading-6 text-content-muted">Recommendations derive from committed KAORI inventory and analytics evidence. The Overview does not query infrastructure providers directly.</p>
                 </article>
                 <article class="rounded-xl border border-outline-subtle bg-surface-hover p-4">
-                    <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
+                    <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                          aria-hidden="true">
                         <i data-lucide="radio-tower" class="h-4 w-4"></i>
                     </span>
                     <h3 class="mt-3 text-sm font-semibold leading-5 text-content-primary">Provider Alert Context</h3>
                     <p class="mt-1 text-sm leading-6 text-content-muted">Alert Intelligence resolves provider alert state only when that workspace is opened; routing, grouping, silences, and inhibition remain provider-owned.</p>
                 </article>
                 <article class="rounded-xl border border-outline-subtle bg-surface-hover p-4">
-                    <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
+                    <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                          aria-hidden="true">
                         <i data-lucide="workflow" class="h-4 w-4"></i>
                     </span>
                     <h3 class="mt-3 text-sm font-semibold leading-5 text-content-primary">Governed Automation</h3>

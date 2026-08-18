@@ -10,7 +10,13 @@
         <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div>
                 <h2 class="text-lg font-semibold text-content-primary">
-                    {% if page_key == 'top_consumers' %}Consumer Records{% elif page_key == 'capacity' %}Bucket Capacity Records{% else %}Bucket Request Path Records{% endif %}
+                    {% if page_key == 'top_consumers' %}
+                        Consumer Records
+                    {% elif page_key == 'capacity' %}
+                        Bucket Capacity Records
+                    {% else %}
+                        Bucket Request Path Records
+                    {% endif %}
                 </h2>
                 <p class="mt-1 max-w-4xl text-sm leading-6 text-content-muted">
                     {% if page_key == 'capacity' %}
@@ -26,13 +32,10 @@
                 {{ table_label.metadata_label(bucket_table.pagination.total_items ~ ' Buckets', size='compact') }}
             {% endif %}
         </div>
-        {{ loading_bar.render('object-storage-bucket-table-loading-indicator', label='Refreshing Bucket Capacity Records' if page_key == 'capacity' else ('Refreshing Bucket Request Path Records' if page_key == 'performance' else 'Refreshing Consumer Records')) }}
+        {{ loading_bar.render('object-storage-bucket-table-loading-indicator', label='Refreshing Bucket Capacity Records' if page_key == 'capacity' else ('Refreshing Bucket Request Path Records' if page_key == 'performance' else 'Refreshing Consumer Records') ) }}
     </header>
-
     {% if dependency_blocker %}
-        <div class="p-5 sm:p-6">
-            {% include "storage/object_storage/analytics/partials/_dependency_notice.html" %}
-        </div>
+        <div class="p-5 sm:p-6">{% include "storage/object_storage/analytics/partials/_dependency_notice.html" %}</div>
     {% elif bucket_table %}
         <form id="object-storage-bucket-table-filter"
               method="get"
@@ -61,13 +64,12 @@
                         Apply Filter
                     </button>
                     {% if bucket_table.search %}
-                        {{ registry_ui.clear_filters_action(
-                            url_for(bucket_table.page_endpoint, system_id=system.id, time_range=selected_time_range, bucket_per_page=bucket_table.pagination.per_page, tab=bucket_table.query_params.tab|default(none)),
-                            table_ui.action_classes() ~ ' h-10 px-4',
-                            hx_get=url_for('analytics.object_storage_bucket_table', system_id=system.id, time_range=selected_time_range, page_key=page_key, bucket_per_page=bucket_table.pagination.per_page, tab=bucket_table.query_params.tab|default(none)),
-                            target='#object-storage-bucket-table-panel',
-                            indicator='#object-storage-bucket-table-loading-indicator',
-                            sync='#object-storage-bucket-table-panel:replace'
+                        {{ registry_ui.clear_filters_action(url_for(bucket_table.page_endpoint, system_id=system.id, time_range=selected_time_range, bucket_per_page=bucket_table.pagination.per_page, tab=bucket_table.query_params.tab|default(none) ),
+                        table_ui.action_classes() ~ ' h-10 px-4',
+                        hx_get=url_for('analytics.object_storage_bucket_table', system_id=system.id, time_range=selected_time_range, page_key=page_key, bucket_per_page=bucket_table.pagination.per_page, tab=bucket_table.query_params.tab|default(none)),
+                        target='#object-storage-bucket-table-panel',
+                        indicator='#object-storage-bucket-table-loading-indicator',
+                        sync='#object-storage-bucket-table-panel:replace'
                         ) }}
                     {% endif %}
                 </div>
@@ -164,11 +166,11 @@
                     {% else %}
                         <tr>
                             <td colspan="{{ 7 if page_key == 'top_consumers' else 5 }}" class="p-0">
-                                {% set empty_state_icon = 'database' %}
-                                {% set empty_state_label = 'No Results' %}
-                                {% set empty_state_title = 'No Bucket Records Match the Current Filters' %}
-                                {% set empty_state_description = 'Adjust the selected Object Storage scope or local filters to review another bucket set.' %}
-                                {% set empty_state_min_height = 'min-h-[160px]' %}
+                                {% set empty_state_icon = "database" %}
+                                {% set empty_state_label = "No Results" %}
+                                {% set empty_state_title = "No Bucket Records Match the Current Filters" %}
+                                {% set empty_state_description = "Adjust the selected Object Storage scope or local filters to review another bucket set." %}
+                                {% set empty_state_min_height = "min-h-[160px]" %}
                                 {% include 'components/states/_empty_state.html' %}
                             </td>
                         </tr>
@@ -176,18 +178,16 @@
                 </tbody>
             </table>
         </div>
-        {{ record_pagination.render(
-            bucket_table.pagination,
-            'bucket_page',
-            'bucket_per_page',
-            'object-storage-bucket-table-panel',
-            'object-storage-bucket-table-filter',
-            'object-storage-bucket-table-loading-indicator',
-            'analytics.object_storage_bucket_table',
-            bucket_table.page_endpoint,
-            bucket_table.query_params,
-            'Buckets',
-            embedded=true
-        ) }}
+        {{ record_pagination.render(bucket_table.pagination,
+                'bucket_page',
+                'bucket_per_page',
+                'object-storage-bucket-table-panel',
+                'object-storage-bucket-table-filter',
+                'object-storage-bucket-table-loading-indicator',
+                'analytics.object_storage_bucket_table',
+                bucket_table.page_endpoint,
+                bucket_table.query_params,
+                'Buckets',
+                embedded=true) }}
     {% endif %}
 </section>

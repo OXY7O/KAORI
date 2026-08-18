@@ -415,8 +415,8 @@
                     </details>
                     {% if current_user.has_permission('identity_providers.view') %}
                         {{ related_page_card.render('Identity Providers',
-                                            'Manage provider records, adapter contracts, and admission paths used to create external identities in KAORI.',
-                                            url_for('identity_providers.index') ,
+                                                'Manage provider records, adapter contracts, and admission paths used to create external identities in KAORI.',
+                                                url_for('identity_providers.index') ,
                         'Open Identity Providers',
                         icon='fingerprint',
                         eyebrow='Related User Management',

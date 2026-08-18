@@ -6,24 +6,24 @@
          class="{{ integration_ui.section_shell_classes() }}">
     {% set registry_filters_active = selected_query or selected_readiness or selected_compatibility or selected_deployment_type %}
     {% set registry_clear_url = url_for('integrations.alertmanager',
-        tab='registry',
-        page=1,
-        per_page=pagination.per_page,
-        coverage_page=1,
-        coverage_per_page=coverage_pagination.per_page,
-        coverage_q=selected_coverage_query,
-        coverage_environment=selected_coverage_environment,
+            tab='registry',
+            page=1,
+            per_page=pagination.per_page,
+            coverage_page=1,
+            coverage_per_page=coverage_pagination.per_page,
+            coverage_q=selected_coverage_query,
+            coverage_environment=selected_coverage_environment,
         coverage_status=selected_coverage_status) %}
     {% set registry_clear_action = registry_ui.clear_filters_action(
-        registry_clear_url,
-        table_ui.action_classes(),
-        hx_get=registry_clear_url,
-        target='#alertmanager-inventory-card',
-        indicator='#alertmanager-inventory-loading',
-        push_url='true',
-        swap='outerHTML',
-        marker='alertmanager-inventory'
-    ) if registry_filters_active else '' %}
+            registry_clear_url,
+            table_ui.action_classes(),
+            hx_get=registry_clear_url,
+            target='#alertmanager-inventory-card',
+            indicator='#alertmanager-inventory-loading',
+            push_url='true',
+            swap='outerHTML',
+            marker='alertmanager-inventory'
+        ) if registry_filters_active else '' %}
     {{ provider_registry.registry_header('Alertmanager Connection Registry',
         'Manage reusable Alertmanager connections and their downstream consumer bindings.',
         'database-zap',

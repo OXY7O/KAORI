@@ -47,7 +47,7 @@ def main() -> int:
         and 'form_parser: ProviderFormParser' in providers
         and 'form_validator: ProviderFormValidator' in providers
         and 'adapter.form_parser(form, existing)' in forms,
-        'channel event persistence': 'event_types=list(data.event_types)' in service,
+        'channel event persistence': 'channel.event_types = list(data.event_types)' in service,
         'generic event dispatcher': 'def dispatch_notification_event(' in service
         and 'def dispatch_matching_notification_event(' in service,
         'report consumer': "REPORT_NOTIFICATION_EVENT = 'report.generated'" in report_notifications,

@@ -166,7 +166,7 @@
                                 <p class="text-xs font-semibold text-content-muted">Metrics Provider</p>
                                 <p class="mt-1 text-sm font-semibold text-content-primary">{{ metrics_source_label }}</p>
                                 <p class="mt-1 text-xs leading-5 text-content-secondary">{{ provider.description }}</p>
-                                <p class="mt-2 text-xs leading-5 text-content-muted">Adapter {{ provider.adapter_key|replace('_', ' ')|title }} · Query {{ provider.query_language|upper }}</p>
+                                <p class="mt-2 text-xs leading-5 text-content-muted">Adapter {{ provider.adapter_key|replace('_', ' ') |title }} · Query {{ provider.query_language|upper }}</p>
                             </div>
                             {% if provider.compatibility_profile_options %}
                                 <div>
@@ -179,7 +179,7 @@
                             {% else %}
                                 <div class="rounded-lg border border-outline-subtle bg-surface-subtle px-4 py-3">
                                     <p class="text-xs font-semibold text-content-muted">Compatibility Detection</p>
-                                    <p class="mt-1 text-sm font-semibold text-content-primary">{{ provider.version_detection_mode|replace('_', ' ')|title }}</p>
+                                    <p class="mt-1 text-sm font-semibold text-content-primary">{{ provider.version_detection_mode|replace('_', ' ') |title }}</p>
                                     <p class="mt-1 text-xs leading-5 text-content-secondary">KAORI applies the compatibility policy declared by this metrics provider.</p>
                                 </div>
                             {% endif %}

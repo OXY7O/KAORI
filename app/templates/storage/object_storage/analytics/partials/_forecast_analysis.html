@@ -12,10 +12,26 @@
         </div>
     </header>
     <div class="grid gap-px bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4">
-        <article class="bg-surface-card p-5"><p class="{{ analysis_surface.metric_label_classes() }}">Growth / Day</p><p class="mt-2 text-xl font-semibold tabular-nums text-content-primary">{{ metrics.forecast_display.growth_per_day }}</p><p class="mt-1 text-xs text-content-muted">Slope across selected range.</p></article>
-        <article class="bg-surface-card p-5"><p class="{{ analysis_surface.metric_label_classes() }}">Projected 7d</p><p class="mt-2 text-xl font-semibold tabular-nums text-content-primary">{{ metrics.forecast_display.projected_7d }}</p><p class="mt-1 text-xs text-content-muted">Linear planning projection.</p></article>
-        <article class="bg-surface-card p-5"><p class="{{ analysis_surface.metric_label_classes() }}">Projected 30d</p><p class="mt-2 text-xl font-semibold tabular-nums text-content-primary">{{ metrics.forecast_display.projected_30d }}</p><p class="mt-1 text-xs text-content-muted">Linear planning projection.</p></article>
-        <article class="bg-surface-card p-5"><p class="{{ analysis_surface.metric_label_classes() }}">Capacity ETA</p><p class="mt-2 text-xl font-semibold tabular-nums text-content-primary">{{ metrics.forecast_display.days_to_capacity }}</p><p class="mt-1 text-xs text-content-muted">Only when growth is positive.</p></article>
+        <article class="bg-surface-card p-5">
+            <p class="{{ analysis_surface.metric_label_classes() }}">Growth / Day</p>
+            <p class="mt-2 text-xl font-semibold tabular-nums text-content-primary">{{ metrics.forecast_display.growth_per_day }}</p>
+            <p class="mt-1 text-xs text-content-muted">Slope across selected range.</p>
+        </article>
+        <article class="bg-surface-card p-5">
+            <p class="{{ analysis_surface.metric_label_classes() }}">Projected 7d</p>
+            <p class="mt-2 text-xl font-semibold tabular-nums text-content-primary">{{ metrics.forecast_display.projected_7d }}</p>
+            <p class="mt-1 text-xs text-content-muted">Linear planning projection.</p>
+        </article>
+        <article class="bg-surface-card p-5">
+            <p class="{{ analysis_surface.metric_label_classes() }}">Projected 30d</p>
+            <p class="mt-2 text-xl font-semibold tabular-nums text-content-primary">{{ metrics.forecast_display.projected_30d }}</p>
+            <p class="mt-1 text-xs text-content-muted">Linear planning projection.</p>
+        </article>
+        <article class="bg-surface-card p-5">
+            <p class="{{ analysis_surface.metric_label_classes() }}">Capacity ETA</p>
+            <p class="mt-2 text-xl font-semibold tabular-nums text-content-primary">{{ metrics.forecast_display.days_to_capacity }}</p>
+            <p class="mt-1 text-xs text-content-muted">Only when growth is positive.</p>
+        </article>
     </div>
     <div class="border-t border-outline-subtle">
         {{ analysis_surface.interpretation_callout('Operational Reading', metrics.forecast_posture.headline, metrics.forecast_posture.detail, icon='calendar-clock', role='status', tone=metrics.forecast_posture.tone) }}

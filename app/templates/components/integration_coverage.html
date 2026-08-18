@@ -9,25 +9,25 @@
              aria-labelledby="integration-coverage-title">
         {% set coverage_filters_active = selected_coverage_query or selected_coverage_environment or selected_coverage_status %}
         {% set coverage_clear_url = url_for(provider.registry_endpoint,
-            tab='coverage',
-            q=selected_query,
-            readiness=selected_readiness,
-            compatibility=selected_compatibility,
-            deployment_type=selected_deployment_type,
-            page=1,
-            per_page=registry_per_page,
-            coverage_page=1,
-            coverage_per_page=pagination.per_page) %}
+                    tab='coverage',
+                    q=selected_query,
+                    readiness=selected_readiness,
+                    compatibility=selected_compatibility,
+                    deployment_type=selected_deployment_type,
+                    page=1,
+                    per_page=registry_per_page,
+                    coverage_page=1,
+                coverage_per_page=pagination.per_page) %}
         {% set coverage_clear_action = registry_ui.clear_filters_action(
-            coverage_clear_url,
-            table_ui.action_classes(),
-            hx_get=coverage_clear_url,
-            target='#integration-coverage',
-            indicator='#' ~ provider.key ~ '-coverage-loading',
-            push_url='true',
-            swap='outerHTML',
-            marker=provider.key ~ '-coverage'
-        ) if coverage_filters_active else '' %}
+                    coverage_clear_url,
+                    table_ui.action_classes(),
+                    hx_get=coverage_clear_url,
+                    target='#integration-coverage',
+                    indicator='#' ~ provider.key ~ '-coverage-loading',
+                    push_url='true',
+                    swap='outerHTML',
+                    marker=provider.key ~ '-coverage'
+                ) if coverage_filters_active else '' %}
         {{ provider_registry.registry_header(provider.label ~ ' Integration Coverage',
                 'Bind operational scopes to existing ' ~ provider.label ~ ' sources.',
                 'route',

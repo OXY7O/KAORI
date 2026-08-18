@@ -8,6 +8,9 @@ from collections import defaultdict
 from pathlib import Path
 
 _MODULE_TOKEN = re.compile(r'^app(?:\.[A-Za-z_][A-Za-z0-9_]*)+$')
+_MODULE_PATH_TOKEN = re.compile(r'^app(?:/[A-Za-z_][A-Za-z0-9_]*)+\.py$')
+_CONFIGURED_ENTRYPOINT = re.compile(r'(?<![A-Za-z0-9_.])(app(?:\.[A-Za-z_][A-Za-z0-9_]*)+):[A-Za-z_][A-Za-z0-9_]*')
+_LEGACY_JOB_MODULE = re.compile(r'^\s*legacy_module:\s*([A-Za-z_][A-Za-z0-9_]*)\s*$', re.MULTILINE)
 
 
 def _module_name(root: Path, path: Path) -> str:
@@ -79,6 +82,31 @@ def validate(root: Path) -> list[str]:
                         target = _module_prefix(module_value, modules)
                         if target:
                             incoming[target].add(path.relative_to(root).as_posix())
+                    elif _MODULE_PATH_TOKEN.match(value):
+                        module_value = value.removesuffix('.py').replace('/', '.')
+                        if module_value.endswith('.__init__'):
+                            module_value = module_value.removesuffix('.__init__')
+                        target = _module_prefix(module_value, modules)
+                        if target:
+                            incoming[target].add(path.relative_to(root).as_posix())
+
+    for config_root in (root / 'app' / 'definitions',):
+        if not config_root.exists():
+            continue
+        for path in sorted(config_root.rglob('*')):
+            if not path.is_file() or path.suffix.lower() not in {'.json', '.toml', '.yaml', '.yml'}:
+                continue
+            text = path.read_text(encoding='utf-8')
+            for match in _CONFIGURED_ENTRYPOINT.finditer(text):
+                target = _module_prefix(match.group(1), modules)
+                if target:
+                    incoming[target].add(path.relative_to(root).as_posix())
+            if path.name == 'registered_jobs.yaml':
+                for match in _LEGACY_JOB_MODULE.finditer(text):
+                    module_value = f'app.platform_operations.jobs.definitions.{match.group(1)}'
+                    target = _module_prefix(module_value, modules)
+                    if target:
+                        incoming[target].add(path.relative_to(root).as_posix())
 
     errors: list[str] = []
     for module, path in sorted(module_paths.items()):

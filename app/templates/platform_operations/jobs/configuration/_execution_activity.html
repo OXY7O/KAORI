@@ -158,11 +158,11 @@
                     {% endif %}
                 </article>
             {% else %}
-                {% set empty_state_icon = 'history' %}
-                {% set empty_state_label = 'No Data' %}
-                {% set empty_state_title = 'No Execution Recorded' %}
-                {% set empty_state_description = 'The first scheduled or manual run will appear here.' %}
-                {% set empty_state_min_height = 'min-h-[160px]' %}
+                {% set empty_state_icon = "history" %}
+                {% set empty_state_label = "No Data" %}
+                {% set empty_state_title = "No Execution Recorded" %}
+                {% set empty_state_description = "The first scheduled or manual run will appear here." %}
+                {% set empty_state_min_height = "min-h-[160px]" %}
                 {% include 'components/states/_empty_state.html' %}
             {% endfor %}
         </div>

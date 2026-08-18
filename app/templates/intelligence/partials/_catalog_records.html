@@ -51,15 +51,14 @@
                         <p class="mt-2 text-xs leading-5 text-content-muted">{{ 'Active evaluator or governed policy is available in the current KAORI boundary.' if item.status == 'available' else ('KAORI enriches an authoritative upstream signal for this definition.' if item.status == 'imported_signal' else 'Definition is cataloged, but enablement stays outside the current boundary.') }}</p>
                     </td>
                     <td class="px-5 py-4 text-right">
-                        {{ detail_row.toggle_button(
-                            'rule-catalog',
-                            item.rule_key,
-                            url_for('intelligence.catalog_rule_details', rule_key=item.rule_key),
-                            detail_target_id,
-                            detail_row_id,
-                            class_name='justify-end',
-                            open_label='View Rule',
-                            close_label='Hide Rule'
+                        {{ detail_row.toggle_button('rule-catalog',
+                                                item.rule_key,
+                                                url_for('intelligence.catalog_rule_details', rule_key=item.rule_key) ,
+                        detail_target_id,
+                        detail_row_id,
+                        class_name='justify-end',
+                        open_label='View Rule',
+                        close_label='Hide Rule'
                         ) }}
                     </td>
                 </tr>

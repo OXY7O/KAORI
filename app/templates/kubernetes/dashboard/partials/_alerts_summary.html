@@ -56,15 +56,17 @@
                 {% set empty_state_min_height = "min-h-[170px]" %}
                 {% include 'components/states/_empty_state.html' %}
             {% else %}
-                {% set blocked_state_icon = 'wifi-off' %}
-                {% set blocked_state_label = 'Source Unavailable' %}
-                {% set blocked_state_title = 'Alert Sources Temporarily Unavailable' %}
-                {% set blocked_state_description %}{{ dashboard.alerts_snapshot.message }}{% endset %}
-                {% set blocked_state_tone = 'warning' %}
-                {% set blocked_state_badge = 'Automatic Retry Enabled' %}
-                {% set blocked_state_badge_icon = 'refresh-cw' %}
-                {% set blocked_state_variant = 'table' %}
-                {% set blocked_state_min_height = 'min-h-[170px]' %}
+                {% set blocked_state_icon = "wifi-off" %}
+                {% set blocked_state_label = "Source Unavailable" %}
+                {% set blocked_state_title = "Alert Sources Temporarily Unavailable" %}
+                {% set blocked_state_description %}
+                    {{ dashboard.alerts_snapshot.message }}
+                {% endset %}
+                {% set blocked_state_tone = "warning" %}
+                {% set blocked_state_badge = "Automatic Retry Enabled" %}
+                {% set blocked_state_badge_icon = "refresh-cw" %}
+                {% set blocked_state_variant = "table" %}
+                {% set blocked_state_min_height = "min-h-[170px]" %}
                 {% include 'components/states/_blocked_state.html' %}
             {% endif %}
         </div>

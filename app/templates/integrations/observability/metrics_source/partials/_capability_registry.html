@@ -36,14 +36,13 @@
                 {% if filters.query or filters.requirement != 'all' or filters.status != 'all' %}
                     {% set capability_clear_href = url_for(detail_endpoint, instance_id=instance.id, tab='validation', page=1, per_page=pagination.per_page) %}
                     {% set capability_clear_url = url_for(registry_endpoint, instance_id=instance.id, page=1, per_page=pagination.per_page) %}
-                    {{ registry_ui.clear_filters_action(
-                        capability_clear_href,
-                        table_ui.action_classes(),
-                        hx_get=capability_clear_url,
-                        target='#' ~ target_id,
-                        indicator='#' ~ loading_id,
-                        swap='outerHTML',
-                        marker=target_id
+                    {{ registry_ui.clear_filters_action(capability_clear_href,
+                                        table_ui.action_classes() ,
+                    hx_get=capability_clear_url,
+                    target='#' ~ target_id,
+                    indicator='#' ~ loading_id,
+                    swap='outerHTML',
+                    marker=target_id
                     ) }}
                 {% endif %}
             </div>

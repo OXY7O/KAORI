@@ -17,23 +17,24 @@
                         </div>
                     {% endcall %}
                 </div>
-                {{ page_hero.context_card(
-                    'Identity Provider Configuration',
-                    'Authentication Source',
-                    'Configuration Scope',
-                    ('Enabled' if provider and provider.enabled else ('Disabled' if provider else 'Draft')),
-                    ('normal' if provider and provider.enabled else 'unknown'),
-                    [
-                        ('settings-2', 'Mode', 'Edit' if provider else 'Add', 'Administrative configuration'),
-                        ('plug-zap', 'Adapter', selected_definition.adapter_key|replace('_', ' ')|title if selected_definition else 'Not Selected', 'Derived from provider catalog')
-                    ],
-                    'Back to Providers',
-                    url_for('identity_providers.index', tab='providers'),
-                    action_icon='arrow-left'
+                {{ page_hero.context_card('Identity Provider Configuration',
+                                'Authentication Source',
+                                'Configuration Scope',
+                                ('Enabled' if provider and provider.enabled else ('Disabled' if provider else 'Draft') ),
+                ('normal' if provider and provider.enabled else 'unknown'),
+                [
+                ('settings-2', 'Mode', 'Edit' if provider else 'Add', 'Administrative configuration'),
+                ('plug-zap', 'Adapter', selected_definition.adapter_key|replace('_', ' ')|title if selected_definition else 'Not Selected', 'Derived from provider catalog')
+                ],
+                'Back to Providers',
+                url_for('identity_providers.index', tab='providers'),
+                action_icon='arrow-left'
                 ) }}
             </div>
         </section>
-        <form method="post" class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px] xl:items-start" data-provider-form>
+        <form method="post"
+              class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px] xl:items-start"
+              data-provider-form>
             {{ form.hidden_tag() }}
             <main class="min-w-0 space-y-5">
                 {% include "access/identity_providers/partials/_provider_selector.html" %}
@@ -63,10 +64,13 @@
                                 {{ form.enabled(class_='mt-1 h-4 w-4 rounded border-outline-strong text-kaori-primary focus:ring-outline-focus') }}
                                 <span class="min-w-0">
                                     <strong class="block text-sm font-semibold text-content-primary">Enable provider authentication</strong>
-                                    <span class="mt-1 block text-xs leading-5 text-content-muted" data-enabled-copy>{{ selected_definition.enabled_copy if selected_definition else 'Select a provider before enabling authentication.' }}</span>
+                                    <span class="mt-1 block text-xs leading-5 text-content-muted"
+                                          data-enabled-copy>{{ selected_definition.enabled_copy if selected_definition else 'Select a provider before enabling authentication.' }}</span>
                                 </span>
                             </label>
-                            {% for error in form.enabled.errors %}<p class="mt-2 text-xs font-medium text-status-critical">{{ error }}</p>{% endfor %}
+                            {% for error in form.enabled.errors %}
+                                <p class="mt-2 text-xs font-medium text-status-critical">{{ error }}</p>
+                            {% endfor %}
                         </div>
                     </div>
                 </section>
@@ -74,9 +78,11 @@
                 {% include "access/identity_providers/partials/_sso_configuration.html" %}
                 {% if test_result %}
                     {% set test_passed = test_result.status == 'success' %}
-                    <section class="rounded-xl border {{ 'border-status-normal-border bg-status-normal-soft' if test_passed else 'border-status-critical-border bg-status-critical-soft' }} p-4 shadow-sm" aria-live="polite">
+                    <section class="rounded-xl border {{ 'border-status-normal-border bg-status-normal-soft' if test_passed else 'border-status-critical-border bg-status-critical-soft' }} p-4 shadow-sm"
+                             aria-live="polite">
                         <div class="flex items-start gap-3">
-                            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-card {{ 'text-status-normal-text' if test_passed else 'text-status-critical-text' }}"><i data-lucide="{{ 'circle-check' if test_passed else 'circle-alert' }}" class="h-4 w-4"></i></span>
+                            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-card {{ 'text-status-normal-text' if test_passed else 'text-status-critical-text' }}"><i data-lucide="{{ 'circle-check' if test_passed else 'circle-alert' }}"
+   class="h-4 w-4"></i></span>
                             <div class="min-w-0">
                                 <h2 class="text-sm font-semibold {{ 'text-status-normal-text' if test_passed else 'text-status-critical-text' }}">{{ test_result.title }}</h2>
                                 <p class="mt-1 text-xs leading-5 {{ 'text-status-normal-text' if test_passed else 'text-status-critical-text' }}">{{ test_result.message }}</p>
@@ -87,9 +93,14 @@
                 <footer class="flex flex-col gap-4 rounded-xl border border-outline-default bg-surface-card p-4 shadow-sm sm:px-5 lg:flex-row lg:items-center lg:justify-between">
                     <p class="min-w-0 text-xs leading-5 text-content-muted lg:flex-1">Test the adapter contract before saving; enable only after the expected authentication flow succeeds.</p>
                     <div class="flex flex-wrap justify-end gap-2 lg:shrink-0">
-                        <a href="{{ url_for('identity_providers.index', tab='providers') }}" class="inline-flex h-10 items-center justify-center rounded-lg border border-outline-default bg-surface-card px-4 text-sm font-semibold text-content-secondary transition hover:border-outline-focus hover:text-kaori-primary">Cancel</a>
-                        <button type="submit" formaction="{{ url_for('identity_providers.test_configuration', provider_id=provider.id) if provider else url_for('identity_providers.test_configuration') }}" formmethod="post" class="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-4 text-sm font-semibold text-content-secondary transition hover:border-outline-focus hover:bg-surface-hover hover:text-kaori-primary"><i data-lucide="plug-zap" class="h-4 w-4"></i>Test Connection</button>
-                        <button type="submit" class="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover"><i data-lucide="save" class="h-4 w-4"></i>Save Provider</button>
+                        <a href="{{ url_for('identity_providers.index', tab='providers') }}"
+                           class="inline-flex h-10 items-center justify-center rounded-lg border border-outline-default bg-surface-card px-4 text-sm font-semibold text-content-secondary transition hover:border-outline-focus hover:text-kaori-primary">Cancel</a>
+                        <button type="submit"
+                                formaction="{{ url_for('identity_providers.test_configuration', provider_id=provider.id) if provider else url_for('identity_providers.test_configuration') }}"
+                                formmethod="post"
+                                class="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-4 text-sm font-semibold text-content-secondary transition hover:border-outline-focus hover:bg-surface-hover hover:text-kaori-primary"><i data-lucide="plug-zap" class="h-4 w-4"></i>Test Connection</button>
+                        <button type="submit"
+                                class="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover"><i data-lucide="save" class="h-4 w-4"></i>Save Provider</button>
                     </div>
                 </footer>
             </main>
@@ -97,4 +108,6 @@
         </form>
     </div>
 {% endblock dashboard_content %}
-{% block scripts %}<script src="{{ url_for('static', filename='js/identity_provider_form.js') }}"></script>{% endblock scripts %}
+{% block scripts %}
+    <script src="{{ url_for('static', filename='js/identity_provider_form.js') }}"></script>
+{% endblock scripts %}

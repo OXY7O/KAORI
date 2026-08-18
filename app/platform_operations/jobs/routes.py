@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 from importlib import import_module
+from typing import Any
 
 from celery.exceptions import CeleryError
 from flask import (
@@ -92,7 +93,7 @@ def _page_context(
     selected_job_key: str | None = None,
     policy_form: JobPolicyForm | None = None,
     policy_error: str | None = None,
-) -> dict[str, object]:
+) -> dict[str, Any]:
     if active_section == 'configuration':
         context = build_job_execution_status_context(tab='active')
         context.update(
@@ -113,7 +114,7 @@ def _page_context(
     return context
 
 
-def _execution_context(*, tab_override: str | None = None) -> dict[str, object]:
+def _execution_context(*, tab_override: str | None = None) -> dict[str, Any]:
     selected_tab = tab_override or request.args.get('execution_tab', request.args.get('tab', 'active')).strip()
     return build_job_execution_context(
         page=request.args.get('page', 1, type=int) or 1,

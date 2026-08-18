@@ -101,6 +101,9 @@ register_metrics_backend(PrometheusHttpBackendAdapter())
 class MetricsRuntimeAdapter:
     integration_type = 'metrics_source'
 
+    def refresh(self, instance: MetricsSource) -> Any:
+        return self.execute('runtime.validate', instance)
+
     def execute(self, operation: str, instance: MetricsSource, **kwargs: Any) -> Any:
         if operation in {
             'validation.session.build',

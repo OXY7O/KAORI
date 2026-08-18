@@ -27,18 +27,18 @@
             </aside>
         {% else %}
             {{ page_hero.context_card('Delivery & Runtime Posture',
-                            'Workload Posture',
-                            'Runtime Posture',
-                            inventory.posture_label,
-                            inventory.posture_tone,
-                            [
-                            ('circle-check', 'Stable', inventory.stable_workloads, 'Expected controller state') ,
-                    ('triangle-alert', 'Exceptions', inventory.exception_workloads, 'Needs review')
-                    ],
-                    'Manage Clusters',
-                    url_for('integrations.kubernetes'),
-                    'server-cog'
-                    ) }}
+                        'Workload Posture',
+                        'Runtime Posture',
+                        inventory.posture_label,
+                        inventory.posture_tone,
+                        [
+                        ('circle-check', 'Stable', inventory.stable_workloads, 'Expected controller state') ,
+            ('triangle-alert', 'Exceptions', inventory.exception_workloads, 'Needs review')
+            ],
+            'Manage Clusters',
+            url_for('integrations.kubernetes'),
+            'server-cog'
+            ) }}
         {% endif %}
     </div>
 </section>

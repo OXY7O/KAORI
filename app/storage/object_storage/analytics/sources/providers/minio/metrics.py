@@ -55,7 +55,9 @@ def _number(value: object) -> float | None:
     try:
         if value is None or isinstance(value, bool):
             return None
-        return float(value)
+        if isinstance(value, (int, float, str)):
+            return float(value)
+        return None
     except (TypeError, ValueError):
         return None
 

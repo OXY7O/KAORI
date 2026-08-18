@@ -36,12 +36,11 @@
             </div>
             <div class="flex flex-wrap items-center gap-2">
                 {% if runtime_history_filters_enabled|default(false) and (selected_history_trigger or selected_history_health or selected_history_readiness) %}
-                    {{ registry_ui.clear_filters_action(
-                        runtime_history_clear_url,
-                        action_button.classes(),
-                        hx_get=runtime_history_url ~ '?page=1&per_page=' ~ runtime_history.pagination.per_page,
-                        target='#' ~ runtime_history_id,
-                        indicator='#' ~ runtime_history_loading_id
+                    {{ registry_ui.clear_filters_action(runtime_history_clear_url,
+                                        action_button.classes() ,
+                    hx_get=runtime_history_url ~ '?page=1&per_page=' ~ runtime_history.pagination.per_page,
+                    target='#' ~ runtime_history_id,
+                    indicator='#' ~ runtime_history_loading_id
                     ) }}
                 {% endif %}
                 {% if current_user.has_permission('platform_operations.view_data_lifecycle') %}

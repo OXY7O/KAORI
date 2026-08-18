@@ -14,7 +14,7 @@
         {{ provider_front.hero("activity", "chart-no-axes-combined",
                 "Metrics Sources",
                 "Register metrics providers once, then bind consumers and route queries through a provider-neutral source contract.",
-                stats.total, stats.ready, stats.bindings, posture_status, url_for('integrations.select_metrics_source_provider'),
+                stats.total, stats.ready, stats.bindings, posture_status, url_for('integrations.select_metrics_source_provider') ,
         ready_total=stats.configured,
         register_label='Register Metrics Source') }}
         {{ provider_front.overview("chart-spline",

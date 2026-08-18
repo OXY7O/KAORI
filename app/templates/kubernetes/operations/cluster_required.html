@@ -8,9 +8,7 @@
                 <div class="{{ page_hero.content_classes() }}">
                     {% call page_hero.intro('workflow', 'Kubernetes Operations', 'shield-alert') %}
                         <h1 class="{{ page_hero.title_classes() }}">{{ requested_page_title }}</h1>
-                        <p class="mt-2 {{ page_hero.description_classes() }}">
-                            {{ requested_page_description }}
-                        </p>
+                        <p class="mt-2 {{ page_hero.description_classes() }}">{{ requested_page_description }}</p>
                         <div class="{{ page_hero.metadata_row_classes() }}">
                             {{ page_hero.meta_label('boxes', 'Cluster Registration') }}
                             {{ page_hero.meta_label('shield-check', 'Operational Guardrail') }}

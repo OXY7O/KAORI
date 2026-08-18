@@ -1,10 +1,5 @@
 {% import "components/content_tabs.html" as content_tabs %}
-{% set consumer_tabs = [
-    ('storage', 'Storage Leaders', 'hard-drive'),
-    ('activity', 'Request Activity', 'activity'),
-    ('records', 'Consumer Records', 'table-2'),
-    ('evidence', 'Evidence', 'list-checks')
-] %}
+{% set consumer_tabs = [('storage', 'Storage Leaders', 'hard-drive'), ('activity', 'Request Activity', 'activity'), ('records', 'Consumer Records', 'table-2'), ('evidence', 'Evidence', 'list-checks')] %}
 <section id="object-storage-top-consumers-workspace"
          data-analytics-tabset
          data-analytics-tabset-id="object-storage-top-consumers-content"
@@ -20,7 +15,7 @@
                 </div>
             </div>
             <div class="flex flex-wrap items-center gap-2">
-                {{ table_label.metadata_label(system.name|default('Selected System'), 'server', size='compact') }}
+                {{ table_label.metadata_label(system.name|default('Selected System') , 'server', size='compact') }}
                 {{ table_label.metadata_label(selected_time_range|upper ~ ' Window', 'clock-3', size='compact') }}
             </div>
         </div>
@@ -47,9 +42,7 @@
              aria-labelledby="object-storage-top-consumers-content-tab-records"
              data-analytics-tab-panel="records"
              hidden
-             class="space-y-4">
-            {% include "storage/object_storage/analytics/partials/_bucket_table.html" %}
-        </div>
+             class="space-y-4">{% include "storage/object_storage/analytics/partials/_bucket_table.html" %}</div>
         <div id="object-storage-top-consumers-content-panel-evidence"
              role="tabpanel"
              aria-labelledby="object-storage-top-consumers-content-tab-evidence"

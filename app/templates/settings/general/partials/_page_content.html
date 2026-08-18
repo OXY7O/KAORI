@@ -3,9 +3,7 @@
     {% include "settings/general/partials/_hero.html" %}
     <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
         {% include "settings/general/partials/_tabs.html" %}
-        <div class="px-5 sm:px-6">
-            {{ loading_bar.render('general-settings-loading', label='Updating General Settings') }}
-        </div>
+        <div class="px-5 sm:px-6">{{ loading_bar.render('general-settings-loading', label='Updating General Settings') }}</div>
         {% if active_tab == 'time-locale' %}
             <div class="p-5 xl:p-6" data-timezone-workspace-layout="full-width">
                 {% include "settings/general/partials/_time_locale.html" %}

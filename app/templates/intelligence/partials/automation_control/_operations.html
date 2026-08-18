@@ -3,7 +3,6 @@
 {% import "intelligence/components/_workspace.html" as intelligence_ui %}
 {% import "intelligence/partials/automation_control/_components.html" as automation_ui %}
 {% import "intelligence/components/_pagination.html" as intelligence_pagination %}
-
 {% call automation_ui.section(
     'Execution Posture',
     'Execution Control separates resolver registration, deployment policy, safety controls, orchestration state, and terminal failure evidence.',
@@ -19,57 +18,137 @@
         {{ intelligence_ui.metric('triangle-alert', 'Dead Letter', payload.metrics.dead_letter, 'Terminal execution failures', 'critical' if payload.metrics.dead_letter else 'normal') }}
     </div>
     <div class="border-t border-outline-subtle p-4 sm:p-5">
-        {{ operational_callout.render(
-            'Infrastructure Execution Boundary',
-            'Runbook, deployment-policy, safety-control, and readiness governance remain writable. Only authorization, execution dispatch, verification, and provider mutation cross the default-deny execution boundary; dead letters are immutable and require fresh evidence for a new attempt.',
-            icon='lock-keyhole',
-            tone='unknown',
-            variant='semantic'
-        ) }}
+        {{ operational_callout.render('Infrastructure Execution Boundary',
+                'Runbook, deployment-policy, safety-control, and readiness governance remain writable. Only authorization, execution dispatch, verification, and provider mutation cross the default-deny execution boundary; dead letters are immutable and require fresh evidence for a new attempt.',
+                icon='lock-keyhole',
+                tone='unknown',
+                variant='semantic') }}
     </div>
 {% endcall %}
-
 {% set can_manage_execution = current_user.has_permission('intelligence.decisions.execute') %}
 {% if can_manage_execution %}
-{% call automation_ui.section(
-    'Governance Configuration',
-    'Prepare deployment allowlists and resolver safety controls without crossing the execution boundary. These settings are revalidated again by the worker at execution time.',
-    'sliders-horizontal'
-    ) %}
-    <div class="grid gap-4 p-4 xl:grid-cols-2 sm:p-5">
-        <form method="post" action="{{ url_for('automation_control.update_automation_deployment_policy') }}" class="space-y-3 rounded-lg border border-outline-subtle bg-surface-hover p-4">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <div>{{ intelligence_ui.subsection('Deployment Allowlist', 'Bind one registered action to an explicit Kubernetes cluster and namespace set.', 'shield-check') }}</div>
-            <div class="grid gap-3 sm:grid-cols-2">
-                <label class="block"><span class="text-xs font-semibold text-content-secondary">Cluster</span><select name="cluster_id" required class="mt-1 min-h-9 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary">{% for cluster in payload.clusters %}<option value="{{ cluster.id }}">{{ cluster.name }}</option>{% endfor %}</select></label>
-                <label class="block"><span class="text-xs font-semibold text-content-secondary">Action</span><select name="action_key" required class="mt-1 min-h-9 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary">{% for item in payload.registry_rows %}<option value="{{ item.action_key }}">{{ item.action_key }}</option>{% endfor %}</select></label>
-                <label class="block"><span class="text-xs font-semibold text-content-secondary">Lifecycle</span><select name="lifecycle_status" class="mt-1 min-h-9 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary"><option value="active">Active</option><option value="disabled">Disabled</option></select></label>
-                <label class="block"><span class="text-xs font-semibold text-content-secondary">Allowed Namespaces (CSV)</span><input name="allowed_namespaces" required placeholder="apps,platform" class="mt-1 min-h-9 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary"></label>
-            </div>
-            <label class="block"><span class="text-xs font-semibold text-content-secondary">Required Registry Fingerprint</span><input name="required_registry_fingerprint" value="{{ payload.registry_fingerprint }}" class="mt-1 min-h-9 w-full rounded-lg border border-outline-default bg-surface-card px-3 font-mono text-xs text-content-primary"></label>
-            <button type="submit" {% if not payload.clusters or not payload.registry_rows %}disabled aria-disabled="true"{% endif %} class="inline-flex min-h-9 items-center gap-2 rounded-lg bg-kaori-primary px-3 text-xs font-semibold text-white hover:bg-kaori-primary-hover disabled:cursor-not-allowed disabled:opacity-50"><i data-lucide="save" class="h-3.5 w-3.5"></i>Save Deployment Policy</button>
-        </form>
-
-        <form method="post" action="{{ url_for('automation_control.update_automation_operational_control') }}" class="space-y-3 rounded-lg border border-outline-subtle bg-surface-hover p-4">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <div>{{ intelligence_ui.subsection('Safety Control', 'Global or cluster scope. Global maintenance and kill switch are hard execution blockers.', 'shield-alert') }}</div>
-            <label class="block"><span class="text-xs font-semibold text-content-secondary">Scope</span><select name="cluster_id" class="mt-1 min-h-9 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary"><option value="">Global</option>{% for cluster in payload.clusters %}<option value="{{ cluster.id }}">{{ cluster.name }}</option>{% endfor %}</select></label>
-            <div class="grid gap-3 sm:grid-cols-2">
-                <label class="flex min-h-9 items-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary"><input type="checkbox" name="global_kill_switch" class="h-4 w-4 rounded border-outline-default text-kaori-primary">Global Kill Switch</label>
-                <label class="flex min-h-9 items-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary"><input type="checkbox" name="maintenance_mode" class="h-4 w-4 rounded border-outline-default text-kaori-primary">Maintenance Mode</label>
-                <label class="block"><span class="text-xs font-semibold text-content-secondary">Concurrency</span><input type="number" min="1" name="concurrency_limit" value="1" class="mt-1 min-h-9 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary"></label>
-                <label class="block"><span class="text-xs font-semibold text-content-secondary">Rate / minute</span><input type="number" min="1" name="rate_limit_per_minute" value="10" class="mt-1 min-h-9 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary"></label>
-                <label class="block"><span class="text-xs font-semibold text-content-secondary">Failure Threshold</span><input type="number" min="1" name="circuit_failure_threshold" value="3" class="mt-1 min-h-9 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary"></label>
-                <label class="block"><span class="text-xs font-semibold text-content-secondary">Cooldown Seconds</span><input type="number" min="1" name="circuit_cooldown_seconds" value="300" class="mt-1 min-h-9 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary"></label>
-            </div>
-            <p class="text-xs leading-5 text-content-muted">The global kill-switch checkbox is only applied when Scope is Global. Cluster controls may set maintenance, concurrency, rate, and circuit-breaker thresholds.</p>
-            <button type="submit" class="inline-flex min-h-9 items-center gap-2 rounded-lg bg-kaori-primary px-3 text-xs font-semibold text-white hover:bg-kaori-primary-hover"><i data-lucide="shield-check" class="h-3.5 w-3.5"></i>Save Safety Control</button>
-        </form>
-    </div>
-{% endcall %}
+    {% call automation_ui.section(
+        'Governance Configuration',
+        'Prepare deployment allowlists and resolver safety controls without crossing the execution boundary. These settings are revalidated again by the worker at execution time.',
+        'sliders-horizontal'
+        ) %}
+        <div class="grid gap-4 p-4 xl:grid-cols-2 sm:p-5">
+            <form method="post"
+                  action="{{ url_for('automation_control.update_automation_deployment_policy') }}"
+                  class="space-y-3 rounded-lg border border-outline-subtle bg-surface-hover p-4">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div>{{ intelligence_ui.subsection('Deployment Allowlist', 'Bind one registered action to an explicit Kubernetes cluster and namespace set.', 'shield-check') }}</div>
+                <div class="grid gap-3 sm:grid-cols-2">
+                    <label class="block">
+                        <span class="text-xs font-semibold text-content-secondary">Cluster</span>
+                        <select name="cluster_id"
+                                required
+                                class="mt-1 min-h-9 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary">
+                            {% for cluster in payload.clusters %}<option value="{{ cluster.id }}">{{ cluster.name }}</option>{% endfor %}
+                        </select>
+                    </label>
+                    <label class="block">
+                        <span class="text-xs font-semibold text-content-secondary">Action</span>
+                        <select name="action_key"
+                                required
+                                class="mt-1 min-h-9 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary">
+                            {% for item in payload.registry_rows %}
+                                <option value="{{ item.action_key }}">{{ item.action_key }}</option>
+                            {% endfor %}
+                        </select>
+                    </label>
+                    <label class="block">
+                        <span class="text-xs font-semibold text-content-secondary">Lifecycle</span>
+                        <select name="lifecycle_status"
+                                class="mt-1 min-h-9 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary">
+                            <option value="active">Active</option>
+                            <option value="disabled">Disabled</option>
+                        </select>
+                    </label>
+                    <label class="block">
+                        <span class="text-xs font-semibold text-content-secondary">Allowed Namespaces (CSV)</span>
+                        <input name="allowed_namespaces"
+                               required
+                               placeholder="apps,platform"
+                               class="mt-1 min-h-9 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary">
+                    </label>
+                </div>
+                <label class="block">
+                    <span class="text-xs font-semibold text-content-secondary">Required Registry Fingerprint</span>
+                    <input name="required_registry_fingerprint"
+                           value="{{ payload.registry_fingerprint }}"
+                           class="mt-1 min-h-9 w-full rounded-lg border border-outline-default bg-surface-card px-3 font-mono text-xs text-content-primary">
+                </label>
+                <button type="submit"
+                        {% if not payload.clusters or not payload.registry_rows %}disabled aria-disabled="true"{% endif %}
+                        class="inline-flex min-h-9 items-center gap-2 rounded-lg bg-kaori-primary px-3 text-xs font-semibold text-white hover:bg-kaori-primary-hover disabled:cursor-not-allowed disabled:opacity-50"><i data-lucide="save" class="h-3.5 w-3.5"></i>Save Deployment Policy</button>
+            </form>
+            <form method="post"
+                  action="{{ url_for('automation_control.update_automation_operational_control') }}"
+                  class="space-y-3 rounded-lg border border-outline-subtle bg-surface-hover p-4">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div>{{ intelligence_ui.subsection('Safety Control', 'Global or cluster scope. Global maintenance and kill switch are hard execution blockers.', 'shield-alert') }}</div>
+                <label class="block">
+                    <span class="text-xs font-semibold text-content-secondary">Scope</span>
+                    <select name="cluster_id"
+                            class="mt-1 min-h-9 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary">
+                        <option value="">Global</option>
+                        {% for cluster in payload.clusters %}<option value="{{ cluster.id }}">{{ cluster.name }}</option>{% endfor %}
+                    </select>
+                </label>
+                <div class="grid gap-3 sm:grid-cols-2">
+                    <label class="flex min-h-9 items-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary">
+                        <input type="checkbox"
+                               name="global_kill_switch"
+                               class="h-4 w-4 rounded border-outline-default text-kaori-primary">
+                        Global Kill Switch
+                    </label>
+                    <label class="flex min-h-9 items-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary">
+                        <input type="checkbox"
+                               name="maintenance_mode"
+                               class="h-4 w-4 rounded border-outline-default text-kaori-primary">
+                        Maintenance Mode
+                    </label>
+                    <label class="block">
+                        <span class="text-xs font-semibold text-content-secondary">Concurrency</span>
+                        <input type="number"
+                               min="1"
+                               name="concurrency_limit"
+                               value="1"
+                               class="mt-1 min-h-9 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary">
+                    </label>
+                    <label class="block">
+                        <span class="text-xs font-semibold text-content-secondary">Rate / minute</span>
+                        <input type="number"
+                               min="1"
+                               name="rate_limit_per_minute"
+                               value="10"
+                               class="mt-1 min-h-9 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary">
+                    </label>
+                    <label class="block">
+                        <span class="text-xs font-semibold text-content-secondary">Failure Threshold</span>
+                        <input type="number"
+                               min="1"
+                               name="circuit_failure_threshold"
+                               value="3"
+                               class="mt-1 min-h-9 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary">
+                    </label>
+                    <label class="block">
+                        <span class="text-xs font-semibold text-content-secondary">Cooldown Seconds</span>
+                        <input type="number"
+                               min="1"
+                               name="circuit_cooldown_seconds"
+                               value="300"
+                               class="mt-1 min-h-9 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary">
+                    </label>
+                </div>
+                <p class="text-xs leading-5 text-content-muted">The global kill-switch checkbox is only applied when Scope is Global. Cluster controls may set maintenance, concurrency, rate, and circuit-breaker thresholds.</p>
+                <button type="submit"
+                        class="inline-flex min-h-9 items-center gap-2 rounded-lg bg-kaori-primary px-3 text-xs font-semibold text-white hover:bg-kaori-primary-hover"><i data-lucide="shield-check" class="h-3.5 w-3.5"></i>Save Safety Control</button>
+            </form>
+        </div>
+    {% endcall %}
 {% endif %}
-
-
 <section class="grid gap-4 xl:grid-cols-2">
     {% call automation_ui.panel(
         'Resolver Registry',
@@ -92,7 +171,6 @@
             {% endfor %}
         </div>
     {% endcall %}
-
     {% call automation_ui.panel(
         'Safety Controls',
         'Global and cluster-specific kill switch, maintenance, concurrency, rate-limit, and circuit-breaker evidence.',
@@ -116,7 +194,6 @@
         </div>
     {% endcall %}
 </section>
-
 {% call automation_ui.section(
     'Deployment Policies',
     'Scoped allowlists bind registered resolver actions to Kubernetes clusters and explicit namespaces. A stored policy is not an execution request.',
@@ -140,7 +217,6 @@
     {% set query_params = {"workspace": "operations"} %}
     {{ intelligence_pagination.render(payload, 'automation_control.index', query_params, resource_label='Deployment Policies', per_page_options=payload.per_page_options) }}
 {% endcall %}
-
 {% call automation_ui.section(
     'Execution Journal',
     'Authorization, queue, lease, retry, resolver result, and terminal orchestration state remain auditable as separate execution evidence.',
@@ -152,14 +228,16 @@
             {% call intelligence_ui.record(row.action_key, row.public_id, icon='scroll-text', status_text=row.orchestration_status|replace('_',' ')|title, status_tone=journal_tone) %}
                 <dl class="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
                     {{ intelligence_ui.field('Scope', row.cluster ~ ' / ' ~ row.namespace) }}
-                    {{ intelligence_ui.field('Execution Result', row.status|replace('_',' ')|title) }}
-                    {{ intelligence_ui.field('Dry Run', 'Accepted' if row.dry_run_allowed is sameas true else ('Blocked' if row.dry_run_allowed is sameas false else 'Not Started')) }}
-                    {{ intelligence_ui.field('Verification', row.verification_status|replace('_',' ')|title) }}
-                    {{ intelligence_ui.field('Recovery Mode', row.recovery_mode|replace('_',' ')|title) }}
+                    {{ intelligence_ui.field('Execution Result', row.status|replace('_',' ') |title) }}
+                    {{ intelligence_ui.field('Dry Run', 'Accepted' if row.dry_run_allowed is sameas true else ('Blocked' if row.dry_run_allowed is sameas false else 'Not Started') ) }}
+                    {{ intelligence_ui.field('Verification', row.verification_status|replace('_',' ') |title) }}
+                    {{ intelligence_ui.field('Recovery Mode', row.recovery_mode|replace('_',' ') |title) }}
                     {{ intelligence_ui.field('Attempts', row.attempts) }}
                     {{ intelligence_ui.field('Updated', row.updated_at) }}
                 </dl>
-                {% if row.verification_summary != '-' %}<p class="mt-3 text-xs leading-5 text-content-muted">Verification: {{ row.verification_summary }}</p>{% endif %}
+                {% if row.verification_summary != '-' %}
+                    <p class="mt-3 text-xs leading-5 text-content-muted">Verification: {{ row.verification_summary }}</p>
+                {% endif %}
                 {% if row.error != '-' %}
                     <div class="mt-3">{{ operational_callout.render('Execution Diagnostic', row.error, icon='triangle-alert', tone='critical', variant='semantic') }}</div>
                 {% endif %}
@@ -169,7 +247,6 @@
         {% endfor %}
     </div>
 {% endcall %}
-
 {% call automation_ui.section(
     'Dead-Letter Review',
     'Terminal orchestration failures remain immutable for diagnosis. KAORI does not replay a consumed one-time authorization; retry requires fresh evidence, a new candidate/decision, and any required approval.',

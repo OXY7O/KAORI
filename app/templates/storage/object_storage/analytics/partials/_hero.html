@@ -11,12 +11,12 @@
                         {{ page_hero.meta_label('lock-keyhole', 'Step ' ~ dependency_blocker.stage ~ ' · ' ~ dependency_blocker.badge) }}
                     {% else %}
                         {% if page_key == 'alerts' %}
-                            {{ page_hero.meta_label('radio-tower', alert_source.resolved_label ~ ' Alerts' if alert_source.connected else ('Automatic Alert Source' if selected_alert_source == 'auto' else selected_alert_source|title ~ ' Alert Source')) }}
+                            {{ page_hero.meta_label('radio-tower', alert_source.resolved_label ~ ' Alerts' if alert_source.connected else ('Automatic Alert Source' if selected_alert_source == 'auto' else selected_alert_source|title ~ ' Alert Source') ) }}
                         {% else %}
                             {{ page_hero.meta_label('clock-3', selected_forecast_history_window|upper ~ ' History' if page_key == 'forecast' else selected_time_range|upper ~ ' Window') }}
                         {% endif %}
                         {% if inventory_observed_at %}
-                            {{ page_hero.meta_label('database-clock', inventory_observed_at|user_datetime('Inventory Not Collected')) }}
+                            {{ page_hero.meta_label('database-clock', inventory_observed_at|user_datetime('Inventory Not Collected') ) }}
                         {% endif %}
                     {% endif %}
                 </div>

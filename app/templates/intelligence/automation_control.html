@@ -24,25 +24,24 @@
                         </div>
                     {% endcall %}
                 </div>
-                {{ page_hero.context_card(
-                    'Automation control posture',
-                    'AUTOMATION POSTURE',
-                    'Control State',
-                    control.posture.label,
-                    control.posture.tone,
-                    hero_metrics,
-                    'Review Production Readiness',
-                    url_for('automation_control.index', workspace='readiness'),
-                    'shield-check'
+                {{ page_hero.context_card('Automation control posture',
+                                'AUTOMATION POSTURE',
+                                'Control State',
+                                control.posture.label,
+                                control.posture.tone,
+                                hero_metrics,
+                                'Review Production Readiness',
+                                url_for('automation_control.index', workspace='readiness') ,
+                'shield-check'
                 ) }}
             </div>
         </section>
-
         <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card">
             <header class="border-b border-outline-subtle px-4 py-4 sm:px-5">
                 <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div class="flex min-w-0 items-start gap-3">
-                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
+                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                              aria-hidden="true">
                             <i data-lucide="gauge" class="h-4 w-4"></i>
                         </span>
                         <div class="min-w-0">
@@ -64,12 +63,12 @@
                 {{ intelligence_ui.metric('triangle-alert', 'Execution Failures', payload.counts.failures, 'Failed or dead-letter evidence', 'critical' if payload.counts.failures else 'normal') }}
             </div>
         </section>
-
         <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card">
             <header class="px-4 py-4 sm:px-5">
                 <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div class="flex min-w-0 items-start gap-3">
-                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
+                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                              aria-hidden="true">
                             <i data-lucide="workflow" class="h-4 w-4"></i>
                         </span>
                         <div class="min-w-0">
@@ -80,20 +79,17 @@
                     <div class="shrink-0">{{ table_label.status_label('Controlled Execution' if payload.execution_enabled else 'Governance Only', 'normal' if payload.execution_enabled else 'info', size='compact') }}</div>
                 </div>
             </header>
-
-            {{ content_tabs.render_links(
-                'automation-control-workspaces',
-                payload.workspace_tabs,
-                payload.workspace,
-                'Automation Control Workspaces',
-                embedded=true,
-                data_namespace='automation-control',
-                nowrap=true
-            ) }}
-
+            {{ content_tabs.render_links('automation-control-workspaces',
+                        payload.workspace_tabs,
+                        payload.workspace,
+                        'Automation Control Workspaces',
+                        embedded=true,
+                        data_namespace='automation-control',
+                        nowrap=true) }}
             <div class="flex flex-col gap-3 border-b border-outline-subtle bg-surface-page px-4 py-4 sm:flex-row sm:items-start sm:justify-between sm:px-5">
                 <div class="flex min-w-0 items-start gap-3">
-                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
+                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                          aria-hidden="true">
                         <i data-lucide="{{ payload.active_workspace.icon }}" class="h-4 w-4"></i>
                     </span>
                     <div class="min-w-0">
@@ -102,11 +98,12 @@
                     </div>
                 </div>
                 <div class="flex shrink-0 items-center gap-2 text-xs font-semibold text-content-secondary">
-                    <i data-lucide="{{ 'unlock' if payload.execution_enabled else 'lock-keyhole' }}" class="h-3.5 w-3.5 text-kaori-primary" aria-hidden="true"></i>
+                    <i data-lucide="{{ 'unlock' if payload.execution_enabled else 'lock-keyhole' }}"
+                       class="h-3.5 w-3.5 text-kaori-primary"
+                       aria-hidden="true"></i>
                     {{ 'Execution gate enabled' if payload.execution_enabled else 'Execution gate disabled' }}
                 </div>
             </div>
-
             <div data-automation-control-active-workspace="{{ payload.workspace }}">
                 {% if payload.workspace == 'overview' %}
                     {% include 'intelligence/partials/automation_control/_overview.html' %}

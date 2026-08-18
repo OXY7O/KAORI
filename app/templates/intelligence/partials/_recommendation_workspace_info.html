@@ -7,7 +7,8 @@
 {% set object_storage_items = payload.result_context.object_storage_items|default(0, true) %}
 {% set critical_items = payload.result_context.critical_items|default(0, true) %}
 {% set warning_items = payload.result_context.warning_items|default(0, true) %}
-<div id="recommendation-summary-section"{% if recommendation_summary_oob|default(false) %} hx-swap-oob="outerHTML"{% endif %}>
+<div id="recommendation-summary-section"
+     {% if recommendation_summary_oob|default(false) %}hx-swap-oob="outerHTML"{% endif %}>
     {% call intelligence_ui.section(
         'Recommendation Summary',
         'Current evidence-backed recommendation posture for the active filter scope.',
@@ -39,7 +40,7 @@
             <div class="mt-3 flex flex-wrap gap-1.5">
                 {{ table_label.metadata_label(payload.scope_label) }}
                 {{ table_label.metadata_label((active_filters ~ ' Active Filters') if active_filters else 'No Active Filters') }}
-                {{ table_label.metadata_label('Committed Evidence') }}
+                {{ table_label.metadata_label("Committed Evidence") }}
             </div>
         </div>
     {% endcall %}

@@ -22,15 +22,14 @@
                 {% endif %}
                 {% if filters.domain != 'all' or filters.status != 'all' or filters.trigger_type != 'all' or filters.operation_mode != 'all' or filters.storage_backend != 'all' or filters.search %}
                     {% set history_clear_url = url_for('platform_operations.data_lifecycle.index', tab='history', archive_page=1, archive_per_page=pager.per_page) %}
-                    {{ registry_ui.clear_filters_action(
-                        history_clear_url,
-                        table_ui.action_classes(),
-                        hx_get=history_clear_url,
-                        target='#data-lifecycle-history',
-                        indicator='#data-lifecycle-history-loading',
-                        push_url='true',
-                        swap='outerHTML',
-                        marker='data-lifecycle-history'
+                    {{ registry_ui.clear_filters_action(history_clear_url,
+                                        table_ui.action_classes() ,
+                    hx_get=history_clear_url,
+                    target='#data-lifecycle-history',
+                    indicator='#data-lifecycle-history-loading',
+                    push_url='true',
+                    swap='outerHTML',
+                    marker='data-lifecycle-history'
                     ) }}
                 {% endif %}
                 <a href="{{ url_for('platform_operations.data_lifecycle.index', tab='history', archive_domain=filters.domain, archive_status=filters.status, archive_trigger=filters.trigger_type, archive_mode=filters.operation_mode, archive_storage=filters.storage_backend, archive_search=filters.search, archive_page=pager.page, archive_per_page=pager.per_page) }}"
@@ -168,9 +167,15 @@
                                         <input type="hidden" name="tab" value="history">
                                         <input type="hidden" name="archive_domain" value="{{ filters.domain }}">
                                         <input type="hidden" name="archive_status" value="{{ filters.status }}">
-                                        <input type="hidden" name="archive_trigger" value="{{ filters.trigger_type }}">
-                                        <input type="hidden" name="archive_mode" value="{{ filters.operation_mode }}">
-                                        <input type="hidden" name="archive_storage" value="{{ filters.storage_backend }}">
+                                        <input type="hidden"
+                                               name="archive_trigger"
+                                               value="{{ filters.trigger_type }}">
+                                        <input type="hidden"
+                                               name="archive_mode"
+                                               value="{{ filters.operation_mode }}">
+                                        <input type="hidden"
+                                               name="archive_storage"
+                                               value="{{ filters.storage_backend }}">
                                         <input type="hidden" name="archive_search" value="{{ filters.search }}">
                                         <input type="hidden" name="archive_page" value="{{ pager.page }}">
                                         <input type="hidden" name="archive_per_page" value="{{ pager.per_page }}">

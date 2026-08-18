@@ -12,6 +12,7 @@ from app.access.authentication.identity_provider.catalog import (
     provider_definition,
 )
 from app.access.authentication.identity_provider.configuration import (
+    IdentityProviderConfiguration,
     apply_identity_provider_configuration,
     identity_provider_configuration_complete,
 )
@@ -238,7 +239,7 @@ def provider_default_role_assignment_error(actor: User, role_id: int | None) -> 
     return 'The selected JIT default role exceeds your delegation boundary.'
 
 
-def create_identity_provider(configuration: dict[str, Any]) -> IdentityProvider:
+def create_identity_provider(configuration: IdentityProviderConfiguration) -> IdentityProvider:
     provider = IdentityProvider()
     apply_identity_provider_configuration(provider, configuration)
     db.session.add(provider)
@@ -250,7 +251,10 @@ def create_identity_provider(configuration: dict[str, Any]) -> IdentityProvider:
     return provider
 
 
-def update_identity_provider(provider: IdentityProvider, configuration: dict[str, Any]) -> IdentityProvider:
+def update_identity_provider(
+    provider: IdentityProvider,
+    configuration: IdentityProviderConfiguration,
+) -> IdentityProvider:
     apply_identity_provider_configuration(provider, configuration)
     try:
         db.session.commit()

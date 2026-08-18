@@ -171,12 +171,11 @@
                     <div class="flex flex-wrap items-center gap-2">
                         {{ table_label.metadata_label(payload.pagination.total_items ~ ' Templates', 'layout-template') }}
                         {% if payload.active_filter_count > 0 %}
-                            {{ registry_ui.clear_filters_link(
-                                'reports.report_templates',
-                                'templates-registry',
-                                'templates-registry-loading',
-                                payload.pagination.per_page,
-                                table_ui.action_classes()
+                            {{ registry_ui.clear_filters_link('reports.report_templates',
+                                                        'templates-registry',
+                                                        'templates-registry-loading',
+                                                        payload.pagination.per_page,
+                                                        table_ui.action_classes() 
                             ) }}
                         {% endif %}
                     </div>
@@ -504,11 +503,11 @@
                         {% else %}
                             <tr>
                                 <td colspan="8" class="p-0">
-                                    {% set empty_state_icon = 'search-x' %}
+                                    {% set empty_state_icon = "search-x" %}
                                     {% set empty_state_label = 'No Results' if payload.active_filter_count > 0 else 'No Data' %}
                                     {% set empty_state_title = 'No Templates Match the Current Filters' if payload.active_filter_count > 0 else 'No Report Templates Available' %}
                                     {% set empty_state_description = 'Clear the filters or use a different template search.' if payload.active_filter_count > 0 else 'Published system templates and governed custom templates will appear here.' %}
-                                    {% set empty_state_min_height = 'min-h-[170px]' %}
+                                    {% set empty_state_min_height = "min-h-[170px]" %}
                                     {% include 'components/states/_empty_state.html' %}
                                 </td>
                             </tr>

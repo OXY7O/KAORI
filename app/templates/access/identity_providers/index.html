@@ -11,16 +11,16 @@
                         <h1 class="{{ page_hero.title_classes() }}">Identity Providers</h1>
                         <p class="mt-2 {{ page_hero.description_classes() }}">Govern external authentication through provider-neutral identity, adapter contracts, admission policy, and controlled identity projection.</p>
                         <div class="{{ page_hero.metadata_row_classes() }}">
-                            {{ page_hero.meta_label('blocks', summary.total ~ (' Provider' if summary.total == 1 else ' Providers')) }}
+                            {{ page_hero.meta_label('blocks', summary.total ~ (' Provider' if summary.total == 1 else ' Providers') ) }}
                             {{ page_hero.meta_label('power', summary.enabled ~ ' Enabled') }}
-                            {{ page_hero.meta_label('link-2', summary.identity_links ~ (' Identity Link' if summary.identity_links == 1 else ' Identity Links')) }}
+                            {{ page_hero.meta_label('link-2', summary.identity_links ~ (' Identity Link' if summary.identity_links == 1 else ' Identity Links') ) }}
                         </div>
                     {% endcall %}
                 </div>
                 {% if current_user.has_permission('identity_providers.manage') %}
-                    {{ page_hero.context_card('Authentication source posture', 'Identity Provider', 'Provider Posture', summary.posture_label, summary.posture_tone, [('power', 'Enabled Providers', summary.enabled, 'Eligible for authentication'), ('link-2', 'Identity Links', summary.identity_links, 'Projected KAORI accounts')], 'Add Provider', url_for('identity_providers.create'), action_icon='plus') }}
+                    {{ page_hero.context_card('Authentication source posture', 'Identity Provider', 'Provider Posture', summary.posture_label, summary.posture_tone, [('power', 'Enabled Providers', summary.enabled, 'Eligible for authentication') , ('link-2', 'Identity Links', summary.identity_links, 'Projected KAORI accounts')], 'Add Provider', url_for('identity_providers.create'), action_icon='plus') }}
                 {% else %}
-                    {{ page_hero.context_card('Authentication source posture', 'Identity Provider', 'Provider Posture', summary.posture_label, summary.posture_tone, [('power', 'Enabled Providers', summary.enabled, 'Eligible for authentication'), ('link-2', 'Identity Links', summary.identity_links, 'Projected KAORI accounts')], 'Review Providers', url_for('identity_providers.index', tab='providers'), action_icon='blocks') }}
+                    {{ page_hero.context_card('Authentication source posture', 'Identity Provider', 'Provider Posture', summary.posture_label, summary.posture_tone, [('power', 'Enabled Providers', summary.enabled, 'Eligible for authentication') , ('link-2', 'Identity Links', summary.identity_links, 'Projected KAORI accounts')], 'Review Providers', url_for('identity_providers.index', tab='providers'), action_icon='blocks') }}
                 {% endif %}
             </div>
         </section>

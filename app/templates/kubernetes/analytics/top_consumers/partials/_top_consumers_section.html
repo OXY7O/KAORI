@@ -68,22 +68,24 @@
                                 {{ ranked_evidence.render(selected_panel.value) }}
                             {% else %}
                                 {% set empty_state_icon = resource_icon %}
-                                {% set empty_state_label = 'No Data' %}
-                                {% set empty_state_title %}No {{ resource_label }} Ranking Evidence{% endset %}
-                                {% set empty_state_description = 'The selected materialized snapshot does not contain ranking evidence for this resource.' %}
-                                {% set empty_state_min_height = 'min-h-[220px]' %}
+                                {% set empty_state_label = "No Data" %}
+                                {% set empty_state_title %}
+                                    No {{ resource_label }} Ranking Evidence
+                                {% endset %}
+                                {% set empty_state_description = "The selected materialized snapshot does not contain ranking evidence for this resource." %}
+                                {% set empty_state_min_height = "min-h-[220px]" %}
                                 {% include 'components/states/_empty_state.html' %}
                             {% endif %}
                         </div>
                     {% endfor %}
                 </div>
             {% else %}
-                {% set empty_state_icon = 'database-zap' %}
-                {% set empty_state_label = 'Sync Required' %}
-                {% set empty_state_tone = 'warning' %}
-                {% set empty_state_title = 'No Ranked Consumer Evidence Available' %}
+                {% set empty_state_icon = "database-zap" %}
+                {% set empty_state_label = "Sync Required" %}
+                {% set empty_state_tone = "warning" %}
+                {% set empty_state_title = "No Ranked Consumer Evidence Available" %}
                 {% set empty_state_description = payload.message|default('Refresh or materialize Top Consumers after Metrics Source evidence becomes available.', true) %}
-                {% set empty_state_min_height = 'min-h-[220px]' %}
+                {% set empty_state_min_height = "min-h-[220px]" %}
                 {% include 'components/states/_empty_state.html' %}
             {% endif %}
             <div class="{{ analysis_surface.interpretation_grid_classes() }}">
@@ -159,12 +161,12 @@
                     {{ recommendation_pager.controls(recommendation_cards|length, 'Recommendations', 3) }}
                 </div>
             {% else %}
-                {% set empty_state_icon = 'list-checks' %}
-                {% set empty_state_label = 'No Findings' %}
-                {% set empty_state_tone = 'normal' %}
-                {% set empty_state_title = 'No Consumer Recommendations Available' %}
-                {% set empty_state_description = 'No current consumer evidence produces a governed recommendation.' %}
-                {% set empty_state_min_height = 'min-h-[160px]' %}
+                {% set empty_state_icon = "list-checks" %}
+                {% set empty_state_label = "No Findings" %}
+                {% set empty_state_tone = "normal" %}
+                {% set empty_state_title = "No Consumer Recommendations Available" %}
+                {% set empty_state_description = "No current consumer evidence produces a governed recommendation." %}
+                {% set empty_state_min_height = "min-h-[160px]" %}
                 {% include 'components/states/_empty_state.html' %}
             {% endif %}
         </div>

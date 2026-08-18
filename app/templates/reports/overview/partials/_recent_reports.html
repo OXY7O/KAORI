@@ -81,14 +81,14 @@
             </table>
         </div>
     {% else %}
-        {% set empty_state_icon = 'file-plus-2' %}
-        {% set empty_state_label = 'No Data' %}
-        {% set empty_state_title = 'No Generated Reports Yet' %}
-        {% set empty_state_description = 'Generate the first report to establish artifact history and reporting evidence for this workspace.' %}
+        {% set empty_state_icon = "file-plus-2" %}
+        {% set empty_state_label = "No Data" %}
+        {% set empty_state_title = "No Generated Reports Yet" %}
+        {% set empty_state_description = "Generate the first report to establish artifact history and reporting evidence for this workspace." %}
         {% set empty_state_action_url = url_for('reports.generate_report') %}
-        {% set empty_state_action_label = 'Generate Report' %}
-        {% set empty_state_action_icon = 'plus-circle' %}
-        {% set empty_state_min_height = 'min-h-[180px]' %}
+        {% set empty_state_action_label = "Generate Report" %}
+        {% set empty_state_action_icon = "plus-circle" %}
+        {% set empty_state_min_height = "min-h-[180px]" %}
         {% include 'components/states/_empty_state.html' %}
     {% endif %}
 </section>

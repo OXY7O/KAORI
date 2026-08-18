@@ -5,12 +5,12 @@ import hashlib
 import json
 import logging
 import shutil
-from collections.abc import Iterator
+from collections.abc import Callable, Iterable, Iterator
 from dataclasses import asdict
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from tempfile import mkdtemp
-from typing import Any
+from typing import Any, cast
 
 from flask import current_app
 from sqlalchemy import or_
@@ -686,7 +686,9 @@ def _isoformat(value: datetime | None) -> str | None:
 def _estimate_archive_size(domain, boundary: ArchiveBoundary, policy: RetentionPolicy) -> int:
     estimator = getattr(domain, 'estimate_uncompressed_bytes', None)
     if callable(estimator):
-        return max(int(estimator(boundary, policy) or 0), 0)
+        estimate = cast(Callable[[ArchiveBoundary, RetentionPolicy], object], estimator)(boundary, policy)
+        if isinstance(estimate, (int, float, str)):
+            return max(int(estimate or 0), 0)
     return archive_support.estimate_uncompressed_size(boundary.record_count)
 
 
@@ -731,7 +733,10 @@ def _store_supplemental_artifacts(
         return []
 
     archived: list[dict[str, Any]] = []
-    for item in provider(boundary, policy):
+    supplements = cast(Callable[[ArchiveBoundary, RetentionPolicy], Iterable[ArchiveSupplement]], provider)(
+        boundary, policy
+    )
+    for item in supplements:
         if not isinstance(item, ArchiveSupplement):
             raise TypeError('Archive supplemental providers must yield ArchiveSupplement values.')
         source_path = Path(item.source_path)

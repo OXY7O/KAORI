@@ -54,7 +54,8 @@ def send_telegram_message(
             else 'Telegram rejected the message.'
         )
         return DeliveryResult(False, description[:500])
-    result = payload.get('result') if isinstance(payload.get('result'), dict) else {}
+    raw_result = payload.get('result')
+    result = raw_result if isinstance(raw_result, dict) else {}
     message_id = result.get('message_id')
     return DeliveryResult(True, 'Telegram message delivered.', str(message_id) if message_id is not None else None)
 

@@ -142,11 +142,13 @@
                                 <div>
                                     <label class="block">
                                         <span class="{{ integration_ui.control_label_classes() }}">Query Horizon</span>
-                                        <select name="query_horizon"
-                                                class="{{ integration_ui.control_classes() }}">
-                                            <option value="recent" {% if metrics_default_horizon == 'recent' %}selected{% endif %}>Recent Preferred</option>
-                                            <option value="historical" {% if metrics_default_horizon == 'historical' %}selected{% endif %}>Historical Preferred</option>
-                                            <option value="balanced" {% if metrics_default_horizon == 'balanced' %}selected{% endif %}>Balanced</option>
+                                        <select name="query_horizon" class="{{ integration_ui.control_classes() }}">
+                                            <option value="recent"
+                                                    {% if metrics_default_horizon == 'recent' %}selected{% endif %}>Recent Preferred</option>
+                                            <option value="historical"
+                                                    {% if metrics_default_horizon == 'historical' %}selected{% endif %}>Historical Preferred</option>
+                                            <option value="balanced"
+                                                    {% if metrics_default_horizon == 'balanced' %}selected{% endif %}>Balanced</option>
                                         </select>
                                     </label>
                                     <p class="mt-1.5 text-xs leading-5 text-content-muted">Recent prefers this source when the query starts inside the configured {{ metrics_recent_window_hours }}h recent-data window. Historical prefers it when the query begins before that boundary.</p>

@@ -39,7 +39,8 @@
                         name="system_id"
                         class="{{ table_ui.filter_select_classes() }}">
                     {% for item in systems %}
-                        <option value="{{ item.id }}" {% if system and system.id == item.id %}selected{% endif %}>{{ item.name }}</option>
+                        <option value="{{ item.id }}"
+                                {% if system and system.id == item.id %}selected{% endif %}>{{ item.name }}</option>
                     {% endfor %}
                 </select>
             </label>
@@ -49,9 +50,12 @@
                     <select id="object-storage-alert-source-filter"
                             name="source"
                             class="{{ table_ui.filter_select_classes() }}">
-                        <option value="auto" {% if selected_alert_source == 'auto' %}selected{% endif %}>Automatic · Alertmanager Preferred</option>
-                        <option value="alertmanager" {% if selected_alert_source == 'alertmanager' %}selected{% endif %}>Alertmanager</option>
-                        <option value="metrics_source" {% if selected_alert_source == 'metrics_source' %}selected{% endif %}>Metrics Source</option>
+                        <option value="auto"
+                                {% if selected_alert_source == 'auto' %}selected{% endif %}>Automatic · Alertmanager Preferred</option>
+                        <option value="alertmanager"
+                                {% if selected_alert_source == 'alertmanager' %}selected{% endif %}>Alertmanager</option>
+                        <option value="metrics_source"
+                                {% if selected_alert_source == 'metrics_source' %}selected{% endif %}>Metrics Source</option>
                     </select>
                 </label>
             {% elif page_key == 'forecast' %}
@@ -61,7 +65,8 @@
                             name="history_window"
                             class="{{ table_ui.filter_select_classes() }}">
                         {% for item in forecast_history_windows %}
-                            <option value="{{ item.value }}" {% if selected_forecast_history_window == item.value %}selected{% endif %}>{{ item.label }}</option>
+                            <option value="{{ item.value }}"
+                                    {% if selected_forecast_history_window == item.value %}selected{% endif %}>{{ item.label }}</option>
                         {% endfor %}
                     </select>
                 </label>
@@ -72,13 +77,13 @@
                             name="time_range"
                             class="{{ table_ui.filter_select_classes() }}">
                         {% for item in allowed_time_ranges %}
-                            <option value="{{ item.value }}" {% if selected_time_range == item.value %}selected{% endif %}>{{ item.label }}</option>
+                            <option value="{{ item.value }}"
+                                    {% if selected_time_range == item.value %}selected{% endif %}>{{ item.label }}</option>
                         {% endfor %}
                     </select>
                 </label>
             {% endif %}
         </form>
-
         {% if page_key == 'alerts' %}
             <div class="grid gap-4 lg:grid-cols-3">
                 <article class="{{ analysis_surface.readiness_shell_classes() }} p-4">
@@ -88,7 +93,8 @@
                             <div class="min-w-0">
                                 <p class="text-sm font-semibold text-content-primary">Selected Alert Stream</p>
                                 <p class="mt-1 break-words text-xs leading-5 text-content-muted">
-                                    {{ alert_source.resolved_label }}{% if alert_source.instance_name %} · {{ alert_source.instance_name }}{% endif %}
+                                    {{ alert_source.resolved_label }}
+                                    {% if alert_source.instance_name %}· {{ alert_source.instance_name }}{% endif %}
                                 </p>
                             </div>
                         </div>
@@ -102,7 +108,8 @@
                             <div class="min-w-0">
                                 <p class="text-sm font-semibold text-content-primary">Alertmanager Lifecycle</p>
                                 <p class="mt-1 break-words text-xs leading-5 text-content-muted">
-                                    {{ alertmanager.profile }}{% if alertmanager.instance_name %} · {{ alertmanager.instance_name }}{% endif %}
+                                    {{ alertmanager.profile }}
+                                    {% if alertmanager.instance_name %}· {{ alertmanager.instance_name }}{% endif %}
                                 </p>
                             </div>
                         </div>
@@ -115,7 +122,10 @@
                             <span class="{{ analysis_surface.semantic_icon_classes(metrics_source.tone) }}"><i data-lucide="activity" class="h-4 w-4"></i></span>
                             <div class="min-w-0">
                                 <p class="text-sm font-semibold text-content-primary">Metric-Derived Signals</p>
-                                <p class="mt-1 break-words text-xs leading-5 text-content-muted">{{ metrics_source.provider_label }}{% if metrics_source.instance_name %} · {{ metrics_source.instance_name }}{% endif %}</p>
+                                <p class="mt-1 break-words text-xs leading-5 text-content-muted">
+                                    {{ metrics_source.provider_label }}
+                                    {% if metrics_source.instance_name %}· {{ metrics_source.instance_name }}{% endif %}
+                                </p>
                             </div>
                         </div>
                         {{ table_label.status_label(metrics_source.label, metrics_source.tone) }}
@@ -123,9 +133,11 @@
                 </article>
             </div>
             {% if alert_source.fallback_reason %}
-                <div class="rounded-lg border border-outline-default bg-status-warning-soft px-4 py-3" role="status">
+                <div class="rounded-lg border border-outline-default bg-status-warning-soft px-4 py-3"
+                     role="status">
                     <div class="flex items-start gap-2">
-                        <i data-lucide="route" class="mt-0.5 h-4 w-4 shrink-0 text-status-warning"></i>
+                        <i data-lucide="route"
+                           class="mt-0.5 h-4 w-4 shrink-0 text-status-warning"></i>
                         <div>
                             <p class="text-sm font-semibold text-content-primary">Fallback Alert Source Active</p>
                             <p class="mt-1 text-xs leading-5 text-content-muted">{{ alert_source.fallback_reason }}</p>
@@ -134,9 +146,11 @@
                 </div>
             {% endif %}
             {% if not alert_source.connected %}
-                <div class="rounded-lg border border-outline-default bg-status-warning-soft px-4 py-3" role="status">
+                <div class="rounded-lg border border-outline-default bg-status-warning-soft px-4 py-3"
+                     role="status">
                     <div class="flex items-start gap-2">
-                        <i data-lucide="triangle-alert" class="mt-0.5 h-4 w-4 shrink-0 text-status-warning"></i>
+                        <i data-lucide="triangle-alert"
+                           class="mt-0.5 h-4 w-4 shrink-0 text-status-warning"></i>
                         <div>
                             <p class="text-sm font-semibold text-content-primary">Alert Stream Unavailable</p>
                             <p class="mt-1 text-xs leading-5 text-content-muted">{{ alert_source.detail }}</p>
@@ -152,7 +166,7 @@
                             <span class="{{ analysis_surface.semantic_icon_classes('normal' if inventory_observed_at else 'warning') }}"><i data-lucide="database" class="h-4 w-4"></i></span>
                             <div class="min-w-0">
                                 <p class="text-sm font-semibold text-content-primary">Committed Inventory</p>
-                                <p class="mt-1 text-xs leading-5 text-content-muted">{{ inventory_observed_at|user_datetime('Not Collected') }}</p>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">{{ inventory_observed_at|user_datetime("Not Collected") }}</p>
                             </div>
                         </div>
                         {{ table_label.status_label('Collected' if inventory_observed_at else 'Not Collected', 'normal' if inventory_observed_at else 'warning') }}
@@ -164,7 +178,10 @@
                             <span class="{{ analysis_surface.semantic_icon_classes(metrics_source.tone) }}"><i data-lucide="activity" class="h-4 w-4"></i></span>
                             <div class="min-w-0">
                                 <p class="text-sm font-semibold text-content-primary">Operational Metrics Source</p>
-                                <p class="mt-1 break-words text-xs leading-5 text-content-muted">{{ metrics_source.provider_label }}{% if metrics_source.instance_name %} · {{ metrics_source.instance_name }}{% endif %}</p>
+                                <p class="mt-1 break-words text-xs leading-5 text-content-muted">
+                                    {{ metrics_source.provider_label }}
+                                    {% if metrics_source.instance_name %}· {{ metrics_source.instance_name }}{% endif %}
+                                </p>
                             </div>
                         </div>
                         {{ table_label.status_label(metrics_source.label, metrics_source.tone) }}
@@ -199,11 +216,12 @@
                 {% endif %}
             </div>
         {% endif %}
-
         {% if query_diagnostics|default([]) and not dependency_blocker %}
-            <div class="rounded-lg border border-outline-default bg-status-warning-soft px-4 py-3 text-sm text-content-secondary" role="status">
+            <div class="rounded-lg border border-outline-default bg-status-warning-soft px-4 py-3 text-sm text-content-secondary"
+                 role="status">
                 <div class="flex items-start gap-2">
-                    <i data-lucide="triangle-alert" class="mt-0.5 h-4 w-4 shrink-0 text-status-warning"></i>
+                    <i data-lucide="triangle-alert"
+                       class="mt-0.5 h-4 w-4 shrink-0 text-status-warning"></i>
                     <div>
                         <p class="font-semibold text-content-primary">Operational Metrics Degraded</p>
                         <p class="mt-1 break-words text-xs leading-5 text-content-muted">{{ query_diagnostics[0] }}</p>

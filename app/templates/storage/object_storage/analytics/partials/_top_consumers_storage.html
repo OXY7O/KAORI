@@ -11,7 +11,7 @@
                     <p class="mt-1 text-sm leading-6 text-content-secondary">Identify the buckets dominating known storage consumption and object population without conflating those rankings with request-path activity.</p>
                 </div>
             </div>
-            {{ table_label.status_label(consumer.concentration_label|default('Unknown'), consumer.concentration_tone|default('unknown')) }}
+            {{ table_label.status_label(consumer.concentration_label|default('Unknown') , consumer.concentration_tone|default('unknown')) }}
         </div>
     </header>
     <div class="grid gap-px bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4">
@@ -22,7 +22,7 @@
         </article>
         <article class="bg-surface-card p-5">
             <p class="{{ analysis_surface.metric_label_classes() }}">Largest Usage Share</p>
-            <p class="mt-2 text-xl font-semibold tabular-nums text-content-primary">{{ consumer.top_usage_share_display|default('N/A') }}</p>
+            <p class="mt-2 text-xl font-semibold tabular-nums text-content-primary">{{ consumer.top_usage_share_display|default("N/A") }}</p>
             <p class="mt-1 text-xs leading-5 text-content-muted">Concentration of known system usage.</p>
         </article>
         <article class="bg-surface-card p-5">
@@ -32,12 +32,12 @@
         </article>
         <article class="bg-surface-card p-5">
             <p class="{{ analysis_surface.metric_label_classes() }}">Quota Evidence</p>
-            <p class="mt-2 text-xl font-semibold tabular-nums text-content-primary">{{ consumer.quota_evidence_coverage_display|default('N/A') }}</p>
+            <p class="mt-2 text-xl font-semibold tabular-nums text-content-primary">{{ consumer.quota_evidence_coverage_display|default("N/A") }}</p>
             <p class="mt-1 text-xs leading-5 text-content-muted">{{ consumer.quota_known_count|default(0) }} of {{ consumer.bucket_count|default(0) }} buckets with known quota evidence.</p>
         </article>
     </div>
     <div class="{{ analysis_surface.interpretation_grid_classes() }}">
-        {{ analysis_surface.interpretation_callout('Concentration Reading', consumer.concentration_label|default('Unknown'), consumer.top_usage_share_display|default('N/A') ~ ' of known usage belongs to the largest bucket. Review ownership and growth before assuming system headroom is evenly distributed.', icon='layers-3', role='status', tone=consumer.concentration_tone|default('unknown')) }}
+        {{ analysis_surface.interpretation_callout('Concentration Reading', consumer.concentration_label|default('Unknown') , consumer.top_usage_share_display|default('N/A') ~ ' of known usage belongs to the largest bucket. Review ownership and growth before assuming system headroom is evenly distributed.', icon='layers-3', role='status', tone=consumer.concentration_tone|default('unknown')) }}
         {{ analysis_surface.interpretation_callout('Storage Boundary', 'Usage and objects answer different ownership questions', 'A bucket can lead object count without leading byte consumption. Keep both rankings visible before assigning capacity or lifecycle remediation.', icon='boxes', role='insight') }}
     </div>
 </section>

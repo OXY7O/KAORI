@@ -70,7 +70,7 @@ def unauthenticated_actor_snapshot() -> ActivityActorSnapshot:
 
 def _user_by_id(value: object) -> User | None:
     try:
-        user_id = int(value)
+        user_id = int(str(value))
     except (TypeError, ValueError):
         return None
     if user_id <= 0:

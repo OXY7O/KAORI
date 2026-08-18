@@ -18,7 +18,8 @@
                         </div>
                     {% endcall %}
                 </div>
-                <aside class="{{ page_hero.aside_classes() }}" aria-label="Metrics Source registration boundary">
+                <aside class="{{ page_hero.aside_classes() }}"
+                       aria-label="Metrics Source registration boundary">
                     <div class="{{ page_hero.context_panel_classes() }}">
                         {{ page_hero.context_header('Registration Boundary', 'Provider First, Contract Stable', 'layers-3') }}
                         <div class="{{ page_hero.context_panel_metrics_classes() }}">
@@ -46,18 +47,29 @@
                             </div>
                         </div>
                         <dl class="mt-4 grid grid-cols-2 gap-3 text-xs">
-                            <div><dt class="font-semibold text-content-muted">Adapter</dt><dd class="mt-1 font-medium text-content-primary">{{ provider.adapter_key|replace('_', ' ')|title }}</dd></div>
-                            <div><dt class="font-semibold text-content-muted">Query Language</dt><dd class="mt-1 font-medium text-content-primary">{{ provider.query_language|upper }}</dd></div>
+                            <div>
+                                <dt class="font-semibold text-content-muted">Adapter</dt>
+                                <dd class="mt-1 font-medium text-content-primary">
+                                    {{ provider.adapter_key|replace('_', ' ') |title }}
+                                </dd>
+                            </div>
+                            <div>
+                                <dt class="font-semibold text-content-muted">Query Language</dt>
+                                <dd class="mt-1 font-medium text-content-primary">
+                                    {{ provider.query_language|upper }}
+                                </dd>
+                            </div>
                         </dl>
                         <div class="mt-5 flex justify-end">
-                            <a href="{{ provider.registration_url }}" class="{{ action_button.classes('primary') }}"><i data-lucide="plus" class="h-4 w-4"></i>Register {{ provider.label }}</a>
+                            <a href="{{ provider.registration_url }}"
+                               class="{{ action_button.classes('primary') }}"><i data-lucide="plus" class="h-4 w-4"></i>Register {{ provider.label }}</a>
                         </div>
                     </article>
                 {% else %}
-                    {% set empty_state_icon = 'chart-spline' %}
-                    {% set empty_state_label = 'Setup Required' %}
-                    {% set empty_state_title = 'No Metrics Providers Available' %}
-                    {% set empty_state_description = 'Add at least one provider definition to the Metrics Source registry before registering a connection.' %}
+                    {% set empty_state_icon = "chart-spline" %}
+                    {% set empty_state_label = "Setup Required" %}
+                    {% set empty_state_title = "No Metrics Providers Available" %}
+                    {% set empty_state_description = "Add at least one provider definition to the Metrics Source registry before registering a connection." %}
                     {% include 'components/states/_empty_state.html' %}
                 {% endfor %}
             </div>

@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
+
+from app.common.analytics.metrics.contracts import MetricPoint
 
 CAPACITY_WARNING_PERCENT = 85.0
 CAPACITY_CRITICAL_PERCENT = 95.0
@@ -67,7 +70,7 @@ def derive_headroom(
     return None, 'Unavailable'
 
 
-def summarize_trend(points: list[dict[str, float]]) -> TrendSummary:
+def summarize_trend(points: Sequence[MetricPoint]) -> TrendSummary:
     valid = [
         point
         for point in points

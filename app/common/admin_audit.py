@@ -1,20 +1,19 @@
 from __future__ import annotations
 
-from typing import Any, Protocol
+from typing import TYPE_CHECKING, Any
 
 from app.extensions.db import db
 from app.models import AuditEvent, User
 
-
-class AuditTarget(Protocol):
-    id: object
+if TYPE_CHECKING:
+    from app.models.rbac import Role
 
 
 def record_admin_event(
     *,
     actor: User | None,
     action: str,
-    target: AuditTarget,
+    target: User | Role,
     summary: str,
     metadata: dict[str, Any] | None = None,
 ) -> None:

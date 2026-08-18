@@ -15,10 +15,17 @@
 <div class="grid gap-4 sm:grid-cols-2">
     <div>
         <label class="{{ table_ui.filter_label_classes() }}">Destination Label</label>
-        <input name="teams_destination" value="{{ form_channel.teams_destination if form_channel else '' }}" class="{{ table_ui.filter_input_classes() }}" placeholder="Platform Ops / Alert Intelligence">
+        <input name="teams_destination"
+               value="{{ form_channel.teams_destination if form_channel else '' }}"
+               class="{{ table_ui.filter_input_classes() }}"
+               placeholder="Platform Ops / Alert Intelligence">
     </div>
     <div>
         <label class="{{ table_ui.filter_label_classes() }}">Workflow Webhook URL</label>
-        <input name="teams_workflow_url" type="password" autocomplete="new-password" class="{{ table_ui.filter_input_classes() }}" placeholder="{{ 'Leave blank to keep current webhook URL' if form_channel and form_channel.credential_configured else 'https://...environment.api.powerplatform.com/...' }}">
+        <input name="teams_workflow_url"
+               type="password"
+               autocomplete="new-password"
+               class="{{ table_ui.filter_input_classes() }}"
+               placeholder="{{ 'Leave blank to keep current webhook URL' if form_channel and form_channel.credential_configured else 'https://...environment.api.powerplatform.com/...' }}">
     </div>
 </div>

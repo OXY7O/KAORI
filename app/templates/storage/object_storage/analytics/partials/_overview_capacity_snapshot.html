@@ -13,11 +13,11 @@
     </header>
     <div class="{{ analysis_surface.metric_grid_classes(4) }}">
         {% set cards = [
-            ('Usable Capacity', metrics.capacity_total_display, 'Physical capacity in scope', 'hard-drive'),
-            ('Current Usage', metrics.usage_total_display, 'Operational stored-data usage', 'database'),
-            ('Remaining Headroom', metrics.capacity_free_display, metrics.capacity_free_source, 'circle-gauge'),
-            ('Utilization', metrics.utilization_display, metrics.headroom_percent_display ~ ' headroom remains', 'gauge')
-        ] %}
+                    ('Usable Capacity', metrics.capacity_total_display, 'Physical capacity in scope', 'hard-drive'),
+                    ('Current Usage', metrics.usage_total_display, 'Operational stored-data usage', 'database'),
+                    ('Remaining Headroom', metrics.capacity_free_display, metrics.capacity_free_source, 'circle-gauge'),
+                    ('Utilization', metrics.utilization_display, metrics.headroom_percent_display ~ ' headroom remains', 'gauge')
+                ] %}
         {% for label, value, helper, icon in cards %}
             <article class="{{ analysis_surface.metric_cell_classes() }}">
                 <div class="flex items-center gap-2">

@@ -64,12 +64,12 @@
                             </div>
                         {% else %}
                             <div class="md:col-span-2 2xl:col-span-3">
-                                {% set empty_state_icon = 'files' %}
-                                {% set empty_state_label = 'No Data' %}
-                                {% set empty_state_title = 'No Report Contracts Yet' %}
-                                {% set empty_state_description = 'No report type is available for this data domain yet.' %}
-                                {% set empty_state_variant = 'panel' %}
-                                {% set empty_state_min_height = 'min-h-[150px]' %}
+                                {% set empty_state_icon = "files" %}
+                                {% set empty_state_label = "No Data" %}
+                                {% set empty_state_title = "No Report Contracts Yet" %}
+                                {% set empty_state_description = "No report type is available for this data domain yet." %}
+                                {% set empty_state_variant = "panel" %}
+                                {% set empty_state_min_height = "min-h-[150px]" %}
                                 {% include 'components/states/_empty_state.html' %}
                             </div>
                         {% endfor %}

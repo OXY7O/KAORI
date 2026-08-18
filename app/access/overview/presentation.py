@@ -101,7 +101,7 @@ def build_access_overview() -> dict[str, Any]:
     """
 
     workspaces: list[dict[str, Any]] = []
-    boundaries: list[dict[str, str]] = []
+    boundaries: list[dict[str, Any]] = []
 
     if _can('users.view'):
         users = build_user_access_summary()

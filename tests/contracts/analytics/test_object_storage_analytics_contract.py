@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -5,6 +6,11 @@ ROOT = Path(__file__).resolve().parents[3]
 
 def read(relative: str) -> str:
     return (ROOT / relative).read_text(encoding='utf-8')
+
+
+def has_jinja_assignment(source: str, variable: str, value: str) -> bool:
+    pattern = rf'{{%\s*set\s+{re.escape(variable)}\s*=\s*(["\']){re.escape(value)}\1\s*%}}'
+    return re.search(pattern, source) is not None
 
 
 def test_object_storage_analytics_domain_is_metrics_backend_neutral() -> None:
@@ -344,7 +350,7 @@ def test_object_storage_analytics_uses_explicit_runtime_states_and_blocking() ->
     assert "'Progress'" in hero_blocked
     assert "'Analytics Readiness'" in hero_blocked
     assert "readiness_step_count = 3 if page_key == 'alerts' else 2" in hero_blocked
-    assert "blocker_status = 'Capability Incomplete'" in hero_blocked
+    assert has_jinja_assignment(hero_blocked, 'blocker_status', 'Capability Incomplete')
 
 
 def test_object_storage_bucket_records_use_shared_kaori_table_contract() -> None:
@@ -393,7 +399,7 @@ def test_object_storage_overview_matches_kubernetes_overview_hero_and_tab_contra
     assert "'Progress'" in hero_blocked
     assert "'Analytics Readiness'" in hero_blocked
     assert "readiness_step_count = 3 if page_key == 'alerts' else 2" in hero_blocked
-    assert "blocker_status = 'Capability Incomplete'" in hero_blocked
+    assert has_jinja_assignment(hero_blocked, 'blocker_status', 'Capability Incomplete')
 
     assert 'components/content_tabs.html' in workspace
     assert 'data-analytics-tabset' in workspace

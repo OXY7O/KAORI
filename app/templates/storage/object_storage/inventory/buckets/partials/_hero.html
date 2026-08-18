@@ -20,24 +20,24 @@
         {% if inventory.setup.is_blocked %}
             <aside class="{{ page_hero.aside_classes() }}"
                    aria-label="Object Storage buckets and containers availability">
-                {% set storage_blocked_scope = 'Inventory Readiness' %}
-                {% set storage_blocked_info = 'Register a Storage integration to collect bucket and container inventory.' %}
+                {% set storage_blocked_scope = "Inventory Readiness" %}
+                {% set storage_blocked_info = "Register a Storage integration to collect bucket and container inventory." %}
                 {% include 'storage/object_storage/inventory/components/_hero_blocked_context.html' %}
             </aside>
         {% else %}
-        {{ page_hero.context_card('Object Storage Asset Posture',
-                'Inventory Posture',
-                'Committed Namespace Coverage',
-                ('Observed' if inventory.total_assets else 'No Assets') ,
-        ('normal' if inventory.total_assets else 'unknown'),
-        [
-        ('container', 'Buckets', inventory.total_buckets, 'S3-compatible namespaces'),
-        ('box', 'Containers', inventory.total_containers, 'Container-native namespaces')
-        ],
-        'Open Object Storage Systems',
-        url_for('object_storage_inventory.systems'),
-        'server'
-        ) }}
+            {{ page_hero.context_card('Object Storage Asset Posture',
+                        'Inventory Posture',
+                        'Committed Namespace Coverage',
+                        ('Observed' if inventory.total_assets else 'No Assets') ,
+            ('normal' if inventory.total_assets else 'unknown'),
+            [
+            ('container', 'Buckets', inventory.total_buckets, 'S3-compatible namespaces'),
+            ('box', 'Containers', inventory.total_containers, 'Container-native namespaces')
+            ],
+            'Open Object Storage Systems',
+            url_for('object_storage_inventory.systems'),
+            'server'
+            ) }}
         {% endif %}
     </div>
 </section>

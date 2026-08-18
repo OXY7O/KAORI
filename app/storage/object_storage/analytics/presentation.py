@@ -1,10 +1,11 @@
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
 
+from app.common.analytics.metrics.contracts import MetricPoint
 from app.storage.object_storage.analytics.analysis import (
     ERROR_CRITICAL_PERCENT,
     ERROR_WARNING_PERCENT,
@@ -61,7 +62,7 @@ def format_datetime(value: datetime | None) -> str:
 
 
 def build_trend_view(
-    points: list[dict[str, float]],
+    points: Sequence[MetricPoint],
     *,
     formatter: Callable[[float | int | None], str] = format_bytes,
 ) -> dict[str, Any]:

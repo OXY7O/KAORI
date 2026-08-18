@@ -142,11 +142,11 @@
                         </article>
                     {% else %}
                         <div class="sm:col-span-2">
-                            {% set empty_state_icon = 'shield-check' %}
-                            {% set empty_state_label = 'No Data' %}
-                            {% set empty_state_title = 'No Readiness Checks Available' %}
-                            {% set empty_state_description = 'Incident readiness checks will appear when the selected alert evidence exposes the required response controls.' %}
-                            {% set empty_state_min_height = 'min-h-[150px]' %}
+                            {% set empty_state_icon = "shield-check" %}
+                            {% set empty_state_label = "No Data" %}
+                            {% set empty_state_title = "No Readiness Checks Available" %}
+                            {% set empty_state_description = "Incident readiness checks will appear when the selected alert evidence exposes the required response controls." %}
+                            {% set empty_state_min_height = "min-h-[150px]" %}
                             {% include 'components/states/_empty_state.html' %}
                         </div>
                     {% endfor %}

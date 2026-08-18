@@ -73,7 +73,8 @@
                 <div class="flex items-start gap-3">
                     <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary dark:text-kaori-accent"><i data-lucide="database-backup" class="h-4 w-4"></i></span>
                     <div class="min-w-0">
-                        <h3 id="data-lifecycle-storage-boundary-title" class="text-sm font-semibold text-content-primary">Storage Boundary</h3>
+                        <h3 id="data-lifecycle-storage-boundary-title"
+                            class="text-sm font-semibold text-content-primary">Storage Boundary</h3>
                         <p class="mt-1 text-xs leading-5 text-content-muted">Hot source storage remains domain-owned; verified cold archives use the shared Data Lifecycle archive target.</p>
                     </div>
                 </div>
@@ -82,16 +83,21 @@
             </header>
             <div class="grid gap-3 px-4 py-3.5 lg:grid-cols-[minmax(0,1fr)_2rem_minmax(0,1fr)] lg:items-center">
                 <div class="flex min-w-0 items-start gap-3">
-                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary dark:text-kaori-accent" aria-hidden="true"><i data-lucide="database" class="h-4 w-4"></i></span>
+                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary dark:text-kaori-accent"
+                          aria-hidden="true"><i data-lucide="database" class="h-4 w-4"></i></span>
                     <div class="min-w-0">
                         <p class="text-xs font-semibold text-content-muted">Hot Source</p>
                         <p class="mt-0.5 text-sm font-semibold text-content-primary">{{ lifecycle.storage_contract.hot_source_label }}</p>
                         <p class="mt-0.5 break-words font-mono text-xs leading-5 text-content-muted">{{ lifecycle.storage_contract.hot_source_detail }}</p>
                     </div>
                 </div>
-                <div class="hidden items-center justify-center text-content-disabled lg:flex" aria-hidden="true"><i data-lucide="arrow-right" class="h-4 w-4"></i></div>
+                <div class="hidden items-center justify-center text-content-disabled lg:flex"
+                     aria-hidden="true">
+                    <i data-lucide="arrow-right" class="h-4 w-4"></i>
+                </div>
                 <div class="flex min-w-0 items-start gap-3">
-                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary dark:text-kaori-accent" aria-hidden="true"><i data-lucide="archive" class="h-4 w-4"></i></span>
+                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary dark:text-kaori-accent"
+                          aria-hidden="true"><i data-lucide="archive" class="h-4 w-4"></i></span>
                     <div class="min-w-0">
                         <p class="text-xs font-semibold text-content-muted">Verified Archive</p>
                         <p class="mt-0.5 text-sm font-semibold text-content-primary">{{ lifecycle.storage_contract.archive_provider_label }}</p>
@@ -278,7 +284,14 @@
                                value="{{ selected.schedule_minute }}">
                     </label>
                 </div>
-                <p class="text-xs leading-5 text-content-muted">Schedule uses {{ lifecycle.schedule_timezone }}. {% if lifecycle.scheduler_enabled %}The dispatcher checks due policies every 15 minutes.{% else %}<span class="font-semibold text-status-warning-text">The global Data Lifecycle dispatcher is disabled; saved schedules will not run automatically.</span>{% endif %}</p>
+                <p class="text-xs leading-5 text-content-muted">
+                    Schedule uses {{ lifecycle.schedule_timezone }}.
+                    {% if lifecycle.scheduler_enabled %}
+                        The dispatcher checks due policies every 15 minutes.
+                    {% else %}
+                        <span class="font-semibold text-status-warning-text">The global Data Lifecycle dispatcher is disabled; saved schedules will not run automatically.</span>
+                    {% endif %}
+                </p>
                 <div class="grid gap-3 rounded-xl border border-outline-default bg-surface-subtle p-4 sm:grid-cols-2 xl:grid-cols-4">
                     <div>
                         <p class="text-xs font-semibold text-content-primary">Retention Boundary</p>
@@ -347,7 +360,8 @@
                     <input type="hidden" name="domain" value="{{ selected.name }}">
                     <input type="hidden" name="tab" value="policies">
                     <input type="hidden" name="mode" value="archive_only">
-                    <button class="{{ table_ui.action_classes() }} disabled:cursor-not-allowed disabled:opacity-50" {% if execution_blocked %}disabled{% endif %}><i data-lucide="archive" class="h-4 w-4"></i>Archive Only</button>
+                    <button class="{{ table_ui.action_classes() }} disabled:cursor-not-allowed disabled:opacity-50"
+                            {% if execution_blocked %}disabled{% endif %}><i data-lucide="archive" class="h-4 w-4"></i>Archive Only</button>
                 </form>
                 <form method="post"
                       action="{{ url_for('platform_operations.data_lifecycle.run') }}"
@@ -359,7 +373,8 @@
                     <input type="hidden" name="domain" value="{{ selected.name }}">
                     <input type="hidden" name="tab" value="policies">
                     <input type="hidden" name="mode" value="archive_and_cleanup">
-                    <button class="inline-flex min-h-8 items-center gap-1.5 rounded-md bg-kaori-primary px-3 text-xs font-semibold text-white hover:bg-kaori-primary-hover disabled:cursor-not-allowed disabled:opacity-50" {% if execution_blocked %}disabled{% endif %}><i data-lucide="archive-restore" class="h-4 w-4"></i>Archive & Cleanup</button>
+                    <button class="inline-flex min-h-8 items-center gap-1.5 rounded-md bg-kaori-primary px-3 text-xs font-semibold text-white hover:bg-kaori-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
+                            {% if execution_blocked %}disabled{% endif %}><i data-lucide="archive-restore" class="h-4 w-4"></i>Archive & Cleanup</button>
                 </form>
             {% endif %}
         </div>

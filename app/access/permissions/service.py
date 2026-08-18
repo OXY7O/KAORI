@@ -102,9 +102,16 @@ def _build_contract_row(
     enabled_jit_providers_by_role: dict[int, list[IdentityProvider]],
 ) -> dict[str, Any]:
     code_owned = canonical is not None
-    module = canonical['module'] if canonical else str(database_permission.module)
-    action = canonical['action'] if canonical else str(database_permission.action)
-    description = canonical['description'] if canonical else database_permission.description
+    if canonical is not None:
+        module = canonical['module']
+        action = canonical['action']
+        description = canonical['description']
+    else:
+        if database_permission is None:
+            raise ValueError(f'Permission contract {key!r} has neither canonical nor database metadata.')
+        module = str(database_permission.module)
+        action = str(database_permission.action)
+        description = database_permission.description
     state_key = _registry_state(canonical, database_permission) if canonical else 'database_only'
     delegation_tier_key, delegation_tier = _delegation_tier(key)
     role_impact = _role_impact(roles, enabled_jit_providers_by_role=enabled_jit_providers_by_role)

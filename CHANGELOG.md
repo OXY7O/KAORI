@@ -40,6 +40,8 @@ No changes recorded after the 2.3.0 release.
 - Repaired Integration domain route ownership so Flask application boot and `flask db upgrade` import `build_integration_domain_page` directly from `domain_service` instead of a removed re-export.
 - Aligned Prometheus Integration contracts and MinIO provider detail formatting with canonical Ruff/djLint output.
 - Fixed Integration binding success-path type narrowing, active Alertmanager workspace djLint findings, and capability pagination URL construction.
+- Closed the 2.3.0 Pyright release gate across Access/RBAC, Identity Providers, Notification Channels, Metrics Source, Object Storage Analytics, Reports, and Platform Operations without weakening `typeCheckingMode`; SQLAlchemy construction and shared typing boundaries now match the canonical runtime models.
+- Fixed two release-candidate defects exposed by type analysis: Object Storage alert resolution now uses the canonical Metrics Source `provider_key`, and Integration Validation recovery/binding refresh calls now use the supported `instance=` API boundary.
 
 ## [2.2.0] - 2026-08-11
 

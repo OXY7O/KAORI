@@ -19,7 +19,7 @@
         </article>
         <article class="bg-surface-card p-5">
             <p class="{{ analysis_surface.metric_label_classes() }}">Last Generated</p>
-            <p class="mt-2 text-lg font-semibold text-content-primary">{{ forecast_materialization.generated_at|user_datetime('Not Generated') }}</p>
+            <p class="mt-2 text-lg font-semibold text-content-primary">{{ forecast_materialization.generated_at|user_datetime("Not Generated") }}</p>
             <p class="mt-1 text-xs leading-5 text-content-muted">Latest usable committed result.</p>
         </article>
         <article class="bg-surface-card p-5">
@@ -34,7 +34,11 @@
                 <div>
                     <p class="text-sm font-semibold text-content-primary">Forecast evidence is not usable yet.</p>
                     <p class="mt-1 text-xs leading-5 text-content-secondary">
-                        {% if forecast_materialization.last_error %}{{ forecast_materialization.last_error }}{% else %}Run Object Storage Forecast Data Refresh and wait for the forecasting worker to commit this history window.{% endif %}
+                        {% if forecast_materialization.last_error %}
+                            {{ forecast_materialization.last_error }}
+                        {% else %}
+                            Run Object Storage Forecast Data Refresh and wait for the forecasting worker to commit this history window.
+                        {% endif %}
                     </p>
                 </div>
                 <a href="{{ url_for('jobs.configuration', job_key='object_storage.forecast.materialize') }}"

@@ -1,7 +1,11 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
 
-def linear_forecast(points: list[dict[str, float]], *, capacity_bytes: float | None) -> dict[str, float | None]:
+from app.common.analytics.metrics import MetricPoint
+
+
+def linear_forecast(points: Sequence[MetricPoint], *, capacity_bytes: float | None) -> dict[str, float | None]:
     if len(points) < 2:
         return {'growth_per_day': None, 'projected_7d': None, 'projected_30d': None, 'days_to_capacity': None}
     first = points[0]

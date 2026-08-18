@@ -16,7 +16,6 @@
             {{ table_label.status_label(metrics.capacity_usage.quota_status, metrics.capacity_usage.quota_tone) }}
         </div>
     </header>
-
     <div class="{{ analysis_surface.metric_grid_classes(4) }}">
         <article class="{{ analysis_surface.metric_cell_classes() }}">
             <p class="{{ analysis_surface.metric_label_classes() }}">Quota Evidence Coverage</p>
@@ -39,7 +38,6 @@
             <p class="mt-1 text-xs leading-5 text-content-muted">Buckets at or above 95% of known quota.</p>
         </article>
     </div>
-
     <div class="{{ analysis_surface.interpretation_grid_classes() }}">
         {{ analysis_surface.interpretation_callout('Consumer Concentration', metrics.capacity_usage.concentration_label ~ ' usage distribution', 'The largest bucket accounts for ' ~ metrics.capacity_usage.top_usage_share_display ~ ' of observed system usage. Review ownership and growth before treating concentration as a capacity risk.', icon='chart-no-axes-column-increasing', role='insight', tone=metrics.capacity_usage.concentration_tone) }}
         {{ analysis_surface.interpretation_callout('Quota Evidence', metrics.capacity_usage.quota_status, metrics.capacity_usage.quota_unknown_count ~ ' bucket(s) do not have usable quota evidence. Missing quota evidence means the governance boundary is unknown; it does not imply unlimited capacity.', icon='shield-question', role='evidence', tone=metrics.capacity_usage.quota_tone) }}

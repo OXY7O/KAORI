@@ -67,13 +67,13 @@
                     </div>
                 {% else %}
                     <div class="mt-4">
-                        {% set empty_state_icon = 'line-chart' %}
-                        {% set empty_state_label = 'Sync Required' %}
-                        {% set empty_state_tone = 'warning' %}
-                        {% set empty_state_title = 'Forecast Chart Not Available' %}
-                        {% set empty_state_description = 'Forecast series will appear after a committed model snapshot is available.' %}
-                        {% set empty_state_variant = 'panel' %}
-                        {% set empty_state_min_height = 'min-h-[220px]' %}
+                        {% set empty_state_icon = "line-chart" %}
+                        {% set empty_state_label = "Sync Required" %}
+                        {% set empty_state_tone = "warning" %}
+                        {% set empty_state_title = "Forecast Chart Not Available" %}
+                        {% set empty_state_description = "Forecast series will appear after a committed model snapshot is available." %}
+                        {% set empty_state_variant = "panel" %}
+                        {% set empty_state_min_height = "min-h-[220px]" %}
                         {% include 'components/states/_empty_state.html' %}
                     </div>
                 {% endif %}

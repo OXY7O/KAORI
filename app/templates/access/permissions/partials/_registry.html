@@ -16,13 +16,12 @@
         <div class="flex flex-wrap items-center gap-2">
             {{ table_label.metadata_label(matching_count ~ ' Matching ' ~ ('Permission' if matching_count == 1 else 'Permissions') , 'key-round') }}
             {% if filters.search or filters.module != 'all' or filters.coverage != 'all' or filters.delegation != 'all' %}
-                {{ registry_ui.clear_filters_action(
-                    url_for('access.permissions.index', view='registry', per_page=filters.per_page),
-                    table_ui.action_classes(),
-                    hx_get=url_for('access.permissions.index', view='registry', per_page=filters.per_page),
-                    target='#permission-workspace',
-                    indicator='#permission-registry-loading',
-                    push_url='true'
+                {{ registry_ui.clear_filters_action(url_for('access.permissions.index', view='registry', per_page=filters.per_page) ,
+                table_ui.action_classes(),
+                hx_get=url_for('access.permissions.index', view='registry', per_page=filters.per_page),
+                target='#permission-workspace',
+                indicator='#permission-registry-loading',
+                push_url='true'
                 ) }}
             {% endif %}
         </div>
@@ -79,8 +78,10 @@
             <span class="{{ table_ui.filter_label_classes() }}">Delegation Boundary</span>
             <select name="delegation" class="{{ table_ui.filter_select_classes() }}">
                 <option value="all"{% if filters.delegation == 'all' %} selected{% endif %}>All Delegation Tiers</option>
-                <option value="standard"{% if filters.delegation == 'standard' %} selected{% endif %}>Standard Capability</option>
-                <option value="access_admin"{% if filters.delegation == 'access_admin' %} selected{% endif %}>Access Administration</option>
+                <option value="standard"
+                        {% if filters.delegation == 'standard' %}selected{% endif %}>Standard Capability</option>
+                <option value="access_admin"
+                        {% if filters.delegation == 'access_admin' %}selected{% endif %}>Access Administration</option>
             </select>
         </label>
     </div>

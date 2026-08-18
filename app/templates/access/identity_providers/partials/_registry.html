@@ -25,13 +25,12 @@
                     {{ summary.matching }} Matching {{ 'Provider' if summary.matching == 1 else 'Providers' }}
                 </span>
                 {% if filters.search or filters.provider_key != 'all' or filters.state != 'all' %}
-                    {{ registry_ui.clear_filters_action(
-                        url_for('identity_providers.index', per_page=pagination.per_page, tab='providers'),
-                        table_ui.action_classes(),
-                        hx_get=url_for('identity_providers.index', per_page=pagination.per_page, tab='providers'),
-                        target='#identity-provider-registry',
-                        indicator='#identity-provider-registry-loading',
-                        push_url='true'
+                    {{ registry_ui.clear_filters_action(url_for('identity_providers.index', per_page=pagination.per_page, tab='providers') ,
+                    table_ui.action_classes(),
+                    hx_get=url_for('identity_providers.index', per_page=pagination.per_page, tab='providers'),
+                    target='#identity-provider-registry',
+                    indicator='#identity-provider-registry-loading',
+                    push_url='true'
                     ) }}
                 {% endif %}
             </div>
@@ -69,7 +68,8 @@
                 <select name="provider_key" class="{{ table_ui.filter_select_classes() }}">
                     <option value="all" {% if filters.provider_key == 'all' %}selected{% endif %}>All Providers</option>
                     {% for option in provider_filter_options %}
-                        <option value="{{ option.value }}" {% if filters.provider_key == option.value %}selected{% endif %}>{{ option.label }}</option>
+                        <option value="{{ option.value }}"
+                                {% if filters.provider_key == option.value %}selected{% endif %}>{{ option.label }}</option>
                     {% endfor %}
                 </select>
             </label>
@@ -106,7 +106,7 @@
                         <td class="{{ table_ui.cell_classes() }}">
                             {{ table_ui.title_cell(provider.display_name, provider.key, row.type.icon) }}
                         </td>
-                        <td class="{{ table_ui.cell_classes() }}">{{ table_label.metadata_label(row.definition.adapter_key|replace('_', ' ')|title, icon='plug-zap') }}</td>
+                        <td class="{{ table_ui.cell_classes() }}">{{ table_label.metadata_label(row.definition.adapter_key|replace('_', ' ') |title, icon='plug-zap') }}</td>
                         <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_label(row.configuration.label, row.configuration.tone, row.configuration.icon) }}</td>
                         <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_label(row.state.label, row.state.tone, row.state.icon) }}</td>
                         <td class="{{ table_ui.cell_classes() }}"><span class="text-sm font-semibold text-content-primary">{{ row.identity_links }}</span></td>
@@ -157,9 +157,7 @@
                 <input type="hidden" name="page" value="1">
                 <input type="hidden" name="tab" value="providers">
                 <input type="hidden" name="search" value="{{ filters.search }}">
-                <input type="hidden"
-                       name="provider_key"
-                       value="{{ filters.provider_key }}">
+                <input type="hidden" name="provider_key" value="{{ filters.provider_key }}">
                 <input type="hidden" name="state" value="{{ filters.state }}">
                 <span class="text-xs font-semibold text-content-secondary">Rows</span>
                 <select name="per_page"

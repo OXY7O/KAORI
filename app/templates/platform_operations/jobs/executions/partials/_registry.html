@@ -22,11 +22,11 @@
             <div class="flex flex-wrap items-center gap-2">
                 {% if job_has_filters %}
                     {{ table_registry.clear_filters_link('jobs.executions',
-                                                         'job-execution-registry',
-                                                         'job-execution-loading',
-                                                         job_pagination.per_page,
-                                                         table_ui.action_classes(),
-                                                         query_params={'fragment': 'registry', 'execution_tab': 'registry'}) }}
+                                        'job-execution-registry',
+                                        'job-execution-loading',
+                                        job_pagination.per_page,
+                                        table_ui.action_classes() ,
+                    query_params={'fragment': 'registry', 'execution_tab': 'registry'}) }}
                 {% endif %}
                 <button type="button"
                         hx-get="{{ refresh_url }}"
@@ -43,10 +43,10 @@
         {{ loading_bar.render('job-execution-loading', label='Refreshing Job Execution Registry') }}
     </header>
     {% call table_registry.filter_form('jobs.executions',
-                                       'job-execution-registry',
-                                       'job-execution-loading',
-                                       job_pagination.per_page,
-                                       classes='grid gap-3 border-b border-outline-subtle bg-surface-hover px-5 py-4 sm:grid-cols-2 xl:grid-cols-4 sm:px-6') %}
+        'job-execution-registry',
+        'job-execution-loading',
+        job_pagination.per_page,
+        classes='grid gap-3 border-b border-outline-subtle bg-surface-hover px-5 py-4 sm:grid-cols-2 xl:grid-cols-4 sm:px-6') %}
         <label class="min-w-0">
             <span class="sr-only">Search job executions</span>
             <span class="relative block">
@@ -218,33 +218,33 @@
         </div>
     {% else %}
         {% if job_has_filters %}
-            {% set empty_state_icon = 'search-x' %}
-            {% set empty_state_label = 'No Results' %}
-            {% set empty_state_title = 'No Job Executions Match the Current Filters' %}
-            {% set empty_state_description = 'Clear or adjust the filters to review other execution records.' %}
+            {% set empty_state_icon = "search-x" %}
+            {% set empty_state_label = "No Results" %}
+            {% set empty_state_title = "No Job Executions Match the Current Filters" %}
+            {% set empty_state_description = "Clear or adjust the filters to review other execution records." %}
         {% else %}
-            {% set empty_state_icon = 'list-checks' %}
-            {% set empty_state_label = 'No Data' %}
-            {% set empty_state_title = 'No Job Executions Recorded' %}
-            {% set empty_state_description = 'Execution history will appear after KAORI queues its first registered background job.' %}
+            {% set empty_state_icon = "list-checks" %}
+            {% set empty_state_label = "No Data" %}
+            {% set empty_state_title = "No Job Executions Recorded" %}
+            {% set empty_state_description = "Execution history will appear after KAORI queues its first registered background job." %}
         {% endif %}
-        {% set empty_state_min_height = 'min-h-[190px]' %}
+        {% set empty_state_min_height = "min-h-[190px]" %}
         {% include 'components/states/_empty_state.html' %}
     {% endif %}
     {{ table_registry.footer('jobs.executions',
-                             'job-execution-registry',
-                             'job-execution-loading',
-                             job_pagination,
-                             {'fragment': 'registry',
-                              'execution_tab': 'registry',
-                              'status': selected_job_status,
-                              'workload': selected_job_workload,
-                              'queue': selected_job_queue,
-                              'search': job_search},
-                             job_pagination.allowed_per_page,
-                             resource_label='Executions',
-                             rows_aria_label='Executions per page',
-                             control_name='job-executions') }}
+        'job-execution-registry',
+        'job-execution-loading',
+        job_pagination,
+        {'fragment': 'registry',
+        'execution_tab': 'registry',
+        'status': selected_job_status,
+        'workload': selected_job_workload,
+        'queue': selected_job_queue,
+        'search': job_search},
+        job_pagination.allowed_per_page,
+        resource_label='Executions',
+        rows_aria_label='Executions per page',
+        control_name='job-executions') }}
     {% if operation_feedback %}
         {% include 'components/operation_feedback_oob.html' %}
     {% endif %}

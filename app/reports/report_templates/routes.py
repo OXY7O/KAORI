@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 def _template_registry_return_url(value: object) -> str:
     registry_url = url_for('reports.report_templates')
     candidate = safe_next_url(value)
-    if candidate == registry_url or (candidate and candidate.startswith(f'{registry_url}?')):
+    if candidate is not None and (candidate == registry_url or candidate.startswith(f'{registry_url}?')):
         return candidate
     return registry_url
 

@@ -5,6 +5,7 @@ from datetime import datetime
 from typing import Any
 
 from app.common.analytics.metrics import (
+    MetricPoint,
     MetricReadinessState,
     MetricsReadinessSnapshot,
     MetricsSource,
@@ -13,6 +14,7 @@ from app.common.analytics.metrics import (
 )
 from app.models.object_storage import ObjectStorageSystem
 from app.storage.object_storage.analytics.dependencies import (
+    ObjectStorageDependencyBlocker,
     metrics_query_blocker,
     metrics_runtime_blocker,
     metrics_validation_blocker,
@@ -65,7 +67,7 @@ class EvidenceReader:
         self.successful_query_count += 1
         return values
 
-    def trend(self, key: str, time_range: str) -> list[dict[str, float]]:
+    def trend(self, key: str, time_range: str) -> list[MetricPoint]:
         if self.source_wide_failure is not None:
             return []
         try:
@@ -216,7 +218,7 @@ def waiting_metrics_source() -> dict[str, Any]:
 
 def source_setup(
     system: ObjectStorageSystem,
-) -> tuple[MetricsSource | None, dict[str, Any], dict[str, Any], dict[str, Any] | None]:
+) -> tuple[MetricsSource | None, dict[str, Any], dict[str, Any], ObjectStorageDependencyBlocker | None]:
     try:
         source = resolve_object_storage_metrics_source(system)
     except MetricsSourceError as exc:
@@ -287,7 +289,7 @@ def runtime_source_state(
     system: ObjectStorageSystem,
     source_view: dict[str, Any],
     reader: EvidenceReader,
-) -> dict[str, Any] | None:
+) -> ObjectStorageDependencyBlocker | None:
     if reader.source_wide_failure is not None:
         exc = reader.source_wide_failure
         source_view['runtime_state'] = (

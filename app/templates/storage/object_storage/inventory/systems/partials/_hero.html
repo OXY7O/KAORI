@@ -20,24 +20,24 @@
         {% if inventory.setup.is_blocked %}
             <aside class="{{ page_hero.aside_classes() }}"
                    aria-label="Object Storage systems availability">
-                {% set storage_blocked_scope = 'Inventory Readiness' %}
-                {% set storage_blocked_info = 'Register a Storage integration to collect system inventory.' %}
+                {% set storage_blocked_scope = "Inventory Readiness" %}
+                {% set storage_blocked_info = "Register a Storage integration to collect system inventory." %}
                 {% include 'storage/object_storage/inventory/components/_hero_blocked_context.html' %}
             </aside>
         {% else %}
-        {{ page_hero.context_card('Object Storage Systems Posture',
-                'System Posture',
-                'Committed Inventory Coverage',
-                ('Ready' if inventory.total_systems and inventory.blocked_systems == 0 else ('Attention Required' if inventory.blocked_systems else 'No Systems') ),
-        ('normal' if inventory.total_systems and inventory.blocked_systems == 0 else ('warning' if inventory.blocked_systems else 'unknown')),
-        [
-        ('database-backup', 'Inventoried', inventory.inventoried_systems, 'Systems with committed inventory'),
-        ('triangle-alert', 'Attention', inventory.blocked_systems, 'Systems requiring remediation')
-        ],
-        'Manage Storage',
-        url_for('integrations.storage'),
-        'database-zap'
-        ) }}
+            {{ page_hero.context_card('Object Storage Systems Posture',
+                        'System Posture',
+                        'Committed Inventory Coverage',
+                        ('Ready' if inventory.total_systems and inventory.blocked_systems == 0 else ('Attention Required' if inventory.blocked_systems else 'No Systems') ),
+            ('normal' if inventory.total_systems and inventory.blocked_systems == 0 else ('warning' if inventory.blocked_systems else 'unknown')),
+            [
+            ('database-backup', 'Inventoried', inventory.inventoried_systems, 'Systems with committed inventory'),
+            ('triangle-alert', 'Attention', inventory.blocked_systems, 'Systems requiring remediation')
+            ],
+            'Manage Storage',
+            url_for('integrations.storage'),
+            'database-zap'
+            ) }}
         {% endif %}
     </div>
 </section>

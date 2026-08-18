@@ -7,24 +7,24 @@
          aria-labelledby="minio-registry-title">
     {% set registry_filters_active = selected_query or selected_environment or selected_readiness or selected_compatibility %}
     {% set registry_clear_url = url_for('minio.index',
-        tab='registry',
-        page=1,
-        per_page=pagination.per_page,
-        coverage_page=1,
-        coverage_per_page=coverage_pagination.per_page,
-        coverage_q=selected_coverage_query,
-        coverage_environment=selected_coverage_environment,
+            tab='registry',
+            page=1,
+            per_page=pagination.per_page,
+            coverage_page=1,
+            coverage_per_page=coverage_pagination.per_page,
+            coverage_q=selected_coverage_query,
+            coverage_environment=selected_coverage_environment,
         coverage_status=selected_coverage_status) %}
     {% set registry_clear_action = registry_ui.clear_filters_action(
-        registry_clear_url,
-        table_ui.action_classes(),
-        hx_get=registry_clear_url,
-        target='#minio-connection-registry',
-        indicator='#minio-registry-loading',
-        push_url='true',
-        swap='outerHTML',
-        marker='minio-registry'
-    ) if registry_filters_active else '' %}
+            registry_clear_url,
+            table_ui.action_classes(),
+            hx_get=registry_clear_url,
+            target='#minio-connection-registry',
+            indicator='#minio-registry-loading',
+            push_url='true',
+            swap='outerHTML',
+            marker='minio-registry'
+        ) if registry_filters_active else '' %}
     {{ provider_registry.registry_header("MinIO Connection Registry",
         "Manage reusable MinIO API connections and review their consumer binding coverage.",
         "database-zap",
@@ -70,5 +70,7 @@
             </div>
         </form>
     </div>
-    <div id="minio-registry-content">{% include "integrations/storage/object_storage/providers/minio/partials/_registry_content.html" %}</div>
+    <div id="minio-registry-content">
+        {% include "integrations/storage/object_storage/providers/minio/partials/_registry_content.html" %}
+    </div>
 </section>

@@ -22,14 +22,7 @@
     <div class="space-y-5"
          data-generated-report-detail="operational-dossier-v5"
          data-generated-detail-polish="professional-v1"
-         {% if payload.poll_interval_seconds %}
-             hx-get="{{ url_for('reports.generated_report_detail', report_id=payload.report.id, next=payload.registry_return_url) }}"
-             hx-trigger="every {{ payload.poll_interval_seconds }}s"
-             hx-select="[data-generated-report-detail]"
-             hx-target="this"
-             hx-swap="outerHTML"
-             hx-on::before-request="if (event.detail.elt === this && this.querySelector('dialog[open]')) event.preventDefault()"
-         {% endif %}>
+         {% if payload.poll_interval_seconds %} hx-get="{{ url_for('reports.generated_report_detail', report_id=payload.report.id, next=payload.registry_return_url) }}" hx-trigger="every {{ payload.poll_interval_seconds }}s" hx-select="[data-generated-report-detail]" hx-target="this" hx-swap="outerHTML" hx-on::before-request="if (event.detail.elt === this && this.querySelector('dialog[open]')) event.preventDefault()" {% endif %}>
         <section class="{{ page_hero.shell_classes() }}">
             <div class="{{ page_hero.layout_classes() }}">
                 <div class="{{ page_hero.content_classes() }}">
@@ -458,7 +451,9 @@
                         {% if can_manage_storage and payload.report.can_archive_report %}
                             <form method="POST"
                                   action="{{ url_for('reports.archive_generated_report', report_id=payload.report.id) }}">
-                                {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+                                {% if csrf_token is defined %}
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                {% endif %}
                                 <input type="hidden" name="next" value="{{ payload.registry_return_url }}">
                                 <button type="submit"
                                         data-operation-submit
@@ -472,7 +467,9 @@
                         {% if can_manage_storage and payload.report.can_restore_report %}
                             <form method="POST"
                                   action="{{ url_for('reports.restore_generated_report', report_id=payload.report.id) }}">
-                                {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+                                {% if csrf_token is defined %}
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                {% endif %}
                                 <input type="hidden" name="next" value="{{ payload.registry_return_url }}">
                                 <button type="submit"
                                         data-operation-submit

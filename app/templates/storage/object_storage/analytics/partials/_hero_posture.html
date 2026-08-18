@@ -1,110 +1,103 @@
 {% import "components/page_hero.html" as page_hero %}
 {% if page_key == 'overview' %}
     {% set posture = metrics.operational_posture|default({}) %}
-    {{ page_hero.context_card_body(
-        'Operational Posture',
+    {{ page_hero.context_card_body('Operational Posture',
         'Analytics Status',
-        posture.status|default('Unknown'),
-        posture.tone|default('unknown'),
-        [
-            ('gauge', 'Capacity Use', metrics.utilization_display|default('N/A'), 'Current physical utilization'),
-            ('circle-alert', 'Error Ratio', metrics.error_ratio_display|default('N/A'), 'Current request error ratio')
-        ],
-        'Manage Object Storage',
-        url_for('object_storage_inventory.overview'),
-        'database'
+        posture.status|default('Unknown') ,
+    posture.tone|default('unknown'),
+    [
+    ('gauge', 'Capacity Use', metrics.utilization_display|default('N/A'), 'Current physical utilization'),
+    ('circle-alert', 'Error Ratio', metrics.error_ratio_display|default('N/A'), 'Current request error ratio')
+    ],
+    'Manage Object Storage',
+    url_for('object_storage_inventory.overview'),
+    'database'
     ) }}
 {% elif page_key == 'capacity' %}
     {% set posture = metrics.capacity_posture|default({}) %}
-    {{ page_hero.context_card_body(
-        'Capacity Posture',
+    {{ page_hero.context_card_body('Capacity Posture',
         'Capacity Status',
-        posture.status|default('Unknown'),
-        posture.tone|default('unknown'),
-        [
-            ('gauge', 'Utilization', metrics.utilization_display|default('N/A'), 'Physical capacity utilization'),
-            ('circle-gauge', 'Headroom', metrics.capacity_free_display|default('N/A'), 'Remaining physical capacity')
-        ],
-        'Manage Object Storage',
-        url_for('object_storage_inventory.overview'),
-        'database'
+        posture.status|default('Unknown') ,
+    posture.tone|default('unknown'),
+    [
+    ('gauge', 'Utilization', metrics.utilization_display|default('N/A'), 'Physical capacity utilization'),
+    ('circle-gauge', 'Headroom', metrics.capacity_free_display|default('N/A'), 'Remaining physical capacity')
+    ],
+    'Manage Object Storage',
+    url_for('object_storage_inventory.overview'),
+    'database'
     ) }}
 {% elif page_key == 'performance' %}
     {% set posture = metrics.performance_posture|default({}) %}
     {% set performance = metrics.performance|default({}) %}
-    {{ page_hero.context_card_body(
-        'Performance Posture',
+    {{ page_hero.context_card_body('Performance Posture',
         'Request Health',
-        posture.status|default('Unknown'),
-        posture.tone|default('unknown'),
-        [
-            ('circle-alert', 'Error Ratio', performance.error_ratio_display|default('N/A'), 'Current request reliability signal'),
-            ('activity', 'Request Rate', performance.request_rate_display|default('N/A'), 'Current S3 request demand')
-        ],
-        'Manage Object Storage',
-        url_for('object_storage_inventory.overview'),
-        'database'
+        posture.status|default('Unknown') ,
+    posture.tone|default('unknown'),
+    [
+    ('circle-alert', 'Error Ratio', performance.error_ratio_display|default('N/A'), 'Current request reliability signal'),
+    ('activity', 'Request Rate', performance.request_rate_display|default('N/A'), 'Current S3 request demand')
+    ],
+    'Manage Object Storage',
+    url_for('object_storage_inventory.overview'),
+    'database'
     ) }}
 {% elif page_key == 'forecast' %}
     {% set posture = metrics.forecast_posture|default({}) %}
     {% set forecast_status = posture.status|default(forecast_materialization.label, true) %}
     {% set forecast_tone = posture.tone|default(forecast_materialization.tone, true) %}
-    {{ page_hero.context_card_body(
-        'Forecast Posture',
+    {{ page_hero.context_card_body('Forecast Posture',
         'Forecast Outlook',
         forecast_status,
         forecast_tone,
         [
-            ('calendar-range', 'Projected 30d', metrics.forecast_display.projected_30d|default('N/A'), 'Worker-materialized linear projection'),
-            ('timer', 'Capacity ETA', metrics.forecast_display.days_to_capacity|default('N/A'), 'Only when positive growth is observed')
-        ],
-        'Review Forecast Worker',
-        url_for('jobs.configuration', job_key='object_storage.forecast.materialize'),
-        'cpu'
+        ('calendar-range', 'Projected 30d', metrics.forecast_display.projected_30d|default('N/A') , 'Worker-materialized linear projection'),
+    ('timer', 'Capacity ETA', metrics.forecast_display.days_to_capacity|default('N/A'), 'Only when positive growth is observed')
+    ],
+    'Review Forecast Worker',
+    url_for('jobs.configuration', job_key='object_storage.forecast.materialize'),
+    'cpu'
     ) }}
 {% elif page_key == 'top_consumers' %}
     {% set consumer = metrics.bucket_analysis|default({}) %}
-    {{ page_hero.context_card_body(
-        'Consumer Posture',
+    {{ page_hero.context_card_body('Consumer Posture',
         'Usage Concentration',
-        consumer.concentration_label|default('Unknown'),
-        consumer.concentration_tone|default('unknown'),
-        [
-            ('layers-3', 'Largest Share', consumer.top_usage_share_display|default('N/A'), 'Largest bucket share of known usage'),
-            ('container', 'Buckets', consumer.bucket_count|default(0), 'Buckets evaluated in current scope')
-        ],
-        'Manage Object Storage',
-        url_for('object_storage_inventory.overview'),
-        'database'
+        consumer.concentration_label|default('Unknown') ,
+    consumer.concentration_tone|default('unknown'),
+    [
+    ('layers-3', 'Largest Share', consumer.top_usage_share_display|default('N/A'), 'Largest bucket share of known usage'),
+    ('container', 'Buckets', consumer.bucket_count|default(0), 'Buckets evaluated in current scope')
+    ],
+    'Manage Object Storage',
+    url_for('object_storage_inventory.overview'),
+    'database'
     ) }}
 {% elif page_key == 'alerts' %}
     {% set alerts = alert_posture|default({}) %}
     {% set alert_action_endpoint = 'integrations.alertmanager' if alert_source.resolved_source == 'alertmanager' else 'integrations.metrics_sources' %}
-    {{ page_hero.context_card_body(
-        'Alert Posture',
+    {{ page_hero.context_card_body('Alert Posture',
         'Active Alert State',
-        alerts.status|default('Unknown'),
-        alerts.tone|default('unknown'),
-        [
-            ('shield-alert', 'Critical', alerts.critical|default(0), 'Critical alerts from the resolved alert source'),
-            ('bell-ring', 'Firing', alerts.firing|default(0), 'Currently firing alert records')
-        ],
-        'Review Alert Source',
-        url_for(alert_action_endpoint),
-        'radio-tower'
+        alerts.status|default('Unknown') ,
+    alerts.tone|default('unknown'),
+    [
+    ('shield-alert', 'Critical', alerts.critical|default(0), 'Critical alerts from the resolved alert source'),
+    ('bell-ring', 'Firing', alerts.firing|default(0), 'Currently firing alert records')
+    ],
+    'Review Alert Source',
+    url_for(alert_action_endpoint),
+    'radio-tower'
     ) }}
 {% else %}
-    {{ page_hero.context_card_body(
-        'Operational Posture',
+    {{ page_hero.context_card_body('Operational Posture',
         'Analytics Status',
         metrics_source.label,
         metrics_source.tone,
         [
-            ('activity', 'Metrics Source', metrics_source.provider_label),
-            ('database', 'Inventory', 'Collected' if inventory_observed_at else 'Not Collected')
-        ],
-        'Manage Object Storage',
-        url_for('object_storage_inventory.overview'),
-        'database'
+        ('activity', 'Metrics Source', metrics_source.provider_label) ,
+    ('database', 'Inventory', 'Collected' if inventory_observed_at else 'Not Collected')
+    ],
+    'Manage Object Storage',
+    url_for('object_storage_inventory.overview'),
+    'database'
     ) }}
 {% endif %}

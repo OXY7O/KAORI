@@ -51,16 +51,16 @@
     {% set _ = clear_query.update({page_param: 1, per_page_param: per_page}) %}
     {% set clear_url = url_for(endpoint, **clear_query) %}
     {{ clear_filters_action(clear_url,
-                            classes,
-                            label=label,
-                            hx_get=clear_url,
-                            target='#' ~ registry_id,
-                            indicator='#' ~ loading_id,
-                            select='#' ~ registry_id,
-                            swap='outerHTML',
-                            push_url='true',
-                            sync='closest section:replace',
-                            marker=registry_id) }}
+        classes,
+        label=label,
+        hx_get=clear_url,
+        target='#' ~ registry_id,
+        indicator='#' ~ loading_id,
+        select='#' ~ registry_id,
+        swap='outerHTML',
+        push_url='true',
+        sync='closest section:replace',
+        marker=registry_id) }}
 {%- endmacro %}
 {% macro footer(endpoint, registry_id, loading_id, pagination, query_params, per_page_options, resource_label='Records', rows_aria_label='Records per page', control_name='registry', page_param='page', per_page_param='per_page') -%}
     {% set canonical_query = query_params.copy() if query_params else {} %}

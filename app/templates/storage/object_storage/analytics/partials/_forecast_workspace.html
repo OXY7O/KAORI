@@ -1,10 +1,5 @@
 {% import "components/content_tabs.html" as content_tabs %}
-{% set forecast_tabs = [
-    ('outlook', 'Forecast Outlook', 'chart-spline'),
-    ('trend', 'Usage History', 'chart-no-axes-combined'),
-    ('worker', 'Worker & Method', 'cpu'),
-    ('evidence', 'Evidence', 'list-checks')
-] %}
+{% set forecast_tabs = [('outlook', 'Forecast Outlook', 'chart-spline'), ('trend', 'Usage History', 'chart-no-axes-combined'), ('worker', 'Worker & Method', 'cpu'), ('evidence', 'Evidence', 'list-checks')] %}
 <section id="object-storage-forecast-workspace"
          data-analytics-tabset
          data-analytics-tabset-id="object-storage-forecast-content"
@@ -20,7 +15,7 @@
                 </div>
             </div>
             <div class="flex flex-wrap items-center gap-2">
-                {{ table_label.metadata_label(system.name|default('Selected System'), 'server', size='compact') }}
+                {{ table_label.metadata_label(system.name|default('Selected System') , 'server', size='compact') }}
                 {{ table_label.metadata_label(selected_forecast_history_window|upper ~ ' History', 'calendar-range', size='compact') }}
             </div>
         </div>

@@ -78,7 +78,11 @@ def main() -> int:
     for relative, token in (
         (
             'app/kubernetes/analytics/utilization/service.py',
-            'from app.integrations.observability.metrics_source.exceptions import MetricsSourceError',
+            'from app.integrations.observability.metrics_source.application.consumer import MetricsConsumer',
+        ),
+        (
+            'app/integrations/observability/metrics_source/application/consumer.py',
+            'MetricsSourceError,',
         ),
         (
             'app/kubernetes/operations/secrets/reveal_service.py',
@@ -87,6 +91,12 @@ def main() -> int:
         ('app/common/sensitive_uploads.py', 'def decode_utf8('),
     ):
         require(relative, token, errors)
+
+    forbid(
+        'app/kubernetes/analytics/utilization/service.py',
+        'from app.integrations.observability.metrics_source.exceptions import MetricsSourceError',
+        errors,
+    )
 
     for relative, token in (
         ('app/kubernetes/analytics/workload/quota.py', "cpu_limit = resources['limits.cpu']"),

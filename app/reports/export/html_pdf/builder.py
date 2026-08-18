@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
 from datetime import UTC, datetime
-from typing import Any
+from typing import Any, cast
 
 from app.reports.catalog import get_report_type_spec
 from app.reports.export.constants import (
@@ -123,9 +123,9 @@ _SECTION_DESCRIPTIONS: dict[str, str] = {
 
 def _build_document_context(report: Any, payload: Mapping[str, Any]) -> ReportDocumentContext:
     generated_at = datetime.now(UTC)
-    selected_sections = list(report.sections_as_list())
+    selected_sections: list[str] = [str(section) for section in report.sections_as_list()]
     if report.report_type == 'analytics_overview':
-        selected_sections = list(ANALYTICS_OVERVIEW_SECTION_KEYS)
+        selected_sections = [str(section) for section in ANALYTICS_OVERVIEW_SECTION_KEYS]
     if not selected_sections:
         selected_sections = ['executive_summary', 'operational_recommendations']
 
@@ -164,6 +164,43 @@ def _build_document_context(report: Any, payload: Mapping[str, Any]) -> ReportDo
     )
 
 
+def _build_error_presentation(
+    report: Any,
+    payload: Mapping[str, Any],
+    context: ReportDocumentContext,
+    classification: str,
+) -> tuple[str, dict[str, Any]]:
+    if report.report_type == 'object_storage_analysis':
+        return (
+            'reports/pdf/object_storage_analysis.html',
+            {
+                'report_id': context.report_id,
+                'classification': classification,
+                'page_count': 1 + len(context.sections),
+                'scope_value': context.cluster_scope,
+                'source_label': 'Object Storage Evidence Unavailable',
+                'metrics_contract': 'Generation Limited',
+            },
+        )
+    return (
+        'reports/pdf/analytics_unavailable.html',
+        _build_unavailable_presentation(
+            report,
+            payload,
+            report_reference=context.report_id,
+            report_name=context.report_name,
+            report_type_label=context.report_type_label,
+            cluster_scope=context.cluster_scope,
+            namespace_scope=context.namespace_scope,
+            period_label=context.period_label,
+            data_cutoff=context.data_cutoff,
+            generated_at=context.generated_at_label,
+            generated_by=context.generated_by_label,
+            classification=classification,
+        ),
+    )
+
+
 def build_report_document(
     report: Any,
     payload: Mapping[str, Any],
@@ -175,31 +212,7 @@ def build_report_document(
     template_name = 'reports/pdf/analytics_unavailable.html'
     presentation: dict[str, Any] = {}
     if payload.get('_error'):
-        if report.report_type == 'object_storage_analysis':
-            template_name = 'reports/pdf/object_storage_analysis.html'
-            presentation = {
-                'report_id': context.report_id,
-                'classification': classification,
-                'page_count': 1 + len(context.sections),
-                'scope_value': context.cluster_scope,
-                'source_label': 'Object Storage Evidence Unavailable',
-                'metrics_contract': 'Generation Limited',
-            }
-        else:
-            presentation = _build_unavailable_presentation(
-                report,
-                payload,
-                report_reference=context.report_id,
-                report_name=context.report_name,
-                report_type_label=context.report_type_label,
-                cluster_scope=context.cluster_scope,
-                namespace_scope=context.namespace_scope,
-                period_label=context.period_label,
-                data_cutoff=context.data_cutoff,
-                generated_at=context.generated_at_label,
-                generated_by=context.generated_by_label,
-                classification=classification,
-            )
+        template_name, presentation = _build_error_presentation(report, payload, context, classification)
     elif report.report_type == 'analytics_overview':
         template_name = 'reports/pdf/analytics_overview.html'
         presentation = build_analytics_overview_presentation(
@@ -324,9 +337,15 @@ def build_report_document(
         )
     elif report.report_type == 'object_storage_analysis':
         template_name = 'reports/pdf/object_storage_analysis.html'
-        metrics_source = payload.get('metrics_source') if isinstance(payload.get('metrics_source'), Mapping) else {}
+        metrics_source = (
+            cast(Mapping[str, Any], payload.get('metrics_source'))
+            if isinstance(payload.get('metrics_source'), Mapping)
+            else {}
+        )
         metrics_readiness = (
-            payload.get('metrics_readiness') if isinstance(payload.get('metrics_readiness'), Mapping) else {}
+            cast(Mapping[str, Any], payload.get('metrics_readiness'))
+            if isinstance(payload.get('metrics_readiness'), Mapping)
+            else {}
         )
         presentation = {
             'report_id': context.report_id,

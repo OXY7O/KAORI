@@ -17,14 +17,13 @@
             <div class="flex flex-wrap items-center gap-2">
                 {{ table_label.metadata_label(summary.matching ~ ' Matching ' ~ ('Role' if summary.matching == 1 else 'Roles') , 'list-filter') }}
                 {% if filters.search or filters.role_type != 'all' or filters.state != 'all' %}
-                    {{ registry_ui.clear_filters_action(
-                        url_for('access.roles.index', per_page=filters.per_page),
-                        table_ui.action_classes(),
-                        hx_get=url_for('access.roles.index', per_page=filters.per_page),
-                        target='#role-registry',
-                        indicator='#role-registry-loading',
-                        push_url='true',
-                        sync='#role-registry:replace'
+                    {{ registry_ui.clear_filters_action(url_for('access.roles.index', per_page=filters.per_page) ,
+                    table_ui.action_classes(),
+                    hx_get=url_for('access.roles.index', per_page=filters.per_page),
+                    target='#role-registry',
+                    indicator='#role-registry-loading',
+                    push_url='true',
+                    sync='#role-registry:replace'
                     ) }}
                 {% endif %}
             </div>

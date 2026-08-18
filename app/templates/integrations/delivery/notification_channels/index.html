@@ -7,23 +7,33 @@
 {% import "components/loading_bar.html" as loading_bar %}
 {% import "integrations/components/_workspace.html" as integration_ui %}
 {% macro notification_section(title, description, icon='send', badge_text='', badge_tone='info') -%}
-<section class="{{ integration_ui.section_shell_classes() }}">
-    {{ integration_ui.section_header(icon, title, description, tone='brand') }}
-    {% if badge_text %}<div class="border-b border-outline-subtle px-5 py-3 sm:px-6">{{ table_label.status_label(badge_text, badge_tone, size='compact') }}</div>{% endif %}
-    {{ caller() }}
-</section>
+    <section class="{{ integration_ui.section_shell_classes() }}">
+        {{ integration_ui.section_header(icon, title, description, tone='brand') }}
+        {% if badge_text %}
+            <div class="border-b border-outline-subtle px-5 py-3 sm:px-6">{{ table_label.status_label(badge_text, badge_tone, size='compact') }}</div>
+        {% endif %}
+        {{ caller() }}
+    </section>
 {%- endmacro %}
 {% macro notification_subsection(title, description='', icon='circle-dot') -%}
-<div class="flex min-w-0 items-start gap-2.5">{{ integration_ui.palette_icon(icon, 'brand', size='sm') }}<div class="min-w-0"><h3 class="text-sm font-semibold leading-5 text-content-primary">{{ title }}</h3>{% if description %}<p class="mt-0.5 text-xs leading-5 text-content-muted">{{ description }}</p>{% endif %}</div></div>
+    <div class="flex min-w-0 items-start gap-2.5">
+        {{ integration_ui.palette_icon(icon, 'brand', size='sm') }}
+        <div class="min-w-0">
+            <h3 class="text-sm font-semibold leading-5 text-content-primary">{{ title }}</h3>
+            {% if description %}
+                <p class="mt-0.5 text-xs leading-5 text-content-muted">{{ description }}</p>
+            {% endif %}
+        </div>
+    </div>
 {%- endmacro %}
 {% block title %}Notification Channels{% endblock title %}
 {% block dashboard_content %}
     {% set can_manage = current_user.has_permission('integrations.manage') %}
     {% set selected_provider = form_channel.provider_key if form_channel else '' %}
     {% set hero_metrics = [
-        ('send', 'Eligible', payload.summary.eligible, 'Validated channels'),
-        ('radio-tower', 'Operational', payload.summary.operational, 'Successful automatic delivery')
-    ] %}
+            ('send', 'Eligible', payload.summary.eligible, 'Validated channels'),
+            ('radio-tower', 'Operational', payload.summary.operational, 'Successful automatic delivery')
+        ] %}
     <div class="space-y-6">
         <section class="{{ page_hero.shell_classes() }}">
             <div class="{{ page_hero.layout_classes() }}">
@@ -40,395 +50,401 @@
                         </div>
                     {% endcall %}
                 </div>
-                {{ page_hero.context_card(
-                    'Notification channel posture',
-                    'Delivery Posture',
-                    'Channel Status',
-                    payload.posture.label,
-                    payload.posture.tone,
-                    hero_metrics,
-                    'Integrations Overview',
-                    url_for('integrations.overview'),
-                    'send'
+                {{ page_hero.context_card('Notification channel posture',
+                                'Delivery Posture',
+                                'Channel Status',
+                                payload.posture.label,
+                                payload.posture.tone,
+                                hero_metrics,
+                                'Integrations Overview',
+                                url_for('integrations.overview') ,
+                'send'
                 ) }}
             </div>
         </section>
-
         {% if feedback %}
             <div class="rounded-xl border border-brand-outline bg-kaori-soft px-4 py-3 text-sm text-content-primary">
                 {{ feedback }}
             </div>
         {% endif %}
-
-
         {% set workspace_tabs = [
-            ('overview', 'Overview', 'layout-dashboard', url_for('notification_channels.index', tab='overview'), payload.providers|length ~ ' Providers'),
-            ('channels', 'Channels', 'send', url_for('notification_channels.index', tab='channels'), payload.summary.total ~ ' Channels'),
-            ('delivery', 'Delivery Activity', 'history', url_for('notification_channels.index', tab='delivery'), payload.delivery_pagination.total_items ~ ' Records')
-        ] %}
-        <section id="notification-channels-workspace" class="{{ integration_ui.section_shell_classes() }}">
-            {{ framed_workspace_tabs.render_navigation(
-                workspace_tabs,
-                active_tab,
-                prefix='notification-channels',
-                aria_label='Notification Channels Workspace',
-                hx_target='#notification-channels-workspace',
-                hx_select='#notification-channels-workspace'
-            ) }}
+                    ('overview', 'Overview', 'layout-dashboard', url_for('notification_channels.index', tab='overview'), payload.providers|length ~ ' Providers'),
+                    ('channels', 'Channels', 'send', url_for('notification_channels.index', tab='channels'), payload.summary.total ~ ' Channels'),
+                    ('delivery', 'Delivery Activity', 'history', url_for('notification_channels.index', tab='delivery'), payload.delivery_pagination.total_items ~ ' Records')
+                ] %}
+        <section id="notification-channels-workspace"
+                 class="{{ integration_ui.section_shell_classes() }}">
+            {{ framed_workspace_tabs.render_navigation(workspace_tabs,
+                        active_tab,
+                        prefix='notification-channels',
+                        aria_label='Notification Channels Workspace',
+                        hx_target='#notification-channels-workspace',
+                        hx_select='#notification-channels-workspace') }}
             <div class="space-y-6 p-4 sm:p-5 lg:p-6">
                 {% if active_tab == 'overview' %}
-        {% call notification_section(
-            'Delivery Providers',
-            'Choose the transport that fits the operational audience. Provider credentials remain scoped to '
-            ~ 'the channel and automatic delivery is eligible only after a successful test.',
-            'network',
-            payload.posture.label,
-            payload.posture.tone
-        ) %}
-            <div class="grid gap-px bg-outline-subtle lg:grid-cols-3">
-                {% for provider in payload.providers %}
-                    <div class="bg-surface-card p-4 sm:p-5">
-                        <div class="flex items-start justify-between gap-3">
-                            {{ notification_subsection(provider.label, provider.transport, provider.icon) }}
-                            {{ table_label.status_label(provider.status, provider.tone, size='compact') }}
+                    {% call notification_section(
+                        'Delivery Providers',
+                        'Choose the transport that fits the operational audience. Provider credentials remain scoped to '
+                        ~ 'the channel and automatic delivery is eligible only after a successful test.',
+                        'network',
+                        payload.posture.label,
+                        payload.posture.tone
+                        ) %}
+                        <div class="grid gap-px bg-outline-subtle lg:grid-cols-3">
+                            {% for provider in payload.providers %}
+                                <div class="bg-surface-card p-4 sm:p-5">
+                                    <div class="flex items-start justify-between gap-3">
+                                        {{ notification_subsection(provider.label, provider.transport, provider.icon) }}
+                                        {{ table_label.status_label(provider.status, provider.tone, size='compact') }}
+                                    </div>
+                                    <p class="mt-3 text-sm leading-6 text-content-secondary">{{ provider.description }}</p>
+                                    <p class="mt-2 text-xs leading-5 text-content-muted">{{ provider.configuration }}</p>
+                                </div>
+                            {% endfor %}
                         </div>
-                        <p class="mt-3 text-sm leading-6 text-content-secondary">{{ provider.description }}</p>
-                        <p class="mt-2 text-xs leading-5 text-content-muted">{{ provider.configuration }}</p>
-                    </div>
-                {% endfor %}
-            </div>
-        {% endcall %}
-
-        {% call notification_section(
-            'Delivery Contract',
-            'Provider choice changes transport only. Consumer capabilities emit governed events and select approved channel instances.',
-            'workflow'
-        ) %}
-            <div class="grid gap-px bg-outline-subtle sm:grid-cols-2 lg:grid-cols-4">
-                {% for label, value, icon in [
-                    ('Events', payload.delivery_contract.events, 'bell-ring'),
-                    ('Retry', payload.delivery_contract.retry, 'refresh-cw'),
-                    ('Deduplication', payload.delivery_contract.deduplication, 'copy-check'),
-                    ('Ownership', payload.delivery_contract.ownership, 'waypoints')
-                ] %}
-                    <div class="bg-surface-card p-4 sm:p-5">
-                        {{ notification_subsection(label, value, icon) }}
-                    </div>
-                {% endfor %}
-            </div>
-        {% endcall %}
-
-        {% call notification_section(
-            'Delivery Ownership',
-            'Notification Channels is a platform delivery capability. Consumer capabilities remain responsible for event meaning, policy intent, and content.',
-            'shield-check'
-        ) %}
-            <div class="grid gap-px bg-outline-subtle lg:grid-cols-2">
-                <div class="bg-surface-card p-4 sm:p-5">
-                    {{ notification_subsection('Consumer Capabilities', 'Emit governed events and choose approved destinations', 'workflow') }}
-                    <p class="mt-3 text-sm leading-6 text-content-secondary">
-                        Consumer capabilities emit governed events and select approved destinations. External alert routing, grouping, inhibition, and receiver ownership remain with the selected Alert Source where supported.
-                    </p>
-                </div>
-                <div class="bg-surface-card p-4 sm:p-5">
-                    {{ notification_subsection('Notification Channels', 'Reusable provider delivery infrastructure', 'send') }}
-                    <p class="mt-3 text-sm leading-6 text-content-secondary">
-                        KAORI owns encrypted provider credentials, destination validation, transport adapters, delivery journaling, retries, and per-event deduplication.
-                    </p>
-                </div>
-            </div>
-        {% endcall %}
-                {% elif active_tab == 'channels' %}
-<div id="notification-channel-registry">
-    {{ loading_bar.render('notification-channel-loading', label='Loading notification channels') }}
-        {% call notification_section(
-            'Configured Channels',
-            'Test Delivery validates the provider transport and destination. Allowed Uses controls which KAORI capabilities may select the channel.',
-            'send',
-            payload.posture.label,
-            payload.posture.tone
-        ) %}
-            <div class="overflow-x-auto">
-                <table class="{{ table_ui.table_classes('min-w-[1180px]') }}">
-                    <thead class="{{ table_ui.head_classes() }}">
-                        <tr>
-                            <th class="{{ table_ui.header_cell_classes() }}">Channel</th>
-                            <th class="{{ table_ui.header_cell_classes() }}">Status</th>
-                            <th class="{{ table_ui.header_cell_classes() }}">Destination</th>
-                            <th class="{{ table_ui.header_cell_classes() }}">Policy</th>
-                            <th class="{{ table_ui.header_cell_classes() }}">Domains</th>
-                            <th class="{{ table_ui.header_cell_classes() }}">Uses</th>
-                            <th class="{{ table_ui.header_cell_classes() }}">Last Delivery</th>
-                            <th class="{{ table_ui.header_cell_classes(action=true) }}">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody class="{{ table_ui.body_classes() }}">
-                        {% for channel in payload.channels %}
-                            <tr class="{{ table_ui.row_classes() }}">
-                                <td class="{{ table_ui.cell_classes() }}">{{ table_ui.title_cell(channel.name, channel.provider_label, channel.provider_icon) }}</td>
-                                <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_label(channel.status, channel.tone, size='compact') }}</td>
-                                <td class="{{ table_ui.cell_classes() }} break-all">{{ channel.destination_label }}</td>
-                                <td class="{{ table_ui.cell_classes() }}">{{ channel.minimum_severity_label }}</td>
-                                <td class="{{ table_ui.cell_classes() }}">{{ channel.domain_labels|join(', ') }}</td>
-                                <td class="{{ table_ui.cell_classes() }}">{{ channel.event_type_labels|join(', ') }}</td>
-                                <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_label(channel.last_delivery_label, channel.last_delivery_tone, size='compact') }}</td>
-                                <td class="{{ table_ui.cell_classes(action=true) }}">
-                                    {% if can_manage %}
-                                        <div class="flex justify-end gap-2">
-                                            <a href="{{ url_for('notification_channels.index', tab='channels', edit=channel.id) }}" class="{{ table_ui.action_classes() }}">Edit</a>
-                                            <form method="post" action="{{ url_for('notification_channels.test', channel_id=channel.id) }}">
-                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                                <button class="{{ table_ui.action_classes() }}">Test</button>
-                                            </form>
-                                            {% if channel.delete_blocked %}
-                                                <button type="button"
-                                                        disabled
-                                                        title="{{ channel.delete_reason }}"
-                                                        class="{{ table_ui.action_classes(destructive=true) }} cursor-not-allowed opacity-50">
-                                                    Delete
-                                                </button>
-                                            {% else %}
-                                                <form method="post" action="{{ url_for('notification_channels.delete', channel_id=channel.id) }}">
-                                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                                    <button class="{{ table_ui.action_classes(destructive=true) }}">Delete</button>
-                                                </form>
-                                            {% endif %}
-                                        </div>
-                                    {% endif %}
-                                </td>
-                            </tr>
-                        {% else %}
-                            <tr>
-                                <td colspan="8" class="p-0">
-                                    {% set empty_state_icon = 'send' %}
-                                    {% set empty_state_label = 'Setup Required' %}
-                                    {% set empty_state_tone = 'warning' %}
-                                    {% set empty_state_title = 'No Notification Channels Configured' %}
-                                    {% set empty_state_description = 'Add a validated provider destination to establish governed platform delivery.' %}
-                                    {% set empty_state_min_height = 'min-h-[170px]' %}
-                                    {% include 'components/states/_empty_state.html' %}
-                                </td>
-                            </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-            {% if payload.channel_pagination.total_items > 0 %}
-                {{ table_registry.footer(
-                    'notification_channels.index',
-                    'notification-channel-registry',
-                    'notification-channel-loading',
-                    payload.channel_pagination,
-                    {'tab': 'channels', 'edit': form_channel.id if form_channel else none},
-                    payload.channel_pagination.allowed_per_page,
-                    resource_label='Channels',
-                    rows_aria_label='Notification channels per page',
-                    control_name='notification-channels',
-                    page_param='channel_page',
-                    per_page_param='channel_per_page'
-                ) }}
-            {% endif %}
-        {% endcall %}
-</div>
-
-        {% call notification_section(
-            'Channel Configuration',
-            'Configure one reusable provider destination at a time. Secret values are encrypted at rest and are never '
-            ~ 'rendered back into this form.',
-            'settings-2',
-            payload.posture.label,
-            payload.posture.tone
-        ) %}
-            <form method="post"
-                  action="{{ url_for('notification_channels.update', channel_id=form_channel.id)
-                      if form_channel else url_for('notification_channels.create') }}"
-                  x-data="{ provider: '{{ selected_provider }}' }"
-                  class="space-y-0">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                {% if form_channel %}
-                    <input type="hidden" name="provider_key" value="{{ form_channel.provider_key }}">
-                {% endif %}
-
-                <div class="grid gap-4 border-b border-outline-subtle p-4 sm:grid-cols-2 sm:p-5 lg:grid-cols-3">
-                    <div>
-                        <label class="{{ table_ui.filter_label_classes() }}">Channel Name</label>
-                        <input name="name"
-                               required
-                               value="{{ form_channel.name if form_channel else '' }}"
-                               class="{{ table_ui.filter_input_classes() }}"
-                               placeholder="Operations Alerts">
-                    </div>
-                    <div>
-                        <label class="{{ table_ui.filter_label_classes() }}">Provider</label>
-                        {% if form_channel %}
-                            <div class="flex min-h-10 items-center rounded-md border border-outline-default bg-surface-subtle px-3 text-sm font-semibold text-content-primary">
-                                {% for provider in payload.providers %}
-                                    {% if provider.key == form_channel.provider_key %}{{ provider.label }}{% endif %}
-                                {% endfor %}
+                    {% endcall %}
+                    {% call notification_section(
+                        'Delivery Contract',
+                        'Provider choice changes transport only. Consumer capabilities emit governed events and select approved channel instances.',
+                        'workflow'
+                        ) %}
+                        <div class="grid gap-px bg-outline-subtle sm:grid-cols-2 lg:grid-cols-4">
+                            {% for label, value, icon in [
+                                ('Events', payload.delivery_contract.events, 'bell-ring'),
+                                ('Retry', payload.delivery_contract.retry, 'refresh-cw'),
+                                ('Deduplication', payload.delivery_contract.deduplication, 'copy-check'),
+                                ('Ownership', payload.delivery_contract.ownership, 'waypoints')
+                                ] %}
+                                <div class="bg-surface-card p-4 sm:p-5">{{ notification_subsection(label, value, icon) }}</div>
+                            {% endfor %}
+                        </div>
+                    {% endcall %}
+                    {% call notification_section(
+                        'Delivery Ownership',
+                        'Notification Channels is a platform delivery capability. Consumer capabilities remain responsible for event meaning, policy intent, and content.',
+                        'shield-check'
+                        ) %}
+                        <div class="grid gap-px bg-outline-subtle lg:grid-cols-2">
+                            <div class="bg-surface-card p-4 sm:p-5">
+                                {{ notification_subsection('Consumer Capabilities', 'Emit governed events and choose approved destinations', 'workflow') }}
+                                <p class="mt-3 text-sm leading-6 text-content-secondary">
+                                    Consumer capabilities emit governed events and select approved destinations. External alert routing, grouping, inhibition, and receiver ownership remain with the selected Alert Source where supported.
+                                </p>
                             </div>
-                            <p class="mt-1 text-xs leading-5 text-content-muted">
-                                Provider is immutable after creation. Create a new channel to change transport.
-                            </p>
-                        {% else %}
-                            <select name="provider_key"
-                                    x-model="provider"
-                                    required
-                                    class="{{ table_ui.filter_select_classes() }}">
-                                <option value="">Select provider</option>
-                                {% for provider in payload.providers %}
-                                    <option value="{{ provider.key }}">{{ provider.label }}</option>
-                                {% endfor %}
-                            </select>
-                        {% endif %}
-                    </div>
-                    <div>
-                        <label class="{{ table_ui.filter_label_classes() }}">Minimum Alert Severity</label>
-                        <select name="minimum_severity" class="{{ table_ui.filter_select_classes() }}">
-                            {% for option in payload.severity_options %}
-                                <option value="{{ option.value }}"
-                                        {% if (form_channel.minimum_severity if form_channel else 'warning') == option.value %}selected{% endif %}>
-                                    {{ option.label }}
-                                </option>
-                            {% endfor %}
-                        </select>
-                        <p class="mt-1 text-xs leading-5 text-content-muted">Applies to Alert Intelligence events; Scheduled Reports are not severity-filtered.</p>
-                    </div>
-                </div>
-
-                {% for provider_option in payload.providers %}
-                    <div x-show="provider === '{{ provider_option.key }}'" x-cloak class="border-b border-outline-subtle bg-kaori-soft/40 p-4 sm:p-5">
-                        {% include provider_option.form_partial %}
-                    </div>
-                {% endfor %}
-
-                <div class="grid gap-4 p-4 sm:grid-cols-2 sm:p-5 lg:grid-cols-3">
-                    <div class="sm:col-span-2">
-                        <span class="{{ table_ui.filter_label_classes() }}">Domains</span>
-                        <div class="flex flex-wrap gap-4 rounded-md border border-outline-default bg-surface-card px-3 py-2.5">
-                            {% set selected_domains = form_channel.domains if form_channel else [] %}
-                            {% for option in payload.domain_options %}
-                                <label class="inline-flex items-center gap-2 text-sm text-content-secondary">
-                                    <input type="checkbox" name="domains" value="{{ option.value }}" {% if option.value in selected_domains %}checked{% endif %} class="h-4 w-4 rounded border-outline-default text-kaori-primary">
-                                    {{ option.label }}
-                                </label>
-                            {% endfor %}
+                            <div class="bg-surface-card p-4 sm:p-5">
+                                {{ notification_subsection('Notification Channels', 'Reusable provider delivery infrastructure', 'send') }}
+                                <p class="mt-3 text-sm leading-6 text-content-secondary">
+                                    KAORI owns encrypted provider credentials, destination validation, transport adapters, delivery journaling, retries, and per-event deduplication.
+                                </p>
+                            </div>
                         </div>
+                    {% endcall %}
+                {% elif active_tab == 'channels' %}
+                    <div id="notification-channel-registry">
+                        {{ loading_bar.render('notification-channel-loading', label='Loading notification channels') }}
+                        {% call notification_section(
+                            'Configured Channels',
+                            'Test Delivery validates the provider transport and destination. Allowed Uses controls which KAORI capabilities may select the channel.',
+                            'send',
+                            payload.posture.label,
+                            payload.posture.tone
+                            ) %}
+                            <div class="overflow-x-auto">
+                                <table class="{{ table_ui.table_classes('min-w-[1180px]') }}">
+                                    <thead class="{{ table_ui.head_classes() }}">
+                                        <tr>
+                                            <th class="{{ table_ui.header_cell_classes() }}">Channel</th>
+                                            <th class="{{ table_ui.header_cell_classes() }}">Status</th>
+                                            <th class="{{ table_ui.header_cell_classes() }}">Destination</th>
+                                            <th class="{{ table_ui.header_cell_classes() }}">Policy</th>
+                                            <th class="{{ table_ui.header_cell_classes() }}">Domains</th>
+                                            <th class="{{ table_ui.header_cell_classes() }}">Uses</th>
+                                            <th class="{{ table_ui.header_cell_classes() }}">Last Delivery</th>
+                                            <th class="{{ table_ui.header_cell_classes(action=true) }}">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="{{ table_ui.body_classes() }}">
+                                        {% for channel in payload.channels %}
+                                            <tr class="{{ table_ui.row_classes() }}">
+                                                <td class="{{ table_ui.cell_classes() }}">{{ table_ui.title_cell(channel.name, channel.provider_label, channel.provider_icon) }}</td>
+                                                <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_label(channel.status, channel.tone, size='compact') }}</td>
+                                                <td class="{{ table_ui.cell_classes() }} break-all">{{ channel.destination_label }}</td>
+                                                <td class="{{ table_ui.cell_classes() }}">{{ channel.minimum_severity_label }}</td>
+                                                <td class="{{ table_ui.cell_classes() }}">{{ channel.domain_labels|join(", ") }}</td>
+                                                <td class="{{ table_ui.cell_classes() }}">{{ channel.event_type_labels|join(", ") }}</td>
+                                                <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_label(channel.last_delivery_label, channel.last_delivery_tone, size='compact') }}</td>
+                                                <td class="{{ table_ui.cell_classes(action=true) }}">
+                                                    {% if can_manage %}
+                                                        <div class="flex justify-end gap-2">
+                                                            <a href="{{ url_for('notification_channels.index', tab='channels', edit=channel.id) }}"
+                                                               class="{{ table_ui.action_classes() }}">Edit</a>
+                                                            <form method="post"
+                                                                  action="{{ url_for('notification_channels.test', channel_id=channel.id) }}">
+                                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                                <button class="{{ table_ui.action_classes() }}">Test</button>
+                                                            </form>
+                                                            {% if channel.delete_blocked %}
+                                                                <button type="button"
+                                                                        disabled
+                                                                        title="{{ channel.delete_reason }}"
+                                                                        class="{{ table_ui.action_classes(destructive=true) }} cursor-not-allowed opacity-50">
+                                                                    Delete
+                                                                </button>
+                                                            {% else %}
+                                                                <form method="post"
+                                                                      action="{{ url_for('notification_channels.delete', channel_id=channel.id) }}">
+                                                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                                    <button class="{{ table_ui.action_classes(destructive=true) }}">Delete</button>
+                                                                </form>
+                                                            {% endif %}
+                                                        </div>
+                                                    {% endif %}
+                                                </td>
+                                            </tr>
+                                        {% else %}
+                                            <tr>
+                                                <td colspan="8" class="p-0">
+                                                    {% set empty_state_icon = "send" %}
+                                                    {% set empty_state_label = "Setup Required" %}
+                                                    {% set empty_state_tone = "warning" %}
+                                                    {% set empty_state_title = "No Notification Channels Configured" %}
+                                                    {% set empty_state_description = "Add a validated provider destination to establish governed platform delivery." %}
+                                                    {% set empty_state_min_height = "min-h-[170px]" %}
+                                                    {% include 'components/states/_empty_state.html' %}
+                                                </td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {% if payload.channel_pagination.total_items > 0 %}
+                                {{ table_registry.footer('notification_channels.index',
+                                                                'notification-channel-registry',
+                                                                'notification-channel-loading',
+                                                                payload.channel_pagination,
+                                                                {'tab': 'channels', 'edit': form_channel.id if form_channel else none},
+                                                                payload.channel_pagination.allowed_per_page,
+                                                                resource_label='Channels',
+                                                                rows_aria_label='Notification channels per page',
+                                                                control_name='notification-channels',
+                                                                page_param='channel_page',
+                                                                per_page_param='channel_per_page') }}
+                            {% endif %}
+                        {% endcall %}
                     </div>
-                    <div>
-                        <span class="{{ table_ui.filter_label_classes() }}">Allowed Uses</span>
-                        {% set selected_events = form_channel.event_types if form_channel else [] %}
-                        <div class="space-y-2 rounded-md border border-outline-default bg-surface-card px-3 py-2.5">
-                            {% for option in payload.event_type_options %}
-                                <label class="flex items-center gap-2 text-sm text-content-secondary">
-                                    <input type="checkbox" name="event_types" value="{{ option.value }}" {% if option.value in selected_events %}checked{% endif %} class="h-4 w-4 rounded border-outline-default text-kaori-primary">
-                                    {{ option.label }}
-                                </label>
+                    {% call notification_section(
+                        'Channel Configuration',
+                        'Configure one reusable provider destination at a time. Secret values are encrypted at rest and are never '
+                        ~ 'rendered back into this form.',
+                        'settings-2',
+                        payload.posture.label,
+                        payload.posture.tone
+                        ) %}
+                        <form method="post"
+                              action="{{ url_for('notification_channels.update', channel_id=form_channel.id) if form_channel else url_for('notification_channels.create') }}"
+                              x-data="{ provider: '{{ selected_provider }}' }"
+                              class="space-y-0">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            {% if form_channel %}
+                                <input type="hidden"
+                                       name="provider_key"
+                                       value="{{ form_channel.provider_key }}">
+                            {% endif %}
+                            <div class="grid gap-4 border-b border-outline-subtle p-4 sm:grid-cols-2 sm:p-5 lg:grid-cols-3">
+                                <div>
+                                    <label class="{{ table_ui.filter_label_classes() }}">Channel Name</label>
+                                    <input name="name"
+                                           required
+                                           value="{{ form_channel.name if form_channel else '' }}"
+                                           class="{{ table_ui.filter_input_classes() }}"
+                                           placeholder="Operations Alerts">
+                                </div>
+                                <div>
+                                    <label class="{{ table_ui.filter_label_classes() }}">Provider</label>
+                                    {% if form_channel %}
+                                        <div class="flex min-h-10 items-center rounded-md border border-outline-default bg-surface-subtle px-3 text-sm font-semibold text-content-primary">
+                                            {% for provider in payload.providers %}
+                                                {% if provider.key == form_channel.provider_key %}{{ provider.label }}{% endif %}
+                                            {% endfor %}
+                                        </div>
+                                        <p class="mt-1 text-xs leading-5 text-content-muted">
+                                            Provider is immutable after creation. Create a new channel to change transport.
+                                        </p>
+                                    {% else %}
+                                        <select name="provider_key"
+                                                x-model="provider"
+                                                required
+                                                class="{{ table_ui.filter_select_classes() }}">
+                                            <option value="">Select provider</option>
+                                            {% for provider in payload.providers %}
+                                                <option value="{{ provider.key }}">{{ provider.label }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    {% endif %}
+                                </div>
+                                <div>
+                                    <label class="{{ table_ui.filter_label_classes() }}">Minimum Alert Severity</label>
+                                    <select name="minimum_severity"
+                                            class="{{ table_ui.filter_select_classes() }}">
+                                        {% for option in payload.severity_options %}
+                                            <option value="{{ option.value }}"
+                                                    {% if (form_channel.minimum_severity if form_channel else 'warning') == option.value %}selected{% endif %}>
+                                                {{ option.label }}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                    <p class="mt-1 text-xs leading-5 text-content-muted">Applies to Alert Intelligence events; Scheduled Reports are not severity-filtered.</p>
+                                </div>
+                            </div>
+                            {% for provider_option in payload.providers %}
+                                <div x-show="provider === '{{ provider_option.key }}'"
+                                     x-cloak
+                                     class="border-b border-outline-subtle bg-kaori-soft/40 p-4 sm:p-5">
+                                    {% include provider_option.form_partial %}
+                                </div>
                             {% endfor %}
-                        </div>
-                    </div>
-                    <label class="inline-flex items-center gap-2 text-sm font-medium text-content-secondary">
-                        <input type="checkbox" name="enabled" value="1" {% if not form_channel or form_channel.enabled %}checked{% endif %} class="h-4 w-4 rounded border-outline-default text-kaori-primary">
-                        Enabled
-                    </label>
-                    <div class="flex items-end gap-2 sm:col-span-2 lg:col-span-3">
-                        {% if can_manage %}
-                            <button type="submit" class="inline-flex min-h-10 items-center justify-center gap-2 rounded-md bg-kaori-primary px-4 text-xs font-semibold text-white hover:bg-kaori-primary-hover">
-                                <i data-lucide="save" class="h-3.5 w-3.5"></i>
-                                {{ 'Update Channel' if form_channel else 'Add Notification Channel' }}
-                            </button>
-                        {% else %}
-                            <span class="text-xs text-content-muted">Requires integrations.manage permission.</span>
-                        {% endif %}
-                        {% if form_channel %}
-                            <a href="{{ url_for('notification_channels.index', tab='channels') }}" class="{{ table_ui.action_classes() }} min-h-10">Cancel</a>
-                        {% endif %}
-                    </div>
-                </div>
-            </form>
-        {% endcall %}
+                            <div class="grid gap-4 p-4 sm:grid-cols-2 sm:p-5 lg:grid-cols-3">
+                                <div class="sm:col-span-2">
+                                    <span class="{{ table_ui.filter_label_classes() }}">Domains</span>
+                                    <div class="flex flex-wrap gap-4 rounded-md border border-outline-default bg-surface-card px-3 py-2.5">
+                                        {% set selected_domains = form_channel.domains if form_channel else [] %}
+                                        {% for option in payload.domain_options %}
+                                            <label class="inline-flex items-center gap-2 text-sm text-content-secondary">
+                                                <input type="checkbox"
+                                                       name="domains"
+                                                       value="{{ option.value }}"
+                                                       {% if option.value in selected_domains %}checked{% endif %}
+                                                       class="h-4 w-4 rounded border-outline-default text-kaori-primary">
+                                                {{ option.label }}
+                                            </label>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                <div>
+                                    <span class="{{ table_ui.filter_label_classes() }}">Allowed Uses</span>
+                                    {% set selected_events = form_channel.event_types if form_channel else [] %}
+                                    <div class="space-y-2 rounded-md border border-outline-default bg-surface-card px-3 py-2.5">
+                                        {% for option in payload.event_type_options %}
+                                            <label class="flex items-center gap-2 text-sm text-content-secondary">
+                                                <input type="checkbox"
+                                                       name="event_types"
+                                                       value="{{ option.value }}"
+                                                       {% if option.value in selected_events %}checked{% endif %}
+                                                       class="h-4 w-4 rounded border-outline-default text-kaori-primary">
+                                                {{ option.label }}
+                                            </label>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                <label class="inline-flex items-center gap-2 text-sm font-medium text-content-secondary">
+                                    <input type="checkbox"
+                                           name="enabled"
+                                           value="1"
+                                           {% if not form_channel or form_channel.enabled %}checked{% endif %}
+                                           class="h-4 w-4 rounded border-outline-default text-kaori-primary">
+                                    Enabled
+                                </label>
+                                <div class="flex items-end gap-2 sm:col-span-2 lg:col-span-3">
+                                    {% if can_manage %}
+                                        <button type="submit"
+                                                class="inline-flex min-h-10 items-center justify-center gap-2 rounded-md bg-kaori-primary px-4 text-xs font-semibold text-white hover:bg-kaori-primary-hover">
+                                            <i data-lucide="save" class="h-3.5 w-3.5"></i>
+                                            {{ 'Update Channel' if form_channel else 'Add Notification Channel' }}
+                                        </button>
+                                    {% else %}
+                                        <span class="text-xs text-content-muted">Requires integrations.manage permission.</span>
+                                    {% endif %}
+                                    {% if form_channel %}
+                                        <a href="{{ url_for('notification_channels.index', tab='channels') }}"
+                                           class="{{ table_ui.action_classes() }} min-h-10">Cancel</a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </form>
+                    {% endcall %}
                 {% elif active_tab == 'delivery' %}
-{% call notification_section(
-    'Delivery Activity',
-    'Review the persisted delivery journal used for retry, deduplication, and provider-delivery evidence.',
-    'history',
-    payload.posture.label,
-    payload.posture.tone
-) %}
-    <div id="notification-delivery-registry">
-        {{ loading_bar.render('notification-delivery-loading', label='Loading notification delivery activity') }}
-        <div class="overflow-x-auto">
-            <table class="{{ table_ui.table_classes('min-w-[1120px]') }}">
-                <thead class="{{ table_ui.head_classes() }}">
-                    <tr>
-                        <th class="{{ table_ui.header_cell_classes() }}">Channel</th>
-                        <th class="{{ table_ui.header_cell_classes() }}">Event</th>
-                        <th class="{{ table_ui.header_cell_classes() }}">Scope</th>
-                        <th class="{{ table_ui.header_cell_classes() }}">Severity</th>
-                        <th class="{{ table_ui.header_cell_classes() }}">Status</th>
-                        <th class="{{ table_ui.header_cell_classes() }}">Attempts</th>
-                        <th class="{{ table_ui.header_cell_classes() }}">Recorded</th>
-                        <th class="{{ table_ui.header_cell_classes() }}">Evidence</th>
-                    </tr>
-                </thead>
-                <tbody class="{{ table_ui.body_classes() }}">
-                    {% for delivery in payload.deliveries %}
-                        <tr class="{{ table_ui.row_classes() }}">
-                            <td class="{{ table_ui.cell_classes() }}">{{ table_ui.title_cell(delivery.channel_name, delivery.provider_label, delivery.provider_icon) }}</td>
-                            <td class="{{ table_ui.cell_classes() }}">
-                                <p class="font-semibold text-content-primary">{{ delivery.event_label }}</p>
-                                <p class="mt-0.5 text-xs text-content-muted">{{ delivery.event_type }}</p>
-                            </td>
-                            <td class="{{ table_ui.cell_classes() }}">
-                                <p class="font-medium text-content-secondary">{{ delivery.domain_label }}</p>
-                                <p class="mt-0.5 max-w-[220px] truncate text-xs text-content-muted" title="{{ delivery.asset_key }}">{{ delivery.asset_key }}</p>
-                            </td>
-                            <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_label(delivery.severity_label, 'warning' if delivery.severity == 'warning' else ('critical' if delivery.severity == 'critical' else 'info'), size='compact') }}</td>
-                            <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_label(delivery.status_label, delivery.status_tone, size='compact') }}</td>
-                            <td class="{{ table_ui.cell_classes() }} tabular-nums">{{ delivery.attempt_count }}</td>
-                            <td class="{{ table_ui.cell_classes() }} whitespace-nowrap">{{ delivery.updated_at|user_datetime('-') }}</td>
-                            <td class="{{ table_ui.cell_classes() }}">
-                                {% if delivery.error_message %}
-                                    <span class="text-xs leading-5 text-content-secondary" title="{{ delivery.error_message }}">{{ delivery.error_message|truncate(96, true, '…') }}</span>
-                                {% elif delivery.provider_message_id %}
-                                    <span class="text-xs leading-5 text-content-muted">Provider ID recorded</span>
-                                {% else %}
-                                    <span class="text-xs leading-5 text-content-muted">No additional evidence</span>
-                                {% endif %}
-                            </td>
-                        </tr>
-                    {% else %}
-                        <tr>
-                            <td colspan="8" class="p-0">
-                                {% set empty_state_icon = 'history' %}
-                                {% set empty_state_label = 'No Delivery Evidence' %}
-                                {% set empty_state_tone = 'info' %}
-                                {% set empty_state_title = 'No Notification Deliveries Recorded' %}
-                                {% set empty_state_description = 'Delivery evidence appears after an eligible governed event is sent through a validated channel.' %}
-                                {% set empty_state_min_height = 'min-h-[170px]' %}
-                                {% include 'components/states/_empty_state.html' %}
-                            </td>
-                        </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        {% if payload.delivery_pagination.total_items > 0 %}
-            {{ table_registry.footer(
-                'notification_channels.index',
-                'notification-delivery-registry',
-                'notification-delivery-loading',
-                payload.delivery_pagination,
-                {'tab': 'delivery'},
-                payload.delivery_pagination.allowed_per_page,
-                resource_label='Deliveries',
-                rows_aria_label='Notification deliveries per page',
-                control_name='notification-deliveries',
-                page_param='delivery_page',
-                per_page_param='delivery_per_page'
-            ) }}
-        {% endif %}
-    </div>
-{% endcall %}
+                    {% call notification_section(
+                        'Delivery Activity',
+                        'Review the persisted delivery journal used for retry, deduplication, and provider-delivery evidence.',
+                        'history',
+                        payload.posture.label,
+                        payload.posture.tone
+                        ) %}
+                        <div id="notification-delivery-registry">
+                            {{ loading_bar.render('notification-delivery-loading', label='Loading notification delivery activity') }}
+                            <div class="overflow-x-auto">
+                                <table class="{{ table_ui.table_classes('min-w-[1120px]') }}">
+                                    <thead class="{{ table_ui.head_classes() }}">
+                                        <tr>
+                                            <th class="{{ table_ui.header_cell_classes() }}">Channel</th>
+                                            <th class="{{ table_ui.header_cell_classes() }}">Event</th>
+                                            <th class="{{ table_ui.header_cell_classes() }}">Scope</th>
+                                            <th class="{{ table_ui.header_cell_classes() }}">Severity</th>
+                                            <th class="{{ table_ui.header_cell_classes() }}">Status</th>
+                                            <th class="{{ table_ui.header_cell_classes() }}">Attempts</th>
+                                            <th class="{{ table_ui.header_cell_classes() }}">Recorded</th>
+                                            <th class="{{ table_ui.header_cell_classes() }}">Evidence</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="{{ table_ui.body_classes() }}">
+                                        {% for delivery in payload.deliveries %}
+                                            <tr class="{{ table_ui.row_classes() }}">
+                                                <td class="{{ table_ui.cell_classes() }}">{{ table_ui.title_cell(delivery.channel_name, delivery.provider_label, delivery.provider_icon) }}</td>
+                                                <td class="{{ table_ui.cell_classes() }}">
+                                                    <p class="font-semibold text-content-primary">{{ delivery.event_label }}</p>
+                                                    <p class="mt-0.5 text-xs text-content-muted">{{ delivery.event_type }}</p>
+                                                </td>
+                                                <td class="{{ table_ui.cell_classes() }}">
+                                                    <p class="font-medium text-content-secondary">{{ delivery.domain_label }}</p>
+                                                    <p class="mt-0.5 max-w-[220px] truncate text-xs text-content-muted"
+                                                       title="{{ delivery.asset_key }}">{{ delivery.asset_key }}</p>
+                                                </td>
+                                                <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_label(delivery.severity_label, 'warning' if delivery.severity == 'warning' else ('critical' if delivery.severity == 'critical' else 'info') , size='compact') }}</td>
+                                                <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_label(delivery.status_label, delivery.status_tone, size='compact') }}</td>
+                                                <td class="{{ table_ui.cell_classes() }} tabular-nums">{{ delivery.attempt_count }}</td>
+                                                <td class="{{ table_ui.cell_classes() }} whitespace-nowrap">{{ delivery.updated_at|user_datetime("-") }}</td>
+                                                <td class="{{ table_ui.cell_classes() }}">
+                                                    {% if delivery.error_message %}
+                                                        <span class="text-xs leading-5 text-content-secondary"
+                                                              title="{{ delivery.error_message }}">{{ delivery.error_message|truncate(96, true, '…') }}</span>
+                                                    {% elif delivery.provider_message_id %}
+                                                        <span class="text-xs leading-5 text-content-muted">Provider ID recorded</span>
+                                                    {% else %}
+                                                        <span class="text-xs leading-5 text-content-muted">No additional evidence</span>
+                                                    {% endif %}
+                                                </td>
+                                            </tr>
+                                        {% else %}
+                                            <tr>
+                                                <td colspan="8" class="p-0">
+                                                    {% set empty_state_icon = "history" %}
+                                                    {% set empty_state_label = "No Delivery Evidence" %}
+                                                    {% set empty_state_tone = "info" %}
+                                                    {% set empty_state_title = "No Notification Deliveries Recorded" %}
+                                                    {% set empty_state_description = "Delivery evidence appears after an eligible governed event is sent through a validated channel." %}
+                                                    {% set empty_state_min_height = "min-h-[170px]" %}
+                                                    {% include 'components/states/_empty_state.html' %}
+                                                </td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {% if payload.delivery_pagination.total_items > 0 %}
+                                {{ table_registry.footer('notification_channels.index',
+                                                                'notification-delivery-registry',
+                                                                'notification-delivery-loading',
+                                                                payload.delivery_pagination,
+                                                                {'tab': 'delivery'},
+                                                                payload.delivery_pagination.allowed_per_page,
+                                                                resource_label='Deliveries',
+                                                                rows_aria_label='Notification deliveries per page',
+                                                                control_name='notification-deliveries',
+                                                                page_param='delivery_page',
+                                                                per_page_param='delivery_per_page') }}
+                            {% endif %}
+                        </div>
+                    {% endcall %}
                 {% endif %}
             </div>
         </section>

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Mapping
 from typing import Any
 
 from werkzeug.datastructures import MultiDict
@@ -230,7 +231,7 @@ def _load_rows(
     return [_normalize_object_storage_row(row) for row in stream.get('rows') or []], _normalize_source_status(stream)
 
 
-def _normalize_kubernetes_row(row: dict[str, Any]) -> dict[str, Any]:
+def _normalize_kubernetes_row(row: Mapping[str, Any]) -> dict[str, Any]:
     return {
         'name': str(row.get('name') or 'Unknown Alert'),
         'severity': str(row.get('severity') or 'none'),
@@ -269,7 +270,7 @@ def _normalize_object_storage_row(row: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def _normalize_source_status(status: dict[str, Any]) -> dict[str, Any]:
+def _normalize_source_status(status: Mapping[str, Any]) -> dict[str, Any]:
     return {
         'selected_source': str(status.get('selected_source') or status.get('source') or 'auto'),
         'resolved_source': str(status.get('resolved_source') or 'none'),
@@ -325,7 +326,8 @@ def _alert_intelligence_rules(domain: str) -> list[dict[str, Any]]:
     for rule in INTELLIGENCE_CATALOG:
         if str(rule.get('domain') or '') != domain:
             continue
-        visible_in = rule.get('visible_in') if isinstance(rule.get('visible_in'), list) else []
+        raw_visible_in = rule.get('visible_in')
+        visible_in = [str(value) for value in raw_visible_in] if isinstance(raw_visible_in, list) else []
         if 'Alert Intelligence' not in visible_in:
             continue
         rules.append(

@@ -31,14 +31,13 @@
                 {% if filters.query or filters.requirement or filters.status %}
                     {% set capability_clear_href = url_for('minio.instance_detail', instance_id=instance.id, capability_page=1, capability_per_page=pagination.per_page) ~ '#validation' %}
                     {% set capability_clear_url = url_for('minio.capability_registry', instance_id=instance.id, capability_page=1, capability_per_page=pagination.per_page) %}
-                    {{ registry_ui.clear_filters_action(
-                        capability_clear_href,
-                        table_ui.action_classes(),
-                        hx_get=capability_clear_url,
-                        target='#minio-capability-registry',
-                        indicator='#minio-capability-loading',
-                        swap='outerHTML',
-                        marker='minio-capability-registry'
+                    {{ registry_ui.clear_filters_action(capability_clear_href,
+                                        table_ui.action_classes() ,
+                    hx_get=capability_clear_url,
+                    target='#minio-capability-registry',
+                    indicator='#minio-capability-loading',
+                    swap='outerHTML',
+                    marker='minio-capability-registry'
                     ) }}
                 {% endif %}
             </div>
@@ -143,11 +142,11 @@
                 {% else %}
                     <tr>
                         <td colspan="5" class="p-0">
-                            {% set empty_state_icon = 'scan-search' %}
-                            {% set empty_state_label = 'No Results' %}
-                            {% set empty_state_title = 'No Capability Records Match the Current Filters' %}
-                            {% set empty_state_description = 'Adjust Search Capability, Requirement, or Validation Status to broaden the registry results.' %}
-                            {% set empty_state_min_height = 'min-h-[160px]' %}
+                            {% set empty_state_icon = "scan-search" %}
+                            {% set empty_state_label = "No Results" %}
+                            {% set empty_state_title = "No Capability Records Match the Current Filters" %}
+                            {% set empty_state_description = "Adjust Search Capability, Requirement, or Validation Status to broaden the registry results." %}
+                            {% set empty_state_min_height = "min-h-[160px]" %}
                             {% include 'components/states/_empty_state.html' %}
                         </td>
                     </tr>

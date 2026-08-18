@@ -99,11 +99,11 @@
         {% endfor %}
     </div>
 {% else %}
-    {% set empty_state_icon = 'search-x' %}
-    {% set empty_state_label = 'No Results' %}
-    {% set empty_state_title = 'No Recommendations Match the Current Filters' %}
-    {% set empty_state_description = 'Adjust the filters or continue monitoring current inventory and signal evidence.' %}
-    {% set empty_state_variant = 'panel' %}
-    {% set empty_state_min_height = 'min-h-[170px]' %}
+    {% set empty_state_icon = "search-x" %}
+    {% set empty_state_label = "No Results" %}
+    {% set empty_state_title = "No Recommendations Match the Current Filters" %}
+    {% set empty_state_description = "Adjust the filters or continue monitoring current inventory and signal evidence." %}
+    {% set empty_state_variant = "panel" %}
+    {% set empty_state_min_height = "min-h-[170px]" %}
     {% include 'components/states/_empty_state.html' %}
 {% endif %}

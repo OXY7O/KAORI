@@ -36,7 +36,7 @@
                 <button type="button"
                         hx-get="{{ active_refresh_url }}"
                         hx-target="#active-job-workspace"
-         hx-on::before-request="if (document.hidden) event.preventDefault()"
+                        hx-on::before-request="if (document.hidden) event.preventDefault()"
                         hx-swap="outerHTML"
                         hx-indicator="#active-job-loading"
                         hx-disabled-elt="this"
@@ -119,12 +119,12 @@
             <div class="border-t border-outline-subtle bg-surface-hover px-5 py-3 text-xs text-content-muted sm:px-6">{{ active_job_overflow }} additional active execution{{ '' if active_job_overflow == 1 else 's' }} can be reviewed in the Registry.</div>
         {% endif %}
     {% else %}
-        {% set empty_state_icon = 'circle-check-big' %}
-        {% set empty_state_label = 'Queue Clear' %}
-        {% set empty_state_tone = 'normal' %}
-        {% set empty_state_title = 'No Active Executions' %}
-        {% set empty_state_description = 'All registered background work is currently idle or terminal.' %}
-        {% set empty_state_min_height = 'min-h-[180px]' %}
+        {% set empty_state_icon = "circle-check-big" %}
+        {% set empty_state_label = "Queue Clear" %}
+        {% set empty_state_tone = "normal" %}
+        {% set empty_state_title = "No Active Executions" %}
+        {% set empty_state_description = "All registered background work is currently idle or terminal." %}
+        {% set empty_state_min_height = "min-h-[180px]" %}
         {% include 'components/states/_empty_state.html' %}
     {% endif %}
 </section>

@@ -108,15 +108,15 @@ def test_metrics_source_connection(
     provider = provider_definition(configuration.provider_key)
     password, bearer_token = _resolved_test_credentials(configuration, existing_instance, auth_type=auth_type)
 
-    draft_identity = IntegrationInstance(
-        integration_type='metrics_source',
-        provider_key=provider.key,
-        adapter_key=provider.adapter_key,
-        name=configuration.name or 'Draft metrics source',
-        enabled=configuration.enabled,
-        readiness_status='validation_required',
-    )
-    draft = MetricsSource(integration_instance=draft_identity)
+    draft_identity = IntegrationInstance()
+    draft_identity.integration_type = 'metrics_source'
+    draft_identity.provider_key = provider.key
+    draft_identity.adapter_key = provider.adapter_key
+    draft_identity.name = configuration.name or 'Draft metrics source'
+    draft_identity.enabled = configuration.enabled
+    draft_identity.readiness_status = 'validation_required'
+    draft = MetricsSource()
+    draft.integration_instance = draft_identity
     draft.name = configuration.name or 'Draft metrics source'
     draft.endpoint = endpoint
     draft.description = configuration.description
@@ -216,15 +216,15 @@ def save_metrics_source(
     creating = instance is None
     if instance is None:
         provider = provider_definition(configuration.provider_key)
-        canonical = IntegrationInstance(
-            integration_type='metrics_source',
-            provider_key=provider.key,
-            adapter_key=provider.adapter_key,
-            name=configuration.name,
-            enabled=configuration.enabled,
-            readiness_status='validation_required',
-        )
-        instance = MetricsSource(integration_instance=canonical)
+        canonical = IntegrationInstance()
+        canonical.integration_type = 'metrics_source'
+        canonical.provider_key = provider.key
+        canonical.adapter_key = provider.adapter_key
+        canonical.name = configuration.name
+        canonical.enabled = configuration.enabled
+        canonical.readiness_status = 'validation_required'
+        instance = MetricsSource()
+        instance.integration_instance = canonical
         instance.endpoint = endpoint
         db.session.add(instance)
 

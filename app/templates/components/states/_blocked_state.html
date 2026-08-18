@@ -53,7 +53,9 @@
         {% if permission_granted and state_action_url and state_action_label %}
             <a href="{{ state_action_url }}"
                class="mt-5 inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-offset-2">
-                <i data-lucide="{{ state_action_icon }}" class="h-4 w-4" aria-hidden="true"></i>{{ state_action_label }}
+                <i data-lucide="{{ state_action_icon }}"
+                   class="h-4 w-4"
+                   aria-hidden="true"></i>{{ state_action_label }}
             </a>
         {% elif not permission_granted and state_show_admin_required %}
             <div class="mt-5">{{ table_label.special_label('Admin Required', 'unknown', 'shield') }}</div>

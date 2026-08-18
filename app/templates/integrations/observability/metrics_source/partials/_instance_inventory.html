@@ -6,25 +6,25 @@
          class="{{ integration_ui.section_shell_classes() }}">
     {% set registry_filters_active = selected_query or selected_provider_key or selected_readiness or selected_compatibility %}
     {% set registry_clear_url = url_for('integrations.metrics_sources',
-        tab='registry',
-        provider_key='',
-        page=1,
-        per_page=pagination.per_page,
-        coverage_page=1,
-        coverage_per_page=coverage_pagination.per_page,
-        coverage_q=selected_coverage_query,
-        coverage_environment=selected_coverage_environment,
+            tab='registry',
+            provider_key='',
+            page=1,
+            per_page=pagination.per_page,
+            coverage_page=1,
+            coverage_per_page=coverage_pagination.per_page,
+            coverage_q=selected_coverage_query,
+            coverage_environment=selected_coverage_environment,
         coverage_status=selected_coverage_status) %}
     {% set registry_clear_action = registry_ui.clear_filters_action(
-        registry_clear_url,
-        table_ui.action_classes(),
-        hx_get=registry_clear_url,
-        target='#metrics-source-inventory-card',
-        indicator='#metrics-source-inventory-loading',
-        push_url='true',
-        swap='outerHTML',
-        marker='metrics-source-inventory'
-    ) if registry_filters_active else '' %}
+            registry_clear_url,
+            table_ui.action_classes(),
+            hx_get=registry_clear_url,
+            target='#metrics-source-inventory-card',
+            indicator='#metrics-source-inventory-loading',
+            push_url='true',
+            swap='outerHTML',
+            marker='metrics-source-inventory'
+        ) if registry_filters_active else '' %}
     {{ provider_registry.registry_header('Metrics Source Registry',
         'Manage provider-neutral metrics connections and the operational scopes that can use them.',
         'database-zap',
@@ -46,10 +46,16 @@
             <input type="hidden" name="page" value="1">
             <input type="hidden" name="per_page" value="{{ pagination.per_page }}">
             <input type="hidden" name="coverage_page" value="1">
-            <input type="hidden" name="coverage_per_page" value="{{ coverage_pagination.per_page }}">
+            <input type="hidden"
+                   name="coverage_per_page"
+                   value="{{ coverage_pagination.per_page }}">
             <input type="hidden" name="coverage_q" value="{{ selected_coverage_query }}">
-            <input type="hidden" name="coverage_environment" value="{{ selected_coverage_environment }}">
-            <input type="hidden" name="coverage_status" value="{{ selected_coverage_status }}">
+            <input type="hidden"
+                   name="coverage_environment"
+                   value="{{ selected_coverage_environment }}">
+            <input type="hidden"
+                   name="coverage_status"
+                   value="{{ selected_coverage_status }}">
             <div>
                 {{ provider_registry.search_field('metrics-source-search', 'q', selected_query, 'Name, endpoint, provider, adapter, version, or profile') }}
             </div>
@@ -64,5 +70,7 @@
             </div>
         </form>
     </div>
-    <div id="metrics-source-inventory-content">{% include 'integrations/observability/metrics_source/partials/_inventory_content.html' %}</div>
+    <div id="metrics-source-inventory-content">
+        {% include 'integrations/observability/metrics_source/partials/_inventory_content.html' %}
+    </div>
 </section>

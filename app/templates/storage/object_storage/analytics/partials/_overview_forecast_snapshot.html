@@ -13,11 +13,11 @@
     </header>
     <div class="{{ analysis_surface.metric_grid_classes(4) }}">
         {% set cards = [
-            ('Growth / Day', metrics.forecast_display.growth_per_day, 'Worker-materialized linear baseline', 'trending-up'),
-            ('Projected 7d', metrics.forecast_display.projected_7d, 'Planning projection', 'calendar-days'),
-            ('Projected 30d', metrics.forecast_display.projected_30d, 'Planning projection', 'calendar-range'),
-            ('Capacity ETA', metrics.forecast_display.days_to_capacity, 'Only when positive growth is present', 'timer')
-        ] %}
+                    ('Growth / Day', metrics.forecast_display.growth_per_day, 'Worker-materialized linear baseline', 'trending-up'),
+                    ('Projected 7d', metrics.forecast_display.projected_7d, 'Planning projection', 'calendar-days'),
+                    ('Projected 30d', metrics.forecast_display.projected_30d, 'Planning projection', 'calendar-range'),
+                    ('Capacity ETA', metrics.forecast_display.days_to_capacity, 'Only when positive growth is present', 'timer')
+                ] %}
         {% for label, value, helper, icon in cards %}
             <article class="{{ analysis_surface.metric_cell_classes() }}">
                 <div class="flex items-center gap-2">

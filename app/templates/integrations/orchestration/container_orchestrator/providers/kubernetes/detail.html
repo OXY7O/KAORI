@@ -86,7 +86,9 @@
                      role="tabpanel"
                      aria-labelledby="kubernetes-tab-inventory"
                      x-show="activeTab === 'inventory'"
-                     x-cloak>{% include 'integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_inventory_lifecycle.html' %}</div>
+                     x-cloak>
+                    {% include 'integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_inventory_lifecycle.html' %}
+                </div>
             </div>
         </section>
         {% include 'integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_delete_modal.html' %}

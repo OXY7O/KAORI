@@ -47,20 +47,19 @@ def get_channel(channel_id: int) -> NotificationChannel | None:
 
 
 def create_channel(data: NotificationChannelFormInput, *, user_id: int | None) -> NotificationChannel:
-    channel = NotificationChannel(
-        name=data.name,
-        provider_key=data.provider_key,
-        enabled=data.enabled,
-        credential_payload=_encode_credentials(data.credentials),
-        destination=data.destination,
-        provider_config=dict(data.provider_config),
-        minimum_severity=data.minimum_severity,
-        domains=list(data.domains),
-        event_types=list(data.event_types),
-        test_status='not_tested',
-        created_by_user_id=user_id,
-        updated_by_user_id=user_id,
-    )
+    channel = NotificationChannel()
+    channel.name = data.name
+    channel.provider_key = data.provider_key
+    channel.enabled = data.enabled
+    channel.credential_payload = _encode_credentials(data.credentials)
+    channel.destination = data.destination
+    channel.provider_config = dict(data.provider_config)
+    channel.minimum_severity = data.minimum_severity
+    channel.domains = list(data.domains)
+    channel.event_types = list(data.event_types)
+    channel.test_status = 'not_tested'
+    channel.created_by_user_id = user_id
+    channel.updated_by_user_id = user_id
     db.session.add(channel)
     db.session.commit()
     return channel
@@ -254,23 +253,22 @@ def dispatch_alert_notification(
             delivery.error_message = None
             stats['retried'] += 1
         else:
-            delivery = NotificationDelivery(
-                channel_id=channel.id,
-                event_key=event_key,
-                event_type='alert_intelligence.active_alert',
-                domain=domain,
-                asset_type=asset_type,
-                asset_key=str(asset_key),
-                severity=severity,
-                status='queued',
-                payload_json={
-                    'asset_name': asset_name,
-                    'alert_name': str(alert.get('name') or 'Unknown Alert'),
-                    'source': str(alert.get('source') or '-'),
-                    'target': str(alert.get('target') or '-'),
-                    'recommendation_count': len(recommendations or []),
-                },
-            )
+            delivery = NotificationDelivery()
+            delivery.channel_id = channel.id
+            delivery.event_key = event_key
+            delivery.event_type = 'alert_intelligence.active_alert'
+            delivery.domain = domain
+            delivery.asset_type = asset_type
+            delivery.asset_key = str(asset_key)
+            delivery.severity = severity
+            delivery.status = 'queued'
+            delivery.payload_json = {
+                'asset_name': asset_name,
+                'alert_name': str(alert.get('name') or 'Unknown Alert'),
+                'source': str(alert.get('source') or '-'),
+                'target': str(alert.get('target') or '-'),
+                'recommendation_count': len(recommendations or []),
+            }
             db.session.add(delivery)
             try:
                 db.session.flush()
@@ -347,17 +345,14 @@ def list_event_channel_options(
             and supports_domain
             and supports_severity
         )
+        provider = get_notification_provider(channel.provider_key)
         options.append(
             {
                 'value': str(channel.id),
                 'channel_id': channel.id,
                 'label': channel.name,
                 'provider': _provider_label(channel.provider_key),
-                'provider_icon': (
-                    get_notification_provider(channel.provider_key).icon
-                    if get_notification_provider(channel.provider_key) is not None
-                    else 'send'
-                ),
+                'provider_icon': provider.icon if provider is not None else 'send',
                 'destination': channel.destination or '-',
                 'status': channel.display_status,
                 'tone': _channel_view(channel)['tone'],
@@ -443,17 +438,16 @@ def dispatch_notification_event(*, channel_ids: list[int], event: NotificationEv
             delivery.status = 'queued'
             delivery.error_message = None
         else:
-            delivery = NotificationDelivery(
-                channel_id=channel.id,
-                event_key=event.event_key,
-                event_type=event.event_type,
-                domain=event.domain,
-                asset_type=event.asset_type,
-                asset_key=str(event.asset_key),
-                severity=_normalize_severity(event.severity),
-                status='queued',
-                payload_json=dict(event.payload),
-            )
+            delivery = NotificationDelivery()
+            delivery.channel_id = channel.id
+            delivery.event_key = event.event_key
+            delivery.event_type = event.event_type
+            delivery.domain = event.domain
+            delivery.asset_type = event.asset_type
+            delivery.asset_key = str(event.asset_key)
+            delivery.severity = _normalize_severity(event.severity)
+            delivery.status = 'queued'
+            delivery.payload_json = dict(event.payload)
             db.session.add(delivery)
             try:
                 db.session.flush()

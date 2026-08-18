@@ -278,7 +278,7 @@ def validate_integration_instance(
             ensure_canonical_instance(instance, integration_type=integration_type)
             result_payload['binding_validation_summary'] = _refresh_provider_bindings(
                 integration_type=integration_type,
-                record=instance,
+                instance=instance,
             )
             db.session.commit()
             finalizing_phase = 3
@@ -669,7 +669,7 @@ def refresh_integration_runtime_instance(
         if is_runtime_recovery(previous_health, state.health.status):
             recovery_result = enqueue_recovery_work(
                 integration_type=integration_type,
-                record=instance,
+                instance=instance,
             )
         _update_worker_phase(
             self, current=2, total=3, message='Runtime health evidence was collected; persisting the observation.'

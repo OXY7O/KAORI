@@ -8,25 +8,25 @@
          aria-labelledby="kubernetes-coverage-title">
     {% set coverage_filters_active = selected_coverage_query or selected_coverage_environment or selected_coverage_status %}
     {% set coverage_clear_url = url_for('integrations.kubernetes',
-        tab='coverage',
-        q=selected_query,
-        environment=selected_environment,
-        readiness=selected_readiness,
-        coverage=selected_coverage,
-        page=1,
-        per_page=pagination.per_page,
-        coverage_page=1,
+            tab='coverage',
+            q=selected_query,
+            environment=selected_environment,
+            readiness=selected_readiness,
+            coverage=selected_coverage,
+            page=1,
+            per_page=pagination.per_page,
+            coverage_page=1,
         coverage_per_page=coverage_pagination.per_page) %}
     {% set coverage_clear_action = registry_ui.clear_filters_action(
-        coverage_clear_url,
-        table_ui.action_classes(),
-        hx_get=coverage_clear_url,
-        target='#kubernetes-integration-coverage',
-        indicator='#kubernetes-coverage-loading',
-        push_url='true',
-        swap='outerHTML',
-        marker='kubernetes-coverage'
-    ) if coverage_filters_active else '' %}
+            coverage_clear_url,
+            table_ui.action_classes(),
+            hx_get=coverage_clear_url,
+            target='#kubernetes-integration-coverage',
+            indicator='#kubernetes-coverage-loading',
+            push_url='true',
+            swap='outerHTML',
+            marker='kubernetes-coverage'
+        ) if coverage_filters_active else '' %}
     {{ provider_registry.registry_header("Kubernetes Integration Coverage",
         "Review direct Kubernetes API authority and the independent metrics and alert consumers associated with each cluster.",
         "route",

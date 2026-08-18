@@ -24,7 +24,9 @@
                  hx-get="{{ url_for('analytics.overview_section', section='health-summary') }}?{{ overview_query }}"
                  hx-trigger="load delay:150ms once"
                  hx-swap="innerHTML"
-                 hx-sync="this:replace">{% include "kubernetes/analytics/overview/partials/_section_loading.html" %}</div>
+                 hx-sync="this:replace">
+                {% include "kubernetes/analytics/overview/partials/_section_loading.html" %}
+            </div>
             <section id="analytics-overview-workspace"
                      data-analytics-tabset
                      data-analytics-tabset-id="overview-content"

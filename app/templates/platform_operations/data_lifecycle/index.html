@@ -5,10 +5,10 @@
 {% block title %}Data Lifecycle · KAORI{% endblock %}
 {% block dashboard_content %}
     {% set lifecycle_tabs = [
-        ('policies', 'Retention Policies', 'sliders-horizontal', url_for('platform_operations.data_lifecycle.index', tab='policies', domain=lifecycle.selected_domain)),
-        ('history', 'Archive History', 'history', url_for('platform_operations.data_lifecycle.index', tab='history')),
-        ('storage', 'Archive Storage', 'hard-drive', url_for('platform_operations.data_lifecycle.index', tab='storage'))
-    ] %}
+            ('policies', 'Retention Policies', 'sliders-horizontal', url_for('platform_operations.data_lifecycle.index', tab='policies', domain=lifecycle.selected_domain)),
+            ('history', 'Archive History', 'history', url_for('platform_operations.data_lifecycle.index', tab='history')),
+            ('storage', 'Archive Storage', 'hard-drive', url_for('platform_operations.data_lifecycle.index', tab='storage'))
+        ] %}
     <div class="space-y-6">
         <section class="{{ page_hero.shell_classes() }}">
             <div class="{{ page_hero.layout_classes() }}">
@@ -39,11 +39,11 @@
         <section id="data-lifecycle-workspace-shell"
                  class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
             {{ framed_workspace_tabs.render_navigation(lifecycle_tabs,
-                                                       lifecycle.active_tab,
-                                                       prefix='data-lifecycle',
-                                                       aria_label='Data Lifecycle Workspaces',
-                                                       hx_target='#data-lifecycle-workspace-shell',
-                                                       hx_select='#data-lifecycle-workspace-shell') }}
+                        lifecycle.active_tab,
+                        prefix='data-lifecycle',
+                        aria_label='Data Lifecycle Workspaces',
+                        hx_target='#data-lifecycle-workspace-shell',
+                        hx_select='#data-lifecycle-workspace-shell') }}
             <div class="p-5 lg:p-6">
                 {% if lifecycle.active_tab == 'history' %}
                     {% include "platform_operations/data_lifecycle/partials/_history.html" %}

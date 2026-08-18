@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import socket
 from dataclasses import dataclass
-from typing import Any, NoReturn
+from typing import Any, NoReturn, cast
 from uuid import uuid4
 
 from celery import shared_task
@@ -57,7 +57,7 @@ class ResolverExecutionLease:
 
 def _queue_execution_notification(execution_journal_id: int, event_type: str) -> None:
     try:
-        dispatch_resolver_execution_notification.delay(execution_journal_id, event_type)
+        cast(Any, dispatch_resolver_execution_notification).delay(execution_journal_id, event_type)
     except (RuntimeError, ConnectionError, OSError):
         current_app.logger.exception(
             'Could not enqueue Automation Control execution notification %s for journal %s.',
@@ -68,7 +68,7 @@ def _queue_execution_notification(execution_journal_id: int, event_type: str) ->
 
 def _queue_verification(execution_journal_id: int) -> None:
     try:
-        verify_authorized_resolution.apply_async(
+        cast(Any, verify_authorized_resolution).apply_async(
             kwargs={'execution_journal_id': execution_journal_id},
             countdown=10,
         )

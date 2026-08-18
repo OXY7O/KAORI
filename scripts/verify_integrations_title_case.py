@@ -8,12 +8,7 @@ from html.parser import HTMLParser
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-REVIEWED_TEMPLATE_ROOTS = (
-    ROOT / 'app' / 'templates' / 'integrations',
-    ROOT / 'app' / 'templates' / 'minio',
-    ROOT / 'app' / 'templates' / 'metrics',
-    ROOT / 'app' / 'templates' / 'alertmanager',
-)
+REVIEWED_TEMPLATE_ROOTS = (ROOT / 'app' / 'templates' / 'integrations',)
 CHECKED_TAGS = {'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'th', 'label', 'button'}
 MINOR_WORDS = {
     'a',

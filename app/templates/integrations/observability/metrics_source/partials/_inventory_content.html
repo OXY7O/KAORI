@@ -15,15 +15,17 @@
                                 <i data-lucide="{{ row.provider_icon }}" class="h-4 w-4"></i>
                             </span>
                             <div class="min-w-0">
-                                <p class="truncate text-sm font-semibold text-content-primary" title="{{ row.name }}">{{ row.name }}</p>
+                                <p class="truncate text-sm font-semibold text-content-primary"
+                                   title="{{ row.name }}">{{ row.name }}</p>
                                 <p class="mt-0.5 line-clamp-2 text-xs leading-5 text-content-muted">{{ row.description or 'Reusable metrics connection' }}</p>
                             </div>
                         </div>
                     </td>
                     <td class="{{ table_ui.cell_classes() }}">
-                        <p class="break-words text-sm font-semibold text-content-primary [overflow-wrap:anywhere]" title="{{ row.endpoint }}">{{ row.endpoint }}</p>
+                        <p class="break-words text-sm font-semibold text-content-primary [overflow-wrap:anywhere]"
+                           title="{{ row.endpoint }}">{{ row.endpoint }}</p>
                         <p class="mt-1 text-xs font-semibold text-kaori-primary dark:text-kaori-accent">{{ row.provider_label }}</p>
-                        <p class="mt-0.5 text-xs leading-5 text-content-muted">{{ row.adapter_key|replace('_', ' ')|title }} · {{ row.query_language|upper }}</p>
+                        <p class="mt-0.5 text-xs leading-5 text-content-muted">{{ row.adapter_key|replace('_', ' ') |title }} · {{ row.query_language|upper }}</p>
                     </td>
                     <td class="{{ table_ui.cell_classes() }}">
                         {{ integration_status(row.readiness, display="indicator") }}
@@ -39,7 +41,8 @@
                         <p class="mt-0.5 text-xs leading-5 text-content-muted">Scope binding{{ '' if row.binding_count == 1 else 's' }}</p>
                     </td>
                     <td class="{{ table_ui.cell_classes(action=true) }}">
-                        <a href="{{ url_for('metrics.instance_detail', instance_id=row.instance_id) }}" class="{{ table_ui.action_classes() }}">
+                        <a href="{{ url_for('metrics.instance_detail', instance_id=row.instance_id) }}"
+                           class="{{ table_ui.action_classes() }}">
                             <i data-lucide="settings-2" class="h-4 w-4" aria-hidden="true"></i>
                             Manage
                         </a>

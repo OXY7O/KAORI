@@ -13,11 +13,11 @@
     </header>
     <div class="{{ analysis_surface.metric_grid_classes(4) }}">
         {% set cards = [
-            ('Request Rate', metrics.request_rate_display, 'Current S3 request demand', 'activity'),
-            ('Success Ratio', metrics.success_ratio_display, 'Derived from request and error evidence', 'circle-check-big'),
-            ('Error Ratio', metrics.error_ratio_display, 'Errors relative to request rate', 'circle-alert'),
-            ('Waiting', metrics.waiting_display, 'Queued requests', 'timer')
-        ] %}
+                    ('Request Rate', metrics.request_rate_display, 'Current S3 request demand', 'activity'),
+                    ('Success Ratio', metrics.success_ratio_display, 'Derived from request and error evidence', 'circle-check-big'),
+                    ('Error Ratio', metrics.error_ratio_display, 'Errors relative to request rate', 'circle-alert'),
+                    ('Waiting', metrics.waiting_display, 'Queued requests', 'timer')
+                ] %}
         {% for label, value, helper, icon in cards %}
             <article class="{{ analysis_surface.metric_cell_classes() }}">
                 <div class="flex items-center gap-2">

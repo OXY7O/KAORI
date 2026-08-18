@@ -1,10 +1,5 @@
 {% import "components/content_tabs.html" as content_tabs %}
-{% set capacity_tabs = [
-    ('summary', 'Summary', 'database'),
-    ('trend', 'Usage Trend', 'chart-no-axes-combined'),
-    ('quota', 'Quota & Buckets', 'gauge'),
-    ('evidence', 'Evidence', 'list-checks')
-] %}
+{% set capacity_tabs = [('summary', 'Summary', 'database'), ('trend', 'Usage Trend', 'chart-no-axes-combined'), ('quota', 'Quota & Buckets', 'gauge'), ('evidence', 'Evidence', 'list-checks')] %}
 <section id="object-storage-capacity-workspace"
          data-analytics-tabset
          data-analytics-tabset-id="object-storage-capacity-content"
@@ -20,7 +15,7 @@
                 </div>
             </div>
             <div class="flex flex-wrap items-center gap-2">
-                {{ table_label.metadata_label(system.name|default('Selected System'), 'server', size='compact') }}
+                {{ table_label.metadata_label(system.name|default('Selected System') , 'server', size='compact') }}
                 {{ table_label.metadata_label(selected_time_range|upper ~ ' Window', 'clock-3', size='compact') }}
             </div>
         </div>
@@ -31,17 +26,13 @@
              role="tabpanel"
              aria-labelledby="object-storage-capacity-content-tab-summary"
              data-analytics-tab-panel="summary"
-             class="space-y-4">
-            {% include "storage/object_storage/analytics/partials/_capacity_analysis.html" %}
-        </div>
+             class="space-y-4">{% include "storage/object_storage/analytics/partials/_capacity_analysis.html" %}</div>
         <div id="object-storage-capacity-content-panel-trend"
              role="tabpanel"
              aria-labelledby="object-storage-capacity-content-tab-trend"
              data-analytics-tab-panel="trend"
              hidden
-             class="space-y-4">
-            {% include "storage/object_storage/analytics/partials/_trend.html" %}
-        </div>
+             class="space-y-4">{% include "storage/object_storage/analytics/partials/_trend.html" %}</div>
         <div id="object-storage-capacity-content-panel-quota"
              role="tabpanel"
              aria-labelledby="object-storage-capacity-content-tab-quota"

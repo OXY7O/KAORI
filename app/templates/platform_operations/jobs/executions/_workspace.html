@@ -91,12 +91,12 @@
                 </div>
             </div>
             {{ workspace_tabs.render_navigation(execution_tabs,
-                                                selected_job_tab,
-                                                prefix='execution',
-                                                aria_label='Execution Workspace Sections',
-                                                hx_target='#job-execution-workspace',
-                                                hx_select='#job-execution-workspace',
-                                                hx_indicator='#execution-workspace-loading') }}
+                        selected_job_tab,
+                        prefix='execution',
+                        aria_label='Execution Workspace Sections',
+                        hx_target='#job-execution-workspace',
+                        hx_select='#job-execution-workspace',
+                        hx_indicator='#execution-workspace-loading') }}
             {{ loading_bar.render('execution-workspace-loading', label='Loading Execution Workspace') }}
         </header>
         {% if selected_job_tab == 'registry' %}

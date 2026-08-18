@@ -5,6 +5,7 @@ from typing import Any
 
 from sqlalchemy.orm import selectinload
 
+from app.common.analytics.metrics.contracts import MetricPoint
 from app.common.analytics.params import get_allowed_time_ranges, get_selected_time_range
 from app.models.object_storage import ObjectStorageSystem
 from app.storage.object_storage.analytics.alert_sources import (
@@ -358,7 +359,7 @@ def _add_bucket_metrics(
 def _apply_forecast_result(
     payload: dict[str, Any],
     *,
-    points: list[dict[str, float]],
+    points: list[MetricPoint],
     forecast: dict[str, float | None],
 ) -> None:
     payload['forecast'] = forecast
@@ -415,8 +416,17 @@ def _attach_forecast_materialization(
     context['forecast_materialization'] = state
     payload = snapshot.payload_json if snapshot is not None and isinstance(snapshot.payload_json, dict) else None
     if state['usable'] and payload is not None:
-        points = [point for point in payload.get('points') or [] if isinstance(point, dict)]
-        forecast = payload.get('forecast') if isinstance(payload.get('forecast'), dict) else {}
+        points: list[MetricPoint] = []
+        for point in payload.get('points') or []:
+            if not isinstance(point, dict):
+                continue
+            timestamp = point.get('timestamp')
+            value = point.get('value')
+            if not isinstance(timestamp, (int, float)) or not isinstance(value, (int, float)):
+                continue
+            points.append({'timestamp': float(timestamp), 'value': float(value)})
+        raw_forecast = payload.get('forecast')
+        forecast: dict[str, Any] = dict(raw_forecast) if isinstance(raw_forecast, dict) else {}
         _apply_forecast_result(
             context['metrics'],
             points=points,

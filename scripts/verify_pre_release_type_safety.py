@@ -25,8 +25,18 @@ def _forbid(relative_path: str, needle: str, description: str) -> None:
 def main() -> None:
     _require(
         'app/kubernetes/analytics/utilization/service.py',
+        'from app.integrations.observability.metrics_source.application.consumer import MetricsConsumer',
+        'canonical MetricsConsumer boundary',
+    )
+    _require(
+        'app/integrations/observability/metrics_source/application/consumer.py',
+        'MetricsSourceError,',
+        'consumer-owned MetricsSourceError boundary',
+    )
+    _forbid(
+        'app/kubernetes/analytics/utilization/service.py',
         'from app.integrations.observability.metrics_source.exceptions import MetricsSourceError',
-        'canonical MetricsSourceError import',
+        'Utilization service bypasses the consumer-owned MetricsSourceError boundary',
     )
     _require(
         'app/kubernetes/operations/secrets/reveal_service.py',
@@ -110,6 +120,31 @@ def main() -> None:
         'app/reports/export/xlsx/style.py',
         'sheet.page_setup = PrintPageSetup(',
         'explicit OpenPyXL page setup construction',
+    )
+    _forbid(
+        'app/storage/object_storage/analytics/alert_sources.py',
+        'provider_key_key',
+        'Object Storage alert source contains the retired provider-key typo',
+    )
+    _require(
+        'app/integrations/validation/tasks.py',
+        'instance=instance,',
+        'integration validation uses the canonical instance keyword boundary',
+    )
+    _require(
+        'app/integrations/observability/metrics_source/adapter.py',
+        'def refresh(self, instance: MetricsSource)',
+        'Metrics Source runtime adapter refresh contract',
+    )
+    _require(
+        'app/access/identity_providers/service.py',
+        'configuration: IdentityProviderConfiguration',
+        'typed Identity Provider configuration boundary',
+    )
+    _forbid(
+        'app/access/rbac/policy.py',
+        'class _RoleLike(Protocol)',
+        'RBAC policy still exposes mutable ORM-incompatible role protocol fields',
     )
 
     print('PASS — KAORI Type Safety')

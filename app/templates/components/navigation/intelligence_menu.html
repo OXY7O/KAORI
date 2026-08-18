@@ -1,7 +1,7 @@
 {% set endpoint = request.endpoint or '' %}
 {% set intelligence_active = endpoint.startswith('intelligence.')
     or endpoint.startswith('alert_intelligence.')
-    or endpoint.startswith('automation_control.') %}
+or endpoint.startswith('automation_control.') %}
 <details class="sidebar-menu space-y-1"
          {% if intelligence_active %}open{% endif %}>
     <summary class="{{ 'sidebar-parent-active' if intelligence_active else 'sidebar-item-idle' }} sidebar-parent-link group flex cursor-pointer select-none items-center justify-between min-h-11 rounded-lg px-2.5 py-2 text-base font-semibold leading-6 transition [.sidebar-collapsed_&]:justify-center [.sidebar-collapsed_&]:px-2"
@@ -18,13 +18,7 @@
            class="sidebar-expanded-only sidebar-menu-chevron h-4 w-4 {{ 'text-kaori-accent' if intelligence_active else 'text-white/[0.35]' }}"></i>
     </summary>
     <div class="sidebar-expanded-only sidebar-submenu ml-6 mt-1 space-y-1 border-l border-white/10 pl-3">
-        {% set intelligence_links = [
-            ('intelligence.index', 'layout-dashboard', 'Overview'),
-            ('intelligence.recommendations', 'sparkles', 'Recommendations'),
-            ('alert_intelligence.index', 'triangle-alert', 'Alert Intelligence'),
-            ('intelligence.catalog', 'list-checks', 'Rule Catalog'),
-            ('automation_control.index', 'workflow', 'Automation Control')
-        ] %}
+        {% set intelligence_links = [('intelligence.index', 'layout-dashboard', 'Overview'), ('intelligence.recommendations', 'sparkles', 'Recommendations'), ('alert_intelligence.index', 'triangle-alert', 'Alert Intelligence'), ('intelligence.catalog', 'list-checks', 'Rule Catalog'), ('automation_control.index', 'workflow', 'Automation Control')] %}
         {% for target_endpoint, icon, label in intelligence_links %}
             {% set active = endpoint == target_endpoint %}
             <a href="{{ url_for(target_endpoint) }}"

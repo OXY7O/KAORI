@@ -48,8 +48,8 @@
     {% set empty_state_tone = 'warning' if tone == 'warning' else 'unknown' %}
     {% set empty_state_title = title %}
     {% set empty_state_description = text %}
-    {% set empty_state_variant = 'panel' %}
-    {% set empty_state_min_height = 'min-h-[160px]' %}
+    {% set empty_state_variant = "panel" %}
+    {% set empty_state_min_height = "min-h-[160px]" %}
     {% include 'components/states/_empty_state.html' %}
 {%- endmacro %}
 {% macro permission_label(allowed, protected=false) -%}

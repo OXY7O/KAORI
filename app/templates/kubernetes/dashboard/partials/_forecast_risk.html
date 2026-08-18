@@ -19,13 +19,13 @@
         {% set blocked_state_tone = "warning" %}
         {% include 'components/states/_blocked_state.html' %}
     {% elif dashboard.forecast_snapshot.source_status != 'Available' %}
-        {% set blocked_state_icon = 'chart-spline' %}
-        {% set blocked_state_label = 'Source Unavailable' %}
-        {% set blocked_state_title = 'Forecast Data Not Available' %}
+        {% set blocked_state_icon = "chart-spline" %}
+        {% set blocked_state_label = "Source Unavailable" %}
+        {% set blocked_state_title = "Forecast Data Not Available" %}
         {% set blocked_state_description = dashboard.forecast_snapshot.insight %}
-        {% set blocked_state_tone = 'warning' %}
-        {% set blocked_state_variant = 'table' %}
-        {% set blocked_state_min_height = 'min-h-[180px]' %}
+        {% set blocked_state_tone = "warning" %}
+        {% set blocked_state_variant = "table" %}
+        {% set blocked_state_min_height = "min-h-[180px]" %}
         {% include 'components/states/_blocked_state.html' %}
     {% else %}
         {% set overall_tone = 'critical' if dashboard.forecast_snapshot.critical_count > 0 else ('warning' if dashboard.forecast_snapshot.at_risk_count > 0 else 'normal') %}

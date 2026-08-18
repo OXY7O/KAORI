@@ -39,16 +39,15 @@
             {% if namespace_filters.query or namespace_filters.policy != 'all' %}
                 {% set namespace_clear_href = url_for('platform_operations.kubernetes.index', tab='secret-reveal', cluster_id=selected_cluster.id, page=1, per_page=namespace_pagination.per_page) %}
                 {% set namespace_clear_url = url_for('platform_operations.kubernetes.secret_reveal.workspace', cluster_id=selected_cluster.id, page=1, per_page=namespace_pagination.per_page) %}
-                {{ registry_ui.clear_filters_action(
-                    namespace_clear_href,
-                    table_ui.action_classes(),
-                    hx_get=namespace_clear_url,
-                    target='#secret-reveal-namespace-section',
-                    indicator='#secret-reveal-namespace-loading',
-                    select='#secret-reveal-namespace-section',
-                    push_url='true',
-                    swap='outerHTML',
-                    marker='secret-reveal-namespaces'
+                {{ registry_ui.clear_filters_action(namespace_clear_href,
+                                table_ui.action_classes() ,
+                hx_get=namespace_clear_url,
+                target='#secret-reveal-namespace-section',
+                indicator='#secret-reveal-namespace-loading',
+                select='#secret-reveal-namespace-section',
+                push_url='true',
+                swap='outerHTML',
+                marker='secret-reveal-namespaces'
                 ) }}
             {% endif %}
             <a href="{{ url_for('platform_operations.kubernetes.index', tab='secret-reveal', cluster_id=selected_cluster.id, namespace_q=namespace_filters.query, namespace_policy=namespace_filters.policy, page=1, per_page=namespace_pagination.per_page) }}"

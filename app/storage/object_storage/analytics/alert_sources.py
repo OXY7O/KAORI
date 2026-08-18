@@ -316,7 +316,7 @@ def _load_metrics_source(system: ObjectStorageSystem, *, selected_source: str) -
             instance_name=None,
         )
 
-    provider = provider_definition(consumer.config.provider_key_key)
+    provider = provider_definition(consumer.config.provider_key)
     rows = _deduplicate(_metrics_source_rows(payload, source_label=provider.label))
     return _source_view(
         selected_source=selected_source,
@@ -378,7 +378,8 @@ def _alertmanager_rows(items: list[Any]) -> list[dict[str, Any]]:
     for item in items:
         if not isinstance(item, dict):
             continue
-        labels = item.get('labels') if isinstance(item.get('labels'), dict) else {}
+        raw_labels = item.get('labels')
+        labels: dict[str, Any] = dict(raw_labels) if isinstance(raw_labels, dict) else {}
         rows.append(
             {
                 'name': str(item.get('alert_name') or item.get('alertname') or 'Unknown Alert'),
@@ -408,7 +409,8 @@ def _metrics_source_rows(payload: dict[str, Any], *, source_label: str) -> list[
     for item in result:
         if not isinstance(item, dict):
             continue
-        labels = item.get('metric') if isinstance(item.get('metric'), dict) else {}
+        raw_labels = item.get('metric')
+        labels: dict[str, Any] = dict(raw_labels) if isinstance(raw_labels, dict) else {}
         rows.append(
             {
                 'name': str(labels.get('alertname') or 'Unknown Alert'),
@@ -432,7 +434,8 @@ def _metrics_source_rows(payload: dict[str, Any], *, source_label: str) -> list[
 def _deduplicate(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     selected: dict[tuple[Any, ...], dict[str, Any]] = {}
     for row in rows:
-        labels = row.get('labels') if isinstance(row.get('labels'), dict) else {}
+        raw_labels = row.get('labels')
+        labels: dict[str, Any] = dict(raw_labels) if isinstance(raw_labels, dict) else {}
         fingerprint = str(row.get('fingerprint') or '').strip()
         identity: tuple[Any, ...]
         if fingerprint:

@@ -1,10 +1,5 @@
 {% import "components/content_tabs.html" as content_tabs %}
-{% set alert_tabs = [
-    ('overview', 'Alert Overview', 'radar'),
-    ('records', 'Alert Records', 'bell-ring'),
-    ('signals', 'Metric Signals', 'list-tree'),
-    ('evidence', 'Evidence', 'list-checks')
-] %}
+{% set alert_tabs = [('overview', 'Alert Overview', 'radar'), ('records', 'Alert Records', 'bell-ring'), ('signals', 'Metric Signals', 'list-tree'), ('evidence', 'Evidence', 'list-checks')] %}
 <section id="object-storage-alerts-workspace"
          data-analytics-tabset
          data-analytics-tabset-id="object-storage-alerts-content"
@@ -20,7 +15,7 @@
                 </div>
             </div>
             <div class="flex flex-wrap items-center gap-2">
-                {{ table_label.metadata_label(system.name|default('Selected System'), 'server', size='compact') }}
+                {{ table_label.metadata_label(system.name|default('Selected System') , 'server', size='compact') }}
                 {{ table_label.metadata_label(alert_source.resolved_label ~ ' Source', 'radio-tower', size='compact') }}
             </div>
         </div>
@@ -31,17 +26,13 @@
              role="tabpanel"
              aria-labelledby="object-storage-alerts-content-tab-overview"
              data-analytics-tab-panel="overview"
-             class="space-y-4">
-            {% include "storage/object_storage/analytics/partials/_alerts_summary.html" %}
-        </div>
+             class="space-y-4">{% include "storage/object_storage/analytics/partials/_alerts_summary.html" %}</div>
         <div id="object-storage-alerts-content-panel-records"
              role="tabpanel"
              aria-labelledby="object-storage-alerts-content-tab-records"
              data-analytics-tab-panel="records"
              hidden
-             class="space-y-4">
-            {% include "storage/object_storage/analytics/partials/_alert_records.html" %}
-        </div>
+             class="space-y-4">{% include "storage/object_storage/analytics/partials/_alert_records.html" %}</div>
         <div id="object-storage-alerts-content-panel-signals"
              role="tabpanel"
              aria-labelledby="object-storage-alerts-content-tab-signals"

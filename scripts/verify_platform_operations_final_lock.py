@@ -87,6 +87,11 @@ def read(relative: str) -> str:
     return (ROOT / relative).read_text(encoding='utf-8')
 
 
+def has_jinja_assignment(source: str, variable: str, value: str) -> bool:
+    pattern = rf'{{%\s*set\s+{re.escape(variable)}\s*=\s*(["\']){re.escape(value)}\1\s*%}}'
+    return re.search(pattern, source) is not None
+
+
 def template_files() -> list[Path]:
     result: list[Path] = []
     for root in TEMPLATE_ROOTS:
@@ -337,9 +342,8 @@ def main() -> int:
         errors.append('Active Work must share OOB summary refresh and pause polling while the browser is hidden')
     if '{% if include_status_oob|default(false) %}' not in active_jobs:
         errors.append('Active Work OOB summary fragments must be response-only and never leak into the initial page')
-    if (
-        'components/states/_empty_state.html' not in active_jobs
-        or "empty_state_label = 'Queue Clear'" not in active_jobs
+    if 'components/states/_empty_state.html' not in active_jobs or not has_jinja_assignment(
+        active_jobs, 'empty_state_label', 'Queue Clear'
     ):
         errors.append('Active Work healthy zero state must use the canonical KAORI empty-state component')
     status_poller = read('app/templates/platform_operations/jobs/executions/partials/_status_poller.html')
@@ -465,10 +469,10 @@ def main() -> int:
             errors.append(f'Namespace Policies proportional column contract missing: {width}')
     if 'data-kaori-auto-submit' not in namespace_table:
         errors.append('Namespace Policies page-size control must retain shared auto-submit ownership')
-    if "empty_state_label = 'No Results'" not in namespace_table:
+    if not has_jinja_assignment(namespace_table, 'empty_state_label', 'No Results'):
         errors.append('Namespace Policies filtered zero state must use canonical No Results semantics')
     if (
-        "blocked_state_variant = 'table'" not in namespace_table
+        not has_jinja_assignment(namespace_table, 'blocked_state_variant', 'table')
         or 'components/states/_blocked_state.html' not in namespace_table
     ):
         errors.append('Namespace Policies unavailable live source must use the canonical table blocker')
@@ -551,7 +555,7 @@ def main() -> int:
     if '<aside class="overflow-hidden rounded-2xl border border-kaori-primary bg-kaori-primary' in cluster_workspace:
         errors.append('Secret Reveal Kubernetes Boundary must not return to a solid Violet surface')
     if (
-        "empty_state_label = 'Setup Required'" not in cluster_workspace
+        not has_jinja_assignment(cluster_workspace, 'empty_state_label', 'Setup Required')
         or 'components/states/_empty_state.html' not in cluster_workspace
     ):
         errors.append('Secret Reveal no-cluster state must use the canonical KAORI setup empty state')

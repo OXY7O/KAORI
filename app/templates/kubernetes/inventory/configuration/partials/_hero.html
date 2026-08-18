@@ -27,18 +27,18 @@
             </aside>
         {% else %}
             {{ page_hero.context_card('Protected Metadata Boundary',
-                            'Configuration Boundary',
-                            'Key Names Only',
-                            'Protected',
-                            'normal',
-                            [
-                            ('key-round', 'Indexed Key Names', inventory.total_key_names, 'Values excluded') ,
-                    ('shield-check', 'Persisted Values', 'None', 'Never exported')
-                    ],
-                    'Manage Clusters',
-                    url_for('integrations.kubernetes'),
-                    'server-cog'
-                    ) }}
+                        'Configuration Boundary',
+                        'Key Names Only',
+                        'Protected',
+                        'normal',
+                        [
+                        ('key-round', 'Indexed Key Names', inventory.total_key_names, 'Values excluded') ,
+            ('shield-check', 'Persisted Values', 'None', 'Never exported')
+            ],
+            'Manage Clusters',
+            url_for('integrations.kubernetes'),
+            'server-cog'
+            ) }}
         {% endif %}
     </div>
 </section>

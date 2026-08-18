@@ -58,17 +58,23 @@
                      role="tabpanel"
                      aria-labelledby="minio-tab-validation"
                      x-show="activeTab === 'validation'"
-                     x-cloak>{% include "integrations/storage/object_storage/providers/minio/partials/_detail_validation.html" %}</div>
+                     x-cloak>
+                    {% include "integrations/storage/object_storage/providers/minio/partials/_detail_validation.html" %}
+                </div>
                 <div id="minio-panel-runtime"
                      role="tabpanel"
                      aria-labelledby="minio-tab-runtime"
                      x-show="activeTab === 'runtime'"
-                     x-cloak>{% include "integrations/storage/object_storage/providers/minio/partials/_detail_runtime.html" %}</div>
+                     x-cloak>
+                    {% include "integrations/storage/object_storage/providers/minio/partials/_detail_runtime.html" %}
+                </div>
                 <div id="minio-panel-scope"
                      role="tabpanel"
                      aria-labelledby="minio-tab-scope"
                      x-show="activeTab === 'scope'"
-                     x-cloak>{% include "integrations/storage/object_storage/providers/minio/partials/_detail_scope.html" %}</div>
+                     x-cloak>
+                    {% include "integrations/storage/object_storage/providers/minio/partials/_detail_scope.html" %}
+                </div>
             </div>
         </section>
         {% include "integrations/storage/object_storage/providers/minio/partials/_delete_modal.html" %}

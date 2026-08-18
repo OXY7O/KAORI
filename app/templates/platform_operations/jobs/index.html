@@ -5,9 +5,9 @@
 {% block dashboard_content %}
     {% set operational_attention = job_stats.attention + configuration_stats.attention %}
     {% set top_tabs = [
-        ('executions', 'Executions', 'list-checks', url_for('jobs.executions')),
-        ('configuration', 'Job Configuration', 'sliders-horizontal', url_for('jobs.configuration'))
-    ] %}
+            ('executions', 'Executions', 'list-checks', url_for('jobs.executions')),
+            ('configuration', 'Job Configuration', 'sliders-horizontal', url_for('jobs.configuration'))
+        ] %}
     <div class="space-y-6">
         <section class="{{ page_hero.shell_classes() }}">
             <div class="{{ page_hero.layout_classes() }}">
@@ -48,9 +48,9 @@
         </section>
         <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
             {{ framed_workspace_tabs.render_navigation(top_tabs,
-                                                       active_jobs_section,
-                                                       prefix='jobs-platform',
-                                                       aria_label='Jobs and Executions Workspaces') }}
+                        active_jobs_section,
+                        prefix='jobs-platform',
+                        aria_label='Jobs and Executions Workspaces') }}
             <div class="p-5 lg:p-6">
                 {% if active_jobs_section == 'configuration' %}
                     {% include "platform_operations/jobs/configuration/_workspace.html" %}

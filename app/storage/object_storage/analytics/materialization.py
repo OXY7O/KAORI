@@ -92,11 +92,10 @@ def mark_forecast_pending(
 ) -> ObjectStorageForecastSnapshot:
     snapshot = get_forecast_snapshot(system_id=system_id, history_window=history_window)
     if snapshot is None:
-        snapshot = ObjectStorageForecastSnapshot(
-            object_storage_system_id=str(system_id),
-            history_window=history_window,
-            method=FORECAST_METHOD,
-        )
+        snapshot = ObjectStorageForecastSnapshot()
+        snapshot.object_storage_system_id = str(system_id)
+        snapshot.history_window = history_window
+        snapshot.method = FORECAST_METHOD
         db.session.add(snapshot)
     snapshot.status = 'pending'
     snapshot.last_attempt_at = datetime.now(UTC)

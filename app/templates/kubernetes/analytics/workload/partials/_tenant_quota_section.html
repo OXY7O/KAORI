@@ -318,13 +318,13 @@
                                             </article>
                                         {% else %}
                                             <div class="lg:col-span-2">
-                                                {% set empty_state_icon = 'scale' %}
-                                                {% set empty_state_label = 'Sync Required' %}
-                                                {% set empty_state_tone = 'warning' %}
-                                                {% set empty_state_title = 'No ResourceQuota Object Available' %}
-                                                {% set empty_state_description = 'This namespace has active demand but no committed ResourceQuota object evidence.' %}
-                                                {% set empty_state_variant = 'panel' %}
-                                                {% set empty_state_min_height = 'min-h-[150px]' %}
+                                                {% set empty_state_icon = "scale" %}
+                                                {% set empty_state_label = "Sync Required" %}
+                                                {% set empty_state_tone = "warning" %}
+                                                {% set empty_state_title = "No ResourceQuota Object Available" %}
+                                                {% set empty_state_description = "This namespace has active demand but no committed ResourceQuota object evidence." %}
+                                                {% set empty_state_variant = "panel" %}
+                                                {% set empty_state_min_height = "min-h-[150px]" %}
                                                 {% include 'components/states/_empty_state.html' %}
                                             </div>
                                         {% endfor %}

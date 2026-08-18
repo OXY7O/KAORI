@@ -9,22 +9,22 @@
     {% set blocked_state_description = dependency_blocker.description %}
     {% set blocked_step = dependency_blocker.stage|int %}
     {% set analytics_steps = dependency_steps|default([
-        {
-            "label": "Kubernetes",
-            "icon": "server-cog",
-            "description": "Cluster access and canonical binding"
-        },
-        {
-            "label": "Metrics Source",
-            "icon": "activity",
-            "description": "Metrics source and analytics capability"
-        },
-        {
-            "label": "Alertmanager",
-            "icon": "bell-ring",
-            "description": "Alert source and scoped signal access"
-        }
-    ]) %}
+            {
+                "label": "Kubernetes",
+                "icon": "server-cog",
+                "description": "Cluster access and canonical binding"
+            },
+            {
+                "label": "Metrics Source",
+                "icon": "activity",
+                "description": "Metrics source and analytics capability"
+            },
+            {
+                "label": "Alertmanager",
+                "icon": "bell-ring",
+                "description": "Alert source and scoped signal access"
+            }
+        ]) %}
     {% set dependency_route_summary = dependency_route_summary|default('Kubernetes → Metrics Source → Alertmanager') %}
     {% set dependency_step_count = analytics_steps|length %}
     {% set dependency_grid_classes = dependency_grid_classes|default('lg:grid-cols-3') %}

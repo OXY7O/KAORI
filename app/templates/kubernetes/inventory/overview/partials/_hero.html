@@ -29,18 +29,18 @@
             </aside>
         {% else %}
             {{ page_hero.context_card('Fleet Inventory Posture',
-                            'Inventory Posture',
-                            'Fleet Posture',
-                            overview.posture.status,
-                            overview.posture.tone,
-                            [
-                            ('server-cog', 'Connected', overview.health.connected_clusters ~ '/' ~ overview.total_clusters, 'Ready integrations') ,
-                    ('scan-search', 'Active Signals', overview.active_signal_count, 'Current exceptions')
-                    ],
-                    'Manage Clusters',
-                    url_for('integrations.kubernetes'),
-                    action_icon='server-cog'
-                    ) }}
+                        'Inventory Posture',
+                        'Fleet Posture',
+                        overview.posture.status,
+                        overview.posture.tone,
+                        [
+                        ('server-cog', 'Connected', overview.health.connected_clusters ~ '/' ~ overview.total_clusters, 'Ready integrations') ,
+            ('scan-search', 'Active Signals', overview.active_signal_count, 'Current exceptions')
+            ],
+            'Manage Clusters',
+            url_for('integrations.kubernetes'),
+            action_icon='server-cog'
+            ) }}
         {% endif %}
     </div>
 </section>

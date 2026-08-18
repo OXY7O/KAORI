@@ -20,7 +20,8 @@ def _blocker_detail(context: dict[str, Any]) -> str:
 
 
 def _source_status(context: dict[str, Any]) -> dict[str, Any]:
-    source = context.get('metrics_source') if isinstance(context.get('metrics_source'), dict) else {}
+    raw_source = context.get('metrics_source')
+    source: dict[str, Any] = dict(raw_source) if isinstance(raw_source, dict) else {}
     blocker_detail = _blocker_detail(context)
     label = str(source.get('label') or ('Limited' if blocker_detail else 'Ready'))
     return {

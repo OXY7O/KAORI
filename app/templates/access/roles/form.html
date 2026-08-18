@@ -233,7 +233,14 @@
                                 <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"><i data-lucide="grid-2x2-check" class="h-5 w-5"></i></span>
                                 <div class="min-w-0">
                                     <h2 class="text-base font-bold text-content-primary">Permission Matrix</h2>
-                                    <p class="mt-0.5 text-sm leading-5 text-content-muted">Review {{ selected_count }} mapped permissions across {{ selected_module_ns.count }} modules. {% if delegation_limited and not read_only %}Only permissions inside your effective delegation boundary can be selected.{% else %}Expand only the modules you need.{% endif %}</p>
+                                    <p class="mt-0.5 text-sm leading-5 text-content-muted">
+                                        Review {{ selected_count }} mapped permissions across {{ selected_module_ns.count }} modules.
+                                        {% if delegation_limited and not read_only %}
+                                            Only permissions inside your effective delegation boundary can be selected.
+                                        {% else %}
+                                            Expand only the modules you need.
+                                        {% endif %}
+                                    </p>
                                 </div>
                             </div>
                             {{ table_label.metadata_label('RBAC Scope', icon='shield-check') }}

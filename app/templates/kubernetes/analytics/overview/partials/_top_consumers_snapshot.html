@@ -97,13 +97,13 @@
                         </ol>
                     {% else %}
                         <div class="m-3 sm:m-4">
-                            {% set empty_state_icon = 'users' %}
-                            {% set empty_state_label = 'Sync Required' %}
-                            {% set empty_state_tone = 'warning' %}
-                            {% set empty_state_title = 'No Consumer Data Available' %}
-                            {% set empty_state_description = 'Rankings appear after utilization metrics are committed.' %}
-                            {% set empty_state_variant = 'panel' %}
-                            {% set empty_state_min_height = 'min-h-[150px]' %}
+                            {% set empty_state_icon = "users" %}
+                            {% set empty_state_label = "Sync Required" %}
+                            {% set empty_state_tone = "warning" %}
+                            {% set empty_state_title = "No Consumer Data Available" %}
+                            {% set empty_state_description = "Rankings appear after utilization metrics are committed." %}
+                            {% set empty_state_variant = "panel" %}
+                            {% set empty_state_min_height = "min-h-[150px]" %}
                             {% include 'components/states/_empty_state.html' %}
                         </div>
                     {% endif %}

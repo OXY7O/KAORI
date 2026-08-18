@@ -123,7 +123,9 @@ def build_instance_context(
     binding_per_page: int = 5,
 ) -> dict[str, Any]:
     bindings = bindings_for_instance(instance)
-    consumer_asset_groups = build_consumer_asset_groups(get_binding_validation_profile)
+    consumer_asset_groups = build_consumer_asset_groups(
+        lambda asset_type: get_binding_validation_profile(instance.adapter_key, asset_type)
+    )
     available_capabilities: set[str] = {
         str(item) for item in ((instance.capabilities or {}).get('available') or ()) if item
     }
@@ -226,7 +228,7 @@ def _capability_row(item: dict[str, Any]) -> dict[str, Any]:
     technical_checks: list[dict[str, Any]] = [
         check for check in (item.get('technical_checks') or ()) if isinstance(check, dict)
     ]
-    validation_query = item.get('validation_query') or (definition.validation_query if definition else None)
+    validation_query = item.get('validation_query')
     expected_signals = list(item.get('expected_signals') or (definition.expected_signals if definition else ()))
     required_by = list(item.get('required_by') or (definition.required_by if definition else ()))
     source_owner = str(

@@ -27,23 +27,19 @@
             <tbody class="{{ table_ui.body_classes() }}">
                 {% for row in payload.alerts %}
                     <tr class="{{ table_ui.row_classes() }}">
+                        <td class="{{ table_ui.cell_classes() }}">{{ table_ui.title_cell(row.name, row.summary, 'triangle-alert') }}</td>
                         <td class="{{ table_ui.cell_classes() }}">
-                            {{ table_ui.title_cell(row.name, row.summary, 'triangle-alert') }}
-                        </td>
-                        <td class="{{ table_ui.cell_classes() }}">
-                            {{ table_label.status_label(
-                                row.severity|title,
-                                'critical' if row.severity == 'critical'
-                                else ('warning' if row.severity == 'warning' else 'info'),
-                                size='compact'
+                            {{ table_label.status_label(row.severity|title,
+                                                        'critical' if row.severity == 'critical'
+                                                        else ('warning' if row.severity == 'warning' else 'info') ,
+                            size='compact'
                             ) }}
                         </td>
                         <td class="{{ table_ui.cell_classes() }}">
-                            {{ table_label.status_label(
-                                row.state|title,
-                                'critical' if row.state == 'firing'
-                                else ('warning' if row.state == 'pending' else 'info'),
-                                size='compact'
+                            {{ table_label.status_label(row.state|title,
+                                                        'critical' if row.state == 'firing'
+                                                        else ('warning' if row.state == 'pending' else 'info') ,
+                            size='compact'
                             ) }}
                         </td>
                         <td class="{{ table_ui.cell_classes() }}">{{ row.target }}</td>
@@ -62,11 +58,11 @@
                 {% else %}
                     <tr>
                         <td colspan="7" class="p-0">
-                            {% set empty_state_icon = 'search-x' %}
-                            {% set empty_state_label = 'No Results' %}
-                            {% set empty_state_title = 'No Alert Records Match the Current Filters' %}
-                            {% set empty_state_description = 'Adjust the Intelligence scope, source, severity, state, or search filters.' %}
-                            {% set empty_state_min_height = 'min-h-[160px]' %}
+                            {% set empty_state_icon = "search-x" %}
+                            {% set empty_state_label = "No Results" %}
+                            {% set empty_state_title = "No Alert Records Match the Current Filters" %}
+                            {% set empty_state_description = "Adjust the Intelligence scope, source, severity, state, or search filters." %}
+                            {% set empty_state_min_height = "min-h-[160px]" %}
                             {% include 'components/states/_empty_state.html' %}
                         </td>
                     </tr>
@@ -74,8 +70,7 @@
             </tbody>
         </table>
     </div>
-    {{ record_pagination.render(
-        payload.pagination,
+    {{ record_pagination.render(payload.pagination,
         'page',
         'per_page',
         'alert-intelligence-records',
@@ -85,6 +80,5 @@
         'alert_intelligence.index',
         pagination_query,
         'Alerts',
-        embedded=true
-    ) }}
+        embedded=true) }}
 </div>

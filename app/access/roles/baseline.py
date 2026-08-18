@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import TypedDict
 
 from app.access.rbac.defaults import DEFAULT_ROLE_DEFINITIONS, DEFAULT_ROLE_PERMISSIONS
 from app.access.rbac.policy import role_is_protected_default
@@ -14,6 +15,14 @@ class RoleBaselineState:
     tone: str
     icon: str
     detail: str
+
+
+class RoleBaselineSnapshot(TypedDict):
+    states: dict[int, RoleBaselineState]
+    missing_defaults: list[str]
+    drift_count: int
+    canonical_count: int
+    unexpected_system_count: int
 
 
 def _canonical_state(role: Role) -> RoleBaselineState:
@@ -72,7 +81,7 @@ def role_baseline_state(role: Role) -> RoleBaselineState:
     )
 
 
-def role_baseline_snapshot(roles: list[Role]) -> dict[str, object]:
+def role_baseline_snapshot(roles: list[Role]) -> RoleBaselineSnapshot:
     states = {role.id: role_baseline_state(role) for role in roles}
     roles_by_name = {role.name: role for role in roles}
     missing_defaults = sorted(set(DEFAULT_ROLE_DEFINITIONS) - set(roles_by_name))

@@ -17,14 +17,13 @@
             {{ table_label.status_label(metrics.capacity_posture.status, metrics.capacity_posture.tone) }}
         </div>
     </header>
-
     <div class="{{ analysis_surface.metric_grid_classes(4) }}">
         {% set cards = [
-            ('Usable Capacity', metrics.capacity_total_display, 'Physical capacity available to this system', 'hard-drive'),
-            ('Current Usage', metrics.usage_total_display, 'Operational stored-data usage', 'database'),
-            ('Remaining Headroom', metrics.capacity_free_display, metrics.capacity_usage.headroom_source, 'circle-gauge'),
-            ('Stored Objects', metrics.object_count_display, 'Current object population', 'boxes')
-        ] %}
+                    ('Usable Capacity', metrics.capacity_total_display, 'Physical capacity available to this system', 'hard-drive'),
+                    ('Current Usage', metrics.usage_total_display, 'Operational stored-data usage', 'database'),
+                    ('Remaining Headroom', metrics.capacity_free_display, metrics.capacity_usage.headroom_source, 'circle-gauge'),
+                    ('Stored Objects', metrics.object_count_display, 'Current object population', 'boxes')
+                ] %}
         {% for label, value, helper, icon in cards %}
             <article class="{{ analysis_surface.metric_cell_classes() }}">
                 <div class="flex items-center gap-2">
@@ -38,7 +37,6 @@
             </article>
         {% endfor %}
     </div>
-
     <div class="grid gap-px border-t border-outline-subtle bg-outline-subtle lg:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.65fr)]">
         <article class="bg-surface-card p-5 sm:p-6">
             <div class="flex items-start justify-between gap-3">
@@ -61,7 +59,6 @@
             {% endif %}
             <p class="mt-4 text-xs leading-5 text-content-secondary">{{ metrics.capacity_posture.detail }}</p>
         </article>
-
         <article class="bg-surface-card p-5 sm:p-6">
             <div class="flex items-start justify-between gap-3">
                 <div>
@@ -73,19 +70,27 @@
             <dl class="mt-4 grid grid-cols-2 gap-4 border-t border-outline-subtle pt-4 text-xs">
                 <div>
                     <dt class="text-content-muted">Growth / Day</dt>
-                    <dd class="mt-1 font-semibold tabular-nums text-content-primary">{{ metrics.capacity_usage.growth_per_day_display }}</dd>
+                    <dd class="mt-1 font-semibold tabular-nums text-content-primary">
+                        {{ metrics.capacity_usage.growth_per_day_display }}
+                    </dd>
                 </div>
                 <div>
                     <dt class="text-content-muted">Window Change</dt>
-                    <dd class="mt-1 font-semibold tabular-nums text-content-primary">{{ metrics.capacity_usage.window_delta_display }} · {{ metrics.capacity_usage.window_delta_percent_display }}</dd>
+                    <dd class="mt-1 font-semibold tabular-nums text-content-primary">
+                        {{ metrics.capacity_usage.window_delta_display }} · {{ metrics.capacity_usage.window_delta_percent_display }}
+                    </dd>
                 </div>
                 <div>
                     <dt class="text-content-muted">Daily Capacity Change</dt>
-                    <dd class="mt-1 font-semibold tabular-nums text-content-primary">{{ metrics.capacity_usage.growth_capacity_percent_display }}</dd>
+                    <dd class="mt-1 font-semibold tabular-nums text-content-primary">
+                        {{ metrics.capacity_usage.growth_capacity_percent_display }}
+                    </dd>
                 </div>
                 <div>
                     <dt class="text-content-muted">Samples</dt>
-                    <dd class="mt-1 font-semibold tabular-nums text-content-primary">{{ metrics.capacity_usage.trend_sample_count }}</dd>
+                    <dd class="mt-1 font-semibold tabular-nums text-content-primary">
+                        {{ metrics.capacity_usage.trend_sample_count }}
+                    </dd>
                 </div>
             </dl>
             <p class="mt-4 text-xs leading-5 text-content-secondary">
@@ -97,7 +102,6 @@
             </p>
         </article>
     </div>
-
     <div class="{{ analysis_surface.interpretation_grid_classes() }}">
         {{ analysis_surface.interpretation_callout('Capacity Reading', metrics.capacity_posture.headline, metrics.capacity_posture.detail, icon='shield-check', role='status', tone=metrics.capacity_posture.tone) }}
         {{ analysis_surface.interpretation_callout('Measurement Boundary', 'Physical headroom and bucket quota are separate controls', 'Usable capacity describes physical operating headroom. Bucket quotas describe per-bucket governance limits and must not be interpreted as system free capacity.', icon='ruler', role='insight') }}

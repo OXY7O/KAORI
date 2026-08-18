@@ -24,13 +24,13 @@
         {% if dependency_blocker %}
             {% include "storage/object_storage/analytics/partials/_dependency_notice.html" %}
         {% elif not alert_source.connected %}
-            {% set blocked_state_icon = 'triangle-alert' %}
-            {% set blocked_state_label = 'Source Unavailable' %}
-            {% set blocked_state_title = 'Alert Records Unavailable' %}
+            {% set blocked_state_icon = "triangle-alert" %}
+            {% set blocked_state_label = "Source Unavailable" %}
+            {% set blocked_state_title = "Alert Records Unavailable" %}
             {% set blocked_state_description = alert_source.detail %}
-            {% set blocked_state_tone = 'warning' %}
-            {% set blocked_state_variant = 'table' %}
-            {% set blocked_state_min_height = 'min-h-[160px]' %}
+            {% set blocked_state_tone = "warning" %}
+            {% set blocked_state_variant = "table" %}
+            {% set blocked_state_min_height = "min-h-[160px]" %}
             {% include 'components/states/_blocked_state.html' %}
         {% elif alert_table %}
             <form id="object-storage-alert-record-filter"
@@ -53,17 +53,23 @@
                     </label>
                     <label class="block" for="object-storage-alert-severity">
                         <span class="{{ table_ui.filter_label_classes() }}">Severity</span>
-                        <select id="object-storage-alert-severity" name="alert_severity" class="{{ table_ui.filter_select_classes() }}">
+                        <select id="object-storage-alert-severity"
+                                name="alert_severity"
+                                class="{{ table_ui.filter_select_classes() }}">
                             {% for value, label in [('all','All Severities'),('critical','Critical'),('warning','Warning'),('info','Info'),('unknown','Unknown')] %}
-                                <option value="{{ value }}" {% if alert_table.severity == value %}selected{% endif %}>{{ label }}</option>
+                                <option value="{{ value }}"
+                                        {% if alert_table.severity == value %}selected{% endif %}>{{ label }}</option>
                             {% endfor %}
                         </select>
                     </label>
                     <label class="block" for="object-storage-alert-state">
                         <span class="{{ table_ui.filter_label_classes() }}">State</span>
-                        <select id="object-storage-alert-state" name="alert_state" class="{{ table_ui.filter_select_classes() }}">
+                        <select id="object-storage-alert-state"
+                                name="alert_state"
+                                class="{{ table_ui.filter_select_classes() }}">
                             {% for value, label in [('all','All States'),('firing','Firing'),('pending','Pending'),('suppressed','Suppressed')] %}
-                                <option value="{{ value }}" {% if alert_table.state == value %}selected{% endif %}>{{ label }}</option>
+                                <option value="{{ value }}"
+                                        {% if alert_table.state == value %}selected{% endif %}>{{ label }}</option>
                             {% endfor %}
                         </select>
                     </label>
@@ -72,13 +78,12 @@
                             <i data-lucide="search" class="h-4 w-4"></i>Apply Filter
                         </button>
                         {% if alert_table.search or alert_table.severity != 'all' or alert_table.state != 'all' %}
-                            {{ registry_ui.clear_filters_action(
-                                url_for('analytics.object_storage_alerts', system_id=system.id, source=selected_alert_source, alert_per_page=alert_table.pagination.per_page, tab='records'),
-                                table_ui.action_classes() ~ ' h-10 px-4',
-                                hx_get=url_for('analytics.object_storage_alert_table', system_id=system.id, source=selected_alert_source, alert_per_page=alert_table.pagination.per_page, tab='records'),
-                                target='#object-storage-alert-records',
-                                indicator='#object-storage-alert-records-loading',
-                                sync='#object-storage-alert-records:replace'
+                            {{ registry_ui.clear_filters_action(url_for('analytics.object_storage_alerts', system_id=system.id, source=selected_alert_source, alert_per_page=alert_table.pagination.per_page, tab='records') ,
+                            table_ui.action_classes() ~ ' h-10 px-4',
+                            hx_get=url_for('analytics.object_storage_alert_table', system_id=system.id, source=selected_alert_source, alert_per_page=alert_table.pagination.per_page, tab='records'),
+                            target='#object-storage-alert-records',
+                            indicator='#object-storage-alert-records-loading',
+                            sync='#object-storage-alert-records:replace'
                             ) }}
                         {% endif %}
                     </div>
@@ -109,7 +114,7 @@
                                 <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_label(row.severity|title, severity_tone) }}</td>
                                 <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_label(row.state|title, state_tone) }}</td>
                                 <td class="{{ table_ui.cell_classes() }} break-all">{{ row.target }}</td>
-                                <td class="{{ table_ui.cell_classes() }}">{{ row.starts_at|user_datetime('N/A') }}</td>
+                                <td class="{{ table_ui.cell_classes() }}">{{ row.starts_at|user_datetime("N/A") }}</td>
                                 <td class="{{ table_ui.cell_classes() }} break-all">{{ row.receiver }}</td>
                                 <td class="{{ table_ui.cell_classes() }}">
                                     <div class="flex flex-wrap gap-1.5">
@@ -126,11 +131,11 @@
                         {% else %}
                             <tr>
                                 <td colspan="7" class="p-0">
-                                    {% set empty_state_icon = 'bell-off' %}
-                                    {% set empty_state_label = 'No Results' %}
-                                    {% set empty_state_title = 'No Alert Records Match the Current Filters' %}
-                                    {% set empty_state_description = 'Adjust the alert source or local filters to review another set of Object Storage alert evidence.' %}
-                                    {% set empty_state_min_height = 'min-h-[160px]' %}
+                                    {% set empty_state_icon = "bell-off" %}
+                                    {% set empty_state_label = "No Results" %}
+                                    {% set empty_state_title = "No Alert Records Match the Current Filters" %}
+                                    {% set empty_state_description = "Adjust the alert source or local filters to review another set of Object Storage alert evidence." %}
+                                    {% set empty_state_min_height = "min-h-[160px]" %}
                                     {% include 'components/states/_empty_state.html' %}
                                 </td>
                             </tr>
@@ -138,19 +143,17 @@
                     </tbody>
                 </table>
             </div>
-            {{ record_pagination.render(
-                alert_table.pagination,
-                'alert_page',
-                'alert_per_page',
-                'object-storage-alert-records',
-                'object-storage-alert-record-filter',
-                'object-storage-alert-records-loading',
-                'analytics.object_storage_alert_table',
-                'analytics.object_storage_alerts',
-                alert_table.query_params,
-                'Alerts',
-                embedded=true
-            ) }}
+            {{ record_pagination.render(alert_table.pagination,
+                        'alert_page',
+                        'alert_per_page',
+                        'object-storage-alert-records',
+                        'object-storage-alert-record-filter',
+                        'object-storage-alert-records-loading',
+                        'analytics.object_storage_alert_table',
+                        'analytics.object_storage_alerts',
+                        alert_table.query_params,
+                        'Alerts',
+                        embedded=true) }}
         {% endif %}
     </div>
 </section>
