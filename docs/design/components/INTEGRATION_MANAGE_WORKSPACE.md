@@ -159,6 +159,18 @@ Kubernetes uses the same manage-workspace hierarchy as Alertmanager and Metrics 
 
 The Kubernetes Add flow requires a successful synchronous Test Connection before Save Connection is enabled. KAORI issues a short-lived signed proof bound to the current user, identity fields, TLS policy, and kubeconfig fingerprint. Any form change invalidates the proof. The server verifies the proof and repeats the connection probe immediately before persistence. Test, rejection, persistence, and failure outcomes must create persistent toast feedback and Activity Audit records.
 
+## Setup reference and validation ownership
+
+Configuration setup references use one placement contract across providers: after the Operational Flow/Operational Context inside the Configuration body and before the workspace footer. The Kubernetes RBAC example is the visual reference; Metrics Source and future provider setup references must use the same hierarchy rather than appending a detached card after the shared configuration contract.
+
+Validation ownership remains split by evidence boundary:
+
+- **Provider/Core Validation** owns transport, provider compatibility, generic API/query capabilities, and provider readiness.
+- **Binding Validation** owns asset-scoped consumer identity, required metric/label contracts, pairing rules, and consumer capability evidence.
+- **General Validation** is the operator roll-up surface. It displays provider-core rows plus the latest completed binding-owned consumer rows; it does not create a second consumer validation engine.
+- **Scope & Consumers** shows binding profile, selector, and validation state plus the action to validate that binding. Detailed missing evidence stays in General Validation `View More`.
+- A binding without completed validation is `Validation Required`; provider readiness must not upgrade it to Ready or reinterpret it as Missing.
+
 ## Capability evidence and runnable checks
 
 Capability Technical Detail separates explanation from executable evidence:

@@ -31,8 +31,6 @@ metrics_source_label ~ " owns its metrics and retention. KAORI keeps source read
 flow_items,
 "Connection changes require revalidation; existing consumer bindings stay attached to their managed assets.",
 url_for("metrics.edit_instance", instance_id=instance.id) ,
-operational_metadata=operational_metadata
+operational_metadata=operational_metadata,
+setup_reference_template="integrations/observability/metrics_source/partials/_minimum_validation_metrics.html"
 ) }}
-<div class="mt-4">
-    {% include "integrations/observability/metrics_source/partials/_minimum_validation_metrics.html" %}
-</div>

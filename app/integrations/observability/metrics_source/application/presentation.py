@@ -161,8 +161,9 @@ def build_instance_context(
         integration_instance_id=instance.integration_instance_id,
     )
     binding_rows = [_binding_row(binding, instance) for binding in bindings]
-    consumer_validation_gap_rows = _consumer_validation_gap_rows(bindings, binding_rows)
-    capability_rows = [*provider_capability_rows, *consumer_validation_gap_rows]
+    consumer_validation_rows = _consumer_validation_rows(bindings, binding_rows)
+    consumer_validation_gap_rows = [row for row in consumer_validation_rows if not row['available']]
+    capability_rows = [*provider_capability_rows, *consumer_validation_rows]
     binding_registry_rows, binding_registry_pagination = paginate_sequence(
         binding_rows,
         page=binding_page,
@@ -449,7 +450,7 @@ def _binding_row(binding: IntegrationBinding, source: MetricsSource) -> dict[str
     }
 
 
-def _consumer_validation_gap_rows(
+def _consumer_validation_rows(
     bindings: list[IntegrationBinding],
     binding_rows: list[dict[str, Any]],
 ) -> list[dict[str, Any]]:
@@ -462,20 +463,20 @@ def _consumer_validation_gap_rows(
             continue
 
         source_identity = evidence.get('source_identity')
-        if isinstance(source_identity, dict) and str(source_identity.get('status') or '') != 'ready':
-            rows.append(_consumer_identity_gap_row(binding, binding_view, source_identity))
+        if isinstance(source_identity, dict):
+            rows.append(_consumer_identity_row(binding, binding_view, source_identity))
 
         for assessment in evidence.get('capability_assessments') or ():
             if not isinstance(assessment, dict):
                 continue
             status = str(assessment.get('status') or 'not_observed')
-            if status in {'available', 'ready', 'not_observed'}:
+            if status == 'not_observed':
                 continue
-            rows.append(_consumer_capability_gap_row(binding, binding_view, assessment))
+            rows.append(_consumer_capability_row(binding, binding_view, assessment))
     return rows
 
 
-def _consumer_identity_gap_row(
+def _consumer_identity_row(
     binding: IntegrationBinding,
     binding_view: dict[str, Any],
     identity: dict[str, Any],
@@ -483,7 +484,7 @@ def _consumer_identity_gap_row(
     item = {
         'key': 'source_identity',
         'label': identity.get('label') or 'Cluster Source Identity',
-        'status': 'misconfigured',
+        'status': 'available' if str(identity.get('status') or '') == 'ready' else 'misconfigured',
         'status_label': identity.get('status_label') or 'Failed',
         'observed': identity.get('observed') or identity.get('message') or 'No source identity evidence recorded.',
         'expected': identity.get('expected') or 'cluster=<stable-cluster-name>',
@@ -492,23 +493,27 @@ def _consumer_identity_gap_row(
         'technical_checks': identity.get('technical_checks') or [],
         'source_owner': 'Prometheus scrape identity / Thanos source identity',
         'required_by': ['Kubernetes Metrics Binding'],
-        'impact': 'KAORI cannot isolate Kubernetes metrics for this consumer binding safely.',
+        'impact': (
+            'The Kubernetes binding has a stable, query-visible cluster identity.'
+            if str(identity.get('status') or '') == 'ready'
+            else 'KAORI cannot isolate Kubernetes metrics for this consumer binding safely.'
+        ),
     }
     row = _capability_row(item)
-    return _decorate_consumer_gap(row, binding, binding_view, contract_key='source_identity.cluster')
+    return _decorate_consumer_row(row, binding, binding_view, contract_key='source_identity.cluster')
 
 
-def _consumer_capability_gap_row(
+def _consumer_capability_row(
     binding: IntegrationBinding,
     binding_view: dict[str, Any],
     assessment: dict[str, Any],
 ) -> dict[str, Any]:
     contract_key = str(assessment.get('key') or 'consumer_contract')
     row = _capability_row(assessment)
-    return _decorate_consumer_gap(row, binding, binding_view, contract_key=contract_key)
+    return _decorate_consumer_row(row, binding, binding_view, contract_key=contract_key)
 
 
-def _decorate_consumer_gap(
+def _decorate_consumer_row(
     row: dict[str, Any],
     binding: IntegrationBinding,
     binding_view: dict[str, Any],

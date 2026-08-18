@@ -95,9 +95,14 @@ def main() -> int:
     metrics_configuration = read(
         'app/templates/integrations/observability/metrics_source/partials/_detail_configuration.html'
     )
+    provider_configuration_contract = read(
+        'app/templates/integrations/components/_provider_configuration_contract.html'
+    )
+    metrics_presentation = read('app/integrations/observability/metrics_source/application/presentation.py')
     metrics_validation = read(
         'app/templates/integrations/observability/metrics_source/partials/_detail_validation_content.html'
     )
+    metrics_scope = read('app/templates/integrations/observability/metrics_source/partials/_detail_scope.html')
     metrics_examples = read(
         'app/templates/integrations/observability/metrics_source/partials/_minimum_validation_metrics.html'
     )
@@ -125,14 +130,42 @@ def main() -> int:
     ):
         require(token in metrics_examples, f'Metrics validation setup example missing canonical token: {token}', errors)
     require(
-        '_minimum_validation_metrics.html' in metrics_configuration
+        'setup_reference_template="integrations/observability/metrics_source/partials/_minimum_validation_metrics.html"'
+        in metrics_configuration
+        and '<div class="mt-4">' not in metrics_configuration
         and '_minimum_validation_metrics.html' not in metrics_validation,
-        'Metrics Source Configuration must own the minimum-validation setup reference while Validation owns results',
+        'Metrics Source setup reference must use the shared in-contract Configuration slot rather than a detached card',
+        errors,
+    )
+    setup_reference_index = provider_configuration_contract.find('{% include setup_reference_template %}')
+    operational_context_index = provider_configuration_contract.find('operational_context.render')
+    configuration_footer_index = provider_configuration_contract.find('<footer')
+    require(
+        'setup_reference_template=""' in provider_configuration_contract
+        and 0 <= operational_context_index < setup_reference_index < configuration_footer_index,
+        'Shared provider Configuration must place setup references after Operational Context and before the footer',
         errors,
     )
     require(
-        'Consumer Contract Evidence' in metrics_registry and 'row.contract_scope == "consumer"' in metrics_registry,
-        'Metrics Source Validation registry must own detailed binding-specific consumer gaps',
+        'Consumer Contract Evidence' in metrics_registry
+        and 'row.contract_scope == "consumer"' in metrics_registry
+        and 'latest completed Binding Validation evidence' in metrics_registry,
+        'Metrics Source Validation registry must roll up binding-owned consumer evidence and own its detail surface',
+        errors,
+    )
+    require(
+        'consumer_validation_rows = _consumer_validation_rows' in metrics_presentation
+        and 'capability_rows = [*provider_capability_rows, *consumer_validation_rows]' in metrics_presentation
+        and "consumer_validation_gap_rows = [row for row in consumer_validation_rows if not row['available']]"
+        in metrics_presentation,
+        'General Metrics Source Validation must roll up completed Binding Validation capability rows without changing gap semantics',
+        errors,
+    )
+    require(
+        'Open Validation → Capability Registry for exact missing capability evidence and remediation.' in metrics_scope
+        and 'Missing technical capability:' not in metrics_scope
+        and 'Binding coverage missing:' not in metrics_scope,
+        'Metrics Source Scope must show binding posture only; exact missing capability detail belongs to Validation',
         errors,
     )
     require(

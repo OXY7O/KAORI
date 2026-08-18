@@ -27,7 +27,7 @@
          data-kaori-provider-capability-matrix>
     {% call connection_validation_header.render(
         'Metrics Source Full Validation',
-        'Validate Metrics Source compatibility and core APIs. Consumer metrics remain binding-specific.',
+        'Validate provider compatibility and core APIs, then roll up the latest binding-owned consumer capability evidence.',
         icon='scan-search',
         loading_id='metrics-source-validation-loading',
         loading_active=validation_job and validation_job.is_active,
@@ -55,7 +55,7 @@
     {{ provider_job_status.render(validation_job, 'Metrics Source validation running in worker', 'Metrics Source') }}
     <div class="space-y-4 p-4 sm:p-5">
         {{ capability_readiness.render('Metrics Source Provider Readiness',
-                'Core API evidence determines provider readiness; consumer label and metric gaps stay in Validation evidence.',
+                'Core API evidence determines provider readiness; consumer capability rows are roll-ups of the latest Binding Validation evidence.',
                 readiness,
                 readiness|replace('_', ' ') |title,
         'Validated Capabilities',

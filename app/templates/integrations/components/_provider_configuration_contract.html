@@ -11,7 +11,8 @@
     flow_items,
     footer_note,
     configure_url,
-    operational_metadata=()) -%}
+    operational_metadata=(),
+    setup_reference_template="") -%}
     <div class="space-y-4 font-sans"
          data-kaori-provider-configuration-contract>
         <section class="{{ integration_ui.section_shell_classes() }} overflow-hidden">
@@ -68,6 +69,9 @@
                     </dl>
                 </section>
                 {{ operational_context.render(boundary_description, flow_items, operational_metadata) }}
+                {% if setup_reference_template %}
+                    {% include setup_reference_template %}
+                {% endif %}
             </div>
             <footer class="flex flex-col gap-3 border-t border-outline-subtle bg-surface-subtle px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between sm:px-5">
                 <div class="flex items-start gap-2.5">

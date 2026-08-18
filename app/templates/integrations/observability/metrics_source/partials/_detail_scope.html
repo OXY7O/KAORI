@@ -143,11 +143,8 @@
                                                         {{ integration_status('ready' if candidate.is_selected else ('degraded' if candidate.eligible else 'blocked') , 'Selected' if candidate.is_selected else ('Eligible' if candidate.eligible else 'Skipped'), display='indicator') }}
                                                     </div>
                                                     <p class="mt-2 text-xs leading-5 text-content-secondary">{{ candidate.decision_reason }}</p>
-                                                    {% if candidate.missing_capability_labels %}
-                                                        <p class="mt-2 text-xs font-semibold text-status-critical-text">Missing technical capability: {{ candidate.missing_capability_labels|join(", ") }}</p>
-                                                    {% endif %}
-                                                    {% if candidate.missing_binding_capabilities %}
-                                                        <p class="mt-1 text-xs font-semibold text-status-warning-text">Binding coverage missing: {{ candidate.missing_binding_capabilities|join(", ") }}</p>
+                                                    {% if candidate.missing_capability_labels or candidate.missing_binding_capabilities %}
+                                                        <p class="mt-2 text-xs font-medium text-content-muted">Open Validation → Capability Registry for exact missing capability evidence and remediation.</p>
                                                     {% endif %}
                                                 </div>
                                             {% else %}
