@@ -5,24 +5,26 @@
 {% import "components/resource_detail_modal.html" as resource_detail_modal %}
 <section id="tls-certificates-table-card"
          class="{{ table_ui.block_classes() }}">
+    {% set inventory_header_actions = none %}
+    {% if payload.filters.cluster_id or payload.filters.namespace or payload.filters.status != 'all' or payload.filters.search %}
+        {% set inventory_header_actions %}
+            {{ registry_ui.clear_filters_action(url_for('governance.tls_certificates', per_page=payload.pagination.per_page) ,
+            table_ui.action_classes(),
+            hx_get=url_for('governance.tls_certificates', per_page=payload.pagination.per_page, partial_mode='page_workspace'),
+            target='#tls-certificates-page-workspace',
+            indicator='#tls-certificates-table-loading'
+            ) }}
+        {% endset %}
+    {% endif %}
     {{ table_ui.inventory_block_header('lock-keyhole',
         'TLS Certificate Registry',
         'Certificate validity, declared host coverage, and Ingress relationship evidence.',
         'tls-certificates-table-loading',
         'Refreshing TLS Certificate Registry',
-        url_for('integrations.kubernetes') 
+        url_for('integrations.kubernetes') ,
+    header_actions=inventory_header_actions
     ) }}
     <div class="{{ table_ui.inventory_filter_bar_classes() }}">
-        {% if payload.filters.cluster_id or payload.filters.namespace or payload.filters.status != 'all' or payload.filters.search %}
-            <div class="mb-3 flex justify-end">
-                {{ registry_ui.clear_filters_action(url_for('governance.tls_certificates', per_page=payload.pagination.per_page) ,
-                table_ui.action_classes(),
-                hx_get=url_for('governance.tls_certificates', per_page=payload.pagination.per_page, partial_mode='page_workspace'),
-                target='#tls-certificates-page-workspace',
-                indicator='#tls-certificates-table-loading'
-                ) }}
-            </div>
-        {% endif %}
         {% include "kubernetes/governance/tls_certificates/partials/_filters.html" %}
     </div>
     <div class="w-full overflow-hidden">

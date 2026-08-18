@@ -2,15 +2,25 @@
 {% import "components/segmented_tabs.html" as segmented_tabs %}
 {% import "components/table_label.html" as table_label %}
 {% import "components/table.html" as table_ui %}
+{% import "components/table_registry.html" as registry_ui %}
+{% set topology_filters_active = filters.cluster_id or filters.namespace or filters.scope != 'all' or filters.depth != '1' %}
+{% set topology_header_actions = registry_ui.clear_filters_action(
+    url_for('inventory.topology'),
+    table_ui.action_classes() ~ ('' if topology_filters_active else ' hidden'),
+    marker='topology-filter-form',
+    swap='',
+    id='topology-clear-filters-button'
+) %}
 {% call visualization_workspace.render(
     'topology-workspace',
     'Inventory Relationship Map',
     'Explore committed Kubernetes inventory relationships without running live provider queries.',
     icon='git-fork',
-    action_id='topology-refresh-button',
-    action_label='Refresh Graph',
+    action_id='topology-reload-button',
+    action_label='Reload Snapshot',
     action_icon='refresh-cw',
-    loading_id='topology-loading'
+    loading_id='topology-loading',
+    header_actions=topology_header_actions
     ) %}
     <div class="border-b border-outline-subtle bg-surface-elevated px-5 py-4">
         <form id="topology-filter-form"

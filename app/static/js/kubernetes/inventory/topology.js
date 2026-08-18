@@ -55,6 +55,7 @@ const startTopologyWorkspace = () => {
     const resourceToggles = Array.from(document.querySelectorAll('[data-topology-resource-toggle]'))
     const searchSummary = $('topology-search-summary')
     const filterSummary = $('topology-filter-summary')
+    const clearFiltersButton = $('topology-clear-filters-button')
 
     if (!canvas || !clusterSelect || !namespaceSelect || !scopeSelect || !depthSelect) return
 
@@ -706,6 +707,19 @@ const startTopologyWorkspace = () => {
         layoutModeSelect.value = value === 'dependency' ? 'dependency' : 'hierarchy'
     }
 
+    const hasActiveFilters = () =>
+        Boolean(
+            clusterSelect.value ||
+                (!namespaceSelect.disabled && namespaceSelect.value) ||
+                scopeSelect.value !== 'all' ||
+                depthSelect.value !== '1' ||
+                searchInput.value.trim()
+        )
+
+    const syncClearFiltersVisibility = () => {
+        clearFiltersButton?.classList.toggle('hidden', !hasActiveFilters())
+    }
+
     const updateUrl = () => {
         const url = new URL(window.location.href)
         const values = {
@@ -726,6 +740,7 @@ const startTopologyWorkspace = () => {
             else url.searchParams.delete(key)
         })
         window.history.replaceState({}, '', url)
+        syncClearFiltersVisibility()
     }
 
     const applyStateToControls = () => {
@@ -1708,8 +1723,8 @@ const startTopologyWorkspace = () => {
 
     const setLoading = (state) => {
         loading?.classList.toggle('htmx-request', state)
-        const refresh = $('topology-refresh-button')
-        if (refresh) refresh.disabled = state
+        const reload = $('topology-reload-button')
+        if (reload) reload.disabled = state
     }
 
     const createGraph = (payload) => {
@@ -1838,14 +1853,20 @@ const startTopologyWorkspace = () => {
     updateNamespaceOptions(config.filters?.namespace || '')
     createGraph(currentPayload)
     setActiveView(activeView, { updateUrl: false })
+    syncClearFiltersVisibility()
+
+    const reloadForFilterChange = () => {
+        syncClearFiltersVisibility()
+        fetchGraph()
+    }
 
     clusterSelect.addEventListener('change', () => {
         updateNamespaceOptions('')
-        fetchGraph()
+        reloadForFilterChange()
     })
-    namespaceSelect.addEventListener('change', fetchGraph)
-    scopeSelect.addEventListener('change', fetchGraph)
-    depthSelect.addEventListener('change', fetchGraph)
+    namespaceSelect.addEventListener('change', reloadForFilterChange)
+    scopeSelect.addEventListener('change', reloadForFilterChange)
+    depthSelect.addEventListener('change', reloadForFilterChange)
     layoutModeSelect?.addEventListener('change', () => {
         updateUrl()
         applyCurrentLayout()
@@ -1891,6 +1912,7 @@ const startTopologyWorkspace = () => {
     )
 
     searchInput.addEventListener('input', () => {
+        syncClearFiltersVisibility()
         window.clearTimeout(searchTimer)
         searchTimer = window.setTimeout(() => renderSearchResults(searchInput.value), 160)
     })
@@ -1930,14 +1952,25 @@ const startTopologyWorkspace = () => {
 
     $('topology-fit-button')?.addEventListener('click', fitGraphToCanvas)
     $('topology-reset-button')?.addEventListener('click', () => {
+        collapsedNodeIds = new Set()
+        clearSelection()
+        applyVisibility({ relayout: true })
+    })
+    $('topology-reload-button')?.addEventListener('click', fetchGraph)
+    clearFiltersButton?.addEventListener('click', (event) => {
+        event.preventDefault()
+        clusterSelect.value = ''
+        updateNamespaceOptions('')
+        scopeSelect.value = 'all'
+        depthSelect.value = '1'
         searchInput.value = ''
         hideSearchResults()
         collapsedNodeIds = new Set()
         clearSelection()
-        applyVisibility({ relayout: true })
         if (searchSummary) searchSummary.textContent = 'Search and open a resource in the current topology scope.'
+        syncClearFiltersVisibility()
+        fetchGraph()
     })
-    $('topology-refresh-button')?.addEventListener('click', fetchGraph)
     $('topology-export-png-button')?.addEventListener('click', exportPng)
     $('topology-export-json-button')?.addEventListener('click', exportJson)
 

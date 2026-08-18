@@ -15,6 +15,7 @@ def test_clear_filters_is_owned_by_the_shared_registry_component() -> None:
     component = read(REGISTRY_COMPONENT)
 
     assert "label='Clear Filters'" in component
+    assert 'data-kaori-clear-filters' in component
     assert 'data-kaori-canonical-registry-clear' in component
     assert 'data-lucide="x"' in component
     assert '{page_param: 1, per_page_param: per_page}' in component
@@ -58,3 +59,48 @@ def test_specialized_filtered_tables_follow_the_same_clear_contract() -> None:
         source = read(TEMPLATES / relative)
         assert 'clear_filters' in source, relative
         assert 'per_page' in source, relative
+
+
+def test_headered_inventory_surfaces_place_clear_filters_with_header_actions() -> None:
+    headered = (
+        'kubernetes/inventory/nodes/partials/_table_card.html',
+        'kubernetes/inventory/namespaces/partials/_table_card.html',
+        'kubernetes/inventory/workloads/partials/_table_card.html',
+        'kubernetes/inventory/pods/partials/_table_card.html',
+        'kubernetes/inventory/services/partials/_table_card.html',
+        'kubernetes/inventory/ingresses/partials/_table_card.html',
+        'kubernetes/inventory/storage/partials/_table_card.html',
+        'kubernetes/inventory/configuration/partials/_table_card.html',
+        'kubernetes/governance/tls_certificates/partials/_table.html',
+        'kubernetes/operations/secrets/_bulk_target_table.html',
+        'storage/object_storage/inventory/systems/partials/_table_card.html',
+        'storage/object_storage/inventory/buckets/partials/_table_card.html',
+    )
+    table = read(TEMPLATES / 'components/table.html')
+
+    assert 'data-kaori-table-header-actions' in table
+    assert "header_actions=''" in table
+    for relative in headered:
+        source = read(TEMPLATES / relative)
+        assert 'header_actions=inventory_header_actions' in source, relative
+        assert 'clear_filters_action(' in source, relative
+        assert 'mb-3 flex justify-end' not in source, relative
+
+
+def test_topology_reuses_clear_filters_and_distinguishes_snapshot_reload() -> None:
+    workspace = read(TEMPLATES / 'kubernetes/inventory/topology/partials/_workspace.html')
+    script = read(ROOT / 'app/static/js/kubernetes/inventory/topology.js')
+    pattern = read(ROOT / 'docs/design/patterns/KUBERNETES_TOPOLOGY.md')
+
+    assert 'components/table_registry.html' in workspace
+    assert 'topology-clear-filters-button' in workspace
+    assert "marker='topology-filter-form'" in workspace
+    assert "action_label='Reload Snapshot'" in workspace
+    assert 'Refresh Graph' not in workspace
+    assert "$('topology-reload-button')?.addEventListener('click', fetchGraph)" in script
+    assert "clearFiltersButton?.addEventListener('click'" in script
+    assert "scopeSelect.value = 'all'" in script
+    assert "depthSelect.value = '1'" in script
+    assert "searchInput.value = ''" in script
+    assert script.count("searchInput.value = ''") == 1
+    assert 'It is a JavaScript data fetch, not an HTMX page refresh.' in pattern

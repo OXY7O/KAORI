@@ -28,6 +28,9 @@ def test_topology_uses_the_adaptive_visualization_workspace() -> None:
     assert 'topology-details-button' in workspace
     assert '2xl:hidden' not in workspace
     assert 'components/loading_bar.html' in component
+    assert 'data-kaori-visualization-header-actions' in component
+    assert "action_label='Reload Snapshot'" in workspace
+    assert 'topology-clear-filters-button' in workspace
 
 
 def test_topology_side_panes_are_always_on_demand_drawers() -> None:

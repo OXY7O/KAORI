@@ -62,6 +62,21 @@ STANDARD_CONSUMERS = (
     'app/templates/storage/object_storage/inventory/systems/partials/_table_card.html',
 )
 
+HEADER_ACTION_CONSUMERS = (
+    'app/templates/kubernetes/inventory/nodes/partials/_table_card.html',
+    'app/templates/kubernetes/inventory/namespaces/partials/_table_card.html',
+    'app/templates/kubernetes/inventory/workloads/partials/_table_card.html',
+    'app/templates/kubernetes/inventory/pods/partials/_table_card.html',
+    'app/templates/kubernetes/inventory/services/partials/_table_card.html',
+    'app/templates/kubernetes/inventory/ingresses/partials/_table_card.html',
+    'app/templates/kubernetes/inventory/storage/partials/_table_card.html',
+    'app/templates/kubernetes/inventory/configuration/partials/_table_card.html',
+    'app/templates/kubernetes/governance/tls_certificates/partials/_table.html',
+    'app/templates/kubernetes/operations/secrets/_bulk_target_table.html',
+    'app/templates/storage/object_storage/inventory/systems/partials/_table_card.html',
+    'app/templates/storage/object_storage/inventory/buckets/partials/_table_card.html',
+)
+
 
 def read(relative: str) -> str:
     return (ROOT / relative).read_text(encoding='utf-8')
@@ -103,6 +118,11 @@ def main() -> int:
         'registry_ui.filter_form() must own canonical full-width filter geometry.',
         errors,
     )
+    require(
+        'data-kaori-clear-filters' in registry,
+        'Shared Clear Filters action must expose one global filter-action marker.',
+        errors,
+    )
 
     for relative in STANDARD_CONSUMERS:
         source = read(relative)
@@ -114,6 +134,57 @@ def main() -> int:
             f'{relative} must use canonical full-width filter geometry.',
             errors,
         )
+
+    require(
+        'data-kaori-table-header-actions' in table and "header_actions=''" in table,
+        'Inventory-style table headers must expose one shared header action group.',
+        errors,
+    )
+    for relative in HEADER_ACTION_CONSUMERS:
+        source = read(relative)
+        require(
+            'header_actions=inventory_header_actions' in source,
+            f'{relative} must place conditional Clear Filters in the shared header action group.',
+            errors,
+        )
+        require(
+            'mb-3 flex justify-end' not in source,
+            f'{relative} must not float Clear Filters above the filter fields.',
+            errors,
+        )
+
+    topology = read('app/templates/kubernetes/inventory/topology/partials/_workspace.html')
+    topology_script = read('app/static/js/kubernetes/inventory/topology.js')
+    topology_pattern = read('docs/design/patterns/KUBERNETES_TOPOLOGY.md')
+    for token in (
+        'topology-clear-filters-button',
+        "marker='topology-filter-form'",
+        "action_label='Reload Snapshot'",
+    ):
+        require(token in topology, f'Topology missing canonical filter/header token: {token}', errors)
+    require(
+        'Refresh Graph' not in topology,
+        'Topology must use Reload Snapshot rather than ambiguous Refresh Graph copy.',
+        errors,
+    )
+    for token in (
+        "$('topology-reload-button')?.addEventListener('click', fetchGraph)",
+        "clearFiltersButton?.addEventListener('click'",
+        "scopeSelect.value = 'all'",
+        "depthSelect.value = '1'",
+        "searchInput.value = ''",
+    ):
+        require(token in topology_script, f'Topology Clear Filters/reload behavior missing: {token}', errors)
+    require(
+        topology_script.count("searchInput.value = ''") == 1,
+        'Topology search reset must belong only to Clear Filters, not the display Reset action.',
+        errors,
+    )
+    require(
+        'It is a JavaScript data fetch, not an HTMX page refresh.' in topology_pattern,
+        'Topology documentation must distinguish Reload Snapshot from HTMX navigation.',
+        errors,
+    )
 
     # The Provider Registry screenshot that initiated this standard had two
     # visible fields inside a three-column desktop grid. Fixed-grid ownership
@@ -197,6 +268,8 @@ def main() -> int:
         'full-width and content-aware',
         'orphan empty column',
         'explicit action groups may remain content-width',
+        '`Clear Filters` keeps one interaction owner',
+        '`Clear Filters` belongs in that same header action group',
         'filters never use `max-w-*`',
     ):
         require(token in standard, f'Table/filter design standard missing rule: {token}', errors)

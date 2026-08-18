@@ -1,25 +1,27 @@
 {% import "components/table.html" as table_ui %}
 {% import "components/table_registry.html" as registry_ui %}
 <section id="pods-inventory-card" class="{{ table_ui.block_classes() }}">
+    {% set inventory_header_actions = none %}
+    {% if selected_cluster_id or selected_namespace or selected_owner_type or selected_node or selected_status or search %}
+        {% set inventory_header_actions %}
+            {{ registry_ui.clear_filters_action(url_for('inventory.pods', per_page=pagination.per_page) ,
+            table_ui.action_classes(),
+            hx_get=url_for('inventory.pods', per_page=pagination.per_page, partial_mode='page_workspace'),
+            target='#pods-page-workspace',
+            indicator='#pods-table-loading'
+            ) }}
+        {% endset %}
+    {% endif %}
     {{ table_ui.inventory_block_header('package-search',
         'Pod Inventory',
         'Kubernetes Pod runtime, placement, ownership, and activity evidence collected from connected clusters.',
         'pods-table-loading',
         'Refreshing Pod Inventory',
         url_for('integrations.kubernetes') ,
-    'Open Cluster List'
+    'Open Cluster List',
+    header_actions=inventory_header_actions
     ) }}
     <div class="{{ table_ui.inventory_filter_bar_classes() }}">
-        {% if selected_cluster_id or selected_namespace or selected_owner_type or selected_node or selected_status or search %}
-            <div class="mb-3 flex justify-end">
-                {{ registry_ui.clear_filters_action(url_for('inventory.pods', per_page=pagination.per_page) ,
-                table_ui.action_classes(),
-                hx_get=url_for('inventory.pods', per_page=pagination.per_page, partial_mode='page_workspace'),
-                target='#pods-page-workspace',
-                indicator='#pods-table-loading'
-                ) }}
-            </div>
-        {% endif %}
         <form hx-get="{{ url_for('inventory.pods') }}"
               hx-target="#pods-page-workspace"
               hx-swap="outerHTML"

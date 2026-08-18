@@ -170,6 +170,9 @@ The canonical layout is full-width and content-aware:
 - two visible filters fill the row as two peers, three filters fill it as three peers, and a single remaining filter fills its row;
 - hidden inputs do not reserve layout space;
 - explicit action groups may remain content-width when the filter surface includes `Apply`, `Clear Filters`, or another operator action; the filter fields still consume all remaining width;
+- `Clear Filters` keeps one interaction owner (`components/table_registry.html`) across table, registry, and visualization filter surfaces;
+- when a filtered surface already has a block/header action group, `Clear Filters` belongs in that same header action group beside metadata/context actions; do not float it in a separate row above the filter fields;
+- when no header action group exists, `Clear Filters` may sit beside the filter fields as a compact action while the fields continue to consume the remaining width;
 - filters never use `max-w-*` merely to keep a control visually narrow inside an otherwise empty filter row.
 
 On smaller screens the same contract stacks or wraps without page-level horizontal overflow. This full-width fill behavior is the KAORI default for Inventory, Integrations, Access, Intelligence, Reports, Governance, and Platform Operations filter surfaces.

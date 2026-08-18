@@ -78,9 +78,9 @@
                                                                                     </div>
                                                                                 </div>
                                                                             {%- endmacro %}
-                                                                            {% macro inventory_block_header(icon, title, description, loading_id, loading_label, action_href, action_label='Manage Clusters') -%}
+                                                                            {% macro inventory_block_header(icon, title, description, loading_id, loading_label, action_href, action_label='Manage Clusters', header_actions='') -%}
                                                                                 <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
-                                                                                    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                                                                    <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                                                                                         <div class="flex min-w-0 items-start gap-3">
                                                                                             <span class="{{ block_icon_classes() }}" aria-hidden="true">
                                                                                                 <i data-lucide="{{ icon }}" class="h-5 w-5"></i>
@@ -90,10 +90,14 @@
                                                                                                 <p class="{{ block_description_classes() }}">{{ description }}</p>
                                                                                             </div>
                                                                                         </div>
-                                                                                        <a href="{{ action_href }}" class="{{ action_classes() }}">
-                                                                                            <i data-lucide="server-cog" class="h-4 w-4" aria-hidden="true"></i>
-                                                                                            {{ action_label }}
-                                                                                        </a>
+                                                                                        <div class="flex shrink-0 flex-wrap items-center gap-2"
+                                                                                             data-kaori-table-header-actions>
+                                                                                            <a href="{{ action_href }}" class="{{ action_classes() }}">
+                                                                                                <i data-lucide="server-cog" class="h-4 w-4" aria-hidden="true"></i>
+                                                                                                {{ action_label }}
+                                                                                            </a>
+                                                                                            {% if header_actions %}{{ header_actions }}{% endif %}
+                                                                                        </div>
                                                                                     </div>
                                                                                     {{ loading_bar.render(loading_id, label=loading_label) }}
                                                                                 </header>

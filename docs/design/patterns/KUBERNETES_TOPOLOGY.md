@@ -6,6 +6,7 @@
 Canonical Hero
 Compact Inventory Data Snapshot
 Visualization Workspace Style 1 — Adaptive Explorer
+├── Header Actions: Reload Snapshot + conditional Clear Filters
 ├── Filter Bar
 ├── Local Status / Warning Region
 ├── Canvas Toolbar
@@ -27,6 +28,7 @@ Compact segmented tabs must render the configured `data-*` attribute with the ta
 
 - Hero owns topology posture: Clusters, Namespaces, Resources, Relationships, and Graph Coverage.
 - Inventory Data Snapshot owns exact collection time, source, scope, committed coverage, and exceptions.
+- Header actions own explicit committed-snapshot reload and the canonical conditional Clear Filters action.
 - Filter Bar owns graph data scope.
 - Canvas Toolbar owns local presentation and export actions.
 - Inspector owns selected resource or relationship context.
@@ -35,7 +37,7 @@ The hero must not repeat exact sync time or snapshot source.
 
 ## Data Boundary
 
-Topology reads current committed inventory rows. Filter, refresh, list, inspector, layout, and export interactions do not query the Kubernetes API live.
+Topology reads current committed inventory rows. Filter, reload, list, inspector, layout, and export interactions do not query the Kubernetes API live.
 
 Graph payloads are cached by committed generation and filter combination. Query paths load only resource families required by scope/depth, and service-to-pod matching is indexed by cluster and namespace.
 
@@ -49,7 +51,7 @@ Graph payloads are cached by committed generation and filter combination. Query 
 
 ## Loading and Errors
 
-The visualization workspace owns one local loading bar for filter and Refresh Graph requests. Display-only changes do not show loading.
+The visualization workspace owns one local loading bar for filter and **Reload Snapshot** requests. Filter changes already fetch the matching committed topology payload automatically; Reload Snapshot is the explicit same-scope re-fetch used to pick up a newer committed inventory generation without changing filters. It is a JavaScript data fetch, not an HTMX page refresh. **Clear Filters** reuses the canonical shared action, resets Cluster/Namespace/Resource Scope/Depth/Search to defaults, preserves layout/view display state, and reloads the default committed graph. Display-only changes do not show loading.
 
 A truncated graph uses a warning callout with omitted counts. Renderer errors preserve Resource List access.
 

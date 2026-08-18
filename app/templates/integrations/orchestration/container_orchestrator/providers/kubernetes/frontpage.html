@@ -16,7 +16,7 @@
          x-data="{ deleteModal: false, deleteUrl: '', deleteName: '', openDelete(url, name) { this.deleteUrl = url; this.deleteName = name; this.deleteModal = true; } }">
         {{ provider_front.hero("boxes", "network",
                 "Kubernetes Integrations",
-                "Register, validate, and govern reusable Kubernetes API connections and consumer bindings.",
+                "Register, validate, and govern reusable Kubernetes API connections, provider capabilities, and downstream consumer bindings.",
                 stats.total, stats.ready, stats.bindings, posture_status, url_for('cluster.add_cluster') ,
         ready_total=stats.total) }}
         {{ provider_front.overview("network",
