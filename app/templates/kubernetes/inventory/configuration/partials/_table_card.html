@@ -27,7 +27,7 @@
               hx-indicator="#configuration-table-loading"
               hx-trigger="change, keyup changed delay:500ms from:find input[name='search']"
               aria-label="Configuration inventory filters"
-              class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              class="{{ table_ui.filter_layout_classes() }}">
             <input type="hidden" name="page" value="1">
             <input type="hidden" name="per_page" value="{{ pagination.per_page }}">
             <input type="hidden" name="partial_mode" value="page_workspace">

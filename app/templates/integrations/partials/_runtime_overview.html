@@ -77,7 +77,7 @@
                   hx-push-url="true"
                   hx-trigger="change delay:100ms"
                   aria-label="Integration runtime filters"
-                  class="grid gap-4 md:grid-cols-3 md:items-end">
+                  class="{{ table_ui.filter_layout_classes() }}">
                 <input type="hidden" name="tab" value="runtime" />
                 <input type="hidden" name="page" value="1" />
                 <input type="hidden"

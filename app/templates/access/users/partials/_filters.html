@@ -2,7 +2,7 @@
 <form id="users-filter-form"
       method="get"
       action="{{ url_for('users.index') }}"
-      class="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-4 lg:items-end"
+      class="{{ table_ui.filter_layout_classes() }}"
       hx-get="{{ url_for('users.index') }}"
       hx-trigger="submit, change delay:120ms from:select, keyup changed delay:450ms from:input[name='search']"
       hx-target="#users-page-content"

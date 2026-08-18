@@ -59,15 +59,17 @@ def test_permission_catalog_uses_kaori_hero_overview_tabs_tables_loading_and_pag
         assert 'hx-indicator=' in template
 
     assert 'table_ui.inventory_filter_bar_classes()' in registry
-    assert 'grid w-full gap-3 sm:grid-cols-2 lg:grid-cols-4' in registry
-    assert 'sm:col-span-2 lg:col-span-1' in registry
+    assert 'table_ui.filter_layout_classes()' in registry
+    assert 'lg:grid-cols-' not in registry
+    assert 'sm:col-span-2 lg:col-span-1' not in registry
     # Filter controls share one vertical rhythm. filter_label_classes() already owns
     # the label-to-control spacing, so local mt-* offsets would misalign search
     # inputs and native selects in some browsers.
     assert 'relative mt-1.5' not in registry
     assert 'class="mt-1.5 {{ table_ui.filter_select_classes() }}"' not in registry
     assert 'table_ui.inventory_filter_bar_classes()' in coverage
-    assert 'grid w-full gap-3 sm:grid-cols-2 lg:grid-cols-5' in coverage
+    assert 'table_ui.filter_layout_classes()' in coverage
+    assert 'lg:grid-cols-' not in coverage
     assert 'Search Permission' in registry
     assert 'Control Module' in registry
     assert 'Coverage' in registry

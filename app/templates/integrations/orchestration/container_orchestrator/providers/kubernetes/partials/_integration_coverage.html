@@ -43,7 +43,7 @@
               hx-push-url="true"
               hx-trigger="change from:select, keyup changed delay:500ms from:input[name='coverage_q'], search from:input[name='coverage_q']"
               hx-indicator="#kubernetes-coverage-loading"
-              class="grid gap-4 md:grid-cols-2 xl:grid-cols-12 xl:items-end">
+              class="{{ table_ui.filter_layout_classes() }}">
             <input type="hidden" name="tab" value="coverage">
             <input type="hidden" name="coverage_page" value="1">
             <input type="hidden"
@@ -55,13 +55,13 @@
             <input type="hidden" name="coverage" value="{{ selected_coverage }}">
             <input type="hidden" name="page" value="1">
             <input type="hidden" name="per_page" value="{{ pagination.per_page }}">
-            <div class="md:col-span-2 xl:col-span-5">
+            <div class="min-w-0">
                 {{ provider_registry.search_field("kubernetes-coverage-search", "coverage_q", selected_coverage_query, "Cluster, API endpoint, metrics, or alert source", label="Search Asset") }}
             </div>
-            <div class="xl:col-span-3">
+            <div class="min-w-0">
                 {{ provider_registry.select_field("kubernetes-coverage-environment", "coverage_environment", selected_coverage_environment, "Environment", coverage_environment_options, "All Environments") }}
             </div>
-            <div class="xl:col-span-4">
+            <div class="min-w-0">
                 {{ provider_registry.select_field("kubernetes-coverage-status", "coverage_status", selected_coverage_status, "Coverage", coverage_status_options, "All Coverage States") }}
             </div>
         </form>

@@ -78,7 +78,7 @@ def test_generated_registry_is_compact_focused_and_auto_refreshes_pending_work()
     assert 'In Progress' in template
     assert 'Needs Review' in template
     assert 'active generation refreshes silently' in template
-    assert 'xl:grid-cols-6' in template
+    assert 'xl:grid-cols-6' not in template
     assert 'xl:grid-cols-[minmax(13rem,1.4fr)' not in template
     assert 'components/table_registry.html' in template
     assert 'registry_ui.filter_form(' in template

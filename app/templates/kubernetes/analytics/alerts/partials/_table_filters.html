@@ -4,7 +4,7 @@
 <form id="{{ table_kind }}-table-filter-form"
       method="get"
       action="{{ url_for('analytics.alerts') }}"
-      class="grid gap-4 border-b border-outline-subtle bg-surface-hover px-4 py-4 sm:grid-cols-2 sm:px-5 lg:items-end {{ 'lg:grid-cols-4' if is_alert_table else 'lg:grid-cols-3' }}"
+      class="{{ analytics_workspace.filter_layout_classes() }} border-b border-outline-subtle bg-surface-hover px-4 py-4 sm:px-5"
       hx-get="{{ url_for(endpoint_name) }}"
       hx-trigger="change[event.target.matches('select')] delay:120ms, keyup[event.target.name === 'search'] changed delay:450ms, search[event.target.name === 'search']"
       hx-target="{{ target_id }}"

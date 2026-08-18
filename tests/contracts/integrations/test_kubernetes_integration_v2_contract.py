@@ -45,7 +45,8 @@ def test_kubernetes_registry_uses_one_line_htmx_filters_and_inventory_table() ->
     assert 'components/table.html' in registry
     assert 'data-kaori-one-line-filters' in registry
     assert 'min-w-[840px]' not in registry
-    assert 'xl:grid-cols-[minmax(0,1.5fr)_repeat(3,minmax(0,1fr))]' in registry
+    assert 'table_ui.filter_layout_classes()' in registry
+    assert 'xl:grid-cols-[minmax(0,1.5fr)_repeat(3,minmax(0,1fr))]' not in registry
     assert 'table-fixed' not in registry
     assert 'provider_registry.connection_registry_table_classes()' in registry
     assert '[overflow-wrap:anywhere]' in registry

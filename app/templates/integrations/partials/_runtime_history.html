@@ -75,7 +75,7 @@
                   hx-trigger="change delay:100ms"
                   hx-indicator="#{{ runtime_history_loading_id }}"
                   aria-label="Runtime observation filters"
-                  class="grid gap-4 lg:grid-cols-3 lg:items-end">
+                  class="{{ table_ui.filter_layout_classes() }}">
                 <input type="hidden" name="tab" value="{{ runtime_history_tab_name }}">
                 <input type="hidden" name="page" value="1">
                 <input type="hidden"

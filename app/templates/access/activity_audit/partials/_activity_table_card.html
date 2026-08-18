@@ -35,7 +35,7 @@
               hx-push-url="true"
               hx-trigger="change from:select, keyup changed delay:450ms from:input[name='search']"
               hx-indicator="#operational-activity-loading"
-              class="grid w-full gap-3 sm:grid-cols-2 xl:grid-cols-5">
+              class="{{ table_ui.filter_layout_classes() }}">
             <input type="hidden" name="page" value="1">
             <input type="hidden" name="per_page" value="{{ pagination.per_page }}">
             <div>

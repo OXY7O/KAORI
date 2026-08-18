@@ -65,9 +65,6 @@
 {% macro filter_region_classes() -%}
     border-b border-outline-subtle bg-surface-hover px-5 py-4 sm:px-6
 {%- endmacro %}
-{% macro filter_grid_classes(columns=4) -%}
-    grid gap-4 {{ 'md:grid-cols-2 xl:grid-cols-4' if columns == 4 else ('md:grid-cols-2 xl:grid-cols-3' if columns == 3 else 'md:grid-cols-2') }} xl:items-end
-{%- endmacro %}
 {% macro control_label_classes() -%}
     mb-2 block text-sm font-semibold text-content-secondary
 {%- endmacro %}

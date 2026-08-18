@@ -88,7 +88,7 @@
               hx-push-url="true"
               hx-trigger="change from:select[name='namespace_policy'], keyup changed delay:500ms from:input[name='namespace_q']"
               hx-indicator="#secret-reveal-namespace-loading"
-              class="grid gap-4 md:grid-cols-[minmax(0,1fr)_18rem] md:items-end">
+              class="{{ table_ui.filter_layout_classes() }}">
             <input type="hidden" name="cluster_id" value="{{ selected_cluster.id }}">
             <input type="hidden" name="page" value="1">
             <input type="hidden"
@@ -106,7 +106,7 @@
                            class="h-11 w-full rounded-lg border border-outline-default bg-surface-card py-2 pr-3 pl-10 text-sm text-content-primary transition outline-none placeholder:text-content-muted focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10">
                 </div>
             </div>
-            <div>
+            <div class="min-w-0">
                 <label class="mb-2 block text-sm font-medium text-content-secondary">Reveal Policy</label>
                 <select name="namespace_policy"
                         class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary transition outline-none focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10">

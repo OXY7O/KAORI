@@ -26,7 +26,7 @@
               hx-trigger="change, keyup changed delay:500ms from:find input[name='search']"
               hx-indicator="#object-storage-systems-loading"
               aria-label="Object Storage Systems filters"
-              class="grid gap-4 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(16rem,1.4fr)] lg:items-end">
+              class="{{ table_ui.filter_layout_classes() }}">
             <input type="hidden" name="page" value="1">
             <input type="hidden"
                    name="per_page"

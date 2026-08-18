@@ -98,11 +98,12 @@ def test_alert_intelligence_context_and_record_filter_geometry_are_distinct() ->
     workspace = read('app/templates/intelligence/partials/_alert_intelligence_workspace.html')
     alerts = read('app/templates/intelligence/partials/_alert_intelligence_alerts.html')
 
-    assert 'lg:grid-cols-12' in workspace
-    for token in ('lg:col-span-3', 'lg:col-span-5', 'lg:col-span-4'):
-        assert token in workspace
-    assert 'lg:grid-cols-12' in alerts
-    assert 'lg:col-span-6' in alerts
+    assert 'table_ui.filter_layout_classes()' in workspace
+    assert 'lg:grid-cols-12' not in workspace
+    assert 'lg:col-span-' not in workspace
+    assert 'table_ui.filter_layout_classes()' in alerts
+    assert 'lg:grid-cols-12' not in alerts
+    assert 'lg:col-span-' not in alerts
     assert 'Search' in alerts
     assert 'Severity' in alerts
     assert 'State' in alerts

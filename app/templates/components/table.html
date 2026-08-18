@@ -18,86 +18,88 @@
                     {{ table_primitives.block_description_classes() }}{%- endmacro %}
                     {% macro loading_bar_classes() -%}
                         {{ table_primitives.loading_bar_classes() }}{%- endmacro %}
-                        {% macro filter_bar_classes() -%}
-                            {{ table_primitives.filter_bar_classes() }}{%- endmacro %}
-                            {% macro filter_label_classes() -%}
-                                {{ table_primitives.filter_label_classes() }}{%- endmacro %}
-                                {% macro filter_input_classes() -%}
-                                    {{ table_primitives.filter_input_classes() }}{%- endmacro %}
-                                    {% macro filter_select_classes() -%}
-                                        {{ table_primitives.filter_select_classes() }}{%- endmacro %}
-                                        {% macro table_classes(min_width='') -%}
-                                            {{ table_primitives.table_classes(min_width) }}{%- endmacro %}
-                                            {% macro head_classes() -%}
-                                                {{ table_primitives.head_classes() }}{%- endmacro %}
-                                                {% macro header_cell_classes(action=false) -%}
-                                                    {{ table_primitives.header_cell_classes(action) }}{%- endmacro %}
-                                                    {% macro body_classes() -%}
-                                                        {{ table_primitives.body_classes() }}{%- endmacro %}
-                                                        {% macro row_classes() -%}
-                                                            {{ table_primitives.row_classes() }}{%- endmacro %}
-                                                            {% macro cell_classes(action=false) -%}
-                                                                {{ table_primitives.cell_classes(action) }}{%- endmacro %}
-                                                                {% macro title_cell(name, supporting_text='', icon='') -%}
-                                                                    {{ table_primitives.title_cell(name, supporting_text, icon) }}{%- endmacro %}
-                                                                    {% macro action_classes(destructive=false) -%}
-                                                                        {{ table_primitives.action_classes(destructive) }}{%- endmacro %}
-                                                                        {% macro namespace_identity(name, class_name='max-w-[220px]') -%}
-                                                                            <div class="flex min-w-0 items-center gap-2 {{ class_name }}">
-                                                                                <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary"
-                                                                                      aria-hidden="true">
-                                                                                    <i data-lucide="folder-tree" class="h-4 w-4"></i>
-                                                                                </span>
-                                                                                <span class="min-w-0 truncate text-sm font-semibold leading-5 text-content-primary"
-                                                                                      title="{{ name or '-' }}">{{ name or '-' }}</span>
-                                                                            </div>
-                                                                        {%- endmacro %}
-                                                                        {% macro cluster_identity(name, environment='') -%}
-                                                                            {% set environment_label = environment|environment_name(empty='Environment not specified') %}
-                                                                            <div class="flex min-w-[12rem] items-start gap-2.5">
-                                                                                <span class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary"
-                                                                                      aria-hidden="true">
-                                                                                    <i data-lucide="server" class="h-4 w-4"></i>
-                                                                                </span>
-                                                                                <div class="min-w-0">
-                                                                                    <p class="truncate text-sm font-semibold leading-5 text-content-primary"
-                                                                                       title="{{ name }}">{{ name }}</p>
-                                                                                    <p class="mt-0.5 truncate text-xs leading-5 text-content-muted"
-                                                                                       title="{{ environment_label }}">{{ environment_label }}</p>
+                        {% macro filter_layout_classes() -%}
+                            {{ table_primitives.filter_layout_classes() }}{%- endmacro %}
+                            {% macro filter_bar_classes() -%}
+                                {{ table_primitives.filter_bar_classes() }}{%- endmacro %}
+                                {% macro filter_label_classes() -%}
+                                    {{ table_primitives.filter_label_classes() }}{%- endmacro %}
+                                    {% macro filter_input_classes() -%}
+                                        {{ table_primitives.filter_input_classes() }}{%- endmacro %}
+                                        {% macro filter_select_classes() -%}
+                                            {{ table_primitives.filter_select_classes() }}{%- endmacro %}
+                                            {% macro table_classes(min_width='') -%}
+                                                {{ table_primitives.table_classes(min_width) }}{%- endmacro %}
+                                                {% macro head_classes() -%}
+                                                    {{ table_primitives.head_classes() }}{%- endmacro %}
+                                                    {% macro header_cell_classes(action=false) -%}
+                                                        {{ table_primitives.header_cell_classes(action) }}{%- endmacro %}
+                                                        {% macro body_classes() -%}
+                                                            {{ table_primitives.body_classes() }}{%- endmacro %}
+                                                            {% macro row_classes() -%}
+                                                                {{ table_primitives.row_classes() }}{%- endmacro %}
+                                                                {% macro cell_classes(action=false) -%}
+                                                                    {{ table_primitives.cell_classes(action) }}{%- endmacro %}
+                                                                    {% macro title_cell(name, supporting_text='', icon='') -%}
+                                                                        {{ table_primitives.title_cell(name, supporting_text, icon) }}{%- endmacro %}
+                                                                        {% macro action_classes(destructive=false) -%}
+                                                                            {{ table_primitives.action_classes(destructive) }}{%- endmacro %}
+                                                                            {% macro namespace_identity(name, class_name='max-w-[220px]') -%}
+                                                                                <div class="flex min-w-0 items-center gap-2 {{ class_name }}">
+                                                                                    <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary"
+                                                                                          aria-hidden="true">
+                                                                                        <i data-lucide="folder-tree" class="h-4 w-4"></i>
+                                                                                    </span>
+                                                                                    <span class="min-w-0 truncate text-sm font-semibold leading-5 text-content-primary"
+                                                                                          title="{{ name or '-' }}">{{ name or '-' }}</span>
                                                                                 </div>
-                                                                            </div>
-                                                                        {%- endmacro %}
-                                                                        {% macro namespaced_scope_identity(cluster_name, cluster_environment, namespace) -%}
-                                                                            <div class="min-w-[12rem]">
-                                                                                {{ cluster_identity(cluster_name, cluster_environment) }}
-                                                                                <div class="mt-1.5 pl-10">
-                                                                                    <p class="truncate text-xs leading-5 text-content-muted"
-                                                                                       title="{{ namespace or '-' }}">Namespace · {{ namespace or '-' }}</p>
-                                                                                </div>
-                                                                            </div>
-                                                                        {%- endmacro %}
-                                                                        {% macro inventory_block_header(icon, title, description, loading_id, loading_label, action_href, action_label='Manage Clusters') -%}
-                                                                            <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
-                                                                                <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                                                                                    <div class="flex min-w-0 items-start gap-3">
-                                                                                        <span class="{{ block_icon_classes() }}" aria-hidden="true">
-                                                                                            <i data-lucide="{{ icon }}" class="h-5 w-5"></i>
-                                                                                        </span>
-                                                                                        <div class="min-w-0">
-                                                                                            <h2 class="{{ block_title_classes() }}">{{ title }}</h2>
-                                                                                            <p class="{{ block_description_classes() }}">{{ description }}</p>
-                                                                                        </div>
-                                                                                    </div>
-                                                                                    <a href="{{ action_href }}" class="{{ action_classes() }}">
-                                                                                        <i data-lucide="server-cog" class="h-4 w-4" aria-hidden="true"></i>
-                                                                                        {{ action_label }}
-                                                                                    </a>
-                                                                                </div>
-                                                                                {{ loading_bar.render(loading_id, label=loading_label) }}
-                                                                            </header>
-                                                                        {%- endmacro %}
-                                                                        {% macro inventory_filter_bar_classes() -%}
-                                                                            {{ table_primitives.inventory_filter_bar_classes() }}{%- endmacro %}
-                                                                            {% macro search_field(name, value, placeholder, id=None) -%}
-                                                                                {{ table_primitives.search_field(name, value, placeholder, id) }}
                                                                             {%- endmacro %}
+                                                                            {% macro cluster_identity(name, environment='') -%}
+                                                                                {% set environment_label = environment|environment_name(empty='Environment not specified') %}
+                                                                                <div class="flex min-w-[12rem] items-start gap-2.5">
+                                                                                    <span class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary"
+                                                                                          aria-hidden="true">
+                                                                                        <i data-lucide="server" class="h-4 w-4"></i>
+                                                                                    </span>
+                                                                                    <div class="min-w-0">
+                                                                                        <p class="truncate text-sm font-semibold leading-5 text-content-primary"
+                                                                                           title="{{ name }}">{{ name }}</p>
+                                                                                        <p class="mt-0.5 truncate text-xs leading-5 text-content-muted"
+                                                                                           title="{{ environment_label }}">{{ environment_label }}</p>
+                                                                                    </div>
+                                                                                </div>
+                                                                            {%- endmacro %}
+                                                                            {% macro namespaced_scope_identity(cluster_name, cluster_environment, namespace) -%}
+                                                                                <div class="min-w-[12rem]">
+                                                                                    {{ cluster_identity(cluster_name, cluster_environment) }}
+                                                                                    <div class="mt-1.5 pl-10">
+                                                                                        <p class="truncate text-xs leading-5 text-content-muted"
+                                                                                           title="{{ namespace or '-' }}">Namespace · {{ namespace or '-' }}</p>
+                                                                                    </div>
+                                                                                </div>
+                                                                            {%- endmacro %}
+                                                                            {% macro inventory_block_header(icon, title, description, loading_id, loading_label, action_href, action_label='Manage Clusters') -%}
+                                                                                <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+                                                                                    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                                                                        <div class="flex min-w-0 items-start gap-3">
+                                                                                            <span class="{{ block_icon_classes() }}" aria-hidden="true">
+                                                                                                <i data-lucide="{{ icon }}" class="h-5 w-5"></i>
+                                                                                            </span>
+                                                                                            <div class="min-w-0">
+                                                                                                <h2 class="{{ block_title_classes() }}">{{ title }}</h2>
+                                                                                                <p class="{{ block_description_classes() }}">{{ description }}</p>
+                                                                                            </div>
+                                                                                        </div>
+                                                                                        <a href="{{ action_href }}" class="{{ action_classes() }}">
+                                                                                            <i data-lucide="server-cog" class="h-4 w-4" aria-hidden="true"></i>
+                                                                                            {{ action_label }}
+                                                                                        </a>
+                                                                                    </div>
+                                                                                    {{ loading_bar.render(loading_id, label=loading_label) }}
+                                                                                </header>
+                                                                            {%- endmacro %}
+                                                                            {% macro inventory_filter_bar_classes() -%}
+                                                                                {{ table_primitives.inventory_filter_bar_classes() }}{%- endmacro %}
+                                                                                {% macro search_field(name, value, placeholder, id=None) -%}
+                                                                                    {{ table_primitives.search_field(name, value, placeholder, id) }}
+                                                                                {%- endmacro %}

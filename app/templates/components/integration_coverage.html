@@ -44,7 +44,7 @@
                   hx-push-url="true"
                   hx-trigger="change from:select, keyup changed delay:500ms from:input[name='coverage_q'], search from:input[name='coverage_q']"
                   hx-indicator="#{{ provider.key }}-coverage-loading"
-                  class="grid gap-4 md:grid-cols-2 xl:grid-cols-12 xl:items-end">
+                  class="{{ table_ui.filter_layout_classes() }}">
                 <input type="hidden" name="tab" value="coverage">
                 <input type="hidden" name="coverage_page" value="1">
                 <input type="hidden"
@@ -60,7 +60,7 @@
                        value="{{ selected_deployment_type }}">
                 <input type="hidden" name="page" value="1">
                 <input type="hidden" name="per_page" value="{{ registry_per_page }}">
-                <div class="md:col-span-2 xl:col-span-5">
+                <div class="min-w-0">
                     <label class="{{ integration_ui.control_label_classes() }}"
                            for="{{ provider.key }}-coverage-search">Search Scope</label>
                     <div class="relative">
@@ -75,7 +75,7 @@
                                class="{{ integration_ui.search_classes() }}">
                     </div>
                 </div>
-                <div class="xl:col-span-3">
+                <div class="min-w-0">
                     <label class="{{ integration_ui.control_label_classes() }}"
                            for="{{ provider.key }}-coverage-environment">Environment</label>
                     <select id="{{ provider.key }}-coverage-environment"
@@ -88,7 +88,7 @@
                         {% endfor %}
                     </select>
                 </div>
-                <div class="xl:col-span-4">
+                <div class="min-w-0">
                     <label class="{{ integration_ui.control_label_classes() }}"
                            for="{{ provider.key }}-coverage-status">Coverage</label>
                     <select id="{{ provider.key }}-coverage-status"

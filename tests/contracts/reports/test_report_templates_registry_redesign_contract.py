@@ -29,7 +29,7 @@ def test_template_registry_uses_full_width_kaori_workspace() -> None:
     assert 'data-template-registry="true"' in template
     assert "marker_name='data-template-filters'" in template
     assert "marker_value='true'" in template
-    assert 'xl:grid-cols-7' in template
+    assert 'xl:grid-cols-7' not in template
     assert 'Template Registry' in template
     assert '>Template<' in template
     assert '>Domain<' in template

@@ -41,7 +41,7 @@
               hx-push-url="true"
               hx-indicator="#kubernetes-registry-loading"
               hx-trigger="input changed delay:300ms from:#kubernetes-registry-search, change delay:100ms from:select"
-              class="grid gap-3 sm:grid-cols-2 xl:grid-cols-[minmax(0,1.5fr)_repeat(3,minmax(0,1fr))]">
+              class="{{ table_ui.filter_layout_classes() }}">
             <input type="hidden" name="tab" value="registry">
             <input type="hidden" name="page" value="1">
             <input type="hidden" name="per_page" value="{{ pagination.per_page }}">

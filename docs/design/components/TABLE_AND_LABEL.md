@@ -160,7 +160,19 @@ Two visible row actions remain the preferred default because they preserve scana
 
 ## 11. Filter bar
 
-On desktop, filters share one row when space allows. On smaller screens, use a responsive grid or stack without horizontal overflow.
+Filter field groups use the canonical `table_ui.filter_layout_classes()` layout. `registry_ui.filter_form(...)` applies the same layout automatically. Page-local fixed desktop grids (`lg:grid-cols-*`, `xl:grid-cols-*`, or fixed-width search/select columns) are not the default filter geometry.
+
+The canonical layout is full-width and content-aware:
+
+- every visible direct filter field participates in the available row width;
+- fields wrap when the viewport cannot preserve a practical control width;
+- when a wrapped row contains fewer fields, those fields expand to consume the remaining row width instead of leaving an orphan empty column;
+- two visible filters fill the row as two peers, three filters fill it as three peers, and a single remaining filter fills its row;
+- hidden inputs do not reserve layout space;
+- explicit action groups may remain content-width when the filter surface includes `Apply`, `Clear Filters`, or another operator action; the filter fields still consume all remaining width;
+- filters never use `max-w-*` merely to keep a control visually narrow inside an otherwise empty filter row.
+
+On smaller screens the same contract stacks or wraps without page-level horizontal overflow. This full-width fill behavior is the KAORI default for Inventory, Integrations, Access, Intelligence, Reports, Governance, and Platform Operations filter surfaces.
 
 Filter labels:
 

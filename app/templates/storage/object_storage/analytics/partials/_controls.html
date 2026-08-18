@@ -31,7 +31,7 @@
               hx-indicator="#object-storage-analytics-refresh-indicator"
               hx-trigger="change delay:120ms"
               data-analytics-preserve-tab
-              class="grid gap-4 sm:grid-cols-2">
+              class="{{ table_ui.filter_layout_classes() }}">
             <input type="hidden" name="tab" value="">
             <label class="block" for="object-storage-system-filter">
                 <span class="{{ table_ui.filter_label_classes() }}">Object Storage System</span>

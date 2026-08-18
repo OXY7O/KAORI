@@ -4,7 +4,8 @@ All notable KAORI changes are recorded here. KAORI uses Semantic Versioning for 
 
 ## [Unreleased]
 
-No changes recorded after the 2.3.0 release.
+### Changed
+- Standardized KAORI filter geometry on one full-width wrapping layout: visible Search/select fields now share all available row width, incomplete wrapped rows expand instead of leaving orphan desktop columns, and compact action groups keep only the space they need.
 
 ## [2.3.0] - 2026-08-18
 

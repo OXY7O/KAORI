@@ -39,8 +39,8 @@
       hx-push-url="true"
       hx-indicator="#permission-registry-loading">
     <input type="hidden" name="view" value="registry">
-    <div class="grid w-full gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <label class="block min-w-0 sm:col-span-2 lg:col-span-1">
+    <div class="{{ table_ui.filter_layout_classes() }}">
+        <label class="block min-w-0">
             <span class="{{ table_ui.filter_label_classes() }}">Search Permission</span>
             <div class="relative">
                 <i data-lucide="search"

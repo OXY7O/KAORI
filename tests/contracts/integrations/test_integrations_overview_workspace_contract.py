@@ -54,7 +54,8 @@ def test_runtime_filters_auto_refresh_in_one_row_without_action_buttons() -> Non
     runtime = read('app/templates/integrations/partials/_runtime_overview.html')
 
     assert 'hx-trigger="change delay:100ms"' in runtime
-    assert 'class="grid gap-4 md:grid-cols-3 md:items-end"' in runtime
+    assert 'table_ui.filter_layout_classes()' in runtime
+    assert 'md:grid-cols-3' not in runtime
     assert runtime.count('table_ui.filter_select_classes()') == 3
     assert 'Apply Filters' not in runtime
     assert '>Reset<' not in runtime

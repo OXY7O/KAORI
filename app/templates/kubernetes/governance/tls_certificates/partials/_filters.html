@@ -7,13 +7,13 @@
       hx-swap="outerHTML"
       hx-indicator="#tls-certificates-table-loading"
       hx-trigger="change, keyup changed delay:500ms from:find input[name='search']"
-      class="grid gap-4 xl:grid-cols-12 xl:items-end">
+      class="{{ table_ui.filter_layout_classes() }}">
     <input type="hidden" name="page" value="1">
     <input type="hidden"
            name="per_page"
            value="{{ payload.pagination.per_page }}">
     <input type="hidden" name="partial_mode" value="page_workspace">
-    <div class="xl:col-span-3">
+    <div class="min-w-0">
         <label class="{{ table_ui.filter_label_classes() }}"
                for="tls-cluster-filter">Cluster</label>
         <select id="tls-cluster-filter"
@@ -26,7 +26,7 @@
             {% endfor %}
         </select>
     </div>
-    <div class="xl:col-span-3">
+    <div class="min-w-0">
         <label class="{{ table_ui.filter_label_classes() }}"
                for="tls-namespace-filter">Namespace</label>
         <select id="tls-namespace-filter"
@@ -39,7 +39,7 @@
             {% endfor %}
         </select>
     </div>
-    <div class="xl:col-span-2">
+    <div class="min-w-0">
         <label class="{{ table_ui.filter_label_classes() }}" for="tls-status-filter">Validity</label>
         <select id="tls-status-filter"
                 name="status"
@@ -51,7 +51,7 @@
             {% endfor %}
         </select>
     </div>
-    <div class="xl:col-span-4">
+    <div class="min-w-0">
         <label class="{{ table_ui.filter_label_classes() }}" for="tls-search-filter">Search TLS Certificates</label>
         {{ table_ui.search_field('search', payload.filters.search, 'Search Secret name, namespace, subject, or issuer') }}
     </div>

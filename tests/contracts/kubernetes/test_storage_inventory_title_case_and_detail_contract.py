@@ -31,7 +31,8 @@ def test_storage_inventory_uses_canonical_resource_page_pattern() -> None:
     assert 'hx-target="#storage-page-workspace"' in card
     assert 'name="partial_mode" value="page_workspace"' in card
     assert 'aria-label="Storage inventory filters"' in card
-    assert 'lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,0.9fr)_minmax(0,0.9fr)_minmax(16rem,1.35fr)]' in card
+    assert 'table_ui.filter_layout_classes()' in card
+    assert 'lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,0.9fr)_minmax(0,0.9fr)_minmax(16rem,1.35fr)]' not in card
     for control_id in (
         'storage-cluster-filter',
         'storage-namespace-filter',

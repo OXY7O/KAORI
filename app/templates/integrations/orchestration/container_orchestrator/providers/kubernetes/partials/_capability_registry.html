@@ -63,7 +63,7 @@
         <input type="hidden"
                name="capability_per_page"
                value="{{ pagination.per_page }}">
-        <div class="grid gap-3 lg:grid-cols-[minmax(0,1fr)_14rem_14rem]">
+        <div class="{{ table_ui.filter_layout_classes() }}">
             <label class="block min-w-0">
                 <span class="{{ integration_ui.control_label_classes() }}">Search Capability</span>
                 <span class="relative block">

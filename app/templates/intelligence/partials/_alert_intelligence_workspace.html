@@ -83,8 +83,8 @@
                     Selected asset and alert source define the evidence context shared across every Alert Intelligence section.
                 </p>
             </div>
-            <div class="grid flex-1 gap-3 sm:grid-cols-2 lg:max-w-4xl lg:grid-cols-12">
-                <label class="block lg:col-span-3">
+            <div class="{{ table_ui.filter_layout_classes() }} flex-1">
+                <label class="block">
                     <span class="{{ table_ui.filter_label_classes() }}">Domain</span>
                     <select name="domain"
                             autocomplete="off"
@@ -97,7 +97,7 @@
                         {% endfor %}
                     </select>
                 </label>
-                <label class="block lg:col-span-5">
+                <label class="block">
                     <span class="{{ table_ui.filter_label_classes() }}">Asset</span>
                     <select name="asset"
                             autocomplete="off"
@@ -112,7 +112,7 @@
                         {% endfor %}
                     </select>
                 </label>
-                <label class="block lg:col-span-4">
+                <label class="block">
                     <span class="{{ table_ui.filter_label_classes() }}">Alert Source</span>
                     <select name="source"
                             autocomplete="off"

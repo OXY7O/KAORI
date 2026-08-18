@@ -64,15 +64,15 @@
                 ) }}
             {% endif %}
         </div>
-        <div class="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-12">
-            <label class="block lg:col-span-6">
+        <div class="mt-3 {{ table_ui.filter_layout_classes() }}">
+            <label class="block">
                 <span class="{{ table_ui.filter_label_classes() }}">Search</span>
                 {{ table_ui.search_field('q',
                                 payload.filters.q,
                                 'Search alert name, target, receiver, or summary',
                                 id='alert-intelligence-search') }}
             </label>
-            <label class="block lg:col-span-3">
+            <label class="block">
                 <span class="{{ table_ui.filter_label_classes() }}">Severity</span>
                 <select name="severity"
                         autocomplete="off"
@@ -90,7 +90,7 @@
                     {% endfor %}
                 </select>
             </label>
-            <label class="block lg:col-span-3">
+            <label class="block">
                 <span class="{{ table_ui.filter_label_classes() }}">State</span>
                 <select name="state"
                         autocomplete="off"

@@ -1,7 +1,6 @@
 {# Inventory-aligned local filter owner for record-oriented Analytics panels. #}
 {% import "components/table_primitives.html" as table_ui %}
 {% macro form(form_id, action, hx_get, target, indicator, trigger, columns=3) -%}
-    {% set column_classes = 'lg:grid-cols-[minmax(0,1fr)_minmax(0,0.8fr)_minmax(0,0.8fr)]' if columns == 3 else 'lg:grid-cols-[minmax(0,1fr)_minmax(0,0.8fr)]' %}
     <form id="{{ form_id }}"
           method="get"
           action="{{ action }}"
@@ -11,7 +10,7 @@
           hx-swap="outerHTML"
           hx-sync="{{ target }}:replace"
           hx-indicator="{{ indicator }}"
-          class="grid gap-4 border-b border-outline-subtle bg-surface-hover px-4 py-4 sm:px-5 {{ column_classes }} lg:items-end">
+          class="{{ table_ui.filter_layout_classes() }} border-b border-outline-subtle bg-surface-hover px-4 py-4 sm:px-5">
         {{ caller() }}
     </form>
 {%- endmacro %}

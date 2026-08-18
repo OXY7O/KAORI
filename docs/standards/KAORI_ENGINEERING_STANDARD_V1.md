@@ -65,6 +65,7 @@ Requirements include:
 - default Rows = 5;
 - Rows options = 5 / 10 / 25 / 50;
 - stable filter and pagination state;
+- canonical filter rows use the shared full-width wrapping geometry (`table_ui.filter_layout_classes()` or `registry_ui.filter_form(...)` ownership): visible fields expand across the available row, incomplete wrap rows do not leave orphan columns, and page-local fixed desktop filter grids/max-width caps are prohibited unless an explicit action/control composition requires them;
 - every canonical filtered table exposes **Clear Filters** only while search/filter state is active; clearing resets the table to page 1, preserves the current Rows selection, and keeps the owning HTMX target/loading contract;
 - use the label **Clear Filters** and the shared `components/table_registry.html` interaction instead of page-local `Reset Filter(s)` controls;
 - canonical compact rectangular status/metadata labels;

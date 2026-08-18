@@ -59,7 +59,7 @@ def test_activity_register_uses_immutable_actor_and_persisted_category_filters()
         'Status',
         'Actor',
         'Time Range',
-        'class="grid w-full gap-3 sm:grid-cols-2 xl:grid-cols-5"',
+        'table_ui.filter_layout_classes()',
         "loading_bar.render('operational-activity-loading'",
         'Refreshing Activity Register',
     ):

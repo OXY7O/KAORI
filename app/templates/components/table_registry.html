@@ -1,4 +1,5 @@
 {% import "components/pagination.html" as pagination_ui %}
+{% import "components/table_primitives.html" as table_primitives %}
 {#
   KAORI canonical server-backed registry interaction contract.
 
@@ -25,7 +26,7 @@
           hx-sync="closest section:replace"
           data-kaori-canonical-registry-filter="{{ registry_id }}"
           {% if marker_name %}{{ marker_name }}="{{ marker_value }}"{% endif %}
-          class="{{ classes }}">
+          class="{{ table_primitives.filter_layout_classes() }} {{ classes }}">
         <input type="hidden" name="{{ page_param }}" value="1">
         <input type="hidden" name="{{ per_page_param }}" value="{{ per_page }}">
         {{ caller() }}

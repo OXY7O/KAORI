@@ -176,12 +176,12 @@
                         <input type="hidden" name="view" value="notifications">
                         <input type="hidden" name="page" value="1">
                         <input type="hidden" name="per_page" value="{{ pager.per_page }}">
-                        <div class="min-w-0 lg:min-w-[20rem] lg:flex-1">
+                        <div class="min-w-0">
                             <label for="notification-center-search"
                                    class="{{ table_ui.filter_label_classes() }}">Search Notifications</label>
                             {{ table_ui.search_field('search', filters.search, 'Search title, message, detail, or event', id='notification-center-search') }}
                         </div>
-                        <div class="min-w-0 lg:w-48 lg:shrink-0">
+                        <div class="min-w-0">
                             <label for="notification-center-category"
                                    class="{{ table_ui.filter_label_classes() }}">Category</label>
                             <select id="notification-center-category"
@@ -194,7 +194,7 @@
                                 {% endfor %}
                             </select>
                         </div>
-                        <div class="min-w-0 lg:w-48 lg:shrink-0">
+                        <div class="min-w-0">
                             <label for="notification-center-status"
                                    class="{{ table_ui.filter_label_classes() }}">Status</label>
                             <select id="notification-center-status"
@@ -209,7 +209,7 @@
                                 <option value="info" {% if filters.status == 'info' %}selected{% endif %}>Information</option>
                             </select>
                         </div>
-                        <div class="min-w-0 lg:w-48 lg:shrink-0">
+                        <div class="min-w-0">
                             <label for="notification-center-state"
                                    class="{{ table_ui.filter_label_classes() }}">State</label>
                             <select id="notification-center-state"

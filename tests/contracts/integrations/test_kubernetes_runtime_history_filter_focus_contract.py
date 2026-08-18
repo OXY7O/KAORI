@@ -23,7 +23,8 @@ def test_runtime_history_uses_kaori_one_line_htmx_filters_without_buttons():
     source = _text(RUNTIME_HISTORY)
     assert 'data-kaori-runtime-history-filters' in source
     assert 'table_ui.inventory_filter_bar_classes()' in source
-    assert 'lg:grid-cols-3' in source
+    assert 'table_ui.filter_layout_classes()' in source
+    assert 'lg:grid-cols-3' not in source
     assert 'hx-trigger="change delay:100ms"' in source
     assert 'name="history_trigger"' in source
     assert 'name="history_health"' in source

@@ -33,7 +33,7 @@
     <div class="{{ table_ui.inventory_filter_bar_classes() }}">
         <form method="get"
               action="{{ url_for('access.roles.index') }}"
-              class="grid gap-3 lg:grid-cols-3"
+              class="{{ table_ui.filter_layout_classes() }}"
               hx-get="{{ url_for('access.roles.index') }}"
               hx-trigger="keyup changed delay:400ms from:input[name='search'], change from:select[name='role_type'], change from:select[name='state']"
               hx-target="#role-registry"

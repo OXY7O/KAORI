@@ -41,7 +41,7 @@
               hx-push-url="true"
               hx-trigger="change from:select, keyup changed delay:500ms from:input[name='q'], search from:input[name='q']"
               hx-indicator="#metrics-source-inventory-loading"
-              class="grid gap-3 sm:grid-cols-2 xl:grid-cols-[minmax(0,1.5fr)_minmax(0,0.7fr)_minmax(0,0.7fr)_minmax(0,0.9fr)] xl:items-end">
+              class="{{ table_ui.filter_layout_classes() }}">
             <input type="hidden" name="tab" value="registry">
             <input type="hidden" name="page" value="1">
             <input type="hidden" name="per_page" value="{{ pagination.per_page }}">

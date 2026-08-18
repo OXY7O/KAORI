@@ -13,10 +13,9 @@ def test_recommendation_and_catalog_filters_use_shared_two_desktop_rows() -> Non
     catalog = read('app/templates/intelligence/partials/_catalog_workspace.html')
 
     assert '{% set filter_compact_two_rows = true %}' in workspace
-    assert "'lg:grid-cols-12' if filter_compact_two_rows" in filters
-    assert "'lg:col-span-4' if filter_compact_two_rows" in filters
-    assert "'lg:col-span-2' if filter_compact_two_rows" in filters
-    assert "'lg:col-span-3' if filter_compact_two_rows" in filters
+    assert 'table_ui.filter_layout_classes()' in filters
+    assert 'lg:grid-cols-12' not in filters
+    assert 'lg:col-span-' not in filters
     assert filters.index('>Signal Source</span>') < filters.index('>Severity</span>')
     assert '{% set filter_compact_two_rows = true %}' in catalog
 

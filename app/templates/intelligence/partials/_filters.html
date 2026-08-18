@@ -41,12 +41,12 @@
             ) }}
         {% endif %}
     </div>
-    <div class="grid gap-3 sm:grid-cols-2 {{ 'lg:grid-cols-12' if filter_compact_two_rows|default(false) else 'xl:grid-cols-4' }}">
-        <label class="block {{ 'lg:col-span-4' if filter_compact_two_rows|default(false) else 'xl:col-span-2' }}">
+    <div class="{{ table_ui.filter_layout_classes() }}">
+        <label class="block">
             <span class="{{ table_ui.filter_label_classes() }}">Search</span>
             {{ table_ui.search_field('q', payload.filters.q, resolved_search_placeholder) }}
         </label>
-        <label class="block {{ 'lg:col-span-2' if filter_compact_two_rows|default(false) else '' }}">
+        <label class="block">
             <span class="{{ table_ui.filter_label_classes() }}">Domain</span>
             <select name="domain"
                     autocomplete="off"
@@ -57,7 +57,7 @@
                 {% endfor %}
             </select>
         </label>
-        <label class="block {{ 'lg:col-span-3' if filter_compact_two_rows|default(false) else '' }}">
+        <label class="block">
             <span class="{{ table_ui.filter_label_classes() }}">Provider Coverage</span>
             <select name="provider"
                     autocomplete="off"
@@ -69,7 +69,7 @@
             </select>
         </label>
         {% if filter_compact_two_rows|default(false) %}
-            <label class="block lg:col-span-3">
+            <label class="block">
                 <span class="{{ table_ui.filter_label_classes() }}">Signal Source</span>
                 <select name="signal_source"
                         autocomplete="off"
@@ -81,7 +81,7 @@
                 </select>
             </label>
         {% endif %}
-        <label class="block {{ 'lg:col-span-3' if filter_compact_two_rows|default(false) else '' }}">
+        <label class="block">
             <span class="{{ table_ui.filter_label_classes() }}">Severity</span>
             <select name="severity"
                     autocomplete="off"
@@ -92,7 +92,7 @@
                 {% endfor %}
             </select>
         </label>
-        <label class="block {{ 'lg:col-span-3' if filter_compact_two_rows|default(false) else '' }}">
+        <label class="block">
             <span class="{{ table_ui.filter_label_classes() }}">Category</span>
             <select name="category"
                     autocomplete="off"
@@ -103,7 +103,7 @@
                 {% endfor %}
             </select>
         </label>
-        <label class="block {{ 'lg:col-span-3' if filter_compact_two_rows|default(false) else '' }}">
+        <label class="block">
             <span class="{{ table_ui.filter_label_classes() }}">Resource Type</span>
             <select name="source_kind"
                     autocomplete="off"
@@ -114,7 +114,7 @@
                 {% endfor %}
             </select>
         </label>
-        <label class="block {{ 'lg:col-span-3' if filter_compact_two_rows|default(false) else '' }}">
+        <label class="block">
             <span class="{{ table_ui.filter_label_classes() }}">Rule Type</span>
             <select name="logic_type"
                     autocomplete="off"

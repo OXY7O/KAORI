@@ -38,7 +38,7 @@
       hx-push-url="true"
       hx-indicator="#permission-coverage-loading">
     <input type="hidden" name="view" value="coverage">
-    <div class="grid w-full gap-3 sm:grid-cols-2 lg:grid-cols-5">
+    <div class="{{ table_ui.filter_layout_classes() }}">
         <label class="block min-w-0">
             <span class="{{ table_ui.filter_label_classes() }}">Search Permission</span>
             <div class="relative">

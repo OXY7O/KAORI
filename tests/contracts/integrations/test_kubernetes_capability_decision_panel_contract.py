@@ -67,7 +67,8 @@ def test_capability_registry_filters_do_not_force_horizontal_scroll():
     source = REGISTRY.read_text(encoding='utf-8')
 
     assert 'data-kaori-capability-filters' in source
-    assert 'lg:grid-cols-[minmax(0,1fr)_14rem_14rem]' in source
+    assert 'table_ui.filter_layout_classes()' in source
+    assert 'lg:grid-cols-[minmax(0,1fr)_14rem_14rem]' not in source
     assert 'table-fixed' in source
     assert 'min-w-[760px]' not in source
     assert 'min-w-[820px]' not in source

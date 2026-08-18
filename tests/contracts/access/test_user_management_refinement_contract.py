@@ -78,8 +78,8 @@ def test_user_directory_uses_shared_kaori_loading_filters_labels_and_expand_deta
     assert 'Clear Filters' not in filters
     assert 'Local Database' in filters
     assert '· Inactive' in filters
-    assert 'lg:grid-cols-4' in filters
-    assert 'lg:grid-cols-[' not in filters
+    assert 'table_ui.filter_layout_classes()' in filters
+    assert 'lg:grid-cols-' not in filters
     assert '{% import "components/details/_expandable_row.html" as expandable %}' in table
     assert 'expandable.toggle_button' in table
     assert 'expandable.static_detail_row' in table

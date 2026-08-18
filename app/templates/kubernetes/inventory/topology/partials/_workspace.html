@@ -14,8 +14,8 @@
     ) %}
     <div class="border-b border-outline-subtle bg-surface-elevated px-5 py-4">
         <form id="topology-filter-form"
-              class="grid gap-4 xl:grid-cols-12 xl:items-end">
-            <div class="xl:col-span-2">
+              class="{{ table_ui.filter_layout_classes() }}">
+            <div class="min-w-0">
                 <label for="topology-cluster"
                        class="mb-2 block text-xs font-semibold text-content-secondary">Cluster</label>
                 <select id="topology-cluster"
@@ -28,7 +28,7 @@
                     {% endfor %}
                 </select>
             </div>
-            <div class="xl:col-span-2">
+            <div class="min-w-0">
                 <label for="topology-namespace"
                        class="mb-2 block text-xs font-semibold text-content-secondary">Namespace</label>
                 <select id="topology-namespace"
@@ -44,7 +44,7 @@
                     {% endif %}
                 </select>
             </div>
-            <div class="xl:col-span-2">
+            <div class="min-w-0">
                 <label for="topology-scope"
                        class="mb-2 block text-xs font-semibold text-content-secondary">Resource Scope</label>
                 <select id="topology-scope"
@@ -56,7 +56,7 @@
                     {% endfor %}
                 </select>
             </div>
-            <div class="xl:col-span-2">
+            <div class="min-w-0">
                 <label for="topology-depth"
                        class="mb-2 block text-xs font-semibold text-content-secondary">Depth</label>
                 <select id="topology-depth"
@@ -68,7 +68,7 @@
                     {% endfor %}
                 </select>
             </div>
-            <div class="xl:col-span-4">
+            <div class="min-w-0">
                 <label for="topology-search"
                        class="mb-2 block text-xs font-semibold text-content-secondary">Search Resource</label>
                 <div class="relative">

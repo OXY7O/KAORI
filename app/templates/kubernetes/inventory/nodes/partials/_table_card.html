@@ -26,7 +26,7 @@
               hx-trigger="change, keyup changed delay:500ms from:find input[name='search']"
               hx-indicator="#nodes-table-loading"
               aria-label="Node inventory filters"
-              class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(16rem,1.35fr)] lg:items-end">
+              class="{{ table_ui.filter_layout_classes() }}">
             <input type="hidden" name="page" value="1" />
             <input type="hidden" name="per_page" value="{{ pagination.per_page }}" />
             <input type="hidden" name="partial_mode" value="page_workspace" />

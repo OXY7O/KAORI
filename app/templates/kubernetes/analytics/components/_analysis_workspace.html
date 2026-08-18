@@ -10,6 +10,9 @@
 {% macro control_select_classes() -%}
     {{ table_ui.filter_select_classes() }}
 {%- endmacro %}
+{% macro filter_layout_classes() -%}
+    {{ table_ui.filter_layout_classes() }}
+{%- endmacro %}
 {% macro control_group(title, description, group_id, columns='sm:grid-cols-2') -%}
     <section class="min-w-0 bg-surface-card p-4" aria-labelledby="{{ group_id }}">
         <div class="min-h-16">
