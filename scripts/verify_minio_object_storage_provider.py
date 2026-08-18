@@ -12,6 +12,7 @@ PYTHON_FILES = (
     'app/integrations/storage/object_storage/providers/minio/__init__.py',
     'app/integrations/storage/object_storage/providers/minio/adapter.py',
     'app/integrations/storage/object_storage/providers/minio/capabilities.py',
+    'app/integrations/storage/object_storage/adapters/s3/client.py',
     'app/integrations/storage/object_storage/providers/minio/client.py',
     'app/integrations/storage/object_storage/providers/minio/compatibility.py',
     'app/integrations/observability/metrics_source/binding_profiles.py',
@@ -53,6 +54,7 @@ def main() -> None:
     )
     compatibility = read('app/integrations/storage/object_storage/providers/minio/compatibility.py')
     provider_catalog = read('app/definitions/catalogs/integrations/storage/object_storage/contract.yaml')
+    s3_adapter = read('app/integrations/storage/object_storage/adapters/s3/client.py')
     client = read('app/integrations/storage/object_storage/providers/minio/client.py')
     service = read('app/integrations/storage/object_storage/providers/minio/application/service.py')
     registration_service = read('app/integrations/storage/object_storage/providers/minio/application/registration.py')
@@ -108,7 +110,9 @@ def main() -> None:
     require('DELETE FROM integration_bindings' in owner_binding_cleanup, 'MinIO owner self-binding cleanup is missing')
     require("ii.provider_type = 'minio'" in owner_binding_cleanup, 'MinIO owner-binding cleanup must target MinIO only')
 
-    require("provider_type='minio'" in registration, 'MinIO provider is not registered')
+    require("integration_type='object_storage'" in registration, 'MinIO integration module must use the provider-neutral object_storage type')
+    require("provider_key='minio'" in registration, 'MinIO provider implementation is not registered')
+    require("adapter_key='s3'" in registration, 'MinIO provider implementation must use the S3 adapter boundary')
     require("domain_key='storage'" in registration, 'MinIO must belong to Storage')
     require("capability_key='object_storage'" in registration, 'MinIO must belong to Object Storage')
     require("navigation_endpoint_prefixes=('minio.',)" in registration, 'MinIO navigation ownership is missing')
@@ -153,9 +157,15 @@ def main() -> None:
         'MinIO API capability profile missing',
     )
 
-    require("boto3.client(\n        's3'" in client, 'MinIO API client must use the existing S3 SDK boundary')
-    require("signature_version='s3v4'" in client, 'MinIO S3 client must use SigV4')
-    require('client.list_buckets()' in client, 'MinIO registration validation must prove bucket discovery access')
+    require(
+        'from app.integrations.storage.object_storage.adapters.s3 import (' in client
+        and 'build_s3_client' in client
+        and 'list_buckets as list_s3_buckets' in client,
+        'MinIO provider must consume the shared S3 adapter boundary',
+    )
+    require("boto3.client(\n        's3'" in s3_adapter, 'Shared S3 adapter must use the boto3 S3 SDK boundary')
+    require("signature_version='s3v4'" in s3_adapter, 'Shared S3 adapter must use SigV4')
+    require('client.list_buckets()' in s3_adapter, 'Shared S3 adapter must prove bucket discovery access')
 
     require(
         'ensure_primary_asset_binding' not in service, 'MinIO registration must not create a provider-to-self binding'
@@ -184,8 +194,8 @@ def main() -> None:
     )
 
     require(
-        'get_integration(provider_type).get_instance(instance_id)' in validation_web,
-        'validation admission must be registry-driven',
+        'get_integration(integration_type).require_record_for_canonical(integration_instance_id)' in validation_web,
+        'validation admission must resolve canonical provider records through the integration registry',
     )
     for legacy in ('MetricsSource', 'AlertmanagerInstance', 'KubernetesConnection'):
         require(legacy not in validation_web, f'validation admission still hard-codes {legacy}')

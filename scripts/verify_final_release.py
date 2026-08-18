@@ -57,6 +57,7 @@ SHARED_CHECKS: tuple[tuple[str, tuple[str, ...]], ...] = (
     ('UI Style', (PYTHON, 'scripts/verify_ui_style.py')),
     ('UI Reuse', (PYTHON, 'scripts/verify_ui_reuse.py')),
     ('JavaScript', (PYTHON, 'scripts/verify_javascript_syntax.py')),
+    ('Template Dependencies', (PYTHON, 'scripts/verify_template_dependencies.py')),
     ('Release Governance', (PYTHON, 'scripts/verify_release_governance.py')),
     ('Environment Contract', (PYTHON, 'scripts/verify_environment_contract.py')),
     ('Notification Channels', (PYTHON, 'scripts/verify_notification_channels.py')),

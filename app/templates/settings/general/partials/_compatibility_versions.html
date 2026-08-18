@@ -39,9 +39,9 @@
                 <i data-lucide="table-properties" class="h-5 w-5"></i>
             </span>
             <div>
-                <h2 class="text-base font-bold text-content-primary">Supported Version Matrix</h2>
+                <h2 class="text-base font-bold text-content-primary">Qualified Compatibility Matrix</h2>
                 <p class="mt-1 text-sm leading-6 text-content-muted">
-                    Use the Recommended Baseline for new deployments. Minimum Compatible versions still require successful capability validation.
+                    This matrix reflects KAORI-qualified runtime contracts, not the upstream support calendar. New deployments should prefer the recommended qualified baseline and must still pass live capability validation.
                 </p>
             </div>
         </div>
@@ -67,7 +67,7 @@
                                 </span>
                                 <div class="min-w-0">
                                     <p class="text-sm font-semibold text-content-primary">{{ item.product }}</p>
-                                    <p class="mt-0.5 text-xs leading-5 text-content-muted">{{ item.profile_count }} profile{{ '' if item.profile_count == 1 else 's' }}</p>
+                                    <p class="mt-0.5 text-xs leading-5 text-content-muted">{{ item.profile_count }} profile{{ '' if item.profile_count == 1 else 's' }} · {{ item.version_scheme }}</p>
                                 </div>
                             </div>
                         </td>

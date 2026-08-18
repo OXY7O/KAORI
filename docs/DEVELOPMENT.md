@@ -1,5 +1,7 @@
 # KAORI Development Environment
 
+For the canonical start/stop sequence, production startup boundary, and runtime troubleshooting order, see `docs/RUNNING.md`. For the layered test strategy and release commands, see `docs/TESTING.md`.
+
 KAORI development uses VS Code Dev Containers and Docker Compose. Python, Flask,
 PostgreSQL, Redis, Node.js, Tailwind, and development linters run inside Linux
 containers. A host `.venv` is not required.
@@ -23,6 +25,12 @@ containers. A host `.venv` is not required.
 7. Press `F5` and select `KAORI: Flask Debug`.
 
 The application is available at `http://localhost:5000`.
+
+Equivalent terminal launch inside the Dev Container:
+
+```bash
+flask --app run:app run --host=0.0.0.0 --port=5000 --debug
+```
 
 ## Daily workflow
 

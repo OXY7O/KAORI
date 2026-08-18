@@ -9,28 +9,31 @@ from app.integrations.compatibility import (
     PROFILES,
 )
 from app.integrations.observability.metrics_source.providers import provider_definitions
+from app.integrations.storage.object_storage.providers.minio.compatibility import (
+    MINIO_COMPATIBILITY_PROFILES,
+)
 from app.kubernetes.cluster.constants import get_environment_label
 
 _RELEASE_HIGHLIGHTS: tuple[dict[str, str], ...] = (
     {
-        'title': 'Deterministic Final Release Gate',
-        'icon': 'badge-check',
+        'title': 'Provider-Neutral Integration Lifecycle',
+        'icon': 'unplug',
         'description': (
-            'One general release command now verifies navigation and Blueprint ownership, static quality, the full test suite, frontend formatting, endpoint registration, and worker runtime readiness.'
+            'Kubernetes, Prometheus, Thanos Query, Alertmanager, and MinIO now follow clearer provider, compatibility, capability, validation, binding, and consumer-readiness ownership boundaries.'
         ),
     },
     {
-        'title': 'Locked Operational Surfaces',
-        'icon': 'lock-keyhole',
+        'title': 'Operations & Data Lifecycle Control Plane',
+        'icon': 'workflow',
         'description': (
-            'Core Kubernetes, Analytics, Reports, Integrations, Platform Operations, Access, Settings, and Authentication surfaces are protected by permanent release contracts while Intelligence remains baseline-locked for controlled follow-on development.'
+            'Jobs, execution evidence, Data Lifecycle, notifications, object-storage analytics, and controlled automation surfaces converge on shared operational feedback and worker-owned execution contracts.'
         ),
     },
     {
-        'title': 'Hardening & Test Reliability',
+        'title': 'Release Reliability & Identity Hardening',
         'icon': 'shield-check',
         'description': (
-            'Authorization ordering, Secret handling, storage resilience, type safety, test prerequisites, module isolation, and runtime characterization were tightened so future defects can be handled inside smaller controlled scopes.'
+            'Release metadata, final gates, Access and Identity Provider boundaries, runtime imports, type safety, and regression contracts are tightened for a reproducible 2.3.0 deployment baseline.'
         ),
     },
 )
@@ -77,8 +80,8 @@ _RELEASE_FEATURES: tuple[dict[str, Any], ...] = (
         'icon': 'unplug',
         'description': 'Versioned adapters, live capability evidence, and recovery monitoring for infrastructure providers.',
         'features': (
-            'Kubernetes, Metrics Source, and Alertmanager compatibility profiles',
-            'Provider-neutral Metrics Source registration with adapter and query-language contracts',
+            'Kubernetes, Prometheus, Thanos Query, Alertmanager, and MinIO compatibility profiles',
+            'Provider-neutral Metrics Source registration with Prometheus and Thanos Query adapters plus asset-scoped consumer bindings',
             'Runtime observations, readiness validation, and capability evidence collection',
             'Automatic runtime monitoring with targeted recovery refresh after connectivity returns',
             'User-friendly source failure presentation without exposing raw endpoints or exceptions',
@@ -122,11 +125,12 @@ _STATIC_COMPATIBILITY_PRESENTATION: tuple[dict[str, Any], ...] = (
     {
         'key': 'kubernetes',
         'product': 'Kubernetes',
+        'version_scheme': 'Semantic version',
         'icon': 'ship-wheel',
         'minimum_version': '1.20',
         'minimum_label': 'v1.20',
-        'recommended_version': '1.34',
-        'recommended_label': 'v1.34+',
+        'recommended_version': '1.36',
+        'recommended_label': 'v1.36.x',
         'support_band': KUBERNETES_SUPPORTED_VERSION_LABEL,
         'current_band': KUBERNETES_CURRENT_VERSION_LABEL,
         'support_label': 'Current and Legacy Supported',
@@ -137,14 +141,15 @@ _STATIC_COMPATIBILITY_PRESENTATION: tuple[dict[str, Any], ...] = (
     {
         'key': 'alertmanager',
         'product': 'Alertmanager',
+        'version_scheme': 'Semantic version',
         'icon': 'bell-ring',
         'minimum_version': '0.25',
         'minimum_label': 'v0.25',
-        'recommended_version': '0.27',
-        'recommended_label': 'v0.27+',
+        'recommended_version': '0.33',
+        'recommended_label': 'v0.33.x',
         'support_band': 'v0.25–v0.33',
         'current_band': 'v0.27–v0.33',
-        'support_label': 'API v2 Current',
+        'support_label': 'API v2 Qualified',
         'support_tone': 'normal',
         'capability_summary': 'Alertmanager API v2 status, alerts, and silences contracts.',
         'validation_basis': 'Observed API metadata and binding scope must pass before alert analytics are considered ready.',
@@ -162,6 +167,7 @@ def _metrics_compatibility_presentation() -> tuple[dict[str, Any], ...]:
             {
                 'key': provider.key,
                 'product': provider.label,
+                'version_scheme': 'Semantic version',
                 'icon': provider.icon,
                 'minimum_version': support.minimum_version,
                 'minimum_label': support.minimum_label,
@@ -178,6 +184,35 @@ def _metrics_compatibility_presentation() -> tuple[dict[str, Any], ...]:
     return tuple(rows)
 
 
+def _object_storage_compatibility_presentation() -> dict[str, Any] | None:
+    if not MINIO_COMPATIBILITY_PROFILES:
+        return None
+    profile = MINIO_COMPATIBILITY_PROFILES[0]
+    return {
+        'key': 'minio',
+        'product': 'MinIO',
+        'version_scheme': 'Release identifier',
+        'minimum_version': profile.minimum_release,
+        'minimum_label': profile.minimum_release,
+        'recommended_version': profile.maximum_release,
+        'recommended_label': profile.maximum_release,
+        'support_band': profile.supported_range_label,
+        'current_band': profile.label,
+        'support_label': 'Qualified Release',
+        'support_tone': 'normal',
+        'capability_summary': 'S3 API reachability, product identity, bucket discovery, and optional object-storage governance capabilities.',
+        'validation_basis': 'The declared MinIO release must match a qualified provider profile; live S3/API validation and observability consumer bindings remain independently authoritative.',
+        'profiles': tuple(
+            {
+                'key': item.key,
+                'version_constraint': item.supported_range_label,
+                'support_level': item.support_level,
+            }
+            for item in MINIO_COMPATIBILITY_PROFILES
+        ),
+    }
+
+
 def _clean_config_value(value: Any, fallback: str = 'Not provided') -> str:
     normalized = str(value or '').strip()
     return normalized or fallback
@@ -185,24 +220,30 @@ def _clean_config_value(value: Any, fallback: str = 'Not provided') -> str:
 
 def _compatibility_catalog() -> tuple[dict[str, Any], ...]:
     catalog: list[dict[str, Any]] = []
+    minio = _object_storage_compatibility_presentation()
     presentations = (
         _STATIC_COMPATIBILITY_PRESENTATION[0],
         *_metrics_compatibility_presentation(),
         *_STATIC_COMPATIBILITY_PRESENTATION[1:],
+        *((minio,) if minio else ()),
     )
     for presentation in presentations:
-        profiles = PROFILES.get(presentation['key'], ())
+        explicit_profiles = presentation.get('profiles')
+        if explicit_profiles is not None:
+            profiles = tuple(explicit_profiles)
+        else:
+            profiles = tuple(
+                {
+                    'key': profile.key,
+                    'version_constraint': profile.version_constraint,
+                    'support_level': profile.support_level,
+                }
+                for profile in PROFILES.get(presentation['key'], ())
+            )
         catalog.append(
             {
                 **presentation,
-                'profiles': tuple(
-                    {
-                        'key': profile.key,
-                        'version_constraint': profile.version_constraint,
-                        'support_level': profile.support_level,
-                    }
-                    for profile in profiles
-                ),
+                'profiles': profiles,
                 'profile_count': len(profiles),
             }
         )

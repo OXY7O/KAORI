@@ -12,9 +12,20 @@ KAORI is an operations and observability platform for Kubernetes environments. I
 - Kubernetes, Prometheus, and Alertmanager provider adapters
 - Tailwind CSS with locally built frontend assets
 
-## Development
+## Run KAORI
 
-The supported development path is the VS Code Dev Container described in [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md).
+Start with [`docs/RUNNING.md`](docs/RUNNING.md) for local and production startup. The supported development path is the VS Code Dev Container described in [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md).
+
+Local development inside the Dev Container:
+
+```bash
+cp .env.example .env
+bash scripts/init_db.sh --bootstrap-admin
+npm run watch-css
+flask --app run:app run --host=0.0.0.0 --port=5000 --debug
+```
+
+## Development
 
 Initialize a fresh development database:
 
@@ -54,11 +65,13 @@ Start with:
 - [`docs/architecture/quality-gates.md`](docs/architecture/quality-gates.md)
 - [`docs/architecture/RELEASE_SURFACE_COVERAGE.md`](docs/architecture/RELEASE_SURFACE_COVERAGE.md)
 - [`docs/architecture/job-execution-foundation.md`](docs/architecture/job-execution-foundation.md)
+- [`docs/RUNNING.md`](docs/RUNNING.md)
+- [`docs/TESTING.md`](docs/TESTING.md)
 - [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md)
 - [`docs/deployment/ENVIRONMENT_CONFIGURATION.md`](docs/deployment/ENVIRONMENT_CONFIGURATION.md)
 - [`docs/deployment/RELEASE_GOVERNANCE.md`](docs/deployment/RELEASE_GOVERNANCE.md)
 - [`CHANGELOG.md`](CHANGELOG.md)
-- [`KAORI 2.2.0 Release Notes`](docs/releases/KAORI_2_2_0.md)
+- [`KAORI 2.3.0 Release Notes`](docs/releases/KAORI_2_3_0.md)
 
 ## Source Archives
 

@@ -18,8 +18,8 @@ provider_kinds:
   support_presentation:
     minimum_version: '2.40'
     minimum_label: v2.40
-    recommended_version: '3.0'
-    recommended_label: v3.0+
+    recommended_version: '3.13'
+    recommended_label: v3.13 LTS
     support_band: v2.40–v3.x
     current_band: v3.x
     support_label: Prometheus 3 Current
@@ -48,10 +48,10 @@ provider_kinds:
   support_presentation:
     minimum_version: '0.39'
     minimum_label: v0.39
-    recommended_version: '0.41'
-    recommended_label: v0.41+
-    support_band: v0.39–v0.41
-    current_band: v0.41.x
+    recommended_version: '0.42'
+    recommended_label: v0.42.x
+    support_band: v0.39–v0.42
+    current_band: v0.42.x
     support_label: Query Profile Current
     support_tone: normal
     capability_summary: Long-retention metrics queries through the configured Prometheus HTTP adapter.
@@ -62,6 +62,7 @@ compatibility_profiles:
 - thanos-query-v0-39
 - thanos-query-v0-40
 - thanos-query-v0-41
+- thanos-query-v0-42
 provider_capability_keys:
 - instant_query
 - range_query

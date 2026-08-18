@@ -17,6 +17,7 @@ run_static() {
     python scripts/verify_application_package_architecture.py
     python scripts/verify_welcome_final_lock.py
     python scripts/verify_python_syntax.py
+    python scripts/verify_template_dependencies.py
     python scripts/verify_single_pdf_engine.py
     python scripts/verify_analytics_pdf_publication.py
     python scripts/verify_report_generation_contract.py

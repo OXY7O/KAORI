@@ -1,8 +1,36 @@
-# KAORI Production Deployment
+# KAORI Deployment
 
-The canonical development and production runbook is maintained in [`RUN.md`](../RUN.md).
+Use an immutable tagged image and a production environment file based on `.env.production.example`. `KAORI_IMAGE` and `APP_VERSION` must identify the same release. The canonical running guide is `docs/RUNNING.md`; this document records deployment-specific contracts and worker details.
 
-Production principles:
+## Production Release Startup
+
+Back up PostgreSQL before applying a new release. Then validate configuration, migrate, and start the complete production stack:
+
+```bash
+docker compose -f compose.production.yml run --rm validate
+docker compose -f compose.production.yml run --rm migrate
+docker compose -f compose.production.yml up -d
+docker compose -f compose.production.yml ps
+```
+
+Confirm the `web` service becomes healthy and review the logs before opening traffic:
+
+```bash
+docker compose -f compose.production.yml logs --tail=100 web
+```
+
+After the stack is running, verify worker queue ownership and run the runtime-aware final gate from a release checkout when the environment provides its required services:
+
+```bash
+python scripts/verify_final_release.py --all --runtime
+```
+
+Rollback must use a previously approved immutable image and a migration plan appropriate to the schema revision. Do not point `KAORI_IMAGE` at an unversioned `latest` tag.
+
+## Production Principles
+
+The canonical development and production runbook is `docs/RUNNING.md`.
+
 
 - Build the Dockerfile `production` target in CI.
 - Deploy an immutable registry image tagged with a version or commit SHA.

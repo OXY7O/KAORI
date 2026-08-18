@@ -15,6 +15,7 @@ from flask import (
 )
 from flask_login import current_user
 from kombu.exceptions import OperationalError as KombuOperationalError
+from sqlalchemy.exc import SQLAlchemyError
 
 from app.access.rbac.decorators import permission_required
 from app.kubernetes.cluster.onboarding import has_registered_clusters

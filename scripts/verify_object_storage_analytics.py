@@ -141,7 +141,8 @@ def main() -> int:
         'app/integrations/observability/metrics_source/binding_validators/__init__.py'
     )
     assert 'ObjectStorageMetricsProfileAuditor' in binding_validator
-    assert 'return system.minio_connection is not None' in binding_validator
+    assert 'owner = object_storage_owner(system.id)' in binding_validator
+    assert "owner is not None and owner.provider_key == 'minio'" in binding_validator
     assert "'metrics_readiness': audit" in binding_validator
     assert '_VALIDATION_ADAPTERS' in binding_validator
     assert "asset_profile='minio-v2'" in binding_validator

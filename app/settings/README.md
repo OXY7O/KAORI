@@ -27,7 +27,7 @@ Current tabs:
 - `time-locale`: automatic browser timezone or a fixed IANA timezone.
 - `regional-format`: regional locale, date format, and 12/24-hour time format.
 - `system-information`: safe KAORI release identity, curated release highlights, and the capabilities shipped with the deployed version.
-- `compatibility-versions`: minimum compatible and recommended Kubernetes, Metrics Source provider, and Alertmanager baselines derived from the canonical integration compatibility policy.
+- `compatibility-versions`: minimum compatible and recommended Kubernetes, Metrics Source provider, Alertmanager, and qualified MinIO baselines derived from canonical integration/provider compatibility contracts.
 
 The former standalone `/settings/time-locale` and `/settings/system-info` pages have been removed. General Settings is the canonical location for personal presentation preferences and safe release information.
 
@@ -63,7 +63,7 @@ The former standalone `/settings/time-locale` and `/settings/system-info` pages 
 - `APP_VERSION` is the canonical deployed application version and should match the immutable image tag.
 - `APP_BUILD_SHA` and `APP_BUILD_DATE` are optional immutable build metadata.
 - `CHANGELOG.md` is the canonical operator-facing release-history source; System Information remains a safe runtime summary rather than a duplicate changelog.
-- `docs/releases/KAORI_2_2_0.md` records the approved 2.2.0 release scope, deferred work, and final verification command.
+- `docs/releases/KAORI_2_3_0.md` records the 2.3.0 release scope, publication boundary, and final verification command.
 - Follow `docs/deployment/RELEASE_GOVERNANCE.md` for version bumps, tags, immutable image identity, and release approval.
 - System Information and Compatibility Versions require `system.view` and expose only safe product metadata.
 - Never expose credentials, secret environment-variable values, database URLs, provider endpoints, Redis details, Kubernetes credentials, or internal service addresses.

@@ -144,6 +144,21 @@ KAORI                     → registration, binding, validation, routing, correl
 
 Deleting an asset owner removes its asset bindings; reusable source instances remain independent unless explicitly deleted through their own governed lifecycle.
 
+
+## KAORI 2.3.0 qualified compatibility baseline
+
+The System Information matrix is a **KAORI qualification policy**, not a mirror of each upstream project's lifecycle page. A version can be current upstream and still remain blocked until KAORI has a matching compatibility profile and successful live capability evidence.
+
+| Integration | Minimum qualified | Recommended baseline | KAORI profile policy |
+|---|---:|---:|---|
+| Kubernetes | v1.20 | v1.36.x | `kubernetes-api-v1`, with live API/RBAC discovery authoritative |
+| Prometheus | v2.40 | v3.13 LTS | major-2 legacy-supported and major-3 current HTTP profiles |
+| Alertmanager | v0.25 | v0.33.x | API v2 profiles through `<0.34` |
+| Thanos Query | v0.39 | v0.42.x | explicit 0.39, 0.40, 0.41, and 0.42 Query profiles |
+| MinIO | `RELEASE.2024-08-03T04-33-23Z` | same qualified release | exact object-storage provider release profile; do not infer compatibility for other releases |
+
+MinIO uses a release identifier rather than Semantic Versioning, so System Information presents its version scheme explicitly. Provider compatibility never replaces Core Validation, binding validation, runtime health, selector evidence, or asset-specific consumer readiness.
+
 ## Canonical navigation and route ownership
 
 - `/integrations/` — integration overview.

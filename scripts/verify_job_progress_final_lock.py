@@ -25,12 +25,14 @@ def main() -> int:
     for required in (
         'macro job_progress(',
         '<div class="w-full min-w-0">',
-        "track_classes='h-1.5 w-full overflow-hidden rounded-full",
-        'mt-2 h-1.5 w-full overflow-hidden rounded-full',
+        '{% macro notification_track_classes()',
+        'h-1.5 w-full overflow-hidden rounded-full',
+        '{% macro notification_indeterminate(',
         'style="width: {{ safe_value }}%"',
         'data-progress="{{ safe_value }}"',
         'transition-all duration-500 ease-out',
-        "if job.progress_mode == 'queued'",
+        "queued=job.progress_mode == 'queued'",
+        '{% if queued %}',
         'w-1/4 rounded-full bg-kaori-primary/55',
     ):
         if required not in component:

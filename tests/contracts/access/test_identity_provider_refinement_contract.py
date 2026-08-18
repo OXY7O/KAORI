@@ -33,6 +33,8 @@ def test_identity_provider_overview_uses_provider_adapter_boundary_and_tabs() ->
     overview = read('app/templates/access/identity_providers/partials/_overview.html')
     tabs = read('app/templates/access/identity_providers/partials/_tabs.html')
     assert 'page_hero.context_card(' in template
+    assert '{% import "components/table_label.html" as table_label %}' in template
+    assert 'components/table_labels.html' not in template
     assert 'Authentication Source Posture' in overview
     for label in ('Configured', 'Enabled', 'Directory', 'Browser SSO'):
         assert label in overview

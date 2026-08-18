@@ -1,46 +1,45 @@
 # Changelog
-- Centralized observability binding mutation on Prometheus/Alertmanager source workspaces, made Kubernetes/MinIO lifecycle binding views read-only, generalized eligible consumer assets through a shared registry for future providers such as Vault, and standardized capability/readiness/configuration surfaces across Integration details.
-- Corrected domain binding semantics and interaction ownership: Storage/Orchestration now expose only consumer bindings (Prometheus/Alertmanager), provider workspace actions remain visible in empty and populated states, Provider Registry/Bindings switch through HTMX without full-page reload, and MinIO owner self-bindings are retired with data cleanup.
-- Aligned MinIO with Kubernetes asset-owner lifecycle semantics: reusable configuration/edit flow, Core Validation, manual Runtime Refresh, governed Prometheus/Alertmanager consumer bindings, guarded Delete Connection, and retained shared observability sources/history.
-- Unified provider registration action footers on one embedded gate-state component: Test Connection readiness now renders as a compact status surface, Cancel/Register actions share one responsive geometry, and verified state enables the canonical primary CTA across Kubernetes, Prometheus, Alertmanager, and MinIO.
-- Standardized provider registration field labels, placeholders, Cancel actions, and helper-text density across Kubernetes, Prometheus, Alertmanager, and MinIO; hardened MinIO connection-test diagnostics and separated S3 reachability from product-identity Core Validation.
-- Simplified provider connection right rails to one shared Flow + Related Operational Workspace contract and fixed Kubernetes front-page typing/overview regressions detected by Pyright.
-- Unified Kubernetes, Prometheus, Alertmanager, and MinIO registration Heroes on one reusable contract; Kubernetes now uses `Register Kubernetes Connection`, the same Draft/Pre-save posture panel, and the same Test Connection → Core Validation progression as the other providers.
-
-- Standardized provider empty states and registration UX: consumer coverage now uses asset terminology, route-owned authorization avoids redundant `Admin Required` states, and MinIO Test Connection follows the same operation-scoped HTMX proof flow as Kubernetes, Prometheus, and Alertmanager.
-
-- Refactored Integration provider front pages to share one DRY Hero, Integration Overview, canonical Connection Registry column contract, and reusable direct/observability coverage table geometry across Kubernetes, Prometheus, Alertmanager, and MinIO.
-- Unified Kubernetes, Prometheus, Alertmanager, and MinIO provider landing pages on one canonical front-page hierarchy: Operational Integration Hero, shared Integration Overview, Integration Coverage, and Connection Registry; MinIO empty states now retain the same filter/table/pagination geometry as populated states.
-- Fixed Integration binding success-path type narrowing so Pyright no longer treats the resolved Kubernetes asset as optional after a successful binding create.
-- Cleaned active Alertmanager workspace djLint findings (T002/H037) and aligned capability pagination URL construction with the Prometheus registry pattern.
-
-- Refined Integration domain workspace UX across Orchestration, Observability, and Storage: separated tab rails from registry table surfaces, preserved readable row text with the sidebar open, normalized operator-facing Prometheus naming, isolated operation-specific loading bars, and added live HTMX tab-status refresh for validation/runtime updates.
-- Refined Integration domain landing-page UX by removing duplicated KPI tiles, using compact capability/provider metadata, and replacing empty provider metrics with an explicit registration-validation-binding onboarding path.
 
 All notable KAORI changes are recorded here. KAORI uses Semantic Versioning for release identity.
 
 ## [Unreleased]
 
-### Fixed
-- Clarified Object Storage Analytics dependency gating so retired consumer-validation evidence is reported as `Consumer Validation Stale`, blocked pages hide analysis controls, and the Hero no longer exposes verbose provider/profile internals as primary posture text.
-- Aligned Prometheus Integration contract assertions with canonical djLint double-quote Jinja tags and Ruff-formatted the consumer-profile verifier so quality gates no longer fail on formatting-only drift.
-- Normalized the MinIO provider detail template to the canonical djLint format so the global template-format gate no longer stops on `app/templates/integrations/storage/object_storage/providers/minio/instance_detail.html`.
-- Repaired Integration domain route ownership so Flask application boot and `flask db upgrade` import `build_integration_domain_page` directly from `domain_service` instead of a removed `service.py` re-export.
+No changes recorded after the 2.3.0 release.
+
+## [2.3.0] - 2026-08-18
+
+### Added
+- Added an explicit `thanos-query-v0-42` compatibility profile and promoted Thanos Query v0.42.x to the recommended qualified baseline.
+- Added MinIO to Settings → General Settings → Compatibility Versions using its canonical object-storage compatibility contract and release-identifier scheme.
+- Added `docs/RUNNING.md` as the canonical development/production startup runbook and expanded testing/deployment documentation with targeted, static, functional, frontend, and runtime-aware release commands.
+- Added a permanent Identity Providers template regression assertion plus a global literal-Jinja template dependency verifier wired into quick/final static release gates, so missing shared templates fail before runtime.
 
 ### Changed
-- Object Storage Forecast now uses a persistent forecasting-worker materialization path on the dedicated `forecasting` queue with 7d/30d/90d history windows, stale-grace handling, and provider-neutral metrics-source execution instead of browser-request forecast calculation.
-- Prometheus Full Validation documentation now reflects the current worker behavior: provider-core validation refreshes enabled consumer bindings, while targeted binding validation remains available for one-consumer rechecks.
-- Centralized Prometheus/Alertmanager consumer binding mutation in Observability, introduced the canonical consumer-asset registry (`kubernetes_cluster`, `object_storage_system`, future extensible assets), made Kubernetes/MinIO `Inventory & Lifecycle` binding evidence read-only, and standardized capability/readiness/Operational Context presentation across provider details.
-- Domain Integration Bindings now represent only consumer-source relationships; native asset-owner attachments are excluded from binding counts and UI, domain tabs use HTMX replacement with persistent provider workspace actions, and legacy MinIO self-bindings are removed by migration.
-- Aligned MinIO provider details with the Kubernetes asset-owner lifecycle: `object_storage_system` configuration is editable without recreating consumer bindings, runtime health refresh is operation-scoped, and `Inventory & Lifecycle` shows bound observability sources read-only plus guarded deletion while binding mutation stays in Prometheus/Alertmanager.
-- Unified provider registration action footers on one embedded gate-state component: Test Connection readiness now renders as a compact status surface, Cancel/Register actions share one responsive geometry, and verified state enables the canonical primary CTA across Kubernetes, Prometheus, Alertmanager, and MinIO.
-- Standardized provider front pages across Kubernetes, Prometheus, Alertmanager, and MinIO with shared overview geometry and framed Coverage/Registry tabs while preserving provider-specific evidence inside those tabs.
-- Generalized Alertmanager around consumer-neutral Core Validation and asset-scoped alert Consumer Profiles, including `kubernetes-alerts-v1` and `minio-alerts-v1`, so shared Alertmanager instances can segregate Kubernetes, MinIO, and future alert streams by binding selector without false provider degradation.
-- Aligned MinIO provider pages with the canonical Integration workspace: `MinIO Integrations` + `Register Connection`, Integration Coverage/Connection Registry, shared registration workflow, and Configuration/Validation & Capabilities/Runtime & History/Inventory & Lifecycle detail tabs.
-- Unified Orchestration, Observability, and Storage domain landing pages on one Capability Registry + Provider Registry + Bindings workspace, including asset-owned cross-domain binding visibility and canonical five-row pagination.
+- Updated KAORI release identity, environment examples, immutable production image example, System Information highlights, documentation links, and release notes to 2.3.0.
+- Updated qualified recommended baselines shown by System Information to Kubernetes v1.36.x, Prometheus v3.13 LTS, Alertmanager v0.33.x, and Thanos Query v0.42.x while keeping live capability evidence authoritative.
+- Centralized observability binding mutation on Prometheus/Alertmanager source workspaces, made Kubernetes/MinIO lifecycle binding views read-only, generalized eligible consumer assets through a shared registry for future providers, and standardized capability/readiness/configuration surfaces across Integration details.
+- Corrected domain binding semantics and interaction ownership: Storage/Orchestration expose only consumer bindings, provider workspace actions remain visible in empty and populated states, Provider Registry/Bindings switch through HTMX without full-page reload, and MinIO owner self-bindings are retired with data cleanup.
+- Aligned MinIO with Kubernetes asset-owner lifecycle semantics: reusable configuration/edit flow, Core Validation, manual Runtime Refresh, governed Prometheus/Alertmanager consumer bindings, guarded Delete Connection, and retained shared observability sources/history.
+- Unified provider registration action footers on one embedded gate-state component: Test Connection readiness is a compact status surface, Cancel/Register actions share one responsive geometry, and verified state enables the canonical primary CTA across Kubernetes, Prometheus, Alertmanager, and MinIO.
+- Standardized provider registration field labels, placeholders, Cancel actions, helper-text density, empty states, and registration UX across Kubernetes, Prometheus, Alertmanager, and MinIO; MinIO Test Connection remains an operation-scoped proof distinct from product-identity Core Validation.
+- Simplified provider connection right rails to one shared Flow + Related Operational Workspace contract and unified provider registration Heroes on one reusable contract.
+- Refactored Integration provider front pages and domain landing pages to share canonical Hero, Integration Overview, Capability/Provider Registry, Coverage/Bindings, table geometry, pagination, and operation-specific loading behavior.
+- Object Storage Forecast now uses persistent forecasting-worker materialization on the dedicated `forecasting` queue with 7d/30d/90d history windows, stale-grace handling, and provider-neutral Metrics Source execution instead of browser-request calculation.
+- Centralized Prometheus/Alertmanager consumer binding mutation in Observability, introduced the canonical consumer-asset registry (`kubernetes_cluster`, `object_storage_system`), and standardized capability/readiness/Operational Context presentation across provider details.
+- Generalized Alertmanager around consumer-neutral Core Validation and asset-scoped alert Consumer Profiles, including Kubernetes and MinIO alert contracts, so shared instances can segregate consumer streams without false provider degradation.
+- Generalized Prometheus provider readiness around the consumer-neutral core contract and moved Kubernetes/MinIO metric, label, PromQL, and capability evidence to asset-scoped `IntegrationBinding` consumer profiles.
+- Added Kubernetes/Object Storage metrics consumer profiles and persisted binding validation profile/evidence so one Metrics Source can serve multiple managed-asset types without false provider degradation.
 - Locked the canonical Integration lifecycle in architecture/workspace documentation: Provider → Compatibility Profile → Provider Capability Set → Core Validation → Binding → Consumer Profile → Binding Validation → Consumer Eligibility.
-- Generalized Prometheus provider readiness around the consumer-neutral `prometheus-core-v1` contract and moved Kubernetes/MinIO metric, label, PromQL, and capability evidence to asset-scoped `IntegrationBinding` consumer profiles.
-- Added `kubernetes-metrics-v1` and `minio-metrics-2024-v1` binding profiles plus persisted binding validation profile/evidence so one Metrics Source can serve multiple managed-asset types without false provider degradation.
+
+### Fixed
+- Fixed `/access/identity-providers/` HTTP 500 by correcting the missing `components/table_labels.html` import to the canonical `components/table_label.html`.
+- Fixed Ruff `F821` release blockers by restoring `Sequence` in Automation Control presentation, `SQLAlchemyError` in TLS Governance routes, and `User` in Protected Secret Reveal service.
+- Synchronized stale release verifiers with the canonical Kubernetes Dashboard namespace, provider-neutral Object Storage/Integration contracts, catalog-driven Automation Control notifications/System Runbooks, and shared Job Progress components so final gates validate the active architecture rather than retired implementation details.
+- Corrected Release Surface Coverage documentation to the canonical 60 navigation links / 25 registered blueprints baseline.
+- Clarified Object Storage Analytics dependency gating so retired consumer-validation evidence is reported as `Consumer Validation Stale`, blocked pages hide analysis controls, and the Hero no longer exposes verbose provider/profile internals as primary posture text.
+- Repaired Integration domain route ownership so Flask application boot and `flask db upgrade` import `build_integration_domain_page` directly from `domain_service` instead of a removed re-export.
+- Aligned Prometheus Integration contracts and MinIO provider detail formatting with canonical Ruff/djLint output.
+- Fixed Integration binding success-path type narrowing, active Alertmanager workspace djLint findings, and capability pagination URL construction.
 
 ## [2.2.0] - 2026-08-11
 

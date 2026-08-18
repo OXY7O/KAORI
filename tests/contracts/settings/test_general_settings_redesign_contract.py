@@ -100,7 +100,9 @@ def test_compatibility_workspace_keeps_version_and_readiness_decisions_separate(
     context = read('app/templates/settings/general/partials/_compatibility_versions_context.html')
     assert 'Integration Compatibility' in main
     assert 'Validation Required' in main
-    assert 'Supported Version Matrix' in main
+    assert 'Qualified Compatibility Matrix' in main
+    assert 'upstream support calendar' in main
+    assert 'item.version_scheme' in main
     assert 'Capability Validation Basis' in main
     assert 'Reading the Matrix' in context
     assert 'Minimum Compatible' in context

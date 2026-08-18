@@ -42,9 +42,11 @@ def main() -> int:
     readiness = read('app/templates/intelligence/partials/automation_control/_readiness.html')
     notification_forms = read('app/integrations/delivery/notification_channels/forms.py')
     notification_service = read('app/integrations/delivery/notification_channels/service.py')
+    notification_catalog = read('app/definitions/catalogs/platform_operations/notifications/outbound_delivery.yaml')
     decision_notifications = read('app/intelligence/automation_control/notifications.py')
     execution_notifications = read('app/intelligence/resolver/notifications.py')
     system_runbook_catalog = read('app/intelligence/knowledge/system_catalog.py')
+    system_runbook_definitions = read('app/definitions/catalogs/intelligence/knowledge/system_runbooks.yaml')
     knowledge_service = read('app/intelligence/knowledge/service.py')
     knowledge_matching = read('app/intelligence/knowledge/matching.py')
     resolver_bootstrap = read('app/integrations/resolver_bootstrap.py')
@@ -201,9 +203,10 @@ def main() -> int:
         'automation.execution_failed',
         'automation.verification_failed',
     )
+    require('event_type_keys' in notification_forms, 'Notification form must resolve event keys from the canonical catalog', errors)
+    require('event_type_label' in notification_service, 'Notification service must resolve event labels from the canonical catalog', errors)
     for event_type in events:
-        require(event_type in notification_forms, f'Notification Channel contract missing {event_type}', errors)
-        require(event_type in notification_service, f'Notification label contract missing {event_type}', errors)
+        require(event_type in notification_catalog, f'Notification catalog missing {event_type}', errors)
         require(
             event_type in decision_notifications + execution_notifications,
             f'Automation lifecycle producer contract missing {event_type}',
@@ -238,22 +241,22 @@ def main() -> int:
             errors,
         )
     require(
-        'kubernetes.deployment.restart' in system_runbook_catalog,
+        'kubernetes.deployment.restart' in system_runbook_definitions,
         'Validated Deployment restart System Runbook is missing',
         errors,
     )
     require(
-        "validation_status='system_tested'" in system_runbook_catalog,
+        'validation_status: system_tested' in system_runbook_definitions,
         'System Runbook must declare tested catalog posture',
         errors,
     )
     require(
-        'post-action rollout verification' in system_runbook_catalog.lower(),
+        'post-action rollout verification' in system_runbook_definitions.lower(),
         'System Runbook must document verification contract',
         errors,
     )
     require(
-        'manual_compensating_recovery' in system_runbook_catalog,
+        'manual_compensating_recovery' in system_runbook_definitions,
         'System Runbook must preserve recovery semantics',
         errors,
     )

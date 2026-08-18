@@ -251,7 +251,7 @@ for source, forbidden in (
         if needle in source:
             raise SystemExit(f'Notification Deck legacy casing remains: {needle}')
 
-if "if job.progress_mode == 'queued'" not in progress_component:
+if "queued=job.progress_mode == 'queued'" not in progress_component or '{% if queued %}' not in progress_component:
     raise SystemExit('Queued jobs must use a static progress marker.')
 if 'w-1/4 rounded-full bg-kaori-primary/55' not in progress_component:
     raise SystemExit('Queued job marker is missing the non-animated KAORI style.')

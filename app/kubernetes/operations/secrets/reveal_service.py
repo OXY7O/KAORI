@@ -32,7 +32,7 @@ from app.kubernetes.operations.secrets.reveal_policy import (
     get_enabled_namespace_names,
     get_namespace_policy,
 )
-from app.models import Cluster, SecretRevealNamespacePolicy, SecretRevealRequest
+from app.models import Cluster, SecretRevealNamespacePolicy, SecretRevealRequest, User
 
 SUPPORTED_REVEAL_TYPES = {
     'Opaque': {

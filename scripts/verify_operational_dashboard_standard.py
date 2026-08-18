@@ -4,7 +4,7 @@ import ast
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-DASHBOARD_DIR = ROOT / 'app' / 'templates' / 'dashboards' / 'kubernetes'
+DASHBOARD_DIR = ROOT / 'app' / 'templates' / 'kubernetes' / 'dashboard'
 CONTENT = DASHBOARD_DIR / 'partials' / '_content.html'
 HERO = DASHBOARD_DIR / 'partials' / '_hero.html'
 BLOCKED_HERO = ROOT / 'app' / 'templates' / 'components' / 'cluster' / '_hero_blocked_context.html'
@@ -14,26 +14,26 @@ WORKSPACE_TABS = ROOT / 'app' / 'templates' / 'components' / 'workspace_tabs.htm
 METRIC_CARD = ROOT / 'app' / 'templates' / 'components' / 'operational_metric_card.html'
 KPI_CARDS = DASHBOARD_DIR / 'partials' / '_kpi_cards.html'
 TOP_CONSUMERS = DASHBOARD_DIR / 'partials' / '_top_consumers.html'
-ROUTES = ROOT / 'app' / 'dashboards' / 'kubernetes' / 'routes.py'
-SERVICE = ROOT / 'app' / 'dashboards' / 'kubernetes' / 'service.py'
-README = ROOT / 'app' / 'dashboards' / 'kubernetes' / 'README.md'
+ROUTES = ROOT / 'app' / 'kubernetes' / 'dashboard' / 'routes.py'
+SERVICE = ROOT / 'app' / 'kubernetes' / 'dashboard' / 'service.py'
+README = ROOT / 'app' / 'kubernetes' / 'dashboard' / 'README.md'
 STANDARD = ROOT / 'docs' / 'design' / 'patterns' / 'OPERATIONAL_DASHBOARD.md'
 AUDIT = ROOT / 'docs' / 'design' / 'audits' / 'KUBERNETES_OPERATIONS_DASHBOARD_ALIGNMENT_AUDIT_2026_08.md'
 QUALITY_GATE = ROOT / 'scripts' / 'quality_gate.sh'
 FEATURE_COVERAGE = ROOT / 'scripts' / 'verify_feature_test_coverage.py'
-CHARACTERIZATION = ROOT / 'tests' / 'dashboards' / 'test_kubernetes_dashboard_characterization.py'
-SNAPSHOT_FLOW_TEST = ROOT / 'tests' / 'dashboards' / 'test_kubernetes_dashboard_snapshot_flow.py'
-TOP_CONSUMERS_SOURCE = ROOT / 'app' / 'dashboards' / 'kubernetes' / 'sections' / 'top_consumers.py'
-SCHEMA = ROOT / 'app' / 'dashboards' / 'kubernetes' / 'schema.py'
-KPI_BUILDER = ROOT / 'app' / 'dashboards' / 'kubernetes' / 'sections' / 'kpis.py'
-UTILS = ROOT / 'app' / 'dashboards' / 'kubernetes' / 'utils.py'
-FRESHNESS = ROOT / 'app' / 'dashboards' / 'kubernetes' / 'sections' / 'freshness.py'
-SECTIONS_INIT = ROOT / 'app' / 'dashboards' / 'kubernetes' / 'sections' / '__init__.py'
-UNIT_TEST = ROOT / 'tests' / 'unit' / 'dashboards' / 'test_kubernetes_dashboard_domain.py'
-SECURITY_TEST = ROOT / 'tests' / 'security' / 'dashboards' / 'test_kubernetes_dashboard_security.py'
-RENDERING_TEST = ROOT / 'tests' / 'rendering' / 'dashboards' / 'test_kubernetes_dashboard_rendering.py'
-INTEGRATION_TEST = ROOT / 'tests' / 'integration' / 'dashboards' / 'test_kubernetes_dashboard_repository.py'
-E2E_TEST = ROOT / 'tests' / 'e2e' / 'dashboards' / 'test_kubernetes_dashboard_smoke.py'
+CHARACTERIZATION = ROOT / 'tests' / 'kubernetes' / 'dashboard' / 'test_kubernetes_dashboard_characterization.py'
+SNAPSHOT_FLOW_TEST = ROOT / 'tests' / 'kubernetes' / 'dashboard' / 'test_kubernetes_dashboard_snapshot_flow.py'
+TOP_CONSUMERS_SOURCE = ROOT / 'app' / 'kubernetes' / 'dashboard' / 'sections' / 'top_consumers.py'
+SCHEMA = ROOT / 'app' / 'kubernetes' / 'dashboard' / 'schema.py'
+KPI_BUILDER = ROOT / 'app' / 'kubernetes' / 'dashboard' / 'sections' / 'kpis.py'
+UTILS = ROOT / 'app' / 'kubernetes' / 'dashboard' / 'utils.py'
+FRESHNESS = ROOT / 'app' / 'kubernetes' / 'dashboard' / 'sections' / 'freshness.py'
+SECTIONS_INIT = ROOT / 'app' / 'kubernetes' / 'dashboard' / 'sections' / '__init__.py'
+UNIT_TEST = ROOT / 'tests' / 'unit' / 'kubernetes' / 'dashboard' / 'test_kubernetes_dashboard_domain.py'
+SECURITY_TEST = ROOT / 'tests' / 'security' / 'kubernetes' / 'dashboard' / 'test_kubernetes_dashboard_security.py'
+RENDERING_TEST = ROOT / 'tests' / 'rendering' / 'kubernetes' / 'dashboard' / 'test_kubernetes_dashboard_rendering.py'
+INTEGRATION_TEST = ROOT / 'tests' / 'integration' / 'kubernetes' / 'dashboard' / 'test_kubernetes_dashboard_repository.py'
+E2E_TEST = ROOT / 'tests' / 'e2e' / 'kubernetes' / 'dashboard' / 'test_kubernetes_dashboard_smoke.py'
 
 SECTION_PARTIALS = (
     '_signal_overview.html',
@@ -345,7 +345,7 @@ def verify() -> None:
             'OPERATIONAL_DASHBOARD.md` v1.3',
             'Arrow Left/Right, Home, and End keyboard navigation',
             'artifact-format neutral',
-            'Web requests must not query Kubernetes, Prometheus, or Alertmanager directly',
+            'Web requests must not query Kubernetes, Metrics Source, or Alertmanager directly',
         ),
         'dashboard technical README',
     )

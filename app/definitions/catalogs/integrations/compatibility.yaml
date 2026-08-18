@@ -76,10 +76,20 @@ profiles:
 - key: thanos-query-v0-41
   product: thanos
   version_constraint: '>=0.41,<0.42'
+  support_level: supported
+  required_capabilities:
+  - prometheus_api_v1
+  - instant_query
+  - range_query
+  notes: Supported Thanos Query 0.41 profile.
+  query_profile: prometheus-http-core-v1
+- key: thanos-query-v0-42
+  product: thanos
+  version_constraint: '>=0.42,<0.43'
   support_level: current
   required_capabilities:
   - prometheus_api_v1
   - instant_query
   - range_query
-  notes: Current Thanos Query profile.
+  notes: Current Thanos Query 0.42 profile using the Prometheus HTTP API v1 query contract.
   query_profile: prometheus-http-core-v1

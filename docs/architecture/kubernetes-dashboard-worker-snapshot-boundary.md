@@ -103,7 +103,7 @@ Run:
 ```bash
 pytest -q \
   tests/analytics/test_kubernetes_analytics_materialization.py \
-  tests/dashboards/test_kubernetes_dashboard_snapshot_flow.py
+  tests/kubernetes/dashboard/test_kubernetes_dashboard_snapshot_flow.py
 python scripts/verify_python_syntax.py
 ```
 
