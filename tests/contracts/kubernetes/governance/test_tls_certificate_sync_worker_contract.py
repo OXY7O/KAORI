@@ -102,10 +102,11 @@ def test_tls_operation_buttons_share_the_same_kaori_component() -> None:
 
 def test_tls_dispatch_attempts_are_written_to_activity_audit() -> None:
     routes = (ROOT / 'app/kubernetes/governance/tls_certificates/routes.py').read_text()
+    audit = (ROOT / 'app/kubernetes/governance/tls_certificates/audit.py').read_text()
 
-    assert 'from app.models.audit import AuditEvent' in routes
+    assert 'from app.models.audit import AuditEvent' in audit
     assert 'def _record_dispatch_audit(' in routes
-    assert "event.action = f'governance_tls_secret_sync_dispatch_{action_status}'" in routes
+    assert "event.action = f'governance_tls_secret_sync_dispatch_{action_status}'" in audit
     assert "action_status='queued' if outcome.created else 'already_active'" in routes
     assert "action_status='quota_exceeded'" in routes
     assert "action_status='failed'" in routes

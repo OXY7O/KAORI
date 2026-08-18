@@ -17,14 +17,25 @@ from flask_login import current_user
 
 from app.access.rbac.decorators import permission_required
 from app.common.automation_execution import execution_enabled
-from app.extensions.db import db
 from app.integrations.resolver_bootstrap import build_resolver_contract_registry, get_resolver_registry
 from app.intelligence.automation_control.notifications import (
     APPROVAL_REQUIRED_EVENT,
     DECISION_APPROVED_EVENT,
     DECISION_REJECTED_EVENT,
 )
-from app.intelligence.automation_control.presentation import build_automation_control_context, upsert_deployment_policy
+from app.intelligence.automation_control.presentation import build_automation_control_context
+from app.intelligence.automation_control.service import (
+    commit_automation_control,
+    get_cluster,
+    get_decision,
+    get_decision_candidate,
+    get_readiness_record,
+    get_runbook,
+    get_runbook_binding,
+    get_runbook_revision,
+    rollback_automation_control,
+    upsert_deployment_policy,
+)
 from app.intelligence.automation_control.tasks import dispatch_automation_decision_notification
 from app.intelligence.knowledge.candidate_review import dismiss_candidate, promote_candidate
 from app.intelligence.knowledge.matching import create_alert_binding, set_alert_binding_status
@@ -53,14 +64,6 @@ from app.intelligence.workflow import (
     issue_persisted_execution_token,
     reject_decision,
 )
-from app.models.cluster import Cluster
-from app.models.intelligence import IntelligenceDecision, IntelligenceDecisionCandidate
-from app.models.knowledge import (
-    KnowledgeRunbook,
-    KnowledgeRunbookAlertBinding,
-    KnowledgeRunbookRevision,
-)
-from app.models.resolver import ResolverProductionReadinessRecord
 from app.platform_operations.notifications.service import queue_transient_feedback
 
 automation_control_bp = Blueprint(
@@ -121,7 +124,7 @@ def create_automation_revision(runbook_id: int | None = None) -> ResponseReturnV
     def operation() -> object:
         assert_custom_runbook_authoring_enabled(current_app.config)
         selected_runbook_id = runbook_id or _positive_int(request.form.get('runbook_id'), 'Runbook')
-        runbook = db.session.get(KnowledgeRunbook, selected_runbook_id)
+        runbook = get_runbook(selected_runbook_id)
         if runbook is None:
             raise ValueError('Selected runbook no longer exists.')
         parameter_schema = _json_object(request.form.get('parameter_schema_json'), 'Parameter schema')
@@ -156,7 +159,7 @@ def create_automation_revision(runbook_id: int | None = None) -> ResponseReturnV
 @permission_required('knowledge.runbooks.publish')
 def publish_automation_revision(revision_id: int) -> ResponseReturnValue:
     def operation() -> object:
-        revision = db.session.get(KnowledgeRunbookRevision, revision_id)
+        revision = get_runbook_revision(revision_id)
         if revision is None:
             raise ValueError('Selected runbook revision no longer exists.')
         assert_revision_mutation_allowed(revision, config=current_app.config, operation='published')
@@ -186,7 +189,7 @@ def publish_automation_revision(revision_id: int) -> ResponseReturnValue:
 @permission_required('knowledge.runbooks.publish')
 def withdraw_automation_revision(revision_id: int) -> ResponseReturnValue:
     def operation() -> object:
-        revision = db.session.get(KnowledgeRunbookRevision, revision_id)
+        revision = get_runbook_revision(revision_id)
         if revision is None:
             raise ValueError('Selected runbook revision no longer exists.')
         assert_revision_mutation_allowed(revision, config=current_app.config, operation='withdrawn')
@@ -209,7 +212,7 @@ def withdraw_automation_revision(revision_id: int) -> ResponseReturnValue:
 def create_automation_binding() -> ResponseReturnValue:
     def operation() -> object:
         revision_id = _positive_int(request.form.get('revision_id'), 'Published revision')
-        revision = db.session.get(KnowledgeRunbookRevision, revision_id)
+        revision = get_runbook_revision(revision_id)
         if revision is None:
             raise ValueError('Selected published revision no longer exists.')
         assert_binding_uses_allowed_runbook(revision, config=current_app.config)
@@ -239,7 +242,7 @@ def create_automation_binding() -> ResponseReturnValue:
 @permission_required('knowledge.runbooks.manage')
 def update_automation_binding_status(binding_id: int) -> ResponseReturnValue:
     def operation() -> object:
-        binding = db.session.get(KnowledgeRunbookAlertBinding, binding_id)
+        binding = get_runbook_binding(binding_id)
         if binding is None:
             raise ValueError('Selected runbook binding no longer exists.')
         return set_alert_binding_status(
@@ -261,7 +264,7 @@ def update_automation_binding_status(binding_id: int) -> ResponseReturnValue:
 @permission_required('intelligence.decisions.create')
 def promote_automation_candidate(candidate_id: int) -> ResponseReturnValue:
     def operation() -> object:
-        candidate = db.session.get(IntelligenceDecisionCandidate, candidate_id)
+        candidate = get_decision_candidate(candidate_id)
         if candidate is None:
             raise ValueError('Selected decision candidate no longer exists.')
         decision = promote_candidate(
@@ -287,7 +290,7 @@ def promote_automation_candidate(candidate_id: int) -> ResponseReturnValue:
 @permission_required('intelligence.decisions.create')
 def dismiss_automation_candidate(candidate_id: int) -> ResponseReturnValue:
     def operation() -> object:
-        candidate = db.session.get(IntelligenceDecisionCandidate, candidate_id)
+        candidate = get_decision_candidate(candidate_id)
         if candidate is None:
             raise ValueError('Selected decision candidate no longer exists.')
         return dismiss_candidate(
@@ -321,13 +324,13 @@ def reject_automation_decision(decision_id: int) -> ResponseReturnValue:
 @permission_required('intelligence.decisions.execute')
 def execute_automation_decision(decision_id: int) -> ResponseReturnValue:
     def operation() -> object:
-        decision = db.session.get(IntelligenceDecision, decision_id)
+        decision = get_decision(decision_id)
         if decision is None:
             raise ValueError('Selected decision no longer exists.')
         cluster_id = str(decision.cluster_id or '').strip()
         if not cluster_id:
             raise ValueError('Resolver execution requires a cluster-scoped decision.')
-        cluster = db.session.get(Cluster, cluster_id)
+        cluster = get_cluster(cluster_id)
         if cluster is None:
             raise ValueError('Resolver target cluster does not exist.')
         registry = get_resolver_registry(current_app)
@@ -404,7 +407,7 @@ def update_automation_operational_control() -> ResponseReturnValue:
             ),
             actor_user_id=_actor_user_id(),
         )
-        db.session.commit()
+        commit_automation_control()
         return record
 
     return _handle_governance_mutation(
@@ -421,7 +424,7 @@ def record_automation_readiness() -> ResponseReturnValue:
     def operation() -> object:
         cluster_id = request.form.get('cluster_id', '').strip()
         action_key = request.form.get('action_key', '').strip()
-        if db.session.get(Cluster, cluster_id) is None:
+        if get_cluster(cluster_id) is None:
             raise ValueError('Selected cluster does not exist.')
         get_resolver_registry(current_app).describe(action_key)
         results = {check: check in request.form for check in REQUIRED_CHECKS}
@@ -431,7 +434,7 @@ def record_automation_readiness() -> ResponseReturnValue:
             results=results,
             actor_user_id=_actor_user_id(),
         )
-        db.session.commit()
+        commit_automation_control()
         return record
 
     return _handle_governance_mutation(
@@ -446,7 +449,7 @@ def record_automation_readiness() -> ResponseReturnValue:
 @permission_required('intelligence.decisions.execute')
 def advance_automation_readiness(record_id: int) -> ResponseReturnValue:
     def operation() -> object:
-        record = db.session.get(ResolverProductionReadinessRecord, record_id)
+        record = get_readiness_record(record_id)
         if record is None:
             raise ValueError('Selected readiness record no longer exists.')
         advance_rollout_stage(
@@ -454,7 +457,7 @@ def advance_automation_readiness(record_id: int) -> ResponseReturnValue:
             target_stage=request.form.get('target_stage', 'disabled'),
             actor_user_id=_actor_user_id(),
         )
-        db.session.commit()
+        commit_automation_control()
         return record
 
     return _handle_governance_mutation(
@@ -467,7 +470,7 @@ def advance_automation_readiness(record_id: int) -> ResponseReturnValue:
 
 def _decision_outcome(decision_id: int, *, outcome: str) -> ResponseReturnValue:
     def operation() -> object:
-        decision = db.session.get(IntelligenceDecision, decision_id)
+        decision = get_decision(decision_id)
         if decision is None:
             raise ValueError('Selected decision no longer exists.')
         reason = request.form.get('reason', '')
@@ -573,7 +576,7 @@ def _handle_control_operation(
     try:
         operation()
     except Exception:
-        db.session.rollback()
+        rollback_automation_control()
         current_app.logger.exception('Automation Control operation failed in workspace %s.', workspace)
         queue_transient_feedback(
             status='error',

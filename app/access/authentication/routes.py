@@ -24,6 +24,7 @@ from app.access.authentication.services import (
     PROVIDER_UNAVAILABLE_MESSAGE,
     authenticate,
     credential_failure_message,
+    record_successful_authentication,
 )
 from app.access.authentication.session import (
     AuthSessionError,
@@ -37,7 +38,6 @@ from app.access.authentication.sso import (
     find_enabled_sso_provider,
     resolve_sso_identity,
 )
-from app.extensions.db import db
 from app.extensions.limiter import limiter
 from app.models import User
 from app.platform_operations.notifications.service import queue_transient_feedback
@@ -71,14 +71,7 @@ def _complete_successful_login(
     user = result.user
     if user is None:
         raise RuntimeError('Successful authentication result is missing its user.')
-    user.last_login_at = datetime.now(UTC)
-    user.last_login_ip = _client_ip()
-    user.last_auth_source = result.source
-    try:
-        db.session.commit()
-    except SQLAlchemyError:
-        db.session.rollback()
-        raise
+    record_successful_authentication(user, source=result.source, client_ip=_client_ip())
 
     establish_authenticated_session(
         user,

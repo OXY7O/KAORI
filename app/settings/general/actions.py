@@ -135,3 +135,18 @@ def save_regional_format_preference(
         saved=True,
         notification_changed=bool(feedback.get('notification_deck_visible')),
     )
+
+
+def sync_browser_timezone_preference(*, user: User, browser_timezone: str) -> tuple[str, str]:
+    """Synchronize automatic browser timezone state without creating operator feedback noise."""
+
+    if normalize_timezone_mode(user.timezone_mode) != 'automatic':
+        return 'ignored', normalize_timezone_name(user.timezone)
+    if not is_valid_timezone_name(browser_timezone):
+        return 'invalid_timezone', normalize_timezone_name(user.timezone)
+    normalized_timezone = normalize_timezone_name(browser_timezone)
+    if normalized_timezone == normalize_timezone_name(user.timezone):
+        return 'unchanged', normalized_timezone
+    user.timezone = normalized_timezone
+    db.session.commit()
+    return 'updated', normalized_timezone

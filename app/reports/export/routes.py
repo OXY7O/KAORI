@@ -12,12 +12,11 @@ from flask_login import current_user
 
 from app.access.authentication.session import safe_next_url
 from app.access.rbac.decorators import permission_required
-from app.extensions.db import db
-from app.models.report import Report
 from app.platform_operations.notifications.service import queue_transient_feedback, record_operational_activity
 from app.reports.export.artifacts import get_report_artifact_format
 from app.reports.export.service import get_download_file_path
 from app.reports.jobs.service import ReportJobEnqueueError, enqueue_report_generation
+from app.reports.repository import get_report, mark_report_queue_failure
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +38,7 @@ def _generated_detail_url(report_id: int, registry_return_url: str) -> str:
 
 @permission_required('reports.generate')
 def generate_report_output(report_id: int) -> ResponseReturnValue:
-    report = db.session.get(Report, report_id)
+    report = get_report(report_id)
     if report is None:
         abort(404)
 
@@ -65,15 +64,14 @@ def generate_report_output(report_id: int) -> ResponseReturnValue:
         )
     except ReportJobEnqueueError:
         logger.exception('Report %s could not be queued for artifact generation.', report_id)
-        db.session.rollback()
-        failed_report = db.session.get(Report, report_id)
-        if failed_report is not None and failed_report.status != 'ready':
-            failed_report.status = 'failed'
-            failed_report.error_message = (
+        mark_report_queue_failure(
+            report_id,
+            message=(
                 'KAORI could not queue this report. Review the Reports worker, broker, '
                 'and queue configuration before retrying.'
-            )
-            db.session.commit()
+            ),
+            preserve_ready=True,
+        )
         record_operational_activity(
             user_id=current_user.id,
             event_type='report_generation_queue_failed',
@@ -112,7 +110,7 @@ def generate_report_output(report_id: int) -> ResponseReturnValue:
 
 @permission_required('reports.view')
 def download_report_artifact(report_id: int) -> ResponseReturnValue:
-    report = db.session.get(Report, report_id)
+    report = get_report(report_id)
     if report is None:
         abort(404)
     artifact_format = get_report_artifact_format(report.output_format)

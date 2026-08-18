@@ -1,23 +1,5 @@
 {
-  "version": 1,
-  "route_persistence_files": [
-    "app/access/authentication/routes.py",
-    "app/access/identity_providers/routes.py",
-    "app/access/roles/routes.py",
-    "app/access/users/routes.py",
-    "app/integrations/observability/metrics_source/application/routes.py",
-    "app/integrations/storage/object_storage/providers/minio/application/routes.py",
-    "app/intelligence/automation_control/routes.py",
-    "app/kubernetes/cluster/routes.py",
-    "app/kubernetes/governance/tls_certificates/routes.py",
-    "app/kubernetes/operations/secrets/reveal_routes.py",
-    "app/platform_operations/jobs/routes.py",
-    "app/platform_operations/kubernetes/secret_reveal/routes.py",
-    "app/reports/export/routes.py",
-    "app/reports/generate/routes.py",
-    "app/settings/routes.py"
-  ],
-  "presentation_mutation_files": [
-    "app/intelligence/automation_control/presentation.py"
-  ]
+  "version": 2,
+  "route_persistence_files": [],
+  "presentation_mutation_files": []
 }

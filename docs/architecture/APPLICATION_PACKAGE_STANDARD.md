@@ -29,6 +29,7 @@ Product implementations must not reappear as top-level packages. Provider-specif
 Within a feature package, use the smallest useful subset of these files:
 
 - `routes.py` — **Controller**: authorization, HTTP parsing, service invocation, response/render selection.
+- `*_web.py` — optional controller/web-orchestration split for large HTTP workflows; it may use request/render/redirect APIs but must delegate persistence to service/repository layers.
 - `forms.py` — input parsing and validation.
 - `service.py` — application/use-case orchestration and transaction intent.
 - `policy.py` — business/security invariants and admission decisions.
@@ -54,7 +55,7 @@ Preferred worker flow:
 
 New repository modules may not depend on Flask request globals, `current_user`, redirects, or template rendering. New service modules may not render templates. New presentation modules may not mutate the database.
 
-Some historical route modules still perform direct ORM persistence and one historical presentation module still mutates persistence. Those files are explicitly listed in `docs/architecture/mvc-debt-baseline.json`. The baseline may shrink but must never grow.
+The MVC persistence-debt baseline is intentionally empty. Direct ORM persistence in `routes.py`, `*_routes.py`, or `*_web.py`, and database mutation in presentation modules, are forbidden and fail the application-package architecture gate.
 
 ## Physical namespace rules
 

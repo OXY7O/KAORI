@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+from datetime import UTC, datetime
+
+from sqlalchemy.exc import SQLAlchemyError
+
 from app.access.authentication.admission import enforce_login_admission
 from app.access.authentication.identity_provider.registry import build_credential_provider_registry
 from app.access.authentication.results import (
@@ -10,6 +14,8 @@ from app.access.authentication.results import (
     AuthReason,
     AuthResult,
 )
+from app.extensions.db import db
+from app.models import User
 
 
 def _finalize_result(result: AuthResult) -> AuthResult:
@@ -37,6 +43,24 @@ def authenticate(username: str, password: str) -> AuthResult:
     return unavailable_result or local_result
 
 
+def record_successful_authentication(
+    user: User,
+    *,
+    source: str,
+    client_ip: str | None,
+) -> None:
+    """Persist login evidence before the authenticated session is established."""
+
+    user.last_login_at = datetime.now(UTC)
+    user.last_login_ip = client_ip
+    user.last_auth_source = source
+    try:
+        db.session.commit()
+    except SQLAlchemyError:
+        db.session.rollback()
+        raise
+
+
 def credential_failure_message(result: AuthResult) -> str:
     """Return the public message for username/password authentication failures.
 
@@ -59,4 +83,5 @@ __all__ = [
     'USER_INACTIVE_MESSAGE',
     'authenticate',
     'credential_failure_message',
+    'record_successful_authentication',
 ]

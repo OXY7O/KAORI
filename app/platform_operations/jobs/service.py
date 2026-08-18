@@ -237,6 +237,15 @@ def create_or_attach_job(
     return job, True
 
 
+def get_job_by_public_id(public_id: str) -> JobExecution | None:
+    return JobExecution.query.filter_by(public_id=public_id).first()
+
+
+def rollback_job_dispatch_transaction() -> None:
+    """Reset the current job-dispatch transaction before emitting failure evidence."""
+    db.session.rollback()
+
+
 def get_job_by_task_id(task_id: str) -> JobExecution | None:
     return JobExecution.query.filter_by(celery_task_id=task_id).first()
 

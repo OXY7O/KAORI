@@ -34,6 +34,38 @@ class RoleImpactAcknowledgementRequired(RoleInputError):
     """Raised when role deactivation would affect referenced access without acknowledgement."""
 
 
+def get_role(role_id: int) -> Role | None:
+    return db.session.get(Role, role_id)
+
+
+def rollback_role_transaction() -> None:
+    """Release row locks and reset a failed role mutation transaction."""
+    db.session.rollback()
+
+
+def delete_custom_role(*, actor: User, role: Role) -> dict[str, object]:
+    role_name = role.display_name
+    snapshot = {
+        'target_type': 'role',
+        'target_id': role.id,
+        'role_slug': role.name,
+        'role_display_name': role.display_name,
+        'role_type': 'custom',
+        'lifecycle_status': 'deleted',
+        'permission_count': len(role.permissions),
+    }
+    record_admin_event(
+        actor=actor,
+        action='role.deleted',
+        target=role,
+        summary=f'Deleted custom role {role_name}.',
+        metadata={'role_slug': role.name},
+    )
+    db.session.delete(role)
+    db.session.commit()
+    return snapshot
+
+
 def role_version_token(role: Role) -> str:
     updated_at = role.updated_at
     if updated_at.tzinfo is None:

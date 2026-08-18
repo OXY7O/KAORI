@@ -4,13 +4,17 @@ from collections.abc import Mapping
 from typing import Any
 
 from sqlalchemy import func
+from sqlalchemy.exc import SQLAlchemyError
 
 from app.access.authentication.identity_provider.catalog import (
     AuthProviderFamily,
     configurable_provider_definitions,
     provider_definition,
 )
-from app.access.authentication.identity_provider.configuration import identity_provider_configuration_complete
+from app.access.authentication.identity_provider.configuration import (
+    apply_identity_provider_configuration,
+    identity_provider_configuration_complete,
+)
 from app.access.rbac.policy import is_local_break_glass, role_is_access_admin_level, role_is_delegable_by_actor
 from app.access.rbac.service import assignable_roles_for_actor
 from app.common.pagination import PER_PAGE_OPTIONS, build_pagination_window, normalize_per_page, positive_int
@@ -232,3 +236,37 @@ def provider_default_role_assignment_error(actor: User, role_id: int | None) -> 
     if role_is_access_admin_level(role) and not is_local_break_glass(actor):
         return 'Only a Local Database Super Admin can assign an administrator-level JIT default role.'
     return 'The selected JIT default role exceeds your delegation boundary.'
+
+
+def create_identity_provider(configuration: dict[str, Any]) -> IdentityProvider:
+    provider = IdentityProvider()
+    apply_identity_provider_configuration(provider, configuration)
+    db.session.add(provider)
+    try:
+        db.session.commit()
+    except SQLAlchemyError:
+        db.session.rollback()
+        raise
+    return provider
+
+
+def update_identity_provider(provider: IdentityProvider, configuration: dict[str, Any]) -> IdentityProvider:
+    apply_identity_provider_configuration(provider, configuration)
+    try:
+        db.session.commit()
+    except SQLAlchemyError:
+        db.session.rollback()
+        raise
+    return provider
+
+
+def commit_identity_projection() -> None:
+    try:
+        db.session.commit()
+    except SQLAlchemyError:
+        db.session.rollback()
+        raise
+
+
+def rollback_identity_provider_transaction() -> None:
+    db.session.rollback()

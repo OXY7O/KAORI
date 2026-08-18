@@ -168,6 +168,20 @@ def _expire_stale_requests() -> None:
     db.session.commit()
 
 
+def get_secret_reveal_approvers(*, exclude_user_id: int) -> list[User]:
+    candidates = User.query.filter(
+        User.account_is_active.is_(True),
+        User.deleted_at.is_(None),
+        User.id != exclude_user_id,
+    ).all()
+    return [user for user in candidates if user.has_permission('kubernetes_secrets.approve_reveal')]
+
+
+def rollback_secret_reveal_transaction() -> None:
+    """Reset a failed protected-secret transaction before reading or recording follow-up evidence."""
+    db.session.rollback()
+
+
 def get_reveal_clusters() -> list[Cluster]:
     if not _global_enabled():
         return []

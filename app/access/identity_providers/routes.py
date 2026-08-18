@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import cast
 
-from flask import Blueprint, redirect, render_template, request, url_for
+from flask import Blueprint, abort, redirect, render_template, request, url_for
 from flask_login import current_user
 from sqlalchemy.exc import IntegrityError
 
@@ -39,15 +39,19 @@ from app.access.identity_providers.provisioning_proof import (
     issue_projection_proof,
     verify_projection_proof,
 )
+from app.access.identity_providers.repository import get_identity_provider
 from app.access.identity_providers.service import (
     assign_provider_role_choices,
     build_identity_provider_payload,
+    commit_identity_projection,
+    create_identity_provider,
     normalize_provider_filters,
     provider_default_role_assignment_error,
+    rollback_identity_provider_transaction,
+    update_identity_provider,
 )
 from app.access.rbac.decorators import permission_required
 from app.common.admin_audit import record_admin_event
-from app.extensions.db import db
 from app.models import IdentityProvider, User
 
 bp = Blueprint('identity_providers', __name__, url_prefix='/access/identity-providers')
@@ -87,13 +91,9 @@ def create():
         if role_error:
             form.default_role_id.errors = [*form.default_role_id.errors, role_error]
             return render_template('access/identity_providers/form.html', **_form_context(form, None))
-        provider = IdentityProvider()
-        apply_identity_provider_configuration(provider, configuration_from_form(form))
-        db.session.add(provider)
         try:
-            db.session.commit()
+            provider = create_identity_provider(configuration_from_form(form))
         except IntegrityError:
-            db.session.rollback()
             form.key.errors = [*form.key.errors, 'Provider key already exists.']
         else:
             identity_provider_feedback(
@@ -112,7 +112,9 @@ def create():
 @bp.route('/<int:provider_id>/edit', methods=['GET', 'POST'])
 @permission_required('identity_providers.manage')
 def edit(provider_id: int):
-    provider = db.get_or_404(IdentityProvider, provider_id)
+    provider = get_identity_provider(provider_id)
+    if provider is None:
+        abort(404)
     actor = cast(User, current_user)
     form = IdentityProviderForm()
     assign_provider_role_choices(form, actor=actor)
@@ -123,11 +125,9 @@ def edit(provider_id: int):
         if role_error:
             form.default_role_id.errors = [*form.default_role_id.errors, role_error]
             return render_template('access/identity_providers/form.html', **_form_context(form, provider))
-        apply_identity_provider_configuration(provider, configuration_from_form(form))
         try:
-            db.session.commit()
+            update_identity_provider(provider, configuration_from_form(form))
         except IntegrityError:
-            db.session.rollback()
             form.key.errors = [*form.key.errors, 'Provider key already exists.']
         else:
             identity_provider_feedback(
@@ -147,7 +147,9 @@ def edit(provider_id: int):
 @bp.post('/<int:provider_id>/test')
 @permission_required('identity_providers.manage')
 def test_configuration(provider_id: int | None = None):
-    provider = db.get_or_404(IdentityProvider, provider_id) if provider_id is not None else None
+    provider = get_identity_provider(provider_id) if provider_id is not None else None
+    if provider_id is not None and provider is None:
+        abort(404)
     actor = cast(User, current_user)
     form = IdentityProviderForm()
     assign_provider_role_choices(form, actor=actor)
@@ -180,7 +182,9 @@ def test_configuration(provider_id: int | None = None):
 @permission_required('identity_providers.manage')
 def validate(provider_id: int):
     actor = cast(User, current_user)
-    provider = db.get_or_404(IdentityProvider, provider_id)
+    provider = get_identity_provider(provider_id)
+    if provider is None:
+        abort(404)
     status, title = 'success', 'Provider validation passed'
     try:
         message = validate_identity_provider(provider)
@@ -210,7 +214,7 @@ def directory_provisioning():
     projection_proofs: dict[str, str] = {}
     selected_provider = None
     if search_form.validate_on_submit() and search_form.submit.data:
-        selected_provider = db.session.get(IdentityProvider, search_form.provider_id.data)
+        selected_provider = get_identity_provider(search_form.provider_id.data)
         if selected_provider is not None:
             try:
                 results = get_directory_provider_adapter(selected_provider.adapter_key).search(
@@ -266,7 +270,7 @@ def provision_identity():
     if not provider_id_raw.isdigit() or role_id is None:
         return redirect(url_for('identity_providers.directory_provisioning'))
 
-    provider = db.session.get(IdentityProvider, int(provider_id_raw))
+    provider = get_identity_provider(int(provider_id_raw))
     if (
         provider is None
         or not provider.enabled
@@ -301,9 +305,9 @@ def provision_identity():
             summary=f'Provisioned directory identity {user.username}.',
             metadata={'provider_key': provider.provider_key, 'provider_instance_key': provider.key},
         )
-        db.session.commit()
+        commit_identity_projection()
     except (IdentityProjectionError, ProjectionProofError) as exc:
-        db.session.rollback()
+        rollback_identity_provider_transaction()
         identity_provider_feedback(
             actor=actor,
             event_type='external_identity_provision_failed',

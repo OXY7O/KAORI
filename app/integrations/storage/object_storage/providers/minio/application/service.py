@@ -17,6 +17,10 @@ from app.models.object_storage import ObjectStorageSystem
 from app.platform_operations.jobs.service import acquire_resource_admission_locks
 
 
+def get_minio_instance(instance_id: int) -> MinioInstance | None:
+    return MinioInstance.query.filter_by(id=instance_id).first()
+
+
 def test_minio_connection(values: MinioRegistrationInput) -> MinioConnectionResult:
     result = test_connection_values(
         endpoint=values.endpoint,

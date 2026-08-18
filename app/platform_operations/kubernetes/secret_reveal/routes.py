@@ -17,14 +17,17 @@ from flask_wtf.csrf import validate_csrf
 from wtforms.validators import ValidationError
 
 from app.access.rbac.decorators import permission_required
-from app.extensions.db import db
 from app.kubernetes.operations.secrets.reveal_policy import (
     cluster_reveal_readiness_evidence,
     set_namespace_reveal_policy,
     update_cluster_reveal_readiness,
 )
 from app.models import Cluster
-from app.platform_operations.kubernetes.secret_reveal.service import build_secret_reveal_settings_context
+from app.platform_operations.kubernetes.secret_reveal.service import (
+    build_secret_reveal_settings_context,
+    get_secret_reveal_cluster,
+    rollback_secret_reveal_settings_transaction,
+)
 from app.platform_operations.notifications.feedback import queue_operational_feedback
 from app.platform_operations.notifications.service import record_operational_activity
 
@@ -87,7 +90,7 @@ def _settings_response(cluster_id: str, operation_feedback: dict[str, Any] | Non
 
 
 def _cluster_or_error(cluster_id: str) -> Cluster:
-    cluster = Cluster.query.filter_by(id=cluster_id).first()
+    cluster = get_secret_reveal_cluster(cluster_id)
     if cluster is None:
         raise ValueError('The selected Kubernetes cluster was not found.')
     return cluster
@@ -204,7 +207,7 @@ def update_readiness(cluster_id: str):
             },
         )
     except ValueError as exc:
-        db.session.rollback()
+        rollback_secret_reveal_settings_transaction()
         operation_feedback = _record_settings_activity(
             event_type='kubernetes_secret_reveal_cluster_readiness_failed',
             status='error',
@@ -213,7 +216,7 @@ def update_readiness(cluster_id: str):
             metadata={'cluster_id': cluster_id},
         )
     except Exception:
-        db.session.rollback()
+        rollback_secret_reveal_settings_transaction()
         current_app.logger.exception('Unexpected Secret Reveal readiness update failure.')
         operation_feedback = _record_settings_activity(
             event_type='kubernetes_secret_reveal_cluster_readiness_failed',
@@ -260,7 +263,7 @@ def update_namespace_policy(cluster_id: str):
             },
         )
     except ValueError as exc:
-        db.session.rollback()
+        rollback_secret_reveal_settings_transaction()
         operation_feedback = _record_settings_activity(
             event_type='kubernetes_secret_reveal_namespace_policy_failed',
             status='error',
@@ -273,7 +276,7 @@ def update_namespace_policy(cluster_id: str):
             },
         )
     except Exception:
-        db.session.rollback()
+        rollback_secret_reveal_settings_transaction()
         current_app.logger.exception('Unexpected Secret Reveal namespace policy failure.')
         operation_feedback = _record_settings_activity(
             event_type='kubernetes_secret_reveal_namespace_policy_failed',

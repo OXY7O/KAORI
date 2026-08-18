@@ -15,16 +15,14 @@ from flask import (
 )
 from flask_login import current_user
 from kombu.exceptions import OperationalError as KombuOperationalError
-from sqlalchemy.exc import SQLAlchemyError
 
 from app.access.rbac.decorators import permission_required
-from app.extensions.db import db
 from app.kubernetes.cluster.onboarding import has_registered_clusters
+from app.kubernetes.governance.tls_certificates.audit import record_tls_sync_dispatch_audit
 from app.kubernetes.governance.tls_certificates.job_presentation import get_visible_tls_sync_job, present_tls_sync_job
 from app.kubernetes.governance.tls_certificates.readiness import check_tls_governance_schema_readiness
 from app.kubernetes.governance.tls_certificates.service import get_tls_certificate_detail, get_tls_certificate_page
 from app.kubernetes.governance.tls_certificates.sync_state import build_tls_sync_state
-from app.models.audit import AuditEvent
 from app.platform_operations.jobs.dispatcher import dispatch_registered_job
 from app.platform_operations.jobs.service import JobQuotaExceeded
 from app.platform_operations.notifications.feedback import OperationalDeliveryPolicy
@@ -85,25 +83,14 @@ def _record_dispatch_audit(
     job=None,
     metadata: dict[str, object] | None = None,
 ) -> None:
-    event = AuditEvent()
-    event.actor_user_id = int(current_user.id)
-    event.target_type = 'job_execution' if job is not None else 'tls_certificate_inventory'
-    event.target_id = job.public_id if job is not None else (cluster_id or 'all_clusters')
-    event.action = f'governance_tls_secret_sync_dispatch_{action_status}'
-    event.summary = summary[:255]
-    event.metadata_json = {
-        'cluster_id': cluster_id,
-        'job_execution_id': job.id if job is not None else None,
-        'job_public_id': job.public_id if job is not None else None,
-        'dispatch_status': action_status,
-        **(metadata or {}),
-    }
-    try:
-        db.session.add(event)
-        db.session.commit()
-    except SQLAlchemyError:
-        db.session.rollback()
-        logger.exception('Could not persist TLS sync dispatch audit event.')
+    record_tls_sync_dispatch_audit(
+        actor_user_id=int(current_user.id),
+        action_status=action_status,
+        summary=summary,
+        cluster_id=cluster_id,
+        job=job,
+        metadata=metadata,
+    )
 
 
 def _render_sync_response(

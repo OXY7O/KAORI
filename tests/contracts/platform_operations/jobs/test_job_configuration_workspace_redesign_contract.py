@@ -65,3 +65,16 @@ def test_job_definitions_provide_job_specific_execution_history_descriptions() -
     content = _read('app/definitions/catalogs/platform_operations/jobs/registered_jobs.yaml')
     assert content.count('execution_summary:') >= 7
     assert content.count('recent_execution_summary:') >= 7
+
+
+def test_registered_job_configuration_templates_use_canonical_platform_operations_namespace() -> None:
+    catalog = _read('app/definitions/catalogs/platform_operations/jobs/registered_jobs.yaml')
+    template_names = [
+        line.split(':', 1)[1].strip()
+        for line in catalog.splitlines()
+        if line.strip().startswith('configuration_template:')
+    ]
+    assert template_names
+    for template_name in template_names:
+        assert template_name.startswith('platform_operations/jobs/configuration/definitions/')
+        assert (ROOT / 'app/templates' / template_name).is_file(), template_name

@@ -406,6 +406,17 @@ def main() -> int:
     ):
         errors.append('Jobs hero must present combined Operational Attention')
 
+    job_catalog = read('app/definitions/catalogs/platform_operations/jobs/registered_jobs.yaml')
+    configuration_templates = re.findall(r'^\s*configuration_template:\s*([^#\s]+)', job_catalog, flags=re.MULTILINE)
+    if not configuration_templates:
+        errors.append('Registered Jobs catalog must declare configuration templates')
+    for template_name in configuration_templates:
+        if not template_name.startswith('platform_operations/jobs/configuration/definitions/'):
+            errors.append(f'Registered Jobs template path is outside the canonical namespace: {template_name}')
+            continue
+        if not (ROOT / 'app/templates' / template_name).is_file():
+            errors.append(f'Registered Jobs template path does not exist: {template_name}')
+
     job_routes = read('app/platform_operations/jobs/routes.py')
     for required in (
         "if active_section == 'configuration':",

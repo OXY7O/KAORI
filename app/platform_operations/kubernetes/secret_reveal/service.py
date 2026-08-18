@@ -6,6 +6,7 @@ from typing import Any
 from flask import current_app
 
 from app.common.presentation import present_user_datetime
+from app.extensions.db import db
 from app.kubernetes.operations.secrets.reveal_policy import (
     REVEAL_NAMESPACE_POLICIES,
     build_namespace_policy_rows,
@@ -24,6 +25,15 @@ _NAMESPACE_POLICY_FILTERS = {
     'missing': 'Missing from live cluster',
     'unknown': 'Live state unknown',
 }
+
+
+def get_secret_reveal_cluster(cluster_id: str) -> Cluster | None:
+    return Cluster.query.filter_by(id=cluster_id).first()
+
+
+def rollback_secret_reveal_settings_transaction() -> None:
+    """Reset a failed Secret Reveal administration transaction before recording failure evidence."""
+    db.session.rollback()
 
 
 def _normalize_page(value: str | int | None) -> int:

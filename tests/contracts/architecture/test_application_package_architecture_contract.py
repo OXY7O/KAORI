@@ -83,7 +83,7 @@ def test_mvc_debt_is_explicit_and_cannot_become_an_unbounded_exception_bucket() 
     route_debt = baseline['route_persistence_files']
     presentation_debt = baseline['presentation_mutation_files']
 
-    assert len(route_debt) == 15
-    assert presentation_debt == ['app/intelligence/automation_control/presentation.py']
+    assert route_debt == []
+    assert presentation_debt == []
     assert len(route_debt) == len(set(route_debt))
     assert all((ROOT / path).exists() for path in (*route_debt, *presentation_debt))

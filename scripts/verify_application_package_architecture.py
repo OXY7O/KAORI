@@ -115,7 +115,7 @@ def _imports(path: Path) -> tuple[str, ...]:
 def _route_persistence_files() -> set[str]:
     result: set[str] = set()
     for path in APP.rglob('*.py'):
-        if path.name != 'routes.py' and not path.name.endswith('_routes.py'):
+        if path.name != 'routes.py' and not path.name.endswith('_routes.py') and not path.name.endswith('_web.py'):
             continue
 
         tree = ast.parse(path.read_text(encoding='utf-8'), filename=str(path))
@@ -212,9 +212,9 @@ def main() -> int:
     actual_routes = _route_persistence_files()
     allowed_routes = set(baseline.get('route_persistence_files') or ())
     for path in sorted(actual_routes - allowed_routes):
-        errors.append(f'new controller persistence debt is forbidden: {path}')
+        errors.append(f'new web/controller persistence debt is forbidden: {path}')
     for path in sorted(allowed_routes - actual_routes):
-        errors.append(f'MVC debt baseline is stale; remove resolved controller persistence entry: {path}')
+        errors.append(f'MVC debt baseline is stale; remove resolved web/controller persistence entry: {path}')
 
     actual_presentations = _presentation_mutation_files()
     allowed_presentations = set(baseline.get('presentation_mutation_files') or ())

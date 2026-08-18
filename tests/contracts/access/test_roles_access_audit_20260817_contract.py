@@ -102,7 +102,8 @@ def test_access_admin_audit_helper_is_not_owned_by_user_service() -> None:
     assert 'def record_admin_event' in helper
     assert 'AuditEvent()' in helper
     assert 'def record_admin_event' not in users_service
-    assert 'from app.common.admin_audit import record_admin_event' in users_routes
+    assert 'from app.common.admin_audit import record_admin_event' in users_service
+    assert 'record_admin_event' not in users_routes
     assert 'from app.common.admin_audit import record_admin_event' in role_service
     assert 'from app.common.admin_audit import record_admin_event' in provider_routes
 

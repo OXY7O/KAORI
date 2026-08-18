@@ -4,9 +4,11 @@ from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import or_, select
+from sqlalchemy.exc import SQLAlchemyError
 
 from app.access.rbac.policy import is_local_break_glass, role_is_access_admin_level, role_is_delegable_by_actor
 from app.access.rbac.service import assignable_roles_for_actor
+from app.common.admin_audit import record_admin_event
 from app.extensions.db import db
 from app.models import Role, User
 
@@ -435,3 +437,72 @@ def restore_user(target: User) -> None:
     # account returns to inactive administration until activation is explicit.
     target.account_is_active = False
     target.updated_at = now
+
+
+def get_user(user_id: int) -> User | None:
+    return db.session.get(User, user_id)
+
+
+def persist_created_user(*, actor: User, user: User) -> None:
+    try:
+        db.session.flush()
+        record_admin_event(
+            actor=actor,
+            action='user.created',
+            target=user,
+            summary=f'Created user {user.username}.',
+            metadata={'auth_source': user.auth_source, 'role': user.role_name},
+        )
+        db.session.commit()
+    except SQLAlchemyError:
+        db.session.rollback()
+        raise
+
+
+def persist_updated_user(*, actor: User, user: User) -> None:
+    try:
+        record_admin_event(
+            actor=actor,
+            action='user.updated',
+            target=user,
+            summary=f'Updated user {user.username}.',
+            metadata={'auth_source': user.auth_source, 'role': user.role_name},
+        )
+        db.session.commit()
+    except SQLAlchemyError:
+        db.session.rollback()
+        raise
+
+
+def activate_user_account(*, actor: User, user: User) -> None:
+    set_user_active(user, True)
+    record_admin_event(actor=actor, action='user.activated', target=user, summary=f'Activated user {user.username}.')
+    db.session.commit()
+
+
+def deactivate_user_account(*, actor: User, user: User) -> None:
+    set_user_active(user, False)
+    record_admin_event(
+        actor=actor, action='user.deactivated', target=user, summary=f'Deactivated user {user.username}.'
+    )
+    db.session.commit()
+
+
+def reset_user_password(*, actor: User, user: User, password: str) -> None:
+    user.set_password(password)
+    record_admin_event(
+        actor=actor, action='user.password_reset', target=user, summary=f'Reset password for user {user.username}.'
+    )
+    db.session.commit()
+
+
+def restore_user_account(*, actor: User, user: User) -> None:
+    restore_user(user)
+    record_admin_event(actor=actor, action='user.restored', target=user, summary=f'Restored user {user.username}.')
+    db.session.commit()
+
+
+def delete_user_account(*, actor: User, user: User) -> None:
+    soft_delete_user(user)
+    record_admin_event(actor=actor, action='user.deleted', target=user, summary=f'Soft deleted user {user.username}.')
+    db.session.commit()

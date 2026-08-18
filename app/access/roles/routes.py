@@ -22,14 +22,15 @@ from app.access.roles.service import (
     RoleImpactAcknowledgementRequired,
     RoleInputError,
     create_custom_role,
+    delete_custom_role,
     ensure_role_within_delegation_boundary,
+    get_role,
     lock_role_for_mutation,
     role_version_matches,
     role_version_token,
+    rollback_role_transaction,
     update_custom_role,
 )
-from app.common.admin_audit import record_admin_event
-from app.extensions.db import db
 from app.models import Role, User
 
 bp = Blueprint('roles', __name__)
@@ -121,7 +122,7 @@ def create():
 @permission_required('roles.manage')
 def clone(role_id: int):
     actor = cast(User, current_user._get_current_object())
-    source_role = db.session.get(Role, role_id)
+    source_role = get_role(role_id)
     if source_role is None or not role_is_protected_default(source_role):
         role_access_feedback(
             actor=actor,
@@ -196,7 +197,7 @@ def clone(role_id: int):
 @permission_required('roles.view')
 def detail(role_id: int):
     actor = cast(User, current_user._get_current_object())
-    role = db.session.get(Role, role_id)
+    role = get_role(role_id)
     if role is None:
         role_access_feedback(
             actor=actor,
@@ -223,7 +224,7 @@ def detail(role_id: int):
 @bp.get('/<int:role_id>/details')
 @permission_required('roles.view')
 def modal_details(role_id: int):
-    role = db.session.get(Role, role_id)
+    role = get_role(role_id)
     if role is None:
         return 'Role details unavailable.', 404
     actor = cast(User, current_user._get_current_object())
@@ -237,7 +238,7 @@ def modal_details(role_id: int):
 @permission_required('roles.manage')
 def edit(role_id: int):
     actor = cast(User, current_user._get_current_object())
-    role = db.session.get(Role, role_id)
+    role = get_role(role_id)
     if role is None:
         role_access_feedback(
             actor=actor,
@@ -282,14 +283,14 @@ def edit(role_id: int):
     if form.validate_on_submit():
         locked_role = lock_role_for_mutation(role_id)
         if locked_role is None:
-            db.session.rollback()
+            rollback_role_transaction()
             return redirect(url_for('access.roles.index'))
         role = locked_role
 
         if not role_version_matches(role, form.role_version.data):
             current_version = role_version_token(role)
-            db.session.rollback()
-            role = db.session.get(Role, role_id)
+            rollback_role_transaction()
+            role = get_role(role_id)
             form.role_version.data = current_version
             form.role_version.errors = [
                 *form.role_version.errors,
@@ -308,16 +309,16 @@ def edit(role_id: int):
                     impact_acknowledged=bool(form.impact_acknowledged.data),
                 )
             except RoleDelegationError as exc:
-                db.session.rollback()
+                rollback_role_transaction()
                 _permission_error(form, str(exc))
             except RoleImpactAcknowledgementRequired as exc:
-                db.session.rollback()
+                rollback_role_transaction()
                 form.impact_acknowledged.errors = [*form.impact_acknowledged.errors, str(exc)]
             except RoleInputError as exc:
-                db.session.rollback()
+                rollback_role_transaction()
                 form.name.errors = [*form.name.errors, str(exc)]
             except (SQLAlchemyError, ValueError):
-                db.session.rollback()
+                rollback_role_transaction()
                 current_app.logger.exception('Failed to update custom role %s with submitted permissions.', role_id)
                 role_access_feedback(
                     actor=actor,
@@ -357,7 +358,7 @@ def delete(role_id: int):
     actor = cast(User, current_user._get_current_object())
     role = lock_role_for_mutation(role_id)
     if role is None:
-        db.session.rollback()
+        rollback_role_transaction()
         role_access_feedback(
             actor=actor,
             event_type='rbac_role_delete_rejected',
@@ -369,7 +370,7 @@ def delete(role_id: int):
 
     form = DeleteRoleForm()
     if not form.validate_on_submit() or str(form.role_id.data) != str(role.id):
-        db.session.rollback()
+        rollback_role_transaction()
         role_access_feedback(
             actor=actor,
             event_type='rbac_role_delete_rejected',
@@ -380,7 +381,7 @@ def delete(role_id: int):
         )
         return redirect(url_for('access.roles.index'))
     if role_is_mutation_protected(role):
-        db.session.rollback()
+        rollback_role_transaction()
         role_access_feedback(
             actor=actor,
             event_type='rbac_role_delete_rejected',
@@ -393,7 +394,7 @@ def delete(role_id: int):
     try:
         ensure_role_within_delegation_boundary(actor=actor, role=role)
     except RoleDelegationError as exc:
-        db.session.rollback()
+        rollback_role_transaction()
         role_access_feedback(
             actor=actor,
             event_type='rbac_role_delete_rejected',
@@ -404,7 +405,7 @@ def delete(role_id: int):
         )
         return redirect(url_for('access.roles.index'))
     if not role_version_matches(role, form.role_version.data):
-        db.session.rollback()
+        rollback_role_transaction()
         role_access_feedback(
             actor=actor,
             event_type='rbac_role_delete_blocked',
@@ -418,7 +419,7 @@ def delete(role_id: int):
 
     blockers = get_role_delete_blockers(role)
     if blockers['assigned_users'] or blockers['identity_providers']:
-        db.session.rollback()
+        rollback_role_transaction()
         blocker_parts = []
         if blockers['assigned_users']:
             blocker_parts.append(f'{blockers["assigned_users"]} user assignment(s)')
@@ -436,24 +437,7 @@ def delete(role_id: int):
         return redirect(url_for('access.roles.index'))
 
     role_name = role.display_name
-    role_snapshot = {
-        'target_type': 'role',
-        'target_id': role.id,
-        'role_slug': role.name,
-        'role_display_name': role.display_name,
-        'role_type': 'custom',
-        'lifecycle_status': 'deleted',
-        'permission_count': len(role.permissions),
-    }
-    record_admin_event(
-        actor=actor,
-        action='role.deleted',
-        target=role,
-        summary=f'Deleted custom role {role_name}.',
-        metadata={'role_slug': role.name},
-    )
-    db.session.delete(role)
-    db.session.commit()
+    role_snapshot = delete_custom_role(actor=actor, role=role)
     role_access_feedback(
         actor=actor,
         event_type='rbac_role_deleted',

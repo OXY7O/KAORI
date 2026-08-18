@@ -657,6 +657,11 @@ def update_cluster(
     return cluster
 
 
+def rollback_cluster_deletion() -> None:
+    """Reset a failed cluster deletion transaction before failure evidence is recorded."""
+    db.session.rollback()
+
+
 def delete_cluster(cluster: Cluster) -> dict[str, int]:
     """Delete a managed Kubernetes registration and its scope associations.
 

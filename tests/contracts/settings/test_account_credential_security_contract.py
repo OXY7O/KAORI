@@ -85,10 +85,12 @@ def test_credential_workspace_explains_session_effect_without_reopening_external
 
 def test_administrative_reset_now_revokes_target_sessions_and_no_longer_claims_they_remain_active() -> None:
     routes = read('app/access/users/routes.py')
+    users_service = read('app/access/users/service.py')
     reset_template = read('app/templates/access/users/reset_password.html')
     readme = read('app/access/users/README.md')
 
-    assert 'user.set_password(' in routes
+    assert 'user.set_password(' in users_service
+    assert 'reset_user_password(actor=actor, user=user' in routes
     assert 'existing sessions were revoked' in routes
     assert 'Revoked on Next Request' in reset_template
     assert 'Remain Active' not in reset_template

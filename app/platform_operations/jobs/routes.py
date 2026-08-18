@@ -22,8 +22,6 @@ from sqlalchemy.exc import SQLAlchemyError
 from app.access.rbac.decorators import permission_required
 from app.common.job_execution_contract import SYNC_ALL_INVENTORY_ACTION, job_operation_label
 from app.common.job_execution_presentation import present_job_execution_detail
-from app.extensions.db import db
-from app.models.job import JobExecution
 from app.platform_operations.jobs.configuration import (
     build_job_configuration_context,
     build_job_configuration_live_context,
@@ -35,7 +33,13 @@ from app.platform_operations.jobs.policies.forms import JobPolicyForm, ManualJob
 from app.platform_operations.jobs.policies.service import update_job_policy
 from app.platform_operations.jobs.presentation import build_job_execution_context, build_job_execution_status_context
 from app.platform_operations.jobs.registry import get_job_definition
-from app.platform_operations.jobs.service import JobCancellationNotAllowed, JobQuotaExceeded, cancel_job_execution
+from app.platform_operations.jobs.service import (
+    JobCancellationNotAllowed,
+    JobQuotaExceeded,
+    cancel_job_execution,
+    get_job_by_public_id,
+    rollback_job_dispatch_transaction,
+)
 from app.platform_operations.notifications.service import (
     get_navigation_notification_context,
     record_operational_activity,
@@ -212,7 +216,9 @@ def executions() -> ResponseReturnValue:
 @bp.get('/executions/<string:public_id>/details')
 @permission_required('jobs.view')
 def execution_details(public_id: str) -> ResponseReturnValue:
-    job = JobExecution.query.filter_by(public_id=public_id).first_or_404()
+    job = get_job_by_public_id(public_id)
+    if job is None:
+        abort(404)
     response = make_response(
         render_template(
             'platform_operations/jobs/executions/partials/_execution_details.html',
@@ -461,7 +467,7 @@ def run_now(job_key: str) -> ResponseReturnValue:
             requested_by_user_id=int(current_user.id),
         )
     except JobQuotaExceeded as exc:
-        db.session.rollback()
+        rollback_job_dispatch_transaction()
         feedback = record_operational_activity(
             user_id=int(current_user.id),
             event_type='job_manual_dispatch',
@@ -490,7 +496,7 @@ def run_now(job_key: str) -> ResponseReturnValue:
             return _render_configuration_job(job_key, operation_feedback=feedback)
         return redirect(url_for('jobs.configuration', job_key=job_key))
     except (CeleryError, KombuOperationalError, OSError, RuntimeError, SQLAlchemyError):
-        db.session.rollback()
+        rollback_job_dispatch_transaction()
         logger.exception('Could not dispatch registered job %s.', job_key)
         feedback = record_operational_activity(
             user_id=int(current_user.id),
@@ -560,7 +566,9 @@ def run_now(job_key: str) -> ResponseReturnValue:
 @bp.post('/executions/<string:public_id>/cancel')
 @permission_required('jobs.cancel')
 def cancel_execution(public_id: str) -> ResponseReturnValue:
-    job = JobExecution.query.filter_by(public_id=public_id).first_or_404()
+    job = get_job_by_public_id(public_id)
+    if job is None:
+        abort(404)
     is_htmx = request.headers.get('HX-Request') == 'true'
     if job.is_active:
         previous_status = job.status

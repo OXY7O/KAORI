@@ -116,14 +116,12 @@
     "app/reports/storage/service.py::get_report_storage_backend_status": 194
   },
   "module_line_limits": {
-    "app/integrations/observability/metrics_source/application/routes.py": 913,
     "app/integrations/observability/metrics_source/query_profiles/kubernetes_v1.py": 1309,
     "app/integrations/service.py": 869,
     "app/intelligence/recommendation_engine.py": 2460,
     "app/kubernetes/analytics/job_adapter.py": 828,
     "app/kubernetes/analytics/overview/service.py": 1715,
     "app/kubernetes/analytics/utilization/service.py": 1103,
-    "app/kubernetes/cluster/routes.py": 874,
     "app/reports/export/html_pdf/analytics_overview.py": 2362,
     "app/reports/export/html_pdf/capacity_analysis.py": 1255,
     "app/reports/export/html_pdf/forecast_analysis.py": 1114,

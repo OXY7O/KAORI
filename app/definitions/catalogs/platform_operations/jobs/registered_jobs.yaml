@@ -17,7 +17,7 @@ jobs:
   domain_execute_permission: clusters.sync
   dispatcher_path: app.kubernetes.inventory.job_adapter:dispatch_inventory_sync
   context_builder_path: app.kubernetes.inventory.job_adapter:build_inventory_sync_context
-  configuration_template: jobs/configuration/definitions/inventory_sync.html
+  configuration_template: platform_operations/jobs/configuration/definitions/inventory_sync.html
   default_enabled: true
   default_interval_minutes: 60
   safety_summary: Each cluster promotes inventory only after a complete generation commits successfully.
@@ -40,7 +40,7 @@ jobs:
   domain_execute_permission: storage.sync
   dispatcher_path: app.storage.object_storage.inventory.job_adapter:dispatch_object_storage_inventory_sync
   context_builder_path: app.storage.object_storage.inventory.job_adapter:build_object_storage_inventory_sync_context
-  configuration_template: jobs/configuration/definitions/object_storage_inventory_sync.html
+  configuration_template: platform_operations/jobs/configuration/definitions/object_storage_inventory_sync.html
   default_enabled: true
   default_interval_minutes: 60
   safety_summary: Each system replaces its committed bucket snapshot only after collection succeeds.
@@ -63,7 +63,7 @@ jobs:
   domain_execute_permission: analytics.view
   dispatcher_path: app.storage.object_storage.analytics.job_adapter:dispatch_object_storage_forecast_materialization
   context_builder_path: app.storage.object_storage.analytics.job_adapter:build_object_storage_forecast_materialization_context
-  configuration_template: jobs/configuration/definitions/forecast_refresh.html
+  configuration_template: platform_operations/jobs/configuration/definitions/forecast_refresh.html
   default_enabled: true
   default_interval_minutes: 120
   minimum_interval_minutes: 30
@@ -96,7 +96,7 @@ jobs:
   domain_execute_permission: reports.manage_schedules
   dispatcher_path: app.reports.schedules.job_adapter:dispatch_report_schedule_job
   context_builder_path: app.reports.schedules.job_adapter:build_report_schedule_context
-  configuration_template: jobs/configuration/definitions/report_schedule.html
+  configuration_template: platform_operations/jobs/configuration/definitions/report_schedule.html
   default_enabled: true
   default_interval_minutes: 5
   minimum_interval_minutes: 1
@@ -124,7 +124,7 @@ jobs:
   domain_execute_permission: tls_certificates.sync
   dispatcher_path: app.kubernetes.governance.tls_certificates.job_adapter:dispatch_tls_certificate_sync
   context_builder_path: app.kubernetes.governance.tls_certificates.job_adapter:build_tls_certificate_sync_context
-  configuration_template: jobs/configuration/definitions/tls_certificate_sync.html
+  configuration_template: platform_operations/jobs/configuration/definitions/tls_certificate_sync.html
   default_enabled: true
   default_interval_minutes: 360
   minimum_interval_minutes: 30
@@ -150,7 +150,7 @@ jobs:
   domain_execute_permission: analytics.view
   dispatcher_path: app.kubernetes.analytics.job_adapter:dispatch_analytics_materialization
   context_builder_path: app.kubernetes.analytics.job_adapter:build_analytics_materialization_context
-  configuration_template: jobs/configuration/definitions/analytics_refresh.html
+  configuration_template: platform_operations/jobs/configuration/definitions/analytics_refresh.html
   default_enabled: true
   default_interval_minutes: 15
   minimum_interval_minutes: 5
@@ -183,7 +183,7 @@ jobs:
   domain_execute_permission: analytics.view
   dispatcher_path: app.kubernetes.analytics.job_adapter:dispatch_forecast_materialization
   context_builder_path: app.kubernetes.analytics.job_adapter:build_forecast_materialization_context
-  configuration_template: jobs/configuration/definitions/forecast_refresh.html
+  configuration_template: platform_operations/jobs/configuration/definitions/forecast_refresh.html
   default_enabled: true
   default_interval_minutes: 120
   minimum_interval_minutes: 30

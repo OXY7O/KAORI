@@ -126,7 +126,8 @@ def test_access_administration_uses_shared_persisted_audit_helper() -> None:
     helper = read('app/common/admin_audit.py')
     readme = read('app/access/users/README.md')
     assert 'def record_admin_event(' not in service
-    assert 'from app.common.admin_audit import record_admin_event' in routes
+    assert 'from app.common.admin_audit import record_admin_event' in service
+    assert 'record_admin_event' not in routes
     assert 'AuditEvent()' in helper
     assert 'Shared Administrative Audit Boundary' in readme
     assert 'app/common/admin_audit.py' in readme

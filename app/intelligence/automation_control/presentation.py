@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Mapping, Sequence
+from collections.abc import Mapping
 from typing import Any
 
 from flask import current_app
@@ -16,7 +16,6 @@ from app.intelligence.automation_control.overview import build_automation_overvi
 from app.intelligence.knowledge.service import custom_runbook_authoring_enabled
 from app.intelligence.knowledge.system_catalog import is_system_runbook_key, list_system_runbooks
 from app.intelligence.resolver.production_readiness import REQUIRED_CHECKS, STAGE_ORDER, assess_readiness
-from app.models.audit import AuditEvent
 from app.models.cluster import Cluster
 from app.models.intelligence import (
     IntelligenceDecision,
@@ -224,62 +223,6 @@ def _overview_activity(cluster_names: Mapping[str, str]) -> dict[str, Any]:
         'pagination': None,
         'resource_label': 'automation activity',
     }
-
-
-def upsert_deployment_policy(
-    *,
-    cluster_id: str,
-    action_key: str,
-    lifecycle_status: str,
-    allowed_namespaces: Sequence[str],
-    required_registry_fingerprint: str | None,
-    actor_user_id: int | None,
-) -> ResolverDeploymentPolicy:
-    if lifecycle_status not in {'active', 'disabled'}:
-        raise ValueError('Deployment policy status must be active or disabled.')
-    cluster = db.session.get(Cluster, cluster_id)
-    if cluster is None:
-        raise ValueError('Selected cluster does not exist.')
-    registry = get_resolver_registry(current_app)
-    registry.describe(action_key)
-    current_fingerprint = str(current_app.config.get('RESOLVER_REGISTRY_FINGERPRINT') or '').strip()
-    requested_fingerprint = str(required_registry_fingerprint or '').strip()
-    if requested_fingerprint and requested_fingerprint != current_fingerprint:
-        raise ValueError('Required registry fingerprint does not match the current KAORI resolver registry.')
-    pinned_fingerprint = requested_fingerprint or current_fingerprint or None
-    namespaces = sorted({item.strip() for item in allowed_namespaces if item.strip()})
-    if lifecycle_status == 'active' and not namespaces:
-        raise ValueError('An active resolver deployment policy requires an explicit namespace allowlist.')
-
-    record = ResolverDeploymentPolicy.query.filter_by(cluster_id=cluster_id, action_key=action_key).one_or_none()
-    created = record is None
-    if record is None:
-        record = ResolverDeploymentPolicy()
-        record.cluster_id = cluster_id
-        record.action_key = action_key
-        record.created_by_user_id = actor_user_id
-        db.session.add(record)
-    record.lifecycle_status = lifecycle_status
-    record.allowed_namespaces_json = namespaces
-    record.required_registry_fingerprint = pinned_fingerprint
-    record.updated_by_user_id = actor_user_id
-
-    event = AuditEvent()
-    event.actor_user_id = actor_user_id
-    event.target_type = 'resolver_deployment_policy'
-    event.target_id = f'{cluster_id}:{action_key}'
-    event.action = 'resolver.deployment_policy.created' if created else 'resolver.deployment_policy.updated'
-    event.summary = 'KAORI resolver deployment policy updated.'
-    event.metadata_json = {
-        'cluster_id': cluster_id,
-        'action_key': action_key,
-        'lifecycle_status': lifecycle_status,
-        'allowed_namespaces': namespaces,
-        'required_registry_fingerprint': record.required_registry_fingerprint,
-    }
-    db.session.add(event)
-    db.session.commit()
-    return record
 
 
 def _workspace_tabs() -> list[tuple[str, str, str, str]]:

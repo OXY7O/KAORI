@@ -23,6 +23,7 @@ from app.integrations.storage.object_storage.providers.minio.application.registr
 from app.integrations.storage.object_storage.providers.minio.application.service import (
     create_minio_instance,
     delete_minio_instance,
+    get_minio_instance,
     test_minio_connection,
     update_minio_instance,
 )
@@ -50,7 +51,7 @@ minio_bp = Blueprint('minio', __name__, url_prefix='/integrations/minio')
 
 
 def _instance_or_404(instance_id: int) -> MinioInstance:
-    instance = MinioInstance.query.filter_by(id=instance_id).first()
+    instance = get_minio_instance(instance_id)
     if instance is None:
         abort(404)
     return instance

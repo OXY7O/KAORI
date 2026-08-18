@@ -443,3 +443,41 @@ def update_metrics_binding_selector(
         routing_policy=routing_policy,
         commit=commit,
     )
+
+
+def get_metrics_binding(instance: MetricsSource, binding_id: int) -> IntegrationBinding | None:
+    binding = db.session.get(IntegrationBinding, binding_id)
+    if binding is None or binding.integration_instance_id != instance.integration_instance_id:
+        return None
+    return binding
+
+
+def delete_metrics_binding(instance: MetricsSource, binding_id: int) -> IntegrationBinding | None:
+    binding = IntegrationBinding.query.filter_by(
+        id=binding_id,
+        integration_instance_id=instance.integration_instance_id,
+    ).first()
+    if binding is None:
+        return None
+    try:
+        db.session.delete(binding)
+        db.session.commit()
+    except SQLAlchemyError:
+        db.session.rollback()
+        raise
+    return binding
+
+
+def rollback_metrics_source_transaction() -> None:
+    db.session.rollback()
+
+
+def test_and_persist_metrics_source(instance: MetricsSource) -> dict[str, Any]:
+    result = MetricsService(instance).test_connection()
+    ensure_canonical_instance(instance, integration_type='metrics_source')
+    try:
+        db.session.commit()
+    except SQLAlchemyError:
+        db.session.rollback()
+        raise
+    return result

@@ -35,6 +35,7 @@ def test_metrics_source_and_alertmanager_own_binding_mutation_through_one_shared
         'app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_detail_scope.html'
     )
     prom_routes = read('app/integrations/observability/metrics_source/application/routes.py')
+    prom_binding_web = read('app/integrations/observability/metrics_source/application/binding_web.py')
     alert_forms = read('app/integrations/observability/alert_source/providers/alertmanager/application/forms.py')
 
     assert 'data-kaori-observability-binding-modal' in modal
@@ -49,8 +50,9 @@ def test_metrics_source_and_alertmanager_own_binding_mutation_through_one_shared
         assert 'Add Kubernetes Binding' not in source
         assert 'Add MinIO Binding' not in source
 
-    assert "request.form.get('asset_type'" in prom_routes
-    assert "request.form.get('asset_key'" in prom_routes
+    assert "request.form.get('asset_type'" in prom_binding_web
+    assert 'binding_web.add_instance_binding(instance_id)' in prom_routes
+    assert "request.form.get('asset_key'" in prom_binding_web
     assert 'SUPPORTED_SCOPE_TYPES = {' in alert_forms
     assert 'registered_consumer_asset_definitions()' in alert_forms
 

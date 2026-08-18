@@ -21,6 +21,7 @@ from app.access.users.directory import (
 from app.access.users.forms import ResetPasswordForm, UserForm
 from app.access.users.notifications import user_management_feedback
 from app.access.users.service import (
+    activate_user_account,
     assign_user_form_choices,
     can_activate_user,
     can_create_user,
@@ -30,13 +31,15 @@ from app.access.users.service import (
     can_reset_user_password,
     can_restore_user,
     create_or_update_user,
+    deactivate_user_account,
+    delete_user_account,
+    get_user,
     lock_active_super_admin_boundary,
-    restore_user,
-    set_user_active,
-    soft_delete_user,
+    persist_created_user,
+    persist_updated_user,
+    reset_user_password,
+    restore_user_account,
 )
-from app.common.admin_audit import record_admin_event
-from app.extensions.db import db
 from app.models import User
 
 bp = Blueprint('users', __name__, url_prefix='/users')
@@ -119,15 +122,7 @@ def create():
             form.password.errors = [*form.password.errors, 'Password is required for Local Database users.']
         else:
             try:
-                db.session.flush()
-                record_admin_event(
-                    actor=actor,
-                    action='user.created',
-                    target=user,
-                    summary=f'Created user {user.username}.',
-                    metadata={'auth_source': user.auth_source, 'role': user.role_name},
-                )
-                db.session.commit()
+                persist_created_user(actor=actor, user=user)
                 feedback = user_management_feedback(
                     actor=actor,
                     event_type='user_created',
@@ -138,7 +133,6 @@ def create():
                 )
                 return finish(feedback)
             except IntegrityError:
-                db.session.rollback()
                 form.username.errors = [*form.username.errors, 'Username or email already exists.']
 
     return render_template(
@@ -155,7 +149,7 @@ def create():
 @permission_required('users.manage')
 def edit(user_id: int):
     actor = cast(User, current_user)
-    user = db.session.get(User, user_id)
+    user = get_user(user_id)
     if user is None:
         return reject('User unavailable', 'The requested user record was not found.', status='error')
 
@@ -199,14 +193,7 @@ def edit(user_id: int):
             return reject('User update blocked', message or 'This account cannot be modified.', target=user)
         try:
             create_or_update_user(form, user)
-            record_admin_event(
-                actor=actor,
-                action='user.updated',
-                target=user,
-                summary=f'Updated user {user.username}.',
-                metadata={'auth_source': user.auth_source, 'role': user.role_name},
-            )
-            db.session.commit()
+            persist_updated_user(actor=actor, user=user)
             feedback = user_management_feedback(
                 actor=actor,
                 event_type='user_updated',
@@ -217,7 +204,6 @@ def edit(user_id: int):
             )
             return finish(feedback)
         except IntegrityError:
-            db.session.rollback()
             form.username.errors = [*form.username.errors, 'Username or email already exists.']
 
     return render_template(
@@ -238,15 +224,13 @@ def edit(user_id: int):
 @permission_required('users.activate')
 def activate(user_id: int):
     actor = cast(User, current_user)
-    user = db.session.get(User, user_id)
+    user = get_user(user_id)
     if user is None:
         return reject('User unavailable', 'The requested user record was not found.', status='error')
     allowed, message = can_activate_user(actor, user)
     if not allowed:
         return reject('Activation blocked', message or 'This account cannot be activated.', target=user)
-    set_user_active(user, True)
-    record_admin_event(actor=actor, action='user.activated', target=user, summary=f'Activated user {user.username}.')
-    db.session.commit()
+    activate_user_account(actor=actor, user=user)
     return finish(
         user_management_feedback(
             actor=actor,
@@ -263,18 +247,14 @@ def activate(user_id: int):
 @permission_required('users.activate')
 def deactivate(user_id: int):
     actor = cast(User, current_user)
-    user = db.session.get(User, user_id)
+    user = get_user(user_id)
     if user is None:
         return reject('User unavailable', 'The requested user record was not found.', status='error')
     lock_active_super_admin_boundary(user)
     allowed, message = can_deactivate_user(actor, user)
     if not allowed:
         return reject('Deactivation blocked', message or 'This account cannot be deactivated.', target=user)
-    set_user_active(user, False)
-    record_admin_event(
-        actor=actor, action='user.deactivated', target=user, summary=f'Deactivated user {user.username}.'
-    )
-    db.session.commit()
+    deactivate_user_account(actor=actor, user=user)
     return finish(
         user_management_feedback(
             actor=actor,
@@ -291,7 +271,7 @@ def deactivate(user_id: int):
 @permission_required('users.reset_password')
 def reset_password(user_id: int):
     actor = cast(User, current_user)
-    user = db.session.get(User, user_id)
+    user = get_user(user_id)
     if user is None:
         return reject('User unavailable', 'The requested user record was not found.', status='error')
     allowed, message = can_reset_user_password(actor, user)
@@ -301,11 +281,7 @@ def reset_password(user_id: int):
         )
     form = ResetPasswordForm()
     if form.validate_on_submit():
-        user.set_password(form.password.data or '')
-        record_admin_event(
-            actor=actor, action='user.password_reset', target=user, summary=f'Reset password for user {user.username}.'
-        )
-        db.session.commit()
+        reset_user_password(actor=actor, user=user, password=form.password.data or '')
         return finish(
             user_management_feedback(
                 actor=actor,
@@ -323,15 +299,13 @@ def reset_password(user_id: int):
 @permission_required('users.activate')
 def restore(user_id: int):
     actor = cast(User, current_user)
-    user = db.session.get(User, user_id)
+    user = get_user(user_id)
     if user is None:
         return reject('User unavailable', 'The requested user record was not found.', status='error')
     allowed, message = can_restore_user(actor, user)
     if not allowed:
         return reject('Restore blocked', message or 'This account cannot be restored.', target=user)
-    restore_user(user)
-    record_admin_event(actor=actor, action='user.restored', target=user, summary=f'Restored user {user.username}.')
-    db.session.commit()
+    restore_user_account(actor=actor, user=user)
     return finish(
         user_management_feedback(
             actor=actor,
@@ -348,16 +322,14 @@ def restore(user_id: int):
 @permission_required('users.delete')
 def delete(user_id: int):
     actor = cast(User, current_user)
-    user = db.session.get(User, user_id)
+    user = get_user(user_id)
     if user is None:
         return reject('User unavailable', 'The requested user record was not found.', status='error')
     lock_active_super_admin_boundary(user)
     allowed, message = can_delete_user(actor, user)
     if not allowed:
         return reject('Deletion blocked', message or 'This account cannot be deleted.', target=user)
-    soft_delete_user(user)
-    record_admin_event(actor=actor, action='user.deleted', target=user, summary=f'Soft deleted user {user.username}.')
-    db.session.commit()
+    delete_user_account(actor=actor, user=user)
     return finish(
         user_management_feedback(
             actor=actor,

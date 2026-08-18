@@ -20,7 +20,6 @@ from app.access.authentication.forms import ChangePasswordForm
 from app.access.users.directory import build_user_identity_context
 from app.common.timezone import (
     format_user_datetime,
-    is_valid_timezone_name,
     normalize_date_format,
     normalize_locale,
     normalize_time_format,
@@ -28,10 +27,14 @@ from app.common.timezone import (
     normalize_timezone_name,
     timezone_choice_groups,
 )
-from app.extensions.db import db
-from app.models import Notification, User
+from app.models import User
 from app.settings.account.actions import process_password_change
-from app.settings.general.actions import save_regional_format_preference, save_timezone_preference
+from app.settings.account.queries import authentication_activity_summary, recent_authentication_events
+from app.settings.general.actions import (
+    save_regional_format_preference,
+    save_timezone_preference,
+    sync_browser_timezone_preference,
+)
 from app.settings.general.forms import RegionalFormatForm, TimezonePreferenceForm
 from app.settings.system_information import build_system_information
 
@@ -136,21 +139,10 @@ def general():
 @login_required
 def sync_browser_timezone():
     user = cast(User, current_user._get_current_object())
-    if normalize_timezone_mode(user.timezone_mode) != 'automatic':
-        return jsonify({'status': 'ignored', 'timezone': normalize_timezone_name(user.timezone)}), 200
-
     payload = request.get_json(silent=True) or {}
     browser_timezone = str(payload.get('timezone') or '').strip()
-    if not is_valid_timezone_name(browser_timezone):
-        return jsonify({'status': 'invalid_timezone'}), 400
-
-    normalized_timezone = normalize_timezone_name(browser_timezone)
-    if normalized_timezone == normalize_timezone_name(user.timezone):
-        return jsonify({'status': 'unchanged', 'timezone': normalized_timezone}), 200
-
-    user.timezone = normalized_timezone
-    db.session.commit()
-    return jsonify({'status': 'updated', 'timezone': normalized_timezone}), 200
+    status, timezone = sync_browser_timezone_preference(user=user, browser_timezone=browser_timezone)
+    return jsonify({'status': status, 'timezone': timezone}), 400 if status == 'invalid_timezone' else 200
 
 
 @bp.route('/account', methods=['GET', 'POST'])
@@ -184,25 +176,8 @@ def account():
             return redirect(url_for('settings.account', tab='credentials'))
 
     identity_context = build_user_identity_context(user)
-    recent_login_events = (
-        Notification.query.filter(
-            Notification.user_id == user.id,
-            Notification.event_type == 'authentication',
-        )
-        .order_by(Notification.created_at.desc(), Notification.id.desc())
-        .limit(5)
-        .all()
-    )
-    activity_summary = {'total': len(recent_login_events), 'success': 0, 'failed': 0, 'sign_out': 0}
-    for event in recent_login_events:
-        metadata = event.metadata_json or {}
-        action = metadata.get('access_action') or ('logout' if event.title == 'User signed out' else 'login')
-        if action == 'logout':
-            activity_summary['sign_out'] += 1
-        elif event.status == 'success':
-            activity_summary['success'] += 1
-        else:
-            activity_summary['failed'] += 1
+    recent_login_events = recent_authentication_events(user.id)
+    activity_summary = authentication_activity_summary(recent_login_events)
 
     context: dict[str, Any] = {
         'active_tab': active_tab,
