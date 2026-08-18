@@ -25,7 +25,7 @@ def main() -> int:
     routes = read('app/kubernetes/inventory/routes.py')
     topology = read('app/kubernetes/inventory/topology/node_builder.py')
     payload = read('app/reports/export/payloads/inventory.py')
-    xlsx = read('app/reports/export/xlsx/standard.py')
+    xlsx = read('app/reports/export/xlsx/profiles_kubernetes.py')
     workspace = read('app/templates/kubernetes/inventory/ingresses/partials/_page_workspace.html')
     card = read('app/templates/kubernetes/inventory/ingresses/partials/_table_card.html')
     table = read('app/templates/kubernetes/inventory/ingresses/partials/_table_content.html')

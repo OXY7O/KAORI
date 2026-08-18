@@ -22,7 +22,7 @@ def main() -> int:
     detail_backend = read('app/kubernetes/inventory/resources/pod_detail.py')
     routes = read('app/kubernetes/inventory/routes.py')
     export_payload = read('app/reports/export/payloads/inventory.py')
-    export_standard = read('app/reports/export/xlsx/standard.py')
+    export_standard = read('app/reports/export/xlsx/profiles_kubernetes.py')
     workspace = read('app/templates/kubernetes/inventory/pods/partials/_page_workspace.html')
     table_card = read('app/templates/kubernetes/inventory/pods/partials/_table_card.html')
     table_content = read('app/templates/kubernetes/inventory/pods/partials/_table_content.html')
