@@ -368,8 +368,7 @@ before it loads live data:
 - `pvc_usage`
 - `node_filesystem_identity`
 
-The filesystem contract accepts canonical `node`, `nodename`, or
-`kubernetes_node` labels. It does not use `instance="IP:port"` as a node name.
+The filesystem contract requires the canonical `node=<Kubernetes Node.name>` label. Legacy aliases such as `nodename` or `kubernetes_node` and `instance="IP:port"` do not satisfy the Storage Analytics node-identity contract.
 When the contract is incomplete, the page renders an integration capability
 blocker and directs the operator to Metrics Source remediation instead of
 executing an unvalidated alternate query path.

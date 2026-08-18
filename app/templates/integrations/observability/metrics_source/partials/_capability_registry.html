@@ -28,11 +28,11 @@
                 <div class="min-w-0">
                     <h3 id="metrics-source-capability-registry-title"
                         class="text-base font-semibold text-content-primary">Capability Registry</h3>
-                    <p class="mt-1 max-w-4xl text-sm leading-6 text-content-secondary">Review core Metrics Source API capability, contract category, requirement, and validation state. Detailed evidence stays behind View More.</p>
+                    <p class="mt-1 max-w-4xl text-sm leading-6 text-content-secondary">Review provider core capabilities plus missing binding-specific consumer contracts. Detailed source-label, metric, and relabel evidence stays behind View More.</p>
                 </div>
             </div>
             <div class="flex flex-wrap items-center gap-2">
-                {{ table_label.metadata_label(registry.total_contracts ~ " Capability Contracts") }}
+                {{ table_label.metadata_label(capability_rows|length ~ " Validation Records") }}
                 {% if filters.query or filters.requirement != 'all' or filters.status != 'all' %}
                     {% set capability_clear_href = url_for(detail_endpoint, instance_id=instance.id, tab='validation', page=1, per_page=pagination.per_page) %}
                     {% set capability_clear_url = url_for(registry_endpoint, instance_id=instance.id, page=1, per_page=pagination.per_page) %}
@@ -73,7 +73,7 @@
                            type="search"
                            name="query"
                            value="{{ filters.query }}"
-                           placeholder="Search capability, category, or API..."
+                           placeholder="Search capability, contract, or scope..."
                            autocomplete="off"
                            class="{{ integration_ui.search_classes() }}">
                 </span>
@@ -111,7 +111,7 @@
             <thead class="{{ table_ui.head_classes() }}">
                 <tr>
                     <th class="{{ table_ui.header_cell_classes() }}">Capability</th>
-                    <th class="{{ table_ui.header_cell_classes() }}">API Contract</th>
+                    <th class="{{ table_ui.header_cell_classes() }}">Contract</th>
                     <th class="{{ table_ui.header_cell_classes() }}">Requirement</th>
                     <th class="{{ table_ui.header_cell_classes() }}">Status</th>
                     <th class="{{ table_ui.header_cell_classes(action=true) }}">Details</th>
@@ -136,9 +136,9 @@
                         <td class="{{ table_ui.cell_classes() }}">
                             <p class="truncate font-semibold text-content-primary"
                                title="{{ row.category }}">{{ row.category }}</p>
-                            <p class="mt-0.5 truncate text-xs text-content-muted">Metrics Source Core API</p>
+                            <p class="mt-0.5 truncate text-xs text-content-muted">{{ row.scope_label if row.contract_scope == 'consumer' else 'Metrics Source Core API' }}</p>
                         </td>
-                        <td class="{{ table_ui.cell_classes() }}">{{ table_label.metadata_label("Required" if row.required else "Optional") }}</td>
+                        <td class="{{ table_ui.cell_classes() }}">{{ table_label.metadata_label(row.requirement_label or ("Required" if row.required else "Optional") ) }}</td>
                         <td class="{{ table_ui.cell_classes() }}">{{ integration_status(tone, row.status_label, display="indicator") }}</td>
                         <td class="{{ table_ui.cell_classes(action=true) }}">{{ record_actions.view_more("metrics-source-capability-detail-" ~ loop.index, role="capability") }}</td>
                     </tr>
@@ -219,18 +219,18 @@
         {% call record_detail_modal.render(
             "metrics-source-capability-detail-" ~ loop.index,
             row.key,
-            "Metrics Source Core Capability Evidence",
+            "Consumer Contract Evidence" if row.contract_scope == "consumer" else "Metrics Source Core Capability Evidence",
             row.label,
-            row.category ~ " · " ~ ("Required" if row.required else "Optional") ~ " capability",
+            row.category ~ " · " ~ row.requirement_label ~ " capability",
             icon="scan-search",
-            footer_text="Capability details use the latest completed Metrics Source Full Validation evidence.",
+            footer_text=("Consumer details use the latest completed binding validation evidence." if row.contract_scope == "consumer" else "Capability details use the latest completed Metrics Source Full Validation evidence."),
             size="standard"
             ) %}
             {{ provider_capability_detail.content(row,
-                        "Metrics Source",
+                        row.scope_label if row.contract_scope == "consumer" else "Metrics Source",
                         row.source_owner,
-                        "Provider API Probe",
-                        "Full Validation owns provider compatibility and generic Metrics Source API evidence. Consumer-specific metric contracts are validated on their bindings.") }}
+                        "Binding Contract Probe" if row.contract_scope == "consumer" else "Provider API Probe",
+                        "Binding Validation owns source identity, required metric labels, filesystem pairing, and downstream consumer evidence." if row.contract_scope == "consumer" else "Full Validation owns provider compatibility and generic Metrics Source API evidence. Consumer-specific metric contracts are validated on their bindings.") }}
         {% endcall %}
     {% endfor %}
 </section>

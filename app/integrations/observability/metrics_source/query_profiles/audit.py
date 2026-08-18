@@ -511,7 +511,7 @@ class PromQLProfileAuditor:
 
         filesystem_metrics = ('node_filesystem_size_bytes', 'node_filesystem_avail_bytes')
         filesystem_checks = [
-            self._technical_metric_check(metric, available_metrics, metric_labels, {'mountpoint', 'fstype'})
+            self._technical_metric_check(metric, available_metrics, metric_labels, {'node', 'mountpoint', 'fstype'})
             for metric in filesystem_metrics
         ]
         size_contract = self._filesystem_contract('node_filesystem_size_bytes')
@@ -546,8 +546,8 @@ class PromQLProfileAuditor:
                 f'{", ".join(observed_nodes[:5]) or "none"}.'
             ),
             expected=(
-                'Both exact Storage Analytics queries return at least one numeric series with node, '
-                'nodename, or kubernetes_node identity. /var is preferred and / is accepted as fallback.'
+                'Both exact Storage Analytics queries return at least one numeric series with the canonical node label. '
+                '/var is preferred and / is accepted as fallback.'
             ),
             technical_checks=filesystem_checks
             + [
@@ -612,14 +612,12 @@ class PromQLProfileAuditor:
         }
 
     def _filesystem_contract(self, metric: str) -> dict[str, Any]:
-        canonical_labels = ('node', 'nodename', 'kubernetes_node')
+        canonical_labels = ('node',)
         raw_expressions = (
             f'{metric}{{mountpoint="/var", fstype!~"tmpfs|overlay"}}',
             f'{metric}{{mountpoint="/", fstype!~"tmpfs|overlay"}}',
         )
-        expressions = tuple(
-            f'count by (node, nodename, kubernetes_node, mountpoint) ({expression})' for expression in raw_expressions
-        )
+        expressions = tuple(f'count by (node, mountpoint) ({expression})' for expression in raw_expressions)
         selected_expression = expressions[0]
         rows: list[dict[str, Any]] = []
         for expression in expressions:

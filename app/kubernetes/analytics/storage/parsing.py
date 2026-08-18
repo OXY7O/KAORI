@@ -2,21 +2,12 @@ from __future__ import annotations
 
 from app.kubernetes.analytics.storage.evidence import VectorEvidence, sample_metric, sample_value
 
-_CANONICAL_NODE_LABELS = ('node', 'nodename', 'kubernetes_node')
-
 
 def node_numeric_map(evidence: VectorEvidence) -> dict[str, float]:
     values: dict[str, float] = {}
     for item in evidence.rows:
         metric = sample_metric(item)
-        node = next(
-            (
-                str(metric.get(label) or '').strip()
-                for label in _CANONICAL_NODE_LABELS
-                if str(metric.get(label) or '').strip()
-            ),
-            '',
-        )
+        node = str(metric.get('node') or '').strip()
         value = sample_value(item)
         if not node or value is None:
             continue

@@ -34,7 +34,7 @@ Domain services resolve stable query keys from the canonical registry. Provider-
 4. 24-hour, 7-day, 30-day, and 60-day history availability;
 5. deprecated query and replacement metadata.
 
-A compatible Metrics Source endpoint using the Prometheus HTTP adapter can still be `degraded` when required exporters, metrics, labels, or historical data are missing. Query readiness is therefore separate from engine compatibility.
+A compatible Metrics Source endpoint using the Prometheus HTTP adapter can still have binding-specific consumer gaps when required exporters, metrics, labels, or historical data are missing. Provider-core readiness remains separate from consumer query readiness. Kubernetes Metrics Source bindings require the canonical query-visible `cluster=<stable-cluster-name>` source label because the binding selector is applied to PromQL. Direct Prometheus therefore needs that target label on the relevant Kubernetes scrape pipelines; when Thanos is used, every source Prometheus also publishes the same value as an external label so the query plane preserves source provenance. Storage Analytics separately requires the canonical `node=<Kubernetes Node.name>` label on node-exporter filesystem series. Exact missing evidence is persisted on the binding and presented in the Metrics Source **Validation** tab rather than expanding Provider Readiness.
 
 ## Retention and Thanos
 
@@ -76,7 +76,7 @@ Node filesystem expressions are reused from the canonical Utilization query regi
 
 ## Storage Analytics Evidence Contract
 
-Storage Analytics registers one query per signal. Filesystem pressure requires a matching size and available-byte pair for `/var` or fallback `/`. PVC pressure uses `kubelet_volume_stats_used_bytes / kubelet_volume_stats_capacity_bytes`; requested claim bytes are a separate demand signal. Capacity, used, and available PVC gauges use `max by (namespace, persistentvolumeclaim)` so duplicate kubelet scrape targets do not inflate the value. Missing query results remain unavailable evidence rather than synthetic zero.
+Storage Analytics registers one query per signal. Filesystem pressure requires `node_filesystem_size_bytes` and `node_filesystem_avail_bytes` on the same canonical `node` and `mountpoint`; `/var` is preferred and `/` is the fallback. The `node` value must equal Kubernetes `Node.name`. `instance` remains scrape-endpoint diagnostics and is never accepted as Kubernetes node identity. PVC pressure uses `kubelet_volume_stats_used_bytes / kubelet_volume_stats_capacity_bytes`; requested claim bytes are a separate demand signal. Capacity, used, and available PVC gauges use `max by (namespace, persistentvolumeclaim)` so duplicate kubelet scrape targets do not inflate the value. Missing query results remain unavailable evidence rather than synthetic zero.
 
 ## Workload Analytics query boundary
 

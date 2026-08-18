@@ -211,9 +211,7 @@ capabilities:
   - Storage Analytics
   impact: Storage Analytics cannot calculate node filesystem capacity and availability reliably.
   source_owner: node_exporter relabeling or recording rules
-  recommendation: Run the validation query against the configured metrics source. When the metric
-    exists but the contract query returns no canonical node series, review query filters, recording rules, and label
-    transformation before changing the exporter.
+  recommendation: Preserve node_filesystem_size_bytes and node_filesystem_avail_bytes with the canonical node label and matching mountpoint. Relabel the node-exporter scrape target to node=<Kubernetes Node.name>; instance is diagnostic endpoint identity only and must not substitute for node.
   expected_signals:
   - node_filesystem_size_bytes{node!=""}
   - node_filesystem_avail_bytes{node!=""}
@@ -243,8 +241,7 @@ binding_profiles:
   - expression: count(kube_pod_info)
     signal_key: kube_pod_info
     label: Kubernetes pod identity
-  no_match_message: The selector was accepted, but no scoped kube-state-metrics identity series matched. Verify
-    the selector label/value on kube_node_info, kube_namespace_status_phase, or kube_pod_info.
+  no_match_message: The canonical cluster selector was accepted, but no scoped kube-state-metrics identity series matched. Verify cluster=<stable-cluster-name> is query-visible on the Kubernetes source series and matches the binding value. Direct Prometheus requires a scrape target label; Thanos should preserve the same identity from each source Prometheus external label. Then review kube_node_info, kube_namespace_status_phase, and kube_pod_info.
 - adapter_key: prometheus_http
   asset_type: object_storage_system
   profile_key: object-storage-metrics-v1

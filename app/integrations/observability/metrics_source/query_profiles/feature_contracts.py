@@ -74,7 +74,7 @@ FEATURE_CONTRACTS: tuple[FeatureContract, ...] = (
             'analytics.storage.queries.NODE_ROOT_FILESYSTEM_AVAILABLE_QUERY',
         ),
         'Either the /var pair or the / pair returns usable filesystem series with canonical node identity.',
-        required_labels=('node|nodename|kubernetes_node',),
+        required_labels=('node',),
     ),
     FeatureContract(
         'storage.pvc',
@@ -345,7 +345,7 @@ def _validation_expression(contract: FeatureContract, expression: str) -> str:
     # node_exporter vectors prevents a large multi-cluster endpoint from returning
     # thousands of label-heavy samples while preserving the labels required to
     # prove a usable size/available pair.
-    return f'count by (node, nodename, kubernetes_node, mountpoint) ({expression})'
+    return f'count by (node, mountpoint) ({expression})'
 
 
 def _filesystem_identity_keys(rows: list[dict[str, Any]]) -> tuple[str, ...]:
@@ -353,7 +353,7 @@ def _filesystem_identity_keys(rows: list[dict[str, Any]]) -> tuple[str, ...]:
     for row in rows:
         labels = row.get('metric') or {}
         node = next(
-            (str(labels.get(name)) for name in ('node', 'nodename', 'kubernetes_node') if labels.get(name)),
+            (str(labels.get(name)) for name in ('node',) if labels.get(name)),
             '',
         )
         mountpoint = str(labels.get('mountpoint') or '')
@@ -403,9 +403,7 @@ def _storage_remediation(checks: list[dict[str, Any]], label_ready: bool) -> str
         options.append(f'or complete the fallback / pair by verifying {", ".join(root_missing)}')
     if not options:
         options.append('align size and available series on the same canonical node identity and mountpoint')
-    identity = (
-        ' Also expose a canonical node identity label (node, nodename, or kubernetes_node).' if not label_ready else ''
-    )
+    identity = ' Also expose the canonical Kubernetes node identity label (node).' if not label_ready else ''
     return (
         f'KAORI observed only part of the filesystem contract: {"; ".join(options)}.'
         f'{identity} Storage readiness requires both node_filesystem_size_bytes and '

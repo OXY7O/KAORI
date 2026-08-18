@@ -365,7 +365,7 @@ def instance_capability_registry(instance_id: int) -> ResponseReturnValue:
         status=request.args.get('status', 'all'),
         page=request.args.get('page', 1),
         per_page=request.args.get('per_page', 5),
-        search_fields=('label', 'category', 'source_owner'),
+        search_fields=('label', 'category', 'scope_label', 'source_owner', 'description'),
     )
     return render_template('integrations/observability/metrics_source/partials/_capability_registry.html', **context)
 

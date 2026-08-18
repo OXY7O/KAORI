@@ -500,28 +500,28 @@ QUERIES: dict[str, QueryDefinition] = {
         expression='node_filesystem_size_bytes{mountpoint="/var", fstype!~"tmpfs|overlay"}',
         domain='app.kubernetes.analytics.storage',
         required_metrics=('node_filesystem_size_bytes',),
-        required_labels=(('node_filesystem_size_bytes', ('mountpoint',)),),
+        required_labels=(('node_filesystem_size_bytes', ('node', 'mountpoint')),),
     ),
     'analytics.storage.queries.NODE_VAR_FILESYSTEM_AVAILABLE_QUERY': QueryDefinition(
         key='analytics.storage.queries.NODE_VAR_FILESYSTEM_AVAILABLE_QUERY',
         expression='node_filesystem_avail_bytes{mountpoint="/var", fstype!~"tmpfs|overlay"}',
         domain='app.kubernetes.analytics.storage',
         required_metrics=('node_filesystem_avail_bytes',),
-        required_labels=(('node_filesystem_avail_bytes', ('mountpoint',)),),
+        required_labels=(('node_filesystem_avail_bytes', ('node', 'mountpoint')),),
     ),
     'analytics.storage.queries.NODE_ROOT_FILESYSTEM_SIZE_QUERY': QueryDefinition(
         key='analytics.storage.queries.NODE_ROOT_FILESYSTEM_SIZE_QUERY',
         expression='node_filesystem_size_bytes{mountpoint="/", fstype!~"tmpfs|overlay"}',
         domain='app.kubernetes.analytics.storage',
         required_metrics=('node_filesystem_size_bytes',),
-        required_labels=(('node_filesystem_size_bytes', ('mountpoint',)),),
+        required_labels=(('node_filesystem_size_bytes', ('node', 'mountpoint')),),
     ),
     'analytics.storage.queries.NODE_ROOT_FILESYSTEM_AVAILABLE_QUERY': QueryDefinition(
         key='analytics.storage.queries.NODE_ROOT_FILESYSTEM_AVAILABLE_QUERY',
         expression='node_filesystem_avail_bytes{mountpoint="/", fstype!~"tmpfs|overlay"}',
         domain='app.kubernetes.analytics.storage',
         required_metrics=('node_filesystem_avail_bytes',),
-        required_labels=(('node_filesystem_avail_bytes', ('mountpoint',)),),
+        required_labels=(('node_filesystem_avail_bytes', ('node', 'mountpoint')),),
     ),
     'analytics.storage.queries.PVC_REQUESTED_BY_CLAIM_QUERY': QueryDefinition(
         key='analytics.storage.queries.PVC_REQUESTED_BY_CLAIM_QUERY',
@@ -850,14 +850,14 @@ QUERIES: dict[str, QueryDefinition] = {
         expression='sum(\n    node_filesystem_size_bytes{\n        mountpoint="/var",\n        fstype!~"tmpfs|overlay|squashfs"\n    }\n)\nor\nsum(\n    node_filesystem_size_bytes{\n        mountpoint="/",\n        fstype!~"tmpfs|overlay|squashfs"\n    }\n)',
         domain='app.kubernetes.analytics.utilization',
         required_metrics=('node_filesystem_size_bytes',),
-        required_labels=(('node_filesystem_size_bytes', ('mountpoint',)),),
+        required_labels=(('node_filesystem_size_bytes', ('node', 'mountpoint')),),
     ),
     'analytics.utilization.queries.STORAGE_AVAILABLE': QueryDefinition(
         key='analytics.utilization.queries.STORAGE_AVAILABLE',
         expression='sum(\n    node_filesystem_avail_bytes{\n        mountpoint="/var",\n        fstype!~"tmpfs|overlay|squashfs"\n    }\n)\nor\nsum(\n    node_filesystem_avail_bytes{\n        mountpoint="/",\n        fstype!~"tmpfs|overlay|squashfs"\n    }\n)',
         domain='app.kubernetes.analytics.utilization',
         required_metrics=('node_filesystem_avail_bytes',),
-        required_labels=(('node_filesystem_avail_bytes', ('mountpoint',)),),
+        required_labels=(('node_filesystem_avail_bytes', ('node', 'mountpoint')),),
     ),
     'analytics.utilization.queries.STORAGE_USAGE': QueryDefinition(
         key='analytics.utilization.queries.STORAGE_USAGE',
@@ -865,8 +865,8 @@ QUERIES: dict[str, QueryDefinition] = {
         domain='app.kubernetes.analytics.utilization',
         required_metrics=('node_filesystem_size_bytes', 'node_filesystem_avail_bytes'),
         required_labels=(
-            ('node_filesystem_avail_bytes', ('mountpoint',)),
-            ('node_filesystem_size_bytes', ('mountpoint',)),
+            ('node_filesystem_avail_bytes', ('node', 'mountpoint')),
+            ('node_filesystem_size_bytes', ('node', 'mountpoint')),
         ),
     ),
     'analytics.utilization.queries.STORAGE_UTILIZATION': QueryDefinition(
@@ -875,8 +875,8 @@ QUERIES: dict[str, QueryDefinition] = {
         domain='app.kubernetes.analytics.utilization',
         required_metrics=('node_filesystem_size_bytes', 'node_filesystem_avail_bytes'),
         required_labels=(
-            ('node_filesystem_avail_bytes', ('mountpoint',)),
-            ('node_filesystem_size_bytes', ('mountpoint',)),
+            ('node_filesystem_avail_bytes', ('node', 'mountpoint')),
+            ('node_filesystem_size_bytes', ('node', 'mountpoint')),
         ),
     ),
     'analytics.utilization.queries.POD_COUNT': QueryDefinition(
@@ -981,7 +981,7 @@ QUERIES: dict[str, QueryDefinition] = {
         expression='node_filesystem_size_bytes{\n    mountpoint="/var",\n    fstype!~"tmpfs|overlay|squashfs"\n}\nor on(instance)\n(\n    node_filesystem_size_bytes{\n        mountpoint="/",\n        fstype!~"tmpfs|overlay|squashfs"\n    }\n    unless on(instance)\n    node_filesystem_size_bytes{\n        mountpoint="/var",\n        fstype!~"tmpfs|overlay|squashfs"\n    }\n)',
         domain='app.kubernetes.analytics.utilization',
         required_metrics=('node_filesystem_size_bytes',),
-        required_labels=(('node_filesystem_size_bytes', ('mountpoint',)),),
+        required_labels=(('node_filesystem_size_bytes', ('node', 'mountpoint')),),
     ),
     'analytics.utilization.queries.CPU_CAPACITY_BY_NODE': QueryDefinition(
         key='analytics.utilization.queries.CPU_CAPACITY_BY_NODE',

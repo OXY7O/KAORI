@@ -199,7 +199,7 @@ The Metrics Source Storage Filesystem Contract requires a complete capacity-and-
 
 - `node_filesystem_size_bytes`
 - `node_filesystem_avail_bytes`
-- a canonical node identity label (`node`, `nodename`, or `kubernetes_node`)
+- the canonical Kubernetes node identity label `node` (`node=<Kubernetes Node.name>`)
 
 A size series alone proves filesystem capacity collection but cannot calculate utilization or remaining headroom. Validation evidence must display all four registered queries, identify the missing half of each pair, and avoid generic exporter remediation when the metric exists but only part of the contract is observable.
 
@@ -237,5 +237,5 @@ The Metrics Source Analytics Readiness workspace must explain the difference bet
 - A successful Technical Check proves only that one registered PromQL query executed.
 - Domain readiness additionally requires the complete metric, label, identity, and pairing contract consumed by the Analytics module.
 - The Storage Filesystem Contract requires both `node_filesystem_size_bytes` and `node_filesystem_avail_bytes` for the same canonical node identity and mountpoint. `/var` is preferred and `/` is the documented fallback.
-- Accepted canonical node identity labels are `node`, `nodename`, or `kubernetes_node`. `instance` alone is not accepted as a stable Kubernetes node identity.
+- The canonical node identity is exactly `node=<Kubernetes Node.name>`. Legacy aliases such as `nodename` or `kubernetes_node`, and `instance` endpoint identity, do not satisfy Storage Analytics readiness.
 - Users must be directed to Analytics Query Contract Evidence for the exact validation queries, observed labels, and remediation guidance.

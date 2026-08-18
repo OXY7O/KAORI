@@ -55,7 +55,7 @@
     {{ provider_job_status.render(validation_job, 'Metrics Source validation running in worker', 'Metrics Source') }}
     <div class="space-y-4 p-4 sm:p-5">
         {{ capability_readiness.render('Metrics Source Provider Readiness',
-                'Core API evidence determines Metrics Source readiness.',
+                'Core API evidence determines provider readiness; consumer label and metric gaps stay in Validation evidence.',
                 readiness,
                 readiness|replace('_', ' ') |title,
         'Validated Capabilities',
@@ -85,7 +85,7 @@
         {{ readiness_explanation.render(readiness_decision_title,
                 readiness_decision_message,
                 readiness_decision_tone,
-                [capability_summary.required_missing ~ " required gaps", binding_rows|length ~ " consumer bindings"]) }}
+                [capability_summary.required_missing ~ " provider gaps", consumer_validation_summary.gap_count ~ " consumer validation gaps"]) }}
         {% include "integrations/observability/metrics_source/partials/_capability_registry.html" %}
     </div>
 </section>

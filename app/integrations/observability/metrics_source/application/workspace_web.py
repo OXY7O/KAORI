@@ -42,7 +42,7 @@ def instance_detail_context(
     )
     context['capability_registry'] = build_capability_registry_view(
         context.get('capability_rows', []),
-        search_fields=('label', 'category', 'source_owner'),
+        search_fields=('label', 'category', 'scope_label', 'source_owner', 'description'),
     )
     context['delete_instance_url'] = url_for('metrics.delete_instance', instance_id=instance.id)
     context['validation_job'] = _active_task(instance.integration_instance_id, 'full_validation')

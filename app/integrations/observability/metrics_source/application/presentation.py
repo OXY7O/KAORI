@@ -150,17 +150,19 @@ def build_instance_context(
         health_status=history_health,
         readiness=history_readiness,
     )
-    capability_rows: list[dict[str, Any]] = [
+    provider_capability_rows: list[dict[str, Any]] = [
         _capability_row(assessment_map.get(key, {'key': key, 'status': 'not_observed'}))
         for key in PROVIDER_CAPABILITY_KEYS
     ]
-    observed_keys: set[str] = {str(row['key']) for row in capability_rows if row['available']}
+    observed_keys: set[str] = {str(row['key']) for row in provider_capability_rows if row['available']}
 
     deletion_guard = provider_deletion_guard(
         integration_type='metrics_source',
         integration_instance_id=instance.integration_instance_id,
     )
     binding_rows = [_binding_row(binding, instance) for binding in bindings]
+    consumer_validation_gap_rows = _consumer_validation_gap_rows(bindings, binding_rows)
+    capability_rows = [*provider_capability_rows, *consumer_validation_gap_rows]
     binding_registry_rows, binding_registry_pagination = paginate_sequence(
         binding_rows,
         page=binding_page,
@@ -179,10 +181,16 @@ def build_instance_context(
         'metrics_recent_window_hours': recent_window_hours(),
         'capability_rows': capability_rows,
         'capability_summary': {
-            'total': len(capability_rows),
+            'total': len(provider_capability_rows),
             'observed': len(observed_keys),
-            'required_missing': sum(1 for row in capability_rows if row['required'] and not row['available']),
-            'optional_missing': sum(1 for row in capability_rows if not row['required'] and not row['available']),
+            'required_missing': sum(1 for row in provider_capability_rows if row['required'] and not row['available']),
+            'optional_missing': sum(
+                1 for row in provider_capability_rows if not row['required'] and not row['available']
+            ),
+        },
+        'consumer_validation_summary': {
+            'validated_bindings': sum(row['validation_status'] == 'ready' for row in binding_rows),
+            'gap_count': len(consumer_validation_gap_rows),
         },
         'module_readiness_rows': _module_readiness_rows(instance, available_capabilities),
         'source_resolution_rows': _source_resolution_rows(instance, bindings),
@@ -261,6 +269,8 @@ def _capability_row(item: dict[str, Any]) -> dict[str, Any]:
         'category': _capability_category(key),
         'description': _capability_description(required_by, source_owner),
         'required': required,
+        'requirement_label': {True: 'Required', False: 'Optional'}[required],
+        'contract_scope': 'provider',
         'available': available,
         'status_label': item.get('status_label') or status.replace('_', ' ').title(),
         'status_tone': status_tone,
@@ -437,6 +447,92 @@ def _binding_row(binding: IntegrationBinding, source: MetricsSource) -> dict[str
         'query_horizon': routing_policy['query_horizon'],
         'routing_weight': routing_policy['weight'],
     }
+
+
+def _consumer_validation_gap_rows(
+    bindings: list[IntegrationBinding],
+    binding_rows: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    binding_view_by_id = {int(row['binding'].id): row for row in binding_rows}
+    rows: list[dict[str, Any]] = []
+    for binding in bindings:
+        evidence = binding.validation_evidence if isinstance(binding.validation_evidence, dict) else {}
+        binding_view = binding_view_by_id.get(int(binding.id))
+        if binding_view is None:
+            continue
+
+        source_identity = evidence.get('source_identity')
+        if isinstance(source_identity, dict) and str(source_identity.get('status') or '') != 'ready':
+            rows.append(_consumer_identity_gap_row(binding, binding_view, source_identity))
+
+        for assessment in evidence.get('capability_assessments') or ():
+            if not isinstance(assessment, dict):
+                continue
+            status = str(assessment.get('status') or 'not_observed')
+            if status in {'available', 'ready', 'not_observed'}:
+                continue
+            rows.append(_consumer_capability_gap_row(binding, binding_view, assessment))
+    return rows
+
+
+def _consumer_identity_gap_row(
+    binding: IntegrationBinding,
+    binding_view: dict[str, Any],
+    identity: dict[str, Any],
+) -> dict[str, Any]:
+    item = {
+        'key': 'source_identity',
+        'label': identity.get('label') or 'Cluster Source Identity',
+        'status': 'misconfigured',
+        'status_label': identity.get('status_label') or 'Failed',
+        'observed': identity.get('observed') or identity.get('message') or 'No source identity evidence recorded.',
+        'expected': identity.get('expected') or 'cluster=<stable-cluster-name>',
+        'recommendation': identity.get('recommendation')
+        or 'Expose the canonical cluster label and rerun binding validation.',
+        'technical_checks': identity.get('technical_checks') or [],
+        'source_owner': 'Prometheus scrape identity / Thanos source identity',
+        'required_by': ['Kubernetes Metrics Binding'],
+        'impact': 'KAORI cannot isolate Kubernetes metrics for this consumer binding safely.',
+    }
+    row = _capability_row(item)
+    return _decorate_consumer_gap(row, binding, binding_view, contract_key='source_identity.cluster')
+
+
+def _consumer_capability_gap_row(
+    binding: IntegrationBinding,
+    binding_view: dict[str, Any],
+    assessment: dict[str, Any],
+) -> dict[str, Any]:
+    contract_key = str(assessment.get('key') or 'consumer_contract')
+    row = _capability_row(assessment)
+    return _decorate_consumer_gap(row, binding, binding_view, contract_key=contract_key)
+
+
+def _decorate_consumer_gap(
+    row: dict[str, Any],
+    binding: IntegrationBinding,
+    binding_view: dict[str, Any],
+    *,
+    contract_key: str,
+) -> dict[str, Any]:
+    scope_label = str(binding_view.get('scope_label') or binding.asset_key)
+    selector = str(binding_view.get('selector_summary') or 'Unscoped')
+    row.update(
+        {
+            'key': f'binding.{binding.id}.{contract_key}',
+            'contract_key': contract_key,
+            'contract_scope': 'consumer',
+            'required': True,
+            'requirement_label': 'Consumer Required',
+            'category': f'Consumer · {row.get("category") or "Metrics Contract"}',
+            'description': f'{scope_label} · {selector}',
+            'scope_label': scope_label,
+            'scope_type_label': str(binding_view.get('scope_type_label') or binding.asset_type),
+            'consumer_profile_label': str(binding_view.get('consumer_profile_label') or 'Consumer Metrics'),
+            'binding_id': int(binding.id),
+        }
+    )
+    return row
 
 
 def _source_resolution_rows(

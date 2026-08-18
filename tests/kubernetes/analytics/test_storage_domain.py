@@ -115,6 +115,16 @@ def test_filesystem_uses_complete_root_pair_when_var_is_incomplete() -> None:
     assert row['evidence_available'] is True
 
 
+def test_filesystem_ignores_legacy_node_identity_aliases() -> None:
+    domain = _load_domain()
+    evidence = _evidence(
+        filesystem_var_size=VectorEvidence((_sample({'nodename': 'worker-1'}, 100),), observed=True),
+        filesystem_var_available=VectorEvidence((_sample({'nodename': 'worker-1'}, 50),), observed=True),
+    )
+
+    assert domain.build_filesystem_rows(evidence) == []
+
+
 def test_filesystem_missing_available_bytes_remains_unknown() -> None:
     domain = _load_domain()
     evidence = _evidence(filesystem_var_size=VectorEvidence((_sample({'node': 'worker-1'}, 100),), observed=True))

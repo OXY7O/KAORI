@@ -91,6 +91,84 @@ def main() -> int:
         errors,
     )
 
+    # Metrics Source setup guidance reuses the canonical modal + integrated-tab hierarchy.
+    metrics_configuration = read(
+        'app/templates/integrations/observability/metrics_source/partials/_detail_configuration.html'
+    )
+    metrics_validation = read(
+        'app/templates/integrations/observability/metrics_source/partials/_detail_validation_content.html'
+    )
+    metrics_examples = read(
+        'app/templates/integrations/observability/metrics_source/partials/_minimum_validation_metrics.html'
+    )
+    metrics_registry = read(
+        'app/templates/integrations/observability/metrics_source/partials/_capability_registry.html'
+    )
+    kubernetes_binding_validator = read(
+        'app/integrations/observability/metrics_source/binding_validators/kubernetes.py'
+    )
+    feature_contracts = read('app/integrations/observability/metrics_source/query_profiles/feature_contracts.py')
+    storage_parsing = read('app/kubernetes/analytics/storage/parsing.py')
+    for token in (
+        'Minimum Metrics Validation Example',
+        'Open Metrics Examples',
+        'components/workspace_tabs.html',
+        "('identity', 'Prometheus / Thanos Identity', 'fingerprint')",
+        "('filesystem', 'Node Filesystem Relabel', 'hard-drive')",
+        'externalLabels:',
+        'targetLabel: cluster',
+        'replacement: k8s-production',
+        'cluster: k8s-production',
+        'targetLabel: node',
+        '__meta_kubernetes_pod_node_name',
+        'instance</code> label may remain for scrape diagnostics',
+    ):
+        require(token in metrics_examples, f'Metrics validation setup example missing canonical token: {token}', errors)
+    require(
+        '_minimum_validation_metrics.html' in metrics_configuration
+        and '_minimum_validation_metrics.html' not in metrics_validation,
+        'Metrics Source Configuration must own the minimum-validation setup reference while Validation owns results',
+        errors,
+    )
+    require(
+        'Consumer Contract Evidence' in metrics_registry and 'row.contract_scope == "consumer"' in metrics_registry,
+        'Metrics Source Validation registry must own detailed binding-specific consumer gaps',
+        errors,
+    )
+    require(
+        "next((matcher for matcher in matchers if matcher.label == 'cluster'), None)" in kubernetes_binding_validator,
+        'Kubernetes Metrics binding validation must require the canonical cluster selector label',
+        errors,
+    )
+    require(
+        'client.label_values(cluster_matcher.label)' in kubernetes_binding_validator,
+        'Kubernetes Metrics binding validation must verify the source cluster label against live evidence',
+        errors,
+    )
+    require(
+        'query-visible target label' in kubernetes_binding_validator
+        and "provider_key == 'thanos'" in kubernetes_binding_validator,
+        'Kubernetes Metrics binding remediation must distinguish direct-Prometheus query labels from Thanos external identity',
+        errors,
+    )
+    require(
+        "required_labels=('node',)" in feature_contracts,
+        'Storage filesystem validation must require the canonical node label',
+        errors,
+    )
+    require(
+        'count by (node, mountpoint)' in feature_contracts,
+        'Storage filesystem validation must pair evidence by canonical node + mountpoint',
+        errors,
+    )
+    require(
+        "metric.get('node')" in storage_parsing
+        and 'nodename' not in storage_parsing
+        and 'kubernetes_node' not in storage_parsing,
+        'Storage Analytics parsing must consume only the canonical node label after validation',
+        errors,
+    )
+
     # Capability registries use real HTMX interaction + one shared loading bar.
     registry_contracts = (
         (

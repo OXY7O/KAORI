@@ -33,3 +33,6 @@ flow_items,
 url_for("metrics.edit_instance", instance_id=instance.id) ,
 operational_metadata=operational_metadata
 ) }}
+<div class="mt-4">
+    {% include "integrations/observability/metrics_source/partials/_minimum_validation_metrics.html" %}
+</div>

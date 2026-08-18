@@ -90,6 +90,8 @@ validation. Provider readiness therefore remains consumer-neutral while
 binding-owned evidence is rebuilt in the same operator workflow. The
 binding-level Validate action remains the targeted path for one consumer.
 
+Kubernetes consumer bindings use one canonical identity contract: `cluster=<stable-cluster-name>`. For direct Prometheus, the label must be query-visible on Kubernetes scrape targets because KAORI applies the binding selector to PromQL. When the source feeds Thanos, every upstream Prometheus must also publish the same cluster value as an external label so the aggregated query plane preserves provenance. Storage filesystem evidence additionally requires `node=<Kubernetes Node.name>` on `node_filesystem_size_bytes` and `node_filesystem_avail_bytes`, paired on the same mountpoint (`/var` preferred, `/` fallback). The `instance` label is not a node-identity substitute. Missing consumer identity and label evidence is persisted on `IntegrationBinding.validation_evidence` and surfaced only in the Validation registry; Provider Readiness remains provider-core only.
+
 ## Query runtime contract
 
 `MetricsConsumer` is the only analytics query boundary. It resolves an eligible
