@@ -8,8 +8,8 @@ ROOT = Path(__file__).resolve().parents[1]
 TEMPLATE_ROOT = ROOT / 'app' / 'templates'
 
 _LITERAL_DEPENDENCY_PATTERNS = (
-    re.compile(r'''{%\s*(?:extends|include|import)\s+["']([^"']+)["']'''),
-    re.compile(r'''{%\s*from\s+["']([^"']+)["']\s+import\b'''),
+    re.compile(r"""{%\s*(?:extends|include|import)\s+["']([^"']+)["']"""),
+    re.compile(r"""{%\s*from\s+["']([^"']+)["']\s+import\b"""),
 )
 
 
@@ -46,10 +46,7 @@ def verify() -> None:
         details = '\n'.join(f'- {item}' for item in problems)
         raise AssertionError(f'Jinja template dependency verification failed:\n{details}')
 
-    print(
-        f'PASS — KAORI Template Dependencies · {len(templates)} templates · '
-        f'{checked_references} literal references'
-    )
+    print(f'PASS — KAORI Template Dependencies · {len(templates)} templates · {checked_references} literal references')
 
 
 if __name__ == '__main__':

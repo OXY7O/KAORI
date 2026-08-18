@@ -25,6 +25,7 @@ def main() -> int:
     csv_renderer = read('app/reports/export/csv/renderer.py')
     inventory_common = read('app/reports/export/inventory_common.py')
     xlsx_standard = read('app/reports/export/xlsx/standard.py')
+    xlsx_schema = read('app/reports/export/xlsx/schema.py')
     xlsx_builder = read('app/reports/export/xlsx/builder.py')
     xlsx_style = read('app/reports/export/xlsx/style.py')
     reporting_doc = read('docs/reports/kaori-reporting-standard-v1.md')
@@ -38,7 +39,7 @@ def main() -> int:
     )
     require("CSV_STANDARD: Final = 'kaori-reporting-csv-v2.0'" in csv_standard, 'CSV v2 standard is missing', errors)
     require(
-        "INVENTORY_WORKBOOK_STANDARD: Final = 'kaori-inventory-xlsx-v2.0'" in xlsx_standard,
+        "INVENTORY_WORKBOOK_STANDARD: Final = 'kaori-inventory-xlsx-v2.0'" in xlsx_schema,
         'XLSX v2 standard is missing',
         errors,
     )
@@ -77,7 +78,7 @@ def main() -> int:
     )
     require('freeze_panes:' not in xlsx_standard, 'legacy hard-coded freeze panes remain in profiles', errors)
     require('status_columns' not in xlsx_standard, 'legacy profile-level status columns remain', errors)
-    require('semantic_type' in xlsx_standard, 'column-level semantic roles are missing', errors)
+    require('semantic_type' in xlsx_schema, 'column-level semantic roles are missing', errors)
     require(
         "'negative_condition'" in xlsx_builder,
         'negative Kubernetes conditions do not have dedicated semantic formatting',
@@ -121,6 +122,7 @@ def main() -> int:
         'app/reports/export/csv/renderer.py',
         'app/reports/export/inventory_common.py',
         'app/reports/export/xlsx/standard.py',
+        'app/reports/export/xlsx/schema.py',
         'app/reports/export/xlsx/style.py',
         'app/reports/export/xlsx/builder.py',
     ):

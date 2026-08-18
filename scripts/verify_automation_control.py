@@ -45,7 +45,6 @@ def main() -> int:
     notification_catalog = read('app/definitions/catalogs/platform_operations/notifications/outbound_delivery.yaml')
     decision_notifications = read('app/intelligence/automation_control/notifications.py')
     execution_notifications = read('app/intelligence/resolver/notifications.py')
-    system_runbook_catalog = read('app/intelligence/knowledge/system_catalog.py')
     system_runbook_definitions = read('app/definitions/catalogs/intelligence/knowledge/system_runbooks.yaml')
     knowledge_service = read('app/intelligence/knowledge/service.py')
     knowledge_matching = read('app/intelligence/knowledge/matching.py')
@@ -203,8 +202,16 @@ def main() -> int:
         'automation.execution_failed',
         'automation.verification_failed',
     )
-    require('event_type_keys' in notification_forms, 'Notification form must resolve event keys from the canonical catalog', errors)
-    require('event_type_label' in notification_service, 'Notification service must resolve event labels from the canonical catalog', errors)
+    require(
+        'event_type_keys' in notification_forms,
+        'Notification form must resolve event keys from the canonical catalog',
+        errors,
+    )
+    require(
+        'event_type_label' in notification_service,
+        'Notification service must resolve event labels from the canonical catalog',
+        errors,
+    )
     for event_type in events:
         require(event_type in notification_catalog, f'Notification catalog missing {event_type}', errors)
         require(

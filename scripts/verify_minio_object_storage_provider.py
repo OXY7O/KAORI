@@ -110,7 +110,10 @@ def main() -> None:
     require('DELETE FROM integration_bindings' in owner_binding_cleanup, 'MinIO owner self-binding cleanup is missing')
     require("ii.provider_type = 'minio'" in owner_binding_cleanup, 'MinIO owner-binding cleanup must target MinIO only')
 
-    require("integration_type='object_storage'" in registration, 'MinIO integration module must use the provider-neutral object_storage type')
+    require(
+        "integration_type='object_storage'" in registration,
+        'MinIO integration module must use the provider-neutral object_storage type',
+    )
     require("provider_key='minio'" in registration, 'MinIO provider implementation is not registered')
     require("adapter_key='s3'" in registration, 'MinIO provider implementation must use the S3 adapter boundary')
     require("domain_key='storage'" in registration, 'MinIO must belong to Storage')
