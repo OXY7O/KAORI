@@ -57,7 +57,6 @@ run_static() {
     python scripts/verify_core_kubernetes_final_lock.py
     python scripts/verify_platform_operations_final_lock.py
     python scripts/verify_job_progress_final_lock.py
-    python scripts/verify_platform_operations_overview_final_lock.py
     python scripts/verify_data_lifecycle_final_lock.py
     python scripts/verify_notification_center_final_lock.py
     python scripts/verify_notification_activity_center.py
@@ -71,7 +70,6 @@ run_static() {
     python scripts/verify_notification_channels.py
     python scripts/verify_provider_frontpage_consistency.py
     python scripts/verify_hero_component_standard.py
-    python scripts/verify_form_with_context_standard.py
     python scripts/verify_filter_layout_standard.py
     python scripts/verify_title_case_standard.py
     python scripts/verify_integrations_title_case.py

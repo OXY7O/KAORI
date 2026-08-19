@@ -14,7 +14,7 @@ Platform Operations v1.1 remains the execution-semantics baseline. v1.2 reopens 
 2. **Inactive Queue Activity is not inspected.** A full-page Job Configuration request builds execution data without Celery Queue Activity topology inspection. Executions keeps its existing worker-readiness behavior.
 3. **Policy Timeline uses a clear card surface.** Inventory, TLS, Analytics, and Forecast policy timelines use `bg-surface-card` with the shared KAORI border tokens.
 4. **Report delivery-channel cards use a clear card surface.** Email, Telegram, Slack, and Webhook readiness cards use `bg-surface-card`; no raw white/dark palette utilities are introduced.
-5. **Configuration copy stays concise.** Stale fallback and workspace helper copy are shortened without changing semantics. Registered-job descriptions for Inventory Sync, Report Schedule Dispatcher, and Analytics Data Refresh are compact.
+5. **Configuration copy stays concise.** Stale fallback and workspace helper copy are shortened without changing semantics. Registered-job descriptions for Inventory Sync, Report Schedule Dispatcher, and Kubernetes Analytics Data Refresh are compact.
 6. **Planned Job Definitions is removed.** Job Configuration lists only registered/operational definitions; speculative future jobs do not occupy the production control surface.
 7. **Existing v1.1 execution contracts remain frozen.** Empty-state Active Work polling, bounded attention, expandable Registry detail, worker readiness, filter-safe Registry counts, and Operational Attention remain unchanged.
 

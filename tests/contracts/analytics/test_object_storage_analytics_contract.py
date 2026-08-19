@@ -581,11 +581,27 @@ def test_object_storage_forecast_is_worker_materialized_on_forecasting_queue() -
     assert 'eligible_target_count' in materialization_template
     assert 'materialization_target_label' in materialization_template
     assert 'selected_job.eligible_cluster_count' not in materialization_template
-    assert 'Forecast Worker Materialization' in worker_status
+    assert 'Forecast Worker Refresh' in worker_status
     forecast_workspace = read('app/templates/storage/object_storage/analytics/partials/_forecast_workspace.html')
     assert 'forecast_materialization.usable' in forecast_workspace
     assert (ROOT / 'app/models/object_storage_analytics.py').exists()
     assert (ROOT / 'migrations/versions/20260814_object_storage_forecast_snapshots.py').exists()
+    object_storage_jobs = [item for item in jobs['jobs'] if item.get('domain') == 'Object Storage Analytics']
+    assert [item['key'] for item in object_storage_jobs] == ['object_storage.forecast.materialize']
+    assert job['name'] == 'Object Storage Forecast Data Refresh'
+    assert job['configuration_template'] == 'platform_operations/jobs/configuration/definitions/forecast_refresh.html'
+    assert 'Snapshot Refresh Policy' in materialization_template
+    assert 'Automatic Snapshot Refresh' in materialization_template
+
+    forecast_config = read('app/templates/platform_operations/jobs/configuration/definitions/forecast_refresh.html')
+    analytics_readme = read('app/storage/object_storage/analytics/README.md')
+    assert "definition.domain == 'Object Storage Analytics'" in forecast_config
+    assert "'Object Storage' if definition.domain == 'Object Storage Analytics' else 'Kubernetes'" in forecast_config
+    assert 'history windows prepared by the' in forecast_config
+    assert 'forecast worker.' in forecast_config
+    assert 'Forecast is intentionally the only Object Storage Analytics surface with a' in analytics_readme
+    assert 'scheduled Job Configuration entry' in analytics_readme
+    assert 'they do not maintain separate worker-owned snapshot artifacts' in analytics_readme
 
 
 def test_object_storage_alerts_use_independent_alert_and_metric_evidence_paths() -> None:

@@ -190,8 +190,8 @@ Overview section endpoints hydrate only the requested snapshot-backed section.
 After deployment:
 
 1. Run Metrics Source **Full Validation** so exact capability evidence is persisted.
-2. Run **Analytics Data Refresh**.
-3. Run **Forecast Data Refresh** after Analytics completes when the heavy-job
+2. Run **Kubernetes Analytics Data Refresh**.
+3. Run **Kubernetes Forecast Data Refresh** after Analytics completes when the heavy-job
    per-user quota is one.
 4. Confirm scheduled and on-demand jobs execute on `analytics-batch` and
    `forecasting` queues.

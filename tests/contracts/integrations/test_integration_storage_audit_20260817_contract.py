@@ -62,4 +62,5 @@ def test_minio_bound_source_registry_hides_empty_pagination_and_uses_metrics_sou
     assert '{% if binding_pagination.total_items > 0 %}' in registry
     assert 'Metrics Source or Alertmanager' in registry
     assert 'Metrics Source and Alertmanager remain reusable source-owned connections' in scope
-    assert 'Metrics Source owns metrics by source identity' in index
+    assert 'MinIO owns S3 storage state' in index
+    assert 'asset-scoped binding evidence' in index

@@ -116,7 +116,7 @@
                     <p class="text-xs font-semibold text-content-primary">Object Storage Metrics Contract</p>
                     {{ integration_status('ready' if metrics_readiness.get('status') == 'ready' else 'degraded', metrics_readiness.get('status_label', metrics_readiness.get('status', 'Unknown')|replace('_', ' ')|title), display='indicator') }}
                 </div>
-                <p class="mt-2 text-xs leading-5 text-content-secondary">Required metrics ready {{ readiness_summary.get('required_ready', 0) }} / {{ readiness_summary.get('required_total', 0) }}. Exact MinIO metric evidence remains owned by the bound Object Storage consumer profile.</p>
+                <p class="mt-2 text-xs leading-5 text-content-secondary">Required metrics ready {{ readiness_summary.get('required_ready', 0) }} / {{ readiness_summary.get('required_total', 0) }}. Exact Object Storage metric evidence remains owned by the bound consumer profile.</p>
             </section>
         {% endif %}
         {% if family == 'alerts' and evidence %}

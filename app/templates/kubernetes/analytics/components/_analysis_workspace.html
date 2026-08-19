@@ -151,7 +151,7 @@
                                 <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-status-critical-soft text-status-critical"><i data-lucide="circle-alert" class="h-4 w-4"></i></span>
                                 <div class="min-w-0">
                                     <p class="text-sm font-semibold text-content-primary">{{ snapshot.last_error_title|default('Latest Refresh Error', true) }}</p>
-                                    <p class="mt-1 break-words text-xs leading-5 text-content-muted">{{ snapshot.last_error_detail|default('The latest analytics refresh failed. Review the materialization job for controlled diagnostic evidence.', true) }}</p>
+                                    <p class="mt-1 break-words text-xs leading-5 text-content-muted">{{ snapshot.last_error_detail|default('The latest analytics refresh failed. Review the analytics refresh job for controlled diagnostic evidence.', true) }}</p>
                                     {% if snapshot.last_error_remediation|default(none) %}
                                         <div class="mt-3">
                                             {{ analysis_surface.interpretation_content('Recommended Action',

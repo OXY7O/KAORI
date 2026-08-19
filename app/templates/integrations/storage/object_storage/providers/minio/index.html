@@ -13,7 +13,7 @@
     <div class="kaori-integration-semantic space-y-6">
         {{ provider_front.hero("database", "database-zap",
                 "MinIO Integrations",
-                "Register, validate, and govern reusable MinIO connections and consumer bindings.",
+                "Register, validate, govern, and maintain reusable MinIO connections together with their consumer bindings and lifecycle state.",
                 stats.total, stats.ready, stats.bindings, posture_status, url_for('minio.new_instance') ,
         ready_total=stats.configured) }}
         {{ provider_front.overview("boxes",
@@ -25,7 +25,7 @@
                 "Asset, Binding, and Runtime Aware",
                 "KAORI resolves metrics and alert consumers independently through asset-scoped bindings and consumer profiles.",
                 "Each Provider Remains Authoritative",
-                "MinIO owns storage state; Metrics Source owns metrics by source identity; Alertmanager owns alert delivery. KAORI governs registration and binding evidence.") }}
+                "MinIO owns S3 storage state; observability sources stay independent. KAORI governs registration and asset-scoped binding evidence.") }}
         {% call(tab_name) integration_tabs.render("minio", active_tab, stats.total, stats.total) %}
             {% if tab_name == "coverage" %}
                 {% include "integrations/storage/object_storage/providers/minio/partials/_coverage.html" %}

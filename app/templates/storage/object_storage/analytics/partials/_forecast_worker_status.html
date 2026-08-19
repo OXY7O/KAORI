@@ -4,7 +4,7 @@
             <div class="flex min-w-0 items-start gap-3">
                 <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="cpu" class="h-5 w-5"></i></span>
                 <div>
-                    <h2 class="text-lg font-semibold text-content-primary">Forecast Worker Materialization</h2>
+                    <h2 class="text-lg font-semibold text-content-primary">Forecast Worker Refresh</h2>
                     <p class="mt-1 text-sm leading-6 text-content-muted">Forecast values are committed by the forecasting worker and are not calculated inside the browser request.</p>
                 </div>
             </div>
@@ -15,7 +15,7 @@
         <article class="bg-surface-card p-5">
             <p class="{{ analysis_surface.metric_label_classes() }}">History Window</p>
             <p class="mt-2 text-lg font-semibold text-content-primary">{{ selected_forecast_history_window|upper }}</p>
-            <p class="mt-1 text-xs leading-5 text-content-muted">Configured materialization scope.</p>
+            <p class="mt-1 text-xs leading-5 text-content-muted">Configured worker refresh scope.</p>
         </article>
         <article class="bg-surface-card p-5">
             <p class="{{ analysis_surface.metric_label_classes() }}">Last Generated</p>

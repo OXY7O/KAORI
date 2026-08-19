@@ -15,7 +15,7 @@
     ("key-round", "info", "Access Contract", auth_label, "Credentials remain encrypted and independent from consumer bindings."),
     ("database", "success" if instance.enabled else "warning", "Metrics Authority", metrics_source_label ~ " Runtime" if instance.enabled else "Source Disabled", metrics_source_label ~ " owns metric query execution and retention; bindings only govern consumer selection.")
 ] %}
-{% set flow_items = [('Configure', 'Set reusable identity, endpoint access, TLS, authentication, and compatibility detection.', 'settings-2'), ('Validate', 'Confirm the adapter, query-language, and provider capability contract.', 'badge-check'), ('Observe', 'Persist runtime health and historical provider evidence independently from consumers.', 'activity'), ('Bind', 'Associate Kubernetes, MinIO, and future managed assets through consumer profiles.', 'waypoints')] %}
+{% set flow_items = [('Configure', 'Set reusable identity, endpoint access, TLS, authentication, and compatibility detection.', 'settings-2'), ('Validate', 'Confirm the adapter, query-language, and provider capability contract.', 'badge-check'), ('Observe', 'Persist runtime health and historical provider evidence independently from consumers.', 'activity'), ('Bind', 'Associate Kubernetes, Object Storage, and future managed assets through consumer profiles.', 'waypoints')] %}
 {% set operational_metadata = [
     "Metrics Authority",
     "Read-Only Query",

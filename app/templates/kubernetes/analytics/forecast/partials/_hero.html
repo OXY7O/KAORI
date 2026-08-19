@@ -4,7 +4,7 @@
         <div class="{{ page_hero.content_classes() }}">
             {% call page_hero.intro('sparkles', 'Kubernetes Analytics', 'line-chart') %}
                 <h1 class="{{ page_hero.title_classes() }}">Resource Forecast</h1>
-                <p class="mt-2 {{ page_hero.description_classes() }}">Review projected demand, threshold timing, and future capacity risk.</p>
+                <p class="mt-2 {{ page_hero.description_classes() }}">Review projected demand, threshold timing, growth trends, and potential future capacity risks across the cluster.</p>
                 <div class="{{ page_hero.metadata_row_classes() }}">
                     {{ page_hero.meta_label('server', selected_cluster_name) }}
                     {% if dependency_blocker %}

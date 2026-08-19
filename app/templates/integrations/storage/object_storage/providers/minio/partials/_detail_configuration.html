@@ -10,7 +10,7 @@
 {% set evidence_items = [
     ("server", "brand", "MinIO S3 API Endpoint", instance.endpoint, "Base S3-compatible API endpoint used by KAORI for governed discovery and validation."),
     ("shield-check", "success" if instance.verify_ssl else "warning", "TLS Verification", "Enabled" if instance.verify_ssl else "Disabled", "Certificate validation policy for the MinIO API endpoint."),
-    ("key-round", "info", "Access Contract", instance.access_key, "The secret key remains encrypted; registration and Full Validation use governed S3 discovery."),
+    ("key-round", "info", "Access Contract", instance.access_key, "The secret key stays encrypted; registration and Full Validation use governed S3 discovery."),
     ("database", "success", "Storage Authority", "Object Storage System", "MinIO owns S3 state; observability sources remain independent consumers.")
 ] %}
 {% set flow_items = [('Configure', 'Register S3 identity, credentials, TLS, region, and request policy.', 'settings-2'), ('Validate', 'Resolve MinIO product identity, release compatibility, S3 access, and provider capabilities.', 'badge-check'), ('Observe', 'Persist runtime health and endpoint diagnostics independently from consumer bindings.', 'activity'), ('Bind', 'Associate reusable Metrics Source and Alertmanager sources only when required.', 'waypoints')] %}
@@ -25,7 +25,7 @@
 readiness,
 summary_items,
 evidence_items,
-"MinIO owns S3 state; Metrics Source and Alertmanager remain independent observability sources. KAORI correlates binding evidence without copying their credentials into MinIO.",
+"MinIO owns S3 storage state; observability sources remain independent. KAORI correlates asset-scoped binding evidence without copying credentials.",
 flow_items,
 "Connection-sensitive changes reset readiness until Full Validation confirms the updated MinIO contract. Consumer bindings remain attached to the canonical object-storage asset.",
 url_for("minio.edit_instance", instance_id=instance.id) ,

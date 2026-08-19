@@ -13,7 +13,7 @@
       hx-sync="#top-consumers-page:replace">
     {% call analytics_workspace.controls_readiness(
         'Consumer Controls & Data Readiness',
-        'Cluster scope uses the committed cluster snapshot. Namespace scope uses a namespace-specific committed snapshot and may require worker materialization before evidence is available.',
+        'Cluster scope uses the committed cluster snapshot. Namespace scope uses a namespace-specific committed snapshot and may require a worker refresh before evidence is available.',
         'sliders-horizontal',
         'top-consumers-refresh-indicator',
         metrics_source_status,

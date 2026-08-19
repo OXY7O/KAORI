@@ -93,3 +93,36 @@ def test_release_coverage_documentation_keeps_explicit_incomplete_feature_state(
         'PASS is short; FAIL is detailed.',
     ):
         assert token in documentation
+
+
+def test_full_release_runner_does_not_repeat_surface_verifiers_before_quality_gate() -> None:
+    runner = read('scripts/verify_final_release.py')
+    main_block = runner.split('def main() -> int:', 1)[1]
+    assert 'if args.all:' in main_block
+    assert 'if not _run_full_gate()' in main_block
+    assert 'elif not _run_surface_checks()' in main_block
+
+
+def test_release_verifier_inventory_has_no_orphan_or_one_off_shell_wrappers() -> None:
+    owner_paths = (
+        'scripts/quality_gate.sh',
+        'scripts/verify_final_release.py',
+        'scripts/release_surface_registry.py',
+        'package.json',
+    )
+    owner_text = '\n'.join(read(path) for path in owner_paths)
+    verifier_paths = sorted(path for path in SCRIPTS.glob('verify_*') if path.is_file())
+
+    assert verifier_paths
+    assert [path.name for path in verifier_paths if path.suffix == '.sh'] == ['verify_source_hygiene.sh']
+    assert not [path.name for path in verifier_paths if path.suffix == '.sh' and any(ch.isdigit() for ch in path.stem)]
+
+    orphaned = [
+        path.name
+        for path in verifier_paths
+        if path.name != 'verify_final_release.py'
+        and path.name not in owner_text
+        and path.as_posix() not in owner_text
+    ]
+    assert orphaned == []
+

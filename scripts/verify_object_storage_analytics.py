@@ -394,7 +394,7 @@ def main() -> int:
     assert 'materialize_object_storage_forecasts' in forecast_task
     assert 'object_storage.forecast.materialize' in forecast_job_adapter
     assert 'FORECASTING_CELERY_QUEUE' in forecast_job_adapter
-    assert 'Forecast Worker Materialization' in forecast_worker_status
+    assert 'Forecast Worker Refresh' in forecast_worker_status
     assert 'forecast_materialization.usable' in forecast_workspace
     assert 'eligible_target_count' in materialization_template
     assert 'selected_job.eligible_cluster_count' not in materialization_template

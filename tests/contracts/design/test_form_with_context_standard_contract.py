@@ -61,3 +61,26 @@ def test_form_with_context_standard_is_indexed_and_distinct_from_fixed_width_rai
     assert 'Protected Kubernetes Secret Reveal' in standard
     assert 'FORM_WITH_CONTEXT_RAIL.md' in right_rail
     assert 'components/FORM_WITH_CONTEXT_RAIL.md' in design_readme
+
+
+def test_shared_form_field_alignment_contract_is_owned_by_contract_tests() -> None:
+    field = read('app/templates/components/form_field.html')
+    standard = read('docs/design/components/FORM_FIELD.md')
+    form_standard = read('docs/design/components/FORM.md')
+
+    for token in ('macro label_row', 'min-h-6', 'macro select_classes', 'mt-2 h-10 w-full', 'macro help'):
+        assert token in field
+    for token in (
+        '# KAORI Form Field Alignment Standard',
+        'Helper / Validation Copy',
+        'never between label and control',
+        'do not mix `h-10` and `h-11`',
+    ):
+        assert token in standard
+    assert 'Form + Right Context' in form_standard
+
+
+def test_form_with_context_contract_runs_from_canonical_contract_gate() -> None:
+    quality_gate = read('scripts/quality_gate.sh')
+    assert 'pytest -q tests/contracts tests/migrations' in quality_gate
+    assert 'verify_form_with_context_standard.py' not in quality_gate

@@ -134,8 +134,8 @@ docker compose -f compose.production.yml up -d --no-deps \
 Run one manual refresh after deployment:
 
 1. Open **Platform Operations → Jobs & Executions → Job Configuration**.
-2. Run **Analytics Data Refresh** once.
-3. Run **Forecast Data Refresh** once.
+2. Run **Kubernetes Analytics Data Refresh** once.
+3. Run **Kubernetes Forecast Data Refresh** once.
 4. Confirm both executions finish successfully before evaluating dashboard completeness.
 
 The Analytics policy always retains:
@@ -206,8 +206,8 @@ METRICS_SOURCE_ANALYTICS_RANGE_QUERY_TIMEOUT_SECONDS=120
 Deployment validation:
 
 1. Run Metrics Source Full Validation for each bound source.
-2. Run Analytics Data Refresh and confirm a failed dataset does not stop later work items.
-3. Run Forecast Data Refresh after the analytics job reaches a terminal state.
+2. Run Kubernetes Analytics Data Refresh and confirm a failed dataset does not stop later work items.
+3. Run Kubernetes Forecast Data Refresh after the analytics job reaches a terminal state.
 4. Open every Kubernetes Analytics page for a ready cluster and for an explicitly selected incomplete cluster.
 5. Confirm committed data remains visible with an advisory readiness notice rather than a blank or full-page blocker.
 

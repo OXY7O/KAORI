@@ -7,7 +7,7 @@
         <div class="{{ page_hero.content_classes() }}">
             {% call page_hero.intro('bar-chart-3', 'Kubernetes Analytics', 'server-cog') %}
                 <h1 class="{{ page_hero.title_classes() }}">Capacity Analysis</h1>
-                <p class="mt-2 {{ page_hero.description_classes() }}">Review worker headroom, allocation pressure, and scheduling risk.</p>
+                <p class="mt-2 {{ page_hero.description_classes() }}">Review worker headroom, allocation pressure, scheduling constraints, and emerging capacity risks across active workloads.</p>
                 <div class="{{ page_hero.metadata_row_classes() }}">
                     {{ page_hero.meta_label('server', selected_cluster_name) }}
                     {% if dependency_blocker %}

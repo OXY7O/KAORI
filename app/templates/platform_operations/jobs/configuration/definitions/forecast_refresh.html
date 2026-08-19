@@ -4,7 +4,7 @@
         <div class="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
             <div>
                 <h4 class="text-sm font-semibold text-content-primary">Precomputed History Windows</h4>
-                <p class="mt-1 text-xs leading-5 text-content-muted">Choose history windows prepared by the forecast worker.</p>
+                <p class="mt-1 text-xs leading-5 text-content-muted">Choose history windows prepared by the {{ 'Object Storage' if definition.domain == 'Object Storage Analytics' else 'Kubernetes' }} forecast worker.</p>
             </div>
             <span class="text-xs font-semibold text-kaori-primary">30D Always Included</span>
         </div>

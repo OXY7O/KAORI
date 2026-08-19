@@ -55,7 +55,7 @@
         {% endif %}
         <div class="grid divide-y divide-outline-subtle sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-4">
             {% set binding_metrics = [
-                            ('link-2', 'Consumer Bindings', binding_rows|length, 'Kubernetes, MinIO, and future asset mappings'),
+                            ('link-2', 'Consumer Bindings', binding_rows|length, 'Kubernetes, Object Storage, and future asset mappings'),
                             ('shield-check', 'Validated Bindings', validated_binding_count, 'Binding validation currently Ready'),
                             ('route', 'Operational Bindings', ready_binding_count, 'Source + binding gates currently usable'),
                             ('layout-grid', 'Consumer Assets', resolution_scope_count, 'Managed assets with resolver context')

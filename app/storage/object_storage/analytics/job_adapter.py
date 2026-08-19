@@ -181,7 +181,7 @@ def build_object_storage_forecast_materialization_context(policy: JobPolicy) -> 
             'label': 'Ready',
             'tone': 'normal',
             'icon': 'circle-check',
-            'description': 'Eligible Object Storage systems can be materialized by the forecasting worker.',
+            'description': 'Eligible Object Storage systems are ready for forecast refresh.',
         }
     else:
         execution_state = {
@@ -220,9 +220,9 @@ def build_object_storage_forecast_materialization_context(policy: JobPolicy) -> 
             'tone': 'normal' if policy.enabled else 'disabled',
             'icon': 'circle-check' if policy.enabled else 'circle-pause',
             'description': (
-                'Automatic Object Storage forecast materialization is scheduled.'
+                'Automatic Object Storage forecast refresh is scheduled.'
                 if policy.enabled
-                else 'Automatic Object Storage forecast materialization is disabled.'
+                else 'Automatic Object Storage forecast refresh is disabled.'
             ),
         },
         'interval_label': present_interval(policy.interval_minutes),

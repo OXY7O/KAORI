@@ -15,7 +15,7 @@
     ("key-round", "info", "Access Contract", auth_label, "Credentials remain encrypted and independent from consumer selectors."),
     ("siren", "success" if instance.enabled else "warning", "Alerting Authority", deployment_label if instance.enabled else "Source Disabled", "Alertmanager owns alert routing and delivery; bindings only scope consumer use.")
 ] %}
-{% set flow_items = [('Configure', 'Set reusable identity, endpoint access, TLS, authentication, and deployment contract.', 'settings-2'), ('Validate', 'Confirm provider-neutral Alertmanager status, alerts, and silences APIs.', 'badge-check'), ('Observe', 'Persist runtime health and provider diagnostics independently from consumers.', 'activity'), ('Bind', 'Associate Kubernetes, MinIO, and future managed assets through alert consumer profiles.', 'waypoints')] %}
+{% set flow_items = [('Configure', 'Set reusable identity, endpoint access, TLS, authentication, and deployment contract.', 'settings-2'), ('Validate', 'Confirm provider-neutral Alertmanager status, alerts, and silences APIs.', 'badge-check'), ('Observe', 'Persist runtime health and provider diagnostics independently from consumers.', 'activity'), ('Bind', 'Associate Kubernetes, Object Storage, and future managed assets through alert consumer profiles.', 'waypoints')] %}
 {% set operational_metadata = [
     "Alert Routing Authority",
     "Read-Only Discovery",

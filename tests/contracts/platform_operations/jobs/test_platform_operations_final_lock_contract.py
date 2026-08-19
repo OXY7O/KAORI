@@ -51,7 +51,7 @@ def test_platform_operations_final_lock_is_documented_and_release_gated() -> Non
         ROOT / 'docs/design/audits/KAORI_PLATFORM_OPERATIONS_DATA_LIFECYCLE_FINAL_LOCK_V1_2_AUDIT_2026_08_08.md'
     ).exists()
     assert 'verify_platform_operations_final_lock.py' in read('scripts/quality_gate.sh')
-    assert 'verify_platform_operations_overview_final_lock.py' in read('scripts/quality_gate.sh')
+    assert 'pytest -q tests/contracts tests/migrations' in read('scripts/quality_gate.sh')
     assert 'verify_notification_center_final_lock.py' in read('scripts/quality_gate.sh')
     assert 'PASS — KAORI Platform Operations Final Lock v2.2' in read(
         'scripts/verify_platform_operations_final_lock.py'

@@ -71,7 +71,7 @@ jobs:
   safety_summary: Forecast range queries run on the forecasting queue. The last usable committed result remains available
     when a refresh fails inside its stale-grace window.
   execution_summary: Generate reusable Object Storage forecast snapshots and monitor the forecasting worker.
-  recent_execution_summary: Latest Object Storage forecast materialization runs.
+  recent_execution_summary: Latest Object Storage forecast refresh runs.
   default_configuration:
     history_windows:
     - 7d
@@ -135,7 +135,7 @@ jobs:
   recent_execution_summary: Latest scheduled and manual TLS Secret inventory refreshes.
   legacy_module: tls_certificate_sync
 - key: analytics.materialize
-  name: Analytics Data Refresh
+  name: Kubernetes Analytics Data Refresh
   domain: Kubernetes Analytics
   description: Refresh shared Kubernetes analytics snapshots.
   icon: chart-no-axes-combined
@@ -156,8 +156,8 @@ jobs:
   minimum_interval_minutes: 5
   maximum_interval_minutes: 1440
   safety_summary: Long-range results are generated once per cluster and parameter set, then shared by every user.
-  execution_summary: Materialize shared analytics snapshots and monitor worker progress from one execution workspace.
-  recent_execution_summary: Latest shared analytics snapshot materialization runs.
+  execution_summary: Refresh shared analytics snapshots and monitor worker progress from one execution workspace.
+  recent_execution_summary: Latest Kubernetes analytics snapshot refresh runs.
   default_configuration:
     time_ranges:
     - 24h
@@ -168,7 +168,7 @@ jobs:
     stale_grace_minutes: 1440
   legacy_module: analytics_refresh
 - key: analytics.forecast.materialize
-  name: Forecast Data Refresh
+  name: Kubernetes Forecast Data Refresh
   domain: Kubernetes Analytics
   description: Generate persistent capacity forecasts on the forecasting worker.
   icon: chart-spline
@@ -191,7 +191,7 @@ jobs:
   safety_summary: Forecast range queries run in the forecasting queue and the last successful result remains available during
     refresh.
   execution_summary: Generate reusable forecast history snapshots and monitor the forecasting worker.
-  recent_execution_summary: Latest forecast history materialization runs.
+  recent_execution_summary: Latest Kubernetes forecast refresh runs.
   default_configuration:
     history_windows:
     - 7d

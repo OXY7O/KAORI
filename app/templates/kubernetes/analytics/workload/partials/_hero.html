@@ -7,7 +7,7 @@
         <div class="{{ page_hero.content_classes() }}">
             {% call page_hero.intro('boxes', 'Kubernetes Analytics', 'layout-dashboard') %}
                 <h1 class="{{ page_hero.title_classes() }}">Workload Analysis</h1>
-                <p class="mt-2 {{ page_hero.description_classes() }}">Review quotas, requests, limits, QoS, and right-sizing evidence.</p>
+                <p class="mt-2 {{ page_hero.description_classes() }}">Review quotas, requests, limits, QoS classes, utilization patterns, and right-sizing evidence across workloads.</p>
                 <div class="{{ page_hero.metadata_row_classes() }}">
                     {{ page_hero.meta_label('server', selected_cluster_name) }}
                     {% if dependency_blocker %}

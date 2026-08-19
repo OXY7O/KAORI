@@ -210,9 +210,10 @@ def main() -> int:
     os.environ['PYTHONDONTWRITEBYTECODE'] = '1'
     _purge_generated_python_cache()
 
-    if not _run_surface_checks():
-        return 1
-    if args.all and not _run_full_gate():
+    if args.all:
+        if not _run_full_gate():
+            return 1
+    elif not _run_surface_checks():
         return 1
     if args.runtime and not _run_runtime_checks():
         return 1

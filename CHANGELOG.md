@@ -3,9 +3,10 @@
 All notable KAORI changes are recorded here. KAORI uses Semantic Versioning for release identity.
 
 ## [Unreleased]
+- Audited the v2.3.0 release-candidate wording and verification ownership: operator-facing Analytics uses Refresh language instead of implementation-level materialization terminology, Object Storage Forecast Job Configuration is explicit, generic Observability copy uses Object Storage consumer identity, and dead one-off verification wrappers are retired in favor of canonical contract tests.
 - Refined Integration UX across Overview, Orchestration, Observability, and Object Storage: shortened dense operational copy, normalized provider-detail typography hierarchy, prevented Runtime Overview HTMX scroll jumps, collapsed the Kubernetes runtime Evidence Boundary into one readable block, fixed Observability coverage Manage Binding links to provider record IDs, removed redundant MinIO release-profile helper copy, and restored spacing between MinIO runtime and history surfaces.
 - Hardened observability binding polling so active JobExecution scope identity is recovered when transient Redis validation metadata is missing; Metrics Source and Alertmanager detail pages now fail safe instead of raising a missing `binding_id` template error.
-- Stabilized post-v2.3.0 Integration UI contracts: View More is a canonical row action with vertical detail expansion, provider-core Full Validation remains separate from binding-owned validation, validator imports/formatting are release-gate clean, and primary Integration workspace typography is consistent across Kubernetes, Metrics Source, Alert Source, and Object Storage.
+- Stabilized the v2.3.0 release-candidate Integration UI contracts: View More is a canonical row action with vertical detail expansion, provider-core Full Validation remains separate from binding-owned validation, validator imports/formatting are release-gate clean, and primary Integration workspace typography is consistent across Kubernetes, Metrics Source, Alert Source, and Object Storage.
 - Fixed observability binding validation worker model loading and unified provider-detail primary header typography across Configuration, Validation, Runtime, and Bindings & Consumers.
 - Refined Consumer Binding Registry into a summary-first four-column layout with `View More` expansion for identity, profile, resolver, and binding validation evidence.
 
@@ -16,7 +17,7 @@ All notable KAORI changes are recorded here. KAORI uses Semantic Versioning for 
 - Hardened Compact Segmented Tabs on one formatter-safe shared controller hook contract so Kubernetes Topology Graph/List and Details/Relationships remain interactive after template formatting; removed dynamic attribute-name ownership from consumers.
 - Standardized Clear Filters placement across headered inventory-style surfaces, added the same canonical Clear Filters behavior to Inventory Relationship Map, and renamed Topology `Refresh Graph` to `Reload Snapshot` to distinguish committed-snapshot re-fetch from automatic filter loading and HTMX navigation.
 - Refined Integration taxonomy/provider copy for clearer orchestration and observability ownership while keeping Metrics Source provider-selection guidance concise.
-- Refined post-2.3.0 operational UI consistency: Runtime History actions stay aligned, Topology segmented tabs now carry functional dataset values, modal identity/status labels are grouped, and ConfigMap/Secret live selectors share helper context.
+- Refined v2.3.0 release-candidate operational UI consistency: Runtime History actions stay aligned, Topology segmented tabs now carry functional dataset values, modal identity/status labels are grouped, and ConfigMap/Secret live selectors share helper context.
 
 
 ### Changed

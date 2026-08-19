@@ -77,7 +77,7 @@ def test_minio_validation_runtime_and_inventory_ownership_are_separated() -> Non
     assert 'lightweight provider health probe without collecting inventory' in client.lower()
     assert 'Visible Buckets' not in validation
     assert 'Required Contracts' in validation
-    assert 'Inventory Sync owns committed storage assets' in validation
+    assert 'Inventory Sync owns committed assets' in validation
     assert 'without capability mutation or inventory discovery' in runtime
 
 

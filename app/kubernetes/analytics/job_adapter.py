@@ -764,7 +764,7 @@ def _context(policy: JobPolicy, *, forecasting: bool) -> dict[str, Any]:
             'label': 'Execution Active',
             'tone': 'pending',
             'icon': 'loader-circle',
-            'description': 'A materialization worker is processing snapshot requests.',
+            'description': 'An analytics worker is refreshing snapshot requests.',
         }
     elif not clusters:
         configuration_state = {
@@ -788,7 +788,7 @@ def _context(policy: JobPolicy, *, forecasting: bool) -> dict[str, Any]:
             'label': 'Ready',
             'tone': 'normal',
             'icon': 'circle-check',
-            'description': 'Eligible clusters are ready for materialization.',
+            'description': 'Eligible clusters are ready for snapshot refresh.',
         }
     else:
         configuration_state = {
@@ -800,7 +800,7 @@ def _context(policy: JobPolicy, *, forecasting: bool) -> dict[str, Any]:
             'label': 'Ready',
             'tone': 'normal',
             'icon': 'circle-check',
-            'description': 'Manual materialization is available for eligible clusters.',
+            'description': 'Manual snapshot refresh is available for eligible clusters.',
         }
 
     return {

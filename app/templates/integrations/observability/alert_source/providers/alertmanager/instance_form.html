@@ -293,7 +293,7 @@
             </form>
             <aside class="space-y-4 xl:col-span-4 xl:sticky xl:top-5">
                 {% if instance %}
-                    {% set alertmanager_flow_items = [('Save Changes', 'Update the reusable connection contract and return readiness to Validation Required.'), ('Test Connection', 'Confirm the saved endpoint remains reachable with the selected authentication and TLS settings.'), ('Run Core Validation', 'Rebuild Alertmanager API compatibility and provider readiness evidence.'), ('Review Consumer Bindings', 'Confirm Kubernetes, MinIO, and future consumers retain independent alert bindings and selectors.')] %}
+                    {% set alertmanager_flow_items = [('Save Changes', 'Update the reusable connection contract and return readiness to Validation Required.'), ('Test Connection', 'Confirm the saved endpoint remains reachable with the selected authentication and TLS settings.'), ('Run Core Validation', 'Rebuild Alertmanager API compatibility and provider readiness evidence.'), ('Review Consumer Bindings', 'Confirm Kubernetes, Object Storage, and future consumers retain independent alert bindings and selectors.')] %}
                     {{ provider_registration_context.render("Alertmanager Configuration Flow",
                                         "How saved connection changes return to governed operational use.",
                                         alertmanager_flow_items,
@@ -307,7 +307,7 @@
                     authority_boundary="Alertmanager remains authoritative for routing, grouping, inhibition, silences, and notification delivery. KAORI owns provider readiness and governed consumer-binding evidence.") }}
                 {% else %}
                     {% set alertmanager_flow_items = [('Define Connection Identity', 'Create one reusable Alertmanager connection for the endpoint and its ownership context.'), ('Configure Endpoint Access', 'Set authentication, TLS behavior, request timeout, and the supported Alertmanager API contract.'), ('Test Connection', 'Verify endpoint reachability and API access before KAORI enables registration.'), ('Register Connection', 'Create the reusable connection identity before Core Validation and consumer binding.')] %}
-                    {% set alertmanager_related_description = "A single Alertmanager runtime can serve Kubernetes, MinIO, and future integrations through independent consumer bindings and selectors." %}
+                    {% set alertmanager_related_description = "A single Alertmanager runtime can serve Kubernetes, Object Storage, and future integrations through independent consumer bindings and selectors." %}
                     {% if initial_cluster %}
                         {% set alertmanager_related_description = alertmanager_related_description ~ " This registration will also create the initial alert binding for " ~ initial_cluster.name ~ "." %}
                     {% endif %}

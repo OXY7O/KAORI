@@ -14,7 +14,7 @@
         <div class="{{ page_hero.content_classes() }}">
             {% call page_hero.intro('list-filter', 'Kubernetes Analytics', 'chart-no-axes-column-increasing') %}
                 <h1 class="{{ page_hero.title_classes() }}">Top Consumers</h1>
-                <p class="mt-2 {{ page_hero.description_classes() }}">Review the highest CPU, memory, pod, and PVC consumers.</p>
+                <p class="mt-2 {{ page_hero.description_classes() }}">Review the highest CPU, memory, pod, and PVC consumers to identify concentration and resource pressure.</p>
                 <div class="{{ page_hero.metadata_row_classes() }}">
                     {{ page_hero.meta_label('server', selected_cluster_name) }}
                     {% if dependency_blocker %}

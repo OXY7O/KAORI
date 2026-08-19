@@ -163,7 +163,7 @@
                     <div class="{{ analysis_surface.empty_evidence_classes('p-5') }}">
                         {% set empty_state_icon = "database-zap" %}
                         {% set empty_state_title = resource_label ~ ' Forecast Missing' %}
-                        {% set empty_state_description = "The committed snapshot does not contain this resource forecast. Refresh the forecast materialization." %}
+                        {% set empty_state_description = "The committed snapshot does not contain this resource forecast. Refresh the forecast snapshot." %}
                         {% include "components/states/_empty_state.html" %}
                     </div>
                 {% endif %}

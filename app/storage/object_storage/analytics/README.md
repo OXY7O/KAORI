@@ -98,7 +98,7 @@ Interactive Object Storage analytics is intentionally fail-fast:
 5. Partial query success is reported as `Degraded`; successful runtime query execution is reported as `Operational`.
 6. Committed Inventory evidence remains available when operational metrics are degraded or disconnected.
 
-Background/materialization workloads may use a different retry policy; the UI
+Background refresh workloads may use a different retry policy; the UI
 request path must not multiply an unreachable provider into a query storm.
 
 ## No-compatibility rule
@@ -144,13 +144,21 @@ validator. Upgraded deployments reset the retired profile to consumer
 validation required and must rerun validation with the current
 `integration-validation` worker.
 
-## Forecast materialization
+## Forecast worker refresh
 
 Object Storage Forecast follows the Kubernetes Analytics worker pattern instead
 of calculating long-range projections inside the interactive request. The
-registered job `object_storage.forecast.materialize` runs on the dedicated
-`forecasting` queue and materializes 7d, 30d, and 90d history windows into
-`ObjectStorageForecastSnapshot` records.
+registered Job Configuration entry `object_storage.forecast.materialize` runs on
+the dedicated `forecasting` queue and refreshes 7d, 30d, and 90d history windows
+into `ObjectStorageForecastSnapshot` records.
+
+Forecast is intentionally the only Object Storage Analytics surface with a
+scheduled Job Configuration entry. Overview, Capacity & Usage, Performance, Top
+Consumers, and Alerts & Anomalies resolve current Metrics Source / Alertmanager
+evidence at request time and combine it with committed Object Storage Inventory
+where applicable; they do not maintain separate worker-owned snapshot artifacts.
+Adding independent jobs for those surfaces would duplicate source queries and
+create competing freshness ownership without a persisted artifact boundary.
 
 The Forecast UI reads committed worker output and reports `Current`, `Stale`,
 `Expired`, `Refreshing`, or worker-failure states from that artifact. The last
@@ -160,7 +168,7 @@ it never executes a 30d range query in the browser request.
 
 The worker resolves the same provider-neutral `MetricsSource` contract with a
 background retry policy. A future Metrics Source backend can therefore
-materialize the same forecast artifact without changing Object Storage
+refresh the same forecast artifact without changing Object Storage
 Analytics domain code.
 
 

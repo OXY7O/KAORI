@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import ast
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -61,8 +62,48 @@ def test_minio_reuses_shared_s3_transport_instead_of_owning_transport_copy() -> 
     assert 'def build_s3_client(' not in provider
 
 
-def test_folder_architecture_verifier_is_part_of_the_lock() -> None:
-    verifier = read('scripts/verify_integration_folder_architecture.py')
-    assert 'PASS — KAORI Integration Folder Architecture' in verifier
-    assert 'product directory must live below providers/' in verifier
-    assert 'MinIO provider must reuse the shared S3 adapter.' in verifier
+def _absolute_imports(path: Path) -> tuple[str, ...]:
+    tree = ast.parse(path.read_text(encoding='utf-8'), filename=str(path))
+    targets: list[str] = []
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            targets.extend(alias.name for alias in node.names)
+        elif isinstance(node, ast.ImportFrom) and node.level == 0 and node.module:
+            targets.append(node.module)
+    return tuple(targets)
+
+
+def test_product_directories_and_imports_stay_below_canonical_provider_boundaries() -> None:
+    integration_root = ROOT / 'app/integrations'
+    product_names = {
+        'alertmanager', 'aws_s3', 'azure_blob', 'garage', 'hpe_alletra', 'kubernetes',
+        'minio', 'netapp_ontap', 'netapp_ontap_nfs', 'prometheus', 'rancher',
+        'sangfor_kubernetes_engine', 'thanos',
+    }
+    forbidden_imports = (
+        'app.integrations.kubernetes', 'app.integrations.metrics', 'app.integrations.alertmanager',
+        'app.integrations.minio', 'app.metrics', 'app.alertmanager', 'app.minio',
+    )
+
+    for path in integration_root.rglob('*'):
+        if path.is_dir() and path.name in product_names:
+            assert 'providers' in path.relative_to(integration_root).parts, path
+
+    for path in (ROOT / 'app').rglob('*.py'):
+        for target in _absolute_imports(path):
+            assert not any(target == prefix or target.startswith(f'{prefix}.') for prefix in forbidden_imports), (
+                path, target
+            )
+
+    for retired in (
+        'app/templates/integrations/kubernetes',
+        'app/templates/integrations/metrics',
+        'app/templates/integrations/alertmanager',
+        'app/templates/metrics',
+        'app/templates/alertmanager',
+        'app/templates/minio',
+        'app/integrations/observability/metrics_source/prometheus_http_client.py',
+        'app/integrations/observability/metrics_source/prometheus_http_runtime.py',
+        'app/integrations/observability/metrics_source/prometheus_http_validation.py',
+    ):
+        assert not (ROOT / retired).exists(), retired

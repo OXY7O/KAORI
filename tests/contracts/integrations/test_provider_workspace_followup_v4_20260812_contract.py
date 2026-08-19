@@ -91,7 +91,7 @@ def test_minio_readiness_keeps_range_readable_without_long_range_badge() -> None
     metadata = validation.split('{% set capability_metadata = [', 1)[1].split('] %}', 1)[0]
     shared = read('app/templates/integrations/components/_capability_readiness.html')
 
-    assert 'Product · ' in metadata
+    assert 'Product · ' not in metadata
     assert 'Profile · ' in metadata
     assert 'Supported Range · ' not in metadata
     assert 'for the qualified release.' in validation

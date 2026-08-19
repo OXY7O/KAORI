@@ -235,7 +235,7 @@
             </section>
             <aside class="space-y-4 xl:col-span-4 xl:sticky xl:top-5">
                 {% if instance %}
-                    {% set metrics_source_flow_items = [('Save Changes', 'Update the reusable connection contract and return readiness to Validation Required.'), ('Test Connection', 'Confirm the saved endpoint remains reachable with the selected access settings.'), ('Run Core Validation', 'Rebuild provider compatibility and adapter and query-contract readiness evidence.'), ('Review Consumer Bindings', 'Confirm Kubernetes, MinIO, and future consumers retain independent validated bindings.')] %}
+                    {% set metrics_source_flow_items = [('Save Changes', 'Update the reusable connection contract and return readiness to Validation Required.'), ('Test Connection', 'Confirm the saved endpoint remains reachable with the selected access settings.'), ('Run Core Validation', 'Rebuild provider compatibility and adapter and query-contract readiness evidence.'), ('Review Consumer Bindings', 'Confirm Kubernetes, Object Storage, and future consumers retain independent validated bindings.')] %}
                     {{ provider_registration_context.render(metrics_source_label ~ " Configuration Flow",
                                         "How saved connection changes return to governed operational use.",
                                         metrics_source_flow_items,
@@ -249,7 +249,7 @@
                     authority_boundary=metrics_source_label ~ " remains authoritative for metric query execution. Metrics collection and retention remain owned by the selected source platform. KAORI owns provider readiness, consumer binding validation, and governed source resolution.") }}
                 {% else %}
                     {% set metrics_source_flow_items = [('Define Connection Identity', 'Provide a stable KAORI name and ownership description for the reusable source.'), ('Configure Endpoint Access', 'Set the endpoint, authentication, TLS verification, timeout, and compatibility detection.'), ('Test Connection', 'Verify reachability and compatibility before KAORI enables registration.'), ('Register Connection', 'Create the reusable connection identity before Core Validation and consumer binding.')] %}
-                    {% set metrics_source_related_description = "A single metrics source can serve Kubernetes, MinIO, and future integrations through independent consumer bindings and horizon-aware routing." %}
+                    {% set metrics_source_related_description = "A single metrics source can serve Kubernetes, Object Storage, and future integrations through independent consumer bindings and horizon-aware routing." %}
                     {% if initial_cluster %}
                         {% set metrics_source_related_description = metrics_source_related_description ~ " This registration will also create the initial metrics binding for " ~ initial_cluster.name ~ "." %}
                     {% endif %}

@@ -1,7 +1,7 @@
 # KAORI 2.3.0 Release Notes
 
 **Release date:** 2026-08-18
-**Git tag:** `v2.3.0`
+**Git tag:** Pending (`v2.3.0` after final approval)
 **Release type:** Minor release
 **Status:** Pre-tag release candidate; tag and publication require the full final gate in the canonical Dev Container
 
@@ -22,7 +22,7 @@ The release also closes pre-tag regressions detected during final review, includ
 
 ### Object Storage and worker-owned analytics
 
-- Object Storage Forecast uses persistent worker materialization instead of browser-request calculation.
+- Object Storage Forecast uses persistent worker refresh snapshots instead of browser-request calculation.
 - Metrics and alert dependencies remain provider-neutral and binding-scoped.
 - Data Lifecycle, Jobs & Executions, notification delivery, and archive/storage evidence stay within shared Platform Operations contracts.
 

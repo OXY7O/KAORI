@@ -89,11 +89,11 @@ generate one inline.
 
 No migration or new environment variable is required. Deploy web, Beat,
 analytics worker, and forecasting worker from the same release. Run one
-Analytics Data Refresh and one Forecast Data Refresh after deployment so every
+Kubernetes Analytics Data Refresh and one Kubernetes Forecast Data Refresh after deployment so every
 eligible cluster has the parameter sets consumed by the dashboard.
 
-When `JOB_MAX_HEAVY_PER_USER=1`, wait for Analytics Data Refresh to reach a
-terminal state before starting Forecast Data Refresh. A quota rejection is an
+When `JOB_MAX_HEAVY_PER_USER=1`, wait for Kubernetes Analytics Data Refresh to reach a
+terminal state before starting Kubernetes Forecast Data Refresh. A quota rejection is an
 expected warning and must not be logged as an infrastructure exception.
 
 ## Validation

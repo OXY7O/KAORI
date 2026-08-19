@@ -62,9 +62,9 @@ def test_runtime_identity_icons_use_kaori_brand_palette():
 def test_runtime_observation_boundary_remains_explicit_without_duplicate_error_copy():
     source = _source()
     assert 'data-kaori-runtime-observation-boundary' in source
-    assert 'Runtime Refresh owns reachability, latency, and current health.' in source
+    assert 'Runtime Refresh owns reachability, latency, and current health; Full Validation owns API discovery' in source
     assert (
-        'Full Validation owns API discovery, compatibility selection, capability contracts, and effective RBAC.'
+        'Full Validation owns API discovery, compatibility, capability contracts, and effective RBAC.'
         in source
     )
     assert 'runtime_state.message' not in source

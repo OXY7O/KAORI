@@ -76,7 +76,7 @@
         ) }}
         {% if readiness == "ready" %}
             {% set readiness_decision_title = "Provider Readiness Is Ready" %}
-            {% set readiness_decision_message = "Core Alertmanager APIs are ready. Kubernetes and MinIO alert coverage remains binding-specific." %}
+            {% set readiness_decision_message = "Core Alertmanager APIs are ready. Kubernetes and Object Storage alert coverage remains binding-specific." %}
             {% set readiness_decision_tone = "normal" %}
         {% elif readiness in ["blocked", "failed", "unavailable", "incompatible"] %}
             {% set readiness_decision_title = "Why Readiness Is Blocked" %}
