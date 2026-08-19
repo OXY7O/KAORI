@@ -4,7 +4,7 @@ All notable KAORI changes are recorded here. KAORI uses Semantic Versioning for 
 
 ## [Unreleased]
 
-- Redesigned General Settings → System Information and Compatibility Versions as unified full-width read-only workspaces, folding release governance, information boundaries, matrix guidance, and compatibility policy into the active content instead of detached side-context boxes.
+- Redesigned General Settings → System Information and Compatibility Versions as unified full-width read-only workspaces with stronger release-led and matrix-led visual hierarchy, keeping governance and compatibility guidance inline while reducing repeated equal-weight nested cards and retiring detached side-context boxes.
 - Restored mandatory Metrics Source consumer identity validation: Kubernetes bindings now require the canonical `cluster` source label, Storage filesystem contracts require `node=<Kubernetes Node.name>` with matching size/available mountpoint pairs, setup guidance follows the Minimum Validation modal pattern, and exact consumer gaps are shown only in the Validation registry.
 - Tightened post-release operational copy, aligned Recent Runtime Observations actions with inventory header controls, made Topology Clear Filters semantically hidden until filters are active, locked Metrics Source runtime adapters to the canonical refresh boundary, and standardized provider readiness metadata on concise Profile labels.
 - Hardened Compact Segmented Tabs on one formatter-safe shared controller hook contract so Kubernetes Topology Graph/List and Details/Relationships remain interactive after template formatting; removed dynamic attribute-name ownership from consumers.

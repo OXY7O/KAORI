@@ -93,6 +93,7 @@ def test_system_information_is_explicitly_read_only_and_traceable() -> None:
     assert 'Information Boundary' in main
     assert 'Not Exposed' in main
     assert 'data-system-information-workspace="unified"' in main
+    assert 'data-system-information-visual-hierarchy="release-led"' in main
     assert 'data-system-information-workspace-layout="full-width"' in read(
         'app/templates/settings/general/partials/_page_content.html'
     )
@@ -113,6 +114,7 @@ def test_compatibility_workspace_keeps_version_and_readiness_decisions_separate(
     assert 'Live Readiness' in main
     assert 'Policy Boundary' in main
     assert 'data-compatibility-versions-workspace="unified"' in main
+    assert 'data-compatibility-visual-hierarchy="matrix-led"' in main
     assert 'data-compatibility-versions-workspace-layout="full-width"' in read(
         'app/templates/settings/general/partials/_page_content.html'
     )

@@ -163,6 +163,11 @@ def main() -> int:
         errors,
     )
     require(
+        'data-system-information-visual-hierarchy="release-led"' in system_information_workspace,
+        'System Information must keep the release-led full-width visual hierarchy',
+        errors,
+    )
+    require(
         'data-compatibility-versions-workspace="unified"' in compatibility_workspace,
         'Compatibility Versions must remain one unified full-width read-only workspace',
         errors,
@@ -170,6 +175,11 @@ def main() -> int:
     require(
         'Reading the Matrix' in compatibility_workspace and 'Policy Boundary' in compatibility_workspace,
         'Compatibility reading guidance and policy boundary must remain inline',
+        errors,
+    )
+    require(
+        'data-compatibility-visual-hierarchy="matrix-led"' in compatibility_workspace,
+        'Compatibility Versions must keep the matrix-led full-width visual hierarchy',
         errors,
     )
 

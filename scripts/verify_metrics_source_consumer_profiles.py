@@ -89,8 +89,8 @@ def main() -> int:
     assert 'integration_taxonomy_document()' in consumer_assets
     assert 'asset_type: kubernetes_cluster' in taxonomy_catalog
     assert 'asset_type: object_storage_system' in taxonomy_catalog
-    assert 'Validate Metrics Source compatibility and core APIs.' in validation_template
-    assert 'Consumer metrics remain binding-specific.' in validation_template
+    assert 'binding-owned consumer capability evidence' in validation_template
+    assert 'latest Binding Validation evidence' in validation_template
 
     canonical_flow = (
         'Provider\n'

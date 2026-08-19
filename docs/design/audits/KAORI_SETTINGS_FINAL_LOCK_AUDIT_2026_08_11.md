@@ -13,6 +13,7 @@
 5. Updated the Settings style-debt baseline only for Settings paths whose debt decreased.
 6. Restored the explicit Account & Authentication presentation contract in `app/settings/README.md`.
 7. Added a permanent Settings Final Lock verifier to the release static gate.
+8. Refined the read-only workspace visual hierarchy: System Information is release-led and Compatibility Versions is matrix-led, using accent bands, split evidence regions, dividers, and grouped lists instead of repeated equal-weight nested cards.
 
 ## Security checks
 
