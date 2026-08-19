@@ -165,4 +165,7 @@ def test_identity_provider_permissions_are_independent_from_user_management() ->
     assert "revision = '20260817_idp_rbac_split'" in migration
     assert "down_revision = '20260817_identity_provider_v1'" in migration
     assert "permissions.c.key == 'users.manage'" in migration
+    assert 'persisted_role_count' in migration
+    assert 'legacy_permission_id is None and persisted_role_count' in migration
+    assert 'if legacy_permission_id is not None:' in migration
     assert '_copy_role_assignments' in migration

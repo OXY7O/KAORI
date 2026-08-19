@@ -104,10 +104,17 @@ def upgrade() -> None:
         sa.column('permission_id', sa.Integer),
         sa.column('created_at', sa.DateTime(timezone=True)),
     )
+    roles = sa.table(
+        'roles',
+        sa.column('id', sa.Integer),
+    )
 
     legacy_permission_id = bind.execute(sa.select(permissions.c.id).where(permissions.c.key == 'users.manage')).scalar()
-    if legacy_permission_id is None:
-        raise RuntimeError('users.manage must exist before Identity Provider RBAC can be split safely.')
+    persisted_role_count = int(bind.execute(sa.select(sa.func.count()).select_from(roles)).scalar_one())
+    if legacy_permission_id is None and persisted_role_count:
+        raise RuntimeError(
+            'users.manage must exist before Identity Provider RBAC can be split safely when persisted roles already exist.'
+        )
 
     for key, module, action, description in PERMISSIONS:
         permission_id = _ensure_permission(
@@ -119,13 +126,14 @@ def upgrade() -> None:
             description=description,
             now=now,
         )
-        _copy_role_assignments(
-            bind,
-            role_permissions,
-            source_id=int(legacy_permission_id),
-            target_id=permission_id,
-            now=now,
-        )
+        if legacy_permission_id is not None:
+            _copy_role_assignments(
+                bind,
+                role_permissions,
+                source_id=int(legacy_permission_id),
+                target_id=permission_id,
+                now=now,
+            )
 
 
 def downgrade() -> None:

@@ -88,6 +88,8 @@ RBAC routes do not use Flask flash messages. Mutation outcomes are recorded thro
 
 `flask seed-rbac` may create missing canonical permissions, synchronize canonical metadata, converge protected default roles, and normalize default-role mappings. Database-only permission rows are not silently deleted by Permission Catalog; operators must review role usage before any controlled cleanup migration.
 
+Fresh installation runs the Alembic migration chain before `seed-rbac` or `bootstrap-admin`. RBAC data migrations must therefore tolerate an unseeded database when no persisted roles exist, while still failing closed if a legacy permission required to preserve role assignments is missing from an already-seeded RBAC state. Migration code must never require the post-migration seed command to have run first.
+
 ## Object Storage domain split
 
 Object Storage visibility does not inherit the Kubernetes read permissions. Canonical read contracts are:
