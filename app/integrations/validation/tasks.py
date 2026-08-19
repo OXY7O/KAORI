@@ -24,6 +24,7 @@ from app.platform_operations.jobs.service import (
     subscriber_user_ids,
     update_job_progress,
 )
+from app.models.integration import IntegrationBinding
 from app.platform_operations.notifications.service import record_operational_activity
 
 logger = logging.getLogger(__name__)

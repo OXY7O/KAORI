@@ -2,14 +2,14 @@
 {% macro render(title, description, icon='plug-zap', aria_label=None, loading_id=None, loading_active=false, loading_label=None) -%}
     <header class="border-b border-outline-subtle px-4 py-4 sm:px-5"
             aria-label="{{ aria_label or title }}">
-        <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div class="flex min-w-0 items-start gap-3">
                 <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary dark:text-kaori-accent">
                     <i data-lucide="{{ icon }}" class="h-5 w-5" aria-hidden="true"></i>
                 </span>
                 <div class="min-w-0">
                     <h2 class="text-base font-semibold text-content-primary">{{ title }}</h2>
-                    <p class="mt-0.5 max-w-2xl text-xs leading-5 text-content-muted">{{ description }}</p>
+                    <p class="mt-1 max-w-3xl text-sm leading-6 text-content-secondary">{{ description }}</p>
                 </div>
             </div>
             {% if caller is defined %}

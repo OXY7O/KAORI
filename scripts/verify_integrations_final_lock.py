@@ -167,7 +167,8 @@ def main() -> int:
         errors,
     )
     require(
-        'Open Bindings & Consumers → View Result on the affected binding for exact missing capability evidence and remediation.' in metrics_scope
+        'Open Bindings & Consumers → View Result on the affected binding for exact missing capability evidence and remediation.'
+        in metrics_scope
         and 'Missing technical capability:' not in metrics_scope
         and 'Binding coverage missing:' not in metrics_scope,
         'Metrics Source Scope must show binding posture only; exact missing capability detail belongs to Validation',
@@ -564,8 +565,7 @@ def main() -> int:
         errors,
     )
     require(
-        'data-kaori-validation-poller' in validation_poller
-        and 'hx-trigger="every {{ delay }}"' in validation_poller,
+        'data-kaori-validation-poller' in validation_poller and 'hx-trigger="every {{ delay }}"' in validation_poller,
         'Integration validation must reuse the shared periodic terminal-aware validation poller',
         errors,
     )
@@ -581,6 +581,12 @@ def main() -> int:
         errors,
     )
     require(
+        'from app.models.integration import IntegrationBinding' in validation_tasks
+        and 'db.session.get(IntegrationBinding, binding_id)' in validation_tasks,
+        'Binding validation worker must import and load the canonical IntegrationBinding model',
+        errors,
+    )
+    require(
         'def _reconcile_terminal_job(' in validation_state
         and "celery_state not in {'SUCCESS', 'FAILURE', 'REVOKED'}" in validation_state
         and "'is_active': False if terminal" in validation_state
@@ -592,8 +598,7 @@ def main() -> int:
         'def _as_result_payload', 1
     )[0]
     require(
-        '_refresh_provider_bindings(' not in full_validation
-        and 'binding_validation_summary' not in full_validation,
+        '_refresh_provider_bindings(' not in full_validation and 'binding_validation_summary' not in full_validation,
         'Provider Full Validation must remain core-only and must not refresh bindings implicitly',
         errors,
     )
@@ -618,6 +623,15 @@ def main() -> int:
         and 'Provider Runtime Profile' in metrics_runtime_template
         and 'Query Contract' in metrics_runtime_template,
         'Metrics Source UI must separate provider runtime compatibility from the shared query contract',
+        errors,
+    )
+
+    provider_header = read('app/templates/components/connection_validation_header.html')
+    require(
+        'text-base font-semibold text-content-primary' in provider_header
+        and 'mt-1 max-w-3xl text-sm leading-6 text-content-secondary' in provider_header
+        and 'text-xs leading-5 text-content-muted' not in provider_header,
+        'Provider detail primary headers must use the canonical text-base title and text-sm/leading-6 description typography',
         errors,
     )
 
