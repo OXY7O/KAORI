@@ -275,26 +275,37 @@ def _reconcile_terminal_job(
                 status = str(payload.get('status') or '').strip().lower()
                 result_summary = payload.get('result') if isinstance(payload.get('result'), dict) else {}
                 if status == 'error':
-                    job = mark_job_failed(
-                        task_id,
-                        error=str(payload.get('detail') or payload.get('message') or 'Worker returned an error result.'),
-                        error_code='operation_failed',
-                    ) or job
+                    job = (
+                        mark_job_failed(
+                            task_id,
+                            error=str(
+                                payload.get('detail') or payload.get('message') or 'Worker returned an error result.'
+                            ),
+                            error_code='operation_failed',
+                        )
+                        or job
+                    )
                 else:
-                    job = mark_job_succeeded(
-                        task_id,
-                        result_summary=result_summary,
-                        result_type=str(payload.get('operation') or 'job_result'),
-                        partial=status == 'warning',
-                    ) or job
+                    job = (
+                        mark_job_succeeded(
+                            task_id,
+                            result_summary=result_summary,
+                            result_type=str(payload.get('operation') or 'job_result'),
+                            partial=status == 'warning',
+                        )
+                        or job
+                    )
             elif celery_state == 'REVOKED':
                 job = mark_job_canceled(task_id, message='Celery task was revoked') or job
             else:
-                job = mark_job_failed(
-                    task_id,
-                    error=str(payload.get('detail') or payload.get('message') or 'Celery worker reported FAILURE.'),
-                    error_code='celery_failure',
-                ) or job
+                job = (
+                    mark_job_failed(
+                        task_id,
+                        error=str(payload.get('detail') or payload.get('message') or 'Celery worker reported FAILURE.'),
+                        error_code='celery_failure',
+                    )
+                    or job
+                )
         return job_snapshot(job)
     except (SQLAlchemyError, RuntimeError, ValueError, TypeError):
         db.session.rollback()
@@ -326,6 +337,7 @@ def _binding_id_from_snapshot(payload: dict[str, Any]) -> int | None:
         return int(scope_key[len(prefix) :])
     except (TypeError, ValueError):
         return None
+
 
 def build_validation_snapshot(task_id: str) -> dict[str, Any]:
     result = current_app.extensions['celery'].AsyncResult(task_id)

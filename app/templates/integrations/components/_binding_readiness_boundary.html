@@ -47,7 +47,7 @@
     {% else %}
         {% set resolution_tone = "warning" %}
         {% set resolution_title = operational_bindings ~ ' / ' ~ total_bindings ~ ' Operational' %}
-        {% set resolution_description = "Review provider readiness, binding validation, selector identity, capability coverage, and resolver preference for non-operational bindings." %}
+        {% set resolution_description = "Review readiness, binding validation, selector identity, capability coverage, and resolver preference for non-operational bindings." %}
     {% endif %}
     {% set header_badge %}
         {{ table_label.metadata_label(total_bindings ~ ' Binding' ~ ('' if total_bindings == 1 else 's') , 'link-2') }}

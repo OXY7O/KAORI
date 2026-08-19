@@ -169,7 +169,8 @@ def main() -> int:
         errors,
     )
     require(
-        'Open Bindings & Consumers → View More on the affected binding for exact missing capability evidence and remediation.' in metrics_scope
+        'Open Bindings & Consumers → View More on the affected binding for exact missing capability evidence and remediation.'
+        in metrics_scope
         and 'Missing technical capability:' not in metrics_scope
         and 'Binding coverage missing:' not in metrics_scope,
         'Metrics Source Scope must show binding posture only; exact missing capability detail belongs to Validation',
@@ -211,10 +212,16 @@ def main() -> int:
 
     connection_header = read('app/templates/components/connection_validation_header.html')
     provider_configuration = read('app/templates/integrations/components/_provider_configuration_contract.html')
-    alert_scope = read('app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_detail_scope.html')
+    alert_scope = read(
+        'app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_detail_scope.html'
+    )
     minio_scope = read('app/templates/integrations/storage/object_storage/providers/minio/partials/_detail_scope.html')
-    kubernetes_connection = read('app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_connection_contract.html')
-    kubernetes_inventory = read('app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_inventory_lifecycle.html')
+    kubernetes_connection = read(
+        'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_connection_contract.html'
+    )
+    kubernetes_inventory = read(
+        'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_inventory_lifecycle.html'
+    )
     primary_title = 'text-base font-semibold text-content-primary'
     primary_description = 'text-sm leading-6 text-content-secondary'
     require(
@@ -599,8 +606,7 @@ def main() -> int:
         errors,
     )
     require(
-        'data-kaori-validation-poller' in validation_poller
-        and 'hx-trigger="every {{ delay }}"' in validation_poller,
+        'data-kaori-validation-poller' in validation_poller and 'hx-trigger="every {{ delay }}"' in validation_poller,
         'Integration validation must reuse the shared periodic terminal-aware validation poller',
         errors,
     )
@@ -641,8 +647,7 @@ def main() -> int:
         'def _as_result_payload', 1
     )[0]
     require(
-        '_refresh_provider_bindings(' not in full_validation
-        and 'binding_validation_summary' not in full_validation,
+        '_refresh_provider_bindings(' not in full_validation and 'binding_validation_summary' not in full_validation,
         'Provider Full Validation must remain core-only and must not refresh bindings implicitly',
         errors,
     )

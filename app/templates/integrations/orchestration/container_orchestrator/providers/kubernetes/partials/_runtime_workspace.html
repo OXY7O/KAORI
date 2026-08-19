@@ -143,14 +143,14 @@
                         {{ table_label.metadata_label("Controlled Action") }}
                     </div>
                 </header>
-                <div class="grid gap-px bg-outline-subtle lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+                <div class="grid gap-px bg-outline-subtle lg:grid-cols-2">
                     <section class="bg-surface-card px-4 py-4 sm:px-5"
                              data-kaori-runtime-primary-finding>
                         <div class="flex items-start gap-3">
                             {{ integration_ui.palette_icon('scan-line', 'brand', size='sm') }}
                             <div class="min-w-0 flex-1">
                                 <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Primary Finding</p>
-                                <p class="mt-2 text-base font-semibold leading-7 text-content-primary [overflow-wrap:anywhere]">{{ runtime_state.summary }}</p>
+                                <p class="mt-2 text-sm font-semibold leading-6 text-content-primary [overflow-wrap:anywhere]">{{ runtime_state.summary }}</p>
                             </div>
                         </div>
                     </section>
@@ -161,7 +161,7 @@
                             {{ integration_ui.palette_icon('target', 'brand', size='sm') }}
                             <div class="min-w-0 flex-1">
                                 <h4 id="runtime-next-action-title"
-                                    class="text-xs font-semibold text-content-muted">Next Operational Action</h4>
+                                    class="text-xs font-semibold uppercase tracking-wide text-content-muted">Next Operational Action</h4>
                                 <p class="mt-2 text-sm font-semibold leading-6 text-content-primary [overflow-wrap:anywhere]">{{ runtime_next_action }}</p>
                             </div>
                         </div>

@@ -22,6 +22,11 @@ def test_runtime_workspace_uses_horizontal_decision_summary():
     assert 'Next Operational Action' in source
     assert 'data-kaori-runtime-decision-panel' not in source
     assert 'lg:grid-cols-[minmax(0,1fr)_23rem]' not in source
+    assert 'lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]' not in source
+    assert 'grid gap-px bg-outline-subtle lg:grid-cols-2' in source
+    assert '<p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Primary Finding</p>' in source
+    assert 'class="text-xs font-semibold uppercase tracking-wide text-content-muted">Next Operational Action</h4>' in source
+    assert 'mt-2 text-sm font-semibold leading-6 text-content-primary [overflow-wrap:anywhere]">{{ runtime_state.summary }}' in source
 
 
 def test_runtime_decision_separates_runtime_and_validation_evidence():

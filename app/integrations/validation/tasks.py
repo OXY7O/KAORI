@@ -389,7 +389,6 @@ def _validation_completion_status(result_payload: dict[str, Any], state: Any) ->
     return 'warning'
 
 
-
 @shared_task(
     bind=True,
     name=BINDING_VALIDATION_TASK_NAME,

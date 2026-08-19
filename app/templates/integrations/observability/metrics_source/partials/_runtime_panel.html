@@ -54,7 +54,7 @@
     ) }}
     {% call connection_validation_header.render(
         'Runtime Health & Diagnostics',
-        'Review persisted provider health, concise diagnostics, endpoint context, and Runtime Refresh versus Full Validation ownership.',
+        'Review provider health, concise diagnostics, endpoint context, and Runtime Refresh vs Full Validation ownership.',
         icon='activity',
         loading_id='metrics-source-runtime-loading',
         loading_active=runtime_refresh_job and runtime_refresh_job.is_active,
