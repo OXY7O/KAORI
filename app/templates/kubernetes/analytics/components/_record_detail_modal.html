@@ -6,14 +6,18 @@
   teleported to <body> so table, overflow, and HTMX containers cannot clip it.
 
   Size contract:
-  - standard: alert/anomaly evidence and ordinary record review,
-  - wide: dense evidence matrices such as Workload and Top Consumers.
+  - standard: anomaly evidence and ordinary record review,
+  - wide: dense evidence matrices such as Workload and Top Consumers,
+  - investigation: operational triage workspaces that need wider evidence context.
 
   The modal is content-sized. max-height is only a guardrail; short content
   must never stretch to viewport height.
 #}
 {% macro render(modal_id, context_label, title, subtitle, icon='panel-top-open', footer_text='Details use the latest committed Analytics snapshot.', size='standard') -%}
     {% set modal_width = 'max-w-5xl' if size == 'wide' else 'max-w-4xl' %}
+    {% if size == 'investigation' %}
+        {% set modal_width = 'max-w-6xl' %}
+    {% endif %}
     <template x-teleport="body">
         <div x-show="detailOpen"
              x-cloak

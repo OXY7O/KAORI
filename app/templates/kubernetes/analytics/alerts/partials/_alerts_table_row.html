@@ -65,7 +65,8 @@
         alert.name,
         alert.description,
         icon='bell-ring',
-        footer_text='Alert evidence, routing metadata, and operational context come from the latest committed Alerts & Anomalies snapshot.'
+        footer_text='Alert evidence, routing metadata, and operational context come from the latest committed Alerts & Anomalies snapshot.',
+        size='investigation'
         ) %}
         <div class="space-y-4" data-kaori-alert-evidence-modal>
             <section class="{{ analysis_surface.nested_evidence_card_classes('overflow-hidden') }}"
@@ -89,7 +90,7 @@
                     </div>
                 </div>
             </section>
-            <div class="grid gap-4 lg:grid-cols-[minmax(0,1.2fr)_minmax(280px,0.8fr)]">
+            <div class="grid gap-4 lg:grid-cols-[minmax(0,1.25fr)_minmax(320px,0.95fr)]">
                 <div class="space-y-4">
                     <section class="{{ analysis_surface.nested_evidence_card_classes('overflow-hidden') }}">
                         <header class="border-b border-outline-subtle px-4 py-3">

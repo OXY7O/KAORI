@@ -91,6 +91,8 @@ def test_alert_records_use_shared_view_more_modals_and_controlled_wrapping() -> 
     modal = read('app/templates/kubernetes/analytics/components/_record_detail_modal.html')
 
     assert "modal_width = 'max-w-5xl' if size == 'wide' else 'max-w-4xl'" in modal
+    assert "size == 'investigation'" in modal
+    assert "modal_width = 'max-w-6xl'" in modal
     assert "size='standard'" in modal
     assert 'max-h-[calc(100dvh-2rem)]' in modal
     assert 'data-kaori-record-detail-modal' in modal
@@ -113,6 +115,8 @@ def test_alert_records_use_shared_view_more_modals_and_controlled_wrapping() -> 
         assert 'tracking-[' not in row
 
     assert 'data-kaori-alert-evidence-modal' in alert_row
+    assert "size='investigation'" in alert_row
+    assert 'lg:grid-cols-[minmax(0,1.25fr)_minmax(320px,0.95fr)]' in alert_row
     assert 'Signal Context' in alert_row
     assert 'Triage Decision' in alert_row
     assert 'Triage Readiness' in alert_row
