@@ -22,9 +22,9 @@
 {% macro detail_row(label, value='-', break_all=False, nowrap=False) -%}
     {% set display_value = value if value not in [None, ''] else '-' %}
     {% set value_wrap_classes = 'whitespace-nowrap' if nowrap else ('break-all' if break_all else 'break-words') %}
-    <div class="grid min-w-0 gap-1 sm:grid-cols-[minmax(8rem,0.38fr)_minmax(0,1fr)] sm:gap-3">
+    <div class="grid min-w-0 gap-1 sm:grid-cols-[minmax(9rem,0.42fr)_minmax(0,1fr)] sm:gap-3">
         <span class="min-w-0 break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]">{{ label }}</span>
-        <span class="min-w-0 {{ value_wrap_classes }} text-left text-xs font-medium leading-5 text-content-primary [overflow-wrap:anywhere] sm:text-right"
+        <span class="min-w-0 {{ value_wrap_classes }} text-left text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere] sm:text-right"
               title="{{ display_value }}">{{ display_value }}</span>
     </div>
 {%- endmacro %}
@@ -37,7 +37,7 @@
     </div>
 {%- endmacro %}
 {% macro technical_row(label, value='-', break_all=True) -%}
-    <div class="grid min-w-0 gap-1 sm:grid-cols-[minmax(8rem,0.38fr)_minmax(0,1fr)] sm:gap-3">
+    <div class="grid min-w-0 gap-1 sm:grid-cols-[minmax(9rem,0.42fr)_minmax(0,1fr)] sm:gap-3">
         <span class="min-w-0 break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]">{{ label }}</span>
         <span class="flex min-w-0 justify-start text-left sm:justify-end sm:text-right">
             {{ technical_value.render(value, align='right', break_all=break_all) }}
@@ -45,14 +45,14 @@
     </div>
 {%- endmacro %}
 {% macro status_row(label, value, tone='unknown', icon=None, size='compact') -%}
-    <div class="grid min-w-0 gap-1 sm:grid-cols-[minmax(8rem,0.38fr)_minmax(0,1fr)] sm:items-start sm:gap-3">
+    <div class="grid min-w-0 gap-1 sm:grid-cols-[minmax(9rem,0.42fr)_minmax(0,1fr)] sm:items-start sm:gap-3">
         <span class="min-w-0 break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]">{{ label }}</span>
         <span class="flex min-w-0 justify-start sm:justify-end">{{ table_label.status_label(value, tone, icon, size) }}</span>
     </div>
 {%- endmacro %}
 {% macro metadata_row(label, value='-', icon=None, wrap=False) -%}
     {% set display_value = value if value not in [None, ''] else '-' %}
-    <div class="grid min-w-0 gap-1 sm:grid-cols-[minmax(8rem,0.38fr)_minmax(0,1fr)] sm:gap-3">
+    <div class="grid min-w-0 gap-1 sm:grid-cols-[minmax(9rem,0.42fr)_minmax(0,1fr)] sm:gap-3">
         <span class="min-w-0 break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]">{{ label }}</span>
         <span class="flex min-w-0 justify-start text-left sm:justify-end sm:text-right">
             {{ table_label.metadata_label(display_value, icon, wrap, 'detail') }}

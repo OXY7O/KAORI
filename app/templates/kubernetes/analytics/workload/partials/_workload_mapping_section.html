@@ -156,7 +156,7 @@
                             row.type ~ ' · ' ~ row.namespace ~ ' · ' ~ row.replicas ~ ' Pods',
                             icon='boxes',
                             footer_text='Request, limit, usage, and selected-window peak evidence come from the latest committed Workload Analysis snapshot.',
-                            size='wide'
+                            size='investigation'
                             ) %}
                             <div class="space-y-5">
                                 <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card">
@@ -197,10 +197,10 @@
                                                 <p class="mt-1 text-xs leading-5 text-content-secondary">Current usage and selected-window peak are evaluated against the configured CPU request.</p>
                                             </div>
                                         </header>
-                                        <div class="grid grid-cols-2 divide-x divide-y divide-outline-subtle">
+                                        <div class="grid gap-px bg-outline-subtle sm:grid-cols-2 xl:grid-cols-[repeat(3,minmax(0,1fr))_minmax(15rem,1.15fr)]">
                                             {% for label, value in [('Request', row.cpu_request), ('Limit', row.cpu_limit), ('Current Usage', row.cpu_current), ('Selected-Window Pod Peak Sum', row.cpu_peak_sum)] %}
-                                                <div class="min-w-0 px-4 py-3">
-                                                    <p class="{{ analysis_surface.metric_label_classes() }}">{{ label }}</p>
+                                                <div class="min-w-0 bg-surface-card px-4 py-3">
+                                                    <p class="{{ analysis_surface.metric_label_classes() }} {% if label == 'Selected-Window Pod Peak Sum' %}sm:whitespace-nowrap{% endif %}">{{ label }}</p>
                                                     <p class="mt-1 text-sm font-semibold text-content-primary">{{ value }}</p>
                                                 </div>
                                             {% endfor %}
@@ -240,10 +240,10 @@
                                                 <p class="mt-1 text-xs leading-5 text-content-secondary">Working-set usage and selected-window peak are evaluated against the configured memory request.</p>
                                             </div>
                                         </header>
-                                        <div class="grid grid-cols-2 divide-x divide-y divide-outline-subtle">
+                                        <div class="grid gap-px bg-outline-subtle sm:grid-cols-2 xl:grid-cols-[repeat(3,minmax(0,1fr))_minmax(15rem,1.15fr)]">
                                             {% for label, value in [('Request', row.memory_request), ('Limit', row.memory_limit), ('Current Usage', row.memory_current), ('Selected-Window Pod Peak Sum', row.memory_peak_sum)] %}
-                                                <div class="min-w-0 px-4 py-3">
-                                                    <p class="{{ analysis_surface.metric_label_classes() }}">{{ label }}</p>
+                                                <div class="min-w-0 bg-surface-card px-4 py-3">
+                                                    <p class="{{ analysis_surface.metric_label_classes() }} {% if label == 'Selected-Window Pod Peak Sum' %}sm:whitespace-nowrap{% endif %}">{{ label }}</p>
                                                     <p class="mt-1 text-sm font-semibold text-content-primary">{{ value }}</p>
                                                 </div>
                                             {% endfor %}
@@ -285,14 +285,23 @@
                                                 <p class="mt-1 text-xs leading-5 text-content-secondary">{{ row.metrics_coverage.description }}</p>
                                             </div>
                                         </div>
-                                        <div class="mt-4 grid gap-3 sm:grid-cols-2">
+                                        <div class="mt-4 grid gap-3 xl:grid-cols-3">
                                             <div class="rounded-lg border border-outline-subtle bg-surface-hover px-4 py-3">
                                                 <p class="{{ analysis_surface.metric_label_classes() }}">Interpretation</p>
                                                 <p class="mt-1 text-xs leading-5 text-content-secondary">Current usage is compared with configured requests. Right-sizing remains blocked until current and selected-window CPU and memory evidence is complete.</p>
                                             </div>
                                             <div class="rounded-lg border border-outline-subtle bg-surface-hover px-4 py-3">
-                                                <p class="{{ analysis_surface.metric_label_classes() }}">Selected-Window Boundary</p>
-                                                <p class="mt-1 text-xs leading-5 text-content-secondary">Pod peak sums are an upper-bound signal because individual Pod peaks may occur at different timestamps.</p>
+                                                <p class="{{ analysis_surface.metric_label_classes() }}">How To Read The Bars</p>
+                                                <p class="mt-1 text-xs leading-5 text-content-secondary">Bar length shows request utilization as a percentage of the configured request. Green stays below 75%, amber is 75% to 90%, and red is above 90%.</p>
+                                                <div class="mt-3 flex flex-wrap gap-1.5">
+                                                    {{ table_label.status_label('Below 75%', 'normal', size='compact') }}
+                                                    {{ table_label.status_label('75% To 90%', 'warning', size='compact') }}
+                                                    {{ table_label.status_label('Above 90%', 'critical', size='compact') }}
+                                                </div>
+                                            </div>
+                                            <div class="rounded-lg border border-outline-subtle bg-surface-hover px-4 py-3">
+                                                <p class="{{ analysis_surface.metric_label_classes() }}">Current vs Selected-Window Peak</p>
+                                                <p class="mt-1 text-xs leading-5 text-content-secondary">Current Usage shows the latest committed reading. Selected-Window Pod Peak Sum shows the highest summed Pod usage within the chosen analysis window and is an upper-bound signal.</p>
                                             </div>
                                         </div>
                                     </section>
