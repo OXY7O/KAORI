@@ -162,10 +162,14 @@ def build_navigation_breadcrumb(
 
     if endpoint == 'welcome.index':
         items = [BreadcrumbItem('Welcome', 'sparkles')]
-    elif endpoint.startswith('kubernetes_dashboard.'):
+    elif endpoint.startswith(('kubernetes_dashboard.', 'object_storage_dashboard.')):
+        dashboard_label = {
+            'kubernetes_dashboard': 'Kubernetes Operations',
+            'object_storage_dashboard': 'Object Storage Operations',
+        }.get(endpoint.split('.', 1)[0], 'Kubernetes Operations')
         items = [
             BreadcrumbItem('Dashboards', 'layout-dashboard'),
-            BreadcrumbItem('Kubernetes Operations'),
+            BreadcrumbItem(dashboard_label),
         ]
     elif integration_owner is not None:
         items = [

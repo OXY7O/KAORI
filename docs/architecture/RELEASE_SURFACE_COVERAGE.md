@@ -4,14 +4,14 @@ Status: **Locked release-coverage contract**
 
 This registry answers one release question: **is every operator-visible menu, nested web domain, and non-navigation system surface explicitly owned by a release verifier or test boundary?**
 
-The current baseline contains **60 navigation links** across the authenticated application shell and **25 registered blueprints**. A new menu link, menu template, or registered Blueprint must be added to the canonical registry in the same change or the general release audit fails closed.
+The current baseline contains **61 navigation links** across the authenticated application shell and **26 registered blueprints**. A new menu link, menu template, or registered Blueprint must be added to the canonical registry in the same change or the general release audit fails closed.
 
 ## Navigation and Surface Matrix
 
 | Surface | State | Navigation ownership | Release evidence |
 |---|---|---|---|
 | Welcome | LOCKED | Main → Welcome | `verify_welcome_final_lock.py` |
-| Kubernetes Dashboard | LOCKED | Main → Dashboards → Kubernetes | `verify_operational_dashboard_standard.py` |
+| Operational Dashboards | LOCKED | Main → Dashboards → Kubernetes + Object Storage | `verify_operational_dashboard_standard.py` + Object Storage dashboard contracts |
 | Kubernetes Inventory | LOCKED | Kubernetes → Inventory | `verify_inventory_final_lock.py` |
 | Object Storage Inventory | LOCKED | Storage → Object Storage | `verify_object_storage_inventory_final_lock.py` |
 | Kubernetes Operations | LOCKED | Kubernetes → Operations | `verify_kubernetes_operations_final_lock.py` |
@@ -94,6 +94,10 @@ The provider-neutral inventory workspace is a separate authenticated release sur
 
 ## Object Storage Analytics Expansion
 
-`Insights & Reporting → Object Storage Analytics` is owned by the existing `analytics_bp` release surface. The first locked baseline adds **Overview**, **Capacity & Usage**, **Performance**, **Forecast**, **Top Consumers**, and **Alerts & Anomalies** without creating a provider-specific Blueprint.
+`Insights & Reporting → Object Storage Analytics` is owned by the existing `analytics_bp` release surface. The locked workspace provides **Overview**, **Capacity & Usage**, **Performance**, **Forecast**, **Top Consumers**, and **Alerts & Anomalies**.
 
-The evidence contract is explicit: committed Object Storage Inventory owns current configuration/state evidence; the resolved provider-neutral metrics source owns operational time-series and KAORI metric-derived signal evidence; provider alert records use Alertmanager as the lifecycle-rich preferred source with scoped Prometheus `ALERTS` fallback. A registered system is not Analytics-ready until at least one committed inventory observation exists, so registration and Inventory Sync remain an explicit prerequisite before metric analysis. The two alert evidence paths remain independent so one source failure does not suppress usable evidence from the other. Forecast is worker-materialized through `object_storage.forecast.materialize` on the dedicated forecasting queue and persists Object Storage-specific 7d/30d/90d history artifacts rather than executing long-range queries inside the interactive page request.
+The evidence contract is snapshot-first: committed Object Storage Inventory owns current asset/configuration evidence; `object_storage.analytics.materialize` collects operational metrics and alert evidence in the background and commits reusable analytics snapshots; `object_storage.forecast.materialize` commits long-range system and bucket forecast artifacts. Interactive analytics and dashboard requests read those committed artifacts and never query Metrics Source or Alertmanager directly. Alertmanager remains the lifecycle-rich preferred alert source with metrics-backed alert evidence retained as the independent fallback inside the same committed analytics snapshot.
+
+## Object Storage Dashboard Expansion
+
+`Dashboards → Object Storage` is owned by `object_storage_dashboard_bp` under `/dashboards/object-storage`. It mirrors the Kubernetes operational-dashboard concept with **Operations Overview**, **Capacity & Demand**, **Signals & Actions**, and **Reporting** tabs, a scope selector, lazy HTMX sections, and committed-evidence freshness. The dashboard reads Object Storage Inventory plus committed Object Storage Analytics and Forecast snapshots only; no live provider, Metrics Source, or Alertmanager query is permitted on page load.

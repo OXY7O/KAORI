@@ -32,13 +32,16 @@ SURFACES: tuple[ReleaseSurface, ...] = (
     ),
     ReleaseSurface(
         key='dashboard',
-        title='Kubernetes Dashboard',
+        title='Operational Dashboards',
         lock_state='LOCKED',
         navigation_source='app/templates/components/navigation/dashboards_menu.html',
-        navigation_endpoints=('kubernetes_dashboard.index',),
-        blueprint_vars=('kubernetes_dashboard_bp',),
+        navigation_endpoints=('kubernetes_dashboard.index', 'object_storage_dashboard.index'),
+        blueprint_vars=('kubernetes_dashboard_bp', 'object_storage_dashboard_bp'),
         verifiers=('scripts/verify_operational_dashboard_standard.py',),
-        contract_paths=('tests/contracts/kubernetes/test_operations_dashboard_styling_guide_contract.py',),
+        contract_paths=(
+            'tests/contracts/kubernetes/test_operations_dashboard_styling_guide_contract.py',
+            'tests/contracts/storage/object_storage/dashboard',
+        ),
     ),
     ReleaseSurface(
         key='inventory',

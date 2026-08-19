@@ -152,8 +152,9 @@ def main() -> int:
     assert 'self.client.series(metrics)' in audit
     assert 'self.client.query(definition.expression)' in audit
     assert "readiness_tier='optional'" in profile
-    assert 'Operational Metrics Readiness' in readiness
-    assert 'Persisted validation evidence' in readiness
+    assert 'Operational Metrics Contract' in readiness
+    assert 'Full Validation records whether each canonical metric family' in readiness
+    assert 'Readiness By Evidence Domain' in readiness
 
     for metric in (
         'minio_cluster_capacity_usable_total_bytes',
@@ -257,7 +258,9 @@ def main() -> int:
     assert 'metrics_query_blocker' in runtime
     assert "'inventory_required'" in read('app/storage/object_storage/analytics/dependencies.py')
     assert 'inventory_required_blocker(system)' in service
-    assert service.count('inventory_required_blocker(system)') >= 3
+    assert service.count('inventory_required_blocker(system)') >= 1
+    assert 'read_analytics_snapshot(system_id=system.id, time_range=time_range)' in service
+    assert "source_setup(system, execution_mode='background')" in service
     assert 'build_bucket_table_view' in bucket_table_service
     assert 'default=5' in bucket_table_service
     assert "'overview': 'consumers'" not in bucket_table_service
@@ -272,9 +275,8 @@ def main() -> int:
     assert 'object-storage-bucket-table-loading-indicator' in bucket_table_template
     assert 'components/analytics/_table_label_primitives.html' not in bucket_table_template
     assert 'components/dependencies/_blocker.html' in dependency_blocker
-    assert 'Object Storage → Metrics' in dependency_blocker
-    assert 'Object Storage → Metrics → Alert Evidence' in dependency_blocker
-    assert 'dependency_grid_classes = "lg:grid-cols-2"' in dependency_blocker
+    assert 'Object Storage → Metrics → Analytics Snapshot' in dependency_blocker
+    assert 'Alert Evidence' not in dependency_blocker
     assert 'dependency_grid_classes = "lg:grid-cols-3"' in dependency_blocker
     assert 'Analytics Readiness' in shared_dependency_blocker
     assert 'Current Blocker' in shared_dependency_blocker
@@ -291,7 +293,8 @@ def main() -> int:
     assert "'Current Step'" in hero_blocked
     assert "'Progress'" in hero_blocked
     assert "'Analytics Readiness'" in hero_blocked
-    assert "readiness_step_count = 3 if page_key == 'alerts' else 2" in hero_blocked
+    assert 'readiness_step_count = 3' in hero_blocked
+    assert "step_labels = {1: 'Object Storage', 2: 'Metrics', 3: 'Analytics Snapshot'}" in hero_blocked
     assert "'Analytics Overview'" in service
     for copy in (
         'Review usable capacity, consumption trends, bucket pressure, quota posture, and growth across the selected system.',
@@ -354,7 +357,7 @@ def main() -> int:
     assert 'Bucket Consumption Evidence' not in bucket_table_template
 
     assert 'data-analytics-tabset-id="object-storage-forecast-content"' in forecast_workspace
-    for label in ('Forecast Outlook', 'Usage History', 'Worker & Method', 'Evidence'):
+    for label in ('Forecast Outlook', 'Usage Trend', 'Bucket Forecasts', 'Worker & Method', 'Evidence'):
         assert f"'{label}'" in forecast_workspace
     assert '_forecast_worker_status.html' in forecast_workspace
     assert '_forecast_methodology.html' in forecast_workspace
