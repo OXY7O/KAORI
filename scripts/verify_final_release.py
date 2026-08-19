@@ -19,7 +19,7 @@ PYTHON = sys.executable
 
 SHORT_LABELS = {
     'Welcome': 'Welcome',
-    'Kubernetes Dashboard': 'Dashboard',
+    'Operational Dashboards': 'Dashboards',
     'Kubernetes Inventory': 'Inventory',
     'Object Storage Inventory': 'Object Storage',
     'Kubernetes Operations': 'Kubernetes Ops',

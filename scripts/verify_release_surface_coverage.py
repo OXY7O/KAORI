@@ -92,6 +92,8 @@ def _registered_blueprint_vars() -> set[str]:
 
 def verify() -> None:
     errors: list[str] = []
+    navigation_count = len(navigation_endpoints())
+    blueprint_count = len(blueprint_vars())
 
     actual_menu_templates = {path.name for path in NAVIGATION_DIR.glob('*_menu.html')}
     if actual_menu_templates != EXPECTED_MENU_TEMPLATES:
@@ -184,8 +186,8 @@ def verify() -> None:
             if surface.title not in documentation or surface.lock_state not in documentation:
                 errors.append(f'{surface.title}: release coverage documentation is incomplete')
         for token in (
-            '61 navigation links',
-            '26 registered blueprints',
+            f'{navigation_count} navigation links',
+            f'{blueprint_count} registered blueprints',
             'Cluster Management',
             'Integrations → Orchestration → Kubernetes',
         ):
@@ -198,7 +200,7 @@ def verify() -> None:
             print(f'- {error}')
         raise SystemExit(1)
 
-    print('PASS — KAORI Release Coverage · 61 links / 26 blueprints')
+    print(f'PASS — KAORI Release Coverage · {navigation_count} links / {blueprint_count} blueprints')
 
 
 if __name__ == '__main__':

@@ -7,7 +7,7 @@ from sqlalchemy import or_
 from sqlalchemy.orm import selectinload
 
 from app.models import Report, ReportSchedule, ReportTemplate
-from app.models.object_storage import ObjectStorageBucket, ObjectStorageSystem
+from app.models.object_storage import ObjectStorageSystem
 from app.storage.object_storage.analytics.alert_sources import (
     build_alert_posture,
     resolve_materialized_alert_stream,

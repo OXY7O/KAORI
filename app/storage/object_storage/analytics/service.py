@@ -27,13 +27,13 @@ from app.storage.object_storage.analytics.analysis import (
     metric_risk_signals,
     performance_posture,
 )
-from app.storage.object_storage.analytics.bucket_table import build_bucket_table_view
 from app.storage.object_storage.analytics.bucket_evidence import (
     add_bucket_usage_shares,
     build_bucket_forecast_summary,
     build_bucket_forecast_view,
     build_bucket_rows,
 )
+from app.storage.object_storage.analytics.bucket_table import build_bucket_table_view
 from app.storage.object_storage.analytics.dependencies import (
     analytics_snapshot_blocker,
     inventory_required_blocker,

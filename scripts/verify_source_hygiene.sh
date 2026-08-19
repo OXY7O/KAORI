@@ -27,7 +27,7 @@ violations=()
 checked=0
 
 if [[ -d .git ]]; then
-    mapfile -t candidates < <(git ls-files)
+    mapfile -t candidates < <(git -c safe.directory="$ROOT" ls-files)
     source_label='tracked source'
 else
     mapfile -d '' -t candidates < <(

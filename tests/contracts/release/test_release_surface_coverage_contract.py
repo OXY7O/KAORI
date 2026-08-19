@@ -17,10 +17,10 @@ def read(relative: str) -> str:
 
 
 def test_release_registry_closes_navigation_and_blueprint_inventory() -> None:
-    assert len(navigation_endpoints()) == 60
-    assert len(set(navigation_endpoints())) == 60
-    assert len(blueprint_vars()) == 26
-    assert len(set(blueprint_vars())) == 26
+    assert len(navigation_endpoints()) == 61
+    assert len(set(navigation_endpoints())) == 61
+    assert len(blueprint_vars()) == 27
+    assert len(set(blueprint_vars())) == 27
     assert len(SURFACES) == 16
 
     assert {surface.lock_state for surface in SURFACES} == {'LOCKED', 'BASELINE LOCKED', 'SYSTEM LOCKED'}
@@ -85,8 +85,8 @@ def test_cluster_listing_legacy_chain_is_retired_and_guarded() -> None:
 def test_release_coverage_documentation_keeps_explicit_incomplete_feature_state() -> None:
     documentation = read('docs/architecture/RELEASE_SURFACE_COVERAGE.md')
     for token in (
-        '60 navigation links',
-        '25 registered blueprints',
+        '61 navigation links',
+        '27 registered blueprints',
         'Intelligence | BASELINE LOCKED',
         'Runtime Health | SYSTEM LOCKED',
         'Cluster Management is intentionally not a separate sidebar menu',
@@ -125,4 +125,10 @@ def test_release_verifier_inventory_has_no_orphan_or_one_off_shell_wrappers() ->
         and path.as_posix() not in owner_text
     ]
     assert orphaned == []
+
+
+def test_source_hygiene_is_safe_for_mounted_devcontainer_repository() -> None:
+    hygiene = read('scripts/verify_source_hygiene.sh')
+
+    assert 'git -c safe.directory="$ROOT" ls-files' in hygiene
 

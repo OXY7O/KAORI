@@ -42,6 +42,7 @@ def test_dashboard_route_and_service_are_snapshot_only() -> None:
     assert 'get_forecast_snapshot(' in service
     assert 'analytics_snapshot_state(' in service
     assert 'forecast_snapshot_state(' in service
+    assert 'ObjectStorageBucket' not in service
     for forbidden in (
         'source_setup(',
         'MetricsConsumer(',
