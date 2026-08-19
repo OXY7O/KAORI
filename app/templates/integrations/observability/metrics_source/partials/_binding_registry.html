@@ -7,6 +7,7 @@
 {% import "components/table_label.html" as table_label %}
 {% import "integrations/components/_workspace.html" as integration_ui %}
 {% from "integrations/components/_semantic_status.html" import integration_status %}
+{% set active_binding_id = binding_validation_job.get('binding_id') if binding_validation_job else none %}
 <section id="metrics-source-binding-registry"
          class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm"
          aria-labelledby="metrics-source-bound-scopes-title"
@@ -97,11 +98,11 @@
                                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                     {% endif %}
                                     <button type="submit"
-                                            {% if binding_validation_job and binding_validation_job.is_active and binding_validation_job.binding_id == row.binding.id %}disabled{% endif %}
+                                            {% if binding_validation_job and binding_validation_job.get('is_active') and active_binding_id == row.binding.id %}disabled{% endif %}
                                             class="{{ table_ui.action_classes() }} whitespace-nowrap disabled:cursor-wait">
-                                        <i data-lucide="{{ 'loader-circle' if binding_validation_job and binding_validation_job.is_active and binding_validation_job.binding_id == row.binding.id else 'scan-search' }}"
-                                           class="h-3.5 w-3.5{% if binding_validation_job and binding_validation_job.is_active and binding_validation_job.binding_id == row.binding.id %} animate-spin{% endif %}"
-                                           aria-hidden="true"></i>{{ 'Validating' if binding_validation_job and binding_validation_job.is_active and binding_validation_job.binding_id == row.binding.id else 'Validate' }}
+                                        <i data-lucide="{{ 'loader-circle' if binding_validation_job and binding_validation_job.get('is_active') and active_binding_id == row.binding.id else 'scan-search' }}"
+                                           class="h-3.5 w-3.5{% if binding_validation_job and binding_validation_job.get('is_active') and active_binding_id == row.binding.id %} animate-spin{% endif %}"
+                                           aria-hidden="true"></i>{{ 'Validating' if binding_validation_job and binding_validation_job.get('is_active') and active_binding_id == row.binding.id else 'Validate' }}
                                     </button>
                                 </form>
                                 <button type="button"

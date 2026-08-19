@@ -629,6 +629,14 @@ def main() -> int:
         'Validation snapshots must stop polling on terminal Celery results and reconcile durable JobExecution state',
         errors,
     )
+    require(
+        'def _binding_id_from_snapshot(' in validation_state
+        and "scope_type') or '') != 'integration_binding'" in validation_state
+        and "prefix = 'binding:'" in validation_state
+        and "payload['binding_id'] = binding_id" in validation_state,
+        'Binding validation snapshots must recover binding identity from durable JobExecution scope when transient metadata is missing',
+        errors,
+    )
     full_validation = validation_tasks.split('def validate_integration_instance', 1)[1].split(
         'def _as_result_payload', 1
     )[0]
@@ -742,6 +750,14 @@ def main() -> int:
             and 'validation_poller.render(' in scope
             and 'hx-trigger="load delay:1500ms" hx-target="this"' not in scope,
             f'{provider}: binding validation must poll through the shared child poller rather than self-replacing root HTMX',
+            errors,
+        )
+        require(
+            "binding_validation_job.get('binding_id')" in scope
+            and 'binding_poll_active' in scope
+            and 'binding_validation_job.binding_id' not in scope
+            and 'binding_validation_job.binding_id' not in registry,
+            f'{provider}: binding polling and action state must tolerate incomplete transient validation metadata without raising template errors',
             errors,
         )
 

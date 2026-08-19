@@ -83,5 +83,7 @@ def _active_binding_task(instance: MetricsSource, bindings):
             binding_id=binding.id,
         )
         if task_id:
-            return build_validation_snapshot(task_id)
+            snapshot = build_validation_snapshot(task_id)
+            snapshot.setdefault('binding_id', binding.id)
+            return snapshot
     return None

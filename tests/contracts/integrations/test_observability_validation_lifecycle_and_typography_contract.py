@@ -67,3 +67,29 @@ def test_integration_provider_families_share_primary_workspace_typography() -> N
     assert "mt-1 max-w-3xl text-sm leading-6 text-content-secondary" in configuration
     assert "mt-0.5 max-w-2xl text-xs leading-5 text-content-muted" not in shared
 
+
+
+def test_binding_polling_recovers_durable_binding_identity_without_redis_metadata() -> None:
+    state = read('app/integrations/validation/state.py')
+    metrics_workspace = read(
+        'app/integrations/observability/metrics_source/application/workspace_web.py'
+    )
+    alert_workspace = read(
+        'app/integrations/observability/alert_source/providers/alertmanager/application/workspace_web.py'
+    )
+    metrics_scope = read(
+        'app/templates/integrations/observability/metrics_source/partials/_detail_scope.html'
+    )
+    alert_scope = read(
+        'app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_detail_scope.html'
+    )
+
+    assert "scope_type') or '') != 'integration_binding'" in state
+    assert "prefix = 'binding:'" in state
+    assert "payload['binding_id'] = binding_id" in state
+    for workspace in (metrics_workspace, alert_workspace):
+        assert "snapshot.setdefault('binding_id', binding.id)" in workspace
+    for scope in (metrics_scope, alert_scope):
+        assert "binding_validation_job.get('binding_id')" in scope
+        assert 'binding_poll_active' in scope
+        assert 'binding_validation_job.binding_id' not in scope

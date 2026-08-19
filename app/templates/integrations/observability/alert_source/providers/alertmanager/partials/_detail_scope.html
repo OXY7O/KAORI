@@ -10,13 +10,17 @@
 {% set validated_binding_count = binding_rows|selectattr('validation_status', 'equalto', 'ready')|list|length %}
 {% set operational_binding_count = binding_rows|selectattr('operational_status', 'equalto', 'ready')|list|length %}
 {% set lifecycle_blocked = bindings or (deletion_guard and deletion_guard.blocked) %}
+{% set active_binding_id = binding_validation_job.get('binding_id') if binding_validation_job else none %}
+{% set active_binding_task_id = binding_validation_job.get('task_id') if binding_validation_job else none %}
+{% set binding_poll_active = binding_validation_job and binding_validation_job.get('is_active') and active_binding_id and active_binding_task_id %}
 <div id="alertmanager-scope-workspace"
      {% if scope_oob is defined and scope_oob %}hx-swap-oob="outerHTML"{% endif %}
      class="space-y-4 font-sans"
      data-kaori-alertmanager-bindings-v3>
-    {{ validation_poller.render(binding_validation_job and binding_validation_job.is_active,
-        url_for('alertmanager.binding_validation_status', instance_id=instance.id, binding_id=binding_validation_job.binding_id, task_id=binding_validation_job.task_id) if binding_validation_job and binding_validation_job.is_active else '',
-    '#alertmanager-scope-workspace'
+    {{ validation_poller.render(
+        binding_poll_active,
+        url_for('alertmanager.binding_validation_status', instance_id=instance.id, binding_id=active_binding_id, task_id=active_binding_task_id) if binding_poll_active else '',
+        '#alertmanager-scope-workspace'
     ) }}
     <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm">
         <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
@@ -33,12 +37,12 @@
                         data-dialog-target="alertmanager-create-binding-dialog"
                         class="{{ action_button.classes('primary') }}"><i data-lucide="link" class="h-4 w-4" aria-hidden="true"></i>Add Binding</button>
             </div>
-            {{ loading_bar.render('alertmanager-binding-validation-loading', active=binding_validation_job and binding_validation_job.is_active, label='Validating Alertmanager binding') }}
+            {{ loading_bar.render('alertmanager-binding-validation-loading', active=binding_validation_job and binding_validation_job.get('is_active'), label='Validating Alertmanager binding') }}
         </header>
-        {% if binding_validation_job and binding_validation_job.is_active %}
+        {% if binding_validation_job and binding_validation_job.get('is_active') %}
             <div class="flex flex-col gap-2 border-b border-outline-subtle bg-surface-subtle px-5 py-3 text-xs text-content-secondary sm:flex-row sm:items-center sm:justify-between"><span class="inline-flex items-center gap-2 font-semibold text-content-primary"><i data-lucide="loader-circle"
    class="h-3.5 w-3.5 animate-spin text-kaori-primary dark:text-kaori-accent"
-   aria-hidden="true"></i>{{ binding_validation_job.title or 'Binding validation running' }}</span><span>Task {{ binding_validation_job.task_id[:8] }} · {{ binding_validation_job.elapsed_seconds }}s</span></div>
+   aria-hidden="true"></i>{{ binding_validation_job.get('title') or 'Binding validation running' }}</span><span>Task {{ (binding_validation_job.get('task_id') or '')[:8] }} · {{ binding_validation_job.get('elapsed_seconds', 0) }}s</span></div>
         {% endif %}
         <div class="grid divide-y divide-outline-subtle sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-4">
             <div class="px-5 py-4 sm:px-6">

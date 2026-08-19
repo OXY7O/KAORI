@@ -302,6 +302,31 @@ def _reconcile_terminal_job(
         return {}
 
 
+def _binding_id_from_snapshot(payload: dict[str, Any]) -> int | None:
+    """Recover a binding id from canonical JobExecution scope when Redis metadata is absent.
+
+    Validation metadata is an acceleration layer and may expire or be unavailable while
+    the durable JobExecution is still active. Binding polling must therefore be able to
+    reconstruct the route identity from ``scope_key=binding:<id>`` instead of exposing
+    an incomplete active snapshot to templates.
+    """
+    value = payload.get('binding_id')
+    if value not in (None, ''):
+        try:
+            return int(value)
+        except (TypeError, ValueError):
+            return None
+    if str(payload.get('scope_type') or '') != 'integration_binding':
+        return None
+    scope_key = str(payload.get('scope_key') or '')
+    prefix = 'binding:'
+    if not scope_key.startswith(prefix):
+        return None
+    try:
+        return int(scope_key[len(prefix) :])
+    except (TypeError, ValueError):
+        return None
+
 def build_validation_snapshot(task_id: str) -> dict[str, Any]:
     result = current_app.extensions['celery'].AsyncResult(task_id)
     payload = get_validation_metadata(task_id)
@@ -331,6 +356,10 @@ def build_validation_snapshot(task_id: str) -> dict[str, Any]:
         if reconciled:
             canonical = reconciled
             payload = {**canonical, **payload}
+
+    binding_id = _binding_id_from_snapshot(payload)
+    if binding_id is not None:
+        payload['binding_id'] = binding_id
 
     canonical_status = str(canonical.get('status') or '')
     canonical_active = bool(canonical.get('is_active'))

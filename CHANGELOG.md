@@ -3,6 +3,7 @@
 All notable KAORI changes are recorded here. KAORI uses Semantic Versioning for release identity.
 
 ## [Unreleased]
+- Hardened observability binding polling so active JobExecution scope identity is recovered when transient Redis validation metadata is missing; Metrics Source and Alertmanager detail pages now fail safe instead of raising a missing `binding_id` template error.
 - Stabilized post-v2.3.0 Integration UI contracts: View More is a canonical row action with vertical detail expansion, provider-core Full Validation remains separate from binding-owned validation, validator imports/formatting are release-gate clean, and primary Integration workspace typography is consistent across Kubernetes, Metrics Source, Alert Source, and Object Storage.
 - Fixed observability binding validation worker model loading and unified provider-detail primary header typography across Configuration, Validation, Runtime, and Bindings & Consumers.
 - Refined Consumer Binding Registry into a summary-first four-column layout with `View More` expansion for identity, profile, resolver, and binding validation evidence.
