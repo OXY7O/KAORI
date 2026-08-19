@@ -158,8 +158,10 @@ def main() -> int:
         errors,
     )
     require(
-        'Release Governance' in system_information_workspace and 'Information Boundary' in system_information_workspace,
-        'System Information governance and exposure boundaries must remain inline',
+        'Release Identity' in system_information_workspace
+        and 'Release Governance' in system_information_workspace
+        and 'Information Boundary' in system_information_workspace,
+        'System Information release identity, governance, and exposure boundaries must remain inline',
         errors,
     )
     require(

@@ -39,7 +39,7 @@
     },
     "app/templates/access/authentication/setup_required.html": {
       "custom_hero_titles": 1,
-      "semantic_border_utilities": 3
+      "semantic_border_utilities": 1
     },
     "app/templates/kubernetes/cluster/partials/_form.html": {
       "copied_standard_surface_shells": 1,

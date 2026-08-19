@@ -59,6 +59,8 @@ def main() -> int:
     layout = read('app/templates/layouts/auth.html')
     login_css = read('app/static/css/auth-login.css')
     login_js = read('app/static/js/auth_login.js')
+    clipboard_js = read('app/static/js/clipboard.js')
+    terminal_command = read('app/templates/components/terminal_command.html')
     readme = read('app/access/authentication/README.md')
     quality_gate = read('scripts/quality_gate.sh')
     feature_gate = read('scripts/verify_feature_test_coverage.py')
@@ -121,6 +123,26 @@ def main() -> int:
     ):
         require(required in setup, f'Setup Required Title Case contract missing: {required}', errors)
 
+    for required in (
+        'data-kaori-setup-workspace="release-v2"',
+        'Initialization Path',
+        'PostgreSQL Reachable',
+        'Schema Missing',
+        'components/terminal_command.html',
+        'Copy Command',
+        'This readiness check is read-only.',
+    ):
+        require(required in setup, f'Setup Required release workspace contract missing: {required}', errors)
+
+    for required in (
+        'data-kaori-terminal-command',
+        'data-kaori-copy-button',
+        'data-kaori-copy-source',
+        'aria-live="polite"',
+    ):
+        require(required in terminal_command, f'Terminal Command shared copy contract missing: {required}', errors)
+    require('x-data=' not in terminal_command, 'Terminal Command must not require Alpine for copy behavior', errors)
+
     require('username = StringField' in forms and 'Length(max=100)' in forms, 'Username input bound missing', errors)
     require('password = PasswordField' in forms and 'Length(max=1024)' in forms, 'Password input bound missing', errors)
     require('return INVALID_LOGIN_MESSAGE' in services, 'Credential failure normalization missing', errors)
@@ -157,6 +179,15 @@ def main() -> int:
     require('#7C3AED' in login_css and '#A78BFA' in login_css, 'KAORI Violet login palette contract drifted', errors)
 
     require("filename='js/auth_login.js'" in layout, 'Authentication runtime must use first-party JS', errors)
+    require(
+        "filename='js/clipboard.js'" in layout, 'Authentication setup must load the shared clipboard runtime', errors
+    )
+    require(
+        'navigator.clipboard?.writeText' in clipboard_js, 'Shared clipboard runtime missing Clipboard API path', errors
+    )
+    require(
+        "document.execCommand('copy')" in clipboard_js, 'Shared clipboard runtime missing fallback copy path', errors
+    )
     require(_inline_script_count(layout) == 1, 'Only the pre-paint theme bootstrap may remain inline', errors)
     require("localStorage.getItem('theme')" in layout, 'Pre-paint theme bootstrap missing', errors)
     require("querySelector('[data-password-input]')" in login_js, 'External password-toggle runtime missing', errors)

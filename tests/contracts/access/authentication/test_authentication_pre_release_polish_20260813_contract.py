@@ -31,3 +31,28 @@ def test_authentication_release_labels_keep_kaori_title_case() -> None:
         'PostgreSQL Is Unavailable',
     ):
         assert token in setup
+
+
+def test_database_setup_workspace_uses_release_hierarchy_and_copyable_commands() -> None:
+    setup = read('app/templates/access/authentication/setup_required.html')
+    component = read('app/templates/components/terminal_command.html')
+    runtime = read('app/static/js/clipboard.js')
+
+    for token in (
+        'data-kaori-setup-workspace="release-v2"',
+        'Initialization Path',
+        'PostgreSQL Reachable',
+        'Schema Missing',
+        'Development Bootstrap',
+        'Recommended path',
+        'Security Boundary',
+        'Copy Command',
+        'Copy Commands',
+        'Copy Checks',
+        'This readiness check is read-only.',
+    ):
+        assert token in setup
+
+    assert 'components/terminal_command.html' in setup
+    assert 'data-kaori-copy-button' in component
+    assert 'navigator.clipboard?.writeText' in runtime

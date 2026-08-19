@@ -98,6 +98,13 @@ This prevents a local username collision from silently authenticating against LD
 7. Account state, provider ownership, and role admission are normalized before session establishment.
 8. A validated internal `next` target is carried through the signed SSO flow and revalidated before redirect; external and protocol-relative targets are rejected.
 
+
+## Database Setup Workspace
+
+When PostgreSQL is reachable but the KAORI schema is missing, `access/authentication/setup_required.html` renders the release-aligned initialization workspace. The surface stays read-only: it explains the encryption boundary, presents the canonical bootstrap sequence, exposes missing schema evidence, and returns the operator to the normal login readiness check.
+
+Executable bootstrap and recovery instructions must use `components/terminal_command.html`. Copy behavior is owned by the shared `app/static/js/clipboard.js` runtime; authentication templates must not add inline clipboard handlers or page-local terminal chrome. The authenticated and unauthenticated layouts both load this runtime so the command component has one cross-shell interaction contract.
+
 ## Security Invariants
 
 - Local Database authentication remains available as the controlled recovery provider.
