@@ -95,7 +95,15 @@ QUERIES: dict[str, QueryDefinition] = {
     ),
     'object_storage.bucket.usage': QueryDefinition(
         key='object_storage.bucket.usage',
-        expression='topk(50, max by (bucket) (minio_bucket_usage_total_bytes))',
+        expression='max by (bucket) (minio_bucket_usage_total_bytes)',
+        domain='object_storage_consumers',
+        readiness_tier='recommended',
+        required_metrics=('minio_bucket_usage_total_bytes',),
+        required_labels=(('minio_bucket_usage_total_bytes', ('bucket',)),),
+    ),
+    'object_storage.bucket.usage_history': QueryDefinition(
+        key='object_storage.bucket.usage_history',
+        expression='max by (bucket) (minio_bucket_usage_total_bytes)',
         domain='object_storage_consumers',
         readiness_tier='recommended',
         required_metrics=('minio_bucket_usage_total_bytes',),
@@ -103,7 +111,7 @@ QUERIES: dict[str, QueryDefinition] = {
     ),
     'object_storage.bucket.objects': QueryDefinition(
         key='object_storage.bucket.objects',
-        expression='topk(50, max by (bucket) (minio_bucket_usage_object_total))',
+        expression='max by (bucket) (minio_bucket_usage_object_total)',
         domain='object_storage_consumers',
         readiness_tier='recommended',
         required_metrics=('minio_bucket_usage_object_total',),
@@ -119,7 +127,7 @@ QUERIES: dict[str, QueryDefinition] = {
     ),
     'object_storage.bucket.request_rate': QueryDefinition(
         key='object_storage.bucket.request_rate',
-        expression='topk(50, sum by (bucket) (rate(minio_bucket_requests_total[5m])))',
+        expression='sum by (bucket) (rate(minio_bucket_requests_total[5m]))',
         domain='object_storage_consumers',
         readiness_tier='recommended',
         required_metrics=('minio_bucket_requests_total',),
@@ -129,8 +137,8 @@ QUERIES: dict[str, QueryDefinition] = {
     'object_storage.bucket.error_rate': QueryDefinition(
         key='object_storage.bucket.error_rate',
         expression=(
-            'topk(50, sum by (bucket) (rate(minio_bucket_requests_4xx_errors_total[5m])) '
-            '+ sum by (bucket) (rate(minio_bucket_requests_5xx_errors_total[5m])))'
+            'sum by (bucket) '
+            '(rate({__name__=~"minio_bucket_requests_(4xx|5xx)_errors_total"}[5m]))'
         ),
         domain='object_storage_consumers',
         readiness_tier='recommended',

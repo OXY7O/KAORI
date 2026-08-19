@@ -42,10 +42,13 @@
 
         const points = parsePoints(panel.dataset.objectStorageTrendPoints)
         const secondaryPoints = parsePoints(panel.dataset.objectStorageSecondaryTrendPoints)
+        const projectionPoints = parsePoints(panel.dataset.objectStorageProjectionPoints)
         if (!points.length) return
 
         destroyChart()
-        const isPerformance = panel.dataset.objectStoragePageKey === 'performance'
+        const mode = panel.dataset.objectStorageChartMode || panel.dataset.objectStoragePageKey || 'usage'
+        const isPerformance = mode === 'performance'
+        const isForecast = mode === 'forecast'
         const textColor = cssVariable('--kaori-content-secondary', 'CanvasText')
         const gridColor = cssVariable('--kaori-outline-subtle', 'transparent')
         const primaryColor = cssVariable('--kaori-brand-primary', 'CanvasText')
@@ -60,7 +63,7 @@
         )
         const datasets = [
             {
-                label: isPerformance ? 'Request Rate' : 'Storage Usage',
+                label: isPerformance ? 'Request Rate' : (isForecast ? 'Observed Usage' : 'Storage Usage'),
                 data: points.map((point) => Number(point.value)),
                 borderColor: primaryColor,
                 backgroundColor: primaryColor,
@@ -90,6 +93,37 @@
                 spanGaps: true,
             })
         }
+        if (isForecast && projectionPoints.length) {
+            const combinedLabels = [...points, ...projectionPoints.slice(1)].map((point) =>
+                new Intl.DateTimeFormat([], {
+                    month: 'short',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                }).format(new Date(Number(point.timestamp) * 1000))
+            )
+            labels.splice(0, labels.length, ...combinedLabels)
+            datasets[0].data = [
+                ...points.map((point) => Number(point.value)),
+                ...projectionPoints.slice(1).map(() => null),
+            ]
+            datasets.push({
+                label: '30d Linear Projection',
+                data: [
+                    ...points.slice(0, -1).map(() => null),
+                    ...projectionPoints.map((point) => Number(point.value)),
+                ],
+                borderColor: primaryColor,
+                backgroundColor: primaryColor,
+                borderWidth: 2,
+                pointRadius: 0,
+                pointHoverRadius: 4,
+                borderDash: [6, 5],
+                tension: 0,
+                fill: false,
+                spanGaps: true,
+            })
+        }
         window[chartKey] = new Chart(canvas.getContext('2d'), {
             type: 'line',
             data: { labels, datasets },
@@ -99,7 +133,7 @@
                 animation: false,
                 interaction: { mode: 'index', intersect: false },
                 plugins: {
-                    legend: { display: isPerformance && datasets.length > 1, labels: { color: textColor } },
+                    legend: { display: (isPerformance || isForecast) && datasets.length > 1, labels: { color: textColor } },
                     tooltip: {
                         callbacks: {
                             label: (context) =>

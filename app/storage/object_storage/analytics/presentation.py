@@ -133,6 +133,10 @@ def build_bucket_analysis(rows: list[dict[str, Any]], total_usage: float | None)
         return max(values, key=lambda item: float(item[key] or 0)) if values else None
 
     quota_known = [row for row in rows if row['quota_bytes'] is not None]
+    quota_not_configured = [row for row in rows if row.get('quota_state') == 'not_configured']
+    quota_observed = [
+        row for row in rows if row['quota_bytes'] is not None or row.get('quota_state') == 'not_configured'
+    ]
     request_evidence_count = sum(row.get('request_rate') is not None for row in rows)
     error_evidence_count = sum(row.get('error_ratio') is not None for row in rows)
     quota_pressure = [
@@ -151,7 +155,10 @@ def build_bucket_analysis(rows: list[dict[str, Any]], total_usage: float | None)
     return {
         'bucket_count': len(rows),
         'quota_known_count': len(quota_known),
-        'quota_unknown_count': len(rows) - len(quota_known),
+        'quota_configured_count': len(quota_known),
+        'quota_not_configured_count': len(quota_not_configured),
+        'quota_observed_count': len(quota_observed),
+        'quota_unknown_count': len(rows) - len(quota_observed),
         'quota_pressure_count': len(quota_pressure),
         'critical_quota_count': sum(
             row['quota_utilization'] is not None and row['quota_utilization'] >= 95 for row in quota_known
@@ -167,7 +174,7 @@ def build_bucket_analysis(rows: list[dict[str, Any]], total_usage: float | None)
             request_evidence_count / len(rows) * 100.0 if rows else None
         ),
         'error_evidence_coverage_display': format_percent(error_evidence_count / len(rows) * 100.0 if rows else None),
-        'quota_evidence_coverage_display': format_percent(len(quota_known) / len(rows) * 100.0 if rows else None),
+        'quota_evidence_coverage_display': format_percent(len(quota_observed) / len(rows) * 100.0 if rows else None),
         'top_usage_share': top_usage_share,
         'top_usage_share_display': format_percent(top_usage_share),
         'concentration_label': concentration['label'],
@@ -187,12 +194,18 @@ def build_capacity_usage_view(
 ) -> dict[str, Any]:
     bucket_count = int(bucket_analysis.get('bucket_count') or 0)
     quota_known_count = int(bucket_analysis.get('quota_known_count') or 0)
+    quota_not_configured_count = int(bucket_analysis.get('quota_not_configured_count') or 0)
+    quota_observed_raw = bucket_analysis.get('quota_observed_count')
+    quota_observed_count = int(quota_observed_raw if quota_observed_raw is not None else quota_known_count)
     quota_pressure_count = int(bucket_analysis.get('quota_pressure_count') or 0)
     critical_quota_count = int(bucket_analysis.get('critical_quota_count') or 0)
     warning_quota_count = max(0, quota_pressure_count - critical_quota_count)
     within_quota_count = max(0, quota_known_count - quota_pressure_count)
-    quota_coverage_percent = quota_known_count / bucket_count * 100.0 if bucket_count > 0 else None
-    if quota_known_count == 0:
+    quota_coverage_percent = quota_observed_count / bucket_count * 100.0 if bucket_count > 0 else None
+    if quota_known_count == 0 and quota_not_configured_count > 0 and quota_observed_count == bucket_count:
+        quota_status = 'No Quotas Configured'
+        quota_tone = 'info'
+    elif quota_observed_count == 0:
         quota_status = 'No Quota Evidence'
         quota_tone = 'unknown'
     elif critical_quota_count:
@@ -231,6 +244,9 @@ def build_capacity_usage_view(
         'window_delta_percent_display': trend_summary.get('delta_percent_display') or 'N/A',
         'quota_coverage_display': format_percent(quota_coverage_percent),
         'quota_known_count': quota_known_count,
+        'quota_configured_count': quota_known_count,
+        'quota_not_configured_count': quota_not_configured_count,
+        'quota_observed_count': quota_observed_count,
         'quota_unknown_count': int(bucket_analysis.get('quota_unknown_count') or 0),
         'quota_within_count': within_quota_count,
         'quota_warning_count': warning_quota_count,

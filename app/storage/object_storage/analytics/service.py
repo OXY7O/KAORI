@@ -134,6 +134,26 @@ def _inventory_totals(system: ObjectStorageSystem) -> dict[str, float | int]:
     }
 
 
+def _metric_evidence_label(state: str, *, bucket_scoped: bool = False) -> str:
+    labels = {
+        'unsupported': 'Metric Not Scraped',
+        'blocked': 'Metric Contract Blocked',
+        'not_validated': 'Validation Required',
+        'failed': 'Runtime Query Failed',
+        'skipped': 'Runtime Query Skipped',
+        'no_data': 'No Current Samples',
+    }
+    if state == 'ready' and bucket_scoped:
+        return 'No Bucket Series'
+    return labels.get(state, 'Unavailable')
+
+
+def _add_bucket_usage_shares(rows: list[dict[str, Any]], usage_total: float | None) -> None:
+    for row in rows:
+        row['usage_share'] = utilization_percent(row.get('usage_bytes'), usage_total)
+        row['usage_share_display'] = format_percent(row['usage_share'])
+
+
 def _bucket_rows(
     system: ObjectStorageSystem,
     reader: EvidenceReader,
@@ -146,57 +166,147 @@ def _bucket_rows(
     quota = reader.vector('object_storage.bucket.quota') if include_capacity_detail else {}
     request_rate = reader.vector('object_storage.bucket.request_rate') if include_activity else {}
     error_rate = reader.vector('object_storage.bucket.error_rate') if include_activity else {}
+
+    usage_state = reader.evidence_state('object_storage.bucket.usage')
+    objects_state = reader.evidence_state('object_storage.bucket.objects') if include_capacity_detail else 'not_requested'
+    quota_metric_state = reader.evidence_state('object_storage.bucket.quota') if include_capacity_detail else 'not_requested'
+    request_state = reader.evidence_state('object_storage.bucket.request_rate') if include_activity else 'not_requested'
+    error_state = reader.evidence_state('object_storage.bucket.error_rate') if include_activity else 'not_requested'
+
     inventory = {bucket.name: bucket for bucket in system.buckets or ()}
     names = set(inventory) | set(usage) | set(objects) | set(quota) | set(request_rate) | set(error_rate)
     rows: list[dict[str, Any]] = []
     for name in names:
         bucket = inventory.get(name)
         size = usage.get(name)
-        usage_source = reader.source_label if size is not None else 'Unavailable'
+        usage_source = reader.source_label if size is not None else _metric_evidence_label(usage_state, bucket_scoped=True)
         if size is None and bucket is not None and bucket.size_bytes is not None:
             size = float(bucket.size_bytes)
             usage_source = 'Committed Snapshot'
 
         object_count = objects.get(name)
-        objects_source = reader.source_label if object_count is not None else 'Unavailable'
+        objects_source = (
+            reader.source_label
+            if object_count is not None
+            else _metric_evidence_label(objects_state, bucket_scoped=True)
+        )
         if object_count is None and bucket is not None and bucket.object_count is not None:
             object_count = float(bucket.object_count)
             objects_source = 'Committed Snapshot'
 
         quota_bytes = quota.get(name)
-        quota_source = reader.source_label if quota_bytes is not None else 'Unavailable'
-        if quota_bytes is None and bucket is not None and bucket.quota_bytes is not None:
-            quota_bytes = float(bucket.quota_bytes)
-            quota_source = 'Committed Snapshot'
+        quota_state = 'configured' if quota_bytes is not None else 'unknown'
+        quota_evidence_code = 'metrics_source' if quota_bytes is not None else None
+        quota_source = (
+            reader.source_label
+            if quota_bytes is not None
+            else _metric_evidence_label(quota_metric_state, bucket_scoped=True)
+        )
+        if bucket is not None:
+            inventory_quota_state = str(bucket.quota_state or 'not_collected').strip().lower().replace('-', '_')
+            if quota_bytes is None and bucket.quota_bytes is not None:
+                quota_bytes = float(bucket.quota_bytes)
+                quota_state = 'configured'
+                quota_source = 'Committed Snapshot'
+                quota_evidence_code = bucket.quota_evidence_code
+            elif quota_bytes is None and inventory_quota_state == 'not_configured':
+                quota_state = 'not_configured'
+                quota_source = 'Committed Snapshot'
+                quota_evidence_code = bucket.quota_evidence_code
+            elif quota_bytes is None and inventory_quota_state in {'not_collected', 'not_supported'}:
+                quota_state = inventory_quota_state
+                quota_source = 'Inventory Quota Not Collected' if inventory_quota_state == 'not_collected' else 'Inventory Quota Unsupported'
+                quota_evidence_code = bucket.quota_evidence_code
+            elif quota_bytes is None and inventory_quota_state == 'configured':
+                quota_state = 'inconsistent'
+                quota_source = 'Inventory Evidence Incomplete'
+                quota_evidence_code = bucket.quota_evidence_code
 
         bucket_request_rate = request_rate.get(name)
-        request_source = reader.source_label if bucket_request_rate is not None else 'Unavailable'
+        request_source = (
+            reader.source_label
+            if bucket_request_rate is not None
+            else _metric_evidence_label(request_state, bucket_scoped=True)
+        )
         bucket_error_rate = error_rate.get(name)
-        error_source = reader.source_label if bucket_error_rate is not None else 'Unavailable'
+        error_source = (
+            reader.source_label
+            if bucket_error_rate is not None
+            else _metric_evidence_label(error_state, bucket_scoped=True)
+        )
         bucket_error_ratio = error_ratio(bucket_error_rate, bucket_request_rate)
         quota_utilization = utilization_percent(size, quota_bytes)
         quota_tone = utilization_tone(quota_utilization) if quota_bytes is not None else 'unknown'
+        if quota_state == 'not_configured':
+            quota_display = 'Not Configured'
+            quota_utilization_display = 'Not Applicable'
+            quota_status_label = 'No Quota Configured'
+            quota_status_tone = 'info'
+        elif quota_state == 'inconsistent':
+            quota_display = 'Evidence Incomplete'
+            quota_utilization_display = 'Unknown'
+            quota_status_label = 'Review Inventory Evidence'
+            quota_status_tone = 'warning'
+        elif quota_state == 'not_collected':
+            quota_display = 'N/A'
+            quota_utilization_display = 'Unknown'
+            quota_status_label = 'Quota Not Collected'
+            quota_status_tone = 'warning'
+        elif quota_state == 'not_supported':
+            quota_display = 'N/A'
+            quota_utilization_display = 'Not Available'
+            quota_status_label = 'Quota Collection Unsupported'
+            quota_status_tone = 'unknown'
+        elif quota_bytes is None:
+            quota_display = 'N/A'
+            quota_utilization_display = 'N/A'
+            quota_status_label = _metric_evidence_label(quota_metric_state, bucket_scoped=True)
+            quota_status_tone = 'unknown'
+        elif quota_utilization is not None and quota_utilization >= 95:
+            quota_display = format_bytes(quota_bytes)
+            quota_utilization_display = format_percent(quota_utilization)
+            quota_status_label = 'Critical'
+            quota_status_tone = 'critical'
+        elif quota_utilization is not None and quota_utilization >= 85:
+            quota_display = format_bytes(quota_bytes)
+            quota_utilization_display = format_percent(quota_utilization)
+            quota_status_label = 'Pressure'
+            quota_status_tone = 'warning'
+        else:
+            quota_display = format_bytes(quota_bytes)
+            quota_utilization_display = format_percent(quota_utilization)
+            quota_status_label = 'Within Quota'
+            quota_status_tone = 'normal'
+
         rows.append(
             {
                 'name': name,
                 'usage_bytes': size,
                 'usage_display': format_bytes(size),
                 'usage_source': usage_source,
+                'usage_evidence_state': usage_state,
                 'objects': object_count,
                 'objects_display': format_number(object_count),
                 'objects_source': objects_source,
+                'objects_evidence_state': objects_state,
                 'quota_bytes': quota_bytes,
-                'quota_display': format_bytes(quota_bytes),
+                'quota_display': quota_display,
                 'quota_source': quota_source,
+                'quota_state': quota_state,
+                'quota_evidence_code': quota_evidence_code,
                 'quota_utilization': quota_utilization,
-                'quota_utilization_display': format_percent(quota_utilization),
+                'quota_utilization_display': quota_utilization_display,
                 'quota_tone': quota_tone,
+                'quota_status_label': quota_status_label,
+                'quota_status_tone': quota_status_tone,
                 'request_rate': bucket_request_rate,
                 'request_rate_display': format_rate(bucket_request_rate),
                 'request_source': request_source,
+                'request_evidence_state': request_state,
                 'error_rate': bucket_error_rate,
                 'error_rate_display': format_rate(bucket_error_rate),
                 'error_source': error_source,
+                'error_evidence_state': error_state,
                 'error_ratio': bucket_error_ratio,
                 'error_ratio_display': format_percent(bucket_error_ratio),
                 'source': usage_source,
@@ -351,9 +461,112 @@ def _add_bucket_metrics(
         include_activity=include_activity,
         include_capacity_detail=include_capacity_detail,
     )
+    _add_bucket_usage_shares(rows, payload.get('usage_total'))
     rows.sort(key=lambda item: float(item.get(sort_by) or 0), reverse=True)
     payload['bucket_rows'] = rows
     payload['bucket_analysis'] = build_bucket_analysis(rows, payload.get('usage_total'))
+
+
+def _forecast_projection_points(
+    points: list[MetricPoint],
+    forecast: dict[str, float | None],
+) -> list[MetricPoint]:
+    if not points:
+        return []
+    last = points[-1]
+    projected: list[MetricPoint] = [{'timestamp': float(last['timestamp']), 'value': float(last['value'])}]
+    projected_7d = forecast.get('projected_7d')
+    projected_30d = forecast.get('projected_30d')
+    if projected_7d is not None:
+        projected.append({'timestamp': float(last['timestamp']) + (7 * 86400.0), 'value': float(projected_7d)})
+    if projected_30d is not None:
+        projected.append({'timestamp': float(last['timestamp']) + (30 * 86400.0), 'value': float(projected_30d)})
+    return projected
+
+
+def _bucket_forecast_view(raw_rows: object) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for raw in raw_rows if isinstance(raw_rows, list) else []:
+        if not isinstance(raw, dict):
+            continue
+        forecast = raw.get('forecast') if isinstance(raw.get('forecast'), dict) else {}
+        history_state = str(raw.get('history_state') or ('ready' if int(raw.get('sample_count') or 0) >= 2 else 'no_data'))
+        current = raw.get('current_bytes')
+        inventory_usage = raw.get('inventory_usage_bytes')
+        quota = raw.get('quota_bytes')
+        projected_30d = forecast.get('projected_30d')
+        days_to_quota = forecast.get('days_to_capacity')
+        quota_utilization = utilization_percent(current, quota)
+        projected_quota_utilization = utilization_percent(projected_30d, quota)
+        growth_per_day = forecast.get('growth_per_day')
+        if history_state != 'ready':
+            watch_label, watch_tone = 'Insufficient History', 'unknown'
+        elif days_to_quota is not None and days_to_quota <= 30:
+            watch_label, watch_tone = 'Critical · Quota ≤ 30d', 'critical'
+        elif days_to_quota is not None and days_to_quota <= 90:
+            watch_label, watch_tone = 'Warning · Quota ≤ 90d', 'warning'
+        elif projected_quota_utilization is not None and projected_quota_utilization >= 95:
+            watch_label, watch_tone = 'Critical · Projected ≥ 95%', 'critical'
+        elif projected_quota_utilization is not None and projected_quota_utilization >= 85:
+            watch_label, watch_tone = 'Warning · Projected ≥ 85%', 'warning'
+        elif growth_per_day is not None and growth_per_day > 0:
+            watch_label, watch_tone = 'Growth Watch', 'info'
+        elif growth_per_day is not None:
+            watch_label, watch_tone = 'Stable / Decreasing', 'normal'
+        else:
+            watch_label, watch_tone = 'Insufficient History', 'unknown'
+        rows.append(
+            {
+                'name': str(raw.get('name') or 'Unknown Bucket'),
+                'sample_count': int(raw.get('sample_count') or 0),
+                'history_state': history_state,
+                'history_label': (
+                    'Forecast Ready'
+                    if history_state == 'ready'
+                    else ('One Range Sample' if history_state == 'partial' else 'No Range Series')
+                ),
+                'history_tone': 'normal' if history_state == 'ready' else 'unknown',
+                'current_bytes': current,
+                'current_display': format_bytes(current),
+                'inventory_usage_bytes': inventory_usage,
+                'inventory_usage_display': format_bytes(inventory_usage),
+                'growth_per_day': growth_per_day,
+                'growth_per_day_display': format_bytes(growth_per_day) + '/day' if growth_per_day is not None else 'N/A',
+                'projected_30d': projected_30d,
+                'projected_30d_display': format_bytes(projected_30d),
+                'quota_bytes': quota,
+                'quota_display': format_bytes(quota) if quota is not None else 'Not Configured',
+                'quota_utilization': quota_utilization,
+                'quota_utilization_display': format_percent(quota_utilization),
+                'projected_quota_utilization': projected_quota_utilization,
+                'projected_quota_utilization_display': format_percent(projected_quota_utilization),
+                'days_to_quota': days_to_quota,
+                'days_to_quota_display': f'{days_to_quota:.1f} days' if days_to_quota is not None else 'No ETA',
+                'watch_label': watch_label,
+                'watch_tone': watch_tone,
+            }
+        )
+    tone_order = {'critical': 4, 'warning': 3, 'info': 2, 'unknown': 1, 'normal': 0}
+    rows.sort(
+        key=lambda row: (
+            tone_order.get(str(row['watch_tone']), 1),
+            float(row.get('projected_30d') or row.get('current_bytes') or row.get('inventory_usage_bytes') or 0),
+        ),
+        reverse=True,
+    )
+    return rows
+
+
+def _bucket_forecast_summary(rows: list[dict[str, Any]]) -> dict[str, int]:
+    return {
+        'tracked_count': len(rows),
+        'ready_count': sum(row.get('history_state') == 'ready' for row in rows),
+        'attention_count': sum(row.get('watch_tone') in {'critical', 'warning'} for row in rows),
+        'critical_count': sum(row.get('watch_tone') == 'critical' for row in rows),
+        'warning_count': sum(row.get('watch_tone') == 'warning' for row in rows),
+        'quota_bounded_count': sum(row.get('quota_bytes') is not None for row in rows),
+        'history_gap_count': sum(row.get('history_state') != 'ready' for row in rows),
+    }
 
 
 def _apply_forecast_result(
@@ -377,6 +590,7 @@ def _apply_forecast_result(
         forecast_posture(forecast['growth_per_day'], forecast['days_to_capacity'])
     )
     payload['forecast_history'] = points
+    payload['forecast_projection'] = _forecast_projection_points(points, forecast)
     payload['forecast_history_summary'] = build_trend_view(points)
 
 
@@ -400,6 +614,9 @@ def _apply_unavailable_forecast(payload: dict[str, Any], state: dict[str, Any]) 
         'detail': 'Refresh the Object Storage forecast materialization before using projected capacity values.',
     }
     payload['forecast_history'] = []
+    payload['forecast_projection'] = []
+    payload['bucket_forecasts'] = []
+    payload['bucket_forecast_summary'] = _bucket_forecast_summary([])
     payload['forecast_history_summary'] = build_trend_view([])
 
 
@@ -437,6 +654,9 @@ def _attach_forecast_materialization(
                 'days_to_capacity': forecast.get('days_to_capacity'),
             },
         )
+        bucket_forecasts = _bucket_forecast_view(payload.get('bucket_forecasts'))
+        context['metrics']['bucket_forecasts'] = bucket_forecasts
+        context['metrics']['bucket_forecast_summary'] = _bucket_forecast_summary(bucket_forecasts)
         return
     _apply_unavailable_forecast(context['metrics'], state)
 
@@ -726,10 +946,7 @@ def get_object_storage_bucket_table_context(page_key: str, query_args: Any) -> d
     )
     if page_key == 'performance':
         rows.sort(key=lambda item: float(item.get('request_rate') or 0), reverse=True)
-    for row in rows:
-        usage_total = core.get('usage_total')
-        row['usage_share'] = utilization_percent(row.get('usage_bytes'), usage_total)
-        row['usage_share_display'] = format_percent(row['usage_share'])
+    _add_bucket_usage_shares(rows, core.get('usage_total'))
     context['metrics'] = {'bucket_rows': rows}
     context['query_diagnostics'] = list(dict.fromkeys(item for item in reader.diagnostics if item))
     runtime_blocker = runtime_source_state(system, context['metrics_source'], reader)

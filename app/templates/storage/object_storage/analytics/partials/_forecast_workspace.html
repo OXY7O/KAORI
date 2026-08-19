@@ -1,5 +1,5 @@
 {% import "components/content_tabs.html" as content_tabs %}
-{% set forecast_tabs = [('outlook', 'Forecast Outlook', 'chart-spline'), ('trend', 'Usage History', 'chart-no-axes-combined'), ('worker', 'Worker & Method', 'cpu'), ('evidence', 'Evidence', 'list-checks')] %}
+{% set forecast_tabs = [('outlook', 'Forecast Outlook', 'chart-spline'), ('trend', 'Usage Trend', 'chart-no-axes-combined'), ('buckets', 'Bucket Forecasts', 'container'), ('worker', 'Worker & Method', 'cpu'), ('evidence', 'Evidence', 'list-checks')] %}
 <section id="object-storage-forecast-workspace"
          data-analytics-tabset
          data-analytics-tabset-id="object-storage-forecast-content"
@@ -11,7 +11,7 @@
                 <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="chart-spline" class="h-5 w-5"></i></span>
                 <div class="min-w-0">
                     <h2 class="text-lg font-semibold text-content-primary">Forecast Analysis Workspace</h2>
-                    <p class="mt-1 text-sm leading-6 text-content-secondary">Separate planning outlook, historical evidence, worker refresh, methodology, and source readiness.</p>
+                    <p class="mt-1 text-sm leading-6 text-content-secondary">Separate system outlook, usage trend, bucket forecast watch, worker refresh, methodology, and source readiness.</p>
                 </div>
             </div>
             <div class="flex flex-wrap items-center gap-2">
@@ -41,6 +41,18 @@
              class="space-y-4">
             {% if forecast_materialization.usable %}
                 {% include "storage/object_storage/analytics/partials/_trend.html" %}
+            {% else %}
+                {% include "storage/object_storage/analytics/partials/_forecast_unavailable.html" %}
+            {% endif %}
+        </div>
+        <div id="object-storage-forecast-content-panel-buckets"
+             role="tabpanel"
+             aria-labelledby="object-storage-forecast-content-tab-buckets"
+             data-analytics-tab-panel="buckets"
+             hidden
+             class="space-y-4">
+            {% if forecast_materialization.usable %}
+                {% include "storage/object_storage/analytics/partials/_bucket_forecasts.html" %}
             {% else %}
                 {% include "storage/object_storage/analytics/partials/_forecast_unavailable.html" %}
             {% endif %}

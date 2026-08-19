@@ -33,7 +33,7 @@
         <article class="bg-surface-card p-5">
             <p class="{{ analysis_surface.metric_label_classes() }}">Quota Evidence</p>
             <p class="mt-2 text-xl font-semibold tabular-nums text-content-primary">{{ consumer.quota_evidence_coverage_display|default("N/A") }}</p>
-            <p class="mt-1 text-xs leading-5 text-content-muted">{{ consumer.quota_known_count|default(0) }} of {{ consumer.bucket_count|default(0) }} buckets with known quota evidence.</p>
+            <p class="mt-1 text-xs leading-5 text-content-muted">{{ consumer.quota_observed_count|default(0) }} of {{ consumer.bucket_count|default(0) }} buckets have an observed quota state; {{ consumer.quota_not_configured_count|default(0) }} report Not Configured.</p>
         </article>
     </div>
     <div class="{{ analysis_surface.interpretation_grid_classes() }}">

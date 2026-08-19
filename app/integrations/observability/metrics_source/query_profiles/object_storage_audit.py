@@ -33,6 +33,7 @@ _QUERY_LABELS = {
     'object_storage.traffic.received_bps': 'Traffic Received',
     'object_storage.traffic.sent_bps': 'Traffic Sent',
     'object_storage.bucket.usage': 'Bucket Usage',
+    'object_storage.bucket.usage_history': 'Bucket Usage History',
     'object_storage.bucket.objects': 'Bucket Objects',
     'object_storage.bucket.quota': 'Bucket Quota',
     'object_storage.bucket.request_rate': 'Bucket Request Rate',

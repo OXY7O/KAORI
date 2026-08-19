@@ -107,6 +107,53 @@ def mark_forecast_pending(
     return snapshot
 
 
+def _bucket_forecast_payload(
+    *,
+    system: ObjectStorageSystem,
+    source,
+    history_window: str,
+) -> list[dict[str, Any]]:
+    series = source.trend_vector('object_storage.bucket.usage_history', history_window, 'bucket')
+    inventory = {bucket.name: bucket for bucket in system.buckets or ()}
+    names = sorted(set(inventory) | set(series))
+    rows: list[dict[str, Any]] = []
+    for name in names:
+        points = series.get(name) or []
+        bucket = inventory.get(name)
+        quota_bytes = float(bucket.quota_bytes) if bucket is not None and bucket.quota_bytes is not None else None
+        if len(points) >= 2:
+            forecast = linear_forecast(points, capacity_bytes=quota_bytes)
+            history_state = 'ready'
+        else:
+            forecast = {
+                'growth_per_day': None,
+                'projected_7d': None,
+                'projected_30d': None,
+                'days_to_capacity': None,
+            }
+            history_state = 'partial' if points else 'no_data'
+        current_bytes = float(points[-1]['value']) if points else None
+        rows.append(
+            {
+                'name': name,
+                'sample_count': len(points),
+                'history_state': history_state,
+                'current_bytes': current_bytes,
+                'inventory_usage_bytes': float(bucket.size_bytes) if bucket is not None and bucket.size_bytes is not None else None,
+                'quota_bytes': quota_bytes,
+                'forecast': forecast,
+            }
+        )
+    rows.sort(
+        key=lambda row: (
+            row.get('history_state') == 'ready',
+            float(row.get('current_bytes') or row.get('inventory_usage_bytes') or 0),
+        ),
+        reverse=True,
+    )
+    return rows
+
+
 def materialize_forecast(
     *,
     system: ObjectStorageSystem,
@@ -133,6 +180,11 @@ def materialize_forecast(
                 f'Object Storage forecast history {history_window} returned fewer than two usable samples.'
             )
         forecast = linear_forecast(points, capacity_bytes=capacity)
+        bucket_forecasts = _bucket_forecast_payload(
+            system=system,
+            source=source,
+            history_window=history_window,
+        )
         now = datetime.now(UTC)
         snapshot.payload_json = {
             'method': FORECAST_METHOD,
@@ -140,6 +192,7 @@ def materialize_forecast(
             'capacity_bytes': capacity,
             'points': points,
             'forecast': forecast,
+            'bucket_forecasts': bucket_forecasts,
             'source': {
                 'provider_key': source.identity.provider_key,
                 'provider_label': source.identity.provider_label,

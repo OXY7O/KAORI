@@ -102,6 +102,29 @@ def _matrix_points(payload: dict[str, Any]) -> list[MetricPoint]:
     return points
 
 
+def _matrix_by_label(payload: dict[str, Any], label: str) -> dict[str, list[MetricPoint]]:
+    values: dict[str, list[MetricPoint]] = {}
+    for row in _results(payload):
+        metric = row.get('metric')
+        samples = row.get('values')
+        if not isinstance(metric, dict) or not isinstance(samples, list):
+            continue
+        key = str(metric.get(label) or '').strip()
+        if not key:
+            continue
+        points: list[MetricPoint] = []
+        for sample in samples:
+            if not isinstance(sample, (list, tuple)) or len(sample) < 2:
+                continue
+            timestamp = _number(sample[0])
+            number = _number(sample[1])
+            if timestamp is not None and number is not None:
+                points.append({'timestamp': timestamp, 'value': number})
+        if points:
+            values[key] = points
+    return values
+
+
 def _readiness_state(value: object) -> MetricReadinessState:
     normalized = str(value or '').strip().lower()
     try:
@@ -301,3 +324,20 @@ class MinioMetricsSourceAdapter:
         except MetricsIntegrationError as exc:
             raise _translate_error(exc) from exc
         return _matrix_points(payload)
+
+    def trend_vector(self, metric_key: str, time_range: str, label: str) -> dict[str, list[MetricPoint]]:
+        window, step = _TIME_WINDOWS.get(time_range, _TIME_WINDOWS['24h'])
+        end = datetime.now(UTC)
+        start = end - window
+        try:
+            payload = self._consumer.query_range(
+                get_object_storage_query_expression(metric_key),
+                start.isoformat(),
+                end.isoformat(),
+                step,
+                retry_count=self._retry_count,
+            )
+        except MetricsIntegrationError as exc:
+            raise _translate_error(exc) from exc
+        return _matrix_by_label(payload, label)
+

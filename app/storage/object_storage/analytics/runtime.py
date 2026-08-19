@@ -32,6 +32,7 @@ class EvidenceReader:
         self.source_wide_failure: MetricsSourceError | None = None
         self.failed_query_count = 0
         self.successful_query_count = 0
+        self.query_states: dict[str, str] = {}
 
     @property
     def source_label(self) -> str:
@@ -47,36 +48,60 @@ class EvidenceReader:
 
     def scalar(self, key: str) -> float | None:
         if self.source_wide_failure is not None:
+            self.query_states[key] = 'skipped'
             return None
         try:
             value = self.source.scalar(key)
         except MetricsSourceError as exc:
             self._record_failure(exc)
+            self.query_states[key] = 'failed'
             return None
         self.successful_query_count += 1
+        self.query_states[key] = 'ready' if value is not None else 'no_data'
         return value
 
     def vector(self, key: str) -> dict[str, float]:
         if self.source_wide_failure is not None:
+            self.query_states[key] = 'skipped'
             return {}
         try:
             values = self.source.vector(key, 'bucket')
         except MetricsSourceError as exc:
             self._record_failure(exc)
+            self.query_states[key] = 'failed'
             return {}
         self.successful_query_count += 1
+        self.query_states[key] = 'ready' if values else 'no_data'
         return values
 
     def trend(self, key: str, time_range: str) -> list[MetricPoint]:
         if self.source_wide_failure is not None:
+            self.query_states[key] = 'skipped'
             return []
         try:
             points = self.source.trend(key, time_range)
         except MetricsSourceError as exc:
             self._record_failure(exc)
+            self.query_states[key] = 'failed'
             return []
         self.successful_query_count += 1
+        self.query_states[key] = 'ready' if points else 'no_data'
         return points
+
+    def readiness_state(self, key: str) -> str:
+        item = next((item for item in self.source.readiness.items if item.key == key), None)
+        return item.state.value if item is not None else 'not_validated'
+
+    def evidence_state(self, key: str) -> str:
+        runtime_state = self.query_states.get(key)
+        if runtime_state in {'failed', 'skipped'}:
+            return runtime_state
+        if runtime_state == 'ready':
+            return 'ready'
+        readiness_state = self.readiness_state(key)
+        if readiness_state in {'unsupported', 'blocked', 'not_validated'}:
+            return readiness_state
+        return runtime_state or readiness_state or 'no_data'
 
 
 def _readiness_status_for_items(items: list[Any]) -> tuple[str, str, str]:

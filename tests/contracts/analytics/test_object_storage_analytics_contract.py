@@ -156,8 +156,8 @@ def test_object_storage_metrics_readiness_is_validation_owned_and_provider_quali
     assert 'class ObjectStorageMetricsProfileAuditor' in audit
     assert 'self.client.series(metrics)' in audit
     assert 'self.client.query(definition.expression)' in audit
-    assert 'Operational Metrics Readiness' in readiness_template
-    assert 'Runtime reachability is evaluated separately' in readiness_template
+    assert 'Operational Metrics Contract' in readiness_template
+    assert 'Runtime reachability and current samples are evaluated separately' in readiness_template
 
 
 def test_object_storage_query_profile_classifies_required_recommended_and_optional_evidence() -> None:
@@ -260,7 +260,7 @@ def test_object_storage_analysis_distinguishes_operational_domains_and_provenanc
     assert 'Alert Reading' in alerts_summary
     assert 'Provider alerts and metric signals are separate' in alerts_summary
     assert 'Active Alert Records' in alert_records
-    assert 'Metrics Source fallback uses the scoped ALERTS metric' in alert_records
+    assert 'Metrics Source fallback uses scoped ALERTS evidence' in alert_records
     assert 'Alertmanager Authority' in alert_source_evidence
     assert 'Highest Error Ratio' in consumer_activity
     assert 'Inventory &amp; Operational Reconciliation' in reconciliation
@@ -276,9 +276,9 @@ def test_object_storage_performance_chart_keeps_request_and_error_series_separat
     javascript = read('app/static/js/storage/object_storage/analytics.js')
 
     assert 'data-object-storage-secondary-trend-points' in trend
-    assert 'Request & Error Trend' in trend
+    assert 'Request &amp; Error Trend' in trend
     assert 'secondaryByTimestamp' in javascript
-    assert "isPerformance ? 'Request Rate' : 'Storage Usage'" in javascript
+    assert "isPerformance ? 'Request Rate' : (isForecast ? 'Observed Usage' : 'Storage Usage')" in javascript
     assert "label: 'Error Rate'" in javascript
 
 
@@ -490,7 +490,7 @@ def test_object_storage_forecast_consumers_and_alerts_use_shared_tab_workspace_c
     assert 'partials/_alerts_workspace.html' in index
 
     assert 'data-analytics-tabset-id="object-storage-forecast-content"' in forecast_workspace
-    for label in ('Forecast Outlook', 'Usage History', 'Worker & Method', 'Evidence'):
+    for label in ('Forecast Outlook', 'Usage Trend', 'Bucket Forecasts', 'Worker & Method', 'Evidence'):
         assert f"'{label}'" in forecast_workspace
     assert 'Linear baseline · planning signal only' in forecast_methodology
     assert "'Forecast Posture'" in hero_posture

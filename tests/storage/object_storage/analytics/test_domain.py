@@ -47,6 +47,14 @@ def test_metrics_source_adapter_parses_scalar_bucket_vector_and_matrix() -> None
         }
     }
     matrix_payload = {'data': {'result': [{'metric': {}, 'values': [[100, '10'], [200, '20.5']]}]}}
+    bucket_matrix_payload = {
+        'data': {
+            'result': [
+                {'metric': {'bucket': 'archive'}, 'values': [[100, '10'], [200, '20']]},
+                {'metric': {'bucket': 'reports'}, 'values': [[100, '30'], [200, '40']]},
+            ]
+        }
+    }
 
     assert metrics_source._vector_scalar(vector_payload) == 2048.0
     assert metrics_source._vector_by_label(vector_payload, 'bucket') == {
@@ -57,6 +65,16 @@ def test_metrics_source_adapter_parses_scalar_bucket_vector_and_matrix() -> None
         {'timestamp': 100.0, 'value': 10.0},
         {'timestamp': 200.0, 'value': 20.5},
     ]
+    assert metrics_source._matrix_by_label(bucket_matrix_payload, 'bucket') == {
+        'archive': [
+            {'timestamp': 100.0, 'value': 10.0},
+            {'timestamp': 200.0, 'value': 20.0},
+        ],
+        'reports': [
+            {'timestamp': 100.0, 'value': 30.0},
+            {'timestamp': 200.0, 'value': 40.0},
+        ],
+    }
 
 
 def test_request_reader_stops_after_source_wide_transport_failure() -> None:
@@ -289,3 +307,38 @@ def test_object_storage_performance_view_keeps_demand_and_reliability_semantics_
     assert view['bucket_error_coverage_display'] == '75.0%'
     assert view['top_request_bucket_name'] == 'media'
     assert view['top_error_bucket_name'] == 'archive'
+
+
+def test_bucket_analysis_treats_not_configured_quota_as_observed_provider_state() -> None:
+    presentation = load_module(
+        'object_storage_quota_evidence_presentation_under_test',
+        'app/storage/object_storage/analytics/presentation.py',
+    )
+    rows = [
+        {
+            'name': 'configured',
+            'usage_bytes': 40.0,
+            'quota_bytes': 100.0,
+            'quota_state': 'configured',
+            'quota_utilization': 40.0,
+            'request_rate': None,
+            'error_ratio': None,
+        },
+        {
+            'name': 'unbounded',
+            'usage_bytes': 60.0,
+            'quota_bytes': None,
+            'quota_state': 'not_configured',
+            'quota_utilization': None,
+            'request_rate': None,
+            'error_ratio': None,
+        },
+    ]
+
+    analysis = presentation.build_bucket_analysis(rows, 100.0)
+
+    assert analysis['quota_configured_count'] == 1
+    assert analysis['quota_not_configured_count'] == 1
+    assert analysis['quota_observed_count'] == 2
+    assert analysis['quota_unknown_count'] == 0
+    assert analysis['quota_evidence_coverage_display'] == '100.0%'

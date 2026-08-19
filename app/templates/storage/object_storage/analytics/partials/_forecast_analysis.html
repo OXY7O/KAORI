@@ -33,6 +33,10 @@
             <p class="mt-1 text-xs text-content-muted">Only when growth is positive.</p>
         </article>
     </div>
+    <div class="border-t border-outline-subtle p-4 sm:p-5">
+        {% set object_storage_trend_mode = 'forecast' %}
+        {% include "storage/object_storage/analytics/partials/_trend.html" %}
+    </div>
     <div class="border-t border-outline-subtle">
         {{ analysis_surface.interpretation_callout('Operational Reading', metrics.forecast_posture.headline, metrics.forecast_posture.detail, icon='calendar-clock', role='status', tone=metrics.forecast_posture.tone) }}
     </div>

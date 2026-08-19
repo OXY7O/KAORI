@@ -20,11 +20,11 @@
                 </h2>
                 <p class="mt-1 max-w-4xl text-sm leading-6 text-content-muted">
                     {% if page_key == 'capacity' %}
-                        Review bucket usage, share of system consumption, object population, and known quota pressure. Operational metrics are preferred; committed Inventory remains an explicit field-level fallback.
+                        Review bucket usage, share of system consumption, object population, and quota pressure. Metrics are preferred; committed Inventory supplies quota and point-in-time usage fallback when live bucket metrics are absent.
                     {% elif page_key == 'performance' %}
-                        Review bucket-level request demand and error pressure from operational metrics. Request-path fields do not fall back to Inventory because committed Inventory does not contain historical request evidence.
+                        Review bucket-level request demand and error pressure from operational metrics. Request fields never fall back to Inventory; when a value is unavailable, the source label distinguishes missing bucket series, unscraped metrics, and runtime query failure.
                     {% else %}
-                        Review ranked storage, object, request, and error evidence for consumer triage. Operational metrics remain the preferred source, with committed Inventory used only as an explicit field-level fallback where supported.
+                        Review ranked storage, object, request, and error evidence for consumer triage. Operational metrics remain the preferred source; committed Inventory remains an explicit field-level fallback where supported.
                     {% endif %}
                 </p>
             </div>
@@ -141,25 +141,23 @@
                                 <td class="{{ table_ui.cell_classes() }}">
                                     <div class="flex flex-wrap items-center gap-2">
                                         <span class="tabular-nums font-medium text-content-primary">{{ row.quota_utilization_display }}</span>
-                                        {% if row.quota_utilization is none %}
-                                            {{ table_label.status_label('No Quota Evidence', 'unknown') }}
-                                        {% elif row.quota_utilization >= 95 %}
-                                            {{ table_label.status_label('Critical', 'critical') }}
-                                        {% elif row.quota_utilization >= 85 %}
-                                            {{ table_label.status_label('Pressure', 'warning') }}
-                                        {% else %}
-                                            {{ table_label.status_label('Within Quota', 'normal') }}
-                                        {% endif %}
+                                        {{ table_label.status_label(row.quota_status_label, row.quota_status_tone) }}
                                     </div>
                                     {% if row.quota_utilization is not none %}
                                         {{ progress_bar.semantic_bar(row.quota_utilization, row.quota_tone, track_classes='mt-2 h-1.5 overflow-hidden rounded-full bg-surface-hover', label=row.name ~ ' quota utilization') }}
                                     {% endif %}
-                                    <p class="mt-1 text-xs text-content-muted">{{ row.quota_display }} quota</p>
+                                    <p class="mt-1 text-xs text-content-muted">{{ row.quota_display }}{{ ' quota' if row.quota_bytes is not none else '' }}</p>
                                     <div class="mt-1">{{ table_label.metadata_label(row.quota_source, 'gauge', size='compact') }}</div>
                                 </td>
                                 {% if page_key == 'top_consumers' %}
-                                    <td class="{{ table_ui.cell_classes() }} tabular-nums">{{ row.request_rate_display }}</td>
-                                    <td class="{{ table_ui.cell_classes() }} tabular-nums">{{ row.error_ratio_display }}</td>
+                                    <td class="{{ table_ui.cell_classes() }}">
+                                        <p class="tabular-nums font-medium text-content-primary">{{ row.request_rate_display }}</p>
+                                        <div class="mt-1">{{ table_label.metadata_label(row.request_source, 'activity', size='compact') }}</div>
+                                    </td>
+                                    <td class="{{ table_ui.cell_classes() }}">
+                                        <p class="tabular-nums font-medium text-content-primary">{{ row.error_ratio_display }}</p>
+                                        <div class="mt-1">{{ table_label.metadata_label(row.error_source, 'triangle-alert', size='compact') }}</div>
+                                    </td>
                                 {% endif %}
                             {% endif %}
                         </tr>

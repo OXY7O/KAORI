@@ -114,7 +114,7 @@ The current Object Storage Analytics workspace exposes distinct operational sema
 - **Capacity & Usage** separates physical usable headroom, usage growth, bucket quota pressure, and concentration inside Summary, Usage Trend, Quota & Buckets, and Evidence tabs.
 - **Performance** separates request health, traffic/trend, bucket activity, and evidence into the shared Analytics tab workspace pattern. Request demand stays distinct from reliability, queue/inflight pressure, node availability, ingress/egress throughput, and request/error history; increasing demand is descriptive, while error, waiting, and availability evidence drive request-path posture.
 - **Top Consumers** separates Storage Leaders, Request Activity, detailed Consumer Records, and Evidence. Ranking detail remains outside the Overview.
-- **Forecast** separates Forecast Outlook, committed Usage History, Worker & Method, and Evidence. The linear baseline remains a planning boundary rather than a capacity commitment.
+- **Forecast** separates Forecast Outlook, committed Usage Trend, Bucket Forecasts, Worker & Method, and Evidence. System and per-bucket linear baselines remain planning boundaries rather than capacity commitments; forecast-watch labels never impersonate active Alertmanager alerts.
 - **Alerts & Anomalies** separates Alert Overview, provider Alert Records, Metric Signals, and Evidence. Automatic source selection prefers Alertmanager and falls back to metric-derived alert-state evidence from the selected Metrics Source adapter; metric-derived signals remain a separate KAORI operating-boundary evidence family.
 
 Inventory reconciliation is intentionally non-authoritative: differences within the
@@ -132,7 +132,7 @@ Object Storage Analytics follows the same operational interaction contract as Ku
 - missing configuration, unvalidated required metrics, incomplete capability, disconnection, authentication failure, and total runtime-query failure are explicit blocking states;
 - partial runtime-query failure is a degraded state, not a false healthy state;
 - the Overview prioritizes operational KPI/posture, trend, concise consumer concentration, and drill-down workspaces before contract-readiness detail;
-- bucket records use the shared Analytics record-pagination owner at `templates/analytics/components/_record_pagination.html`, with search, Apply Filter + Reset Filter actions, 5-row default pagination, 5/10/25/50 page sizes, HTMX partial refresh, and a header loading indicator.
+- bucket records use the shared Analytics record-pagination owner at `templates/analytics/components/_record_pagination.html`, with 5-row default pagination, 5/10/25/50 page sizes, HTMX partial refresh, and a header loading indicator; active alert records additionally use auto-refreshing search/select filters and a conditional Clear Filters action with no horizontal table scroll.
 
 The status words describe different evidence layers intentionally: `Ready` is persisted metric-contract validation, `Operational` is successful current runtime query execution, `Degraded` is partial current query success, and `Disconnected` is current transport failure. These terms must not be used interchangeably.
 
@@ -150,7 +150,7 @@ Object Storage Forecast follows the Kubernetes Analytics worker pattern instead
 of calculating long-range projections inside the interactive request. The
 registered Job Configuration entry `object_storage.forecast.materialize` runs on
 the dedicated `forecasting` queue and refreshes 7d, 30d, and 90d history windows
-into `ObjectStorageForecastSnapshot` records.
+into `ObjectStorageForecastSnapshot` records. The same snapshot payload also stores bucket-level usage forecasts derived from bucket-labeled Metrics Source history, so per-bucket planning evidence does not require another job or database table. Buckets with fewer than two usable range samples stay visible as explicit history gaps instead of being omitted.
 
 Forecast is intentionally the only Object Storage Analytics surface with a
 scheduled Job Configuration entry. Overview, Capacity & Usage, Performance, Top
@@ -170,6 +170,15 @@ The worker resolves the same provider-neutral `MetricsSource` contract with a
 background retry policy. A future Metrics Source backend can therefore
 refresh the same forecast artifact without changing Object Storage
 Analytics domain code.
+
+
+## Bucket metric collection boundary
+
+Bucket usage, object, quota, request, and error metrics are bucket-labeled operational evidence. KAORI queries the complete scoped bucket vector and performs ranking/pagination in the application; query profiles must not truncate the source vector with `topk`, because doing so can incorrectly turn lower-ranked buckets into apparent `N/A` records.
+
+For MinIO v2, cluster and bucket telemetry are separate scrape categories. System capacity and S3-wide request metrics come from cluster metrics, while bucket usage/quota/request families require the bucket metrics endpoint. Full Validation records whether those optional/recommended families are actually present. Runtime rows then distinguish `Metric Not Scraped`, `No Current Samples`, `No Bucket Series`, and `Runtime Query Failed`; none of those states are coerced to zero. Committed Inventory is an allowed field-level fallback for bucket identity, point-in-time usage/object evidence, and quota state, but never for request-path rate or error-rate time series.
+
+Quota semantics are also explicit: `Not Configured` is a successfully observed provider state and counts as quota-state evidence, while `N/A` is reserved for unavailable, unsupported, inconsistent, or not-collected quota evidence.
 
 
 ## Alert source contract

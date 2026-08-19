@@ -29,6 +29,10 @@
             </article>
         {% endfor %}
     </div>
+    <div class="border-t border-outline-subtle p-4 sm:p-5">
+        {% set object_storage_trend_mode = 'forecast' %}
+        {% include "storage/object_storage/analytics/partials/_trend.html" %}
+    </div>
     <div class="border-t border-outline-subtle px-5 py-4 sm:px-6">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <p class="text-sm leading-6 text-content-secondary">{{ metrics.forecast_posture.detail }}</p>

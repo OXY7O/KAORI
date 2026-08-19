@@ -7,12 +7,11 @@
                 </span>
                 <div class="min-w-0">
                     <div class="flex flex-wrap items-center gap-2">
-                        <h2 class="text-lg font-semibold text-content-primary">Operational Metrics Readiness</h2>
+                        <h2 class="text-lg font-semibold text-content-primary">Operational Metrics Contract</h2>
                         {{ table_label.status_label(metrics_readiness.label, metrics_readiness.tone) }}
                     </div>
                     <p class="mt-1 text-sm leading-6 text-content-muted">
-                        Persisted validation evidence confirms whether the canonical Object Storage metric contract is
-                        supported by this bound source. Runtime reachability is evaluated separately on every request.
+                        Full Validation records whether each canonical metric family, label schema, and query is usable for this binding. Runtime reachability and current samples are evaluated separately.
                     </p>
                 </div>
             </div>
@@ -52,30 +51,34 @@
             </article>
         </div>
         {% if metrics_readiness.domains %}
-            <div class="border-t border-outline-subtle">
-                <div class="overflow-x-auto">
-                    <table class="{{ table_ui.table_classes('min-w-[680px]') }}">
-                        <thead class="{{ table_ui.head_classes() }}">
-                            <tr>
-                                <th class="{{ table_ui.header_cell_classes() }}">Metric Domain</th>
-                                <th class="{{ table_ui.header_cell_classes() }}">Required Ready</th>
-                                <th class="{{ table_ui.header_cell_classes() }}">Total Ready</th>
-                                <th class="{{ table_ui.header_cell_classes(true) }}">Status</th>
-                            </tr>
-                        </thead>
-                        <tbody class="{{ table_ui.body_classes() }} bg-surface-card">
-                            {% for domain in metrics_readiness.domains %}
-                                <tr class="{{ table_ui.row_classes() }}">
-                                    <td class="{{ table_ui.cell_classes() }} font-semibold text-content-primary">{{ domain.label }}</td>
-                                    <td class="{{ table_ui.cell_classes() }} tabular-nums">
-                                        {{ domain.required_ready_count }} / {{ domain.required_total_count }}
-                                    </td>
-                                    <td class="{{ table_ui.cell_classes() }} tabular-nums">{{ domain.ready_count }} / {{ domain.total_count }}</td>
-                                    <td class="{{ table_ui.cell_classes(true) }}">{{ table_label.status_label(domain.status_label, domain.tone) }}</td>
-                                </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+            <div class="border-t border-outline-subtle bg-surface-card p-4 sm:p-5">
+                <div class="mb-3">
+                    <h3 class="text-sm font-semibold text-content-primary">Readiness By Evidence Domain</h3>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Required metrics gate the workspace. Recommended and optional gaps remain visible without being treated as fabricated zero values.</p>
+                </div>
+                <div class="grid gap-px overflow-hidden rounded-xl border border-outline-subtle bg-outline-subtle md:grid-cols-2 xl:grid-cols-4"
+                     data-kaori-evidence-domain-readiness>
+                    {% for domain in metrics_readiness.domains %}
+                        <article class="flex min-w-0 flex-col bg-surface-card p-4 sm:p-5">
+                            <div class="flex min-w-0 items-start justify-between gap-3">
+                                <div class="min-w-0">
+                                    <p class="text-sm font-semibold text-content-primary">{{ domain.label }}</p>
+                                    <p class="mt-1 text-xs leading-5 text-content-muted">{{ domain.ready_count }} of {{ domain.total_count }} registered queries ready</p>
+                                </div>
+                                {{ table_label.status_label(domain.status_label, domain.tone, size='compact') }}
+                            </div>
+                            <div class="mt-auto grid grid-cols-2 gap-4 border-t border-outline-subtle pt-3 text-xs">
+                                <div class="min-w-0">
+                                    <p class="text-content-muted">Required Gate</p>
+                                    <p class="mt-1 font-semibold tabular-nums text-content-primary">{{ domain.required_ready_count }} / {{ domain.required_total_count }}</p>
+                                </div>
+                                <div class="min-w-0">
+                                    <p class="text-content-muted">Domain Coverage</p>
+                                    <p class="mt-1 font-semibold tabular-nums text-content-primary">{{ domain.ready_count }} / {{ domain.total_count }}</p>
+                                </div>
+                            </div>
+                        </article>
+                    {% endfor %}
                 </div>
             </div>
         {% endif %}
