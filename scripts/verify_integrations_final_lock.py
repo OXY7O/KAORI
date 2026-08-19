@@ -529,6 +529,8 @@ def main() -> int:
     # Observability Bindings & Consumers final-lock contract.
     binding_boundary = read('app/templates/integrations/components/_binding_readiness_boundary.html')
     binding_modal = read('app/templates/integrations/components/_observability_binding_modal.html')
+    binding_layout = read('app/templates/integrations/components/_binding_registry_layout.html')
+    validation_poller = read('app/templates/integrations/components/_validation_poller.html')
     require(
         'data-kaori-binding-readiness-boundary' in binding_boundary
         and 'Source-Owned Mutation' in binding_boundary
@@ -544,6 +546,20 @@ def main() -> int:
         'Shared Observability Add Binding dialog must keep workflow and validation ownership guidance',
         errors,
     )
+    require(
+        'table_ui.table_classes' in binding_layout
+        and 'min-w-[90rem]' in binding_layout
+        and 'data-kaori-binding-registry-columns' in binding_layout
+        and 'w-[22%]' in binding_layout
+        and 'flex min-w-0 flex-nowrap items-center justify-end gap-2 whitespace-nowrap' in binding_layout,
+        'Shared binding registry geometry must reserve stable Actions capacity and horizontal overflow',
+        errors,
+    )
+    require(
+        'data-kaori-validation-poller' in validation_poller,
+        'Binding validation must reuse the shared terminal-aware validation poller',
+        errors,
+    )
     for provider, template_root, identity_column in (
         ('metrics_source', 'app/templates/integrations/observability/metrics_source', 'Metrics Identity'),
         (
@@ -553,6 +569,7 @@ def main() -> int:
         ),
     ):
         registry = read(f'{template_root}/partials/_binding_registry.html')
+        scope = read(f'{template_root}/partials/_detail_scope.html')
         for marker in (
             'data-kaori-binding-registry-final-lock',
             'Consumer Asset',
@@ -570,6 +587,21 @@ def main() -> int:
         )
         require(
             'components/loading_bar.html' in registry, f'{provider}: binding loading bar must remain shared', errors
+        )
+        require(
+            '_binding_registry_layout.html' in registry
+            and 'data-kaori-binding-registry-table' in registry
+            and 'binding_registry_layout.columns()' in registry
+            and 'binding_registry_layout.action_group_classes()' in registry,
+            f'{provider}: binding table geometry must remain shared and collision-safe',
+            errors,
+        )
+        require(
+            '_validation_poller.html' in scope
+            and 'validation_poller.render(' in scope
+            and 'hx-trigger="load delay:1500ms" hx-target="this"' not in scope,
+            f'{provider}: binding validation must poll through the shared child poller rather than self-replacing root HTMX',
+            errors,
         )
 
     # Integrations Overview and provider front-page final-lock contract.

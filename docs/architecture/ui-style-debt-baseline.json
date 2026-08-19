@@ -165,9 +165,6 @@
     "app/templates/settings/account/partials/_tabs.html": {
       "page_local_workspace_tablists": 1
     },
-    "app/templates/settings/general/partials/_system_information.html": {
-      "copied_standard_surface_shells": 1
-    },
     "app/templates/settings/general/partials/_tabs.html": {
       "page_local_workspace_tablists": 1
     },

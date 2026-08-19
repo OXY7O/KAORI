@@ -38,10 +38,19 @@ def test_binding_decision_is_shared_and_keeps_readiness_dimensions_independent()
 
 
 def test_metrics_source_and_alertmanager_binding_registries_share_final_column_contract() -> None:
+    layout = read('app/templates/integrations/components/_binding_registry_layout.html')
     prom = read('app/templates/integrations/observability/metrics_source/partials/_binding_registry.html')
     alert = read(
         'app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_binding_registry.html'
     )
+
+    assert 'table_ui.table_classes' in layout
+    assert 'min-w-[90rem]' in layout
+    assert 'data-kaori-binding-registry-columns' in layout
+    for width in ('w-[15%]', 'w-[14%]', 'w-[9%]', 'w-[12%]', 'w-[13%]', 'w-[22%]'):
+        assert width in layout
+    assert layout.count('w-[22%]') == 1
+    assert 'flex min-w-0 flex-nowrap items-center justify-end gap-2 whitespace-nowrap' in layout
 
     columns = (
         'Consumer Asset',
@@ -53,14 +62,17 @@ def test_metrics_source_and_alertmanager_binding_registries_share_final_column_c
     )
     for source in (prom, alert):
         assert 'data-kaori-binding-registry-final-lock' in source
-        assert 'table-fixed' in source
+        assert '_binding_registry_layout.html' in source
+        assert 'data-kaori-binding-registry-table' in source
+        assert 'binding_registry_layout.columns()' in source
+        assert 'binding_registry_layout.state_cell_classes()' in source
+        assert 'binding_registry_layout.action_group_classes()' in source
+        assert 'overscroll-x-contain' in source
         assert 'components/pagination.html' in source
         assert 'components/loading_bar.html' in source
         assert 'binding_registry_pagination.allowed_per_page' in source
         assert 'Validate before eligibility' in source
         assert 'Resolver eligible' in source
-        assert 'flex flex-nowrap items-center justify-end' in source
-        assert 'whitespace-nowrap' in source
         for column in columns:
             assert column in source
 
@@ -68,6 +80,32 @@ def test_metrics_source_and_alertmanager_binding_registries_share_final_column_c
     assert 'Alert Identity' in alert
     assert 'row.consumer_profile_label' in prom
     assert 'row.consumer_profile_label' in alert
+
+
+def test_binding_validation_polling_uses_the_shared_terminal_aware_poller() -> None:
+    prom = read('app/templates/integrations/observability/metrics_source/partials/_detail_scope.html')
+    alert = read(
+        'app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_detail_scope.html'
+    )
+    poller = read('app/templates/integrations/components/_validation_poller.html')
+
+    assert 'data-kaori-validation-poller' in poller
+    for source, target in (
+        (prom, '#metrics-source-scope-workspace'),
+        (alert, '#alertmanager-scope-workspace'),
+    ):
+        assert '_validation_poller.html' in source
+        assert 'validation_poller.render(' in source
+        assert target in source
+        assert 'hx-trigger="load delay:1500ms" hx-target="this"' not in source
+
+    metrics_registry = read('app/templates/integrations/observability/metrics_source/partials/_binding_registry.html')
+    alert_registry = read(
+        'app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_binding_registry.html'
+    )
+    for registry in (metrics_registry, alert_registry):
+        assert "'Validating'" in registry
+        assert 'disabled:cursor-wait' in registry
 
 
 def test_shared_add_binding_modal_locks_workflow_roles_and_source_ownership() -> None:
