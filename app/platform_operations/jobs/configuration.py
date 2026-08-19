@@ -81,6 +81,15 @@ def _execution_presentation(definition: JobDefinition, selected_context: dict[st
                 f'{selected_context.get("eligible_cluster_count", 0)} clusters'
             ),
         },
+        'object_storage.analytics.materialize': {
+            'manual_action_label': 'Refresh Object Storage Analytics',
+            'manual_action_icon': 'chart-no-axes-combined',
+            'execution_scope_label': 'Configured Object Storage Snapshots',
+            'execution_scope_detail': (
+                f'{selected_context.get("dataset_count", 0)} time ranges across '
+                f'{selected_context.get("eligible_system_count", 0)} systems'
+            ),
+        },
         'reports.schedule.dispatch': {
             'manual_action_label': 'Process Due Reports',
             'manual_action_icon': 'file-clock',

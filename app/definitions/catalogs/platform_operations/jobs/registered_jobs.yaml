@@ -47,6 +47,41 @@ jobs:
   execution_summary: Run an object-storage inventory refresh and monitor the canonical execution without leaving this page.
   recent_execution_summary: Latest scheduled and manual object-storage inventory synchronizations.
   legacy_module: object_storage_inventory_sync
+- key: object_storage.analytics.materialize
+  name: Object Storage Analytics Data Refresh
+  domain: Object Storage Analytics
+  description: Refresh shared Object Storage operational analytics snapshots on the analytics worker.
+  icon: chart-no-axes-combined
+  queue_name: analytics-batch
+  workload_class: analytics
+  job_type: object_storage_analytics_materialization
+  operation: materialize_object_storage_analytics
+  scope_type: object_storage_analytics_fleet
+  scope_key: all
+  configure_permission: jobs.configure
+  execute_permission: jobs.execute
+  domain_execute_permission: object_storage_analytics.view
+  dispatcher_path: app.storage.object_storage.analytics.job_adapter:dispatch_object_storage_analytics_materialization
+  context_builder_path: app.storage.object_storage.analytics.job_adapter:build_object_storage_analytics_materialization_context
+  configuration_template: platform_operations/jobs/configuration/definitions/analytics_refresh.html
+  default_enabled: true
+  default_interval_minutes: 15
+  minimum_interval_minutes: 5
+  maximum_interval_minutes: 1440
+  safety_summary: >-
+    Operational metrics and alert evidence are collected on the analytics worker and committed before pages can read them.
+    The last usable snapshot remains available inside the stale-grace window.
+  execution_summary: Refresh reusable Object Storage Analytics snapshots without querying providers from user page requests.
+  recent_execution_summary: Latest Object Storage operational analytics snapshot refresh runs.
+  default_configuration:
+    time_ranges:
+    - 24h
+    - 7d
+    - 30d
+    - 60d
+    freshness_minutes: 15
+    stale_grace_minutes: 1440
+  legacy_module: object_storage_analytics_refresh
 - key: object_storage.forecast.materialize
   name: Object Storage Forecast Data Refresh
   domain: Object Storage Analytics
@@ -60,7 +95,7 @@ jobs:
   scope_key: all
   configure_permission: jobs.configure
   execute_permission: jobs.execute
-  domain_execute_permission: analytics.view
+  domain_execute_permission: object_storage_analytics.view
   dispatcher_path: app.storage.object_storage.analytics.job_adapter:dispatch_object_storage_forecast_materialization
   context_builder_path: app.storage.object_storage.analytics.job_adapter:build_object_storage_forecast_materialization_context
   configuration_template: platform_operations/jobs/configuration/definitions/forecast_refresh.html

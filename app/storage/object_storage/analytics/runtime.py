@@ -24,7 +24,7 @@ from app.storage.object_storage.analytics.sources import resolve_object_storage_
 
 
 class EvidenceReader:
-    """Read canonical metrics once per request and fail fast on source-wide failures."""
+    """Read canonical metrics once per collection and fail fast on source-wide failures."""
 
     def __init__(self, source: MetricsSource) -> None:
         self.source = source
@@ -33,6 +33,9 @@ class EvidenceReader:
         self.failed_query_count = 0
         self.successful_query_count = 0
         self.query_states: dict[str, str] = {}
+        self._scalar_cache: dict[str, float | None] = {}
+        self._vector_cache: dict[str, dict[str, float]] = {}
+        self._trend_cache: dict[tuple[str, str], list[MetricPoint]] = {}
 
     @property
     def source_label(self) -> str:
@@ -47,45 +50,61 @@ class EvidenceReader:
             self.source_wide_failure = exc
 
     def scalar(self, key: str) -> float | None:
+        if key in self._scalar_cache:
+            return self._scalar_cache[key]
         if self.source_wide_failure is not None:
             self.query_states[key] = 'skipped'
+            self._scalar_cache[key] = None
             return None
         try:
             value = self.source.scalar(key)
         except MetricsSourceError as exc:
             self._record_failure(exc)
             self.query_states[key] = 'failed'
+            self._scalar_cache[key] = None
             return None
         self.successful_query_count += 1
         self.query_states[key] = 'ready' if value is not None else 'no_data'
+        self._scalar_cache[key] = value
         return value
 
     def vector(self, key: str) -> dict[str, float]:
+        if key in self._vector_cache:
+            return self._vector_cache[key]
         if self.source_wide_failure is not None:
             self.query_states[key] = 'skipped'
+            self._vector_cache[key] = {}
             return {}
         try:
             values = self.source.vector(key, 'bucket')
         except MetricsSourceError as exc:
             self._record_failure(exc)
             self.query_states[key] = 'failed'
+            self._vector_cache[key] = {}
             return {}
         self.successful_query_count += 1
         self.query_states[key] = 'ready' if values else 'no_data'
+        self._vector_cache[key] = values
         return values
 
     def trend(self, key: str, time_range: str) -> list[MetricPoint]:
+        cache_key = (key, time_range)
+        if cache_key in self._trend_cache:
+            return self._trend_cache[cache_key]
         if self.source_wide_failure is not None:
             self.query_states[key] = 'skipped'
+            self._trend_cache[cache_key] = []
             return []
         try:
             points = self.source.trend(key, time_range)
         except MetricsSourceError as exc:
             self._record_failure(exc)
             self.query_states[key] = 'failed'
+            self._trend_cache[cache_key] = []
             return []
         self.successful_query_count += 1
         self.query_states[key] = 'ready' if points else 'no_data'
+        self._trend_cache[cache_key] = points
         return points
 
     def readiness_state(self, key: str) -> str:
@@ -243,9 +262,11 @@ def waiting_metrics_source() -> dict[str, Any]:
 
 def source_setup(
     system: ObjectStorageSystem,
+    *,
+    execution_mode: str = 'runtime',
 ) -> tuple[MetricsSource | None, dict[str, Any], dict[str, Any], ObjectStorageDependencyBlocker | None]:
     try:
-        source = resolve_object_storage_metrics_source(system)
+        source = resolve_object_storage_metrics_source(system, execution_mode=execution_mode)
     except MetricsSourceError as exc:
         blocker = resolver_error_blocker(system, exc)
         if exc.kind == MetricsSourceFailureKind.AUTHENTICATION:

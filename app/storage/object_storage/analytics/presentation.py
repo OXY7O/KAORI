@@ -114,6 +114,21 @@ def build_comparison_view(
     }
 
 
+def _bucket_leader(rows: list[dict[str, Any]], key: str) -> dict[str, Any] | None:
+    values = [row for row in rows if row.get(key) is not None]
+    return max(values, key=lambda item: float(item[key] or 0)) if values else None
+
+
+def _concentration_posture(top_usage_share: float | None) -> dict[str, str]:
+    if top_usage_share is None:
+        return {'label': 'Unknown', 'tone': 'unknown'}
+    if top_usage_share >= 70:
+        return {'label': 'Highly Concentrated', 'tone': 'warning'}
+    if top_usage_share >= 50:
+        return {'label': 'Concentrated', 'tone': 'warning'}
+    return {'label': 'Distributed', 'tone': 'normal'}
+
+
 def build_bucket_analysis(rows: list[dict[str, Any]], total_usage: float | None) -> dict[str, Any]:
     denominator = (
         total_usage
@@ -128,10 +143,6 @@ def build_bucket_analysis(rows: list[dict[str, Any]], total_usage: float | None)
         )
         row['usage_share_display'] = format_percent(row['usage_share'])
 
-    def leader(key: str) -> dict[str, Any] | None:
-        values = [row for row in rows if row.get(key) is not None]
-        return max(values, key=lambda item: float(item[key] or 0)) if values else None
-
     quota_known = [row for row in rows if row['quota_bytes'] is not None]
     quota_not_configured = [row for row in rows if row.get('quota_state') == 'not_configured']
     quota_observed = [
@@ -142,16 +153,9 @@ def build_bucket_analysis(rows: list[dict[str, Any]], total_usage: float | None)
     quota_pressure = [
         row for row in quota_known if row['quota_utilization'] is not None and row['quota_utilization'] >= 85
     ]
-    top_usage = leader('usage_bytes')
+    top_usage = _bucket_leader(rows, 'usage_bytes')
     top_usage_share = top_usage.get('usage_share') if top_usage else None
-    if top_usage_share is None:
-        concentration = {'label': 'Unknown', 'tone': 'unknown'}
-    elif top_usage_share >= 70:
-        concentration = {'label': 'Highly Concentrated', 'tone': 'warning'}
-    elif top_usage_share >= 50:
-        concentration = {'label': 'Concentrated', 'tone': 'warning'}
-    else:
-        concentration = {'label': 'Distributed', 'tone': 'normal'}
+    concentration = _concentration_posture(top_usage_share)
     return {
         'bucket_count': len(rows),
         'quota_known_count': len(quota_known),
@@ -164,10 +168,10 @@ def build_bucket_analysis(rows: list[dict[str, Any]], total_usage: float | None)
             row['quota_utilization'] is not None and row['quota_utilization'] >= 95 for row in quota_known
         ),
         'top_usage': top_usage,
-        'top_objects': leader('objects'),
-        'top_request_rate': leader('request_rate'),
-        'top_error_rate': leader('error_rate'),
-        'top_error_ratio': leader('error_ratio'),
+        'top_objects': _bucket_leader(rows, 'objects'),
+        'top_request_rate': _bucket_leader(rows, 'request_rate'),
+        'top_error_rate': _bucket_leader(rows, 'error_rate'),
+        'top_error_ratio': _bucket_leader(rows, 'error_ratio'),
         'request_evidence_count': request_evidence_count,
         'error_evidence_count': error_evidence_count,
         'request_evidence_coverage_display': format_percent(

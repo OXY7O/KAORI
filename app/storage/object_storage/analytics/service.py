@@ -3,6 +3,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
+from celery.exceptions import CeleryError
+from kombu.exceptions import OperationalError as KombuOperationalError
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import selectinload
 
 from app.common.analytics.metrics.contracts import MetricPoint
@@ -12,6 +15,7 @@ from app.storage.object_storage.analytics.alert_sources import (
     alertmanager_readiness,
     build_alert_posture,
     load_alert_stream,
+    resolve_materialized_alert_stream,
     selected_alert_source,
 )
 from app.storage.object_storage.analytics.alert_table import build_alert_table_view
@@ -24,11 +28,22 @@ from app.storage.object_storage.analytics.analysis import (
     performance_posture,
 )
 from app.storage.object_storage.analytics.bucket_table import build_bucket_table_view
+from app.storage.object_storage.analytics.bucket_evidence import (
+    add_bucket_usage_shares,
+    build_bucket_forecast_summary,
+    build_bucket_forecast_view,
+    build_bucket_rows,
+)
 from app.storage.object_storage.analytics.dependencies import (
+    analytics_snapshot_blocker,
     inventory_required_blocker,
     system_required_blocker,
 )
-from app.storage.object_storage.analytics.materialization import forecast_snapshot_state, get_forecast_snapshot
+from app.storage.object_storage.analytics.materialization import (
+    forecast_snapshot_state,
+    get_forecast_snapshot,
+    read_analytics_snapshot,
+)
 from app.storage.object_storage.analytics.presentation import (
     PerformanceEvidence,
     build_bucket_analysis,
@@ -134,186 +149,7 @@ def _inventory_totals(system: ObjectStorageSystem) -> dict[str, float | int]:
     }
 
 
-def _metric_evidence_label(state: str, *, bucket_scoped: bool = False) -> str:
-    labels = {
-        'unsupported': 'Metric Not Scraped',
-        'blocked': 'Metric Contract Blocked',
-        'not_validated': 'Validation Required',
-        'failed': 'Runtime Query Failed',
-        'skipped': 'Runtime Query Skipped',
-        'no_data': 'No Current Samples',
-    }
-    if state == 'ready' and bucket_scoped:
-        return 'No Bucket Series'
-    return labels.get(state, 'Unavailable')
 
-
-def _add_bucket_usage_shares(rows: list[dict[str, Any]], usage_total: float | None) -> None:
-    for row in rows:
-        row['usage_share'] = utilization_percent(row.get('usage_bytes'), usage_total)
-        row['usage_share_display'] = format_percent(row['usage_share'])
-
-
-def _bucket_rows(
-    system: ObjectStorageSystem,
-    reader: EvidenceReader,
-    *,
-    include_activity: bool,
-    include_capacity_detail: bool = True,
-) -> list[dict[str, Any]]:
-    usage = reader.vector('object_storage.bucket.usage')
-    objects = reader.vector('object_storage.bucket.objects') if include_capacity_detail else {}
-    quota = reader.vector('object_storage.bucket.quota') if include_capacity_detail else {}
-    request_rate = reader.vector('object_storage.bucket.request_rate') if include_activity else {}
-    error_rate = reader.vector('object_storage.bucket.error_rate') if include_activity else {}
-
-    usage_state = reader.evidence_state('object_storage.bucket.usage')
-    objects_state = reader.evidence_state('object_storage.bucket.objects') if include_capacity_detail else 'not_requested'
-    quota_metric_state = reader.evidence_state('object_storage.bucket.quota') if include_capacity_detail else 'not_requested'
-    request_state = reader.evidence_state('object_storage.bucket.request_rate') if include_activity else 'not_requested'
-    error_state = reader.evidence_state('object_storage.bucket.error_rate') if include_activity else 'not_requested'
-
-    inventory = {bucket.name: bucket for bucket in system.buckets or ()}
-    names = set(inventory) | set(usage) | set(objects) | set(quota) | set(request_rate) | set(error_rate)
-    rows: list[dict[str, Any]] = []
-    for name in names:
-        bucket = inventory.get(name)
-        size = usage.get(name)
-        usage_source = reader.source_label if size is not None else _metric_evidence_label(usage_state, bucket_scoped=True)
-        if size is None and bucket is not None and bucket.size_bytes is not None:
-            size = float(bucket.size_bytes)
-            usage_source = 'Committed Snapshot'
-
-        object_count = objects.get(name)
-        objects_source = (
-            reader.source_label
-            if object_count is not None
-            else _metric_evidence_label(objects_state, bucket_scoped=True)
-        )
-        if object_count is None and bucket is not None and bucket.object_count is not None:
-            object_count = float(bucket.object_count)
-            objects_source = 'Committed Snapshot'
-
-        quota_bytes = quota.get(name)
-        quota_state = 'configured' if quota_bytes is not None else 'unknown'
-        quota_evidence_code = 'metrics_source' if quota_bytes is not None else None
-        quota_source = (
-            reader.source_label
-            if quota_bytes is not None
-            else _metric_evidence_label(quota_metric_state, bucket_scoped=True)
-        )
-        if bucket is not None:
-            inventory_quota_state = str(bucket.quota_state or 'not_collected').strip().lower().replace('-', '_')
-            if quota_bytes is None and bucket.quota_bytes is not None:
-                quota_bytes = float(bucket.quota_bytes)
-                quota_state = 'configured'
-                quota_source = 'Committed Snapshot'
-                quota_evidence_code = bucket.quota_evidence_code
-            elif quota_bytes is None and inventory_quota_state == 'not_configured':
-                quota_state = 'not_configured'
-                quota_source = 'Committed Snapshot'
-                quota_evidence_code = bucket.quota_evidence_code
-            elif quota_bytes is None and inventory_quota_state in {'not_collected', 'not_supported'}:
-                quota_state = inventory_quota_state
-                quota_source = 'Inventory Quota Not Collected' if inventory_quota_state == 'not_collected' else 'Inventory Quota Unsupported'
-                quota_evidence_code = bucket.quota_evidence_code
-            elif quota_bytes is None and inventory_quota_state == 'configured':
-                quota_state = 'inconsistent'
-                quota_source = 'Inventory Evidence Incomplete'
-                quota_evidence_code = bucket.quota_evidence_code
-
-        bucket_request_rate = request_rate.get(name)
-        request_source = (
-            reader.source_label
-            if bucket_request_rate is not None
-            else _metric_evidence_label(request_state, bucket_scoped=True)
-        )
-        bucket_error_rate = error_rate.get(name)
-        error_source = (
-            reader.source_label
-            if bucket_error_rate is not None
-            else _metric_evidence_label(error_state, bucket_scoped=True)
-        )
-        bucket_error_ratio = error_ratio(bucket_error_rate, bucket_request_rate)
-        quota_utilization = utilization_percent(size, quota_bytes)
-        quota_tone = utilization_tone(quota_utilization) if quota_bytes is not None else 'unknown'
-        if quota_state == 'not_configured':
-            quota_display = 'Not Configured'
-            quota_utilization_display = 'Not Applicable'
-            quota_status_label = 'No Quota Configured'
-            quota_status_tone = 'info'
-        elif quota_state == 'inconsistent':
-            quota_display = 'Evidence Incomplete'
-            quota_utilization_display = 'Unknown'
-            quota_status_label = 'Review Inventory Evidence'
-            quota_status_tone = 'warning'
-        elif quota_state == 'not_collected':
-            quota_display = 'N/A'
-            quota_utilization_display = 'Unknown'
-            quota_status_label = 'Quota Not Collected'
-            quota_status_tone = 'warning'
-        elif quota_state == 'not_supported':
-            quota_display = 'N/A'
-            quota_utilization_display = 'Not Available'
-            quota_status_label = 'Quota Collection Unsupported'
-            quota_status_tone = 'unknown'
-        elif quota_bytes is None:
-            quota_display = 'N/A'
-            quota_utilization_display = 'N/A'
-            quota_status_label = _metric_evidence_label(quota_metric_state, bucket_scoped=True)
-            quota_status_tone = 'unknown'
-        elif quota_utilization is not None and quota_utilization >= 95:
-            quota_display = format_bytes(quota_bytes)
-            quota_utilization_display = format_percent(quota_utilization)
-            quota_status_label = 'Critical'
-            quota_status_tone = 'critical'
-        elif quota_utilization is not None and quota_utilization >= 85:
-            quota_display = format_bytes(quota_bytes)
-            quota_utilization_display = format_percent(quota_utilization)
-            quota_status_label = 'Pressure'
-            quota_status_tone = 'warning'
-        else:
-            quota_display = format_bytes(quota_bytes)
-            quota_utilization_display = format_percent(quota_utilization)
-            quota_status_label = 'Within Quota'
-            quota_status_tone = 'normal'
-
-        rows.append(
-            {
-                'name': name,
-                'usage_bytes': size,
-                'usage_display': format_bytes(size),
-                'usage_source': usage_source,
-                'usage_evidence_state': usage_state,
-                'objects': object_count,
-                'objects_display': format_number(object_count),
-                'objects_source': objects_source,
-                'objects_evidence_state': objects_state,
-                'quota_bytes': quota_bytes,
-                'quota_display': quota_display,
-                'quota_source': quota_source,
-                'quota_state': quota_state,
-                'quota_evidence_code': quota_evidence_code,
-                'quota_utilization': quota_utilization,
-                'quota_utilization_display': quota_utilization_display,
-                'quota_tone': quota_tone,
-                'quota_status_label': quota_status_label,
-                'quota_status_tone': quota_status_tone,
-                'request_rate': bucket_request_rate,
-                'request_rate_display': format_rate(bucket_request_rate),
-                'request_source': request_source,
-                'request_evidence_state': request_state,
-                'error_rate': bucket_error_rate,
-                'error_rate_display': format_rate(bucket_error_rate),
-                'error_source': error_source,
-                'error_evidence_state': error_state,
-                'error_ratio': bucket_error_ratio,
-                'error_ratio_display': format_percent(bucket_error_ratio),
-                'source': usage_source,
-            }
-        )
-    rows.sort(key=lambda item: float(item['usage_bytes'] or 0), reverse=True)
-    return rows
 
 
 def _build_core_metrics(reader: EvidenceReader, system: ObjectStorageSystem) -> dict[str, Any]:
@@ -455,13 +291,13 @@ def _add_bucket_metrics(
     include_capacity_detail: bool = True,
     sort_by: str = 'usage_bytes',
 ) -> None:
-    rows = _bucket_rows(
+    rows = build_bucket_rows(
         system,
         reader,
         include_activity=include_activity,
         include_capacity_detail=include_capacity_detail,
     )
-    _add_bucket_usage_shares(rows, payload.get('usage_total'))
+    add_bucket_usage_shares(rows, payload.get('usage_total'))
     rows.sort(key=lambda item: float(item.get(sort_by) or 0), reverse=True)
     payload['bucket_rows'] = rows
     payload['bucket_analysis'] = build_bucket_analysis(rows, payload.get('usage_total'))
@@ -484,89 +320,6 @@ def _forecast_projection_points(
     return projected
 
 
-def _bucket_forecast_view(raw_rows: object) -> list[dict[str, Any]]:
-    rows: list[dict[str, Any]] = []
-    for raw in raw_rows if isinstance(raw_rows, list) else []:
-        if not isinstance(raw, dict):
-            continue
-        forecast = raw.get('forecast') if isinstance(raw.get('forecast'), dict) else {}
-        history_state = str(raw.get('history_state') or ('ready' if int(raw.get('sample_count') or 0) >= 2 else 'no_data'))
-        current = raw.get('current_bytes')
-        inventory_usage = raw.get('inventory_usage_bytes')
-        quota = raw.get('quota_bytes')
-        projected_30d = forecast.get('projected_30d')
-        days_to_quota = forecast.get('days_to_capacity')
-        quota_utilization = utilization_percent(current, quota)
-        projected_quota_utilization = utilization_percent(projected_30d, quota)
-        growth_per_day = forecast.get('growth_per_day')
-        if history_state != 'ready':
-            watch_label, watch_tone = 'Insufficient History', 'unknown'
-        elif days_to_quota is not None and days_to_quota <= 30:
-            watch_label, watch_tone = 'Critical · Quota ≤ 30d', 'critical'
-        elif days_to_quota is not None and days_to_quota <= 90:
-            watch_label, watch_tone = 'Warning · Quota ≤ 90d', 'warning'
-        elif projected_quota_utilization is not None and projected_quota_utilization >= 95:
-            watch_label, watch_tone = 'Critical · Projected ≥ 95%', 'critical'
-        elif projected_quota_utilization is not None and projected_quota_utilization >= 85:
-            watch_label, watch_tone = 'Warning · Projected ≥ 85%', 'warning'
-        elif growth_per_day is not None and growth_per_day > 0:
-            watch_label, watch_tone = 'Growth Watch', 'info'
-        elif growth_per_day is not None:
-            watch_label, watch_tone = 'Stable / Decreasing', 'normal'
-        else:
-            watch_label, watch_tone = 'Insufficient History', 'unknown'
-        rows.append(
-            {
-                'name': str(raw.get('name') or 'Unknown Bucket'),
-                'sample_count': int(raw.get('sample_count') or 0),
-                'history_state': history_state,
-                'history_label': (
-                    'Forecast Ready'
-                    if history_state == 'ready'
-                    else ('One Range Sample' if history_state == 'partial' else 'No Range Series')
-                ),
-                'history_tone': 'normal' if history_state == 'ready' else 'unknown',
-                'current_bytes': current,
-                'current_display': format_bytes(current),
-                'inventory_usage_bytes': inventory_usage,
-                'inventory_usage_display': format_bytes(inventory_usage),
-                'growth_per_day': growth_per_day,
-                'growth_per_day_display': format_bytes(growth_per_day) + '/day' if growth_per_day is not None else 'N/A',
-                'projected_30d': projected_30d,
-                'projected_30d_display': format_bytes(projected_30d),
-                'quota_bytes': quota,
-                'quota_display': format_bytes(quota) if quota is not None else 'Not Configured',
-                'quota_utilization': quota_utilization,
-                'quota_utilization_display': format_percent(quota_utilization),
-                'projected_quota_utilization': projected_quota_utilization,
-                'projected_quota_utilization_display': format_percent(projected_quota_utilization),
-                'days_to_quota': days_to_quota,
-                'days_to_quota_display': f'{days_to_quota:.1f} days' if days_to_quota is not None else 'No ETA',
-                'watch_label': watch_label,
-                'watch_tone': watch_tone,
-            }
-        )
-    tone_order = {'critical': 4, 'warning': 3, 'info': 2, 'unknown': 1, 'normal': 0}
-    rows.sort(
-        key=lambda row: (
-            tone_order.get(str(row['watch_tone']), 1),
-            float(row.get('projected_30d') or row.get('current_bytes') or row.get('inventory_usage_bytes') or 0),
-        ),
-        reverse=True,
-    )
-    return rows
-
-
-def _bucket_forecast_summary(rows: list[dict[str, Any]]) -> dict[str, int]:
-    return {
-        'tracked_count': len(rows),
-        'ready_count': sum(row.get('history_state') == 'ready' for row in rows),
-        'attention_count': sum(row.get('watch_tone') in {'critical', 'warning'} for row in rows),
-        'critical_count': sum(row.get('watch_tone') == 'critical' for row in rows),
-        'warning_count': sum(row.get('watch_tone') == 'warning' for row in rows),
-        'quota_bounded_count': sum(row.get('quota_bytes') is not None for row in rows),
-        'history_gap_count': sum(row.get('history_state') != 'ready' for row in rows),
-    }
 
 
 def _apply_forecast_result(
@@ -616,7 +369,7 @@ def _apply_unavailable_forecast(payload: dict[str, Any], state: dict[str, Any]) 
     payload['forecast_history'] = []
     payload['forecast_projection'] = []
     payload['bucket_forecasts'] = []
-    payload['bucket_forecast_summary'] = _bucket_forecast_summary([])
+    payload['bucket_forecast_summary'] = build_bucket_forecast_summary([])
     payload['forecast_history_summary'] = build_trend_view([])
 
 
@@ -654,9 +407,9 @@ def _attach_forecast_materialization(
                 'days_to_capacity': forecast.get('days_to_capacity'),
             },
         )
-        bucket_forecasts = _bucket_forecast_view(payload.get('bucket_forecasts'))
+        bucket_forecasts = build_bucket_forecast_view(payload.get('bucket_forecasts'))
         context['metrics']['bucket_forecasts'] = bucket_forecasts
-        context['metrics']['bucket_forecast_summary'] = _bucket_forecast_summary(bucket_forecasts)
+        context['metrics']['bucket_forecast_summary'] = build_bucket_forecast_summary(bucket_forecasts)
         return
     _apply_unavailable_forecast(context['metrics'], state)
 
@@ -722,6 +475,54 @@ def _build_metrics(
     return payload
 
 
+def build_analytics_snapshot_payload(
+    *,
+    system: ObjectStorageSystem,
+    time_range: str,
+) -> dict[str, Any]:
+    """Collect one reusable operational snapshot on the analytics worker.
+
+    This is the only Object Storage Analytics path that performs operational
+    Metrics Source and alert-source reads. UI requests consume the committed
+    payload through ``read_analytics_snapshot``.
+    """
+
+    source, source_view, readiness, blocker = source_setup(system, execution_mode='background')
+    if source is None or blocker is not None:
+        detail = blocker.get('diagnostic_detail') if blocker else None
+        raise RuntimeError(
+            str(detail or (blocker.get('description') if blocker else '') or 'Object Storage Metrics Source is not eligible.')
+        )
+
+    reader = EvidenceReader(source)
+    page_metrics = {
+        page_key: _build_metrics(page_key, reader, system, time_range)
+        for page_key in ('overview', 'capacity', 'performance', 'top_consumers', 'alerts', 'forecast')
+    }
+    runtime_blocker = runtime_source_state(system, source_view, reader)
+    if runtime_blocker is not None:
+        raise RuntimeError(
+            str(runtime_blocker.get('diagnostic_detail') or runtime_blocker.get('description') or 'Operational metrics query failed.')
+        )
+
+    alertmanager_stream = load_alert_stream(system, selected_source='alertmanager')
+    metrics_alert_stream = load_alert_stream(system, selected_source='metrics_source')
+    return {
+        'time_range': time_range,
+        'inventory_observed_at': system.inventory_observed_at,
+        'metrics_source': source_view,
+        'metrics_readiness': readiness,
+        'query_diagnostics': list(dict.fromkeys(item for item in reader.diagnostics if item)),
+        'query_states': dict(reader.query_states),
+        'page_metrics': page_metrics,
+        'alert_streams': {
+            'alertmanager': alertmanager_stream,
+            'metrics_source': metrics_alert_stream,
+        },
+        'alertmanager': alertmanager_readiness(system, runtime_stream=alertmanager_stream),
+    }
+
+
 def _base_context(page_key: str, query_args: Any) -> tuple[dict[str, Any], ObjectStorageSystem | None, str]:
     page = PAGES.get(page_key, PAGES['overview'])
     systems = _systems()
@@ -740,6 +541,18 @@ def _base_context(page_key: str, query_args: Any) -> tuple[dict[str, Any], Objec
         'allowed_time_ranges': get_allowed_time_ranges(),
         'selected_forecast_history_window': history_window,
         'forecast_history_windows': FORECAST_HISTORY_WINDOWS,
+        'analytics_materialization': {
+            'state': 'missing',
+            'label': 'Worker Data Required',
+            'tone': 'warning',
+            'usable': False,
+            'stale': False,
+            'time_range': time_range,
+            'generated_at': None,
+            'last_attempt_at': None,
+            'last_error': None,
+            'dispatch_error': None,
+        },
         'forecast_materialization': {
             'state': 'missing',
             'label': 'Worker Data Required',
@@ -770,19 +583,19 @@ def _base_context(page_key: str, query_args: Any) -> tuple[dict[str, Any], Objec
             'fallback_reason': None,
             'checked_at': None,
         },
-        'alertmanager': (
-            alertmanager_readiness(system)
-            if system is not None
-            else {
-                'configured': False,
-                'connected': False,
-                'label': 'Not Configured',
-                'tone': 'unknown',
-                'description': 'Select an Object Storage system.',
-                'instance_name': None,
-                'profile': 'object-storage-alerts-v1',
-            }
-        ),
+        'alertmanager': {
+            'configured': False,
+            'connected': False,
+            'label': 'Waiting for Analytics Snapshot' if system is not None else 'Not Configured',
+            'tone': 'unknown',
+            'description': (
+                'Alertmanager readiness is read from the committed analytics snapshot.'
+                if system is not None
+                else 'Select an Object Storage system.'
+            ),
+            'instance_name': None,
+            'profile': 'object-storage-alerts-v1',
+        },
         'alert_posture': {
             'total': 0,
             'critical': 0,
@@ -818,15 +631,70 @@ def _unavailable_alert_metrics() -> dict[str, Any]:
     }
 
 
-def _get_alerts_context(
+def _queue_analytics_snapshot_refresh(
+    *,
+    system: ObjectStorageSystem,
+    time_range: str,
+) -> tuple[bool, str | None]:
+    """Queue a missing/stale snapshot without performing source reads in the web request."""
+
+    try:
+        from app.platform_operations.jobs.dispatcher import dispatch_registered_job
+
+        outcome = dispatch_registered_job(
+            job_key='object_storage.analytics.materialize',
+            trigger_type='on_demand',
+            requested_by_user_id=None,
+            parameters={'system_id': str(system.id), 'time_range': time_range},
+        )
+        return bool(outcome.accepted), None if outcome.accepted else str(outcome.message or '') or None
+    except (CeleryError, KombuOperationalError, LookupError, RuntimeError, SQLAlchemyError, ValueError) as exc:
+        return False, f'Analytics refresh could not be queued: {exc}'
+
+
+def _attach_committed_analytics_snapshot(
     context: dict[str, Any],
+    *,
+    system: ObjectStorageSystem,
+    time_range: str,
+) -> dict[str, Any] | None:
+    payload, state = read_analytics_snapshot(system_id=system.id, time_range=time_range)
+    state = {**state, 'dispatch_error': None, 'refresh_dispatched': False}
+    if payload is None or state.get('stale'):
+        dispatched, dispatch_error = _queue_analytics_snapshot_refresh(system=system, time_range=time_range)
+        state['refresh_dispatched'] = dispatched
+        state['dispatch_error'] = dispatch_error
+    context['analytics_materialization'] = state
+    if payload is None:
+        context['dependency_blocker'] = analytics_snapshot_blocker(
+            system,
+            time_range=time_range,
+            label=str(state.get('label') or 'Worker Data Required'),
+            detail=str(state.get('last_error') or state.get('dispatch_error') or '').strip() or None,
+        )
+        return None
+
+    context['metrics_source'] = dict(payload.get('metrics_source') or waiting_metrics_source())
+    context['metrics_readiness'] = dict(payload.get('metrics_readiness') or waiting_metrics_readiness())
+    context['query_diagnostics'] = list(payload.get('query_diagnostics') or [])
+    context['inventory_observed_at'] = payload.get('inventory_observed_at') or context.get('inventory_observed_at')
+    return payload
+
+
+def _apply_alert_snapshot_context(
+    context: dict[str, Any],
+    *,
+    payload: dict[str, Any],
     system: ObjectStorageSystem,
     query_args: Any,
-    time_range: str,
-) -> dict[str, Any]:
-    alert_stream = load_alert_stream(system, selected_source=context['selected_alert_source'])
+) -> None:
+    streams = payload.get('alert_streams') if isinstance(payload.get('alert_streams'), dict) else {}
+    alert_stream = resolve_materialized_alert_stream(
+        streams,
+        selected_source=context['selected_alert_source'],
+    )
     context['alert_source'] = alert_stream
-    context['alertmanager'] = alertmanager_readiness(system, runtime_stream=alert_stream)
+    context['alertmanager'] = dict(payload.get('alertmanager') or context['alertmanager'])
     context['alert_posture'] = build_alert_posture(alert_stream)
     context['alert_table'] = build_alert_table_view(
         alert_stream.get('rows') or [],
@@ -834,25 +702,12 @@ def _get_alerts_context(
         system=system,
         selected_source=context['selected_alert_source'],
     )
-
-    source, source_view, readiness, blocker = source_setup(system)
-    context['metrics_source'] = source_view
-    context['metrics_readiness'] = readiness
-    metrics_operational = False
-    if source is not None and blocker is None:
-        reader = EvidenceReader(source)
-        context['metrics'] = _build_metrics('alerts', reader, system, time_range)
-        context['query_diagnostics'] = list(dict.fromkeys(item for item in reader.diagnostics if item))
-        runtime_blocker = runtime_source_state(system, context['metrics_source'], reader)
-        metrics_operational = runtime_blocker is None
-        if not metrics_operational:
-            context['metrics'] = _unavailable_alert_metrics()
-    else:
-        context['metrics'] = _unavailable_alert_metrics()
-
+    page_metrics = payload.get('page_metrics') if isinstance(payload.get('page_metrics'), dict) else {}
+    context['metrics'] = dict(page_metrics.get('alerts') or _unavailable_alert_metrics())
+    metrics_runtime_state = str(context['metrics_source'].get('runtime_state') or '')
+    metrics_operational = metrics_runtime_state in {'operational', 'degraded'}
     context['alerts_evidence_available'] = bool(alert_stream.get('connected')) or metrics_operational
     context['alerts_degraded'] = not (bool(alert_stream.get('connected')) and metrics_operational)
-    return context
 
 
 def get_object_storage_analytics_context(page_key: str, query_args: Any) -> dict[str, Any]:
@@ -864,23 +719,25 @@ def get_object_storage_analytics_context(page_key: str, query_args: Any) -> dict
         context['dependency_blocker'] = inventory_required_blocker(system)
         return context
 
+    payload = _attach_committed_analytics_snapshot(context, system=system, time_range=time_range)
+    if payload is None:
+        return context
+
     if page_key == 'alerts':
-        return _get_alerts_context(context, system, query_args, time_range)
-
-    source, source_view, readiness, blocker = source_setup(system)
-    context['metrics_source'] = source_view
-    context['metrics_readiness'] = readiness
-    if source is None or blocker is not None:
-        context['dependency_blocker'] = blocker
+        _apply_alert_snapshot_context(context, payload=payload, system=system, query_args=query_args)
         return context
 
-    reader = EvidenceReader(source)
-    context['metrics'] = _build_metrics(page_key, reader, system, time_range)
-    context['query_diagnostics'] = list(dict.fromkeys(item for item in reader.diagnostics if item))
-    runtime_blocker = runtime_source_state(system, context['metrics_source'], reader)
-    if runtime_blocker is not None:
-        context['dependency_blocker'] = runtime_blocker
+    page_metrics = payload.get('page_metrics') if isinstance(payload.get('page_metrics'), dict) else {}
+    metrics = page_metrics.get(page_key)
+    if not isinstance(metrics, dict):
+        context['dependency_blocker'] = analytics_snapshot_blocker(
+            system,
+            time_range=time_range,
+            label='Snapshot Contract Invalid',
+            detail=f'Committed analytics snapshot does not contain the {page_key} dataset.',
+        )
         return context
+    context['metrics'] = metrics
 
     if page_key in {'overview', 'forecast'}:
         history_window = '30d' if page_key == 'overview' else context['selected_forecast_history_window']
@@ -898,66 +755,10 @@ def get_object_storage_analytics_context(page_key: str, query_args: Any) -> dict
 
 
 def get_object_storage_alert_table_context(query_args: Any) -> dict[str, Any]:
-    context, system, _ = _base_context('alerts', query_args)
-    if system is None:
-        context['dependency_blocker'] = system_required_blocker()
-        return context
-    if system.inventory_observed_at is None:
-        context['dependency_blocker'] = inventory_required_blocker(system)
-        return context
-    alert_stream = load_alert_stream(system, selected_source=context['selected_alert_source'])
-    context['alert_source'] = alert_stream
-    context['alertmanager'] = alertmanager_readiness(system, runtime_stream=alert_stream)
-    context['alert_posture'] = build_alert_posture(alert_stream)
-    context['alert_table'] = build_alert_table_view(
-        alert_stream.get('rows') or [],
-        query_args,
-        system=system,
-        selected_source=context['selected_alert_source'],
-    )
-    return context
+    return get_object_storage_analytics_context('alerts', query_args)
 
 
 def get_object_storage_bucket_table_context(page_key: str, query_args: Any) -> dict[str, Any]:
     if page_key not in {'capacity', 'performance', 'top_consumers'}:
         page_key = 'top_consumers'
-    context, system, time_range = _base_context(page_key, query_args)
-    if system is None:
-        context['dependency_blocker'] = system_required_blocker()
-        return context
-    if system.inventory_observed_at is None:
-        context['dependency_blocker'] = inventory_required_blocker(system)
-        return context
-
-    source, source_view, readiness, blocker = source_setup(system)
-    context['metrics_source'] = source_view
-    context['metrics_readiness'] = readiness
-    if source is None or blocker is not None:
-        context['dependency_blocker'] = blocker
-        return context
-
-    reader = EvidenceReader(source)
-    core = _build_core_metrics(reader, system)
-    rows = _bucket_rows(
-        system,
-        reader,
-        include_activity=page_key in {'performance', 'top_consumers'},
-        include_capacity_detail=page_key != 'performance',
-    )
-    if page_key == 'performance':
-        rows.sort(key=lambda item: float(item.get('request_rate') or 0), reverse=True)
-    _add_bucket_usage_shares(rows, core.get('usage_total'))
-    context['metrics'] = {'bucket_rows': rows}
-    context['query_diagnostics'] = list(dict.fromkeys(item for item in reader.diagnostics if item))
-    runtime_blocker = runtime_source_state(system, context['metrics_source'], reader)
-    if runtime_blocker is not None:
-        context['dependency_blocker'] = runtime_blocker
-        return context
-    context['bucket_table'] = build_bucket_table_view(
-        rows,
-        query_args,
-        page_key=page_key,
-        system=system,
-        time_range=time_range,
-    )
-    return context
+    return get_object_storage_analytics_context(page_key, query_args)

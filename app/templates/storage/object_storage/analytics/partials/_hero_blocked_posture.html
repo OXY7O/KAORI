@@ -9,8 +9,8 @@
 {% else %}
     {% set blocker_status = "Unavailable" %}
 {% endif %}
-{% set step_labels = {1: 'Object Storage', 2: 'Metrics', 3: 'Alert Evidence'} %}
-{% set readiness_step_count = 3 if page_key == 'alerts' else 2 %}
+{% set step_labels = {1: 'Object Storage', 2: 'Metrics', 3: 'Analytics Snapshot'} %}
+{% set readiness_step_count = 3 %}
 {% if page_key == 'capacity' %}
     {% set posture_label = "Capacity Posture" %}
 {% elif page_key == 'performance' %}

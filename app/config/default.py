@@ -362,6 +362,9 @@ class Config:
             'app.kubernetes.analytics.tasks.materialize_forecast_snapshots': {
                 'queue': FORECASTING_CELERY_QUEUE,
             },
+            'app.storage.object_storage.analytics.tasks.materialize_object_storage_analytics': {
+                'queue': ANALYTICS_CELERY_QUEUE,
+            },
             'app.storage.object_storage.analytics.tasks.materialize_object_storage_forecasts': {
                 'queue': FORECASTING_CELERY_QUEUE,
             },

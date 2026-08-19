@@ -283,11 +283,12 @@ def update_policy(job_key: str) -> ResponseReturnValue:
 
     try:
         configuration = dict(definition.default_configuration or {})
-        if job_key == 'analytics.materialize':
+        if job_key in {'analytics.materialize', 'object_storage.analytics.materialize'}:
+            default_freshness = 15 if job_key == 'object_storage.analytics.materialize' else 20
             configuration.update(
                 {
                     'time_ranges': list(form.analytics_time_ranges.data or ['24h', '7d', '30d', '60d']),
-                    'freshness_minutes': int(form.freshness_minutes.data or 20),
+                    'freshness_minutes': int(form.freshness_minutes.data or default_freshness),
                     'stale_grace_minutes': int(form.stale_grace_minutes.data or 1440),
                 }
             )

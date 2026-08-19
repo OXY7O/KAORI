@@ -56,7 +56,7 @@ def load_alert_stream(system: ObjectStorageSystem, *, selected_source: str) -> d
         metrics_source['tone'] = 'warning'
         metrics_source['fallback_reason'] = (
             f'Alertmanager was not usable: {alertmanager.get("detail") or alertmanager.get("label")}. '
-            'Metrics query evidence is being used for the current view.'
+            'Metrics query evidence is being collected for the committed analytics snapshot.'
         )
         return metrics_source
 
@@ -72,6 +72,80 @@ def load_alert_stream(system: ObjectStorageSystem, *, selected_source: str) -> d
             detail=(
                 f'Alertmanager: {alertmanager.get("detail") or alertmanager.get("label")}. '
                 f'Metrics Source: {metrics_source.get("detail") or metrics_source.get("label")}.'
+            ),
+        ),
+        rows=[],
+        instance_name=None,
+    )
+
+
+def resolve_materialized_alert_stream(
+    streams: dict[str, Any],
+    *,
+    selected_source: str,
+) -> dict[str, Any]:
+    """Resolve a UI alert source from worker-collected streams without live provider access."""
+
+    alertmanager = dict(streams.get('alertmanager') or {})
+    metrics_source = dict(streams.get('metrics_source') or {})
+    if selected_source == 'alertmanager':
+        return alertmanager or _source_view(
+            selected_source='alertmanager',
+            resolved_source='none',
+            runtime=AlertSourceRuntime(
+                configured=False,
+                connected=False,
+                label='Alertmanager Snapshot Unavailable',
+                tone='unknown',
+                detail='The committed analytics snapshot does not contain Alertmanager evidence.',
+            ),
+            rows=[],
+            instance_name=None,
+        )
+    if selected_source == 'metrics_source':
+        return metrics_source or _source_view(
+            selected_source='metrics_source',
+            resolved_source='none',
+            runtime=AlertSourceRuntime(
+                configured=False,
+                connected=False,
+                label='Metrics Alert Snapshot Unavailable',
+                tone='unknown',
+                detail='The committed analytics snapshot does not contain metrics-backed alert evidence.',
+            ),
+            rows=[],
+            instance_name=None,
+        )
+
+    if alertmanager.get('connected'):
+        resolved = dict(alertmanager)
+        resolved['selected_source'] = 'auto'
+        return resolved
+    if metrics_source.get('connected'):
+        resolved = dict(metrics_source)
+        resolved['selected_source'] = 'auto'
+        resolved['fallback_used'] = True
+        resolved['label'] = 'Metrics Source Fallback Active'
+        resolved['tone'] = 'warning'
+        resolved['fallback_reason'] = (
+            f'Alertmanager was not usable in the committed snapshot: '
+            f'{alertmanager.get("detail") or alertmanager.get("label") or "no alert evidence"}. '
+            'Metrics-backed alert evidence is being used from the same analytics snapshot.'
+        )
+        return resolved
+
+    configured = bool(alertmanager.get('configured') or metrics_source.get('configured'))
+    return _source_view(
+        selected_source='auto',
+        resolved_source='none',
+        runtime=AlertSourceRuntime(
+            configured=configured,
+            connected=False,
+            label='Alert Sources Unavailable' if configured else 'Alert Sources Not Configured',
+            tone='critical' if configured else 'unknown',
+            detail=(
+                f'Alertmanager snapshot: {alertmanager.get("detail") or alertmanager.get("label") or "unavailable"}. '
+                f'Metrics Source snapshot: {metrics_source.get("detail") or metrics_source.get("label") or "unavailable"}.'
             ),
         ),
         rows=[],
@@ -123,7 +197,7 @@ def alertmanager_readiness(
             'connected': True,
             'label': 'Operational',
             'tone': 'normal',
-            'description': 'Alertmanager consumer binding is eligible and the current alert retrieval succeeded.',
+            'description': 'Alertmanager consumer binding is eligible and the analytics worker alert retrieval succeeded.',
             'instance_name': runtime_stream.get('instance_name') or selected.instance.name,
             'profile': selected.binding.validation_profile or 'object-storage-alerts-v1',
         }
@@ -143,7 +217,7 @@ def alertmanager_readiness(
     else:
         label, tone = 'Ready · Runtime Unverified', 'info'
         description = (
-            'Alertmanager consumer binding is eligible. Runtime connectivity will be confirmed when alerts are loaded.'
+            'Alertmanager consumer binding is eligible. Runtime connectivity will be confirmed by the analytics worker refresh.'
         )
     return {
         'configured': True,

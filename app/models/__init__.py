@@ -33,7 +33,7 @@ from app.models.minio import MinioInstance
 from app.models.notification import Notification
 from app.models.notification_channel import NotificationChannel, NotificationDelivery
 from app.models.object_storage import ObjectStorageBucket, ObjectStorageSystem
-from app.models.object_storage_analytics import ObjectStorageForecastSnapshot
+from app.models.object_storage_analytics import ObjectStorageAnalyticsSnapshot, ObjectStorageForecastSnapshot
 from app.models.rbac import Permission, Role, RolePermission
 from app.models.report import Report, ReportSchedule, ReportScheduleRun, ReportTemplate
 from app.models.resolver import (
@@ -68,6 +68,7 @@ __all__ = [
     'MinioInstance',
     'ObjectStorageSystem',
     'ObjectStorageBucket',
+    'ObjectStorageAnalyticsSnapshot',
     'ObjectStorageForecastSnapshot',
     'ExternalIdentityLink',
     'ClusterStatus',

@@ -3,15 +3,16 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
-from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from app.common.analytics.metrics import MetricReadinessState, MetricsSourceError
 from app.extensions.db import db
 from app.models.object_storage import ObjectStorageSystem
-from app.models.object_storage_analytics import ObjectStorageForecastSnapshot
+from app.models.object_storage_analytics import ObjectStorageAnalyticsSnapshot, ObjectStorageForecastSnapshot
 from app.storage.object_storage.analytics.forecasting import linear_forecast
 from app.storage.object_storage.analytics.sources import resolve_object_storage_metrics_source
 
+ANALYTICS_SNAPSHOT_SCHEMA = 'object-storage-analytics.v1'
 FORECAST_METHOD = 'linear-v1'
 
 
@@ -19,6 +20,184 @@ def _aware(value: datetime | None) -> datetime | None:
     if value is None:
         return None
     return value if value.tzinfo is not None else value.replace(tzinfo=UTC)
+
+
+def _encode_snapshot_value(value: Any) -> Any:
+    if value is None or isinstance(value, (bool, int, float, str)):
+        return value
+    if isinstance(value, datetime):
+        return {'__kaori_object_storage_type__': 'datetime', 'value': value.isoformat()}
+    if isinstance(value, dict):
+        return {str(key): _encode_snapshot_value(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple, set)):
+        return [_encode_snapshot_value(item) for item in value]
+    raise TypeError(f'Unsupported Object Storage analytics snapshot value: {type(value).__name__}')
+
+
+def _decode_snapshot_value(value: Any) -> Any:
+    if isinstance(value, list):
+        return [_decode_snapshot_value(item) for item in value]
+    if not isinstance(value, dict):
+        return value
+    if value.get('__kaori_object_storage_type__') == 'datetime':
+        return datetime.fromisoformat(str(value['value']))
+    return {key: _decode_snapshot_value(item) for key, item in value.items()}
+
+
+def get_analytics_snapshot(*, system_id: str, time_range: str) -> ObjectStorageAnalyticsSnapshot | None:
+    return ObjectStorageAnalyticsSnapshot.query.filter_by(
+        object_storage_system_id=str(system_id),
+        time_range=time_range,
+    ).first()
+
+
+def analytics_snapshot_state(snapshot: ObjectStorageAnalyticsSnapshot | None) -> dict[str, Any]:
+    if snapshot is None:
+        return {
+            'state': 'missing',
+            'label': 'Worker Data Required',
+            'tone': 'warning',
+            'usable': False,
+            'stale': False,
+            'generated_at': None,
+            'last_attempt_at': None,
+            'last_error': None,
+        }
+    now = datetime.now(UTC)
+    generated_at = _aware(snapshot.generated_at)
+    expires_at = _aware(snapshot.expires_at)
+    stale_deadline = (
+        expires_at + timedelta(minutes=max(int(snapshot.stale_grace_minutes or 0), 0))
+        if expires_at is not None
+        else None
+    )
+    has_payload = isinstance(snapshot.payload_json, dict) and generated_at is not None
+    if snapshot.status == 'pending':
+        label, tone = ('Refreshing · Last Snapshot Available', 'info') if has_payload else ('Refreshing', 'pending')
+    elif snapshot.status == 'failed':
+        label, tone = ('Stale · Last Refresh Failed', 'warning') if has_payload else ('Worker Failed', 'critical')
+    elif not has_payload:
+        label, tone = 'Worker Data Required', 'warning'
+    elif expires_at is not None and now <= expires_at:
+        label, tone = 'Current', 'normal'
+    elif stale_deadline is not None and now <= stale_deadline:
+        label, tone = 'Stale', 'warning'
+    else:
+        label, tone = 'Expired', 'critical'
+    usable = bool(has_payload and stale_deadline is not None and now <= stale_deadline)
+    stale = bool(usable and expires_at is not None and now > expires_at)
+    return {
+        'state': snapshot.status,
+        'label': label,
+        'tone': tone,
+        'usable': usable,
+        'stale': stale,
+        'generated_at': snapshot.generated_at,
+        'last_attempt_at': snapshot.last_attempt_at,
+        'last_error': snapshot.last_error,
+    }
+
+
+def read_analytics_snapshot(*, system_id: str, time_range: str) -> tuple[dict[str, Any] | None, dict[str, Any]]:
+    snapshot = get_analytics_snapshot(system_id=system_id, time_range=time_range)
+    state = analytics_snapshot_state(snapshot)
+    state['time_range'] = time_range
+    if snapshot is None or not state['usable'] or not isinstance(snapshot.payload_json, dict):
+        return None, state
+    payload = _decode_snapshot_value(snapshot.payload_json)
+    if not isinstance(payload, dict) or payload.get('schema') != ANALYTICS_SNAPSHOT_SCHEMA:
+        return None, {**state, 'usable': False, 'label': 'Snapshot Contract Invalid', 'tone': 'critical'}
+    return payload, state
+
+
+def mark_analytics_pending(
+    *,
+    system_id: str,
+    time_range: str,
+    freshness_minutes: int,
+    stale_grace_minutes: int,
+    job_execution_id: int | None,
+) -> ObjectStorageAnalyticsSnapshot:
+    snapshot = get_analytics_snapshot(system_id=system_id, time_range=time_range)
+    if snapshot is None:
+        snapshot = ObjectStorageAnalyticsSnapshot()
+        snapshot.object_storage_system_id = str(system_id)
+        snapshot.time_range = time_range
+        db.session.add(snapshot)
+    snapshot.status = 'pending'
+    snapshot.last_attempt_at = datetime.now(UTC)
+    snapshot.last_error = None
+    snapshot.freshness_minutes = max(int(freshness_minutes), 5)
+    snapshot.stale_grace_minutes = max(int(stale_grace_minutes), 15)
+    snapshot.last_job_execution_id = job_execution_id
+    try:
+        db.session.commit()
+    except IntegrityError:
+        db.session.rollback()
+        snapshot = ObjectStorageAnalyticsSnapshot.query.filter_by(
+            object_storage_system_id=str(system_id),
+            time_range=time_range,
+        ).one()
+    return snapshot
+
+
+def store_analytics_snapshot(
+    *,
+    system_id: str,
+    time_range: str,
+    payload: dict[str, Any],
+    freshness_minutes: int,
+    stale_grace_minutes: int,
+    job_execution_id: int | None,
+) -> ObjectStorageAnalyticsSnapshot:
+    snapshot = mark_analytics_pending(
+        system_id=system_id,
+        time_range=time_range,
+        freshness_minutes=freshness_minutes,
+        stale_grace_minutes=stale_grace_minutes,
+        job_execution_id=job_execution_id,
+    )
+    now = datetime.now(UTC)
+    snapshot.payload_json = _encode_snapshot_value({'schema': ANALYTICS_SNAPSHOT_SCHEMA, **payload})
+    snapshot.status = 'ready'
+    snapshot.generated_at = now
+    snapshot.expires_at = now + timedelta(minutes=max(int(freshness_minutes), 5))
+    snapshot.last_attempt_at = now
+    snapshot.last_error = None
+    snapshot.last_job_execution_id = job_execution_id
+    db.session.commit()
+    return snapshot
+
+
+def fail_analytics_snapshot(
+    *,
+    system_id: str,
+    time_range: str,
+    error: Exception | str,
+    freshness_minutes: int,
+    stale_grace_minutes: int,
+    job_execution_id: int | None,
+) -> None:
+    snapshot = mark_analytics_pending(
+        system_id=system_id,
+        time_range=time_range,
+        freshness_minutes=freshness_minutes,
+        stale_grace_minutes=stale_grace_minutes,
+        job_execution_id=job_execution_id,
+    )
+    snapshot.status = 'failed'
+    snapshot.last_attempt_at = datetime.now(UTC)
+    snapshot.last_error = str(error)[:4000]
+    snapshot.last_job_execution_id = job_execution_id
+    db.session.commit()
+
+
+def analytics_snapshot_due(*, system_id: str, time_range: str) -> bool:
+    snapshot = get_analytics_snapshot(system_id=system_id, time_range=time_range)
+    if snapshot is None or snapshot.payload_json is None or snapshot.generated_at is None:
+        return True
+    expires_at = _aware(snapshot.expires_at)
+    return expires_at is None or datetime.now(UTC) >= expires_at
 
 
 def required_contract_ready(source) -> bool:

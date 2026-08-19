@@ -11,7 +11,7 @@
                         {{ table_label.status_label(metrics_readiness.label, metrics_readiness.tone) }}
                     </div>
                     <p class="mt-1 text-sm leading-6 text-content-muted">
-                        Full Validation records whether each canonical metric family, label schema, and query is usable for this binding. Runtime reachability and current samples are evaluated separately.
+                        Full Validation records whether each canonical metric family, label schema, and query is usable for this binding. Runtime reachability and current samples are evaluated separately by the analytics worker when it commits a snapshot.
                     </p>
                 </div>
             </div>

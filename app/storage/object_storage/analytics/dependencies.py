@@ -14,6 +14,7 @@ ObjectStorageDependencyKind = Literal[
     'metrics_source_connection',
     'metrics_source_authentication',
     'metrics_source_query',
+    'analytics_snapshot',
 ]
 
 
@@ -154,7 +155,7 @@ def metrics_runtime_blocker(
         'title': 'Operational Metrics Source Disconnected',
         'description': (
             f'The metrics source bound to {system.name} is currently unreachable. '
-            'Committed Inventory remains available, but live Object Storage Analytics is blocked until runtime connectivity is restored.'
+            'Committed Inventory and the last usable analytics snapshot remain available when eligible; new analytics refreshes are blocked until worker connectivity is restored.'
         ),
         'diagnostic_detail': str(exc),
         'icon': 'plug-zap',
@@ -176,7 +177,7 @@ def metrics_query_blocker(
         'title': 'Operational Metrics Query Failed',
         'description': (
             f'The metrics source for {system.name} is reachable, but KAORI could not complete any '
-            'runtime metric query for this analysis. Review the validated query profile and provider response before continuing.'
+            'worker metric query for this snapshot refresh. Review the validated query profile and provider response before continuing.'
         ),
         'diagnostic_detail': detail,
         'icon': 'file-warning',
@@ -208,3 +209,27 @@ def resolver_error_blocker(
             'action_endpoint': 'integrations.observability',
         }
     return metrics_source_setup_blocker(system, detail=str(exc))
+
+
+def analytics_snapshot_blocker(
+    system: ObjectStorageSystem,
+    *,
+    time_range: str,
+    label: str,
+    detail: str | None = None,
+) -> ObjectStorageDependencyBlocker:
+    return {
+        'kind': 'analytics_snapshot',
+        'stage': 3,
+        'badge': label,
+        'tone': 'warning' if label not in {'Worker Failed', 'Expired', 'Snapshot Contract Invalid'} else 'critical',
+        'title': 'Object Storage Analytics Snapshot Required',
+        'description': (
+            f'{system.name} does not have a usable committed {time_range.upper()} Object Storage Analytics snapshot yet. '
+            'KAORI has queued or is waiting for the analytics worker; page requests do not query the operational metrics or alert providers directly.'
+        ),
+        'diagnostic_detail': detail,
+        'icon': 'database-clock',
+        'action_label': 'Open Analytics Job',
+        'action_endpoint': 'jobs.overview',
+    }

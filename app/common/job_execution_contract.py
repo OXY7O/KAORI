@@ -5,6 +5,7 @@ from app.definitions.validation import require_list, require_mapping, require_st
 
 KUBERNETES_INVENTORY_SYNC_OPERATION = 'sync_kubernetes_inventory'
 OBJECT_STORAGE_INVENTORY_SYNC_OPERATION = 'sync_object_storage_inventory'
+OBJECT_STORAGE_ANALYTICS_MATERIALIZE_OPERATION = 'materialize_object_storage_analytics'
 OBJECT_STORAGE_FORECAST_MATERIALIZE_OPERATION = 'materialize_object_storage_forecast'
 SYNC_ALL_INVENTORY_ACTION = 'sync_all_inventory'
 

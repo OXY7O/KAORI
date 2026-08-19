@@ -23,6 +23,7 @@ app/storage/object_storage/analytics/
 ├── runtime.py
 ├── dependencies.py
 ├── bucket_table.py
+├── bucket_evidence.py
 ├── alert_sources.py
 ├── alert_table.py
 ├── analysis.py
@@ -36,12 +37,7 @@ app/storage/object_storage/analytics/
     └── minio_metrics.py
 ```
 
-`service.py` orchestrates page evidence. `runtime.py` owns the provider-neutral runtime/readiness state machine and request-local fail-fast reader, while `dependencies.py` owns explicit blocking states. All three consume only the provider-neutral contract from `app.common.analytics.metrics`. `analysis.py` owns pure domain calculations such as
-capacity/performance/forecast posture, trend summaries, headroom derivation, and
-Inventory-vs-operational reconciliation; it has no provider dependency. Provider-specific query syntax, response parsing,
-and exception translation live in a pair-qualified adapter such as
-`sources/minio_metrics.py`. This prevents a metrics binding for another
-Object Storage provider from accidentally receiving the MinIO asset profile.
+`service.py` owns two deliberately separate paths: worker collection and snapshot-only page assembly. `runtime.py` owns the provider-neutral readiness state machine and the fail-fast `EvidenceReader` used only while the analytics worker collects a snapshot, while `dependencies.py` owns explicit blocking states. `materialization.py` persists and reads the committed operational and forecast artifacts. All of these consume only the provider-neutral contract from `app.common.analytics.metrics`. `analysis.py` owns pure domain calculations such as capacity/performance/forecast posture, trend summaries, headroom derivation, and Inventory-vs-operational reconciliation; it has no provider dependency. Provider-specific query syntax, response parsing, and exception translation live in a pair-qualified adapter such as `sources/providers/minio/metrics.py`. This prevents a metrics binding for another Object Storage provider from accidentally receiving the MinIO asset profile.
 
 ## Canonical metrics contract
 
@@ -74,32 +70,26 @@ profile by:
 4. classifying evidence as `ready`, `no_data`, `unsupported`, or `blocked`;
 5. persisting the complete readiness snapshot on `IntegrationBinding.validation_evidence`.
 
-Analytics reads that persisted snapshot through `MetricsSource.readiness`. It
-does not rediscover metric families on every page request. Contract readiness
-and current runtime reachability are intentionally separate: a previously
-validated source can be reported as runtime-unreachable without destroying the
-last known contract evidence.
+The analytics worker reads that persisted readiness through `MetricsSource.readiness` when it builds a committed operational snapshot. Page requests read the readiness copy stored in that snapshot and never rediscover metric families or perform operational source probes. Contract readiness and collection-time runtime reachability are intentionally separate: a previously validated source can fail during a later worker refresh without destroying the last usable committed analytics artifact inside its stale-grace window.
 
 Required metrics define the minimum operational contract. Recommended metrics
 enrich health/performance/top-consumer analysis, while optional metrics (for
 example bucket quota) never block the core contract when the provider does not
 expose them.
 
-## Interactive failure policy
+## Worker collection and failure policy
 
-Interactive Object Storage analytics is intentionally fail-fast:
+Object Storage operational analytics follows the same materialization boundary as Kubernetes Analytics. Interactive page requests never query Metrics Source or Alertmanager for analytics evidence.
 
-1. The adapter executes provider calls with no interactive retry.
-2. A transport or authentication error becomes a source-wide
-   `MetricsSourceError`.
-3. The request-local evidence reader opens its source circuit and skips all
-   remaining provider queries for that page request.
-4. Query-specific failures do not trip the source circuit; unrelated metrics may still render. If every runtime query fails, Analytics blocks with `Runtime Query Failed` rather than presenting an empty workspace.
-5. Partial query success is reported as `Degraded`; successful runtime query execution is reported as `Operational`.
-6. Committed Inventory evidence remains available when operational metrics are degraded or disconnected.
+1. `object_storage.analytics.materialize` runs on the `analytics-batch` queue.
+2. The worker resolves the validated Object Storage Metrics Source binding and uses one cached `EvidenceReader` collection for Overview, Capacity & Usage, Performance, Top Consumers, Alerts, and the current-range Forecast context.
+3. A transport or authentication failure becomes a source-wide `MetricsSourceError`; the collector opens its source circuit and skips remaining operational metric queries for that work item.
+4. Query-specific failures remain explicit evidence states. If every operational query fails, the worker rejects the refresh rather than committing an apparently empty healthy snapshot.
+5. The worker also collects both Alertmanager and Metrics Source alert streams so `Automatic`, explicit Alertmanager, and explicit Metrics Source selection can be resolved later from committed evidence without provider access in the page request.
+6. A successful collection is stored in `ObjectStorageAnalyticsSnapshot`. The UI reads only this committed artifact plus committed Object Storage Inventory and, where required, the separate forecast snapshot.
+7. When the operational snapshot becomes stale, KAORI keeps the last usable payload inside the configured stale-grace window and queues an on-demand refresh. Missing or expired evidence blocks with `Object Storage Analytics Snapshot Required` until a worker commits usable data.
 
-Background refresh workloads may use a different retry policy; the UI
-request path must not multiply an unreachable provider into a query storm.
+The registered job defaults to a 15-minute freshness interval with 24-hour stale grace. Its snapshot table is bounded by the unique `(object_storage_system_id, time_range)` scope: refreshes replace the current artifact instead of appending unbounded analytics history.
 
 ## No-compatibility rule
 
@@ -126,15 +116,15 @@ different observation times. Analytics never rewrites Inventory from this compar
 
 Object Storage Analytics follows the same operational interaction contract as Kubernetes Analytics:
 
-- dependency-blocked pages reuse the shared `components/dependencies/_blocker.html` readiness surface instead of maintaining a separate Object Storage blocker design; Object Storage pages use `Object Storage → Metrics`, while Alerts extends the path with `Alert Evidence`;
-- a registered Object Storage system without `inventory_observed_at` is still blocked as `Object Storage Inventory Sync Required`; operational metrics do not bypass the committed inventory prerequisite;
-- scope changes use the shared KAORI HTMX loading bar and report the runtime state as `Checking Runtime` while the request is in progress;
-- missing configuration, unvalidated required metrics, incomplete capability, disconnection, authentication failure, and total runtime-query failure are explicit blocking states;
-- partial runtime-query failure is a degraded state, not a false healthy state;
+- dependency-blocked pages reuse the shared `components/dependencies/_blocker.html` readiness surface instead of maintaining a separate Object Storage blocker design; the readiness path is `Object Storage → Metrics → Analytics Snapshot`;
+- a registered Object Storage system without `inventory_observed_at` is still blocked as `Object Storage Inventory Sync Required`; operational snapshots do not bypass the committed inventory prerequisite;
+- scope changes use the shared KAORI HTMX loading bar and read the selected committed snapshot only; a stale or missing artifact queues an analytics worker refresh without turning the page request into a source query;
+- missing configuration, unvalidated required metrics, incomplete capability, collection-time disconnection/authentication failure, and total worker-query failure are explicit states;
+- partial worker-query failure is persisted as degraded evidence, not a false healthy state;
 - the Overview prioritizes operational KPI/posture, trend, concise consumer concentration, and drill-down workspaces before contract-readiness detail;
 - bucket records use the shared Analytics record-pagination owner at `templates/analytics/components/_record_pagination.html`, with 5-row default pagination, 5/10/25/50 page sizes, HTMX partial refresh, and a header loading indicator; active alert records additionally use auto-refreshing search/select filters and a conditional Clear Filters action with no horizontal table scroll.
 
-The status words describe different evidence layers intentionally: `Ready` is persisted metric-contract validation, `Operational` is successful current runtime query execution, `Degraded` is partial current query success, and `Disconnected` is current transport failure. These terms must not be used interchangeably.
+The status words describe different evidence layers intentionally: `Ready` is persisted metric-contract validation, `Operational` records that the committed worker collection completed its operational queries successfully, `Degraded` records partial worker-query success, and `Disconnected` records a collection-time transport failure. Snapshot freshness (`Current`, `Stale`, `Expired`, `Refreshing`) is a separate artifact lifecycle and must not be conflated with source readiness.
 
 When a consumer binding still carries a retired validation profile, Analytics
 reports `Consumer Validation Stale` instead of the ambiguous `Validation
@@ -152,13 +142,12 @@ registered Job Configuration entry `object_storage.forecast.materialize` runs on
 the dedicated `forecasting` queue and refreshes 7d, 30d, and 90d history windows
 into `ObjectStorageForecastSnapshot` records. The same snapshot payload also stores bucket-level usage forecasts derived from bucket-labeled Metrics Source history, so per-bucket planning evidence does not require another job or database table. Buckets with fewer than two usable range samples stay visible as explicit history gaps instead of being omitted.
 
-Forecast is intentionally the only Object Storage Analytics surface with a
-scheduled Job Configuration entry. Overview, Capacity & Usage, Performance, Top
-Consumers, and Alerts & Anomalies resolve current Metrics Source / Alertmanager
-evidence at request time and combine it with committed Object Storage Inventory
-where applicable; they do not maintain separate worker-owned snapshot artifacts.
-Adding independent jobs for those surfaces would duplicate source queries and
-create competing freshness ownership without a persisted artifact boundary.
+Object Storage Analytics has two scheduled materialization owners, not one job per page:
+
+- `object_storage.analytics.materialize` collects reusable operational metrics and both alert streams for Overview, Capacity & Usage, Performance, Top Consumers, Alerts & Anomalies, and current-range forecast context into `ObjectStorageAnalyticsSnapshot` on `analytics-batch`.
+- `object_storage.forecast.materialize` performs long-range system and per-bucket forecast collection into `ObjectStorageForecastSnapshot` on the dedicated `forecasting` queue.
+
+This separation prevents each page from repeating source queries while keeping heavier long-range forecasting independent from short-lived operational freshness.
 
 The Forecast UI reads committed worker output and reports `Current`, `Stale`,
 `Expired`, `Refreshing`, or worker-failure states from that artifact. The last
@@ -176,7 +165,7 @@ Analytics domain code.
 
 Bucket usage, object, quota, request, and error metrics are bucket-labeled operational evidence. KAORI queries the complete scoped bucket vector and performs ranking/pagination in the application; query profiles must not truncate the source vector with `topk`, because doing so can incorrectly turn lower-ranked buckets into apparent `N/A` records.
 
-For MinIO v2, cluster and bucket telemetry are separate scrape categories. System capacity and S3-wide request metrics come from cluster metrics, while bucket usage/quota/request families require the bucket metrics endpoint. Full Validation records whether those optional/recommended families are actually present. Runtime rows then distinguish `Metric Not Scraped`, `No Current Samples`, `No Bucket Series`, and `Runtime Query Failed`; none of those states are coerced to zero. Committed Inventory is an allowed field-level fallback for bucket identity, point-in-time usage/object evidence, and quota state, but never for request-path rate or error-rate time series.
+For MinIO v2, cluster and bucket telemetry are separate scrape categories. System capacity and S3-wide request metrics come from cluster metrics, while bucket usage/quota/request families require the bucket metrics endpoint. Full Validation records whether those optional/recommended families are actually present. Committed worker rows distinguish `Metric Not Scraped`, `No Current Samples`, `No Bucket Series`, and `Runtime Query Failed`; none of those states are coerced to zero. Committed Inventory is an allowed field-level fallback for bucket identity, point-in-time usage/object evidence, and quota state, but never for request-path rate or error-rate time series.
 
 Quota semantics are also explicit: `Not Configured` is a successfully observed provider state and counts as quota-state evidence, while `N/A` is reserved for unavailable, unsupported, inconsistent, or not-collected quota evidence.
 
@@ -185,7 +174,7 @@ Quota semantics are also explicit: `Not Configured` is a successfully observed p
 
 Object Storage Alerts & Anomalies keeps two different evidence families explicit:
 
-1. **Provider alert records** use `Automatic`, `Alertmanager`, or `Metrics Source` selection. Automatic prefers the governed `object_storage_system` Alertmanager binding (`object-storage-alerts-v1`) and falls back to metric-derived alert-state evidence from the selected Metrics Source adapter. Alertmanager is lifecycle-rich; Metrics Source fallback is metric-derived rule-state evidence only.
-2. **KAORI metric-derived signals** continue to evaluate Object Storage capacity, request error, queue-pressure, and node-health operating boundaries from the operational `MetricsSource`. These signals are not duplicated Alertmanager records and do not claim routing, silence, inhibition, or receiver evidence.
+1. **Provider alert records** use `Automatic`, `Alertmanager`, or `Metrics Source` selection. The analytics worker stores both eligible streams in the operational snapshot. Automatic later prefers the committed Alertmanager stream and falls back to committed metric-derived alert-state evidence without querying either provider from the page request. Alertmanager is lifecycle-rich; Metrics Source fallback is metric-derived rule-state evidence only.
+2. **KAORI metric-derived signals** evaluate Object Storage capacity, request error, queue-pressure, and node-health operating boundaries from the metrics collected in the same operational snapshot. These signals are not duplicated Alertmanager records and do not claim routing, silence, inhibition, or receiver evidence.
 
-Alertmanager and Metrics Source are therefore independent evidence paths on the Alerts page. A Metrics Source outage must not suppress a usable Alertmanager alert stream, and an Alertmanager outage must not suppress usable metric-derived signals or Metrics Source alert fallback.
+Alertmanager and Metrics Source remain independent evidence families inside the snapshot. A collection failure for one stream must not fabricate evidence for the other, and the UI preserves the committed fallback semantics until the next successful worker refresh.

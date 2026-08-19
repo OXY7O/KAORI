@@ -157,7 +157,7 @@ def test_object_storage_metrics_readiness_is_validation_owned_and_provider_quali
     assert 'self.client.series(metrics)' in audit
     assert 'self.client.query(definition.expression)' in audit
     assert 'Operational Metrics Contract' in readiness_template
-    assert 'Runtime reachability and current samples are evaluated separately' in readiness_template
+    assert 'Runtime reachability and current samples are evaluated separately by the analytics worker' in readiness_template
 
 
 def test_object_storage_query_profile_classifies_required_recommended_and_optional_evidence() -> None:
@@ -328,14 +328,15 @@ def test_object_storage_analytics_uses_explicit_runtime_states_and_blocking() ->
     assert 'metrics_query_blocker' in runtime
     assert "'inventory_required'" in dependencies
     service = read('app/storage/object_storage/analytics/service.py')
-    assert service.count('inventory_required_blocker(system)') >= 3
+    assert service.count('inventory_required_blocker(system)') >= 1
+    assert "return get_object_storage_analytics_context('alerts', query_args)" in service
+    assert 'return get_object_storage_analytics_context(page_key, query_args)' in service
     assert 'object-storage-analytics-refresh-indicator' in controls
     shared_blocker = read('app/templates/components/dependencies/_blocker.html')
     assert 'components/dependencies/_blocker.html' in blocker
-    assert 'Object Storage → Metrics' in blocker
-    assert 'Object Storage → Metrics → Alert Evidence' in blocker
-    assert 'dependency_grid_classes = "lg:grid-cols-2"' in blocker
-    assert 'dependency_grid_classes = "lg:grid-cols-3"' in blocker
+    assert 'Object Storage → Metrics → Analytics Snapshot' in blocker
+    assert 'Alert Evidence' not in blocker
+    assert blocker.count('dependency_grid_classes = "lg:grid-cols-3"') == 2
     assert 'Analytics Readiness' in shared_blocker
     assert 'Current Blocker' in shared_blocker
     assert 'dependency_route_summary' in shared_blocker
@@ -349,7 +350,8 @@ def test_object_storage_analytics_uses_explicit_runtime_states_and_blocking() ->
     assert "'Current Step'" in hero_blocked
     assert "'Progress'" in hero_blocked
     assert "'Analytics Readiness'" in hero_blocked
-    assert "readiness_step_count = 3 if page_key == 'alerts' else 2" in hero_blocked
+    assert 'readiness_step_count = 3' in hero_blocked
+    assert "3: 'Analytics Snapshot'" in hero_blocked
     assert has_jinja_assignment(hero_blocked, 'blocker_status', 'Capability Incomplete')
 
 
@@ -398,7 +400,8 @@ def test_object_storage_overview_matches_kubernetes_overview_hero_and_tab_contra
     assert "'Current Step'" in hero_blocked
     assert "'Progress'" in hero_blocked
     assert "'Analytics Readiness'" in hero_blocked
-    assert "readiness_step_count = 3 if page_key == 'alerts' else 2" in hero_blocked
+    assert 'readiness_step_count = 3' in hero_blocked
+    assert "3: 'Analytics Snapshot'" in hero_blocked
     assert has_jinja_assignment(hero_blocked, 'blocker_status', 'Capability Incomplete')
 
     assert 'components/content_tabs.html' in workspace
@@ -587,7 +590,10 @@ def test_object_storage_forecast_is_worker_materialized_on_forecasting_queue() -
     assert (ROOT / 'app/models/object_storage_analytics.py').exists()
     assert (ROOT / 'migrations/versions/20260814_object_storage_forecast_snapshots.py').exists()
     object_storage_jobs = [item for item in jobs['jobs'] if item.get('domain') == 'Object Storage Analytics']
-    assert [item['key'] for item in object_storage_jobs] == ['object_storage.forecast.materialize']
+    assert [item['key'] for item in object_storage_jobs] == [
+        'object_storage.analytics.materialize',
+        'object_storage.forecast.materialize',
+    ]
     assert job['name'] == 'Object Storage Forecast Data Refresh'
     assert job['configuration_template'] == 'platform_operations/jobs/configuration/definitions/forecast_refresh.html'
     assert 'Snapshot Refresh Policy' in materialization_template
@@ -599,9 +605,9 @@ def test_object_storage_forecast_is_worker_materialized_on_forecasting_queue() -
     assert "'Object Storage' if definition.domain == 'Object Storage Analytics' else 'Kubernetes'" in forecast_config
     assert 'history windows prepared by the' in forecast_config
     assert 'forecast worker.' in forecast_config
-    assert 'Forecast is intentionally the only Object Storage Analytics surface with a' in analytics_readme
-    assert 'scheduled Job Configuration entry' in analytics_readme
-    assert 'they do not maintain separate worker-owned snapshot artifacts' in analytics_readme
+    assert '`object_storage.analytics.materialize` collects reusable operational metrics' in analytics_readme
+    assert '`ObjectStorageAnalyticsSnapshot`' in analytics_readme
+    assert 'Interactive page requests never query Metrics Source or Alertmanager' in analytics_readme
 
 
 def test_object_storage_alerts_use_independent_alert_and_metric_evidence_paths() -> None:
@@ -623,7 +629,8 @@ def test_object_storage_alerts_use_independent_alert_and_metric_evidence_paths()
     assert "context['alerts_degraded']" in service
     assert 'Automatic · Alertmanager Preferred' in controls
     assert 'Alertmanager Lifecycle' in controls
-    assert 'Metric-Derived Signals' in controls
+    assert 'Metrics Snapshot Source' in controls
+    assert 'Analytics Worker Snapshot' in controls
     assert 'Metrics Only' in records
     assert 'Silenced' in records
     assert 'Inhibited' in records

@@ -79,7 +79,7 @@ Celery Beat runs `app.platform_operations.jobs.tasks.dispatch_scheduled_jobs` ev
 
 ## Analytics Definitions
 
-The registry includes `analytics.materialize`, `analytics.forecast.materialize`, and `object_storage.forecast.materialize`. These definitions use database-backed `JobPolicy`, canonical `JobExecution`, worker-specific queues, shared deduplication, and Activity Audit records for automatic runs. Kubernetes and Object Storage forecast definitions both use the dedicated `forecasting` queue while retaining separate domain artifacts and eligibility contracts. Scheduled jobs have no user subscriber and therefore do not produce notification-center items or toasts.
+The registry includes `analytics.materialize`, `analytics.forecast.materialize`, `object_storage.analytics.materialize`, and `object_storage.forecast.materialize`. These definitions use database-backed `JobPolicy`, canonical `JobExecution`, worker-specific queues, shared deduplication, and Activity Audit records for automatic runs. Kubernetes and Object Storage operational analytics use the `analytics-batch` queue, while both forecast definitions use the dedicated `forecasting` queue and retain separate domain artifacts and eligibility contracts. Scheduled jobs have no user subscriber and therefore do not produce notification-center items or toasts.
 
 Analytics and Forecast policies are freshness-aware. A due policy check may complete with `current` and create no `JobExecution` when every configured snapshot is still reusable. This avoids periodic Metrics Source queries that do not improve the data served to users.
 

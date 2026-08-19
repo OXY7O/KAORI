@@ -19,19 +19,18 @@ def test_bucket_query_contract_collects_complete_scoped_vectors_without_topk_tru
 
 
 def test_bucket_evidence_keeps_inventory_fallback_and_explicit_missing_reasons() -> None:
-    service = read('app/storage/object_storage/analytics/service.py')
+    bucket_evidence = read('app/storage/object_storage/analytics/bucket_evidence.py')
     bucket_table = read('app/templates/storage/object_storage/analytics/partials/_bucket_table.html')
     evidence = read('app/templates/storage/object_storage/analytics/partials/_evidence_boundary.html')
 
-    assert "usage_source = 'Committed Snapshot'" in service
-    assert "objects_source = 'Committed Snapshot'" in service
-    assert "quota_source = 'Committed Snapshot'" in service
-    assert "quota_state = 'not_configured'" in service
-    assert "quota_status_label = 'No Quota Configured'" in service
-    assert "quota_status_label = 'Quota Not Collected'" in service
-    assert "quota_status_label = 'Quota Collection Unsupported'" in service
-    assert "'unsupported': 'Metric Not Scraped'" in service
-    assert "'failed': 'Runtime Query Failed'" in service
+    assert "return float(inventory_value), 'Committed Snapshot'" in bucket_evidence
+    assert "'state': 'not_configured'" in bucket_evidence
+    assert "'source': 'Committed Snapshot'" in bucket_evidence
+    assert "'not_configured': ('Not Configured', 'Not Applicable', 'No Quota Configured', 'info')" in bucket_evidence
+    assert "'not_collected': ('N/A', 'Unknown', 'Quota Not Collected', 'warning')" in bucket_evidence
+    assert "'not_supported': ('N/A', 'Not Available', 'Quota Collection Unsupported', 'unknown')" in bucket_evidence
+    assert "'unsupported': 'Metric Not Scraped'" in bucket_evidence
+    assert "'failed': 'Runtime Query Failed'" in bucket_evidence
     assert 'row.request_source' in bucket_table
     assert 'row.error_source' in bucket_table
     assert 'This is actual state, not a collection failure.' in evidence

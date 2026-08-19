@@ -7,7 +7,7 @@
             <div class="min-w-0">
                 <h2 class="text-lg font-semibold text-content-primary">How Evidence Is Assembled</h2>
                 <p class="mt-1 max-w-4xl text-sm leading-6 text-content-muted">
-                    Read each value with its source role. KAORI does not silently replace missing time-series evidence with a different source unless that field has an explicit Inventory fallback.
+                    Read each value with its source role. The page reads one committed worker snapshot; KAORI does not silently replace missing time-series evidence with a different source unless that field has an explicit Inventory fallback.
                 </p>
             </div>
         </div>
@@ -39,7 +39,7 @@
                 <div class="min-w-0">
                     <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Alertmanager</p>
                     <p class="mt-1 text-sm font-semibold text-content-primary">Alert Lifecycle & Routing</p>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">Owns active alert lifecycle, receiver, silence, inhibition, and routing evidence when an eligible Object Storage alert binding is resolved.</p>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">The analytics worker collects active alert lifecycle, receiver, silence, inhibition, and routing evidence when an eligible Object Storage alert binding is resolved.</p>
                 </div>
             </div>
         </article>
@@ -57,7 +57,7 @@
                     </div>
                     <div class="rounded-lg border border-outline-subtle bg-surface-elevated px-3 py-3">
                         {{ table_label.status_label('No Current Samples', 'unknown', size='compact') }}
-                        <p class="mt-2 text-xs leading-5 text-content-muted">The query is valid but returned no samples in the current scope or time window.</p>
+                        <p class="mt-2 text-xs leading-5 text-content-muted">The worker query was valid but returned no samples in the selected scope or time window.</p>
                     </div>
                     <div class="rounded-lg border border-outline-subtle bg-surface-elevated px-3 py-3">
                         {{ table_label.status_label('Metric Not Scraped', 'warning', size='compact') }}
@@ -65,7 +65,7 @@
                     </div>
                     <div class="rounded-lg border border-outline-subtle bg-surface-elevated px-3 py-3">
                         {{ table_label.status_label('Runtime Query Failed', 'critical', size='compact') }}
-                        <p class="mt-2 text-xs leading-5 text-content-muted">The metric contract exists, but the current query failed. KAORI does not convert this state into zero or healthy evidence.</p>
+                        <p class="mt-2 text-xs leading-5 text-content-muted">The metric contract exists, but the worker collection query failed. KAORI preserves the failure state instead of converting it into zero or healthy evidence.</p>
                     </div>
                 </div>
             </div>

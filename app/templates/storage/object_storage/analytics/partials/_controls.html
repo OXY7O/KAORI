@@ -7,17 +7,17 @@
             </span>
             <div class="min-w-0">
                 <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Analysis Controls</p>
-                <h2 class="mt-1 text-lg font-semibold text-content-primary">Object Storage Scope &amp; Runtime Readiness</h2>
+                <h2 class="mt-1 text-lg font-semibold text-content-primary">Object Storage Scope &amp; Snapshot Readiness</h2>
                 <p class="mt-1 text-sm leading-6 text-content-muted">
                     {% if page_key == 'alerts' %}
-                        Select the managed system and alert source. Automatic prefers Alertmanager and falls back to Metrics Source ALERTS evidence when Alertmanager is unavailable.
+                        Select the managed system and committed alert view. Automatic prefers worker-collected Alertmanager evidence and falls back to metrics-backed alert evidence from the same analytics snapshot.
                     {% else %}
-                        Select the managed system and analysis window. KAORI keeps committed Inventory, metric-contract validation, and current runtime connectivity as separate states.
+                        Select the managed system and analysis window. Pages read worker-materialized analytics snapshots; operational Metrics Source and alert-provider queries run only on the background analytics worker.
                     {% endif %}
                 </p>
             </div>
         </div>
-        {{ loading_bar.render('object-storage-analytics-refresh-indicator', label='Refreshing Alert Sources' if page_key == 'alerts' else 'Checking Operational Metrics') }}
+        {{ loading_bar.render('object-storage-analytics-refresh-indicator', label='Loading Committed Alert Snapshot' if page_key == 'alerts' else 'Loading Committed Analytics Snapshot') }}
     </header>
     <div class="space-y-5 p-5 sm:p-6">
         <form id="object-storage-analytics-controls"
@@ -85,7 +85,7 @@
             {% endif %}
         </form>
         {% if page_key == 'alerts' %}
-            <div class="grid gap-4 lg:grid-cols-3">
+            <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                 <article class="{{ analysis_surface.readiness_shell_classes() }} p-4">
                     <div class="flex items-start justify-between gap-3">
                         <div class="flex min-w-0 items-start gap-3">
@@ -99,6 +99,18 @@
                             </div>
                         </div>
                         {{ table_label.status_label(alert_source.label, alert_source.tone) }}
+                    </div>
+                </article>
+                <article class="{{ analysis_surface.readiness_shell_classes() }} p-4">
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="flex min-w-0 items-start gap-3">
+                            <span class="{{ analysis_surface.semantic_icon_classes(analytics_materialization.tone) }}"><i data-lucide="database-clock" class="h-4 w-4"></i></span>
+                            <div class="min-w-0">
+                                <p class="text-sm font-semibold text-content-primary">Analytics Worker Snapshot</p>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">{{ selected_time_range|upper }} · {{ analytics_materialization.generated_at|user_datetime('Not Generated') }}</p>
+                            </div>
+                        </div>
+                        {{ table_label.status_label(analytics_materialization.label, analytics_materialization.tone) }}
                     </div>
                 </article>
                 <article class="{{ analysis_surface.readiness_shell_classes() }} p-4">
@@ -121,7 +133,7 @@
                         <div class="flex min-w-0 items-start gap-3">
                             <span class="{{ analysis_surface.semantic_icon_classes(metrics_source.tone) }}"><i data-lucide="activity" class="h-4 w-4"></i></span>
                             <div class="min-w-0">
-                                <p class="text-sm font-semibold text-content-primary">Metric-Derived Signals</p>
+                                <p class="text-sm font-semibold text-content-primary">Metrics Snapshot Source</p>
                                 <p class="mt-1 break-words text-xs leading-5 text-content-muted">
                                     {{ metrics_source.provider_label }}
                                     {% if metrics_source.instance_name %}· {{ metrics_source.instance_name }}{% endif %}
@@ -159,7 +171,7 @@
                 </div>
             {% endif %}
         {% else %}
-            <div class="grid gap-4 lg:grid-cols-3">
+            <div class="grid gap-4 md:grid-cols-2 {{ 'xl:grid-cols-4' if page_key == 'forecast' else 'xl:grid-cols-3' }}">
                 <article class="{{ analysis_surface.readiness_shell_classes() }} p-4">
                     <div class="flex items-start justify-between gap-3">
                         <div class="flex min-w-0 items-start gap-3">
@@ -175,16 +187,25 @@
                 <article class="{{ analysis_surface.readiness_shell_classes() }} p-4">
                     <div class="flex items-start justify-between gap-3">
                         <div class="flex min-w-0 items-start gap-3">
-                            <span class="{{ analysis_surface.semantic_icon_classes(metrics_source.tone) }}"><i data-lucide="activity" class="h-4 w-4"></i></span>
+                            <span class="{{ analysis_surface.semantic_icon_classes(analytics_materialization.tone) }}"><i data-lucide="database-clock" class="h-4 w-4"></i></span>
                             <div class="min-w-0">
-                                <p class="text-sm font-semibold text-content-primary">Operational Metrics Source</p>
-                                <p class="mt-1 break-words text-xs leading-5 text-content-muted">
-                                    {{ metrics_source.provider_label }}
-                                    {% if metrics_source.instance_name %}· {{ metrics_source.instance_name }}{% endif %}
-                                </p>
+                                <p class="text-sm font-semibold text-content-primary">Analytics Worker Snapshot</p>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">{{ selected_time_range|upper }} · {{ analytics_materialization.generated_at|user_datetime('Not Generated') }}</p>
                             </div>
                         </div>
-                        {{ table_label.status_label(metrics_source.label, metrics_source.tone) }}
+                        {{ table_label.status_label(analytics_materialization.label, analytics_materialization.tone) }}
+                    </div>
+                </article>
+                <article class="{{ analysis_surface.readiness_shell_classes() }} p-4">
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="flex min-w-0 items-start gap-3">
+                            <span class="{{ analysis_surface.semantic_icon_classes(metrics_readiness.tone) }}"><i data-lucide="list-checks" class="h-4 w-4"></i></span>
+                            <div class="min-w-0">
+                                <p class="text-sm font-semibold text-content-primary">Metrics Contract At Collection</p>
+                                <p class="mt-1 break-words text-xs leading-5 text-content-muted">{{ metrics_readiness.profile_label }} · {{ metrics_source.provider_label }}</p>
+                            </div>
+                        </div>
+                        {{ table_label.status_label(metrics_readiness.label, metrics_readiness.tone) }}
                     </div>
                 </article>
                 {% if page_key == 'forecast' %}
@@ -200,20 +221,26 @@
                             {{ table_label.status_label(forecast_materialization.label, forecast_materialization.tone) }}
                         </div>
                     </article>
-                {% else %}
-                    <article class="{{ analysis_surface.readiness_shell_classes() }} p-4">
-                        <div class="flex items-start justify-between gap-3">
-                            <div class="flex min-w-0 items-start gap-3">
-                                <span class="{{ analysis_surface.semantic_icon_classes(metrics_readiness.tone) }}"><i data-lucide="list-checks" class="h-4 w-4"></i></span>
-                                <div class="min-w-0">
-                                    <p class="text-sm font-semibold text-content-primary">Metrics Contract</p>
-                                    <p class="mt-1 text-xs leading-5 text-content-muted">{{ metrics_readiness.profile_label }}</p>
-                                </div>
-                            </div>
-                            {{ table_label.status_label(metrics_readiness.label, metrics_readiness.tone) }}
-                        </div>
-                    </article>
                 {% endif %}
+            </div>
+        {% endif %}
+        {% if analytics_materialization.stale or analytics_materialization.refresh_dispatched or analytics_materialization.dispatch_error %}
+            <div class="rounded-lg border border-outline-default bg-status-warning-soft px-4 py-3" role="status">
+                <div class="flex items-start gap-2">
+                    <i data-lucide="refresh-cw" class="mt-0.5 h-4 w-4 shrink-0 text-status-warning"></i>
+                    <div>
+                        <p class="text-sm font-semibold text-content-primary">Analytics Snapshot Refresh</p>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">
+                            {% if analytics_materialization.dispatch_error %}
+                                {{ analytics_materialization.dispatch_error }} The last usable committed snapshot remains visible when it is inside the stale-grace window.
+                            {% elif analytics_materialization.refresh_dispatched %}
+                                A newer {{ selected_time_range|upper }} snapshot has been queued. This page continues to read the committed snapshot; it does not query providers directly.
+                            {% else %}
+                                The current snapshot is stale but still inside the governed fallback window.
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
             </div>
         {% endif %}
         {% if query_diagnostics|default([]) and not dependency_blocker %}

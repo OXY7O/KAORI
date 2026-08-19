@@ -29,16 +29,16 @@ def test_object_storage_blocker_reuses_kubernetes_analytics_dependency_surface()
     blocked_hero = read('app/templates/storage/object_storage/analytics/partials/_hero_blocked_posture.html')
 
     assert 'components/dependencies/_blocker.html' in object_blocker
-    assert 'Object Storage → Metrics' in object_blocker
-    assert 'Object Storage → Metrics → Alert Evidence' in object_blocker
-    assert 'dependency_grid_classes = "lg:grid-cols-2"' in object_blocker
-    assert 'dependency_grid_classes = "lg:grid-cols-3"' in object_blocker
+    assert 'Object Storage → Metrics → Analytics Snapshot' in object_blocker
+    assert 'Alert Evidence' not in object_blocker
+    assert object_blocker.count('dependency_grid_classes = "lg:grid-cols-3"') == 2
     assert 'Analytics Readiness' in shared_blocker
     assert 'Current Blocker' in shared_blocker
     assert 'dependency_route_summary' in shared_blocker
     assert 'dependency_step_count' in shared_blocker
     assert "'Analytics Readiness'" in blocked_hero
-    assert "readiness_step_count = 3 if page_key == 'alerts' else 2" in blocked_hero
+    assert 'readiness_step_count = 3' in blocked_hero
+    assert "3: 'Analytics Snapshot'" in blocked_hero
 
 
 def test_object_storage_analytics_requires_committed_inventory_before_metrics_analysis() -> None:
@@ -48,8 +48,10 @@ def test_object_storage_analytics_requires_committed_inventory_before_metrics_an
     assert "'inventory_required'" in dependencies
     assert 'Object Storage Inventory Sync Required' in dependencies
     assert "'action_endpoint': 'object_storage_inventory.overview'" in dependencies
-    assert service.count('if system.inventory_observed_at is None:') >= 3
-    assert service.count('inventory_required_blocker(system)') >= 3
+    assert service.count('if system.inventory_observed_at is None:') >= 1
+    assert service.count('inventory_required_blocker(system)') >= 1
+    assert "return get_object_storage_analytics_context('alerts', query_args)" in service
+    assert 'return get_object_storage_analytics_context(page_key, query_args)' in service
 
 
 def test_object_storage_runtime_boundary_stays_provider_neutral_and_fail_fast() -> None:
