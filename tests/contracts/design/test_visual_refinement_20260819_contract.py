@@ -17,13 +17,11 @@ def test_operational_callout_actions_no_longer_compress_description_copy() -> No
     assert 'inline-flex min-h-9 shrink-0 items-center justify-center gap-2 rounded-lg border' in source
 
 
-
 def test_detail_rows_use_more_readable_value_emphasis_for_inventory_drawers() -> None:
     source = read('app/templates/components/details/_detail_content.html')
 
     assert 'sm:grid-cols-[minmax(9rem,0.42fr)_minmax(0,1fr)]' in source
     assert 'text-left text-sm font-semibold leading-5 text-content-primary' in source
-
 
 
 def test_workload_mapping_modal_uses_investigation_width_and_bar_reading_guide() -> None:
@@ -40,11 +38,13 @@ def test_workload_mapping_modal_uses_investigation_width_and_bar_reading_guide()
     assert 'Current vs Selected-Window Peak' in source
 
 
-
 def test_forecast_resource_outlook_uses_clearer_threshold_timing_copy() -> None:
     source = read('app/templates/kubernetes/analytics/forecast/partials/_forecast_section.html')
 
-    assert 'md:grid-cols-[minmax(0,1.2fr)_minmax(9rem,0.85fr)_minmax(9rem,0.85fr)_minmax(12rem,1.05fr)_minmax(10rem,0.95fr)]' in source
+    assert (
+        'md:grid-cols-[minmax(0,1.2fr)_minmax(9rem,0.85fr)_minmax(9rem,0.85fr)_minmax(12rem,1.05fr)_minmax(10rem,0.95fr)]'
+        in source
+    )
     assert 'Warning: {{ item.warning_eta.label }}' in source
     assert 'Critical: {{ item.critical_eta.label }}' in source
     assert 'md:flex-col md:items-start' in source

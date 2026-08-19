@@ -340,4 +340,3 @@ class MinioMetricsSourceAdapter:
         except MetricsIntegrationError as exc:
             raise _translate_error(exc) from exc
         return _matrix_by_label(payload, label)
-

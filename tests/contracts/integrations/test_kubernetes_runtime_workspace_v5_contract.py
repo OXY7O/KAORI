@@ -27,7 +27,10 @@ def test_runtime_workspace_uses_horizontal_decision_summary():
     assert '<p class="text-xs font-semibold text-content-muted">Primary Finding</p>' in source
     assert 'class="text-xs font-semibold text-content-muted">Next Operational Action</h4>' in source
     assert 'uppercase tracking-wide' not in source
-    assert 'mt-2 text-sm font-semibold leading-6 text-content-primary [overflow-wrap:anywhere]">{{ runtime_state.summary }}' in source
+    assert (
+        'mt-2 text-sm font-semibold leading-6 text-content-primary [overflow-wrap:anywhere]">{{ runtime_state.summary }}'
+        in source
+    )
 
 
 def test_runtime_decision_separates_runtime_and_validation_evidence():
@@ -63,9 +66,8 @@ def test_runtime_identity_icons_use_kaori_brand_palette():
 def test_runtime_observation_boundary_remains_explicit_without_duplicate_error_copy():
     source = _source()
     assert 'data-kaori-runtime-observation-boundary' in source
-    assert 'Runtime Refresh owns reachability, latency, and current health; Full Validation owns API discovery' in source
     assert (
-        'Full Validation owns API discovery, compatibility, capability contracts, and effective RBAC.'
-        in source
+        'Runtime Refresh owns reachability, latency, and current health; Full Validation owns API discovery' in source
     )
+    assert 'Full Validation owns API discovery, compatibility, capability contracts, and effective RBAC.' in source
     assert 'runtime_state.message' not in source

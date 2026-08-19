@@ -59,7 +59,7 @@ def test_forecast_worker_materializes_system_and_bucket_history_in_one_snapshot(
     assert 'def _matrix_by_label(' in adapter
     assert 'def trend_vector(self, metric_key: str, time_range: str, label: str)' in adapter
     assert "source.trend_vector('object_storage.bucket.usage_history', history_window, 'bucket')" in materialization
-    assert "names = sorted(set(inventory) | set(series))" in materialization
+    assert 'names = sorted(set(inventory) | set(series))' in materialization
     assert "'history_state': history_state" in materialization
     assert "'bucket_forecasts': bucket_forecasts" in materialization
     assert "context['metrics']['bucket_forecasts'] = bucket_forecasts" in service
@@ -118,7 +118,10 @@ def test_active_alert_records_use_responsive_kaori_htmx_record_surface_without_h
     records = read('app/templates/storage/object_storage/analytics/partials/_alert_records.html')
 
     assert 'object-storage-alert-records-loading' in records
-    assert "hx-trigger=\"change[event.target.matches('select')] delay:120ms, keyup[event.target.name === 'alert_q'] changed delay:450ms, search[event.target.name === 'alert_q']\"" in records
+    assert (
+        "hx-trigger=\"change[event.target.matches('select')] delay:120ms, keyup[event.target.name === 'alert_q'] changed delay:450ms, search[event.target.name === 'alert_q']\""
+        in records
+    )
     assert 'hx-target="#object-storage-alert-records"' in records
     assert 'hx-sync="#object-storage-alert-records:replace"' in records
     assert 'data-kaori-clear-filters' not in records  # emitted by the shared clear_filters_action macro

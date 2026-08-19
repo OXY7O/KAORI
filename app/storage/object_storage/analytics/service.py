@@ -149,9 +149,6 @@ def _inventory_totals(system: ObjectStorageSystem) -> dict[str, float | int]:
     }
 
 
-
-
-
 def _build_core_metrics(reader: EvidenceReader, system: ObjectStorageSystem) -> dict[str, Any]:
     total = reader.scalar('object_storage.capacity.total_bytes')
     free_metric = reader.scalar('object_storage.capacity.free_bytes')
@@ -318,8 +315,6 @@ def _forecast_projection_points(
     if projected_30d is not None:
         projected.append({'timestamp': float(last['timestamp']) + (30 * 86400.0), 'value': float(projected_30d)})
     return projected
-
-
 
 
 def _apply_forecast_result(
@@ -491,7 +486,11 @@ def build_analytics_snapshot_payload(
     if source is None or blocker is not None:
         detail = blocker.get('diagnostic_detail') if blocker else None
         raise RuntimeError(
-            str(detail or (blocker.get('description') if blocker else '') or 'Object Storage Metrics Source is not eligible.')
+            str(
+                detail
+                or (blocker.get('description') if blocker else '')
+                or 'Object Storage Metrics Source is not eligible.'
+            )
         )
 
     reader = EvidenceReader(source)
@@ -502,7 +501,11 @@ def build_analytics_snapshot_payload(
     runtime_blocker = runtime_source_state(system, source_view, reader)
     if runtime_blocker is not None:
         raise RuntimeError(
-            str(runtime_blocker.get('diagnostic_detail') or runtime_blocker.get('description') or 'Operational metrics query failed.')
+            str(
+                runtime_blocker.get('diagnostic_detail')
+                or runtime_blocker.get('description')
+                or 'Operational metrics query failed.'
+            )
         )
 
     alertmanager_stream = load_alert_stream(system, selected_source='alertmanager')

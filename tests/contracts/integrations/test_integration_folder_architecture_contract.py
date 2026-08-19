@@ -76,13 +76,28 @@ def _absolute_imports(path: Path) -> tuple[str, ...]:
 def test_product_directories_and_imports_stay_below_canonical_provider_boundaries() -> None:
     integration_root = ROOT / 'app/integrations'
     product_names = {
-        'alertmanager', 'aws_s3', 'azure_blob', 'garage', 'hpe_alletra', 'kubernetes',
-        'minio', 'netapp_ontap', 'netapp_ontap_nfs', 'prometheus', 'rancher',
-        'sangfor_kubernetes_engine', 'thanos',
+        'alertmanager',
+        'aws_s3',
+        'azure_blob',
+        'garage',
+        'hpe_alletra',
+        'kubernetes',
+        'minio',
+        'netapp_ontap',
+        'netapp_ontap_nfs',
+        'prometheus',
+        'rancher',
+        'sangfor_kubernetes_engine',
+        'thanos',
     }
     forbidden_imports = (
-        'app.integrations.kubernetes', 'app.integrations.metrics', 'app.integrations.alertmanager',
-        'app.integrations.minio', 'app.metrics', 'app.alertmanager', 'app.minio',
+        'app.integrations.kubernetes',
+        'app.integrations.metrics',
+        'app.integrations.alertmanager',
+        'app.integrations.minio',
+        'app.metrics',
+        'app.alertmanager',
+        'app.minio',
     )
 
     for path in integration_root.rglob('*'):
@@ -92,7 +107,8 @@ def test_product_directories_and_imports_stay_below_canonical_provider_boundarie
     for path in (ROOT / 'app').rglob('*.py'):
         for target in _absolute_imports(path):
             assert not any(target == prefix or target.startswith(f'{prefix}.') for prefix in forbidden_imports), (
-                path, target
+                path,
+                target,
             )
 
     for retired in (

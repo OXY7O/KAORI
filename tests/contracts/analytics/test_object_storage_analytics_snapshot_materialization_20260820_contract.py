@@ -51,7 +51,10 @@ def test_page_requests_are_snapshot_only_and_live_reads_are_worker_owned() -> No
     assert 'reader = EvidenceReader(source)' in worker_collector
     assert "load_alert_stream(system, selected_source='alertmanager')" in worker_collector
     assert "load_alert_stream(system, selected_source='metrics_source')" in worker_collector
-    assert "for page_key in ('overview', 'capacity', 'performance', 'top_consumers', 'alerts', 'forecast')" in worker_collector
+    assert (
+        "for page_key in ('overview', 'capacity', 'performance', 'top_consumers', 'alerts', 'forecast')"
+        in worker_collector
+    )
 
     assert 'EvidenceReader(' not in request_path
     assert 'source_setup(' not in request_path
@@ -104,7 +107,10 @@ def test_registered_object_storage_analytics_job_uses_analytics_batch_and_shared
     assert definition['workload_class'] == 'analytics'
     assert definition['operation'] == 'materialize_object_storage_analytics'
     assert definition['default_interval_minutes'] == 15
-    assert definition['configuration_template'] == 'platform_operations/jobs/configuration/definitions/analytics_refresh.html'
+    assert (
+        definition['configuration_template']
+        == 'platform_operations/jobs/configuration/definitions/analytics_refresh.html'
+    )
     assert definition['default_configuration']['time_ranges'] == ['24h', '7d', '30d', '60d']
     assert 'dispatch_object_storage_analytics_materialization' in adapter
     assert 'build_object_storage_analytics_materialization_context' in adapter

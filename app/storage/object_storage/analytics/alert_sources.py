@@ -216,9 +216,7 @@ def alertmanager_readiness(
         )
     else:
         label, tone = 'Ready · Runtime Unverified', 'info'
-        description = (
-            'Alertmanager consumer binding is eligible. Runtime connectivity will be confirmed by the analytics worker refresh.'
-        )
+        description = 'Alertmanager consumer binding is eligible. Runtime connectivity will be confirmed by the analytics worker refresh.'
     return {
         'configured': True,
         'connected': connected,

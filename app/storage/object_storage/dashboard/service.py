@@ -33,9 +33,7 @@ def _systems() -> list[ObjectStorageSystem]:
     )
 
 
-def _selected_system(
-    systems: list[ObjectStorageSystem], selected_system_id: str | None
-) -> ObjectStorageSystem | None:
+def _selected_system(systems: list[ObjectStorageSystem], selected_system_id: str | None) -> ObjectStorageSystem | None:
     if not selected_system_id:
         return None
     return next((system for system in systems if str(system.id) == str(selected_system_id)), None)
@@ -100,8 +98,12 @@ def _inventory_summary(systems: list[ObjectStorageSystem]) -> dict[str, Any]:
     buckets = [bucket for system in systems for bucket in (system.buckets or ())]
     size_values = [int(bucket.size_bytes) for bucket in buckets if bucket.size_bytes is not None]
     object_values = [int(bucket.object_count) for bucket in buckets if bucket.object_count is not None]
-    quota_configured = [bucket for bucket in buckets if bucket.quota_state == 'configured' and bucket.quota_bytes is not None]
-    usage_collected = [bucket for bucket in buckets if bucket.size_bytes is not None and bucket.object_count is not None]
+    quota_configured = [
+        bucket for bucket in buckets if bucket.quota_state == 'configured' and bucket.quota_bytes is not None
+    ]
+    usage_collected = [
+        bucket for bucket in buckets if bucket.size_bytes is not None and bucket.object_count is not None
+    ]
     return {
         'systems': len(systems),
         'buckets': len(buckets),
@@ -138,9 +140,7 @@ def _health_rows(systems: list[ObjectStorageSystem]) -> list[dict[str, Any]]:
     return rows
 
 
-def _dashboard_kpis(
-    systems: list[ObjectStorageSystem], selected: ObjectStorageSystem | None
-) -> list[dict[str, str]]:
+def _dashboard_kpis(systems: list[ObjectStorageSystem], selected: ObjectStorageSystem | None) -> list[dict[str, str]]:
     scoped = [selected] if selected is not None else systems
     inventory = _inventory_summary(scoped)
     active_alerts = 0
@@ -161,18 +161,55 @@ def _dashboard_kpis(
             selected_utilization = str(overview.get('utilization_display') or 'N/A')
 
     if selected is not None:
-        usage_display = format_bytes(operational_usage) if operational_usage is not None else inventory['stored_display']
+        usage_display = (
+            format_bytes(operational_usage) if operational_usage is not None else inventory['stored_display']
+        )
         return [
-            {'label': 'Buckets', 'value': str(inventory['buckets']), 'description': 'Committed inventory assets', 'icon': 'database'},
-            {'label': 'Used Capacity', 'value': usage_display, 'description': 'Worker metrics with inventory fallback context', 'icon': 'hard-drive'},
-            {'label': 'Utilization', 'value': selected_utilization or 'N/A', 'description': 'Committed 24h analytics snapshot', 'icon': 'gauge'},
-            {'label': 'Active Alerts', 'value': str(active_alerts) if alert_sources_ready else 'N/A', 'description': 'Committed alert evidence', 'icon': 'bell-ring'},
+            {
+                'label': 'Buckets',
+                'value': str(inventory['buckets']),
+                'description': 'Committed inventory assets',
+                'icon': 'database',
+            },
+            {
+                'label': 'Used Capacity',
+                'value': usage_display,
+                'description': 'Worker metrics with inventory fallback context',
+                'icon': 'hard-drive',
+            },
+            {
+                'label': 'Utilization',
+                'value': selected_utilization or 'N/A',
+                'description': 'Committed 24h analytics snapshot',
+                'icon': 'gauge',
+            },
+            {
+                'label': 'Active Alerts',
+                'value': str(active_alerts) if alert_sources_ready else 'N/A',
+                'description': 'Committed alert evidence',
+                'icon': 'bell-ring',
+            },
         ]
 
     return [
-        {'label': 'Systems', 'value': str(inventory['systems']), 'description': 'Registered Object Storage systems', 'icon': 'server'},
-        {'label': 'Buckets', 'value': str(inventory['buckets']), 'description': 'Committed inventory assets', 'icon': 'database'},
-        {'label': 'Inventory Usage', 'value': str(inventory['stored_display']), 'description': 'Committed bucket usage evidence', 'icon': 'hard-drive'},
+        {
+            'label': 'Systems',
+            'value': str(inventory['systems']),
+            'description': 'Registered Object Storage systems',
+            'icon': 'server',
+        },
+        {
+            'label': 'Buckets',
+            'value': str(inventory['buckets']),
+            'description': 'Committed inventory assets',
+            'icon': 'database',
+        },
+        {
+            'label': 'Inventory Usage',
+            'value': str(inventory['stored_display']),
+            'description': 'Committed bucket usage evidence',
+            'icon': 'hard-drive',
+        },
         {
             'label': 'Analytics Ready',
             'value': f'{analytics_ready} / {len(scoped)}' if scoped else '0 / 0',
@@ -184,8 +221,13 @@ def _dashboard_kpis(
 
 def _freshness(selected: ObjectStorageSystem | None, systems: list[ObjectStorageSystem]) -> list[dict[str, str]]:
     if selected is None:
-        observed = [_aware(system.inventory_observed_at) for system in systems if system.inventory_observed_at is not None]
-        analytics_states = [analytics_snapshot_state(get_analytics_snapshot(system_id=str(system.id), time_range=_DASHBOARD_TIME_RANGE)) for system in systems]
+        observed = [
+            _aware(system.inventory_observed_at) for system in systems if system.inventory_observed_at is not None
+        ]
+        analytics_states = [
+            analytics_snapshot_state(get_analytics_snapshot(system_id=str(system.id), time_range=_DASHBOARD_TIME_RANGE))
+            for system in systems
+        ]
         ready = sum(bool(state.get('usable')) for state in analytics_states)
         return [
             {
@@ -272,8 +314,14 @@ def _forecast(selected: ObjectStorageSystem | None) -> dict[str, Any]:
     if selected is None:
         return {'available': False}
     payload, state = _forecast_payload(selected)
-    forecast = payload.get('forecast') if isinstance(payload, dict) and isinstance(payload.get('forecast'), dict) else {}
-    bucket_rows = payload.get('bucket_forecasts') if isinstance(payload, dict) and isinstance(payload.get('bucket_forecasts'), list) else []
+    forecast = (
+        payload.get('forecast') if isinstance(payload, dict) and isinstance(payload.get('forecast'), dict) else {}
+    )
+    bucket_rows = (
+        payload.get('bucket_forecasts')
+        if isinstance(payload, dict) and isinstance(payload.get('bucket_forecasts'), list)
+        else []
+    )
     projected = forecast.get('projected_30d')
     days = forecast.get('days_to_capacity')
     growth = forecast.get('growth_per_day')
@@ -282,7 +330,10 @@ def _forecast(selected: ObjectStorageSystem | None) -> dict[str, Any]:
     elif days is not None and float(days) <= 90:
         posture = {'label': 'Warning', 'tone': 'warning'}
     elif growth is not None:
-        posture = {'label': 'Growth Watch' if float(growth) > 0 else 'Stable', 'tone': 'info' if float(growth) > 0 else 'normal'}
+        posture = {
+            'label': 'Growth Watch' if float(growth) > 0 else 'Stable',
+            'tone': 'info' if float(growth) > 0 else 'normal',
+        }
     else:
         posture = {'label': 'Insufficient History', 'tone': 'unknown'}
     return {
@@ -369,9 +420,7 @@ def _reporting(selected: ObjectStorageSystem | None) -> dict[str, Any]:
     }
 
 
-def get_dashboard_overview(
-    *, selected_system_id: str | None = None, active_tab: str = 'overview'
-) -> dict[str, Any]:
+def get_dashboard_overview(*, selected_system_id: str | None = None, active_tab: str = 'overview') -> dict[str, Any]:
     systems = _systems()
     selected = _selected_system(systems, selected_system_id)
     inventory = _inventory_summary([selected] if selected is not None else systems)
@@ -380,10 +429,18 @@ def get_dashboard_overview(
         'selected_system_id': str(selected.id) if selected is not None else None,
         'selected_system': selected,
         'active_tab': active_tab,
-        'last_updated': _human_time(selected.inventory_observed_at if selected is not None else max(
-            (_aware(system.inventory_observed_at) for system in systems if system.inventory_observed_at is not None),
-            default=None,
-        )),
+        'last_updated': _human_time(
+            selected.inventory_observed_at
+            if selected is not None
+            else max(
+                (
+                    _aware(system.inventory_observed_at)
+                    for system in systems
+                    if system.inventory_observed_at is not None
+                ),
+                default=None,
+            )
+        ),
         'inventory': inventory,
     }
 

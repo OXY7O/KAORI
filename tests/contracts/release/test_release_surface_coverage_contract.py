@@ -120,9 +120,7 @@ def test_release_verifier_inventory_has_no_orphan_or_one_off_shell_wrappers() ->
     orphaned = [
         path.name
         for path in verifier_paths
-        if path.name != 'verify_final_release.py'
-        and path.name not in owner_text
-        and path.as_posix() not in owner_text
+        if path.name != 'verify_final_release.py' and path.name not in owner_text and path.as_posix() not in owner_text
     ]
     assert orphaned == []
 
@@ -131,4 +129,3 @@ def test_source_hygiene_is_safe_for_mounted_devcontainer_repository() -> None:
     hygiene = read('scripts/verify_source_hygiene.sh')
 
     assert 'git -c safe.directory="$ROOT" ls-files' in hygiene
-

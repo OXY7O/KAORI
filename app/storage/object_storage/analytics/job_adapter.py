@@ -114,7 +114,9 @@ def _analytics_work_items(
     stale_grace_minutes = int(configuration.get('stale_grace_minutes') or 1440)
     time_ranges = _configured_time_ranges(policy)
     if requested_time_range:
-        time_ranges = [requested_time_range] if requested_time_range in {'1h', '6h', '12h', '24h', '7d', '30d', '60d'} else []
+        time_ranges = (
+            [requested_time_range] if requested_time_range in {'1h', '6h', '12h', '24h', '7d', '30d', '60d'} else []
+        )
     items: list[dict[str, Any]] = []
     for system in eligible:
         for time_range in time_ranges:
@@ -242,7 +244,9 @@ def build_object_storage_analytics_materialization_context(policy: JobPolicy) ->
             'label': 'Blocked',
             'tone': 'warning',
             'icon': 'shield-alert',
-            'description': diagnostics[0] if diagnostics else 'No inventory-ready Object Storage metrics binding is eligible.',
+            'description': diagnostics[0]
+            if diagnostics
+            else 'No inventory-ready Object Storage metrics binding is eligible.',
         }
     return {
         'eligible_system_count': len(eligible),

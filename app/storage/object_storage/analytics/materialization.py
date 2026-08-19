@@ -318,7 +318,9 @@ def _bucket_forecast_payload(
                 'sample_count': len(points),
                 'history_state': history_state,
                 'current_bytes': current_bytes,
-                'inventory_usage_bytes': float(bucket.size_bytes) if bucket is not None and bucket.size_bytes is not None else None,
+                'inventory_usage_bytes': float(bucket.size_bytes)
+                if bucket is not None and bucket.size_bytes is not None
+                else None,
                 'quota_bytes': quota_bytes,
                 'forecast': forecast,
             }

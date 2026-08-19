@@ -48,9 +48,14 @@ def test_runtime_observation_boundary_is_integrated_with_diagnostics():
     assert '<footer class="border-t border-outline-subtle bg-surface-subtle' in source
     assert 'data-kaori-runtime-observation-boundary' in source
     assert 'Evidence Boundary' in source
-    assert 'Runtime Refresh owns reachability, latency, and current health; Full Validation owns API discovery' in source
+    assert (
+        'Runtime Refresh owns reachability, latency, and current health; Full Validation owns API discovery' in source
+    )
     assert 'Recent Runtime Observations hold detailed diagnostics and remediation.' in source
-    assert 'lg:justify-between' not in source.split('data-kaori-runtime-observation-boundary', 1)[1].split('</footer>', 1)[0]
+    assert (
+        'lg:justify-between'
+        not in source.split('data-kaori-runtime-observation-boundary', 1)[1].split('</footer>', 1)[0]
+    )
 
 
 def test_runtime_does_not_duplicate_lifecycle_or_operational_focus_in_decision():

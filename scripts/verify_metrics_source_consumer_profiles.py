@@ -42,9 +42,7 @@ def main() -> int:
     workspace_standard = read('docs/design/components/INTEGRATIONS_WORKSPACE_STANDARD.md')
 
     promql_audit = read('app/integrations/observability/metrics_source/query_profiles/audit.py')
-    feature_contracts = read(
-        'app/integrations/observability/metrics_source/query_profiles/feature_contracts.py'
-    )
+    feature_contracts = read('app/integrations/observability/metrics_source/query_profiles/feature_contracts.py')
     forecast_profile = read('app/integrations/observability/metrics_source/query_profiles/forecast_v1.py')
     promql_doc = read('docs/PROMQL_QUERY_PROFILES.md')
 
