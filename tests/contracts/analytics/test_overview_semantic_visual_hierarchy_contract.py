@@ -60,8 +60,10 @@ def test_operational_health_uses_neutral_signal_cards_and_status_badges() -> Non
     source = read(HEALTH)
 
     assert 'overview_surface.attention_strip_classes()' in source
+    assert 'flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between' in source
     assert "'Needs' if issue_count == 1 else 'Need'" in source
     assert "table_label.status_label('Refresh Required', 'warning'" in source
+    assert 'class="shrink-0 sm:pt-1"' in source
     assert 'grid gap-px bg-outline-subtle sm:grid-cols-2 lg:grid-cols-3' in source
     assert 'overview_surface.semantic_icon_classes(semantic_tone)' in source
     assert 'table_label.status_label(item.status' in source

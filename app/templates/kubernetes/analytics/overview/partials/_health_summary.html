@@ -101,16 +101,18 @@
                     </div>
                     {% if issue_count %}
                         <div class="{{ overview_surface.attention_strip_classes() }}">
-                            <div class="flex min-w-0 items-start gap-3">
-                                <span class="{{ overview_surface.semantic_icon_classes('warning') }}">
-                                    <i data-lucide="triangle-alert" class="h-4 w-4"></i>
-                                </span>
-                                <div class="min-w-0">
-                                    <p class="text-sm font-semibold text-content-primary">{{ issue_count }} Dataset{{ '' if issue_count == 1 else 's' }} {{ 'Needs' if issue_count == 1 else 'Need' }} Attention</p>
-                                    <p class="mt-1 text-xs leading-5 text-content-secondary">{{ snapshot.description|default("Review stale, pending, or failed worker datasets before relying on cross-domain conclusions.") }}</p>
+                            <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                                <div class="flex min-w-0 items-start gap-3">
+                                    <span class="{{ overview_surface.semantic_icon_classes('warning') }}">
+                                        <i data-lucide="triangle-alert" class="h-4 w-4"></i>
+                                    </span>
+                                    <div class="min-w-0">
+                                        <p class="text-sm font-semibold text-content-primary">{{ issue_count }} Dataset{{ '' if issue_count == 1 else 's' }} {{ 'Needs' if issue_count == 1 else 'Need' }} Attention</p>
+                                        <p class="mt-1 text-xs leading-5 text-content-secondary">{{ snapshot.description|default("Review stale, pending, or failed worker datasets before relying on cross-domain conclusions.") }}</p>
+                                    </div>
                                 </div>
+                                <div class="shrink-0 sm:pt-1">{{ table_label.status_label('Refresh Required', 'warning', size='compact') }}</div>
                             </div>
-                            <div class="shrink-0 sm:pt-1">{{ table_label.status_label('Refresh Required', 'warning', size='compact') }}</div>
                         </div>
                     {% endif %}
                 </div>
