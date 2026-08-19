@@ -11,7 +11,7 @@
 {% set capability_metrics = [
     {'icon': 'braces', 'tone': 'normal', 'label': 'Validated Capabilities', 'value': capability_summary.observed ~ '/' ~ capability_summary.total, 'description': 'Provider-neutral Metrics Source adapter and query capabilities.'},
     {'icon': 'shield-x', 'tone': 'critical' if capability_summary.required_missing else 'normal', 'label': 'Required Gaps', 'value': capability_summary.required_missing, 'description': 'Provider-level capabilities that block use as a metrics runtime.'},
-    {'icon': 'link-2', 'tone': 'normal', 'label': 'Consumer Bindings', 'value': binding_rows|length, 'description': 'Kubernetes, MinIO, and future consumers validated independently per binding.'}
+    {'icon': 'link-2', 'tone': 'normal', 'label': 'Consumer Bindings', 'value': binding_rows|length, 'description': 'Kubernetes, MinIO, and future consumers are validated independently per binding.'}
 ] %}
 {% set capability_metadata = [
     'Profile · ' ~ query_contract_label
@@ -27,7 +27,7 @@
          data-kaori-provider-capability-matrix>
     {% call connection_validation_header.render(
         'Metrics Source Full Validation',
-        'Validate provider compatibility and the shared Prometheus HTTP API v1 / PromQL core. Consumer contracts are validated only from Bindings & Consumers.',
+        'Validate provider compatibility and the shared Prometheus HTTP API v1 / PromQL core. Consumer contracts stay in Bindings & Consumers.',
         icon='scan-search',
         loading_id='metrics-source-validation-loading',
         loading_active=validation_job and validation_job.is_active,
@@ -55,7 +55,7 @@
     {{ provider_job_status.render(validation_job, 'Metrics Source validation running in worker', 'Metrics Source') }}
     <div class="space-y-4 p-4 sm:p-5">
         {{ capability_readiness.render('Metrics Source Provider Readiness',
-                'Core API evidence determines provider readiness. Kubernetes and MinIO consumer capabilities are intentionally excluded from this registry.',
+                'Core API evidence determines provider readiness; Kubernetes and MinIO consumer capabilities stay outside this registry.',
                 readiness,
                 readiness|replace('_', ' ') |title,
         'Validated Capabilities',

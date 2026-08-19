@@ -14,7 +14,7 @@
         {{ provider_front.hero("activity", "chart-no-axes-combined",
                 "Metrics Sources",
                 "Register metrics providers once, then bind consumers and route queries through a provider-neutral source contract.",
-                stats.total, stats.ready, stats.bindings, posture_status, url_for('integrations.select_metrics_source_provider') ,
+                stats.total, stats.ready, stats.bindings, posture_status, url_for('integrations.select_metrics_source_provider'),
         ready_total=stats.configured,
         register_label='Register Metrics Source') }}
         {{ provider_front.overview("chart-spline",
@@ -24,9 +24,9 @@
                 "Provider-Neutral Consumer Contract",
                 "Analytics and reports resolve a Metrics Source by capability, scope, readiness, role, horizon, and weight. Consumers do not branch on a specific metrics product.",
                 "Extensible Provider Registry",
-                "Provider definitions declare their adapter, query language, default horizon, validation mode, and presentation metadata. New compatible providers can be added without new routes or consumer models.",
+                "Provider definitions declare adapter, query language, default horizon, validation mode, and presentation metadata so compatible providers can be added without new consumer models.",
                 "Source Platforms Remain Authoritative",
-                "The selected metrics platform owns collection, retention, and query execution. KAORI owns registration evidence, validation, scoped bindings, routing policy, and operational correlation.") }}
+                "The metrics platform owns collection, retention, and query execution. KAORI owns registration, validation, scoped bindings, routing, and operational correlation.") }}
         {% call(tab_name) integration_tabs.render("metrics-source", active_tab, coverage_stats.total, stats.total) %}
             {% if tab_name == "coverage" %}
                 {% include "integrations/partials/_coverage_card.html" %}

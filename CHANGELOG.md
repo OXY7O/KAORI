@@ -3,6 +3,7 @@
 All notable KAORI changes are recorded here. KAORI uses Semantic Versioning for release identity.
 
 ## [Unreleased]
+- Refined Integration UX across Overview, Orchestration, Observability, and Object Storage: shortened dense operational copy, normalized provider-detail typography hierarchy, prevented Runtime Overview HTMX scroll jumps, collapsed the Kubernetes runtime Evidence Boundary into one readable block, fixed Observability coverage Manage Binding links to provider record IDs, removed redundant MinIO release-profile helper copy, and restored spacing between MinIO runtime and history surfaces.
 - Hardened observability binding polling so active JobExecution scope identity is recovered when transient Redis validation metadata is missing; Metrics Source and Alertmanager detail pages now fail safe instead of raising a missing `binding_id` template error.
 - Stabilized post-v2.3.0 Integration UI contracts: View More is a canonical row action with vertical detail expansion, provider-core Full Validation remains separate from binding-owned validation, validator imports/formatting are release-gate clean, and primary Integration workspace typography is consistent across Kubernetes, Metrics Source, Alert Source, and Object Storage.
 - Fixed observability binding validation worker model loading and unified provider-detail primary header typography across Configuration, Validation, Runtime, and Bindings & Consumers.

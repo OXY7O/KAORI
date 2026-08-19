@@ -93,7 +93,7 @@
                     <section class="relative overflow-hidden rounded-lg border border-outline-subtle bg-surface-elevated">
                         {% call connection_validation_header.render(
                             "Endpoint & Access",
-                            "Define MinIO S3 API access and credentials, then verify reachability before saving. Use the S3 API URL, not the Console URL.",
+                            "Define MinIO S3 API access and credentials, verify reachability, then save. Use the S3 API URL, not the Console URL.",
                             icon="network",
                             loading_id="minio-connection-test-loading",
                             loading_label="Testing MinIO connection"
@@ -165,14 +165,13 @@
                             <label class="block">
                                 <span class="mb-1.5 block text-sm font-semibold text-content-primary">{{ form.declared_release.label.text }}</span>
                                 {{ form.declared_release(class_="h-11 w-full cursor-not-allowed rounded-lg border border-outline-default bg-surface-hover px-3.5 font-mono text-sm text-content-secondary") }}
-                                <p class="mt-1.5 text-xs leading-5 text-content-muted">{{ form.declared_release.description }}</p>
                             </label>
                         </div>
                         <div class="mt-4 grid gap-3 md:grid-cols-2">
                             {% call operational_toggle.render("Verify TLS Certificate", "Reject untrusted or mismatched MinIO certificates.") %}
                                 {{ form.verify_ssl(class_="h-4 w-4 rounded border-outline-strong text-kaori-primary focus:ring-outline-focus") }}
                             {% endcall %}
-                            {% call operational_toggle.render("Allow KAORI to Use This Connection", "Disabled connections remain registered but are excluded from provider resolution.") %}
+                            {% call operational_toggle.render("Allow KAORI to Use This Connection", "Disabled connections stay registered but are excluded from provider resolution.") %}
                                 {{ form.enabled(class_="h-4 w-4 rounded border-outline-strong text-kaori-primary focus:ring-outline-focus") }}
                             {% endcall %}
                         </div>

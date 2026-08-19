@@ -43,8 +43,8 @@
                         </td>
                         <td class="px-4 py-4">{{ integration_status(row.coverage_status, row.coverage_label) }}</td>
                         <td class="whitespace-nowrap px-5 py-4 text-right sm:px-6">
-                            {% if row.source_id %}
-                                <a href="{{ url_for(provider.detail_endpoint, instance_id=row.source_id) }}#scope"
+                            {% if row.source_record_id %}
+                                <a href="{{ url_for(provider.detail_endpoint, instance_id=row.source_record_id) }}#scope"
                                    class="inline-flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary transition hover:border-outline-focus hover:bg-kaori-soft hover:text-kaori-primary">
                                     <i data-lucide="settings-2" class="h-3.5 w-3.5" aria-hidden="true"></i>
                                     Manage Binding

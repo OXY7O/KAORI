@@ -39,9 +39,9 @@
                 </div>
             </header>
             <div class="{{ integration_ui.metric_grid_classes(4) }}">
-                {{ integration_ui.metric_card('Configured Targets', stats.configured, 'Registered connection records with an endpoint or canonical Kubernetes connection.', 'plug-zap', 'brand') }}
+                {{ integration_ui.metric_card('Configured Targets', stats.configured, 'Registered targets with a usable endpoint or canonical Kubernetes connection.', 'plug-zap', 'brand') }}
                 {{ integration_ui.metric_card('Ready for Use', stats.ready, 'Targets validated for operational use.', 'badge-check', 'brand') }}
-                {{ integration_ui.metric_card('Readiness Review', stats.readiness_review, 'Configured targets that are disabled, degraded, blocked, or not yet validated.', 'scan-search', 'brand') }}
+                {{ integration_ui.metric_card('Readiness Review', stats.readiness_review, 'Configured targets that are disabled, degraded, blocked, or awaiting validation.', 'scan-search', 'brand') }}
                 {{ integration_ui.metric_card('Not Configured', stats.not_configured, 'Registered targets without a usable connection configuration.', 'circle-dashed', 'brand') }}
             </div>
             <div class="border-t border-outline-subtle px-5 py-4 sm:px-6">
@@ -61,204 +61,203 @@
                         prefix='integration-overview',
                         aria_label='Integration Overview Sections',
                         hx_target='#integration-workspace',
-                        hx_select='#integration-workspace') }}
+                        hx_select='#integration-workspace',
+                        hx_swap='outerHTML show:none') }}
             <div class="p-4 sm:p-5 lg:p-6">
                 {% if active_tab == 'catalog' %}
-                    <div id="integration-overview-panel-catalog"
-                         data-integration-overview-workspace="catalog">
-                        <section id="provider-catalog"
-                                 class="{{ integration_ui.section_shell_classes() }}"
-                                 aria-labelledby="provider-catalog-title">
-                            <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
-                                <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                                    <div class="flex min-w-0 items-start gap-3">
-                                        {{ integration_ui.palette_icon('package-search', 'brand', size='lg') }}
-                                        <div class="min-w-0">
-                                            <h2 id="provider-catalog-title"
-                                                class="text-base font-semibold text-content-primary">Provider Catalog</h2>
-                                            <p class="mt-1 text-sm leading-6 text-content-secondary">Open registered provider workspaces grouped by operational domain and capability.</p>
-                                        </div>
+                <div id="integration-overview-panel-catalog"
+                     data-integration-overview-workspace="catalog">
+                    <section id="provider-catalog"
+                             class="{{ integration_ui.section_shell_classes() }}"
+                             aria-labelledby="provider-catalog-title">
+                        <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+                            <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                                <div class="flex min-w-0 items-start gap-3">
+                                    {{ integration_ui.palette_icon('package-search', 'brand', size='lg') }}
+                                    <div class="min-w-0">
+                                        <h2 id="provider-catalog-title"
+                                            class="text-base font-semibold text-content-primary">Provider Catalog</h2>
+                                        <p class="mt-1 text-sm leading-6 text-content-secondary">Open registered provider workspaces grouped by operational domain and capability.</p>
                                     </div>
-                                    {{ table_label.metadata_label(available_provider_count ~ ' Providers', size='compact') }}
                                 </div>
-                            </header>
-                            <div class="grid gap-4 p-5 sm:p-6 lg:grid-cols-3">
-                                {% for item in catalog if item.availability == 'available' %}
-                                    <article class="flex flex-col rounded-xl border border-outline-subtle bg-surface-card p-5 transition hover:border-outline-strong">
-                                        <div class="flex items-start justify-between gap-3">
-                                            {{ integration_ui.palette_icon(item.icon, 'brand', size='lg') }}
-                                            {{ integration_status(item.posture_state, item.posture_label, display='indicator') }}
+                                {{ table_label.metadata_label(available_provider_count ~ ' Providers', size='compact') }}
+                            </div>
+                        </header>
+                        <div class="grid gap-4 p-5 sm:p-6 lg:grid-cols-3">
+                            {% for item in catalog if item.availability == 'available' %}
+                                <article class="flex flex-col rounded-xl border border-outline-subtle bg-surface-card p-5 transition hover:border-outline-strong">
+                                    <div class="flex items-start justify-between gap-3">
+                                        {{ integration_ui.palette_icon(item.icon, 'brand', size='lg') }}
+                                        {{ integration_status(item.posture_state, item.posture_label, display='indicator') }}
+                                    </div>
+                                    <p class="mt-4 text-xs font-semibold uppercase tracking-wide text-content-muted">{{ item.category }} · {{ item.capability }}</p>
+                                    <h3 class="mt-1 text-base font-semibold text-content-primary">{{ item.name }}</h3>
+                                    <p class="mt-2 text-sm leading-6 text-content-secondary">{{ item.description }}</p>
+                                    <div class="mt-auto pt-5">
+                                        <div class="grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-outline-subtle bg-outline-subtle">
+                                            <div class="bg-surface-card px-3 py-2.5">
+                                                <p class="text-xs font-semibold text-content-muted">Registered</p>
+                                                <p class="mt-1 text-lg font-semibold tabular-nums text-content-primary">{{ item.total }}</p>
+                                            </div>
+                                            <div class="bg-surface-card px-3 py-2.5">
+                                                <p class="text-xs font-semibold text-content-muted">Ready</p>
+                                                <p class="mt-1 text-lg font-semibold tabular-nums text-content-primary">{{ item.ready }}</p>
+                                            </div>
                                         </div>
-                                        <p class="mt-4 text-xs font-semibold uppercase tracking-wide text-content-muted">{{ item.category }} · {{ item.capability }}</p>
-                                        <h3 class="mt-1 text-base font-semibold text-content-primary">{{ item.name }}</h3>
-                                        <p class="mt-2 text-sm leading-6 text-content-secondary">{{ item.description }}</p>
-                                        <div class="mt-auto pt-5">
-                                            <div class="grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-outline-subtle bg-outline-subtle">
-                                                <div class="bg-surface-card px-3 py-2.5">
-                                                    <p class="text-xs font-semibold text-content-muted">Registered</p>
-                                                    <p class="mt-1 text-lg font-semibold tabular-nums text-content-primary">{{ item.total }}</p>
+                                        <div class="mt-3">
+                                            <div class="mb-1.5 flex items-center justify-between gap-3 text-xs">
+                                                <span class="font-semibold text-content-secondary">Operational Readiness</span>
+                                                <span class="font-semibold tabular-nums text-kaori-primary dark:text-kaori-accent">{{ item.readiness_percent|round|int }}%</span>
+                                            </div>
+                                            {{ progress_bar.bar(item.readiness_percent, 'h-1.5 overflow-hidden rounded-full bg-surface-hover', 'h-full rounded-full bg-kaori-primary', item.name ~ ' operational readiness') }}
+                                        </div>
+                                        <a href="{{ url_for(item.workspace_endpoint) }}"
+                                           class="mt-4 inline-flex min-h-9 w-full items-center justify-center gap-1.5 rounded-lg bg-kaori-primary px-3 text-xs font-semibold text-white transition hover:bg-kaori-primary-hover">
+                                            Open Workspace
+                                            <i data-lucide="arrow-right" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                        </a>
+                                    </div>
+                                </article>
+                            {% endfor %}
+                        </div>
+                    </section>
+                </div>
+                {% elif active_tab == 'runtime' %}
+                <div id="integration-overview-panel-runtime"
+                     data-integration-overview-workspace="runtime">{% include 'integrations/partials/_runtime_overview.html' %}</div>
+                {% else %}
+                <div id="integration-overview-panel-coverage"
+                     data-integration-overview-workspace="coverage">
+                    {% set operational_domains = coverage|selectattr('lifecycle', 'equalto', 'available')|list %}
+                    {% set planned_domains = coverage|rejectattr('lifecycle', 'equalto', 'available')|list %}
+                    <section class="{{ integration_ui.section_shell_classes() }}"
+                             aria-labelledby="coverage-summary-title">
+                        <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+                            <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                                <div class="flex min-w-0 items-start gap-3">
+                                    {{ integration_ui.palette_icon('layout-grid', 'brand', size='lg') }}
+                                    <div class="min-w-0">
+                                        <h2 id="coverage-summary-title"
+                                            class="text-base font-semibold text-content-primary">Integration Domain Coverage</h2>
+                                        <p class="mt-1 text-sm leading-6 text-content-secondary">Map available provider workspaces, target readiness, and planned integration boundaries by operational domain.</p>
+                                    </div>
+                                </div>
+                                {{ table_label.metadata_label(coverage_stats.available_domains ~ ' Available · ' ~ coverage_stats.planned_domains ~ ' Planned', size='compact') }}
+                            </div>
+                        </header>
+                        <div class="grid gap-px border-b border-outline-subtle bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4">
+                            {% for label, value, helper in [
+                                ('Available Domains', coverage_stats.available_domains, 'Domains with configurable provider workspaces'),
+                                ('Configured Targets', coverage_stats.configured_targets, 'Targets with usable connection settings'),
+                                ('Ready Targets', coverage_stats.ready_targets, 'Targets validated for operational use'),
+                                ('Needs Review', coverage_stats.attention_targets, 'Targets not ready or not configured')
+                                ] %}
+                                <div class="bg-surface-card px-5 py-4">
+                                    <div class="flex items-start justify-between gap-3">
+                                        <div class="min-w-0">
+                                            <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">{{ label }}</p>
+                                            <p class="mt-1 text-xs leading-5 text-content-secondary">{{ helper }}</p>
+                                        </div>
+                                        <p class="shrink-0 text-2xl font-semibold tabular-nums text-content-primary">{{ value }}</p>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                        <div class="p-5 sm:p-6">
+                            <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+                                <div>
+                                    <h3 class="text-sm font-semibold text-content-primary">Available Domains</h3>
+                                    <p class="mt-1 text-xs leading-5 text-content-secondary">Domains with provider workspaces available for configuration and persisted readiness review.</p>
+                                </div>
+                                <p class="text-xs font-semibold text-content-muted">{{ operational_domains|length }} domain{{ '' if operational_domains|length == 1 else 's' }} · {{ coverage_stats.ready_targets }} ready target{{ '' if coverage_stats.ready_targets == 1 else 's' }}</p>
+                            </div>
+                            <div class="mt-3 overflow-hidden rounded-xl border border-outline-subtle divide-y divide-outline-subtle">
+                                {% for item in operational_domains %}
+                                    <article class="grid min-w-0 gap-4 bg-surface-card px-4 py-4 transition hover:bg-kaori-mist sm:px-5 lg:grid-cols-[minmax(0,1.35fr)_minmax(12rem,0.75fr)_minmax(17rem,1fr)] lg:items-center">
+                                        <div class="flex min-w-0 items-start gap-3">
+                                            {{ integration_ui.palette_icon(item.icon, 'brand', size='lg') }}
+                                            <div class="min-w-0">
+                                                <div class="flex flex-wrap items-center gap-2">
+                                                    <h4 class="text-sm font-semibold text-content-primary">{{ item.label }}</h4>
+                                                    {{ integration_status('ready', 'Available', display='indicator') }}
                                                 </div>
-                                                <div class="bg-surface-card px-3 py-2.5">
-                                                    <p class="text-xs font-semibold text-content-muted">Ready</p>
-                                                    <p class="mt-1 text-lg font-semibold tabular-nums text-content-primary">{{ item.ready }}</p>
+                                                <p class="mt-1 text-xs leading-5 text-content-secondary">{{ item.description }}</p>
+                                            </div>
+                                        </div>
+                                        <div class="min-w-0 lg:border-l lg:border-outline-subtle lg:pl-4">
+                                            <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Provider Workspaces</p>
+                                            <div class="mt-2 flex flex-wrap gap-2">
+                                                {% for provider_name in item.providers.split(' · ') %}
+                                                    {{ table_label.metadata_label(provider_name, size='compact') }}
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                        <div class="min-w-0 lg:border-l lg:border-outline-subtle lg:pl-4">
+                                            <div class="flex flex-wrap items-center justify-between gap-2">
+                                                <div>
+                                                    <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Operational Readiness</p>
+                                                    {% if item.total > 0 %}
+                                                        <p class="mt-1 text-sm font-semibold tabular-nums text-content-primary">{{ item.ready }} of {{ item.total }} targets ready</p>
+                                                    {% else %}
+                                                        <p class="mt-1 text-sm font-semibold text-content-primary">No targets registered</p>
+                                                    {% endif %}
                                                 </div>
+                                                {{ integration_status(item.posture_state, item.posture_label, display='indicator') }}
                                             </div>
                                             <div class="mt-3">
-                                                <div class="mb-1.5 flex items-center justify-between gap-3 text-xs">
-                                                    <span class="font-semibold text-content-secondary">Operational Readiness</span>
-                                                    <span class="font-semibold tabular-nums text-kaori-primary dark:text-kaori-accent">{{ item.readiness_percent|round|int }}%</span>
-                                                </div>
-                                                {{ progress_bar.bar(item.readiness_percent, 'h-1.5 overflow-hidden rounded-full bg-surface-hover', 'h-full rounded-full bg-kaori-primary', item.name ~ ' operational readiness') }}
+                                                {{ progress_bar.bar(item.readiness_percent, 'h-1.5 overflow-hidden rounded-full bg-surface-hover', 'h-full rounded-full bg-kaori-primary', item.label ~ ' operational readiness') }}
                                             </div>
-                                            <a href="{{ url_for(item.workspace_endpoint) }}"
-                                               class="mt-4 inline-flex min-h-9 w-full items-center justify-center gap-1.5 rounded-lg bg-kaori-primary px-3 text-xs font-semibold text-white transition hover:bg-kaori-primary-hover">
-                                                Open Workspace
-                                                <i data-lucide="arrow-right" class="h-3.5 w-3.5" aria-hidden="true"></i>
-                                            </a>
+                                            <div class="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs">
+                                                <span class="text-content-muted">Configured <strong class="font-semibold text-content-primary">{{ item.configured }}</strong></span>
+                                                <span class="text-content-muted">Ready <strong class="font-semibold text-content-primary">{{ item.ready }}</strong></span>
+                                                <span class="text-content-muted">Review <strong class="font-semibold text-content-primary">{{ item.attention }}</strong></span>
+                                            </div>
                                         </div>
                                     </article>
                                 {% endfor %}
                             </div>
-                        </section>
-                    </div>
-                {% elif active_tab == 'runtime' %}
-                    <div id="integration-overview-panel-runtime"
-                         data-integration-overview-workspace="runtime">
-                        {% include 'integrations/partials/_runtime_overview.html' %}
-                    </div>
-                {% else %}
-                    <div id="integration-overview-panel-coverage"
-                         data-integration-overview-workspace="coverage">
-                        {% set operational_domains = coverage|selectattr('lifecycle', 'equalto', 'available')|list %}
-                        {% set planned_domains = coverage|rejectattr('lifecycle', 'equalto', 'available')|list %}
-                        <section class="{{ integration_ui.section_shell_classes() }}"
-                                 aria-labelledby="coverage-summary-title">
-                            <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
-                                <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                                    <div class="flex min-w-0 items-start gap-3">
-                                        {{ integration_ui.palette_icon('layout-grid', 'brand', size='lg') }}
-                                        <div class="min-w-0">
-                                            <h2 id="coverage-summary-title"
-                                                class="text-base font-semibold text-content-primary">Integration Domain Coverage</h2>
-                                            <p class="mt-1 text-sm leading-6 text-content-secondary">Map available provider workspaces, target readiness, and planned integration boundaries by operational domain.</p>
-                                        </div>
-                                    </div>
-                                    {{ table_label.metadata_label(coverage_stats.available_domains ~ ' Available · ' ~ coverage_stats.planned_domains ~ ' Planned', size='compact') }}
+                            <div class="mt-6 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+                                <div>
+                                    <h3 class="text-sm font-semibold text-content-primary">Planned Domains</h3>
+                                    <p class="mt-1 text-xs leading-5 text-content-secondary">Architecture boundaries reserved for provider workspaces that are not yet configurable.</p>
                                 </div>
-                            </header>
-                            <div class="grid gap-px border-b border-outline-subtle bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4">
-                                {% for label, value, helper in [
-                                    ('Available Domains', coverage_stats.available_domains, 'Domains with configurable provider workspaces'),
-                                    ('Configured Targets', coverage_stats.configured_targets, 'Targets with usable connection settings'),
-                                    ('Ready Targets', coverage_stats.ready_targets, 'Targets validated for operational use'),
-                                    ('Needs Review', coverage_stats.attention_targets, 'Targets not ready or not configured')
-                                    ] %}
-                                    <div class="bg-surface-card px-5 py-4">
-                                        <div class="flex items-start justify-between gap-3">
-                                            <div class="min-w-0">
-                                                <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">{{ label }}</p>
-                                                <p class="mt-1 text-xs leading-5 text-content-secondary">{{ helper }}</p>
-                                            </div>
-                                            <p class="shrink-0 text-2xl font-semibold tabular-nums text-content-primary">{{ value }}</p>
-                                        </div>
-                                    </div>
-                                {% endfor %}
+                                <p class="text-xs font-semibold text-content-muted">{{ planned_domains|length }} roadmap domain{{ '' if planned_domains|length == 1 else 's' }}</p>
                             </div>
-                            <div class="p-5 sm:p-6">
-                                <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-                                    <div>
-                                        <h3 class="text-sm font-semibold text-content-primary">Available Domains</h3>
-                                        <p class="mt-1 text-xs leading-5 text-content-secondary">Domains with provider workspaces available for configuration and persisted readiness review.</p>
-                                    </div>
-                                    <p class="text-xs font-semibold text-content-muted">{{ operational_domains|length }} domain{{ '' if operational_domains|length == 1 else 's' }} · {{ coverage_stats.ready_targets }} ready target{{ '' if coverage_stats.ready_targets == 1 else 's' }}</p>
-                                </div>
-                                <div class="mt-3 overflow-hidden rounded-xl border border-outline-subtle divide-y divide-outline-subtle">
-                                    {% for item in operational_domains %}
-                                        <article class="grid min-w-0 gap-4 bg-surface-card px-4 py-4 transition hover:bg-kaori-mist sm:px-5 lg:grid-cols-[minmax(0,1.35fr)_minmax(12rem,0.75fr)_minmax(17rem,1fr)] lg:items-center">
+                            <div class="mt-3 grid gap-3 lg:grid-cols-2">
+                                {% for item in planned_domains %}
+                                    <article class="rounded-xl border border-outline-subtle bg-surface-card p-4 sm:p-5">
+                                        <div class="flex min-w-0 items-start justify-between gap-3">
                                             <div class="flex min-w-0 items-start gap-3">
-                                                {{ integration_ui.palette_icon(item.icon, 'brand', size='lg') }}
+                                                {{ integration_ui.palette_icon(item.icon, 'brand') }}
                                                 <div class="min-w-0">
-                                                    <div class="flex flex-wrap items-center gap-2">
-                                                        <h4 class="text-sm font-semibold text-content-primary">{{ item.label }}</h4>
-                                                        {{ integration_status('ready', 'Available', display='indicator') }}
-                                                    </div>
+                                                    <h4 class="text-sm font-semibold text-content-primary">{{ item.label }}</h4>
                                                     <p class="mt-1 text-xs leading-5 text-content-secondary">{{ item.description }}</p>
                                                 </div>
                                             </div>
-                                            <div class="min-w-0 lg:border-l lg:border-outline-subtle lg:pl-4">
-                                                <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Provider Workspaces</p>
-                                                <div class="mt-2 flex flex-wrap gap-2">
-                                                    {% for provider_name in item.providers.split(' · ') %}
-                                                        {{ table_label.metadata_label(provider_name, size='compact') }}
-                                                    {% endfor %}
-                                                </div>
+                                            {{ table_label.status_label('Planned', 'unknown', size='compact') }}
+                                        </div>
+                                        <div class="mt-4 border-t border-outline-subtle pt-4">
+                                            <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Planned Provider Ownership</p>
+                                            <div class="mt-2 flex flex-wrap gap-2">
+                                                {% for provider_name in item.providers.split(' · ') %}
+                                                    {{ table_label.metadata_label(provider_name, size='compact') }}
+                                                {% endfor %}
                                             </div>
-                                            <div class="min-w-0 lg:border-l lg:border-outline-subtle lg:pl-4">
-                                                <div class="flex flex-wrap items-center justify-between gap-2">
-                                                    <div>
-                                                        <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Operational Readiness</p>
-                                                        {% if item.total > 0 %}
-                                                            <p class="mt-1 text-sm font-semibold tabular-nums text-content-primary">{{ item.ready }} of {{ item.total }} targets ready</p>
-                                                        {% else %}
-                                                            <p class="mt-1 text-sm font-semibold text-content-primary">No targets registered</p>
-                                                        {% endif %}
-                                                    </div>
-                                                    {{ integration_status(item.posture_state, item.posture_label, display='indicator') }}
-                                                </div>
-                                                <div class="mt-3">
-                                                    {{ progress_bar.bar(item.readiness_percent, 'h-1.5 overflow-hidden rounded-full bg-surface-hover', 'h-full rounded-full bg-kaori-primary', item.label ~ ' operational readiness') }}
-                                                </div>
-                                                <div class="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs">
-                                                    <span class="text-content-muted">Configured <strong class="font-semibold text-content-primary">{{ item.configured }}</strong></span>
-                                                    <span class="text-content-muted">Ready <strong class="font-semibold text-content-primary">{{ item.ready }}</strong></span>
-                                                    <span class="text-content-muted">Review <strong class="font-semibold text-content-primary">{{ item.attention }}</strong></span>
-                                                </div>
-                                            </div>
-                                        </article>
-                                    {% endfor %}
-                                </div>
-                                <div class="mt-6 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-                                    <div>
-                                        <h3 class="text-sm font-semibold text-content-primary">Planned Domains</h3>
-                                        <p class="mt-1 text-xs leading-5 text-content-secondary">Architecture boundaries reserved for provider workspaces that are not yet configurable.</p>
-                                    </div>
-                                    <p class="text-xs font-semibold text-content-muted">{{ planned_domains|length }} roadmap domain{{ '' if planned_domains|length == 1 else 's' }}</p>
-                                </div>
-                                <div class="mt-3 grid gap-3 lg:grid-cols-2">
-                                    {% for item in planned_domains %}
-                                        <article class="rounded-xl border border-outline-subtle bg-surface-card p-4 sm:p-5">
-                                            <div class="flex min-w-0 items-start justify-between gap-3">
-                                                <div class="flex min-w-0 items-start gap-3">
-                                                    {{ integration_ui.palette_icon(item.icon, 'brand') }}
-                                                    <div class="min-w-0">
-                                                        <h4 class="text-sm font-semibold text-content-primary">{{ item.label }}</h4>
-                                                        <p class="mt-1 text-xs leading-5 text-content-secondary">{{ item.description }}</p>
-                                                    </div>
-                                                </div>
-                                                {{ table_label.status_label('Planned', 'unknown', size='compact') }}
-                                            </div>
-                                            <div class="mt-4 border-t border-outline-subtle pt-4">
-                                                <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Planned Provider Ownership</p>
-                                                <div class="mt-2 flex flex-wrap gap-2">
-                                                    {% for provider_name in item.providers.split(' · ') %}
-                                                        {{ table_label.metadata_label(provider_name, size='compact') }}
-                                                    {% endfor %}
-                                                </div>
-                                                <p class="mt-3 text-xs leading-5 text-content-muted">No configuration, runtime observation, or readiness evidence is expected until this provider workspace becomes available.</p>
-                                            </div>
-                                        </article>
-                                    {% endfor %}
-                                </div>
-                                <div class="mt-5 flex items-start gap-3 rounded-lg border border-outline-subtle bg-surface-card px-4 py-3">
-                                    {{ integration_ui.palette_icon('shield-check', 'brand', size='sm') }}
-                                    <div class="min-w-0">
-                                        <p class="text-xs font-semibold text-content-primary">Coverage Boundary</p>
-                                        <p class="mt-1 text-xs leading-5 text-content-secondary">KAORI reports provider ownership and persisted readiness evidence only. External provider systems remain authoritative for configuration, runtime state, and lifecycle decisions.</p>
-                                    </div>
+                                            <p class="mt-3 text-xs leading-5 text-content-muted">No configuration, runtime observation, or readiness evidence is expected until this provider workspace becomes available.</p>
+                                        </div>
+                                    </article>
+                                {% endfor %}
+                            </div>
+                            <div class="mt-5 flex items-start gap-3 rounded-lg border border-outline-subtle bg-surface-card px-4 py-3">
+                                {{ integration_ui.palette_icon('shield-check', 'brand', size='sm') }}
+                                <div class="min-w-0">
+                                    <p class="text-xs font-semibold text-content-primary">Coverage Boundary</p>
+                                    <p class="mt-1 text-xs leading-5 text-content-secondary">KAORI reports provider ownership and persisted readiness evidence only. External provider systems remain authoritative for configuration, runtime state, and lifecycle decisions.</p>
                                 </div>
                             </div>
-                        </section>
-                    </div>
+                        </div>
+                    </section>
+                </div>
                 {% endif %}
             </div>
         </section>

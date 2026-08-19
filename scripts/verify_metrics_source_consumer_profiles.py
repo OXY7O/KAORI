@@ -96,8 +96,8 @@ def main() -> int:
     assert 'integration_taxonomy_document()' in consumer_assets
     assert 'asset_type: kubernetes_cluster' in taxonomy_catalog
     assert 'asset_type: object_storage_system' in taxonomy_catalog
-    assert 'Consumer contracts are validated only from Bindings & Consumers.' in validation_template
-    assert 'consumer capabilities are intentionally excluded from this registry' in validation_template
+    assert 'Consumer contracts stay in Bindings & Consumers.' in validation_template
+    assert 'consumer capabilities stay outside this registry' in validation_template
     assert 'View More' in binding_template
     assert 'data-kaori-binding-view-more' in binding_template
     assert 'data-kaori-binding-actions' in binding_template

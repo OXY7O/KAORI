@@ -111,9 +111,7 @@ def test_binding_validation_polling_uses_the_shared_terminal_aware_poller() -> N
     state = read('app/integrations/validation/state.py')
     web = read('app/integrations/validation/web.py')
     metrics_routes = read('app/integrations/observability/metrics_source/application/binding_web.py')
-    alert_routes = read(
-        'app/integrations/observability/alert_source/providers/alertmanager/application/routes.py'
-    )
+    alert_routes = read('app/integrations/observability/alert_source/providers/alertmanager/application/routes.py')
 
     assert 'data-kaori-validation-poller' in poller
     assert 'hx-trigger="every {{ delay }}"' in poller
@@ -162,9 +160,7 @@ def test_worker_completion_terminalizes_jobs_and_refreshes_operational_feedback(
     web = read('app/integrations/validation/web.py')
     navbar = read('app/templates/components/navigation/navbar.html')
 
-    binding_body = tasks.split('def validate_integration_binding', 1)[1].split(
-        '@shared_task(', 1
-    )[0]
+    binding_body = tasks.split('def validate_integration_binding', 1)[1].split('@shared_task(', 1)[0]
     assert binding_body.index('_record_completion(') < binding_body.index('final_payload(')
     assert 'mark_job_succeeded(' in completion
     assert 'mark_job_failed(' in completion
@@ -190,9 +186,7 @@ def test_runtime_refresh_polling_and_asset_profile_parity_are_global() -> None:
         assert 'validation_poller.render(' in source
         assert 'hx-trigger="load delay:1500ms"' not in source
 
-    metrics_contract = read(
-        'app/definitions/catalogs/integrations/observability/metrics_source/contract.yaml'
-    )
+    metrics_contract = read('app/definitions/catalogs/integrations/observability/metrics_source/contract.yaml')
     alert_contract = read(
         'app/definitions/catalogs/integrations/observability/alert_source/providers/alertmanager.yaml'
     )

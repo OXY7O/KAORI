@@ -123,7 +123,7 @@
             </section>
             {% set operational_flow_items = [('Configure', 'Set identity, environment, kubeconfig ownership, and TLS policy.', 'settings-2'), ('Validate', 'Discover served APIs, effective RBAC, compatibility, and fallback requirements.', 'badge-check'), ('Observe', 'Persist runtime health, latency, diagnostics, and lifecycle evidence.', 'activity'), ('Synchronize', 'Commit normalized inventory and enable downstream workspaces.', 'refresh-cw')] %}
             {% set operational_metadata = capability_scope|map('replace', '_', ' ')|map('title')|list %}
-            {{ operational_context.render('Kubernetes owns live state and API authorization. KAORI provides controlled access, normalized history, correlation, reporting, and Activity Audit without becoming the cluster source of truth.',
+            {{ operational_context.render('Kubernetes remains the source of truth for live state and API authorization. KAORI adds controlled access, history, correlation, reporting, and Activity Audit.',
                         operational_flow_items,
                         operational_metadata) }}
             {% include 'integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_minimum_validation_rbac.html' %}

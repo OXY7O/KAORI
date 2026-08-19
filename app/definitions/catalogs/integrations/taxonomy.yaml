@@ -3,19 +3,19 @@ kind: integration_taxonomy
 domains:
 - key: orchestration
   label: Orchestration
-  description: Cluster orchestration providers, control-plane connectivity, discovery coverage, and trusted runtime access across registered environments.
+  description: Cluster orchestration providers, control-plane connectivity, discovery, and runtime access.
   icon: boxes
   workspace_endpoint: integrations.orchestration
   order: 10
 - key: observability
   label: Observability
-  description: Metrics, alerting, runtime validation, and operational telemetry providers across shared observability integrations and consumers.
+  description: Metrics, alerting, runtime validation, and operational telemetry providers.
   icon: activity
   workspace_endpoint: integrations.observability
   order: 20
 - key: storage
   label: Storage
-  description: Object, file, and block storage providers used for operational visibility and data services.
+  description: Object, file, and block storage providers used for operational visibility, capacity context, and governed data services.
   icon: database
   workspace_endpoint: integrations.storage
   order: 30

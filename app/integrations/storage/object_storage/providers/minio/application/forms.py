@@ -9,9 +9,7 @@ from wtforms.validators import DataRequired, Length, NumberRange, Optional, Vali
 
 from app.integrations.storage.object_storage.providers.minio.application.contracts import MinioRegistrationInput
 from app.integrations.storage.object_storage.providers.minio.compatibility import (
-    PROFILE_LABEL,
     SUPPORTED_RELEASE,
-    SUPPORTED_RELEASE_RANGE_LABEL,
     evaluate_minio_release,
 )
 from app.kubernetes.cluster.constants import ENVIRONMENTS
@@ -78,7 +76,6 @@ class MinioInstanceForm(FlaskForm):
         'MinIO Server Release',
         validators=[DataRequired(), Length(max=96)],
         default=SUPPORTED_RELEASE,
-        description=f'Profile · {PROFILE_LABEL} · Supported Range · {SUPPORTED_RELEASE_RANGE_LABEL}',
         render_kw={'readonly': True},
     )
     enabled = BooleanField('Allow KAORI to Use This Connection', default=True)

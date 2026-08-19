@@ -163,6 +163,8 @@ def test_binding_actions_keep_canonical_single_line_geometry() -> None:
     assert 'shrink-0 items-center gap-1.5 whitespace-nowrap' in coverage
     assert 'Manage Binding' in coverage
     assert 'Choose Source' in coverage
+    assert 'instance_id=row.source_record_id' in coverage
+    assert 'instance_id=row.source_id' not in coverage
 
     assert 'min-w-0 flex-1 text-xs leading-5 text-content-muted' in modal
     assert 'flex shrink-0 items-center justify-end gap-2' in modal

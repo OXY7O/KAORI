@@ -93,3 +93,40 @@ def test_binding_polling_recovers_durable_binding_identity_without_redis_metadat
         assert "binding_validation_job.get('binding_id')" in scope
         assert 'binding_poll_active' in scope
         assert 'binding_validation_job.binding_id' not in scope
+
+
+def test_all_integration_primary_workspaces_follow_one_typography_hierarchy() -> None:
+    direct_primary = [
+        read('app/templates/integrations/overview.html'),
+        read('app/templates/integrations/partials/_domain_workspace.html'),
+        read('app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_connection_contract.html'),
+        read('app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_inventory_lifecycle.html'),
+        read('app/templates/integrations/observability/metrics_source/partials/_detail_scope.html'),
+        read('app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_detail_scope.html'),
+        read('app/templates/integrations/storage/object_storage/providers/minio/partials/_detail_scope.html'),
+        read('app/templates/integrations/observability/metrics_source/instance_form.html'),
+        read('app/templates/integrations/observability/alert_source/providers/alertmanager/instance_form.html'),
+        read('app/templates/integrations/storage/object_storage/providers/minio/instance_form.html'),
+    ]
+    shared_header_consumers = [
+        read('app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_capability_workspace.html'),
+        read('app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_runtime_workspace.html'),
+        read('app/templates/integrations/observability/metrics_source/partials/_detail_validation_content.html'),
+        read('app/templates/integrations/observability/metrics_source/partials/_runtime_panel.html'),
+        read('app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_detail_validation_content.html'),
+        read('app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_runtime_panel.html'),
+        read('app/templates/integrations/storage/object_storage/providers/minio/partials/_detail_validation.html'),
+        read('app/templates/integrations/storage/object_storage/providers/minio/partials/_detail_runtime.html'),
+    ]
+
+    for source in direct_primary:
+        assert 'text-base font-semibold text-content-primary' in source
+        assert 'text-sm leading-6 text-content-secondary' in source
+
+    for source in shared_header_consumers:
+        assert 'connection_validation_header.render(' in source
+
+    standard = read('docs/design/components/INTEGRATIONS_WORKSPACE_STANDARD.md')
+    assert 'Primary workspace title' in standard
+    assert 'Secondary section title' in standard
+    assert 'Evidence label / helper' in standard

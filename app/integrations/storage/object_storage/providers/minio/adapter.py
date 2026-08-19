@@ -138,7 +138,7 @@ class MinioRuntimeAdapter:
         elif compatibility.readiness == 'ready':
             instance.readiness_status = 'ready'
             instance.validation_message = (
-                f'MinIO S3 API access and bucket-discovery capability are validated. {compatibility.message}'
+                f'MinIO S3 access and bucket discovery are validated against the KAORI-qualified release. {compatibility.message}'
             )
             instance.object_storage_system.status = 'connected'
         else:

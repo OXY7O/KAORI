@@ -12,6 +12,7 @@
 {% set capability_blocked = capability_total - capability_ready %}
 {% set capability_percent = ((capability_ready * 100 / capability_total) if capability_total else 0) %}
 {% set capability_metadata = [
+    "Product · " ~ compatibility_policy.product_label,
     "Profile · " ~ (instance.compatibility_profile or compatibility_policy.profile_key)
 ] %}
 {% set capability_metrics = [
@@ -51,7 +52,7 @@
     {{ provider_job_status.render(validation_job, 'MinIO validation running in worker', 'MinIO') }}
     <div class="p-5 sm:p-6">
         {{ capability_readiness.render("MinIO Capability Readiness",
-                "Required MinIO identity, compatibility, and S3 capability evidence. Qualified range: " ~ compatibility_policy.supported_range ~ ".",
+                "Required MinIO identity, compatibility, and S3 capability evidence for the qualified release.",
                 readiness,
                 readiness_label,
                 "Validated Capabilities",
@@ -62,7 +63,7 @@
                 "Object Storage Provider Eligible" if readiness == "ready" else "Remediation Required",
                 "Required MinIO S3 contracts are usable." if readiness == "ready" else "Resolve required MinIO API or compatibility gaps.",
                 "normal" if readiness == "ready" else "critical",
-                "Full Validation owns S3 capability evidence; Runtime Refresh owns live health; Inventory Sync owns committed storage assets; bindings own consumer evidence.",
+                "Full Validation owns S3 capabilities; Runtime Refresh owns live health; Inventory Sync owns committed storage assets; bindings own consumer evidence.",
                 "Revalidate after MinIO, credential, or S3 API changes." if readiness == "ready" else "Resolve MinIO gaps, then rerun Full Validation.") }}
         {% if readiness == "ready" %}
             {% set readiness_decision_title = "Provider Readiness Is Ready" %}
