@@ -28,7 +28,7 @@
                 <div class="min-w-0">
                     <h3 id="metrics-source-capability-registry-title"
                         class="text-base font-semibold text-content-primary">Capability Registry</h3>
-                    <p class="mt-1 max-w-4xl text-sm leading-6 text-content-secondary">Review provider core capabilities plus the latest completed Binding Validation evidence. Consumer capability status is binding-owned; detailed source-label, metric, pairing, and relabel evidence stays behind View More.</p>
+                    <p class="mt-1 max-w-4xl text-sm leading-6 text-content-secondary">Review only provider-owned Metrics Source core capabilities. Kubernetes and MinIO metric contracts, labels, retention, and downstream capability evidence stay with each Binding Validation result.</p>
                 </div>
             </div>
             <div class="flex flex-wrap items-center gap-2">
@@ -136,7 +136,7 @@
                         <td class="{{ table_ui.cell_classes() }}">
                             <p class="truncate font-semibold text-content-primary"
                                title="{{ row.category }}">{{ row.category }}</p>
-                            <p class="mt-0.5 truncate text-xs text-content-muted">{{ row.scope_label if row.contract_scope == 'consumer' else 'Metrics Source Core API' }}</p>
+                            <p class="mt-0.5 truncate text-xs text-content-muted">Provider Core Capability</p>
                         </td>
                         <td class="{{ table_ui.cell_classes() }}">{{ table_label.metadata_label(row.requirement_label or ("Required" if row.required else "Optional") ) }}</td>
                         <td class="{{ table_ui.cell_classes() }}">{{ integration_status(tone, row.status_label, display="indicator") }}</td>
@@ -219,18 +219,18 @@
         {% call record_detail_modal.render(
             "metrics-source-capability-detail-" ~ loop.index,
             row.key,
-            "Consumer Contract Evidence" if row.contract_scope == "consumer" else "Metrics Source Core Capability Evidence",
+            "Metrics Source Core Capability Evidence",
             row.label,
             row.category ~ " · " ~ row.requirement_label ~ " capability",
             icon="scan-search",
-            footer_text=("Consumer details use the latest completed binding validation evidence." if row.contract_scope == "consumer" else "Capability details use the latest completed Metrics Source Full Validation evidence."),
+            footer_text="Capability details use the latest completed Metrics Source Full Validation evidence.",
             size="standard"
             ) %}
             {{ provider_capability_detail.content(row,
-                        row.scope_label if row.contract_scope == "consumer" else "Metrics Source",
+                        "Metrics Source",
                         row.source_owner,
-                        "Binding Contract Probe" if row.contract_scope == "consumer" else "Provider API Probe",
-                        "Binding Validation owns source identity, required metric labels, filesystem pairing, and downstream consumer evidence." if row.contract_scope == "consumer" else "Full Validation owns provider compatibility and generic Metrics Source API evidence. Consumer-specific metric contracts are validated on their bindings.") }}
+                        "Provider API Probe",
+                        "Full Validation owns provider compatibility and generic Metrics Source API evidence. Consumer-specific metric contracts are validated only from Bindings & Consumers.") }}
         {% endcall %}
     {% endfor %}
 </section>

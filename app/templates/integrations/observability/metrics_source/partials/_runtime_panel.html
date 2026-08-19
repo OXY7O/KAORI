@@ -4,6 +4,7 @@
 {% import "components/connection_validation_header.html" as connection_validation_header %}
 {% import "integrations/components/_runtime_decision.html" as runtime_decision %}
 {% import "integrations/components/_provider_job_status.html" as provider_job_status %}
+{% import "integrations/components/_validation_poller.html" as validation_poller %}
 {% import "integrations/components/_workspace.html" as integration_ui %}
 {% from "integrations/components/_semantic_status.html" import integration_status %}
 {% set runtime_product = runtime_state.capability_metadata.endpoint_product|default(instance.endpoint_product or provider.label, true) %}
@@ -11,6 +12,8 @@
 {% set runtime_provider = runtime_state.capability_metadata.provider_key|default(instance.provider_key, true) %}
 {% set runtime_adapter = runtime_state.capability_metadata.adapter_key|default(instance.adapter_key, true) %}
 {% set runtime_query_language = runtime_state.capability_metadata.query_language|default(instance.query_language, true) %}
+{% set runtime_profile_label = provider_runtime_profile_label %}
+{% set runtime_query_contract_label = query_contract_label %}
 {% set runtime_attention = runtime_state.attention_factors|default([], true) %}
 {% set runtime_observed = runtime_state.observed_at is not none %}
 {% set health_tone = 'ready' if runtime_observed and runtime_state.health_status == 'healthy' else ('degraded' if runtime_observed and runtime_state.health_status in ['degraded', 'warning'] else ('blocked' if runtime_observed and runtime_state.health_status in ['unhealthy', 'failed'] else 'not_observed')) %}
@@ -43,8 +46,11 @@
 <article id="metrics-source-runtime-panel"
          class="relative overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm font-sans"
          data-kaori-metrics-source-runtime-v4
-         data-kaori-provider-runtime-kubernetes-pattern
-         {% if runtime_refresh_job and runtime_refresh_job.is_active %}hx-get="{{ url_for('metrics.runtime_refresh_status', instance_id=instance.id, task_id=runtime_refresh_job.task_id) }}" hx-trigger="load delay:1500ms" hx-target="this" hx-swap="outerHTML"{% endif %}>
+         data-kaori-provider-runtime-kubernetes-pattern>
+    {{ validation_poller.render(runtime_refresh_job and runtime_refresh_job.is_active,
+        url_for('metrics.runtime_refresh_status', instance_id=instance.id, task_id=runtime_refresh_job.task_id) if runtime_refresh_job and runtime_refresh_job.is_active else '',
+    '#metrics-source-runtime-panel'
+    ) }}
     {% call connection_validation_header.render(
         'Runtime Health & Diagnostics',
         'Review persisted provider health, concise diagnostics, endpoint context, and the boundary between Runtime Refresh and Full Validation.',
@@ -77,13 +83,12 @@
                 'Health gate only; provider Full Validation and consumer-binding validation remain independent.',
                 runtime_state.readiness,
                 runtime_state.readiness_label,
-                (runtime_state.compatibility_profile or 'Compatibility not validated') ~ ' · ' ~ runtime_state.capability_count ~ ' observed capabilities',
-        observation_rows,
-        runtime_primary_finding,
-        runtime_attention|length,
-        runtime_next_action,
-        'Full technical diagnostic detail and remediation stay in Recent Runtime Observations. This workspace keeps only the current operational summary.'
-        ) }}
+                runtime_profile_label ~ ' · ' ~ runtime_state.capability_count ~ ' observed capabilities',
+                observation_rows,
+                runtime_primary_finding,
+                runtime_attention|length,
+                runtime_next_action,
+                'Full technical diagnostic detail and remediation stay in Recent Runtime Observations. This workspace keeps only the current operational summary.') }}
         <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card"
                  aria-labelledby="metrics-source-runtime-evidence-title"
                  data-kaori-metrics-source-runtime-evidence>
@@ -98,12 +103,13 @@
                 </div>
                 {{ table_label.metadata_label((runtime_state.diagnostics|length) ~ ' Checks') }}
             </header>
-            <div class="grid gap-px bg-outline-subtle sm:grid-cols-2 xl:grid-cols-5"
+            <div class="grid gap-px bg-outline-subtle sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6"
                  data-kaori-metrics-source-endpoint-contract>
                 {% for label, value, helper in [
                     ('Endpoint Product', runtime_product|replace('_', ' ')|title, 'Validated provider product'),
                     ('Detected Runtime', runtime_version, 'Observed provider version'),
-                    ('Compatibility Profile', runtime_state.compatibility_profile or 'Not Observed', 'Provider compatibility contract'),
+                    ('Provider Runtime Profile', runtime_profile_label, 'Detected provider runtime compatibility'),
+                    ('Query Contract', runtime_query_contract_label, 'Shared Prometheus HTTP API and PromQL contract'),
                     ('Provider Key', runtime_provider|replace('_', ' ')|title, 'Registered metrics provider'),
                     ('Adapter / Query', runtime_adapter|replace('_', ' ')|title ~ ' · ' ~ runtime_query_language|upper, 'Execution adapter and query-language contract')
                     ] %}

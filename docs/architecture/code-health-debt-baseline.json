@@ -53,7 +53,7 @@
     "app/access/roles/presentation.py::build_roles_index_context": 41,
     "app/common/integration_errors.py::describe_integration_failure": 35,
     "app/integrations/observability/metrics_source/application/presentation.py::_capability_row": 38,
-    "app/integrations/observability/metrics_source/query_profiles/audit.py::PromQLProfileAuditor._capability_assessments": 33,
+    "app/integrations/observability/metrics_source/query_profiles/audit.py::PromQLProfileAuditor._capability_assessments": 31,
     "app/integrations/observability/metrics_source/query_profiles/audit.py::PromQLProfileAuditor.audit": 33,
     "app/integrations/orchestration/container_orchestrator/adapters/kubernetes_api/adapter.py::KubernetesRuntimeAdapter.get_state": 57,
     "app/integrations/runtime/presentation.py::runtime_history_view": 33,
@@ -85,8 +85,7 @@
   "function_line_limits": {
     "app/access/overview/presentation.py::build_access_overview": 199,
     "app/common/integration_errors.py::describe_integration_failure": 192,
-    "app/integrations/observability/metrics_source/query_profiles/audit.py::PromQLProfileAuditor._capability_assessments": 275,
-    "app/integrations/validation/tasks.py::validate_integration_instance": 174,
+    "app/integrations/observability/metrics_source/query_profiles/audit.py::PromQLProfileAuditor._capability_assessments": 268,
     "app/intelligence/recommendation_engine.py::build_alerts_actionable_recommendations": 206,
     "app/intelligence/recommendation_engine.py::build_forecast_actionable_recommendations": 172,
     "app/intelligence/recommendation_engine.py::build_workload_actionable_recommendations": 324,

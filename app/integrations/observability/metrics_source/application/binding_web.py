@@ -31,6 +31,7 @@ from app.integrations.validation.web import (
     enqueue_binding_validation,
     snapshot_feedback_for_user,
     validate_snapshot_access,
+    validation_poll_response,
 )
 from app.platform_operations.notifications.service import record_operational_activity
 
@@ -333,12 +334,13 @@ def binding_validation_status(instance_id: int, binding_id: int, task_id: str) -
         binding_id=binding.id,
     ):
         abort(404)
-    return _render_instance_partial(
+    content = _render_instance_partial(
         'integrations/observability/metrics_source/partials/_detail_scope.html',
         instance,
         operation_feedback=snapshot_feedback_for_user(snapshot, user_id=int(current_user.id)),
         binding_validation_job=snapshot,
     )
+    return validation_poll_response(content, snapshot=snapshot)
 
 
 def delete_instance_binding(instance_id: int, binding_id: int) -> ResponseReturnValue:

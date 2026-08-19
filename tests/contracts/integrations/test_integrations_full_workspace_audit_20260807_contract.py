@@ -52,7 +52,8 @@ def test_provider_bound_scope_tables_are_full_width_before_decision_split() -> N
         decision = scope.index('Binding Decision')
         assert include_marker < decision
         assert 'data-kaori-bound-scopes-full-width' in registry
-        assert 'table_ui.table_classes(' in registry
+        assert '_binding_registry_layout.html' in registry
+        assert 'binding_registry_layout.table_classes()' in registry
 
     assert 'Consumer Bindings' in read(
         'app/templates/integrations/observability/metrics_source/partials/_detail_scope.html'

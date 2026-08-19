@@ -2,12 +2,12 @@
 {% import "integrations/components/_provider_configuration_contract.html" as provider_configuration_contract %}
 {% set readiness = instance.readiness_status or "validation_required" %}
 {% set auth_label = (instance.auth_type or "none")|replace("_", " ")|title %}
-{% set compatibility_label = instance.compatibility_profile or "Validation Required" %}
+{% set compatibility_label = provider_runtime_profile_label %}
 {% set summary_items = [
     ("Canonical Identity", instance.name, "Stable provider and audit identity"),
     ("Environment", instance.environment|default("")|title, "Coverage and policy context"),
     ("Detected Version", instance.detected_version or "Not Observed", "Observed from the configured metrics adapter"),
-    ("Compatibility", compatibility_label, "Resolved by Validation & Capabilities")
+    ("Provider Runtime Profile", compatibility_label, "Detected provider runtime compatibility")
 ] %}
 {% set evidence_items = [
     ("server", "brand", metrics_source_label ~ ' Metrics Endpoint', instance.endpoint, "Base HTTP API endpoint queried by KAORI."),
@@ -20,7 +20,8 @@
     "Metrics Authority",
     "Read-Only Query",
     metrics_source_label ~ " Query API",
-    "Profile · " ~ compatibility_label
+    "Runtime · " ~ compatibility_label,
+    "Query · " ~ query_contract_label
 ] %}
 {{ provider_configuration_contract.render(metrics_source_label,
 "chart-spline",

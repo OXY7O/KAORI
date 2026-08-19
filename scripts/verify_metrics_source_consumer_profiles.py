@@ -41,6 +41,11 @@ def main() -> int:
     module_map = read('docs/architecture/integration-module-map.md')
     workspace_standard = read('docs/design/components/INTEGRATIONS_WORKSPACE_STANDARD.md')
 
+    promql_audit = read('app/integrations/observability/metrics_source/query_profiles/audit.py')
+    feature_contracts = read('app/integrations/observability/metrics_source/query_profiles/feature_contracts.py')
+    forecast_profile = read('app/integrations/observability/metrics_source/query_profiles/forecast_v1.py')
+    promql_doc = read('docs/PROMQL_QUERY_PROFILES.md')
+
     assert 'from app.integrations.domain_service import (' in routes
     assert 'build_integration_domain_page,' in routes
     assert 'integration_compatibility_document()' in compatibility
@@ -89,8 +94,19 @@ def main() -> int:
     assert 'integration_taxonomy_document()' in consumer_assets
     assert 'asset_type: kubernetes_cluster' in taxonomy_catalog
     assert 'asset_type: object_storage_system' in taxonomy_catalog
-    assert 'binding-owned consumer capability evidence' in validation_template
-    assert 'latest Binding Validation evidence' in validation_template
+    assert 'Consumer contracts are validated only from Bindings & Consumers.' in validation_template
+    assert 'consumer capabilities are intentionally excluded from this registry' in validation_template
+    assert 'View Result' in binding_template
+    assert '_binding_validation_result.html' in binding_template
+
+    assert forecast_profile.count("required_history='90d'") >= 13
+    assert 'retention = self.validate_retention(retention_horizons(definitions))' in promql_audit
+    assert 'long_term_history_assessment(retention)' in promql_audit
+    assert 'retention=retention' in promql_audit
+    assert 'required_histories.add(definition.required_history)' in feature_contracts
+    assert 'technical_history_check(required_history, retention)' in feature_contracts
+    assert 'shared query contract is `prometheus-http-core-v1`' in promql_doc
+    assert 'does not ask the operator to choose a Prometheus "HTTP v2/v3" profile' in promql_doc
 
     canonical_flow = (
         'Provider\n'

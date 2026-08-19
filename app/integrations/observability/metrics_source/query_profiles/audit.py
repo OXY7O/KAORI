@@ -9,6 +9,10 @@ from app.integrations.observability.metrics_source.capabilities import definitio
 from app.integrations.observability.metrics_source.exceptions import MetricsSourceError
 from app.integrations.observability.metrics_source.query_profiles import PROFILE_KEY, list_kubernetes_queries
 from app.integrations.observability.metrics_source.query_profiles.feature_contracts import evaluate_feature_contracts
+from app.integrations.observability.metrics_source.query_profiles.retention import (
+    long_term_history_assessment,
+    retention_horizons,
+)
 
 _CAPACITY_LABEL_REQUIREMENTS = {
     'kube_node_status_allocatable': {'node', 'resource', 'unit'},
@@ -136,7 +140,7 @@ class PromQLProfileAuditor:
                 )
             )
 
-        retention = self.validate_retention(('24h', '7d', '30d', '60d'))
+        retention = self.validate_retention(retention_horizons(definitions))
         blocked = sum(item.status == 'blocked' for item in results)
         deprecated = sum(item.status == 'deprecated' for item in results)
         deferred = sum(item.status == 'deferred' for item in results)
@@ -146,7 +150,13 @@ class PromQLProfileAuditor:
             available_metrics, metric_label_cache, retention, blocked_details
         )
         feature_contracts = (
-            evaluate_feature_contracts(self.client, sample_namespace=sample_namespace) if execute_queries else []
+            evaluate_feature_contracts(
+                self.client,
+                sample_namespace=sample_namespace,
+                retention=retention,
+            )
+            if execute_queries
+            else []
         )
         if feature_contracts:
             self._reconcile_capabilities_from_contracts(capability_assessments, feature_contracts)
@@ -264,7 +274,11 @@ class PromQLProfileAuditor:
             output[horizon] = {
                 'available': bool(rows),
                 'sample_time': sample_time.isoformat(),
-                'message': 'Historical samples found.' if rows else 'No historical samples found at this horizon.',
+                'message': (
+                    f'Historical samples found at the {horizon} horizon.'
+                    if rows
+                    else f'No historical samples found at the {horizon} horizon.'
+                ),
             }
         return output
 
@@ -562,14 +576,7 @@ class PromQLProfileAuditor:
             ],
         )
 
-        history_ready = bool(retention.get('60d', {}).get('available'))
-        add(
-            'long_term_history',
-            'available' if history_ready else 'missing',
-            'Historical samples were found at 60 days.'
-            if history_ready
-            else 'No samples were found at the 60-day horizon.',
-        )
+        add('long_term_history', **long_term_history_assessment(retention))
 
         return assessments
 

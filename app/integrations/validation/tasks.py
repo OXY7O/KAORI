@@ -9,7 +9,7 @@ from celery import shared_task
 import app.integrations.runtime.refresh as runtime_refresh
 from app.common.presentation import present_key_label
 from app.extensions.db import db
-from app.integrations.lifecycle import ensure_canonical_instance, ensure_provider_operational
+from app.integrations.lifecycle import ensure_provider_operational
 from app.integrations.registry import execute_integration_operation, get_integration
 from app.integrations.runtime.recovery import enqueue_recovery_work, is_runtime_recovery, latest_runtime_health
 from app.integrations.runtime.repository import persist_runtime_state
@@ -18,7 +18,6 @@ from app.integrations.validation.state import (
     release_validation_job,
     store_validation_metadata,
 )
-from app.models.integration import IntegrationBinding
 from app.platform_operations.jobs.service import (
     get_job_by_task_id,
     mark_job_running,
@@ -235,7 +234,7 @@ def validate_integration_instance(
         'message': 'The validation worker is rebuilding operational evidence.',
         'detail': 'KAORI will update this workspace when the worker completes.',
         'progress_current': 1,
-        'progress_total': 4,
+        'progress_total': 3,
     }
     if _canceled_before_worker_start(task_id):
         _release_job_safely(
@@ -256,7 +255,7 @@ def validate_integration_instance(
     operation = str(base['operation'])
     try:
         _update_worker_phase(
-            self, current=1, total=4, message='Connecting to the provider and loading the full validation contract.'
+            self, current=1, total=3, message='Connecting to the provider and loading the core validation contract.'
         )
         module = get_integration(integration_type)
         instance = module.require_record_for_canonical(integration_instance_id)
@@ -268,28 +267,11 @@ def validate_integration_instance(
         )
         result_payload = _as_result_payload(validation_result)
 
-        if 'binding.validate' in module.operations:
-            _update_worker_phase(
-                self,
-                current=2,
-                total=4,
-                message=f'{module.label} capability evidence was collected; refreshing asset bindings.',
-            )
-            ensure_canonical_instance(instance, integration_type=integration_type)
-            result_payload['binding_validation_summary'] = _refresh_provider_bindings(
-                integration_type=integration_type,
-                instance=instance,
-            )
-            db.session.commit()
-            finalizing_phase = 3
-        else:
-            finalizing_phase = 2
-
         _update_worker_phase(
             self,
-            current=finalizing_phase,
-            total=4,
-            message=f'{module.label} capability evidence was collected; finalizing the validation result.',
+            current=2,
+            total=3,
+            message=f'{module.label} core capability evidence was collected; finalizing provider validation.',
         )
         status = _validation_completion_status(result_payload, state)
         title = (
@@ -404,47 +386,6 @@ def _validation_completion_status(result_payload: dict[str, Any], state: Any) ->
     if readiness == 'ready':
         return 'success'
     return 'warning'
-
-
-def _refresh_provider_bindings(*, integration_type: str, instance: Any) -> dict[str, Any]:
-    integration_instance_id = getattr(instance, 'integration_instance_id', None)
-    if integration_instance_id is None:
-        return {'total': 0, 'ready': 0, 'attention': 0, 'results': []}
-    bindings = (
-        IntegrationBinding.query.filter_by(
-            integration_instance_id=integration_instance_id,
-            enabled=True,
-        )
-        .order_by(IntegrationBinding.id.asc())
-        .all()
-    )
-    ready = 0
-    results: list[dict[str, Any]] = []
-    for binding in bindings:
-        result = execute_integration_operation(
-            integration_type,
-            'binding.validate',
-            record=instance,
-            binding=binding,
-            commit=False,
-        )
-        payload = _as_result_payload(result)
-        if payload.get('status') == 'ready':
-            ready += 1
-        results.append(
-            {
-                'binding_id': binding.id,
-                'asset_type': binding.asset_type,
-                'asset_key': binding.asset_key,
-                **payload,
-            }
-        )
-    return {
-        'total': len(bindings),
-        'ready': ready,
-        'attention': len(bindings) - ready,
-        'results': results,
-    }
 
 
 @shared_task(

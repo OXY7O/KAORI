@@ -297,6 +297,12 @@ def _binding_row(binding: IntegrationBinding, source: AlertmanagerInstance) -> d
         'selector_operator': selector_values['operator'],
         'selector_value': selector_values['value'],
         'validation_status': binding.validation_status or 'validation_required',
+        'validation_message': binding.validation_message or 'Run Binding Validation to establish consumer evidence.',
+        'validation_evidence': validation_evidence,
+        'last_validated_at': present_user_datetime(binding.last_validated_at, empty='Not validated'),
+        'has_validation_result': bool(
+            binding.last_validated_at or binding.validation_evidence or binding.validation_message
+        ),
         'consumer_profile_key': binding.validation_profile
         or (consumer_profile.profile_key if consumer_profile else None),
         'consumer_profile_label': validation_evidence.get('profile_label')

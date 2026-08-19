@@ -1,6 +1,7 @@
 {% import "components/connection_validation_header.html" as connection_validation_header %}
 {% import "components/framed_workspace_tabs.html" as framed_workspace_tabs %}
 {% import "integrations/components/_provider_job_status.html" as provider_job_status %}
+{% import "integrations/components/_validation_poller.html" as validation_poller %}
 {% import "components/table_label.html" as table_label %}
 {% import "integrations/components/_workspace.html" as integration_ui %}
 {% from "integrations/components/_semantic_status.html" import integration_status %}
@@ -20,8 +21,11 @@
 {% endif %}
 <article id="kubernetes-runtime-workspace"
          class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm font-sans"
-         data-kaori-runtime-workspace-v8
-         {% if validation_job and validation_job.is_active %}hx-get="{{ url_for('integrations.kubernetes_runtime_refresh_status', cluster_id=cluster.id, task_id=validation_job.task_id) }}" hx-trigger="load delay:1500ms" hx-target="this" hx-swap="outerHTML"{% endif %}>
+         data-kaori-runtime-workspace-v8>
+    {{ validation_poller.render(validation_job and validation_job.is_active,
+        url_for('integrations.kubernetes_runtime_refresh_status', cluster_id=cluster.id, task_id=validation_job.task_id) if validation_job and validation_job.is_active else '',
+    '#kubernetes-runtime-workspace'
+    ) }}
     {% call connection_validation_header.render(
         'Runtime Health & Diagnostics',
         'Review persisted runtime evidence, diagnostic coverage, lifecycle context, and the boundary between Runtime Refresh and Full Validation.',

@@ -14,7 +14,7 @@
     {'icon': 'link-2', 'tone': 'normal', 'label': 'Consumer Bindings', 'value': binding_rows|length, 'description': 'Kubernetes, MinIO, and future consumers validated independently per binding.'}
 ] %}
 {% set capability_metadata = [
-    'Profile · ' ~ (instance.compatibility_profile or instance.capability_profile or instance.query_profile or 'Validation Required')
+    'Profile · ' ~ query_contract_label
 ] %}
 {% if capability_summary.required_missing %}
     {% set next_action = "Restore blocked core APIs, then rerun Full Validation." %}
@@ -27,7 +27,7 @@
          data-kaori-provider-capability-matrix>
     {% call connection_validation_header.render(
         'Metrics Source Full Validation',
-        'Validate provider compatibility and core APIs, then roll up the latest binding-owned consumer capability evidence.',
+        'Validate provider compatibility and the shared Prometheus HTTP API v1 / PromQL core. Consumer contracts are validated only from Bindings & Consumers.',
         icon='scan-search',
         loading_id='metrics-source-validation-loading',
         loading_active=validation_job and validation_job.is_active,
@@ -55,7 +55,7 @@
     {{ provider_job_status.render(validation_job, 'Metrics Source validation running in worker', 'Metrics Source') }}
     <div class="space-y-4 p-4 sm:p-5">
         {{ capability_readiness.render('Metrics Source Provider Readiness',
-                'Core API evidence determines provider readiness; consumer capability rows are roll-ups of the latest Binding Validation evidence.',
+                'Core API evidence determines provider readiness. Kubernetes and MinIO consumer capabilities are intentionally excluded from this registry.',
                 readiness,
                 readiness|replace('_', ' ') |title,
         'Validated Capabilities',
@@ -85,7 +85,7 @@
         {{ readiness_explanation.render(readiness_decision_title,
                 readiness_decision_message,
                 readiness_decision_tone,
-                [capability_summary.required_missing ~ " provider gaps", consumer_validation_summary.gap_count ~ " consumer validation gaps"]) }}
+                [capability_summary.required_missing ~ " provider gaps", binding_rows|length ~ " consumer bindings validated separately"]) }}
         {% include "integrations/observability/metrics_source/partials/_capability_registry.html" %}
     </div>
 </section>

@@ -127,10 +127,11 @@ The canonical Object Storage consumer profile is `object-storage-metrics-v1`.
 A binding that still carries a retired provider-specific consumer profile is
 reported as **Consumer Validation Stale** and is not treated as eligible. Upgrade
 migrations reset that binding to the canonical profile and force revalidation;
-no runtime compatibility alias is retained. Provider Full Validation refreshes
-enabled consumer bindings after provider-core validation, so the
-`integration-validation` worker must run the same deployed code version as the
-web application.
+no runtime compatibility alias is retained. Provider Full Validation remains
+provider-core only; consumer bindings are revalidated explicitly from the source
+workspace. The `integration-validation` worker must run the same deployed code
+version as the web application so terminal job state, binding evidence, and UI
+polling converge on the same lifecycle contract.
 
 Readiness tiers are explicit:
 

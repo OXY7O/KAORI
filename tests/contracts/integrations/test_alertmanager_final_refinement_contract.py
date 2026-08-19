@@ -99,7 +99,8 @@ def test_alertmanager_binding_workspace_is_full_width_and_lifecycle_action_is_se
     assert 'xl:sticky' not in content
     assert 'min-w-[76rem]' not in content
     assert 'data-kaori-bound-scopes-full-width' in registry
-    assert 'table-fixed' in registry
+    assert '_binding_registry_layout.html' in registry
+    assert 'binding_registry_layout.table_classes()' in registry
     assert 'table_ui.action_classes(true)' in registry
 
 

@@ -50,6 +50,7 @@ from app.integrations.validation.web import (
     enqueue_runtime_health_refresh,
     snapshot_feedback_for_user,
     validate_snapshot_access,
+    validation_poll_response,
 )
 from app.platform_operations.notifications.service import get_navigation_notification_context
 
@@ -238,12 +239,13 @@ def runtime_refresh_status(instance_id: int, task_id: str) -> ResponseReturnValu
         integration_instance_id=instance.integration_instance_id,
     ):
         abort(404)
-    return _render_instance_partial(
+    content = _render_instance_partial(
         'integrations/observability/alert_source/providers/alertmanager/partials/_runtime_refresh_response.html',
         instance,
         operation_feedback=snapshot_feedback_for_user(snapshot, user_id=int(current_user.id)),
         runtime_refresh_job=snapshot,
     )
+    return validation_poll_response(content, snapshot=snapshot)
 
 
 @alertmanager_bp.get('/instances/<int:instance_id>/runtime/history')
@@ -368,13 +370,13 @@ def instance_validation_status(instance_id: int, task_id: str) -> ResponseReturn
         integration_instance_id=instance.integration_instance_id,
     ):
         abort(404)
-    return _render_instance_partial(
+    content = _render_instance_partial(
         'integrations/observability/alert_source/providers/alertmanager/partials/_detail_validation_content.html',
         instance,
         operation_feedback=snapshot_feedback_for_user(snapshot, user_id=int(current_user.id)),
         validation_job=snapshot,
-        validation_scope_oob=True,
     )
+    return validation_poll_response(content, snapshot=snapshot)
 
 
 @alertmanager_bp.post('/instances/<int:instance_id>/bindings')
@@ -605,12 +607,13 @@ def binding_validation_status(instance_id: int, binding_id: int, task_id: str) -
         binding_id=binding.id,
     ):
         abort(404)
-    return _render_instance_partial(
+    content = _render_instance_partial(
         'integrations/observability/alert_source/providers/alertmanager/partials/_detail_scope.html',
         instance,
         operation_feedback=snapshot_feedback_for_user(snapshot, user_id=int(current_user.id)),
         binding_validation_job=snapshot,
     )
+    return validation_poll_response(content, snapshot=snapshot)
 
 
 @alertmanager_bp.post('/instances/<int:instance_id>/bindings/<int:binding_id>/delete')

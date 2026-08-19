@@ -60,33 +60,64 @@ def test_binding_validation_enforces_cluster_source_identity_and_node_filesystem
     assert "('node_filesystem_avail_bytes', ('node', 'mountpoint'))" in queries
 
 
-def test_consumer_capability_rollup_is_binding_owned_and_detailed_in_general_validation() -> None:
+def test_provider_capability_registry_stays_core_only_and_binding_results_stay_with_bindings() -> None:
     presentation = read('app/integrations/observability/metrics_source/application/presentation.py')
     registry = read('app/templates/integrations/observability/metrics_source/partials/_capability_registry.html')
     validation = read(
         'app/templates/integrations/observability/metrics_source/partials/_detail_validation_content.html'
     )
+    binding_registry = read('app/templates/integrations/observability/metrics_source/partials/_binding_registry.html')
+    binding_result = read('app/templates/integrations/components/_binding_validation_result.html')
     scope = read('app/templates/integrations/observability/metrics_source/partials/_detail_scope.html')
     readiness = read('app/templates/integrations/components/_capability_readiness.html')
 
-    assert 'consumer_validation_rows = _consumer_validation_rows' in presentation
-    assert (
-        "consumer_validation_gap_rows = [row for row in consumer_validation_rows if not row['available']]"
-        in presentation
-    )
-    assert 'capability_rows = [*provider_capability_rows, *consumer_validation_rows]' in presentation
-    assert 'if isinstance(source_identity, dict):' in presentation
-    assert "if status == 'not_observed':" in presentation
-    assert "'contract_scope': 'consumer'" in presentation
-    assert 'Consumer Contract Evidence' in registry
-    assert 'latest completed Binding Validation evidence' in registry
-    assert 'consumer capability status is binding-owned'.lower() in registry.lower()
-    assert 'Binding Validation owns source identity, required metric labels, filesystem pairing' in registry
-    assert 'consumer_validation_summary.gap_count' in validation
-    assert 'binding-owned consumer capability evidence' in validation
-    assert 'Open Validation → Capability Registry for exact missing capability evidence and remediation.' in scope
+    assert 'capability_rows = provider_capability_rows' in presentation
+    assert '_consumer_validation_rows' not in presentation
+    assert "'contract_scope': 'provider'" in presentation
+    assert 'Provider Core Capability' in registry
+    assert 'Consumer Contract Evidence' not in registry
+    assert 'Consumer contracts are validated only from Bindings & Consumers.' in validation
+    assert 'consumer capabilities are intentionally excluded from this registry' in validation
+    assert '_binding_validation_result.html' in binding_registry
+    assert 'View Result' in binding_registry
+    assert 'Binding Validation Result' in binding_result
+    assert 'Consumer Capability Evidence' in binding_result
+    assert '90d History Availability' not in validation
     assert 'Missing technical capability:' not in scope
     assert 'Binding coverage missing:' not in scope
     assert 'missing_labels' not in readiness
     assert 'node_filesystem_size_bytes' not in readiness
     assert 'cluster source label' not in readiness.lower()
+
+
+def test_forecast_binding_validation_uses_declared_90_day_history_independent_of_http_major() -> None:
+    audit = read('app/integrations/observability/metrics_source/query_profiles/audit.py')
+    feature_contracts = read('app/integrations/observability/metrics_source/query_profiles/feature_contracts.py')
+    forecast = read('app/integrations/observability/metrics_source/query_profiles/forecast_v1.py')
+    compatibility = read('app/definitions/catalogs/integrations/compatibility.yaml')
+    provider_contract = read('app/definitions/catalogs/integrations/observability/metrics_source/contract.yaml')
+    retention = read('app/integrations/observability/metrics_source/query_profiles/retention.py')
+    docs = read('docs/PROMQL_QUERY_PROFILES.md')
+
+    assert forecast.count("required_history='90d'") >= 13
+    assert 'retention = self.validate_retention(retention_horizons(definitions))' in audit
+    assert 'long_term_history_assessment(retention)' in audit
+    assert "horizon: str = '90d'" in retention
+    assert "'label': f'{horizon} History Availability'" in retention
+    assert 'retention=retention' in audit
+    assert 'required_histories.add(definition.required_history)' in feature_contracts
+    assert 'technical_history_check(required_history, retention)' in feature_contracts
+    # Historical profile keys remain internal Prometheus runtime-major contracts.
+    assert 'prometheus-http-v2' in compatibility
+    assert 'prometheus-http-v3' in compatibility
+    assert 'Prometheus 2.x runtime profile using the stable Prometheus HTTP API v1 core contract.' in compatibility
+    assert 'Prometheus 3.x runtime profile using the stable Prometheus HTTP API v1 core contract.' in compatibility
+    assert 'version_detection_mode: automatic' in provider_contract
+    thanos = provider_contract.split('- key: thanos', 1)[1].split('compatibility_profiles:', 1)[0]
+    assert 'compatibility_profile_options: []' in thanos
+    assert 'Prometheus HTTP API v2' not in thanos
+    assert 'Prometheus HTTP API v3' not in thanos
+    assert compatibility.count('query_profile: prometheus-http-core-v1') >= 6
+    assert 'shared query contract is `prometheus-http-core-v1`' in docs
+    assert 'does not ask the operator to choose a Prometheus "HTTP v2/v3" profile' in docs
+    assert "required_history='90d'" in docs

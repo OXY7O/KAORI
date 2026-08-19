@@ -3,6 +3,7 @@
 {% import "components/connection_validation_header.html" as connection_validation_header %}
 {% import "integrations/components/_runtime_decision.html" as runtime_decision %}
 {% import "integrations/components/_provider_job_status.html" as provider_job_status %}
+{% import "integrations/components/_validation_poller.html" as validation_poller %}
 {% import "integrations/components/_workspace.html" as integration_ui %}
 {% from "integrations/components/_semantic_status.html" import integration_status %}
 {% set runtime_observed = runtime_state.observed_at is not none %}
@@ -37,8 +38,11 @@
 <section id="alertmanager-runtime-panel"
          class="relative {{ integration_ui.section_shell_classes() }} font-sans"
          data-kaori-alertmanager-runtime-v3
-         data-kaori-provider-runtime-kubernetes-pattern
-         {% if runtime_refresh_job and runtime_refresh_job.is_active %}hx-get="{{ url_for('alertmanager.runtime_refresh_status', instance_id=instance.id, task_id=runtime_refresh_job.task_id) }}" hx-trigger="load delay:1500ms" hx-target="this" hx-swap="outerHTML"{% endif %}>
+         data-kaori-provider-runtime-kubernetes-pattern>
+    {{ validation_poller.render(runtime_refresh_job and runtime_refresh_job.is_active,
+        url_for('alertmanager.runtime_refresh_status', instance_id=instance.id, task_id=runtime_refresh_job.task_id) if runtime_refresh_job and runtime_refresh_job.is_active else '',
+    '#alertmanager-runtime-panel'
+    ) }}
     {% call connection_validation_header.render(
         'Runtime Health & Diagnostics',
         'Review persisted provider health, concise diagnostics, endpoint context, and the boundary between Runtime Refresh and Full Validation.',

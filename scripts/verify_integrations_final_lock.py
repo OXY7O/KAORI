@@ -109,6 +109,9 @@ def main() -> int:
     metrics_registry = read(
         'app/templates/integrations/observability/metrics_source/partials/_capability_registry.html'
     )
+    metrics_binding_registry = read(
+        'app/templates/integrations/observability/metrics_source/partials/_binding_registry.html'
+    )
     kubernetes_binding_validator = read(
         'app/integrations/observability/metrics_source/binding_validators/kubernetes.py'
     )
@@ -146,23 +149,26 @@ def main() -> int:
         'Shared provider Configuration must place setup references after Operational Context and before the footer',
         errors,
     )
+    binding_result = read('app/templates/integrations/components/_binding_validation_result.html')
     require(
-        'Consumer Contract Evidence' in metrics_registry
-        and 'row.contract_scope == "consumer"' in metrics_registry
-        and 'latest completed Binding Validation evidence' in metrics_registry,
-        'Metrics Source Validation registry must roll up binding-owned consumer evidence and own its detail surface',
+        'Provider Core Capability' in metrics_registry
+        and 'Consumer Contract Evidence' not in metrics_registry
+        and 'capability_rows = provider_capability_rows' in metrics_presentation
+        and '_consumer_validation_rows' not in metrics_presentation,
+        'Metrics Source General Validation must remain provider-core only',
         errors,
     )
     require(
-        'consumer_validation_rows = _consumer_validation_rows' in metrics_presentation
-        and 'capability_rows = [*provider_capability_rows, *consumer_validation_rows]' in metrics_presentation
-        and "consumer_validation_gap_rows = [row for row in consumer_validation_rows if not row['available']]"
-        in metrics_presentation,
-        'General Metrics Source Validation must roll up completed Binding Validation capability rows without changing gap semantics',
+        '_binding_validation_result.html' in metrics_binding_registry
+        and 'View Result' in metrics_binding_registry
+        and 'Binding Validation Result' in binding_result
+        and 'Consumer Capability Evidence' in binding_result,
+        'Binding-specific capability evidence must remain owned by Bindings & Consumers',
         errors,
     )
     require(
-        'Open Validation → Capability Registry for exact missing capability evidence and remediation.' in metrics_scope
+        'Open Bindings & Consumers → View Result on the affected binding for exact missing capability evidence and remediation.'
+        in metrics_scope
         and 'Missing technical capability:' not in metrics_scope
         and 'Binding coverage missing:' not in metrics_scope,
         'Metrics Source Scope must show binding posture only; exact missing capability detail belongs to Validation',
@@ -556,10 +562,76 @@ def main() -> int:
         errors,
     )
     require(
-        'data-kaori-validation-poller' in validation_poller,
-        'Binding validation must reuse the shared terminal-aware validation poller',
+        'data-kaori-validation-poller' in validation_poller and 'hx-trigger="every {{ delay }}"' in validation_poller,
+        'Integration validation must reuse the shared periodic terminal-aware validation poller',
         errors,
     )
+    validation_state = read('app/integrations/validation/state.py')
+    validation_web = read('app/integrations/validation/web.py')
+    validation_tasks = read('app/integrations/validation/tasks.py')
+    metrics_contract = read('app/definitions/catalogs/integrations/observability/metrics_source/contract.yaml')
+    require(
+        'Cache-Control' in validation_web
+        and "'no-store, max-age=0'" in validation_web
+        and 'kaori:notifications-changed' in validation_web,
+        'Validation poll responses must bypass caches and refresh Notification Deck on terminal completion',
+        errors,
+    )
+    require(
+        'def _reconcile_terminal_job(' in validation_state
+        and "celery_state not in {'SUCCESS', 'FAILURE', 'REVOKED'}" in validation_state
+        and "'is_active': False if terminal" in validation_state
+        and "'is_complete': True if terminal" in validation_state,
+        'Validation snapshots must stop polling on terminal Celery results and reconcile durable JobExecution state',
+        errors,
+    )
+    full_validation = validation_tasks.split('def validate_integration_instance', 1)[1].split(
+        'def _as_result_payload', 1
+    )[0]
+    require(
+        '_refresh_provider_bindings(' not in full_validation and 'binding_validation_summary' not in full_validation,
+        'Provider Full Validation must remain core-only and must not refresh bindings implicitly',
+        errors,
+    )
+    thanos_contract = metrics_contract.split('- key: thanos', 1)[1].split('compatibility_profiles:', 1)[0]
+    require(
+        'version_detection_mode: automatic' in thanos_contract
+        and 'compatibility_profile_options: []' in thanos_contract
+        and 'Prometheus HTTP API v2' not in thanos_contract
+        and 'Prometheus HTTP API v3' not in thanos_contract,
+        'Thanos must auto-detect its own runtime and must not expose fake Prometheus HTTP v2/v3 choices',
+        errors,
+    )
+
+    metrics_form = read('app/templates/integrations/observability/metrics_source/instance_form.html')
+    metrics_runtime_template = read(
+        'app/templates/integrations/observability/metrics_source/partials/_runtime_panel.html'
+    )
+    require(
+        'Prometheus HTTP API v1 / PromQL core contract' in metrics_form
+        and 'Prometheus HTTP API v2' not in metrics_form
+        and 'Prometheus HTTP API v3' not in metrics_form
+        and 'Provider Runtime Profile' in metrics_runtime_template
+        and 'Query Contract' in metrics_runtime_template,
+        'Metrics Source UI must separate provider runtime compatibility from the shared query contract',
+        errors,
+    )
+
+    for runtime_path in (
+        'app/templates/integrations/observability/metrics_source/partials/_runtime_panel.html',
+        'app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_runtime_panel.html',
+        'app/templates/integrations/storage/object_storage/providers/minio/partials/_detail_runtime.html',
+        'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_runtime_workspace.html',
+    ):
+        runtime_template = read(runtime_path)
+        require(
+            '_validation_poller.html' in runtime_template
+            and 'validation_poller.render(' in runtime_template
+            and 'hx-trigger="load delay:1500ms"' not in runtime_template,
+            f'Runtime workspace must use shared terminal-aware polling: {runtime_path}',
+            errors,
+        )
+
     for provider, template_root, identity_column in (
         ('metrics_source', 'app/templates/integrations/observability/metrics_source', 'Metrics Identity'),
         (

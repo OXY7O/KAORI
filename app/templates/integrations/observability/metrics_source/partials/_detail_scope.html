@@ -5,14 +5,18 @@
 {% import "integrations/components/_workspace.html" as integration_ui %}
 {% import "integrations/components/_observability_binding_modal.html" as observability_binding_modal %}
 {% import "integrations/components/_binding_readiness_boundary.html" as binding_readiness_boundary %}
+{% import "integrations/components/_validation_poller.html" as validation_poller %}
 {% from "integrations/components/_semantic_status.html" import integration_status %}
 {% set ready_binding_count = binding_rows|selectattr('operational_status', 'equalto', 'ready')|list|length %}
 {% set validated_binding_count = binding_rows|selectattr('validation_status', 'equalto', 'ready')|list|length %}
 {% set resolution_scope_count = source_resolution_rows|length %}
 <div id="metrics-source-scope-workspace"
      class="space-y-4 font-sans"
-     data-kaori-metrics-source-bindings-v3
-     {% if binding_validation_job and binding_validation_job.is_active %} hx-get="{{ url_for('metrics.binding_validation_status', instance_id=instance.id, binding_id=binding_validation_job.binding_id, task_id=binding_validation_job.task_id) }}" hx-trigger="load delay:1500ms" hx-target="this" hx-swap="outerHTML" {% endif %}>
+     data-kaori-metrics-source-bindings-v3>
+    {{ validation_poller.render(binding_validation_job and binding_validation_job.is_active,
+        url_for('metrics.binding_validation_status', instance_id=instance.id, binding_id=binding_validation_job.binding_id, task_id=binding_validation_job.task_id) if binding_validation_job and binding_validation_job.is_active else '',
+    '#metrics-source-scope-workspace'
+    ) }}
     <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm"
              aria-labelledby="metrics-source-bindings-title">
         <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
@@ -144,7 +148,7 @@
                                                     </div>
                                                     <p class="mt-2 text-xs leading-5 text-content-secondary">{{ candidate.decision_reason }}</p>
                                                     {% if candidate.missing_capability_labels or candidate.missing_binding_capabilities %}
-                                                        <p class="mt-2 text-xs font-medium text-content-muted">Open Validation → Capability Registry for exact missing capability evidence and remediation.</p>
+                                                        <p class="mt-2 text-xs font-medium text-content-muted">Open Bindings & Consumers → View Result on the affected binding for exact missing capability evidence and remediation.</p>
                                                     {% endif %}
                                                 </div>
                                             {% else %}

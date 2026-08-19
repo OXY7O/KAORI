@@ -37,6 +37,7 @@ from app.integrations.validation.state import build_validation_snapshot, get_act
 from app.integrations.validation.web import (
     snapshot_feedback_for_user,
     validate_snapshot_access,
+    validation_poll_response,
 )
 from app.models.minio import MinioInstance
 from app.platform_operations.notifications.service import (
@@ -460,9 +461,10 @@ def runtime_refresh_status(instance_id: int, task_id: str) -> ResponseReturnValu
         operation_feedback=snapshot_feedback_for_user(snapshot, user_id=int(current_user.id)),
         runtime_history_oob=True,
     )
-    return render_template(
+    content = render_template(
         'integrations/storage/object_storage/providers/minio/partials/_detail_runtime.html', **context
     )
+    return validation_poll_response(content, snapshot=snapshot)
 
 
 @minio_bp.get('/instances/<int:instance_id>/validation/status/<string:task_id>')
@@ -481,9 +483,10 @@ def validation_status(instance_id: int, task_id: str) -> ResponseReturnValue:
         validation_job=snapshot,
         operation_feedback=snapshot_feedback_for_user(snapshot, user_id=int(current_user.id)),
     )
-    return render_template(
+    content = render_template(
         'integrations/storage/object_storage/providers/minio/partials/_detail_validation.html', **context
     )
+    return validation_poll_response(content, snapshot=snapshot)
 
 
 @minio_bp.get('/instances/<int:instance_id>/runtime/history')

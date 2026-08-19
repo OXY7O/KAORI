@@ -45,6 +45,7 @@ from app.integrations.validation.web import (
     enqueue_runtime_health_refresh,
     snapshot_feedback_for_user,
     validate_snapshot_access,
+    validation_poll_response,
 )
 from app.platform_operations.notifications.service import (
     get_navigation_notification_context,
@@ -350,10 +351,11 @@ def kubernetes_capability_validation_status(cluster_id: str, task_id: str) -> Re
             'runtime_history_oob': True,
         }
     )
-    return render_template(
+    content = render_template(
         'integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_capability_workspace.html',
         **context,
     )
+    return validation_poll_response(content, snapshot=snapshot)
 
 
 @integrations_bp.post('/kubernetes/<string:cluster_id>/runtime/refresh')
@@ -450,10 +452,11 @@ def kubernetes_runtime_refresh_status(cluster_id: str, task_id: str) -> Response
             'notification_context': get_navigation_notification_context(user_id=int(current_user.id)),
         }
     )
-    return render_template(
+    content = render_template(
         'integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_runtime_workspace.html',
         **context,
     )
+    return validation_poll_response(content, snapshot=snapshot)
 
 
 @integrations_bp.get('/kubernetes/<string:cluster_id>/runtime/history')

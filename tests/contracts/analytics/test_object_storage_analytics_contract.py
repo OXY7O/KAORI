@@ -529,18 +529,20 @@ def test_object_storage_consumer_profile_staleness_is_explicit_and_direct_cutove
     assert "validation_profile = 'minio-metrics-2024-v1'" in migration
 
 
-def test_metrics_source_full_validation_refreshes_enabled_consumer_bindings() -> None:
+def test_metrics_source_full_validation_keeps_consumer_bindings_independent() -> None:
     validation_tasks = read('app/integrations/validation/tasks.py')
     integrations_readme = read('app/integrations/README.md')
     metrics_source_readme = read('app/integrations/observability/metrics_source/README.md')
 
-    assert "result_payload['binding_validation_summary'] = _refresh_provider_bindings(" in validation_tasks
-    assert 'IntegrationBinding.query.filter_by(' in validation_tasks
-    assert 'enabled=True' in validation_tasks
-    assert "'binding.validate'" in validation_tasks
-    assert 'Provider Full Validation does not implicitly validate consumer bindings.' not in integrations_readme
-    assert 'Provider Full Validation refreshes every enabled consumer binding' in integrations_readme
-    assert 'Full Validation refreshes enabled consumer bindings' in metrics_source_readme
+    full_validation = validation_tasks.split('def validate_integration_instance', 1)[1].split(
+        'def _as_result_payload', 1
+    )[0]
+    assert '_refresh_provider_bindings(' not in full_validation
+    assert 'binding_validation_summary' not in full_validation
+    assert 'Provider Full Validation is intentionally provider-core only' in integrations_readme
+    assert 'only the explicit binding `Validate` action rebuilds consumer-specific evidence' in integrations_readme
+    assert 'Full Validation is provider-core only' in metrics_source_readme
+    assert 'explicit binding Validate action' in metrics_source_readme
 
 
 def test_object_storage_forecast_is_worker_materialized_on_forecasting_queue() -> None:

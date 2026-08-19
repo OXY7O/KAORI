@@ -167,8 +167,8 @@ Validation ownership remains split by evidence boundary:
 
 - **Provider/Core Validation** owns transport, provider compatibility, generic API/query capabilities, and provider readiness.
 - **Binding Validation** owns asset-scoped consumer identity, required metric/label contracts, pairing rules, and consumer capability evidence.
-- **General Validation** is the operator roll-up surface. It displays provider-core rows plus the latest completed binding-owned consumer rows; it does not create a second consumer validation engine.
-- **Scope & Consumers** shows binding profile, selector, and validation state plus the action to validate that binding. Detailed missing evidence stays in General Validation `View More`.
+- **General Validation** displays provider-core capability evidence only and does not create or roll up consumer capability rows.
+- **Scope & Consumers / Bindings & Consumers** shows binding profile, selector, validation state, the explicit Validate action, and the latest binding-owned result. Detailed missing evidence stays behind that binding's `View Result`.
 - A binding without completed validation is `Validation Required`; provider readiness must not upgrade it to Ready or reinterpret it as Missing.
 
 ## Capability evidence and runnable checks

@@ -32,7 +32,7 @@ provider_kinds:
   adapter_key: prometheus_http
   query_language: promql
   default_query_horizon: historical
-  version_detection_mode: manual
+  version_detection_mode: automatic
   endpoint_placeholder: https://thanos-query.example.internal
   icon: database-zap
   endpoint_capabilities:
@@ -40,11 +40,7 @@ provider_kinds:
   - instant_query
   - range_query
   - long_term_history
-  compatibility_profile_options:
-  - value: prometheus-http-v2
-    label: Prometheus HTTP API v2
-  - value: prometheus-http-v3
-    label: Prometheus HTTP API v3
+  compatibility_profile_options: []
   support_presentation:
     minimum_version: '0.39'
     minimum_label: v0.39
@@ -54,8 +50,8 @@ provider_kinds:
     current_band: v0.42.x
     support_label: Query Profile Current
     support_tone: normal
-    capability_summary: Long-retention metrics queries through the configured Prometheus HTTP adapter.
-    validation_basis: Provider identity, adapter compatibility, query results, and historical data availability determine readiness.
+    capability_summary: Long-retention PromQL queries through the shared Prometheus HTTP API v1 core contract.
+    validation_basis: Thanos runtime compatibility and the shared Prometheus HTTP API v1 core are validated at provider level; asset metrics remain binding-specific.
 compatibility_profiles:
 - prometheus-http-v2
 - prometheus-http-v3

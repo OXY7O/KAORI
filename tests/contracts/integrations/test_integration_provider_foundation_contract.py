@@ -105,8 +105,9 @@ def test_validation_worker_dispatches_full_validation_through_registry() -> None
     assert 'module = get_integration(integration_type)' in full_validation
     assert 'instance = module.require_record_for_canonical(integration_instance_id)' in full_validation
     assert 'runtime_refresh.refresh_and_record(' in full_validation
-    assert "if 'binding.validate' in module.operations" in full_validation
-    assert '_refresh_provider_bindings(' in full_validation
+    assert "if 'binding.validate' in module.operations" not in full_validation
+    assert '_refresh_provider_bindings(' not in full_validation
+    assert 'binding_validation_summary' not in full_validation
     assert "instance.integration_type == '" not in full_validation
     assert "provider_type == 'alertmanager'" not in full_validation
     assert "provider_type == 'kubernetes'" not in full_validation

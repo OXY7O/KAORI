@@ -174,13 +174,13 @@
                                         <span class="mb-1.5 block text-sm font-semibold text-content-primary">{{ form.compatibility_profile_override.label.text }}</span>
                                         {{ form.compatibility_profile_override(class_='h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-medium text-content-primary outline-none transition hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20', required=provider.version_detection_mode == 'manual') }}
                                     </label>
-                                    <p class="mt-1.5 text-xs leading-5 text-content-muted">Select an API compatibility profile only when the provider contract requires an explicit override.</p>
+                                    <p class="mt-1.5 text-xs leading-5 text-content-muted">Select a provider runtime profile only when the provider contract requires an explicit override. Prometheus and Thanos query through the shared Prometheus HTTP API v1 core contract.</p>
                                 </div>
                             {% else %}
                                 <div class="rounded-lg border border-outline-subtle bg-surface-subtle px-4 py-3">
                                     <p class="text-xs font-semibold text-content-muted">Compatibility Detection</p>
                                     <p class="mt-1 text-sm font-semibold text-content-primary">{{ provider.version_detection_mode|replace('_', ' ') |title }}</p>
-                                    <p class="mt-1 text-xs leading-5 text-content-secondary">KAORI applies the compatibility policy declared by this metrics provider.</p>
+                                    <p class="mt-1 text-xs leading-5 text-content-secondary">KAORI detects the provider runtime and validates the shared Prometheus HTTP API v1 / PromQL core contract separately.</p>
                                 </div>
                             {% endif %}
                         </div>

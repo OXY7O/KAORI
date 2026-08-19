@@ -4,7 +4,7 @@ from collections.abc import Callable
 from datetime import UTC, datetime
 from typing import Any
 
-from flask import current_app
+from flask import current_app, make_response
 
 from app.integrations.contracts import IntegrationInstanceNotFound, IntegrationNotRegistered
 from app.integrations.registry import get_integration
@@ -277,6 +277,23 @@ def enqueue_binding_validation(
         message='KAORI queued the scope selector validation.',
         detail='Source resolution remains blocked until the worker completes.',
     )
+
+
+def validation_poll_response(content: Any, *, snapshot: dict[str, Any]) -> Any:
+    """Return one validation/runtime poll response without reusable cache state.
+
+    Poll URLs are stable for the lifetime of a Celery task. Reusing an active
+    HTML response after the worker has reached a terminal state leaves loading
+    indicators stuck until a full-page reload. Poll responses are therefore
+    explicitly no-store. Terminal responses also ask the navigation shell to
+    refresh Notification Deck / Activity Center state immediately.
+    """
+    response = make_response(content)
+    response.headers['Cache-Control'] = 'no-store, max-age=0'
+    response.headers['Pragma'] = 'no-cache'
+    if snapshot.get('is_complete'):
+        response.headers['HX-Trigger'] = '{"kaori:notifications-changed":{}}'
+    return response
 
 
 def validate_snapshot_access(

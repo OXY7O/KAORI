@@ -85,12 +85,12 @@ canonical managed-asset registry and resolves the consumer profile by
 `adapter_key + asset_type`. Asset-owner pages display the resulting source
 bindings read-only and never create pair-specific binding tables or forms.
 
-Full Validation refreshes enabled consumer bindings after provider-core
-validation. Provider readiness therefore remains consumer-neutral while
-binding-owned evidence is rebuilt in the same operator workflow. The
-binding-level Validate action remains the targeted path for one consumer.
+Full Validation is provider-core only and never refreshes consumer bindings
+implicitly. Provider readiness therefore remains consumer-neutral. The explicit
+explicit binding Validate action is the only path that rebuilds one consumer's
+identity, metric-label, retention, and capability evidence.
 
-Kubernetes consumer bindings use one canonical identity contract: `cluster=<stable-cluster-name>`. For direct Prometheus, the label must be query-visible on Kubernetes scrape targets because KAORI applies the binding selector to PromQL. When the source feeds Thanos, every upstream Prometheus must also publish the same cluster value as an external label so the aggregated query plane preserves provenance. Storage filesystem evidence additionally requires `node=<Kubernetes Node.name>` on `node_filesystem_size_bytes` and `node_filesystem_avail_bytes`, paired on the same mountpoint (`/var` preferred, `/` fallback). The `instance` label is not a node-identity substitute. Missing consumer identity and label evidence is persisted on `IntegrationBinding.validation_evidence` and surfaced only in the Validation registry; Provider Readiness remains provider-core only.
+Kubernetes consumer bindings use one canonical identity contract: `cluster=<stable-cluster-name>`. For direct Prometheus, the label must be query-visible on Kubernetes scrape targets because KAORI applies the binding selector to PromQL. When the source feeds Thanos, every upstream Prometheus must also publish the same cluster value as an external label so the aggregated query plane preserves provenance. Storage filesystem evidence additionally requires `node=<Kubernetes Node.name>` on `node_filesystem_size_bytes` and `node_filesystem_avail_bytes`, paired on the same mountpoint (`/var` preferred, `/` fallback). The `instance` label is not a node-identity substitute. Missing consumer identity and label evidence is persisted on `IntegrationBinding.validation_evidence` and surfaced from the corresponding binding through `View Result`; Provider Readiness remains provider-core only.
 
 ## Query runtime contract
 

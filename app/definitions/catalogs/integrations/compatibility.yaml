@@ -22,7 +22,7 @@ profiles:
   required_capabilities:
   - instant_query
   - range_query
-  notes: Prometheus HTTP API profile for runtime major 2.
+  notes: Prometheus 2.x runtime profile using the stable Prometheus HTTP API v1 core contract.
   query_profile: prometheus-http-core-v1
 - key: prometheus-http-v3
   product: prometheus
@@ -31,7 +31,7 @@ profiles:
   required_capabilities:
   - instant_query
   - range_query
-  notes: Prometheus HTTP API profile for runtime major 3.
+  notes: Prometheus 3.x runtime profile using the stable Prometheus HTTP API v1 core contract.
   query_profile: prometheus-http-core-v1
 - key: alertmanager-api-v2-legacy
   product: alertmanager

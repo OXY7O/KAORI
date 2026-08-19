@@ -6,6 +6,11 @@ from typing import Any
 
 from app.integrations.observability.metrics_source.exceptions import MetricsSourceError
 from app.integrations.observability.metrics_source.query_profiles import get_kubernetes_query
+from app.integrations.observability.metrics_source.query_profiles.retention import (
+    history_remediation,
+    maximum_history,
+    technical_history_check,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -196,19 +201,41 @@ FEATURE_CONTRACTS: tuple[FeatureContract, ...] = (
 )
 
 
-def evaluate_feature_contracts(client: Any, *, sample_namespace: str = 'default') -> list[dict[str, Any]]:
-    return [_evaluate(client, contract, sample_namespace=sample_namespace) for contract in FEATURE_CONTRACTS]
+def evaluate_feature_contracts(
+    client: Any,
+    *,
+    sample_namespace: str = 'default',
+    retention: dict[str, dict[str, Any]] | None = None,
+) -> list[dict[str, Any]]:
+    return [
+        _evaluate(
+            client,
+            contract,
+            sample_namespace=sample_namespace,
+            retention=retention,
+        )
+        for contract in FEATURE_CONTRACTS
+    ]
 
 
-def _evaluate(client: Any, contract: FeatureContract, *, sample_namespace: str) -> dict[str, Any]:
+def _evaluate(
+    client: Any,
+    contract: FeatureContract,
+    *,
+    sample_namespace: str,
+    retention: dict[str, dict[str, Any]] | None = None,
+) -> dict[str, Any]:
     checks: list[dict[str, Any]] = []
     successful = 0
     usable = 0
     observed_labels: set[str] = set()
     query_texts: list[str] = []
+    required_histories: set[str] = set()
 
     for query_key in contract.query_keys:
         definition = get_kubernetes_query(query_key)
+        if definition.required_history:
+            required_histories.add(definition.required_history)
         registered_expression = definition.expression.replace('$namespace', _escape_label_value(sample_namespace))
         expression = _validation_expression(contract, registered_expression)
         query_texts.append(expression)
@@ -315,12 +342,25 @@ def _evaluate(client: Any, contract: FeatureContract, *, sample_namespace: str) 
         status = 'failed'
         observed = 'Registered queries executed but returned no usable samples.'
 
+    required_history = maximum_history(required_histories)
+    history_failed = False
+    if required_history:
+        history_check = technical_history_check(required_history, retention)
+        checks.append(history_check)
+        observed = f'{observed} Required history: {history_check["evidence"]}'
+        if history_check['status'] != 'ready':
+            history_failed = True
+            status = 'failed'
+
     status_label = {'ready': 'Ready', 'failed': 'Failed', 'not_observed': 'Not Observed'}[status]
-    remediation = (
-        _storage_remediation(checks, label_ready)
-        if contract.key == 'storage.filesystem' and status != 'ready'
-        else _remediation(status, successful, len(contract.query_keys), usable)
-    )
+    if history_failed and required_history:
+        remediation = history_remediation(required_history)
+    else:
+        remediation = (
+            _storage_remediation(checks, label_ready)
+            if contract.key == 'storage.filesystem' and status != 'ready'
+            else _remediation(status, successful, len(contract.query_keys), usable)
+        )
     return {
         'key': contract.key,
         'feature': contract.feature,

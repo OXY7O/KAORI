@@ -125,7 +125,7 @@ def test_provider_configuration_and_readiness_use_shared_kaori_surfaces() -> Non
 
     for registry in (prom_capabilities, alert_capabilities):
         assert 'Capability Registry' in registry
-        assert 'View More' in registry
+        assert 'record_actions.view_more(' in registry
         assert 'components/pagination.html' in registry
         assert 'Search Capability' in registry
         assert 'Validation Status' in registry

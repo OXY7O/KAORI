@@ -7,6 +7,9 @@ from typing import Any, cast
 
 from flask import current_app
 from redis import Redis
+from sqlalchemy.exc import SQLAlchemyError
+
+from app.extensions.db import db
 
 from app.platform_operations.jobs.constants import ACTIVE_JOB_STATUSES
 
@@ -241,6 +244,76 @@ def _elapsed_seconds(payload: dict[str, Any]) -> int:
     return max(int((finished - started).total_seconds()), 0)
 
 
+def _reconcile_terminal_job(
+    *,
+    task_id: str,
+    celery_state: str,
+    payload: dict[str, Any],
+) -> dict[str, Any]:
+    """Converge durable JobExecution state when Celery is already terminal.
+
+    The worker normally terminalizes JobExecution before returning. This is a
+    defensive read-path repair for the narrow case where Celery persisted its
+    terminal result but canonical job finalization failed or was interrupted.
+    It keeps UI polling, Active Work, and Notification Deck lifecycle aligned.
+    """
+    if celery_state not in {'SUCCESS', 'FAILURE', 'REVOKED'}:
+        return {}
+    try:
+        from app.platform_operations.jobs.service import (
+            get_job_by_task_id,
+            job_snapshot,
+            mark_job_canceled,
+            mark_job_failed,
+            mark_job_succeeded,
+        )
+
+        job = get_job_by_task_id(task_id)
+        if job is None:
+            return {}
+        if job.is_active:
+            if celery_state == 'SUCCESS':
+                status = str(payload.get('status') or '').strip().lower()
+                result_summary = payload.get('result') if isinstance(payload.get('result'), dict) else {}
+                if status == 'error':
+                    job = (
+                        mark_job_failed(
+                            task_id,
+                            error=str(
+                                payload.get('detail') or payload.get('message') or 'Worker returned an error result.'
+                            ),
+                            error_code='operation_failed',
+                        )
+                        or job
+                    )
+                else:
+                    job = (
+                        mark_job_succeeded(
+                            task_id,
+                            result_summary=result_summary,
+                            result_type=str(payload.get('operation') or 'job_result'),
+                            partial=status == 'warning',
+                        )
+                        or job
+                    )
+            elif celery_state == 'REVOKED':
+                job = mark_job_canceled(task_id, message='Celery task was revoked') or job
+            else:
+                job = (
+                    mark_job_failed(
+                        task_id,
+                        error=str(payload.get('detail') or payload.get('message') or 'Celery worker reported FAILURE.'),
+                        error_code='celery_failure',
+                    )
+                    or job
+                )
+        return job_snapshot(job)
+    except (SQLAlchemyError, RuntimeError, ValueError, TypeError):
+        db.session.rollback()
+        logger.exception('Could not reconcile terminal canonical job state for task %s.', task_id)
+        return {}
+
+
 def build_validation_snapshot(task_id: str) -> dict[str, Any]:
     result = current_app.extensions['celery'].AsyncResult(task_id)
     payload = get_validation_metadata(task_id)
@@ -263,6 +336,14 @@ def build_validation_snapshot(task_id: str) -> dict[str, Any]:
         payload.setdefault('title', 'Integration validation interrupted')
         payload.setdefault('message', 'The validation worker could not complete the requested operation.')
         payload.setdefault('detail', 'Review the validation-worker logs and Redis connectivity before retrying.')
+
+    terminal = result.state in {'SUCCESS', 'FAILURE', 'REVOKED'}
+    if terminal and (not canonical or bool(canonical.get('is_active'))):
+        reconciled = _reconcile_terminal_job(task_id=task_id, celery_state=result.state, payload=payload)
+        if reconciled:
+            canonical = reconciled
+            payload = {**canonical, **payload}
+
     canonical_status = str(canonical.get('status') or '')
     canonical_active = bool(canonical.get('is_active'))
     canonical_complete = bool(canonical.get('is_complete'))
@@ -272,8 +353,11 @@ def build_validation_snapshot(task_id: str) -> dict[str, Any]:
         'task_id': task_id,
         'celery_state': result.state,
         'state_label': state_label,
-        'is_active': canonical_active if canonical else result.state in ACTIVE_CELERY_STATES,
-        'is_complete': canonical_complete if canonical else result.state in {'SUCCESS', 'FAILURE', 'REVOKED'},
+        # A terminal Celery result is authoritative for polling even if durable
+        # repair could not be persisted on this read. This prevents an endless
+        # spinner while keeping reconciliation best-effort above.
+        'is_active': False if terminal else (canonical_active if canonical else result.state in ACTIVE_CELERY_STATES),
+        'is_complete': True if terminal else (canonical_complete if canonical else False),
         'elapsed_seconds': _elapsed_seconds(payload),
         'feedback': payload.get('feedback'),
     }

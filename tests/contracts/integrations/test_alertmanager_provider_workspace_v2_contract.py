@@ -80,7 +80,8 @@ def test_alertmanager_bindings_use_standard_table_and_native_dialog():
     assert 'Binding Decision' in content
     assert 'observability_binding_modal.render(' in content
     assert 'data-kaori-observability-binding-modal' in binding_modal
-    assert 'table_ui.table_classes' in binding_registry
+    assert '_binding_registry_layout.html' in binding_registry
+    assert 'binding_registry_layout.table_classes()' in binding_registry
 
 
 def test_alertmanager_runtime_history_accepts_server_side_filters():

@@ -35,7 +35,8 @@ def test_metrics_bindings_use_kaori_table_and_native_create_dialog() -> None:
     assert 'Consumer Bindings' in template
     assert 'Effective Consumer Resolution' in template
     assert 'Binding Decision' in template
-    assert 'table_ui.table_classes' in registry
+    assert '_binding_registry_layout.html' in registry
+    assert 'binding_registry_layout.table_classes()' in registry
     assert "integration_status(row.validation_status, display='indicator')" in registry
     assert 'observability_binding_modal.render("metrics-source-create-binding-dialog"' in template
     assert 'data-kaori-dialog-open' in template

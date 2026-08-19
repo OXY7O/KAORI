@@ -88,8 +88,13 @@ def test_binding_validation_polling_uses_the_shared_terminal_aware_poller() -> N
         'app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_detail_scope.html'
     )
     poller = read('app/templates/integrations/components/_validation_poller.html')
+    state = read('app/integrations/validation/state.py')
+    web = read('app/integrations/validation/web.py')
+    metrics_routes = read('app/integrations/observability/metrics_source/application/binding_web.py')
+    alert_routes = read('app/integrations/observability/alert_source/providers/alertmanager/application/routes.py')
 
     assert 'data-kaori-validation-poller' in poller
+    assert 'hx-trigger="every {{ delay }}"' in poller
     for source, target in (
         (prom, '#metrics-source-scope-workspace'),
         (alert, '#alertmanager-scope-workspace'),
@@ -99,13 +104,77 @@ def test_binding_validation_polling_uses_the_shared_terminal_aware_poller() -> N
         assert target in source
         assert 'hx-trigger="load delay:1500ms" hx-target="this"' not in source
 
+    assert 'def validation_poll_response(' in web
+    assert "response.headers['Cache-Control'] = 'no-store, max-age=0'" in web
+    assert "response.headers['HX-Trigger'] = '{\"kaori:notifications-changed\":{}}'" in web
+    assert 'def _reconcile_terminal_job(' in state
+    assert "'is_active': False if terminal" in state
+    assert "'is_complete': True if terminal" in state
+    assert 'validation_poll_response(content, snapshot=snapshot)' in metrics_routes
+    assert 'validation_poll_response(content, snapshot=snapshot)' in alert_routes
+
     metrics_registry = read('app/templates/integrations/observability/metrics_source/partials/_binding_registry.html')
     alert_registry = read(
         'app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_binding_registry.html'
     )
+    result = read('app/templates/integrations/components/_binding_validation_result.html')
     for registry in (metrics_registry, alert_registry):
         assert "'Validating'" in registry
         assert 'disabled:cursor-wait' in registry
+        assert 'View Result' in registry
+        assert '_binding_validation_result.html' in registry
+    assert 'Binding Validation Result' in result
+
+    navbar = read('app/templates/components/navigation/navbar.html')
+    feedback = read('app/templates/components/operation_feedback_oob.html')
+    assert 'kaori:notifications-changed' in navbar
+    assert 'operation_feedback_oob' in prom
+    assert 'operation_feedback_oob' in alert
+    assert "{% include 'components/operational_toast.html' %}" in feedback
+
+
+def test_worker_completion_terminalizes_jobs_and_refreshes_operational_feedback() -> None:
+    tasks = read('app/integrations/validation/tasks.py')
+    completion = read('app/integrations/validation/completion.py')
+    web = read('app/integrations/validation/web.py')
+    navbar = read('app/templates/components/navigation/navbar.html')
+
+    binding_body = tasks.split('def validate_integration_binding', 1)[1].split('@shared_task(', 1)[0]
+    assert binding_body.index('_record_completion(') < binding_body.index('final_payload(')
+    assert 'mark_job_succeeded(' in completion
+    assert 'mark_job_failed(' in completion
+    assert "response.headers['HX-Trigger'] = '{\"kaori:notifications-changed\":{}}'" in web
+    assert '@kaori:notifications-changed.window' in navbar
+
+
+def test_runtime_refresh_polling_and_asset_profile_parity_are_global() -> None:
+    poller = read('app/templates/integrations/components/_validation_poller.html')
+    runtime_templates = (
+        read('app/templates/integrations/observability/metrics_source/partials/_runtime_panel.html'),
+        read(
+            'app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_runtime_panel.html'
+        ),
+        read('app/templates/integrations/storage/object_storage/providers/minio/partials/_detail_runtime.html'),
+        read(
+            'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_runtime_workspace.html'
+        ),
+    )
+    assert 'hx-trigger="every {{ delay }}"' in poller
+    for source in runtime_templates:
+        assert '_validation_poller.html' in source
+        assert 'validation_poller.render(' in source
+        assert 'hx-trigger="load delay:1500ms"' not in source
+
+    metrics_contract = read('app/definitions/catalogs/integrations/observability/metrics_source/contract.yaml')
+    alert_contract = read(
+        'app/definitions/catalogs/integrations/observability/alert_source/providers/alertmanager.yaml'
+    )
+    assert 'asset_type: kubernetes_cluster' in metrics_contract
+    assert 'asset_type: object_storage_system' in metrics_contract
+    assert 'profile_key: kubernetes-metrics-v1' in metrics_contract
+    assert 'profile_key: object-storage-metrics-v1' in metrics_contract
+    assert 'asset_type: kubernetes_cluster' in alert_contract
+    assert 'asset_type: object_storage_system' in alert_contract
 
 
 def test_shared_add_binding_modal_locks_workflow_roles_and_source_ownership() -> None:

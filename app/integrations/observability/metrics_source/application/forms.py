@@ -37,7 +37,7 @@ class MetricsSourceConfigForm(FlaskForm):
     )
 
     compatibility_profile_override = SelectField(
-        'API Compatibility Profile',
+        'Provider Compatibility Profile',
         choices=_compatibility_profile_choices(),
         default='',
         validators=[Optional()],
@@ -86,9 +86,9 @@ class MetricsSourceConfigForm(FlaskForm):
         allowed = {value for value, _label in definition.compatibility_profile_options}
         selected = str(field.data or '').strip()
         if definition.version_detection_mode == 'manual' and not selected:
-            raise ValidationError('Select the API compatibility profile required by this metrics provider.')
+            raise ValidationError('Select the provider compatibility profile required by this metrics provider.')
         if selected and selected not in allowed:
-            raise ValidationError('The selected API compatibility profile is not valid for this metrics provider.')
+            raise ValidationError('The selected provider compatibility profile is not valid for this metrics provider.')
 
     def validate_endpoint(self, field: StringField) -> None:
         endpoint = (field.data or '').strip()

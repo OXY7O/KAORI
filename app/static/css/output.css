@@ -1416,6 +1416,9 @@
   .min-w-\[82rem\] {
     min-width: 82rem;
   }
+  .min-w-\[90rem\] {
+    min-width: 90rem;
+  }
   .min-w-\[135px\] {
     min-width: 135px;
   }
@@ -2364,6 +2367,12 @@
     background-color: var(--kaori-status-warning-soft);
     @supports (color: color-mix(in lab, red, red)) {
       background-color: color-mix(in oklab, var(--kaori-status-warning-soft) 55%, transparent);
+    }
+  }
+  .bg-status-warning-soft\/60 {
+    background-color: var(--kaori-status-warning-soft);
+    @supports (color: color-mix(in lab, red, red)) {
+      background-color: color-mix(in oklab, var(--kaori-status-warning-soft) 60%, transparent);
     }
   }
   .bg-surface-card {
@@ -4602,6 +4611,11 @@
       grid-template-columns: 1fr 7rem 1fr;
     }
   }
+  .sm\:grid-cols-\[2\.5rem_minmax\(0\,1fr\)\] {
+    @media (width >= 40rem) {
+      grid-template-columns: 2.5rem minmax(0,1fr);
+    }
+  }
   .sm\:grid-cols-\[8rem_minmax\(0\,1fr\)\] {
     @media (width >= 40rem) {
       grid-template-columns: 8rem minmax(0,1fr);
@@ -4819,6 +4833,11 @@
       padding-inline: calc(var(--spacing) * 6);
     }
   }
+  .sm\:px-7 {
+    @media (width >= 40rem) {
+      padding-inline: calc(var(--spacing) * 7);
+    }
+  }
   .sm\:px-8 {
     @media (width >= 40rem) {
       padding-inline: calc(var(--spacing) * 8);
@@ -4832,6 +4851,11 @@
   .sm\:py-5 {
     @media (width >= 40rem) {
       padding-block: calc(var(--spacing) * 5);
+    }
+  }
+  .sm\:py-6 {
+    @media (width >= 40rem) {
+      padding-block: calc(var(--spacing) * 6);
     }
   }
   .sm\:pt-1 {
@@ -5650,6 +5674,11 @@
   .lg\:py-5 {
     @media (width >= 64rem) {
       padding-block: calc(var(--spacing) * 5);
+    }
+  }
+  .lg\:py-8 {
+    @media (width >= 64rem) {
+      padding-block: calc(var(--spacing) * 8);
     }
   }
   .lg\:pt-0 {

@@ -5,6 +5,7 @@ from typing import Any
 from flask import url_for
 
 from app.common.pagination import paginate_sequence
+from app.common.presentation import present_user_datetime
 from app.extensions.db import db
 from app.integrations.binding_selectors import selector_form_values, selector_is_configured, selector_summary
 from app.integrations.consumer_assets import build_consumer_asset_groups
@@ -111,6 +112,23 @@ _RESOLUTION_CONSUMERS: tuple[dict[str, Any], ...] = (
 )
 
 
+def _provider_runtime_profile_label(instance: MetricsSource) -> str:
+    definition = provider_definition(instance.provider_key)
+    version = str(instance.detected_version or '').strip().lstrip('v')
+    if version:
+        return f'{definition.label} v{version}'
+    if instance.compatibility_profile:
+        return f'{definition.label} Runtime Profile'
+    return 'Validation Required'
+
+
+def _query_contract_label(instance: MetricsSource) -> str:
+    query_profile = str(instance.query_profile or instance.capability_profile or '').strip()
+    if instance.adapter_key == 'prometheus_http' or query_profile == 'prometheus-http-core-v1':
+        return 'Prometheus HTTP API v1 / PromQL Core'
+    return query_profile.replace('-', ' ').title() if query_profile else 'Validation Required'
+
+
 def build_instance_context(
     instance: MetricsSource,
     *,
@@ -161,9 +179,7 @@ def build_instance_context(
         integration_instance_id=instance.integration_instance_id,
     )
     binding_rows = [_binding_row(binding, instance) for binding in bindings]
-    consumer_validation_rows = _consumer_validation_rows(bindings, binding_rows)
-    consumer_validation_gap_rows = [row for row in consumer_validation_rows if not row['available']]
-    capability_rows = [*provider_capability_rows, *consumer_validation_rows]
+    capability_rows = provider_capability_rows
     binding_registry_rows, binding_registry_pagination = paginate_sequence(
         binding_rows,
         page=binding_page,
@@ -173,6 +189,8 @@ def build_instance_context(
     return {
         'instance': instance,
         'provider': provider_definition(instance.provider_key),
+        'provider_runtime_profile_label': _provider_runtime_profile_label(instance),
+        'query_contract_label': _query_contract_label(instance),
         'bindings': bindings,
         'deletion_guard': deletion_guard,
         'binding_rows': binding_rows,
@@ -191,7 +209,7 @@ def build_instance_context(
         },
         'consumer_validation_summary': {
             'validated_bindings': sum(row['validation_status'] == 'ready' for row in binding_rows),
-            'gap_count': len(consumer_validation_gap_rows),
+            'gap_count': sum(row['validation_status'] in {'blocked', 'degraded'} for row in binding_rows),
         },
         'module_readiness_rows': _module_readiness_rows(instance, available_capabilities),
         'source_resolution_rows': _source_resolution_rows(instance, bindings),
@@ -442,102 +460,18 @@ def _binding_row(binding: IntegrationBinding, source: MetricsSource) -> dict[str
         'selector_operator': selector_values['operator'],
         'selector_value': selector_values['value'],
         'validation_status': binding.validation_status or 'validation_required',
+        'validation_message': binding.validation_message or 'Run Binding Validation to establish consumer evidence.',
+        'validation_evidence': binding.validation_evidence if isinstance(binding.validation_evidence, dict) else {},
+        'last_validated_at': present_user_datetime(binding.last_validated_at, empty='Not validated'),
+        'has_validation_result': bool(
+            binding.last_validated_at or binding.validation_evidence or binding.validation_message
+        ),
         'source_readiness': source_readiness,
         'operational_status': operational['status'],
         'operational_label': operational['label'],
         'query_horizon': routing_policy['query_horizon'],
         'routing_weight': routing_policy['weight'],
     }
-
-
-def _consumer_validation_rows(
-    bindings: list[IntegrationBinding],
-    binding_rows: list[dict[str, Any]],
-) -> list[dict[str, Any]]:
-    binding_view_by_id = {int(row['binding'].id): row for row in binding_rows}
-    rows: list[dict[str, Any]] = []
-    for binding in bindings:
-        evidence = binding.validation_evidence if isinstance(binding.validation_evidence, dict) else {}
-        binding_view = binding_view_by_id.get(int(binding.id))
-        if binding_view is None:
-            continue
-
-        source_identity = evidence.get('source_identity')
-        if isinstance(source_identity, dict):
-            rows.append(_consumer_identity_row(binding, binding_view, source_identity))
-
-        for assessment in evidence.get('capability_assessments') or ():
-            if not isinstance(assessment, dict):
-                continue
-            status = str(assessment.get('status') or 'not_observed')
-            if status == 'not_observed':
-                continue
-            rows.append(_consumer_capability_row(binding, binding_view, assessment))
-    return rows
-
-
-def _consumer_identity_row(
-    binding: IntegrationBinding,
-    binding_view: dict[str, Any],
-    identity: dict[str, Any],
-) -> dict[str, Any]:
-    item = {
-        'key': 'source_identity',
-        'label': identity.get('label') or 'Cluster Source Identity',
-        'status': 'available' if str(identity.get('status') or '') == 'ready' else 'misconfigured',
-        'status_label': identity.get('status_label') or 'Failed',
-        'observed': identity.get('observed') or identity.get('message') or 'No source identity evidence recorded.',
-        'expected': identity.get('expected') or 'cluster=<stable-cluster-name>',
-        'recommendation': identity.get('recommendation')
-        or 'Expose the canonical cluster label and rerun binding validation.',
-        'technical_checks': identity.get('technical_checks') or [],
-        'source_owner': 'Prometheus scrape identity / Thanos source identity',
-        'required_by': ['Kubernetes Metrics Binding'],
-        'impact': (
-            'The Kubernetes binding has a stable, query-visible cluster identity.'
-            if str(identity.get('status') or '') == 'ready'
-            else 'KAORI cannot isolate Kubernetes metrics for this consumer binding safely.'
-        ),
-    }
-    row = _capability_row(item)
-    return _decorate_consumer_row(row, binding, binding_view, contract_key='source_identity.cluster')
-
-
-def _consumer_capability_row(
-    binding: IntegrationBinding,
-    binding_view: dict[str, Any],
-    assessment: dict[str, Any],
-) -> dict[str, Any]:
-    contract_key = str(assessment.get('key') or 'consumer_contract')
-    row = _capability_row(assessment)
-    return _decorate_consumer_row(row, binding, binding_view, contract_key=contract_key)
-
-
-def _decorate_consumer_row(
-    row: dict[str, Any],
-    binding: IntegrationBinding,
-    binding_view: dict[str, Any],
-    *,
-    contract_key: str,
-) -> dict[str, Any]:
-    scope_label = str(binding_view.get('scope_label') or binding.asset_key)
-    selector = str(binding_view.get('selector_summary') or 'Unscoped')
-    row.update(
-        {
-            'key': f'binding.{binding.id}.{contract_key}',
-            'contract_key': contract_key,
-            'contract_scope': 'consumer',
-            'required': True,
-            'requirement_label': 'Consumer Required',
-            'category': f'Consumer · {row.get("category") or "Metrics Contract"}',
-            'description': f'{scope_label} · {selector}',
-            'scope_label': scope_label,
-            'scope_type_label': str(binding_view.get('scope_type_label') or binding.asset_type),
-            'consumer_profile_label': str(binding_view.get('consumer_profile_label') or 'Consumer Metrics'),
-            'binding_id': int(binding.id),
-        }
-    )
-    return row
 
 
 def _source_resolution_rows(

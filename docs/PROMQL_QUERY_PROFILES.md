@@ -31,7 +31,7 @@ Domain services resolve stable query keys from the canonical registry. Provider-
 1. metric-name availability through `/api/v1/label/__name__/values`;
 2. label schema through `/api/v1/series`;
 3. optional execution of every registered query;
-4. 24-hour, 7-day, 30-day, and 60-day history availability;
+4. baseline 24-hour, 7-day, 30-day, and 60-day history plus every longer `QueryDefinition.required_history` horizon;
 5. deprecated query and replacement metadata.
 
 A compatible Metrics Source endpoint using the Prometheus HTTP adapter can still have binding-specific consumer gaps when required exporters, metrics, labels, or historical data are missing. Provider-core readiness remains separate from consumer query readiness. Kubernetes Metrics Source bindings require the canonical query-visible `cluster=<stable-cluster-name>` source label because the binding selector is applied to PromQL. Direct Prometheus therefore needs that target label on the relevant Kubernetes scrape pipelines; when Thanos is used, every source Prometheus also publishes the same value as an external label so the query plane preserves source provenance. Storage Analytics separately requires the canonical `node=<Kubernetes Node.name>` label on node-exporter filesystem series. Exact missing evidence is persisted on the binding and presented in the Metrics Source **Validation** tab rather than expanding Provider Readiness.
@@ -45,7 +45,7 @@ The Helm output must not be used as the Prometheus binary version. In the suppli
 - `thanos-17.3.1` is the Thanos Helm chart version;
 - app version `0.39.2` identifies the Thanos application family, not Prometheus.
 
-KAORI must detect the Prometheus server runtime from `/api/v1/status/buildinfo`. Thanos must be validated separately as a Prometheus-compatible query backend. Historical readiness is measured against the endpoint actually used for long-range queries. A local Prometheus endpoint can be healthy while failing the 30-day or 60-day horizon; that is not evidence that Thanos retention is unavailable unless KAORI is querying the Thanos endpoint.
+KAORI detects the configured provider runtime from `/api/v1/status/buildinfo`. Prometheus 2.x/3.x and Thanos Query runtime profiles are provider compatibility contracts, not HTTP API major versions. The shared query contract is `prometheus-http-core-v1`, because both providers expose Prometheus-compatible `/api/v1` query operations and PromQL. Thanos therefore does not ask the operator to choose a Prometheus "HTTP v2/v3" profile. Historical readiness is measured against the endpoint actually used for the binding. A local Prometheus endpoint can be healthy while a historical Thanos endpoint has a different retention boundary. The canonical Forecast contract declares `required_history='90d'`, so Binding Validation must probe 90-day history on the selected Metrics Source and persist that exact evidence before Forecast becomes eligible.
 
 ## Deprecation and replacement
 

@@ -4,7 +4,7 @@
               aria-hidden="true"
               data-kaori-validation-poller
               hx-get="{{ status_url }}"
-              hx-trigger="load delay:{{ delay }}"
+              hx-trigger="every {{ delay }}"
               hx-target="{{ target }}"
               hx-swap="outerHTML"></span>
     {% endif %}
