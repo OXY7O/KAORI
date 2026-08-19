@@ -12,31 +12,26 @@
          aria-labelledby="alertmanager-bound-scopes-title"
          data-kaori-bound-scopes-full-width
          data-kaori-binding-registry-final-lock>
-    <header class="border-b border-outline-subtle px-5 py-4">
+    <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
         <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-            <div class="flex items-start gap-3">
-                {{ integration_ui.palette_icon("link-2", "brand", size="md") }}
-                <div>
+            <div class="flex min-w-0 items-start gap-3">
+                {{ integration_ui.palette_icon("boxes", "brand", size="md") }}
+                <div class="min-w-0">
                     <h3 id="alertmanager-bound-scopes-title"
                         class="text-sm font-semibold text-content-primary">Consumer Binding Registry</h3>
-                    <p class="mt-1 text-xs leading-5 text-content-secondary">Each consumer asset binding owns its alert profile, identity selector, validation evidence, and effective resolution.</p>
+                    <p class="mt-1 text-xs leading-5 text-content-secondary">Keep binding posture and actions visible. Open View More for alert identity, consumer profile, resolver preference, and the latest binding-owned validation evidence.</p>
                 </div>
             </div>
-            {{ table_label.metadata_label(binding_rows|length ~ " Binding" ~ ("" if binding_rows|length == 1 else "s") ) }}
+            {{ table_label.metadata_label(binding_rows|length ~ (" Binding" if binding_rows|length == 1 else " Bindings"), "link-2") }}
         </div>
-        {{ loading_bar.render("alertmanager-binding-registry-loading", label="Refreshing Alertmanager Consumer Bindings") }}
+        {{ loading_bar.render("alertmanager-binding-registry-loading", label="Refreshing Alert Source Consumer Bindings") }}
     </header>
-    <div class="overflow-x-auto overscroll-x-contain"
-         x-data="{ selectorEditor: null, validationResult: null }">
-        <table class="{{ binding_registry_layout.table_classes() }}"
-               data-kaori-binding-registry-table>
+    <div x-data="{ selectorEditor: null, expandedBinding: null }" class="overflow-x-auto overscroll-x-contain">
+        <table class="{{ binding_registry_layout.table_classes() }}" data-kaori-binding-registry-table>
             {{ binding_registry_layout.columns() }}
             <thead class="{{ table_ui.head_classes() }}">
                 <tr>
-                    <th class="{{ table_ui.header_cell_classes() }}">Consumer Asset</th>
-                    <th class="{{ table_ui.header_cell_classes() }}">Alert Identity</th>
-                    <th class="{{ table_ui.header_cell_classes() }}">Consumer Profile</th>
-                    <th class="{{ table_ui.header_cell_classes() }}">Resolver Preference</th>
+                    <th class="{{ table_ui.header_cell_classes() }}">Consumer Binding</th>
                     <th class="{{ table_ui.header_cell_classes() }}">Binding Validation</th>
                     <th class="{{ table_ui.header_cell_classes() }}">Effective Resolution</th>
                     <th class="{{ table_ui.header_cell_classes(action=true) }}">Actions</th>
@@ -51,56 +46,48 @@
                                 <div class="min-w-0">
                                     <p class="break-words text-sm font-semibold text-content-primary [overflow-wrap:anywhere]"
                                        title="{{ row.scope_label }}">{{ row.scope_label }}</p>
-                                    <p class="mt-0.5 break-words text-xs text-content-muted [overflow-wrap:anywhere]"
-                                       title="{{ row.scope_type_label }}">{{ row.scope_type_label }}</p>
+                                    <div class="mt-0.5 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-xs text-content-muted">
+                                        <span class="font-medium text-content-secondary">{{ row.scope_type_label }}</span>
+                                        <span aria-hidden="true">·</span>
+                                        <span class="truncate" title="{{ row.consumer_profile_label }}">{{ row.consumer_profile_label }}</span>
+                                    </div>
+                                    <button type="button"
+                                            @click="selectorEditor = null; expandedBinding = expandedBinding === {{ row.binding.id }} ? null : {{ row.binding.id }}"
+                                            :aria-expanded="expandedBinding === {{ row.binding.id }}"
+                                            class="mt-1.5 inline-flex items-center gap-1 text-xs font-semibold text-kaori-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus"
+                                            data-kaori-binding-view-more>
+                                        <i x-show="expandedBinding !== {{ row.binding.id }}"
+                                           data-lucide="chevron-down"
+                                           class="h-3.5 w-3.5"
+                                           aria-hidden="true"></i>
+                                        <i x-cloak
+                                           x-show="expandedBinding === {{ row.binding.id }}"
+                                           data-lucide="chevron-up"
+                                           class="h-3.5 w-3.5"
+                                           aria-hidden="true"></i>
+                                        <span x-show="expandedBinding !== {{ row.binding.id }}">View More</span>
+                                        <span x-cloak x-show="expandedBinding === {{ row.binding.id }}">View Less</span>
+                                    </button>
                                 </div>
                             </div>
                         </td>
                         <td class="{{ table_ui.cell_classes() }}">
-                            <p class="break-words text-xs font-semibold text-content-primary [overflow-wrap:anywhere]"
-                               title="{{ row.selector_summary }}">{{ row.selector_summary }}</p>
-                            <p class="mt-1 text-xs leading-5 text-content-muted">{{ "Configured" if row.selector_configured else "Selector Required" }}</p>
-                        </td>
-                        <td class="{{ table_ui.cell_classes() }}">
-                            <p class="break-words text-xs font-semibold text-content-primary [overflow-wrap:anywhere]"
-                               title="{{ row.consumer_profile_label }}">{{ row.consumer_profile_label }}</p>
-                            <p class="mt-1 break-words text-xs text-content-muted [overflow-wrap:anywhere]"
-                               title="{{ row.consumer_profile_key or 'Validation Required' }}">{{ row.consumer_profile_key or "Validation Required" }}</p>
-                            {% if row.matched_alerts %}
-                                <p class="mt-1 text-xs text-content-muted">{{ row.matched_alerts }} matching active alert{{ "" if row.matched_alerts == 1 else "s" }}</p>
-                            {% endif %}
-                        </td>
-                        <td class="{{ table_ui.cell_classes() }}">
-                            <p class="text-xs font-semibold text-content-primary">{{ row.binding.binding_role|title }}</p>
-                            <p class="mt-1 text-xs text-content-muted">Priority {{ row.binding.priority }}</p>
-                        </td>
-                        <td class="{{ table_ui.cell_classes() }}">
-                            <div class="{{ binding_registry_layout.state_cell_classes() }}"
-                                 data-kaori-binding-validation-state>
-                                {{ integration_status(row.validation_status, row.validation_status|replace("_", " ") |title, display="indicator") }}
+                            <div class="{{ binding_registry_layout.state_cell_classes() }}" data-kaori-binding-validation-state>
+                                {{ integration_status(row.validation_status, row.validation_status|replace("_", " ")|title, display="indicator") }}
                                 <p class="mt-1 text-xs leading-5 text-content-muted">{{ "Current binding evidence" if row.validation_status == "ready" else "Validate before eligibility" }}</p>
-                                {% if row.has_validation_result %}
-                                    <button type="button"
-                                            @click="validationResult = validationResult === {{ row.binding.id }} ? null : {{ row.binding.id }}"
-                                            class="mt-1.5 inline-flex items-center gap-1 text-xs font-semibold text-kaori-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
-                                        <i data-lucide="file-search" class="h-3.5 w-3.5" aria-hidden="true"></i>View Result
-                                    </button>
-                                {% endif %}
                             </div>
                         </td>
                         <td class="{{ table_ui.cell_classes() }}">
-                            <div class="{{ binding_registry_layout.state_cell_classes() }}"
-                                 data-kaori-binding-resolution-state>
+                            <div class="{{ binding_registry_layout.state_cell_classes() }}" data-kaori-binding-resolution-state>
                                 {{ integration_status(row.operational_status, row.operational_label, display="indicator") }}
                                 <p class="mt-1 text-xs leading-5 text-content-muted">{{ "Resolver eligible" if row.operational_status == "ready" else "Source or binding gate" }}</p>
                             </div>
                         </td>
                         <td class="{{ table_ui.cell_classes(action=true) }} whitespace-nowrap">
-                            <div class="{{ binding_registry_layout.action_group_classes() }}"
-                                 data-kaori-binding-actions>
+                            <div class="{{ binding_registry_layout.action_group_classes() }}" data-kaori-binding-actions>
                                 {% if row.binding.asset_type != "global" %}
                                     <button type="button"
-                                            @click="selectorEditor = selectorEditor === {{ row.binding.id }} ? null : {{ row.binding.id }}"
+                                            @click="expandedBinding = null; selectorEditor = selectorEditor === {{ row.binding.id }} ? null : {{ row.binding.id }}"
                                             class="{{ table_ui.action_classes() }} whitespace-nowrap"><i data-lucide="settings-2" class="h-3.5 w-3.5" aria-hidden="true"></i>Manage</button>
                                 {% endif %}
                                 <form method="post"
@@ -109,9 +96,7 @@
                                       hx-target="#alertmanager-scope-workspace"
                                       hx-swap="outerHTML"
                                       hx-indicator="#alertmanager-binding-validation-loading">
-                                    {% if csrf_token is defined %}
-                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                    {% endif %}
+                                    {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
                                     <button type="submit"
                                             {% if binding_validation_job and binding_validation_job.is_active and binding_validation_job.binding_id == row.binding.id %}disabled{% endif %}
                                             class="{{ table_ui.action_classes() }} whitespace-nowrap disabled:cursor-wait">
@@ -131,20 +116,45 @@
                             </div>
                         </td>
                     </tr>
-                    {% if row.has_validation_result %}
-                        <tr x-cloak
-                            x-show="validationResult === {{ row.binding.id }}"
-                            class="bg-surface-subtle"
-                            data-kaori-binding-validation-result-row>
-                            <td colspan="7" class="border-t border-outline-subtle px-4 py-4 sm:px-5">
-                                {{ binding_validation_result.render(row, 'alerts') }}
-                            </td>
-                        </tr>
-                    {% endif %}
+                    <tr x-cloak
+                        x-show="expandedBinding === {{ row.binding.id }}"
+                        class="bg-surface-subtle"
+                        data-kaori-binding-details-row>
+                        <td colspan="4" class="border-t border-outline-subtle px-5 py-4 sm:px-6">
+                            <div class="{{ binding_registry_layout.detail_grid_classes() }}" data-kaori-binding-secondary-details>
+                                <section class="{{ binding_registry_layout.detail_item_classes() }}">
+                                    <p class="text-xs font-semibold text-content-muted">Alert Identity</p>
+                                    <p class="mt-1 break-words font-mono text-xs font-semibold text-content-primary [overflow-wrap:anywhere]"
+                                       title="{{ row.selector_summary }}">{{ row.selector_summary }}</p>
+                                    <p class="mt-1 text-xs leading-5 text-content-muted">{{ "Configured" if row.selector_configured else "Selector Required" }}</p>
+                                </section>
+                                <section class="{{ binding_registry_layout.detail_item_classes() }}">
+                                    <p class="text-xs font-semibold text-content-muted">Consumer Profile</p>
+                                    <p class="mt-1 break-words text-xs font-semibold text-content-primary [overflow-wrap:anywhere]">{{ row.consumer_profile_label }}</p>
+                                    <p class="mt-1 break-words text-xs text-content-muted [overflow-wrap:anywhere]">{{ row.consumer_profile_key or "Validation Required" }}</p>
+                                    {% if row.matched_alerts %}<p class="mt-1 text-xs text-content-muted">{{ row.matched_alerts }} matching active alert{{ "" if row.matched_alerts == 1 else "s" }}</p>{% endif %}
+                                </section>
+                                <section class="{{ binding_registry_layout.detail_item_classes() }}">
+                                    <p class="text-xs font-semibold text-content-muted">Resolver Preference</p>
+                                    <p class="mt-1 text-xs font-semibold text-content-primary">{{ row.binding.binding_role|title }}</p>
+                                    <p class="mt-1 text-xs text-content-muted">Priority {{ row.binding.priority }}</p>
+                                </section>
+                            </div>
+                            {% if row.has_validation_result %}
+                                <div class="mt-5 border-t border-outline-subtle pt-5" data-kaori-binding-expanded-validation>
+                                    {{ binding_validation_result.render(row, 'alerts') }}
+                                </div>
+                            {% else %}
+                                <div class="mt-5 border-t border-outline-subtle pt-4">
+                                    <p class="text-xs font-semibold text-content-primary">Binding Validation Evidence</p>
+                                    <p class="mt-1 text-xs leading-5 text-content-secondary">Run Validate to populate consumer-specific alert capability evidence for this binding.</p>
+                                </div>
+                            {% endif %}
+                        </td>
+                    </tr>
                     {% if row.binding.asset_type != "global" %}
                         <tr x-show="selectorEditor === {{ row.binding.id }}" x-cloak>
-                            <td colspan="7"
-                                class="border-t border-outline-subtle bg-surface-subtle px-5 py-4">
+                            <td colspan="4" class="border-t border-outline-subtle bg-surface-subtle px-5 py-4">
                                 <div class="mb-3 flex items-start gap-3">
                                     {{ integration_ui.palette_icon("scan-line", "info", size="sm") }}
                                     <div class="min-w-0">
@@ -158,19 +168,14 @@
                                       hx-target="#alertmanager-scope-workspace"
                                       hx-swap="outerHTML"
                                       class="grid gap-3 lg:grid-cols-[1fr_8rem_1fr_auto] lg:items-end">
-                                    {% if csrf_token is defined %}
-                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                    {% endif %}
+                                    {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
                                     <div>
                                         <label class="{{ table_ui.filter_label_classes() }}">Label</label>
-                                        <input name="selector_label"
-                                               value="{{ row.selector_label }}"
-                                               class="{{ table_ui.filter_input_classes() }}">
+                                        <input name="selector_label" value="{{ row.selector_label }}" class="{{ table_ui.filter_input_classes() }}">
                                     </div>
                                     <div>
                                         <label class="{{ table_ui.filter_label_classes() }}">Operator</label>
-                                        <select name="selector_operator"
-                                                class="{{ table_ui.filter_select_classes() }}">
+                                        <select name="selector_operator" class="{{ table_ui.filter_select_classes() }}">
                                             <option value="=" {% if row.selector_operator == "=" %}selected{% endif %}>=</option>
                                             <option value="=~" {% if row.selector_operator == "=~" %}selected{% endif %}>=~</option>
                                             <option value="!=" {% if row.selector_operator == "!=" %}selected{% endif %}>!=</option>
@@ -179,19 +184,16 @@
                                     </div>
                                     <div>
                                         <label class="{{ table_ui.filter_label_classes() }}">Value</label>
-                                        <input name="selector_value"
-                                               value="{{ row.selector_value }}"
-                                               class="{{ table_ui.filter_input_classes() }}">
+                                        <input name="selector_value" value="{{ row.selector_value }}" class="{{ table_ui.filter_input_classes() }}">
                                     </div>
-                                    <button type="submit"
-                                            class="{{ action_button.classes('primary') }} whitespace-nowrap"><i data-lucide="save" class="h-3.5 w-3.5" aria-hidden="true"></i>Save Identity</button>
+                                    <button type="submit" class="{{ action_button.classes('primary') }} whitespace-nowrap"><i data-lucide="save" class="h-3.5 w-3.5" aria-hidden="true"></i>Save Identity</button>
                                 </form>
                             </td>
                         </tr>
                     {% endif %}
                 {% else %}
                     <tr>
-                        <td colspan="7" class="p-0">
+                        <td colspan="4" class="p-0">
                             {% set empty_state_icon = "git-branch" %}
                             {% set empty_state_label = "No Bindings" %}
                             {% set empty_state_title = "No Consumer Bindings" %}

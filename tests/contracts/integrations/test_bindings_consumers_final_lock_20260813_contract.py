@@ -37,7 +37,7 @@ def test_binding_decision_is_shared_and_keeps_readiness_dimensions_independent()
     assert "identity_title='Alert Identity Boundary'" in alert
 
 
-def test_metrics_source_and_alertmanager_binding_registries_share_final_column_contract() -> None:
+def test_metrics_source_and_alertmanager_binding_registries_share_summary_first_contract() -> None:
     layout = read('app/templates/integrations/components/_binding_registry_layout.html')
     prom = read('app/templates/integrations/observability/metrics_source/partials/_binding_registry.html')
     alert = read(
@@ -45,20 +45,25 @@ def test_metrics_source_and_alertmanager_binding_registries_share_final_column_c
     )
 
     assert 'table_ui.table_classes' in layout
-    assert 'min-w-[90rem]' in layout
+    assert 'min-w-[64rem]' in layout
     assert 'data-kaori-binding-registry-columns' in layout
-    for width in ('w-[15%]', 'w-[14%]', 'w-[9%]', 'w-[12%]', 'w-[13%]', 'w-[22%]'):
+    for width in ('w-[30%]', 'w-[20%]'):
         assert width in layout
-    assert layout.count('w-[22%]') == 1
+    assert layout.count('w-[30%]') == 2
+    assert layout.count('w-[20%]') == 2
+    assert 'detail_grid_classes' in layout
+    assert 'detail_item_classes' in layout
     assert 'flex min-w-0 flex-nowrap items-center justify-end gap-2 whitespace-nowrap' in layout
 
-    columns = (
-        'Consumer Asset',
-        'Consumer Profile',
-        'Resolver Preference',
+    summary_columns = (
+        'Consumer Binding',
         'Binding Validation',
         'Effective Resolution',
         'Actions',
+    )
+    expanded_labels = (
+        'Consumer Profile',
+        'Resolver Preference',
     )
     for source in (prom, alert):
         assert 'data-kaori-binding-registry-final-lock' in source
@@ -67,14 +72,22 @@ def test_metrics_source_and_alertmanager_binding_registries_share_final_column_c
         assert 'binding_registry_layout.columns()' in source
         assert 'binding_registry_layout.state_cell_classes()' in source
         assert 'binding_registry_layout.action_group_classes()' in source
+        assert 'binding_registry_layout.detail_grid_classes()' in source
+        assert 'binding_registry_layout.detail_item_classes()' in source
+        assert 'data-kaori-binding-view-more' in source
+        assert 'data-kaori-binding-details-row' in source
+        assert 'data-kaori-binding-secondary-details' in source
+        assert 'colspan="4"' in source
         assert 'overscroll-x-contain' in source
         assert 'components/pagination.html' in source
         assert 'components/loading_bar.html' in source
         assert 'binding_registry_pagination.allowed_per_page' in source
         assert 'Validate before eligibility' in source
         assert 'Resolver eligible' in source
-        for column in columns:
+        for column in summary_columns:
             assert column in source
+        for label in expanded_labels:
+            assert label in source
 
     assert 'Metrics Identity' in prom
     assert 'Alert Identity' in alert
@@ -91,7 +104,9 @@ def test_binding_validation_polling_uses_the_shared_terminal_aware_poller() -> N
     state = read('app/integrations/validation/state.py')
     web = read('app/integrations/validation/web.py')
     metrics_routes = read('app/integrations/observability/metrics_source/application/binding_web.py')
-    alert_routes = read('app/integrations/observability/alert_source/providers/alertmanager/application/routes.py')
+    alert_routes = read(
+        'app/integrations/observability/alert_source/providers/alertmanager/application/routes.py'
+    )
 
     assert 'data-kaori-validation-poller' in poller
     assert 'hx-trigger="every {{ delay }}"' in poller
@@ -139,7 +154,9 @@ def test_worker_completion_terminalizes_jobs_and_refreshes_operational_feedback(
     web = read('app/integrations/validation/web.py')
     navbar = read('app/templates/components/navigation/navbar.html')
 
-    binding_body = tasks.split('def validate_integration_binding', 1)[1].split('@shared_task(', 1)[0]
+    binding_body = tasks.split('def validate_integration_binding', 1)[1].split(
+        '@shared_task(', 1
+    )[0]
     assert binding_body.index('_record_completion(') < binding_body.index('final_payload(')
     assert 'mark_job_succeeded(' in completion
     assert 'mark_job_failed(' in completion
@@ -165,7 +182,9 @@ def test_runtime_refresh_polling_and_asset_profile_parity_are_global() -> None:
         assert 'validation_poller.render(' in source
         assert 'hx-trigger="load delay:1500ms"' not in source
 
-    metrics_contract = read('app/definitions/catalogs/integrations/observability/metrics_source/contract.yaml')
+    metrics_contract = read(
+        'app/definitions/catalogs/integrations/observability/metrics_source/contract.yaml'
+    )
     alert_contract = read(
         'app/definitions/catalogs/integrations/observability/alert_source/providers/alertmanager.yaml'
     )

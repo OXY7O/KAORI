@@ -3,6 +3,7 @@
 All notable KAORI changes are recorded here. KAORI uses Semantic Versioning for release identity.
 
 ## [Unreleased]
+- Refined Consumer Binding Registry into a summary-first four-column layout with `View More` expansion for identity, profile, resolver, and binding validation evidence.
 
 - Corrected Observability provider/runtime validation ownership: Prometheus and Thanos now expose provider runtime identity separately from the shared Prometheus HTTP API v1 / PromQL query contract, Full Validation remains provider-core only, Binding Validation owns Kubernetes/Object Storage consumer evidence and View Result, terminal worker results automatically end polling and refresh operational notifications, the shared binding registry prevents Effective Resolution/Actions overlap, and Forecast readiness validates its canonical 90-day history requirement at the binding boundary.
 - Redesigned General Settings → System Information and Compatibility Versions as unified full-width read-only workspaces with stronger release-led and matrix-led visual hierarchy, keeping governance and compatibility guidance inline while reducing repeated equal-weight nested cards and retiring detached side-context boxes.

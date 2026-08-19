@@ -167,8 +167,7 @@ def main() -> int:
         errors,
     )
     require(
-        'Open Bindings & Consumers → View Result on the affected binding for exact missing capability evidence and remediation.'
-        in metrics_scope
+        'Open Bindings & Consumers → View Result on the affected binding for exact missing capability evidence and remediation.' in metrics_scope
         and 'Missing technical capability:' not in metrics_scope
         and 'Binding coverage missing:' not in metrics_scope,
         'Metrics Source Scope must show binding posture only; exact missing capability detail belongs to Validation',
@@ -554,15 +553,19 @@ def main() -> int:
     )
     require(
         'table_ui.table_classes' in binding_layout
-        and 'min-w-[90rem]' in binding_layout
+        and 'min-w-[64rem]' in binding_layout
         and 'data-kaori-binding-registry-columns' in binding_layout
-        and 'w-[22%]' in binding_layout
+        and binding_layout.count('w-[30%]') == 2
+        and binding_layout.count('w-[20%]') == 2
+        and 'detail_grid_classes' in binding_layout
+        and 'detail_item_classes' in binding_layout
         and 'flex min-w-0 flex-nowrap items-center justify-end gap-2 whitespace-nowrap' in binding_layout,
-        'Shared binding registry geometry must reserve stable Actions capacity and horizontal overflow',
+        'Shared binding registry must keep a summary-first four-column layout with expandable secondary details',
         errors,
     )
     require(
-        'data-kaori-validation-poller' in validation_poller and 'hx-trigger="every {{ delay }}"' in validation_poller,
+        'data-kaori-validation-poller' in validation_poller
+        and 'hx-trigger="every {{ delay }}"' in validation_poller,
         'Integration validation must reuse the shared periodic terminal-aware validation poller',
         errors,
     )
@@ -589,7 +592,8 @@ def main() -> int:
         'def _as_result_payload', 1
     )[0]
     require(
-        '_refresh_provider_bindings(' not in full_validation and 'binding_validation_summary' not in full_validation,
+        '_refresh_provider_bindings(' not in full_validation
+        and 'binding_validation_summary' not in full_validation,
         'Provider Full Validation must remain core-only and must not refresh bindings implicitly',
         errors,
     )
@@ -644,7 +648,7 @@ def main() -> int:
         scope = read(f'{template_root}/partials/_detail_scope.html')
         for marker in (
             'data-kaori-binding-registry-final-lock',
-            'Consumer Asset',
+            'Consumer Binding',
             identity_column,
             'Consumer Profile',
             'Resolver Preference',
@@ -652,6 +656,9 @@ def main() -> int:
             'Effective Resolution',
             'Actions',
             'Validate before eligibility',
+            'data-kaori-binding-view-more',
+            'data-kaori-binding-details-row',
+            'data-kaori-binding-secondary-details',
         ):
             require(marker in registry, f'{provider}: binding registry final-lock marker missing: {marker}', errors)
         require(
@@ -664,8 +671,10 @@ def main() -> int:
             '_binding_registry_layout.html' in registry
             and 'data-kaori-binding-registry-table' in registry
             and 'binding_registry_layout.columns()' in registry
-            and 'binding_registry_layout.action_group_classes()' in registry,
-            f'{provider}: binding table geometry must remain shared and collision-safe',
+            and 'binding_registry_layout.action_group_classes()' in registry
+            and 'binding_registry_layout.detail_grid_classes()' in registry
+            and 'colspan="4"' in registry,
+            f'{provider}: binding table must keep shared summary-first geometry and expandable detail ownership',
             errors,
         )
         require(
