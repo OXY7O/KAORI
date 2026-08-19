@@ -6,11 +6,11 @@
 Canonical Hero
 Compact Inventory Data Snapshot
 Visualization Workspace Style 1 — Adaptive Explorer
-├── Header Actions: Reload Snapshot + conditional Clear Filters
+├── Header Actions: Reload Snapshot + conditional Clear Filters (canonical compact peer actions)
 ├── Filter Bar
 ├── Local Status / Warning Region
 ├── Canvas Toolbar
-│   ├── Tab Style 2: Graph / Resource List
+│   ├── Tab Style 3: Graph / Resource List (compact toolbar mode)
 │   ├── Controls → left drawer
 │   ├── Details  → right drawer
 │   ├── Fit
@@ -19,7 +19,7 @@ Visualization Workspace Style 1 — Adaptive Explorer
 ├── Full-Width Graph or Accessible Resource List
 ├── Display Controls → hidden until requested
 └── Topology Inspector → hidden until requested/selection
-    └── Tab Style 2: Details / Relationships
+    └── Tab Style 3: Details / Relationships (full-width equal-segment inspector mode)
 
 Compact segmented tabs must render the configured `data-*` attribute with the tab key as its value. Topology JavaScript reads those values through `dataset` for Graph/List and Details/Relationships activation; a valueless data attribute is not a valid interaction contract.
 ```
@@ -28,7 +28,7 @@ Compact segmented tabs must render the configured `data-*` attribute with the ta
 
 - Hero owns topology posture: Clusters, Namespaces, Resources, Relationships, and Graph Coverage.
 - Inventory Data Snapshot owns exact collection time, source, scope, committed coverage, and exceptions.
-- Header actions own explicit committed-snapshot reload and the canonical conditional Clear Filters action.
+- Header actions own explicit committed-snapshot reload and the canonical conditional Clear Filters action. Both are peer utilities and use the same compact header-action geometry; Reload Snapshot is not styled as a dominant primary CTA.
 - Filter Bar owns graph data scope.
 - Canvas Toolbar owns local presentation and export actions.
 - Inspector owns selected resource or relationship context.

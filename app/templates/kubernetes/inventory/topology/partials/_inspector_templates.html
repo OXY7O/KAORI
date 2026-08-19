@@ -53,7 +53,8 @@
         {{ segmented_tabs.render([('details', 'Details', 'list-tree') , ('relationships', 'Relationships', 'git-branch')],
         prefix='topology-inspector',
         active_key='details',
-        aria_label='Topology Inspector'
+        aria_label='Topology Inspector',
+        fill=true
         ) }}
         <span data-relationship-count class="sr-only"></span>
         <div id="topology-inspector-panel-details"

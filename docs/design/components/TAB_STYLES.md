@@ -58,6 +58,7 @@ Use Tab Style 2 when the parent workspace shell is part of the information archi
 
 Use Tab Style 3 for local view switching in a visualization, inspector, drawer, or compact component. Do not use it for top-level workspace domains or four-plus peer sections. The detailed contract lives in `SEGMENTED_TABS.md`.
 The shared component also owns the DOM controller hooks (`data-kaori-segmented-group` and `data-kaori-segmented-tab`); consumers must not introduce parallel page-local tab-hook attributes.
+Compact toolbar tabsets stay content-width by default. Bounded inspectors may use the shared `fill=true` mode to distribute two or three segments evenly across the available width; this is geometry within Tab Style 3, not a new tab style.
 
 ## Tab Style 4 — Content Tabs
 

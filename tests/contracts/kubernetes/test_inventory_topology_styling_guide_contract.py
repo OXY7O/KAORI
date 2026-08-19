@@ -33,6 +33,8 @@ def test_topology_uses_the_adaptive_visualization_workspace() -> None:
     assert 'components/loading_bar.html' in component
     assert 'data-kaori-visualization-header-actions' in component
     assert "action_label='Reload Snapshot'" in workspace
+    assert 'action_classes=table_ui.action_classes()' in workspace
+    assert "action_classes=''" in component
     assert 'topology-clear-filters-button' in workspace
     assert 'hidden=not topology_filters_active' in workspace
     assert 'clearFiltersButton.hidden = !hasActiveFilters()' in script
@@ -72,6 +74,10 @@ def test_topology_registers_compact_segmented_tab_style() -> None:
     assert "('list', 'Resource List', 'list-tree')" in workspace
     assert "('details', 'Details', 'list-tree')" in inspector
     assert "('relationships', 'Relationships', 'git-branch')" in inspector
+    assert 'fill=true' in inspector
+    assert 'fill=true' not in workspace
+    assert "{{ 'flex w-full' if fill else 'inline-flex' }}" in component
+    assert "{{ 'min-w-0 flex-1' if fill else '' }}" in component
     assert 'data-kaori-segmented-group="topology-view"' in script
     assert 'data-kaori-segmented-group="topology-inspector"' in script
     assert 'dataset.kaoriSegmentedTab' in script
@@ -97,6 +103,24 @@ def test_compact_segmented_tabs_render_stable_controller_hooks() -> None:
     assert 'data-kaori-segmented-tab="relationships"' in rendered
     assert 'aria-selected="true"' in rendered
     assert 'None=' not in rendered
+
+
+def test_compact_segmented_tabs_support_symmetric_bounded_inspectors() -> None:
+    environment = Environment(loader=FileSystemLoader(ROOT / 'app/templates'))
+    component = environment.get_template('components/segmented_tabs.html').module
+
+    rendered = component.render(
+        [('details', 'Details', 'list-tree'), ('relationships', 'Relationships', 'git-branch')],
+        prefix='topology-inspector',
+        active_key='details',
+        aria_label='Topology Inspector',
+        fill=True,
+    )
+
+    assert 'flex w-full' in rendered
+    assert rendered.count('min-w-0 flex-1') == 2
+    assert 'data-kaori-segmented-tab="details"' in rendered
+    assert 'data-kaori-segmented-tab="relationships"' in rendered
 
 
 def test_topology_graph_has_an_accessible_resource_list_fallback() -> None:
@@ -204,7 +228,7 @@ def test_topology_reference_pattern_is_documented() -> None:
     inventory_readme = _read('app/kubernetes/inventory/README.md')
 
     assert 'Visualization Workspace Style 1 — Adaptive Explorer' in pattern
-    assert 'Tab Style 2: Graph / Resource List' in pattern
+    assert 'Tab Style 3: Graph / Resource List' in pattern
     assert (
         'Renderer failure must not remove access' in pattern
         or 'Renderer errors preserve Resource List access' in pattern

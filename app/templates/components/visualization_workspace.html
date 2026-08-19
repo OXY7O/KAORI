@@ -14,7 +14,8 @@
     action_label=None,
     action_icon='refresh-cw',
     loading_id=None,
-    header_actions=''
+    header_actions='',
+    action_classes=''
     ) -%}
     <section id="{{ id }}"
              data-kaori-visualization-workspace="adaptive-explorer"
@@ -37,7 +38,7 @@
                         {% if action_id and action_label %}
                             <button type="button"
                                     id="{{ action_id }}"
-                                    class="inline-flex min-h-9 shrink-0 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-offset-2 focus-visible:ring-offset-surface-card disabled:cursor-not-allowed disabled:opacity-60">
+                                    class="{{ action_classes or 'inline-flex min-h-9 shrink-0 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-offset-2 focus-visible:ring-offset-surface-card disabled:cursor-not-allowed disabled:opacity-60' }}">
                                 <i data-lucide="{{ action_icon }}" class="h-4 w-4" aria-hidden="true"></i>
                                 {{ action_label }}
                             </button>

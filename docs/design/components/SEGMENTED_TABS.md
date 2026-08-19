@@ -19,6 +19,7 @@ Examples:
 ## Contract
 
 - renders one compact segmented surface;
+- defaults to content-width segments for toolbars; bounded inspectors may enable `fill=true` so every segment shares the available width equally;
 - active segment uses a filled surface and Violet text;
 - inactive segments remain neutral;
 - each control has `role="tab"`, `aria-controls`, `aria-selected`, and roving `tabindex`;
@@ -32,7 +33,7 @@ Examples:
 
 Do not use Tab Style 3 for top-level workspace domains or four-plus peer operational sections. Those use Tab Style 1 — Integrated Workspace Tabs or Tab Style 2 — Framed Workspace Tabs according to the parent surface contract.
 
-Do not create another tab style for color, radius, icon, or spacing variation alone.
+Do not create another tab style for color, radius, icon, spacing, or equal-width inspector geometry alone. Use the shared `fill=true` mode when a bounded two- or three-way inspector tabset needs symmetric segments.
 
 ### Controller Hook Ownership
 
