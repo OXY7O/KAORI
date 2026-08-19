@@ -13,9 +13,10 @@
 <div id="metrics-source-scope-workspace"
      class="space-y-4 font-sans"
      data-kaori-metrics-source-bindings-v3>
-    {{ validation_poller.render(binding_validation_job and binding_validation_job.is_active,
+    {{ validation_poller.render(
+        binding_validation_job and binding_validation_job.is_active,
         url_for('metrics.binding_validation_status', instance_id=instance.id, binding_id=binding_validation_job.binding_id, task_id=binding_validation_job.task_id) if binding_validation_job and binding_validation_job.is_active else '',
-    '#metrics-source-scope-workspace'
+        '#metrics-source-scope-workspace'
     ) }}
     <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm"
              aria-labelledby="metrics-source-bindings-title">
@@ -148,7 +149,7 @@
                                                     </div>
                                                     <p class="mt-2 text-xs leading-5 text-content-secondary">{{ candidate.decision_reason }}</p>
                                                     {% if candidate.missing_capability_labels or candidate.missing_binding_capabilities %}
-                                                        <p class="mt-2 text-xs font-medium text-content-muted">Open Bindings & Consumers → View Result on the affected binding for exact missing capability evidence and remediation.</p>
+                                                        <p class="mt-2 text-xs font-medium text-content-muted">Open Bindings & Consumers → View More on the affected binding for exact missing capability evidence and remediation.</p>
                                                     {% endif %}
                                                 </div>
                                             {% else %}

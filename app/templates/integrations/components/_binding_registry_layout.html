@@ -1,13 +1,13 @@
 {% import "components/table.html" as table_ui %}
 {% macro table_classes() -%}
-    {{ table_ui.table_classes("min-w-[64rem]") }} table-fixed
+    {{ table_ui.table_classes("min-w-[72rem]") }} table-fixed
 {%- endmacro %}
 {% macro columns() -%}
     <colgroup data-kaori-binding-registry-columns>
         <col class="w-[30%]">
-        <col class="w-[20%]">
-        <col class="w-[20%]">
-        <col class="w-[30%]">
+        <col class="w-[18%]">
+        <col class="w-[18%]">
+        <col class="w-[34%]">
     </colgroup>
 {%- endmacro %}
 {% macro state_cell_classes() -%}

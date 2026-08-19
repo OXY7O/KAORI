@@ -160,15 +160,16 @@ def main() -> int:
     )
     require(
         '_binding_validation_result.html' in metrics_binding_registry
-        and 'View Result' in metrics_binding_registry
+        and 'View More' in metrics_binding_registry
+        and 'data-kaori-binding-view-more' in metrics_binding_registry
+        and 'data-kaori-binding-actions' in metrics_binding_registry
         and 'Binding Validation Result' in binding_result
         and 'Consumer Capability Evidence' in binding_result,
         'Binding-specific capability evidence must remain owned by Bindings & Consumers',
         errors,
     )
     require(
-        'Open Bindings & Consumers → View Result on the affected binding for exact missing capability evidence and remediation.'
-        in metrics_scope
+        'Open Bindings & Consumers → View More on the affected binding for exact missing capability evidence and remediation.' in metrics_scope
         and 'Missing technical capability:' not in metrics_scope
         and 'Binding coverage missing:' not in metrics_scope,
         'Metrics Source Scope must show binding posture only; exact missing capability detail belongs to Validation',
@@ -205,6 +206,38 @@ def main() -> int:
         and 'nodename' not in storage_parsing
         and 'kubernetes_node' not in storage_parsing,
         'Storage Analytics parsing must consume only the canonical node label after validation',
+        errors,
+    )
+
+    connection_header = read('app/templates/components/connection_validation_header.html')
+    provider_configuration = read('app/templates/integrations/components/_provider_configuration_contract.html')
+    alert_scope = read('app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_detail_scope.html')
+    minio_scope = read('app/templates/integrations/storage/object_storage/providers/minio/partials/_detail_scope.html')
+    kubernetes_connection = read('app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_connection_contract.html')
+    kubernetes_inventory = read('app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_inventory_lifecycle.html')
+    primary_title = 'text-base font-semibold text-content-primary'
+    primary_description = 'text-sm leading-6 text-content-secondary'
+    require(
+        primary_title in connection_header
+        and 'mt-1 max-w-3xl text-sm leading-6 text-content-secondary' in connection_header
+        and primary_title in provider_configuration
+        and 'mt-1 max-w-3xl text-sm leading-6 text-content-secondary' in provider_configuration
+        and primary_title in metrics_scope
+        and primary_description in metrics_scope
+        and primary_title in alert_scope
+        and primary_description in alert_scope
+        and primary_title in minio_scope
+        and primary_description in minio_scope
+        and primary_title in kubernetes_connection
+        and primary_description in kubernetes_connection
+        and primary_title in kubernetes_inventory
+        and primary_description in kubernetes_inventory,
+        'Integration primary workspace typography must keep one title/description hierarchy across providers and tabs',
+        errors,
+    )
+    require(
+        'mt-0.5 max-w-2xl text-xs leading-5 text-content-muted' not in connection_header,
+        'Integration primary workspace descriptions must not regress to secondary helper typography',
         errors,
     )
 
@@ -554,18 +587,20 @@ def main() -> int:
     )
     require(
         'table_ui.table_classes' in binding_layout
-        and 'min-w-[64rem]' in binding_layout
+        and 'min-w-[72rem]' in binding_layout
         and 'data-kaori-binding-registry-columns' in binding_layout
-        and binding_layout.count('w-[30%]') == 2
-        and binding_layout.count('w-[20%]') == 2
+        and binding_layout.count('w-[30%]') == 1
+        and binding_layout.count('w-[18%]') == 2
+        and binding_layout.count('w-[34%]') == 1
         and 'detail_grid_classes' in binding_layout
         and 'detail_item_classes' in binding_layout
         and 'flex min-w-0 flex-nowrap items-center justify-end gap-2 whitespace-nowrap' in binding_layout,
-        'Shared binding registry must keep a summary-first four-column layout with expandable secondary details',
+        'Shared binding registry must keep a summary-first four-column layout with stable Actions capacity and expandable secondary details',
         errors,
     )
     require(
-        'data-kaori-validation-poller' in validation_poller and 'hx-trigger="every {{ delay }}"' in validation_poller,
+        'data-kaori-validation-poller' in validation_poller
+        and 'hx-trigger="every {{ delay }}"' in validation_poller,
         'Integration validation must reuse the shared periodic terminal-aware validation poller',
         errors,
     )
@@ -598,7 +633,8 @@ def main() -> int:
         'def _as_result_payload', 1
     )[0]
     require(
-        '_refresh_provider_bindings(' not in full_validation and 'binding_validation_summary' not in full_validation,
+        '_refresh_provider_bindings(' not in full_validation
+        and 'binding_validation_summary' not in full_validation,
         'Provider Full Validation must remain core-only and must not refresh bindings implicitly',
         errors,
     )
@@ -675,6 +711,16 @@ def main() -> int:
             'data-kaori-binding-secondary-details',
         ):
             require(marker in registry, f'{provider}: binding registry final-lock marker missing: {marker}', errors)
+        action_region = registry.split('data-kaori-binding-actions', 1)[1].split('</div>', 1)[0]
+        first_row = registry.split('{% for row in binding_registry_rows %}', 1)[1]
+        consumer_cell = first_row.split('<td class="{{ table_ui.cell_classes() }}">', 1)[1].split('</td>', 1)[0]
+        require(
+            'View More' in action_region
+            and 'data-kaori-binding-view-more' in action_region
+            and 'data-kaori-binding-view-more' not in consumer_cell,
+            f'{provider}: View More must remain a canonical Actions-column button rather than inline Consumer Binding text',
+            errors,
+        )
         require(
             'components/pagination.html' in registry, f'{provider}: binding pagination must remain canonical', errors
         )

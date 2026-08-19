@@ -42,7 +42,9 @@ def main() -> int:
     workspace_standard = read('docs/design/components/INTEGRATIONS_WORKSPACE_STANDARD.md')
 
     promql_audit = read('app/integrations/observability/metrics_source/query_profiles/audit.py')
-    feature_contracts = read('app/integrations/observability/metrics_source/query_profiles/feature_contracts.py')
+    feature_contracts = read(
+        'app/integrations/observability/metrics_source/query_profiles/feature_contracts.py'
+    )
     forecast_profile = read('app/integrations/observability/metrics_source/query_profiles/forecast_v1.py')
     promql_doc = read('docs/PROMQL_QUERY_PROFILES.md')
 
@@ -96,7 +98,9 @@ def main() -> int:
     assert 'asset_type: object_storage_system' in taxonomy_catalog
     assert 'Consumer contracts are validated only from Bindings & Consumers.' in validation_template
     assert 'consumer capabilities are intentionally excluded from this registry' in validation_template
-    assert 'View Result' in binding_template
+    assert 'View More' in binding_template
+    assert 'data-kaori-binding-view-more' in binding_template
+    assert 'data-kaori-binding-actions' in binding_template
     assert '_binding_validation_result.html' in binding_template
 
     assert forecast_profile.count("required_history='90d'") >= 13

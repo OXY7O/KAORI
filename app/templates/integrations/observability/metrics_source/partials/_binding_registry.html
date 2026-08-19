@@ -51,23 +51,6 @@
                                         <span aria-hidden="true">·</span>
                                         <span class="truncate" title="{{ row.consumer_profile_label }}">{{ row.consumer_profile_label }}</span>
                                     </div>
-                                    <button type="button"
-                                            @click="selectorEditor = null; expandedBinding = expandedBinding === {{ row.binding.id }} ? null : {{ row.binding.id }}"
-                                            :aria-expanded="expandedBinding === {{ row.binding.id }}"
-                                            class="mt-1.5 inline-flex items-center gap-1 text-xs font-semibold text-kaori-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus"
-                                            data-kaori-binding-view-more>
-                                        <i x-show="expandedBinding !== {{ row.binding.id }}"
-                                           data-lucide="chevron-down"
-                                           class="h-3.5 w-3.5"
-                                           aria-hidden="true"></i>
-                                        <i x-cloak
-                                           x-show="expandedBinding === {{ row.binding.id }}"
-                                           data-lucide="chevron-up"
-                                           class="h-3.5 w-3.5"
-                                           aria-hidden="true"></i>
-                                        <span x-show="expandedBinding !== {{ row.binding.id }}">View More</span>
-                                        <span x-cloak x-show="expandedBinding === {{ row.binding.id }}">View Less</span>
-                                    </button>
                                 </div>
                             </div>
                         </td>
@@ -86,6 +69,23 @@
                         <td class="{{ table_ui.cell_classes(action=true) }} whitespace-nowrap">
                             <div class="{{ binding_registry_layout.action_group_classes() }}" data-kaori-binding-actions>
                                 <button type="button"
+                                        @click="selectorEditor = null; expandedBinding = expandedBinding === {{ row.binding.id }} ? null : {{ row.binding.id }}"
+                                        :aria-expanded="expandedBinding === {{ row.binding.id }}"
+                                        class="{{ table_ui.action_classes() }} whitespace-nowrap"
+                                        data-kaori-binding-view-more>
+                                    <i x-show="expandedBinding !== {{ row.binding.id }}"
+                                       data-lucide="chevron-down"
+                                       class="h-3.5 w-3.5"
+                                       aria-hidden="true"></i>
+                                    <i x-cloak
+                                       x-show="expandedBinding === {{ row.binding.id }}"
+                                       data-lucide="chevron-up"
+                                       class="h-3.5 w-3.5"
+                                       aria-hidden="true"></i>
+                                    <span x-show="expandedBinding !== {{ row.binding.id }}">View More</span>
+                                    <span x-cloak x-show="expandedBinding === {{ row.binding.id }}">View Less</span>
+                                </button>
+                                <button type="button"
                                         @click="expandedBinding = null; selectorEditor = selectorEditor === {{ row.binding.id }} ? null : {{ row.binding.id }}"
                                         class="{{ table_ui.action_classes() }} whitespace-nowrap"><i data-lucide="settings-2" class="h-3.5 w-3.5" aria-hidden="true"></i>Manage</button>
                                 <form method="post"
@@ -93,7 +93,9 @@
                                       hx-post="{{ url_for('metrics.validate_instance_binding', instance_id=instance.id, binding_id=row.binding.id) }}"
                                       hx-target="#metrics-source-scope-workspace"
                                       hx-swap="outerHTML">
-                                    {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+                                    {% if csrf_token is defined %}
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    {% endif %}
                                     <button type="submit"
                                             {% if binding_validation_job and binding_validation_job.is_active and binding_validation_job.binding_id == row.binding.id %}disabled{% endif %}
                                             class="{{ table_ui.action_classes() }} whitespace-nowrap disabled:cursor-wait">
@@ -170,7 +172,9 @@
                                   hx-target="#metrics-source-scope-workspace"
                                   hx-swap="outerHTML"
                                   class="grid gap-3 md:grid-cols-2 xl:grid-cols-[1fr_7rem_1fr_10rem_8rem_auto] xl:items-end">
-                                {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+                                {% if csrf_token is defined %}
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    {% endif %}
                                 <div>
                                     <label class="{{ table_ui.filter_label_classes() }}">Metrics Label</label>
                                     <input name="selector_label"

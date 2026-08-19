@@ -66,7 +66,9 @@ def test_provider_capability_registry_stays_core_only_and_binding_results_stay_w
     validation = read(
         'app/templates/integrations/observability/metrics_source/partials/_detail_validation_content.html'
     )
-    binding_registry = read('app/templates/integrations/observability/metrics_source/partials/_binding_registry.html')
+    binding_registry = read(
+        'app/templates/integrations/observability/metrics_source/partials/_binding_registry.html'
+    )
     binding_result = read('app/templates/integrations/components/_binding_validation_result.html')
     scope = read('app/templates/integrations/observability/metrics_source/partials/_detail_scope.html')
     readiness = read('app/templates/integrations/components/_capability_readiness.html')
@@ -79,7 +81,9 @@ def test_provider_capability_registry_stays_core_only_and_binding_results_stay_w
     assert 'Consumer contracts are validated only from Bindings & Consumers.' in validation
     assert 'consumer capabilities are intentionally excluded from this registry' in validation
     assert '_binding_validation_result.html' in binding_registry
-    assert 'View Result' in binding_registry
+    assert 'View More' in binding_registry
+    assert 'data-kaori-binding-view-more' in binding_registry
+    assert 'data-kaori-binding-actions' in binding_registry
     assert 'Binding Validation Result' in binding_result
     assert 'Consumer Capability Evidence' in binding_result
     assert '90d History Availability' not in validation
@@ -88,7 +92,6 @@ def test_provider_capability_registry_stays_core_only_and_binding_results_stay_w
     assert 'missing_labels' not in readiness
     assert 'node_filesystem_size_bytes' not in readiness
     assert 'cluster source label' not in readiness.lower()
-
 
 def test_forecast_binding_validation_uses_declared_90_day_history_independent_of_http_major() -> None:
     audit = read('app/integrations/observability/metrics_source/query_profiles/audit.py')

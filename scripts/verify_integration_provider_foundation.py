@@ -75,8 +75,17 @@ def main() -> None:
         'full validation must not branch on concrete provider names',
     )
     require(
-        "if 'binding.validate' in module.operations" in full_validation,
-        'full validation must discover binding validation through registered operations',
+        "'binding.validate'" not in full_validation,
+        'full validation must remain provider-core and must not execute consumer binding validation',
+    )
+    binding_validation = validation.split('def validate_integration_binding', 1)[1].split(
+        'def refresh_integration_runtime_instance', 1
+    )[0]
+    require(
+        "if 'binding.validate' not in module.operations" in binding_validation
+        and 'execute_integration_operation(' in binding_validation
+        and "'binding.validate'" in binding_validation,
+        'binding validation must discover and execute the registered binding.validate operation',
     )
 
     service = read('app/integrations/service.py')
