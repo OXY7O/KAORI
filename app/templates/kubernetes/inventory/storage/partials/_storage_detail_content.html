@@ -4,9 +4,9 @@
 {% import "components/related_resource_collection.html" as related_collection %}
 {% import "components/operational_callout.html" as operational_callout %}
 <div data-kaori-detail-variant="full-workspace-modal"
-     data-kaori-detail-density="adaptive-stacks"
-     data-kaori-inventory-detail="v4"
-     data-kaori-inventory-detail-layout="operational-fact-sheet"
+     data-kaori-detail-density="resource-profile"
+     data-kaori-inventory-detail="v5"
+     data-kaori-inventory-detail-layout="resource-profile"
      class="{{ detail.expanded_workspace_outer_classes() }}">
     <div class="{{ detail.expanded_workspace_shell_classes() }}">
         {% set detail_description = "Provisioning, capacity, access, binding, relationship, and lifecycle evidence." %}
@@ -29,8 +29,8 @@
         ('Capacity', item.capacity, item.capacity_supporting),
         ('Related Resources', item.claim_count + item.pod_count if item.claims_reported and item.pods_reported else 'Not Reported', item.claim_count ~ ' claims · ' ~ item.pod_count ~ ' Pods' if item.claims_reported and item.pods_reported else 'Relationship evidence incomplete')
         ], compact=true) }}
-        <div class="grid items-start gap-4 p-5 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
-            <div class="space-y-4">
+        <div class="grid items-start gap-5 p-4 sm:p-5 lg:p-6 xl:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)]">
+            <div class="space-y-5">
                 {% call detail.inventory_section('Storage Identity', 'badge-info', item.age, badge_size='detail', stretch=false, density='compact') %}
                     {{ detail.inventory_row('Cluster', item.cluster_name) }}
                     {{ detail.inventory_row('Namespace', item.namespace) }}
@@ -75,7 +75,7 @@
                     {% endif %}
                 {% endcall %}
             </div>
-            <div class="space-y-4">
+            <div class="space-y-5">
                 {% call detail.inventory_section('Binding & Lifecycle', 'link-2', item.lifecycle_label, 'status' if item.type != 'StorageClass' else 'metadata', item.lifecycle_tone, badge_size='detail', stretch=false, density='compact') %}
                     {{ detail.inventory_fact_grid([
                                         {'label': 'Lifecycle', 'value': item.lifecycle_label},

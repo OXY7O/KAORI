@@ -4,9 +4,9 @@
 {% import "components/related_resource_collection.html" as related_collection %}
 {% import "components/operational_callout.html" as operational_callout %}
 <div data-kaori-detail-variant="full-workspace-modal"
-     data-kaori-detail-density="adaptive-stacks"
-     data-kaori-inventory-detail="v4"
-     data-kaori-inventory-detail-layout="operational-fact-sheet"
+     data-kaori-detail-density="resource-profile"
+     data-kaori-inventory-detail="v5"
+     data-kaori-inventory-detail-layout="resource-profile"
      class="{{ detail.expanded_workspace_outer_classes() }}">
     <div class="{{ detail.expanded_workspace_shell_classes() }}">
         {% set detail_description = "Protected key metadata, collection, mutation, and current Pod reference evidence." %}
@@ -25,7 +25,7 @@
         ('Mutation Model', item.mutation_label, 'Committed object configuration'),
         ('Current Pod References', item.used_by_display, 'Committed Pod reference evidence')
         ], compact=true) }}
-        <div class="space-y-4 p-4 sm:p-5">
+        <div class="space-y-5 p-4 sm:p-5 lg:p-6">
             <div class="grid items-start gap-4 xl:grid-cols-2">
                 {% call detail.inventory_section('Object Identity', 'badge-info', item.age, badge_size='detail', stretch=false, density='compact') %}
                     {{ detail.inventory_row('Cluster', item.cluster_name) }}

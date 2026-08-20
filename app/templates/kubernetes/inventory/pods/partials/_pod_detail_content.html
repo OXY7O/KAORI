@@ -7,9 +7,9 @@
 {% import "components/related_resource_collection.html" as related_collection %}
 {% import "components/operational_callout.html" as operational_callout %}
 <div data-kaori-detail-variant="full-workspace-modal"
-     data-kaori-detail-density="adaptive-stacks"
-     data-kaori-inventory-detail="v4"
-     data-kaori-inventory-detail-layout="operational-fact-sheet"
+     data-kaori-detail-density="resource-profile"
+     data-kaori-inventory-detail="v5"
+     data-kaori-inventory-detail-layout="resource-profile"
      class="{{ detail.expanded_workspace_outer_classes() }}">
     <div class="{{ detail.expanded_workspace_shell_classes() }}">
         {% set detail_description = "Runtime, placement, container, storage, and configuration evidence from the committed snapshot." %}
@@ -27,8 +27,8 @@
         ('Restart Activity', pod.restarts, 'Cumulative snapshot value' if pod.runtime_evidence_reported else 'Runtime evidence not reported'),
         ('Owner', pod.owner_display, '')
         ], compact=true) }}
-        <div class="grid items-start gap-4 p-5 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
-            <div class="space-y-4">
+        <div class="grid items-start gap-5 p-4 sm:p-5 lg:p-6 xl:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)]">
+            <div class="space-y-5">
                 {% call detail.inventory_section('Pod Identity', 'badge-info', pod.age, badge_size='detail', stretch=false, density='compact') %}
                     {{ detail.inventory_row('Cluster', pod.cluster_name) }}
                     {{ detail.inventory_row('Namespace', pod.namespace) }}
@@ -65,7 +65,7 @@
                     {% endif %}
                 {% endcall %}
             </div>
-            <div class="space-y-4">
+            <div class="space-y-5">
                 {% call detail.inventory_section('Placement & Network', 'map-pin', pod.node or 'Not Scheduled', badge_size='detail', stretch=false, density='compact') %}
                     {{ detail.inventory_fact_grid(pod.placement_rows, columns=3) }}
                     <div class="mt-3">

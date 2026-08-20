@@ -8,9 +8,9 @@
 {% set condition_tone = 'critical' if node.ready_condition == 'Not Ready' or node.network_availability == 'Unavailable' else ('warning' if node.has_pressure or node.scheduling_display == 'Cordoned' else ('unknown' if node.ready_condition == 'Unknown' or node.scheduling_display == 'Not Reported' else 'normal')) %}
 {% set condition_posture = 'Critical' if condition_tone == 'critical' else ('Warning' if condition_tone == 'warning' else ('Normal' if condition_tone == 'normal' else 'Unknown')) %}
 <div data-kaori-detail-variant="full-workspace-modal"
-     data-kaori-detail-density="adaptive-stacks"
-     data-kaori-inventory-detail="v4"
-     data-kaori-inventory-detail-layout="operational-fact-sheet"
+     data-kaori-detail-density="resource-profile"
+     data-kaori-inventory-detail="v5"
+     data-kaori-inventory-detail-layout="resource-profile"
      class="{{ detail.expanded_workspace_outer_classes() }}">
     <div class="{{ detail.expanded_workspace_shell_classes() }}">
         {% set detail_description = "Identity, capacity, runtime, network, scheduling, and condition evidence from the committed snapshot." %}
@@ -23,64 +23,72 @@
             {% endcall %}
         {% endcall %}
         {{ detail.summary_strip([
-                ('Readiness', node.status_display, 'Node condition') ,
-        ('Scheduling', node.scheduling_display, 'Placement state'),
-        ('Scheduled Pods', node.scheduled_pod_count, 'Committed assignments'),
-        ('Capacity', node.capacity_summary, 'CPU · Memory')
-        ], compact=true) }}
-        <div class="grid items-start gap-x-10 gap-y-8 p-5 sm:p-6 xl:grid-cols-2">
-            {% call detail.inventory_section('Node Identity', 'badge-info') %}
-                {{ detail.inventory_technical_row('System UUID', node.system_uuid) }}
-                {{ detail.inventory_row('Cluster', node.cluster_name) }}
-                {{ detail.inventory_row('Environment', node.cluster_environment|environment_name(empty='Not Specified') ) }}
-                {{ detail.inventory_row('Role', node.role_display) }}
-                {{ detail.inventory_row('Age', node.age) }}
-                {{ detail.inventory_row('Collected', node.collected_at|user_datetime) }}
-                {{ detail.inventory_note(node.role_description, 'server') }}
-            {% endcall %}
-            {% call detail.inventory_section('Node Capacity', 'gauge') %}
-                {{ detail.inventory_row('CPU', node.cpu_display) }}
-                {{ detail.inventory_row('Memory', node.memory_display) }}
-                {{ detail.inventory_row('Ephemeral Storage', node.ephemeral_storage_display) }}
-                {{ detail.inventory_row('Allocatable Ephemeral', node.ephemeral_storage_allocatable_display) }}
-                {{ detail.inventory_note('Capacity values remain factual Kubernetes evidence. Missing values are shown explicitly and are not converted to zero.', 'database') }}
-            {% endcall %}
-            {% call detail.inventory_section('Connectivity', 'network', node.network_availability, 'status', network_tone, badge_size='detail') %}
-                {{ detail.inventory_technical_row('Internal IP', node.internal_ip or 'Not Reported') }}
-                {{ detail.inventory_technical_row('External IP', node.external_ip or 'Not Reported') }}
-                {{ detail.inventory_technical_row('Hostname', node.hostname_address or 'Not Reported') }}
-                {{ detail.inventory_row('Network Scope', node.network_scope) }}
-                {{ detail.inventory_note('Internal IP is the cluster address; External IP may be absent on private nodes.', 'network') }}
-            {% endcall %}
-            {% call detail.inventory_section('Platform & Runtime', 'cpu', class_name='') %}
-                {{ detail.inventory_row('Operating System', node.operating_system_display) }}
-                {{ detail.inventory_row('OS Image', node.os_image) }}
-                {{ detail.inventory_technical_row('Architecture', node.architecture, False) }}
-                {{ detail.inventory_technical_row('Kernel Version', node.kernel_version) }}
-                {{ detail.inventory_technical_row('Container Runtime', node.container_runtime_identifier) }}
-                {{ detail.inventory_technical_row('Kubelet Version', node.kubelet_version) }}
-                {{ detail.inventory_technical_row('Kube-Proxy Version', node.kube_proxy_version) }}
-            {% endcall %}
-            {% call detail.inventory_section('Scheduling & Conditions', 'clipboard-check', condition_posture, 'status', condition_tone, class_name='xl:col-span-2', badge_size='detail', stretch=false) %}
-                {{ detail.inventory_fact_grid([
-                                {'label': 'Scheduling', 'value': node.scheduling_display, 'supporting': 'New Pod placement'},
-                                {'label': 'Readiness', 'value': node.ready_condition, 'supporting': 'Kubelet readiness'},
-                                {'label': 'Memory Pressure', 'value': node.memory_pressure, 'supporting': 'Memory condition'},
-                                {'label': 'Disk Pressure', 'value': node.disk_pressure, 'supporting': 'Disk condition'},
-                                {'label': 'PID Pressure', 'value': node.pid_pressure, 'supporting': 'Process condition'}
-                                ], columns=5) }}
-                <div class="mt-3 rounded-lg border border-outline-subtle bg-surface-elevated px-3 py-3">
+                ('Readiness', node.status_display, 'Node condition'),
+                ('Scheduling', node.scheduling_display, 'Placement state'),
+                ('Scheduled Pods', node.scheduled_pod_count, 'Committed assignments'),
+                ('Capacity', node.capacity_summary, 'CPU · Memory')
+                ], compact=true) }}
+        <div class="space-y-5 p-4 sm:p-5 lg:p-6">
+            <div class="grid items-start gap-5 lg:grid-cols-2">
+                <div class="space-y-5">
+                    {% call detail.inventory_section('Node Identity', 'badge-info') %}
+                        {{ detail.inventory_technical_row('System UUID', node.system_uuid) }}
+                        {{ detail.inventory_row('Cluster', node.cluster_name) }}
+                        {{ detail.inventory_row('Environment', node.cluster_environment|environment_name(empty='Not Specified')) }}
+                        {{ detail.inventory_row('Role', node.role_display) }}
+                        {{ detail.inventory_row('Age', node.age) }}
+                        {{ detail.inventory_row('Collected', node.collected_at|user_datetime) }}
+                        {{ detail.inventory_note(node.role_description, 'server') }}
+                    {% endcall %}
+                    {% call detail.inventory_section('Connectivity', 'network', node.network_availability, 'status', network_tone, badge_size='detail') %}
+                        {{ detail.inventory_technical_row('Internal IP', node.internal_ip or 'Not Reported') }}
+                        {{ detail.inventory_technical_row('External IP', node.external_ip or 'Not Reported') }}
+                        {{ detail.inventory_technical_row('Hostname', node.hostname_address or 'Not Reported') }}
+                        {{ detail.inventory_row('Network Scope', node.network_scope) }}
+                        {{ detail.inventory_note('Internal IP is the cluster address; External IP may be absent on private nodes.', 'network') }}
+                    {% endcall %}
+                </div>
+                <div class="space-y-5">
+                    {% call detail.inventory_section('Node Capacity', 'gauge') %}
+                        {{ detail.inventory_row('CPU', node.cpu_display) }}
+                        {{ detail.inventory_row('Memory', node.memory_display) }}
+                        {{ detail.inventory_row('Ephemeral Storage', node.ephemeral_storage_display) }}
+                        {{ detail.inventory_row('Allocatable Ephemeral', node.ephemeral_storage_allocatable_display) }}
+                        {{ detail.inventory_note('Capacity values remain factual Kubernetes evidence. Missing values are shown explicitly and are not converted to zero.', 'database') }}
+                    {% endcall %}
+                    {% call detail.inventory_section('Platform & Runtime', 'cpu') %}
+                        {{ detail.inventory_row('Operating System', node.operating_system_display) }}
+                        {{ detail.inventory_row('OS Image', node.os_image) }}
+                        {{ detail.inventory_technical_row('Architecture', node.architecture, False) }}
+                        {{ detail.inventory_technical_row('Kernel Version', node.kernel_version) }}
+                        {{ detail.inventory_technical_row('Container Runtime', node.container_runtime_identifier) }}
+                        {{ detail.inventory_technical_row('Kubelet Version', node.kubelet_version) }}
+                        {{ detail.inventory_technical_row('Kube-Proxy Version', node.kube_proxy_version) }}
+                    {% endcall %}
+                </div>
+            </div>
+            {% call detail.inventory_section('Scheduling & Conditions', 'clipboard-check', condition_posture, 'status', condition_tone, badge_size='detail') %}
+                <div class="py-2">
+                    {{ detail.inventory_fact_grid([
+                            {'label': 'Scheduling', 'value': node.scheduling_display, 'supporting': 'New Pod placement'},
+                            {'label': 'Readiness', 'value': node.ready_condition, 'supporting': 'Kubelet readiness'},
+                            {'label': 'Memory Pressure', 'value': node.memory_pressure, 'supporting': 'Memory condition'},
+                            {'label': 'Disk Pressure', 'value': node.disk_pressure, 'supporting': 'Disk condition'},
+                            {'label': 'PID Pressure', 'value': node.pid_pressure, 'supporting': 'Process condition'}
+                            ], columns=5) }}
+                </div>
+                <div class="border-t border-outline-subtle py-3">
                     <div class="flex flex-wrap items-start justify-between gap-3">
                         <div>
-                            <p class="text-sm font-semibold text-content-primary">Scheduling Taints</p>
-                            <p class="mt-0.5 text-xs leading-5 text-content-muted">Taints remain factual placement constraints until evaluated against workload tolerations.</p>
+                            <p class="text-sm font-semibold leading-5 text-content-primary">Scheduling Taints</p>
+                            <p class="mt-0.5 text-xs leading-5 text-content-muted">Factual placement constraints from the committed Node snapshot.</p>
                         </div>
-                        {{ table_label.metadata_label(node.taints|length ~ ' ' ~ ('Taint' if node.taints|length == 1 else 'Taints') ) }}
+                        {{ table_label.metadata_label(node.taints|length ~ ' ' ~ ('Taint' if node.taints|length == 1 else 'Taints')) }}
                     </div>
                     {% if node.taints %}
-                        <div class="mt-2 grid min-w-0 gap-2 sm:grid-cols-2">
+                        <div class="mt-3 divide-y divide-outline-subtle overflow-hidden rounded-lg border border-outline-subtle bg-surface-elevated">
                             {% for taint in node.taints %}
-                                <div class="min-w-0 rounded-lg border border-outline-subtle bg-surface-card px-3 py-2.5">{{ technical_value.render(taint, break_all=true, class_name='font-medium', size='body') }}</div>
+                                <div class="min-w-0 px-3 py-2.5">{{ technical_value.render(taint, break_all=true, class_name='font-medium', size='body') }}</div>
                             {% endfor %}
                         </div>
                     {% else %}
@@ -88,29 +96,18 @@
                     {% endif %}
                 </div>
             {% endcall %}
-            <div class="xl:col-span-2">
-                {{ metadata_collection.render('Node Labels',
-                                node.labels,
-                                icon='tags',
-                                empty_title='No Node Labels Collected',
-                                empty_description='Labels will appear when they are present in the committed Node snapshot.',
-                                context='Labels are factual Kubernetes metadata and do not establish policy compliance by themselves.',
-                                compact_pairs=true) }}
-            </div>
+            {{ metadata_collection.render('Node Labels',
+                            node.labels,
+                            icon='tags',
+                            empty_title='No Node Labels Collected',
+                            empty_description='Labels will appear when they are present in the committed Node snapshot.',
+                            context='Labels are factual Kubernetes metadata and do not establish policy compliance by themselves.',
+                            compact_pairs=true) }}
+            {{ operational_callout.render(node.operational_context.title,
+                            node.operational_context.description,
+                            icon=node.operational_context.icon,
+                            tone=node.operational_context.tone,
+                            variant='semantic') }}
         </div>
-        <section class="border-t border-outline-subtle bg-surface-elevated p-5"
-                 aria-label="Node Operational Context">
-            <div class="grid gap-3 lg:grid-cols-2">
-                {{ operational_callout.render('Committed Snapshot Boundary',
-                                'This detail reads the latest committed database snapshot. It does not query the Kubernetes API live.',
-                                icon='database',
-                                tone='info') }}
-                {{ operational_callout.render(node.operational_context.title,
-                                node.operational_context.description,
-                                icon=node.operational_context.icon,
-                                tone=node.operational_context.tone,
-                                variant='semantic') }}
-            </div>
-        </section>
     </div>
 </div>

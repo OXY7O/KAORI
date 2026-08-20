@@ -25,4 +25,4 @@ def test_node_detail_uses_natural_height_two_column_evidence_sections() -> None:
     assert "detail.inventory_section('Connectivity'" in detail
     assert "detail.inventory_section('Platform & Runtime'" in detail
     assert "detail.inventory_section('Scheduling & Conditions'" in detail
-    assert 'Committed Snapshot Boundary' in detail
+    assert "operational_callout.render(node.operational_context.title" in detail

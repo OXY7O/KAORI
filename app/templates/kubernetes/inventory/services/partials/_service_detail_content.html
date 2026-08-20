@@ -5,9 +5,9 @@
 {% import "components/operational_callout.html" as operational_callout %}
 {% import "components/table.html" as table_ui %}
 <div data-kaori-detail-variant="full-workspace-modal"
-     data-kaori-detail-density="adaptive-stacks"
-     data-kaori-inventory-detail="v4"
-     data-kaori-inventory-detail-layout="operational-fact-sheet"
+     data-kaori-detail-density="resource-profile"
+     data-kaori-inventory-detail="v5"
+     data-kaori-inventory-detail-layout="resource-profile"
      class="{{ detail.expanded_workspace_outer_classes() }}">
     <div class="{{ detail.expanded_workspace_shell_classes() }}">
         {% set detail_description = "Access, backend, port, selected Pod, and network evidence from the committed snapshot." %}
@@ -26,8 +26,8 @@
         ('Ready Endpoints', 'Not Applicable' if not service.endpoint_registration_applicable else (service.ready_endpoint_count if service.ready_endpoint_count is not none else 'Not Reported'), 'External DNS destination' if not service.endpoint_registration_applicable else (service.endpoint_source if service.endpoints_reported else 'Endpoint evidence unavailable')),
         ('Selected Pods', service.pod_count if service.pod_count is not none else 'Not Applicable', 'Selector matches' if service.pod_relationship_applicable else 'No Service selector')
         ], compact=true) }}
-        <div class="grid items-start gap-4 p-5 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
-            <div class="space-y-4">
+        <div class="grid items-start gap-5 p-4 sm:p-5 lg:p-6 xl:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)]">
+            <div class="space-y-5">
                 {% call detail.inventory_section('Service Identity', 'badge-info', service.age, badge_size='detail', stretch=false, density='compact') %}
                     {{ detail.inventory_row('Cluster', service.cluster_name) }}
                     {{ detail.inventory_row('Namespace', service.namespace) }}
@@ -52,7 +52,7 @@
                     ], columns=2) }}
                 {% endcall %}
             </div>
-            <div class="space-y-4">
+            <div class="space-y-5">
                 {% call detail.inventory_section('Backend Registration', 'waypoints', service.backend.label, 'status', service.backend.tone, badge_size='detail', stretch=false, density='compact') %}
                     {{ detail.inventory_fact_grid([
                                         {'label': 'Registration State', 'value': service.backend.label, 'supporting': service.backend.supporting},

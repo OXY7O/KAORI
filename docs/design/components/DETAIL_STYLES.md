@@ -30,7 +30,7 @@ Node, Namespace, Workload, Pod, Service, Ingress, Storage, and Configuration Inv
 
 - Kubernetes Inventory uses `resource_detail_modal.inventory_host(...)` for one shared modal contract;
 - `View Details` opens one near-fullscreen modal without changing table height;
-- desktop width is bounded by `90rem` and available viewport space;
+- desktop width is bounded by `78rem` and available viewport space;
 - mobile uses the available viewport as a full workspace;
 - header, summary strip, and footer remain visible while the detail body scrolls;
 - Escape, backdrop, and explicit Close dismiss the modal;
@@ -46,7 +46,7 @@ Node, Namespace, Workload, Pod, Service, Ingress, Storage, and Configuration Inv
 - resource title, metadata, and primary lifecycle/readiness/collection state use the shared `detail.header_identity_row()` owner as one grouped identity row;
 - the supporting description renders below that identity row; do not float the primary state onto a second badge line or detach it beneath the leading icon/modal outer edge;
 - the summary uses the shared `data-resource-detail-summary` owner;
-- Kubernetes Inventory detail roots declare `data-kaori-inventory-detail="v2"`;
+- Kubernetes Inventory detail roots declare `data-kaori-inventory-detail="v5"`;
 - resource headers use `detail.workspace_header(...)` instead of hand-authored heading/font classes;
 - the resource title is rendered through `detail.inventory_title(...)` inside `detail.header_identity_row()` so title, metadata, and primary state form one scan line.
 
@@ -55,7 +55,7 @@ Node, Namespace, Workload, Pod, Service, Ingress, Storage, and Configuration Inv
 Inventory View Details uses one predictable scale across Node, Namespace, Workload, Pod, Service, Ingress, Storage, and Configuration:
 
 ```text
-Resource title       text-lg / semibold
+Resource title       text-xl / semibold
 Summary value        text-base / semibold
 Section/card title   text-sm / semibold
 Field label          text-sm / medium / secondary
@@ -70,18 +70,18 @@ Technical identifiers use the same `text-sm / medium` body value scale through `
 ```text
 Resource Header
 Sticky Summary Strip
-Adaptive Evidence Workspace
+Resource Profile Workspace
 Relationships and Technical Metadata
 Committed Snapshot Boundary
 State-Aware Guidance
 Optional Related Operation
 ```
 
-## Adaptive Detail Stacks
+## Resource Profile Layout
 
-Use adaptive detail stacks when evidence cards have materially different content lengths.
+Use the resource profile layout when evidence groups have materially different content lengths.
 
-- mark adaptive implementations with `data-kaori-detail-density="adaptive-stacks"`;
+- mark Inventory implementations with `data-kaori-detail-density="resource-profile"`;
 - use independent vertical stacks rather than one equal-height row;
 - use natural-height cards with `stretch=false`;
 - use asymmetric splits when one evidence domain needs more width;
@@ -92,7 +92,7 @@ Use adaptive detail stacks when evidence cards have materially different content
 - keep large tables, relationships, metadata, and Operational Context full width;
 - do not add fixed or minimum heights to mask content imbalance.
 
-Adaptive stacks are valid inside Full Workspace Modal and compact inline details.
+Resource profile layout is the canonical Kubernetes Inventory presentation inside Full Workspace Modal.
 
 ### Inventory evidence surface rules
 
@@ -108,13 +108,16 @@ Operational boundary and next action
 
 Use one section boundary per evidence domain. Do not wrap every metric in a standalone rounded card. Large key inventories use the grouped shared collection surface so dozens of keys remain scannable without producing a wall of floating tiles. Identity labels and factual values share the same `text-sm` body scale. Labels use medium secondary text, values use medium primary text, section titles use semibold, and only supporting copy steps down to `text-xs`.
 
+### Inventory Resource Profile (V5)
 
-### Inventory Operational Fact Sheet (V4)
+Kubernetes Inventory details use a contained resource-profile layout built for operational scanning.
 
-Kubernetes Inventory details use an operational fact-sheet layout rather than a card gallery.
-
-- Section boundaries are expressed with spacing and hairline dividers, not nested rounded cards.
-- Field labels and factual values share the same `text-sm` body scale; labels are regular/muted and values are medium/primary.
-- Summary values may use `text-base`; supporting guidance stays `text-xs`.
-- Technical metadata uses the same body scale and is arranged as scan-friendly rows or columns, never a wall of floating tiles.
-- Notes are inline evidence guidance with a small icon and divider, not full tinted information cards.
+- The modal is intentionally narrower than the viewport (`78rem` maximum) so field labels and values remain readable and eye travel stays bounded.
+- The modal uses content-driven height up to the viewport limit; short resources do not look artificially empty while long resources scroll inside the workspace.
+- Evidence domains use one natural-height card each. Do not create one card per metric or one borderless wall of rows.
+- Two independent vertical stacks are preferred for the primary evidence area so a taller Identity card does not create empty space beneath a shorter Capacity card.
+- Field labels and values share the same `text-sm` body scale. Labels are secondary/regular; values are primary/medium.
+- Summary values use `text-base`; the resource title uses `text-xl`; supporting guidance stays `text-xs`.
+- Large metadata and key collections use one contained list surface with row dividers. Key-heavy resources may scroll inside the collection rather than extending the entire modal indefinitely.
+- KAORI violet is reserved for icons and selected emphasis. Factual surfaces remain neutral; semantic colors are used only for state.
+- Repeated committed-snapshot boundary copy should not be duplicated inside every resource section when the modal footer already establishes that boundary.

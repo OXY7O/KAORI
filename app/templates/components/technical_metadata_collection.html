@@ -2,59 +2,64 @@
 {% import "components/details/_detail_content.html" as detail %}
 {% macro render(title, entries, icon='tags', empty_title='No Metadata Collected', empty_description='Metadata will appear when it is present in the committed inventory snapshot.', context=None, compact=false, mode='pairs', compact_pairs=false, total_count=none, truncated=false) -%}
     {% set entry_count = total_count if total_count is not none else (entries|length if entries else 0) %}
-    <section class="min-w-0" data-kaori-inventory-metadata-collection>
-        <header class="flex min-w-0 flex-wrap items-center justify-between gap-3 border-b border-outline-subtle pb-2.5">
+    <section class="min-w-0 overflow-hidden rounded-xl border border-outline-subtle bg-surface-card"
+             data-kaori-inventory-metadata-collection>
+        <header class="flex min-w-0 flex-wrap items-center justify-between gap-3 border-b border-outline-subtle px-4 py-3 sm:px-5">
             <div class="flex min-w-0 items-center gap-2.5">
-                <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary"
-                      aria-hidden="true"><i data-lucide="{{ icon }}" class="h-3.5 w-3.5"></i></span>
+                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                      aria-hidden="true"><i data-lucide="{{ icon }}" class="h-4 w-4"></i></span>
                 <h4 class="min-w-0 break-words text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]">{{ title }}</h4>
             </div>
             {{ table_label.metadata_label(entry_count ~ ' ' ~ ('Entry' if entry_count == 1 else 'Entries') ) }}
         </header>
         {% if entries %}
-            {% if mode == 'keys' %}
-                <div class="grid min-w-0 gap-x-8 sm:grid-cols-2 xl:grid-cols-3">
-                    {% for entry in entries %}
-                        {% set key = entry[0] if entry is sequence and entry is not string else entry %}
-                        <div class="min-w-0 border-b border-outline-subtle py-2.5">
-                            <p class="break-words text-sm font-medium leading-5 text-content-primary [overflow-wrap:anywhere]">{{ key }}</p>
+            <div class="px-4 py-2 sm:px-5">
+                {% if mode == 'keys' %}
+                    <div class="max-h-[24rem] overflow-y-auto pr-1">
+                        <div class="grid min-w-0 gap-x-5 sm:grid-cols-2 xl:grid-cols-3">
+                            {% for entry in entries %}
+                                {% set key = entry[0] if entry is sequence and entry is not string else entry %}
+                                <div class="min-w-0 border-b border-outline-subtle py-2.5">
+                                    <p class="break-words text-sm font-medium leading-5 text-content-primary [overflow-wrap:anywhere]">{{ key }}</p>
+                                </div>
+                            {% endfor %}
                         </div>
-                    {% endfor %}
-                </div>
-            {% elif mode == 'records' %}
-                <div class="grid min-w-0 gap-x-8 sm:grid-cols-2">
-                    {% for entry in entries %}
-                        {% set record_label = entry.type if entry.type is defined else (entry.name if entry.name is defined else 'Evidence') %}
-                        {% set record_value = entry.status if entry.status is defined else (entry.value if entry.value is defined else '-') %}
-                        {% set record_reason = entry.reason if entry.reason is defined else (entry.message if entry.message is defined else none) %}
-                        <article class="min-w-0 border-b border-outline-subtle py-2.5">
-                            <p class="break-words text-sm font-normal leading-5 text-content-muted [overflow-wrap:anywhere]">{{ record_label }}</p>
-                            <p class="mt-0.5 break-words text-sm font-medium leading-5 text-content-primary [overflow-wrap:anywhere]">{{ record_value }}</p>
-                            {% if record_reason %}
-                                <p class="mt-0.5 whitespace-pre-wrap break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]">{{ record_reason }}</p>
-                            {% endif %}
-                        </article>
-                    {% endfor %}
-                </div>
-            {% else %}
-                {% set pairs = entries.items() if entries.items is defined else entries %}
-                <div class="grid min-w-0 gap-x-10 {{ 'lg:grid-cols-2' if compact_pairs else '' }}">
-                    {% for key, value in pairs %}
-                        <div class="grid min-w-0 gap-1 border-b border-outline-subtle py-2.5 sm:grid-cols-[minmax(10rem,0.42fr)_minmax(0,1fr)] sm:gap-5">
-                            <span class="min-w-0 break-words text-sm font-normal leading-5 text-content-muted [overflow-wrap:anywhere]">{{ key }}</span>
-                            <span class="min-w-0 whitespace-pre-wrap break-words text-sm font-medium leading-5 text-content-primary [overflow-wrap:anywhere]">{{ value if value not in [None, ''] else '-' }}</span>
-                        </div>
-                    {% endfor %}
-                </div>
-            {% endif %}
-            {% if truncated %}
-                <p class="mt-3 break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]">Showing the first {{ entries|length }} of {{ entry_count }} entries.</p>
-            {% endif %}
-            {% if context %}
-                <p class="mt-3 break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]">{{ context }}</p>
-            {% endif %}
+                    </div>
+                {% elif mode == 'records' %}
+                    <div class="grid min-w-0 gap-x-8 sm:grid-cols-2">
+                        {% for entry in entries %}
+                            {% set record_label = entry.type if entry.type is defined else (entry.name if entry.name is defined else 'Evidence') %}
+                            {% set record_value = entry.status if entry.status is defined else (entry.value if entry.value is defined else '-') %}
+                            {% set record_reason = entry.reason if entry.reason is defined else (entry.message if entry.message is defined else none) %}
+                            <article class="min-w-0 border-b border-outline-subtle py-2.5">
+                                <p class="break-words text-sm font-normal leading-5 text-content-secondary [overflow-wrap:anywhere]">{{ record_label }}</p>
+                                <p class="mt-0.5 break-words text-sm font-medium leading-5 text-content-primary [overflow-wrap:anywhere]">{{ record_value }}</p>
+                                {% if record_reason %}
+                                    <p class="mt-0.5 whitespace-pre-wrap break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]">{{ record_reason }}</p>
+                                {% endif %}
+                            </article>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    {% set pairs = entries.items() if entries.items is defined else entries %}
+                    <div class="grid min-w-0 gap-x-8 {{ 'lg:grid-cols-2' if compact_pairs else '' }}">
+                        {% for key, value in pairs %}
+                            <div class="grid min-w-0 gap-1 border-b border-outline-subtle py-2.5 sm:grid-cols-[minmax(9.5rem,0.42fr)_minmax(0,1fr)] sm:gap-4">
+                                <span class="min-w-0 break-words text-sm font-normal leading-5 text-content-secondary [overflow-wrap:anywhere]">{{ key }}</span>
+                                <span class="min-w-0 whitespace-pre-wrap break-words text-sm font-medium leading-5 text-content-primary [overflow-wrap:anywhere]">{{ value if value not in [None, ''] else '-' }}</span>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+                {% if truncated %}
+                    <p class="mt-3 break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]">Showing the first {{ entries|length }} of {{ entry_count }} entries.</p>
+                {% endif %}
+                {% if context %}
+                    <p class="mt-3 break-words border-t border-outline-subtle pt-3 text-xs leading-5 text-content-muted [overflow-wrap:anywhere]">{{ context }}</p>
+                {% endif %}
+            </div>
         {% else %}
-            <div class="pt-3">{{ detail.empty_evidence(empty_title, empty_description, icon) }}</div>
+            <div class="p-4 sm:p-5">{{ detail.empty_evidence(empty_title, empty_description, icon) }}</div>
         {% endif %}
     </section>
 {%- endmacro %}

@@ -6,9 +6,9 @@
 {% import "components/table.html" as table_ui %}
 {% import "components/technical_value.html" as technical_value %}
 <div data-kaori-detail-variant="full-workspace-modal"
-     data-kaori-detail-density="adaptive-stacks"
-     data-kaori-inventory-detail="v4"
-     data-kaori-inventory-detail-layout="operational-fact-sheet"
+     data-kaori-detail-density="resource-profile"
+     data-kaori-inventory-detail="v5"
+     data-kaori-inventory-detail-layout="resource-profile"
      class="{{ detail.expanded_workspace_outer_classes() }}">
     <div class="{{ detail.expanded_workspace_shell_classes() }}">
         {% set detail_description = "Host, publication, TLS Secret, and backend route evidence from the committed snapshot." %}
@@ -27,8 +27,8 @@
         ('Backend Routes', ingress.backend_count, ingress.service_count ~ ' Services · ' ~ ingress.resource_backend_count ~ ' Resource Backends'),
         ('TLS References', ingress.tls_secret_count, ingress.secret_collection_state)
         ], compact=true) }}
-        <div class="grid items-start gap-4 p-5 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
-            <div class="space-y-4">
+        <div class="grid items-start gap-5 p-4 sm:p-5 lg:p-6 xl:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)]">
+            <div class="space-y-5">
                 {% call detail.inventory_section('Ingress Identity', 'badge-info', ingress.age, badge_size='detail', stretch=false, density='compact') %}
                     {{ detail.inventory_row('Cluster', ingress.cluster_name) }}
                     {{ detail.inventory_row('Namespace', ingress.namespace) }}
@@ -60,7 +60,7 @@
                     {% endif %}
                 {% endcall %}
             </div>
-            <div class="space-y-4">
+            <div class="space-y-5">
                 {% call detail.inventory_section('TLS Reference Evidence', 'shield', ingress.tls_secret_count ~ ' Secrets', badge_size='detail', stretch=false, density='compact') %}
                     {{ detail.inventory_fact_grid([
                                         {'label': 'TLS Declared', 'value': 'Yes' if ingress.tls else 'No'},

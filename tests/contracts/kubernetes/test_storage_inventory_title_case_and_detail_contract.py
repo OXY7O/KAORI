@@ -77,7 +77,7 @@ def test_storage_detail_uses_adaptive_stacks_and_factual_configuration() -> None
     semantics = read(SEMANTICS)
     service = read(SERVICE)
 
-    assert 'data-kaori-detail-density="adaptive-stacks"' in detail
+    assert 'data-kaori-detail-density="resource-profile"' in detail
     assert 'detail.expanded_workspace_shell_classes()' in detail
     for title in ('Storage Identity', 'Capacity & Access', 'Binding & Lifecycle', 'Provisioning Configuration'):
         assert f"detail.inventory_section('{title}'" in detail

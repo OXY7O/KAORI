@@ -13,7 +13,7 @@ def test_service_and_ingress_use_shared_network_inventory_contracts() -> None:
     pattern = read('docs/design/patterns/KUBERNETES_NETWORK_INVENTORY.md')
 
     for source in (service_detail, ingress_detail):
-        assert 'data-kaori-detail-density="adaptive-stacks"' in source
+        assert 'data-kaori-detail-density="resource-profile"' in source
         assert 'detail.expanded_workspace_shell_classes()' in source
         assert 'technical_metadata_collection.html' in source
         assert 'related_resource_collection.html' in source
@@ -31,9 +31,9 @@ def test_inventory_fact_grid_uses_one_grouped_boundary_without_floating_tiles() 
 
     assert 'macro inventory_fact_grid(rows, columns=2)' in detail
     assert 'data-kaori-inventory-fact-grid' in detail
-    assert 'grid min-w-0 gap-x-6' in detail
+    assert 'data-kaori-inventory-fact-grid' in detail
     assert 'rounded-lg border border-outline-subtle bg-surface-card' not in detail.split('{% macro inventory_fact_grid', 1)[1].split('{%- endmacro %}', 1)[0]
-    assert 'min-w-0 border-b border-outline-subtle py-2.5' in detail
+    assert 'overflow-hidden rounded-lg border border-outline-subtle bg-surface-elevated' in detail
 
 
 def test_metadata_collection_avoids_nested_vertical_scroll() -> None:

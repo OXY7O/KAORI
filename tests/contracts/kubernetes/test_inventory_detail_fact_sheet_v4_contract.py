@@ -17,50 +17,55 @@ def read(relative: str) -> str:
     return (ROOT / relative).read_text(encoding='utf-8')
 
 
-def test_inventory_v4_is_a_fact_sheet_not_a_nested_card_gallery() -> None:
+def test_inventory_v5_uses_resource_profile_sections_with_natural_height() -> None:
     shared = read('app/templates/components/details/_detail_content.html')
+    modal = read('app/templates/components/resource_detail_modal.html')
 
     section = shared.split('{% macro inventory_section', 1)[1].split('{%- endmacro %}', 1)[0]
-    assert 'rounded-xl border border-outline-subtle bg-surface-card' not in section
-    assert 'border-b border-outline-subtle pb-2.5' in section
-    assert 'text-sm font-normal leading-5 text-content-muted' in shared
+    assert 'rounded-xl border border-outline-subtle bg-surface-card' in section
+    assert 'px-4 py-3 sm:px-5' in section
+    assert 'text-sm font-normal leading-5 text-content-secondary' in shared
     assert 'text-left text-sm font-medium leading-5 text-content-primary' in shared
     assert 'macro inventory_note(' in shared
-    assert 'grid min-w-0 gap-x-6' in shared
+    assert 'data-kaori-inventory-fact-grid' in shared
+    assert "'max-w-[78rem]'" in modal
 
     for resource, filename in DETAILS.items():
         detail = read(f'app/templates/kubernetes/inventory/{resource}/partials/{filename}')
-        assert 'data-kaori-inventory-detail="v4"' in detail, resource
-        assert 'data-kaori-inventory-detail-layout="operational-fact-sheet"' in detail, resource
+        assert 'data-kaori-inventory-detail="v5"' in detail, resource
+        assert 'data-kaori-inventory-detail-layout="resource-profile"' in detail, resource
 
 
-def test_node_detail_uses_inline_guidance_and_open_evidence_columns() -> None:
+def test_node_detail_uses_independent_column_stacks_and_grouped_conditions() -> None:
     node = read('app/templates/kubernetes/inventory/nodes/partials/_node_detail_content.html')
 
-    assert 'components/detail_tip.html' not in node
-    assert node.count('detail.inventory_note(') == 3
-    assert 'grid items-start gap-x-10 gap-y-8 p-5 sm:p-6 xl:grid-cols-2' in node
+    assert 'grid items-start gap-5 lg:grid-cols-2' in node
+    assert node.count('<div class="space-y-5">') == 2
     assert "detail.inventory_section('Node Identity'" in node
     assert "detail.inventory_section('Node Capacity'" in node
     assert "detail.inventory_section('Connectivity'" in node
     assert "detail.inventory_section('Platform & Runtime'" in node
+    assert "detail.inventory_section('Scheduling & Conditions'" in node
+    assert node.count('detail.inventory_note(') == 3
+    assert "operational_callout.render('Committed Snapshot Boundary'" not in node
 
 
-def test_metadata_collections_use_flat_rows_and_no_tile_wall() -> None:
+def test_metadata_collections_are_contained_lists_not_tile_walls() -> None:
     metadata = read('app/templates/components/technical_metadata_collection.html')
 
     assert 'data-kaori-inventory-metadata-collection' in metadata
-    assert 'grid min-w-0 gap-x-8 sm:grid-cols-2 xl:grid-cols-3' in metadata
-    assert 'border-b border-outline-subtle py-2.5' in metadata
-    assert 'gap-px overflow-hidden rounded-lg border border-outline-subtle bg-outline-subtle' not in metadata
-    assert 'bg-surface-card px-3 py-2.5' not in metadata
+    assert 'rounded-xl border border-outline-subtle bg-surface-card' in metadata
+    assert 'max-h-[24rem] overflow-y-auto' in metadata
+    assert 'grid min-w-0 gap-x-5 sm:grid-cols-2 xl:grid-cols-3' in metadata
+    assert 'rounded-lg border border-outline-subtle bg-surface-elevated px-3 py-2.5' not in metadata
 
 
-def test_inventory_related_resources_use_flat_collection_variant() -> None:
+def test_inventory_related_resources_use_contained_list_variant() -> None:
     related = read('app/templates/components/related_resource_collection.html')
     assert 'macro inventory_render(' in related
     assert 'data-kaori-inventory-related-collection' in related
-    assert 'border-b border-outline-subtle pb-2.5' in related
+    assert 'rounded-xl border border-outline-subtle bg-surface-card' in related
+    assert 'divide-y divide-outline-subtle px-4 sm:px-5' in related
 
     for resource in ('workloads', 'pods', 'services', 'ingresses', 'storage', 'configuration'):
         detail = read(f'app/templates/kubernetes/inventory/{resource}/partials/{DETAILS[resource]}')

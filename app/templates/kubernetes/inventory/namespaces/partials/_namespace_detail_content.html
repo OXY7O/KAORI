@@ -3,9 +3,9 @@
 {% import "components/technical_metadata_collection.html" as metadata_collection %}
 {% import "components/operational_callout.html" as operational_callout %}
 <div data-kaori-detail-variant="full-workspace-modal"
-     data-kaori-detail-density="adaptive-stacks"
-     data-kaori-inventory-detail="v4"
-     data-kaori-inventory-detail-layout="operational-fact-sheet"
+     data-kaori-detail-density="resource-profile"
+     data-kaori-inventory-detail="v5"
+     data-kaori-inventory-detail-layout="resource-profile"
      class="{{ detail.expanded_workspace_outer_classes() }}">
     <div class="{{ detail.expanded_workspace_shell_classes() }}">
         {% set detail_description = "Lifecycle, controls, composition, and security evidence from the committed snapshot." %}
@@ -22,8 +22,8 @@
         ('Tracked Objects', namespace.object_counts.tracked_total, ''),
         ('Control Evidence', namespace.control_evidence_display, '')
         ], compact=true) }}
-        <div class="grid items-start gap-4 p-5 xl:grid-cols-[minmax(0,0.82fr)_minmax(0,1.18fr)]">
-            <div class="space-y-4">
+        <div class="grid items-start gap-5 p-4 sm:p-5 lg:p-6 xl:grid-cols-[minmax(0,0.88fr)_minmax(0,1.12fr)]">
+            <div class="space-y-5">
                 {% call detail.inventory_section('Namespace Identity', 'badge-info', namespace.age, badge_size='detail', stretch=false, density='compact') %}
                     {{ detail.inventory_status_row('Lifecycle', namespace.lifecycle_label, namespace.lifecycle_tone, size='detail') }}
                     {{ detail.inventory_row('Age', namespace.age) }}
@@ -49,7 +49,7 @@
                     </div>
                 {% endcall %}
             </div>
-            <div class="space-y-4">
+            <div class="space-y-5">
                 {% call detail.inventory_section('Object Composition', 'boxes', namespace.object_counts.evidence_display, badge_size='detail', stretch=false, density='compact') %}
                     {{ detail.inventory_fact_grid([
                                         ('Workloads', namespace.object_counts.workloads, '') ,

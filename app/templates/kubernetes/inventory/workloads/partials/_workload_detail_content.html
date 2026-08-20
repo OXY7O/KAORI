@@ -6,9 +6,9 @@
 {% import "components/related_resource_collection.html" as related_collection %}
 {% import "components/operational_callout.html" as operational_callout %}
 <div data-kaori-detail-variant="full-workspace-modal"
-     data-kaori-detail-density="adaptive-stacks"
-     data-kaori-inventory-detail="v4"
-     data-kaori-inventory-detail-layout="operational-fact-sheet"
+     data-kaori-detail-density="resource-profile"
+     data-kaori-inventory-detail="v5"
+     data-kaori-inventory-detail-layout="resource-profile"
      class="{{ detail.expanded_workspace_outer_classes() }}">
     <div class="{{ detail.expanded_workspace_shell_classes() }}">
         {% set detail_description = "Runtime, delivery, placement, and relationship evidence from the committed snapshot." %}
@@ -26,8 +26,8 @@
         ('Template Containers', workload.template_container_count if workload.pod_configuration_reported else 'Not Reported', ''),
         ('Delivery Model', workload.delivery_model, workload.delivery_supporting)
         ], compact=true) }}
-        <div class="grid items-start gap-4 p-5 xl:grid-cols-[minmax(0,0.82fr)_minmax(0,1.18fr)]">
-            <div class="space-y-4">
+        <div class="grid items-start gap-5 p-4 sm:p-5 lg:p-6 xl:grid-cols-[minmax(0,0.88fr)_minmax(0,1.12fr)]">
+            <div class="space-y-5">
                 {% call detail.inventory_section('Workload Identity', 'badge-info', workload.age, badge_size='detail', stretch=false, density='compact') %}
                     {{ detail.inventory_row('Cluster', workload.cluster_name) }}
                     {{ detail.inventory_row('Namespace', workload.namespace) }}
@@ -45,7 +45,7 @@
                     {% endif %}
                 {% endcall %}
             </div>
-            <div class="space-y-4">
+            <div class="space-y-5">
                 {% call detail.inventory_section('Pod Template', 'container', workload.template_container_count ~ ' Containers' if workload.pod_configuration_reported else 'Not Reported', badge_size='detail', stretch=false, density='compact') %}
                     {% if workload.pod_configuration_reported %}
                         {{ detail.inventory_fact_grid(workload.pod_configuration_rows, columns=3) }}

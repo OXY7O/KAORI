@@ -62,7 +62,7 @@
                                     <p class="text-xs font-medium leading-5 text-content-muted">Committed Snapshot</p>
                                 </div>
                                 <h2 id="resource-detail-modal-title"
-                                    class="mt-1 break-words text-lg font-semibold leading-7 text-content-primary [overflow-wrap:anywhere]">{{ resource_type }} Details</h2>
+                                    class="mt-1 break-words text-xl font-semibold leading-7 text-content-primary [overflow-wrap:anywhere]">{{ resource_type }} Details</h2>
                                 <p class="mt-1 text-sm leading-6 text-content-muted">Loading {{ context_label|lower }} evidence.</p>
                             </div>
                         </div>
@@ -134,7 +134,7 @@
     {{ _host(resource_type, detail_url_template, footer_text, context_label, dialog_max_width, 'modal', content_driven) }}
 {%- endmacro %}
 {% macro inventory_host(resource_type, detail_url_template, footer_text='Committed Inventory snapshot · No live Kubernetes API query.') -%}
-    {{ _host(resource_type, detail_url_template, footer_text, 'Inventory', 'max-w-[90rem]', 'modal', false) }}
+    {{ _host(resource_type, detail_url_template, footer_text, 'Inventory', 'max-w-[78rem]', 'modal', true) }}
 {%- endmacro %}
 {% macro drawer_host(resource_type, detail_url_template, footer_text='Details come from the current committed KAORI data boundary.', context_label='Intelligence', dialog_max_width='max-w-2xl') -%}
     {{ _host(resource_type, detail_url_template, footer_text, context_label, dialog_max_width, 'drawer', false) }}

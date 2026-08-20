@@ -14,8 +14,8 @@ def test_workload_detail_uses_full_workspace_modal_reference_structure() -> None
     assert "detail.inventory_section('Workload Identity'" in template
     assert "detail.inventory_section('Runtime State'" in template
     assert "detail.inventory_section('Pod Template'" in template
-    assert 'data-kaori-detail-density="adaptive-stacks"' in template
-    assert 'xl:grid-cols-[minmax(0,0.82fr)_minmax(0,1.18fr)]' in template
+    assert 'data-kaori-detail-density="resource-profile"' in template
+    assert 'xl:grid-cols-[minmax(0,0.88fr)_minmax(0,1.12fr)]' in template
     assert 'items-stretch' not in template
     assert template.count('stretch=false') >= 3
     assert 'min-h-80' not in template
