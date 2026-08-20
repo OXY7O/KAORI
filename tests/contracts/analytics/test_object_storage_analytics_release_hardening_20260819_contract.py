@@ -13,7 +13,11 @@ def test_bucket_query_contract_collects_complete_scoped_vectors_without_topk_tru
     assert "expression='max by (bucket) (minio_bucket_usage_total_bytes)'" in profile
     assert "expression='max by (bucket) (minio_bucket_usage_object_total)'" in profile
     assert "expression='sum by (bucket) (rate(minio_bucket_requests_total[5m]))'" in profile
-    assert '__name__=~"minio_bucket_requests_(4xx|5xx)_errors_total"' in profile
+    assert '__name__=~"minio_bucket_requests_(4xx|5xx)_errors_total"' not in profile
+    assert 'rate(minio_bucket_requests_4xx_errors_total[5m])' in profile
+    assert 'rate(minio_bucket_requests_5xx_errors_total[5m])' in profile
+    assert 'or sum by (bucket) (rate(minio_bucket_requests_4xx_errors_total[5m]))' in profile
+    assert 'or sum by (bucket) (rate(minio_bucket_requests_5xx_errors_total[5m]))' in profile
     assert "'object_storage.bucket.usage_history': QueryDefinition(" in profile
     assert 'topk(50' not in profile
 

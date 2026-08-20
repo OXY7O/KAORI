@@ -136,7 +136,12 @@ QUERIES: dict[str, QueryDefinition] = {
     ),
     'object_storage.bucket.error_rate': QueryDefinition(
         key='object_storage.bucket.error_rate',
-        expression=('sum by (bucket) (rate({__name__=~"minio_bucket_requests_(4xx|5xx)_errors_total"}[5m]))'),
+        expression=(
+            '(sum by (bucket) (rate(minio_bucket_requests_4xx_errors_total[5m])) '
+            '+ sum by (bucket) (rate(minio_bucket_requests_5xx_errors_total[5m]))) '
+            'or sum by (bucket) (rate(minio_bucket_requests_4xx_errors_total[5m])) '
+            'or sum by (bucket) (rate(minio_bucket_requests_5xx_errors_total[5m]))'
+        ),
         domain='object_storage_consumers',
         readiness_tier='recommended',
         required_metrics=(
