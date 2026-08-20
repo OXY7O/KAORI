@@ -36,11 +36,11 @@ def test_inventory_v5_uses_resource_profile_sections_with_natural_height() -> No
         assert 'data-kaori-inventory-detail-layout="resource-profile"' in detail, resource
 
 
-def test_node_detail_uses_independent_column_stacks_and_grouped_conditions() -> None:
+def test_node_detail_uses_full_width_section_stack_and_grouped_conditions() -> None:
     node = read('app/templates/kubernetes/inventory/nodes/partials/_node_detail_content.html')
 
-    assert 'grid items-start gap-5 lg:grid-cols-2' in node
-    assert node.count('<div class="space-y-5">') == 2
+    assert 'grid items-start gap-5 lg:grid-cols-2' not in node
+    assert node.count('<div class="space-y-5">') == 1
     assert "detail.inventory_section('Node Identity'" in node
     assert "detail.inventory_section('Node Capacity'" in node
     assert "detail.inventory_section('Connectivity'" in node
@@ -56,7 +56,8 @@ def test_metadata_collections_are_contained_lists_not_tile_walls() -> None:
     assert 'data-kaori-inventory-metadata-collection' in metadata
     assert 'rounded-xl border border-outline-subtle bg-surface-card' in metadata
     assert 'max-h-[24rem] overflow-y-auto' in metadata
-    assert 'grid min-w-0 gap-x-5 sm:grid-cols-2 xl:grid-cols-3' in metadata
+    assert "metadata_label(entry_count ~ ' ' ~ ('Entry' if entry_count == 1 else 'Entries'), 'tags', false, 'detail')" in metadata
+    assert 'grid min-w-0 gap-x-6 sm:grid-cols-2 xl:grid-cols-3' in metadata
     assert 'rounded-lg border border-outline-subtle bg-surface-elevated px-3 py-2.5' not in metadata
 
 

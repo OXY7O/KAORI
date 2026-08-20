@@ -95,7 +95,7 @@
         <div class="flex min-h-0 flex-1 flex-col gap-3 {{ 'p-3.5' if density == 'compact' else 'p-4 sm:p-5' }}">{{ caller() }}</div>
     </section>
 {%- endmacro %}
-{% macro inventory_section(title, icon, badge=None, badge_type='metadata', badge_tone='unknown', class_name='', badge_size='compact', stretch=false, density='compact') -%}
+{% macro inventory_section(title, icon, badge=None, badge_type='metadata', badge_tone='unknown', class_name='', badge_size='detail', stretch=false, density='compact') -%}
     <section data-kaori-inventory-detail-section
              class="min-w-0 overflow-hidden rounded-xl border border-outline-subtle bg-surface-card {{ class_name }}">
         <header class="flex min-w-0 items-center justify-between gap-3 border-b border-outline-subtle px-4 py-3 sm:px-5">

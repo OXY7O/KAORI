@@ -10,13 +10,13 @@
                       aria-hidden="true"><i data-lucide="{{ icon }}" class="h-4 w-4"></i></span>
                 <h4 class="min-w-0 break-words text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]">{{ title }}</h4>
             </div>
-            {{ table_label.metadata_label(entry_count ~ ' ' ~ ('Entry' if entry_count == 1 else 'Entries') ) }}
+            {{ table_label.metadata_label(entry_count ~ ' ' ~ ('Entry' if entry_count == 1 else 'Entries'), 'tags', false, 'detail') }}
         </header>
         {% if entries %}
             <div class="px-4 py-2 sm:px-5">
                 {% if mode == 'keys' %}
                     <div class="max-h-[24rem] overflow-y-auto pr-1">
-                        <div class="grid min-w-0 gap-x-5 sm:grid-cols-2 xl:grid-cols-3">
+                        <div class="grid min-w-0 gap-x-6 sm:grid-cols-2 xl:grid-cols-3">
                             {% for entry in entries %}
                                 {% set key = entry[0] if entry is sequence and entry is not string else entry %}
                                 <div class="min-w-0 border-b border-outline-subtle py-2.5">

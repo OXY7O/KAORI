@@ -101,9 +101,6 @@ def test_configuration_key_inventory_uses_full_width_grouped_list_instead_of_til
 
     assert 'space-y-5 p-4 sm:p-5 lg:p-6' in configuration
     assert "metadata_collection.render('Key Inventory'" in configuration
-    assert (
-        'grid min-w-0 gap-x-8 sm:grid-cols-2 xl:grid-cols-3'
-        in metadata
-    )
+    assert 'grid min-w-0 gap-x-6 sm:grid-cols-2 xl:grid-cols-3' in metadata
     assert 'rounded-lg border border-outline-subtle bg-surface-elevated px-3 py-2.5' not in metadata
     assert 'data-kaori-inventory-metadata-collection' in metadata

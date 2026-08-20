@@ -48,10 +48,10 @@ def test_inventory_v5_typography_and_section_geometry_are_consistent() -> None:
     assert 'bg-surface-elevated/60' in shared
 
 
-def test_node_profile_uses_independent_column_stacks_and_reduces_redundant_callouts() -> None:
+def test_node_profile_uses_full_width_section_stack_and_reduces_redundant_callouts() -> None:
     node = read('app/templates/kubernetes/inventory/nodes/partials/_node_detail_content.html')
-    assert 'grid items-start gap-5 lg:grid-cols-2' in node
-    assert node.count('<div class="space-y-5">') == 2
+    assert 'grid items-start gap-5 lg:grid-cols-2' not in node
+    assert node.count('<div class="space-y-5">') == 1
     assert "detail.inventory_section('Node Identity'" in node
     assert "detail.inventory_section('Node Capacity'" in node
     assert "detail.inventory_section('Connectivity'" in node
@@ -65,6 +65,7 @@ def test_large_metadata_collections_are_contained_and_scannable() -> None:
     related = read('app/templates/components/related_resource_collection.html')
     assert 'rounded-xl border border-outline-subtle bg-surface-card' in metadata
     assert 'max-h-[24rem] overflow-y-auto' in metadata
-    assert 'grid min-w-0 gap-x-5 sm:grid-cols-2 xl:grid-cols-3' in metadata
+    assert "metadata_label(entry_count ~ ' ' ~ ('Entry' if entry_count == 1 else 'Entries'), 'tags', false, 'detail')" in metadata
+    assert 'grid min-w-0 gap-x-6 sm:grid-cols-2 xl:grid-cols-3' in metadata
     assert 'rounded-xl border border-outline-subtle bg-surface-card' in related
     assert 'divide-y divide-outline-subtle px-4 sm:px-5' in related

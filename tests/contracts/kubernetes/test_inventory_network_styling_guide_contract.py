@@ -50,9 +50,7 @@ def test_volume_source_uses_body_typography() -> None:
     pod_detail = read('app/templates/kubernetes/inventory/pods/partials/_pod_detail_content.html')
     technical = read('app/templates/components/technical_value.html')
 
-    assert (
-        "technical_value.render(volume.source, break_all=true, class_name='font-medium', size='body')" in pod_detail
-    )
+    assert "technical_value.render(volume.source, break_all=true, class_name='font-medium', size='body')" in pod_detail
     assert "size='compact'" in technical
     assert "'text-sm leading-5' if size == 'body'" in technical
 
