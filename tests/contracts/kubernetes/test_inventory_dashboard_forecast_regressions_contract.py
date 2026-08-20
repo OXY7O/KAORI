@@ -12,8 +12,8 @@ def test_inventory_snapshot_context_uses_stacked_rows_for_long_values() -> None:
     inventory = read('app/templates/kubernetes/inventory/overview/partials/_resources_by_cluster_content.html')
 
     assert 'macro stacked_detail_row(' in details
-    assert "stacked_detail_row('Snapshot Source', cluster.snapshot_source)" in inventory
-    assert "stacked_detail_row('Last Collected'" in inventory
+    assert "detail_row('Snapshot Source', cluster.snapshot_source)" in inventory
+    assert "detail_row('Last Collected'" in inventory
     assert 'nowrap=True' not in inventory
 
 
