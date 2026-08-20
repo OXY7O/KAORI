@@ -28,7 +28,16 @@ def test_inventory_view_details_use_v2_modal_host_and_shared_resource_header() -
     assert 'backdrop-blur-md' in modal
     assert 'text-lg font-semibold leading-7 text-content-primary' in modal
     assert 'macro workspace_header(' in shared
+    assert 'macro header_identity_row()' in shared
+    assert 'macro inventory_title(' in shared
+    assert 'macro inventory_section(' in shared
+    assert 'macro inventory_row(' in shared
+    assert 'macro inventory_technical_row(' in shared
+    assert 'macro inventory_fact_grid(' in shared
     assert 'data-resource-detail-header' in shared
+    assert 'data-resource-detail-header-identity' in shared
+    assert 'data-kaori-inventory-detail-section' in shared
+    assert 'data-kaori-inventory-fact-grid' in shared
     assert 'text-lg font-semibold leading-7 text-content-primary' in shared
 
     for resource in RESOURCES:
@@ -36,7 +45,12 @@ def test_inventory_view_details_use_v2_modal_host_and_shared_resource_header() -
         detail = read(f'app/templates/kubernetes/inventory/{resource}/partials/{DETAIL_FILES[resource]}')
         assert 'resource_detail_modal.inventory_host(' in index, resource
         assert 'data-kaori-inventory-detail="v2"' in detail, resource
+        assert 'data-kaori-inventory-detail-layout="evidence-workspace"' in detail, resource
         assert 'detail.workspace_header(' in detail, resource
+        assert 'detail.header_identity_row()' in detail, resource
+        assert 'detail.inventory_title(' in detail, resource
+        assert 'detail.inventory_section(' in detail, resource
+        assert 'detail.inventory_fact_grid(' in detail, resource
         assert '<header data-resource-detail-header' not in detail, resource
 
 
@@ -44,6 +58,7 @@ def test_inventory_detail_typography_has_one_predictable_hierarchy() -> None:
     shared = read('app/templates/components/details/_detail_content.html')
     metadata = read('app/templates/components/technical_metadata_collection.html')
     technical = read('app/templates/components/technical_value.html')
+    runtime = read('app/templates/components/container_runtime_collection.html')
 
     # Resource title -> section title -> factual value -> field/supporting label.
     assert 'text-lg font-semibold leading-7 text-content-primary' in shared
@@ -52,6 +67,11 @@ def test_inventory_detail_typography_has_one_predictable_hierarchy() -> None:
     assert 'text-xs font-medium leading-5 text-content-muted' in shared
     assert "size='body'" in shared
     assert "'text-sm leading-5' if size == 'body'" in technical
+    assert (
+        "technical_value.render(container.image or 'Not Reported', break_all=true, class_name='font-semibold', size='body')"
+        in runtime
+    )
+    assert 'text-sm font-semibold tabular-nums text-content-primary' in runtime
 
     # Metadata key/value pairs follow the same label/value hierarchy instead of reversing emphasis.
     assert 'text-xs font-medium leading-5 text-content-muted' in metadata
@@ -71,3 +91,16 @@ def test_modal_loading_header_matches_loaded_inventory_header_scale() -> None:
     assert 'text-sm leading-6 text-content-muted' in script
     assert 'Committed Snapshot' in script
     assert 'border border-brand-outline bg-kaori-soft' in script
+
+
+def test_configuration_key_inventory_uses_full_width_grouped_list_instead_of_tile_wall() -> None:
+    configuration = read('app/templates/kubernetes/inventory/configuration/partials/_configuration_detail_content.html')
+    metadata = read('app/templates/components/technical_metadata_collection.html')
+
+    assert 'space-y-4 p-4 sm:p-5' in configuration
+    assert "metadata_collection.render('Key Inventory'" in configuration
+    assert (
+        'gap-px overflow-hidden rounded-lg border border-outline-subtle bg-outline-subtle sm:grid-cols-2 xl:grid-cols-3'
+        in metadata
+    )
+    assert 'rounded-lg border border-outline-subtle bg-surface-elevated px-3 py-2.5' not in metadata

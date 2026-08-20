@@ -170,9 +170,9 @@ def main() -> int:
     for token in (
         'data-kaori-detail-density="adaptive-stacks"',
         'components/technical_metadata_collection.html',
-        "detail.detail_card('Node Identity', 'badge-info')",
-        "detail.detail_card('Node Capacity', 'gauge')",
-        "detail.detail_row('Network Scope', node.network_scope)",
+        "detail.inventory_section('Node Identity', 'badge-info')",
+        "detail.inventory_section('Node Capacity', 'gauge')",
+        "detail.inventory_row('Network Scope', node.network_scope)",
         'node.role_description',
         'No taints were reported in the current snapshot.',
         "'Node Labels'",

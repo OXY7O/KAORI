@@ -75,6 +75,8 @@ def test_compact_cluster_table_has_details_button_and_shared_right_drawer() -> N
     assert "'Committed inventory overview.'" in content
     assert "'Platform and registration context for the selected inventory source.'" not in content
     assert "'Collection boundary and freshness for the committed generation.'" not in content
+    assert "stacked_detail_row('Registered Cluster', cluster.name)" in content
+    assert "stacked_detail_row('Freshness Window', cluster.freshness_window_hours ~ ' Hours')" in content
 
 
 def test_cluster_table_pagination_uses_resource_case_and_visible_rows_label() -> None:
@@ -108,7 +110,7 @@ def test_snapshot_source_uses_compact_non_wrapping_value() -> None:
     details_macro = read('app/templates/components/details/_detail_content.html')
 
     assert "'snapshot_source': 'Committed Snapshot'" in backend
-    assert "detail_row('Snapshot Source', cluster.snapshot_source, nowrap=True)" in content
+    assert "stacked_detail_row('Snapshot Source', cluster.snapshot_source)" in content
     assert "{% macro detail_row(label, value='-', break_all=False, nowrap=False) -%}" in details_macro
     assert 'sm:text-right' in details_macro
 
@@ -128,8 +130,8 @@ def test_snapshot_last_collected_uses_numeric_non_wrapping_datetime() -> None:
     presentation = read('app/bootstrap/presentation.py')
 
     assert "user_datetime(date_format='day_month_numeric')" in content
-    assert "detail_row('Last Collected'" in content
-    assert 'nowrap=True' in content
+    assert "stacked_detail_row('Last Collected'" in content
+    assert 'nowrap=True' not in content
     assert "value_wrap_classes = 'whitespace-nowrap' if nowrap" in details_macro
     assert 'date_format: str | None = None' in presentation
     assert "date_format=date_format or preferences['date_format']" in presentation

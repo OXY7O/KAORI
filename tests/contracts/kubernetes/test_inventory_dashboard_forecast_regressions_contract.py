@@ -7,13 +7,14 @@ def read(relative: str) -> str:
     return (ROOT / relative).read_text(encoding='utf-8')
 
 
-def test_inventory_snapshot_source_uses_aligned_detail_row_for_canonical_value() -> None:
+def test_inventory_snapshot_context_uses_stacked_rows_for_long_values() -> None:
     details = read('app/templates/components/details/_detail_content.html')
     inventory = read('app/templates/kubernetes/inventory/overview/partials/_resources_by_cluster_content.html')
 
-    assert 'macro detail_row(' in details
-    assert 'whitespace-nowrap' in details
-    assert "detail_row('Snapshot Source', cluster.snapshot_source, nowrap=True)" in inventory
+    assert 'macro stacked_detail_row(' in details
+    assert "stacked_detail_row('Snapshot Source', cluster.snapshot_source)" in inventory
+    assert "stacked_detail_row('Last Collected'" in inventory
+    assert 'nowrap=True' not in inventory
 
 
 def test_kubernetes_dashboard_forecast_schema_matches_latest_daily_average_payload() -> None:

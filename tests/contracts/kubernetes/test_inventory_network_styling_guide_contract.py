@@ -26,12 +26,13 @@ def test_service_and_ingress_use_shared_network_inventory_contracts() -> None:
     assert 'Ingress | Scope | Publication | TLS References | Routing | Details' in pattern
 
 
-def test_shared_evidence_tiles_do_not_render_empty_gray_grid_cells() -> None:
+def test_inventory_fact_grid_uses_one_grouped_boundary_without_floating_tiles() -> None:
     detail = read('app/templates/components/details/_detail_content.html')
 
-    assert 'grid items-start gap-2' in detail
-    assert 'rounded-lg border border-outline-subtle bg-surface-elevated' in detail
-    assert 'bg-outline-subtle gap-px' not in detail
+    assert 'macro inventory_fact_grid(rows, columns=2)' in detail
+    assert 'data-kaori-inventory-fact-grid' in detail
+    assert 'gap-px overflow-hidden rounded-lg border border-outline-subtle bg-outline-subtle' in detail
+    assert 'min-w-0 bg-surface-card px-3.5 py-3' in detail
 
 
 def test_metadata_collection_avoids_nested_vertical_scroll() -> None:
@@ -47,7 +48,9 @@ def test_volume_source_uses_body_typography() -> None:
     pod_detail = read('app/templates/kubernetes/inventory/pods/partials/_pod_detail_content.html')
     technical = read('app/templates/components/technical_value.html')
 
-    assert "technical_value.render(volume.source, break_all=true, size='body')" in pod_detail
+    assert (
+        "technical_value.render(volume.source, break_all=true, class_name='font-semibold', size='body')" in pod_detail
+    )
     assert "size='compact'" in technical
     assert "'text-sm leading-5' if size == 'body'" in technical
 

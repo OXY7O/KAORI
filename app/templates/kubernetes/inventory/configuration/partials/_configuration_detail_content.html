@@ -6,14 +6,18 @@
 <div data-kaori-detail-variant="full-workspace-modal"
      data-kaori-detail-density="adaptive-stacks"
      data-kaori-inventory-detail="v2"
+     data-kaori-inventory-detail-layout="evidence-workspace"
      class="{{ detail.expanded_workspace_outer_classes() }}">
     <div class="{{ detail.expanded_workspace_shell_classes() }}">
-        {% set detail_description = 'Protected key metadata, collection, mutation, and current Pod reference evidence.' %}
-        {% call detail.workspace_header(item.name, detail_description, 'key-round' if item.type == 'Secret' else 'file-json-2') %}
-            {{ table_label.metadata_label(item.type) }}
-            {{ table_label.metadata_label(item.namespace, 'folder-tree') }}
-            {{ table_label.status_indicator_label(item.mutation_label, item.mutation_tone, size='detail') }}
-            {{ table_label.metadata_label(item.collection_state, 'database') }}
+        {% set detail_description = "Protected key metadata, collection, mutation, and current Pod reference evidence." %}
+        {% call detail.workspace_header(detail_description, 'key-round' if item.type == 'Secret' else 'file-json-2') %}
+            {% call detail.header_identity_row() %}
+                {{ detail.inventory_title(item.name) }}
+                {{ table_label.metadata_label(item.type) }}
+                {{ table_label.metadata_label(item.namespace, 'folder-tree') }}
+                {{ table_label.status_indicator_label(item.mutation_label, item.mutation_tone, size='detail') }}
+                {{ table_label.metadata_label(item.collection_state, 'database') }}
+            {% endcall %}
         {% endcall %}
         {{ detail.summary_strip([
                 ('Object Type', item.type, item.secret_type if item.type == 'Secret' else 'ConfigMap metadata') ,
@@ -21,19 +25,19 @@
         ('Mutation Model', item.mutation_label, 'Committed object configuration'),
         ('Current Pod References', item.used_by_display, 'Committed Pod reference evidence')
         ], compact=true) }}
-        <div class="grid items-start gap-4 p-5 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
-            <div class="space-y-4">
-                {% call detail.detail_card('Object Identity', 'badge-info', item.age, badge_size='detail', stretch=false, density='compact') %}
-                    {{ detail.detail_row('Cluster', item.cluster_name) }}
-                    {{ detail.detail_row('Namespace', item.namespace) }}
-                    {{ detail.metadata_row('Object Type', item.type) }}
-                    {% if item.type == 'Secret' %}{{ detail.metadata_row('Secret Type', item.secret_type) }}{% endif %}
-                    {{ detail.detail_row('Age', item.age) }}
-                    {{ detail.detail_row('Created', item.created_at|user_datetime if item.created_at else 'Not Reported') }}
-                    {{ detail.detail_row('Collected', item.collected_at|user_datetime if item.collected_at else 'Not Reported') }}
+        <div class="space-y-4 p-4 sm:p-5">
+            <div class="grid items-start gap-4 xl:grid-cols-2">
+                {% call detail.inventory_section('Object Identity', 'badge-info', item.age, badge_size='detail', stretch=false, density='compact') %}
+                    {{ detail.inventory_row('Cluster', item.cluster_name) }}
+                    {{ detail.inventory_row('Namespace', item.namespace) }}
+                    {{ detail.inventory_metadata_row('Object Type', item.type) }}
+                    {% if item.type == 'Secret' %}{{ detail.inventory_metadata_row('Secret Type', item.secret_type) }}{% endif %}
+                    {{ detail.inventory_row('Age', item.age) }}
+                    {{ detail.inventory_row('Created', item.created_at|user_datetime if item.created_at else 'Not Reported') }}
+                    {{ detail.inventory_row('Collected', item.collected_at|user_datetime if item.collected_at else 'Not Reported') }}
                 {% endcall %}
-                {% call detail.detail_card('Protected Data Boundary', 'shield-check', 'Values Not Persisted', badge_size='detail', stretch=false, density='compact') %}
-                    {{ detail.evidence_grid([
+                {% call detail.inventory_section('Protected Data Boundary', 'shield-check', 'Values Not Persisted', badge_size='detail', stretch=false, density='compact') %}
+                    {{ detail.inventory_fact_grid([
                                         {'label': 'Object Collection', 'value': item.collection_state},
                                         {'label': 'Pod Reference Collection', 'value': item.pod_collection_state},
                                         {'label': 'Key Names', 'value': item.key_count ~ ' Indexed'},
@@ -44,21 +48,19 @@
                     <p class="mt-3 text-xs leading-5 text-content-muted">Kubernetes list responses arrive transiently in the collector process. KAORI indexes key names only and does not decode, log, persist, or display value content.</p>
                 {% endcall %}
             </div>
-            <div class="space-y-4">
-                {{ metadata_collection.render('Key Inventory', item.key_entries, 'key-round', 'No Key Names Indexed', 'The committed object contains no indexed key names.', 'Key names are indexed without persisting or displaying their values.', compact=true, mode='keys', total_count=item.key_count, truncated=item.key_entries_truncated) }}
-                {% if item.pod_reference_reported %}
-                    {{ related_collection.render('Current Pod References', 'Pods whose committed configuration references include this object.', item.used_by, item.used_by_count, 'package-check', 'No Current Pod References', 'No Pod reference is represented in the current committed snapshot. Other consumers may still exist.', item.used_by_truncated, url_for('inventory.pods', cluster_id=item.cluster_id, namespace=item.namespace) , 'Open Pod Inventory') }}
-                {% else %}
-                    {% call detail.detail_card('Current Pod References', 'circle-help', 'Not Reported', badge_size='detail', stretch=false, density='compact') %}
-                        {{ detail.empty_evidence('Pod Reference Evidence Not Reported', 'Pod collection is recorded as ' ~ item.pod_collection_state ~ '. KAORI cannot determine current Pod references from this snapshot.', 'circle-help') }}
-                    {% endcall %}
-                {% endif %}
-            </div>
-            <section class="grid gap-3 xl:col-span-2 xl:grid-cols-2">
+            {{ metadata_collection.render('Key Inventory', item.key_entries, 'key-round', 'No Key Names Indexed', 'The committed object contains no indexed key names.', 'Key names are indexed without persisting or displaying their values.', compact=true, mode='keys', total_count=item.key_count, truncated=item.key_entries_truncated) }}
+            {% if item.pod_reference_reported %}
+                {{ related_collection.render('Current Pod References', 'Pods whose committed configuration references include this object.', item.used_by, item.used_by_count, 'package-check', 'No Current Pod References', 'No Pod reference is represented in the current committed snapshot. Other consumers may still exist.', item.used_by_truncated, url_for('inventory.pods', cluster_id=item.cluster_id, namespace=item.namespace) , 'Open Pod Inventory') }}
+            {% else %}
+                {% call detail.inventory_section('Current Pod References', 'circle-help', 'Not Reported', badge_size='detail', stretch=false, density='compact') %}
+                    {{ detail.empty_evidence('Pod Reference Evidence Not Reported', 'Pod collection is recorded as ' ~ item.pod_collection_state ~ '. KAORI cannot determine current Pod references from this snapshot.', 'circle-help') }}
+                {% endcall %}
+            {% endif %}
+            <section class="grid gap-3 xl:grid-cols-2">
                 {{ operational_callout.render('Committed Snapshot Boundary', 'This detail reports protected key-index metadata and committed Pod reference evidence. It does not query the Kubernetes API live or expose configuration values.', 'database', 'info') }}
                 {{ operational_callout.render(item.operational_context.title, item.operational_context.description, item.operational_context.icon, item.operational_context.tone, 'semantic') }}
             </section>
-            <section class="rounded-xl border border-outline-subtle bg-surface-elevated p-4 xl:col-span-2">
+            <section class="rounded-xl border border-outline-subtle bg-surface-card p-4">
                 <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <h4 class="text-sm font-semibold text-content-primary">Related Operations</h4>

@@ -187,11 +187,11 @@
                         'server',
                         density='compact'
                         ) %}
-                        <div class="space-y-3">
-                            {{ detail_ui.detail_row('Environment', cluster.environment|environment_name(empty='Not Specified') ) }}
-                            {{ detail_ui.detail_row('Kubernetes Version', cluster.kubernetes_version) }}
-                            {{ detail_ui.detail_row('Registered Cluster', cluster.name) }}
-                        </div>
+                        <dl class="grid min-w-0 gap-3">
+                            {{ detail_ui.stacked_detail_row('Environment', cluster.environment|environment_name(empty='Not Specified') ) }}
+                            {{ detail_ui.stacked_detail_row('Kubernetes Version', cluster.kubernetes_version) }}
+                            {{ detail_ui.stacked_detail_row('Registered Cluster', cluster.name) }}
+                        </dl>
                     {% endcall %}
                     {% set snapshot_badge %}
                         {{ table_label.status_label(cluster.sync_status_label, cluster.sync_status_tone, none, 'detail') }}
@@ -203,11 +203,11 @@
                         badge=snapshot_badge,
                         density='compact'
                         ) %}
-                        <div class="space-y-3">
-                            {{ detail_ui.detail_row('Last Collected', cluster.synced_at|user_datetime(date_format='day_month_numeric') if cluster.synced_at else 'Not Collected', nowrap=True) }}
-                            {{ detail_ui.detail_row('Freshness Window', cluster.freshness_window_hours ~ ' Hours') }}
-                            {{ detail_ui.detail_row('Snapshot Source', cluster.snapshot_source, nowrap=True) }}
-                        </div>
+                        <dl class="grid min-w-0 gap-3">
+                            {{ detail_ui.stacked_detail_row('Last Collected', cluster.synced_at|user_datetime(date_format='day_month_numeric') if cluster.synced_at else 'Not Collected') }}
+                            {{ detail_ui.stacked_detail_row('Freshness Window', cluster.freshness_window_hours ~ ' Hours') }}
+                            {{ detail_ui.stacked_detail_row('Snapshot Source', cluster.snapshot_source) }}
+                        </dl>
                     {% endcall %}
                 </div>
                 {% call side_drawer.section(
