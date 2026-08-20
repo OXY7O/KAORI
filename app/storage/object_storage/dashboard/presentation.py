@@ -202,9 +202,7 @@ def _request_items(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
         signal_state = 'unknown'
         if request_rate is not None:
             signal_state = (
-                'critical'
-                if (error_ratio or 0) >= 5
-                else ('warning' if (error_ratio or 0) >= 1 else 'normal')
+                'critical' if (error_ratio or 0) >= 5 else ('warning' if (error_ratio or 0) >= 1 else 'normal')
             )
         items.append(
             {
@@ -237,7 +235,9 @@ def _consumer_insight(
         description = f'{missing_activity_count} bucket(s) do not have committed request-rate evidence.'
     else:
         title = 'Bucket Demand Is Distributed'
-        description = 'No dominant usage concentration or request-path evidence gap is present in the committed snapshot.'
+        description = (
+            'No dominant usage concentration or request-path evidence gap is present in the committed snapshot.'
+        )
     items: list[str] = []
     if top_share is not None:
         items.append(f'Top usage share {format_percent(top_share)}')

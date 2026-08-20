@@ -6,8 +6,7 @@
              aria-label="{{ title }} Bucket Consumers">
         <div class="mb-3 flex items-center justify-between gap-3">
             <div class="flex items-center gap-2">
-                <span class="h-2.5 w-2.5 rounded-full bg-kaori-primary"
-                      aria-hidden="true"></span>
+                <span class="h-2.5 w-2.5 rounded-full bg-kaori-primary" aria-hidden="true"></span>
                 <h3 class="text-sm font-semibold text-content-primary">{{ title }}</h3>
             </div>
             {{ table_label.metadata_label('Top 3', icon=icon) }}
@@ -92,11 +91,15 @@
             <dl class="grid grid-cols-2 gap-4 text-xs lg:min-w-[280px]">
                 <div>
                     <dt class="text-content-muted">Activity Gaps</dt>
-                    <dd class="mt-1 text-base font-semibold text-content-primary">{{ dashboard.top_consumers.missing_activity_count }} Buckets</dd>
+                    <dd class="mt-1 text-base font-semibold text-content-primary">
+                        {{ dashboard.top_consumers.missing_activity_count }} Buckets
+                    </dd>
                 </div>
                 <div>
                     <dt class="text-content-muted">High Usage</dt>
-                    <dd class="mt-1 text-base font-semibold text-content-primary">{{ dashboard.top_consumers.high_usage_count }} Buckets</dd>
+                    <dd class="mt-1 text-base font-semibold text-content-primary">
+                        {{ dashboard.top_consumers.high_usage_count }} Buckets
+                    </dd>
                 </div>
             </dl>
         </div>

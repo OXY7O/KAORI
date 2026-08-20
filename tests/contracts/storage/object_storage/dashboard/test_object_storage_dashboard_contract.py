@@ -43,6 +43,10 @@ def test_dashboard_route_and_service_are_snapshot_only() -> None:
     assert 'get_forecast_snapshot(' in service
     assert 'analytics_snapshot_state(' in service
     assert 'forecast_snapshot_state(' in service
+    assert 'def _alerts(selected: ObjectStorageSystem | None)' in service
+    assert "dashboard['alerts'] = _alerts(selected)" in service
+    assert "status_reason = 'Inventory & analytics ready.'" in service
+    assert 'Committed inventory and analytics evidence are available.' not in service
     assert 'ObjectStorageBucket' not in service
     for forbidden in (
         'source_setup(',
@@ -193,6 +197,15 @@ def test_capacity_dashboard_matches_kubernetes_forecast_and_top_consumer_pattern
     assert 'storage/object_storage/dashboard/partials/_forecast_risk.html' in capacity
     assert 'storage/object_storage/dashboard/partials/_top_consumers.html' in capacity
     for token in (
+        'components/operational_flow_steps.html',
+        'Data Scope',
+        'Overall Capacity Risk',
+        'What This Means',
+        'Recommended Action',
+        'Recommended Capacity Action Flow',
+    ):
+        assert token in capacity
+    for token in (
         'components/forecast_projection_chart.html',
         'Projected Storage Utilization Trend',
         'Historical usage is solid; the forward 30-day projection is dashed.',
@@ -236,6 +249,8 @@ def test_signals_and_reporting_match_kubernetes_dashboard_composition() -> None:
     ):
         assert token in signals
     assert 'Alerts Summary' in alerts
+    assert 'def _alerts(selected: ObjectStorageSystem | None)' in service
+    assert "'rows': rows[:3]" in service
     assert 'Alert Interpretation & Response' in response
     assert 'Controlled Response Flow' in response
     assert 'Recommended Actions' in actions

@@ -168,7 +168,7 @@ def _health_rows(systems: list[ObjectStorageSystem]) -> list[dict[str, Any]]:
         else:
             overall_status = 'Healthy'
             overall_tone = 'normal'
-            status_reason = 'Committed inventory and analytics evidence are available.'
+            status_reason = 'Inventory & analytics ready.'
 
         rows.append(
             {
@@ -363,6 +363,32 @@ def _capacity(selected: ObjectStorageSystem | None) -> dict[str, Any]:
         'headroom_display': str(metrics.get('headroom_percent_display') or 'N/A'),
         'posture': dict(metrics.get('capacity_posture') or {}),
         'reconciliation': list(metrics.get('reconciliation') or []),
+    }
+
+
+def _alerts(selected: ObjectStorageSystem | None) -> dict[str, Any]:
+    if selected is None:
+        return {
+            'available': False,
+            'critical': 0,
+            'warning': 0,
+            'info': 0,
+            'total': 0,
+            'source_label': 'Unavailable',
+            'rows': [],
+        }
+    payload, state = _snapshot_payload(selected)
+    stream, posture = _alert_view(payload)
+    rows = [row for row in stream.get('rows') or [] if isinstance(row, dict)]
+    return {
+        'available': bool(stream.get('connected')),
+        'snapshot': state,
+        'critical': int(posture.get('critical') or 0),
+        'warning': int(posture.get('warning') or 0),
+        'info': int(posture.get('info') or 0),
+        'total': int(posture.get('total') or 0),
+        'source_label': str(stream.get('resolved_label') or stream.get('label') or 'Unavailable'),
+        'rows': rows[:3],
     }
 
 

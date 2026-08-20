@@ -85,7 +85,9 @@
             <dl class="grid grid-cols-3 gap-3 text-xs lg:min-w-[300px]">
                 <div>
                     <dt class="text-content-muted">Total</dt>
-                    <dd class="mt-1 text-base font-semibold text-content-primary">{{ total_alerts }}</dd>
+                    <dd class="mt-1 text-base font-semibold text-content-primary">
+                        {{ total_alerts }}
+                    </dd>
                 </div>
                 <div>
                     <dt class="text-content-muted">Highest</dt>
@@ -103,7 +105,9 @@
                 </div>
                 <div>
                     <dt class="text-content-muted">Source</dt>
-                    <dd class="mt-1 truncate text-base font-semibold text-content-primary">{{ dashboard.alerts.source_label }}</dd>
+                    <dd class="mt-1 truncate text-base font-semibold text-content-primary">
+                        {{ dashboard.alerts.source_label }}
+                    </dd>
                 </div>
             </dl>
         </div>
