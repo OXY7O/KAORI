@@ -262,4 +262,3 @@ def test_bucket_forecast_watch_uses_shared_kaori_table_standard() -> None:
         assert f'>{label}<' in forecast
     assert 'data-object-storage-bucket-forecast-records' not in forecast
     assert 'lg:grid-cols-12' not in forecast
-

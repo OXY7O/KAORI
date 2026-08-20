@@ -4,7 +4,7 @@
 {% import "components/table_label.html" as table_label %}
 {% import "components/table.html" as table_ui %}
 {% set dashboard_tabs = [('overview', 'Operations Overview', 'activity'), ('capacity', 'Capacity & Demand', 'gauge'), ('signals', 'Signals & Actions', 'bell-ring'), ('reporting', 'Reporting', 'file-text')] %}
-{% set dashboard_query = 'system_id=' ~ (dashboard.selected_system_id or '') %}
+{% set dashboard_query = 'system_id=' ~ (dashboard.selected_system_id or '') ~ '&system_health_page=' ~ dashboard.system_health_pagination.page ~ '&system_health_per_page=' ~ dashboard.system_health_pagination.per_page %}
 <section class="{{ page_hero.shell_classes() }}">
     <div class="{{ page_hero.layout_classes() }}">
         <div class="{{ page_hero.content_classes() }}">

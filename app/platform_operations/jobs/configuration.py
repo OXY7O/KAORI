@@ -156,8 +156,7 @@ def _selected_job_context(definition: JobDefinition, policy: JobPolicy) -> dict[
             'label': 'Last Dispatch Failed',
             'tone': 'critical',
             'message': (
-                policy.last_dispatch_message
-                or 'The last scheduler dispatch failed before execution could start.'
+                policy.last_dispatch_message or 'The last scheduler dispatch failed before execution could start.'
             ),
         }
         if policy.last_dispatch_status == 'failed'

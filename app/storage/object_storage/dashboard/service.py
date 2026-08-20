@@ -6,6 +6,7 @@ from typing import Any
 from sqlalchemy import or_
 from sqlalchemy.orm import selectinload
 
+from app.common.pagination import paginate_sequence
 from app.models import Report, ReportSchedule, ReportTemplate
 from app.models.object_storage import ObjectStorageSystem
 from app.storage.object_storage.analytics.alert_sources import (
@@ -150,7 +151,7 @@ def _health_rows(systems: list[ObjectStorageSystem]) -> list[dict[str, Any]]:
         elif not analytics_usable:
             overall_status = 'Warning'
             overall_tone = 'warning'
-            status_reason = f"Analytics snapshot is {snapshot_state.get('label') or 'not ready'}."
+            status_reason = f'Analytics snapshot is {snapshot_state.get("label") or "not ready"}.'
         elif warning_alerts > 0:
             overall_status = 'Warning'
             overall_tone = 'warning'
@@ -466,10 +467,22 @@ def _reporting(selected: ObjectStorageSystem | None) -> dict[str, Any]:
     }
 
 
-def get_dashboard_overview(*, selected_system_id: str | None = None, active_tab: str = 'overview') -> dict[str, Any]:
+def get_dashboard_overview(
+    *,
+    selected_system_id: str | None = None,
+    system_health_page: str | int | None = 1,
+    system_health_per_page: int = 5,
+    active_tab: str = 'overview',
+) -> dict[str, Any]:
     systems = _systems()
     selected = _selected_system(systems, selected_system_id)
     inventory = _inventory_summary([selected] if selected is not None else systems)
+    health_scope = [selected] if selected is not None else systems
+    _visible_systems, health_pagination = paginate_sequence(
+        health_scope,
+        page=system_health_page,
+        per_page=system_health_per_page,
+    )
     return {
         'systems': [{'id': str(system.id), 'name': system.name} for system in systems],
         'selected_system_id': str(selected.id) if selected is not None else None,
@@ -488,19 +501,39 @@ def get_dashboard_overview(*, selected_system_id: str | None = None, active_tab:
             )
         ),
         'inventory': inventory,
+        'system_health_pagination': health_pagination,
     }
 
 
-def get_dashboard_section(section: str, *, selected_system_id: str | None = None) -> dict[str, Any]:
+def get_dashboard_section(
+    section: str,
+    *,
+    selected_system_id: str | None = None,
+    system_health_page: str | int | None = 1,
+    system_health_per_page: int = 5,
+) -> dict[str, Any]:
     systems = _systems()
     selected = _selected_system(systems, selected_system_id)
-    dashboard = get_dashboard_overview(selected_system_id=selected_system_id)
-    if section == 'kpi_cards':
-        dashboard['kpis'] = _dashboard_kpis(systems, selected)
-    elif section == 'overview':
-        dashboard['health_rows'] = _health_rows(systems)
+    dashboard = get_dashboard_overview(
+        selected_system_id=selected_system_id,
+        system_health_page=system_health_page,
+        system_health_per_page=system_health_per_page,
+    )
+    if section in {'overview', 'system_health'}:
+        health_scope = [selected] if selected is not None else systems
+        visible_systems, pagination = paginate_sequence(
+            health_scope,
+            page=system_health_page,
+            per_page=system_health_per_page,
+        )
+        dashboard['health_rows'] = _health_rows(visible_systems)
+        dashboard['system_health_pagination'] = pagination
+        if section == 'system_health':
+            return dashboard
         dashboard['inventory'] = _inventory_summary([selected] if selected is not None else systems)
         dashboard['freshness'] = _freshness(selected, systems)
+    elif section == 'kpi_cards':
+        dashboard['kpis'] = _dashboard_kpis(systems, selected)
     elif section == 'capacity':
         dashboard['capacity'] = _capacity(selected)
         dashboard['forecast'] = _forecast(selected)

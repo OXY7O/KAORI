@@ -598,10 +598,7 @@ def recover_stale_jobs() -> dict[str, int]:
         stale = False
         stale_reason = ''
         if job.status == 'queued':
-            stale = bool(
-                (job.expires_at is not None and job.expires_at < now)
-                or job.queued_at < queued_cutoff
-            )
+            stale = bool((job.expires_at is not None and job.expires_at < now) or job.queued_at < queued_cutoff)
             if stale:
                 stale_reason = 'queued_start_timeout'
         elif job.status in {'running', 'retrying'}:

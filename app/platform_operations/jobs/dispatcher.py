@@ -63,9 +63,7 @@ def ensure_task_registered_for_queue(*, task: object, queue_name: str) -> None:
         ) from exc
 
     task_workers = {
-        worker
-        for worker in queue_workers
-        if task_name in {str(name) for name in (registered.get(worker) or [])}
+        worker for worker in queue_workers if task_name in {str(name) for name in (registered.get(worker) or [])}
     }
     if task_workers:
         return
