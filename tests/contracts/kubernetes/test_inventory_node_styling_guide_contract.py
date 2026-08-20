@@ -71,6 +71,7 @@ def test_node_detail_uses_inline_detail_style_shared_primitives_and_operational_
     assert '{% macro detail_row' not in detail
     assert '{% macro detail_card' not in detail
     assert '{% macro technical_row' in shared
+    assert "technical_value.render(value, align='right', break_all=break_all, class_name='font-semibold', size='body')" in shared
     assert '{% macro summary_metric' in shared
 
 

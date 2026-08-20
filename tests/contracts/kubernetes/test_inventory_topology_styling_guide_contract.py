@@ -38,6 +38,10 @@ def test_topology_uses_the_adaptive_visualization_workspace() -> None:
     assert 'topology-clear-filters-button' in workspace
     assert 'hidden=not topology_filters_active' in workspace
     assert 'clearFiltersButton.hidden = !hasActiveFilters()' in script
+    assert 'placeholder="Search resources"' in workspace
+    assert 'Search and open a resource in the current topology scope.' not in workspace
+    assert 'topology-search-summary' not in workspace
+    assert 'searchSummary' not in script
 
 
 def test_topology_side_panes_are_always_on_demand_drawers() -> None:

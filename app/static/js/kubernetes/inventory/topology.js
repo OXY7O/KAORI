@@ -53,7 +53,6 @@ const startTopologyWorkspace = () => {
     const groupNamespaceToggle = $('topology-group-namespace-toggle')
     const relationshipToggles = Array.from(document.querySelectorAll('[data-topology-relationship-toggle]'))
     const resourceToggles = Array.from(document.querySelectorAll('[data-topology-resource-toggle]'))
-    const searchSummary = $('topology-search-summary')
     const filterSummary = $('topology-filter-summary')
     const clearFiltersButton = $('topology-clear-filters-button')
 
@@ -1544,7 +1543,6 @@ const startTopologyWorkspace = () => {
         activeSearchIndex = -1
         if (!normalized) {
             hideSearchResults()
-            if (searchSummary) searchSummary.textContent = 'Search and open a resource in the current topology scope.'
             return
         }
         const matches = visibleNodeRecords()
@@ -1606,8 +1604,6 @@ const startTopologyWorkspace = () => {
         }
         searchResults.classList.remove('hidden')
         searchInput.setAttribute('aria-expanded', 'true')
-        if (searchSummary)
-            searchSummary.textContent = `${matches.length} matching ${matches.length === 1 ? 'resource' : 'resources'} found.`
         window.lucide?.createIcons()
     }
 
@@ -1967,7 +1963,6 @@ const startTopologyWorkspace = () => {
         hideSearchResults()
         collapsedNodeIds = new Set()
         clearSelection()
-        if (searchSummary) searchSummary.textContent = 'Search and open a resource in the current topology scope.'
         syncClearFiltersVisibility()
         fetchGraph()
     })
