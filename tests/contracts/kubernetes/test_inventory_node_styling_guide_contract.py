@@ -74,7 +74,7 @@ def test_node_detail_uses_inline_detail_style_shared_primitives_and_operational_
     assert '{% macro inventory_row' in shared
     assert '{% macro inventory_technical_row' in shared
     assert (
-        "technical_value.render(value, align='left', break_all=break_all, class_name='font-semibold', size='body')"
+        "technical_value.render(value, align='left', break_all=break_all, class_name='font-medium', size='body')"
         in shared
     )
     assert '{% macro inventory_fact_grid' in shared
@@ -110,3 +110,17 @@ def test_pagination_component_supports_numeric_links_and_preserves_query_state()
     assert 'window_start' in pagination
     assert 'window_end' in pagination
     assert 'hx_target=None' in pagination
+
+
+def test_node_detail_factual_rows_use_one_calm_body_typography_scale() -> None:
+    shared = read('app/templates/components/details/_detail_content.html')
+    metadata = read('app/templates/components/technical_metadata_collection.html')
+    node = read('app/templates/kubernetes/inventory/nodes/partials/_node_detail_content.html')
+
+    assert 'text-sm font-medium leading-5 text-content-secondary' in shared
+    assert 'text-left text-sm font-medium leading-5 text-content-primary' in shared
+    assert "class_name='font-medium', size='body'" in shared
+    assert 'text-sm font-medium leading-5 text-content-secondary' in metadata
+    assert 'text-sm font-medium leading-5 text-content-primary' in metadata
+    assert 'bg-surface-hover' not in metadata
+    assert "technical_value.render(taint, break_all=true, class_name='font-medium', size='body')" in node

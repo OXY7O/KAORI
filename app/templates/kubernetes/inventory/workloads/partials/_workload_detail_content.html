@@ -97,7 +97,7 @@
                                         <td class="{{ table_ui.cell_classes() }}"><span class="text-sm font-semibold text-content-primary">{{ condition.type }}</span></td>
                                         <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_indicator_label(condition.status, condition.tone) }}</td>
                                         <td class="{{ table_ui.cell_classes() }}"><span class="text-sm font-medium text-content-primary">{{ condition.reason }}</span></td>
-                                        <td class="{{ table_ui.cell_classes() }}">{{ technical_value.render(condition.last_transition_time, class_name='font-semibold', size='body') }}</td>
+                                        <td class="{{ table_ui.cell_classes() }}">{{ technical_value.render(condition.last_transition_time, class_name='font-medium', size='body') }}</td>
                                         <td class="{{ table_ui.cell_classes() }}">
                                             <p class="break-words text-sm leading-5 text-content-secondary [overflow-wrap:anywhere]">{{ condition.message }}</p>
                                         </td>
@@ -167,7 +167,7 @@
                                     <tr class="{{ table_ui.row_classes() }}">
                                         <td class="{{ table_ui.cell_classes() }}"><span class="text-sm font-semibold text-content-primary">{{ container.name }}</span></td>
                                         <td class="{{ table_ui.cell_classes() }}">{{ table_label.metadata_label(container.kind) }}</td>
-                                        <td class="{{ table_ui.cell_classes() }}">{{ technical_value.render(container.image, break_all=true, class_name='font-semibold', size='body') }}</td>
+                                        <td class="{{ table_ui.cell_classes() }}">{{ technical_value.render(container.image, break_all=true, class_name='font-medium', size='body') }}</td>
                                         <td class="{{ table_ui.cell_classes() }}"><span class="text-sm font-medium text-content-primary">{{ container.pull_policy or 'Not Reported' }}</span></td>
                                     </tr>
                                 {% endfor %}

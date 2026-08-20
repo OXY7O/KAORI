@@ -58,12 +58,12 @@ Inventory View Details uses one predictable scale across Node, Namespace, Worklo
 Resource title       text-lg / semibold
 Summary value        text-base / semibold
 Section/card title   text-sm / semibold
-Field value          text-sm / semibold
-Field label          text-xs / medium
-Supporting copy      text-xs / regular
+Field label          text-sm / medium / secondary
+Field value          text-sm / medium / primary
+Supporting copy      text-xs / regular / muted
 ```
 
-Technical identifiers use the same `text-sm` body value scale through `technical_value.render(..., size='body')`. Do not create smaller monospace or arbitrary-size value typography inside Inventory details. Metadata pair collections follow the same muted-label / emphasized-value hierarchy.
+Technical identifiers use the same `text-sm / medium` body value scale through `technical_value.render(..., size='body')`. Inventory field labels and factual values intentionally share the same 14px body scale; hierarchy comes from tone and weight, not arbitrary font-size jumps. Supporting copy alone steps down to `text-xs`. Do not create smaller monospace or arbitrary-size value typography inside Inventory details. Metadata pair collections follow the same secondary-label / primary-value hierarchy.
 
 ### Content order
 
@@ -106,4 +106,4 @@ Full-width relationships / large collections
 Operational boundary and next action
 ```
 
-Use one section boundary per evidence domain. Do not wrap every metric in a standalone rounded card. Large key inventories use the grouped shared collection surface so dozens of keys remain scannable without producing a wall of floating tiles. Identity and technical values share the same `text-sm / semibold` body scale; only labels and supporting copy step down to `text-xs`.
+Use one section boundary per evidence domain. Do not wrap every metric in a standalone rounded card. Large key inventories use the grouped shared collection surface so dozens of keys remain scannable without producing a wall of floating tiles. Identity labels and factual values share the same `text-sm` body scale. Labels use medium secondary text, values use medium primary text, section titles use semibold, and only supporting copy steps down to `text-xs`.

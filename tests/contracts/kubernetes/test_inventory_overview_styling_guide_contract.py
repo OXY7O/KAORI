@@ -86,8 +86,8 @@ def test_compact_cluster_table_has_details_button_and_shared_right_drawer() -> N
     assert '>Cluster</h4>' not in context
     assert '>Snapshot</h4>' not in context
     assert context.count('side_drawer.context_fact(') == 6
-    assert "text-sm font-semibold leading-5 text-content-primary" in drawer
-    assert "text-xs font-medium leading-5" in drawer
+    assert 'text-sm font-semibold leading-5 text-content-primary' in drawer
+    assert 'text-xs font-medium leading-5' in drawer
 
 
 def test_cluster_table_pagination_uses_resource_case_and_visible_rows_label() -> None:

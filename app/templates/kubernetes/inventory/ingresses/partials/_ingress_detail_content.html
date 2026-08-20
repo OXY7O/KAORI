@@ -110,8 +110,8 @@
                             <tbody class="{{ table_ui.body_classes() }}">
                                 {% for backend in ingress.backend_paths %}
                                     <tr class="{{ table_ui.row_classes() }}">
-                                        <td class="{{ table_ui.cell_classes() }}">{{ technical_value.render(backend.host, class_name='font-semibold', size='body') }}</td>
-                                        <td class="{{ table_ui.cell_classes() }}">{{ technical_value.render(backend.path, class_name='font-semibold', size='body') }}</td>
+                                        <td class="{{ table_ui.cell_classes() }}">{{ technical_value.render(backend.host, class_name='font-medium', size='body') }}</td>
+                                        <td class="{{ table_ui.cell_classes() }}">{{ technical_value.render(backend.path, class_name='font-medium', size='body') }}</td>
                                         <td class="{{ table_ui.cell_classes() }}">{{ table_label.metadata_label(backend.route_source) }}</td>
                                         <td class="{{ table_ui.cell_classes() }}">{{ table_label.metadata_label(backend.path_type) }}</td>
                                         <td class="{{ table_ui.cell_classes() }}">

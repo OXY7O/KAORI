@@ -112,34 +112,34 @@
                 {% endif %}
             {% endif %}
         </header>
-        <div class="space-y-2.5 p-4 sm:p-5">{{ caller() }}</div>
+        <div class="space-y-2 p-4 sm:p-5">{{ caller() }}</div>
     </section>
 {%- endmacro %}
 {% macro inventory_row(label, value='-', break_all=False, nowrap=False) -%}
     {% set display_value = value if value not in [None, ''] else '-' %}
     {% set value_wrap_classes = 'whitespace-nowrap' if nowrap else ('break-all' if break_all else 'break-words') %}
     <div class="grid min-w-0 gap-1 sm:grid-cols-[minmax(8rem,0.34fr)_minmax(0,1fr)] sm:items-start sm:gap-4">
-        <span class="min-w-0 break-words text-xs font-medium leading-5 text-content-muted [overflow-wrap:anywhere]">{{ label }}</span>
-        <span class="min-w-0 {{ value_wrap_classes }} text-left text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]"
+        <span class="min-w-0 break-words text-sm font-medium leading-5 text-content-secondary [overflow-wrap:anywhere]">{{ label }}</span>
+        <span class="min-w-0 {{ value_wrap_classes }} text-left text-sm font-medium leading-5 text-content-primary [overflow-wrap:anywhere]"
               title="{{ display_value }}">{{ display_value }}</span>
     </div>
 {%- endmacro %}
 {% macro inventory_technical_row(label, value='-', break_all=True) -%}
     <div class="grid min-w-0 gap-1 sm:grid-cols-[minmax(8rem,0.34fr)_minmax(0,1fr)] sm:items-start sm:gap-4">
-        <span class="min-w-0 break-words text-xs font-medium leading-5 text-content-muted [overflow-wrap:anywhere]">{{ label }}</span>
-        <span class="min-w-0 text-left">{{ technical_value.render(value, align='left', break_all=break_all, class_name='font-semibold', size='body') }}</span>
+        <span class="min-w-0 break-words text-sm font-medium leading-5 text-content-secondary [overflow-wrap:anywhere]">{{ label }}</span>
+        <span class="min-w-0 text-left">{{ technical_value.render(value, align='left', break_all=break_all, class_name='font-medium', size='body') }}</span>
     </div>
 {%- endmacro %}
 {% macro inventory_status_row(label, value, tone='unknown', icon=None, size='compact') -%}
     <div class="grid min-w-0 gap-1 sm:grid-cols-[minmax(8rem,0.34fr)_minmax(0,1fr)] sm:items-start sm:gap-4">
-        <span class="min-w-0 break-words text-xs font-medium leading-5 text-content-muted [overflow-wrap:anywhere]">{{ label }}</span>
+        <span class="min-w-0 break-words text-sm font-medium leading-5 text-content-secondary [overflow-wrap:anywhere]">{{ label }}</span>
         <span class="flex min-w-0 justify-start">{{ table_label.status_label(value, tone, icon, size) }}</span>
     </div>
 {%- endmacro %}
 {% macro inventory_metadata_row(label, value='-', icon=None, wrap=False) -%}
     {% set display_value = value if value not in [None, ''] else '-' %}
     <div class="grid min-w-0 gap-1 sm:grid-cols-[minmax(8rem,0.34fr)_minmax(0,1fr)] sm:items-start sm:gap-4">
-        <span class="min-w-0 break-words text-xs font-medium leading-5 text-content-muted [overflow-wrap:anywhere]">{{ label }}</span>
+        <span class="min-w-0 break-words text-sm font-medium leading-5 text-content-secondary [overflow-wrap:anywhere]">{{ label }}</span>
         <span class="flex min-w-0 justify-start">{{ table_label.metadata_label(display_value, icon, wrap, 'detail') }}</span>
     </div>
 {%- endmacro %}

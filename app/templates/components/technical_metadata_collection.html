@@ -17,7 +17,7 @@
                     {% for entry in entries %}
                         {% set key = entry[0] if entry is sequence and entry is not string else entry %}
                         <div class="min-w-0 bg-surface-card px-3 py-2.5">
-                            <p class="break-words text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]">{{ key }}</p>
+                            <p class="break-words text-sm font-medium leading-5 text-content-primary [overflow-wrap:anywhere]">{{ key }}</p>
                         </div>
                     {% endfor %}
                 </div>
@@ -28,8 +28,8 @@
                         {% set record_value = entry.status if entry.status is defined else (entry.value if entry.value is defined else '-') %}
                         {% set record_reason = entry.reason if entry.reason is defined else (entry.message if entry.message is defined else none) %}
                         <article class="min-w-0 bg-surface-card px-3.5 py-3">
-                            <p class="break-words text-xs font-medium leading-5 text-content-muted [overflow-wrap:anywhere]">{{ record_label }}</p>
-                            <p class="mt-0.5 break-words text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]">{{ record_value }}</p>
+                            <p class="break-words text-sm font-medium leading-5 text-content-secondary [overflow-wrap:anywhere]">{{ record_label }}</p>
+                            <p class="mt-0.5 break-words text-sm font-medium leading-5 text-content-primary [overflow-wrap:anywhere]">{{ record_value }}</p>
                             {% if record_reason %}
                                 <p class="mt-0.5 whitespace-pre-wrap break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]">{{ record_reason }}</p>
                             {% endif %}
@@ -37,14 +37,14 @@
                     {% endfor %}
                 </div>
             {% else %}
-                <div class="min-w-0 overflow-hidden rounded-lg border border-outline-subtle bg-surface-hover">
+                <div class="min-w-0 overflow-hidden rounded-lg border border-outline-subtle bg-surface-card">
                     {% set pairs = entries.items() if entries.items is defined else entries %}
                     {% for key, value in pairs %}
                         {# Keep Tailwind arbitrary grid tracks token-contiguous; djLint otherwise inserts a breaking space. #}
                         {# djlint:off #}
                         <div class="grid min-w-0 gap-1 border-b border-outline-subtle px-3 py-2.5 last:border-b-0 {{ 'sm:grid-cols-[minmax(7rem,0.34fr)_minmax(0,1fr)] sm:gap-3' if compact_pairs else 'lg:grid-cols-[minmax(15rem,0.42fr)_minmax(0,1fr)] lg:gap-4' }}">
-                            <span class="min-w-0 break-words text-xs font-medium leading-5 text-content-muted [overflow-wrap:anywhere]">{{ key }}</span>
-                            <span class="min-w-0 whitespace-pre-wrap break-words text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]">{{ value if value not in [None, ''] else '-' }}</span>
+                            <span class="min-w-0 break-words text-sm font-medium leading-5 text-content-secondary [overflow-wrap:anywhere]">{{ key }}</span>
+                            <span class="min-w-0 whitespace-pre-wrap break-words text-sm font-medium leading-5 text-content-primary [overflow-wrap:anywhere]">{{ value if value not in [None, ''] else '-' }}</span>
                         </div>
                         {# djlint:on #}
                     {% endfor %}

@@ -60,22 +60,23 @@ def test_inventory_detail_typography_has_one_predictable_hierarchy() -> None:
     technical = read('app/templates/components/technical_value.html')
     runtime = read('app/templates/components/container_runtime_collection.html')
 
-    # Resource title -> section title -> factual value -> field/supporting label.
+    # Resource title -> summary value -> section title -> one body scale for field label/value -> supporting copy.
     assert 'text-lg font-semibold leading-7 text-content-primary' in shared
+    assert 'text-base font-semibold leading-6 text-content-primary' in shared
     assert 'text-sm font-semibold leading-5 text-content-primary' in shared
-    assert 'text-left text-sm font-semibold leading-5 text-content-primary' in shared
-    assert 'text-xs font-medium leading-5 text-content-muted' in shared
+    assert 'text-sm font-medium leading-5 text-content-secondary' in shared
+    assert 'text-left text-sm font-medium leading-5 text-content-primary' in shared
     assert "size='body'" in shared
     assert "'text-sm leading-5' if size == 'body'" in technical
     assert (
-        "technical_value.render(container.image or 'Not Reported', break_all=true, class_name='font-semibold', size='body')"
+        "technical_value.render(container.image or 'Not Reported', break_all=true, class_name='font-medium', size='body')"
         in runtime
     )
     assert 'text-sm font-semibold tabular-nums text-content-primary' in runtime
 
-    # Metadata key/value pairs follow the same label/value hierarchy instead of reversing emphasis.
-    assert 'text-xs font-medium leading-5 text-content-muted' in metadata
-    assert 'text-sm font-semibold leading-5 text-content-primary' in metadata
+    # Metadata key/value pairs use the same 14px body scale and differ by tone rather than size.
+    assert 'text-sm font-medium leading-5 text-content-secondary' in metadata
+    assert 'text-sm font-medium leading-5 text-content-primary' in metadata
 
     for resource, filename in DETAIL_FILES.items():
         detail = read(f'app/templates/kubernetes/inventory/{resource}/partials/{filename}')

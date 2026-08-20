@@ -81,7 +81,7 @@
                     {% if node.taints %}
                         <div class="mt-2 grid min-w-0 gap-2 sm:grid-cols-2">
                             {% for taint in node.taints %}
-                                <div class="min-w-0 rounded-lg border border-outline-subtle bg-surface-card px-3 py-2.5">{{ technical_value.render(taint, break_all=true, class_name='font-semibold', size='body') }}</div>
+                                <div class="min-w-0 rounded-lg border border-outline-subtle bg-surface-card px-3 py-2.5">{{ technical_value.render(taint, break_all=true, class_name='font-medium', size='body') }}</div>
                             {% endfor %}
                         </div>
                     {% else %}

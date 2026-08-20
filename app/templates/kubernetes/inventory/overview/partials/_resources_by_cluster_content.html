@@ -191,7 +191,7 @@
                     ) %}
                     <dl class="grid gap-y-3 border-t border-outline-subtle pt-3 sm:grid-cols-3 sm:gap-y-0">
                         <div class="min-w-0 sm:pb-3 sm:pr-4">
-                            {{ side_drawer.context_fact('Environment', cluster.environment|environment_name(empty='Not Specified'), 'cloud-cog') }}
+                            {{ side_drawer.context_fact('Environment', cluster.environment|environment_name(empty='Not Specified') , 'cloud-cog') }}
                         </div>
                         <div class="min-w-0 sm:border-l sm:border-outline-subtle sm:px-4 sm:pb-3">
                             {{ side_drawer.context_fact('Kubernetes Version', cluster.kubernetes_version, 'badge-check') }}

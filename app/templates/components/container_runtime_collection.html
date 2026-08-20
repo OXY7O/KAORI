@@ -50,7 +50,7 @@
                                     {% endif %}
                                 </td>
                                 <td class="{{ table_ui.cell_classes() }}">
-                                    {{ technical_value.render(container.image or 'Not Reported', break_all=true, class_name='font-semibold', size='body') }}
+                                    {{ technical_value.render(container.image or 'Not Reported', break_all=true, class_name='font-medium', size='body') }}
                                     <p class="mt-1 text-xs leading-5 text-content-muted">Pull Policy · {{ container.pull_policy or 'Not Reported' }}</p>
                                 </td>
                                 <td class="{{ table_ui.cell_classes() }}">

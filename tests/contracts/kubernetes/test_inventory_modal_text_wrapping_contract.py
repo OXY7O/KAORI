@@ -27,7 +27,7 @@ def test_inventory_technical_metadata_uses_readable_wrapping_columns() -> None:
     assert 'sm:grid-cols-[minmax(7rem,0.34fr)_minmax(0,1fr)]' in component
     assert 'sm:grid-cols-[minmax(7rem,0.34fr) _minmax(0,1fr)]' not in component
     assert '{# djlint:off #}' in component and '{# djlint:on #}' in component
-    assert 'text-xs font-medium' in component
+    assert 'text-sm font-medium leading-5 text-content-secondary' in component
     assert 'whitespace-pre-wrap' in component
     assert '[overflow-wrap:anywhere]' in component
     assert 'max-h-' not in component

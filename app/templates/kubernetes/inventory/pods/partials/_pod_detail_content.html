@@ -128,7 +128,7 @@
                                     <tr class="{{ table_ui.row_classes() }}">
                                         <td class="{{ table_ui.cell_classes() }}"><span class="text-sm font-semibold text-content-primary">{{ volume.name }}</span></td>
                                         <td class="{{ table_ui.cell_classes() }}">{{ table_label.metadata_label(volume.type) }}</td>
-                                        <td class="{{ table_ui.cell_classes() }}">{{ technical_value.render(volume.source, break_all=true, class_name='font-semibold', size='body') }}</td>
+                                        <td class="{{ table_ui.cell_classes() }}">{{ technical_value.render(volume.source, break_all=true, class_name='font-medium', size='body') }}</td>
                                         <td class="{{ table_ui.cell_classes() }}"><span class="text-sm font-medium text-content-primary">{{ volume.mounted_by|join(", ") if volume.mounted_by else 'Not Mounted' }}</span></td>
                                     </tr>
                                 {% endfor %}

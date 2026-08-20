@@ -49,7 +49,7 @@ def test_volume_source_uses_body_typography() -> None:
     technical = read('app/templates/components/technical_value.html')
 
     assert (
-        "technical_value.render(volume.source, break_all=true, class_name='font-semibold', size='body')" in pod_detail
+        "technical_value.render(volume.source, break_all=true, class_name='font-medium', size='body')" in pod_detail
     )
     assert "size='compact'" in technical
     assert "'text-sm leading-5' if size == 'body'" in technical
