@@ -70,12 +70,17 @@ def test_node_detail_uses_inline_detail_style_shared_primitives_and_operational_
     assert 'node.operational_context.title' in detail
     assert '{% macro detail_row' not in detail
     assert '{% macro detail_card' not in detail
-    assert '{% macro technical_row' in shared
+    assert '{% macro inventory_section' in shared
+    assert '{% macro inventory_row' in shared
+    assert '{% macro inventory_technical_row' in shared
     assert (
-        "technical_value.render(value, align='right', break_all=break_all, class_name='font-semibold', size='body')"
+        "technical_value.render(value, align='left', break_all=break_all, class_name='font-semibold', size='body')"
         in shared
     )
-    assert '{% macro summary_metric' in shared
+    assert '{% macro inventory_fact_grid' in shared
+    assert 'detail.inventory_section(' in detail
+    assert 'detail.inventory_technical_row(' in detail
+    assert 'detail.inventory_fact_grid(' in detail
 
 
 def test_node_inventory_registers_detail_and_technical_value_standards() -> None:

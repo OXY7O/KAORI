@@ -9,13 +9,17 @@
 <div data-kaori-detail-variant="full-workspace-modal"
      data-kaori-detail-density="adaptive-stacks"
      data-kaori-inventory-detail="v2"
+     data-kaori-inventory-detail-layout="evidence-workspace"
      class="{{ detail.expanded_workspace_outer_classes() }}">
     <div class="{{ detail.expanded_workspace_shell_classes() }}">
-        {% set detail_description = 'Runtime, placement, container, storage, and configuration evidence from the committed snapshot.' %}
-        {% call detail.workspace_header(pod.name, detail_description, 'package') %}
-            {{ table_label.metadata_label(pod.owner_type or 'Standalone') }}
-            {{ table_label.metadata_label(pod.namespace, 'folder-tree') }}
-            {{ table_label.status_indicator_label(pod.operational_state_label, pod.operational_state_tone, size='detail') }}
+        {% set detail_description = "Runtime, placement, container, storage, and configuration evidence from the committed snapshot." %}
+        {% call detail.workspace_header(detail_description, 'package') %}
+            {% call detail.header_identity_row() %}
+                {{ detail.inventory_title(pod.name) }}
+                {{ table_label.metadata_label(pod.owner_type or 'Standalone') }}
+                {{ table_label.metadata_label(pod.namespace, 'folder-tree') }}
+                {{ table_label.status_indicator_label(pod.operational_state_label, pod.operational_state_tone, size='detail') }}
+            {% endcall %}
         {% endcall %}
         {{ detail.summary_strip([
                 ('Runtime State', pod.operational_state_label, pod.state_evidence) ,
@@ -25,17 +29,17 @@
         ], compact=true) }}
         <div class="grid items-start gap-4 p-5 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
             <div class="space-y-4">
-                {% call detail.detail_card('Pod Identity', 'badge-info', pod.age, badge_size='detail', stretch=false, density='compact') %}
-                    {{ detail.detail_row('Cluster', pod.cluster_name) }}
-                    {{ detail.detail_row('Namespace', pod.namespace) }}
-                    {{ detail.detail_row('Owner', pod.owner_display) }}
-                    {{ detail.detail_row('Age', pod.age) }}
-                    {{ detail.technical_row('Kubernetes UID', pod.uid) }}
-                    {{ detail.detail_row('Created', pod.created_at|user_datetime if pod.created_at else 'Not Reported') }}
-                    {{ detail.detail_row('Collected', pod.collected_at|user_datetime if pod.collected_at else 'Not Reported') }}
+                {% call detail.inventory_section('Pod Identity', 'badge-info', pod.age, badge_size='detail', stretch=false, density='compact') %}
+                    {{ detail.inventory_row('Cluster', pod.cluster_name) }}
+                    {{ detail.inventory_row('Namespace', pod.namespace) }}
+                    {{ detail.inventory_row('Owner', pod.owner_display) }}
+                    {{ detail.inventory_row('Age', pod.age) }}
+                    {{ detail.inventory_technical_row('Kubernetes UID', pod.uid) }}
+                    {{ detail.inventory_row('Created', pod.created_at|user_datetime if pod.created_at else 'Not Reported') }}
+                    {{ detail.inventory_row('Collected', pod.collected_at|user_datetime if pod.collected_at else 'Not Reported') }}
                 {% endcall %}
-                {% call detail.detail_card('Runtime & Conditions', 'activity', pod.operational_state_label, 'status', pod.operational_state_tone, badge_size='detail', stretch=false, density='compact') %}
-                    {{ detail.evidence_grid([
+                {% call detail.inventory_section('Runtime & Conditions', 'activity', pod.operational_state_label, 'status', pod.operational_state_tone, badge_size='detail', stretch=false, density='compact') %}
+                    {{ detail.inventory_fact_grid([
                                         {'label': 'Kubernetes Phase', 'value': pod.status},
                                         {'label': 'Lifecycle State', 'value': pod.lifecycle_phase},
                                         {'label': 'Ready Containers', 'value': pod.ready},
@@ -46,7 +50,7 @@
                     <div class="mt-3">
                         {{ detail.subsection('Reported Conditions', 'Condition status is interpreted by condition type, not by boolean value alone.') }}
                         {% if pod.condition_evidence_rows %}
-                            {{ detail.evidence_grid(pod.condition_evidence_rows, columns=2) }}
+                            {{ detail.inventory_fact_grid(pod.condition_evidence_rows, columns=2) }}
                         {% elif pod.condition_evidence_reported %}
                             {{ detail.empty_evidence('No Conditions Reported', 'The Kubernetes API reported no Pod condition records in this committed snapshot.', 'list-checks') }}
                         {% else %}
@@ -62,11 +66,11 @@
                 {% endcall %}
             </div>
             <div class="space-y-4">
-                {% call detail.detail_card('Placement & Network', 'map-pin', pod.node or 'Not Scheduled', badge_size='detail', stretch=false, density='compact') %}
-                    {{ detail.evidence_grid(pod.placement_rows, columns=3) }}
+                {% call detail.inventory_section('Placement & Network', 'map-pin', pod.node or 'Not Scheduled', badge_size='detail', stretch=false, density='compact') %}
+                    {{ detail.inventory_fact_grid(pod.placement_rows, columns=3) }}
                     <div class="mt-3">
                         {{ detail.subsection("Placement Constraints") }}
-                        {{ detail.evidence_grid(pod.placement_evidence_rows, columns=2) }}
+                        {{ detail.inventory_fact_grid(pod.placement_evidence_rows, columns=2) }}
                     </div>
                     <div class="mt-4 grid items-start gap-4 lg:grid-cols-2">
                         {{ metadata_collection.render('Node Selectors',
@@ -84,9 +88,9 @@
                                                 compact_pairs=true) }}
                     </div>
                 {% endcall %}
-                {% call detail.detail_card('Pod Specification', 'settings-2', (pod.configuration.container_count ~ ' Containers') if pod.specification_evidence_reported and pod.configuration.container_count is not none else 'Not Reported', badge_size='detail', stretch=false, density='compact') %}
+                {% call detail.inventory_section('Pod Specification', 'settings-2', (pod.configuration.container_count ~ ' Containers') if pod.specification_evidence_reported and pod.configuration.container_count is not none else 'Not Reported', badge_size='detail', stretch=false, density='compact') %}
                     {% if pod.specification_evidence_reported %}
-                        {{ detail.evidence_grid(pod.specification_rows, columns=3) }}
+                        {{ detail.inventory_fact_grid(pod.specification_rows, columns=3) }}
                         <p class="mt-3 text-xs leading-5 text-content-muted">QoS, restart, DNS, network, and security configuration remain factual evidence until compared with an explicit governance policy.</p>
                     {% else %}
                         {{ detail.empty_evidence('Pod Specification Not Reported', 'Authoritative Pod specification evidence was not available in the committed snapshot.', 'settings-2') }}
@@ -124,7 +128,7 @@
                                     <tr class="{{ table_ui.row_classes() }}">
                                         <td class="{{ table_ui.cell_classes() }}"><span class="text-sm font-semibold text-content-primary">{{ volume.name }}</span></td>
                                         <td class="{{ table_ui.cell_classes() }}">{{ table_label.metadata_label(volume.type) }}</td>
-                                        <td class="{{ table_ui.cell_classes() }}">{{ technical_value.render(volume.source, break_all=true, size='body') }}</td>
+                                        <td class="{{ table_ui.cell_classes() }}">{{ technical_value.render(volume.source, break_all=true, class_name='font-semibold', size='body') }}</td>
                                         <td class="{{ table_ui.cell_classes() }}"><span class="text-sm font-medium text-content-primary">{{ volume.mounted_by|join(", ") if volume.mounted_by else 'Not Mounted' }}</span></td>
                                     </tr>
                                 {% endfor %}

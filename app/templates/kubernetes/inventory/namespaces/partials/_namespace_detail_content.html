@@ -5,12 +5,16 @@
 <div data-kaori-detail-variant="full-workspace-modal"
      data-kaori-detail-density="adaptive-stacks"
      data-kaori-inventory-detail="v2"
+     data-kaori-inventory-detail-layout="evidence-workspace"
      class="{{ detail.expanded_workspace_outer_classes() }}">
     <div class="{{ detail.expanded_workspace_shell_classes() }}">
-        {% set detail_description = 'Lifecycle, controls, composition, and security evidence from the committed snapshot.' %}
-        {% call detail.workspace_header(namespace.namespace, detail_description, 'folder-tree') %}
-            {{ table_label.metadata_label(namespace.cluster_name, 'building-2') }}
-            {{ table_label.status_indicator_label(namespace.lifecycle_label, namespace.lifecycle_tone, size='detail') }}
+        {% set detail_description = "Lifecycle, controls, composition, and security evidence from the committed snapshot." %}
+        {% call detail.workspace_header(detail_description, 'folder-tree') %}
+            {% call detail.header_identity_row() %}
+                {{ detail.inventory_title(namespace.namespace) }}
+                {{ table_label.metadata_label(namespace.cluster_name, 'building-2') }}
+                {{ table_label.status_indicator_label(namespace.lifecycle_label, namespace.lifecycle_tone, size='detail') }}
+            {% endcall %}
         {% endcall %}
         {{ detail.summary_strip([
                 ('Lifecycle', namespace.lifecycle_label, '') ,
@@ -20,16 +24,16 @@
         ], compact=true) }}
         <div class="grid items-start gap-4 p-5 xl:grid-cols-[minmax(0,0.82fr)_minmax(0,1.18fr)]">
             <div class="space-y-4">
-                {% call detail.detail_card('Namespace Identity', 'badge-info', namespace.age, badge_size='detail', stretch=false, density='compact') %}
-                    {{ detail.status_row('Lifecycle', namespace.lifecycle_label, namespace.lifecycle_tone, size='detail') }}
-                    {{ detail.detail_row('Age', namespace.age) }}
-                    {{ detail.technical_row('UID', namespace.uid) }}
-                    {{ detail.detail_row('Created', namespace.created_at|user_datetime if namespace.created_at else '-') }}
-                    {{ detail.detail_row('Collected', namespace.collected_at|user_datetime) }}
-                    {{ detail.detail_row('Cluster', namespace.cluster_name) }}
+                {% call detail.inventory_section('Namespace Identity', 'badge-info', namespace.age, badge_size='detail', stretch=false, density='compact') %}
+                    {{ detail.inventory_status_row('Lifecycle', namespace.lifecycle_label, namespace.lifecycle_tone, size='detail') }}
+                    {{ detail.inventory_row('Age', namespace.age) }}
+                    {{ detail.inventory_technical_row('UID', namespace.uid) }}
+                    {{ detail.inventory_row('Created', namespace.created_at|user_datetime if namespace.created_at else '-') }}
+                    {{ detail.inventory_row('Collected', namespace.collected_at|user_datetime) }}
+                    {{ detail.inventory_row('Cluster', namespace.cluster_name) }}
                 {% endcall %}
-                {% call detail.detail_card('Access & Security', 'shield-check', namespace.pod_security_enforce_display, badge_size='detail', stretch=false, density='compact') %}
-                    {{ detail.evidence_grid([
+                {% call detail.inventory_section('Access & Security', 'shield-check', namespace.pod_security_enforce_display, badge_size='detail', stretch=false, density='compact') %}
+                    {{ detail.inventory_fact_grid([
                                         ('NetworkPolicies', namespace.network_policy_count if namespace.network_policy_count is not none else 'Not Reported', '') ,
                     ('ServiceAccounts', namespace.service_account_count if namespace.service_account_count is not none else 'Not Reported', ''),
                     ('Default ServiceAccount', namespace.default_service_account, ''),
@@ -46,8 +50,8 @@
                 {% endcall %}
             </div>
             <div class="space-y-4">
-                {% call detail.detail_card('Object Composition', 'boxes', namespace.object_counts.evidence_display, badge_size='detail', stretch=false, density='compact') %}
-                    {{ detail.evidence_grid([
+                {% call detail.inventory_section('Object Composition', 'boxes', namespace.object_counts.evidence_display, badge_size='detail', stretch=false, density='compact') %}
+                    {{ detail.inventory_fact_grid([
                                         ('Workloads', namespace.object_counts.workloads, '') ,
                     ('Pods', namespace.object_counts.pods, ''),
                     ('Services', namespace.object_counts.services, ''),
@@ -65,7 +69,7 @@
                     {% if namespace.object_counts.workloads > 0 %}
                         <div class="pt-1">
                             {{ detail.subsection("Workload Breakdown") }}
-                            {{ detail.evidence_grid([
+                            {{ detail.inventory_fact_grid([
                                                         ('Deployments', namespace.workload_breakdown.deployments, '') ,
                             ('StatefulSets', namespace.workload_breakdown.statefulsets, ''),
                             ('DaemonSets', namespace.workload_breakdown.daemonsets, ''),
@@ -77,8 +81,8 @@
                         {{ detail.empty_evidence('No Workload Objects Collected', 'No controller or batch workload was present in the committed snapshot.', 'layout-grid') }}
                     {% endif %}
                 {% endcall %}
-                {% call detail.detail_card('Resource Controls', 'sliders-horizontal', namespace.control_evidence_display, badge_size='detail', stretch=false, density='compact') %}
-                    {{ detail.evidence_grid([
+                {% call detail.inventory_section('Resource Controls', 'sliders-horizontal', namespace.control_evidence_display, badge_size='detail', stretch=false, density='compact') %}
+                    {{ detail.inventory_fact_grid([
                                         ('ResourceQuota', namespace.quota_display, '') ,
                     ('LimitRange', namespace.limit_range_display, ''),
                     ('NetworkPolicy', namespace.network_policy_display, ''),

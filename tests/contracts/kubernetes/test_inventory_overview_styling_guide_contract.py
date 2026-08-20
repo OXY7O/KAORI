@@ -69,22 +69,25 @@ def test_compact_cluster_table_has_details_button_and_shared_right_drawer() -> N
     assert 'aria-modal="true"' in drawer
     assert '{% macro section(' in drawer
     assert '{% macro metric(' in drawer
+    assert '{% macro context_fact(' in drawer
     assert "density='default'" in drawer
     assert "variant='card'" in drawer
     assert "variant='plain'" in content
     assert "'Committed inventory overview.'" in content
     assert "'Platform and registration context for the selected inventory source.'" not in content
     assert "'Collection boundary and freshness for the committed generation.'" not in content
-    assert "side_drawer.metric('Registered Cluster', cluster.name, 'building-2', variant='plain')" in content
-    assert "side_drawer.metric('Freshness Window', cluster.freshness_window_hours ~ ' Hours', 'timer', variant='plain')" in content
+    assert "side_drawer.context_fact('Registered Cluster', cluster.name, 'building-2')" in content
+    assert "side_drawer.context_fact('Freshness Window', cluster.freshness_window_hours ~ ' Hours', 'timer')" in content
     assert 'sm:grid-cols-3 sm:gap-y-0' in content
-    assert 'border-t border-outline-subtle pt-4 sm:border-l' in content
+    assert 'border-t border-outline-subtle pt-3 sm:border-l' in content
     context = content.split("'Inventory Context',", 1)[1].split("'Inventory Breakdown',", 1)[0]
     assert 'detail_row(' not in context
     assert 'stacked_detail_row(' not in context
     assert '>Cluster</h4>' not in context
     assert '>Snapshot</h4>' not in context
-    assert context.count("variant='plain'") >= 6
+    assert context.count('side_drawer.context_fact(') == 6
+    assert "text-sm font-semibold leading-5 text-content-primary" in drawer
+    assert "text-xs font-medium leading-5" in drawer
 
 
 def test_cluster_table_pagination_uses_resource_case_and_visible_rows_label() -> None:
@@ -118,7 +121,7 @@ def test_snapshot_source_uses_compact_responsive_value() -> None:
     details_macro = read('app/templates/components/details/_detail_content.html')
 
     assert "'snapshot_source': 'Committed Snapshot'" in backend
-    assert "side_drawer.metric('Snapshot Source', cluster.snapshot_source, 'database', variant='plain')" in content
+    assert "side_drawer.context_fact('Snapshot Source', cluster.snapshot_source, 'database')" in content
     assert "{% macro detail_row(label, value='-', break_all=False, nowrap=False) -%}" in details_macro
     assert 'sm:text-right' in details_macro
     assert 'components/details/_detail_content.html' not in content
@@ -139,7 +142,7 @@ def test_snapshot_last_collected_uses_numeric_responsive_datetime() -> None:
     presentation = read('app/bootstrap/presentation.py')
 
     assert "user_datetime(date_format='day_month_numeric')" in content
-    assert "side_drawer.metric('Last Collected'" in content
+    assert "side_drawer.context_fact('Last Collected'" in content
     assert 'nowrap=True' not in content
     assert "value_wrap_classes = 'whitespace-nowrap' if nowrap" in details_macro
     assert 'date_format: str | None = None' in presentation

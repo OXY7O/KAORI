@@ -16,13 +16,13 @@ def test_namespace_detail_uses_full_workspace_modal_grid():
     assert 'xl:grid-cols-[minmax(0,0.82fr)_minmax(0,1.18fr)]' in detail
     assert 'items-stretch' not in detail
     assert detail.count('stretch=false') >= 4
-    assert 'stretch=true' in shared_detail
-    assert "{{ 'h-full' if stretch else '' }}" in shared_detail
+    assert 'macro inventory_section(' in shared_detail
+    assert 'data-kaori-inventory-detail-section' in shared_detail
     assert 'xl:grid-cols-4' not in detail
     assert 'min-h-96' not in detail
     assert 'min-h-[28rem]' not in detail
     for title in ('Namespace Identity', 'Object Composition', 'Access & Security'):
-        assert f"detail.detail_card('{title}'" in detail
+        assert f"detail.inventory_section('{title}'" in detail
 
 
 def test_namespace_detail_uses_shared_empty_evidence_and_operational_context():

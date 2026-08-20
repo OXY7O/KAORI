@@ -16,9 +16,12 @@ def test_object_storage_snapshot_readers_narrow_optional_mapping_payloads() -> N
     assert "streams_value = payload.get('alert_streams')" in service
     assert 'streams = cast(dict[str, Any], streams_value) if isinstance(streams_value, dict) else {}' in service
     assert service.count("page_metrics_value = payload.get('page_metrics')") >= 2
-    assert service.count(
-        'page_metrics = cast(dict[str, Any], page_metrics_value) if isinstance(page_metrics_value, dict) else {}'
-    ) >= 2
+    assert (
+        service.count(
+            'page_metrics = cast(dict[str, Any], page_metrics_value) if isinstance(page_metrics_value, dict) else {}'
+        )
+        >= 2
+    )
 
 
 def test_object_storage_dashboard_filters_optional_inventory_timestamps_before_max() -> None:

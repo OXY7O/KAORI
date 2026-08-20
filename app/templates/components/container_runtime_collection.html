@@ -50,11 +50,11 @@
                                     {% endif %}
                                 </td>
                                 <td class="{{ table_ui.cell_classes() }}">
-                                    {{ technical_value.render(container.image or 'Not Reported', break_all=true) }}
+                                    {{ technical_value.render(container.image or 'Not Reported', break_all=true, class_name='font-semibold', size='body') }}
                                     <p class="mt-1 text-xs leading-5 text-content-muted">Pull Policy · {{ container.pull_policy or 'Not Reported' }}</p>
                                 </td>
                                 <td class="{{ table_ui.cell_classes() }}">
-                                    <span class="text-sm font-medium tabular-nums text-content-primary">{{ container.restart_activity }}</span>
+                                    <span class="text-sm font-semibold tabular-nums text-content-primary">{{ container.restart_activity }}</span>
                                 </td>
                                 <td class="{{ table_ui.cell_classes() }}">
                                     {% if container.started_at_value %}

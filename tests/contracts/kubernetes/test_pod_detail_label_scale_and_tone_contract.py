@@ -10,10 +10,10 @@ def read(relative_path: str) -> str:
 def test_pod_detail_uses_adaptive_natural_height_cards() -> None:
     template = read('app/templates/kubernetes/inventory/pods/partials/_pod_detail_content.html')
 
-    assert "detail.detail_card('Pod Identity'" in template
-    assert "detail.detail_card('Runtime & Conditions'" in template
-    assert "detail.detail_card('Placement & Network'" in template
-    assert "detail.detail_card('Pod Specification'" in template
+    assert "detail.inventory_section('Pod Identity'" in template
+    assert "detail.inventory_section('Runtime & Conditions'" in template
+    assert "detail.inventory_section('Placement & Network'" in template
+    assert "detail.inventory_section('Pod Specification'" in template
     assert 'stretch=false' in template
     assert "density='compact'" in template
     assert 'xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]' in template

@@ -7,14 +7,18 @@
 <div data-kaori-detail-variant="full-workspace-modal"
      data-kaori-detail-density="adaptive-stacks"
      data-kaori-inventory-detail="v2"
+     data-kaori-inventory-detail-layout="evidence-workspace"
      class="{{ detail.expanded_workspace_outer_classes() }}">
     <div class="{{ detail.expanded_workspace_shell_classes() }}">
-        {% set detail_description = 'Access, backend, port, selected Pod, and network evidence from the committed snapshot.' %}
-        {% call detail.workspace_header(service.name, detail_description, 'network') %}
-            {{ table_label.metadata_label(service.cluster_name, 'building-2') }}
-            {{ table_label.metadata_label(service.namespace, 'folder-tree') }}
-            {{ table_label.metadata_label(service.type) }}
-            {{ table_label.status_indicator_label(service.backend.label, service.backend.tone, size='detail') }}
+        {% set detail_description = "Access, backend, port, selected Pod, and network evidence from the committed snapshot." %}
+        {% call detail.workspace_header(detail_description, 'network') %}
+            {% call detail.header_identity_row() %}
+                {{ detail.inventory_title(service.name) }}
+                {{ table_label.metadata_label(service.cluster_name, 'building-2') }}
+                {{ table_label.metadata_label(service.namespace, 'folder-tree') }}
+                {{ table_label.metadata_label(service.type) }}
+                {{ table_label.status_indicator_label(service.backend.label, service.backend.tone, size='detail') }}
+            {% endcall %}
         {% endcall %}
         {{ detail.summary_strip([
                 ('Access Model', service.access_model, service.type) ,
@@ -24,19 +28,19 @@
         ], compact=true) }}
         <div class="grid items-start gap-4 p-5 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
             <div class="space-y-4">
-                {% call detail.detail_card('Service Identity', 'badge-info', service.age, badge_size='detail', stretch=false, density='compact') %}
-                    {{ detail.detail_row('Cluster', service.cluster_name) }}
-                    {{ detail.detail_row('Namespace', service.namespace) }}
-                    {{ detail.metadata_row('Service Type', service.type) }}
-                    {{ detail.detail_row('Age', service.age) }}
-                    {{ detail.technical_row('Kubernetes UID', service.uid) }}
-                    {{ detail.detail_row('Generation', service.generation) }}
-                    {{ detail.detail_row('Created', service.created_at|user_datetime if service.created_at else 'Not Reported') }}
-                    {{ detail.detail_row('Collected', service.collected_at|user_datetime if service.collected_at else 'Not Reported') }}
+                {% call detail.inventory_section('Service Identity', 'badge-info', service.age, badge_size='detail', stretch=false, density='compact') %}
+                    {{ detail.inventory_row('Cluster', service.cluster_name) }}
+                    {{ detail.inventory_row('Namespace', service.namespace) }}
+                    {{ detail.inventory_metadata_row('Service Type', service.type) }}
+                    {{ detail.inventory_row('Age', service.age) }}
+                    {{ detail.inventory_technical_row('Kubernetes UID', service.uid) }}
+                    {{ detail.inventory_row('Generation', service.generation) }}
+                    {{ detail.inventory_row('Created', service.created_at|user_datetime if service.created_at else 'Not Reported') }}
+                    {{ detail.inventory_row('Collected', service.collected_at|user_datetime if service.collected_at else 'Not Reported') }}
                     <div class="mt-3">{{ operational_callout.render('Access Model Context', service.type_description, 'network', 'info') }}</div>
                 {% endcall %}
-                {% call detail.detail_card('Network Identity', 'globe-2', service.access_model, badge_size='detail', stretch=false, density='compact') %}
-                    {{ detail.evidence_grid([
+                {% call detail.inventory_section('Network Identity', 'globe-2', service.access_model, badge_size='detail', stretch=false, density='compact') %}
+                    {{ detail.inventory_fact_grid([
                                         {'label': 'Cluster IP', 'value': service.cluster_ip},
                                         {'label': 'Cluster IPs', 'value': service.cluster_ips|join(', ') if service.cluster_ips else ('Not Applicable' if service.type == 'Headless' else 'Not Configured')},
                     {'label': 'Declared External IPs', 'value': service.declared_external_ips|join(', ') if service.declared_external_ips else 'Not Configured'},
@@ -49,8 +53,8 @@
                 {% endcall %}
             </div>
             <div class="space-y-4">
-                {% call detail.detail_card('Backend Registration', 'waypoints', service.backend.label, 'status', service.backend.tone, badge_size='detail', stretch=false, density='compact') %}
-                    {{ detail.evidence_grid([
+                {% call detail.inventory_section('Backend Registration', 'waypoints', service.backend.label, 'status', service.backend.tone, badge_size='detail', stretch=false, density='compact') %}
+                    {{ detail.inventory_fact_grid([
                                         {'label': 'Registration State', 'value': service.backend.label, 'supporting': service.backend.supporting},
                                         {'label': 'Evidence Source', 'value': 'Not Applicable' if service.type == 'ExternalName' else service.endpoint_source},
                                         {'label': 'Ready Addresses', 'value': service.ready_endpoint_count if service.ready_endpoint_count is not none else 'Not Reported'},
@@ -64,8 +68,8 @@
                         <div class="mt-3">{{ detail.empty_evidence('No Service Selector Configured', 'Backend registration for this Service is managed independently from Pod label selection.', 'scan-search') }}</div>
                     {% endif %}
                 {% endcall %}
-                {% call detail.detail_card('Traffic Configuration', 'sliders-horizontal', service.ip_family_policy, badge_size='detail', stretch=false, density='compact') %}
-                    {{ detail.evidence_grid([
+                {% call detail.inventory_section('Traffic Configuration', 'sliders-horizontal', service.ip_family_policy, badge_size='detail', stretch=false, density='compact') %}
+                    {{ detail.inventory_fact_grid([
                                         {'label': 'IP Family Policy', 'value': service.ip_family_policy},
                                         {'label': 'Session Affinity', 'value': service.session_affinity},
                                         {'label': 'Internal Traffic Policy', 'value': service.internal_traffic_policy},

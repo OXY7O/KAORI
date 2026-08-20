@@ -78,15 +78,13 @@ def test_full_workspace_modal_headers_share_grouped_identity_state_geometry() ->
         'app/templates/storage/object_storage/inventory/buckets/partials/_bucket_detail_content.html',
         'app/templates/storage/object_storage/inventory/systems/partials/_system_detail_content.html',
     )
-    inventory_templates = {
-        relative
-        for relative in templates
-        if '/kubernetes/inventory/' in relative
-    }
+    inventory_templates = {relative for relative in templates if '/kubernetes/inventory/' in relative}
     for relative in templates:
         source = read(relative)
         if relative in inventory_templates:
             assert 'workspace_header(' in source, relative
+            assert 'header_identity_row()' in source, relative
+            assert 'inventory_title(' in source, relative
         else:
             assert 'header_identity_row()' in source, relative
         assert 'header_badge_row()' not in source, relative

@@ -47,7 +47,8 @@ Node, Namespace, Workload, Pod, Service, Ingress, Storage, and Configuration Inv
 - the supporting description renders below that identity row; do not float the primary state onto a second badge line or detach it beneath the leading icon/modal outer edge;
 - the summary uses the shared `data-resource-detail-summary` owner;
 - Kubernetes Inventory detail roots declare `data-kaori-inventory-detail="v2"`;
-- resource headers use `detail.workspace_header(...)` instead of hand-authored heading/font classes.
+- resource headers use `detail.workspace_header(...)` instead of hand-authored heading/font classes;
+- the resource title is rendered through `detail.inventory_title(...)` inside `detail.header_identity_row()` so title, metadata, and primary state form one scan line.
 
 ### Typography hierarchy
 
@@ -84,8 +85,25 @@ Use adaptive detail stacks when evidence cards have materially different content
 - use independent vertical stacks rather than one equal-height row;
 - use natural-height cards with `stretch=false`;
 - use asymmetric splits when one evidence domain needs more width;
-- use `detail.evidence_grid(...)` for compact factual evidence;
+- Kubernetes Inventory uses `detail.inventory_section(...)` for natural-height evidence groups;
+- use `detail.inventory_row(...)`, `detail.inventory_technical_row(...)`, and `detail.inventory_fact_grid(...)` for aligned factual evidence;
+- Inventory field values are left-aligned in a consistent second column to avoid large eye-travel across wide modal cards;
+- grouped fact grids use one shared boundary with internal separators instead of one rounded tile per value;
 - keep large tables, relationships, metadata, and Operational Context full width;
 - do not add fixed or minimum heights to mask content imbalance.
 
 Adaptive stacks are valid inside Full Workspace Modal and compact inline details.
+
+### Inventory evidence surface rules
+
+The Inventory modal is an evidence workspace, not a card gallery. Keep the visual hierarchy restrained:
+
+```text
+Header identity row
+Summary strip
+Two-column natural-height evidence sections
+Full-width relationships / large collections
+Operational boundary and next action
+```
+
+Use one section boundary per evidence domain. Do not wrap every metric in a standalone rounded card. Large key inventories use the grouped shared collection surface so dozens of keys remain scannable without producing a wall of floating tiles. Identity and technical values share the same `text-sm / semibold` body scale; only labels and supporting copy step down to `text-xs`.

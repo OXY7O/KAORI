@@ -8,13 +8,17 @@
 <div data-kaori-detail-variant="full-workspace-modal"
      data-kaori-detail-density="adaptive-stacks"
      data-kaori-inventory-detail="v2"
+     data-kaori-inventory-detail-layout="evidence-workspace"
      class="{{ detail.expanded_workspace_outer_classes() }}">
     <div class="{{ detail.expanded_workspace_shell_classes() }}">
-        {% set detail_description = 'Runtime, delivery, placement, and relationship evidence from the committed snapshot.' %}
-        {% call detail.workspace_header(workload.name, detail_description, 'boxes') %}
-            {{ table_label.metadata_label(workload.type) }}
-            {{ table_label.metadata_label(workload.namespace, 'folder-tree') }}
-            {{ table_label.status_indicator_label(workload.operational_state_label, workload.operational_state_tone, size='detail') }}
+        {% set detail_description = "Runtime, delivery, placement, and relationship evidence from the committed snapshot." %}
+        {% call detail.workspace_header(detail_description, 'boxes') %}
+            {% call detail.header_identity_row() %}
+                {{ detail.inventory_title(workload.name) }}
+                {{ table_label.metadata_label(workload.type) }}
+                {{ table_label.metadata_label(workload.namespace, 'folder-tree') }}
+                {{ table_label.status_indicator_label(workload.operational_state_label, workload.operational_state_tone, size='detail') }}
+            {% endcall %}
         {% endcall %}
         {{ detail.summary_strip([
                 ('Operational State', workload.operational_state_label, workload.state_display) ,
@@ -24,27 +28,27 @@
         ], compact=true) }}
         <div class="grid items-start gap-4 p-5 xl:grid-cols-[minmax(0,0.82fr)_minmax(0,1.18fr)]">
             <div class="space-y-4">
-                {% call detail.detail_card('Workload Identity', 'badge-info', workload.age, badge_size='detail', stretch=false, density='compact') %}
-                    {{ detail.detail_row('Cluster', workload.cluster_name) }}
-                    {{ detail.detail_row('Namespace', workload.namespace) }}
-                    {{ detail.metadata_row('Kind', workload.type) }}
-                    {{ detail.detail_row('Age', workload.age) }}
-                    {{ detail.technical_row('UID', workload.uid) }}
-                    {{ detail.detail_row('Created', workload.created_at|user_datetime if workload.created_at else '-') }}
-                    {{ detail.detail_row('Collected', workload.collected_at|user_datetime) }}
+                {% call detail.inventory_section('Workload Identity', 'badge-info', workload.age, badge_size='detail', stretch=false, density='compact') %}
+                    {{ detail.inventory_row('Cluster', workload.cluster_name) }}
+                    {{ detail.inventory_row('Namespace', workload.namespace) }}
+                    {{ detail.inventory_metadata_row('Kind', workload.type) }}
+                    {{ detail.inventory_row('Age', workload.age) }}
+                    {{ detail.inventory_technical_row('UID', workload.uid) }}
+                    {{ detail.inventory_row('Created', workload.created_at|user_datetime if workload.created_at else '-') }}
+                    {{ detail.inventory_row('Collected', workload.collected_at|user_datetime) }}
                 {% endcall %}
-                {% call detail.detail_card('Runtime State', 'activity', workload.operational_state_label, 'status', workload.operational_state_tone, badge_size='detail', stretch=false, density='compact') %}
+                {% call detail.inventory_section('Runtime State', 'activity', workload.operational_state_label, 'status', workload.operational_state_tone, badge_size='detail', stretch=false, density='compact') %}
                     {% if workload.runtime_state_rows %}
-                        {{ detail.evidence_grid(workload.runtime_state_rows, columns=2) }}
+                        {{ detail.inventory_fact_grid(workload.runtime_state_rows, columns=2) }}
                     {% else %}
                         {{ detail.empty_evidence('Runtime State Not Reported', 'Controller-specific runtime evidence was not present in the committed snapshot.', 'activity') }}
                     {% endif %}
                 {% endcall %}
             </div>
             <div class="space-y-4">
-                {% call detail.detail_card('Pod Template', 'container', workload.template_container_count ~ ' Containers' if workload.pod_configuration_reported else 'Not Reported', badge_size='detail', stretch=false, density='compact') %}
+                {% call detail.inventory_section('Pod Template', 'container', workload.template_container_count ~ ' Containers' if workload.pod_configuration_reported else 'Not Reported', badge_size='detail', stretch=false, density='compact') %}
                     {% if workload.pod_configuration_reported %}
-                        {{ detail.evidence_grid(workload.pod_configuration_rows, columns=3) }}
+                        {{ detail.inventory_fact_grid(workload.pod_configuration_rows, columns=3) }}
                     {% else %}
                         {{ detail.empty_evidence('Pod Template Not Reported', 'The workload collector did not report authoritative Pod-template evidence for this snapshot.', 'container') }}
                     {% endif %}
@@ -93,7 +97,7 @@
                                         <td class="{{ table_ui.cell_classes() }}"><span class="text-sm font-semibold text-content-primary">{{ condition.type }}</span></td>
                                         <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_indicator_label(condition.status, condition.tone) }}</td>
                                         <td class="{{ table_ui.cell_classes() }}"><span class="text-sm font-medium text-content-primary">{{ condition.reason }}</span></td>
-                                        <td class="{{ table_ui.cell_classes() }}">{{ technical_value.render(condition.last_transition_time) }}</td>
+                                        <td class="{{ table_ui.cell_classes() }}">{{ technical_value.render(condition.last_transition_time, class_name='font-semibold', size='body') }}</td>
                                         <td class="{{ table_ui.cell_classes() }}">
                                             <p class="break-words text-sm leading-5 text-content-secondary [overflow-wrap:anywhere]">{{ condition.message }}</p>
                                         </td>
@@ -115,7 +119,7 @@
                     <div>
                         {{ detail.subsection("Delivery Configuration") }}
                         {% if workload.delivery_rows %}
-                            {{ detail.evidence_grid(workload.delivery_rows, columns=2) }}
+                            {{ detail.inventory_fact_grid(workload.delivery_rows, columns=2) }}
                         {% else %}
                             {{ detail.empty_evidence('Delivery Configuration Not Reported', 'Controller-specific delivery settings were not present in the committed snapshot.', 'route') }}
                         {% endif %}
@@ -123,7 +127,7 @@
                     <div>
                         {{ detail.subsection("Placement Constraints") }}
                         {% if workload.placement_evidence_reported %}
-                            {{ detail.evidence_grid(workload.placement_rows, columns=2) }}
+                            {{ detail.inventory_fact_grid(workload.placement_rows, columns=2) }}
                         {% else %}
                             {{ detail.empty_evidence('Placement Evidence Not Reported', 'Node selectors, affinity, tolerations, and topology spread cannot be evaluated without a reported Pod template.', 'map-pin') }}
                         {% endif %}
@@ -163,7 +167,7 @@
                                     <tr class="{{ table_ui.row_classes() }}">
                                         <td class="{{ table_ui.cell_classes() }}"><span class="text-sm font-semibold text-content-primary">{{ container.name }}</span></td>
                                         <td class="{{ table_ui.cell_classes() }}">{{ table_label.metadata_label(container.kind) }}</td>
-                                        <td class="{{ table_ui.cell_classes() }}">{{ technical_value.render(container.image, break_all=true) }}</td>
+                                        <td class="{{ table_ui.cell_classes() }}">{{ technical_value.render(container.image, break_all=true, class_name='font-semibold', size='body') }}</td>
                                         <td class="{{ table_ui.cell_classes() }}"><span class="text-sm font-medium text-content-primary">{{ container.pull_policy or 'Not Reported' }}</span></td>
                                     </tr>
                                 {% endfor %}

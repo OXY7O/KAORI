@@ -6,18 +6,22 @@
 <div data-kaori-detail-variant="full-workspace-modal"
      data-kaori-detail-density="adaptive-stacks"
      data-kaori-inventory-detail="v2"
+     data-kaori-inventory-detail-layout="evidence-workspace"
      class="{{ detail.expanded_workspace_outer_classes() }}">
     <div class="{{ detail.expanded_workspace_shell_classes() }}">
-        {% set detail_description = 'Provisioning, capacity, access, binding, relationship, and lifecycle evidence.' %}
-        {% call detail.workspace_header(item.name, detail_description, 'database') %}
-            {{ table_label.metadata_label(item.type_label) }}
-            {{ table_label.metadata_label(item.namespace, 'folder-tree') }}
-            {% if item.is_default %}{{ table_label.metadata_label("Default") }}{% endif %}
-            {% if item.type == 'StorageClass' %}
-            {{ table_label.metadata_label(item.lifecycle_label) }}
-            {% else %}
-            {{ table_label.status_indicator_label(item.lifecycle_label, item.lifecycle_tone, size='detail') }}
-            {% endif %}
+        {% set detail_description = "Provisioning, capacity, access, binding, relationship, and lifecycle evidence." %}
+        {% call detail.workspace_header(detail_description, 'database') %}
+            {% call detail.header_identity_row() %}
+                {{ detail.inventory_title(item.name) }}
+                {{ table_label.metadata_label(item.type_label) }}
+                {{ table_label.metadata_label(item.namespace, 'folder-tree') }}
+                {% if item.is_default %}{{ table_label.metadata_label("Default") }}{% endif %}
+                {% if item.type == 'StorageClass' %}
+                    {{ table_label.metadata_label(item.lifecycle_label) }}
+                {% else %}
+                    {{ table_label.status_indicator_label(item.lifecycle_label, item.lifecycle_tone, size='detail') }}
+                {% endif %}
+            {% endcall %}
         {% endcall %}
         {{ detail.summary_strip([
                 ('Resource Type', item.type_label, 'Kubernetes storage kind') ,
@@ -27,18 +31,18 @@
         ], compact=true) }}
         <div class="grid items-start gap-4 p-5 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
             <div class="space-y-4">
-                {% call detail.detail_card('Storage Identity', 'badge-info', item.age, badge_size='detail', stretch=false, density='compact') %}
-                    {{ detail.detail_row('Cluster', item.cluster_name) }}
-                    {{ detail.detail_row('Namespace', item.namespace) }}
-                    {{ detail.metadata_row('Resource Type', item.type_label) }}
-                    {{ detail.technical_row('Kubernetes UID', item.uid) }}
-                    {{ detail.detail_row('Age', item.age) }}
-                    {{ detail.detail_row('Created', item.created_at|user_datetime if item.created_at else 'Not Reported') }}
-                    {{ detail.detail_row('Collected', item.collected_at|user_datetime) }}
+                {% call detail.inventory_section('Storage Identity', 'badge-info', item.age, badge_size='detail', stretch=false, density='compact') %}
+                    {{ detail.inventory_row('Cluster', item.cluster_name) }}
+                    {{ detail.inventory_row('Namespace', item.namespace) }}
+                    {{ detail.inventory_metadata_row('Resource Type', item.type_label) }}
+                    {{ detail.inventory_technical_row('Kubernetes UID', item.uid) }}
+                    {{ detail.inventory_row('Age', item.age) }}
+                    {{ detail.inventory_row('Created', item.created_at|user_datetime if item.created_at else 'Not Reported') }}
+                    {{ detail.inventory_row('Collected', item.collected_at|user_datetime) }}
                 {% endcall %}
-                {% call detail.detail_card('Capacity & Access', 'gauge', item.capacity, badge_size='detail', stretch=false, density='compact') %}
+                {% call detail.inventory_section('Capacity & Access', 'gauge', item.capacity, badge_size='detail', stretch=false, density='compact') %}
                     {% if item.type == 'PersistentVolumeClaim' %}
-                        {{ detail.evidence_grid([
+                        {{ detail.inventory_fact_grid([
                                                 {'label': 'Requested Storage', 'value': item.requested_storage},
                                                 {'label': 'Bound Capacity', 'value': item.reported_capacity},
                                                 {'label': 'Allocated Storage', 'value': item.allocated_storage},
@@ -49,7 +53,7 @@
                                                 {'label': 'Status Evidence', 'value': item.status_evidence}
                                                 ], columns=2) }}
                     {% elif item.type == 'PersistentVolume' %}
-                        {{ detail.evidence_grid([
+                        {{ detail.inventory_fact_grid([
                                                 {'label': 'Configured Capacity', 'value': item.reported_capacity},
                                                 {'label': 'Volume Mode', 'value': item.volume_mode},
                                                 {'label': 'Access Modes', 'value': item.requested_access_modes},
@@ -60,7 +64,7 @@
                                                 {'label': 'Status Evidence', 'value': item.status_evidence}
                                                 ], columns=2) }}
                     {% else %}
-                        {{ detail.evidence_grid([
+                        {{ detail.inventory_fact_grid([
                                                 {'label': 'Capacity', 'value': 'Not Applicable'},
                                                 {'label': 'Volume Expansion', 'value': item.expansion},
                                                 {'label': 'Binding Mode', 'value': item.binding_mode},
@@ -72,8 +76,8 @@
                 {% endcall %}
             </div>
             <div class="space-y-4">
-                {% call detail.detail_card('Binding & Lifecycle', 'link-2', item.lifecycle_label, 'status' if item.type != 'StorageClass' else 'metadata', item.lifecycle_tone, badge_size='detail', stretch=false, density='compact') %}
-                    {{ detail.evidence_grid([
+                {% call detail.inventory_section('Binding & Lifecycle', 'link-2', item.lifecycle_label, 'status' if item.type != 'StorageClass' else 'metadata', item.lifecycle_tone, badge_size='detail', stretch=false, density='compact') %}
+                    {{ detail.inventory_fact_grid([
                                         {'label': 'Lifecycle', 'value': item.lifecycle_label},
                                         {'label': 'Binding Reference', 'value': item.binding_reference},
                                         {'label': 'StorageClass', 'value': item.storage_class},
@@ -87,8 +91,8 @@
                         <div class="mt-3">{{ metadata_collection.render('Reported Conditions', item.conditions, 'activity', 'No Conditions Reported', 'No storage condition is represented in the committed snapshot.', 'Condition values remain factual until interpreted by resource kind and reason.', compact=true, mode='records') }}</div>
                     {% endif %}
                 {% endcall %}
-                {% call detail.detail_card('Provisioning Configuration', 'settings-2', item.provisioner, badge_size='detail', stretch=false, density='compact') %}
-                    {{ detail.evidence_grid([
+                {% call detail.inventory_section('Provisioning Configuration', 'settings-2', item.provisioner, badge_size='detail', stretch=false, density='compact') %}
+                    {{ detail.inventory_fact_grid([
                                         {'label': 'Provisioner', 'value': item.provisioner},
                                         {'label': 'Binding Mode', 'value': item.binding_mode},
                                         {'label': 'Reclaim Policy', 'value': item.reclaim_policy},

@@ -7,22 +7,22 @@ def _read(relative_path: str) -> str:
     return (ROOT / relative_path).read_text(encoding='utf-8')
 
 
-def test_node_detail_cards_follow_tallest_card_without_fixed_min_height() -> None:
+def test_node_detail_uses_natural_height_two_column_evidence_sections() -> None:
     detail = _read('app/templates/kubernetes/inventory/nodes/partials/_node_detail_content.html')
     shared = _read('app/templates/components/details/_detail_content.html')
 
     assert 'data-kaori-detail-variant="full-workspace-modal"' in detail
-    assert 'grid items-stretch gap-4 p-5 md:grid-cols-2 2xl:grid-cols-3' in detail
-    assert 'stretch=true' in shared
-    assert "{{ 'h-full' if stretch else '' }}" in shared
+    assert 'grid items-start gap-4 p-4 sm:p-5 xl:grid-cols-2' in detail
+    assert 'macro inventory_section(' in shared
+    assert 'data-kaori-inventory-detail-section' in shared
 
-    # Equal height comes from the grid row, not an arbitrary fixed minimum.
+    # Natural-height sections avoid blank equal-height card space.
     assert 'min-h-80' not in detail
     assert 'min-h-96' not in detail
 
-    assert "detail.detail_card('Node Identity'" in detail
-    assert "detail.detail_card('Node Capacity'" in detail
-    assert "detail.detail_card('Connectivity'" in detail
-    assert "detail.detail_card('Platform & Runtime'" in detail
-    assert "detail.detail_card('Scheduling & Conditions'" in detail
+    assert "detail.inventory_section('Node Identity'" in detail
+    assert "detail.inventory_section('Node Capacity'" in detail
+    assert "detail.inventory_section('Connectivity'" in detail
+    assert "detail.inventory_section('Platform & Runtime'" in detail
+    assert "detail.inventory_section('Scheduling & Conditions'" in detail
     assert 'Committed Snapshot Boundary' in detail

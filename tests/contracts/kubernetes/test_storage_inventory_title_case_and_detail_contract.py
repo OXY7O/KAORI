@@ -80,7 +80,7 @@ def test_storage_detail_uses_adaptive_stacks_and_factual_configuration() -> None
     assert 'data-kaori-detail-density="adaptive-stacks"' in detail
     assert 'detail.expanded_workspace_shell_classes()' in detail
     for title in ('Storage Identity', 'Capacity & Access', 'Binding & Lifecycle', 'Provisioning Configuration'):
-        assert f"detail.detail_card('{title}'" in detail
+        assert f"detail.inventory_section('{title}'" in detail
     assert 'related_collection.render(' in detail
     assert 'metadata_collection.render(' in detail
     assert 'Committed Snapshot Boundary' in detail

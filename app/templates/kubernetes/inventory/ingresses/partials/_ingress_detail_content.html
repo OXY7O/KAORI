@@ -8,14 +8,18 @@
 <div data-kaori-detail-variant="full-workspace-modal"
      data-kaori-detail-density="adaptive-stacks"
      data-kaori-inventory-detail="v2"
+     data-kaori-inventory-detail-layout="evidence-workspace"
      class="{{ detail.expanded_workspace_outer_classes() }}">
     <div class="{{ detail.expanded_workspace_shell_classes() }}">
-        {% set detail_description = 'Host, publication, TLS Secret, and backend route evidence from the committed snapshot.' %}
-        {% call detail.workspace_header(ingress.name, detail_description, 'route') %}
-            {{ table_label.metadata_label(ingress.cluster_name, 'building-2') }}
-            {{ table_label.metadata_label(ingress.namespace, 'folder-tree') }}
-            {{ table_label.metadata_label(ingress.class) }}
-            {{ table_label.status_indicator_label(ingress.detail_posture_label, ingress.detail_posture_tone, size='detail') }}
+        {% set detail_description = "Host, publication, TLS Secret, and backend route evidence from the committed snapshot." %}
+        {% call detail.workspace_header(detail_description, 'route') %}
+            {% call detail.header_identity_row() %}
+                {{ detail.inventory_title(ingress.name) }}
+                {{ table_label.metadata_label(ingress.cluster_name, 'building-2') }}
+                {{ table_label.metadata_label(ingress.namespace, 'folder-tree') }}
+                {{ table_label.metadata_label(ingress.class) }}
+                {{ table_label.status_indicator_label(ingress.detail_posture_label, ingress.detail_posture_tone, size='detail') }}
+            {% endcall %}
         {% endcall %}
         {{ detail.summary_strip([
                 ('Host Scope', ingress.host_label, ingress.host_supporting) ,
@@ -25,22 +29,22 @@
         ], compact=true) }}
         <div class="grid items-start gap-4 p-5 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
             <div class="space-y-4">
-                {% call detail.detail_card('Ingress Identity', 'badge-info', ingress.age, badge_size='detail', stretch=false, density='compact') %}
-                    {{ detail.detail_row('Cluster', ingress.cluster_name) }}
-                    {{ detail.detail_row('Namespace', ingress.namespace) }}
-                    {{ detail.metadata_row('Ingress Class', ingress.class) }}
-                    {{ detail.detail_row('Class Evidence', ingress.class_supporting) }}
-                    {{ detail.detail_row('Age', ingress.age) }}
-                    {{ detail.technical_row('Kubernetes UID', ingress.uid) }}
-                    {{ detail.detail_row('Generation', ingress.generation) }}
-                    {{ detail.detail_row('Created', ingress.created_at|user_datetime if ingress.created_at else 'Not Reported') }}
-                    {{ detail.detail_row('Collected', ingress.collected_at|user_datetime if ingress.collected_at else 'Not Reported') }}
+                {% call detail.inventory_section('Ingress Identity', 'badge-info', ingress.age, badge_size='detail', stretch=false, density='compact') %}
+                    {{ detail.inventory_row('Cluster', ingress.cluster_name) }}
+                    {{ detail.inventory_row('Namespace', ingress.namespace) }}
+                    {{ detail.inventory_metadata_row('Ingress Class', ingress.class) }}
+                    {{ detail.inventory_row('Class Evidence', ingress.class_supporting) }}
+                    {{ detail.inventory_row('Age', ingress.age) }}
+                    {{ detail.inventory_technical_row('Kubernetes UID', ingress.uid) }}
+                    {{ detail.inventory_row('Generation', ingress.generation) }}
+                    {{ detail.inventory_row('Created', ingress.created_at|user_datetime if ingress.created_at else 'Not Reported') }}
+                    {{ detail.inventory_row('Collected', ingress.collected_at|user_datetime if ingress.collected_at else 'Not Reported') }}
                     {% if ingress.finalizers %}
                         <div class="mt-3">{{ metadata_collection.render('Finalizers', ingress.finalizer_entries, 'lock-keyhole', 'No Finalizers', 'No finalizer is represented in the committed snapshot.', 'Finalizers remain factual lifecycle metadata.', compact=true) }}</div>
                     {% endif %}
                 {% endcall %}
-                {% call detail.detail_card('Publication Evidence', 'globe-2', ingress.publication_label, badge_size='detail', stretch=false, density='compact') %}
-                    {{ detail.evidence_grid([
+                {% call detail.inventory_section('Publication Evidence', 'globe-2', ingress.publication_label, badge_size='detail', stretch=false, density='compact') %}
+                    {{ detail.inventory_fact_grid([
                                         {'label': 'Host Scope', 'value': ingress.host_label},
                                         {'label': 'Explicit Hosts', 'value': ingress.host_count},
                                         {'label': 'All-Host Rules', 'value': ingress.hostless_rule_count},
@@ -57,8 +61,8 @@
                 {% endcall %}
             </div>
             <div class="space-y-4">
-                {% call detail.detail_card('TLS Reference Evidence', 'shield', ingress.tls_secret_count ~ ' Secrets', badge_size='detail', stretch=false, density='compact') %}
-                    {{ detail.evidence_grid([
+                {% call detail.inventory_section('TLS Reference Evidence', 'shield', ingress.tls_secret_count ~ ' Secrets', badge_size='detail', stretch=false, density='compact') %}
+                    {{ detail.inventory_fact_grid([
                                         {'label': 'TLS Declared', 'value': 'Yes' if ingress.tls else 'No'},
                                         {'label': 'Secret References', 'value': ingress.tls_secret_count},
                                         {'label': 'Missing Secrets', 'value': ingress.missing_tls_secret_count},
@@ -66,8 +70,8 @@
                                         ], columns=2) }}
                     <p class="mt-3 text-xs leading-5 text-content-muted">A resolved Secret reference confirms only that a Secret exists in the same committed namespace snapshot. It does not validate certificate contents, expiry, key matching, or hostname coverage.</p>
                 {% endcall %}
-                {% call detail.detail_card('Routing Evidence', 'git-branch', ingress.backend_count ~ ' Routes', badge_size='detail', stretch=false, density='compact') %}
-                    {{ detail.evidence_grid([
+                {% call detail.inventory_section('Routing Evidence', 'git-branch', ingress.backend_count ~ ' Routes', badge_size='detail', stretch=false, density='compact') %}
+                    {{ detail.inventory_fact_grid([
                                         {'label': 'Backend Routes', 'value': ingress.backend_count},
                                         {'label': 'Service Backends', 'value': ingress.service_count},
                                         {'label': 'Resource Backends', 'value': ingress.resource_backend_count},
@@ -106,8 +110,8 @@
                             <tbody class="{{ table_ui.body_classes() }}">
                                 {% for backend in ingress.backend_paths %}
                                     <tr class="{{ table_ui.row_classes() }}">
-                                        <td class="{{ table_ui.cell_classes() }}">{{ technical_value.render(backend.host, size='body') }}</td>
-                                        <td class="{{ table_ui.cell_classes() }}">{{ technical_value.render(backend.path, size='body') }}</td>
+                                        <td class="{{ table_ui.cell_classes() }}">{{ technical_value.render(backend.host, class_name='font-semibold', size='body') }}</td>
+                                        <td class="{{ table_ui.cell_classes() }}">{{ technical_value.render(backend.path, class_name='font-semibold', size='body') }}</td>
                                         <td class="{{ table_ui.cell_classes() }}">{{ table_label.metadata_label(backend.route_source) }}</td>
                                         <td class="{{ table_ui.cell_classes() }}">{{ table_label.metadata_label(backend.path_type) }}</td>
                                         <td class="{{ table_ui.cell_classes() }}">

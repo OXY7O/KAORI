@@ -189,24 +189,24 @@
                     badge=snapshot_badge,
                     density='compact'
                     ) %}
-                    <dl class="grid gap-y-4 border-t border-outline-subtle pt-3 sm:grid-cols-3 sm:gap-y-0">
-                        <div class="min-w-0 sm:pb-4 sm:pr-4">
-                            {{ side_drawer.metric('Environment', cluster.environment|environment_name(empty='Not Specified'), 'cloud-cog', variant='plain') }}
+                    <dl class="grid gap-y-3 border-t border-outline-subtle pt-3 sm:grid-cols-3 sm:gap-y-0">
+                        <div class="min-w-0 sm:pb-3 sm:pr-4">
+                            {{ side_drawer.context_fact('Environment', cluster.environment|environment_name(empty='Not Specified'), 'cloud-cog') }}
                         </div>
-                        <div class="min-w-0 sm:border-l sm:border-outline-subtle sm:px-4 sm:pb-4">
-                            {{ side_drawer.metric('Kubernetes Version', cluster.kubernetes_version, 'badge-check', variant='plain') }}
+                        <div class="min-w-0 sm:border-l sm:border-outline-subtle sm:px-4 sm:pb-3">
+                            {{ side_drawer.context_fact('Kubernetes Version', cluster.kubernetes_version, 'badge-check') }}
                         </div>
-                        <div class="min-w-0 sm:border-l sm:border-outline-subtle sm:pb-4 sm:pl-4">
-                            {{ side_drawer.metric('Registered Cluster', cluster.name, 'building-2', variant='plain') }}
+                        <div class="min-w-0 sm:border-l sm:border-outline-subtle sm:pb-3 sm:pl-4">
+                            {{ side_drawer.context_fact('Registered Cluster', cluster.name, 'building-2') }}
                         </div>
-                        <div class="min-w-0 border-t border-outline-subtle pt-4 sm:pr-4">
-                            {{ side_drawer.metric('Last Collected', cluster.synced_at|user_datetime(date_format='day_month_numeric') if cluster.synced_at else 'Not Collected', 'clock-3', variant='plain') }}
+                        <div class="min-w-0 border-t border-outline-subtle pt-3 sm:pr-4">
+                            {{ side_drawer.context_fact('Last Collected', cluster.synced_at|user_datetime(date_format='day_month_numeric') if cluster.synced_at else 'Not Collected', 'clock-3') }}
                         </div>
-                        <div class="min-w-0 border-t border-outline-subtle pt-4 sm:border-l sm:px-4">
-                            {{ side_drawer.metric('Freshness Window', cluster.freshness_window_hours ~ ' Hours', 'timer', variant='plain') }}
+                        <div class="min-w-0 border-t border-outline-subtle pt-3 sm:border-l sm:px-4">
+                            {{ side_drawer.context_fact('Freshness Window', cluster.freshness_window_hours ~ ' Hours', 'timer') }}
                         </div>
-                        <div class="min-w-0 border-t border-outline-subtle pt-4 sm:border-l sm:pl-4">
-                            {{ side_drawer.metric('Snapshot Source', cluster.snapshot_source, 'database', variant='plain') }}
+                        <div class="min-w-0 border-t border-outline-subtle pt-3 sm:border-l sm:pl-4">
+                            {{ side_drawer.context_fact('Snapshot Source', cluster.snapshot_source, 'database') }}
                         </div>
                     </dl>
                 {% endcall %}

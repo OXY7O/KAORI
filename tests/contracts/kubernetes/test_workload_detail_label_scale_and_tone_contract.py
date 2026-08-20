@@ -11,9 +11,9 @@ def test_workload_detail_uses_full_workspace_modal_reference_structure() -> None
     template = _read('app/templates/kubernetes/inventory/workloads/partials/_workload_detail_content.html')
 
     assert 'data-kaori-detail-variant="full-workspace-modal"' in template
-    assert "detail.detail_card('Workload Identity'" in template
-    assert "detail.detail_card('Runtime State'" in template
-    assert "detail.detail_card('Pod Template'" in template
+    assert "detail.inventory_section('Workload Identity'" in template
+    assert "detail.inventory_section('Runtime State'" in template
+    assert "detail.inventory_section('Pod Template'" in template
     assert 'data-kaori-detail-density="adaptive-stacks"' in template
     assert 'xl:grid-cols-[minmax(0,0.82fr)_minmax(0,1.18fr)]' in template
     assert 'items-stretch' not in template
