@@ -23,7 +23,7 @@ def test_inventory_view_details_use_v5_resource_profile_host_and_shared_resource
     shared = read('app/templates/components/details/_detail_content.html')
 
     assert 'macro inventory_host(' in modal
-    assert "'max-w-[78rem]'" in modal
+    assert "'max-w-[92rem]'" in modal
     assert "'modal', true" in modal
     assert 'Committed Inventory snapshot · No live Kubernetes API query.' in modal
     assert 'backdrop-blur-md' in modal
@@ -45,13 +45,19 @@ def test_inventory_view_details_use_v5_resource_profile_host_and_shared_resource
         index = read(f'app/templates/kubernetes/inventory/{resource}/index.html')
         detail = read(f'app/templates/kubernetes/inventory/{resource}/partials/{DETAIL_FILES[resource]}')
         assert 'resource_detail_modal.inventory_host(' in index, resource
-        assert 'data-kaori-inventory-detail="v6"' in detail, resource
-        assert 'data-kaori-inventory-detail-layout="horizontal-section-stack"' in detail, resource
+        if resource == 'nodes':
+            assert 'data-kaori-inventory-detail="v8"' in detail
+            assert 'data-kaori-inventory-detail-layout="balanced-inspector"' in detail
+            assert 'detail.inspector_panel(' in detail
+            assert 'detail.inspector_summary_strip(' in detail
+        else:
+            assert 'data-kaori-inventory-detail="v6"' in detail, resource
+            assert 'data-kaori-inventory-detail-layout="horizontal-section-stack"' in detail, resource
+            assert 'detail.inventory_section(' in detail, resource
+            assert 'detail.inventory_fact_grid(' in detail, resource
         assert 'detail.workspace_header(' in detail, resource
         assert 'detail.header_identity_row()' in detail, resource
         assert 'detail.inventory_title(' in detail, resource
-        assert 'detail.inventory_section(' in detail, resource
-        assert 'detail.inventory_fact_grid(' in detail, resource
         assert '<header data-resource-detail-header' not in detail, resource
 
 

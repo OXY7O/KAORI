@@ -28,26 +28,31 @@ def test_inventory_v6_uses_horizontal_section_bands_with_natural_height() -> Non
     assert 'text-left text-sm font-medium leading-5 text-content-primary' in shared
     assert 'macro inventory_note(' in shared
     assert 'data-kaori-inventory-fact-grid' in shared
-    assert "'max-w-[78rem]'" in modal
+    assert "'max-w-[92rem]'" in modal
 
     for resource, filename in DETAILS.items():
         detail = read(f'app/templates/kubernetes/inventory/{resource}/partials/{filename}')
-        assert 'data-kaori-inventory-detail="v6"' in detail, resource
-        assert 'data-kaori-inventory-detail-layout="horizontal-section-stack"' in detail, resource
+        if resource == 'nodes':
+            assert 'data-kaori-inventory-detail="v8"' in detail
+            assert 'data-kaori-inventory-detail-layout="balanced-inspector"' in detail
+        else:
+            assert 'data-kaori-inventory-detail="v6"' in detail, resource
+            assert 'data-kaori-inventory-detail-layout="horizontal-section-stack"' in detail, resource
 
 
-def test_node_detail_uses_full_width_horizontal_bands_and_grouped_conditions() -> None:
+def test_node_detail_uses_balanced_inspector_and_grouped_conditions() -> None:
     node = read('app/templates/kubernetes/inventory/nodes/partials/_node_detail_content.html')
 
-    assert 'grid items-start gap-5 lg:grid-cols-2' not in node
-    assert node.count('<div class="space-y-5">') >= 1
-    assert "detail.inventory_section('Node Identity'" in node
-    assert "detail.inventory_section('Node Capacity'" in node
-    assert "detail.inventory_section('Connectivity'" in node
-    assert "detail.inventory_section('Platform & Runtime'" in node
-    assert "detail.inventory_section('Scheduling & Conditions'" in node
-    assert node.count('detail.inventory_note(') == 3
-    assert "operational_callout.render('Committed Snapshot Boundary'" not in node
+    assert 'data-kaori-node-inspector' in node
+    assert 'lg:grid-cols-[13.5rem_minmax(0,1fr)]' in node
+    assert 'xl:grid-cols-12' in node
+    assert "detail.inspector_panel('Identity'" in node
+    assert "detail.inspector_panel('Node Capacity'" in node
+    assert "detail.inspector_panel('Connectivity'" in node
+    assert "detail.inspector_panel('Runtime & Platform'" in node
+    assert "detail.inspector_panel('Scheduling & Conditions'" in node
+    assert "operational_callout.render('Committed Snapshot Boundary'" in node
+    assert 'operational_callout.render(node.operational_context.title' in node
 
 
 def test_metadata_collections_are_contained_lists_not_tile_walls() -> None:

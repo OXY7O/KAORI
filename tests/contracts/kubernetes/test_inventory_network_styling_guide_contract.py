@@ -62,7 +62,8 @@ def test_node_scheduling_and_namespace_security_use_available_space() -> None:
     node = read('app/templates/kubernetes/inventory/nodes/partials/_node_detail_content.html')
     namespace = read('app/templates/kubernetes/inventory/namespaces/partials/_namespace_detail_content.html')
 
-    assert 'columns=5' in node
+    assert "detail.inspector_panel('Scheduling & Conditions'" in node
+    assert 'sm:grid-cols-2' in node
     assert 'Scheduling Taints' in node
     assert 'Control Interpretation' in namespace
     assert 'Default ServiceAccount presence is shown separately' in namespace

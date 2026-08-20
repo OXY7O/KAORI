@@ -30,7 +30,7 @@ Node, Namespace, Workload, Pod, Service, Ingress, Storage, and Configuration Inv
 
 - Kubernetes Inventory uses `resource_detail_modal.inventory_host(...)` for one shared modal contract;
 - `View Details` opens one near-fullscreen modal without changing table height;
-- desktop width is bounded by `78rem` and available viewport space;
+- desktop Inventory width is bounded by `92rem` and available viewport space;
 - mobile uses the available viewport as a full workspace;
 - header, summary strip, and footer remain visible while the detail body scrolls;
 - Escape, backdrop, and explicit Close dismiss the modal;
@@ -46,7 +46,7 @@ Node, Namespace, Workload, Pod, Service, Ingress, Storage, and Configuration Inv
 - resource title, metadata, and primary lifecycle/readiness/collection state use the shared `detail.header_identity_row()` owner as one grouped identity row;
 - the supporting description renders below that identity row; do not float the primary state onto a second badge line or detach it beneath the leading icon/modal outer edge;
 - the summary uses the shared `data-resource-detail-summary` owner;
-- Kubernetes Inventory detail roots declare `data-kaori-inventory-detail="v5"`;
+- Node Inventory declares `data-kaori-inventory-detail="v8"`; remaining Kubernetes Inventory details retain the V6 contract until migrated;
 - resource headers use `detail.workspace_header(...)` instead of hand-authored heading/font classes;
 - the resource title is rendered through `detail.inventory_title(...)` inside `detail.header_identity_row()` so title, metadata, and primary state form one scan line.
 
@@ -126,3 +126,20 @@ Kubernetes Inventory details use a contained resource-profile layout built for o
 ## Kubernetes Inventory Horizontal Section Stack V6
 
 Inventory View Details uses full-width horizontal section bands. Each band owns one evidence domain: a restrained Violet identity rail on the left and factual evidence on the right. Desktop layouts do not place peer evidence cards side by side, so unequal content height never creates visual misalignment. Metadata/count tags use the canonical KAORI Violet label treatment; semantic states remain green/amber/red. Field labels and factual values share the same body scale; hierarchy is created with tone and weight rather than arbitrary font-size jumps.
+
+
+## Node Inventory Balanced Inspector V8
+
+Node Inventory uses a Balanced Inspector layout inside Full Workspace Modal. This layout is optimized for predictable technical-value lengths and fast operational scanning.
+
+- left rail owns resource type, cluster, role, environment, collected time, and primary readiness state;
+- the main workspace starts with a four-item operational summary strip;
+- primary evidence uses a 12-column responsive grid with width allocated by expected content length rather than equal card widths;
+- Identity uses `5/12`, Capacity `3/12`, Connectivity `4/12`, Runtime & Platform `7/12`, and Scheduling & Conditions `5/12`;
+- predictable long identifiers such as System UUID, hostname/FQDN, kernel version, runtime identifier, and collected time stay on one line on desktop and use localized horizontal overflow only when the viewport is too narrow;
+- short scalar facts such as CPU, memory, role, environment, pressure state, and readiness use compact aligned rows;
+- Node Labels remain a full-width grouped collection; long metadata values may stay single-line while keys continue to wrap normally;
+- metadata/count tags use the canonical Violet treatment; readiness and operational state remain semantic green/amber/red;
+- the bottom boundary keeps Committed Snapshot and state-aware operational guidance visible as separate peer callouts.
+
+Node V8 deliberately does not use V6 horizontal evidence bands. The inspector layout is the Node-specific reference pattern to validate before propagating the same information architecture to other Kubernetes Inventory resources.

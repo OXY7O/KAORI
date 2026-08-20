@@ -77,10 +77,11 @@ def test_node_detail_uses_inline_detail_style_shared_primitives_and_operational_
         "technical_value.render(value, align='left', break_all=break_all, class_name='font-medium', size='body')"
         in shared
     )
-    assert '{% macro inventory_fact_grid' in shared
-    assert 'detail.inventory_section(' in detail
-    assert 'detail.inventory_technical_row(' in detail
-    assert 'detail.inventory_fact_grid(' in detail
+    assert '{% macro inspector_panel' in shared
+    assert '{% macro inspector_row' in shared
+    assert '{% macro inspector_technical_row' in shared
+    assert 'detail.inspector_panel(' in detail
+    assert 'detail.inspector_technical_row(' in detail
 
 
 def test_node_inventory_registers_detail_and_technical_value_standards() -> None:
@@ -123,4 +124,4 @@ def test_node_detail_factual_rows_use_one_calm_body_typography_scale() -> None:
     assert 'text-sm font-normal leading-5 text-content-secondary' in metadata
     assert 'text-sm font-medium leading-5 text-content-primary' in metadata
     assert 'bg-surface-hover' not in metadata
-    assert "technical_value.render(taint, break_all=true, class_name='font-medium', size='body')" in node
+    assert "technical_value.render(taint, break_all=false, class_name='font-medium whitespace-nowrap', size='body')" in node

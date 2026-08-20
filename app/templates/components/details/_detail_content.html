@@ -187,6 +187,85 @@
         </div>
     </article>
 {%- endmacro %}
+{% macro inspector_panel(title, icon, class_name='', badge=None, badge_type='metadata', badge_tone='unknown') -%}
+    <section data-kaori-node-inspector-panel
+             class="min-w-0 overflow-hidden rounded-xl border border-outline-subtle bg-surface-card {{ class_name }}">
+        <header class="flex min-w-0 items-center justify-between gap-3 border-b border-outline-subtle px-4 py-3">
+            <div class="flex min-w-0 items-center gap-2.5">
+                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary ring-1 ring-inset ring-brand-outline/50"
+                      aria-hidden="true"><i data-lucide="{{ icon }}" class="h-4 w-4"></i></span>
+                <h4 class="min-w-0 break-words text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]">{{ title }}</h4>
+            </div>
+            {% if badge %}
+                {% if badge_type == 'status' %}
+                    {{ table_label.status_label(badge, badge_tone, none, 'detail') }}
+                {% else %}
+                    {{ table_label.special_label(badge, 'maintenance', 'tags', 'detail') }}
+                {% endif %}
+            {% endif %}
+        </header>
+        <div class="min-w-0 px-4 py-2.5 sm:px-5">{{ caller() }}</div>
+    </section>
+{%- endmacro %}
+{% macro inspector_row(label, value='-', nowrap=false) -%}
+    {% set display_value = value if value not in [None, ''] else '-' %}
+    <div class="grid min-w-0 grid-cols-[minmax(7.5rem,0.42fr)_minmax(0,1fr)] items-start gap-3 border-b border-outline-subtle py-2.5 last:border-b-0">
+        <dt class="min-w-0 break-words text-xs font-medium leading-5 text-content-secondary [overflow-wrap:anywhere]">{{ label }}</dt>
+        <dd class="min-w-0 {{ 'overflow-x-auto whitespace-nowrap' if nowrap else 'break-words' }} text-sm font-medium leading-5 text-content-primary [overflow-wrap:anywhere]"
+            title="{{ display_value }}">{{ display_value }}</dd>
+    </div>
+{%- endmacro %}
+{% macro inspector_technical_row(label, value='-', nowrap=true) -%}
+    <div class="grid min-w-0 grid-cols-[minmax(7.5rem,0.42fr)_minmax(0,1fr)] items-start gap-3 border-b border-outline-subtle py-2.5 last:border-b-0">
+        <dt class="min-w-0 break-words text-xs font-medium leading-5 text-content-secondary [overflow-wrap:anywhere]">{{ label }}</dt>
+        <dd class="min-w-0 {{ 'overflow-x-auto whitespace-nowrap' if nowrap else '' }} text-sm font-medium leading-5 text-content-primary">
+            {{ technical_value.render(value, align='left', break_all=false, class_name='font-medium whitespace-nowrap', size='body') }}
+        </dd>
+    </div>
+{%- endmacro %}
+{% macro inspector_hint(message, icon='info') -%}
+    <div class="mt-2 flex min-w-0 items-start gap-2 border-t border-outline-subtle pt-2.5 text-xs leading-5 text-content-muted">
+        <span class="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary"
+              aria-hidden="true"><i data-lucide="{{ icon }}" class="h-3 w-3"></i></span>
+        <p class="min-w-0 flex-1 break-words [overflow-wrap:anywhere]">{{ message }}</p>
+    </div>
+{%- endmacro %}
+{% macro inspector_rail_item(label, value, icon, supporting=None, nowrap=false) -%}
+    <div class="border-b border-outline-subtle py-4 last:border-b-0">
+        <p class="text-xs font-semibold uppercase tracking-[0.05em] text-kaori-primary">{{ label }}</p>
+        <div class="mt-1.5 flex min-w-0 items-start gap-2.5">
+            <span class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary"
+                  aria-hidden="true"><i data-lucide="{{ icon }}" class="h-3.5 w-3.5"></i></span>
+            <div class="min-w-0">
+                <p class="{{ 'whitespace-nowrap' if nowrap else 'break-words' }} text-sm font-medium leading-5 text-content-primary [overflow-wrap:anywhere]">{{ value if value not in [None, ''] else '-' }}</p>
+                {% if supporting %}
+                    <p class="mt-0.5 text-xs leading-5 text-content-muted">{{ supporting }}</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+{%- endmacro %}
+{% macro inspector_summary_strip(items) -%}
+    <div data-resource-detail-summary
+         data-kaori-node-inspector-summary
+         class="m-4 grid overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm sm:grid-cols-2 sm:divide-x sm:divide-outline-subtle lg:mx-6 xl:grid-cols-4">
+        {% for item in items %}
+            {% set tone = item.tone if item.tone is defined else 'brand' %}
+            {% set icon_classes = 'bg-status-normal-soft text-status-normal-text' if tone == 'normal' else ('bg-status-warning-soft text-status-warning-text' if tone == 'warning' else ('bg-status-critical-soft text-status-critical-text' if tone == 'critical' else 'bg-kaori-soft text-kaori-primary')) %}
+            <article class="flex min-w-0 items-start gap-3 border-b border-outline-subtle px-4 py-3.5 last:border-b-0 sm:border-b-0">
+                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg {{ icon_classes }}"
+                      aria-hidden="true"><i data-lucide="{{ item.icon }}" class="h-4 w-4"></i></span>
+                <div class="min-w-0">
+                    <p class="text-xs font-medium leading-5 text-content-muted">{{ item.label }}</p>
+                    <p class="mt-0.5 break-words text-base font-semibold leading-6 text-content-primary [overflow-wrap:anywhere]">{{ item.value }}</p>
+                    {% if item.supporting %}
+                        <p class="mt-0.5 text-xs leading-5 text-content-muted">{{ item.supporting }}</p>
+                    {% endif %}
+                </div>
+            </article>
+        {% endfor %}
+    </div>
+{%- endmacro %}
 {% macro empty_evidence(title, description, icon='info') -%}
     <div class="rounded-lg border border-dashed border-outline-strong bg-surface-elevated px-4 py-4 text-center">
         <span class="mx-auto flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"

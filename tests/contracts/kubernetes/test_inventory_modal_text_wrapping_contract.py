@@ -12,7 +12,7 @@ def test_inventory_modal_uses_wide_overflow_safe_workspace() -> None:
     modal = read('app/templates/components/resource_detail_modal.html')
     script = read('app/static/js/detail_rows.js')
 
-    assert 'max-w-[78rem]' in modal
+    assert 'max-w-[92rem]' in modal
     assert 'overflow-x-hidden overflow-y-auto' in modal
     assert '[overflow-wrap:anywhere]' in modal
     assert 'resource-detail-modal-title" class="mt-0.5 truncate' not in modal

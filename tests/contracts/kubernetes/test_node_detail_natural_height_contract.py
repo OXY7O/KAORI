@@ -7,23 +7,25 @@ def _read(relative_path: str) -> str:
     return (ROOT / relative_path).read_text(encoding='utf-8')
 
 
-def test_node_detail_uses_natural_height_full_width_horizontal_sections() -> None:
+def test_node_detail_uses_balanced_inspector_layout_with_natural_height_sections() -> None:
     detail = _read('app/templates/kubernetes/inventory/nodes/partials/_node_detail_content.html')
     shared = _read('app/templates/components/details/_detail_content.html')
 
     assert 'data-kaori-detail-variant="full-workspace-modal"' in detail
-    assert 'data-kaori-inventory-detail-layout="horizontal-section-stack"' in detail
-    assert 'grid items-start gap-x-10 gap-y-8 p-5 sm:p-6 xl:grid-cols-2' not in detail
-    assert 'macro inventory_section(' in shared
-    assert 'data-kaori-inventory-detail-section' in shared
+    assert 'data-kaori-detail-density="balanced-inspector"' in detail
+    assert 'data-kaori-inventory-detail-layout="balanced-inspector"' in detail
+    assert 'data-kaori-node-inspector' in detail
+    assert 'lg:grid-cols-[13.5rem_minmax(0,1fr)]' in detail
+    assert 'xl:grid-cols-12' in detail
+    assert 'macro inspector_panel(' in shared
+    assert 'macro inspector_row(' in shared
+    assert 'macro inspector_technical_row(' in shared
 
-    # Natural-height sections avoid blank equal-height card space.
     assert 'min-h-80' not in detail
     assert 'min-h-96' not in detail
 
-    assert "detail.inventory_section('Node Identity'" in detail
-    assert "detail.inventory_section('Node Capacity'" in detail
-    assert "detail.inventory_section('Connectivity'" in detail
-    assert "detail.inventory_section('Platform & Runtime'" in detail
-    assert "detail.inventory_section('Scheduling & Conditions'" in detail
+    for title in ('Identity', 'Node Capacity', 'Connectivity', 'Runtime & Platform', 'Scheduling & Conditions'):
+        assert f"detail.inspector_panel('{title}'" in detail
+
+    assert "operational_callout.render('Committed Snapshot Boundary'" in detail
     assert 'operational_callout.render(node.operational_context.title' in detail
