@@ -37,7 +37,7 @@ def test_workload_configuration_is_factual_not_implicitly_scored() -> None:
 def test_workload_detail_uses_related_resources_metadata_and_context() -> None:
     template = _read('app/templates/kubernetes/inventory/workloads/partials/_workload_detail_content.html')
 
-    assert 'related_collection.render(' in template
+    assert 'related_collection.inventory_render(' in template
     assert "'Associated Pods'" in template
     assert "'Open Pod Inventory'" in template
     assert "metadata_collection.render('Workload Labels'" in template

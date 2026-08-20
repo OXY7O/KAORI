@@ -7,8 +7,8 @@
 {% import "components/operational_callout.html" as operational_callout %}
 <div data-kaori-detail-variant="full-workspace-modal"
      data-kaori-detail-density="adaptive-stacks"
-     data-kaori-inventory-detail="v2"
-     data-kaori-inventory-detail-layout="evidence-workspace"
+     data-kaori-inventory-detail="v4"
+     data-kaori-inventory-detail-layout="operational-fact-sheet"
      class="{{ detail.expanded_workspace_outer_classes() }}">
     <div class="{{ detail.expanded_workspace_shell_classes() }}">
         {% set detail_description = "Runtime, delivery, placement, and relationship evidence from the committed snapshot." %}
@@ -53,7 +53,7 @@
                         {{ detail.empty_evidence('Pod Template Not Reported', 'The workload collector did not report authoritative Pod-template evidence for this snapshot.', 'container') }}
                     {% endif %}
                 {% endcall %}
-                {{ related_collection.render('Associated Pods',
+                {{ related_collection.inventory_render('Associated Pods',
                                 'Pods mapped to this controller in the committed snapshot.',
                                 workload.pods,
                                 workload.pod_count,

@@ -31,8 +31,9 @@ def test_inventory_fact_grid_uses_one_grouped_boundary_without_floating_tiles() 
 
     assert 'macro inventory_fact_grid(rows, columns=2)' in detail
     assert 'data-kaori-inventory-fact-grid' in detail
-    assert 'gap-px overflow-hidden rounded-lg border border-outline-subtle bg-outline-subtle' in detail
-    assert 'min-w-0 bg-surface-card px-3.5 py-3' in detail
+    assert 'grid min-w-0 gap-x-6' in detail
+    assert 'rounded-lg border border-outline-subtle bg-surface-card' not in detail.split('{% macro inventory_fact_grid', 1)[1].split('{%- endmacro %}', 1)[0]
+    assert 'min-w-0 border-b border-outline-subtle py-2.5' in detail
 
 
 def test_metadata_collection_avoids_nested_vertical_scroll() -> None:
@@ -40,7 +41,8 @@ def test_metadata_collection_avoids_nested_vertical_scroll() -> None:
     pod_detail = read('app/templates/kubernetes/inventory/pods/partials/_pod_detail_content.html')
 
     assert 'max-h-56 overflow-y-auto' not in metadata
-    assert 'overflow-hidden rounded-lg border' in metadata
+    assert 'data-kaori-inventory-metadata-collection' in metadata
+    assert 'max-h-56 overflow-y-auto' not in metadata
     assert 'grid items-start gap-4 lg:grid-cols-2' in pod_detail
 
 

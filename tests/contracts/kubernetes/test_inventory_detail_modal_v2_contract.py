@@ -18,7 +18,7 @@ def read(relative: str) -> str:
     return (ROOT / relative).read_text(encoding='utf-8')
 
 
-def test_inventory_view_details_use_v2_modal_host_and_shared_resource_header() -> None:
+def test_inventory_view_details_use_v4_fact_sheet_host_and_shared_resource_header() -> None:
     modal = read('app/templates/components/resource_detail_modal.html')
     shared = read('app/templates/components/details/_detail_content.html')
 
@@ -44,8 +44,8 @@ def test_inventory_view_details_use_v2_modal_host_and_shared_resource_header() -
         index = read(f'app/templates/kubernetes/inventory/{resource}/index.html')
         detail = read(f'app/templates/kubernetes/inventory/{resource}/partials/{DETAIL_FILES[resource]}')
         assert 'resource_detail_modal.inventory_host(' in index, resource
-        assert 'data-kaori-inventory-detail="v2"' in detail, resource
-        assert 'data-kaori-inventory-detail-layout="evidence-workspace"' in detail, resource
+        assert 'data-kaori-inventory-detail="v4"' in detail, resource
+        assert 'data-kaori-inventory-detail-layout="operational-fact-sheet"' in detail, resource
         assert 'detail.workspace_header(' in detail, resource
         assert 'detail.header_identity_row()' in detail, resource
         assert 'detail.inventory_title(' in detail, resource
@@ -64,7 +64,7 @@ def test_inventory_detail_typography_has_one_predictable_hierarchy() -> None:
     assert 'text-lg font-semibold leading-7 text-content-primary' in shared
     assert 'text-base font-semibold leading-6 text-content-primary' in shared
     assert 'text-sm font-semibold leading-5 text-content-primary' in shared
-    assert 'text-sm font-medium leading-5 text-content-secondary' in shared
+    assert 'text-sm font-normal leading-5 text-content-muted' in shared
     assert 'text-left text-sm font-medium leading-5 text-content-primary' in shared
     assert "size='body'" in shared
     assert "'text-sm leading-5' if size == 'body'" in technical
@@ -75,7 +75,7 @@ def test_inventory_detail_typography_has_one_predictable_hierarchy() -> None:
     assert 'text-sm font-semibold tabular-nums text-content-primary' in runtime
 
     # Metadata key/value pairs use the same 14px body scale and differ by tone rather than size.
-    assert 'text-sm font-medium leading-5 text-content-secondary' in metadata
+    assert 'text-sm font-normal leading-5 text-content-muted' in metadata
     assert 'text-sm font-medium leading-5 text-content-primary' in metadata
 
     for resource, filename in DETAIL_FILES.items():
@@ -101,7 +101,8 @@ def test_configuration_key_inventory_uses_full_width_grouped_list_instead_of_til
     assert 'space-y-4 p-4 sm:p-5' in configuration
     assert "metadata_collection.render('Key Inventory'" in configuration
     assert (
-        'gap-px overflow-hidden rounded-lg border border-outline-subtle bg-outline-subtle sm:grid-cols-2 xl:grid-cols-3'
+        'grid min-w-0 gap-x-8 sm:grid-cols-2 xl:grid-cols-3'
         in metadata
     )
     assert 'rounded-lg border border-outline-subtle bg-surface-elevated px-3 py-2.5' not in metadata
+    assert 'data-kaori-inventory-metadata-collection' in metadata

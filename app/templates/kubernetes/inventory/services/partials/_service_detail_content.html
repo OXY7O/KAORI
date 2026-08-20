@@ -6,8 +6,8 @@
 {% import "components/table.html" as table_ui %}
 <div data-kaori-detail-variant="full-workspace-modal"
      data-kaori-detail-density="adaptive-stacks"
-     data-kaori-inventory-detail="v2"
-     data-kaori-inventory-detail-layout="evidence-workspace"
+     data-kaori-inventory-detail="v4"
+     data-kaori-inventory-detail-layout="operational-fact-sheet"
      class="{{ detail.expanded_workspace_outer_classes() }}">
     <div class="{{ detail.expanded_workspace_shell_classes() }}">
         {% set detail_description = "Access, backend, port, selected Pod, and network evidence from the committed snapshot." %}
@@ -129,14 +129,14 @@
                         <div class="p-4">{{ detail.empty_evidence('Endpoint Registration Not Applicable', 'ExternalName Services delegate resolution to DNS and do not use Service endpoint registration.', 'external-link') }}</div>
                     </section>
                 {% elif service.endpoints_reported %}
-                    {{ related_collection.render('Endpoint Addresses', 'Registered backend addresses from EndpointSlice or Endpoints evidence.', service.endpoint_resources, service.ready_endpoint_count + service.not_ready_endpoint_count, 'waypoints', 'No Endpoint Addresses', 'No registered backend address is represented in the committed snapshot.', service.endpoints_truncated) }}
+                    {{ related_collection.inventory_render('Endpoint Addresses', 'Registered backend addresses from EndpointSlice or Endpoints evidence.', service.endpoint_resources, service.ready_endpoint_count + service.not_ready_endpoint_count, 'waypoints', 'No Endpoint Addresses', 'No registered backend address is represented in the committed snapshot.', service.endpoints_truncated) }}
                 {% else %}
                     <section class="min-w-0 overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
                         <div class="p-4">{{ detail.empty_evidence('Endpoint Evidence Not Reported', 'EndpointSlice and Endpoints evidence was unavailable during the committed inventory collection.', 'database-zap') }}</div>
                     </section>
                 {% endif %}
                 {% if service.pod_relationship_applicable %}
-                    {{ related_collection.render('Selected Pods', 'Pods matching the Service selector in the current committed snapshot.', service.pods, service.pod_count, 'package-check', 'No Selected Pods', 'No committed Pod label set matches the Service selector.', service.pods_truncated, url_for('inventory.pods', cluster_id=service.cluster_id, namespace=service.namespace) , 'Open Pod Inventory') }}
+                    {{ related_collection.inventory_render('Selected Pods', 'Pods matching the Service selector in the current committed snapshot.', service.pods, service.pod_count, 'package-check', 'No Selected Pods', 'No committed Pod label set matches the Service selector.', service.pods_truncated, url_for('inventory.pods', cluster_id=service.cluster_id, namespace=service.namespace) , 'Open Pod Inventory') }}
                 {% else %}
                     <section class="min-w-0 overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
                         <div class="p-4">{{ detail.empty_evidence('Pod Selection Not Applicable', 'This Service does not declare a Pod selector. Backend registration is external or manually managed.', 'package-x') }}</div>

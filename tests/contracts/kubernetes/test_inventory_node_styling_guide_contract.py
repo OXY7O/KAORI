@@ -117,10 +117,10 @@ def test_node_detail_factual_rows_use_one_calm_body_typography_scale() -> None:
     metadata = read('app/templates/components/technical_metadata_collection.html')
     node = read('app/templates/kubernetes/inventory/nodes/partials/_node_detail_content.html')
 
-    assert 'text-sm font-medium leading-5 text-content-secondary' in shared
+    assert 'text-sm font-normal leading-5 text-content-muted' in shared
     assert 'text-left text-sm font-medium leading-5 text-content-primary' in shared
     assert "class_name='font-medium', size='body'" in shared
-    assert 'text-sm font-medium leading-5 text-content-secondary' in metadata
+    assert 'text-sm font-normal leading-5 text-content-muted' in metadata
     assert 'text-sm font-medium leading-5 text-content-primary' in metadata
     assert 'bg-surface-hover' not in metadata
     assert "technical_value.render(taint, break_all=true, class_name='font-medium', size='body')" in node

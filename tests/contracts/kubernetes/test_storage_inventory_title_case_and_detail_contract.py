@@ -81,7 +81,7 @@ def test_storage_detail_uses_adaptive_stacks_and_factual_configuration() -> None
     assert 'detail.expanded_workspace_shell_classes()' in detail
     for title in ('Storage Identity', 'Capacity & Access', 'Binding & Lifecycle', 'Provisioning Configuration'):
         assert f"detail.inventory_section('{title}'" in detail
-    assert 'related_collection.render(' in detail
+    assert 'related_collection.inventory_render(' in detail
     assert 'metadata_collection.render(' in detail
     assert 'Committed Snapshot Boundary' in detail
     assert 'live filesystem usage, pressure, growth, performance, durability' in detail

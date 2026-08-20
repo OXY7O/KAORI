@@ -51,7 +51,7 @@ def test_namespace_detail_uses_shared_metadata_and_operational_context() -> None
     assert 'Committed Snapshot Boundary' in detail
     assert 'macro render(title, entries' in component
     assert 'max-h-56 overflow-y-auto' not in component
-    assert 'overflow-hidden rounded-lg border' in component
+    assert 'data-kaori-inventory-metadata-collection' in component
 
 
 def test_namespace_pagination_stays_htmx_aware() -> None:

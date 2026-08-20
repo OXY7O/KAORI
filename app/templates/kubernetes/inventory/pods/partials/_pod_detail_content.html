@@ -8,8 +8,8 @@
 {% import "components/operational_callout.html" as operational_callout %}
 <div data-kaori-detail-variant="full-workspace-modal"
      data-kaori-detail-density="adaptive-stacks"
-     data-kaori-inventory-detail="v2"
-     data-kaori-inventory-detail-layout="evidence-workspace"
+     data-kaori-inventory-detail="v4"
+     data-kaori-inventory-detail-layout="operational-fact-sheet"
      class="{{ detail.expanded_workspace_outer_classes() }}">
     <div class="{{ detail.expanded_workspace_shell_classes() }}">
         {% set detail_description = "Runtime, placement, container, storage, and configuration evidence from the committed snapshot." %}
@@ -141,14 +141,14 @@
                     <div class="p-4">{{ detail.empty_evidence('Volume Evidence Not Reported', 'Pod specification evidence was unavailable, so volume absence cannot be established.', 'shield-question') }}</div>
                 {% endif %}
                 <div class="grid gap-4 border-t border-outline-subtle p-4 lg:grid-cols-2">
-                    {{ related_collection.render('Configuration References',
+                    {{ related_collection.inventory_render('Configuration References',
                                         'ConfigMap and Secret names referenced by Pod configuration. Secret content is never displayed.',
                                         pod.configuration_references,
                                         pod.configuration_references|length,
                                         'file-key-2',
                                         'No Configuration References' if pod.reference_evidence_reported else 'Configuration Reference Evidence Not Reported',
                                         'No ConfigMap or Secret reference is represented in this Pod specification.' if pod.reference_evidence_reported else 'Pod specification evidence was unavailable, so KAORI cannot determine whether configuration references exist.') }}
-                    {{ related_collection.render('Storage References',
+                    {{ related_collection.inventory_render('Storage References',
                                         'PersistentVolumeClaims referenced by Pod volumes.',
                                         pod.storage_references,
                                         pod.storage_references|length,

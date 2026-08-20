@@ -49,8 +49,8 @@ def test_ingress_detail_uses_adaptive_stacks_and_factual_reference_evidence() ->
     assert 'Reference State' in detail
     assert '<caption class="sr-only">Declared backend routes for Ingress' in detail
     assert detail.count('scope="col"') >= 6
-    assert "related_collection.render('Backend Services'" in detail
-    assert "related_collection.render('TLS Secret References'" in detail
+    assert "related_collection.inventory_render('Backend Services'" in detail
+    assert "related_collection.inventory_render('TLS Secret References'" in detail
     assert "url_for('inventory.services'" in detail
     assert "url_for('inventory.configuration'" in detail
     assert "'Resolve Backend Service References'" in service

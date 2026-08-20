@@ -12,7 +12,7 @@ def test_node_detail_uses_natural_height_two_column_evidence_sections() -> None:
     shared = _read('app/templates/components/details/_detail_content.html')
 
     assert 'data-kaori-detail-variant="full-workspace-modal"' in detail
-    assert 'grid items-start gap-4 p-4 sm:p-5 xl:grid-cols-2' in detail
+    assert 'grid items-start gap-x-10 gap-y-8 p-5 sm:p-6 xl:grid-cols-2' in detail
     assert 'macro inventory_section(' in shared
     assert 'data-kaori-inventory-detail-section' in shared
 

@@ -107,3 +107,14 @@ Operational boundary and next action
 ```
 
 Use one section boundary per evidence domain. Do not wrap every metric in a standalone rounded card. Large key inventories use the grouped shared collection surface so dozens of keys remain scannable without producing a wall of floating tiles. Identity labels and factual values share the same `text-sm` body scale. Labels use medium secondary text, values use medium primary text, section titles use semibold, and only supporting copy steps down to `text-xs`.
+
+
+### Inventory Operational Fact Sheet (V4)
+
+Kubernetes Inventory details use an operational fact-sheet layout rather than a card gallery.
+
+- Section boundaries are expressed with spacing and hairline dividers, not nested rounded cards.
+- Field labels and factual values share the same `text-sm` body scale; labels are regular/muted and values are medium/primary.
+- Summary values may use `text-base`; supporting guidance stays `text-xs`.
+- Technical metadata uses the same body scale and is arranged as scan-friendly rows or columns, never a wall of floating tiles.
+- Notes are inline evidence guidance with a small icon and divider, not full tinted information cards.

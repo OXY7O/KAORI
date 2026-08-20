@@ -1,6 +1,5 @@
 {% import "components/table_label.html" as table_label %}
 {% import "components/details/_detail_content.html" as detail %}
-{% import "components/detail_tip.html" as inventory_tip %}
 {% import "components/operational_callout.html" as operational_callout %}
 {% import "components/technical_value.html" as technical_value %}
 {% import "components/technical_metadata_collection.html" as metadata_collection %}
@@ -10,8 +9,8 @@
 {% set condition_posture = 'Critical' if condition_tone == 'critical' else ('Warning' if condition_tone == 'warning' else ('Normal' if condition_tone == 'normal' else 'Unknown')) %}
 <div data-kaori-detail-variant="full-workspace-modal"
      data-kaori-detail-density="adaptive-stacks"
-     data-kaori-inventory-detail="v2"
-     data-kaori-inventory-detail-layout="evidence-workspace"
+     data-kaori-inventory-detail="v4"
+     data-kaori-inventory-detail-layout="operational-fact-sheet"
      class="{{ detail.expanded_workspace_outer_classes() }}">
     <div class="{{ detail.expanded_workspace_shell_classes() }}">
         {% set detail_description = "Identity, capacity, runtime, network, scheduling, and condition evidence from the committed snapshot." %}
@@ -29,7 +28,7 @@
         ('Scheduled Pods', node.scheduled_pod_count, 'Committed assignments'),
         ('Capacity', node.capacity_summary, 'CPU · Memory')
         ], compact=true) }}
-        <div class="grid items-start gap-4 p-4 sm:p-5 xl:grid-cols-2">
+        <div class="grid items-start gap-x-10 gap-y-8 p-5 sm:p-6 xl:grid-cols-2">
             {% call detail.inventory_section('Node Identity', 'badge-info') %}
                 {{ detail.inventory_technical_row('System UUID', node.system_uuid) }}
                 {{ detail.inventory_row('Cluster', node.cluster_name) }}
@@ -37,21 +36,21 @@
                 {{ detail.inventory_row('Role', node.role_display) }}
                 {{ detail.inventory_row('Age', node.age) }}
                 {{ detail.inventory_row('Collected', node.collected_at|user_datetime) }}
-                {{ inventory_tip.tip(node.role_description, 'server', true) }}
+                {{ detail.inventory_note(node.role_description, 'server') }}
             {% endcall %}
             {% call detail.inventory_section('Node Capacity', 'gauge') %}
                 {{ detail.inventory_row('CPU', node.cpu_display) }}
                 {{ detail.inventory_row('Memory', node.memory_display) }}
                 {{ detail.inventory_row('Ephemeral Storage', node.ephemeral_storage_display) }}
                 {{ detail.inventory_row('Allocatable Ephemeral', node.ephemeral_storage_allocatable_display) }}
-                {{ inventory_tip.tip('Capacity values remain factual Kubernetes evidence. Missing values are shown explicitly and are not converted to zero.', 'database', true) }}
+                {{ detail.inventory_note('Capacity values remain factual Kubernetes evidence. Missing values are shown explicitly and are not converted to zero.', 'database') }}
             {% endcall %}
             {% call detail.inventory_section('Connectivity', 'network', node.network_availability, 'status', network_tone, badge_size='detail') %}
                 {{ detail.inventory_technical_row('Internal IP', node.internal_ip or 'Not Reported') }}
                 {{ detail.inventory_technical_row('External IP', node.external_ip or 'Not Reported') }}
                 {{ detail.inventory_technical_row('Hostname', node.hostname_address or 'Not Reported') }}
                 {{ detail.inventory_row('Network Scope', node.network_scope) }}
-                {{ inventory_tip.tip('Internal IP is the cluster address; External IP may be absent on private nodes.', 'network', true) }}
+                {{ detail.inventory_note('Internal IP is the cluster address; External IP may be absent on private nodes.', 'network') }}
             {% endcall %}
             {% call detail.inventory_section('Platform & Runtime', 'cpu', class_name='') %}
                 {{ detail.inventory_row('Operating System', node.operating_system_display) }}

@@ -7,8 +7,8 @@
 {% import "components/technical_value.html" as technical_value %}
 <div data-kaori-detail-variant="full-workspace-modal"
      data-kaori-detail-density="adaptive-stacks"
-     data-kaori-inventory-detail="v2"
-     data-kaori-inventory-detail-layout="evidence-workspace"
+     data-kaori-inventory-detail="v4"
+     data-kaori-inventory-detail-layout="operational-fact-sheet"
      class="{{ detail.expanded_workspace_outer_classes() }}">
     <div class="{{ detail.expanded_workspace_shell_classes() }}">
         {% set detail_description = "Host, publication, TLS Secret, and backend route evidence from the committed snapshot." %}
@@ -129,10 +129,10 @@
                 {% endif %}
             </section>
             <div class="xl:col-span-2">
-                {{ related_collection.render('Backend Services', 'Service references resolved against current committed Service evidence.', ingress.backend_resources, ingress.backend_resources|length, 'network', 'No Service Backends', 'No Service backend reference is represented in this Ingress snapshot.', false, url_for('inventory.services', cluster_id=ingress.cluster_id, namespace=ingress.namespace) , 'Open Service Inventory') }}
+                {{ related_collection.inventory_render('Backend Services', 'Service references resolved against current committed Service evidence.', ingress.backend_resources, ingress.backend_resources|length, 'network', 'No Service Backends', 'No Service backend reference is represented in this Ingress snapshot.', false, url_for('inventory.services', cluster_id=ingress.cluster_id, namespace=ingress.namespace) , 'Open Service Inventory') }}
             </div>
             <div class="xl:col-span-2">
-                {{ related_collection.render('TLS Secret References', 'Secret references resolved against current committed Secret evidence.', ingress.tls_resources, ingress.tls_resources|length, 'key-round', 'No TLS Reference', 'No TLS Secret reference is declared in this Ingress snapshot.', false, url_for('inventory.configuration', cluster_id=ingress.cluster_id, namespace=ingress.namespace, type='Secret') , 'Open Secret Inventory') }}
+                {{ related_collection.inventory_render('TLS Secret References', 'Secret references resolved against current committed Secret evidence.', ingress.tls_resources, ingress.tls_resources|length, 'key-round', 'No TLS Reference', 'No TLS Secret reference is declared in this Ingress snapshot.', false, url_for('inventory.configuration', cluster_id=ingress.cluster_id, namespace=ingress.namespace, type='Secret') , 'Open Secret Inventory') }}
             </div>
             <div class="grid items-start gap-4 xl:col-span-2 xl:grid-cols-2">
                 {{ metadata_collection.render('Ingress Labels', ingress.labels, 'tags', 'No Ingress Labels', 'No Ingress labels were reported in the committed snapshot.', 'Labels remain factual identity and controller metadata.') }}

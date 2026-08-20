@@ -42,3 +42,46 @@
         {% endif %}
     </section>
 {%- endmacro %}
+
+{% macro inventory_render(title, description, resources, total_count, icon='git-branch', empty_title='No Related Resources', empty_description='No related resources are represented in the committed inventory snapshot.', truncated=false, action_href=None, action_label=None) -%}
+    <section class="min-w-0" data-kaori-inventory-related-collection>
+        <header class="flex min-w-0 flex-wrap items-center justify-between gap-3 border-b border-outline-subtle pb-2.5">
+            <div class="flex min-w-0 items-center gap-2.5">
+                <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary"
+                      aria-hidden="true"><i data-lucide="{{ icon }}" class="h-3.5 w-3.5"></i></span>
+                <div class="min-w-0">
+                    <h4 class="break-words text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]">{{ title }}</h4>
+                    {% if description %}<p class="mt-0.5 break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]">{{ description }}</p>{% endif %}
+                </div>
+            </div>
+            {{ table_label.metadata_label(total_count ~ ' ' ~ ('Resource' if total_count == 1 else 'Resources') ) }}
+        </header>
+        {% if resources %}
+            <div class="divide-y divide-outline-subtle">
+                {% for resource in resources %}
+                    <article class="flex flex-col gap-2 py-2.5 sm:flex-row sm:items-start sm:justify-between">
+                        <div class="min-w-0">
+                            <p class="break-words text-sm font-medium leading-5 text-content-primary [overflow-wrap:anywhere]">{{ resource.name }}</p>
+                            <p class="mt-0.5 break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]">{{ resource.supporting_primary }}</p>
+                            {% if resource.supporting_secondary %}<p class="break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]">{{ resource.supporting_secondary }}</p>{% endif %}
+                        </div>
+                        {% if resource.status %}
+                            <div class="shrink-0">{{ table_label.status_indicator_label(resource.status, resource.status_tone or 'unknown') }}</div>
+                        {% endif %}
+                    </article>
+                {% endfor %}
+            </div>
+            {% if truncated %}
+                <p class="border-t border-outline-subtle pt-2.5 text-xs leading-5 text-content-muted">Showing the first {{ resources|length }} related resources.</p>
+            {% endif %}
+        {% else %}
+            <div class="pt-3">{{ detail.empty_evidence(empty_title, empty_description, icon) }}</div>
+        {% endif %}
+        {% if action_href and action_label %}
+            <footer class="flex justify-end border-t border-outline-subtle pt-3">
+                <a href="{{ action_href }}"
+                   class="inline-flex min-h-8 items-center justify-center gap-1.5 rounded-md border border-outline-default bg-surface-card px-2.5 text-xs font-medium text-content-secondary transition-colors hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary-dark"><i data-lucide="external-link" class="h-4 w-4"></i>{{ action_label }}</a>
+            </footer>
+        {% endif %}
+    </section>
+{%- endmacro %}

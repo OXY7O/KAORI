@@ -5,8 +5,8 @@
 {% import "components/operational_callout.html" as operational_callout %}
 <div data-kaori-detail-variant="full-workspace-modal"
      data-kaori-detail-density="adaptive-stacks"
-     data-kaori-inventory-detail="v2"
-     data-kaori-inventory-detail-layout="evidence-workspace"
+     data-kaori-inventory-detail="v4"
+     data-kaori-inventory-detail-layout="operational-fact-sheet"
      class="{{ detail.expanded_workspace_outer_classes() }}">
     <div class="{{ detail.expanded_workspace_shell_classes() }}">
         {% set detail_description = "Provisioning, capacity, access, binding, relationship, and lifecycle evidence." %}
@@ -105,10 +105,10 @@
             <div class="xl:col-span-2 grid items-start gap-4 xl:grid-cols-2">
                 {% set claims_empty_title = 'No Related Claims' if item.claims_reported else 'Claim Evidence Not Reported' %}
                 {% set claims_empty_description = 'No PersistentVolumeClaim relationship is represented for this storage object.' if item.claims_reported else 'PersistentVolumeClaim collection evidence is unavailable for this cluster.' %}
-                {{ related_collection.render('Related Claims', 'PersistentVolumeClaim references represented by the committed storage snapshot.', item.claims, item.claim_count, 'folder-check', claims_empty_title, claims_empty_description, item.claims_truncated, url_for('inventory.storage', cluster_id=item.cluster_id, type='PersistentVolumeClaim') , 'Open Claim Inventory') }}
+                {{ related_collection.inventory_render('Related Claims', 'PersistentVolumeClaim references represented by the committed storage snapshot.', item.claims, item.claim_count, 'folder-check', claims_empty_title, claims_empty_description, item.claims_truncated, url_for('inventory.storage', cluster_id=item.cluster_id, type='PersistentVolumeClaim') , 'Open Claim Inventory') }}
                 {% set pods_empty_title = 'No Mounted Pods' if item.pods_reported else 'Pod Mount Evidence Not Reported' %}
                 {% set pods_empty_description = 'No Pod mount relationship is represented in the committed snapshot.' if item.pods_reported else 'Pod collection evidence is unavailable for this cluster.' %}
-                {{ related_collection.render('Mounted Pods', 'Pods whose committed volume references include the related claim.', item.pods, item.pod_count, 'package', pods_empty_title, pods_empty_description, item.pods_truncated, url_for('inventory.pods', cluster_id=item.cluster_id) , 'Open Pod Inventory') }}
+                {{ related_collection.inventory_render('Mounted Pods', 'Pods whose committed volume references include the related claim.', item.pods, item.pod_count, 'package', pods_empty_title, pods_empty_description, item.pods_truncated, url_for('inventory.pods', cluster_id=item.cluster_id) , 'Open Pod Inventory') }}
             </div>
             <div class="grid items-start gap-4 xl:col-span-2 xl:grid-cols-2">
                 {% if item.type == 'StorageClass' %}

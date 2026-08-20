@@ -30,7 +30,7 @@ def test_service_detail_uses_adaptive_stacks_and_factual_network_configuration()
     assert 'detail.expanded_workspace_shell_classes()' in detail
     assert 'Technical Metadata Collection' not in detail
     assert 'metadata_collection.render(' in detail
-    assert 'related_collection.render(' in detail
+    assert 'related_collection.inventory_render(' in detail
     assert 'Traffic policies and publication configuration remain factual evidence' in detail
     assert "status_row('IP Family Policy'" not in detail
     assert "'No Registered Backends'" in semantics
