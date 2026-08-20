@@ -1,53 +1,126 @@
 {% import "components/operational_section_card.html" as operational_section_card %}
 {% import "components/peer_content_grid.html" as peer_content_grid %}
+{% import "components/table.html" as table_ui %}
 {% import "components/table_label.html" as table_label %}
 <div id="object-storage-dashboard-section-overview" class="space-y-5">
-    {% call operational_section_card.render('System Health Summary', 'Committed inventory and 24h analytics readiness across registered Object Storage systems.', 'heart-pulse', body_classes='p-0') %}
-        <div class="divide-y divide-outline-subtle">
-            {% for row in dashboard.health_rows %}
-                <article class="grid gap-3 px-4 py-4 md:grid-cols-[minmax(0,1.35fr)_repeat(4,minmax(0,0.75fr))] md:items-center sm:px-5">
-                    <div class="min-w-0">
-                        <div class="flex flex-wrap items-center gap-2">
-                            <p class="text-sm font-semibold text-content-primary">{{ row.name }}</p>
-                            {{ table_label.metadata_label(row.environment, size='compact') }}
-                        </div>
-                        <p class="mt-1 text-xs text-content-muted">Inventory updated {{ row.inventory_updated }}</p>
-                    </div>
-                    <div>
-                        <p class="text-xs text-content-muted">Provider State</p>
-                        <p class="mt-1 text-sm font-semibold text-content-primary">{{ row.provider_status }}</p>
-                    </div>
-                    <div>
-                        <p class="text-xs text-content-muted">Analytics Snapshot</p>
-                        <div class="mt-1">{{ table_label.status_label(row.snapshot_label, row.snapshot_tone, size='compact') }}</div>
-                    </div>
-                    <div>
-                        <p class="text-xs text-content-muted">Utilization</p>
-                        <p class="mt-1 text-sm font-semibold text-content-primary">{{ row.utilization_display }}</p>
-                    </div>
-                    <div>
-                        <p class="text-xs text-content-muted">Active Alerts</p>
-                        <p class="mt-1 text-sm font-semibold text-content-primary">{{ row.active_alerts if row.active_alerts is not none else 'N/A' }}</p>
-                    </div>
-                </article>
-            {% endfor %}
+    {% call operational_section_card.render(
+        'System Health Summary',
+        'Committed inventory and 24h analytics readiness across registered Object Storage systems.',
+        'heart-pulse',
+        action_href=url_for('object_storage_inventory.overview'),
+        action_label='Open Inventory',
+        body_classes='p-0'
+        ) %}
+        <div class="overflow-x-auto">
+            <table class="{{ table_ui.table_classes('min-w-[1040px]') }}">
+                <thead class="{{ table_ui.head_classes() }}">
+                    <tr>
+                        <th class="{{ table_ui.header_cell_classes() }}">System</th>
+                        <th class="{{ table_ui.header_cell_classes() }}">Overall</th>
+                        <th class="{{ table_ui.header_cell_classes() }}">Buckets</th>
+                        <th class="{{ table_ui.header_cell_classes() }}">Stored Data</th>
+                        <th class="{{ table_ui.header_cell_classes() }}">Utilization</th>
+                        <th class="{{ table_ui.header_cell_classes() }}">Alerts</th>
+                        <th class="{{ table_ui.header_cell_classes(action=true) }}">Snapshot Sources</th>
+                    </tr>
+                </thead>
+                <tbody class="{{ table_ui.body_classes() }}">
+                    {% if dashboard.health_rows %}
+                        {% for row in dashboard.health_rows %}
+                            {% set system_subtitle = row.environment|title ~ ' · Inventory ' ~ row.inventory_updated %}
+                            <tr class="{{ table_ui.row_classes() }}">
+                                <td class="{{ table_ui.cell_classes() }} align-top">
+                                    {{ table_ui.title_cell(row.name, system_subtitle, 'database') }}
+                                </td>
+                                <td class="{{ table_ui.cell_classes() }} align-top">
+                                    <div class="space-y-1.5">
+                                        {{ table_label.status_indicator_label(row.overall_status, row.overall_tone) }}
+                                        <p class="max-w-[210px] text-xs leading-5 text-content-muted"
+                                           title="{{ row.status_reason }}">{{ row.status_reason }}</p>
+                                    </div>
+                                </td>
+                                <td class="{{ table_ui.cell_classes() }} align-top">
+                                    <p class="text-sm font-semibold text-content-primary">{{ row.bucket_count }}</p>
+                                    <p class="mt-1 text-xs text-content-muted">Committed Assets</p>
+                                </td>
+                                <td class="{{ table_ui.cell_classes() }} align-top">
+                                    {% if row.stored_display != 'N/A' %}
+                                        <p class="text-sm font-semibold text-content-primary">{{ row.stored_display }}</p>
+                                        <p class="mt-1 text-xs text-content-muted">{{ row.usage_source }}</p>
+                                    {% else %}
+                                        <p class="text-sm font-semibold text-content-disabled">N/A</p>
+                                        <p class="mt-1 text-xs text-status-unknown-text">Not Collected</p>
+                                    {% endif %}
+                                </td>
+                                <td class="{{ table_ui.cell_classes() }} align-top">
+                                    {% if row.utilization_display != 'N/A' %}
+                                        <p class="text-sm font-semibold text-content-primary">{{ row.utilization_display }}</p>
+                                        <p class="mt-1 text-xs text-content-muted">Utilized</p>
+                                    {% else %}
+                                        <p class="text-sm font-semibold text-content-disabled">N/A</p>
+                                        <p class="mt-1 text-xs text-status-unknown-text">{{ row.snapshot_label }}</p>
+                                    {% endif %}
+                                </td>
+                                <td class="{{ table_ui.cell_classes() }} align-top">
+                                    {% if row.active_alerts is not none %}
+                                        <p class="text-sm font-semibold {% if row.active_alerts > 0 %}text-status-critical-text{% else %}text-status-normal-text{% endif %}">{{ row.active_alerts }}</p>
+                                        <p class="mt-1 text-xs text-content-muted">Active Alerts</p>
+                                    {% else %}
+                                        <p class="text-sm font-semibold text-content-disabled">N/A</p>
+                                        <p class="mt-1 text-xs text-status-unknown-text">Alert Evidence</p>
+                                    {% endif %}
+                                </td>
+                                <td class="{{ table_ui.cell_classes(action=true) }} align-top">
+                                    <div class="ml-auto flex w-fit flex-col items-end gap-1.5 text-xs">
+                                        <span class="inline-flex items-center gap-2 text-content-muted"><span class="h-2 w-2 rounded-full {% if row.inventory_ready %}bg-status-normal{% else %}bg-status-unknown{% endif %}"></span>Inventory</span>
+                                        <span class="inline-flex items-center gap-2 text-content-muted"><span class="h-2 w-2 rounded-full {% if row.snapshot_ready %}bg-status-normal{% else %}bg-status-unknown{% endif %}"></span>Metrics Source</span>
+                                        <span class="inline-flex items-center gap-2 text-content-muted"><span class="h-2 w-2 rounded-full {% if row.alerts_connected %}bg-status-normal{% else %}bg-status-unknown{% endif %}"></span>Alert Signals</span>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="7" class="px-5 py-4">
+                                {% set empty_state_icon = "database" %}
+                                {% set empty_state_label = "No Data" %}
+                                {% set empty_state_title = "No Object Storage Inventory Data" %}
+                                {% set empty_state_description = "Synchronize Object Storage inventory to populate the health summary." %}
+                                {% set empty_state_min_height = "min-h-[160px]" %}
+                                {% include 'components/states/_empty_state.html' %}
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
         </div>
     {% endcall %}
     <div class="{{ peer_content_grid.layout_classes() }}">
         <div class="{{ peer_content_grid.column_classes('primary') }}">
-            {% call operational_section_card.render('Inventory Snapshot', 'Latest committed Object Storage asset and collection coverage.', 'package-search', action_href=url_for('object_storage_inventory.overview'), action_label='View Inventory', body_classes='grid grid-cols-2 gap-3 p-5 sm:grid-cols-3', extra_classes='h-full') %}
+            {% call operational_section_card.render(
+                'Inventory Snapshot',
+                'Latest committed Object Storage asset and collection coverage.',
+                'package-search',
+                action_href=url_for('object_storage_inventory.overview'),
+                action_label='View Inventory',
+                body_classes='grid grid-cols-2 gap-3 p-5 sm:grid-cols-3',
+                extra_classes='h-full'
+                ) %}
                 {% set items = [
-                                    ('Systems', dashboard.inventory.systems, 'server', 'Scope'),
-                                    ('Buckets', dashboard.inventory.buckets, 'database', 'Assets'),
-                                    ('Stored Data', dashboard.inventory.stored_display, 'hard-drive', 'Usage'),
-                                    ('Objects', dashboard.inventory.objects_display, 'blocks', 'Inventory'),
-                                    ('Quota Configured', dashboard.inventory.quota_configured, 'gauge', 'Governance'),
-                                    ('Usage Collected', dashboard.inventory.usage_collected, 'database-check', 'Evidence')
-                                ] %}
+                        ('Systems', dashboard.inventory.systems, 'server', 'Scope'),
+                        ('Buckets', dashboard.inventory.buckets, 'database', 'Assets'),
+                        ('Stored Data', dashboard.inventory.stored_display, 'hard-drive', 'Usage'),
+                        ('Objects', dashboard.inventory.objects_display, 'blocks', 'Inventory'),
+                        ('Quota Configured', dashboard.inventory.quota_configured, 'gauge', 'Governance'),
+                        ('Usage Collected', dashboard.inventory.usage_collected, 'database-check', 'Evidence')
+                    ] %}
                 {% for label, value, icon, role in items %}
                     <article class="rounded-lg border border-outline-subtle bg-surface-elevated p-4">
                         <div class="flex items-start justify-between gap-3">
-                            <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="{{ icon }}" class="h-4 w-4"></i></span>
+                            <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                                  aria-hidden="true">
+                                <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
+                            </span>
                             {{ table_label.metadata_label(role) }}
                         </div>
                         <p class="mt-3 text-xs font-medium text-content-secondary">{{ label }}</p>
@@ -57,20 +130,33 @@
             {% endcall %}
         </div>
         <div class="{{ peer_content_grid.column_classes('secondary') }}">
-            {% call operational_section_card.render('Data Freshness', 'Age and availability of committed inventory, analytics, forecast, and alert evidence.', 'clock-3', body_classes='space-y-3 p-5', extra_classes='h-full') %}
+            {% call operational_section_card.render(
+                'Data Freshness',
+                'Age and availability of committed inventory, analytics, forecast, and alert evidence.',
+                'clock-3',
+                body_classes='grid gap-3 p-5 sm:grid-cols-2',
+                extra_classes='h-full'
+                ) %}
                 {% for item in dashboard.freshness %}
-                    <article class="rounded-lg border border-outline-subtle bg-surface-elevated p-3.5">
+                    <article class="h-full rounded-lg border border-outline-subtle bg-surface-elevated p-3.5">
                         <div class="flex items-start gap-3">
-                            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="{{ item.icon }}" class="h-4 w-4"></i></span>
+                            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                                  aria-hidden="true">
+                                <i data-lucide="{{ item.icon }}" class="h-4 w-4"></i>
+                            </span>
                             <div class="min-w-0 flex-1">
                                 <div class="flex flex-wrap items-start justify-between gap-2">
-                                    <div>
+                                    <div class="min-w-0 flex-1">
                                         <p class="text-sm font-semibold text-content-primary">{{ item.label }}</p>
-                                        <p class="mt-0.5 text-xs font-medium text-content-secondary">{{ item.value }}</p>
+                                        <p class="mt-0.5 break-words text-xs font-medium leading-5 text-content-secondary">
+                                            {{ item.value }}
+                                        </p>
                                     </div>
-                                    {{ table_label.status_label(item.status, item.tone, size='compact') }}
+                                    {{ table_label.status_label(item.status, tone=item.tone) }}
                                 </div>
-                                <p class="mt-2 text-xs leading-5 text-content-muted">{{ item.description }}</p>
+                                {% if item.description %}
+                                    <p class="mt-2 text-xs leading-5 text-content-muted">{{ item.description }}</p>
+                                {% endif %}
                             </div>
                         </div>
                     </article>

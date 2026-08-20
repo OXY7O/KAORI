@@ -79,6 +79,9 @@ def test_dashboard_matches_kubernetes_operational_layout_concept() -> None:
 
 def test_dashboard_sections_are_object_storage_specific_and_committed_evidence_owned() -> None:
     overview = read('app/templates/storage/object_storage/dashboard/partials/_overview.html')
+    kubernetes_health = read('app/templates/kubernetes/dashboard/partials/_cluster_health.html')
+    kubernetes_inventory = read('app/templates/kubernetes/dashboard/partials/_inventory_summary.html')
+    kubernetes_freshness = read('app/templates/kubernetes/dashboard/partials/_data_freshness.html')
     capacity = read('app/templates/storage/object_storage/dashboard/partials/_capacity.html')
     signals = read('app/templates/storage/object_storage/dashboard/partials/_signals.html')
     reporting = read('app/templates/storage/object_storage/dashboard/partials/_reporting.html')
@@ -92,7 +95,21 @@ def test_dashboard_sections_are_object_storage_specific_and_committed_evidence_o
     for token in ('Reporting Summary', 'Evidence Readiness', 'Object Storage report'):
         assert token in reporting
 
-    assert 'overflow-x-auto' not in overview
+    for token in (
+        'components/table.html',
+        "table_ui.table_classes('min-w-[1040px]')",
+        'Snapshot Sources',
+        'Metrics Source',
+        'Alert Signals',
+    ):
+        assert token in overview
+        assert token in kubernetes_health
+
+    assert "body_classes='grid grid-cols-2 gap-3 p-5 sm:grid-cols-3'" in overview
+    assert "body_classes='grid grid-cols-2 gap-3 p-5 sm:grid-cols-3'" in kubernetes_inventory
+    assert "body_classes='grid gap-3 p-5 sm:grid-cols-2'" in overview
+    assert "body_classes='grid gap-3 p-5 sm:grid-cols-2'" in kubernetes_freshness
+    assert 'overflow-x-auto' in overview
     assert 'overflow-x-auto' not in capacity
     assert 'overflow-x-auto' not in signals
 

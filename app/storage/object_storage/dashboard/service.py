@@ -122,19 +122,65 @@ def _health_rows(systems: list[ObjectStorageSystem]) -> list[dict[str, Any]]:
         payload, snapshot_state = _snapshot_payload(system)
         overview = _page_metrics(payload, 'overview')
         stream, posture = _alert_view(payload)
+        buckets = list(system.buckets or ())
+        inventory_usage_values = [float(bucket.size_bytes) for bucket in buckets if bucket.size_bytes is not None]
+        snapshot_usage = overview.get('usage_total')
+        stored_bytes = (
+            snapshot_usage
+            if snapshot_usage is not None
+            else (sum(inventory_usage_values) if inventory_usage_values else None)
+        )
+        usage_source = (
+            'Snapshot' if snapshot_usage is not None else ('Inventory' if inventory_usage_values else 'Not Collected')
+        )
+        provider_status = str(system.status or 'unknown').replace('_', ' ').title()
+        analytics_usable = bool(snapshot_state.get('usable'))
+        alert_connected = bool(stream.get('connected'))
+        critical_alerts = int(posture.get('critical') or 0) if alert_connected else 0
+        warning_alerts = int(posture.get('warning') or 0) if alert_connected else 0
+
+        if provider_status.lower() not in {'connected', 'ready'}:
+            overall_status = 'Critical'
+            overall_tone = 'critical'
+            status_reason = f'Provider state is {provider_status}.'
+        elif critical_alerts > 0:
+            overall_status = 'Critical'
+            overall_tone = 'critical'
+            status_reason = f'{critical_alerts} active critical alert signal(s).'
+        elif not analytics_usable:
+            overall_status = 'Warning'
+            overall_tone = 'warning'
+            status_reason = f"Analytics snapshot is {snapshot_state.get('label') or 'not ready'}."
+        elif warning_alerts > 0:
+            overall_status = 'Warning'
+            overall_tone = 'warning'
+            status_reason = f'{warning_alerts} active warning alert signal(s).'
+        else:
+            overall_status = 'Healthy'
+            overall_tone = 'normal'
+            status_reason = 'Committed inventory and analytics evidence are available.'
+
         rows.append(
             {
                 'id': str(system.id),
                 'name': system.name,
                 'environment': system.environment,
-                'provider_status': str(system.status or 'unknown').replace('_', ' ').title(),
+                'provider_status': provider_status,
                 'inventory_updated': _human_time(system.inventory_observed_at),
+                'inventory_ready': system.inventory_observed_at is not None,
+                'bucket_count': len(buckets),
+                'stored_display': format_bytes(stored_bytes),
+                'usage_source': usage_source,
                 'snapshot_label': str(snapshot_state.get('label') or 'Worker Data Required'),
                 'snapshot_tone': str(snapshot_state.get('tone') or 'unknown'),
+                'snapshot_ready': analytics_usable,
                 'utilization_display': str(overview.get('utilization_display') or 'N/A'),
                 'utilization_tone': str(overview.get('utilization_tone') or 'unknown'),
-                'active_alerts': int(posture.get('total') or 0) if stream.get('connected') else None,
-                'alerts_connected': bool(stream.get('connected')),
+                'active_alerts': int(posture.get('total') or 0) if alert_connected else None,
+                'alerts_connected': alert_connected,
+                'overall_status': overall_status,
+                'overall_tone': overall_tone,
+                'status_reason': status_reason,
             }
         )
     return rows
