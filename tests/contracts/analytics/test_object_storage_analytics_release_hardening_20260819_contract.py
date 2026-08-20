@@ -81,6 +81,8 @@ def test_forecast_workspaces_show_system_graph_and_bucket_watch_without_new_job_
     assert '_bucket_forecasts.html' in forecast_workspace
     assert 'Bucket Forecast Watch' in bucket_forecasts
     assert 'planning watch signals, not active Alertmanager alerts' in bucket_forecasts
+    assert 'data-kaori-object-storage-bucket-forecast-table' in bucket_forecasts
+    assert 'table_ui.title_cell(row.name' in bucket_forecasts
     assert 'data-object-storage-projection-points' in trend
     assert 'Storage Usage Forecast' in trend
     assert "const isForecast = mode === 'forecast'" in javascript

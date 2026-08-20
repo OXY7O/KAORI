@@ -161,8 +161,12 @@ def dispatch_registered_job(
     parameters: dict[str, Any] | None = None,
 ) -> RegisteredJobDispatchResult:
     """Resolve one static job definition and dispatch it through its domain adapter."""
-    from app.platform_operations.jobs.registry import get_job_definition
+    from app.platform_operations.jobs.registry import get_job_definition, refresh_job_registry
 
+    # Dispatch is a deployment boundary: refresh the declarative catalog so a
+    # long-lived web or maintenance worker cannot reject a job added by the
+    # currently mounted/released KAORI source.
+    refresh_job_registry()
     definition = get_job_definition(job_key)
     if trigger_type == 'manual' and not definition.manual_execution_supported:
         raise ValueError(f'{definition.name} does not support manual execution.')

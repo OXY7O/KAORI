@@ -121,6 +121,8 @@ def test_registered_object_storage_analytics_job_uses_analytics_batch_and_shared
     assert "job_key in {'analytics.materialize', 'object_storage.analytics.materialize'}" in routes
     assert "'object_storage.analytics.materialize': {" in presentation
     assert "get_job_definition('object_storage.analytics.materialize')" in exports
+    assert 'required_contract_diagnostic' in adapter
+    assert 'required_contract_diagnostic(source)' in adapter
 
 
 def test_ui_explains_snapshot_authority_and_three_stage_readiness() -> None:
@@ -208,3 +210,55 @@ def test_manual_dispatch_recovery_updates_policy_status_and_surfaces_exact_block
     assert 'A manual retry is independent of the previous scheduler failure' in materialization
     assert 'Manual Execution Blocked' in activity
     assert 'Manual dispatch is blocked until an eligible target is available.' in activity
+
+def test_registered_job_dispatch_refreshes_catalog_for_long_lived_processes() -> None:
+    registry = read('app/platform_operations/jobs/registry.py')
+    dispatcher = read('app/platform_operations/jobs/dispatcher.py')
+
+    assert 'def refresh_job_registry()' in registry
+    assert 'return refresh_job_registry()' in registry
+    assert 'if definition is None:' in registry
+    assert 'refresh_job_registry()' in dispatcher
+    assert 'definition = get_job_definition(job_key)' in dispatcher
+
+
+def test_object_storage_manual_dispatch_reports_required_metric_failures_instead_of_generic_not_ready() -> None:
+    materialization = read('app/storage/object_storage/analytics/materialization.py')
+    adapter = read('app/storage/object_storage/analytics/job_adapter.py')
+
+    assert 'def required_contract_status(source)' in materialization
+    assert 'def required_contract_diagnostic(source, *, max_items: int = 4)' in materialization
+    assert "MetricReadinessState.UNSUPPORTED: 'Metric Not Scraped'" in materialization
+    assert "MetricReadinessState.NO_DATA: 'No Current Samples'" in materialization
+    assert "MetricReadinessState.NOT_VALIDATED: 'Validation Required'" in materialization
+    assert 'Required Metrics Contract Incomplete · {ready_count}/{total_count} Ready' in materialization
+    assert 'Missing: {missing_text}{suffix}' in materialization
+    assert "diagnostics.append(f'{system.name}: {required_contract_diagnostic(source)}')" in adapter
+    assert 'Object Storage consumer metrics contract is not Ready.' not in adapter
+
+
+def test_bucket_forecast_watch_uses_shared_kaori_table_standard() -> None:
+    forecast = read('app/templates/storage/object_storage/analytics/partials/_bucket_forecasts.html')
+
+    assert '{% import "components/table_ui.html" as table_ui %}' in forecast
+    assert 'data-kaori-object-storage-bucket-forecast-table' in forecast
+    assert 'table_ui.table_classes' in forecast
+    assert 'table_ui.head_classes()' in forecast
+    assert 'table_ui.header_cell_classes()' in forecast
+    assert 'table_ui.body_classes()' in forecast
+    assert 'table_ui.row_classes()' in forecast
+    assert 'table_ui.cell_classes()' in forecast
+    assert 'table_ui.title_cell(row.name' in forecast
+    for label in (
+        'Bucket',
+        'Current Usage',
+        'Growth / Day',
+        'Projected 30d',
+        'Quota Boundary',
+        'Quota ETA',
+        'Forecast Watch',
+    ):
+        assert f'>{label}<' in forecast
+    assert 'data-object-storage-bucket-forecast-records' not in forecast
+    assert 'lg:grid-cols-12' not in forecast
+

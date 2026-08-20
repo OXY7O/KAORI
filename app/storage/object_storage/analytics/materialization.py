@@ -200,9 +200,65 @@ def analytics_snapshot_due(*, system_id: str, time_range: str) -> bool:
     return expires_at is None or datetime.now(UTC) >= expires_at
 
 
-def required_contract_ready(source) -> bool:
+_READINESS_STATE_LABELS = {
+    MetricReadinessState.READY: 'Ready',
+    MetricReadinessState.PARTIAL: 'Partial Evidence',
+    MetricReadinessState.NO_DATA: 'No Current Samples',
+    MetricReadinessState.UNSUPPORTED: 'Metric Not Scraped',
+    MetricReadinessState.BLOCKED: 'Metric Contract Blocked',
+    MetricReadinessState.NOT_VALIDATED: 'Validation Required',
+}
+
+
+def required_contract_status(source) -> dict[str, Any]:
     required = [item for item in source.readiness.items if item.tier == 'required']
-    return bool(required) and all(item.state == MetricReadinessState.READY for item in required)
+    missing = [item for item in required if item.state != MetricReadinessState.READY]
+    return {
+        'ready': bool(required) and not missing,
+        'ready_count': len(required) - len(missing),
+        'total_count': len(required),
+        'missing': [
+            {
+                'key': item.key,
+                'label': item.label,
+                'domain': item.domain,
+                'state': item.state.value,
+                'state_label': _READINESS_STATE_LABELS.get(
+                    item.state,
+                    item.state.value.replace('_', ' ').title(),
+                ),
+                'detail': item.detail,
+            }
+            for item in missing
+        ],
+    }
+
+
+def required_contract_ready(source) -> bool:
+    return bool(required_contract_status(source)['ready'])
+
+
+def required_contract_diagnostic(source, *, max_items: int = 4) -> str:
+    status = required_contract_status(source)
+    ready_count = int(status['ready_count'])
+    total_count = int(status['total_count'])
+    if status['ready']:
+        return f'Required Metrics Contract Ready · {ready_count}/{total_count} Ready.'
+
+    missing = list(status['missing'])
+    headline = f'Required Metrics Contract Incomplete · {ready_count}/{total_count} Ready'
+    if not missing:
+        return f'{headline}. Run consumer binding validation to rebuild required metric evidence.'
+
+    visible = missing[: max(int(max_items), 1)]
+    missing_text = '; '.join(
+        f"{item['label']} — {item['state_label']}" for item in visible
+    )
+    remaining = len(missing) - len(visible)
+    suffix = f'; +{remaining} more' if remaining > 0 else ''
+    detail = str(visible[0].get('detail') or '').strip() if len(missing) == 1 else ''
+    action = f' {detail}' if detail else ''
+    return f'{headline}. Missing: {missing_text}{suffix}.{action}'.strip()
 
 
 def get_forecast_snapshot(
@@ -353,7 +409,7 @@ def materialize_forecast(
     try:
         source = resolve_object_storage_metrics_source(system, execution_mode='background')
         if not required_contract_ready(source):
-            raise RuntimeError('Object Storage consumer metrics contract is not Ready for forecasting.')
+            raise RuntimeError(required_contract_diagnostic(source))
         capacity = source.scalar('object_storage.capacity.total_bytes')
         points = source.trend('object_storage.usage.total_bytes', history_window)
         if len(points) < 2:

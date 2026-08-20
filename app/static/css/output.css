@@ -3534,25 +3534,6 @@
       padding-bottom: 0;
     }
   }
-  .open\:border-kaori-primary\/35 {
-    &:is([open], :popover-open, :open) {
-      border-color: var(--kaori-brand-primary);
-      @supports (color: color-mix(in lab, red, red)) {
-        border-color: color-mix(in oklab, var(--kaori-brand-primary) 35%, transparent);
-      }
-    }
-  }
-  .open\:bg-surface-card {
-    &:is([open], :popover-open, :open) {
-      background-color: var(--kaori-surface-card);
-    }
-  }
-  .open\:shadow-sm {
-    &:is([open], :popover-open, :open) {
-      --tw-shadow: 0 1px 3px 0 var(--tw-shadow-color, rgb(0 0 0 / 0.1)), 0 1px 2px -1px var(--tw-shadow-color, rgb(0 0 0 / 0.1));
-      box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
-    }
-  }
   .empty\:hidden {
     &:empty {
       display: none;
@@ -3574,16 +3555,6 @@
     &:hover {
       @media (hover: hover) {
         border-color: var(--kaori-brand-accent);
-      }
-    }
-  }
-  .hover\:border-kaori-accent\/60 {
-    &:hover {
-      @media (hover: hover) {
-        border-color: var(--kaori-brand-accent);
-        @supports (color: color-mix(in lab, red, red)) {
-          border-color: color-mix(in oklab, var(--kaori-brand-accent) 60%, transparent);
-        }
       }
     }
   }
@@ -3778,16 +3749,6 @@
         background-color: var(--kaori-brand-soft);
         @supports (color: color-mix(in lab, red, red)) {
           background-color: color-mix(in oklab, var(--kaori-brand-soft) 40%, transparent);
-        }
-      }
-    }
-  }
-  .hover\:bg-kaori-soft\/45 {
-    &:hover {
-      @media (hover: hover) {
-        background-color: var(--kaori-brand-soft);
-        @supports (color: color-mix(in lab, red, red)) {
-          background-color: color-mix(in oklab, var(--kaori-brand-soft) 45%, transparent);
         }
       }
     }
@@ -6282,14 +6243,6 @@
       }
     }
   }
-  .xl\:last\:border-r-0 {
-    @media (width >= 80rem) {
-      &:last-child {
-        border-right-style: var(--tw-border-style);
-        border-right-width: 0px;
-      }
-    }
-  }
   .xl\:last\:pr-0 {
     @media (width >= 80rem) {
       &:last-child {
@@ -6546,14 +6499,6 @@
       &:nth-child(2n) {
         border-right-style: var(--tw-border-style);
         border-right-width: 0px;
-      }
-    }
-  }
-  .sm\:\[\&\:nth-child\(odd\)\]\:border-r {
-    @media (width >= 40rem) {
-      &:nth-child(odd) {
-        border-right-style: var(--tw-border-style);
-        border-right-width: 1px;
       }
     }
   }

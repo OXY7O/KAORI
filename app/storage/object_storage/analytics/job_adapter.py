@@ -24,6 +24,7 @@ from app.storage.object_storage.analytics.materialization import (
     forecast_snapshot_state,
     get_analytics_snapshot,
     get_forecast_snapshot,
+    required_contract_diagnostic,
     required_contract_ready,
 )
 from app.storage.object_storage.analytics.sources import resolve_object_storage_metrics_source
@@ -59,7 +60,7 @@ def _eligible_systems() -> tuple[list[ObjectStorageSystem], list[str]]:
             diagnostics.append(f'{system.name}: {exc}')
             continue
         if not required_contract_ready(source):
-            diagnostics.append(f'{system.name}: Object Storage consumer metrics contract is not Ready.')
+            diagnostics.append(f'{system.name}: {required_contract_diagnostic(source)}')
             continue
         eligible.append(system)
     return eligible, diagnostics
