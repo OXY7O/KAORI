@@ -97,6 +97,7 @@ def test_registered_object_storage_analytics_job_uses_analytics_batch_and_shared
     adapter = read('app/storage/object_storage/analytics/job_adapter.py')
     tasks = read('app/storage/object_storage/analytics/tasks.py')
     config = read('app/config/default.py')
+    worker_bootstrap = read('celery_worker.py')
     routes = read('app/platform_operations/jobs/routes.py')
     presentation = read('app/platform_operations/jobs/configuration.py')
     exports = read('app/platform_operations/jobs/definitions/__init__.py')
@@ -116,6 +117,7 @@ def test_registered_object_storage_analytics_job_uses_analytics_batch_and_shared
     assert 'build_object_storage_analytics_materialization_context' in adapter
     assert 'materialize_object_storage_analytics' in tasks
     assert "'app.storage.object_storage.analytics.tasks.materialize_object_storage_analytics'" in config
+    assert 'celery_app.loader.import_default_modules()' in worker_bootstrap
     assert "job_key in {'analytics.materialize', 'object_storage.analytics.materialize'}" in routes
     assert "'object_storage.analytics.materialize': {" in presentation
     assert "get_job_definition('object_storage.analytics.materialize')" in exports
@@ -149,3 +151,60 @@ def test_readme_records_two_worker_owners_and_no_live_page_query_contract() -> N
     assert '`object_storage.forecast.materialize`' in readme
     assert 'two scheduled materialization owners, not one job per page' in readme
     assert 'unique `(object_storage_system_id, time_range)` scope' in readme
+
+
+def test_object_storage_materialization_rejects_stale_worker_registry_and_recovers_orphaned_queue_slots() -> None:
+    adapter = read('app/storage/object_storage/analytics/job_adapter.py')
+    dispatcher = read('app/platform_operations/jobs/dispatcher.py')
+    jobs_service = read('app/platform_operations/jobs/service.py')
+    execution = read('app/platform_operations/jobs/execution.py')
+    routes = read('app/platform_operations/jobs/routes.py')
+
+    assert adapter.count('require_registered_worker=True') >= 2
+    assert 'def ensure_task_registered_for_queue(' in dispatcher
+    assert "inspector.active_queues() or {}" in dispatcher
+    assert 'destination=sorted(queue_workers)' in dispatcher
+    assert "registry_inspector.registered() or {}" in dispatcher
+    assert 'do not advertise task' in dispatcher
+    assert 'none returned a task registry' in dispatcher
+    assert 'if require_registered_worker:' in dispatcher
+    assert 'ensure_task_registered_for_queue(task=task, queue_name=queue_name)' in dispatcher
+
+    assert "or job.queued_at < queued_cutoff" in jobs_service
+    assert "stale_reason = 'queued_start_timeout'" in jobs_service
+    assert "control.revoke(job.celery_task_id, terminate=False)" in jobs_service
+    assert "job.progress_message = 'Expired before worker start'" in jobs_service
+
+    assert 'class JobExecutionUnavailable(RuntimeError):' in execution
+    assert 'if job is not None and job.is_terminal:' in execution
+    assert 'is already terminal with status' in execution
+
+    run_now = routes.split('def run_now(', 1)[1].split("@bp.post('/executions/", 1)[0]
+    assert 'recover_stale_jobs()' in run_now
+    assert 'except JobWorkerUnavailable as exc:' in run_now
+    assert 'The job was not queued, so no active execution slot was reserved.' in run_now
+
+
+def test_manual_dispatch_recovery_updates_policy_status_and_surfaces_exact_blocker() -> None:
+    routes = read('app/platform_operations/jobs/routes.py')
+    policy_service = read('app/platform_operations/jobs/policies/service.py')
+    configuration = read('app/platform_operations/jobs/configuration.py')
+    materialization = read('app/templates/platform_operations/jobs/configuration/definitions/_materialization_job.html')
+    activity = read('app/templates/platform_operations/jobs/configuration/_execution_activity.html')
+
+    run_now = routes.split('def run_now(', 1)[1].split("@bp.post('/executions/", 1)[0]
+    assert run_now.count('record_job_dispatch_outcome(') >= 5
+    assert "status='failed'" in run_now
+    assert "status='blocked'" in run_now
+    assert 'status=outcome.status' in run_now
+    assert 'dispatched_at=job.queued_at' in run_now
+    assert "detail=f'{type(exc).__name__}: {str(exc)[:500]}'" in run_now
+
+    assert 'def record_job_dispatch_outcome(' in policy_service
+    assert 'policy.last_dispatch_status = str(status or' in policy_service
+    assert 'policy.last_dispatch_message = str(message or' in policy_service
+    assert "'dispatch_attention'" in configuration
+    assert "'execution_blocker'" in configuration
+    assert 'A manual retry is independent of the previous scheduler failure' in materialization
+    assert 'Manual Execution Blocked' in activity
+    assert 'Manual dispatch is blocked until an eligible target is available.' in activity

@@ -19,13 +19,12 @@
                 {{ table_label.metadata_label(alert_source.resolved_label ~ ' Source', 'radio-tower', size='compact') }}
                 {% if alert_table %}{{ table_label.metadata_label(alert_table.pagination.total_items ~ ' Alerts', 'bell-ring', size='compact') }}{% endif %}
                 {% if alert_filters_active %}
-                    {{ registry_ui.clear_filters_action(
-                        url_for('analytics.object_storage_alerts', system_id=system.id, source=selected_alert_source, alert_per_page=alert_table.pagination.per_page, tab='records'),
-                        table_ui.action_classes() ~ ' h-9 px-3',
-                        hx_get=url_for('analytics.object_storage_alert_table', system_id=system.id, source=selected_alert_source, alert_per_page=alert_table.pagination.per_page, tab='records'),
-                        target='#object-storage-alert-records',
-                        indicator='#object-storage-alert-records-loading',
-                        sync='#object-storage-alert-records:replace'
+                    {{ registry_ui.clear_filters_action(url_for('analytics.object_storage_alerts', system_id=system.id, source=selected_alert_source, alert_per_page=alert_table.pagination.per_page, tab='records') ,
+                    table_ui.action_classes() ~ ' h-9 px-3',
+                    hx_get=url_for('analytics.object_storage_alert_table', system_id=system.id, source=selected_alert_source, alert_per_page=alert_table.pagination.per_page, tab='records'),
+                    target='#object-storage-alert-records',
+                    indicator='#object-storage-alert-records-loading',
+                    sync='#object-storage-alert-records:replace'
                     ) }}
                 {% endif %}
             </div>
@@ -61,24 +60,32 @@
             <input type="hidden" name="source" value="{{ selected_alert_source }}">
             <input type="hidden" name="tab" value="records">
             <input type="hidden" name="alert_page" value="1">
-            <input type="hidden" name="alert_per_page" value="{{ alert_table.pagination.per_page }}">
+            <input type="hidden"
+                   name="alert_per_page"
+                   value="{{ alert_table.pagination.per_page }}">
             <label class="block" for="object-storage-alert-search">
                 <span class="{{ table_ui.filter_label_classes() }}">Search Alerts</span>
                 {{ table_ui.search_field('alert_q', alert_table.search, 'Search alert, target, receiver, or summary', id='object-storage-alert-search') }}
             </label>
             <label class="block" for="object-storage-alert-severity">
                 <span class="{{ table_ui.filter_label_classes() }}">Severity</span>
-                <select id="object-storage-alert-severity" name="alert_severity" class="{{ table_ui.filter_select_classes() }}">
+                <select id="object-storage-alert-severity"
+                        name="alert_severity"
+                        class="{{ table_ui.filter_select_classes() }}">
                     {% for value, label in [('all','All Severities'),('critical','Critical'),('warning','Warning'),('info','Info'),('unknown','Unknown')] %}
-                        <option value="{{ value }}" {% if alert_table.severity == value %}selected{% endif %}>{{ label }}</option>
+                        <option value="{{ value }}"
+                                {% if alert_table.severity == value %}selected{% endif %}>{{ label }}</option>
                     {% endfor %}
                 </select>
             </label>
             <label class="block" for="object-storage-alert-state">
                 <span class="{{ table_ui.filter_label_classes() }}">State</span>
-                <select id="object-storage-alert-state" name="alert_state" class="{{ table_ui.filter_select_classes() }}">
+                <select id="object-storage-alert-state"
+                        name="alert_state"
+                        class="{{ table_ui.filter_select_classes() }}">
                     {% for value, label in [('all','All States'),('firing','Firing'),('pending','Pending'),('suppressed','Suppressed')] %}
-                        <option value="{{ value }}" {% if alert_table.state == value %}selected{% endif %}>{{ label }}</option>
+                        <option value="{{ value }}"
+                                {% if alert_table.state == value %}selected{% endif %}>{{ label }}</option>
                     {% endfor %}
                 </select>
             </label>
@@ -146,15 +153,15 @@
             </div>
         </div>
         {{ record_pagination.render(alert_table.pagination,
-                    'alert_page',
-                    'alert_per_page',
-                    'object-storage-alert-records',
-                    'object-storage-alert-record-filter',
-                    'object-storage-alert-records-loading',
-                    'analytics.object_storage_alert_table',
-                    'analytics.object_storage_alerts',
-                    alert_table.query_params,
-                    'Alerts',
-                    embedded=true) }}
+                'alert_page',
+                'alert_per_page',
+                'object-storage-alert-records',
+                'object-storage-alert-record-filter',
+                'object-storage-alert-records-loading',
+                'analytics.object_storage_alert_table',
+                'analytics.object_storage_alerts',
+                alert_table.query_params,
+                'Alerts',
+                embedded=true) }}
     {% endif %}
 </section>

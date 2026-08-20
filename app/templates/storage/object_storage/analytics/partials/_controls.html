@@ -107,7 +107,7 @@
                             <span class="{{ analysis_surface.semantic_icon_classes(analytics_materialization.tone) }}"><i data-lucide="database-clock" class="h-4 w-4"></i></span>
                             <div class="min-w-0">
                                 <p class="text-sm font-semibold text-content-primary">Analytics Worker Snapshot</p>
-                                <p class="mt-1 text-xs leading-5 text-content-muted">{{ selected_time_range|upper }} · {{ analytics_materialization.generated_at|user_datetime('Not Generated') }}</p>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">{{ selected_time_range|upper }} · {{ analytics_materialization.generated_at|user_datetime("Not Generated") }}</p>
                             </div>
                         </div>
                         {{ table_label.status_label(analytics_materialization.label, analytics_materialization.tone) }}
@@ -190,7 +190,7 @@
                             <span class="{{ analysis_surface.semantic_icon_classes(analytics_materialization.tone) }}"><i data-lucide="database-clock" class="h-4 w-4"></i></span>
                             <div class="min-w-0">
                                 <p class="text-sm font-semibold text-content-primary">Analytics Worker Snapshot</p>
-                                <p class="mt-1 text-xs leading-5 text-content-muted">{{ selected_time_range|upper }} · {{ analytics_materialization.generated_at|user_datetime('Not Generated') }}</p>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">{{ selected_time_range|upper }} · {{ analytics_materialization.generated_at|user_datetime("Not Generated") }}</p>
                             </div>
                         </div>
                         {{ table_label.status_label(analytics_materialization.label, analytics_materialization.tone) }}
@@ -225,9 +225,11 @@
             </div>
         {% endif %}
         {% if analytics_materialization.stale or analytics_materialization.refresh_dispatched or analytics_materialization.dispatch_error %}
-            <div class="rounded-lg border border-outline-default bg-status-warning-soft px-4 py-3" role="status">
+            <div class="rounded-lg border border-outline-default bg-status-warning-soft px-4 py-3"
+                 role="status">
                 <div class="flex items-start gap-2">
-                    <i data-lucide="refresh-cw" class="mt-0.5 h-4 w-4 shrink-0 text-status-warning"></i>
+                    <i data-lucide="refresh-cw"
+                       class="mt-0.5 h-4 w-4 shrink-0 text-status-warning"></i>
                     <div>
                         <p class="text-sm font-semibold text-content-primary">Analytics Snapshot Refresh</p>
                         <p class="mt-1 text-xs leading-5 text-content-muted">

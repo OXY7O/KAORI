@@ -29,9 +29,9 @@ from app.platform_operations.jobs.configuration import (
     build_job_configuration_summary_context,
 )
 from app.platform_operations.jobs.definitions.base import JobDefinition
-from app.platform_operations.jobs.dispatcher import dispatch_registered_job
+from app.platform_operations.jobs.dispatcher import JobWorkerUnavailable, dispatch_registered_job
 from app.platform_operations.jobs.policies.forms import JobPolicyForm, ManualJobRunForm
-from app.platform_operations.jobs.policies.service import update_job_policy
+from app.platform_operations.jobs.policies.service import record_job_dispatch_outcome, update_job_policy
 from app.platform_operations.jobs.presentation import build_job_execution_context, build_job_execution_status_context
 from app.platform_operations.jobs.registry import get_job_definition
 from app.platform_operations.jobs.service import (
@@ -39,6 +39,7 @@ from app.platform_operations.jobs.service import (
     JobQuotaExceeded,
     cancel_job_execution,
     get_job_by_public_id,
+    recover_stale_jobs,
     rollback_job_dispatch_transaction,
 )
 from app.platform_operations.notifications.service import (
@@ -463,13 +464,50 @@ def run_now(job_key: str) -> ResponseReturnValue:
         return redirect(url_for('jobs.configuration', job_key=job_key))
 
     try:
+        recover_stale_jobs()
         outcome = dispatch_registered_job(
             job_key=job_key,
             trigger_type='manual',
             requested_by_user_id=int(current_user.id),
         )
+    except JobWorkerUnavailable as exc:
+        rollback_job_dispatch_transaction()
+        record_job_dispatch_outcome(
+            job_key=job_key,
+            status='failed',
+            message=str(exc),
+        )
+        feedback = record_operational_activity(
+            user_id=int(current_user.id),
+            event_type='job_manual_dispatch',
+            status='error',
+            title=f'{definition.name} Worker Unavailable',
+            message=str(exc),
+            detail=(
+                'The job was not queued, so no active execution slot was reserved. '
+                'Restart the target worker and retry Run Now.'
+            ),
+            action_url=_jobs_execution_url(search=definition.operation, queue=definition.queue_name),
+            action_label='Review Job Executions',
+            action_icon='list-checks',
+            metadata={
+                'job_key': job_key,
+                'trigger_type': 'manual',
+                'reason': 'worker_registration_unavailable',
+                'queue_name': definition.queue_name,
+            },
+            queue_feedback=not is_htmx,
+        )
+        if is_htmx:
+            return _render_configuration_job(job_key, operation_feedback=feedback)
+        return redirect(url_for('jobs.configuration', job_key=job_key))
     except JobQuotaExceeded as exc:
         rollback_job_dispatch_transaction()
+        record_job_dispatch_outcome(
+            job_key=job_key,
+            status='blocked',
+            message=str(exc),
+        )
         feedback = record_operational_activity(
             user_id=int(current_user.id),
             event_type='job_manual_dispatch',
@@ -497,16 +535,21 @@ def run_now(job_key: str) -> ResponseReturnValue:
         if is_htmx:
             return _render_configuration_job(job_key, operation_feedback=feedback)
         return redirect(url_for('jobs.configuration', job_key=job_key))
-    except (CeleryError, KombuOperationalError, OSError, RuntimeError, SQLAlchemyError):
+    except (CeleryError, KombuOperationalError, OSError, RuntimeError, SQLAlchemyError) as exc:
         rollback_job_dispatch_transaction()
         logger.exception('Could not dispatch registered job %s.', job_key)
+        record_job_dispatch_outcome(
+            job_key=job_key,
+            status='failed',
+            message=f'{type(exc).__name__}: {exc}',
+        )
         feedback = record_operational_activity(
             user_id=int(current_user.id),
             event_type='job_manual_dispatch',
             status='error',
             title=f'{definition.name} Could Not Start',
             message='KAORI could not dispatch the job to the canonical execution registry.',
-            detail='Verify PostgreSQL, Redis, Celery Beat, and the target worker before retrying.',
+            detail=f'{type(exc).__name__}: {str(exc)[:500]}',
             action_url=_jobs_execution_url(search=definition.operation, queue=definition.queue_name),
             action_label='Review Job Executions',
             action_icon='list-checks',
@@ -518,6 +561,11 @@ def run_now(job_key: str) -> ResponseReturnValue:
         return redirect(url_for('jobs.configuration', job_key=job_key))
 
     if not outcome.accepted:
+        record_job_dispatch_outcome(
+            job_key=job_key,
+            status=outcome.status,
+            message=outcome.message,
+        )
         feedback = record_operational_activity(
             user_id=int(current_user.id),
             event_type='job_manual_dispatch',
@@ -537,6 +585,13 @@ def run_now(job_key: str) -> ResponseReturnValue:
 
     job = outcome.job
     assert job is not None
+    record_job_dispatch_outcome(
+        job_key=job_key,
+        status=outcome.status,
+        message=outcome.message,
+        job_execution_id=job.id,
+        dispatched_at=job.queued_at,
+    )
     feedback = record_operational_activity(
         user_id=int(current_user.id),
         event_type='job_manual_dispatch',

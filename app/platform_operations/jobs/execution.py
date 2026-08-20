@@ -19,6 +19,10 @@ class JobCancellationRequested(RuntimeError):
     pass
 
 
+class JobExecutionUnavailable(RuntimeError):
+    pass
+
+
 @dataclass
 class JobExecutionContext:
     """Cooperative lifecycle helper for future analytics and forecasting tasks.
@@ -50,7 +54,7 @@ class JobExecutionContext:
         stage: str | None = None,
         target: str | None = None,
     ) -> None:
-        mark_job_running(
+        job = mark_job_running(
             self._task_id(),
             message=message,
             total=total,
@@ -58,6 +62,10 @@ class JobExecutionContext:
             stage=stage,
             target=target,
         )
+        if job is not None and job.is_terminal:
+            raise JobExecutionUnavailable(
+                f'Canonical job {job.public_id} is already terminal with status {job.status}.'
+            )
 
     def checkpoint(
         self,

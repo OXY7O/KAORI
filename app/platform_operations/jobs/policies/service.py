@@ -91,3 +91,27 @@ def update_job_policy(
     policy.next_run_at = calculate_next_run(interval_minutes=interval_minutes) if enabled else None
     db.session.commit()
     return policy
+
+
+def record_job_dispatch_outcome(
+    *,
+    job_key: str,
+    status: str,
+    message: str,
+    job_execution_id: int | None = None,
+    dispatched_at: datetime | None = None,
+) -> JobPolicy:
+    """Persist the latest manual or scheduled dispatch outcome for one policy.
+
+    Manual dispatches use the same policy status surface as scheduled dispatches so
+    a recovered Run Now clears stale ``Dispatch Failed`` evidence immediately.
+    """
+    policy = get_or_create_job_policy(job_key)
+    policy.last_dispatch_status = str(status or 'unknown')[:40]
+    policy.last_dispatch_message = str(message or '')[:255]
+    if job_execution_id is not None:
+        policy.last_job_execution_id = int(job_execution_id)
+    if dispatched_at is not None:
+        policy.last_dispatched_at = dispatched_at
+    db.session.commit()
+    return policy

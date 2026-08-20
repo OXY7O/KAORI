@@ -92,7 +92,7 @@ def test_alert_records_use_shared_view_more_modals_and_controlled_wrapping() -> 
 
     assert "modal_width = 'max-w-5xl' if size == 'wide' else 'max-w-4xl'" in modal
     assert "size == 'investigation'" in modal
-    assert "modal_width = 'max-w-6xl'" in modal
+    assert 'modal_width = "max-w-6xl"' in modal
     assert "size='standard'" in modal
     assert 'max-h-[calc(100dvh-2rem)]' in modal
     assert 'data-kaori-record-detail-modal' in modal

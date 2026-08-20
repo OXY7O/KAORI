@@ -25,23 +25,22 @@
             </div>
             <div class="flex flex-wrap items-center gap-2">
                 {% if selected_integration_type or selected_health or selected_readiness %}
-                    {{ registry_ui.clear_filters_action(
-                        url_for('integrations.overview', tab='runtime', per_page=runtime_pagination.per_page),
-                        table_ui.action_classes(),
-                        hx_get=url_for('integrations.overview', tab='runtime', per_page=runtime_pagination.per_page),
-                        target='#integration-runtime-overview',
-                        indicator='#integration-runtime-loading',
-                        push_url='true'
+                    {{ registry_ui.clear_filters_action(url_for('integrations.overview', tab='runtime', per_page=runtime_pagination.per_page) ,
+                    table_ui.action_classes(),
+                    hx_get=url_for('integrations.overview', tab='runtime', per_page=runtime_pagination.per_page),
+                    target='#integration-runtime-overview',
+                    indicator='#integration-runtime-loading',
+                    push_url='true'
                     ) }}
                 {% endif %}
                 <button type="button"
-                    hx-get="{{ url_for('integrations.overview', tab='runtime', integration_type=selected_integration_type, health=selected_health, readiness=selected_readiness, page=runtime_pagination.page, per_page=runtime_pagination.per_page) }}"
-                    hx-target="#integration-runtime-overview"
-                    hx-swap="outerHTML"
-                    hx-indicator="#integration-runtime-loading"
-                    hx-push-url="true"
-                    class="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary transition hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary dark:hover:text-kaori-accent">
-                <i data-lucide="refresh-cw" class="h-4 w-4" aria-hidden="true"></i>
+                        hx-get="{{ url_for('integrations.overview', tab='runtime', integration_type=selected_integration_type, health=selected_health, readiness=selected_readiness, page=runtime_pagination.page, per_page=runtime_pagination.per_page) }}"
+                        hx-target="#integration-runtime-overview"
+                        hx-swap="outerHTML"
+                        hx-indicator="#integration-runtime-loading"
+                        hx-push-url="true"
+                        class="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary transition hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary dark:hover:text-kaori-accent">
+                    <i data-lucide="refresh-cw" class="h-4 w-4" aria-hidden="true"></i>
                     Reload Evidence
                 </button>
             </div>
@@ -49,14 +48,14 @@
         {{ loading_bar.render('integration-runtime-loading', label='Refreshing integration runtime overview') }}
     </header>
     {% if not runtime_has_targets %}
-        {% set empty_state_icon = 'plug-zap' %}
-        {% set empty_state_label = 'Setup Required' %}
-        {% set empty_state_title = 'No Integration Targets Registered' %}
-        {% set empty_state_description = 'Register a Kubernetes, Metrics Source, Alertmanager, or Object Storage provider target before runtime posture can be reviewed.' %}
+        {% set empty_state_icon = "plug-zap" %}
+        {% set empty_state_label = "Setup Required" %}
+        {% set empty_state_title = "No Integration Targets Registered" %}
+        {% set empty_state_description = "Register a Kubernetes, Metrics Source, Alertmanager, or Object Storage provider target before runtime posture can be reviewed." %}
         {% set empty_state_action_url = url_for('integrations.overview', tab='catalog') %}
-        {% set empty_state_action_label = 'Browse Providers' %}
-        {% set empty_state_action_icon = 'package-search' %}
-        {% set empty_state_min_height = 'min-h-[220px]' %}
+        {% set empty_state_action_label = "Browse Providers" %}
+        {% set empty_state_action_icon = "package-search" %}
+        {% set empty_state_min_height = "min-h-[220px]" %}
         {% include 'components/states/_empty_state.html' %}
     {% else %}
         <div class="{{ integration_ui.metric_grid_classes(5) }} border-b border-outline-subtle">
@@ -193,10 +192,10 @@
                     {% else %}
                         <tr>
                             <td colspan="6" class="p-0">
-                                {% set empty_state_icon = 'search-x' %}
-                                {% set empty_state_label = 'No Results' %}
-                                {% set empty_state_title = 'No Runtime Targets Match These Filters' %}
-                                {% set empty_state_description = 'Clear or adjust the integration-type, health, or readiness filters to expand the result set.' %}
+                                {% set empty_state_icon = "search-x" %}
+                                {% set empty_state_label = "No Results" %}
+                                {% set empty_state_title = "No Runtime Targets Match These Filters" %}
+                                {% set empty_state_description = "Clear or adjust the integration-type, health, or readiness filters to expand the result set." %}
                                 {% set empty_state_min_height = "min-h-[190px]" %}
                                 {% include 'components/states/_empty_state.html' %}
                             </td>

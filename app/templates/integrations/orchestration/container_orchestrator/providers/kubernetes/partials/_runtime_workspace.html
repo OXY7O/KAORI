@@ -22,10 +22,9 @@
 <article id="kubernetes-runtime-workspace"
          class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm font-sans"
          data-kaori-runtime-workspace-v8>
-    {{ validation_poller.render(
-        validation_job and validation_job.is_active,
+    {{ validation_poller.render(validation_job and validation_job.is_active,
         url_for('integrations.kubernetes_runtime_refresh_status', cluster_id=cluster.id, task_id=validation_job.task_id) if validation_job and validation_job.is_active else '',
-        '#kubernetes-runtime-workspace'
+    '#kubernetes-runtime-workspace'
     ) }}
     {% call connection_validation_header.render(
         'Runtime Health & Diagnostics',

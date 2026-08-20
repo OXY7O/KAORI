@@ -39,10 +39,9 @@
          class="relative {{ integration_ui.section_shell_classes() }} font-sans"
          data-kaori-alertmanager-runtime-v3
          data-kaori-provider-runtime-kubernetes-pattern>
-    {{ validation_poller.render(
-        runtime_refresh_job and runtime_refresh_job.is_active,
+    {{ validation_poller.render(runtime_refresh_job and runtime_refresh_job.is_active,
         url_for('alertmanager.runtime_refresh_status', instance_id=instance.id, task_id=runtime_refresh_job.task_id) if runtime_refresh_job and runtime_refresh_job.is_active else '',
-        '#alertmanager-runtime-panel'
+    '#alertmanager-runtime-panel'
     ) }}
     {% call connection_validation_header.render(
         'Runtime Health & Diagnostics',

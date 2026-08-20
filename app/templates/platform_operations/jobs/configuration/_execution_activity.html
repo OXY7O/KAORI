@@ -49,6 +49,8 @@
                         <p class="mt-1 text-xs leading-5 text-content-muted">
                             {% if active_job %}
                                 Running through the configured queue and execution policy.
+                            {% elif selected_job.execution_disabled %}
+                                No active execution. Manual dispatch is blocked until an eligible target is available.
                             {% else %}
                                 No active execution. The job is ready for its next scheduled or manual run.
                             {% endif %}
@@ -83,6 +85,17 @@
             </div>
         </div>
     </div>
+    {% if selected_job.execution_disabled and selected_job.execution_blocker %}
+        <div class="border-t border-outline-subtle bg-status-warning-soft px-5 py-3 sm:px-6">
+            <div class="flex items-start gap-2 text-xs leading-5 text-content-secondary">
+                <i data-lucide="shield-alert" class="mt-0.5 h-4 w-4 shrink-0 text-status-warning"></i>
+                <div class="min-w-0">
+                    <p class="font-semibold text-content-primary">Manual Execution Blocked</p>
+                    <p class="mt-1 break-words text-content-muted">{{ selected_job.execution_blocker }}</p>
+                </div>
+            </div>
+        </div>
+    {% endif %}
     <div class="flex flex-col gap-4 bg-surface-hover px-5 py-4 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
         <p class="max-w-3xl text-xs leading-5 text-content-secondary">
             Manual runs use the same queue, job record, and audit boundary as scheduled executions.

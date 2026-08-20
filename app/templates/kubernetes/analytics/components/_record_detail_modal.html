@@ -16,7 +16,7 @@
 {% macro render(modal_id, context_label, title, subtitle, icon='panel-top-open', footer_text='Details use the latest committed Analytics snapshot.', size='standard') -%}
     {% set modal_width = 'max-w-5xl' if size == 'wide' else 'max-w-4xl' %}
     {% if size == 'investigation' %}
-        {% set modal_width = 'max-w-6xl' %}
+        {% set modal_width = "max-w-6xl" %}
     {% endif %}
     <template x-teleport="body">
         <div x-show="detailOpen"

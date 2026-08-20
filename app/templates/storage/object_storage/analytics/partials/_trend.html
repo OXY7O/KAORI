@@ -15,7 +15,13 @@
         <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div class="min-w-0">
                 <h2 class="text-lg font-semibold text-content-primary">
-                    {% if trend_mode == 'performance' %}Request &amp; Error Trend{% elif trend_mode == 'forecast' %}Storage Usage Forecast{% else %}Storage Usage Trend{% endif %}
+                    {% if trend_mode == 'performance' %}
+                        Request &amp; Error Trend
+                    {% elif trend_mode == 'forecast' %}
+                        Storage Usage Forecast
+                    {% else %}
+                        Storage Usage Trend
+                    {% endif %}
                 </h2>
                 <p class="mt-1 max-w-4xl text-sm leading-6 text-content-muted">
                     {% if trend_mode == 'forecast' %}
@@ -48,15 +54,17 @@
                     </article>
                     <article class="rounded-lg border border-outline-subtle bg-surface-elevated px-4 py-3">
                         <p class="{{ analysis_surface.metric_label_classes() }}">Window Direction</p>
-                        <p class="mt-1 text-sm font-semibold text-content-primary">{{ trend_summary.direction_label|default(trend_summary.direction|default('Unknown')|title) }}</p>
+                        <p class="mt-1 text-sm font-semibold text-content-primary">{{ trend_summary.direction_label|default(trend_summary.direction|default('Unknown') |title) }}</p>
                     </article>
                     <article class="rounded-lg border border-outline-subtle bg-surface-elevated px-4 py-3">
                         <p class="{{ analysis_surface.metric_label_classes() }}">Window Change</p>
-                        <p class="mt-1 text-sm font-semibold tabular-nums text-content-primary">{{ trend_summary.delta_display|default('N/A') }}{% if trend_summary.delta_percent_display|default('') %} · {{ trend_summary.delta_percent_display }}{% endif %}</p>
+                        <p class="mt-1 text-sm font-semibold tabular-nums text-content-primary">{{ trend_summary.delta_display|default("N/A") }}
+                            {% if trend_summary.delta_percent_display|default('') %}· {{ trend_summary.delta_percent_display }}{% endif %}
+                        </p>
                     </article>
                     <article class="rounded-lg border border-outline-subtle bg-surface-elevated px-4 py-3">
                         <p class="{{ analysis_surface.metric_label_classes() }}">Growth / Day</p>
-                        <p class="mt-1 text-sm font-semibold tabular-nums text-content-primary">{{ metrics.forecast_display.growth_per_day if trend_mode == 'forecast' else trend_summary.growth_per_day_display|default('N/A') }}</p>
+                        <p class="mt-1 text-sm font-semibold tabular-nums text-content-primary">{{ metrics.forecast_display.growth_per_day if trend_mode == 'forecast' else trend_summary.growth_per_day_display|default("N/A") }}</p>
                     </article>
                 </div>
             {% endif %}

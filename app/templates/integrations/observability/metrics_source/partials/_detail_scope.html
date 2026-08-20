@@ -16,10 +16,9 @@
 <div id="metrics-source-scope-workspace"
      class="space-y-4 font-sans"
      data-kaori-metrics-source-bindings-v3>
-    {{ validation_poller.render(
-        binding_poll_active,
+    {{ validation_poller.render(binding_poll_active,
         url_for('metrics.binding_validation_status', instance_id=instance.id, binding_id=active_binding_id, task_id=active_binding_task_id) if binding_poll_active else '',
-        '#metrics-source-scope-workspace'
+    '#metrics-source-scope-workspace'
     ) }}
     <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm"
              aria-labelledby="metrics-source-bindings-title">
@@ -49,8 +48,8 @@
             <div class="flex flex-col gap-2 border-b border-outline-subtle bg-surface-subtle px-5 py-3 text-xs text-content-secondary sm:flex-row sm:items-center sm:justify-between">
                 <span class="inline-flex items-center gap-2 font-semibold text-content-primary"><i data-lucide="loader-circle"
    class="h-3.5 w-3.5 animate-spin text-kaori-primary dark:text-kaori-accent"
-   aria-hidden="true"></i>{{ binding_validation_job.get('title') or 'Binding validation running' }}</span>
-                <span>Task {{ (binding_validation_job.get('task_id') or '')[:8] }} · {{ binding_validation_job.get('elapsed_seconds', 0) }}s</span>
+   aria-hidden="true"></i>{{ binding_validation_job.get("title") or 'Binding validation running' }}</span>
+                <span>Task {{ (binding_validation_job.get("task_id") or '')[:8] }} · {{ binding_validation_job.get('elapsed_seconds', 0) }}s</span>
             </div>
         {% endif %}
         <div class="grid divide-y divide-outline-subtle sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-4">

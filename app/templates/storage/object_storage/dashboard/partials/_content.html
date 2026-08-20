@@ -20,14 +20,16 @@
                 </div>
             {% endcall %}
         </div>
-        <aside class="{{ page_hero.aside_classes() }}" aria-label="Object Storage dashboard context">
+        <aside class="{{ page_hero.aside_classes() }}"
+               aria-label="Object Storage dashboard context">
             <div class="{{ page_hero.context_panel_classes() }}">
                 {{ page_hero.context_header('Dashboard Context', 'Operational Signal Scope', 'scan-search') }}
                 <div class="{{ page_hero.context_panel_metrics_classes() }}">
                     {{ page_hero.context_metric('scan-search', 'Active Scope', dashboard.selected_system.name if dashboard.selected_system else 'All Systems', 'Applied across dashboard signals', 'text-sm font-semibold leading-5') }}
                     {{ page_hero.context_metric('database-zap', 'Data Authority', 'Committed Snapshots', 'No live provider query on page load', 'text-sm font-semibold leading-5') }}
                 </div>
-                <a href="{{ url_for('object_storage_inventory.overview') }}" class="{{ page_hero.context_single_action_classes() }}">
+                <a href="{{ url_for('object_storage_inventory.overview') }}"
+                   class="{{ page_hero.context_single_action_classes() }}">
                     <i data-lucide="database" class="h-4 w-4" aria-hidden="true"></i>
                     <span>Object Storage Inventory</span>
                 </a>
@@ -35,7 +37,6 @@
         </aside>
     </div>
 </section>
-
 {% if not dashboard.systems %}
     {% set blocked_state_icon = "database-zap" %}
     {% set blocked_state_label = "System Required" %}
@@ -68,7 +69,9 @@
             <div class="flex w-full items-center gap-2 lg:w-auto">
                 <label for="object-storage-dashboard-system" class="sr-only">Object Storage System Scope</label>
                 <div class="relative min-w-0 flex-1 lg:w-72 lg:flex-none">
-                    <i data-lucide="sliders-horizontal" class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-content-muted" aria-hidden="true"></i>
+                    <i data-lucide="sliders-horizontal"
+                       class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-content-muted"
+                       aria-hidden="true"></i>
                     <select id="object-storage-dashboard-system"
                             name="system_id"
                             hx-get="{{ url_for('object_storage_dashboard.index') }}"
@@ -81,7 +84,8 @@
                             class="{{ table_ui.filter_select_classes() }} pl-10">
                         <option value="">All Systems</option>
                         {% for system in dashboard.systems %}
-                            <option value="{{ system.id }}" {% if dashboard.selected_system_id|string == system.id|string %}selected{% endif %}>{{ system.name }}</option>
+                            <option value="{{ system.id }}"
+                                    {% if dashboard.selected_system_id|string == system.id|string %}selected{% endif %}>{{ system.name }}</option>
                         {% endfor %}
                     </select>
                 </div>
@@ -99,10 +103,12 @@
             </div>
         </div>
     {% endcall %}
-
     <div x-data="{ activeTab: '{{ dashboard.active_tab }}', allowedTabs: ['overview', 'capacity', 'signals', 'reporting'], setTab(tab) { if (!this.allowedTabs.includes(tab)) return; this.activeTab = tab; const url = new URL(window.location.href); url.searchParams.set('tab', tab); window.history.replaceState({}, '', url); }, moveTab(currentTab, direction, prefix) { const currentIndex = this.allowedTabs.indexOf(currentTab); if (currentIndex < 0) return; let nextIndex = currentIndex; if (direction === 'home') nextIndex = 0; else if (direction === 'end') nextIndex = this.allowedTabs.length - 1; else nextIndex = (currentIndex + direction + this.allowedTabs.length) % this.allowedTabs.length; const nextTab = this.allowedTabs[nextIndex]; this.setTab(nextTab); this.$nextTick(() => document.getElementById(`${prefix}-tab-${nextTab}`)?.focus()); } }"
          x-on:popstate.window="activeTab = allowedTabs.includes(new URL(window.location.href).searchParams.get('tab')) ? new URL(window.location.href).searchParams.get('tab') : 'overview'">
-        <input id="object-storage-dashboard-active-tab" type="hidden" name="tab" x-model="activeTab">
+        <input id="object-storage-dashboard-active-tab"
+               type="hidden"
+               name="tab"
+               x-model="activeTab">
         <div class="space-y-5">
             {{ workspace_tabs.render(dashboard_tabs, prefix='object-storage-dashboard', aria_label='Object Storage Dashboard Sections') }}
             {% for tab_key, tab_label, tab_icon in dashboard_tabs %}

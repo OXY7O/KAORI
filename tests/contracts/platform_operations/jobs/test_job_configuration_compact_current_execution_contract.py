@@ -24,3 +24,10 @@ def test_manual_actions_remain_available():
     assert 'jobs.run_now' in text
     assert 'jobs.executions' in text
     assert 'manual_form.hidden_tag()' in text
+
+
+def test_blocked_manual_execution_explains_why_run_now_is_disabled():
+    text = TEMPLATE.read_text()
+    assert 'Manual Execution Blocked' in text
+    assert 'selected_job.execution_blocker' in text
+    assert 'Manual dispatch is blocked until an eligible target is available.' in text

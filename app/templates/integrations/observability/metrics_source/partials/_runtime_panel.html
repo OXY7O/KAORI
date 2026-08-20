@@ -47,10 +47,9 @@
          class="relative overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm font-sans"
          data-kaori-metrics-source-runtime-v4
          data-kaori-provider-runtime-kubernetes-pattern>
-    {{ validation_poller.render(
-        runtime_refresh_job and runtime_refresh_job.is_active,
+    {{ validation_poller.render(runtime_refresh_job and runtime_refresh_job.is_active,
         url_for('metrics.runtime_refresh_status', instance_id=instance.id, task_id=runtime_refresh_job.task_id) if runtime_refresh_job and runtime_refresh_job.is_active else '',
-        '#metrics-source-runtime-panel'
+    '#metrics-source-runtime-panel'
     ) }}
     {% call connection_validation_header.render(
         'Runtime Health & Diagnostics',
@@ -85,12 +84,11 @@
                 runtime_state.readiness,
                 runtime_state.readiness_label,
                 runtime_profile_label ~ ' · ' ~ runtime_state.capability_count ~ ' observed capabilities',
-        observation_rows,
-        runtime_primary_finding,
-        runtime_attention|length,
-        runtime_next_action,
-        'Full technical diagnostic detail and remediation stay in Recent Runtime Observations. This workspace keeps only the current operational summary.'
-        ) }}
+                observation_rows,
+                runtime_primary_finding,
+                runtime_attention|length,
+                runtime_next_action,
+                'Full technical diagnostic detail and remediation stay in Recent Runtime Observations. This workspace keeps only the current operational summary.') }}
         <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card"
                  aria-labelledby="metrics-source-runtime-evidence-title"
                  data-kaori-metrics-source-runtime-evidence>

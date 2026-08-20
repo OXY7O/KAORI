@@ -88,3 +88,73 @@ def test_stale_recovery_force_cancels_after_grace_period(monkeypatch) -> None:
     assert job.progress_message == 'Force canceled after cooperative cancellation timeout'
     assert result == {'recovered': 1, 'expired': 0, 'canceled': 1}
     assert commits == [True]
+
+
+def test_stale_queued_job_with_task_id_is_revoked_and_releases_deduplication_slot(monkeypatch) -> None:
+    app = Flask(__name__)
+    app.config['JOB_QUEUED_STALE_SECONDS'] = 300
+    revoke_calls: list[tuple[str, bool]] = []
+    commits: list[bool] = []
+    celery = SimpleNamespace(
+        control=SimpleNamespace(revoke=lambda task_id, terminate: revoke_calls.append((task_id, terminate)))
+    )
+    app.extensions['celery'] = celery
+    job = _job(
+        status='queued',
+        started_at=None,
+        heartbeat_at=None,
+        queued_at=datetime.now(UTC) - timedelta(minutes=10),
+        celery_task_id='task-stale-queued',
+    )
+    query = SimpleNamespace(filter=lambda *_args, **_kwargs: SimpleNamespace(all=lambda: [job]))
+    status_field = SimpleNamespace(in_=lambda _values: object())
+    monkeypatch.setattr(service, 'JobExecution', SimpleNamespace(query=query, status=status_field))
+    monkeypatch.setattr(service.db, 'session', SimpleNamespace(commit=lambda: commits.append(True)))
+
+    with app.app_context():
+        result = service.recover_stale_jobs()
+
+    assert revoke_calls == [('task-stale-queued', False)]
+    assert job.status == 'expired'
+    assert job.active_deduplication_key is None
+    assert job.error_code == 'queued_start_timeout'
+    assert job.progress_message == 'Expired before worker start'
+    assert result == {'recovered': 1, 'expired': 1, 'canceled': 0}
+    assert commits == [True]
+
+
+def test_worker_registration_preflight_accepts_task_on_target_queue() -> None:
+    from app.platform_operations.jobs import dispatcher
+
+    app = Flask(__name__)
+    task = SimpleNamespace(name='app.storage.object_storage.analytics.tasks.materialize_object_storage_analytics')
+    inspector = SimpleNamespace(
+        active_queues=lambda: {'celery@analytics': [{'name': 'analytics-batch'}]},
+        registered=lambda: {
+            'celery@analytics': ['app.storage.object_storage.analytics.tasks.materialize_object_storage_analytics']
+        },
+    )
+    app.extensions['celery'] = SimpleNamespace(control=SimpleNamespace(inspect=lambda timeout: inspector))
+
+    with app.app_context():
+        dispatcher.ensure_task_registered_for_queue(task=task, queue_name='analytics-batch')
+
+
+def test_worker_registration_preflight_rejects_stale_worker_registry() -> None:
+    from app.platform_operations.jobs import dispatcher
+
+    app = Flask(__name__)
+    task = SimpleNamespace(name='app.storage.object_storage.analytics.tasks.materialize_object_storage_analytics')
+    inspector = SimpleNamespace(
+        active_queues=lambda: {'celery@analytics': [{'name': 'analytics-batch'}]},
+        registered=lambda: {'celery@analytics': ['app.kubernetes.analytics.tasks.materialize_analytics_snapshots']},
+    )
+    app.extensions['celery'] = SimpleNamespace(control=SimpleNamespace(inspect=lambda timeout: inspector))
+
+    with app.app_context():
+        try:
+            dispatcher.ensure_task_registered_for_queue(task=task, queue_name='analytics-batch')
+        except dispatcher.JobWorkerUnavailable as exc:
+            assert 'do not advertise task' in str(exc)
+        else:
+            raise AssertionError('Expected stale worker registry preflight to fail.')

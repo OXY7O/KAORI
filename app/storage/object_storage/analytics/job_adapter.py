@@ -184,6 +184,7 @@ def dispatch_object_storage_analytics_materialization(
         max_attempts=2,
         soft_time_limit_seconds=current_app.config['ANALYTICS_TASK_SOFT_TIME_LIMIT_SECONDS'],
         hard_time_limit_seconds=current_app.config['ANALYTICS_TASK_HARD_TIME_LIMIT_SECONDS'],
+        require_registered_worker=True,
     )
     return RegisteredJobDispatchResult(
         status='queued' if created else 'active',
@@ -339,6 +340,7 @@ def dispatch_object_storage_forecast_materialization(
         max_attempts=2,
         soft_time_limit_seconds=current_app.config['FORECASTING_TASK_SOFT_TIME_LIMIT_SECONDS'],
         hard_time_limit_seconds=current_app.config['FORECASTING_TASK_HARD_TIME_LIMIT_SECONDS'],
+        require_registered_worker=True,
     )
     return RegisteredJobDispatchResult(
         status='queued' if created else 'active',

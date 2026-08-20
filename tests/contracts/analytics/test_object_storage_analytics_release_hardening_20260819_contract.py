@@ -75,8 +75,8 @@ def test_forecast_workspaces_show_system_graph_and_bucket_watch_without_new_job_
     javascript = read('app/static/js/storage/object_storage/analytics.js')
     readme = read('app/storage/object_storage/analytics/README.md')
 
-    assert "object_storage_trend_mode = 'forecast'" in overview_forecast
-    assert "object_storage_trend_mode = 'forecast'" in forecast_analysis
+    assert 'object_storage_trend_mode = "forecast"' in overview_forecast
+    assert 'object_storage_trend_mode = "forecast"' in forecast_analysis
     assert "('buckets', 'Bucket Forecasts', 'container')" in forecast_workspace
     assert '_bucket_forecasts.html' in forecast_workspace
     assert 'Bucket Forecast Watch' in bucket_forecasts

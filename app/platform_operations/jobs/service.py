@@ -5,7 +5,9 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 from uuid import uuid4
 
+from celery.exceptions import CeleryError
 from flask import current_app
+from kombu.exceptions import OperationalError as KombuOperationalError
 from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
 
@@ -594,23 +596,41 @@ def recover_stale_jobs() -> dict[str, int]:
             continue
 
         stale = False
+        stale_reason = ''
         if job.status == 'queued':
-            # A healthy forecasting backlog can legitimately stay queued for a
-            # long time. Only expire an explicit deadline or an orphan record that
-            # was never assigned a Celery task identifier.
             stale = bool(
                 (job.expires_at is not None and job.expires_at < now)
-                or (job.celery_task_id is None and job.queued_at < queued_cutoff)
+                or job.queued_at < queued_cutoff
             )
+            if stale:
+                stale_reason = 'queued_start_timeout'
         elif job.status in {'running', 'retrying'}:
             heartbeat = job.heartbeat_at or job.started_at or job.queued_at
             stale = heartbeat < running_cutoff
+            if stale:
+                stale_reason = 'stale_worker_heartbeat'
         if not stale:
             continue
+        if job.status == 'queued' and job.celery_task_id:
+            try:
+                current_app.extensions['celery'].control.revoke(job.celery_task_id, terminate=False)
+            except (CeleryError, KombuOperationalError, OSError):
+                current_app.logger.warning(
+                    'Could not revoke stale queued Celery task %s before terminalizing job %s.',
+                    job.celery_task_id,
+                    job.public_id,
+                    exc_info=True,
+                )
         _terminalize(job, 'expired')
-        job.error_code = 'stale_job_recovered'
-        job.error_message = 'KAORI marked the job expired because its worker heartbeat became stale.'
-        job.progress_message = 'Expired after stale worker heartbeat'
+        job.error_code = stale_reason
+        if stale_reason == 'queued_start_timeout':
+            job.error_message = (
+                'KAORI marked the job expired because no worker started it before the queued-start deadline.'
+            )
+            job.progress_message = 'Expired before worker start'
+        else:
+            job.error_message = 'KAORI marked the job expired because its worker heartbeat became stale.'
+            job.progress_message = 'Expired after stale worker heartbeat'
         recovered += 1
         expired += 1
     if recovered:

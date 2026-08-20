@@ -20,6 +20,8 @@ def _policy_status(policy: JobPolicy) -> dict[str, str]:
         return {'label': 'Disabled', 'tone': 'disabled', 'icon': 'circle-pause'}
     if policy.last_dispatch_status == 'failed':
         return {'label': 'Dispatch Failed', 'tone': 'critical', 'icon': 'circle-x'}
+    if policy.last_dispatch_status == 'blocked':
+        return {'label': 'Dispatch Blocked', 'tone': 'warning', 'icon': 'shield-alert'}
     return {'label': 'Enabled', 'tone': 'normal', 'icon': 'circle-check'}
 
 
@@ -139,6 +141,28 @@ def _selected_job_context(definition: JobDefinition, policy: JobPolicy) -> dict[
         'eligible_target_count', selected_context.get('eligible_cluster_count', 1)
     )
     selected_context['execution_disabled'] = not bool(eligible_target_count)
+    diagnostics = [str(item) for item in selected_context.get('diagnostics') or [] if str(item).strip()]
+    selected_context['execution_blocker'] = (
+        diagnostics[0]
+        if selected_context['execution_disabled'] and diagnostics
+        else (
+            'No eligible execution target is available for this registered job.'
+            if selected_context['execution_disabled']
+            else ''
+        )
+    )
+    selected_context['dispatch_attention'] = (
+        {
+            'label': 'Last Dispatch Failed',
+            'tone': 'critical',
+            'message': (
+                policy.last_dispatch_message
+                or 'The last scheduler dispatch failed before execution could start.'
+            ),
+        }
+        if policy.last_dispatch_status == 'failed'
+        else None
+    )
     return selected_context
 
 

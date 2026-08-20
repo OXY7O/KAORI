@@ -34,14 +34,13 @@
                 {% if filters.query or filters.requirement or filters.status %}
                     {% set capability_clear_href = url_for('integrations.kubernetes_detail', cluster_id=cluster.id, tab='validation', capability_page=1, capability_per_page=pagination.per_page) %}
                     {% set capability_clear_url = url_for('integrations.kubernetes_capability_registry', cluster_id=cluster.id, capability_page=1, capability_per_page=pagination.per_page) %}
-                    {{ registry_ui.clear_filters_action(
-                        capability_clear_href,
-                        table_ui.action_classes(),
-                        hx_get=capability_clear_url,
-                        target='#kubernetes-capability-registry',
-                        indicator='#kubernetes-capability-loading',
-                        swap='outerHTML',
-                        marker='kubernetes-capability-registry'
+                    {{ registry_ui.clear_filters_action(capability_clear_href,
+                                        table_ui.action_classes() ,
+                    hx_get=capability_clear_url,
+                    target='#kubernetes-capability-registry',
+                    indicator='#kubernetes-capability-loading',
+                    swap='outerHTML',
+                    marker='kubernetes-capability-registry'
                     ) }}
                 {% endif %}
             </div>
@@ -158,12 +157,12 @@
                 {% else %}
                     <tr>
                         <td colspan="6" class="p-0">
-                            {% set empty_state_icon = 'scan-search' %}
+                            {% set empty_state_icon = "scan-search" %}
                             {% set empty_state_label = 'No Results' if registry.total_contracts else 'Sync Required' %}
                             {% set empty_state_tone = 'unknown' if registry.total_contracts else 'warning' %}
                             {% set empty_state_title = 'No Capability Records Match the Current Filters' if registry.total_contracts else 'Capability Evidence Not Available' %}
                             {% set empty_state_description = 'Adjust Search Capability, Requirement, or Validation Status to broaden the registry results.' if registry.total_contracts else 'Run Full Validation to discover stable APIs, legacy fallbacks, effective RBAC, and blocked features.' %}
-                            {% set empty_state_min_height = 'min-h-[160px]' %}
+                            {% set empty_state_min_height = "min-h-[160px]" %}
                             {% include 'components/states/_empty_state.html' %}
                         </td>
                     </tr>

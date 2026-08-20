@@ -28,7 +28,7 @@
             ('Forecast Ready', bucket_forecast_summary.ready_count|default(0), 'At least two usable range samples'),
             ('Quota-Bounded', bucket_forecast_summary.quota_bounded_count|default(0), 'Configured quotas can produce quota ETA'),
             ('History Gaps', bucket_forecast_summary.history_gap_count|default(0), 'One or zero usable range samples')
-        ] %}
+            ] %}
             <article class="bg-surface-card p-4 sm:p-5">
                 <p class="{{ analysis_surface.metric_label_classes() }}">{{ label }}</p>
                 <p class="mt-2 text-xl font-semibold tabular-nums text-content-primary">{{ value }}</p>
@@ -37,7 +37,8 @@
         {% endfor %}
     </div>
     {% if bucket_forecasts %}
-        <div class="divide-y divide-outline-subtle" data-object-storage-bucket-forecast-records>
+        <div class="divide-y divide-outline-subtle"
+             data-object-storage-bucket-forecast-records>
             <div class="hidden grid-cols-12 gap-4 bg-surface-elevated px-5 py-2.5 text-xs font-semibold uppercase tracking-wide text-content-muted lg:grid">
                 <div class="col-span-3">Bucket</div>
                 <div class="col-span-2">Current &amp; Growth</div>
