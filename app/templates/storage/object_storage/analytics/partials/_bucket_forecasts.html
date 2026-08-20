@@ -1,4 +1,4 @@
-{% import "components/table_ui.html" as table_ui %}
+{% import "components/table_primitives.html" as table_ui %}
 {% import "components/table_label.html" as table_label %}
 {% set bucket_forecasts = metrics.bucket_forecasts|default([], true) %}
 {% set bucket_forecast_summary = metrics.bucket_forecast_summary|default({}, true) %}
@@ -39,7 +39,8 @@
         {% endfor %}
     </div>
     {% if bucket_forecasts %}
-        <div class="overflow-x-auto" data-kaori-object-storage-bucket-forecast-table>
+        <div class="overflow-x-auto"
+             data-kaori-object-storage-bucket-forecast-table>
             <table class="{{ table_ui.table_classes('min-w-[1080px]') }}">
                 <thead class="{{ table_ui.head_classes() }}">
                     <tr>

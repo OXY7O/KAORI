@@ -164,17 +164,17 @@ def test_object_storage_materialization_rejects_stale_worker_registry_and_recove
 
     assert adapter.count('require_registered_worker=True') >= 2
     assert 'def ensure_task_registered_for_queue(' in dispatcher
-    assert "inspector.active_queues() or {}" in dispatcher
+    assert 'inspector.active_queues() or {}' in dispatcher
     assert 'destination=sorted(queue_workers)' in dispatcher
-    assert "registry_inspector.registered() or {}" in dispatcher
+    assert 'registry_inspector.registered() or {}' in dispatcher
     assert 'do not advertise task' in dispatcher
     assert 'none returned a task registry' in dispatcher
     assert 'if require_registered_worker:' in dispatcher
     assert 'ensure_task_registered_for_queue(task=task, queue_name=queue_name)' in dispatcher
 
-    assert "or job.queued_at < queued_cutoff" in jobs_service
+    assert 'or job.queued_at < queued_cutoff' in jobs_service
     assert "stale_reason = 'queued_start_timeout'" in jobs_service
-    assert "control.revoke(job.celery_task_id, terminate=False)" in jobs_service
+    assert 'control.revoke(job.celery_task_id, terminate=False)' in jobs_service
     assert "job.progress_message = 'Expired before worker start'" in jobs_service
 
     assert 'class JobExecutionUnavailable(RuntimeError):' in execution
@@ -211,6 +211,7 @@ def test_manual_dispatch_recovery_updates_policy_status_and_surfaces_exact_block
     assert 'Manual Execution Blocked' in activity
     assert 'Manual dispatch is blocked until an eligible target is available.' in activity
 
+
 def test_registered_job_dispatch_refreshes_catalog_for_long_lived_processes() -> None:
     registry = read('app/platform_operations/jobs/registry.py')
     dispatcher = read('app/platform_operations/jobs/dispatcher.py')
@@ -240,7 +241,7 @@ def test_object_storage_manual_dispatch_reports_required_metric_failures_instead
 def test_bucket_forecast_watch_uses_shared_kaori_table_standard() -> None:
     forecast = read('app/templates/storage/object_storage/analytics/partials/_bucket_forecasts.html')
 
-    assert '{% import "components/table_ui.html" as table_ui %}' in forecast
+    assert '{% import "components/table_primitives.html" as table_ui %}' in forecast
     assert 'data-kaori-object-storage-bucket-forecast-table' in forecast
     assert 'table_ui.table_classes' in forecast
     assert 'table_ui.head_classes()' in forecast

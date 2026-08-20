@@ -251,9 +251,7 @@ def required_contract_diagnostic(source, *, max_items: int = 4) -> str:
         return f'{headline}. Run consumer binding validation to rebuild required metric evidence.'
 
     visible = missing[: max(int(max_items), 1)]
-    missing_text = '; '.join(
-        f"{item['label']} — {item['state_label']}" for item in visible
-    )
+    missing_text = '; '.join(f'{item["label"]} — {item["state_label"]}' for item in visible)
     remaining = len(missing) - len(visible)
     suffix = f'; +{remaining} more' if remaining > 0 else ''
     detail = str(visible[0].get('detail') or '').strip() if len(missing) == 1 else ''
