@@ -123,6 +123,7 @@ def test_object_storage_inventory_uses_dedicated_rbac_and_preserves_existing_rol
     assert "has_permission('object_storage_inventory.view')" in sidebar
     assert "has_permission('inventory.view')" in sidebar
 
+
 def test_inventory_sync_preserves_last_committed_snapshot_on_unexpected_empty_discovery() -> None:
     sync = read('app/storage/object_storage/inventory/sync.py')
 
@@ -130,4 +131,3 @@ def test_inventory_sync_preserves_last_committed_snapshot_on_unexpected_empty_di
     assert 'Provider bucket discovery returned zero assets while the last committed snapshot contains' in sync
     assert 'KAORI preserved the previous committed snapshot.' in sync
     assert 'Verify the S3 endpoint, credentials, and ListBuckets scope' in sync
-

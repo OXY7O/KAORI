@@ -58,7 +58,8 @@
                     </article>
                     <article class="rounded-lg border border-outline-subtle bg-surface-elevated px-4 py-3">
                         <p class="{{ analysis_surface.metric_label_classes() }}">Window Change</p>
-                        <p class="mt-1 text-sm font-semibold tabular-nums text-content-primary">{{ trend_summary.delta_display|default("N/A") }}
+                        <p class="mt-1 text-sm font-semibold tabular-nums text-content-primary">
+                            {{ trend_summary.delta_display|default("N/A") }}
                             {% if trend_summary.delta_percent_display|default('') %}· {{ trend_summary.delta_percent_display }}{% endif %}
                         </p>
                     </article>

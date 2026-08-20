@@ -20,7 +20,12 @@ from app.storage.object_storage.analytics.materialization import (
     get_forecast_snapshot,
     read_analytics_snapshot,
 )
-from app.storage.object_storage.analytics.presentation import format_bytes, format_number, format_percent
+from app.storage.object_storage.analytics.presentation import format_bytes, format_number
+from app.storage.object_storage.dashboard.presentation import (
+    build_forecast_view,
+    build_recommended_actions,
+    build_top_consumers_view,
+)
 
 _DASHBOARD_TIME_RANGE = '24h'
 _DASHBOARD_FORECAST_WINDOW = '30d'
@@ -363,86 +368,17 @@ def _capacity(selected: ObjectStorageSystem | None) -> dict[str, Any]:
 
 def _forecast(selected: ObjectStorageSystem | None) -> dict[str, Any]:
     if selected is None:
-        return {'available': False}
+        return build_forecast_view(None, {})
     payload, state = _forecast_payload(selected)
-    forecast = (
-        payload.get('forecast') if isinstance(payload, dict) and isinstance(payload.get('forecast'), dict) else {}
-    )
-    bucket_rows = (
-        payload.get('bucket_forecasts')
-        if isinstance(payload, dict) and isinstance(payload.get('bucket_forecasts'), list)
-        else []
-    )
-    projected = forecast.get('projected_30d')
-    days = forecast.get('days_to_capacity')
-    growth = forecast.get('growth_per_day')
-    if days is not None and float(days) <= 30:
-        posture = {'label': 'Critical', 'tone': 'critical'}
-    elif days is not None and float(days) <= 90:
-        posture = {'label': 'Warning', 'tone': 'warning'}
-    elif growth is not None:
-        posture = {
-            'label': 'Growth Watch' if float(growth) > 0 else 'Stable',
-            'tone': 'info' if float(growth) > 0 else 'normal',
-        }
-    else:
-        posture = {'label': 'Insufficient History', 'tone': 'unknown'}
-    return {
-        'available': bool(payload),
-        'snapshot': state,
-        'projected_30d_display': format_bytes(projected),
-        'growth_per_day_display': f'{format_bytes(growth)}/day' if growth is not None else 'N/A',
-        'days_to_capacity_display': f'{float(days):.1f} days' if days is not None else 'No ETA',
-        'posture': posture,
-        'bucket_count': len(bucket_rows),
-        'attention_count': sum(
-            1
-            for row in bucket_rows
-            if isinstance(row, dict)
-            and isinstance(row.get('forecast'), dict)
-            and row['forecast'].get('days_to_capacity') is not None
-            and float(row['forecast']['days_to_capacity']) <= 90
-        ),
-    }
+    return build_forecast_view(payload, state)
 
 
-def _top_consumers(selected: ObjectStorageSystem | None) -> list[dict[str, str]]:
+def _top_consumers(selected: ObjectStorageSystem | None) -> dict[str, Any]:
     if selected is None:
-        return []
-    payload, _state = _snapshot_payload(selected)
-    metrics = _page_metrics(payload, 'top_consumers')
-    rows = [row for row in metrics.get('bucket_rows') or [] if isinstance(row, dict)]
-    rows.sort(key=lambda row: float(row.get('usage_bytes') or 0), reverse=True)
-    result: list[dict[str, str]] = []
-    for row in rows[:5]:
-        result.append(
-            {
-                'name': str(row.get('name') or 'Unknown Bucket'),
-                'usage': str(row.get('usage_display') or format_bytes(row.get('usage_bytes'))),
-                'share': str(row.get('usage_share_display') or format_percent(row.get('usage_share'))),
-                'objects': str(row.get('objects_display') or format_number(row.get('objects'))),
-                'request_rate': str(row.get('request_rate_display') or 'N/A'),
-            }
-        )
-    return result
-
-
-def _alerts(selected: ObjectStorageSystem | None) -> dict[str, Any]:
-    if selected is None:
-        return {'available': False, 'critical': 0, 'warning': 0, 'info': 0, 'rows': []}
+        return build_top_consumers_view({}, {})
     payload, state = _snapshot_payload(selected)
-    stream, posture = _alert_view(payload)
-    rows = [row for row in stream.get('rows') or [] if isinstance(row, dict)]
-    return {
-        'available': bool(stream.get('connected')),
-        'snapshot': state,
-        'critical': int(posture.get('critical') or 0),
-        'warning': int(posture.get('warning') or 0),
-        'info': int(posture.get('info') or 0),
-        'total': int(posture.get('total') or 0),
-        'source_label': str(stream.get('resolved_label') or stream.get('label') or 'Unavailable'),
-        'rows': rows[:3],
-    }
+    metrics = _page_metrics(payload, 'top_consumers')
+    return build_top_consumers_view(metrics, state)
 
 
 def _reporting(selected: ObjectStorageSystem | None) -> dict[str, Any]:
@@ -457,6 +393,7 @@ def _reporting(selected: ObjectStorageSystem | None) -> dict[str, Any]:
         schedules_query = schedules_query.filter(schedule_scope_filter)
     recent = reports_query.order_by(Report.created_at.desc()).limit(3).all()
     return {
+        'source_status': 'Available',
         'generated_reports': reports_query.count(),
         'templates': ReportTemplate.query.filter(ReportTemplate.report_domain == 'object_storage').count(),
         'schedules': schedules_query.count(),
@@ -546,6 +483,13 @@ def get_dashboard_section(
         dashboard['alerts'] = _alerts(selected)
         dashboard['forecast'] = _forecast(selected)
         dashboard['capacity'] = _capacity(selected)
+        dashboard['top_consumers'] = _top_consumers(selected)
+        dashboard['recommended_actions'] = build_recommended_actions(
+            alerts=dashboard['alerts'],
+            capacity=dashboard['capacity'],
+            forecast=dashboard['forecast'],
+            top_consumers=dashboard['top_consumers'],
+        )
     elif section == 'reporting':
         dashboard['reporting'] = _reporting(selected)
         dashboard['freshness'] = _freshness(selected, systems)

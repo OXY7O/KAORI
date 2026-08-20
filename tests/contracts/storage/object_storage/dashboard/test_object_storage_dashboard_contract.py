@@ -85,18 +85,27 @@ def test_dashboard_sections_are_object_storage_specific_and_committed_evidence_o
     kubernetes_inventory = read('app/templates/kubernetes/dashboard/partials/_inventory_summary.html')
     kubernetes_freshness = read('app/templates/kubernetes/dashboard/partials/_data_freshness.html')
     capacity = read('app/templates/storage/object_storage/dashboard/partials/_capacity.html')
+    forecast = read('app/templates/storage/object_storage/dashboard/partials/_forecast_risk.html')
+    consumers = read('app/templates/storage/object_storage/dashboard/partials/_top_consumers.html')
     signals = read('app/templates/storage/object_storage/dashboard/partials/_signals.html')
+    response = read('app/templates/storage/object_storage/dashboard/partials/_alert_response_guidance.html')
+    actions = read('app/templates/storage/object_storage/dashboard/partials/_recommended_actions.html')
     reporting = read('app/templates/storage/object_storage/dashboard/partials/_reporting.html')
+    reporting_summary = read('app/templates/storage/object_storage/dashboard/partials/_reporting_summary.html')
+    reporting_guidance = read('app/templates/storage/object_storage/dashboard/partials/_reporting_guidance.html')
 
     assert 'System Health Summary' in system_health
     for token in ('Inventory Snapshot', 'Data Freshness'):
         assert token in overview
-    for token in ('Capacity Snapshot', 'Forecast & Growth Risk', 'Top Bucket Consumers'):
-        assert token in capacity
-    for token in ('Alerts Summary', 'Operational Response', 'committed dashboard evidence'):
-        assert token in signals
-    for token in ('Reporting Summary', 'Evidence Readiness', 'Object Storage report'):
-        assert token in reporting
+    assert 'Capacity Snapshot' in capacity
+    assert 'Forecast & Growth Risk' in forecast
+    assert 'Top Bucket Consumers' in consumers
+    assert 'storage/object_storage/dashboard/partials/_alerts_summary.html' in signals
+    assert 'Alert Interpretation & Response' in response
+    assert 'Recommended Actions' in actions
+    assert 'storage/object_storage/dashboard/partials/_reporting_summary.html' in reporting
+    assert 'Reporting Summary' in reporting_summary
+    assert 'Reporting Interpretation & Next Steps' in reporting_guidance
 
     assert 'storage/object_storage/dashboard/partials/_system_health.html' in overview
     for token in (
@@ -170,3 +179,73 @@ def test_object_storage_analytics_verifier_tracks_current_snapshot_contract() ->
         "for label in ('Forecast Outlook', 'Usage Trend', 'Bucket Forecasts', 'Worker & Method', 'Evidence')"
         in verifier
     )
+
+
+def test_capacity_dashboard_matches_kubernetes_forecast_and_top_consumer_pattern() -> None:
+    capacity = read('app/templates/storage/object_storage/dashboard/partials/_capacity.html')
+    forecast = read('app/templates/storage/object_storage/dashboard/partials/_forecast_risk.html')
+    consumers = read('app/templates/storage/object_storage/dashboard/partials/_top_consumers.html')
+    kubernetes_forecast = read('app/templates/kubernetes/dashboard/partials/_forecast_risk.html')
+    kubernetes_consumers = read('app/templates/kubernetes/dashboard/partials/_top_consumers.html')
+    service = read('app/storage/object_storage/dashboard/service.py')
+    presentation = read('app/storage/object_storage/dashboard/presentation.py')
+
+    assert 'storage/object_storage/dashboard/partials/_forecast_risk.html' in capacity
+    assert 'storage/object_storage/dashboard/partials/_top_consumers.html' in capacity
+    for token in (
+        'components/forecast_projection_chart.html',
+        'Projected Storage Utilization Trend',
+        'Historical usage is solid; the forward 30-day projection is dashed.',
+        'Forecast Conclusion',
+    ):
+        assert token in forecast
+    assert 'components/forecast_projection_chart.html' in kubernetes_forecast
+    assert 'Projected Utilization Trend' in kubernetes_forecast
+    for token in (
+        'consumer_panel',
+        'Storage Usage',
+        'Request Activity',
+        'Top 3',
+        'Activity Gaps',
+        'High Usage',
+    ):
+        assert token in consumers
+    assert 'consumer_panel' in kubernetes_consumers
+    assert 'build_forecast_view(payload, state)' in service
+    assert "'chart_items': [chart_item] if chart_item else []" in presentation
+    assert "'usage': usage_items" in presentation
+    assert "'requests': request_items" in presentation
+
+
+def test_signals_and_reporting_match_kubernetes_dashboard_composition() -> None:
+    signals = read('app/templates/storage/object_storage/dashboard/partials/_signals.html')
+    alerts = read('app/templates/storage/object_storage/dashboard/partials/_alerts_summary.html')
+    response = read('app/templates/storage/object_storage/dashboard/partials/_alert_response_guidance.html')
+    actions = read('app/templates/storage/object_storage/dashboard/partials/_recommended_actions.html')
+    reporting = read('app/templates/storage/object_storage/dashboard/partials/_reporting.html')
+    reporting_summary = read('app/templates/storage/object_storage/dashboard/partials/_reporting_summary.html')
+    reporting_guidance = read('app/templates/storage/object_storage/dashboard/partials/_reporting_guidance.html')
+    kubernetes_signals = read('app/templates/kubernetes/dashboard/partials/_content.html')
+    kubernetes_reporting = read('app/templates/kubernetes/dashboard/partials/_reporting_guidance.html')
+    service = read('app/storage/object_storage/dashboard/service.py')
+
+    for token in (
+        'storage/object_storage/dashboard/partials/_alerts_summary.html',
+        'storage/object_storage/dashboard/partials/_alert_response_guidance.html',
+        'storage/object_storage/dashboard/partials/_recommended_actions.html',
+    ):
+        assert token in signals
+    assert 'Alerts Summary' in alerts
+    assert 'Alert Interpretation & Response' in response
+    assert 'Controlled Response Flow' in response
+    assert 'Recommended Actions' in actions
+    assert 'dashboard-recommended-actions' in kubernetes_signals
+    assert "dashboard['recommended_actions'] = build_recommended_actions(" in service
+
+    assert "peer_content_grid.column_classes('primary', 'seven-five')" in reporting
+    assert "peer_content_grid.column_classes('secondary', 'seven-five')" in reporting
+    assert 'Reporting Summary' in reporting_summary
+    assert 'Recent Report Activity' in reporting_summary
+    assert 'Reporting Interpretation & Next Steps' in reporting_guidance
+    assert 'Controlled Reporting Flow' in reporting_guidance
+    assert 'Controlled Reporting Flow' in kubernetes_reporting

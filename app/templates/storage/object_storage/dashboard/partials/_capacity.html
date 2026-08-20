@@ -36,51 +36,9 @@
                 {% endcall %}
             </div>
             <div class="{{ peer_content_grid.column_classes('secondary') }}">
-                {% call operational_section_card.render('Forecast & Growth Risk', 'Committed 30d storage growth projection and capacity timing.', 'trending-up', action_href=url_for('analytics.object_storage_forecast', system_id=dashboard.selected_system_id), action_label='View Forecast', body_classes='p-5', extra_classes='h-full') %}
-                    {% if dashboard.forecast.available %}
-                        <div class="space-y-3">
-                            {% for label, value in [('Projected 30d', dashboard.forecast.projected_30d_display), ('Growth per Day', dashboard.forecast.growth_per_day_display), ('Capacity ETA', dashboard.forecast.days_to_capacity_display)] %}
-                                <div class="flex items-center justify-between gap-3 border-b border-outline-subtle pb-3 last:border-b-0 last:pb-0"><span class="text-xs text-content-muted">{{ label }}</span><span class="text-sm font-semibold text-content-primary">{{ value }}</span></div>
-                            {% endfor %}
-                            <div class="pt-1">{{ table_label.status_label(dashboard.forecast.posture.label, dashboard.forecast.posture.tone, size='detail') }}</div>
-                            <p class="text-xs leading-5 text-content-muted">{{ dashboard.forecast.attention_count }} bucket forecasts are inside the 90-day attention boundary.</p>
-                        </div>
-                    {% else %}
-                        {% set blocked_state_icon = "trending-up" %}{% set blocked_state_label = "Forecast Required" %}{% set blocked_state_title = "Forecast Snapshot Unavailable" %}{% set blocked_state_description = "Run Object Storage Forecast Data Refresh after sufficient historical usage evidence is available." %}{% set blocked_state_tone = "warning" %}
-                        {% include 'components/states/_blocked_state.html' %}
-                    {% endif %}
-                {% endcall %}
+                {% include "storage/object_storage/dashboard/partials/_forecast_risk.html" %}
             </div>
         </div>
-        {% call operational_section_card.render('Top Bucket Consumers', 'Highest committed bucket usage with request-path context.', 'bar-chart-3', action_href=url_for('analytics.object_storage_top_consumers', system_id=dashboard.selected_system_id), action_label='View Top Consumers', body_classes='p-5') %}
-            {% if dashboard.top_consumers %}
-                <div class="divide-y divide-outline-subtle">
-                    {% for row in dashboard.top_consumers %}
-                        <article class="grid gap-3 py-3 first:pt-0 last:pb-0 sm:grid-cols-[minmax(0,1.4fr)_repeat(4,minmax(0,0.75fr))] sm:items-center">
-                            <p class="min-w-0 break-words text-sm font-semibold text-content-primary">{{ row.name }}</p>
-                            <div>
-                                <p class="text-xs text-content-muted">Usage</p>
-                                <p class="mt-1 text-sm font-semibold text-content-primary">{{ row.usage }}</p>
-                            </div>
-                            <div>
-                                <p class="text-xs text-content-muted">Share</p>
-                                <p class="mt-1 text-sm font-semibold text-content-primary">{{ row.share }}</p>
-                            </div>
-                            <div>
-                                <p class="text-xs text-content-muted">Objects</p>
-                                <p class="mt-1 text-sm font-semibold text-content-primary">{{ row.objects }}</p>
-                            </div>
-                            <div>
-                                <p class="text-xs text-content-muted">Requests</p>
-                                <p class="mt-1 text-sm font-semibold text-content-primary">{{ row.request_rate }}</p>
-                            </div>
-                        </article>
-                    {% endfor %}
-                </div>
-            {% else %}
-                {% set empty_state_icon = "database-search" %}{% set empty_state_label = "No Data" %}{% set empty_state_title = "No Bucket Consumer Evidence" %}{% set empty_state_description = "The committed analytics snapshot does not contain bucket usage evidence for this system." %}
-                {% include 'components/states/_empty_state.html' %}
-            {% endif %}
-        {% endcall %}
+        {% include "storage/object_storage/dashboard/partials/_top_consumers.html" %}
     {% endif %}
 </div>

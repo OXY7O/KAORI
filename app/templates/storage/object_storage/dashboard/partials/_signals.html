@@ -1,62 +1,21 @@
-{% import "components/operational_section_card.html" as operational_section_card %}
 {% import "components/peer_content_grid.html" as peer_content_grid %}
-{% import "components/table_label.html" as table_label %}
 <div id="object-storage-dashboard-section-signals" class="space-y-5">
     {% if not dashboard.selected_system %}
-        {% set blocked_state_icon = "bell-ring" %}{% set blocked_state_label = "System Required" %}{% set blocked_state_title = "Select Object Storage System" %}{% set blocked_state_description = "Select a system to review committed alerts and operational response guidance." %}{% set blocked_state_tone = "warning" %}
+        {% set blocked_state_icon = "bell-ring" %}
+        {% set blocked_state_label = "System Required" %}
+        {% set blocked_state_title = "Select Object Storage System" %}
+        {% set blocked_state_description = "Select a system to review committed alerts and controlled operational response guidance." %}
+        {% set blocked_state_tone = "warning" %}
         {% include 'components/states/_blocked_state.html' %}
     {% else %}
         <div class="{{ peer_content_grid.layout_classes() }}">
             <div class="{{ peer_content_grid.column_classes('primary') }}">
-                {% call operational_section_card.render('Alerts Summary', 'Active alert evidence committed by the Object Storage analytics worker.', 'bell-ring', action_href=url_for('analytics.object_storage_alerts', system_id=dashboard.selected_system_id), action_label='Open Alerts & Anomalies', body_classes='p-5', extra_classes='h-full') %}
-                    <div class="grid grid-cols-3 gap-3">
-                        <article class="rounded-lg bg-status-critical-soft p-4 text-center">
-                            <p class="text-xs font-semibold text-status-critical-text">Critical</p>
-                            <p class="mt-1 text-2xl font-semibold text-status-critical-text">{{ dashboard.alerts.critical }}</p>
-                        </article>
-                        <article class="rounded-lg bg-status-warning-soft p-4 text-center">
-                            <p class="text-xs font-semibold text-status-warning-text">Warning</p>
-                            <p class="mt-1 text-2xl font-semibold text-status-warning-text">{{ dashboard.alerts.warning }}</p>
-                        </article>
-                        <article class="rounded-lg bg-status-info-soft p-4 text-center">
-                            <p class="text-xs font-semibold text-status-info-text">Info</p>
-                            <p class="mt-1 text-2xl font-semibold text-status-info-text">{{ dashboard.alerts.info }}</p>
-                        </article>
-                    </div>
-                    <div class="mt-4 flex flex-wrap items-center gap-2">{{ table_label.status_indicator_label('Alert Evidence Available' if dashboard.alerts.available else 'Alert Evidence Unavailable', 'normal' if dashboard.alerts.available else 'warning') }}{{ table_label.metadata_label(dashboard.alerts.source_label, icon='radio-tower') }}</div>
-                    {% if dashboard.alerts.rows %}
-                        <div class="mt-4 divide-y divide-outline-subtle border-y border-outline-subtle">
-                            {% for alert in dashboard.alerts.rows %}
-                                <article class="py-3">
-                                    <div class="flex items-start justify-between gap-3">
-                                        <div class="min-w-0">
-                                            <p class="break-words text-sm font-semibold text-content-primary">{{ alert.name|default("Alert Signal") }}</p>
-                                            <p class="mt-1 text-xs leading-5 text-content-muted">{{ alert.summary|default(alert.target|default('Committed Object Storage alert evidence.') ) }}</p>
-                                        </div>
-                                        {{ table_label.status_label(alert.severity|default('Unknown') |title, alert.severity|default('unknown')|lower, size='compact') }}
-                                    </div>
-                                </article>
-                            {% endfor %}
-                        </div>
-                    {% endif %}
-                {% endcall %}
+                {% include "storage/object_storage/dashboard/partials/_alerts_summary.html" %}
             </div>
             <div class="{{ peer_content_grid.column_classes('secondary') }}">
-                {% call operational_section_card.render('Operational Response', 'Prioritize the next review from committed capacity, forecast, and alert evidence.', 'compass', body_classes='space-y-3 p-5', extra_classes='h-full') %}
-                    {% if dashboard.alerts.critical > 0 %}
-                        {% set action_title = "Triage Critical Alerts First" %}{% set action_detail = "Validate active critical signals, affected buckets or systems, routing ownership, and runbook evidence before capacity changes." %}{% set action_tone = "critical" %}
-                    {% elif dashboard.capacity.utilization is not none and dashboard.capacity.utilization >= 85 %}
-                        {% set action_title = "Review Capacity Pressure" %}{% set action_detail = "Capacity utilization is inside the warning boundary. Review top bucket consumers and the committed 30d forecast before approving additional growth." %}{% set action_tone = "warning" %}
-                    {% elif dashboard.forecast.attention_count > 0 %}
-                        {% set action_title = "Review Bucket Forecast Watch" %}{% set action_detail = "One or more bucket forecasts are inside the 90-day attention boundary. Validate quota and growth ownership before the projected threshold is reached." %}{% set action_tone = "warning" %}
-                    {% else %}
-                        {% set action_title = "Continue Monitoring" %}{% set action_detail = "No immediate critical signal is present in the committed dashboard evidence. Continue scheduled analytics and forecast refreshes." %}{% set action_tone = "normal" %}
-                    {% endif %}
-                    {{ table_label.status_label(action_title, action_tone, size='detail') }}
-                    <p class="text-xs leading-5 text-content-muted">{{ action_detail }}</p>
-                    <div class="border-t border-outline-subtle pt-3 text-xs leading-5 text-content-muted">Dashboard decisions use committed worker snapshots. Open the dedicated analytics workspace before making configuration or operational changes.</div>
-                {% endcall %}
+                {% include "storage/object_storage/dashboard/partials/_alert_response_guidance.html" %}
             </div>
         </div>
+        {% include "storage/object_storage/dashboard/partials/_recommended_actions.html" %}
     {% endif %}
 </div>

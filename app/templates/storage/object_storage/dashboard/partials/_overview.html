@@ -38,16 +38,15 @@
                 {% endfor %}
                 {% if dashboard.inventory.empty_observed_systems %}
                     <div class="col-span-full">
-                        {{ operational_callout.render(
-                            'Empty Committed Inventory Detected',
-                            dashboard.inventory.empty_observed_systems ~ ' observed Object Storage system(s) currently have zero committed bucket/container assets. If this follows a previously non-empty snapshot, verify the S3 endpoint, credentials, and ListBuckets scope, then run Object Storage Inventory Sync again.',
-                            icon='triangle-alert',
-                            tone='warning',
-                            variant='semantic',
-                            extra_classes='w-full',
-                            action_href=url_for('jobs.configuration', job_key='object_storage.inventory.sync'),
-                            action_label='Open Inventory Job',
-                            action_icon='arrow-up-right'
+                        {{ operational_callout.render('Empty Committed Inventory Detected',
+                                                dashboard.inventory.empty_observed_systems ~ ' observed Object Storage system(s) currently have zero committed bucket/container assets. If this follows a previously non-empty snapshot, verify the S3 endpoint, credentials, and ListBuckets scope, then run Object Storage Inventory Sync again.',
+                                                icon='triangle-alert',
+                                                tone='warning',
+                                                variant='semantic',
+                                                extra_classes='w-full',
+                                                action_href=url_for('jobs.configuration', job_key='object_storage.inventory.sync') ,
+                        action_label='Open Inventory Job',
+                        action_icon='arrow-up-right'
                         ) }}
                     </div>
                 {% endif %}
