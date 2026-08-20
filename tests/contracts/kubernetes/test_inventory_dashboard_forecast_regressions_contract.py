@@ -7,14 +7,21 @@ def read(relative: str) -> str:
     return (ROOT / relative).read_text(encoding='utf-8')
 
 
-def test_inventory_snapshot_context_uses_stacked_rows_for_long_values() -> None:
-    details = read('app/templates/components/details/_detail_content.html')
+def test_inventory_context_reuses_snapshot_summary_metric_hierarchy() -> None:
     inventory = read('app/templates/kubernetes/inventory/overview/partials/_resources_by_cluster_content.html')
 
-    assert 'macro stacked_detail_row(' in details
-    assert "detail_row('Snapshot Source', cluster.snapshot_source)" in inventory
-    assert "detail_row('Last Collected'" in inventory
+    context = inventory.split("'Inventory Context',", 1)[1].split("'Inventory Breakdown',", 1)[0]
+    assert "side_drawer.metric('Environment'" in context
+    assert "side_drawer.metric('Kubernetes Version'" in context
+    assert "side_drawer.metric('Registered Cluster'" in context
+    assert "side_drawer.metric('Last Collected'" in context
+    assert "side_drawer.metric('Freshness Window'" in context
+    assert "side_drawer.metric('Snapshot Source'" in context
+    assert context.count("variant='plain'") >= 6
+    assert 'detail_row(' not in context
     assert 'nowrap=True' not in inventory
+    assert "'Cluster Identity'" not in inventory
+    assert "'Snapshot Context'" not in inventory
 
 
 def test_kubernetes_dashboard_forecast_schema_matches_latest_daily_average_payload() -> None:

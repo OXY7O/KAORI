@@ -1,5 +1,4 @@
 {% import "components/pagination.html" as pagination_ui %}
-{% import "components/details/_detail_content.html" as detail_ui %}
 {% import "components/operational_callout.html" as operational_callout %}
 {% import "components/side_drawer.html" as side_drawer %}
 {% import "components/table.html" as table_ui %}
@@ -180,36 +179,37 @@
                         <div class="sm:pl-4">{{ side_drawer.metric('Largest Segment', cluster.dominant_asset.label, 'chart-no-axes-column', cluster.dominant_asset.count ~ ' Objects', variant='plain') }}</div>
                     </dl>
                 {% endcall %}
-                <div class="grid gap-4 sm:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
-                    {% call side_drawer.section(
-                        'Cluster Identity',
-                        '',
-                        'server',
-                        density='compact'
-                        ) %}
-                        <dl class="grid min-w-0 gap-3">
-                            {{ detail_ui.detail_row('Environment', cluster.environment|environment_name(empty='Not Specified') ) }}
-                            {{ detail_ui.detail_row('Kubernetes Version', cluster.kubernetes_version) }}
-                            {{ detail_ui.detail_row('Registered Cluster', cluster.name) }}
-                        </dl>
-                    {% endcall %}
-                    {% set snapshot_badge %}
-                        {{ table_label.status_label(cluster.sync_status_label, cluster.sync_status_tone, none, 'detail') }}
-                    {% endset %}
-                    {% call side_drawer.section(
-                        'Snapshot Context',
-                        '',
-                        'clock-3',
-                        badge=snapshot_badge,
-                        density='compact'
-                        ) %}
-                        <dl class="grid min-w-0 gap-3">
-                            {{ detail_ui.detail_row('Last Collected', cluster.synced_at|user_datetime(date_format='day_month_numeric') if cluster.synced_at else 'Not Collected') }}
-                            {{ detail_ui.detail_row('Freshness Window', cluster.freshness_window_hours ~ ' Hours') }}
-                            {{ detail_ui.detail_row('Snapshot Source', cluster.snapshot_source) }}
-                        </dl>
-                    {% endcall %}
-                </div>
+                {% set snapshot_badge %}
+                    {{ table_label.status_label(cluster.sync_status_label, cluster.sync_status_tone, none, 'detail') }}
+                {% endset %}
+                {% call side_drawer.section(
+                    'Inventory Context',
+                    'Cluster registration and committed snapshot state.',
+                    'server-cog',
+                    badge=snapshot_badge,
+                    density='compact'
+                    ) %}
+                    <dl class="grid gap-y-4 border-t border-outline-subtle pt-3 sm:grid-cols-3 sm:gap-y-0">
+                        <div class="min-w-0 sm:pb-4 sm:pr-4">
+                            {{ side_drawer.metric('Environment', cluster.environment|environment_name(empty='Not Specified'), 'cloud-cog', variant='plain') }}
+                        </div>
+                        <div class="min-w-0 sm:border-l sm:border-outline-subtle sm:px-4 sm:pb-4">
+                            {{ side_drawer.metric('Kubernetes Version', cluster.kubernetes_version, 'badge-check', variant='plain') }}
+                        </div>
+                        <div class="min-w-0 sm:border-l sm:border-outline-subtle sm:pb-4 sm:pl-4">
+                            {{ side_drawer.metric('Registered Cluster', cluster.name, 'building-2', variant='plain') }}
+                        </div>
+                        <div class="min-w-0 border-t border-outline-subtle pt-4 sm:pr-4">
+                            {{ side_drawer.metric('Last Collected', cluster.synced_at|user_datetime(date_format='day_month_numeric') if cluster.synced_at else 'Not Collected', 'clock-3', variant='plain') }}
+                        </div>
+                        <div class="min-w-0 border-t border-outline-subtle pt-4 sm:border-l sm:px-4">
+                            {{ side_drawer.metric('Freshness Window', cluster.freshness_window_hours ~ ' Hours', 'timer', variant='plain') }}
+                        </div>
+                        <div class="min-w-0 border-t border-outline-subtle pt-4 sm:border-l sm:pl-4">
+                            {{ side_drawer.metric('Snapshot Source', cluster.snapshot_source, 'database', variant='plain') }}
+                        </div>
+                    </dl>
+                {% endcall %}
                 {% call side_drawer.section(
                     'Inventory Breakdown',
                     'Committed object totals by asset type.',
