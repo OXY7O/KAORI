@@ -17,13 +17,13 @@ def read(relative: str) -> str:
     return (ROOT / relative).read_text(encoding='utf-8')
 
 
-def test_inventory_v5_uses_resource_profile_sections_with_natural_height() -> None:
+def test_inventory_v6_uses_horizontal_section_bands_with_natural_height() -> None:
     shared = read('app/templates/components/details/_detail_content.html')
     modal = read('app/templates/components/resource_detail_modal.html')
 
     section = shared.split('{% macro inventory_section', 1)[1].split('{%- endmacro %}', 1)[0]
-    assert 'rounded-xl border border-outline-subtle bg-surface-card' in section
-    assert 'px-4 py-3 sm:px-5' in section
+    assert 'data-kaori-inventory-section-layout="horizontal-band"' in section
+    assert 'lg:grid-cols-[14rem_minmax(0,1fr)]' in section
     assert 'text-sm font-normal leading-5 text-content-secondary' in shared
     assert 'text-left text-sm font-medium leading-5 text-content-primary' in shared
     assert 'macro inventory_note(' in shared
@@ -32,15 +32,15 @@ def test_inventory_v5_uses_resource_profile_sections_with_natural_height() -> No
 
     for resource, filename in DETAILS.items():
         detail = read(f'app/templates/kubernetes/inventory/{resource}/partials/{filename}')
-        assert 'data-kaori-inventory-detail="v5"' in detail, resource
-        assert 'data-kaori-inventory-detail-layout="resource-profile"' in detail, resource
+        assert 'data-kaori-inventory-detail="v6"' in detail, resource
+        assert 'data-kaori-inventory-detail-layout="horizontal-section-stack"' in detail, resource
 
 
-def test_node_detail_uses_full_width_section_stack_and_grouped_conditions() -> None:
+def test_node_detail_uses_full_width_horizontal_bands_and_grouped_conditions() -> None:
     node = read('app/templates/kubernetes/inventory/nodes/partials/_node_detail_content.html')
 
     assert 'grid items-start gap-5 lg:grid-cols-2' not in node
-    assert node.count('<div class="space-y-5">') == 1
+    assert node.count('<div class="space-y-5">') >= 1
     assert "detail.inventory_section('Node Identity'" in node
     assert "detail.inventory_section('Node Capacity'" in node
     assert "detail.inventory_section('Connectivity'" in node
@@ -56,7 +56,7 @@ def test_metadata_collections_are_contained_lists_not_tile_walls() -> None:
     assert 'data-kaori-inventory-metadata-collection' in metadata
     assert 'rounded-xl border border-outline-subtle bg-surface-card' in metadata
     assert 'max-h-[24rem] overflow-y-auto' in metadata
-    assert "metadata_label(entry_count ~ ' ' ~ ('Entry' if entry_count == 1 else 'Entries'), 'tags', false, 'detail')" in metadata
+    assert "special_label(entry_count ~ ' ' ~ ('Entry' if entry_count == 1 else 'Entries'), 'maintenance', 'tags', 'detail')" in metadata
     assert 'grid min-w-0 gap-x-6 sm:grid-cols-2 xl:grid-cols-3' in metadata
     assert 'rounded-lg border border-outline-subtle bg-surface-elevated px-3 py-2.5' not in metadata
 

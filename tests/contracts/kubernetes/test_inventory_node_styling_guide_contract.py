@@ -66,7 +66,7 @@ def test_node_detail_uses_inline_detail_style_shared_primitives_and_operational_
     assert 'Container Runtime' in detail
     assert 'Kubelet Version' in detail
     assert 'Kube-Proxy Version' in detail
-    assert "operational_callout.render(node.operational_context.title" in detail
+    assert 'operational_callout.render(node.operational_context.title' in detail
     assert 'node.operational_context.title' in detail
     assert '{% macro detail_row' not in detail
     assert '{% macro detail_card' not in detail

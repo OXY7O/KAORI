@@ -3,9 +3,9 @@
 {% import "components/technical_metadata_collection.html" as metadata_collection %}
 {% import "components/operational_callout.html" as operational_callout %}
 <div data-kaori-detail-variant="full-workspace-modal"
-     data-kaori-detail-density="resource-profile"
-     data-kaori-inventory-detail="v5"
-     data-kaori-inventory-detail-layout="resource-profile"
+     data-kaori-detail-density="horizontal-bands"
+     data-kaori-inventory-detail="v6"
+     data-kaori-inventory-detail-layout="horizontal-section-stack"
      class="{{ detail.expanded_workspace_outer_classes() }}">
     <div class="{{ detail.expanded_workspace_shell_classes() }}">
         {% set detail_description = "Lifecycle, controls, composition, and security evidence from the committed snapshot." %}
@@ -22,7 +22,7 @@
         ('Tracked Objects', namespace.object_counts.tracked_total, ''),
         ('Control Evidence', namespace.control_evidence_display, '')
         ], compact=true) }}
-        <div class="grid items-start gap-5 p-4 sm:p-5 lg:p-6 xl:grid-cols-[minmax(0,0.88fr)_minmax(0,1.12fr)]">
+        <div class="space-y-5 p-4 sm:p-5 lg:p-6">
             <div class="space-y-5">
                 {% call detail.inventory_section('Namespace Identity', 'badge-info', namespace.age, badge_size='detail', stretch=false, density='compact') %}
                     {{ detail.inventory_status_row('Lifecycle', namespace.lifecycle_label, namespace.lifecycle_tone, size='detail') }}
@@ -117,7 +117,7 @@
                     {% endif %}
                 {% endcall %}
             </div>
-            <div class="grid gap-4 xl:col-span-2 xl:grid-cols-2">
+            <div class="grid gap-4 xl:grid-cols-2">
                 {{ metadata_collection.render('Namespace Labels',
                                 namespace.labels,
                                 'tags',
@@ -131,7 +131,7 @@
                                 'Annotations will appear when present in the committed Namespace snapshot.',
                                 'Annotations may be managed by platform controllers and integrations.') }}
             </div>
-            <section class="space-y-3 xl:col-span-2">
+            <section class="space-y-3">
                 <h4 class="text-sm font-semibold text-content-primary">Operational Context</h4>
                 <div class="grid gap-3 lg:grid-cols-2">
                     {{ operational_callout.render('Committed Snapshot Boundary',

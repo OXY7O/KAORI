@@ -73,14 +73,14 @@ def test_node_table_keeps_seven_columns_and_surfaces_conditions() -> None:
 def test_node_detail_reuses_shared_metadata_and_avoids_duplicate_badges() -> None:
     detail = read('app/templates/kubernetes/inventory/nodes/partials/_node_detail_content.html')
 
-    assert 'data-kaori-detail-density="adaptive-stacks"' in detail
+    assert 'data-kaori-detail-density="horizontal-bands"' in detail
     assert 'components/technical_metadata_collection.html' in detail
     assert "detail.inventory_row('Network Scope', node.network_scope)" in detail
     assert 'node.role_description' in detail
     assert "detail.inventory_row('Scheduled Pods'" not in detail
-    assert "table_label.metadata_label(taint, 'tag'" not in detail
+    assert "technical_value.render(taint, break_all=true" in detail
     assert "detail.inventory_section('Node Identity', 'badge-info', node.age" not in detail
-    assert 'Committed Snapshot Boundary' in detail
+    assert 'Committed Snapshot Boundary' not in detail
     assert 'node.capacity_summary' in detail
     assert "node.scheduling_display == 'Not Reported'" in detail
 

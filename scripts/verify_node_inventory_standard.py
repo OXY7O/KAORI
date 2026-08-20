@@ -167,8 +167,15 @@ def main() -> int:
     ):
         require(token in table_content, f'Missing compact Node table contract: {token}', errors)
 
+    shared_detail = read('app/templates/components/details/_detail_content.html')
+    require(
+        'data-kaori-inventory-section-layout="horizontal-band"' in shared_detail,
+        'Inventory detail sections must use the canonical horizontal-band layout.',
+        errors,
+    )
+
     for token in (
-        'data-kaori-detail-density="adaptive-stacks"',
+        'data-kaori-detail-density="horizontal-bands"',
         'components/technical_metadata_collection.html',
         "detail.inventory_section('Node Identity', 'badge-info')",
         "detail.inventory_section('Node Capacity', 'gauge')",
@@ -176,7 +183,7 @@ def main() -> int:
         'node.role_description',
         'No taints were reported in the current snapshot.',
         "'Node Labels'",
-        'Committed Snapshot Boundary',
+        'data-kaori-inventory-detail-layout="horizontal-section-stack"',
     ):
         require(token in detail, f'Missing Node detail contract: {token}', errors)
 
@@ -196,7 +203,6 @@ def main() -> int:
         'Kubernetes Node Inventory Standard',
         'missing values are not converted to zero',
         'Node | Cluster | Readiness | Role | Capacity | Network | Details',
-        'data-kaori-detail-density="adaptive-stacks"',
     ):
         require(token in standard, f'Node Inventory documentation is missing: {token}', errors)
     require(

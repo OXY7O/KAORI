@@ -11,7 +11,7 @@
                     <p class="mt-1 break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]">{{ description }}</p>
                 </div>
             </div>
-            {{ table_label.metadata_label(total_count ~ ' ' ~ ('Resource' if total_count == 1 else 'Resources') ) }}
+            {{ table_label.special_label(total_count ~ ' ' ~ ('Resource' if total_count == 1 else 'Resources'), 'maintenance', 'git-branch', 'detail') }}
         </header>
         {% if resources %}
             <div class="divide-y divide-outline-subtle">
@@ -42,19 +42,21 @@
         {% endif %}
     </section>
 {%- endmacro %}
-
 {% macro inventory_render(title, description, resources, total_count, icon='git-branch', empty_title='No Related Resources', empty_description='No related resources are represented in the committed inventory snapshot.', truncated=false, action_href=None, action_label=None) -%}
-    <section class="min-w-0 overflow-hidden rounded-xl border border-outline-subtle bg-surface-card" data-kaori-inventory-related-collection>
+    <section class="min-w-0 overflow-hidden rounded-xl border border-outline-subtle bg-surface-card"
+             data-kaori-inventory-related-collection>
         <header class="flex min-w-0 flex-wrap items-center justify-between gap-3 border-b border-outline-subtle px-4 py-3 sm:px-5">
             <div class="flex min-w-0 items-start gap-2.5">
                 <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
                       aria-hidden="true"><i data-lucide="{{ icon }}" class="h-4 w-4"></i></span>
                 <div class="min-w-0">
                     <h4 class="break-words text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]">{{ title }}</h4>
-                    {% if description %}<p class="mt-0.5 break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]">{{ description }}</p>{% endif %}
+                    {% if description %}
+                        <p class="mt-0.5 break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]">{{ description }}</p>
+                    {% endif %}
                 </div>
             </div>
-            {{ table_label.metadata_label(total_count ~ ' ' ~ ('Resource' if total_count == 1 else 'Resources') ) }}
+            {{ table_label.special_label(total_count ~ ' ' ~ ('Resource' if total_count == 1 else 'Resources'), 'maintenance', 'git-branch', 'detail') }}
         </header>
         {% if resources %}
             <div class="divide-y divide-outline-subtle px-4 sm:px-5">
@@ -63,7 +65,9 @@
                         <div class="min-w-0">
                             <p class="break-words text-sm font-medium leading-5 text-content-primary [overflow-wrap:anywhere]">{{ resource.name }}</p>
                             <p class="mt-0.5 break-words text-xs leading-5 text-content-secondary [overflow-wrap:anywhere]">{{ resource.supporting_primary }}</p>
-                            {% if resource.supporting_secondary %}<p class="break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]">{{ resource.supporting_secondary }}</p>{% endif %}
+                            {% if resource.supporting_secondary %}
+                                <p class="break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]">{{ resource.supporting_secondary }}</p>
+                            {% endif %}
                         </div>
                         {% if resource.status %}
                             <div class="shrink-0">{{ table_label.status_indicator_label(resource.status, resource.status_tone or 'unknown') }}</div>

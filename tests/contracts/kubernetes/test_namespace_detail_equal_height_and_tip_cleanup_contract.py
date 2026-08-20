@@ -12,9 +12,9 @@ def test_namespace_detail_uses_full_workspace_modal_grid():
     shared_detail = _read('app/templates/components/details/_detail_content.html')
 
     assert 'data-kaori-detail-variant="full-workspace-modal"' in detail
-    assert 'data-kaori-detail-density="adaptive-stacks"' in detail
-    assert 'xl:grid-cols-[minmax(0,0.82fr)_minmax(0,1.18fr)]' in detail
-    assert 'items-stretch' not in detail
+    assert 'data-kaori-detail-density="horizontal-bands"' in detail
+    assert 'xl:grid-cols-[minmax(0,0.82fr)_minmax(0,1.18fr)]' not in detail
+    assert 'data-kaori-inventory-detail-layout="horizontal-section-stack"' in detail
     assert detail.count('stretch=false') >= 4
     assert 'macro inventory_section(' in shared_detail
     assert 'data-kaori-inventory-detail-section' in shared_detail

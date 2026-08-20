@@ -53,8 +53,8 @@ def test_configuration_detail_uses_protected_and_evidence_aware_boundaries() -> 
     service = read(SERVICE)
     semantics = read(SEMANTICS)
 
-    assert 'data-kaori-detail-density="resource-profile"' in detail
-    assert 'data-kaori-inventory-detail-layout="resource-profile"' in detail
+    assert 'data-kaori-detail-density="horizontal-bands"' in detail
+    assert 'data-kaori-inventory-detail-layout="horizontal-section-stack"' in detail
     assert "detail.inventory_section('Protected Data Boundary'" in detail
     assert 'Pod Reference Collection' in detail
     assert 'Pod Reference Evidence Not Reported' in detail

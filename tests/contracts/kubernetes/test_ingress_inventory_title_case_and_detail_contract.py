@@ -42,7 +42,7 @@ def test_ingress_detail_uses_adaptive_stacks_and_factual_reference_evidence() ->
     service = read('app/kubernetes/inventory/resources/ingresses.py')
     semantics = read('app/kubernetes/inventory/resources/ingress_semantics.py')
 
-    assert 'data-kaori-detail-density="resource-profile"' in detail
+    assert 'data-kaori-detail-density="horizontal-bands"' in detail
     assert 'detail.expanded_workspace_shell_classes()' in detail
     assert 'TLS Secret References' in detail
     assert 'does not validate certificate contents, expiry, key matching, or hostname coverage' in detail

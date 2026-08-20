@@ -56,7 +56,7 @@ def test_all_inventory_detail_workspaces_use_modal_extractable_header_and_summar
         source = read(f'app/templates/kubernetes/inventory/{resource}/partials/{filename}')
         assert 'data-kaori-detail-variant="full-workspace-modal"' in source, resource
         assert 'detail.workspace_header(' in source, resource
-        assert 'data-kaori-inventory-detail="v5"' in source, resource
+        assert 'data-kaori-inventory-detail="v6"' in source, resource
         assert 'detail.expanded_workspace_outer_classes()' in source, resource
         assert 'detail.expanded_workspace_shell_classes()' in source, resource
 

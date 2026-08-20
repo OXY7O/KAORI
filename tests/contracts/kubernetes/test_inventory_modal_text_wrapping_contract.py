@@ -12,25 +12,24 @@ def test_inventory_modal_uses_wide_overflow_safe_workspace() -> None:
     modal = read('app/templates/components/resource_detail_modal.html')
     script = read('app/static/js/detail_rows.js')
 
-    assert 'max-w-[100rem]' in modal
+    assert 'max-w-[78rem]' in modal
     assert 'overflow-x-hidden overflow-y-auto' in modal
     assert '[overflow-wrap:anywhere]' in modal
     assert 'resource-detail-modal-title" class="mt-0.5 truncate' not in modal
     assert 'mt-0.5 truncate text-lg' not in script
-    assert 'break-words text-lg' in script
+    assert 'break-words text-xl' in script
 
 
 def test_inventory_technical_metadata_uses_readable_wrapping_columns() -> None:
     component = read('app/templates/components/technical_metadata_collection.html')
 
-    assert 'sm:grid-cols-[minmax(10rem,0.42fr)_minmax(0,1fr)]' in component
-    assert 'grid min-w-0 gap-x-10' in component
+    assert 'sm:grid-cols-[minmax(9.5rem,0.42fr)_minmax(0,1fr)]' in component
+    assert 'grid min-w-0 gap-x-8' in component
     assert 'sm:grid-cols-[minmax(7rem,0.34fr) _minmax(0,1fr)]' not in component
     assert 'text-sm font-normal leading-5 text-content-secondary' in component
     assert 'whitespace-pre-wrap' in component
     assert '[overflow-wrap:anywhere]' in component
-    assert 'max-h-' not in component
-    assert 'overflow-y-auto' not in component
+    assert 'max-h-[24rem] overflow-y-auto' in component
     assert 'break-all text-xs font-semibold' not in component
 
 

@@ -45,8 +45,8 @@ def test_inventory_view_details_use_v5_resource_profile_host_and_shared_resource
         index = read(f'app/templates/kubernetes/inventory/{resource}/index.html')
         detail = read(f'app/templates/kubernetes/inventory/{resource}/partials/{DETAIL_FILES[resource]}')
         assert 'resource_detail_modal.inventory_host(' in index, resource
-        assert 'data-kaori-inventory-detail="v5"' in detail, resource
-        assert 'data-kaori-inventory-detail-layout="resource-profile"' in detail, resource
+        assert 'data-kaori-inventory-detail="v6"' in detail, resource
+        assert 'data-kaori-inventory-detail-layout="horizontal-section-stack"' in detail, resource
         assert 'detail.workspace_header(' in detail, resource
         assert 'detail.header_identity_row()' in detail, resource
         assert 'detail.inventory_title(' in detail, resource

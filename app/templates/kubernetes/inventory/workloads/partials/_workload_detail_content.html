@@ -6,9 +6,9 @@
 {% import "components/related_resource_collection.html" as related_collection %}
 {% import "components/operational_callout.html" as operational_callout %}
 <div data-kaori-detail-variant="full-workspace-modal"
-     data-kaori-detail-density="resource-profile"
-     data-kaori-inventory-detail="v5"
-     data-kaori-inventory-detail-layout="resource-profile"
+     data-kaori-detail-density="horizontal-bands"
+     data-kaori-inventory-detail="v6"
+     data-kaori-inventory-detail-layout="horizontal-section-stack"
      class="{{ detail.expanded_workspace_outer_classes() }}">
     <div class="{{ detail.expanded_workspace_shell_classes() }}">
         {% set detail_description = "Runtime, delivery, placement, and relationship evidence from the committed snapshot." %}
@@ -26,7 +26,7 @@
         ('Template Containers', workload.template_container_count if workload.pod_configuration_reported else 'Not Reported', ''),
         ('Delivery Model', workload.delivery_model, workload.delivery_supporting)
         ], compact=true) }}
-        <div class="grid items-start gap-5 p-4 sm:p-5 lg:p-6 xl:grid-cols-[minmax(0,0.88fr)_minmax(0,1.12fr)]">
+        <div class="space-y-5 p-4 sm:p-5 lg:p-6">
             <div class="space-y-5">
                 {% call detail.inventory_section('Workload Identity', 'badge-info', workload.age, badge_size='detail', stretch=false, density='compact') %}
                     {{ detail.inventory_row('Cluster', workload.cluster_name) }}
@@ -65,7 +65,7 @@
                 'Open Pod Inventory'
                 ) }}
             </div>
-            <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card xl:col-span-2">
+            <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
                 <header class="flex flex-wrap items-start justify-between gap-3 border-b border-outline-subtle px-4 py-3.5">
                     <div class="flex items-start gap-3">
                         <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="list-checks" class="h-4 w-4"></i></span>
@@ -110,7 +110,7 @@
                     <div class="p-4">{{ detail.empty_evidence('Controller Conditions Not Reported', 'The committed workload snapshot does not contain controller condition evidence.', 'list-checks') }}</div>
                 {% endif %}
             </section>
-            <section class="rounded-xl border border-outline-subtle bg-surface-card p-4 xl:col-span-2">
+            <section class="rounded-xl border border-outline-subtle bg-surface-card p-4">
                 <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
                     <div class="flex items-center gap-2 text-sm font-semibold text-content-primary"><span class="flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="route" class="h-4 w-4"></i></span>Delivery & Placement</div>
                     {{ table_label.metadata_label(workload.delivery_model) }}
@@ -140,7 +140,7 @@
                     </div>
                 {% endif %}
             </section>
-            <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card xl:col-span-2">
+            <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
                 <header class="flex flex-wrap items-start justify-between gap-3 border-b border-outline-subtle px-4 py-3.5">
                     <div class="flex items-start gap-3">
                         <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="images" class="h-4 w-4"></i></span>
@@ -178,11 +178,11 @@
                     <div class="p-4">{{ detail.empty_evidence('Container Metadata Unavailable', 'Container template metadata has not been collected for this workload.', 'images') }}</div>
                 {% endif %}
             </section>
-            <div class="grid gap-4 xl:col-span-2 xl:grid-cols-2">
+            <div class="grid gap-4 xl:grid-cols-2">
                 {{ metadata_collection.render('Workload Labels', workload.labels, 'tags', 'No Workload Labels', 'No workload labels were reported in the committed snapshot.', 'Labels remain factual selection and organization metadata.') }}
                 {{ metadata_collection.render('Workload Annotations', workload.annotations, 'notebook-tabs', 'No Workload Annotations', 'No workload annotations were reported in the committed snapshot.', 'Annotations may be managed by controllers and integrations.') }}
             </div>
-            <section class="space-y-3 xl:col-span-2">
+            <section class="space-y-3">
                 <h4 class="text-sm font-semibold text-content-primary">Operational Context</h4>
                 <div class="grid gap-3 lg:grid-cols-2">
                     {{ operational_callout.render('Committed Snapshot Boundary', 'This detail reads the latest committed database snapshot. It does not query the Kubernetes API live.', 'database', 'info') }}

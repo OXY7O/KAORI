@@ -7,7 +7,7 @@ def read(relative_path: str) -> str:
     return (ROOT / relative_path).read_text(encoding='utf-8')
 
 
-def test_pod_detail_uses_adaptive_natural_height_cards() -> None:
+def test_pod_detail_uses_full_width_horizontal_sections() -> None:
     template = read('app/templates/kubernetes/inventory/pods/partials/_pod_detail_content.html')
 
     assert "detail.inventory_section('Pod Identity'" in template
@@ -16,7 +16,8 @@ def test_pod_detail_uses_adaptive_natural_height_cards() -> None:
     assert "detail.inventory_section('Pod Specification'" in template
     assert 'stretch=false' in template
     assert "density='compact'" in template
-    assert 'xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]' in template
+    assert 'xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]' not in template
+    assert 'data-kaori-inventory-detail-layout="horizontal-section-stack"' in template
     assert 'min-h-96' not in template
     assert 'min-h-[32rem]' not in template
     assert 'min-h-[30rem]' not in template

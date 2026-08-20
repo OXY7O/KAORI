@@ -121,3 +121,8 @@ Kubernetes Inventory details use a contained resource-profile layout built for o
 - Large metadata and key collections use one contained list surface with row dividers. Key-heavy resources may scroll inside the collection rather than extending the entire modal indefinitely.
 - KAORI violet is reserved for icons and selected emphasis. Factual surfaces remain neutral; semantic colors are used only for state.
 - Repeated committed-snapshot boundary copy should not be duplicated inside every resource section when the modal footer already establishes that boundary.
+
+
+## Kubernetes Inventory Horizontal Section Stack V6
+
+Inventory View Details uses full-width horizontal section bands. Each band owns one evidence domain: a restrained Violet identity rail on the left and factual evidence on the right. Desktop layouts do not place peer evidence cards side by side, so unequal content height never creates visual misalignment. Metadata/count tags use the canonical KAORI Violet label treatment; semantic states remain green/amber/red. Field labels and factual values share the same body scale; hierarchy is created with tone and weight rather than arbitrary font-size jumps.

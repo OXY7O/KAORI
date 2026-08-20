@@ -97,22 +97,27 @@
 {%- endmacro %}
 {% macro inventory_section(title, icon, badge=None, badge_type='metadata', badge_tone='unknown', class_name='', badge_size='detail', stretch=false, density='compact') -%}
     <section data-kaori-inventory-detail-section
-             class="min-w-0 overflow-hidden rounded-xl border border-outline-subtle bg-surface-card {{ class_name }}">
-        <header class="flex min-w-0 items-center justify-between gap-3 border-b border-outline-subtle px-4 py-3 sm:px-5">
-            <div class="flex min-w-0 items-center gap-2.5">
-                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
-                      aria-hidden="true"><i data-lucide="{{ icon }}" class="h-4 w-4"></i></span>
-                <h4 class="min-w-0 break-words text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]">{{ title }}</h4>
-            </div>
-            {% if badge %}
-                {% if badge_type == 'status' %}
-                    {{ table_label.status_label(badge, badge_tone, none, badge_size) }}
-                {% else %}
-                    {{ table_label.metadata_label(badge, none, false, badge_size) }}
+             data-kaori-inventory-section-layout="horizontal-band"
+             class="min-w-0 overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm {{ class_name }}">
+        <div class="min-w-0 lg:grid lg:grid-cols-[14rem_minmax(0,1fr)]">
+            <header class="flex min-w-0 items-center justify-between gap-3 border-b border-outline-subtle bg-surface-elevated/50 px-4 py-3 sm:px-5 lg:flex-col lg:items-start lg:justify-start lg:border-b-0 lg:border-r lg:px-5 lg:py-4">
+                <div class="flex min-w-0 items-center gap-2.5">
+                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary ring-1 ring-inset ring-brand-outline/50"
+                          aria-hidden="true"><i data-lucide="{{ icon }}" class="h-4 w-4"></i></span>
+                    <h4 class="min-w-0 break-words text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]">{{ title }}</h4>
+                </div>
+                {% if badge %}
+                    <div class="shrink-0 lg:mt-2 lg:pl-10">
+                        {% if badge_type == 'status' %}
+                            {{ table_label.status_label(badge, badge_tone, none, badge_size) }}
+                        {% else %}
+                            {{ table_label.metadata_label(badge, none, false, badge_size) }}
+                        {% endif %}
+                    </div>
                 {% endif %}
-            {% endif %}
-        </header>
-        <div class="px-4 py-2 sm:px-5">{{ caller() }}</div>
+            </header>
+            <div class="min-w-0 px-4 py-2 sm:px-5 lg:px-6 lg:py-3">{{ caller() }}</div>
+        </div>
     </section>
 {%- endmacro %}
 {% macro inventory_row(label, value='-', break_all=False, nowrap=False) -%}

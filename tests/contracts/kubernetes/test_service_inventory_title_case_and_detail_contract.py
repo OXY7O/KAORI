@@ -26,7 +26,7 @@ def test_service_detail_uses_adaptive_stacks_and_factual_network_configuration()
     detail = read('app/templates/kubernetes/inventory/services/partials/_service_detail_content.html')
     semantics = read('app/kubernetes/inventory/resources/service_semantics.py')
 
-    assert 'data-kaori-detail-density="resource-profile"' in detail
+    assert 'data-kaori-detail-density="horizontal-bands"' in detail
     assert 'detail.expanded_workspace_shell_classes()' in detail
     assert 'Technical Metadata Collection' not in detail
     assert 'metadata_collection.render(' in detail
