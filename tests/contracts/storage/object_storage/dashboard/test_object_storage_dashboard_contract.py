@@ -116,6 +116,8 @@ def test_dashboard_sections_are_object_storage_specific_and_committed_evidence_o
     assert 'overflow-x-auto' in system_health
     assert 'overflow-x-auto' not in capacity
     assert 'overflow-x-auto' not in signals
+    assert 'Empty Committed Inventory Detected' in overview
+    assert "url_for('jobs.configuration', job_key='object_storage.inventory.sync')" in overview
 
 
 def test_system_health_summary_matches_kubernetes_pagination_contract() -> None:
@@ -130,6 +132,7 @@ def test_system_health_summary_matches_kubernetes_pagination_contract() -> None:
     assert "request.args.get('system_health_per_page', '5')" in routes
     assert "'system_health': 'storage/object_storage/dashboard/partials/_system_health.html'" in routes
     assert 'from app.common.pagination import paginate_sequence' in service
+    assert "'empty_observed_systems': len(empty_observed_systems)" in service
     assert "if section in {'overview', 'system_health'}:" in service
     assert "dashboard['system_health_pagination'] = pagination" in service
     assert "'&system_health_page=' ~ dashboard.system_health_pagination.page" in content

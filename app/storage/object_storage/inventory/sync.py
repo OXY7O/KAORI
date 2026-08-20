@@ -51,6 +51,13 @@ def commit_bucket_inventory(
     observed = {bucket.name: bucket for bucket in buckets if bucket.name}
     existing = {bucket.name: bucket for bucket in system.buckets}
 
+    if existing and not observed:
+        raise RuntimeError(
+            f'Provider bucket discovery returned zero assets while the last committed snapshot contains '
+            f'{len(existing)} bucket/container asset(s). KAORI preserved the previous committed snapshot. '
+            'Verify the S3 endpoint, credentials, and ListBuckets scope before retrying Object Storage Inventory Sync.'
+        )
+
     created = 0
     updated = 0
     deleted = 0

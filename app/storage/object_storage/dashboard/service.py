@@ -97,6 +97,8 @@ def _alert_view(payload: dict[str, Any] | None) -> tuple[dict[str, Any], dict[st
 
 def _inventory_summary(systems: list[ObjectStorageSystem]) -> dict[str, Any]:
     buckets = [bucket for system in systems for bucket in (system.buckets or ())]
+    observed_systems = [system for system in systems if system.inventory_observed_at is not None]
+    empty_observed_systems = [system for system in observed_systems if not (system.buckets or ())]
     size_values = [int(bucket.size_bytes) for bucket in buckets if bucket.size_bytes is not None]
     object_values = [int(bucket.object_count) for bucket in buckets if bucket.object_count is not None]
     quota_configured = [
@@ -114,6 +116,8 @@ def _inventory_summary(systems: list[ObjectStorageSystem]) -> dict[str, Any]:
         'objects_display': format_number(sum(object_values)) if object_values else 'Not Collected',
         'quota_configured': len(quota_configured),
         'usage_collected': len(usage_collected),
+        'observed_systems': len(observed_systems),
+        'empty_observed_systems': len(empty_observed_systems),
     }
 
 

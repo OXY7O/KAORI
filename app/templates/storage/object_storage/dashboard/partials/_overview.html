@@ -1,3 +1,4 @@
+{% import "components/operational_callout.html" as operational_callout %}
 {% import "components/operational_section_card.html" as operational_section_card %}
 {% import "components/peer_content_grid.html" as peer_content_grid %}
 {% import "components/table_label.html" as table_label %}
@@ -35,6 +36,21 @@
                         <p class="mt-1 text-xl font-semibold text-content-primary">{{ value }}</p>
                     </article>
                 {% endfor %}
+                {% if dashboard.inventory.empty_observed_systems %}
+                    <div class="col-span-full">
+                        {{ operational_callout.render(
+                            'Empty Committed Inventory Detected',
+                            dashboard.inventory.empty_observed_systems ~ ' observed Object Storage system(s) currently have zero committed bucket/container assets. If this follows a previously non-empty snapshot, verify the S3 endpoint, credentials, and ListBuckets scope, then run Object Storage Inventory Sync again.',
+                            icon='triangle-alert',
+                            tone='warning',
+                            variant='semantic',
+                            extra_classes='w-full',
+                            action_href=url_for('jobs.configuration', job_key='object_storage.inventory.sync'),
+                            action_label='Open Inventory Job',
+                            action_icon='arrow-up-right'
+                        ) }}
+                    </div>
+                {% endif %}
             {% endcall %}
         </div>
         <div class="{{ peer_content_grid.column_classes('secondary') }}">
