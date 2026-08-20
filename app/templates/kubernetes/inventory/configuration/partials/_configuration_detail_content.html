@@ -5,26 +5,16 @@
 {% import "components/operational_callout.html" as operational_callout %}
 <div data-kaori-detail-variant="full-workspace-modal"
      data-kaori-detail-density="adaptive-stacks"
+     data-kaori-inventory-detail="v2"
      class="{{ detail.expanded_workspace_outer_classes() }}">
     <div class="{{ detail.expanded_workspace_shell_classes() }}">
-        <header data-resource-detail-header
-                class="{{ detail.expanded_workspace_header_classes() }}">
-            <div class="flex min-w-0 items-start gap-3">
-                <span class="{{ detail.expanded_workspace_icon_classes() }}"
-                      aria-hidden="true"><i data-lucide="{{ 'key-round' if item.type == 'Secret' else 'file-json-2' }}"
-   class="h-5 w-5"></i></span>
-                <div class="min-w-0">
-                    {% call detail.header_identity_row() %}
-                        <h3 class="break-words text-base font-semibold leading-6 text-content-primary [overflow-wrap:anywhere]">{{ item.name }}</h3>
-                        {{ table_label.metadata_label(item.type) }}
-                        {{ table_label.metadata_label(item.namespace, 'folder-tree') }}
-                        {{ table_label.status_indicator_label(item.mutation_label, item.mutation_tone) }}
-                        {{ table_label.metadata_label(item.collection_state, 'database') }}
-                    {% endcall %}
-                    <p class="mt-1 text-xs leading-5 text-content-muted">Protected key-index metadata, collection capability, mutation configuration, and evidence-aware current Pod references.</p>
-                </div>
-            </div>
-        </header>
+        {% set detail_description = 'Protected key metadata, collection, mutation, and current Pod reference evidence.' %}
+        {% call detail.workspace_header(item.name, detail_description, 'key-round' if item.type == 'Secret' else 'file-json-2') %}
+            {{ table_label.metadata_label(item.type) }}
+            {{ table_label.metadata_label(item.namespace, 'folder-tree') }}
+            {{ table_label.status_indicator_label(item.mutation_label, item.mutation_tone, size='detail') }}
+            {{ table_label.metadata_label(item.collection_state, 'database') }}
+        {% endcall %}
         {{ detail.summary_strip([
                 ('Object Type', item.type, item.secret_type if item.type == 'Secret' else 'ConfigMap metadata') ,
         ('Key Count', item.key_count, 'Key names indexed'),

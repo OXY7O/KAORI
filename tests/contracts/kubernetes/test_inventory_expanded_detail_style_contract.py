@@ -45,7 +45,7 @@ def test_all_inventory_tables_use_full_workspace_modal_action() -> None:
         index = read(f'app/templates/kubernetes/inventory/{resource}/index.html')
         assert 'resource_detail_modal.detail_button(' in table, resource
         assert 'expandable.detail_row(' not in table, resource
-        assert 'resource_detail_modal.host(' in index, resource
+        assert 'resource_detail_modal.inventory_host(' in index, resource
 
 
 def test_all_inventory_detail_workspaces_use_modal_extractable_header_and_summary() -> None:
@@ -55,7 +55,8 @@ def test_all_inventory_detail_workspaces_use_modal_extractable_header_and_summar
     for resource, filename in DETAIL_FILES.items():
         source = read(f'app/templates/kubernetes/inventory/{resource}/partials/{filename}')
         assert 'data-kaori-detail-variant="full-workspace-modal"' in source, resource
-        assert 'data-resource-detail-header' in source, resource
+        assert 'detail.workspace_header(' in source, resource
+        assert 'data-kaori-inventory-detail="v2"' in source, resource
         assert 'detail.expanded_workspace_outer_classes()' in source, resource
         assert 'detail.expanded_workspace_shell_classes()' in source, resource
 
@@ -77,7 +78,15 @@ def test_full_workspace_modal_headers_share_grouped_identity_state_geometry() ->
         'app/templates/storage/object_storage/inventory/buckets/partials/_bucket_detail_content.html',
         'app/templates/storage/object_storage/inventory/systems/partials/_system_detail_content.html',
     )
+    inventory_templates = {
+        relative
+        for relative in templates
+        if '/kubernetes/inventory/' in relative
+    }
     for relative in templates:
         source = read(relative)
-        assert 'header_identity_row()' in source, relative
+        if relative in inventory_templates:
+            assert 'workspace_header(' in source, relative
+        else:
+            assert 'header_identity_row()' in source, relative
         assert 'header_badge_row()' not in source, relative

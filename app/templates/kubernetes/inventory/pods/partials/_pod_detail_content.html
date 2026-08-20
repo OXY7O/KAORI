@@ -8,24 +8,15 @@
 {% import "components/operational_callout.html" as operational_callout %}
 <div data-kaori-detail-variant="full-workspace-modal"
      data-kaori-detail-density="adaptive-stacks"
+     data-kaori-inventory-detail="v2"
      class="{{ detail.expanded_workspace_outer_classes() }}">
     <div class="{{ detail.expanded_workspace_shell_classes() }}">
-        <header data-resource-detail-header
-                class="{{ detail.expanded_workspace_header_classes() }}">
-            <div class="flex min-w-0 items-start gap-3">
-                <span class="{{ detail.expanded_workspace_icon_classes() }}"
-                      aria-hidden="true"><i data-lucide="package" class="h-5 w-5"></i></span>
-                <div class="min-w-0">
-                    {% call detail.header_identity_row() %}
-                        <h3 class="break-words text-base font-semibold leading-6 text-content-primary [overflow-wrap:anywhere]">{{ pod.name }}</h3>
-                        {{ table_label.metadata_label(pod.owner_type or 'Standalone') }}
-                        {{ table_label.metadata_label(pod.namespace, 'folder-tree') }}
-                        {{ table_label.status_indicator_label(pod.operational_state_label, pod.operational_state_tone, size='detail') }}
-                    {% endcall %}
-                    <p class="mt-1 text-xs leading-5 text-content-muted">Runtime, placement, container, storage, and configuration evidence from the committed snapshot.</p>
-                </div>
-            </div>
-        </header>
+        {% set detail_description = 'Runtime, placement, container, storage, and configuration evidence from the committed snapshot.' %}
+        {% call detail.workspace_header(pod.name, detail_description, 'package') %}
+            {{ table_label.metadata_label(pod.owner_type or 'Standalone') }}
+            {{ table_label.metadata_label(pod.namespace, 'folder-tree') }}
+            {{ table_label.status_indicator_label(pod.operational_state_label, pod.operational_state_tone, size='detail') }}
+        {% endcall %}
         {{ detail.summary_strip([
                 ('Runtime State', pod.operational_state_label, pod.state_evidence) ,
         ('Ready Containers', pod.ready, ''),

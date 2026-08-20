@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, cast
 
 from app.models.object_storage import ObjectStorageSystem
 from app.storage.object_storage.analytics.analysis import error_ratio
@@ -347,7 +347,8 @@ def _history_label(history_state: str) -> str:
 
 
 def _forecast_row(raw: dict[str, Any]) -> dict[str, Any]:
-    forecast = raw.get('forecast') if isinstance(raw.get('forecast'), dict) else {}
+    forecast_value = raw.get('forecast')
+    forecast = cast(dict[str, Any], forecast_value) if isinstance(forecast_value, dict) else {}
     sample_count = int(raw.get('sample_count') or 0)
     history_state = str(raw.get('history_state') or ('ready' if sample_count >= 2 else 'no_data'))
     current = raw.get('current_bytes')

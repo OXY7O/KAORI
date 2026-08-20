@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, cast
 
 from celery.exceptions import CeleryError
 from kombu.exceptions import OperationalError as KombuOperationalError
@@ -691,7 +691,8 @@ def _apply_alert_snapshot_context(
     system: ObjectStorageSystem,
     query_args: Any,
 ) -> None:
-    streams = payload.get('alert_streams') if isinstance(payload.get('alert_streams'), dict) else {}
+    streams_value = payload.get('alert_streams')
+    streams = cast(dict[str, Any], streams_value) if isinstance(streams_value, dict) else {}
     alert_stream = resolve_materialized_alert_stream(
         streams,
         selected_source=context['selected_alert_source'],
@@ -705,7 +706,8 @@ def _apply_alert_snapshot_context(
         system=system,
         selected_source=context['selected_alert_source'],
     )
-    page_metrics = payload.get('page_metrics') if isinstance(payload.get('page_metrics'), dict) else {}
+    page_metrics_value = payload.get('page_metrics')
+    page_metrics = cast(dict[str, Any], page_metrics_value) if isinstance(page_metrics_value, dict) else {}
     context['metrics'] = dict(page_metrics.get('alerts') or _unavailable_alert_metrics())
     metrics_runtime_state = str(context['metrics_source'].get('runtime_state') or '')
     metrics_operational = metrics_runtime_state in {'operational', 'degraded'}
@@ -730,7 +732,8 @@ def get_object_storage_analytics_context(page_key: str, query_args: Any) -> dict
         _apply_alert_snapshot_context(context, payload=payload, system=system, query_args=query_args)
         return context
 
-    page_metrics = payload.get('page_metrics') if isinstance(payload.get('page_metrics'), dict) else {}
+    page_metrics_value = payload.get('page_metrics')
+    page_metrics = cast(dict[str, Any], page_metrics_value) if isinstance(page_metrics_value, dict) else {}
     metrics = page_metrics.get(page_key)
     if not isinstance(metrics, dict):
         context['dependency_blocker'] = analytics_snapshot_blocker(

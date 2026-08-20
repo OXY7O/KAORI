@@ -307,13 +307,17 @@
         const icon = presentation === 'drawer' ? 'panel-right-open' : 'panel-top-open'
         elements.header.innerHTML = `
             <div class="flex min-w-0 items-start gap-3">
-                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary" aria-hidden="true">
+                <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-brand-outline bg-kaori-soft text-kaori-primary" aria-hidden="true">
                     <i data-lucide="${icon}" class="h-5 w-5"></i>
                 </span>
                 <div class="min-w-0">
-                    <p class="text-xs font-semibold leading-5 text-kaori-primary">${escapeHtml(contextLabel)} Details</p>
-                    <h2 id="resource-detail-modal-title" class="break-words text-lg font-semibold leading-6 text-content-primary [overflow-wrap:anywhere]">${escapeHtml(name || (type || 'Resource') + ' Details')}</h2>
-                    <p class="mt-1 text-sm leading-5 text-content-muted">Loading ${escapeHtml(String(contextLabel || 'Resource').toLowerCase())} evidence.</p>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <p class="text-xs font-semibold leading-5 text-kaori-primary">${escapeHtml(contextLabel)} Detail</p>
+                        <span class="h-1 w-1 rounded-full bg-outline-strong" aria-hidden="true"></span>
+                        <p class="text-xs font-medium leading-5 text-content-muted">Committed Snapshot</p>
+                    </div>
+                    <h2 id="resource-detail-modal-title" class="mt-1 break-words text-lg font-semibold leading-7 text-content-primary [overflow-wrap:anywhere]">${escapeHtml(name || (type || 'Resource') + ' Details')}</h2>
+                    <p class="mt-1 text-sm leading-6 text-content-muted">Loading ${escapeHtml(String(contextLabel || 'Resource').toLowerCase())} evidence.</p>
                 </div>
             </div>
         `

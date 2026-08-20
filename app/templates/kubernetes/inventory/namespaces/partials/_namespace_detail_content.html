@@ -4,23 +4,14 @@
 {% import "components/operational_callout.html" as operational_callout %}
 <div data-kaori-detail-variant="full-workspace-modal"
      data-kaori-detail-density="adaptive-stacks"
+     data-kaori-inventory-detail="v2"
      class="{{ detail.expanded_workspace_outer_classes() }}">
     <div class="{{ detail.expanded_workspace_shell_classes() }}">
-        <header data-resource-detail-header
-                class="{{ detail.expanded_workspace_header_classes() }}">
-            <div class="flex min-w-0 items-start gap-3">
-                <span class="{{ detail.expanded_workspace_icon_classes() }}"
-                      aria-hidden="true"><i data-lucide="folder-tree" class="h-5 w-5"></i></span>
-                <div class="min-w-0">
-                    {% call detail.header_identity_row() %}
-                        <h3 class="break-words text-base font-semibold leading-6 text-content-primary [overflow-wrap:anywhere]">{{ namespace.namespace }}</h3>
-                        {{ table_label.metadata_label(namespace.cluster_name, 'building-2') }}
-                        {{ table_label.status_indicator_label(namespace.lifecycle_label, namespace.lifecycle_tone, size='detail') }}
-                    {% endcall %}
-                    <p class="mt-1 text-xs leading-5 text-content-muted">Lifecycle, controls, composition, and security evidence from the committed snapshot.</p>
-                </div>
-            </div>
-        </header>
+        {% set detail_description = 'Lifecycle, controls, composition, and security evidence from the committed snapshot.' %}
+        {% call detail.workspace_header(namespace.namespace, detail_description, 'folder-tree') %}
+            {{ table_label.metadata_label(namespace.cluster_name, 'building-2') }}
+            {{ table_label.status_indicator_label(namespace.lifecycle_label, namespace.lifecycle_tone, size='detail') }}
+        {% endcall %}
         {{ detail.summary_strip([
                 ('Lifecycle', namespace.lifecycle_label, '') ,
         ('Age', namespace.age, ''),
@@ -103,12 +94,12 @@
                             {% for quota in namespace.quotas %}
                                 <article class="rounded-lg border border-outline-subtle bg-surface-elevated p-3">
                                     <div class="mb-2 flex items-center justify-between gap-3">
-                                        <p class="text-xs font-semibold text-content-primary">{{ quota.name }}</p>
+                                        <p class="text-sm font-semibold leading-5 text-content-primary">{{ quota.name }}</p>
                                         {{ table_label.metadata_label(quota.resource_count ~ ' ' ~ ('Limit' if quota.resource_count == 1 else 'Limits') ) }}
                                     </div>
                                     <div class="grid gap-x-4 gap-y-1.5 sm:grid-cols-2">
                                         {% for resource in quota.resources %}
-                                            <div class="flex items-start justify-between gap-3 text-xs leading-5"><span class="min-w-0 break-words text-content-muted [overflow-wrap:anywhere]">{{ resource.name }}</span><span class="shrink-0 font-medium text-content-primary">{{ resource.hard }}</span></div>
+                                            <div class="flex items-start justify-between gap-3"><span class="min-w-0 break-words text-xs font-medium leading-5 text-content-muted [overflow-wrap:anywhere]">{{ resource.name }}</span><span class="shrink-0 text-sm font-semibold leading-5 text-content-primary">{{ resource.hard }}</span></div>
                                         {% endfor %}
                                     </div>
                                     {% if quota.truncated %}

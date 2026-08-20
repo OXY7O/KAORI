@@ -51,6 +51,15 @@ def _aware(value: datetime | None) -> datetime | None:
     return value if value.tzinfo is not None else value.replace(tzinfo=UTC)
 
 
+def _inventory_observation_times(systems: list[ObjectStorageSystem]) -> list[datetime]:
+    observed: list[datetime] = []
+    for system in systems:
+        resolved = _aware(system.inventory_observed_at)
+        if resolved is not None:
+            observed.append(resolved)
+    return observed
+
+
 def _human_time(value: datetime | None) -> str:
     resolved = _aware(value)
     if resolved is None:
@@ -277,9 +286,7 @@ def _dashboard_kpis(systems: list[ObjectStorageSystem], selected: ObjectStorageS
 
 def _freshness(selected: ObjectStorageSystem | None, systems: list[ObjectStorageSystem]) -> list[dict[str, str]]:
     if selected is None:
-        observed = [
-            _aware(system.inventory_observed_at) for system in systems if system.inventory_observed_at is not None
-        ]
+        observed = _inventory_observation_times(systems)
         analytics_states = [
             analytics_snapshot_state(get_analytics_snapshot(system_id=str(system.id), time_range=_DASHBOARD_TIME_RANGE))
             for system in systems
@@ -458,14 +465,7 @@ def get_dashboard_overview(
         'last_updated': _human_time(
             selected.inventory_observed_at
             if selected is not None
-            else max(
-                (
-                    _aware(system.inventory_observed_at)
-                    for system in systems
-                    if system.inventory_observed_at is not None
-                ),
-                default=None,
-            )
+            else max(_inventory_observation_times(systems), default=None)
         ),
         'inventory': inventory,
         'system_health_pagination': health_pagination,

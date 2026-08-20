@@ -28,6 +28,7 @@ Node, Namespace, Workload, Pod, Service, Ingress, Storage, and Configuration Inv
 
 ### Required behavior
 
+- Kubernetes Inventory uses `resource_detail_modal.inventory_host(...)` for one shared modal contract;
 - `View Details` opens one near-fullscreen modal without changing table height;
 - desktop width is bounded by `90rem` and available viewport space;
 - mobile uses the available viewport as a full workspace;
@@ -44,7 +45,24 @@ Node, Namespace, Workload, Pod, Service, Ingress, Storage, and Configuration Inv
 - fetched detail marks its resource header with `data-resource-detail-header`;
 - resource title, metadata, and primary lifecycle/readiness/collection state use the shared `detail.header_identity_row()` owner as one grouped identity row;
 - the supporting description renders below that identity row; do not float the primary state onto a second badge line or detach it beneath the leading icon/modal outer edge;
-- the summary uses the shared `data-resource-detail-summary` owner.
+- the summary uses the shared `data-resource-detail-summary` owner;
+- Kubernetes Inventory detail roots declare `data-kaori-inventory-detail="v2"`;
+- resource headers use `detail.workspace_header(...)` instead of hand-authored heading/font classes.
+
+### Typography hierarchy
+
+Inventory View Details uses one predictable scale across Node, Namespace, Workload, Pod, Service, Ingress, Storage, and Configuration:
+
+```text
+Resource title       text-lg / semibold
+Summary value        text-base / semibold
+Section/card title   text-sm / semibold
+Field value          text-sm / semibold
+Field label          text-xs / medium
+Supporting copy      text-xs / regular
+```
+
+Technical identifiers use the same `text-sm` body value scale through `technical_value.render(..., size='body')`. Do not create smaller monospace or arbitrary-size value typography inside Inventory details. Metadata pair collections follow the same muted-label / emphasized-value hierarchy.
 
 ### Content order
 

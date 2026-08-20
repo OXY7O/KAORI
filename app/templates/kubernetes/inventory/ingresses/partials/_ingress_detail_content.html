@@ -7,25 +7,16 @@
 {% import "components/technical_value.html" as technical_value %}
 <div data-kaori-detail-variant="full-workspace-modal"
      data-kaori-detail-density="adaptive-stacks"
+     data-kaori-inventory-detail="v2"
      class="{{ detail.expanded_workspace_outer_classes() }}">
     <div class="{{ detail.expanded_workspace_shell_classes() }}">
-        <header data-resource-detail-header
-                class="{{ detail.expanded_workspace_header_classes() }}">
-            <div class="flex min-w-0 items-start gap-3">
-                <span class="{{ detail.expanded_workspace_icon_classes() }}"
-                      aria-hidden="true"><i data-lucide="route" class="h-5 w-5"></i></span>
-                <div class="min-w-0">
-                    {% call detail.header_identity_row() %}
-                        <h3 class="break-words text-base font-semibold leading-6 text-content-primary [overflow-wrap:anywhere]">{{ ingress.name }}</h3>
-                        {{ table_label.metadata_label(ingress.cluster_name, 'building-2') }}
-                        {{ table_label.metadata_label(ingress.namespace, 'folder-tree') }}
-                        {{ table_label.metadata_label(ingress.class) }}
-                        {{ table_label.status_indicator_label(ingress.detail_posture_label, ingress.detail_posture_tone, size='detail') }}
-                    {% endcall %}
-                    <p class="mt-1 text-xs leading-5 text-content-muted">Declared host scope, controller publication, TLS Secret references, and backend routes from one committed snapshot.</p>
-                </div>
-            </div>
-        </header>
+        {% set detail_description = 'Host, publication, TLS Secret, and backend route evidence from the committed snapshot.' %}
+        {% call detail.workspace_header(ingress.name, detail_description, 'route') %}
+            {{ table_label.metadata_label(ingress.cluster_name, 'building-2') }}
+            {{ table_label.metadata_label(ingress.namespace, 'folder-tree') }}
+            {{ table_label.metadata_label(ingress.class) }}
+            {{ table_label.status_indicator_label(ingress.detail_posture_label, ingress.detail_posture_tone, size='detail') }}
+        {% endcall %}
         {{ detail.summary_strip([
                 ('Host Scope', ingress.host_label, ingress.host_supporting) ,
         ('Publication', ingress.publication_label, ingress.publication_supporting),

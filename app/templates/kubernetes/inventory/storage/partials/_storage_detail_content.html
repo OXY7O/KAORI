@@ -5,29 +5,20 @@
 {% import "components/operational_callout.html" as operational_callout %}
 <div data-kaori-detail-variant="full-workspace-modal"
      data-kaori-detail-density="adaptive-stacks"
+     data-kaori-inventory-detail="v2"
      class="{{ detail.expanded_workspace_outer_classes() }}">
     <div class="{{ detail.expanded_workspace_shell_classes() }}">
-        <header data-resource-detail-header
-                class="{{ detail.expanded_workspace_header_classes() }}">
-            <div class="flex min-w-0 items-start gap-3">
-                <span class="{{ detail.expanded_workspace_icon_classes() }}"
-                      aria-hidden="true"><i data-lucide="database" class="h-5 w-5"></i></span>
-                <div class="min-w-0">
-                    {% call detail.header_identity_row() %}
-                        <h3 class="break-words text-base font-semibold leading-6 text-content-primary [overflow-wrap:anywhere]">{{ item.name }}</h3>
-                        {{ table_label.metadata_label(item.type_label) }}
-                        {{ table_label.metadata_label(item.namespace, 'folder-tree') }}
-                        {% if item.is_default %}{{ table_label.metadata_label("Default") }}{% endif %}
-                        {% if item.type == 'StorageClass' %}
-                            {{ table_label.metadata_label(item.lifecycle_label) }}
-                        {% else %}
-                            {{ table_label.status_indicator_label(item.lifecycle_label, item.lifecycle_tone, size='detail') }}
-                        {% endif %}
-                    {% endcall %}
-                    <p class="mt-1 text-xs leading-5 text-content-muted">Committed provisioning, capacity, access, binding, relationship, and lifecycle evidence.</p>
-                </div>
-            </div>
-        </header>
+        {% set detail_description = 'Provisioning, capacity, access, binding, relationship, and lifecycle evidence.' %}
+        {% call detail.workspace_header(item.name, detail_description, 'database') %}
+            {{ table_label.metadata_label(item.type_label) }}
+            {{ table_label.metadata_label(item.namespace, 'folder-tree') }}
+            {% if item.is_default %}{{ table_label.metadata_label("Default") }}{% endif %}
+            {% if item.type == 'StorageClass' %}
+            {{ table_label.metadata_label(item.lifecycle_label) }}
+            {% else %}
+            {{ table_label.status_indicator_label(item.lifecycle_label, item.lifecycle_tone, size='detail') }}
+            {% endif %}
+        {% endcall %}
         {{ detail.summary_strip([
                 ('Resource Type', item.type_label, 'Kubernetes storage kind') ,
         ('Lifecycle', item.lifecycle_label, item.binding_reference),

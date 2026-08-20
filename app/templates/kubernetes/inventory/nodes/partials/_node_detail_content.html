@@ -10,24 +10,15 @@
 {% set condition_posture = 'Critical' if condition_tone == 'critical' else ('Warning' if condition_tone == 'warning' else ('Normal' if condition_tone == 'normal' else 'Unknown')) %}
 <div data-kaori-detail-variant="full-workspace-modal"
      data-kaori-detail-density="adaptive-stacks"
+     data-kaori-inventory-detail="v2"
      class="{{ detail.expanded_workspace_outer_classes() }}">
     <div class="{{ detail.expanded_workspace_shell_classes() }}">
-        <header data-resource-detail-header
-                class="{{ detail.expanded_workspace_header_classes() }}">
-            <div class="flex min-w-0 items-start gap-3">
-                <span class="{{ detail.expanded_workspace_icon_classes() }}"
-                      aria-hidden="true"><i data-lucide="server" class="h-5 w-5"></i></span>
-                <div class="min-w-0">
-                    {% call detail.header_identity_row() %}
-                        <h3 class="break-words text-base font-semibold leading-6 text-content-primary [overflow-wrap:anywhere]">{{ node.node_name }}</h3>
-                        {{ table_label.metadata_label(node.cluster_name, 'building-2') }}
-                        {{ table_label.metadata_label(node.role_display) }}
-                        {{ table_label.status_indicator_label(node.status_display, node_status_tone, size='detail') }}
-                    {% endcall %}
-                    <p class="mt-1 text-xs leading-5 text-content-muted">Node identity, capacity, runtime, connectivity, scheduling, and condition evidence from the latest committed inventory snapshot.</p>
-                </div>
-            </div>
-        </header>
+        {% set detail_description = 'Identity, capacity, runtime, network, scheduling, and condition evidence from the committed snapshot.' %}
+        {% call detail.workspace_header(node.node_name, detail_description, 'server') %}
+            {{ table_label.metadata_label(node.cluster_name, 'building-2') }}
+            {{ table_label.metadata_label(node.role_display) }}
+            {{ table_label.status_indicator_label(node.status_display, node_status_tone, size='detail') }}
+        {% endcall %}
         <div data-resource-detail-summary
              class="grid gap-3 border-b border-outline-subtle bg-surface-card p-4 sm:grid-cols-2 xl:grid-cols-4">
             {{ detail.summary_metric('Readiness', node.status_display, 'Current node readiness condition.', 'circle-check' if node.status == 'Ready' else 'triangle-alert', node_status_tone) }}
