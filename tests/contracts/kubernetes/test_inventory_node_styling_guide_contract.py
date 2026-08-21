@@ -117,8 +117,8 @@ def test_node_detail_factual_rows_use_one_calm_body_typography_scale() -> None:
 
     assert 'text-sm font-normal leading-5 text-content-secondary' in shared
     assert 'text-left text-sm font-medium leading-5 text-content-primary' in shared
-    assert "technical_classes = 'font-medium whitespace-nowrap' if nowrap else 'font-medium'" in shared
+    assert "technical_classes = 'font-medium xl:whitespace-nowrap' if nowrap else 'font-medium'" in shared
     assert 'text-sm font-normal leading-5 text-content-secondary' in metadata
     assert 'text-sm font-medium leading-5 text-content-primary' in metadata
     assert 'bg-surface-hover' not in metadata
-    assert "technical_value.render(taint, break_all=false" in node
+    assert 'technical_value.render(taint, break_all=false' in node

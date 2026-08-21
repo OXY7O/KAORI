@@ -12,8 +12,8 @@ def test_node_detail_uses_balanced_inspector_layout_with_natural_height_sections
     shared = _read('app/templates/components/details/_detail_content.html')
 
     assert 'data-kaori-detail-variant="full-workspace-modal"' in detail
-    assert 'data-kaori-detail-density="balanced-inspector"' in detail
-    assert 'data-kaori-inventory-detail-layout="editorial-evidence-grid"' in detail
+    assert 'data-kaori-detail-density="unified-resource-sheet"' in detail
+    assert 'data-kaori-inventory-detail-layout="unified-resource-sheet"' in detail
     assert 'data-kaori-node-inspector' in detail
     assert 'data-kaori-node-inspector-flow="natural-content"' in detail
     assert 'xl:grid-cols-12' in detail

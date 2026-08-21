@@ -13,199 +13,163 @@
 {% set condition_tone = 'critical' if node.ready_condition == 'Not Ready' or node.network_availability == 'Unavailable' else ('warning' if node.has_pressure or node.scheduling_display == 'Cordoned' else ('unknown' if node.ready_condition == 'Unknown' or node.scheduling_display == 'Not Reported' else 'normal')) %}
 {% set condition_posture = 'Critical' if condition_tone == 'critical' else ('Warning' if condition_tone == 'warning' else ('Normal' if condition_tone == 'normal' else 'Unknown')) %}
 {% set environment_display = node.cluster_environment|environment_name(empty='Not Specified') %}
-{% set readiness_summary_classes = 'bg-status-normal-soft text-status-normal-text' if node_status_tone == 'normal' else ('bg-status-critical-soft text-status-critical-text' if node_status_tone == 'critical' else 'bg-status-unknown-soft text-status-unknown-text') %}
-{% set scheduling_summary_classes = 'bg-status-normal-soft text-status-normal-text' if scheduling_tone == 'normal' else ('bg-status-warning-soft text-status-warning-text' if scheduling_tone == 'warning' else 'bg-status-unknown-soft text-status-unknown-text') %}
+{% set status_dot_classes = 'bg-status-normal' if node_status_tone == 'normal' else ('bg-status-critical' if node_status_tone == 'critical' else 'bg-status-unknown') %}
 {% if node.taints|length == 1 %}
     {% set taint_count_label = '1 Taint' %}
 {% else %}
     {% set taint_count_label = node.taints|length ~ ' Taints' %}
 {% endif %}
 <div data-kaori-detail-variant="full-workspace-modal"
-     data-kaori-detail-density="balanced-inspector"
-     data-kaori-inventory-detail="v9"
-     data-kaori-inventory-detail-layout="editorial-evidence-grid"
+     data-kaori-detail-density="unified-resource-sheet"
+     data-kaori-inventory-detail="v10"
+     data-kaori-inventory-detail-layout="unified-resource-sheet"
      class="{{ detail.expanded_workspace_outer_classes() }}">
     <div class="{{ detail.expanded_workspace_shell_classes() }}">
-        {% set detail_description = "Identity, capacity, runtime, network, scheduling, and condition evidence from the committed snapshot." %}
+        {% set detail_description = "Identity, runtime, network, capacity, and scheduling evidence from the committed Node snapshot." %}
         {% call detail.workspace_header(detail_description, 'server') %}
-            <div class="flex min-w-0 flex-col gap-3 xl:flex-row xl:items-start xl:justify-between xl:gap-6">
-                <div class="min-w-0 flex-1">
-                    {% call detail.header_identity_row() %}
-                        {{ detail.inventory_title(node.node_name) }}
-                    {% endcall %}
-                </div>
-                <div class="grid min-w-0 gap-2 sm:grid-cols-2 xl:w-auto xl:grid-cols-4">
-                    <div class="min-w-0 rounded-lg border border-outline-subtle bg-surface-elevated/50 px-3 py-2">
-                        <p class="text-xs font-semibold uppercase tracking-[0.05em] text-kaori-primary">Cluster</p>
-                        <p class="mt-0.5 min-w-0 break-words text-xs font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]">{{ node.cluster_name }}</p>
-                    </div>
-                    <div class="min-w-0 rounded-lg border border-outline-subtle bg-surface-elevated/50 px-3 py-2">
-                        <p class="text-xs font-semibold uppercase tracking-[0.05em] text-kaori-primary">Role</p>
-                        <p class="mt-0.5 min-w-0 break-words text-xs font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]">{{ node.role_display }}</p>
-                    </div>
-                    <div class="min-w-0 rounded-lg border border-outline-subtle bg-surface-elevated/50 px-3 py-2">
-                        <p class="text-xs font-semibold uppercase tracking-[0.05em] text-kaori-primary">Environment</p>
-                        <p class="mt-0.5 min-w-0 break-words text-xs font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]">{{ environment_display }}</p>
-                    </div>
-                    <div class="min-w-0 rounded-lg border border-outline-subtle bg-surface-elevated/50 px-3 py-2">
-                        <p class="text-xs font-semibold uppercase tracking-[0.05em] text-content-muted">Status</p>
-                        <div class="mt-0.5">{{ table_label.status_indicator_label(node.status_display, node_status_tone, size='detail') }}</div>
-                    </div>
+            <div class="min-w-0">
+                {% call detail.header_identity_row() %}
+                    {{ detail.inventory_title(node.node_name) }}
+                {% endcall %}
+                <div class="mt-2 flex min-w-0 flex-wrap items-center gap-x-6 gap-y-2 text-sm leading-5">
+                    <span class="inline-flex min-w-0 items-center gap-2">
+                        <span class="text-content-muted">Cluster</span>
+                        <span class="min-w-0 break-words font-medium text-content-primary [overflow-wrap:anywhere]">{{ node.cluster_name }}</span>
+                    </span>
+                    <span class="inline-flex min-w-0 items-center gap-2">
+                        <span class="text-content-muted">Role</span>
+                        <span class="font-medium text-content-primary">{{ node.role_display }}</span>
+                    </span>
+                    <span class="inline-flex min-w-0 items-center gap-2">
+                        <span class="text-content-muted">Environment</span>
+                        <span class="font-medium text-content-primary">{{ environment_display }}</span>
+                    </span>
+                    <span class="inline-flex items-center gap-2">
+                        <span class="text-content-muted">Status</span>
+                        <span class="h-1.5 w-1.5 rounded-full {{ status_dot_classes }}" aria-hidden="true"></span>
+                        <span class="font-medium text-content-primary">{{ node.status_display }}</span>
+                    </span>
                 </div>
             </div>
         {% endcall %}
 
-        <div data-resource-detail-summary
-             data-kaori-node-inspector-summary
-             class="mx-4 mt-4 grid overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm sm:grid-cols-2 lg:mx-6 xl:grid-cols-4">
-            <article class="flex min-w-0 items-start gap-3 border-b border-outline-subtle px-4 py-3.5 sm:border-r xl:border-b-0">
-                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg {{ readiness_summary_classes }}"
-                      aria-hidden="true"><i data-lucide="shield-check" class="h-4 w-4"></i></span>
-                <div class="min-w-0">
-                    <p class="text-xs font-medium leading-5 text-content-muted">Readiness</p>
-                    <p class="mt-0.5 break-words text-base font-semibold leading-6 text-content-primary [overflow-wrap:anywhere]">{{ node.status_display }}</p>
-                    <p class="mt-0.5 text-xs leading-5 text-content-muted">Node condition</p>
-                </div>
-            </article>
-            <article class="flex min-w-0 items-start gap-3 border-b border-outline-subtle px-4 py-3.5 xl:border-b-0 xl:border-r">
-                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg {{ scheduling_summary_classes }}"
-                      aria-hidden="true"><i data-lucide="calendar-check" class="h-4 w-4"></i></span>
-                <div class="min-w-0">
-                    <p class="text-xs font-medium leading-5 text-content-muted">Scheduling</p>
-                    <p class="mt-0.5 break-words text-base font-semibold leading-6 text-content-primary [overflow-wrap:anywhere]">{{ node.scheduling_display }}</p>
-                    <p class="mt-0.5 text-xs leading-5 text-content-muted">Placement state</p>
-                </div>
-            </article>
-            <article class="flex min-w-0 items-start gap-3 border-b border-outline-subtle px-4 py-3.5 sm:border-r sm:border-b-0">
-                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
-                      aria-hidden="true"><i data-lucide="box" class="h-4 w-4"></i></span>
-                <div class="min-w-0">
-                    <p class="text-xs font-medium leading-5 text-content-muted">Scheduled Pods</p>
-                    <p class="mt-0.5 break-words text-base font-semibold leading-6 text-content-primary [overflow-wrap:anywhere]">{{ node.scheduled_pod_count }}</p>
-                    <p class="mt-0.5 text-xs leading-5 text-content-muted">Committed assignments</p>
-                </div>
-            </article>
-            <article class="flex min-w-0 items-start gap-3 px-4 py-3.5">
-                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
-                      aria-hidden="true"><i data-lucide="cpu" class="h-4 w-4"></i></span>
-                <div class="min-w-0">
-                    <p class="text-xs font-medium leading-5 text-content-muted">Capacity</p>
-                    <p class="mt-0.5 break-words text-base font-semibold leading-6 text-content-primary [overflow-wrap:anywhere]">{{ node.capacity_summary }}</p>
-                    <p class="mt-0.5 text-xs leading-5 text-content-muted">CPU · Memory</p>
-                </div>
-            </article>
-        </div>
+        {{ detail.inspector_summary_strip([
+                {'label': 'Readiness', 'value': node.status_display, 'supporting': 'Node condition', 'icon': 'shield-check', 'tone': node_status_tone},
+                {'label': 'Scheduling', 'value': node.scheduling_display, 'supporting': 'Placement state', 'icon': 'calendar-check', 'tone': scheduling_tone},
+                {'label': 'Scheduled Pods', 'value': node.scheduled_pod_count, 'supporting': 'Committed assignments', 'icon': 'box', 'tone': 'brand'},
+                {'label': 'Capacity', 'value': node.capacity_summary, 'supporting': 'CPU · Memory', 'icon': 'cpu', 'tone': 'brand'}
+                ]) }}
 
         <div data-kaori-node-inspector
              data-kaori-node-inspector-flow="natural-content"
-             data-kaori-node-inspector-layout="single-scroll-evidence-grid"
+             data-kaori-node-inspector-layout="single-scroll-resource-sheet"
              class="min-w-0 space-y-4 p-4 sm:p-5 lg:p-6">
-            <div class="grid min-w-0 gap-4 xl:grid-cols-12">
-                {% call detail.inspector_section('Identity & Snapshot', 'badge-info', 'Core identity and collection context.', 'xl:col-span-5') %}
-                    <dl class="min-w-0">
-                        {{ detail.inspector_technical_row('Node Name', node.node_name, nowrap=false) }}
-                        {{ detail.inspector_technical_row('System UUID', node.system_uuid, nowrap=false) }}
-                        {{ detail.inspector_row('Cluster', node.cluster_name) }}
+            <div class="min-w-0 overflow-hidden rounded-2xl border border-outline-subtle bg-surface-card shadow-sm"
+                 data-kaori-node-resource-sheet>
+                {% call detail.inspector_section('Identity & Snapshot', 'badge-info', 'Core identity and collection context.') %}
+                    <dl class="grid min-w-0 gap-x-10 sm:grid-cols-2">
+                        {{ detail.inspector_technical_row('Node Name', node.node_name, nowrap=true, class_name='lg:col-span-2') }}
+                        {{ detail.inspector_technical_row('System UUID', node.system_uuid, nowrap=true, class_name='lg:col-span-2') }}
+                        {{ detail.inspector_row('Cluster', node.cluster_name, nowrap=true, class_name='lg:col-span-2') }}
                         {{ detail.inspector_row('Environment', environment_display) }}
                         {{ detail.inspector_row('Role', node.role_display) }}
                         {{ detail.inspector_row('Node Age', node.age) }}
-                        {{ detail.inspector_row('Collected', node.collected_at|user_datetime) }}
+                        {{ detail.inspector_row('Collected', node.collected_at|user_datetime, nowrap=true) }}
                     </dl>
                     {{ detail.inspector_hint(node.role_description, 'server') }}
                 {% endcall %}
 
-                {% call detail.inspector_section('Connectivity & Network', 'network', 'Address and hostname evidence from the committed Node snapshot.', 'xl:col-span-4', node.network_availability, 'status', network_tone) %}
-                    <dl class="min-w-0">
-                        {{ detail.inspector_technical_row('Internal IP', node.internal_ip or 'Not Reported', nowrap=false) }}
-                        {{ detail.inspector_technical_row('External IP', node.external_ip or 'Not Reported', nowrap=false) }}
-                        {{ detail.inspector_technical_row('Hostname / FQDN', node.hostname_address or 'Not Reported', nowrap=false) }}
-                        {{ detail.inspector_row('Network Scope', node.network_scope) }}
+                {% call detail.inspector_section('Connectivity & Network', 'network', 'Address and hostname evidence.', '', node.network_availability, 'status', network_tone) %}
+                    <dl class="grid min-w-0 gap-x-10 sm:grid-cols-2">
+                        {{ detail.inspector_technical_row('Internal IP', node.internal_ip or 'Not Reported', nowrap=true) }}
+                        {{ detail.inspector_technical_row('External IP', node.external_ip or 'Not Reported', nowrap=true) }}
+                        {{ detail.inspector_technical_row('Hostname / FQDN', node.hostname_address or 'Not Reported', nowrap=true, class_name='lg:col-span-2') }}
+                        {{ detail.inspector_row('Network Scope', node.network_scope, class_name='lg:col-span-2') }}
                     </dl>
                     {{ detail.inspector_hint('Internal IP is the cluster address; External IP may be absent on private nodes.', 'network') }}
                 {% endcall %}
 
-                {% call detail.inspector_section('Node Capacity', 'gauge', 'Reported Node capacity.', 'xl:col-span-3') %}
-                    <dl class="min-w-0">
+                {% call detail.inspector_section('Node Capacity', 'gauge', 'Reported capacity from the committed snapshot.') %}
+                    <dl class="grid min-w-0 gap-x-10 sm:grid-cols-2">
                         {{ detail.inspector_row('CPU', node.cpu_display) }}
                         {{ detail.inspector_row('Memory', node.memory_display) }}
                         {{ detail.inspector_row('Ephemeral Storage', node.ephemeral_storage_display) }}
                         {{ detail.inspector_row('Allocatable Ephemeral', node.ephemeral_storage_allocatable_display) }}
                     </dl>
-                    {{ detail.inspector_hint('Missing values remain explicit and are never converted to zero.', 'database') }}
+                    {{ detail.inspector_hint('Missing capacity values remain explicit and are never converted to zero.', 'database') }}
                 {% endcall %}
-            </div>
 
-            <div class="grid min-w-0 gap-4 xl:grid-cols-12">
-                {% call detail.inspector_section('Runtime & Platform', 'terminal-square', 'Host platform and Kubernetes runtime versions.', 'xl:col-span-7') %}
-                    <div class="grid min-w-0 gap-x-8 gap-y-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
-                        <div class="min-w-0">
-                            <div class="mb-1 flex items-center gap-2 border-b border-outline-subtle pb-2">
-                                <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary"
-                                      aria-hidden="true"><i data-lucide="monitor-cog" class="h-3.5 w-3.5"></i></span>
-                                <p class="text-xs font-semibold uppercase tracking-[0.05em] text-content-secondary">Host Platform</p>
+                {% call detail.inspector_section('Runtime & Platform', 'terminal-square', 'Host platform and Kubernetes runtime versions.') %}
+                    <div class="grid min-w-0 gap-6 xl:grid-cols-2 xl:divide-x xl:divide-outline-subtle">
+                        <div class="min-w-0 xl:pr-6">
+                            <div class="mb-1 flex items-center gap-2 border-b border-outline-subtle pb-2.5">
+                                <span class="h-1.5 w-1.5 rounded-full bg-kaori-primary" aria-hidden="true"></span>
+                                <p class="text-sm font-medium leading-5 text-content-primary">Host Platform</p>
                             </div>
                             <dl class="min-w-0">
                                 {{ detail.inspector_row('Operating System', node.operating_system_display) }}
-                                {{ detail.inspector_row('OS Image', node.os_image) }}
-                                {{ detail.inspector_technical_row('Architecture', node.architecture, nowrap=false) }}
-                                {{ detail.inspector_technical_row('Kernel Version', node.kernel_version, nowrap=false) }}
+                                {{ detail.inspector_row('OS Image', node.os_image, nowrap=true) }}
+                                {{ detail.inspector_technical_row('Architecture', node.architecture, nowrap=true) }}
+                                {{ detail.inspector_technical_row('Kernel Version', node.kernel_version, nowrap=true) }}
                             </dl>
                         </div>
-                        <div class="min-w-0">
-                            <div class="mb-1 flex items-center gap-2 border-b border-outline-subtle pb-2">
-                                <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary"
-                                      aria-hidden="true"><i data-lucide="boxes" class="h-3.5 w-3.5"></i></span>
-                                <p class="text-xs font-semibold uppercase tracking-[0.05em] text-content-secondary">Kubernetes Runtime</p>
+                        <div class="min-w-0 xl:pl-6">
+                            <div class="mb-1 flex items-center gap-2 border-b border-outline-subtle pb-2.5">
+                                <span class="h-1.5 w-1.5 rounded-full bg-kaori-primary" aria-hidden="true"></span>
+                                <p class="text-sm font-medium leading-5 text-content-primary">Kubernetes Runtime</p>
                             </div>
                             <dl class="min-w-0">
-                                {{ detail.inspector_technical_row('Container Runtime', node.container_runtime_identifier, nowrap=false) }}
-                                {{ detail.inspector_technical_row('Kubelet Version', node.kubelet_version, nowrap=false) }}
-                                {{ detail.inspector_technical_row('Kube-Proxy Version', node.kube_proxy_version, nowrap=false) }}
+                                {{ detail.inspector_technical_row('Container Runtime', node.container_runtime_identifier, nowrap=true) }}
+                                {{ detail.inspector_technical_row('Kubelet Version', node.kubelet_version, nowrap=true) }}
+                                {{ detail.inspector_technical_row('Kube-Proxy Version', node.kube_proxy_version, nowrap=true) }}
                             </dl>
                         </div>
                     </div>
                 {% endcall %}
 
-                {% call detail.inspector_section('Scheduling & Conditions', 'shield-check', 'Placement state and Node conditions.', 'xl:col-span-5', condition_posture, 'status', condition_tone) %}
-                    <div class="grid min-w-0 gap-x-6 sm:grid-cols-2">
+                {% call detail.inspector_section('Scheduling & Conditions', 'shield-check', 'Placement state and current Node conditions.', '', condition_posture, 'status', condition_tone) %}
+                    <div class="grid min-w-0 gap-x-10 sm:grid-cols-2">
                         {{ detail.inspector_state_item('Scheduling', node.scheduling_display, scheduling_tone) }}
                         {{ detail.inspector_state_item('Readiness', node.ready_condition, readiness_tone) }}
                         {{ detail.inspector_state_item('Memory Pressure', node.memory_pressure, memory_pressure_tone) }}
                         {{ detail.inspector_state_item('Disk Pressure', node.disk_pressure, disk_pressure_tone) }}
                         {{ detail.inspector_state_item('PID Pressure', node.pid_pressure, pid_pressure_tone) }}
                     </div>
-                    <div class="mt-3 border-t border-outline-subtle pt-3">
+                    <div class="mt-4 border-t border-outline-subtle pt-3">
                         <div class="flex flex-wrap items-center justify-between gap-3">
                             <div>
-                                <p class="text-xs font-semibold uppercase tracking-[0.05em] text-content-secondary">Scheduling Taints</p>
+                                <p class="text-sm font-medium leading-5 text-content-primary">Scheduling Taints</p>
                                 <p class="mt-0.5 text-xs leading-5 text-content-muted">Placement constraints declared on this Node.</p>
                             </div>
                             {{ table_label.special_label(taint_count_label, 'maintenance', 'tags', 'detail') }}
                         </div>
                         {% if node.taints %}
-                            <div class="mt-3 space-y-2">
+                            <dl class="mt-2 min-w-0">
                                 {% for taint in node.taints %}
-                                    <div class="min-w-0 rounded-lg border border-brand-outline/60 bg-kaori-soft/70 px-3 py-2 text-kaori-primary-dark">
-                                        {{ technical_value.render(taint, break_all=false, class_name='font-medium break-words [overflow-wrap:anywhere]', monospace=true, size='body') }}
+                                    <div class="grid min-w-0 gap-1 border-b border-outline-subtle py-2.5 last:border-b-0 sm:grid-cols-[minmax(9.5rem,0.3fr)_minmax(0,1fr)] sm:items-baseline sm:gap-5">
+                                        <dt class="text-sm font-normal leading-5 text-content-secondary">Taint</dt>
+                                        <dd class="min-w-0 break-words text-sm font-medium leading-5 text-content-primary [overflow-wrap:anywhere]">
+                                            {{ technical_value.render(taint, break_all=false, class_name='font-medium', monospace=false, size='body') }}
+                                        </dd>
                                     </div>
                                 {% endfor %}
-                            </div>
+                            </dl>
                         {% else %}
-                            <p class="mt-3 text-xs leading-5 text-content-muted">No taints were reported in the current snapshot.</p>
+                            <p class="mt-2 text-sm font-normal leading-5 text-content-secondary">No taints were reported in the current snapshot.</p>
                         {% endif %}
                     </div>
                 {% endcall %}
-            </div>
 
-            {{ metadata_collection.render('Node Labels',
-                        node.labels,
-                        icon='tags',
-                        empty_title='No Node Labels Collected',
-                        empty_description='Labels will appear when they are present in the committed Node snapshot.',
-                        context='Labels are factual Kubernetes metadata and do not establish policy compliance by themselves.',
-                        compact_pairs=true,
-                        nowrap_values=false,
-                        wide_pairs=true) }}
+                {{ metadata_collection.render('Node Labels',
+                            node.labels,
+                            icon='tags',
+                            empty_title='No Node Labels Collected',
+                            empty_description='Labels will appear when they are present in the committed Node snapshot.',
+                            context='Labels are factual Kubernetes metadata and do not establish policy compliance by themselves.',
+                            nowrap_values=false,
+                            wide_pairs=true,
+                            embedded=true) }}
+            </div>
 
             <div class="grid min-w-0 gap-4 xl:grid-cols-12">
                 {{ operational_callout.render('Committed Snapshot Boundary', 'This detail reads the latest committed database snapshot. It does not query the Kubernetes API live.', 'database', 'info', extra_classes='xl:col-span-5') }}

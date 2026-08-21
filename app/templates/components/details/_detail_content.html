@@ -209,58 +209,74 @@
 {%- endmacro %}
 {% macro inspector_section(title, icon, description=None, class_name='', badge=None, badge_type='metadata', badge_tone='unknown') -%}
     <section data-kaori-inspector-section
-             class="min-w-0 overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm {{ class_name }}">
-        <header class="flex min-w-0 items-start justify-between gap-4 border-b border-outline-subtle bg-surface-elevated/40 px-4 py-3 sm:px-5">
-            <div class="flex min-w-0 items-start gap-2.5">
-                <span class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary ring-1 ring-inset ring-brand-outline/50"
-                      aria-hidden="true"><i data-lucide="{{ icon }}" class="h-4 w-4"></i></span>
-                <div class="min-w-0">
-                    <h4 class="min-w-0 break-words text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]">{{ title }}</h4>
-                    {% if description %}
-                        <p class="mt-0.5 max-w-3xl break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]">{{ description }}</p>
-                    {% endif %}
+             data-kaori-inspector-section-layout="resource-sheet-band"
+             class="min-w-0 border-b border-outline-subtle last:border-b-0 {{ class_name }}">
+        <div class="grid min-w-0 xl:grid-cols-[14.5rem_minmax(0,1fr)]">
+            <header class="flex min-w-0 items-start justify-between gap-3 bg-surface-elevated/30 px-4 py-4 sm:px-5 xl:border-r xl:border-outline-subtle xl:px-5 xl:py-5">
+                <div class="flex min-w-0 items-start gap-3">
+                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary ring-1 ring-inset ring-brand-outline/50"
+                          aria-hidden="true"><i data-lucide="{{ icon }}" class="h-4 w-4"></i></span>
+                    <div class="min-w-0">
+                        <h4 class="min-w-0 break-words text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]">{{ title }}</h4>
+                        {% if description %}
+                            <p class="mt-1 break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]">{{ description }}</p>
+                        {% endif %}
+                    </div>
                 </div>
+                {% if badge %}
+                    <div class="shrink-0 xl:hidden">
+                        {% if badge_type == 'status' %}
+                            {{ table_label.status_label(badge, badge_tone, none, 'detail') }}
+                        {% else %}
+                            {{ table_label.special_label(badge, 'maintenance', 'tags', 'detail') }}
+                        {% endif %}
+                    </div>
+                {% endif %}
+            </header>
+            <div class="min-w-0 px-4 py-3 sm:px-5 sm:py-4 xl:px-6 xl:py-5">
+                {% if badge %}
+                    <div class="mb-3 hidden justify-end xl:flex">
+                        {% if badge_type == 'status' %}
+                            {{ table_label.status_label(badge, badge_tone, none, 'detail') }}
+                        {% else %}
+                            {{ table_label.special_label(badge, 'maintenance', 'tags', 'detail') }}
+                        {% endif %}
+                    </div>
+                {% endif %}
+                {{ caller() }}
             </div>
-            {% if badge %}
-                <div class="shrink-0">
-                    {% if badge_type == 'status' %}
-                        {{ table_label.status_label(badge, badge_tone, none, 'detail') }}
-                    {% else %}
-                        {{ table_label.special_label(badge, 'maintenance', 'tags', 'detail') }}
-                    {% endif %}
-                </div>
-            {% endif %}
-        </header>
-        <div class="min-w-0 px-4 py-3 sm:px-5 sm:py-4">{{ caller() }}</div>
+        </div>
     </section>
 {%- endmacro %}
-{% macro inspector_row(label, value='-', nowrap=false) -%}
+{% macro inspector_row(label, value='-', nowrap=false, class_name='') -%}
     {% set display_value = value if value not in [None, ''] else '-' %}
-    <div class="grid min-w-0 gap-1 border-b border-outline-subtle py-2.5 last:border-b-0 sm:grid-cols-[minmax(7.75rem,0.36fr)_minmax(0,1fr)] sm:items-start sm:gap-4">
-        <dt class="min-w-0 break-words text-xs font-medium leading-5 text-content-secondary [overflow-wrap:anywhere]">{{ label }}</dt>
-        <dd class="min-w-0 {{ 'whitespace-nowrap' if nowrap else 'break-words [overflow-wrap:anywhere]' }} text-sm font-semibold leading-5 text-content-primary"
+    {% set value_classes = 'xl:whitespace-nowrap' if nowrap else 'break-words [overflow-wrap:anywhere]' %}
+    <div class="grid min-w-0 gap-1 border-b border-outline-subtle py-2.5 last:border-b-0 sm:grid-cols-[minmax(9.5rem,0.3fr)_minmax(0,1fr)] sm:items-baseline sm:gap-5 {{ class_name }}">
+        <dt class="min-w-0 break-words text-sm font-normal leading-5 text-content-secondary [overflow-wrap:anywhere]">{{ label }}</dt>
+        <dd class="min-w-0 {{ value_classes }} text-left text-sm font-medium leading-5 text-content-primary"
             title="{{ display_value }}">
             {{ display_value }}
         </dd>
     </div>
 {%- endmacro %}
-{% macro inspector_technical_row(label, value='-', nowrap=false) -%}
+{% macro inspector_technical_row(label, value='-', nowrap=false, class_name='') -%}
     {% set display_value = value if value not in [None, ''] else '-' %}
-    {% set technical_classes = 'font-medium whitespace-nowrap' if nowrap else 'font-medium' %}
-    <div class="grid min-w-0 gap-1 border-b border-outline-subtle py-2.5 last:border-b-0 sm:grid-cols-[minmax(7.75rem,0.36fr)_minmax(0,1fr)] sm:items-start sm:gap-4">
-        <dt class="min-w-0 break-words text-xs font-medium leading-5 text-content-secondary [overflow-wrap:anywhere]">{{ label }}</dt>
-        <dd class="min-w-0 text-sm font-semibold leading-5 text-content-primary">
-            {{ technical_value.render(display_value, align='left', break_all=false, class_name=technical_classes, monospace=true, size='body') }}
+    {% set technical_classes = 'font-medium xl:whitespace-nowrap' if nowrap else 'font-medium' %}
+    <div class="grid min-w-0 gap-1 border-b border-outline-subtle py-2.5 last:border-b-0 sm:grid-cols-[minmax(9.5rem,0.3fr)_minmax(0,1fr)] sm:items-baseline sm:gap-5 {{ class_name }}">
+        <dt class="min-w-0 break-words text-sm font-normal leading-5 text-content-secondary [overflow-wrap:anywhere]">{{ label }}</dt>
+        <dd class="min-w-0 text-left text-sm font-medium leading-5 text-content-primary">
+            {{ technical_value.render(display_value, align='left', break_all=false, class_name=technical_classes, monospace=false, size='body') }}
         </dd>
     </div>
 {%- endmacro %}
 {% macro inspector_state_item(label, value, tone='unknown') -%}
     {% set dot_classes = 'bg-status-normal' if tone == 'normal' else ('bg-status-warning' if tone == 'warning' else ('bg-status-critical' if tone == 'critical' else 'bg-status-unknown')) %}
-    <div class="min-w-0 border-b border-outline-subtle py-2.5 last:border-b-0">
-        <p class="text-xs font-medium leading-5 text-content-secondary">{{ label }}</p>
-        <div class="mt-0.5 flex min-w-0 items-center gap-2">
-            <span class="h-1.5 w-1.5 shrink-0 rounded-full {{ dot_classes }}" aria-hidden="true"></span>
-            <p class="min-w-0 break-words text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]">{{ value if value not in [None, ''] else '-' }}</p>
+    <div class="grid min-w-0 gap-1 border-b border-outline-subtle py-2.5 last:border-b-0 sm:grid-cols-[minmax(9.5rem,0.3fr)_minmax(0,1fr)] sm:items-baseline sm:gap-5">
+        <p class="text-sm font-normal leading-5 text-content-secondary">{{ label }}</p>
+        <div class="flex min-w-0 items-center gap-2">
+            <span class="h-1.5 w-1.5 shrink-0 rounded-full {{ dot_classes }}"
+                  aria-hidden="true"></span>
+            <p class="min-w-0 break-words text-sm font-medium leading-5 text-content-primary [overflow-wrap:anywhere]">{{ value if value not in [None, ''] else '-' }}</p>
         </div>
     </div>
 {%- endmacro %}

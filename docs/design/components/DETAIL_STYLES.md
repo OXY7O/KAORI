@@ -46,7 +46,7 @@ Node, Namespace, Workload, Pod, Service, Ingress, Storage, and Configuration Inv
 - resource title, metadata, and primary lifecycle/readiness/collection state use the shared `detail.header_identity_row()` owner as one grouped identity row;
 - the supporting description renders below that identity row; do not float the primary state onto a second badge line or detach it beneath the leading icon/modal outer edge;
 - the summary uses the shared `data-resource-detail-summary` owner;
-- Node Inventory declares `data-kaori-inventory-detail="v9"` with an editorial technical inspector; remaining Kubernetes Inventory details retain the V6 contract until migrated;
+- Node Inventory declares `data-kaori-inventory-detail="v10"`; remaining Kubernetes Inventory details retain the V6 contract until migrated;
 - resource headers use `detail.workspace_header(...)` instead of hand-authored heading/font classes;
 - the resource title is rendered through `detail.inventory_title(...)` inside `detail.header_identity_row()` so title, metadata, and primary state form one scan line.
 
@@ -128,18 +128,20 @@ Kubernetes Inventory details use a contained resource-profile layout built for o
 Inventory View Details uses full-width horizontal section bands. Each band owns one evidence domain: a restrained Violet identity rail on the left and factual evidence on the right. Desktop layouts do not place peer evidence cards side by side, so unequal content height never creates visual misalignment. Metadata/count tags use the canonical KAORI Violet label treatment; semantic states remain green/amber/red. Field labels and factual values share the same body scale; hierarchy is created with tone and weight rather than arbitrary font-size jumps.
 
 
-## Node Inventory Editorial Technical Inspector V9
+## Node Inventory Unified Resource Sheet V10
 
-Node Inventory uses an editorial technical inspector inside Full Workspace Modal. The layout removes the duplicate left rail and allocates width from the expected length and semantics of each value.
+Node Inventory uses a Unified Resource Sheet inside Full Workspace Modal. The objective is one coherent technical profile rather than a gallery of unrelated cards.
 
-- the header owns Node name, Cluster, Role, and primary readiness; the body does not need a second identity rail;
-- the summary is an integrated four-segment ribbon rather than four floating cards;
-- Identity & Snapshot is a full-width fact group, while Capacity and Network Identity use a `4/12` and `8/12` split so hostname/FQDN values do not feel cramped;
-- Runtime & Platform is one full-width section with separate Host Platform and Kubernetes Runtime columns;
-- Scheduling & Conditions uses five lightweight semantic state facts in one row on wide screens, keeping short values visually compact;
-- System UUID, IP addresses, hostname/FQDN, architecture, kernel version, runtime identifier, Kubernetes versions, and taints use selective monospace at the standard body scale; human-readable values stay in Inter;
-- predictable long values stay on one line on desktop and use localized horizontal overflow only when necessary;
-- Node Labels use stacked key/value pairs. Keys use a compact monospace treatment, values remain prominent, and two-column layout preserves long label names without awkward label/value wrapping;
-- Committed Snapshot and state-aware operational guidance use asymmetric `5/12` and `7/12` widths so the longer operational message receives more room.
+- the header owns the Node name and a quiet inline context row for Cluster, Role, Environment, and Status;
+- the four-item operational summary remains one connected strip for Readiness, Scheduling, Scheduled Pods, and Capacity;
+- the evidence body is one rounded resource sheet with horizontal evidence bands rather than peer cards with mismatched heights;
+- every evidence band uses the same left identity rail and the same proportional `text-sm` label/value scale;
+- Node Name, System UUID, Cluster, Collected, Hostname/FQDN, OS Image, Kernel Version, and runtime identifiers receive full-width or desktop-nowrap treatment when their expected length requires it;
+- Node technical values stay on normal proportional KAORI typography in this inspector. Monospace is not used merely because a value is machine-oriented;
+- Node Labels use one full-width key/value list, one label per row, with a wide key column and natural document height; no nested vertical scrolling is introduced;
+- Node Labels, taints, and other long technical evidence may wrap on smaller viewports, but the desktop layout should use available width before wrapping;
+- semantic state uses green/amber/red only for actual state signals. Violet remains the navigation and structural accent;
+- the modal body is the single scrolling context. Sections do not create independent scroll regions;
+- Committed Snapshot Boundary and state-aware Operational Context remain the final peer callouts below the resource sheet.
 
-Node V9 remains Node-specific while it is validated against real cluster data. Other Kubernetes Inventory resources continue to use the V6 horizontal section stack.
+V10 replaces the prior Balanced Inspector card grid. The resource sheet is now the Node-specific reference pattern because it produces stronger alignment, calmer typography, and predictable behavior as labels and technical values grow.

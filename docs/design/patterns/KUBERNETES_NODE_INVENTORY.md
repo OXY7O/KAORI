@@ -148,14 +148,16 @@ The full workspace detail contains:
 
 Detail rules:
 
-- use `data-kaori-detail-density="adaptive-stacks"`;
-- do not use fixed card heights;
+- use `data-kaori-detail-density="unified-resource-sheet"` and `data-kaori-inventory-detail="v10"`;
+- use one unified resource sheet with natural-height horizontal evidence bands; do not use fixed card heights;
 - do not duplicate card badge values as the first row;
 - Connectivity owns network fields only; Scheduled Pods remains in the summary;
 - taints use neutral technical-value surfaces, not a collection of Violet metadata pills;
-- labels use `technical_metadata_collection.html`;
+- labels use `technical_metadata_collection.html` in embedded resource-sheet mode, one key/value pair per row, with no nested scroll region;
 - unknown readiness receives an explicit evidence-validation action, not a healthy scheduling statement;
 - missing capacity or address values remain `Not Reported`/`Not Available`.
+- factual labels and values use one proportional `text-sm` body scale; technical evidence does not switch to monospace solely because it is machine-oriented.
+- desktop layout uses available width before wrapping long Node names, UUIDs, cluster names, collected timestamps, hostnames, OS images, kernel versions, and runtime identifiers.
 
 ## Semantic posture
 

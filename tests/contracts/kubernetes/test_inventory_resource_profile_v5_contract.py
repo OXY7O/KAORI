@@ -28,9 +28,9 @@ def test_inventory_v6_uses_one_horizontal_section_contract_for_all_resources() -
     for resource, filename in DETAILS.items():
         detail = read(f'app/templates/kubernetes/inventory/{resource}/partials/{filename}')
         if resource == 'nodes':
-            assert 'data-kaori-detail-density="balanced-inspector"' in detail
-            assert 'data-kaori-inventory-detail="v9"' in detail
-            assert 'data-kaori-inventory-detail-layout="editorial-evidence-grid"' in detail
+            assert 'data-kaori-detail-density="unified-resource-sheet"' in detail
+            assert 'data-kaori-inventory-detail="v10"' in detail
+            assert 'data-kaori-inventory-detail-layout="unified-resource-sheet"' in detail
             assert 'detail.inspector_section(' in detail
         else:
             assert 'data-kaori-detail-density="horizontal-bands"' in detail, resource
@@ -55,13 +55,15 @@ def test_inventory_v6_typography_and_section_geometry_are_consistent() -> None:
     assert 'bg-surface-elevated/60' in shared
 
 
-def test_node_profile_uses_balanced_inspector_and_preserves_snapshot_boundary() -> None:
+def test_node_profile_uses_unified_resource_sheet_and_preserves_snapshot_boundary() -> None:
     node = read('app/templates/kubernetes/inventory/nodes/partials/_node_detail_content.html')
+    shared = read('app/templates/components/details/_detail_content.html')
+
     assert 'data-kaori-node-inspector' in node
     assert 'data-kaori-node-inspector-flow="natural-content"' in node
-    assert 'xl:grid-cols-12' in node
-    for span in ('xl:col-span-3', 'xl:col-span-4', 'xl:col-span-5', 'xl:col-span-7'):
-        assert span in node
+    assert 'data-kaori-node-inspector-layout="single-scroll-resource-sheet"' in node
+    assert 'data-kaori-node-resource-sheet' in node
+    assert 'data-kaori-inspector-section-layout="resource-sheet-band"' in shared
     assert "detail.inspector_section('Identity & Snapshot'" in node
     assert "detail.inspector_section('Node Capacity'" in node
     assert "detail.inspector_section('Connectivity & Network'" in node

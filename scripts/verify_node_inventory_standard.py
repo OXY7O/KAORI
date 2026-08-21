@@ -176,19 +176,19 @@ def main() -> int:
     require('macro inspector_row(' in shared_detail, 'Node detail must expose the inspector row primitive.', errors)
 
     for token in (
-        'data-kaori-detail-density="balanced-inspector"',
+        'data-kaori-detail-density="unified-resource-sheet"',
         'components/technical_metadata_collection.html',
         "detail.inspector_section('Identity & Snapshot', 'badge-info'",
         "detail.inspector_section('Node Capacity', 'gauge'",
-        "detail.inspector_row('Network Scope', node.network_scope)",
+        "detail.inspector_row('Network Scope', node.network_scope, class_name='lg:col-span-2')",
         'node.role_description',
         'No taints were reported in the current snapshot.',
         "'Node Labels'",
-        'data-kaori-inventory-detail-layout="editorial-evidence-grid"',
+        'data-kaori-inventory-detail-layout="unified-resource-sheet"',
         'data-kaori-node-inspector',
         'data-kaori-node-inspector-flow="natural-content"',
-        'data-kaori-node-inspector-layout="single-scroll-evidence-grid"',
-        'data-kaori-inventory-detail="v9"',
+        'data-kaori-node-inspector-layout="single-scroll-resource-sheet"',
+        'data-kaori-inventory-detail="v10"',
         "operational_callout.render('Committed Snapshot Boundary'",
     ):
         require(token in detail, f'Missing Node detail contract: {token}', errors)

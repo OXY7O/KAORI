@@ -33,8 +33,8 @@ def test_inventory_v6_uses_horizontal_section_bands_with_natural_height() -> Non
     for resource, filename in DETAILS.items():
         detail = read(f'app/templates/kubernetes/inventory/{resource}/partials/{filename}')
         if resource == 'nodes':
-            assert 'data-kaori-inventory-detail="v9"' in detail
-            assert 'data-kaori-inventory-detail-layout="editorial-evidence-grid"' in detail
+            assert 'data-kaori-inventory-detail="v10"' in detail
+            assert 'data-kaori-inventory-detail-layout="unified-resource-sheet"' in detail
         else:
             assert 'data-kaori-inventory-detail="v6"' in detail, resource
             assert 'data-kaori-inventory-detail-layout="horizontal-section-stack"' in detail, resource

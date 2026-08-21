@@ -73,9 +73,9 @@ def test_node_table_keeps_seven_columns_and_surfaces_conditions() -> None:
 def test_node_detail_reuses_shared_metadata_and_avoids_duplicate_badges() -> None:
     detail = read('app/templates/kubernetes/inventory/nodes/partials/_node_detail_content.html')
 
-    assert 'data-kaori-detail-density="balanced-inspector"' in detail
+    assert 'data-kaori-detail-density="unified-resource-sheet"' in detail
     assert 'components/technical_metadata_collection.html' in detail
-    assert "detail.inspector_row('Network Scope', node.network_scope)" in detail
+    assert "detail.inspector_row('Network Scope', node.network_scope, class_name='lg:col-span-2')" in detail
     assert 'node.role_description' in detail
     assert "detail.inspector_row('Scheduled Pods'" not in detail
     assert 'technical_value.render(taint, break_all=false' in detail

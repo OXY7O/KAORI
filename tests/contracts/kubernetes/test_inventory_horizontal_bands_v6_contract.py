@@ -29,9 +29,9 @@ def test_inventory_v6_uses_one_horizontal_band_contract() -> None:
     for resource, filename in DETAILS.items():
         detail = read(f'app/templates/kubernetes/inventory/{resource}/partials/{filename}')
         if resource == 'nodes':
-            assert 'data-kaori-detail-density="balanced-inspector"' in detail
-            assert 'data-kaori-inventory-detail="v9"' in detail
-            assert 'data-kaori-inventory-detail-layout="editorial-evidence-grid"' in detail
+            assert 'data-kaori-detail-density="unified-resource-sheet"' in detail
+            assert 'data-kaori-inventory-detail="v10"' in detail
+            assert 'data-kaori-inventory-detail-layout="unified-resource-sheet"' in detail
             assert 'detail.inspector_section(' in detail
             continue
         assert 'data-kaori-detail-density="horizontal-bands"' in detail, resource
@@ -71,4 +71,4 @@ def test_factual_field_typography_remains_one_body_scale() -> None:
 
     assert 'text-sm font-normal leading-5 text-content-secondary' in shared
     assert 'text-left text-sm font-medium leading-5 text-content-primary' in shared
-    assert "technical_classes = 'font-medium whitespace-nowrap' if nowrap else 'font-medium'" in shared
+    assert "technical_classes = 'font-medium xl:whitespace-nowrap' if nowrap else 'font-medium'" in shared
