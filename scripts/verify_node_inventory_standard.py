@@ -168,20 +168,25 @@ def main() -> int:
         require(token in table_content, f'Missing compact Node table contract: {token}', errors)
 
     shared_detail = read('app/templates/components/details/_detail_content.html')
-    require('macro inspector_panel(' in shared_detail, 'Node detail must expose the inspector panel primitive.', errors)
-    require('macro inspector_row(' in shared_detail, 'Node detail must expose the inspector row primitive.', errors)
+    require('macro inspector_section(' in shared_detail, 'Node detail must expose the editorial inspector section primitive.', errors)
+    require('macro inspector_fact(' in shared_detail, 'Node detail must expose the editorial inspector fact primitive.', errors)
+    require('macro inspector_state_fact(' in shared_detail, 'Node detail must expose the semantic state primitive.', errors)
 
     for token in (
-        'data-kaori-detail-density="balanced-inspector"',
+        'data-kaori-detail-density="editorial-inspector"',
         'components/technical_metadata_collection.html',
-        "detail.inspector_panel('Identity', 'badge-info'",
-        "detail.inspector_panel('Node Capacity', 'gauge'",
-        "detail.inspector_row('Network Scope', node.network_scope, nowrap=true)",
+        "detail.inspector_section('Identity & Snapshot', 'badge-info'",
+        "detail.inspector_section('Capacity', 'gauge'",
+        "detail.inspector_fact('Network Scope', node.network_scope",
+        "detail.inspector_section('Runtime & Platform', 'terminal-square'",
+        "detail.inspector_section('Scheduling & Conditions', 'shield-check'",
         'node.role_description',
         'No taints were reported in the current snapshot.',
         "'Node Labels'",
-        'data-kaori-inventory-detail-layout="balanced-inspector"',
-        'data-kaori-node-inspector',
+        'stacked_pairs=true',
+        'data-kaori-inventory-detail="v9"',
+        'data-kaori-inventory-detail-layout="editorial-technical-inspector"',
+        'data-kaori-node-inspector-layout="content-length-aware"',
         "operational_callout.render('Committed Snapshot Boundary'",
     ):
         require(token in detail, f'Missing Node detail contract: {token}', errors)

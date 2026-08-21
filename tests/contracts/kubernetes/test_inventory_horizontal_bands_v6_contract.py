@@ -29,10 +29,10 @@ def test_inventory_v6_uses_one_horizontal_band_contract() -> None:
     for resource, filename in DETAILS.items():
         detail = read(f'app/templates/kubernetes/inventory/{resource}/partials/{filename}')
         if resource == 'nodes':
-            assert 'data-kaori-detail-density="balanced-inspector"' in detail
-            assert 'data-kaori-inventory-detail="v8"' in detail
-            assert 'data-kaori-inventory-detail-layout="balanced-inspector"' in detail
-            assert 'detail.inspector_panel(' in detail
+            assert 'data-kaori-detail-density="editorial-inspector"' in detail
+            assert 'data-kaori-inventory-detail="v9"' in detail
+            assert 'data-kaori-inventory-detail-layout="editorial-technical-inspector"' in detail
+            assert 'detail.inspector_section(' in detail
             continue
         assert 'data-kaori-detail-density="horizontal-bands"' in detail, resource
         assert 'data-kaori-inventory-detail="v6"' in detail, resource

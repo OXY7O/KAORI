@@ -1,6 +1,6 @@
 {% import "components/table_label.html" as table_label %}
 {% import "components/details/_detail_content.html" as detail %}
-{% macro render(title, entries, icon='tags', empty_title='No Metadata Collected', empty_description='Metadata will appear when it is present in the committed inventory snapshot.', context=None, compact=false, mode='pairs', compact_pairs=false, total_count=none, truncated=false, nowrap_values=false) -%}
+{% macro render(title, entries, icon='tags', empty_title='No Metadata Collected', empty_description='Metadata will appear when it is present in the committed inventory snapshot.', context=None, compact=false, mode='pairs', compact_pairs=false, total_count=none, truncated=false, nowrap_values=false, stacked_pairs=false) -%}
     {% set entry_count = total_count if total_count is not none else (entries|length if entries else 0) %}
     <section class="min-w-0 overflow-hidden rounded-xl border border-outline-subtle bg-surface-card"
              data-kaori-inventory-metadata-collection>
@@ -44,10 +44,17 @@
                     {% set pairs = entries.items() if entries.items is defined else entries %}
                     <div class="grid min-w-0 gap-x-8 {{ 'lg:grid-cols-2' if compact_pairs else '' }}">
                         {% for key, value in pairs %}
-                            <div class="grid min-w-0 gap-1 border-b border-outline-subtle py-2.5 sm:grid-cols-[minmax(9.5rem,0.42fr)_minmax(0,1fr)] sm:gap-4">
-                                <span class="min-w-0 break-words text-sm font-normal leading-5 text-content-secondary [overflow-wrap:anywhere]">{{ key }}</span>
-                                <span class="min-w-0 {{ 'overflow-x-auto whitespace-nowrap' if nowrap_values else 'whitespace-pre-wrap break-words' }} text-sm font-medium leading-5 text-content-primary [overflow-wrap:anywhere]">{{ value if value not in [None, ''] else '-' }}</span>
-                            </div>
+                            {% if stacked_pairs %}
+                                <div class="min-w-0 border-b border-outline-subtle py-3">
+                                    <code class="block min-w-0 overflow-x-auto whitespace-nowrap font-mono text-xs font-medium leading-5 text-content-secondary">{{ key }}</code>
+                                    <span class="mt-0.5 block min-w-0 {{ 'overflow-x-auto whitespace-nowrap' if nowrap_values else 'whitespace-pre-wrap break-words' }} text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]">{{ value if value not in [None, ''] else '-' }}</span>
+                                </div>
+                            {% else %}
+                                <div class="grid min-w-0 gap-1 border-b border-outline-subtle py-2.5 sm:grid-cols-[minmax(9.5rem,0.42fr)_minmax(0,1fr)] sm:gap-4">
+                                    <span class="min-w-0 break-words text-sm font-normal leading-5 text-content-secondary [overflow-wrap:anywhere]">{{ key }}</span>
+                                    <span class="min-w-0 {{ 'overflow-x-auto whitespace-nowrap' if nowrap_values else 'whitespace-pre-wrap break-words' }} text-sm font-medium leading-5 text-content-primary [overflow-wrap:anywhere]">{{ value if value not in [None, ''] else '-' }}</span>
+                                </div>
+                            {% endif %}
                         {% endfor %}
                     </div>
                 {% endif %}
