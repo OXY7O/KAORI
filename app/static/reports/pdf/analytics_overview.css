@@ -352,10 +352,10 @@ body.kaori-analytics-publication.kaori-reporting-v3 .fresh-table {
   font-size: 8pt;
 }
 body.kaori-analytics-publication.kaori-reporting-v3 .fresh-table th:nth-child(1) { width: 22%; }
-body.kaori-analytics-publication.kaori-reporting-v3 .fresh-table th:nth-child(2) { width: 17%; }
-body.kaori-analytics-publication.kaori-reporting-v3 .fresh-table th:nth-child(3) { width: 25%; }
-body.kaori-analytics-publication.kaori-reporting-v3 .fresh-table th:nth-child(4) { width: 18%; }
-body.kaori-analytics-publication.kaori-reporting-v3 .fresh-table th:nth-child(5) { width: 18%; }
+body.kaori-analytics-publication.kaori-reporting-v3 .fresh-table th:nth-child(2) { width: 15%; }
+body.kaori-analytics-publication.kaori-reporting-v3 .fresh-table th:nth-child(3) { width: 23%; }
+body.kaori-analytics-publication.kaori-reporting-v3 .fresh-table th:nth-child(4) { width: 14%; }
+body.kaori-analytics-publication.kaori-reporting-v3 .fresh-table th:nth-child(5) { width: 26%; }
 body.kaori-analytics-publication.kaori-reporting-v3 .fresh-table th,
 body.kaori-analytics-publication.kaori-reporting-v3 .fresh-table td {
   white-space: nowrap;
@@ -636,9 +636,14 @@ body.kaori-analytics-publication.kaori-reporting-v3 .fresh-table {
 }
 body.kaori-analytics-publication.kaori-reporting-v3 .fresh-table th,
 body.kaori-analytics-publication.kaori-reporting-v3 .fresh-table td {
-  padding-left: .95mm;
-  padding-right: .95mm;
+  box-sizing: border-box;
+  padding-left: .65mm;
+  padding-right: .65mm;
   white-space: nowrap;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .fresh-table th:last-child,
+body.kaori-analytics-publication.kaori-reporting-v3 .fresh-table td:last-child {
+  padding-right: .85mm;
 }
 body.kaori-analytics-publication.kaori-reporting-v3 .fresh-table td:last-child,
 body.kaori-analytics-publication.kaori-reporting-v3 .fresh-table th:last-child {

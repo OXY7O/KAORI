@@ -398,7 +398,9 @@
                                 {% call ui.section('Operational Interpretation and Actions') %}
                                     <p>{{ p.capacity_pressure.interpretation }}</p>
                                     <ul class="action-list">
-                                        {% for item in p.capacity_pressure.actions[:3] %}<li>{{ item.title }}</li>{% endfor %}
+                                        {% for item in p.capacity_pressure.actions[:3] %}
+                                            <li>{{ item.title }}</li>
+                                        {% endfor %}
                                     </ul>
                                 {% endcall %}
                             </div>
@@ -658,7 +660,7 @@
                                                     <td>{{ row.type }}</td>
                                                     <td>{{ row.last_successful }}</td>
                                                     <td>{{ row.freshness_short|default(row.freshness, true) }}</td>
-                                                    <td>{{ status(row.status_short|default(row.status, true),row.tone) }}</td>
+                                                    <td>{{ status(row.status_short|default(row.status, true) ,row.tone) }}</td>
                                                 </tr>
                                             {% endfor %}
                                         </tbody>
@@ -725,7 +727,7 @@
                                 {% endcall %}
                                 {% call ui.section('Recommendation References','Descriptions expand below the register without changing table row heights.') %}
                                     <div class="reference-notes reference-grid recommendation-references">
-                                        {% for row in p.recommendations['items'][:5] %}{{ reference_item('R' ~ loop.index, row.title, row.summary|default(row.description, true), 'Why It Matters') }}{% endfor %}
+                                        {% for row in p.recommendations['items'][:5] %}{{ reference_item('R' ~ loop.index, row.title, row.summary|default(row.description, true) , 'Why It Matters') }}{% endfor %}
                                     </div>
                                 {% endcall %}
                                 {% call ui.section('Execution Governance','Ownership, validation expectations, and execution controls for the current recommendation set are listed below.') %}

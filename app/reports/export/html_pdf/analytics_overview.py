@@ -1292,7 +1292,9 @@ def _forecast_rows(
         current = (
             _number(item.get('latest_percent'))
             if item and item.get('latest_percent') is not None
-            else metric.get('percent') if metric.get('available') else None
+            else metric.get('percent')
+            if metric.get('available')
+            else None
         )
         projected = _number(item.get('projected_percent'), current or 0.0) if item else None
         trend = _text(item.get('trend'), _text(forecast_snapshot.get(f'{key}_trend'), 'Unknown'))
@@ -2102,9 +2104,7 @@ def _source_rows(
                 'type': _text(_mapping(item).get('type'), 'Evidence'),
                 'last_successful': _publication_timestamp(_mapping(item).get('last_successful')),
                 'freshness': _text(_mapping(item).get('freshness'), 'Not Available'),
-                'freshness_short': _source_freshness_short(
-                    _text(_mapping(item).get('freshness'), 'Not Available')
-                ),
+                'freshness_short': _source_freshness_short(_text(_mapping(item).get('freshness'), 'Not Available')),
                 'status': _text(_mapping(item).get('status'), 'Unknown'),
                 'status_short': _source_status_short(_text(_mapping(item).get('status'), 'Unknown')),
                 'tone': _tone(_mapping(item).get('tone') or _mapping(item).get('status')),
