@@ -47,9 +47,9 @@ def test_inventory_view_details_use_v5_resource_profile_host_and_shared_resource
         assert 'resource_detail_modal.inventory_host(' in index, resource
         if resource == 'nodes':
             assert 'data-kaori-inventory-detail="v9"' in detail
-            assert 'data-kaori-inventory-detail-layout="editorial-technical-inspector"' in detail
+            assert 'data-kaori-inventory-detail-layout="editorial-evidence-grid"' in detail
             assert 'detail.inspector_section(' in detail
-            assert 'detail.inspector_summary_strip(' in detail
+            assert 'data-resource-detail-summary' in detail
         else:
             assert 'data-kaori-inventory-detail="v6"' in detail, resource
             assert 'data-kaori-inventory-detail-layout="horizontal-section-stack"' in detail, resource

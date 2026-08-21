@@ -13,11 +13,11 @@ def test_node_detail_uses_balanced_inspector_layout_with_natural_height_sections
 
     assert 'data-kaori-detail-variant="full-workspace-modal"' in detail
     assert 'data-kaori-detail-density="balanced-inspector"' in detail
-    assert 'data-kaori-inventory-detail-layout="balanced-inspector"' in detail
+    assert 'data-kaori-inventory-detail-layout="editorial-evidence-grid"' in detail
     assert 'data-kaori-node-inspector' in detail
     assert 'data-kaori-node-inspector-flow="natural-content"' in detail
     assert 'xl:grid-cols-12' in detail
-    assert 'macro inspector_panel(' in shared
+    assert 'macro inspector_section(' in shared
     assert 'macro inspector_row(' in shared
     assert 'macro inspector_technical_row(' in shared
 
@@ -33,7 +33,7 @@ def test_node_detail_uses_balanced_inspector_layout_with_natural_height_sections
         'Runtime & Platform',
         'Scheduling & Conditions',
     ):
-        assert f"detail.inspector_panel('{title}'" in detail
+        assert f"detail.inspector_section('{title}'" in detail
 
     assert "operational_callout.render('Committed Snapshot Boundary'" in detail
     assert 'operational_callout.render(node.operational_context.title' in detail

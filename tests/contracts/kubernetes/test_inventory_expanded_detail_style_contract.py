@@ -58,7 +58,7 @@ def test_all_inventory_detail_workspaces_use_modal_extractable_header_and_summar
         assert 'detail.workspace_header(' in source, resource
         if resource == 'nodes':
             assert 'data-kaori-inventory-detail="v9"' in source
-            assert 'data-kaori-inventory-detail-layout="editorial-technical-inspector"' in source
+            assert 'data-kaori-inventory-detail-layout="editorial-evidence-grid"' in source
         else:
             assert 'data-kaori-inventory-detail="v6"' in source, resource
         assert 'detail.expanded_workspace_outer_classes()' in source, resource

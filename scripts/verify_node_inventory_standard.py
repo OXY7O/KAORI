@@ -168,21 +168,27 @@ def main() -> int:
         require(token in table_content, f'Missing compact Node table contract: {token}', errors)
 
     shared_detail = read('app/templates/components/details/_detail_content.html')
-    require('macro inspector_panel(' in shared_detail, 'Node detail must expose the inspector panel primitive.', errors)
+    require(
+        'macro inspector_section(' in shared_detail,
+        'Node detail must expose the inspector section primitive.',
+        errors,
+    )
     require('macro inspector_row(' in shared_detail, 'Node detail must expose the inspector row primitive.', errors)
 
     for token in (
         'data-kaori-detail-density="balanced-inspector"',
         'components/technical_metadata_collection.html',
-        "detail.inspector_panel('Identity & Snapshot', 'badge-info'",
-        "detail.inspector_panel('Node Capacity', 'gauge'",
+        "detail.inspector_section('Identity & Snapshot', 'badge-info'",
+        "detail.inspector_section('Node Capacity', 'gauge'",
         "detail.inspector_row('Network Scope', node.network_scope)",
         'node.role_description',
         'No taints were reported in the current snapshot.',
         "'Node Labels'",
-        'data-kaori-inventory-detail-layout="balanced-inspector"',
+        'data-kaori-inventory-detail-layout="editorial-evidence-grid"',
         'data-kaori-node-inspector',
         'data-kaori-node-inspector-flow="natural-content"',
+        'data-kaori-node-inspector-layout="single-scroll-evidence-grid"',
+        'data-kaori-inventory-detail="v9"',
         "operational_callout.render('Committed Snapshot Boundary'",
     ):
         require(token in detail, f'Missing Node detail contract: {token}', errors)

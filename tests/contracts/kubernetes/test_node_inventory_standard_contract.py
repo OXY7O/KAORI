@@ -78,8 +78,8 @@ def test_node_detail_reuses_shared_metadata_and_avoids_duplicate_badges() -> Non
     assert "detail.inspector_row('Network Scope', node.network_scope)" in detail
     assert 'node.role_description' in detail
     assert "detail.inspector_row('Scheduled Pods'" not in detail
-    assert 'technical_value.render(taint, break_all=true' in detail
-    assert "detail.inspector_panel('Identity & Snapshot', 'badge-info'" in detail
+    assert 'technical_value.render(taint, break_all=false' in detail
+    assert "detail.inspector_section('Identity & Snapshot', 'badge-info'" in detail
     assert 'Committed Snapshot Boundary' in detail
     assert 'node.capacity_summary' in detail
     assert "node.scheduling_display == 'Not Reported'" in detail
