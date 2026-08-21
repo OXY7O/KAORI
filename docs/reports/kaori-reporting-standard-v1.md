@@ -2,7 +2,7 @@
 
 **Status:** Default and mandatory
 **Effective date:** 2026-08-03
-**Scope:** Kubernetes Analytics and Kubernetes Inventory report generation
+**Scope:** Kubernetes and Object Storage Analytics/Inventory report generation
 
 This document is the canonical implementation contract for KAORI report artifacts. A report type, output format, source boundary, metadata rule, and renderer must conform to this standard before it can be exposed in Generate Report, Templates, Schedules, Generated Reports, or worker execution.
 
@@ -10,25 +10,27 @@ This document is the canonical implementation contract for KAORI report artifact
 
 | Report family | Default format | Additional format | Disallowed formats |
 |---|---|---|---|
-| Kubernetes Analytics | PDF | CSV | XLSX |
-| Kubernetes Inventory | XLSX | CSV | PDF |
+| Analytics (Kubernetes and Object Storage) | PDF | CSV | XLSX |
+| Inventory (Kubernetes and Object Storage) | XLSX | CSV | PDF |
 
 The authoritative matrix is defined in `app/reports/catalog.py`. UI code, routes, schedules, templates, artifact naming, and workers must consume that catalog. They must not maintain separate hard-coded format lists.
 
-## 2. Mandatory selected-cluster boundary
+## 2. Mandatory selected-asset boundary
 
-Every report requires one explicit `cluster_id`.
+Every report requires exactly one canonical infrastructure asset scope.
 
-- Cross-cluster report generation is prohibited.
-- The Generate Report and Schedule forms must not expose a cross-cluster option.
-- Validation must reject an empty or unknown cluster before a report record is created.
-- Collectors must resolve exactly the cluster stored on the report and must never choose a first/default cluster.
-- Inventory queries must filter by the selected cluster and the latest committed inventory generation.
-- Analytics queries, materialized snapshots, Prometheus/Alertmanager observations, report activity, and supporting inventory evidence must use the same selected-cluster boundary.
-- Storage naming must include the selected cluster and must reject an unscoped report.
-- A schedule whose cluster is missing or whose report contract is invalid must record a failed run and must not create an artifact.
+- Kubernetes report types require one explicit selected Kubernetes cluster. Cross-cluster generation is prohibited.
+- Object Storage report types require one explicit selected Object Storage system and do not require a Kubernetes `cluster_id`.
+- The Generate Report, Templates, and Schedules surfaces must expose only scope types declared by the Definition Registry.
+- Validation must reject an empty, unknown, or mismatched asset scope before a report record is created.
+- Collectors must resolve exactly the asset stored on the report and must never select a first/default cluster, system, or provider binding.
+- Kubernetes Inventory queries use the selected cluster and latest committed inventory generation.
+- Kubernetes Analytics evidence uses the same selected-cluster boundary across materialized analytics, metrics, alerts, and supporting inventory.
+- Object Storage Inventory and Analytics use the selected Object Storage system boundary across committed inventory, analytics snapshots, metrics evidence, and alerts.
+- Storage naming must include the canonical asset scope and must reject an unscoped report.
+- A schedule whose asset scope is missing or whose report contract is invalid must record a failed run and must not create an artifact.
 
-Namespace is optional. An empty namespace means all namespaces **inside the selected cluster only**.
+Namespace is optional only for Kubernetes-scoped reports. An empty namespace means all namespaces **inside the selected cluster only**. Object Storage uses system scope and records namespace as `Not Applicable`.
 
 ## 3. Canonical generation pipeline
 
@@ -52,11 +54,13 @@ Analytics PDF and Analytics CSV use the same collector and `ReportDocument` mode
 
 Canonical sources include:
 
-- selected-cluster Analytics materialized snapshots;
-- selected-cluster Prometheus observation/cache data;
-- selected-cluster Alertmanager observation/cache data;
+- selected-cluster Kubernetes Analytics materialized snapshots;
+- selected-cluster Metrics Source and Alertmanager observation/cache data;
 - selected-cluster committed Kubernetes inventory used as supporting evidence;
-- selected-cluster report and schedule activity for reporting-summary sections.
+- selected-system Object Storage analytics/materialized evidence;
+- selected-system Object Storage metrics and alert evidence when configured;
+- selected-system committed Object Storage inventory used as supporting evidence;
+- report and schedule activity filtered to the same canonical asset boundary.
 
 A renderer must not perform an independent source query that would make PDF and CSV disagree. Source failures must be represented as an explicit failed generation or an explicit evidence limitation supported by the report-specific presentation contract.
 
@@ -64,11 +68,11 @@ A renderer must not perform an independent source query that would make PDF and 
 
 Inventory XLSX and Inventory CSV use the same collector, `InventoryExportContext`, row normalizer, profile, column order, and missing-value rules.
 
-Canonical source:
+Canonical sources:
 
-- the latest committed Kubernetes inventory generation;
-- filtered by the exact selected cluster;
-- optionally filtered by namespace when the report type supports namespace scope.
+- Kubernetes Inventory: the latest committed Kubernetes inventory generation for the exact selected cluster, optionally filtered by namespace when supported;
+- Object Storage Inventory: the latest committed Object Storage inventory generation for the exact selected system;
+- TLS Inventory: committed certificate metadata and usage evidence inside the selected Kubernetes cluster/namespace boundary.
 
 Artifact generation must not call the live Kubernetes API. Generated inventory is an auditable snapshot. Live operational actions must be verified separately against current cluster state.
 
@@ -81,8 +85,8 @@ Every artifact must preserve these logical fields where the format supports them
 - report standard/version;
 - report ID and report name;
 - report type and report family;
-- selected cluster;
-- namespace boundary;
+- selected infrastructure asset and asset type;
+- namespace boundary where applicable;
 - period or snapshot label;
 - data cutoff/collection time;
 - generated time and generated-by snapshot;
@@ -92,7 +96,7 @@ Labels, period names, cluster names, namespace semantics, and data cutoff must n
 
 ## 6. PDF default style — Analytics
 
-Analytics PDF is the only PDF family.
+Analytics PDF is the only PDF family. Kubernetes and Object Storage Analytics share the same publication family and reference profile.
 
 - Engine: WeasyPrint.
 - Shared publication component: `app/templates/reports/pdf/components/analytics_publication.html`.
@@ -116,6 +120,7 @@ Inventory XLSX uses `kaori-inventory-xlsx-v2.0` and exactly three reusable sheet
 Default workbook rules:
 
 - KAORI Violet title/header hierarchy;
+- Office-native Aptos/Aptos Display fonts are used for workbook portability; this is the approved XLSX font-family exception to the Inter-based PDF publication style;
 - left horizontal alignment and middle vertical alignment;
 - wrapped text, filter, freeze pane, and one Excel table on each structured sheet;
 - stable report-specific column order;
@@ -128,7 +133,7 @@ The reusable schema is defined in `app/reports/export/xlsx/standard.py`; shared 
 
 ## 8. CSV default style — Analytics and Inventory
 
-CSV standard identifier: `kaori-reporting-csv-v2.0`.
+CSV standard identifier: `kaori-reporting-csv-v2.0`. CSV is a machine-readable exchange artifact, not a visual report; it deliberately has no decorative presentation layer.
 
 Common rules:
 
@@ -144,7 +149,7 @@ Common rules:
 
 Analytics CSV is a normalized long-form export of the same `ReportDocument` used by PDF. It contains source metrics, section status, metrics, findings, table cells, notes, and methodology records.
 
-Inventory CSV contains common report metadata, `record_type`, `record_reference`, `row_number`, and the same report-specific columns and ordering used by the XLSX Inventory sheet. An empty inventory dataset produces one explicit `no_data` row so metadata and the selected-cluster boundary remain auditable.
+Inventory CSV contains common report metadata, `record_type`, `record_reference`, `row_number`, and the same report-specific columns and ordering used by the XLSX Inventory sheet. An empty inventory dataset produces one explicit `no_data` row so metadata and the selected-asset boundary remain auditable.
 
 ## 9. Template and schedule rules
 
@@ -164,13 +169,23 @@ Artifact extension and MIME type come from `OUTPUT_FORMAT_SPECS`:
 - XLSX: `.xlsx`, `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`;
 - CSV: `.csv`, `text/csv`.
 
-Object keys include domain, source kind, year/month, selected-cluster slug, report type, namespace, period, timestamp, and unique suffix. A generic artifact route is used for generation and download; format-specific legacy routes are prohibited.
+Object keys include domain, source kind, year/month, canonical asset-scope slug, report type, namespace/system marker, period, timestamp, and unique suffix. A generic artifact route is used for generation and download; format-specific legacy routes are prohibited.
+
+## 10.1 Cross-format acceptance rules
+
+The report portfolio is considered aligned only when all three artifact contracts agree on identity, source boundary, and semantics:
+
+- **PDF:** management publication for Analytics only; concise comparison registers, references for long identities, shared Analytics Overview typography hierarchy, and no renderer-side source queries.
+- **XLSX:** operational Inventory workbook only; exactly `Inventory`, `Metadata`, and `Field Dictionary` sheets, typed numeric/date cells, stable identity-first columns, filtering/freezing, explicit missing evidence, and no private Secret material. Legacy `.xls` is not supported.
+- **CSV:** machine-readable companion for both families; UTF-8 BOM, LF, stable schema/order, ISO-8601 temporal values, deterministic nested JSON, formula-injection protection, and the same canonical source model used by PDF/XLSX.
+- The public document reference, report type, family, scope, period, data cut-off, generated-by snapshot, and source label must be semantically identical across formats for the same report definition/generation boundary.
+- A report-specific renderer may change presentation only; it must not change the underlying evidence denominator, missing-value meaning, identity, or ordering semantics.
 
 ## 11. Prohibited implementation patterns
 
 Do not introduce:
 
-- a cross-cluster/default-cluster fallback;
+- a cross-cluster, cross-system, default-cluster, or default-system fallback;
 - a global `pdf` or `xlsx` default applied to every family;
 - format-specific duplicate collectors;
 - PDF rendering for Inventory or XLSX rendering for Analytics;
@@ -186,13 +201,13 @@ Do not introduce:
 
 A change is complete only when it updates, as applicable:
 
-1. `app/reports/catalog.py` — type, family, default/allowed formats, sections, period mode;
+1. `app/definitions/catalogs/reports/catalog.yaml` — type, family, default/allowed formats, sections, period mode, domain, and canonical scope asset;
 2. one canonical collector/payload contract;
 3. Analytics `ReportDocument` presentation or Inventory profile;
 4. renderer registry only when adding a new file format;
 5. template/schedule UI derived data, not hard-coded options;
 6. storage extension/MIME behavior through the format catalog;
-7. unit/contract tests for format matrix, selected-cluster rejection, source reuse, schema/layout, and sensitive-data exclusion;
+7. unit/contract tests for format matrix, invalid-scope rejection, source reuse, schema/layout, public-reference coverage, and sensitive-data exclusion;
 8. this standard when the default contract changes.
 
 ## 13. Quality gate
@@ -205,7 +220,7 @@ Before merge:
 - the catalog matrix equals the artifact registry matrix;
 - every report type has one registered collector/presentation path;
 - no removed route, renderer, template, stylesheet, report type, or compatibility alias remains;
-- generated PDF/XLSX/CSV opens successfully and matches the selected cluster;
+- generated PDF/XLSX/CSV opens successfully and matches the selected canonical asset scope;
 - `git diff --check` is clean.
 
 ## Analytics PDF publication contract

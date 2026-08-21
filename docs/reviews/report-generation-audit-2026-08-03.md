@@ -99,3 +99,36 @@ Removed:
 The Flask-dependent report tests could not be collected in the audit sandbox because the provided environment does not contain Flask and its package index does not expose the project-pinned Flask/aiohttp builds. Those tests remain in the repository and must run in the normal KAORI development container or CI environment before merge.
 
 The repository-wide code-health gate still reports pre-existing complexity debt, including large Analytics PDF presentation modules. This remediation reduces report code volume and removes dead report paths, but does not claim to redesign every existing Analytics presentation function. The new report-contract gate prevents the removed format/scope/legacy behavior from returning while that separate complexity backlog is addressed.
+
+## Follow-up portfolio audit — 2026-08-22
+
+The report portfolio was re-audited after Analytics Overview v3 became the canonical PDF reference and Object Storage reporting was published.
+
+### Portfolio coverage
+
+- 20 published report types are present in the Definition Registry.
+- 9 Analytics report types use PDF + CSV: 8 Kubernetes Analytics contracts and 1 Object Storage Analysis contract.
+- 11 Inventory report types use XLSX + CSV: 10 Kubernetes/TLS inventory contracts and 1 Object Storage Inventory contract.
+- Analytics PDF templates are registered in one WeasyPrint publication family and use the Analytics Overview typography/layout reference.
+- Inventory XLSX and Inventory CSV reuse the same workbook profiles, identity-first column order, source dataset, and missing-value rules.
+- Analytics PDF and Analytics CSV reuse the same collector and `ReportDocument` presentation/evidence model.
+
+### Cross-format findings
+
+1. The global reporting standard still described every report as Kubernetes-cluster-scoped even though Object Storage reports correctly use `object_storage_system` scope. Documentation was updated to one canonical infrastructure-asset boundary.
+2. `object_storage_inventory` had no dedicated public report type code and therefore fell back to the generic `RPT` reference suffix. It now owns the canonical `OSI` code.
+3. Several report-specific Analytics stylesheets still hard-coded methodology-table font sizes after Analytics Overview became the typography owner. Those overrides now reference the shared dense-table token instead of defining local typography.
+4. XLSX intentionally uses Office-native Aptos/Aptos Display for client portability while preserving KAORI hierarchy, color, alignment, field order, metadata, dictionary, and conditional-status semantics. This is now documented as the workbook font-family exception rather than visual drift.
+5. CSV is explicitly classified as a machine-readable exchange artifact. It must preserve data semantics and schema parity, not PDF/XLSX decorative styling.
+6. Legacy `.xls` output is not supported; Inventory workbook output is `.xlsx` only.
+
+### Portfolio acceptance result
+
+The canonical artifact matrix remains:
+
+| Family | Formats | Publication/data owner |
+|---|---|---|
+| Analytics | PDF, CSV | Shared collector + `ReportDocument`; Analytics Overview v3 is the PDF visual reference |
+| Inventory | XLSX, CSV | Shared InventoryExportDataset + InventoryWorkbookProfile |
+
+A report is release-ready only when the Definition Registry, renderer/profile coverage, public report reference, source/scope semantics, metadata fields, and family-specific style contract all agree.

@@ -3,7 +3,7 @@ from __future__ import annotations
 from app.extensions.db import db
 from app.models.report import Report
 from app.platform_operations.jobs.definitions.base import RegisteredJobDispatchResult
-from app.platform_operations.jobs.dispatcher import enqueue_canonical_job
+from app.platform_operations.jobs.dispatcher import JobDispatchOptions, enqueue_canonical_job
 from app.reports.jobs.contract import build_report_job_parameters
 from app.reports.jobs.queue import get_reports_queue_name
 from app.reports.jobs.tasks import generate_report_job
@@ -53,8 +53,11 @@ def enqueue_report_generation(
             parameters=payload,
             payload=payload,
             max_attempts=3,
-            soft_time_limit_seconds=1800,
-            hard_time_limit_seconds=1860,
+            dispatch_options=JobDispatchOptions(
+                soft_time_limit_seconds=1800,
+                hard_time_limit_seconds=1860,
+                require_registered_worker=False,
+            ),
         )
         report.job_execution_id = job.id
         if report.status in {'requested', 'failed'}:

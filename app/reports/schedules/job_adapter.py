@@ -10,7 +10,7 @@ from app.models.job import JobExecution, JobPolicy
 from app.models.report import ReportSchedule
 from app.platform_operations.jobs.constants import ACTIVE_JOB_STATUSES
 from app.platform_operations.jobs.definitions.base import RegisteredJobDispatchResult
-from app.platform_operations.jobs.dispatcher import enqueue_canonical_job
+from app.platform_operations.jobs.dispatcher import JobDispatchOptions, enqueue_canonical_job
 from app.platform_operations.jobs.policies.presentation import present_interval
 from app.reports.jobs.queue import get_reports_queue_name
 from app.reports.notifications import get_report_notification_channel_options
@@ -45,8 +45,11 @@ def dispatch_report_schedule_job(
         parameters={'schedule_id': schedule_id, 'limit': limit},
         payload={'trigger_type': trigger_type, 'schedule_id': schedule_id, 'limit': limit},
         max_attempts=2,
-        soft_time_limit_seconds=1800,
-        hard_time_limit_seconds=1860,
+        dispatch_options=JobDispatchOptions(
+            soft_time_limit_seconds=1800,
+            hard_time_limit_seconds=1860,
+            require_registered_worker=False,
+        ),
     )
     return RegisteredJobDispatchResult(
         status='queued' if created else 'reused',

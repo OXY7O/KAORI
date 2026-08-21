@@ -79,4 +79,4 @@
 .page-consumer-risk .content-section,
 .page-consumer-recommendations .content-section { margin-top: 4.6mm; }
 .page-consumer-methodology .content-section { margin-top: 4.1mm; }
-.page-consumer-methodology .report-table { font-size: 6.3pt; }
+.page-consumer-methodology .report-table { font-size: var(--analytics-type-table-dense); }

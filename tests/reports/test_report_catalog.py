@@ -19,6 +19,7 @@ from app.reports.catalog import (
     validate_report_contract,
     validate_report_instance,
 )
+from app.reports.reference import REPORT_TYPE_CODES
 
 
 def test_report_family_format_matrix_is_exact() -> None:
@@ -111,3 +112,9 @@ def test_output_format_metadata_is_complete_and_unique() -> None:
     assert set(OUTPUT_FORMAT_SPECS) == {FORMAT_PDF, FORMAT_XLSX, FORMAT_CSV}
     assert {spec.extension for spec in OUTPUT_FORMAT_SPECS.values()} == {'.pdf', '.xlsx', '.csv'}
     assert OUTPUT_FORMAT_SPECS[FORMAT_CSV].mimetype == 'text/csv'
+
+
+def test_public_report_reference_codes_cover_every_published_report_type() -> None:
+    assert set(REPORT_TYPE_CODES) == {spec.value for spec in REPORT_TYPE_SPECS}
+    assert REPORT_TYPE_CODES['object_storage_inventory'] == 'OSI'
+    assert REPORT_TYPE_CODES['object_storage_analysis'] == 'OSA'

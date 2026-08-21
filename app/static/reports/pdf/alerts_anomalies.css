@@ -85,4 +85,4 @@
 .page-alert-correlation .content-section,
 .page-alert-recommendations .content-section { margin-top: 4.5mm; }
 .page-alert-methodology .content-section { margin-top: 4mm; }
-.page-alert-methodology .report-table { font-size: 6.3pt; }
+.page-alert-methodology .report-table { font-size: var(--analytics-type-table-dense); }

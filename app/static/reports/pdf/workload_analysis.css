@@ -104,7 +104,7 @@
 .data-source-table .compact-register th:nth-child(1) { width: 50%; }
 .data-source-table .compact-register th:nth-child(2) { width: 20%; }
 .data-source-table .compact-register th:nth-child(3) { width: 30%; }
-.methodology-tables .report-table { font-size: 6.45pt; }
+.methodology-tables .report-table { font-size: var(--analytics-type-table-dense); }
 .methodology-tables td { white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: break-word; }
 
 .page-workload-inventory .content-section,

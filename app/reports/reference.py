@@ -20,6 +20,8 @@ REPORT_TYPE_CODES = {
     'resource_forecast': 'FCT',
     'top_consumers': 'TPC',
     'alerts_anomalies': 'ALA',
+    'object_storage_analysis': 'OSA',
+    'object_storage_inventory': 'OSI',
     'inventory_overview': 'IOV',
     'node_inventory': 'NOD',
     'namespace_inventory': 'NSP',
