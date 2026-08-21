@@ -51,7 +51,7 @@
             </div>
             <div data-kaori-unified-resource-sheet
                  class="min-w-0 overflow-hidden rounded-2xl border border-outline-subtle bg-surface-card shadow-sm">
-                {{ metadata_collection.render('Key Inventory', item.key_entries, 'key-round', 'No Key Names Indexed', 'The committed object contains no indexed key names.', 'Key names are indexed without persisting or displaying their values.', compact=true, mode='keys', total_count=item.key_count, truncated=item.key_entries_truncated, embedded=true) }}
+                {{ metadata_collection.render('Key Inventory', item.key_entries, 'key-round', 'No Key Names Indexed', 'The committed object contains no indexed key names.', 'Only key names are indexed; value content is never persisted or displayed.', compact=true, mode='keys', total_count=item.key_count, truncated=item.key_entries_truncated, embedded=true) }}
             </div>
             <div data-kaori-unified-resource-sheet
                  class="min-w-0 overflow-hidden rounded-2xl border border-outline-subtle bg-surface-card shadow-sm">

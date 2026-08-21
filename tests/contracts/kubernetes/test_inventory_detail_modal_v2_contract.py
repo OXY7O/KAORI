@@ -111,9 +111,13 @@ def test_configuration_key_inventory_uses_full_width_grouped_list_instead_of_til
     assert 'min-w-0 space-y-4 p-4 sm:p-5 lg:p-6' in configuration
     assert "metadata_collection.render('Key Inventory'" in configuration
     assert "detail.inventory_note('Kubernetes list responses arrive transiently in the collector process. KAORI indexes key names only and does not decode, log, persist, or display value content.', 'info')" in configuration
-    assert 'grid min-w-0 gap-x-6 gap-y-0 sm:grid-cols-2 xl:grid-cols-2 2xl:grid-cols-3' in metadata
+    assert 'grid min-w-0 gap-x-6 gap-y-0 lg:grid-cols-2' in metadata
     assert 'rounded-lg border border-outline-subtle bg-surface-elevated px-3 py-2.5' not in metadata
     assert 'data-kaori-inventory-metadata-collection' in metadata
+    assert 'data-kaori-metadata-keys-layout="balanced-two-column"' in metadata
+    assert "metadata_description = 'Indexed key names from the committed snapshot; value content remains protected.' if mode == 'keys'" in metadata
+    assert 'entries|length % 2 == 1' in metadata
+    assert '2xl:grid-cols-3' not in metadata
 
 
 def test_inventory_informational_notes_use_icon_note_treatment() -> None:

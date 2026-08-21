@@ -62,7 +62,7 @@ def test_metadata_collections_are_contained_lists_not_tile_walls() -> None:
     assert 'rounded-xl border border-outline-subtle bg-surface-card' in metadata
     assert 'overflow-y-auto' not in metadata
     assert "special_label(entry_count_label, 'maintenance', 'tags', 'detail')" in metadata
-    assert 'grid min-w-0 gap-x-6 gap-y-0 sm:grid-cols-2 xl:grid-cols-2 2xl:grid-cols-3' in metadata
+    assert 'grid min-w-0 gap-x-6 gap-y-0 lg:grid-cols-2' in metadata
     assert 'rounded-lg border border-outline-subtle bg-surface-elevated px-3 py-2.5' not in metadata
 
 
