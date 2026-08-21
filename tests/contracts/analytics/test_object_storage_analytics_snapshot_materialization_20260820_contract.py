@@ -284,4 +284,3 @@ def test_bucket_forecast_watch_uses_shared_kaori_table_standard() -> None:
     assert "label: 'Current Usage'" in javascript
     assert "label: 'Projected 30d'" in javascript
     assert 'data-object-storage-bucket-forecast-records' not in forecast_table
-

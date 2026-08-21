@@ -21,13 +21,15 @@ def test_inventory_v6_uses_one_horizontal_band_contract() -> None:
     shared = read('app/templates/components/details/_detail_content.html')
 
     assert 'data-kaori-inventory-section-layout="resource-sheet-band"' in shared
-    assert 'xl:grid-cols-[17rem_minmax(0,1fr)]' in shared
+    assert 'xl:grid-cols-[20rem_minmax(0,1fr)]' in shared
     assert 'xl:border-r' in shared
     assert 'bg-surface-elevated/35' in shared
     assert "badge_size='detail'" in shared
     assert 'data-kaori-inventory-section-description' in shared
-    assert 'absolute inset-y-0 left-0 w-0.5 bg-kaori-primary/70' in shared
+    assert 'absolute inset-y-0 left-0 w-0.5 bg-kaori-primary/70' not in shared
     assert 'mt-3 hidden xl:flex' in shared
+    assert 'px-6 py-5 sm:px-7' in shared
+    assert 'mx-5 mt-5 grid overflow-hidden' in shared
 
     for resource, filename in DETAILS.items():
         detail = read(f'app/templates/kubernetes/inventory/{resource}/partials/{filename}')
@@ -76,7 +78,7 @@ def test_factual_field_typography_remains_one_body_scale() -> None:
 
 def test_unified_inventory_sections_explain_their_evidence_scope() -> None:
     descriptions = {
-        'overview': 'Registration, environment, Kubernetes version, and connectivity context for this cluster.',
+        'overview': 'Cluster registration, version, and connectivity context.',
         'namespaces': 'Canonical namespace identity, cluster ownership, lifecycle, and collection context.',
         'workloads': 'Workload identity, namespace ownership, controller type, age, and snapshot collection context.',
         'pods': 'Pod identity, namespace ownership, controller resolution, age, and collection timestamps.',

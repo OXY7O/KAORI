@@ -120,7 +120,6 @@ def test_record_oriented_analytics_filters_expose_shared_clear_when_filters_are_
         assert 'record_filter.reset_link(' in read(TEMPLATES / relative), relative
 
 
-
 def test_topology_reuses_clear_filters_and_distinguishes_snapshot_reload() -> None:
     workspace = read(TEMPLATES / 'kubernetes/inventory/topology/partials/_workspace.html')
     script = read(ROOT / 'app/static/js/kubernetes/inventory/topology.js')

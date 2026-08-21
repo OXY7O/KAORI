@@ -22,4 +22,4 @@ def test_namespace_primary_detail_cards_use_detail_sized_labels() -> None:
     assert "detail.inventory_section('Object Composition', 'boxes'" in detail
     assert "detail.inventory_section('Access & Security', 'shield-check'" in detail
     assert 'status_indicator_label(namespace.lifecycle_label' in detail
-    assert "('Default ServiceAccount', namespace.default_service_account" in detail
+    assert "{'label': 'Default ServiceAccount', 'value': namespace.default_service_account, 'icon': 'user'}" in detail

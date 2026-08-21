@@ -27,7 +27,7 @@
                 ]) }}
         <div class="min-w-0 space-y-4 p-4 sm:p-5 lg:p-6">
             {% call detail.resource_sheet() %}
-                {% call detail.inventory_section('Cluster Identity', 'badge-info', connection_label, 'status', connection_tone, description='Registration, environment, Kubernetes version, and connectivity context for this cluster.') %}
+                {% call detail.inventory_section('Cluster Identity', 'badge-info', connection_label, 'status', connection_tone, description='Cluster registration, version, and connectivity context.') %}
                     <dl class="grid min-w-0 gap-x-10 sm:grid-cols-2">
                         {{ detail.inventory_row('Registered Cluster', cluster.name, nowrap=true, class_name='lg:col-span-2') }}
                         {{ detail.inventory_row('Environment', cluster.environment|environment_name(empty='Not Specified') ) }}

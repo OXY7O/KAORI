@@ -142,10 +142,25 @@
                         {% if node.taints %}
                             <dl class="mt-2 min-w-0">
                                 {% for taint in node.taints %}
-                                    <div class="grid min-w-0 gap-1 border-b border-outline-subtle py-2.5 last:border-b-0 sm:grid-cols-[minmax(10rem,0.3fr)_minmax(0,1fr)] sm:items-baseline sm:gap-5">
+                                    {% set taint_parts = taint.rsplit(':', 1) %}
+                                    {% set taint_selector = taint_parts[0] %}
+                                    {% set taint_effect = taint_parts[1] if taint_parts|length > 1 else none %}
+                                    {% set taint_selector_parts = taint_selector.split('=', 1) %}
+                                    {% set taint_key = taint_selector_parts[0] %}
+                                    {% set taint_value = taint_selector_parts[1] if taint_selector_parts|length > 1 else none %}
+                                    {% set taint_effect_tone = 'critical' if taint_effect == 'NoExecute' else ('warning' if taint_effect in ['NoSchedule', 'PreferNoSchedule'] else 'unknown') %}
+                                    <div class="grid min-w-0 gap-1 border-b border-outline-subtle py-2.5 sm:grid-cols-[minmax(10rem,0.3fr)_minmax(0,1fr)] sm:items-start sm:gap-5">
                                         <dt class="text-sm font-normal leading-5 text-content-secondary">Taint</dt>
-                                        <dd class="min-w-0 break-words text-sm font-medium leading-5 text-content-primary [overflow-wrap:anywhere]">
-                                            {{ technical_value.render(taint, break_all=false, class_name='font-medium', monospace=false, size='body') }}
+                                        <dd class="min-w-0">
+                                            <div class="flex min-w-0 flex-wrap items-start gap-2.5">
+                                                <span class="min-w-0 break-words text-sm font-medium leading-5 text-content-primary [overflow-wrap:anywhere]">{{ taint_key }}</span>
+                                                {% if taint_value %}
+                                                    <span class="break-words text-sm font-normal leading-5 text-content-secondary [overflow-wrap:anywhere]">={{ taint_value }}</span>
+                                                {% endif %}
+                                                {% if taint_effect %}
+                                                    {{ table_label.status_label(taint_effect, taint_effect_tone, none, 'detail') }}
+                                                {% endif %}
+                                            </div>
                                         </dd>
                                     </div>
                                 {% endfor %}

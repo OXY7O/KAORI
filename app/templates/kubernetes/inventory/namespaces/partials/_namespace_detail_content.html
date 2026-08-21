@@ -35,11 +35,11 @@
                 {% endcall %}
                 {% call detail.inventory_section('Access & Security', 'shield-check', namespace.pod_security_enforce_display, badge_size='detail', stretch=false, density='compact', description='Pod Security admission posture and access-related metadata reported for this namespace.') %}
                     {{ detail.inventory_fact_grid([
-                                        ('NetworkPolicies', namespace.network_policy_count if namespace.network_policy_count is not none else 'Not Reported', '') ,
-                    ('ServiceAccounts', namespace.service_account_count if namespace.service_account_count is not none else 'Not Reported', ''),
-                    ('Default ServiceAccount', namespace.default_service_account, ''),
-                    ('PSA Enforce', namespace.pod_security_enforce_display, ''),
-                    ('PSA Audit', namespace.pod_security_audit_display, ''),
+                                        {'label': 'NetworkPolicies', 'value': namespace.network_policy_count if namespace.network_policy_count is not none else 'Not Reported', 'icon': 'network'},
+                                        {'label': 'ServiceAccounts', 'value': namespace.service_account_count if namespace.service_account_count is not none else 'Not Reported', 'icon': 'users'},
+                                        {'label': 'Default ServiceAccount', 'value': namespace.default_service_account, 'icon': 'user'},
+                                        {'label': 'PSA Enforce', 'value': namespace.pod_security_enforce_display, 'icon': 'shield-check'},
+                                        ('PSA Audit', namespace.pod_security_audit_display, '') ,
                     ('PSA Warn', namespace.pod_security_warn_display, '')
                     ], columns=2) }}
                     <div class="mt-3">
@@ -85,11 +85,11 @@
                 {% endcall %}
                 {% call detail.inventory_section('Resource Controls', 'sliders-horizontal', namespace.control_evidence_display, badge_size='detail', stretch=false, density='compact', description='Quota and LimitRange evidence that constrains resource consumption in this namespace.') %}
                     {{ detail.inventory_fact_grid([
-                                        ('ResourceQuota', namespace.quota_display, '') ,
-                    ('LimitRange', namespace.limit_range_display, ''),
-                    ('NetworkPolicy', namespace.network_policy_display, ''),
-                    ('PSA Enforce', namespace.pod_security_enforce_display, '')
-                    ], columns=2) }}
+                                        {'label': 'ResourceQuota', 'value': namespace.quota_display, 'icon': 'sliders-horizontal'},
+                                        {'label': 'LimitRange', 'value': namespace.limit_range_display, 'icon': 'gauge'},
+                                        {'label': 'NetworkPolicy', 'value': namespace.network_policy_display, 'icon': 'network'},
+                                        {'label': 'PSA Enforce', 'value': namespace.pod_security_enforce_display, 'icon': 'shield-check'}
+                                        ], columns=2) }}
                     {% if namespace.quota_collection_state != 'Collected' %}
                         {{ detail.empty_evidence('ResourceQuota Evidence Not Reported',
                                                 'ResourceQuota collection state: ' ~ namespace.quota_collection_state ~ '. Refresh collection permissions before interpreting quota absence.',

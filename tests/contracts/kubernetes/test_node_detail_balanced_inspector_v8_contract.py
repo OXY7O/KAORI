@@ -57,7 +57,7 @@ def test_node_v10_uses_one_body_typeface_without_nested_scroll() -> None:
     assert 'overflow-y-auto' not in node
     assert 'overflow-y-auto' not in metadata
     assert 'monospace=false' in shared
-    assert 'monospace=false' in node
+    assert "table_label.status_label(taint_effect, taint_effect_tone, none, 'detail')" in node
     assert 'font-mono' not in node
     assert 'text-sm font-normal leading-5 text-content-secondary' in shared
     assert 'text-left text-sm font-medium leading-5 text-content-primary' in shared
@@ -87,3 +87,11 @@ def test_node_v10_preserves_snapshot_and_operational_boundaries() -> None:
     assert 'does not query the Kubernetes API live' in node
     assert "extra_classes='xl:col-span-5'" in node
     assert "extra_classes='xl:col-span-7'" in node
+
+
+def test_node_v10_taints_use_semantic_effect_labels() -> None:
+    node = read('app/templates/kubernetes/inventory/nodes/partials/_node_detail_content.html')
+
+    assert 'taint_effect_tone' in node
+    assert "table_label.status_label(taint_effect, taint_effect_tone, none, 'detail')" in node
+    assert 'technical_value.render(taint, break_all=false' not in node

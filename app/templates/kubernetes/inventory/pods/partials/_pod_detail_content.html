@@ -74,7 +74,7 @@
                         {{ detail.subsection("Placement Constraints") }}
                         {{ detail.inventory_fact_grid(pod.placement_evidence_rows, columns=2) }}
                     </div>
-                    <div class="mt-4 grid items-start gap-4 lg:grid-cols-2">
+                    <div class="mt-4 space-y-4">
                         {{ metadata_collection.render('Node Selectors',
                                                 pod.node_selectors,
                                                 'binary',
@@ -86,14 +86,13 @@
                                                 'shield',
                                                 'No Tolerations' if pod.specification_evidence_reported else 'Toleration Evidence Not Reported',
                                                 'No toleration was declared in the committed Pod specification.' if pod.specification_evidence_reported else 'Pod specification evidence was unavailable, so KAORI cannot determine whether tolerations were configured.',
-                                                'Tolerations remain factual scheduling evidence until evaluated against an explicit policy.',
-                                                compact_pairs=true) }}
+                                                'Tolerations remain factual scheduling evidence until evaluated against an explicit policy.') }}
                     </div>
                 {% endcall %}
                 {% call detail.inventory_section('Pod Specification', 'settings-2', (pod.configuration.container_count ~ ' Containers') if pod.specification_evidence_reported and pod.configuration.container_count is not none else 'Not Reported', badge_size='detail', stretch=false, density='compact', description='QoS, restart, DNS, network, container, and security configuration from the committed Pod specification.') %}
                     {% if pod.specification_evidence_reported %}
                         {{ detail.inventory_fact_grid(pod.specification_rows, columns=3) }}
-                        <p class="mt-3 text-xs leading-5 text-content-muted">QoS, restart, DNS, network, and security configuration remain factual evidence until compared with an explicit governance policy.</p>
+                        {{ detail.inventory_note('QoS, restart, DNS, network, and security configuration remain factual evidence until compared with an explicit governance policy.', 'info') }}
                     {% else %}
                         {{ detail.empty_evidence('Pod Specification Not Reported', 'Authoritative Pod specification evidence was not available in the committed snapshot.', 'settings-2') }}
                     {% endif %}

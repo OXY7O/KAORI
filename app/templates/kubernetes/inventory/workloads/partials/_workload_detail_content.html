@@ -134,9 +134,9 @@
                         </div>
                     </div>
                     {% if workload.placement_evidence_reported %}
-                        <div class="mt-4 grid gap-4 lg:grid-cols-2">
+                        <div class="mt-4 space-y-4">
                             {{ metadata_collection.render('Node Selectors', workload.node_selectors, 'binary', 'No Node Selectors', 'No node selector was declared in the reported Pod template.', 'Selectors remain factual scheduling evidence until evaluated against an explicit policy.') }}
-                            {{ metadata_collection.render('Tolerations', workload.tolerations, 'shield', 'No Tolerations', 'No toleration was declared in the reported Pod template.', 'Tolerations remain factual scheduling evidence until evaluated against an explicit policy.', compact_pairs=true) }}
+                            {{ metadata_collection.render('Tolerations', workload.tolerations, 'shield', 'No Tolerations', 'No toleration was declared in the reported Pod template.', 'Tolerations remain factual scheduling evidence until evaluated against an explicit policy.') }}
                         </div>
                     {% endif %}
                 {% endcall %}

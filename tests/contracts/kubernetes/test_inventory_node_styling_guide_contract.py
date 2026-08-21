@@ -73,8 +73,11 @@ def test_node_detail_uses_inline_detail_style_shared_primitives_and_operational_
     assert '{% macro inventory_section' in shared
     assert '{% macro inventory_row' in shared
     assert '{% macro inventory_technical_row' in shared
-    assert 'break_all=false' in shared
-    assert '{% macro inspector_section' in shared
+    assert (
+        "technical_value.render(display_value, align='left', break_all=break_all, class_name=technical_classes, monospace=false, size='body')"
+        in shared
+    )
+    assert '{% macro inspector_panel' in shared
     assert '{% macro inspector_row' in shared
     assert '{% macro inspector_technical_row' in shared
     assert 'detail.inspector_section(' in detail
@@ -117,8 +120,9 @@ def test_node_detail_factual_rows_use_one_calm_body_typography_scale() -> None:
 
     assert 'text-sm font-normal leading-5 text-content-secondary' in shared
     assert 'text-left text-sm font-medium leading-5 text-content-primary' in shared
-    assert "technical_classes = 'font-medium xl:whitespace-nowrap' if nowrap else 'font-medium'" in shared
+    assert "class_name=technical_classes, monospace=false, size='body'" in shared
     assert 'text-sm font-normal leading-5 text-content-secondary' in metadata
     assert 'text-sm font-medium leading-5 text-content-primary' in metadata
     assert 'bg-surface-hover' not in metadata
-    assert 'technical_value.render(taint, break_all=false' in node
+    assert "table_label.status_label(taint_effect, taint_effect_tone, none, 'detail')" in node
+    assert 'technical_value.render(taint, break_all=false' not in node

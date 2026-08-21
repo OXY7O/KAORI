@@ -48,11 +48,13 @@ def test_all_inventory_modal_details_avoid_truncated_resource_evidence() -> None
         assert ' truncate ' not in source, template
 
 
-def test_pod_and_workload_tolerations_use_compact_pair_spacing() -> None:
+def test_pod_and_workload_tolerations_use_full_width_single_column_rows() -> None:
     for relative in (
         'app/templates/kubernetes/inventory/pods/partials/_pod_detail_content.html',
         'app/templates/kubernetes/inventory/workloads/partials/_workload_detail_content.html',
     ):
         source = read(relative)
         assert 'Tolerations remain factual scheduling evidence until evaluated against an explicit policy.' in source
-        assert 'compact_pairs=true' in source
+        assert 'compact_pairs=true' not in source
+        assert 'wide_pairs=true' not in source
+        assert 'mt-4 space-y-4' in source

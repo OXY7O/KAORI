@@ -24,16 +24,16 @@
                                                 system_id=system.id,
                                                 history_window=selected_forecast_history_window,
                                                 tab='buckets',
-                                                forecast_bucket_per_page=forecast_table.pagination.per_page),
-                                                table_ui.action_classes() ~ ' h-9 px-3',
-                                                hx_get=url_for('analytics.object_storage_bucket_forecast_table',
-                                                system_id=system.id,
-                                                history_window=selected_forecast_history_window,
-                                                tab='buckets',
-                                                forecast_bucket_per_page=forecast_table.pagination.per_page),
-                                                target='#object-storage-bucket-forecast-table-panel',
-                                                indicator='#object-storage-bucket-forecast-table-loading-indicator',
-                                                sync='#object-storage-bucket-forecast-table-panel:replace') }}
+                                                forecast_bucket_per_page=forecast_table.pagination.per_page) ,
+                        table_ui.action_classes() ~ ' h-9 px-3',
+                        hx_get=url_for('analytics.object_storage_bucket_forecast_table',
+                        system_id=system.id,
+                        history_window=selected_forecast_history_window,
+                        tab='buckets',
+                        forecast_bucket_per_page=forecast_table.pagination.per_page),
+                        target='#object-storage-bucket-forecast-table-panel',
+                        indicator='#object-storage-bucket-forecast-table-loading-indicator',
+                        sync='#object-storage-bucket-forecast-table-panel:replace') }}
                     {% endif %}
                     {{ table_label.metadata_label(forecast_table.pagination.total_items ~ ' Buckets', 'container', size='compact') }}
                 </div>
@@ -55,10 +55,14 @@
               hx-indicator="#object-storage-bucket-forecast-table-loading-indicator"
               class="{{ table_ui.filter_layout_classes() }} border-b border-outline-subtle bg-surface-hover px-4 py-4 sm:px-5">
             <input type="hidden" name="system_id" value="{{ system.id }}">
-            <input type="hidden" name="history_window" value="{{ selected_forecast_history_window }}">
+            <input type="hidden"
+                   name="history_window"
+                   value="{{ selected_forecast_history_window }}">
             <input type="hidden" name="tab" value="buckets">
             <input type="hidden" name="forecast_bucket_page" value="1">
-            <input type="hidden" name="forecast_bucket_per_page" value="{{ forecast_table.pagination.per_page }}">
+            <input type="hidden"
+                   name="forecast_bucket_per_page"
+                   value="{{ forecast_table.pagination.per_page }}">
             <label class="block min-w-0" for="object-storage-forecast-bucket-search">
                 <span class="{{ table_ui.filter_label_classes() }}">Search Bucket</span>
                 {{ table_ui.search_field('forecast_q', forecast_table.search, 'Filter by bucket name', id='object-storage-forecast-bucket-search') }}
@@ -76,7 +80,8 @@
                         ('normal', 'Baseline'),
                         ('unknown', 'Unknown')
                         ] %}
-                        <option value="{{ value }}" {% if forecast_table.watch == value %}selected{% endif %}>{{ label }}</option>
+                        <option value="{{ value }}"
+                                {% if forecast_table.watch == value %}selected{% endif %}>{{ label }}</option>
                     {% endfor %}
                 </select>
             </label>
@@ -91,7 +96,8 @@
                         ('partial', 'Partial History'),
                         ('no_data', 'No History')
                         ] %}
-                        <option value="{{ value }}" {% if forecast_table.history_state == value %}selected{% endif %}>{{ label }}</option>
+                        <option value="{{ value }}"
+                                {% if forecast_table.history_state == value %}selected{% endif %}>{{ label }}</option>
                     {% endfor %}
                 </select>
             </label>

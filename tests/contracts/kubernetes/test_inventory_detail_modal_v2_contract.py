@@ -81,6 +81,8 @@ def test_inventory_detail_typography_has_one_predictable_hierarchy() -> None:
         "class_name='font-medium', size='body')" in runtime
     )
     assert 'text-sm font-semibold tabular-nums text-content-primary' in runtime
+    assert 'data-kaori-unified-resource-sheet' in runtime
+    assert 'rounded-2xl border border-outline-subtle bg-surface-card shadow-sm' in runtime
 
     # Metadata key/value pairs use the same 14px body scale and differ by tone rather than size.
     assert 'text-sm font-normal leading-5 text-content-secondary' in metadata
@@ -111,3 +113,28 @@ def test_configuration_key_inventory_uses_full_width_grouped_list_instead_of_til
     assert 'grid min-w-0 gap-x-6 sm:grid-cols-2 xl:grid-cols-3' in metadata
     assert 'rounded-lg border border-outline-subtle bg-surface-elevated px-3 py-2.5' not in metadata
     assert 'data-kaori-inventory-metadata-collection' in metadata
+
+
+def test_long_selector_and_toleration_evidence_uses_full_width_stacked_sections() -> None:
+    pod = read('app/templates/kubernetes/inventory/pods/partials/_pod_detail_content.html')
+    workload = read('app/templates/kubernetes/inventory/workloads/partials/_workload_detail_content.html')
+
+    assert 'mt-4 space-y-4' in pod
+    assert 'wide_pairs=true' not in pod
+    assert 'mt-4 space-y-4' in workload
+    assert 'wide_pairs=true' not in workload
+
+
+def test_resource_sheet_rows_keep_complete_separators_and_informational_notes_use_icons() -> None:
+    shared = read('app/templates/components/details/_detail_content.html')
+    metadata = read('app/templates/components/technical_metadata_collection.html')
+
+    row_macro = shared.split('{% macro inventory_row', 1)[1].split('{%- endmacro %}', 1)[0]
+    technical_row_macro = shared.split('{% macro inventory_technical_row', 1)[1].split('{%- endmacro %}', 1)[0]
+    fact_grid = shared.split('{% macro inventory_fact_grid', 1)[1].split('{%- endmacro %}', 1)[0]
+
+    assert 'border-b border-outline-subtle' in row_macro
+    assert 'last:border-b-0' not in row_macro
+    assert 'last:border-b-0' not in technical_row_macro
+    assert 'range(columns - remainder)' in fact_grid
+    assert "detail.inventory_note(context, 'info')" in metadata

@@ -247,9 +247,19 @@ def main() -> int:
     ):
         require(token in overview_detail, f'Inventory Overview cluster detail V10 contract missing: {token}', errors)
     require(
-        'def overview_cluster_details(' in routes_source
-        and 'get_inventory_overview_cluster_detail' in routes_source,
+        'def overview_cluster_details(' in routes_source and 'get_inventory_overview_cluster_detail' in routes_source,
         'Inventory Overview cluster detail route must use the committed overview read model.',
+        errors,
+    )
+
+
+    detail_primitives = read('app/templates/components/details/_detail_content.html')
+    require(
+        "description=None" in detail_primitives
+        and 'data-kaori-inventory-section-description' in detail_primitives
+        and 'bg-surface-elevated/35' in detail_primitives
+        and 'absolute inset-y-0 left-0 w-0.5 bg-kaori-primary/70' not in detail_primitives,
+        'Shared Inventory resource-sheet bands must provide descriptive left rails without the deprecated Violet edge accent.',
         errors,
     )
 
@@ -325,6 +335,13 @@ def main() -> int:
             errors,
         )
         require(
+            ('description=' in detail_source)
+            if resource != 'nodes'
+            else ('detail.inspector_section(' in detail_source),
+            f'{resource} detail must explain evidence scope in the left resource-sheet rail.',
+            errors,
+        )
+        require(
             'detail.header_identity_row()' in detail_source,
             f'{resource} detail header must group title, metadata, and primary state in one identity row.',
             errors,
@@ -340,7 +357,6 @@ def main() -> int:
             errors,
         )
 
-    detail_primitives = read('app/templates/components/details/_detail_content.html')
     require(
         'macro header_identity_row()' in detail_primitives
         and 'data-resource-detail-header-identity' in detail_primitives
@@ -400,7 +416,8 @@ def main() -> int:
 
     print(
         'KAORI Kubernetes Inventory Final Lock v1 passed: AuthZ-first HTMX blocking, committed-snapshot reads, '
-        'canonical template routing, blocker-safe Snapshot visibility, Hero/table/modal/pagination composition, topology DB ownership, zero residual helpers, and L0–L7 '
+        'canonical template routing, blocker-safe Snapshot visibility, Hero/table/modal/pagination composition, '
+        'topology DB ownership, zero residual helpers, and L0–L7 '
         'release evidence are aligned.'
     )
     return 0

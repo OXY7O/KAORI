@@ -23,7 +23,7 @@ def test_inventory_v6_uses_horizontal_section_bands_with_natural_height() -> Non
 
     section = shared.split('{% macro inventory_section', 1)[1].split('{%- endmacro %}', 1)[0]
     assert 'data-kaori-inventory-section-layout="resource-sheet-band"' in section
-    assert 'xl:grid-cols-[17rem_minmax(0,1fr)]' in section
+    assert 'xl:grid-cols-[20rem_minmax(0,1fr)]' in section
     assert 'text-sm font-normal leading-5 text-content-secondary' in shared
     assert 'text-left text-sm font-medium leading-5 text-content-primary' in shared
     assert 'macro inventory_note(' in shared

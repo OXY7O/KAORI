@@ -308,9 +308,7 @@ def main() -> int:
         errors,
     )
 
-    bucket_forecast_filter = read(
-        'app/templates/storage/object_storage/analytics/partials/_bucket_forecast_table.html'
-    )
+    bucket_forecast_filter = read('app/templates/storage/object_storage/analytics/partials/_bucket_forecast_table.html')
     for token in (
         'table_ui.filter_layout_classes()',
         'registry_ui.clear_filters_action(',

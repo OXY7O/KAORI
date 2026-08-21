@@ -558,6 +558,7 @@ def get_inventory_overview_cluster_detail(cluster_id: str) -> dict[str, Any] | N
         None,
     )
 
+
 def _count_rows(model: Any) -> int:
     query = db.session.query(func.count(model.id))
     if model is not Cluster:

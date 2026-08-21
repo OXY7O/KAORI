@@ -84,11 +84,10 @@
                    value="{{ filesystem.pagination.per_page|default(5) }}">
             {{ record_filter.select('storage_node', selected_storage_node, filesystem.available_nodes, 'All Nodes', 'Node') }}
             {% if selected_storage_node %}
-                {{ record_filter.reset_link(
-                    url_for('analytics.storage', cluster_id=cluster.id if cluster else '', namespace=selected_namespace, tab='filesystem'),
-                    url_for('analytics.storage_filesystem_summary', cluster_id=cluster.id if cluster else '', namespace=selected_namespace, tab='filesystem', filesystem_page=1, filesystem_per_page=filesystem.pagination.per_page|default(5)),
-                    '#storage-filesystem-panel',
-                    '#' ~ panel_indicator
+                {{ record_filter.reset_link(url_for('analytics.storage', cluster_id=cluster.id if cluster else '', namespace=selected_namespace, tab='filesystem') ,
+                url_for('analytics.storage_filesystem_summary', cluster_id=cluster.id if cluster else '', namespace=selected_namespace, tab='filesystem', filesystem_page=1, filesystem_per_page=filesystem.pagination.per_page|default(5)),
+                '#storage-filesystem-panel',
+                '#' ~ panel_indicator
                 ) }}
             {% endif %}
         {% endcall %}

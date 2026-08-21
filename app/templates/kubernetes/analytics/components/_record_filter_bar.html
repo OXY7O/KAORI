@@ -63,14 +63,14 @@
     <div data-kaori-filter-action>
         <span class="{{ table_ui.filter_label_classes() }}">Actions</span>
         {{ registry_ui.clear_filters_action(href,
-            table_ui.action_classes() ~ ' h-10 px-3',
-            label=label,
-            hx_get=hx_get,
-            target=target,
-            indicator=indicator,
-            swap='outerHTML',
-            sync=target ~ ':replace',
-            lead=false) }}
+                table_ui.action_classes() ~ ' h-10 px-3',
+        label=label,
+        hx_get=hx_get,
+        target=target,
+        indicator=indicator,
+        swap='outerHTML',
+        sync=target ~ ':replace',
+        lead=false) }}
     </div>
 {%- endmacro %}
 {% macro search(name, value, placeholder, label) -%}

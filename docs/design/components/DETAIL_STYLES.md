@@ -142,12 +142,14 @@ Kubernetes Inventory and Object Storage Inventory detail surfaces use Unified Re
 - the four-item operational summary remains one connected strip and uses the shared `detail.inspector_summary_strip(...)` geometry;
 - the evidence body is one rounded resource sheet with horizontal evidence bands rather than peer cards with mismatched heights;
 - every evidence band uses the same left identity rail and the same proportional `text-sm` label/value scale;
-- the desktop identity rail uses a consistent `17rem` width so section titles, descriptions, and state/count badges have breathing room without forcing the factual value area into narrow card-like columns;
+- the desktop identity rail uses a consistent `20rem` width so section titles, descriptions, and state/count badges have breathing room without forcing the factual value area into narrow card-like columns;
 - every left identity rail includes a concise evidence-scope description so the rail remains informative even when the right evidence body is tall;
 - desktop state/count badges live with the section identity rail instead of floating above the factual values, while mobile keeps the badge in the rail header;
-- a restrained violet leading rule and soft elevated rail background provide section rhythm without introducing additional card surfaces or typography scales;
+- the left rail uses a soft elevated background and icon tile without a separate violet edge stripe, keeping the surface calmer while preserving section identity;
 - long identity, endpoint, hostname, UID, image, storage, provider, and timestamp values receive full-width or desktop-nowrap treatment when their expected length requires it;
 - technical values stay on normal proportional KAORI typography. Monospace is not introduced merely because a value is machine-oriented;
+- factual label/value rows keep a bottom separator, including the final visible row in a group, so horizontal rhythm does not stop halfway through a section;
+- informational metadata notes use the shared icon note treatment instead of plain trailing text;
 - labels, annotations, key inventories, provider metadata, and related-resource collections use full-width natural-height list bands; no nested vertical scrolling is introduced;
 - long metadata, taints, selectors, endpoints, and provider-specific evidence may wrap on smaller viewports, but desktop layouts use available width before wrapping;
 - semantic state uses green/amber/red only for actual state signals. Violet remains the navigation and structural accent;

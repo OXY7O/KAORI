@@ -168,11 +168,7 @@ def main() -> int:
         require(token in table_content, f'Missing compact Node table contract: {token}', errors)
 
     shared_detail = read('app/templates/components/details/_detail_content.html')
-    require(
-        'macro inspector_section(' in shared_detail,
-        'Node detail must expose the inspector section primitive.',
-        errors,
-    )
+    require('macro inspector_section(' in shared_detail, 'Node detail must expose the inspector section primitive.', errors)
     require('macro inspector_row(' in shared_detail, 'Node detail must expose the inspector row primitive.', errors)
 
     for token in (
@@ -186,9 +182,6 @@ def main() -> int:
         "'Node Labels'",
         'data-kaori-inventory-detail-layout="unified-resource-sheet"',
         'data-kaori-node-inspector',
-        'data-kaori-node-inspector-flow="natural-content"',
-        'data-kaori-node-inspector-layout="single-scroll-resource-sheet"',
-        'data-kaori-inventory-detail="v10"',
         "operational_callout.render('Committed Snapshot Boundary'",
     ):
         require(token in detail, f'Missing Node detail contract: {token}', errors)

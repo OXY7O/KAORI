@@ -8,13 +8,11 @@
         {% set entry_count_label = entry_count ~ ' Entries' %}
     {% endif %}
     {% if embedded %}
-        <section class="min-w-0 border-b border-outline-subtle last:border-b-0"
+        <section class="min-w-0 border-b border-outline-subtle"
                  data-kaori-inventory-metadata-collection
                  data-kaori-inventory-metadata-layout="resource-sheet-band">
-            <div class="grid min-w-0 xl:grid-cols-[17rem_minmax(0,1fr)]">
-                <header class="relative flex min-w-0 items-start justify-between gap-3 overflow-hidden bg-surface-elevated/35 px-4 py-4 sm:px-5 xl:min-h-full xl:border-r xl:border-outline-subtle xl:px-6 xl:py-5">
-                    <span class="absolute inset-y-0 left-0 w-0.5 bg-kaori-primary/70"
-                          aria-hidden="true"></span>
+            <div class="grid min-w-0 xl:grid-cols-[20rem_minmax(0,1fr)]">
+                <header class="flex min-w-0 items-start justify-between gap-3 overflow-hidden bg-surface-elevated/35 px-6 py-5 sm:px-7 xl:min-h-full xl:border-r xl:border-outline-subtle xl:px-8 xl:py-6">
                     <div class="flex min-w-0 flex-1 items-start gap-3">
                         <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary ring-1 ring-inset ring-brand-outline/50"
                               aria-hidden="true"><i data-lucide="{{ icon }}" class="h-4 w-4"></i></span>
@@ -27,7 +25,7 @@
                     </div>
                     <div class="shrink-0 xl:hidden">{{ table_label.special_label(entry_count_label, 'maintenance', 'tags', 'detail') }}</div>
                 </header>
-                <div class="min-w-0 px-4 py-3 sm:px-5 sm:py-4 xl:px-7 xl:py-5">
+                <div class="min-w-0 px-6 py-5 sm:px-7 xl:px-9 xl:py-6">
                     {% if entries %}
                         {% if mode == 'keys' %}
                             <div class="grid min-w-0 gap-x-10 sm:grid-cols-2 xl:grid-cols-3">
@@ -57,7 +55,7 @@
                             {% set pairs = entries.items() if entries.items is defined else entries %}
                             <div class="min-w-0">
                                 {% for key, value in pairs %}
-                                    <article class="grid min-w-0 gap-1 border-b border-outline-subtle py-2.5 last:border-b-0 sm:grid-cols-[minmax(26rem,0.42fr)_minmax(0,1fr)] sm:items-baseline sm:gap-6">
+                                    <article class="grid min-w-0 gap-1 border-b border-outline-subtle py-2.5 sm:grid-cols-[minmax(26rem,0.42fr)_minmax(0,1fr)] sm:items-baseline sm:gap-6">
                                         <span class="min-w-0 break-words text-sm font-normal leading-5 text-content-secondary [overflow-wrap:anywhere]">{{ key }}</span>
                                         <span class="min-w-0 whitespace-pre-wrap break-words text-sm font-medium leading-5 text-content-primary [overflow-wrap:anywhere]">{{ value if value not in [None, ''] else '-' }}</span>
                                     </article>
@@ -68,7 +66,7 @@
                             <p class="mt-3 break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]">Showing the first {{ entries|length }} of {{ entry_count }} entries.</p>
                         {% endif %}
                         {% if context %}
-                            <p class="mt-3 break-words border-t border-outline-subtle pt-3 text-xs leading-5 text-content-muted [overflow-wrap:anywhere]">{{ context }}</p>
+                            {{ detail.inventory_note(context, 'info') }}
                         {% endif %}
                     {% else %}
                         {{ detail.empty_evidence(empty_title, empty_description, icon) }}
@@ -135,7 +133,7 @@
                         <p class="mt-3 break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]">Showing the first {{ entries|length }} of {{ entry_count }} entries.</p>
                     {% endif %}
                     {% if context %}
-                        <p class="mt-3 break-words border-t border-outline-subtle pt-3 text-xs leading-5 text-content-muted [overflow-wrap:anywhere]">{{ context }}</p>
+                        {{ detail.inventory_note(context, 'info') }}
                     {% endif %}
                 </div>
             {% else %}
