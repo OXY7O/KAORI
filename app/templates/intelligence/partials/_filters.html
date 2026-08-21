@@ -1,14 +1,11 @@
 {% import "components/table.html" as table_ui %}
-{% import "components/table_registry.html" as registry_ui %}
 {% set resolved_endpoint = endpoint_name|default('intelligence.recommendations') %}
 {% set resolved_scope = filter_scope|default('recommendation') %}
 {% set resolved_title = filter_title|default('Recommendation Filters') %}
 {% set resolved_description = filter_description|default('Results refresh automatically when search or scope filters change.') %}
 {% set resolved_search_placeholder = search_placeholder|default('Search recommendation, evidence, or action') %}
 {% set resolved_results_target = filter_results_target|default('#recommendations-results-content') %}
-{% set resolved_workspace_target = filter_workspace_target|default('#recommendations-workspace-content') %}
 {% set resolved_indicator = filter_indicator|default('#recommendations-loading-bar') %}
-{% set resolved_active_filters = payload.active_filter_count|default(payload.result_context.active_filters|default(0), true) %}
 <form id="{{ resolved_scope }}-filter-form"
       method="get"
       action="{{ url_for(resolved_endpoint) }}"
@@ -25,23 +22,9 @@
     <input type="hidden"
            name="per_page"
            value="{{ payload.pagination.per_page }}">
-    <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-            <p class="text-sm font-semibold leading-5 text-content-primary">{{ resolved_title }}</p>
-            <p class="mt-1 text-xs leading-5 text-content-muted">{{ resolved_description }}</p>
-        </div>
-        {% if resolved_active_filters > 0 %}
-            {{ registry_ui.clear_filters_action(url_for(resolved_endpoint, per_page=payload.pagination.per_page) ,
-            table_ui.action_classes(),
-            hx_get=url_for(resolved_endpoint, per_page=payload.pagination.per_page),
-            target=resolved_workspace_target,
-            indicator=resolved_indicator,
-            swap='outerHTML show:none focus-scroll:false',
-            push_url='true',
-            sync=resolved_workspace_target ~ ':replace',
-            lead=false
-            ) }}
-        {% endif %}
+    <div class="mb-4">
+        <p class="text-sm font-semibold leading-5 text-content-primary">{{ resolved_title }}</p>
+        <p class="mt-1 text-xs leading-5 text-content-muted">{{ resolved_description }}</p>
     </div>
     <div class="{{ table_ui.filter_layout_classes() }}">
         <label class="block">

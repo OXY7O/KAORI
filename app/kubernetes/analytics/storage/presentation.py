@@ -326,9 +326,7 @@ def _pressure_lanes(storage_summary: dict[str, Any]) -> list[dict[str, Any]]:
     pvc_coverage = str(pvc.get('pressure_coverage_display') or 'N/A')
     pvc_complete = bool(pvc.get('pressure_evidence_complete'))
     pvc_reason = 'PVC usage uses paired observed capacity. ' + (
-        'Coverage is complete.'
-        if pvc_complete
-        else 'Claims without kubelet volume stats are excluded.'
+        'Coverage is complete.' if pvc_complete else 'Claims without kubelet volume stats are excluded.'
     )
     return [
         {

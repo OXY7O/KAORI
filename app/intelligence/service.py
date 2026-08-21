@@ -88,30 +88,34 @@ def _base_payload(args: MultiDict[str, str], *, page_mode: str) -> dict[str, Any
     end_item = min(end_index, total_items) if total_items else 0
     item_label = 'catalog rules' if page_mode == 'catalog' else 'recommendations'
     visible_filter_keys = (
-        'q',
-        'domain',
-        'provider',
-        'severity',
-        'category',
-        'source_kind',
-        'logic_type',
-        'signal_source',
-        'status',
-    ) if page_mode == 'catalog' else (
-        'q',
-        'domain',
-        'provider',
-        'severity',
-        'category',
-        'source_kind',
-        'logic_type',
-        'signal_source',
+        (
+            'q',
+            'domain',
+            'provider',
+            'severity',
+            'category',
+            'source_kind',
+            'logic_type',
+            'signal_source',
+            'status',
+        )
+        if page_mode == 'catalog'
+        else (
+            'q',
+            'domain',
+            'provider',
+            'severity',
+            'category',
+            'source_kind',
+            'logic_type',
+            'signal_source',
+        )
     )
     active_filter_count = _count_active_filters(filters, visible_filter_keys)
 
     if page_mode == 'catalog':
         for item in items:
-            item['table_summary'] = _truncate_words(item.get('summary'), limit=96)
+            item['table_summary'] = _truncate_words(item.get('summary'), limit=72)
     else:
         for item in items:
             scope_title, scope_supporting = finding_scope_details(item)

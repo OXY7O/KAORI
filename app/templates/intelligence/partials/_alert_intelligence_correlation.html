@@ -28,8 +28,8 @@
         <section class="bg-surface-card p-4 sm:p-5">
             <div class="flex flex-col gap-3 border-b border-outline-subtle pb-3 sm:flex-row sm:items-start sm:justify-between">
                 {{ intelligence_ui.subsection('Active Recommendations',
-                            'Committed findings for the selected asset. ' ~ correlation_note,
-                            'sparkles') }}
+                                'Committed findings for the selected asset. ' ~ correlation_note,
+                                'sparkles') }}
                 <div class="flex shrink-0 items-center gap-2">
                     {{ table_label.metadata_label(payload.recommendations|length ~ ' Findings', size='compact') }}
                     <a href="{{ url_for('intelligence.recommendations', domain=payload.domain) }}"
@@ -70,8 +70,8 @@
         <section class="bg-surface-card p-4 sm:p-5">
             <div class="flex flex-col gap-3 border-b border-outline-subtle pb-3 sm:flex-row sm:items-start sm:justify-between">
                 {{ intelligence_ui.subsection('Catalog Enrichment Rules',
-                            'Canonical definitions that can enrich or interpret alert evidence for this domain.',
-                            'list-checks') }}
+                                'Canonical definitions that can enrich or interpret alert evidence for this domain.',
+                                'list-checks') }}
                 <div class="flex shrink-0 items-center gap-2">
                     {{ table_label.metadata_label(payload.catalog_rules|length ~ ' Rules', size='compact') }}
                     <a href="{{ url_for('intelligence.catalog', domain=payload.domain) }}"

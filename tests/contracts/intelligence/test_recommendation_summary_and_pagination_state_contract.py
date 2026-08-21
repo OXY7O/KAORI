@@ -14,13 +14,14 @@ def test_recommendation_list_uses_presentation_owned_compact_summary():
 
 def test_pagination_and_filters_have_separate_htmx_ownership():
     filters = Path('app/templates/intelligence/partials/_filters.html').read_text()
+    results = Path('app/templates/intelligence/partials/_recommendations_results.html').read_text()
     pagination = Path('app/templates/intelligence/components/_pagination.html').read_text()
     route = Path('app/intelligence/routes.py').read_text()
     assert "filter_results_target|default('#recommendations-results-content')" in filters
     assert 'hx-target="{{ resolved_results_target }}"' in filters
-    assert "filter_workspace_target|default('#recommendations-workspace-content')" in filters
-    assert 'target=resolved_workspace_target' in filters
-    assert "sync=resolved_workspace_target ~ ':replace'" in filters
+    assert 'clear_filters_action' in results
+    assert "target='#recommendations-workspace-content'" in results
+    assert "sync='#recommendations-workspace-content:replace'" in results
     assert "target == 'recommendations-results-content'" in route
     assert 'hx-sync="{{ target }}:replace"' in pagination
     assert "hx_swap='innerHTML show:none focus-scroll:false'" in pagination

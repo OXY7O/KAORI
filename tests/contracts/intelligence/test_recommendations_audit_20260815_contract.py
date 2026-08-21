@@ -95,5 +95,7 @@ def test_recommendation_filters_disable_browser_autofill_state_restoration() -> 
 
     assert 'autocomplete="off"' in filters
     assert filters.count('autocomplete="off"') >= 8
-    assert 'resolved_active_filters' in filters
-    assert 'lead=false' in filters
+    results = read('app/templates/intelligence/partials/_recommendations_results.html')
+    assert 'clear_filters_action' in results
+    assert "target='#recommendations-workspace-content'" in results
+    assert 'lead=false' in results

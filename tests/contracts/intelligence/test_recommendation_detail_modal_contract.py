@@ -37,7 +37,7 @@ def test_shared_resource_detail_host_supports_modal_without_main_layout_lock():
     assert 'translate-x-full' in component
     assert 'resource_detail_modal.host(' in page
     assert "dialog_max_width='max-w-5xl'" in page
-    assert "content_driven=true" in page
+    assert 'content_driven=true' in page
     assert "label='Review'" in records
     assert "icon='panel-right-open'" not in records
     assert "controls='resource-detail-drawer'" not in records
