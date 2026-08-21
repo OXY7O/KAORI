@@ -33,25 +33,24 @@ def test_inventory_v6_uses_horizontal_section_bands_with_natural_height() -> Non
     for resource, filename in DETAILS.items():
         detail = read(f'app/templates/kubernetes/inventory/{resource}/partials/{filename}')
         if resource == 'nodes':
-            assert 'data-kaori-inventory-detail="v9"' in detail
-            assert 'data-kaori-inventory-detail-layout="editorial-technical-inspector"' in detail
+            assert 'data-kaori-inventory-detail="v8"' in detail
+            assert 'data-kaori-inventory-detail-layout="balanced-inspector"' in detail
         else:
             assert 'data-kaori-inventory-detail="v6"' in detail, resource
             assert 'data-kaori-inventory-detail-layout="horizontal-section-stack"' in detail, resource
 
 
-def test_node_detail_uses_editorial_inspector_and_grouped_conditions() -> None:
+def test_node_detail_uses_balanced_inspector_and_grouped_conditions() -> None:
     node = read('app/templates/kubernetes/inventory/nodes/partials/_node_detail_content.html')
 
     assert 'data-kaori-node-inspector' in node
-    assert 'data-kaori-node-inspector-layout="content-length-aware"' in node
+    assert 'data-kaori-node-inspector-flow="natural-content"' in node
     assert 'xl:grid-cols-12' in node
-    assert "detail.inspector_section('Identity & Snapshot'" in node
-    assert "detail.inspector_section('Capacity'" in node
-    assert "detail.inspector_section('Network Identity'" in node
-    assert "detail.inspector_section('Runtime & Platform'" in node
-    assert "detail.inspector_section('Scheduling & Conditions'" in node
-    assert 'detail.inspector_state_fact(' in node
+    assert "detail.inspector_panel('Identity & Snapshot'" in node
+    assert "detail.inspector_panel('Node Capacity'" in node
+    assert "detail.inspector_panel('Connectivity & Network'" in node
+    assert "detail.inspector_panel('Runtime & Platform'" in node
+    assert "detail.inspector_panel('Scheduling & Conditions'" in node
     assert "operational_callout.render('Committed Snapshot Boundary'" in node
     assert 'operational_callout.render(node.operational_context.title' in node
 
@@ -62,7 +61,10 @@ def test_metadata_collections_are_contained_lists_not_tile_walls() -> None:
     assert 'data-kaori-inventory-metadata-collection' in metadata
     assert 'rounded-xl border border-outline-subtle bg-surface-card' in metadata
     assert 'max-h-[24rem] overflow-y-auto' in metadata
-    assert "special_label(entry_count ~ ' ' ~ ('Entry' if entry_count == 1 else 'Entries'), 'maintenance', 'tags', 'detail')" in metadata
+    assert (
+        "special_label(entry_count ~ ' ' ~ ('Entry' if entry_count == 1 else 'Entries'), 'maintenance', 'tags', 'detail')"
+        in metadata
+    )
     assert 'grid min-w-0 gap-x-6 sm:grid-cols-2 xl:grid-cols-3' in metadata
     assert 'rounded-lg border border-outline-subtle bg-surface-elevated px-3 py-2.5' not in metadata
 

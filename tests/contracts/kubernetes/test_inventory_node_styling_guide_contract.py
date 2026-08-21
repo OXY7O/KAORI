@@ -61,7 +61,7 @@ def test_node_detail_uses_inline_detail_style_shared_primitives_and_operational_
 
     assert 'data-kaori-detail-variant="full-workspace-modal"' in detail
     assert 'components/details/_detail_content.html' in detail
-    assert "detail.inspector_section('Capacity'" in detail
+    assert 'Node Capacity' in detail
     assert 'Kernel Version' in detail
     assert 'Container Runtime' in detail
     assert 'Kubelet Version' in detail
@@ -73,15 +73,12 @@ def test_node_detail_uses_inline_detail_style_shared_primitives_and_operational_
     assert '{% macro inventory_section' in shared
     assert '{% macro inventory_row' in shared
     assert '{% macro inventory_technical_row' in shared
-    assert (
-        "technical_value.render(value, align='left', break_all=break_all, class_name='font-medium', size='body')"
-        in shared
-    )
-    assert '{% macro inspector_section' in shared
-    assert '{% macro inspector_fact' in shared
-    assert '{% macro inspector_state_fact' in shared
-    assert 'detail.inspector_section(' in detail
-    assert 'detail.inspector_fact(' in detail
+    assert 'break_all=not nowrap' in shared
+    assert '{% macro inspector_panel' in shared
+    assert '{% macro inspector_row' in shared
+    assert '{% macro inspector_technical_row' in shared
+    assert 'detail.inspector_panel(' in detail
+    assert 'detail.inspector_technical_row(' in detail
 
 
 def test_node_inventory_registers_detail_and_technical_value_standards() -> None:
@@ -120,8 +117,8 @@ def test_node_detail_factual_rows_use_one_calm_body_typography_scale() -> None:
 
     assert 'text-sm font-normal leading-5 text-content-secondary' in shared
     assert 'text-left text-sm font-medium leading-5 text-content-primary' in shared
-    assert "class_name='font-medium', size='body'" in shared
+    assert "class_name='font-medium ' ~ ('whitespace-nowrap' if nowrap else '')" in shared
     assert 'text-sm font-normal leading-5 text-content-secondary' in metadata
     assert 'text-sm font-medium leading-5 text-content-primary' in metadata
     assert 'bg-surface-hover' not in metadata
-    assert "technical_value.render(taint, break_all=false, class_name='font-medium whitespace-nowrap', monospace=true, size='body')" in node
+    assert "technical_value.render(taint, break_all=true, class_name='font-medium', size='body')" in node

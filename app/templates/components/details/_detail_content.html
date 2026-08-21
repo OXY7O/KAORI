@@ -218,8 +218,8 @@
 {% macro inspector_technical_row(label, value='-', nowrap=true) -%}
     <div class="grid min-w-0 grid-cols-[minmax(7.5rem,0.42fr)_minmax(0,1fr)] items-start gap-3 border-b border-outline-subtle py-2.5 last:border-b-0">
         <dt class="min-w-0 break-words text-xs font-medium leading-5 text-content-secondary [overflow-wrap:anywhere]">{{ label }}</dt>
-        <dd class="min-w-0 {{ 'overflow-x-auto whitespace-nowrap' if nowrap else '' }} text-sm font-medium leading-5 text-content-primary">
-            {{ technical_value.render(value, align='left', break_all=false, class_name='font-medium whitespace-nowrap', size='body') }}
+        <dd class="min-w-0 {{ 'whitespace-nowrap' if nowrap else 'break-words [overflow-wrap:anywhere]' }} text-sm font-medium leading-5 text-content-primary">
+            {{ technical_value.render(value, align='left', break_all=not nowrap, class_name='font-medium ' ~ ('whitespace-nowrap' if nowrap else ''), monospace=true, size='body') }}
         </dd>
     </div>
 {%- endmacro %}
@@ -232,7 +232,7 @@
 {%- endmacro %}
 {% macro inspector_rail_item(label, value, icon, supporting=None, nowrap=false) -%}
     <div class="border-b border-outline-subtle py-4 last:border-b-0">
-        <p class="text-xs font-semibold uppercase tracking-wider text-kaori-primary">{{ label }}</p>
+        <p class="text-xs font-semibold uppercase tracking-[0.05em] text-kaori-primary">{{ label }}</p>
         <div class="mt-1.5 flex min-w-0 items-start gap-2.5">
             <span class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary"
                   aria-hidden="true"><i data-lucide="{{ icon }}" class="h-3.5 w-3.5"></i></span>
@@ -245,80 +245,22 @@
         </div>
     </div>
 {%- endmacro %}
-{% macro inspector_section(title, icon, description=None, class_name='', badge=None, badge_type='metadata', badge_tone='unknown') -%}
-    <section data-kaori-inspector-section
-             class="min-w-0 overflow-hidden rounded-xl border border-outline-subtle bg-surface-card {{ class_name }}">
-        <header class="flex min-w-0 items-start justify-between gap-4 border-b border-outline-subtle bg-surface-elevated/50 px-4 py-3 sm:px-5">
-            <div class="flex min-w-0 items-start gap-2.5">
-                <span class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary ring-1 ring-inset ring-brand-outline/50"
-                      aria-hidden="true"><i data-lucide="{{ icon }}" class="h-4 w-4"></i></span>
-                <div class="min-w-0">
-                    <h4 class="text-sm font-semibold leading-5 text-content-primary">{{ title }}</h4>
-                    {% if description %}
-                        <p class="mt-0.5 max-w-3xl text-xs leading-5 text-content-muted">{{ description }}</p>
-                    {% endif %}
-                </div>
-            </div>
-            {% if badge %}
-                <div class="shrink-0">
-                    {% if badge_type == 'status' %}
-                        {{ table_label.status_label(badge, badge_tone, none, 'detail') }}
-                    {% else %}
-                        {{ table_label.special_label(badge, 'maintenance', 'tags', 'detail') }}
-                    {% endif %}
-                </div>
-            {% endif %}
-        </header>
-        <div class="min-w-0 p-4 sm:p-5">{{ caller() }}</div>
-    </section>
-{%- endmacro %}
-{% macro inspector_fact(label, value='-', technical=false, monospace=false, nowrap=false, supporting=None, class_name='') -%}
-    {% set display_value = value if value not in [None, ''] else '-' %}
-    <div data-kaori-inspector-fact class="min-w-0 {{ class_name }}">
-        <dt class="text-xs font-medium leading-5 text-content-muted">{{ label }}</dt>
-        <dd class="mt-0.5 min-w-0 {{ 'overflow-x-auto whitespace-nowrap' if nowrap else 'break-words [overflow-wrap:anywhere]' }}">
-            {% if technical %}
-                {{ technical_value.render(display_value, align='left', break_all=false, class_name='font-semibold ' ~ ('whitespace-nowrap' if nowrap else ''), monospace=monospace, size='body') }}
-            {% else %}
-                <span class="text-sm font-semibold leading-5 text-content-primary" title="{{ display_value }}">{{ display_value }}</span>
-            {% endif %}
-        </dd>
-        {% if supporting %}
-            <p class="mt-0.5 text-xs leading-5 text-content-muted">{{ supporting }}</p>
-        {% endif %}
-    </div>
-{%- endmacro %}
-{% macro inspector_state_fact(label, value, tone='unknown', supporting=None, class_name='') -%}
-    {% set dot_classes = 'bg-status-normal' if tone == 'normal' else ('bg-status-warning' if tone == 'warning' else ('bg-status-critical' if tone == 'critical' else 'bg-status-unknown')) %}
-    <div data-kaori-inspector-state-fact class="min-w-0 {{ class_name }}">
-        <dt class="text-xs font-medium leading-5 text-content-muted">{{ label }}</dt>
-        <dd class="mt-0.5 flex min-w-0 items-center gap-2">
-            <span class="h-1.5 w-1.5 shrink-0 rounded-full {{ dot_classes }}" aria-hidden="true"></span>
-            <span class="min-w-0 break-words text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]">{{ value if value not in [None, ''] else '-' }}</span>
-        </dd>
-        {% if supporting %}
-            <p class="mt-0.5 text-xs leading-5 text-content-muted">{{ supporting }}</p>
-        {% endif %}
-    </div>
-{%- endmacro %}
 {% macro inspector_summary_strip(items) -%}
     <div data-resource-detail-summary
          data-kaori-node-inspector-summary
-         class="grid bg-surface-card sm:grid-cols-2 sm:divide-x sm:divide-outline-subtle xl:grid-cols-4">
+         class="m-4 grid overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm sm:grid-cols-2 sm:divide-x sm:divide-outline-subtle lg:mx-6 xl:grid-cols-4">
         {% for item in items %}
             {% set tone = item.tone if item.tone is defined else 'brand' %}
-            {% set icon_classes = 'bg-status-normal-soft text-status-normal-text' if tone == 'normal' else ('bg-status-warning-soft text-status-warning-text' if tone == 'warning' else ('bg-status-critical-soft text-status-critical-text' if tone == 'critical' else ('bg-status-unknown-soft text-status-unknown-text' if tone == 'unknown' else 'bg-kaori-soft text-kaori-primary'))) %}
-            <article class="flex min-w-0 items-center gap-3 border-b border-outline-subtle px-5 py-3 last:border-b-0 sm:border-b-0 sm:px-6">
-                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg {{ icon_classes }}"
-                      aria-hidden="true"><i data-lucide="{{ item.icon }}" class="h-3.5 w-3.5"></i></span>
+            {% set icon_classes = 'bg-status-normal-soft text-status-normal-text' if tone == 'normal' else ('bg-status-warning-soft text-status-warning-text' if tone == 'warning' else ('bg-status-critical-soft text-status-critical-text' if tone == 'critical' else 'bg-kaori-soft text-kaori-primary')) %}
+            <article class="flex min-w-0 items-start gap-3 border-b border-outline-subtle px-4 py-3.5 last:border-b-0 sm:border-b-0">
+                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg {{ icon_classes }}"
+                      aria-hidden="true"><i data-lucide="{{ item.icon }}" class="h-4 w-4"></i></span>
                 <div class="min-w-0">
-                    <p class="text-xs font-medium leading-4 text-content-muted">{{ item.label }}</p>
-                    <div class="mt-0.5 flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                        <p class="break-words text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]">{{ item.value }}</p>
-                        {% if item.supporting %}
-                            <p class="text-xs leading-4 text-content-muted">{{ item.supporting }}</p>
-                        {% endif %}
-                    </div>
+                    <p class="text-xs font-medium leading-5 text-content-muted">{{ item.label }}</p>
+                    <p class="mt-0.5 break-words text-base font-semibold leading-6 text-content-primary [overflow-wrap:anywhere]">{{ item.value }}</p>
+                    {% if item.supporting %}
+                        <p class="mt-0.5 text-xs leading-5 text-content-muted">{{ item.supporting }}</p>
+                    {% endif %}
                 </div>
             </article>
         {% endfor %}

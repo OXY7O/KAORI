@@ -29,10 +29,10 @@ def test_inventory_v6_uses_one_horizontal_band_contract() -> None:
     for resource, filename in DETAILS.items():
         detail = read(f'app/templates/kubernetes/inventory/{resource}/partials/{filename}')
         if resource == 'nodes':
-            assert 'data-kaori-detail-density="editorial-inspector"' in detail
-            assert 'data-kaori-inventory-detail="v9"' in detail
-            assert 'data-kaori-inventory-detail-layout="editorial-technical-inspector"' in detail
-            assert 'detail.inspector_section(' in detail
+            assert 'data-kaori-detail-density="balanced-inspector"' in detail
+            assert 'data-kaori-inventory-detail="v8"' in detail
+            assert 'data-kaori-inventory-detail-layout="balanced-inspector"' in detail
+            assert 'detail.inspector_panel(' in detail
             continue
         assert 'data-kaori-detail-density="horizontal-bands"' in detail, resource
         assert 'data-kaori-inventory-detail="v6"' in detail, resource
@@ -58,9 +58,18 @@ def test_inventory_tags_use_canonical_violet_label_treatment() -> None:
     related = read('app/templates/components/related_resource_collection.html')
     node = read('app/templates/kubernetes/inventory/nodes/partials/_node_detail_content.html')
 
-    assert "special_label(entry_count ~ ' ' ~ ('Entry' if entry_count == 1 else 'Entries'), 'maintenance', 'tags', 'detail')" in metadata
-    assert "special_label(total_count ~ ' ' ~ ('Resource' if total_count == 1 else 'Resources'), 'maintenance', 'git-branch', 'detail')" in related
-    assert "special_label(node.taints|length ~ ' ' ~ ('Taint' if node.taints|length == 1 else 'Taints'), 'maintenance', 'tags', 'detail')" in node
+    assert (
+        "special_label(entry_count ~ ' ' ~ ('Entry' if entry_count == 1 else 'Entries'), 'maintenance', 'tags', 'detail')"
+        in metadata
+    )
+    assert (
+        "special_label(total_count ~ ' ' ~ ('Resource' if total_count == 1 else 'Resources'), 'maintenance', 'git-branch', 'detail')"
+        in related
+    )
+    assert (
+        "special_label(node.taints|length ~ ' ' ~ ('Taint' if node.taints|length == 1 else 'Taints'), 'maintenance', 'tags', 'detail')"
+        in node
+    )
 
 
 def test_factual_field_typography_remains_one_body_scale() -> None:
@@ -68,4 +77,4 @@ def test_factual_field_typography_remains_one_body_scale() -> None:
 
     assert 'text-sm font-normal leading-5 text-content-secondary' in shared
     assert 'text-left text-sm font-medium leading-5 text-content-primary' in shared
-    assert "class_name='font-medium', size='body'" in shared
+    assert "class_name='font-medium ' ~ ('whitespace-nowrap' if nowrap else '')" in shared

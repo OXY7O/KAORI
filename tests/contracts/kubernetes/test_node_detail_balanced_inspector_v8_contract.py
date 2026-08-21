@@ -7,66 +7,65 @@ def read(relative: str) -> str:
     return (ROOT / relative).read_text(encoding='utf-8')
 
 
-def test_node_v9_uses_editorial_technical_information_architecture() -> None:
+def test_node_v8_uses_balanced_inspector_information_architecture() -> None:
     node = read('app/templates/kubernetes/inventory/nodes/partials/_node_detail_content.html')
     shared = read('app/templates/components/details/_detail_content.html')
 
-    assert 'data-kaori-inventory-detail="v9"' in node
-    assert 'data-kaori-inventory-detail-layout="editorial-technical-inspector"' in node
-    assert 'data-kaori-detail-density="editorial-inspector"' in node
-    assert 'data-kaori-node-inspector-layout="content-length-aware"' in node
-    assert 'macro inspector_section(' in shared
-    assert 'macro inspector_fact(' in shared
-    assert 'macro inspector_state_fact(' in shared
+    assert 'data-kaori-inventory-detail="v8"' in node
+    assert 'data-kaori-inventory-detail-layout="balanced-inspector"' in node
+    assert 'data-kaori-node-inspector' in node
+    assert 'data-kaori-node-inspector-flow="natural-content"' in node
+    assert 'xl:grid-cols-12' in node
+    assert 'macro inspector_panel(' in shared
+    assert 'macro inspector_row(' in shared
+    assert 'macro inspector_technical_row(' in shared
     assert 'macro inspector_summary_strip(' in shared
 
 
-def test_node_v9_allocates_space_by_expected_value_length() -> None:
+def test_node_v8_allocates_width_by_expected_content_length() -> None:
     node = read('app/templates/kubernetes/inventory/nodes/partials/_node_detail_content.html')
 
-    assert "detail.inspector_section('Identity & Snapshot'" in node
-    assert "detail.inspector_section('Capacity'" in node
-    assert "detail.inspector_section('Network Identity'" in node
-    assert "detail.inspector_section('Runtime & Platform'" in node
-    assert "detail.inspector_section('Scheduling & Conditions'" in node
-    assert "'xl:col-span-4'" in node
-    assert "'xl:col-span-8'" in node
-    assert "class_name='sm:col-span-2'" in node
-    assert 'lg:grid-cols-5' in node
+    assert "detail.inspector_panel('Identity & Snapshot', 'badge-info')" in node
+    assert "detail.inspector_panel('Node Capacity', 'gauge', 'xl:col-span-4')" in node
+    assert "detail.inspector_panel('Connectivity & Network', 'network', 'xl:col-span-8'" in node
+    assert "detail.inspector_panel('Runtime & Platform', 'terminal-square')" in node
+    assert "detail.inspector_panel('Scheduling & Conditions', 'shield-check'" in node
+    assert 'xl:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]' in node
 
 
-def test_node_v9_keeps_predictably_long_values_on_one_line() -> None:
+def test_node_v8_long_values_use_natural_wrapping_without_nested_scroll() -> None:
     node = read('app/templates/kubernetes/inventory/nodes/partials/_node_detail_content.html')
     shared = read('app/templates/components/details/_detail_content.html')
-    metadata = read('app/templates/components/technical_metadata_collection.html')
 
-    assert 'overflow-x-auto whitespace-nowrap' in shared
-    assert "detail.inspector_fact('System UUID', node.system_uuid, technical=true, monospace=true, nowrap=true" in node
-    assert "detail.inspector_fact('Hostname / FQDN', node.hostname_address or 'Not Reported', technical=true, monospace=true, nowrap=true" in node
-    assert "detail.inspector_fact('Kernel Version', node.kernel_version, technical=true, monospace=true, nowrap=true" in node
-    assert "detail.inspector_fact('Container Runtime', node.container_runtime_identifier, technical=true, monospace=true, nowrap=true" in node
-    assert 'nowrap_values=true' in node
-    assert 'stacked_pairs=true' in node
-    assert "'overflow-x-auto whitespace-nowrap' if nowrap_values" in metadata
+    assert 'overflow-x-auto' not in node
+    assert 'overflow-y-auto' not in node
+    assert "detail.inspector_technical_row('System UUID', node.system_uuid, nowrap=false)" in node
+    assert (
+        "detail.inspector_technical_row('Hostname / FQDN', node.hostname_address or 'Not Reported', nowrap=false)"
+        in node
+    )
+    assert "detail.inspector_technical_row('Kernel Version', node.kernel_version, nowrap=false)" in node
+    assert (
+        "detail.inspector_technical_row('Container Runtime', node.container_runtime_identifier, nowrap=false)" in node
+    )
+    assert 'break_all=not nowrap' in shared
+    assert 'nowrap_values=false' in node
+    assert 'wide_pairs=true' in node
+    assert 'compact_pairs=false' in node
 
 
-def test_node_v9_uses_selective_monospace_without_turning_the_modal_into_code() -> None:
+def test_node_v8_uses_semantic_status_and_violet_metadata_tags() -> None:
     node = read('app/templates/kubernetes/inventory/nodes/partials/_node_detail_content.html')
-    shared = read('app/templates/components/details/_detail_content.html')
-    metadata = read('app/templates/components/technical_metadata_collection.html')
 
-    assert 'monospace=true' in node
-    assert 'font-mono' not in node
-    assert 'monospace=monospace' in shared
-    assert 'font-mono text-xs font-medium' in metadata
-    assert 'text-sm font-semibold leading-5 text-content-primary' in shared
+    assert "metadata_label(node.cluster_name, 'building-2', true, 'detail')" in node
+    assert "special_label(node.role_display, 'maintenance', 'shield', 'detail')" in node
+    assert 'status_indicator_label(node.status_display, node_status_tone' in node
+    assert "special_label(node.taints|length ~ ' '" in node
 
 
-def test_node_v9_preserves_snapshot_and_operational_boundaries() -> None:
+def test_node_v8_preserves_snapshot_and_operational_boundaries() -> None:
     node = read('app/templates/kubernetes/inventory/nodes/partials/_node_detail_content.html')
 
     assert "operational_callout.render('Committed Snapshot Boundary'" in node
     assert 'operational_callout.render(node.operational_context.title' in node
     assert 'does not query the Kubernetes API live' in node
-    assert "extra_classes='xl:col-span-5'" in node
-    assert "extra_classes='xl:col-span-7'" in node
