@@ -34,8 +34,8 @@
         {% set metrics = [
                     {'label': 'Missing Requests', 'value': missing_requests, 'icon': 'badge-alert', 'tone': 'critical', 'description': 'CPU or memory requests are not completely defined.'},
                     {'label': 'Memory Limit Gaps', 'value': memory_limit_gaps, 'icon': 'memory-stick', 'tone': 'warning', 'description': 'Memory limits require governance review.'},
-                    {'label': 'CPU Limits Unset', 'value': workload.cpu_limits_unset, 'icon': 'cpu', 'tone': 'info', 'description': 'Factual configuration; confirm whether the policy is intentional.'},
-                    {'label': 'Right-Sizing Signals', 'value': right_sizing_signals, 'icon': 'scale', 'tone': 'maintenance', 'description': 'Evidence-complete workloads requiring increase or reduction review.'}
+                    {'label': 'CPU Limits Unset', 'value': workload.cpu_limits_unset, 'icon': 'cpu', 'tone': 'info', 'description': 'Factual configuration; confirm intent.'},
+                    {'label': 'Right-Sizing Signals', 'value': right_sizing_signals, 'icon': 'scale', 'tone': 'maintenance', 'description': 'Evidence-complete workloads flagged for right-sizing.'}
                 ] %}
         <div class="{{ overview_surface.metric_grid_classes(4) }}">
             {% for metric in metrics %}
@@ -120,7 +120,7 @@
             {% elif workload.cpu_limits_unset > 0 %}
                 {{ overview_surface.interpretation_callout('Recommended Action',
                                 'Confirm CPU Limit Policy',
-                                'Unset CPU limits are informational by default. Confirm that the configuration matches the workload governance policy.',
+                                'Factual configuration; confirm the policy is intentional.',
                                 icon='info',
                                 role='brand') }}
             {% else %}

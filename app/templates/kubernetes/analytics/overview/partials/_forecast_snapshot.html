@@ -111,7 +111,7 @@
         <div class="{{ overview_surface.interpretation_grid_classes('lg:grid-cols-3') }}">
             {{ overview_surface.interpretation_callout('How To Read',
                         'Compare Projection With Threshold Timing',
-                        'Compare the dashed projection with warning and critical thresholds. A rising line is actionable when current utilization or headroom is already constrained.',
+                        'Compare the dashed projection with thresholds, especially when headroom is tight.',
                         icon='chart-column',
                         role='insight') }}
             {{ overview_surface.interpretation_callout('What To Do',
@@ -121,7 +121,7 @@
                         role='brand') }}
             {{ overview_surface.interpretation_callout('Forecast Decision',
                         forecast.risk_note,
-                        'Use the current risk posture, projected horizon, and nearest threshold direction to decide whether monitoring is enough or capacity planning should begin now.',
+                        'Use risk, horizon, and threshold direction to choose monitoring or capacity planning.',
                         icon='triangle-alert' if risk_count > 0 else 'circle-check',
                         role='brand',
                         tone='warning' if risk_count > 0 else 'normal') }}

@@ -82,7 +82,7 @@
                     <p class="text-xs font-semibold uppercase tracking-wider text-content-muted">Storage Risk Context</p>
                     {% if storage.pvc_risk_count > 0 %}
                         <p class="mt-1 text-sm font-semibold text-content-primary">Review Namespace Storage Pressure</p>
-                        <p class="mt-1 text-xs leading-5 text-content-muted">Review at-risk PVCs, namespace growth, storage class expansion support, and remaining free capacity before exhaustion.</p>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">Review PVC risk, namespace growth, expansion support, and free capacity.</p>
                         <div class="{{ overview_surface.guidance_card_classes('mt-4') }}">
                             {{ overview_surface.interpretation_callout('Recommended Action',
                                                         'Plan PVC Expansion Or Cleanup',
@@ -122,13 +122,13 @@
             <div class="{{ overview_surface.interpretation_grid_classes('lg:grid-cols-3') }}">
                 {{ overview_surface.interpretation_callout('How To Read',
                                 'Compare Used Capacity With Remaining Free Capacity',
-                                'Requested capacity is demand evidence. Observed PVC capacity is the pressure denominator, while used capacity reflects current volume consumption.',
+                                'Requests show demand; observed capacity sets pressure; used capacity shows current consumption.',
                                 icon='chart-column',
                                 role='insight') }}
                 {% if storage.pvc_risk_count > 0 %}
                     {{ overview_surface.interpretation_callout('What To Watch',
                                         'Review Free Capacity Before Namespace Growth',
-                                        'Track remaining free capacity, PVC risk count, and namespace growth before storage exhaustion or expansion is required.',
+                                        'Track free capacity, PVC risk, and namespace growth before expansion is needed.',
                                         icon='triangle-alert',
                                         role='brand',
                                         tone='warning') }}

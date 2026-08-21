@@ -38,7 +38,7 @@
     </div>
     <div class="{{ analysis_surface.interpretation_grid_classes() }}">
         {{ analysis_surface.interpretation_callout('Consumer Reading', consumer.concentration_label|default('Unknown') , consumer.top_usage_share_display|default('N/A') ~ ' of known usage belongs to the largest bucket. Use Top Consumers for ranking detail and ownership triage.', icon='scan-search', role='status', tone=consumer.concentration_tone|default('unknown')) }}
-        {{ analysis_surface.interpretation_callout('Drill-down', 'Keep detailed bucket records out of Overview', 'Open Top Consumers when you need ranked storage, object, request, or error evidence. Overview intentionally keeps only concentration signals.', icon='arrow-up-right', role='insight') }}
+        {{ analysis_surface.interpretation_callout('Drill-down', 'Keep detailed bucket records out of Overview', 'Open Top Consumers for ranked evidence; Overview shows concentration only.', icon='arrow-up-right', role='insight') }}
     </div>
     <div class="border-t border-outline-subtle bg-surface-hover px-5 py-3 text-right sm:px-6">
         <a href="{{ url_for('analytics.object_storage_top_consumers', system_id=system.id, time_range=selected_time_range) }}"

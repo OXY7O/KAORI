@@ -130,7 +130,7 @@ def _calculate_holt_winters_forecast(
         'slope_per_day': trend,
         'forecast_points': forecast_points,
         'signal_quality': quality,
-        'signal_quality_reason': f'{reason} Weekly additive seasonality was evaluated.',
+        'signal_quality_reason': f'{reason} Weekly seasonality checked.',
     }
 
 
@@ -246,10 +246,10 @@ def _calculate_signal_quality(
     coefficient_of_variation = sqrt(variance) / average_value
 
     if points_count >= 30 and completeness >= 0.90 and coefficient_of_variation <= 0.25:
-        return 'High', f'{points_count} daily samples, {completeness:.0%} completeness, and stable variation.'
+        return 'High', f'{points_count} daily samples · {completeness:.0%} complete · stable variation.'
     if points_count >= 14 and completeness >= 0.75 and coefficient_of_variation <= 0.60:
-        return 'Medium', f'{points_count} daily samples, {completeness:.0%} completeness, and moderate variation.'
-    return 'Low', f'{points_count} daily samples with {completeness:.0%} completeness or high variation.'
+        return 'Medium', f'{points_count} daily samples · {completeness:.0%} complete · moderate variation.'
+    return 'Low', f'{points_count} daily samples · {completeness:.0%} complete or high variation.'
 
 
 def _unavailable_eta(label: str = 'N/A') -> dict[str, Any]:

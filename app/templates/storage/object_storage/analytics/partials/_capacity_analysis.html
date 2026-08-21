@@ -104,6 +104,6 @@
     </div>
     <div class="{{ analysis_surface.interpretation_grid_classes() }}">
         {{ analysis_surface.interpretation_callout('Capacity Reading', metrics.capacity_posture.headline, metrics.capacity_posture.detail, icon='shield-check', role='status', tone=metrics.capacity_posture.tone) }}
-        {{ analysis_surface.interpretation_callout('Measurement Boundary', 'Physical headroom and bucket quota are separate controls', 'Usable capacity describes physical operating headroom. Bucket quotas describe per-bucket governance limits and must not be interpreted as system free capacity.', icon='ruler', role='insight') }}
+        {{ analysis_surface.interpretation_callout('Measurement Boundary', 'Physical headroom and bucket quota are separate controls', 'Usable capacity is physical headroom; quotas are governance limits, not free capacity.', icon='ruler', role='insight') }}
     </div>
 </section>

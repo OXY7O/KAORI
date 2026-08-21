@@ -59,9 +59,9 @@
                         <div class="{{ analysis_surface.evidence_shell_classes() }}">
                             <div class="{{ analysis_surface.metric_grid_classes(4) }}">
                                 {% for label, value, helper, icon in [
-                                    ('Latest Daily Average', item.latest_daily_average_display, ((item.latest_daily_average_percent ~ '% of ' ~ item.capacity_display) if item.latest_daily_average_percent is not none else item.empty_reason), 'gauge'),
-                                    ('Projected Horizon Value', item.projected_display, ((item.projected_percent ~ '% at ' ~ selected_forecast_horizon) if item.projected_percent is not none else item.empty_reason), 'scan-line'),
-                                    ('Weekly Trend', item.weekly_trend_display, 'Direction derived from the selected model', 'trending-up'),
+                                    ('Latest Daily Average', item.latest_daily_average_display, (('Latest committed daily average uses ' ~ item.latest_daily_average_percent ~ '% of the ' ~ item.capacity_display ~ ' capacity baseline defined as ' ~ item.capacity_label ~ '.') if item.latest_daily_average_percent is not none else item.empty_reason), 'gauge'),
+                                    ('Projected Horizon Value', item.projected_display, (('At the selected ' ~ selected_forecast_horizon ~ ' horizon, projected demand reaches ' ~ item.projected_percent ~ '% of the documented capacity baseline.') if item.projected_percent is not none else item.empty_reason), 'scan-line'),
+                                    ('Weekly Trend', item.weekly_trend_display, 'Trend direction is derived from the selected forecast model and committed daily history for this resource.', 'trending-up'),
                                     ('Historical Signal Quality', item.signal_quality, item.signal_quality_reason, 'shield-check')
                                     ] %}
                                     <div class="{{ analysis_surface.metric_cell_classes() }}">
@@ -119,7 +119,7 @@
                                     </dl>
                                     <div class="border-t border-outline-subtle pt-3">
                                         <p class="{{ analysis_surface.metric_label_classes() }}">Scope Boundary</p>
-                                        <p class="mt-1 text-xs leading-5 text-content-secondary">{{ item.scope_label }} · {{ item.comparison_label }} · {{ item.capacity_label }}</p>
+                                        <p class="mt-1 text-xs leading-5 text-content-secondary">Scope: {{ item.scope_label }} · Comparison: {{ item.comparison_label }} · Capacity baseline: {{ item.capacity_label }}.</p>
                                     </div>
                                 </div>
                             </section>
@@ -145,7 +145,7 @@
                         <div class="grid gap-4 lg:grid-cols-2">
                             {{ analysis_surface.interpretation_callout('How To Read',
                                                         'Use Committed Daily Evidence And Signal Quality',
-                                                        'The latest daily average is the final committed daily observation, not an instantaneous reading. Historical Signal Quality describes sample completeness and stability, not model accuracy.',
+                                                        'Latest Daily Average is the last committed point; Signal Quality reflects history completeness, not model accuracy.',
                                                         icon='chart-no-axes-combined',
                                                         role='insight',
                                                         card=true) }}
@@ -264,7 +264,7 @@
                 <div class="{{ analysis_surface.interpretation_grid_classes() }}">
                     {{ analysis_surface.interpretation_callout('How To Read',
                                         'Compare Slope And Threshold Timing Within Each Scope',
-                                        "Compare the slope and threshold timing across resources, but retain each panel's scope boundary. Namespace CPU, memory, and pods are demand shares against cluster capacity; namespace storage uses observed namespace volume capacity.",
+                                        "Compare slope and threshold timing by resource; CPU, memory, and Pods use cluster capacity, while storage uses observed namespace capacity.",
                                         icon='chart-no-axes-combined',
                                         role='insight') }}
                     {{ analysis_surface.interpretation_callout('What To Do',

@@ -325,10 +325,10 @@ def _pressure_lanes(storage_summary: dict[str, Any]) -> list[dict[str, Any]]:
     pvc_scope = str(pvc.get('scope_label') or 'All Namespaces')
     pvc_coverage = str(pvc.get('pressure_coverage_display') or 'N/A')
     pvc_complete = bool(pvc.get('pressure_evidence_complete'))
-    pvc_reason = 'Observed claim usage is measured against paired observed volume capacity. ' + (
-        'Coverage is complete for the active scope.'
+    pvc_reason = 'PVC usage uses paired observed capacity. ' + (
+        'Coverage is complete.'
         if pvc_complete
-        else 'The aggregate excludes claims without paired kubelet volume statistics.'
+        else 'Claims without kubelet volume stats are excluded.'
     )
     return [
         {
