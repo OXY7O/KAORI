@@ -4,7 +4,7 @@
         <meta charset="utf-8">
         <title>{{ document.report_name }}</title>
     </head>
-    <body class="kaori-analytics-publication kaori-reporting-v24">
+    <body class="kaori-analytics-publication kaori-reporting-v3">
         {% set p = document.presentation %}
         {% import 'reports/pdf/components/analytics_publication.html' as ui %}
         {% macro status(label, tone='muted') -%}
@@ -153,28 +153,19 @@
                                 {{ page_title(2, 'Resource Posture', 'Current utilization and committed capacity headroom.') }}
                                 {% call ui.section('Shared Resource Utilization','Current use is compared with the KAORI warning and critical operating bands.') %}
                                     <div class="utilization-chart">
-                                        {% for item in [p.resource_posture.cpu, p.resource_posture.memory] %}
+                                        {% for item in p.resource_posture.shared_rows %}
                                             <div class="util-row">
                                                 <strong>{{ item.label }}</strong>
                                                 <div class="util-track">
-                                                    {{ ui.percent_fill(item.current|replace('%', '') ) }}<b class="warn-line"></b><b class="crit-line"></b>
+                                                    {{ ui.percent_fill(item.chart_percent) }}<b class="warn-line"></b><b class="crit-line"></b>
                                                 </div>
                                                 <span>{{ item.current }} used</span><em>{{ item.headroom }} headroom</em>
-                                            </div>
-                                        {% endfor %}
-                                        {% for row in p.resource_posture.capacity_rows[:2] %}
-                                            <div class="util-row">
-                                                <strong>{{ row.resource }}</strong>
-                                                <div class="util-track">
-                                                    {{ ui.percent_fill(row.chart_percent) }}<b class="warn-line"></b><b class="crit-line"></b>
-                                                </div>
-                                                <span>{{ row.chart_value }}</span><em>{{ row.chart_headroom }}</em>
                                             </div>
                                         {% endfor %}
                                         <div class="util-axis"><span class="axis-start">0%</span><span class="axis-warning">70%</span><span class="axis-critical">85%</span><span class="axis-end">100%</span></div>
                                     </div>
                                 {% endcall %}
-                                {% call ui.section('Storage, Pod, and Node Capacity','Interpretation is separated from the comparison table to keep every row visually consistent.') %}
+                                {% call ui.section('PVC, Pod, and Node Capacity','Interpretation is separated from the comparison table to keep every row visually consistent.') %}
                                     <table class="report-table capacity-table capacity-register">
                                         <thead>
                                             <tr>
@@ -229,6 +220,7 @@
                                                 <th>Resource</th>
                                                 <th>Current</th>
                                                 <th>Projection</th>
+                                                <th>Threshold ETA</th>
                                                 <th>Confidence</th>
                                             </tr>
                                         </thead>
@@ -237,12 +229,10 @@
                                                 <tr>
                                                     <td><strong>P{{ loop.index }}</strong></td>
                                                     <td><strong>{{ row.resource }}</strong></td>
-                                                    <td>{{ row.current }}</td>
-                                                    <td>
-                                                        {{ row.projected }}
-                                                        {% if row.eta %}<small>{{ row.eta }}</small>{% endif %}
-                                                    </td>
-                                                    <td>{{ row.confidence }}</td>
+                                                    <td class="nowrap">{{ row.current }}</td>
+                                                    <td class="nowrap">{{ row.projected }}</td>
+                                                    <td class="nowrap">{{ row.eta|default('Not projected', true) }}</td>
+                                                    <td class="nowrap">{{ row.confidence }}</td>
                                                 </tr>
                                             {% endfor %}
                                         </tbody>
@@ -317,7 +307,7 @@
                                     </table>
                                     <div class="identity-register">
                                         <h3>Complete Consumer Identities</h3>
-                                        <div class="identity-grid">
+                                        <div class="identity-grid single-column consumer-identities">
                                             {% for item in p.top_consumers.primary[:3] %}
                                                 <div class="identity-item">
                                                     <span class="reference-code">M{{ loop.index }}</span>
@@ -658,11 +648,11 @@
                                         <tbody>
                                             {% for row in p.freshness.sources[:4] %}
                                                 <tr>
-                                                    <td>{{ row.source }}</td>
+                                                    <td>{{ row.source_short|default(row.source, true) }}</td>
                                                     <td>{{ row.type }}</td>
                                                     <td>{{ row.last_successful }}</td>
                                                     <td>{{ row.freshness }}</td>
-                                                    <td>{{ status(row.status,row.tone) }}</td>
+                                                    <td>{{ status(row.status_short|default(row.status, true),row.tone) }}</td>
                                                 </tr>
                                             {% endfor %}
                                         </tbody>
@@ -729,7 +719,7 @@
                                 {% endcall %}
                                 {% call ui.section('Recommendation References','Descriptions expand below the register without changing table row heights.') %}
                                     <div class="reference-notes reference-grid recommendation-references">
-                                        {% for row in p.recommendations['items'][:5] %}{{ reference_item('R' ~ loop.index, row.title, row.description, 'Why It Matters') }}{% endfor %}
+                                        {% for row in p.recommendations['items'][:5] %}{{ reference_item('R' ~ loop.index, row.title, row.summary|default(row.description, true), 'Why It Matters') }}{% endfor %}
                                     </div>
                                 {% endcall %}
                                 {% call ui.section('Execution Governance') %}
@@ -780,7 +770,7 @@
                                                 <tbody>
                                                     {% for row in p.methodology.sources[:4] %}
                                                         <tr>
-                                                            <td>{{ row.source }}</td>
+                                                            <td>{{ row.source_short|default(row.source, true) }}</td>
                                                             <td class="freshness-value">{{ row.freshness }}</td>
                                                             <td class="collected-value">{{ row.last_successful }}</td>
                                                         </tr>

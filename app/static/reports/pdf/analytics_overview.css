@@ -52,12 +52,14 @@
 /* Forecast */
 .chart-frame { border: .3mm solid #D7DEE8; background: #FCFDFE; padding: 3mm 4mm 2mm; overflow: hidden; }
 .chart-frame svg { display: block; width: 100%; max-height: 61mm; }
-.forecast-register th:nth-child(1) { width: 9%; }
+.forecast-register th:nth-child(1) { width: 8%; }
 .forecast-register th:nth-child(2) { width: 22%; }
-.forecast-register th:nth-child(3) { width: 18%; }
-.forecast-register th:nth-child(4) { width: 31%; }
-.forecast-register th:nth-child(5) { width: 20%; }
-.forecast-register td small { display: block; margin-top: .5mm; color: #64748B; }
+.forecast-register th:nth-child(3) { width: 14%; }
+.forecast-register th:nth-child(4) { width: 16%; }
+.forecast-register th:nth-child(5) { width: 22%; }
+.forecast-register th:nth-child(6) { width: 18%; }
+.forecast-register th,
+.forecast-register td { white-space: nowrap; }
 .forecast-references { margin-top: 2.7mm; }
 
 /* Consumers */
@@ -72,9 +74,10 @@
 .resource-key-compact th:nth-child(2) { width: 42%; }
 .resource-key-compact th:nth-child(3) { width: 24%; }
 .resource-key-compact th:nth-child(4) { width: 24%; }
-.page-consumers .identity-item { padding-top: 1.55mm; padding-bottom: 1.55mm; }
-.page-consumers .identity-title { font-size: 6.75pt; }
-.page-consumers .identity-meta { font-size: 6pt; }
+.page-consumers .consumer-identities { grid-template-columns: 1fr; }
+.page-consumers .consumer-identities .identity-item { grid-template-columns: 8.5mm minmax(0, 1fr); padding-top: 1.45mm; padding-bottom: 1.45mm; }
+.page-consumers .identity-title { font-size: 6.9pt; white-space: nowrap; }
+.page-consumers .identity-meta { font-size: 6.1pt; white-space: nowrap; }
 
 /* Capacity pressure */
 .capacity-table th:nth-child(1) { width: 18%; }
@@ -118,10 +121,13 @@
 .readiness-line { display: flex; align-items: center; gap: 3mm; margin-bottom: 2.5mm; }
 .readiness-line strong { font-size: 8pt; }
 .empty-state { margin: 0; padding: 4mm; border: .3mm dashed #CBD5E1; background: #F8FAFC; color: #64748B; }
-.reports-table th:nth-child(1) { width: 45%; }
-.reports-table th:nth-child(2) { width: 25%; }
-.reports-table th:nth-child(3) { width: 15%; }
+.reports-table th:nth-child(1) { width: 42%; }
+.reports-table th:nth-child(2) { width: 30%; }
+.reports-table th:nth-child(3) { width: 13%; }
 .reports-table th:nth-child(4) { width: 15%; }
+.reports-table td:nth-child(2),
+.reports-table td:nth-child(3),
+.reports-table td:nth-child(4) { white-space: nowrap; }
 .spaced { margin-top: 2.2mm !important; }
 
 /* Inventory */
@@ -145,11 +151,14 @@
 /* Freshness */
 .freshness-chart { min-height: 47mm; border: .3mm solid #E2E8F0; background: #F8FAFC; overflow: hidden; }
 .freshness-chart svg { display: block; width: 100%; max-height: 48mm; }
-.fresh-table th:nth-child(1) { width: 29%; }
-.fresh-table th:nth-child(2) { width: 20%; }
-.fresh-table th:nth-child(3) { width: 24%; }
-.fresh-table th:nth-child(4) { width: 16%; }
-.fresh-table th:nth-child(5) { width: 11%; }
+.fresh-table th:nth-child(1) { width: 23%; }
+.fresh-table th:nth-child(2) { width: 19%; }
+.fresh-table th:nth-child(3) { width: 27%; }
+.fresh-table th:nth-child(4) { width: 18%; }
+.fresh-table th:nth-child(5) { width: 13%; }
+.fresh-table td:nth-child(3),
+.fresh-table td:nth-child(4),
+.fresh-table td:nth-child(5) { white-space: nowrap; }
 .quality-table th:nth-child(1) { width: 52%; }
 .quality-table th:nth-child(2) { width: 12%; }
 .quality-table th:nth-child(3) { width: 18%; }
@@ -175,9 +184,11 @@
 /* Methodology */
 .methodology-register-layout { display: grid; grid-template-columns: minmax(0, 1.12fr) minmax(0, .88fr); gap: 6mm; align-items: start; }
 .methodology-register-layout h3 { margin: 0 0 2.4mm; font-size: 7.5pt; }
-.sources-compact th:nth-child(1) { width: 46%; }
+.sources-compact th:nth-child(1) { width: 40%; }
 .sources-compact th:nth-child(2) { width: 20%; }
-.sources-compact th:nth-child(3) { width: 34%; }
+.sources-compact th:nth-child(3) { width: 40%; }
+.sources-compact td:nth-child(2),
+.sources-compact td:nth-child(3) { white-space: nowrap; }
 .method-register th:nth-child(1) { width: 14%; }
 .method-register th:nth-child(2) { width: 42%; }
 .method-register th:nth-child(3) { width: 44%; }
@@ -206,13 +217,12 @@
 .page-trend .content-section,
 .page-consumers .content-section,
 .page-capacity-pressure .content-section,
-.page-alerts .content-section,
 .page-reporting .content-section,
 .page-freshness .content-section,
-.page-recommendations .content-section { margin-top: 4.6mm; }
-.page-methodology .content-section { margin-top: 3.8mm; }
-.page-methodology .section-body { margin-top: 2.4mm; }
-.page-methodology .report-table { font-size: 6.25pt; }
-.page-methodology .reference-item p { font-size: 6.1pt; }
-.page-alerts .content-section { margin-top: 4.1mm; }
-.page-alerts .section-body { margin-top: 2.4mm; }
+.page-recommendations .content-section { margin-top: 4.8mm; }
+.page-alerts .content-section { margin-top: 4.4mm; }
+.page-alerts .section-body { margin-top: 2.6mm; }
+.page-methodology .content-section { margin-top: 4mm; }
+.page-methodology .section-body { margin-top: 2.5mm; }
+.page-methodology .report-table { font-size: 6.4pt; }
+.page-methodology .reference-item p { font-size: 6.2pt; }

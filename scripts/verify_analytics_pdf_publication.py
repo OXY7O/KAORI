@@ -107,7 +107,7 @@ def main() -> int:
         'KAORI Analytics PDF Publication Standard v3.0',
         'font-family:"Inter Analytics"',
         'font-size:8pt',
-        'line-height:1.46',
+        'line-height:1.44',
         'table-layout:fixed',
         'overflow-wrap:break-word',
         '.identity-register',
@@ -122,6 +122,7 @@ def main() -> int:
         )
     require('text-overflow:ellipsis' not in compact_css, 'Evidence CSS must not use ellipsis.', errors)
     require('word-break:break-all' not in compact_css, 'Evidence CSS must not use break-all.', errors)
+    require('font-size:7pt' in compact_css, 'Canonical report table body size must remain 7pt.', errors)
 
     component = read(PDF_TEMPLATE_ROOT / 'components' / 'analytics_publication.html')
     require('macro identity_register' in component, 'Shared identity_register macro is missing.', errors)
@@ -220,6 +221,8 @@ def main() -> int:
         'Concise register',
         'Reference register',
         'collision-safe',
+        'same evidence series and denominator',
+        'Raw ISO timestamps with microseconds are prohibited',
         'KAORI-{FAMILY}-{TYPE}-{YYYYMMDD}-{FINGERPRINT}',
     ):
         require(value in docs, f'Publication documentation is missing: {value}', errors)

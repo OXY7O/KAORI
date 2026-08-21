@@ -68,16 +68,31 @@ Canonical family:
 |---|---:|---:|
 | Cover title | 26.5 pt | 1.04 |
 | Page title | 15 pt | 1.08 |
-| Section heading | 10.2 pt | 1.22 |
-| Subheading | 8.25 pt | 1.28 |
-| Body | 8 pt | 1.46 |
+| Section heading | 10 pt | 1.20 |
+| Subheading | 8.25 pt | 1.25 |
+| Body | 8 pt | 1.44 |
 | Lead paragraph | 8.15 pt | 1.50 |
-| Table body | 6.8 pt | 1.34 |
-| Reference body | 6.9 pt | 1.42 |
-| Source note | 6.2 pt | 1.38 |
+| Table body | 7 pt | 1.36 |
+| Reference body | 6.95 pt | 1.44 |
+| Source note | 6.35 pt | 1.42 |
 | Footer | 5.8 pt | 1.0 |
 
 Long narrative text should use a controlled measure rather than spanning the full page width. Paragraph margins are tokenized; browser defaults and per-template paragraph spacing are prohibited.
+
+
+### 4.1 Precision-layout refinement (2026-08-21)
+
+The v3.0 contract is refined with the following mandatory publication rules. This is not a new visual family; it tightens the existing standard based on production report review.
+
+- Prefer one-line values, dates, statuses, units, thresholds, and short labels in fixed comparison registers.
+- Preserve readable type size. If content does not fit, shorten presentation copy or move the full detail to a reference register instead of shrinking typography.
+- Technical identities receive horizontal space before wrapping. Full identities belong in a full-width reference register when a narrow table would force repeated line breaks.
+- Publication labels must identify the actual measurement boundary. Node-filesystem utilization, PVC observed capacity, PVC requested capacity, and bucket/system capacity are separate evidence domains and must never share an ambiguous `Storage` label when their denominators differ.
+- A current value, projected value, and headroom value presented on one row must use the same evidence series and denominator.
+- Forecast rows must take both current and projected values from the committed forecast series when that series is available. A current value from another analytics card must not be substituted into a forecast row.
+- Generated timestamps in fixed registers use a human-readable UTC format. Raw ISO timestamps with microseconds are prohibited in publication tables.
+- Source registers may use compact publication labels such as `Metrics Cache`, `Kubernetes Inventory`, `Analytics Snapshots`, and `Alert Cache`; the full source identity remains available elsewhere in the evidence boundary.
+- Normalize non-breaking and renderer-sensitive dash characters before publication so identifiers and `cut-off` language do not produce broken glyphs.
 
 ## 5. Vertical rhythm
 
@@ -114,6 +129,8 @@ Rules:
 - Never use `word-break: break-all`.
 - Use normal word wrapping and explicit overflow-safe cells.
 - Keep column headers short and include units in the header or title.
+- Prefer a dedicated column over a second line inside a cell when a scalar such as threshold ETA can remain one line.
+- A fixed register should not mix two denominators under one resource label.
 - Avoid merged cells.
 - Do not split one row across pages.
 - Missing evidence remains `Not Available`, `Not Collected`, `Partial Coverage`, or `Source Unavailable`; it is never converted to zero.
@@ -190,6 +207,8 @@ Before release, render every Analytics report and inspect every page as an image
 - tables contain concise comparable fields;
 - complete identities exist in references;
 - charts have readable labels and visible gaps for missing observations;
+- current, projection, capacity, and headroom values use the documented evidence denominator;
+- fixed-table timestamps, statuses, and scalar values remain on one line where practical;
 - paragraph spacing is consistent;
 - public references use the documented convention;
 - source-unavailable output uses the canonical design.

@@ -329,6 +329,7 @@ def _snapshot_series_item(
         ),
         'latest_percent': _safe_int(latest),
         'projected_percent': _safe_int(projected),
+        'confidence': str(item.get('signal_quality') or 'Not Available'),
         'trend': _get_forecast_trend_label(item),
     }
 

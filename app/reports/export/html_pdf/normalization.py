@@ -83,7 +83,19 @@ def sanitize_text(value: Any, *, fallback: str = '-') -> str:
         rendered = [sanitize_text(item, fallback='') for item in value[:6]]
         return ', '.join(item for item in rendered if item) or fallback
 
-    text = _WHITESPACE_PATTERN.sub(' ', str(value)).strip()
+    text = str(value)
+    # PDF-safe punctuation normalization: keep technical identifiers and prose
+    # renderable across WeasyPrint/PDF viewers without broken-glyph artifacts.
+    text = (
+        text.replace('\u00a0', ' ')
+        .replace('\u00ad', '')
+        .replace('\u2010', '-')
+        .replace('\u2011', '-')
+        .replace('\u2012', '-')
+        .replace('\u2013', '-')
+        .replace('\u2212', '-')
+    )
+    text = _WHITESPACE_PATTERN.sub(' ', text).strip()
     return text or fallback
 
 

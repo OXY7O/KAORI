@@ -153,7 +153,7 @@ body.kaori-analytics-publication .content-section { margin-top: 5.5mm; break-ins
 body.kaori-analytics-publication .content-section:first-of-type { margin-top: 0; }
 body.kaori-analytics-publication .content-section h2 { margin: 0; font-size: 10pt; line-height: 1.2; font-weight: 700; letter-spacing: -.008em; }
 body.kaori-analytics-publication .content-section h3 { margin: 0; font-size: 8.25pt; line-height: 1.25; font-weight: 650; }
-body.kaori-analytics-publication .section-subtitle { margin: 1.25mm 0 0; color: var(--analytics-muted); font-size: 6.55pt; line-height: 1.4; }
+body.kaori-analytics-publication .section-subtitle { margin: 1.25mm 0 0; color: var(--analytics-muted); font-size: 6.65pt; line-height: 1.4; }
 body.kaori-analytics-publication .section-rule,
 body.kaori-analytics-publication .section-rule > span { display: none; }
 body.kaori-analytics-publication .section-body { margin-top: 3mm; font-size: 8pt; line-height: 1.44; }
@@ -161,7 +161,7 @@ body.kaori-analytics-publication .section-body p { margin: 0; }
 body.kaori-analytics-publication .section-body p + p { margin-top: 2.2mm; }
 body.kaori-analytics-publication .lead-paragraph,
 body.kaori-analytics-publication .narrative-copy { max-width: 154mm; font-size: 8.15pt; line-height: 1.5; }
-body.kaori-analytics-publication .source-note { margin-top: 2.2mm; color: var(--analytics-muted); font-size: 6.25pt; line-height: 1.42; }
+body.kaori-analytics-publication .source-note { margin-top: 2.2mm; color: var(--analytics-muted); font-size: 6.35pt; line-height: 1.42; }
 body.kaori-analytics-publication .two-column { display: grid; grid-template-columns: minmax(0, 1.24fr) minmax(0, .76fr); gap: 6.5mm; align-items: start; }
 body.kaori-analytics-publication .paired-sections > .content-section { margin-top: 0; }
 
@@ -175,7 +175,7 @@ body.kaori-analytics-publication .interpretation-card p { margin: 3mm 0 0; font-
 body.kaori-analytics-publication .interpretation-card small { display: block; margin-top: 3.6mm; color: var(--analytics-muted); font-size: 6.2pt; line-height: 1.44; }
 
 /* Tables */
-body.kaori-analytics-publication .report-table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 6.9pt; line-height: 1.36; }
+body.kaori-analytics-publication .report-table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 7pt; line-height: 1.36; }
 body.kaori-analytics-publication .report-table thead { display: table-header-group; }
 body.kaori-analytics-publication .report-table tr { break-inside: avoid; page-break-inside: avoid; }
 body.kaori-analytics-publication .report-table th { padding: 1.7mm 1.85mm; vertical-align: middle; border-top: .28mm solid var(--analytics-border); border-bottom: .32mm solid var(--analytics-border); background: var(--analytics-table-head); color: #334155; text-align: left; font-weight: 650; line-height: 1.25; overflow-wrap: break-word; }
@@ -202,7 +202,7 @@ body.kaori-analytics-publication .reference-copy { min-width: 0; }
 body.kaori-analytics-publication .reference-copy > strong,
 body.kaori-analytics-publication .reference-item strong { display: block; margin: 0 0 .6mm; color: #1F2937; font-size: 7.25pt; line-height: 1.3; font-weight: 650; overflow-wrap: break-word; }
 body.kaori-analytics-publication .reference-copy p,
-body.kaori-analytics-publication .reference-item p { margin: 0; color: #475569; font-size: 6.85pt; line-height: 1.46; }
+body.kaori-analytics-publication .reference-item p { margin: 0; color: #475569; font-size: 6.95pt; line-height: 1.44; }
 body.kaori-analytics-publication .reference-copy p b { color: #334155; font-weight: 600; }
 body.kaori-analytics-publication .reference-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 8mm; }
 body.kaori-analytics-publication .reference-grid > h3 { grid-column: 1 / -1; }

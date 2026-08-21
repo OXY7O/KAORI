@@ -1420,16 +1420,12 @@ def _normalize_overview_consumers_for_recommendations(
         ):
             continue
 
-        value = _safe_float(
-            _as_float_like(
-                item.get(
-                    'value',
-                    item.get(
-                        'percent',
-                        0,
-                    ),
-                )
-            )
+        value = str(
+            item.get('display_value')
+            or item.get('value_label')
+            or item.get('value')
+            or item.get('percent')
+            or 'Not Available'
         )
 
         normalized.append(
@@ -1639,6 +1635,7 @@ def _normalize_forecast_series(
                         )
                     )
                 ),
+                'confidence': str(item.get('confidence') or 'Not Available'),
                 'trend': str(
                     item.get(
                         'trend',

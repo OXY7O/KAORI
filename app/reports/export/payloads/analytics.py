@@ -91,7 +91,13 @@ def _collect_reporting_summary(report: Report) -> dict[str, Any]:
                 'schedules': schedule_count,
                 'active_schedules': active_schedules,
             },
-            'recent_reports': [serialize_recent_report(item) for item in recent_reports],
+            'recent_reports': [
+                {
+                    **serialize_recent_report(item),
+                    'created_at_display': _format_datetime(item.created_at),
+                }
+                for item in recent_reports
+            ],
             'schedules': [_serialize_schedule(schedule) for schedule in schedules],
             'storage': _serialize_storage_context(get_storage_context()),
             'notes': [

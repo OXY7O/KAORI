@@ -56,10 +56,11 @@ def _payload() -> dict[str, object]:
         },
         'storage_snapshot': {
             'pvc_requested': '10.0 TB',
+            'pvc_capacity': '8.0 TB',
             'pvc_used': '6.4 TB',
             'pvc_risk_count': 2,
-            'used_percent': 64.0,
-            'free_percent': 36.0,
+            'used_percent': 80.0,
+            'free_percent': 20.0,
         },
         'forecast_snapshot': {
             'risk_note': 'No near-term threshold breach is projected.',
@@ -408,3 +409,108 @@ def test_analytics_overview_v29_precision_layout_contract() -> None:
     assert 'class="method-rule"' in rendered_html
     assert 'class="method-setting"' in rendered_html
     assert 'donut-caption-below' in document.presentation['alerts']['severity_svg']
+
+
+def test_analytics_overview_separates_node_filesystem_and_pvc_capacity_evidence() -> None:
+    document, rendered_html, _ = _rendered_html()
+    presentation = document.presentation
+
+    assert presentation['resource_posture']['shared_rows'][2]['label'] == 'Node Filesystem'
+    storage_row = presentation['resource_posture']['capacity_rows'][0]
+    assert storage_row['resource'] == 'PVC Storage'
+    assert storage_row['capacity'] == '8.0 TB'
+    assert storage_row['headroom'] == '20.0%'
+    assert presentation['executive']['metrics'][2]['label'] == 'PVC Headroom'
+    assert 'PVC, Pod, and Node Capacity' in rendered_html
+
+
+def test_analytics_overview_forecast_row_uses_same_series_for_current_and_projection() -> None:
+    payload = _payload()
+    payload['forecast_snapshot'] = {
+        'series': [
+            {
+                'key': 'storage',
+                'label': 'PVC Storage',
+                'historical_points': '0,87.5 50,85.0',
+                'forecast_points': '50,85.0 100,82.0',
+                'latest_percent': 15.0,
+                'projected_percent': 18.0,
+                'confidence': 'Stable History',
+                'trend': 'Increasing',
+            },
+            {
+                'key': 'memory',
+                'label': 'Memory',
+                'historical_points': '0,45 50,39',
+                'forecast_points': '50,39 100,27',
+                'latest_percent': 61.0,
+                'projected_percent': 73.0,
+                'confidence': 'Stable History',
+                'trend': 'Increasing',
+            },
+        ],
+        'nearest_warning': {'resource': 'memory', 'label': '90 Days'},
+        'highest_projected_resource': 'Memory',
+        'highest_projected_percent': 73.0,
+    }
+
+    document = build_report_document(AnalyticsOverviewReportStub(), payload)
+    rows = {row['resource']: row for row in document.presentation['trend_forecast']['resource_rows']}
+
+    assert rows['PVC Storage']['current'] == '15.0%'
+    assert rows['PVC Storage']['projected'] == '18.0%'
+    assert rows['PVC Storage']['confidence'] == 'Stable History'
+    assert rows['Memory']['current'] == '61.0%'
+    assert rows['Memory']['projected'] == '73.0%'
+    assert rows['Memory']['eta'] == '90 Days'
+
+
+def test_analytics_overview_fixed_registers_use_publication_safe_one_line_fields() -> None:
+    _, rendered_html, project_root = _rendered_html()
+    template = (project_root / 'app' / 'templates' / 'reports' / 'pdf' / 'analytics_overview.html').read_text()
+    stylesheet = (project_root / 'app' / 'static' / 'reports' / 'pdf' / 'analytics_overview.css').read_text()
+
+    assert '<th>Threshold ETA</th>' in template
+    assert 'row.eta|default' in template
+    assert 'consumer-identities' in template
+    assert '.forecast-register th:nth-child(6)' in stylesheet
+    assert '.forecast-register td { white-space: nowrap; }' in stylesheet
+    assert '.page-consumers .identity-title { font-size: 6.9pt; white-space: nowrap; }' in stylesheet
+
+
+def test_analytics_overview_pdf_standard_documents_precision_semantics() -> None:
+    project_root = Path(__file__).resolve().parents[2]
+    standard = (project_root / 'docs' / 'reports' / 'kaori-analytics-pdf-publication-standard-v3.md').read_text()
+
+    assert 'Precision-layout refinement (2026-08-21)' in standard
+    assert 'same evidence series and denominator' in standard
+    assert 'Raw ISO timestamps with microseconds are prohibited' in standard
+    assert 'Node-filesystem utilization' in standard
+
+
+def test_analytics_overview_prioritizes_p1_before_p2_and_p3_in_management_registers() -> None:
+    payload = _payload()
+    payload['actionable_recommendations'] = {
+        'items': [
+            {'title': 'Low Priority', 'description': 'Later review.', 'priority': 'Info', 'source': 'Analytics'},
+            {
+                'title': 'Urgent Workload Governance',
+                'description': 'Immediate review.',
+                'priority': 'Critical',
+                'source': 'Workload Analysis',
+            },
+            {
+                'title': 'Capacity Review',
+                'description': 'Review headroom.',
+                'priority': 'Warning',
+                'source': 'Capacity Analysis',
+            },
+        ]
+    }
+
+    document = build_report_document(AnalyticsOverviewReportStub(), payload)
+    recommendation_items = document.presentation['recommendations']['items']
+    executive_findings = document.presentation['executive']['findings']
+
+    assert [item['priority'] for item in recommendation_items[:3]] == ['P1', 'P2', 'P3']
+    assert executive_findings[0]['title'] == 'Urgent Workload Governance'

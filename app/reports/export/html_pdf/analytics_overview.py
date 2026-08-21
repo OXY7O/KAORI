@@ -192,6 +192,7 @@ def build_analytics_overview_presentation(
     resource_posture = {
         'cpu': _resource_posture_card(resource_metrics, 'cpu'),
         'memory': _resource_posture_card(resource_metrics, 'memory'),
+        'shared_rows': [_resource_posture_card(resource_metrics, key) for key in ('cpu', 'memory', 'storage', 'pods')],
         'capacity_rows': _capacity_rows(
             resource_metrics=resource_metrics,
             capacity_snapshot=capacity_snapshot,
@@ -555,7 +556,7 @@ def _resource_metrics(
     for key, label in (
         ('cpu', 'CPU'),
         ('memory', 'Memory'),
-        ('storage', 'Storage'),
+        ('storage', 'Node Filesystem'),
         ('pods', 'Pods'),
     ):
         card = _mapping(resource_snapshot.get(key))
@@ -615,7 +616,7 @@ def _storage_headroom_metric(storage: Mapping[str, Any]) -> dict[str, Any]:
         tone = 'critical' if free < 10 else 'warning' if risks or free < 30 else 'normal'
         status = 'Critical' if tone == 'critical' else 'Review' if tone == 'warning' else 'Normal'
     return {
-        'label': 'Storage Headroom',
+        'label': 'PVC Headroom',
         'value': _display_percent(free),
         'status': status,
         'tone': tone,
@@ -639,6 +640,7 @@ def _priority_findings(
                 'title': _text(recommendation.get('title'), 'Operational recommendation'),
                 'description': _text(recommendation.get('description'), ''),
                 'summary': _text(recommendation.get('summary') or recommendation.get('description'), ''),
+                'priority': _text(recommendation.get('priority'), 'Review'),
                 'tone': _tone(recommendation.get('tone') or recommendation.get('priority')),
                 'scope': _text(recommendation.get('scope'), 'Selected reporting scope'),
             }
@@ -801,6 +803,8 @@ def _recommendations(actionable: Mapping[str, Any], payload: Mapping[str, Any]) 
                 'validation': _validation_text(source, title),
             }
         )
+    priority_order = {'P1': 0, 'P2': 1, 'P3': 2}
+    normalized.sort(key=lambda item: (priority_order.get(_text(item.get('priority')), 9), _integer(item.get('rank'))))
     return normalized[:12]
 
 
@@ -815,10 +819,10 @@ def _suggest_owner(source: str, title: str) -> str:
 
 def _target_window(tone: str) -> str:
     if tone == 'critical':
-        return 'This Week (5-7 days)'
+        return '5-7 Days'
     if tone == 'warning':
-        return 'Next Week (7-14 days)'
-    return 'This Month (14-30 days)'
+        return '7-14 Days'
+    return '14-30 Days'
 
 
 def _validation_text(source: str, title: str) -> str:
@@ -892,6 +896,13 @@ def _management_summary(
     else:
         resource_sentence = 'Shared CPU and memory utilization are not available from the committed metric evidence.'
 
+    pvc_headroom = storage_snapshot.get('free_percent')
+    pvc_sentence = (
+        f'Observed PVC headroom is {_display_percent(_number(pvc_headroom))}.'
+        if pvc_headroom is not None
+        else 'Observed PVC headroom is not available.'
+    )
+
     concerns: list[str] = []
     not_ready = _integer(inventory.get('not_ready_nodes'))
     if not_ready:
@@ -917,7 +928,7 @@ def _management_summary(
     else:
         forecast_sentence = 'Forecast conclusions remain limited to the committed historical observation window.'
 
-    return f'{resource_sentence} {concern_sentence} {forecast_sentence}'
+    return f'{resource_sentence} {pvc_sentence} {concern_sentence} {forecast_sentence}'
 
 
 def _overall_assessment(
@@ -945,8 +956,8 @@ def _evidence_summary(source_rows: Sequence[Mapping[str, Any]]) -> list[dict[str
     return [
         {
             'label': _text(row.get('label')),
-            'source': _text(row.get('source')),
-            'status': _text(row.get('status')),
+            'source': _text(row.get('source_short') or row.get('source')),
+            'status': _text(row.get('status_short') or row.get('status')),
             'tone': _tone(row.get('tone')),
         }
         for row in source_rows[:3]
@@ -1010,17 +1021,20 @@ def _capacity_rows(
     storage_used_percent = max(0.0, min(100.0, 100.0 - storage_free))
     return [
         {
-            'resource': 'Storage',
+            'resource': 'PVC Storage',
             'used': _text(storage_snapshot.get('pvc_used'), 'Not Available'),
-            'capacity': _text(storage_snapshot.get('pvc_requested'), 'Not Available'),
+            'capacity': _text(
+                storage_snapshot.get('pvc_capacity') or storage_snapshot.get('pvc_requested'),
+                'Not Available',
+            ),
             'headroom': _display_percent(storage_free),
             'chart_percent': storage_used_percent,
             'chart_value': f'{_display_percent(storage_used_percent)} used',
             'chart_headroom': f'{_display_percent(storage_free)} headroom',
             'interpretation': (
-                f'{storage_risks} local volume risk item(s) detected.'
+                f'{storage_risks} PVC pressure or expansion risk item(s) detected.'
                 if storage_risks
-                else 'No local persistent volume risk item detected.'
+                else 'Observed PVC usage remains within the current capacity baseline.'
             ),
             'status': storage_status,
             'tone': storage_tone,
@@ -1071,8 +1085,11 @@ def _resource_interpretation(
             ]
     else:
         details = ['Shared CPU and memory signals are not available from the committed metric evidence.']
+    pvc_headroom = storage_snapshot.get('free_percent')
+    if pvc_headroom is not None:
+        details.append(f'Observed PVC headroom is {_display_percent(_number(pvc_headroom))}.')
     if pvc_risks:
-        details.append(f'{pvc_risks} local storage item(s) require separate review.')
+        details.append(f'{pvc_risks} PVC item(s) require separate review.')
     if not_ready:
         details.append(f'{not_ready} node(s) are not ready and are excluded from active capacity assumptions.')
     return ' '.join(details)
@@ -1097,6 +1114,7 @@ def _forecast_series(forecast_snapshot: Mapping[str, Any]) -> list[dict[str, Any
                     'forecast_points': _text(item.get('forecast_points'), ''),
                     'latest_percent': _number(item.get('latest_percent')),
                     'projected_percent': _number(item.get('projected_percent')),
+                    'confidence': _text(item.get('confidence'), 'Not Available'),
                     'trend': _text(item.get('trend'), 'Unknown'),
                 }
             )
@@ -1141,6 +1159,7 @@ def _forecast_series(forecast_snapshot: Mapping[str, Any]) -> list[dict[str, Any
             'forecast_points': forecast_points,
             'latest_percent': latest,
             'projected_percent': projected,
+            'confidence': 'Not Available',
             'trend': 'Increasing' if projected > latest else 'Stable',
         }
     ]
@@ -1266,14 +1285,18 @@ def _forecast_rows(
     nearest_resource = str(nearest_critical.get('resource') or nearest_warning.get('resource') or '').lower()
     nearest_label = _text(nearest_critical.get('label') or nearest_warning.get('label'), 'Not projected')
     rows: list[dict[str, Any]] = []
-    for key, label in (('cpu', 'CPU'), ('memory', 'Memory'), ('storage', 'Storage'), ('pods', 'Pods')):
+    for key, label in (('cpu', 'CPU'), ('memory', 'Memory'), ('storage', 'PVC Storage'), ('pods', 'Pods')):
         metric = _mapping(resource_metrics.get(key))
-        current = metric.get('percent') if metric.get('available') else None
         item = _mapping(item_map.get(key))
+        current = (
+            _number(item.get('latest_percent'))
+            if item and item.get('latest_percent') is not None
+            else metric.get('percent') if metric.get('available') else None
+        )
         projected = _number(item.get('projected_percent'), current or 0.0) if item else None
         trend = _text(item.get('trend'), _text(forecast_snapshot.get(f'{key}_trend'), 'Unknown'))
         eta = nearest_label if key == nearest_resource else 'Not projected'
-        confidence = 'High' if item else 'Not Available'
+        confidence = _text(item.get('confidence'), 'Not Available') if item else 'Not Available'
         tone = (
             'neutral'
             if projected is None
@@ -1405,7 +1428,13 @@ def _observation_scope(
     source_rows: Sequence[Mapping[str, Any]],
     period_label: str,
 ) -> list[dict[str, Any]]:
-    result = [{'label': _text(row.get('label')), 'value': _text(row.get('source'))} for row in source_rows[:3]]
+    result = [
+        {
+            'label': _text(row.get('label')),
+            'value': _text(row.get('source_short') or row.get('source')),
+        }
+        for row in source_rows[:3]
+    ]
     result.append({'label': 'Time Window', 'value': period_label})
     return result
 
@@ -1417,13 +1446,11 @@ def _capacity_pressure_rows(
     inventory: Mapping[str, Any],
 ) -> list[dict[str, Any]]:
     rows = []
-    for key, label in (('cpu', 'CPU'), ('memory', 'Memory'), ('storage', 'Storage'), ('pods', 'Pods')):
+    for key, label in (('cpu', 'CPU'), ('memory', 'Memory'), ('storage', 'Node Filesystem'), ('pods', 'Pods')):
         metric = _mapping(resource_metrics.get(key))
         available = bool(metric.get('available'))
         percent = metric.get('percent') if available else None
         headroom = _display_percent(max(0.0, 100.0 - percent) if percent is not None else None)
-        if key == 'storage' and storage_snapshot.get('free_percent') is not None:
-            headroom = _display_percent(_number(storage_snapshot.get('free_percent')))
         rows.append(
             {
                 'resource': label,
@@ -1435,6 +1462,31 @@ def _capacity_pressure_rows(
                 'tone': _tone(metric.get('tone')),
             }
         )
+    pvc_used = storage_snapshot.get('used_percent')
+    pvc_free = storage_snapshot.get('free_percent')
+    pvc_available = pvc_used is not None or pvc_free is not None
+    if pvc_used is None and pvc_free is not None:
+        pvc_used = max(0.0, 100.0 - _number(pvc_free))
+    if pvc_free is None and pvc_used is not None:
+        pvc_free = max(0.0, 100.0 - _number(pvc_used))
+    pvc_risk_count = _integer(storage_snapshot.get('pvc_risk_count'))
+    pvc_status = 'Review' if pvc_risk_count else 'Normal' if pvc_available else 'Unknown'
+    pvc_tone = 'warning' if pvc_risk_count else 'normal' if pvc_available else 'neutral'
+    rows.append(
+        {
+            'resource': 'PVC Storage',
+            'used': _display_percent(_number(pvc_used)) if pvc_available else 'Not Available',
+            'capacity': _text(
+                storage_snapshot.get('pvc_capacity') or storage_snapshot.get('pvc_requested'),
+                'Not Available',
+            ),
+            'headroom': _display_percent(_number(pvc_free)) if pvc_available else 'Not Available',
+            'percent': _number(pvc_used) if pvc_available else 0.0,
+            'status': pvc_status,
+            'tone': pvc_tone,
+        }
+    )
+
     total_nodes = _integer(inventory.get('total_nodes'))
     not_ready = _integer(inventory.get('not_ready_nodes'))
     rows.append(
@@ -1915,7 +1967,7 @@ def _inventory(inventory_snapshot: Mapping[str, Any], selected_cluster_id: Any) 
                 'tone': 'warning' if totals['workloads'] else 'neutral',
             },
             {'label': 'Pods', 'value': str(totals['pods']), 'tone': 'info'},
-            {'label': 'Persistent Volumes', 'value': str(totals['storage']), 'tone': 'neutral'},
+            {'label': 'Storage Volumes', 'value': str(totals['storage']), 'tone': 'neutral'},
         ],
         'clusters': clusters,
         'totals': totals,
@@ -1972,6 +2024,33 @@ def _inventory_health_summary(
     return result
 
 
+def _source_short_label(item: Mapping[str, Any]) -> str:
+    label = _text(item.get('label'), '').lower()
+    source = _text(item.get('source'), 'Unknown Source')
+    if label == 'metrics' or 'metrics source' in source.lower():
+        return 'Metrics Cache'
+    if label == 'inventory' or 'kubernetes committed inventory' in source.lower():
+        return 'Kubernetes Inventory'
+    if label == 'analytics' or 'analytics materialized' in source.lower():
+        return 'Analytics Snapshots'
+    if label == 'alerts' or 'alertmanager' in source.lower():
+        return 'Alert Cache'
+    return source
+
+
+def _source_status_short(value: str) -> str:
+    normalized = value.strip().lower()
+    if 'partial' in normalized:
+        return 'Partial'
+    if 'connected' in normalized:
+        return 'Connected'
+    if 'query ready' in normalized:
+        return 'Query Ready'
+    if normalized == 'current':
+        return 'Current'
+    return value
+
+
 def _source_rows(
     *,
     payload: Mapping[str, Any],
@@ -1985,10 +2064,12 @@ def _source_rows(
             {
                 'label': _text(_mapping(item).get('label'), 'Data Source'),
                 'source': _text(_mapping(item).get('source'), 'Unknown Source'),
+                'source_short': _source_short_label(_mapping(item)),
                 'type': _text(_mapping(item).get('type'), 'Evidence'),
                 'last_successful': _text(_mapping(item).get('last_successful'), 'Not Available'),
                 'freshness': _text(_mapping(item).get('freshness'), 'Not Available'),
                 'status': _text(_mapping(item).get('status'), 'Unknown'),
+                'status_short': _source_status_short(_text(_mapping(item).get('status'), 'Unknown')),
                 'tone': _tone(_mapping(item).get('tone') or _mapping(item).get('status')),
             }
             for item in explicit
