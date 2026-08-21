@@ -449,6 +449,17 @@ def quick_sync_all_inventory() -> ResponseReturnValue:
     return _quick_action_response(accepted=accepted)
 
 
+def _manual_run_response(
+    job_key: str,
+    *,
+    is_htmx: bool,
+    feedback: object | None = None,
+) -> ResponseReturnValue:
+    if is_htmx:
+        return _render_configuration_job(job_key, operation_feedback=feedback)
+    return redirect(url_for('jobs.configuration', job_key=job_key))
+
+
 @bp.post('/configuration/<path:job_key>/run')
 @permission_required('jobs.execute')
 def run_now(job_key: str) -> ResponseReturnValue:
@@ -459,9 +470,7 @@ def run_now(job_key: str) -> ResponseReturnValue:
     form = ManualJobRunForm()
     is_htmx = _is_htmx()
     if not form.validate_on_submit():
-        if is_htmx:
-            return _render_configuration_job(job_key)
-        return redirect(url_for('jobs.configuration', job_key=job_key))
+        return _manual_run_response(job_key, is_htmx=is_htmx)
 
     try:
         recover_stale_jobs()
@@ -498,9 +507,7 @@ def run_now(job_key: str) -> ResponseReturnValue:
             },
             queue_feedback=not is_htmx,
         )
-        if is_htmx:
-            return _render_configuration_job(job_key, operation_feedback=feedback)
-        return redirect(url_for('jobs.configuration', job_key=job_key))
+        return _manual_run_response(job_key, is_htmx=is_htmx, feedback=feedback)
     except JobQuotaExceeded as exc:
         rollback_job_dispatch_transaction()
         record_job_dispatch_outcome(
@@ -532,9 +539,7 @@ def run_now(job_key: str) -> ResponseReturnValue:
             },
             queue_feedback=not is_htmx,
         )
-        if is_htmx:
-            return _render_configuration_job(job_key, operation_feedback=feedback)
-        return redirect(url_for('jobs.configuration', job_key=job_key))
+        return _manual_run_response(job_key, is_htmx=is_htmx, feedback=feedback)
     except (CeleryError, KombuOperationalError, OSError, RuntimeError, SQLAlchemyError) as exc:
         rollback_job_dispatch_transaction()
         logger.exception('Could not dispatch registered job %s.', job_key)
@@ -556,9 +561,7 @@ def run_now(job_key: str) -> ResponseReturnValue:
             metadata={'job_key': job_key, 'trigger_type': 'manual'},
             queue_feedback=not is_htmx,
         )
-        if is_htmx:
-            return _render_configuration_job(job_key, operation_feedback=feedback)
-        return redirect(url_for('jobs.configuration', job_key=job_key))
+        return _manual_run_response(job_key, is_htmx=is_htmx, feedback=feedback)
 
     if not outcome.accepted:
         record_job_dispatch_outcome(
@@ -579,9 +582,7 @@ def run_now(job_key: str) -> ResponseReturnValue:
             metadata={'job_key': job_key, 'trigger_type': 'manual', 'dispatch_status': outcome.status},
             queue_feedback=not is_htmx,
         )
-        if is_htmx:
-            return _render_configuration_job(job_key, operation_feedback=feedback)
-        return redirect(url_for('jobs.configuration', job_key=job_key))
+        return _manual_run_response(job_key, is_htmx=is_htmx, feedback=feedback)
 
     job = outcome.job
     assert job is not None
@@ -612,12 +613,7 @@ def run_now(job_key: str) -> ResponseReturnValue:
         },
         queue_feedback=not is_htmx,
     )
-    if is_htmx:
-        return _render_configuration_job(
-            job_key,
-            operation_feedback=feedback,
-        )
-    return redirect(url_for('jobs.configuration', job_key=job_key))
+    return _manual_run_response(job_key, is_htmx=is_htmx, feedback=feedback)
 
 
 @bp.post('/executions/<string:public_id>/cancel')

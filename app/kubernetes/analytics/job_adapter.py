@@ -33,7 +33,7 @@ from app.models import AnalyticsSnapshot, Cluster
 from app.models.job import JobExecution, JobPolicy
 from app.platform_operations.jobs.constants import ACTIVE_JOB_STATUSES
 from app.platform_operations.jobs.definitions.base import RegisteredJobDispatchResult
-from app.platform_operations.jobs.dispatcher import enqueue_canonical_job
+from app.platform_operations.jobs.dispatcher import JobDispatchOptions, enqueue_canonical_job
 
 _DASHBOARD_REQUIRED_24H_DATASETS = {CAPACITY_DATASET_KEY}
 _RANGE_ORDER = {
@@ -630,8 +630,7 @@ def _dispatch(
         scope_type=scope_type,
         scope_key=scope_key,
         max_attempts=2,
-        soft_time_limit_seconds=soft_time_limit,
-        hard_time_limit_seconds=hard_time_limit,
+        dispatch_options=JobDispatchOptions(soft_time_limit, hard_time_limit),
     )
     return RegisteredJobDispatchResult(
         status='queued' if created else 'active',

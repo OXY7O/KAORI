@@ -15,7 +15,7 @@ from app.models.job import JobExecution, JobPolicy
 from app.models.object_storage import ObjectStorageSystem
 from app.platform_operations.jobs.constants import ACTIVE_JOB_STATUSES, WORKLOAD_ANALYTICS, WORKLOAD_FORECASTING
 from app.platform_operations.jobs.definitions.base import RegisteredJobDispatchResult
-from app.platform_operations.jobs.dispatcher import enqueue_canonical_job
+from app.platform_operations.jobs.dispatcher import JobDispatchOptions, enqueue_canonical_job
 from app.platform_operations.jobs.policies.presentation import present_interval
 from app.storage.object_storage.analytics.materialization import (
     analytics_snapshot_due,
@@ -183,9 +183,11 @@ def dispatch_object_storage_analytics_materialization(
         scope_type='object_storage_analytics_fleet',
         scope_key=scope_key,
         max_attempts=2,
-        soft_time_limit_seconds=current_app.config['ANALYTICS_TASK_SOFT_TIME_LIMIT_SECONDS'],
-        hard_time_limit_seconds=current_app.config['ANALYTICS_TASK_HARD_TIME_LIMIT_SECONDS'],
-        require_registered_worker=True,
+        dispatch_options=JobDispatchOptions(
+            soft_time_limit_seconds=current_app.config['ANALYTICS_TASK_SOFT_TIME_LIMIT_SECONDS'],
+            hard_time_limit_seconds=current_app.config['ANALYTICS_TASK_HARD_TIME_LIMIT_SECONDS'],
+            require_registered_worker=True,
+        ),
     )
     return RegisteredJobDispatchResult(
         status='queued' if created else 'active',
@@ -339,9 +341,11 @@ def dispatch_object_storage_forecast_materialization(
         scope_type='object_storage_forecast_fleet',
         scope_key=scope_key,
         max_attempts=2,
-        soft_time_limit_seconds=current_app.config['FORECASTING_TASK_SOFT_TIME_LIMIT_SECONDS'],
-        hard_time_limit_seconds=current_app.config['FORECASTING_TASK_HARD_TIME_LIMIT_SECONDS'],
-        require_registered_worker=True,
+        dispatch_options=JobDispatchOptions(
+            soft_time_limit_seconds=current_app.config['FORECASTING_TASK_SOFT_TIME_LIMIT_SECONDS'],
+            hard_time_limit_seconds=current_app.config['FORECASTING_TASK_HARD_TIME_LIMIT_SECONDS'],
+            require_registered_worker=True,
+        ),
     )
     return RegisteredJobDispatchResult(
         status='queued' if created else 'active',

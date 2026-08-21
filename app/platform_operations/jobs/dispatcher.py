@@ -1,13 +1,23 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import Any, cast
 
 from celery import Task
+from celery.exceptions import CeleryError
 from flask import current_app
+from kombu.exceptions import OperationalError as KombuOperationalError
 
 from app.models.job import JobExecution
 from app.platform_operations.jobs.definitions.base import RegisteredJobDispatchResult
 from app.platform_operations.jobs.service import create_or_attach_job, mark_job_failed
+
+
+@dataclass(frozen=True, slots=True)
+class JobDispatchOptions:
+    soft_time_limit_seconds: int | None = None
+    hard_time_limit_seconds: int | None = None
+    require_registered_worker: bool = False
 
 
 class JobWorkerUnavailable(RuntimeError):
@@ -34,7 +44,7 @@ def ensure_task_registered_for_queue(*, task: object, queue_name: str) -> None:
     try:
         inspector = celery_app.control.inspect(timeout=1.25)
         active_queues = inspector.active_queues() or {}
-    except Exception as exc:
+    except (CeleryError, KombuOperationalError, OSError) as exc:
         raise JobWorkerUnavailable(
             f'Celery worker inspection failed with {type(exc).__name__}; '
             f'KAORI cannot safely dispatch to {queue_name!r}.'
@@ -56,7 +66,7 @@ def ensure_task_registered_for_queue(*, task: object, queue_name: str) -> None:
             timeout=1.75,
         )
         registered = registry_inspector.registered() or {}
-    except Exception as exc:
+    except (CeleryError, KombuOperationalError, OSError) as exc:
         raise JobWorkerUnavailable(
             f'Workers consume {queue_name!r}, but task-registry inspection failed with {type(exc).__name__}. '
             'Retry after worker remote control is available.'
@@ -100,9 +110,7 @@ def enqueue_canonical_job(
     scope_key: str | None = None,
     max_attempts: int = 3,
     priority: int | None = None,
-    soft_time_limit_seconds: int | None = None,
-    hard_time_limit_seconds: int | None = None,
-    require_registered_worker: bool = False,
+    dispatch_options: JobDispatchOptions | None = None,
 ) -> tuple[JobExecution, bool]:
     """Create or attach to one idempotent job and dispatch it exactly once.
 
@@ -110,6 +118,8 @@ def enqueue_canonical_job(
     analytics and forecasting jobs. Integration validation retains its additional
     provider lock because it has cross-operation conflict rules.
     """
+    options = dispatch_options or JobDispatchOptions()
+    require_registered_worker = options.require_registered_worker
     if require_registered_worker:
         ensure_task_registered_for_queue(task=task, queue_name=queue_name)
 
@@ -140,10 +150,10 @@ def enqueue_canonical_job(
             'queue': queue_name,
             'priority': job.priority,
         }
-        if soft_time_limit_seconds is not None:
-            apply_options['soft_time_limit'] = max(int(soft_time_limit_seconds), 1)
-        if hard_time_limit_seconds is not None:
-            apply_options['time_limit'] = max(int(hard_time_limit_seconds), 1)
+        if options.soft_time_limit_seconds is not None:
+            apply_options['soft_time_limit'] = max(int(options.soft_time_limit_seconds), 1)
+        if options.hard_time_limit_seconds is not None:
+            apply_options['time_limit'] = max(int(options.hard_time_limit_seconds), 1)
         cast(Task, task).apply_async(**apply_options)
     except Exception as exc:
         mark_job_failed(job.celery_task_id, error=exc, error_code='dispatch_failed')
