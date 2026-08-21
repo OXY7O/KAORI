@@ -27,8 +27,7 @@ def test_overview_system_details_reuse_systems_unified_resource_sheet() -> None:
     assert 'data-kaori-inventory-detail-layout="unified-resource-sheet"' in detail
     assert "detail.inventory_row('Compatibility Profile', system.compatibility_profile_label, nowrap=true)" in detail
     assert (
-        "detail.inventory_technical_row('Endpoint', system.endpoint, nowrap=true, class_name='lg:col-span-2')"
-        in detail
+        "detail.inventory_technical_row('Endpoint', system.endpoint, nowrap=true, class_name='lg:col-span-2')" in detail
     )
 
 

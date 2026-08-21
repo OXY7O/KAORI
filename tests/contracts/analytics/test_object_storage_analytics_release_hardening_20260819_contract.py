@@ -75,6 +75,7 @@ def test_forecast_workspaces_show_system_graph_and_bucket_watch_without_new_job_
     forecast_analysis = read('app/templates/storage/object_storage/analytics/partials/_forecast_analysis.html')
     forecast_workspace = read('app/templates/storage/object_storage/analytics/partials/_forecast_workspace.html')
     bucket_forecasts = read('app/templates/storage/object_storage/analytics/partials/_bucket_forecasts.html')
+    bucket_forecast_table = read('app/templates/storage/object_storage/analytics/partials/_bucket_forecast_table.html')
     trend = read('app/templates/storage/object_storage/analytics/partials/_trend.html')
     javascript = read('app/static/js/storage/object_storage/analytics.js')
     readme = read('app/storage/object_storage/analytics/README.md')
@@ -85,12 +86,18 @@ def test_forecast_workspaces_show_system_graph_and_bucket_watch_without_new_job_
     assert '_bucket_forecasts.html' in forecast_workspace
     assert 'Bucket Forecast Watch' in bucket_forecasts
     assert 'planning watch signals, not active Alertmanager alerts' in bucket_forecasts
-    assert 'data-kaori-object-storage-bucket-forecast-table' in bucket_forecasts
-    assert 'table_ui.title_cell(row.name' in bucket_forecasts
+    assert 'data-object-storage-bucket-forecast-chart-panel' in bucket_forecasts
+    assert 'data-object-storage-bucket-forecast-chart' in bucket_forecasts
+    assert '_bucket_forecast_table.html' in bucket_forecasts
+    assert 'data-kaori-object-storage-bucket-forecast-table' in bucket_forecast_table
+    assert 'table_ui.title_cell(row.name' in bucket_forecast_table
     assert 'data-object-storage-projection-points' in trend
     assert 'Storage Usage Forecast' in trend
     assert "const isForecast = mode === 'forecast'" in javascript
     assert "label: '30d Linear Projection'" in javascript
+    assert "const bucketForecastChartKey = 'kaoriObjectStorageBucketForecastChart'" in javascript
+    assert "label: 'Projected 30d'" in javascript
+    assert "indexAxis: 'y'" in javascript
     assert 'does not require another job or database table' in readme
 
 

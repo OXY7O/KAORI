@@ -83,4 +83,3 @@ def test_system_detail_uses_unified_resource_sheet_v10() -> None:
     assert "detail.inventory_section('Inventory Snapshot'" in detail
     assert 'Registered storage system identity, environment, provider release, and compatibility profile.' in detail
     assert 'detail.detail_card(' not in detail
-

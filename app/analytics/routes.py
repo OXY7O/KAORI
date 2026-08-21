@@ -31,6 +31,7 @@ from app.platform_operations.notifications.service import (
 from app.storage.object_storage.analytics.routes import (
     object_storage_alert_table,
     object_storage_alerts,
+    object_storage_bucket_forecast_table,
     object_storage_bucket_table,
     object_storage_capacity,
     object_storage_forecast,
@@ -449,6 +450,13 @@ analytics_bp.add_url_rule(
     '/object-storage/buckets/table',
     endpoint='object_storage_bucket_table',
     view_func=object_storage_bucket_table,
+    methods=['GET'],
+)
+
+analytics_bp.add_url_rule(
+    '/object-storage/forecast/buckets/table',
+    endpoint='object_storage_bucket_forecast_table',
+    view_func=object_storage_bucket_forecast_table,
     methods=['GET'],
 )
 

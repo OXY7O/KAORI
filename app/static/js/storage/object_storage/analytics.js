@@ -1,5 +1,6 @@
 ;(() => {
     const chartKey = 'kaoriObjectStorageAnalyticsChart'
+    const bucketForecastChartKey = 'kaoriObjectStorageBucketForecastChart'
 
     const cssVariable = (name, fallback) =>
         getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback
@@ -30,6 +31,12 @@
         if (!window[chartKey]) return
         window[chartKey].destroy()
         window[chartKey] = null
+    }
+
+    function destroyBucketForecastChart() {
+        if (!window[bucketForecastChartKey]) return
+        window[bucketForecastChartKey].destroy()
+        window[bucketForecastChartKey] = null
     }
 
     function render(root = document) {
@@ -161,8 +168,105 @@
         })
     }
 
-    document.addEventListener('DOMContentLoaded', () => render(document))
-    document.addEventListener('kaori:analytics-tab-visible', (event) => render(event.target))
-    document.body.addEventListener('htmx:afterSwap', (event) => render(event.target))
-    document.body.addEventListener('htmx:beforeSwap', destroyChart)
+    function renderBucketForecastChart(root = document) {
+        const panel =
+            root.querySelector?.('[data-object-storage-bucket-forecast-chart-panel]') ||
+            document.querySelector('[data-object-storage-bucket-forecast-chart-panel]')
+        if (!panel || typeof Chart === 'undefined') return
+        const canvas = panel.querySelector('[data-object-storage-bucket-forecast-chart]')
+        if (!canvas) return
+
+        const rows = parsePoints(panel.dataset.objectStorageBucketForecastRows)
+            .filter(
+                (row) =>
+                    row?.history_state === 'ready' &&
+                    row.current_bytes !== null &&
+                    row.current_bytes !== undefined &&
+                    row.projected_30d !== null &&
+                    row.projected_30d !== undefined &&
+                    Number.isFinite(Number(row.current_bytes)) &&
+                    Number.isFinite(Number(row.projected_30d))
+            )
+            .sort(
+                (left, right) =>
+                    Number(right.projected_30d ?? right.current_bytes ?? 0) -
+                    Number(left.projected_30d ?? left.current_bytes ?? 0)
+            )
+            .slice(0, 8)
+        if (!rows.length) return
+
+        destroyBucketForecastChart()
+        const textColor = cssVariable('--kaori-content-secondary', 'CanvasText')
+        const gridColor = cssVariable('--kaori-outline-subtle', 'transparent')
+        const primaryColor = cssVariable('--kaori-brand-primary', 'CanvasText')
+        const accentColor = cssVariable('--kaori-brand-accent', primaryColor)
+
+        window[bucketForecastChartKey] = new Chart(canvas.getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: rows.map((row) => String(row.name || 'Unnamed Bucket')),
+                datasets: [
+                    {
+                        label: 'Current Usage',
+                        data: rows.map((row) => Number(row.current_bytes)),
+                        backgroundColor: accentColor,
+                        borderColor: accentColor,
+                        borderWidth: 1,
+                        borderRadius: 4,
+                        maxBarThickness: 18,
+                    },
+                    {
+                        label: 'Projected 30d',
+                        data: rows.map((row) => Number(row.projected_30d)),
+                        backgroundColor: primaryColor,
+                        borderColor: primaryColor,
+                        borderWidth: 1,
+                        borderRadius: 4,
+                        maxBarThickness: 18,
+                    },
+                ],
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: false,
+                interaction: { mode: 'index', intersect: false },
+                plugins: {
+                    legend: { display: true, labels: { color: textColor } },
+                    tooltip: {
+                        callbacks: {
+                            label: (context) => `${context.dataset.label}: ${formatBytes(Number(context.parsed.x))}`,
+                        },
+                    },
+                },
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        ticks: { color: textColor, callback: (value) => formatBytes(Number(value)) },
+                        grid: { color: gridColor },
+                    },
+                    y: {
+                        ticks: { color: textColor, autoSkip: false },
+                        grid: { display: false },
+                    },
+                },
+            },
+        })
+    }
+
+    function renderAll(root = document) {
+        render(root)
+        renderBucketForecastChart(root)
+    }
+
+    function destroyAllCharts() {
+        destroyChart()
+        destroyBucketForecastChart()
+    }
+
+    document.addEventListener('DOMContentLoaded', () => renderAll(document))
+    document.addEventListener('kaori:analytics-tab-visible', (event) => renderAll(event.target))
+    document.body.addEventListener('htmx:afterSwap', (event) => renderAll(event.target))
+    document.body.addEventListener('htmx:beforeSwap', destroyAllCharts)
 })()

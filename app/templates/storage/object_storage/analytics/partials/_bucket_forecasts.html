@@ -1,4 +1,3 @@
-{% import "components/table_primitives.html" as table_ui %}
 {% import "components/table_label.html" as table_label %}
 {% set bucket_forecasts = metrics.bucket_forecasts|default([], true) %}
 {% set bucket_forecast_summary = metrics.bucket_forecast_summary|default({}, true) %}
@@ -39,76 +38,42 @@
         {% endfor %}
     </div>
     {% if bucket_forecasts %}
-        <div class="overflow-x-auto"
-             data-kaori-object-storage-bucket-forecast-table>
-            <table class="{{ table_ui.table_classes('min-w-[1080px]') }}">
-                <thead class="{{ table_ui.head_classes() }}">
-                    <tr>
-                        <th class="{{ table_ui.header_cell_classes() }}">Bucket</th>
-                        <th class="{{ table_ui.header_cell_classes() }}">Current Usage</th>
-                        <th class="{{ table_ui.header_cell_classes() }}">Growth / Day</th>
-                        <th class="{{ table_ui.header_cell_classes() }}">Projected 30d</th>
-                        <th class="{{ table_ui.header_cell_classes() }}">Quota Boundary</th>
-                        <th class="{{ table_ui.header_cell_classes() }}">Quota ETA</th>
-                        <th class="{{ table_ui.header_cell_classes() }}">Forecast Watch</th>
-                    </tr>
-                </thead>
-                <tbody class="{{ table_ui.body_classes() }} bg-surface-card">
-                    {% for row in bucket_forecasts %}
-                        <tr class="{{ table_ui.row_classes() }}">
-                            <td class="{{ table_ui.cell_classes() }}">
-                                {{ table_ui.title_cell(row.name, row.sample_count ~ ' forecast samples', 'container') }}
-                                <div class="mt-1">{{ table_label.status_label(row.history_label, row.history_tone, size='compact') }}</div>
-                            </td>
-                            <td class="{{ table_ui.cell_classes() }}">
-                                <p class="tabular-nums font-medium text-content-primary">{{ row.current_display }}</p>
-                                {% if row.current_bytes is none and row.inventory_usage_bytes is not none %}
-                                    <p class="mt-1 text-xs leading-5 text-content-muted">Inventory context: {{ row.inventory_usage_display }}</p>
-                                {% else %}
-                                    <p class="mt-1 text-xs leading-5 text-content-muted">Committed bucket history</p>
-                                {% endif %}
-                            </td>
-                            <td class="{{ table_ui.cell_classes() }}">
-                                <p class="tabular-nums font-medium text-content-primary">{{ row.growth_per_day_display }}</p>
-                                <p class="mt-1 text-xs leading-5 text-content-muted">Selected history baseline</p>
-                            </td>
-                            <td class="{{ table_ui.cell_classes() }}">
-                                <p class="tabular-nums font-medium text-content-primary">{{ row.projected_30d_display }}</p>
-                                <p class="mt-1 text-xs leading-5 text-content-muted">Linear 30-day projection</p>
-                            </td>
-                            <td class="{{ table_ui.cell_classes() }}">
-                                <p class="tabular-nums font-medium text-content-primary">{{ row.quota_display }}</p>
-                                {% if row.quota_bytes is not none %}
-                                    <p class="mt-1 text-xs leading-5 text-content-muted">Projected {{ row.projected_quota_utilization_display }}</p>
-                                {% else %}
-                                    <p class="mt-1 text-xs leading-5 text-content-muted">No configured bucket quota</p>
-                                {% endif %}
-                            </td>
-                            <td class="{{ table_ui.cell_classes() }}">
-                                <p class="tabular-nums font-medium text-content-primary">{{ row.days_to_quota_display }}</p>
-                                <p class="mt-1 text-xs leading-5 text-content-muted">Projected quota boundary</p>
-                            </td>
-                            <td class="{{ table_ui.cell_classes() }}">
-                                <div>{{ table_label.status_label(row.watch_label, row.watch_tone, size='compact') }}</div>
-                                <p class="mt-2 max-w-sm text-xs leading-5 text-content-muted">
-                                    {% if row.history_state != 'ready' %}
-                                        Restore bucket metric history before predictive action.
-                                    {% elif row.watch_tone == 'critical' %}
-                                        Prioritize quota, retention, or growth review before the projected boundary.
-                                    {% elif row.watch_tone == 'warning' %}
-                                        Plan owner review and validate growth or quota policy.
-                                    {% elif row.watch_tone == 'info' %}
-                                        Positive growth remains on the planning watch list.
-                                    {% else %}
-                                        No near-term quota pressure is indicated by the current baseline.
-                                    {% endif %}
-                                </p>
-                            </td>
-                        </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+        {% if bucket_forecast_summary.ready_count|default(0) > 0 %}
+            <section class="border-t border-outline-subtle bg-surface-card"
+                     data-object-storage-bucket-forecast-chart-panel
+                     data-object-storage-bucket-forecast-rows="{{ bucket_forecasts|tojson|forceescape }}">
+                <header class="flex flex-col gap-3 border-b border-outline-subtle px-5 py-4 sm:flex-row sm:items-start sm:justify-between sm:px-6">
+                    <div class="min-w-0">
+                        <h3 class="text-base font-semibold leading-6 text-content-primary">Current vs 30-Day Projected Usage</h3>
+                        <p class="mt-1 max-w-4xl text-sm leading-6 text-content-muted">
+                            Compare present usage with the linear 30-day projection for the highest projected forecast-ready buckets. Full bucket names remain available on the axis and in the record table below.
+                        </p>
+                    </div>
+                    {{ table_label.metadata_label(([bucket_forecast_summary.ready_count|default(0), 8]|min) ~ ' Buckets Charted', 'bar-chart-3', size='compact') }}
+                </header>
+                <div class="h-[360px] min-w-0 px-4 py-4 sm:px-6">
+                    <canvas data-object-storage-bucket-forecast-chart
+                            aria-label="Current and projected Object Storage bucket usage chart"></canvas>
+                </div>
+                <div class="border-t border-outline-subtle px-5 py-3 sm:px-6">
+                    <p class="text-xs leading-5 text-content-muted">
+                        Chart ranking uses projected 30-day usage and shows up to eight forecast-ready buckets. Quota timing and evidence quality remain explicit in the standard record table.
+                    </p>
+                </div>
+            </section>
+        {% else %}
+            <section class="border-t border-outline-subtle bg-surface-card p-5 sm:p-6">
+                {% set empty_state_icon = "chart-spline" %}
+                {% set empty_state_label = "History Required" %}
+                {% set empty_state_tone = "warning" %}
+                {% set empty_state_title = "Bucket Forecast Chart Is Waiting for History" %}
+                {% set empty_state_description = "At least two usable bucket-level usage samples are required before KAORI can compare current usage with a 30-day projection. Evidence-gap records remain visible below." %}
+                {% set empty_state_variant = "panel" %}
+                {% set empty_state_min_height = "min-h-[180px]" %}
+                {% include 'components/states/_empty_state.html' %}
+            </section>
+        {% endif %}
+        {% include "storage/object_storage/analytics/partials/_bucket_forecast_table.html" %}
         <div class="border-t border-outline-subtle px-5 py-4 sm:px-6">
             <p class="text-xs leading-5 text-content-muted">
                 Forecast Watch is derived from committed bucket usage history and configured quota evidence. Critical and warning labels indicate projected planning pressure only; active alert lifecycle and routing remain owned by Alertmanager.

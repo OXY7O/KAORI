@@ -50,7 +50,7 @@ def test_inventory_v6_typography_and_section_geometry_are_consistent() -> None:
     assert 'text-sm font-normal leading-5 text-content-secondary' in shared
     assert 'text-left text-sm font-medium leading-5 text-content-primary' in shared
     assert 'data-kaori-inventory-section-layout="resource-sheet-band"' in shared
-    assert 'xl:grid-cols-[14.5rem_minmax(0,1fr)]' in shared
+    assert 'xl:grid-cols-[17rem_minmax(0,1fr)]' in shared
     assert 'bg-surface-elevated/35' in shared
     assert 'mt-3 flex min-w-0 items-start gap-2 border-t border-outline-subtle pt-3' in shared
     assert 'data-kaori-inventory-section-description' in shared

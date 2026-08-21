@@ -11,7 +11,7 @@
                     <p class="mt-1 break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]">{{ description }}</p>
                 </div>
             </div>
-            {{ table_label.special_label(total_count ~ ' ' ~ ('Resource' if total_count == 1 else 'Resources'), 'maintenance', 'git-branch', 'detail') }}
+            {{ table_label.special_label(total_count ~ ' ' ~ ('Resource' if total_count == 1 else 'Resources') , 'maintenance', 'git-branch', 'detail') }}
         </header>
         {% if resources %}
             <div class="divide-y divide-outline-subtle">
@@ -44,7 +44,7 @@
 {%- endmacro %}
 {% macro inventory_render(title, description, resources, total_count, icon='git-branch', empty_title='No Related Resources', empty_description='No related resources are represented in the committed inventory snapshot.', truncated=false, action_href=None, action_label=None, embedded=false) -%}
     {% if total_count == 1 %}
-        {% set total_count_label = '1 Resource' %}
+        {% set total_count_label = "1 Resource" %}
     {% else %}
         {% set total_count_label = total_count ~ ' Resources' %}
     {% endif %}
@@ -52,8 +52,8 @@
         <section class="min-w-0 border-b border-outline-subtle last:border-b-0"
                  data-kaori-inventory-related-collection
                  data-kaori-inventory-related-layout="resource-sheet-band">
-            <div class="grid min-w-0 xl:grid-cols-[14.5rem_minmax(0,1fr)]">
-                <header class="relative flex min-w-0 items-start justify-between gap-3 overflow-hidden bg-surface-elevated/35 px-4 py-4 sm:px-5 xl:min-h-full xl:border-r xl:border-outline-subtle xl:px-5 xl:py-5">
+            <div class="grid min-w-0 xl:grid-cols-[17rem_minmax(0,1fr)]">
+                <header class="relative flex min-w-0 items-start justify-between gap-3 overflow-hidden bg-surface-elevated/35 px-4 py-4 sm:px-5 xl:min-h-full xl:border-r xl:border-outline-subtle xl:px-6 xl:py-5">
                     <span class="absolute inset-y-0 left-0 w-0.5 bg-kaori-primary/70"
                           aria-hidden="true"></span>
                     <div class="flex min-w-0 flex-1 items-start gap-3">

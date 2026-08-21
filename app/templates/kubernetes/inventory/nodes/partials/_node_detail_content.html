@@ -15,7 +15,7 @@
 {% set environment_display = node.cluster_environment|environment_name(empty='Not Specified') %}
 {% set status_dot_classes = 'bg-status-normal' if node_status_tone == 'normal' else ('bg-status-critical' if node_status_tone == 'critical' else 'bg-status-unknown') %}
 {% if node.taints|length == 1 %}
-    {% set taint_count_label = '1 Taint' %}
+    {% set taint_count_label = "1 Taint" %}
 {% else %}
     {% set taint_count_label = node.taints|length ~ ' Taints' %}
 {% endif %}
@@ -46,20 +46,19 @@
                     </span>
                     <span class="inline-flex items-center gap-2">
                         <span class="text-content-muted">Status</span>
-                        <span class="h-1.5 w-1.5 rounded-full {{ status_dot_classes }}" aria-hidden="true"></span>
+                        <span class="h-1.5 w-1.5 rounded-full {{ status_dot_classes }}"
+                              aria-hidden="true"></span>
                         <span class="font-medium text-content-primary">{{ node.status_display }}</span>
                     </span>
                 </div>
             </div>
         {% endcall %}
-
         {{ detail.inspector_summary_strip([
                 {'label': 'Readiness', 'value': node.status_display, 'supporting': 'Node condition', 'icon': 'shield-check', 'tone': node_status_tone},
                 {'label': 'Scheduling', 'value': node.scheduling_display, 'supporting': 'Placement state', 'icon': 'calendar-check', 'tone': scheduling_tone},
                 {'label': 'Scheduled Pods', 'value': node.scheduled_pod_count, 'supporting': 'Committed assignments', 'icon': 'box', 'tone': 'brand'},
                 {'label': 'Capacity', 'value': node.capacity_summary, 'supporting': 'CPU · Memory', 'icon': 'cpu', 'tone': 'brand'}
                 ]) }}
-
         <div data-kaori-node-inspector
              data-kaori-node-inspector-flow="natural-content"
              data-kaori-node-inspector-layout="single-scroll-resource-sheet"
@@ -79,7 +78,6 @@
                     </dl>
                     {{ detail.inspector_hint(node.role_description, 'server') }}
                 {% endcall %}
-
                 {% call detail.inspector_section('Connectivity & Network', 'network', 'Node addressing, hostname, and network-scope evidence captured in the committed snapshot.', '', node.network_availability, 'status', network_tone) %}
                     <dl class="grid min-w-0 gap-x-10 sm:grid-cols-2">
                         {{ detail.inspector_technical_row('Internal IP', node.internal_ip or 'Not Reported', nowrap=true) }}
@@ -89,7 +87,6 @@
                     </dl>
                     {{ detail.inspector_hint('Internal IP is the cluster address; External IP may be absent on private nodes.', 'network') }}
                 {% endcall %}
-
                 {% call detail.inspector_section('Node Capacity', 'gauge', 'Reported compute, memory, and ephemeral storage capacity; missing evidence remains explicit.') %}
                     <dl class="grid min-w-0 gap-x-10 sm:grid-cols-2">
                         {{ detail.inspector_row('CPU', node.cpu_display) }}
@@ -99,7 +96,6 @@
                     </dl>
                     {{ detail.inspector_hint('Missing capacity values remain explicit and are never converted to zero.', 'database') }}
                 {% endcall %}
-
                 {% call detail.inspector_section('Runtime & Platform', 'terminal-square', 'Host OS, kernel, container runtime, and Kubernetes component versions defining the execution environment.') %}
                     <div class="grid min-w-0 gap-6 xl:grid-cols-2 xl:divide-x xl:divide-outline-subtle">
                         <div class="min-w-0 xl:pr-6">
@@ -127,7 +123,6 @@
                         </div>
                     </div>
                 {% endcall %}
-
                 {% call detail.inspector_section('Scheduling & Conditions', 'shield-check', 'Placement eligibility, readiness, pressure conditions, and taints that affect Node scheduling.', '', condition_posture, 'status', condition_tone) %}
                     <div class="grid min-w-0 gap-x-10 sm:grid-cols-2">
                         {{ detail.inspector_state_item('Scheduling', node.scheduling_display, scheduling_tone) }}
@@ -147,7 +142,7 @@
                         {% if node.taints %}
                             <dl class="mt-2 min-w-0">
                                 {% for taint in node.taints %}
-                                    <div class="grid min-w-0 gap-1 border-b border-outline-subtle py-2.5 last:border-b-0 sm:grid-cols-[minmax(9.5rem,0.3fr)_minmax(0,1fr)] sm:items-baseline sm:gap-5">
+                                    <div class="grid min-w-0 gap-1 border-b border-outline-subtle py-2.5 last:border-b-0 sm:grid-cols-[minmax(10rem,0.3fr)_minmax(0,1fr)] sm:items-baseline sm:gap-5">
                                         <dt class="text-sm font-normal leading-5 text-content-secondary">Taint</dt>
                                         <dd class="min-w-0 break-words text-sm font-medium leading-5 text-content-primary [overflow-wrap:anywhere]">
                                             {{ technical_value.render(taint, break_all=false, class_name='font-medium', monospace=false, size='body') }}
@@ -160,18 +155,16 @@
                         {% endif %}
                     </div>
                 {% endcall %}
-
                 {{ metadata_collection.render('Node Labels',
-                            node.labels,
-                            icon='tags',
-                            empty_title='No Node Labels Collected',
-                            empty_description='Labels will appear when they are present in the committed Node snapshot.',
-                            context='Labels are factual Kubernetes metadata and do not establish policy compliance by themselves.',
-                            nowrap_values=false,
-                            wide_pairs=true,
-                            embedded=true) }}
+                                node.labels,
+                                icon='tags',
+                                empty_title='No Node Labels Collected',
+                                empty_description='Labels will appear when they are present in the committed Node snapshot.',
+                                context='Labels are factual Kubernetes metadata and do not establish policy compliance by themselves.',
+                                nowrap_values=false,
+                                wide_pairs=true,
+                                embedded=true) }}
             </div>
-
             <div class="grid min-w-0 gap-4 xl:grid-cols-12">
                 {{ operational_callout.render('Committed Snapshot Boundary', 'This detail reads the latest committed database snapshot. It does not query the Kubernetes API live.', 'database', 'info', extra_classes='xl:col-span-5') }}
                 {{ operational_callout.render(node.operational_context.title, node.operational_context.description, icon=node.operational_context.icon, tone=node.operational_context.tone, variant='semantic', extra_classes='xl:col-span-7') }}

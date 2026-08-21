@@ -16,7 +16,10 @@ def test_inventory_overview_and_pagination_copy() -> None:
     assert 'Open one Kubernetes asset inventory' in catalog
     assert "{{ 'Cluster' if overview.resources_pagination.total_items == 1 else 'Clusters' }}" in clusters
     assert '>Rows</label>' in clusters
-    assert '\n                of <span' in clusters
+    assert (
+        'of <span class="font-semibold text-content-primary">{{ overview.resources_pagination.total_items }}</span>'
+        in clusters
+    )
     assert 'of <span' in namespaces
     assert '\n                Of <span' not in clusters
     assert '\n            Of <span' not in namespaces
@@ -50,8 +53,7 @@ def test_namespace_detail_card_calls_match_shared_macro_signature() -> None:
 
     assert (
         "macro inventory_section(title, icon, badge=None, badge_type='metadata', badge_tone='unknown', "
-        "class_name='', badge_size='detail', stretch=false, density='compact', description=None)"
-        in macro
+        "class_name='', badge_size='detail', stretch=false, density='compact', description=None)" in macro
     )
     assert 'data-kaori-detail-variant="full-workspace-modal"' in detail
     assert 'data-kaori-detail-density="unified-resource-sheet"' in detail

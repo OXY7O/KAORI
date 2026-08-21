@@ -12,10 +12,9 @@
             {% include "kubernetes/inventory/overview/partials/_resources_by_cluster.html" %}
         {% endif %}
     </div>
-    {{ resource_detail_modal.inventory_host(
-        'Cluster Inventory',
-        url_for('inventory.overview_cluster_details', cluster_id=0),
-        'Committed Inventory snapshot · No live Kubernetes API query.',
-        'Kubernetes Inventory'
-        ) }}
+    {{ resource_detail_modal.inventory_host('Cluster Inventory',
+        url_for('inventory.overview_cluster_details', cluster_id=0) ,
+    'Committed Inventory snapshot · No live Kubernetes API query.',
+    'Kubernetes Inventory'
+    ) }}
 {% endblock dashboard_content %}

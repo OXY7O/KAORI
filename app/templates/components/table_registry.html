@@ -32,9 +32,10 @@
         {{ caller() }}
     </form>
 {%- endmacro %}
-{% macro clear_filters_action(href, classes, label='Clear Filters', hx_get='', target='', indicator='', select='', swap='outerHTML', push_url='', sync='', marker='', id='', hidden=false) -%}
+{% macro clear_filters_action(href, classes, label='Clear Filters', hx_get='', target='', indicator='', select='', swap='outerHTML', push_url='', sync='', marker='', id='', hidden=false, lead=true) -%}
     <a href="{{ href }}"
        data-kaori-clear-filters
+       data-kaori-filter-action
        {% if id %}id="{{ id }}"{% endif %}
        {% if hidden %}hidden{% endif %}
        {% if hx_get %}hx-get="{{ hx_get }}"{% endif %}
@@ -45,7 +46,7 @@
        {% if indicator %}hx-indicator="{{ indicator }}"{% endif %}
        {% if sync %}hx-sync="{{ sync }}"{% endif %}
        {% if marker %}data-kaori-canonical-registry-clear="{{ marker }}"{% endif %}
-       class="{{ classes }}">
+       class="{{ classes }} shrink-0 whitespace-nowrap {{ 'order-first' if lead else '' }}">
         <i data-lucide="x" class="h-4 w-4" aria-hidden="true"></i>
         {{ label }}
     </a>

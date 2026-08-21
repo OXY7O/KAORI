@@ -14,7 +14,7 @@
         {% call detail.workspace_header(detail_description, 'server-cog') %}
             {% call detail.header_identity_row() %}
                 {{ detail.inventory_title(cluster.name) }}
-                {{ table_label.metadata_label(cluster.environment|environment_name(empty='Not Specified'), 'building-2') }}
+                {{ table_label.metadata_label(cluster.environment|environment_name(empty='Not Specified') , 'building-2') }}
                 {{ table_label.metadata_label(cluster.kubernetes_version, 'badge-check') }}
                 {{ table_label.status_indicator_label(connection_label, connection_tone, size='detail') }}
             {% endcall %}
@@ -30,7 +30,7 @@
                 {% call detail.inventory_section('Cluster Identity', 'badge-info', connection_label, 'status', connection_tone, description='Registration, environment, Kubernetes version, and connectivity context for this cluster.') %}
                     <dl class="grid min-w-0 gap-x-10 sm:grid-cols-2">
                         {{ detail.inventory_row('Registered Cluster', cluster.name, nowrap=true, class_name='lg:col-span-2') }}
-                        {{ detail.inventory_row('Environment', cluster.environment|environment_name(empty='Not Specified')) }}
+                        {{ detail.inventory_row('Environment', cluster.environment|environment_name(empty='Not Specified') ) }}
                         {{ detail.inventory_row('Kubernetes Version', cluster.kubernetes_version, nowrap=true) }}
                         {{ detail.inventory_status_row('Connection State', connection_label, connection_tone, class_name='lg:col-span-2') }}
                     </dl>

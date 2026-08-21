@@ -33,7 +33,10 @@ from app.storage.object_storage.analytics.bucket_evidence import (
     build_bucket_forecast_view,
     build_bucket_rows,
 )
-from app.storage.object_storage.analytics.bucket_table import build_bucket_table_view
+from app.storage.object_storage.analytics.bucket_table import (
+    build_bucket_forecast_table_view,
+    build_bucket_table_view,
+)
 from app.storage.object_storage.analytics.dependencies import (
     analytics_snapshot_blocker,
     inventory_required_blocker,
@@ -615,6 +618,7 @@ def _base_context(page_key: str, query_args: Any) -> tuple[dict[str, Any], Objec
         'alert_table': None,
         'metrics': {},
         'bucket_table': None,
+        'bucket_forecast_table': None,
         'query_diagnostics': [],
         'inventory_observed_at': system.inventory_observed_at if system is not None else None,
     }
@@ -749,6 +753,14 @@ def get_object_storage_analytics_context(page_key: str, query_args: Any) -> dict
         history_window = '30d' if page_key == 'overview' else context['selected_forecast_history_window']
         _attach_forecast_materialization(context, system=system, history_window=history_window)
 
+    if page_key == 'forecast':
+        context['bucket_forecast_table'] = build_bucket_forecast_table_view(
+            context['metrics'].get('bucket_forecasts') or [],
+            query_args,
+            system=system,
+            history_window=context['selected_forecast_history_window'],
+        )
+
     if page_key in {'capacity', 'performance', 'top_consumers'}:
         context['bucket_table'] = build_bucket_table_view(
             context['metrics'].get('bucket_rows') or [],
@@ -768,3 +780,7 @@ def get_object_storage_bucket_table_context(page_key: str, query_args: Any) -> d
     if page_key not in {'capacity', 'performance', 'top_consumers'}:
         page_key = 'top_consumers'
     return get_object_storage_analytics_context(page_key, query_args)
+
+
+def get_object_storage_bucket_forecast_table_context(query_args: Any) -> dict[str, Any]:
+    return get_object_storage_analytics_context('forecast', query_args)

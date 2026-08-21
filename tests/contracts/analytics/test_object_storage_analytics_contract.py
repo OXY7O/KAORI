@@ -80,7 +80,7 @@ def test_object_storage_analytics_uses_dedicated_rbac_and_sidebar_visibility() -
     permissions = {item['key']: item for item in access['permissions']}
     object_storage_permission = permissions['object_storage_analytics.view']
 
-    assert routes.count("@permission_required('object_storage_analytics.view')") == 8
+    assert routes.count("@permission_required('object_storage_analytics.view')") == 9
     assert object_storage_permission['module'] == 'storage_analytics'
     assert "load_definition_document('access/rbac/access.yaml'" in defaults
     assert "has_permission('object_storage_analytics.view')" in sidebar

@@ -24,8 +24,7 @@ def test_overview_system_details_use_shared_wide_inventory_modal() -> None:
     assert "'max-w-[92rem]'" in modal
     assert 'data-kaori-detail-density="unified-resource-sheet"' in detail
     assert (
-        "detail.inventory_technical_row('Endpoint', system.endpoint, nowrap=true, class_name='lg:col-span-2')"
-        in detail
+        "detail.inventory_technical_row('Endpoint', system.endpoint, nowrap=true, class_name='lg:col-span-2')" in detail
     )
 
 

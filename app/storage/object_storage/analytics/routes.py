@@ -7,6 +7,7 @@ from app.access.rbac.decorators import permission_required
 from app.storage.object_storage.analytics.service import (
     get_object_storage_alert_table_context,
     get_object_storage_analytics_context,
+    get_object_storage_bucket_forecast_table_context,
     get_object_storage_bucket_table_context,
 )
 
@@ -54,6 +55,14 @@ def object_storage_bucket_table() -> ResponseReturnValue:
     return render_template(
         'storage/object_storage/analytics/partials/_bucket_table.html',
         **get_object_storage_bucket_table_context(page_key, request.args),
+    )
+
+
+@permission_required('object_storage_analytics.view')
+def object_storage_bucket_forecast_table() -> ResponseReturnValue:
+    return render_template(
+        'storage/object_storage/analytics/partials/_bucket_forecast_table.html',
+        **get_object_storage_bucket_forecast_table_context(request.args),
     )
 
 

@@ -26,7 +26,7 @@
     htmx-indicator pointer-events-none h-1 w-full overflow-hidden bg-kaori-soft
 {%- endmacro %}
 {% macro filter_layout_classes() -%}
-    flex w-full flex-wrap items-end gap-3 [&>label]:min-w-0 [&>label]:flex-1 [&>label]:basis-full [&>div]:min-w-0 [&>div]:flex-1 [&>div]:basis-full sm:[&>label]:basis-56 sm:[&>div]:basis-56
+    flex w-full flex-wrap items-end gap-3 [&>label]:min-w-0 [&>label]:flex-1 [&>label]:basis-full [&>div]:min-w-0 [&>div]:flex-1 [&>div]:basis-full [&>[data-kaori-filter-action]]:flex-none [&>[data-kaori-filter-action]]:basis-auto sm:[&>label]:basis-56 sm:[&>div]:basis-56
 {%- endmacro %}
 {% macro filter_bar_classes() -%}
     {{ filter_layout_classes() }} border-b border-outline-subtle bg-surface-hover px-5 py-4 lg:px-6

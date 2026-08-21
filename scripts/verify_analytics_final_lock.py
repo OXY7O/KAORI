@@ -232,7 +232,7 @@ def main() -> int:
         errors,
     )
     require(
-        object_storage_permission_guards == 8,
+        object_storage_permission_guards == 9,
         'Expected every Object Storage Analytics full/fragment route to retain object_storage_analytics.view authorization.',
         errors,
     )

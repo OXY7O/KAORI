@@ -17,8 +17,7 @@ def test_ingress_inventory_uses_canonical_resource_page_pattern() -> None:
 
     assert (
         "for resource in ('nodes', 'namespaces', 'configuration', 'workloads', 'pods', 'services', "
-        "'ingresses', 'storage')"
-        in routes
+        "'ingresses', 'storage')" in routes
     )
     assert 'id="ingresses-page-workspace"' in workspace
     assert 'kubernetes/inventory/components/_data_freshness.html' in workspace

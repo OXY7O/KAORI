@@ -221,17 +221,8 @@ def _inventory_scope_label(clusters: list[Any], cluster_id: str) -> str:
 @permission_required('inventory.view')
 @_clusterless_inventory_htmx_guard
 def overview():
-    cluster_page = request.args.get(
-        'cluster_page',
-        1,
-        type=int,
-    )
-
-    cluster_per_page = request.args.get(
-        'cluster_per_page',
-        5,
-        type=int,
-    )
+    cluster_page = request.args.get('cluster_page', 1, type=int)
+    cluster_per_page = request.args.get('cluster_per_page', 5, type=int)
 
     overview = get_inventory_overview()
 

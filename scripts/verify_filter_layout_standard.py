@@ -58,6 +58,7 @@ STANDARD_CONSUMERS = (
     'app/templates/reports/report_templates/index.html',
     'app/templates/reports/schedules/index.html',
     'app/templates/storage/object_storage/analytics/partials/_controls.html',
+    'app/templates/storage/object_storage/analytics/partials/_bucket_forecast_table.html',
     'app/templates/storage/object_storage/inventory/buckets/partials/_table_card.html',
     'app/templates/storage/object_storage/inventory/systems/partials/_table_card.html',
 )
@@ -75,6 +76,15 @@ HEADER_ACTION_CONSUMERS = (
     'app/templates/kubernetes/operations/secrets/_bulk_target_table.html',
     'app/templates/storage/object_storage/inventory/systems/partials/_table_card.html',
     'app/templates/storage/object_storage/inventory/buckets/partials/_table_card.html',
+)
+
+RECORD_FILTER_CLEAR_CONSUMERS = (
+    'app/templates/kubernetes/analytics/storage/partials/_persistent_volumes_panel.html',
+    'app/templates/kubernetes/analytics/storage/partials/_persistent_volume_claims_panel.html',
+    'app/templates/kubernetes/analytics/storage/partials/_filesystem_panel.html',
+    'app/templates/kubernetes/analytics/workload/partials/_tenant_quota_section.html',
+    'app/templates/kubernetes/analytics/workload/partials/_workload_mapping_section.html',
+    'app/templates/kubernetes/analytics/top_consumers/partials/_consumer_detail_section.html',
 )
 
 
@@ -105,6 +115,8 @@ def main() -> int:
         '[&>div]:basis-full',
         'sm:[&>label]:basis-56',
         'sm:[&>div]:basis-56',
+        '[&>[data-kaori-filter-action]]:flex-none',
+        '[&>[data-kaori-filter-action]]:basis-auto',
     ):
         require(token in primitives, f'filter primitive missing canonical token: {token}', errors)
 
@@ -124,6 +136,22 @@ def main() -> int:
         errors,
     )
 
+    for token in (
+        'lead=true',
+        "'order-first' if lead else ''",
+        'shrink-0 whitespace-nowrap',
+        'data-kaori-filter-action',
+    ):
+        require(token in registry, f'Shared Clear Filters ordering contract missing: {token}', errors)
+
+    header_actions_index = table.find('{% if header_actions %}')
+    permanent_action_index = table.find('<a href="{{ action_href }}"', header_actions_index)
+    require(
+        header_actions_index >= 0 and permanent_action_index > header_actions_index,
+        'Conditional Clear Filters must render before the permanent table-header action.',
+        errors,
+    )
+
     for relative in STANDARD_CONSUMERS:
         source = read(relative)
         require(
@@ -132,6 +160,20 @@ def main() -> int:
             or 'table_registry.filter_form(' in source
             or 'filter_bar_classes()' in source,
             f'{relative} must use canonical full-width filter geometry.',
+            errors,
+        )
+
+    record_filter = read('app/templates/kubernetes/analytics/components/_record_filter_bar.html')
+    require(
+        'registry_ui.clear_filters_action(' in record_filter and 'lead=false' in record_filter,
+        'Analytics record filters must reuse the shared Clear Filters owner without reordering filter-row fields.',
+        errors,
+    )
+    for relative in RECORD_FILTER_CLEAR_CONSUMERS:
+        source = read(relative)
+        require(
+            'record_filter.reset_link(' in source,
+            f'{relative} must expose Clear Filters when local record filters are active.',
             errors,
         )
 
@@ -266,12 +308,32 @@ def main() -> int:
         errors,
     )
 
+    bucket_forecast_filter = read(
+        'app/templates/storage/object_storage/analytics/partials/_bucket_forecast_table.html'
+    )
+    for token in (
+        'table_ui.filter_layout_classes()',
+        'registry_ui.clear_filters_action(',
+        'data-kaori-table-header-actions',
+        'forecast_watch',
+        'forecast_history_state',
+        'record_pagination.render(',
+        "table_ui.table_classes('min-w-[840px]')",
+    ):
+        require(
+            token in bucket_forecast_filter,
+            f'Bucket Forecast table missing standard filter/table token: {token}',
+            errors,
+        )
+
     for token in (
         'full-width and content-aware',
         'orphan empty column',
         'explicit action groups may remain content-width',
         '`Clear Filters` keeps one interaction owner',
         '`Clear Filters` belongs in that same header action group',
+        '`Clear Filters` is the leading action',
+        'never pushes, displaces, or visually collides',
         'filters never use `max-w-*`',
     ):
         require(token in standard, f'Table/filter design standard missing rule: {token}', errors)

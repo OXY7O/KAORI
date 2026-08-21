@@ -97,14 +97,16 @@
 {%- endmacro %}
 {% macro resource_sheet(class_name='') -%}
     <section data-kaori-unified-resource-sheet
-             class="min-w-0 overflow-hidden rounded-2xl border border-outline-subtle bg-surface-card shadow-sm {{ class_name }}">{{ caller() }}</section>
+             class="min-w-0 overflow-hidden rounded-2xl border border-outline-subtle bg-surface-card shadow-sm {{ class_name }}">
+        {{ caller() }}
+    </section>
 {%- endmacro %}
 {% macro inventory_section(title, icon, badge=None, badge_type='metadata', badge_tone='unknown', class_name='', badge_size='detail', stretch=false, density='compact', description=None) -%}
     <section data-kaori-inventory-detail-section
              data-kaori-inventory-section-layout="resource-sheet-band"
              class="min-w-0 border-b border-outline-subtle last:border-b-0 {{ class_name }}">
-        <div class="grid min-w-0 xl:grid-cols-[14.5rem_minmax(0,1fr)]">
-            <header class="relative flex min-w-0 items-start justify-between gap-3 overflow-hidden bg-surface-elevated/35 px-4 py-4 sm:px-5 xl:min-h-full xl:border-r xl:border-outline-subtle xl:px-5 xl:py-5">
+        <div class="grid min-w-0 xl:grid-cols-[17rem_minmax(0,1fr)]">
+            <header class="relative flex min-w-0 items-start justify-between gap-3 overflow-hidden bg-surface-elevated/35 px-4 py-4 sm:px-5 xl:min-h-full xl:border-r xl:border-outline-subtle xl:px-6 xl:py-5">
                 <span class="absolute inset-y-0 left-0 w-0.5 bg-kaori-primary/70"
                       aria-hidden="true"></span>
                 <div class="flex min-w-0 flex-1 items-start gap-3">
@@ -137,9 +139,7 @@
                     </div>
                 {% endif %}
             </header>
-            <div class="min-w-0 px-4 py-3 sm:px-5 sm:py-4 xl:px-7 xl:py-5">
-                {{ caller() }}
-            </div>
+            <div class="min-w-0 px-4 py-3 sm:px-5 sm:py-4 xl:px-7 xl:py-5">{{ caller() }}</div>
         </div>
     </section>
 {%- endmacro %}
@@ -165,7 +165,8 @@
     <div class="grid min-w-0 gap-1 border-b border-outline-subtle py-2.5 last:border-b-0 sm:grid-cols-[minmax(10rem,0.3fr)_minmax(0,1fr)] sm:items-baseline sm:gap-5 {{ class_name }}">
         <span class="min-w-0 break-words text-sm font-normal leading-5 text-content-secondary [overflow-wrap:anywhere]">{{ label }}</span>
         <span class="flex min-w-0 items-center gap-2 text-sm font-medium leading-5 text-content-primary">
-            <span class="h-1.5 w-1.5 shrink-0 rounded-full {{ dot_classes }}" aria-hidden="true"></span>
+            <span class="h-1.5 w-1.5 shrink-0 rounded-full {{ dot_classes }}"
+                  aria-hidden="true"></span>
             <span class="min-w-0 break-words [overflow-wrap:anywhere]">{{ value if value not in [None, ''] else '-' }}</span>
         </span>
     </div>
@@ -211,7 +212,9 @@
             <div class="min-w-0">
                 <p class="text-xs font-medium leading-5 text-content-muted">{{ label }}</p>
                 <p class="mt-0.5 break-words text-base font-semibold leading-6 text-content-primary [overflow-wrap:anywhere]">{{ value }}</p>
-                {% if description %}<p class="mt-1 text-xs leading-5 text-content-muted">{{ description }}</p>{% endif %}
+                {% if description %}
+                    <p class="mt-1 text-xs leading-5 text-content-muted">{{ description }}</p>
+                {% endif %}
             </div>
         </div>
     </article>
@@ -219,7 +222,7 @@
 {% macro inspector_panel(title, icon, class_name='', badge=None, badge_type='metadata', badge_tone='unknown') -%}
     <section data-kaori-node-inspector-panel
              class="min-w-0 overflow-hidden rounded-xl border border-outline-subtle bg-surface-card {{ class_name }}">
-        <header class="flex min-w-0 items-center justify-between gap-3 border-b border-outline-subtle bg-surface-elevated/40 px-4 py-3 sm:px-5">
+        <header class="flex min-w-0 items-center justify-between gap-3 border-b border-outline-subtle bg-surface-elevated/35 px-4 py-3 sm:px-5">
             <div class="flex min-w-0 items-center gap-2.5">
                 <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary ring-1 ring-inset ring-brand-outline/50"
                       aria-hidden="true"><i data-lucide="{{ icon }}" class="h-4 w-4"></i></span>
@@ -240,8 +243,8 @@
     <section data-kaori-inspector-section
              data-kaori-inspector-section-layout="resource-sheet-band"
              class="min-w-0 border-b border-outline-subtle last:border-b-0 {{ class_name }}">
-        <div class="grid min-w-0 xl:grid-cols-[14.5rem_minmax(0,1fr)]">
-            <header class="relative flex min-w-0 items-start justify-between gap-3 overflow-hidden bg-surface-elevated/35 px-4 py-4 sm:px-5 xl:min-h-full xl:border-r xl:border-outline-subtle xl:px-5 xl:py-5">
+        <div class="grid min-w-0 xl:grid-cols-[17rem_minmax(0,1fr)]">
+            <header class="relative flex min-w-0 items-start justify-between gap-3 overflow-hidden bg-surface-elevated/35 px-4 py-4 sm:px-5 xl:min-h-full xl:border-r xl:border-outline-subtle xl:px-6 xl:py-5">
                 <span class="absolute inset-y-0 left-0 w-0.5 bg-kaori-primary/70"
                       aria-hidden="true"></span>
                 <div class="flex min-w-0 flex-1 items-start gap-3">
@@ -274,16 +277,14 @@
                     </div>
                 {% endif %}
             </header>
-            <div class="min-w-0 px-4 py-3 sm:px-5 sm:py-4 xl:px-7 xl:py-5">
-                {{ caller() }}
-            </div>
+            <div class="min-w-0 px-4 py-3 sm:px-5 sm:py-4 xl:px-7 xl:py-5">{{ caller() }}</div>
         </div>
     </section>
 {%- endmacro %}
 {% macro inspector_row(label, value='-', nowrap=false, class_name='') -%}
     {% set display_value = value if value not in [None, ''] else '-' %}
     {% set value_classes = 'xl:whitespace-nowrap' if nowrap else 'break-words [overflow-wrap:anywhere]' %}
-    <div class="grid min-w-0 gap-1 border-b border-outline-subtle py-2.5 last:border-b-0 sm:grid-cols-[minmax(9.5rem,0.3fr)_minmax(0,1fr)] sm:items-baseline sm:gap-5 {{ class_name }}">
+    <div class="grid min-w-0 gap-1 border-b border-outline-subtle py-2.5 last:border-b-0 sm:grid-cols-[minmax(10rem,0.3fr)_minmax(0,1fr)] sm:items-baseline sm:gap-5 {{ class_name }}">
         <dt class="min-w-0 break-words text-sm font-normal leading-5 text-content-secondary [overflow-wrap:anywhere]">{{ label }}</dt>
         <dd class="min-w-0 {{ value_classes }} text-left text-sm font-medium leading-5 text-content-primary"
             title="{{ display_value }}">
@@ -294,7 +295,7 @@
 {% macro inspector_technical_row(label, value='-', nowrap=false, class_name='') -%}
     {% set display_value = value if value not in [None, ''] else '-' %}
     {% set technical_classes = 'font-medium xl:whitespace-nowrap' if nowrap else 'font-medium' %}
-    <div class="grid min-w-0 gap-1 border-b border-outline-subtle py-2.5 last:border-b-0 sm:grid-cols-[minmax(9.5rem,0.3fr)_minmax(0,1fr)] sm:items-baseline sm:gap-5 {{ class_name }}">
+    <div class="grid min-w-0 gap-1 border-b border-outline-subtle py-2.5 last:border-b-0 sm:grid-cols-[minmax(10rem,0.3fr)_minmax(0,1fr)] sm:items-baseline sm:gap-5 {{ class_name }}">
         <dt class="min-w-0 break-words text-sm font-normal leading-5 text-content-secondary [overflow-wrap:anywhere]">{{ label }}</dt>
         <dd class="min-w-0 text-left text-sm font-medium leading-5 text-content-primary">
             {{ technical_value.render(display_value, align='left', break_all=false, class_name=technical_classes, monospace=false, size='body') }}
@@ -303,7 +304,7 @@
 {%- endmacro %}
 {% macro inspector_state_item(label, value, tone='unknown') -%}
     {% set dot_classes = 'bg-status-normal' if tone == 'normal' else ('bg-status-warning' if tone == 'warning' else ('bg-status-critical' if tone == 'critical' else 'bg-status-unknown')) %}
-    <div class="grid min-w-0 gap-1 border-b border-outline-subtle py-2.5 last:border-b-0 sm:grid-cols-[minmax(9.5rem,0.3fr)_minmax(0,1fr)] sm:items-baseline sm:gap-5">
+    <div class="grid min-w-0 gap-1 border-b border-outline-subtle py-2.5 last:border-b-0 sm:grid-cols-[minmax(10rem,0.3fr)_minmax(0,1fr)] sm:items-baseline sm:gap-5">
         <p class="text-sm font-normal leading-5 text-content-secondary">{{ label }}</p>
         <div class="flex min-w-0 items-center gap-2">
             <span class="h-1.5 w-1.5 shrink-0 rounded-full {{ dot_classes }}"
@@ -327,9 +328,7 @@
                   aria-hidden="true"><i data-lucide="{{ icon }}" class="h-3.5 w-3.5"></i></span>
             <div class="min-w-0">
                 <p class="{{ 'whitespace-nowrap' if nowrap else 'break-words' }} text-sm font-medium leading-5 text-content-primary [overflow-wrap:anywhere]">{{ value if value not in [None, ''] else '-' }}</p>
-                {% if supporting %}
-                    <p class="mt-0.5 text-xs leading-5 text-content-muted">{{ supporting }}</p>
-                {% endif %}
+                {% if supporting %}<p class="mt-0.5 text-xs leading-5 text-content-muted">{{ supporting }}</p>{% endif %}
             </div>
         </div>
     </div>
@@ -371,7 +370,9 @@
             <article class="min-w-0 border-b border-outline-subtle px-5 py-3.5 sm:border-r xl:border-b-0 xl:last:border-r-0">
                 <p class="text-xs font-medium leading-4 text-content-muted">{{ label }}</p>
                 <p class="mt-1 break-words text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]">{{ value }}</p>
-                {% if description %}<p class="mt-0.5 text-xs leading-4 text-content-muted">{{ description }}</p>{% endif %}
+                {% if description %}
+                    <p class="mt-0.5 text-xs leading-4 text-content-muted">{{ description }}</p>
+                {% endif %}
             </article>
         {% endfor %}
     </div>

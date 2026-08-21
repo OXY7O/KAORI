@@ -30,7 +30,8 @@
                 {'label': 'Related Resources', 'value': item.claim_count + item.pod_count if item.claims_reported and item.pods_reported else 'Not Reported', 'supporting': item.claim_count ~ ' claims · ' ~ item.pod_count ~ ' Pods' if item.claims_reported and item.pods_reported else 'Relationship evidence incomplete', 'icon': 'git-branch', 'tone': 'brand'}
                 ]) }}
         <div class="min-w-0 space-y-4 p-4 sm:p-5 lg:p-6">
-            <div data-kaori-unified-resource-sheet class="min-w-0 overflow-hidden rounded-2xl border border-outline-subtle bg-surface-card shadow-sm">
+            <div data-kaori-unified-resource-sheet
+                 class="min-w-0 overflow-hidden rounded-2xl border border-outline-subtle bg-surface-card shadow-sm">
                 {% call detail.inventory_section('Storage Identity', 'badge-info', item.age, badge_size='detail', stretch=false, density='compact', description='Storage resource identity, type, scope, lifecycle age, and committed collection context.') %}
                     {{ detail.inventory_row('Cluster', item.cluster_name) }}
                     {{ detail.inventory_row('Namespace', item.namespace) }}
@@ -75,7 +76,8 @@
                     {% endif %}
                 {% endcall %}
             </div>
-            <div data-kaori-unified-resource-sheet class="min-w-0 overflow-hidden rounded-2xl border border-outline-subtle bg-surface-card shadow-sm">
+            <div data-kaori-unified-resource-sheet
+                 class="min-w-0 overflow-hidden rounded-2xl border border-outline-subtle bg-surface-card shadow-sm">
                 {% call detail.inventory_section('Binding & Lifecycle', 'link-2', item.lifecycle_label, 'status' if item.type != 'StorageClass' else 'metadata', item.lifecycle_tone, badge_size='detail', stretch=false, density='compact', description='Claim binding, phase, storage class relationship, and lifecycle state for this storage resource.') %}
                     {{ detail.inventory_fact_grid([
                                         {'label': 'Lifecycle', 'value': item.lifecycle_label},
@@ -102,7 +104,8 @@
                     ], columns=2) }}
                 {% endcall %}
             </div>
-            <div data-kaori-unified-resource-sheet class="min-w-0 overflow-hidden rounded-2xl border border-outline-subtle bg-surface-card shadow-sm">
+            <div data-kaori-unified-resource-sheet
+                 class="min-w-0 overflow-hidden rounded-2xl border border-outline-subtle bg-surface-card shadow-sm">
                 {% set claims_empty_title = 'No Related Claims' if item.claims_reported else 'Claim Evidence Not Reported' %}
                 {% set claims_empty_description = 'No PersistentVolumeClaim relationship is represented for this storage object.' if item.claims_reported else 'PersistentVolumeClaim collection evidence is unavailable for this cluster.' %}
                 {{ related_collection.inventory_render('Related Claims', 'PersistentVolumeClaim references represented by the committed storage snapshot.', item.claims, item.claim_count, 'folder-check', claims_empty_title, claims_empty_description, item.claims_truncated, url_for('inventory.storage', cluster_id=item.cluster_id, type='PersistentVolumeClaim') , 'Open Claim Inventory', embedded=true) }}
@@ -110,7 +113,8 @@
                 {% set pods_empty_description = 'No Pod mount relationship is represented in the committed snapshot.' if item.pods_reported else 'Pod collection evidence is unavailable for this cluster.' %}
                 {{ related_collection.inventory_render('Mounted Pods', 'Pods whose committed volume references include the related claim.', item.pods, item.pod_count, 'package', pods_empty_title, pods_empty_description, item.pods_truncated, url_for('inventory.pods', cluster_id=item.cluster_id) , 'Open Pod Inventory', embedded=true) }}
             </div>
-            <div data-kaori-unified-resource-sheet class="min-w-0 overflow-hidden rounded-2xl border border-outline-subtle bg-surface-card shadow-sm">
+            <div data-kaori-unified-resource-sheet
+                 class="min-w-0 overflow-hidden rounded-2xl border border-outline-subtle bg-surface-card shadow-sm">
                 {% if item.type == 'StorageClass' %}
                     {{ metadata_collection.render('Provisioner Parameters', item.parameters, 'sliders-horizontal', 'No Provisioner Parameters', 'No StorageClass parameter is represented in the committed snapshot.', 'Parameters are factual provisioner configuration.', compact=true, embedded=true) }}
                 {% endif %}

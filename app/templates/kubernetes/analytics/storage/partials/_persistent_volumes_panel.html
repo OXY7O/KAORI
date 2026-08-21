@@ -72,6 +72,14 @@
             {{ record_filter.search('pv_search', selected_pv_search, 'Search PV or claim...', 'Search PV') }}
             {{ record_filter.select('pv_status', selected_pv_status, storage_summary.persistent_storage.pv_status_options, 'All Status', 'PV Status') }}
             {{ record_filter.select('pv_storage_class', selected_pv_storage_class, storage_summary.persistent_storage.pv_storage_class_options, 'All StorageClass', 'PV Storage Class') }}
+            {% if selected_pv_search or selected_pv_status or selected_pv_storage_class %}
+                {{ record_filter.reset_link(
+                    url_for('analytics.storage', cluster_id=cluster.id if cluster else '', namespace=selected_namespace, tab='pv'),
+                    url_for('analytics.storage_persistent_summary', cluster_id=cluster.id if cluster else '', namespace=selected_namespace, tab='pv', pv_page=1, pv_per_page=storage_summary.persistent_storage.pv_pagination.per_page|default(5)),
+                    '#persistent-volumes-panel',
+                    '#' ~ panel_indicator
+                ) }}
+            {% endif %}
         {% endcall %}
         {% call evidence_list.shell('Persistent Volume Records', embedded=true) %}
             {% call evidence_list.header() %}

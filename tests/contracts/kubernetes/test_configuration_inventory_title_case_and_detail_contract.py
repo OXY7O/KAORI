@@ -43,8 +43,7 @@ def test_configuration_inventory_uses_canonical_workspace_pattern() -> None:
     assert 'Age ' not in table
     assert (
         "for resource in ('nodes', 'namespaces', 'configuration', 'workloads', 'pods', 'services', "
-        "'ingresses', 'storage')"
-        in routes
+        "'ingresses', 'storage')" in routes
     )
     assert not (ROOT / 'app/templates/kubernetes/inventory/configuration/partials/_inventory_scope.html').exists()
 

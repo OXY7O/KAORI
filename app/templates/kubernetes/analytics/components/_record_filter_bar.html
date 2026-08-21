@@ -1,5 +1,6 @@
 {# Inventory-aligned local filter owner for record-oriented Analytics panels. #}
 {% import "components/table_primitives.html" as table_ui %}
+{% import "components/table_registry.html" as registry_ui %}
 {% macro form(form_id, action, hx_get, target, indicator, trigger, columns=3) -%}
     <form id="{{ form_id }}"
           method="get"
@@ -59,18 +60,17 @@
     </div>
 {%- endmacro %}
 {% macro reset_link(href, hx_get, target, indicator, label='Clear Filters') -%}
-    <div>
+    <div data-kaori-filter-action>
         <span class="{{ table_ui.filter_label_classes() }}">Actions</span>
-        <a href="{{ href }}"
-           hx-get="{{ hx_get }}"
-           hx-target="{{ target }}"
-           hx-swap="outerHTML"
-           hx-sync="{{ target }}:replace"
-           hx-indicator="{{ indicator }}"
-           class="{{ table_ui.action_classes() }} h-10 w-full whitespace-nowrap px-3 sm:w-auto">
-            <i data-lucide="x" class="h-4 w-4" aria-hidden="true"></i>
-            {{ label }}
-        </a>
+        {{ registry_ui.clear_filters_action(href,
+            table_ui.action_classes() ~ ' h-10 px-3',
+            label=label,
+            hx_get=hx_get,
+            target=target,
+            indicator=indicator,
+            swap='outerHTML',
+            sync=target ~ ':replace',
+            lead=false) }}
     </div>
 {%- endmacro %}
 {% macro search(name, value, placeholder, label) -%}

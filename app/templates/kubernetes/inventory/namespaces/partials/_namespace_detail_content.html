@@ -23,7 +23,8 @@
                 {'label': 'Control Evidence', 'value': namespace.control_evidence_display, 'supporting': 'Quota, network, and PSA evidence', 'icon': 'shield-check', 'tone': 'brand'}
                 ]) }}
         <div class="min-w-0 space-y-4 p-4 sm:p-5 lg:p-6">
-            <div data-kaori-unified-resource-sheet class="min-w-0 overflow-hidden rounded-2xl border border-outline-subtle bg-surface-card shadow-sm">
+            <div data-kaori-unified-resource-sheet
+                 class="min-w-0 overflow-hidden rounded-2xl border border-outline-subtle bg-surface-card shadow-sm">
                 {% call detail.inventory_section('Namespace Identity', 'badge-info', namespace.age, badge_size='detail', stretch=false, density='compact', description='Canonical namespace identity, cluster ownership, lifecycle, and collection context.') %}
                     {{ detail.inventory_status_row('Lifecycle', namespace.lifecycle_label, namespace.lifecycle_tone, size='detail') }}
                     {{ detail.inventory_row('Age', namespace.age) }}
@@ -49,7 +50,8 @@
                     </div>
                 {% endcall %}
             </div>
-            <div data-kaori-unified-resource-sheet class="min-w-0 overflow-hidden rounded-2xl border border-outline-subtle bg-surface-card shadow-sm">
+            <div data-kaori-unified-resource-sheet
+                 class="min-w-0 overflow-hidden rounded-2xl border border-outline-subtle bg-surface-card shadow-sm">
                 {% call detail.inventory_section('Object Composition', 'boxes', namespace.object_counts.evidence_display, badge_size='detail', stretch=false, density='compact', description='Committed workload, Pod, Service, Ingress, and configuration composition within this namespace.') %}
                     {{ detail.inventory_fact_grid([
                                         ('Workloads', namespace.object_counts.workloads, '') ,

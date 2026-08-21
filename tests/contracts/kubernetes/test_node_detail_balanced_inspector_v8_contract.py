@@ -34,8 +34,7 @@ def test_node_v10_long_evidence_gets_full_width_when_it_needs_it() -> None:
     assert "detail.inspector_section('Runtime & Platform', 'terminal-square'" in node
     assert "detail.inspector_section('Scheduling & Conditions', 'shield-check'" in node
     assert (
-        "detail.inspector_technical_row('Node Name', node.node_name, nowrap=true, class_name='lg:col-span-2')"
-        in node
+        "detail.inspector_technical_row('Node Name', node.node_name, nowrap=true, class_name='lg:col-span-2')" in node
     )
     assert (
         "detail.inspector_technical_row('System UUID', node.system_uuid, nowrap=true, class_name='lg:col-span-2')"

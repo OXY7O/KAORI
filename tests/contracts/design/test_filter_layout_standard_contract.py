@@ -19,6 +19,8 @@ def test_shared_filter_geometry_fills_each_visible_row() -> None:
         '[&>div]:flex-1',
         'sm:[&>label]:basis-56',
         'sm:[&>div]:basis-56',
+        '[&>[data-kaori-filter-action]]:flex-none',
+        '[&>[data-kaori-filter-action]]:basis-auto',
     ):
         assert token in primitives
 
@@ -54,10 +56,20 @@ def test_provider_registry_and_reviewed_filter_surfaces_do_not_leave_orphan_colu
 
 def test_action_aware_filter_keeps_actions_compact_and_search_fills_remainder() -> None:
     bucket = read('app/templates/storage/object_storage/analytics/partials/_bucket_table.html')
+    forecast = read('app/templates/storage/object_storage/analytics/partials/_bucket_forecast_table.html')
 
     assert 'class="block min-w-0 flex-1" for="object-storage-bucket-search"' in bucket
     assert 'class="flex flex-none flex-wrap items-center gap-2"' in bucket
+    assert bucket.index('clear_filters_action(') < bucket.index('Apply Filter')
     assert 'sm:max-w-md' not in bucket
+
+    assert 'table_ui.filter_layout_classes()' in forecast
+    assert 'registry_ui.clear_filters_action(' in forecast
+    assert 'data-kaori-table-header-actions' in forecast
+    assert 'forecast_watch' in forecast
+    assert 'forecast_history_state' in forecast
+    assert "table_ui.table_classes('min-w-[840px]')" in forecast
+    assert 'record_pagination.render(' in forecast
 
 
 def test_filter_standard_is_documented_and_release_gated() -> None:

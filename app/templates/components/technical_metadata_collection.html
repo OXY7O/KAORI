@@ -11,8 +11,8 @@
         <section class="min-w-0 border-b border-outline-subtle last:border-b-0"
                  data-kaori-inventory-metadata-collection
                  data-kaori-inventory-metadata-layout="resource-sheet-band">
-            <div class="grid min-w-0 xl:grid-cols-[14.5rem_minmax(0,1fr)]">
-                <header class="relative flex min-w-0 items-start justify-between gap-3 overflow-hidden bg-surface-elevated/35 px-4 py-4 sm:px-5 xl:min-h-full xl:border-r xl:border-outline-subtle xl:px-5 xl:py-5">
+            <div class="grid min-w-0 xl:grid-cols-[17rem_minmax(0,1fr)]">
+                <header class="relative flex min-w-0 items-start justify-between gap-3 overflow-hidden bg-surface-elevated/35 px-4 py-4 sm:px-5 xl:min-h-full xl:border-r xl:border-outline-subtle xl:px-6 xl:py-5">
                     <span class="absolute inset-y-0 left-0 w-0.5 bg-kaori-primary/70"
                           aria-hidden="true"></span>
                     <div class="flex min-w-0 flex-1 items-start gap-3">
@@ -47,7 +47,9 @@
                                     <article class="min-w-0 border-b border-outline-subtle py-2.5">
                                         <p class="text-sm font-normal leading-5 text-content-secondary">{{ record_label }}</p>
                                         <p class="mt-0.5 break-words text-sm font-medium leading-5 text-content-primary [overflow-wrap:anywhere]">{{ record_value }}</p>
-                                        {% if record_reason %}<p class="mt-0.5 whitespace-pre-wrap break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]">{{ record_reason }}</p>{% endif %}
+                                        {% if record_reason %}
+                                            <p class="mt-0.5 whitespace-pre-wrap break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]">{{ record_reason }}</p>
+                                        {% endif %}
                                     </article>
                                 {% endfor %}
                             </div>
@@ -77,7 +79,7 @@
     {% else %}
         <section class="min-w-0 overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm"
                  data-kaori-inventory-metadata-collection>
-            <header class="flex min-w-0 flex-wrap items-center justify-between gap-3 border-b border-outline-subtle bg-surface-elevated/40 px-4 py-3 sm:px-5">
+            <header class="flex min-w-0 flex-wrap items-center justify-between gap-3 border-b border-outline-subtle bg-surface-elevated/35 px-4 py-3 sm:px-5">
                 <div class="flex min-w-0 items-center gap-2.5">
                     <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary ring-1 ring-inset ring-brand-outline/50"
                           aria-hidden="true"><i data-lucide="{{ icon }}" class="h-4 w-4"></i></span>

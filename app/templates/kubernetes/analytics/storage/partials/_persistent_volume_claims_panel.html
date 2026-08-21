@@ -97,6 +97,14 @@
             {{ record_filter.search('pvc_search', selected_pvc_search, 'Search PVC or namespace...', 'Search PVC') }}
             {{ record_filter.select('pvc_status', selected_pvc_status, storage_summary.persistent_storage.pvc_status_options, 'All Status', 'PVC Status') }}
             {{ record_filter.select('pvc_storage_class', selected_pvc_storage_class, storage_summary.persistent_storage.pvc_storage_class_options, 'All StorageClass', 'PVC Storage Class') }}
+            {% if selected_pvc_search or selected_pvc_status or selected_pvc_storage_class %}
+                {{ record_filter.reset_link(
+                    url_for('analytics.storage', cluster_id=cluster.id if cluster else '', namespace=selected_namespace, tab='pvc'),
+                    url_for('analytics.storage_persistent_summary', cluster_id=cluster.id if cluster else '', namespace=selected_namespace, tab='pvc', pvc_page=1, pvc_per_page=storage_summary.persistent_storage.pvc_pagination.per_page|default(5)),
+                    '#persistent-volume-claims-panel',
+                    '#' ~ panel_indicator
+                ) }}
+            {% endif %}
         {% endcall %}
         {% call evidence_list.shell('Persistent Volume Claim Records', embedded=true) %}
             {% call evidence_list.header() %}

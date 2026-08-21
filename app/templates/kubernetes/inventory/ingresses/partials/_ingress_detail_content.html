@@ -28,7 +28,8 @@
                 {'label': 'TLS References', 'value': ingress.tls_secret_count, 'supporting': ingress.secret_collection_state, 'icon': 'shield', 'tone': 'brand'}
                 ]) }}
         <div class="min-w-0 space-y-4 p-4 sm:p-5 lg:p-6">
-            <div data-kaori-unified-resource-sheet class="min-w-0 overflow-hidden rounded-2xl border border-outline-subtle bg-surface-card shadow-sm">
+            <div data-kaori-unified-resource-sheet
+                 class="min-w-0 overflow-hidden rounded-2xl border border-outline-subtle bg-surface-card shadow-sm">
                 {% call detail.inventory_section('Ingress Identity', 'badge-info', ingress.age, badge_size='detail', stretch=false, density='compact', description='Ingress identity, namespace ownership, class, lifecycle age, and collection context.') %}
                     {{ detail.inventory_row('Cluster', ingress.cluster_name) }}
                     {{ detail.inventory_row('Namespace', ingress.namespace) }}
@@ -60,7 +61,8 @@
                     {% endif %}
                 {% endcall %}
             </div>
-            <div data-kaori-unified-resource-sheet class="min-w-0 overflow-hidden rounded-2xl border border-outline-subtle bg-surface-card shadow-sm">
+            <div data-kaori-unified-resource-sheet
+                 class="min-w-0 overflow-hidden rounded-2xl border border-outline-subtle bg-surface-card shadow-sm">
                 {% call detail.inventory_section('TLS Reference Evidence', 'shield', ingress.tls_secret_count ~ ' Secrets', badge_size='detail', stretch=false, density='compact', description='Referenced TLS Secrets and certificate binding evidence declared by this Ingress.') %}
                     {{ detail.inventory_fact_grid([
                                         {'label': 'TLS Declared', 'value': 'Yes' if ingress.tls else 'No'},
@@ -133,7 +135,8 @@
                 {{ related_collection.inventory_render('Backend Services', 'Service references resolved against current committed Service evidence.', ingress.backend_resources, ingress.backend_resources|length, 'network', 'No Service Backends', 'No Service backend reference is represented in this Ingress snapshot.', false, url_for('inventory.services', cluster_id=ingress.cluster_id, namespace=ingress.namespace) , 'Open Service Inventory', embedded=true) }}
                 {{ related_collection.inventory_render('TLS Secret References', 'Secret references resolved against current committed Secret evidence.', ingress.tls_resources, ingress.tls_resources|length, 'key-round', 'No TLS Reference', 'No TLS Secret reference is declared in this Ingress snapshot.', false, url_for('inventory.configuration', cluster_id=ingress.cluster_id, namespace=ingress.namespace, type='Secret') , 'Open Secret Inventory', embedded=true) }}
             </div>
-            <div data-kaori-unified-resource-sheet class="min-w-0 overflow-hidden rounded-2xl border border-outline-subtle bg-surface-card shadow-sm">
+            <div data-kaori-unified-resource-sheet
+                 class="min-w-0 overflow-hidden rounded-2xl border border-outline-subtle bg-surface-card shadow-sm">
                 {{ metadata_collection.render('Ingress Labels', ingress.labels, 'tags', 'No Ingress Labels', 'No Ingress labels were reported in the committed snapshot.', 'Labels remain factual identity and controller metadata.', embedded=true) }}
                 {{ metadata_collection.render('Ingress Annotations', ingress.annotations, 'notebook-tabs', 'No Ingress Annotations', 'No Ingress annotations were reported in the committed snapshot.', 'Annotations may influence controller and integration behavior.', embedded=true) }}
             </div>

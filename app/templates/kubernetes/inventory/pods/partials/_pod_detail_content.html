@@ -28,7 +28,8 @@
                 {'label': 'Owner', 'value': pod.owner_display, 'supporting': 'Resolved controller', 'icon': 'git-branch', 'tone': 'brand'}
                 ]) }}
         <div class="min-w-0 space-y-4 p-4 sm:p-5 lg:p-6">
-            <div data-kaori-unified-resource-sheet class="min-w-0 overflow-hidden rounded-2xl border border-outline-subtle bg-surface-card shadow-sm">
+            <div data-kaori-unified-resource-sheet
+                 class="min-w-0 overflow-hidden rounded-2xl border border-outline-subtle bg-surface-card shadow-sm">
                 {% call detail.inventory_section('Pod Identity', 'badge-info', pod.age, badge_size='detail', stretch=false, density='compact', description='Pod identity, namespace ownership, controller resolution, age, and collection timestamps.') %}
                     {{ detail.inventory_row('Cluster', pod.cluster_name) }}
                     {{ detail.inventory_row('Namespace', pod.namespace) }}
@@ -65,7 +66,8 @@
                     {% endif %}
                 {% endcall %}
             </div>
-            <div data-kaori-unified-resource-sheet class="min-w-0 overflow-hidden rounded-2xl border border-outline-subtle bg-surface-card shadow-sm">
+            <div data-kaori-unified-resource-sheet
+                 class="min-w-0 overflow-hidden rounded-2xl border border-outline-subtle bg-surface-card shadow-sm">
                 {% call detail.inventory_section('Placement & Network', 'map-pin', pod.node or 'Not Scheduled', badge_size='detail', stretch=false, density='compact', description='Node placement, Pod addressing, scheduling constraints, selectors, and toleration evidence.') %}
                     {{ detail.inventory_fact_grid(pod.placement_rows, columns=3) }}
                     <div class="mt-3">

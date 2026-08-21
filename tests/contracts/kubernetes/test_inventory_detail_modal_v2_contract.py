@@ -78,8 +78,7 @@ def test_inventory_detail_typography_has_one_predictable_hierarchy() -> None:
     assert "'text-sm leading-5' if size == 'body'" in technical
     assert (
         "technical_value.render(container.image or 'Not Reported', break_all=true, "
-        "class_name='font-medium', size='body')"
-        in runtime
+        "class_name='font-medium', size='body')" in runtime
     )
     assert 'text-sm font-semibold tabular-nums text-content-primary' in runtime
 

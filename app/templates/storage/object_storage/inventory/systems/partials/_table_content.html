@@ -40,12 +40,11 @@
                     </td>
                     <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_indicator_label(system.status_label, system.status_tone) }}</td>
                     <td class="{{ table_ui.cell_classes(true) }}">
-                        {{ resource_detail_modal.detail_button(
-                                system.id,
-                                url_for('object_storage_inventory.system_details', system_id=system.id),
-                                system.name,
-                                'Object Storage System'
-                                ) }}
+                        {{ resource_detail_modal.detail_button(system.id,
+                                                url_for('object_storage_inventory.system_details', system_id=system.id) ,
+                        system.name,
+                        'Object Storage System'
+                        ) }}
                     </td>
                 </tr>
             {% else %}

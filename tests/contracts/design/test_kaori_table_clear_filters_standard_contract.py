@@ -16,10 +16,14 @@ def test_clear_filters_is_owned_by_the_shared_registry_component() -> None:
 
     assert "label='Clear Filters'" in component
     assert 'data-kaori-clear-filters' in component
+    assert 'data-kaori-filter-action' in component
     assert 'data-kaori-canonical-registry-clear' in component
     assert 'data-lucide="x"' in component
     assert '{page_param: 1, per_page_param: per_page}' in component
     assert "sync='closest section:replace'" in component
+    assert 'lead=true' in component
+    assert "'order-first' if lead else ''" in component
+    assert 'shrink-0 whitespace-nowrap' in component
 
 
 def test_legacy_reset_filter_copy_is_not_used_by_kaori_templates() -> None:
@@ -54,6 +58,7 @@ def test_specialized_filtered_tables_follow_the_same_clear_contract() -> None:
         'reports/report_templates/index.html',
         'reports/schedules/index.html',
         'access/users/partials/_content.html',
+        'storage/object_storage/analytics/partials/_bucket_forecast_table.html',
     )
     for relative in specialized:
         source = read(TEMPLATES / relative)
@@ -85,6 +90,35 @@ def test_headered_inventory_surfaces_place_clear_filters_with_header_actions() -
         assert 'header_actions=inventory_header_actions' in source, relative
         assert 'clear_filters_action(' in source, relative
         assert 'mb-3 flex justify-end' not in source, relative
+
+
+def test_clear_filters_leads_right_side_action_groups_without_displacing_existing_actions() -> None:
+    table = read(TEMPLATES / 'components/table.html')
+    standard = read(ROOT / 'docs/design/components/TABLE_AND_LABEL.md')
+
+    clear_index = table.index('{% if header_actions %}')
+    permanent_action_index = table.index('<a href="{{ action_href }}"', clear_index)
+    assert clear_index < permanent_action_index
+    assert '`Clear Filters` is the leading action' in standard
+    assert 'never pushes, displaces, or visually collides' in standard
+
+
+def test_record_oriented_analytics_filters_expose_shared_clear_when_filters_are_meaningful() -> None:
+    record_filter = read(TEMPLATES / 'kubernetes/analytics/components/_record_filter_bar.html')
+    assert 'registry_ui.clear_filters_action(' in record_filter
+    assert 'lead=false' in record_filter
+
+    consumers = (
+        'kubernetes/analytics/storage/partials/_persistent_volumes_panel.html',
+        'kubernetes/analytics/storage/partials/_persistent_volume_claims_panel.html',
+        'kubernetes/analytics/storage/partials/_filesystem_panel.html',
+        'kubernetes/analytics/workload/partials/_tenant_quota_section.html',
+        'kubernetes/analytics/workload/partials/_workload_mapping_section.html',
+        'kubernetes/analytics/top_consumers/partials/_consumer_detail_section.html',
+    )
+    for relative in consumers:
+        assert 'record_filter.reset_link(' in read(TEMPLATES / relative), relative
+
 
 
 def test_topology_reuses_clear_filters_and_distinguishes_snapshot_reload() -> None:

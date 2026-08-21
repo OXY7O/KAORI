@@ -21,7 +21,7 @@ def test_inventory_v6_uses_one_horizontal_band_contract() -> None:
     shared = read('app/templates/components/details/_detail_content.html')
 
     assert 'data-kaori-inventory-section-layout="resource-sheet-band"' in shared
-    assert 'xl:grid-cols-[14.5rem_minmax(0,1fr)]' in shared
+    assert 'xl:grid-cols-[17rem_minmax(0,1fr)]' in shared
     assert 'xl:border-r' in shared
     assert 'bg-surface-elevated/35' in shared
     assert "badge_size='detail'" in shared
@@ -62,11 +62,7 @@ def test_inventory_tags_use_canonical_violet_label_treatment() -> None:
     node = read('app/templates/kubernetes/inventory/nodes/partials/_node_detail_content.html')
 
     assert "special_label(entry_count_label, 'maintenance', 'tags', 'detail')" in metadata
-    assert (
-        "special_label(total_count ~ ' ' ~ ('Resource' if total_count == 1 else 'Resources'), "
-        "'maintenance', 'git-branch', 'detail')"
-        in related
-    )
+    assert "special_label(total_count_label, 'maintenance', 'git-branch', 'detail')" in related
     assert "special_label(taint_count_label, 'maintenance', 'tags', 'detail')" in node
 
 

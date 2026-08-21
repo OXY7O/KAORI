@@ -13,10 +13,9 @@
             {% include "storage/object_storage/inventory/overview/partials/_systems_snapshot.html" %}
         {% endif %}
     </div>
-    {{ resource_detail_modal.inventory_host(
-        'Object Storage System',
-        url_for('object_storage_inventory.system_details', system_id=0),
-        'Committed Object Storage Inventory snapshot · No live provider API query.',
-        'Object Storage Inventory'
-        ) }}
+    {{ resource_detail_modal.inventory_host('Object Storage System',
+        url_for('object_storage_inventory.system_details', system_id=0) ,
+    'Committed Object Storage Inventory snapshot · No live provider API query.',
+    'Object Storage Inventory'
+    ) }}
 {% endblock dashboard_content %}

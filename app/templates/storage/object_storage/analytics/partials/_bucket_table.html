@@ -59,10 +59,6 @@
                     {{ table_ui.search_field('bucket_q', bucket_table.search, 'Filter by bucket name', id='object-storage-bucket-search') }}
                 </label>
                 <div class="flex flex-none flex-wrap items-center gap-2">
-                    <button type="submit" class="{{ table_ui.action_classes() }} h-10 px-4">
-                        <i data-lucide="search" class="h-4 w-4"></i>
-                        Apply Filter
-                    </button>
                     {% if bucket_table.search %}
                         {{ registry_ui.clear_filters_action(url_for(bucket_table.page_endpoint, system_id=system.id, time_range=selected_time_range, bucket_per_page=bucket_table.pagination.per_page, tab=bucket_table.query_params.tab|default(none) ),
                         table_ui.action_classes() ~ ' h-10 px-4',
@@ -72,6 +68,10 @@
                         sync='#object-storage-bucket-table-panel:replace'
                         ) }}
                     {% endif %}
+                    <button type="submit" class="{{ table_ui.action_classes() }} h-10 px-4">
+                        <i data-lucide="search" class="h-4 w-4"></i>
+                        Apply Filter
+                    </button>
                 </div>
             </div>
         </form>

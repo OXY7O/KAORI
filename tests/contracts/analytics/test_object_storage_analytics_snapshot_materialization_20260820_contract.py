@@ -240,25 +240,48 @@ def test_object_storage_manual_dispatch_reports_required_metric_failures_instead
 
 def test_bucket_forecast_watch_uses_shared_kaori_table_standard() -> None:
     forecast = read('app/templates/storage/object_storage/analytics/partials/_bucket_forecasts.html')
+    forecast_table = read('app/templates/storage/object_storage/analytics/partials/_bucket_forecast_table.html')
+    bucket_table = read('app/storage/object_storage/analytics/bucket_table.py')
+    service = read('app/storage/object_storage/analytics/service.py')
+    routes = read('app/storage/object_storage/analytics/routes.py')
+    route_registry = read('app/analytics/routes.py')
+    javascript = read('app/static/js/storage/object_storage/analytics.js')
 
-    assert '{% import "components/table_primitives.html" as table_ui %}' in forecast
-    assert 'data-kaori-object-storage-bucket-forecast-table' in forecast
-    assert 'table_ui.table_classes' in forecast
-    assert 'table_ui.head_classes()' in forecast
-    assert 'table_ui.header_cell_classes()' in forecast
-    assert 'table_ui.body_classes()' in forecast
-    assert 'table_ui.row_classes()' in forecast
-    assert 'table_ui.cell_classes()' in forecast
-    assert 'table_ui.title_cell(row.name' in forecast
-    for label in (
-        'Bucket',
-        'Current Usage',
-        'Growth / Day',
-        'Projected 30d',
-        'Quota Boundary',
-        'Quota ETA',
-        'Forecast Watch',
-    ):
-        assert f'>{label}<' in forecast
-    assert 'data-object-storage-bucket-forecast-records' not in forecast
-    assert 'lg:grid-cols-12' not in forecast
+    assert 'data-object-storage-bucket-forecast-chart-panel' in forecast
+    assert 'data-object-storage-bucket-forecast-rows' in forecast
+    assert 'data-object-storage-bucket-forecast-chart' in forecast
+    assert 'Current vs 30-Day Projected Usage' in forecast
+    assert '_bucket_forecast_table.html' in forecast
+
+    assert 'data-kaori-object-storage-bucket-forecast-table' in forecast_table
+    assert 'table_ui.filter_layout_classes()' in forecast_table
+    assert 'registry_ui.clear_filters_action(' in forecast_table
+    assert "table_ui.table_classes('min-w-[840px]')" in forecast_table
+    assert 'table_ui.head_classes()' in forecast_table
+    assert 'table_ui.header_cell_classes()' in forecast_table
+    assert 'table_ui.body_classes()' in forecast_table
+    assert 'table_ui.row_classes()' in forecast_table
+    assert 'table_ui.cell_classes()' in forecast_table
+    assert 'table_ui.title_cell(row.name' in forecast_table
+    assert 'record_pagination.render(' in forecast_table
+    for label in ('Bucket', 'Usage Outlook', 'Growth / Day', 'Quota Outlook', 'Forecast Watch'):
+        assert f'>{label}<' in forecast_table
+    forecast_head = forecast_table.split('<thead', 1)[1].split('</thead>', 1)[0]
+    for retired in ('Current Usage', 'Projected 30d', 'Quota Boundary', 'Quota ETA'):
+        assert f'>{retired}<' not in forecast_head
+
+    assert 'def build_bucket_forecast_table_view(' in bucket_table
+    assert "query_args.get('forecast_watch')" in bucket_table
+    assert "query_args.get('forecast_history_state')" in bucket_table
+    assert "query_args.get('forecast_bucket_per_page')" in bucket_table
+    assert "context['bucket_forecast_table'] = build_bucket_forecast_table_view(" in service
+    assert 'def get_object_storage_bucket_forecast_table_context(' in service
+    assert 'def object_storage_bucket_forecast_table()' in routes
+    assert "'/object-storage/forecast/buckets/table'" in route_registry
+    assert "const bucketForecastChartKey = 'kaoriObjectStorageBucketForecastChart'" in javascript
+    assert "type: 'bar'" in javascript
+    assert "indexAxis: 'y'" in javascript
+    assert "label: 'Current Usage'" in javascript
+    assert "label: 'Projected 30d'" in javascript
+    assert 'data-object-storage-bucket-forecast-records' not in forecast_table
+

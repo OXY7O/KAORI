@@ -92,11 +92,11 @@
                                                                                         </div>
                                                                                         <div class="flex shrink-0 flex-wrap items-center gap-2"
                                                                                              data-kaori-table-header-actions>
+                                                                                            {% if header_actions %}{{ header_actions }}{% endif %}
                                                                                             <a href="{{ action_href }}" class="{{ action_classes() }}">
                                                                                                 <i data-lucide="server-cog" class="h-4 w-4" aria-hidden="true"></i>
                                                                                                 {{ action_label }}
                                                                                             </a>
-                                                                                            {% if header_actions %}{{ header_actions }}{% endif %}
                                                                                         </div>
                                                                                     </div>
                                                                                     {{ loading_bar.render(loading_id, label=loading_label) }}

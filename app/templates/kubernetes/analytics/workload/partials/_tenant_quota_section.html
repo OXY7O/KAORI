@@ -69,6 +69,14 @@
             {{ record_filter.search('tenant_search', selected_tenant_search, 'Search Namespace...', 'Search Namespace') }}
             {{ record_filter.select('tenant_quota_status', selected_tenant_quota_status, quota_status_options, 'All Quota Statuses', 'Quota Status') }}
             {{ record_filter.select('tenant_risk', selected_tenant_risk, tenant_risk_options, 'All Risks', 'Tenant Risk') }}
+            {% if selected_tenant_search or selected_tenant_quota_status or selected_tenant_risk %}
+                {{ record_filter.reset_link(
+                    full_page_url,
+                    url_for('analytics.workload_tenant_quota', cluster_id=cluster.id if cluster else '', namespace=selected_namespace, time_range=selected_time_range, tab='quotas', quota_page=1, quota_per_page=quota_pagination.per_page),
+                    '#tenant-quota-analysis',
+                    '#' ~ indicator_id
+                ) }}
+            {% endif %}
         {% endcall %}
         {% call evidence_list.shell('Tenant Quota Records', embedded=true) %}
             {% call evidence_list.header() %}

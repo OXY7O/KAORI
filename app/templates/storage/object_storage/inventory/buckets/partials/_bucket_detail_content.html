@@ -33,7 +33,7 @@
                         {{ detail.inventory_row('Provider', bucket.provider_label) }}
                         {{ detail.inventory_row('Native Type', bucket.native_type_label) }}
                         {{ detail.inventory_row('Location', bucket.location) }}
-                        {{ detail.inventory_row('Environment', bucket.environment|environment_name(empty='Not Specified')) }}
+                        {{ detail.inventory_row('Environment', bucket.environment|environment_name(empty='Not Specified') ) }}
                         {{ detail.inventory_row('Created', bucket.provider_created_at|user_datetime if bucket.provider_created_at else 'Not Reported', nowrap=true, class_name='lg:col-span-2') }}
                     </dl>
                 {% endcall %}
@@ -104,7 +104,7 @@
                 {% endfor %}
             {% endcall %}
             {% if bucket.enrichment_gaps %}
-                {{ operational_callout.render('Partial Provider Evidence', 'Some optional provider evidence could not be collected: ' ~ (bucket.enrichment_gaps|join(', ')) ~ '. The committed inventory snapshot remains usable.', icon='triangle-alert', tone='warning', variant='semantic') }}
+                {{ operational_callout.render('Partial Provider Evidence', 'Some optional provider evidence could not be collected: ' ~ (bucket.enrichment_gaps|join(', ') ) ~ '. The committed inventory snapshot remains usable.', icon='triangle-alert', tone='warning', variant='semantic') }}
             {% endif %}
             <div class="grid min-w-0 gap-4 xl:grid-cols-12">
                 {{ operational_callout.render('Inventory Boundary', bucket.data_boundary, icon='database', tone='info', extra_classes='xl:col-span-5') }}

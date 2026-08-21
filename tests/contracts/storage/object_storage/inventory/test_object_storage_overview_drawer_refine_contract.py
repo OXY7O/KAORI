@@ -21,8 +21,7 @@ def test_provider_context_keeps_endpoint_full_width_in_unified_resource_sheet() 
     detail = read('app/templates/storage/object_storage/inventory/systems/partials/_system_detail_content.html')
 
     assert (
-        "detail.inventory_technical_row('Endpoint', system.endpoint, nowrap=true, class_name='lg:col-span-2')"
-        in detail
+        "detail.inventory_technical_row('Endpoint', system.endpoint, nowrap=true, class_name='lg:col-span-2')" in detail
     )
     assert "detail.inventory_row('Region', system.region)" in detail
     assert "detail.inventory_row('Addressing Style', system.addressing_style)" in detail
