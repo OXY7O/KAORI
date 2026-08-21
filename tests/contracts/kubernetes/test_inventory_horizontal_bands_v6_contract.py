@@ -29,7 +29,7 @@ def test_inventory_v6_uses_one_horizontal_band_contract() -> None:
     assert 'absolute inset-y-0 left-0 w-0.5 bg-kaori-primary/70' not in shared
     assert 'mt-3 hidden xl:flex' in shared
     assert 'px-6 py-5 sm:px-7' in shared
-    assert 'mx-5 mt-5 grid overflow-hidden' in shared
+    assert 'mt-5 grid overflow-hidden' in shared
 
     for resource, filename in DETAILS.items():
         detail = read(f'app/templates/kubernetes/inventory/{resource}/partials/{filename}')

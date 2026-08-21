@@ -168,7 +168,9 @@ def main() -> int:
         require(token in table_content, f'Missing compact Node table contract: {token}', errors)
 
     shared_detail = read('app/templates/components/details/_detail_content.html')
-    require('macro inspector_section(' in shared_detail, 'Node detail must expose the inspector section primitive.', errors)
+    require(
+        'macro inspector_section(' in shared_detail, 'Node detail must expose the inspector section primitive.', errors
+    )
     require('macro inspector_row(' in shared_detail, 'Node detail must expose the inspector row primitive.', errors)
 
     for token in (

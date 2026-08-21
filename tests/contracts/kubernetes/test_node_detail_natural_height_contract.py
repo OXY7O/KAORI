@@ -24,7 +24,13 @@ def test_node_detail_uses_unified_resource_sheet_with_natural_height_sections() 
     assert 'min-h-80' not in detail
     assert 'min-h-96' not in detail
 
-    for title in ('Identity & Snapshot', 'Node Capacity', 'Connectivity & Network', 'Runtime & Platform', 'Scheduling & Conditions'):
+    for title in (
+        'Identity & Snapshot',
+        'Node Capacity',
+        'Connectivity & Network',
+        'Runtime & Platform',
+        'Scheduling & Conditions',
+    ):
         assert f"detail.inspector_section('{title}'" in detail
 
     assert "operational_callout.render('Committed Snapshot Boundary'" in detail

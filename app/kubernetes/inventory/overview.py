@@ -549,7 +549,6 @@ def get_inventory_overview() -> dict[str, Any]:
     }
 
 
-
 def get_inventory_overview_cluster_detail(cluster_id: str) -> dict[str, Any] | None:
     """Return one committed cluster-inventory overview row for detail presentation."""
     normalized_id = str(cluster_id)

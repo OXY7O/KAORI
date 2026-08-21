@@ -185,64 +185,25 @@
 {%- endmacro %}
 {% macro inventory_fact_grid(rows, columns=2) -%}
     {% set grid_classes = 'sm:grid-cols-2 xl:grid-cols-5' if columns == 5 else ('sm:grid-cols-2 xl:grid-cols-4' if columns == 4 else ('sm:grid-cols-2 xl:grid-cols-3' if columns == 3 else 'sm:grid-cols-2')) %}
-    {% set fact_icons = {
-        'Node': 'server',
-        'Pod IP': 'network',
-        'Host IP': 'router',
-        'Service Account': 'user-round',
-        'Containers': 'container',
-        'Init Containers': 'package-plus',
-        'Ready Containers': 'circle-check',
-        'Desired Replicas': 'layers-3',
-        'Ready Replicas': 'circle-check',
-        'Available Replicas': 'badge-check',
-        'Strategy': 'route',
-        'Node Selector': 'binary',
-        'Tolerations': 'shield',
-        'Cluster IP': 'network',
-        'IP Families': 'waypoints',
-        'Scheduler': 'calendar-cog',
-        'DNS Policy': 'globe-2',
-        'Runtime Class': 'cpu',
-        'Volumes': 'database',
-        'ResourceQuota': 'sliders-horizontal',
-        'LimitRange': 'gauge',
-        'NetworkPolicy': 'network',
-        'PSA Enforce': 'shield-check'
-    } %}
     <div data-kaori-inventory-fact-grid
          class="grid min-w-0 gap-x-10 {{ grid_classes }}">
         {% for row in rows %}
             {% set label = row.label if row.label is defined else row[0] %}
             {% set value = row.value if row.value is defined else row[1] %}
             {% set supporting = row.supporting if row.supporting is defined else (row[2] if row|length > 2 else none) %}
-            {% set row_icon = row.icon if row.icon is defined else (row[3] if row|length > 3 else fact_icons.get(label)) %}
             <article class="min-w-0 border-b border-outline-subtle py-3">
-                {% if row_icon %}
-                    <div class="flex min-w-0 items-start gap-3">
-                        <span class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary ring-1 ring-inset ring-brand-outline/40"
-                              aria-hidden="true"><i data-lucide="{{ row_icon }}" class="h-4 w-4"></i></span>
-                        <div class="min-w-0 flex-1">
-                            <p class="text-sm font-normal leading-5 text-content-secondary">{{ label }}</p>
-                            <p class="mt-0.5 break-words text-sm font-medium leading-5 text-content-primary [overflow-wrap:anywhere]">{{ value if value not in [None, ''] else '-' }}</p>
-                            {% if supporting %}
-                                <p class="mt-0.5 break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]">{{ supporting }}</p>
-                            {% endif %}
-                        </div>
-                    </div>
-                {% else %}
-                    <p class="text-sm font-normal leading-5 text-content-secondary">{{ label }}</p>
-                    <p class="mt-0.5 break-words text-sm font-medium leading-5 text-content-primary [overflow-wrap:anywhere]">{{ value if value not in [None, ''] else '-' }}</p>
-                    {% if supporting %}
-                        <p class="mt-0.5 break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]">{{ supporting }}</p>
-                    {% endif %}
+                <p class="text-sm font-normal leading-5 text-content-secondary">{{ label }}</p>
+                <p class="mt-0.5 break-words text-sm font-medium leading-5 text-content-primary [overflow-wrap:anywhere]">{{ value if value not in [None, ''] else '-' }}</p>
+                {% if supporting %}
+                    <p class="mt-0.5 break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]">{{ supporting }}</p>
                 {% endif %}
             </article>
         {% endfor %}
         {% set remainder = (rows|length) % columns %}
         {% if remainder %}
             {% for _ in range(columns - remainder) %}
-                <span class="hidden border-b border-outline-subtle xl:block" aria-hidden="true"></span>
+                <span class="hidden border-b border-outline-subtle xl:block"
+                      aria-hidden="true"></span>
             {% endfor %}
         {% endif %}
     </div>
@@ -380,7 +341,7 @@
 {% macro inspector_summary_strip(items) -%}
     <div data-resource-detail-summary
          data-kaori-node-inspector-summary
-         class="mx-5 mt-5 grid overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm sm:grid-cols-2 lg:mx-7 lg:mt-6 xl:grid-cols-4">
+         class="mt-5 grid overflow-hidden border border-outline-subtle bg-surface-card sm:grid-cols-2 lg:mt-6 xl:grid-cols-4">
         {% for item in items %}
             {% set tone = item.tone if item.tone is defined else 'brand' %}
             {% set icon_classes = 'bg-status-normal-soft text-status-normal-text' if tone == 'normal' else ('bg-status-warning-soft text-status-warning-text' if tone == 'warning' else ('bg-status-critical-soft text-status-critical-text' if tone == 'critical' else 'bg-kaori-soft text-kaori-primary')) %}
@@ -409,12 +370,14 @@
 {% macro summary_strip(metrics, columns=4, compact=false) -%}
     <div data-resource-detail-summary
          data-kaori-inventory-summary-strip
-         class="mx-5 mt-5 grid overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm sm:grid-cols-2 lg:mx-7 lg:mt-6 xl:grid-cols-4">
+         class="mt-5 grid overflow-hidden border border-outline-subtle bg-surface-card sm:grid-cols-2 lg:mt-6 xl:grid-cols-4">
         {% for label, value, description in metrics %}
             <article class="min-w-0 border-b border-outline-subtle px-5 py-3.5 sm:border-r xl:border-b-0 xl:last:border-r-0">
                 <p class="text-xs font-medium leading-4 text-content-muted">{{ label }}</p>
                 <p class="mt-1 break-words text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]">{{ value }}</p>
-                {% if description %}<p class="mt-0.5 text-xs leading-4 text-content-muted">{{ description }}</p>{% endif %}
+                {% if description %}
+                    <p class="mt-0.5 text-xs leading-4 text-content-muted">{{ description }}</p>
+                {% endif %}
             </article>
         {% endfor %}
     </div>

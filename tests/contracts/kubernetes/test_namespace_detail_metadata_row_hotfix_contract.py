@@ -19,7 +19,10 @@ def test_shared_detail_component_exposes_metadata_row() -> None:
 def test_namespace_psa_rows_use_supported_shared_macro() -> None:
     namespace_detail = read('app/templates/kubernetes/inventory/namespaces/partials/_namespace_detail_content.html')
     assert 'detail.inventory_fact_grid([' in namespace_detail
-    assert "{'label': 'PSA Enforce', 'value': namespace.pod_security_enforce_display, 'icon': 'shield-check'}" in namespace_detail
+    assert (
+        "{'label': 'PSA Enforce', 'value': namespace.pod_security_enforce_display, 'icon': 'shield-check'}"
+        in namespace_detail
+    )
     assert "('PSA Audit', namespace.pod_security_audit_display" in namespace_detail
     assert "('PSA Warn', namespace.pod_security_warn_display" in namespace_detail
 

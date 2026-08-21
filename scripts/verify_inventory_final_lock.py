@@ -252,10 +252,9 @@ def main() -> int:
         errors,
     )
 
-
     detail_primitives = read('app/templates/components/details/_detail_content.html')
     require(
-        "description=None" in detail_primitives
+        'description=None' in detail_primitives
         and 'data-kaori-inventory-section-description' in detail_primitives
         and 'bg-surface-elevated/35' in detail_primitives
         and 'absolute inset-y-0 left-0 w-0.5 bg-kaori-primary/70' not in detail_primitives,
