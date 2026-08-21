@@ -1,0 +1,31 @@
+/* KAORI Object Storage Analysis PDF specialization v3.0. */
+.kaori-object-storage-analysis-report .cover-grid { grid-template-columns: 1.08fr .92fr; }
+.kaori-object-storage-analysis-report .availability-status {
+  margin-top: 1mm;
+  padding: 4.5mm;
+  border-left: 1.1mm solid #7C3AED;
+  background: #F8FAFC;
+}
+.kaori-object-storage-analysis-report .availability-status span {
+  display: block;
+  color: #64748B;
+  font-size: 6.2pt;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+.kaori-object-storage-analysis-report .availability-status strong {
+  display: block;
+  margin-top: 1.4mm;
+  color: #182033;
+  font-size: 12pt;
+  line-height: 1.15;
+}
+.kaori-object-storage-analysis-report .availability-status p {
+  margin: 1.8mm 0 0;
+  color: #475569;
+  font-size: 6.8pt;
+  line-height: 1.4;
+}
+.kaori-object-storage-analysis-report .single-column-references { grid-template-columns: 1fr; }
+.kaori-object-storage-analysis-report .report-table { font-size: var(--analytics-type-table); }

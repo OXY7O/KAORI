@@ -22,6 +22,9 @@ body.kaori-analytics-publication {
   --analytics-border-soft: #E2E8F0;
   --analytics-surface: #F8FAFC;
   --analytics-table-head: #F1F5F9;
+  --analytics-type-table: 7pt;
+  --analytics-type-table-dense: 5.45pt;
+  --analytics-type-page: 14.6pt;
   --report-ink: var(--analytics-text);
   --report-muted: var(--analytics-muted);
   --report-rule: var(--analytics-border);
@@ -110,7 +113,7 @@ body.kaori-analytics-publication .page-title-row {
 }
 body.kaori-analytics-publication .section-index { width: 9mm; height: 9mm; display: flex; align-items: center; justify-content: center; border-radius: 1.6mm; background: var(--analytics-primary); color: #fff; font-size: 9pt; line-height: 1; font-weight: 700; }
 body.kaori-analytics-publication .page-title-copy { min-width: 0; }
-body.kaori-analytics-publication .page-title-copy h1 { margin: 0; font-size: 13.8pt; line-height: 1.08; font-weight: 700; letter-spacing: -.012em; overflow-wrap: break-word; }
+body.kaori-analytics-publication .page-title-copy h1 { margin: 0; font-size: var(--analytics-type-page); line-height: 1.08; font-weight: 700; letter-spacing: -.012em; overflow-wrap: break-word; }
 body.kaori-analytics-publication .page-title-copy p { margin: 1mm 0 0; color: var(--analytics-muted); font-size: 6.75pt; line-height: 1.3; }
 body.kaori-analytics-publication .cutoff { display: flex; flex-direction: column; justify-content: center; min-width: 0; text-align: right; }
 body.kaori-analytics-publication .cutoff span { color: var(--analytics-muted); font-size: 5.65pt; line-height: 1.1; }

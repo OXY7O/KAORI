@@ -17,6 +17,7 @@ ANALYTICS_TEMPLATE_STYLESHEETS: dict[str, str] = {
     'reports/pdf/forecast_analysis.html': 'forecast_analysis.css',
     'reports/pdf/top_consumers_analysis.html': 'top_consumers_analysis.css',
     'reports/pdf/alerts_anomalies.html': 'alerts_anomalies.css',
+    'reports/pdf/object_storage_analysis.html': 'object_storage_analysis.css',
     'reports/pdf/analytics_unavailable.html': 'analytics_unavailable.css',
 }
 

@@ -4,7 +4,7 @@
         <meta charset="utf-8">
         <title>{{ document.report_name }}</title>
     </head>
-    <body class="kaori-analytics-publication kaori-object-storage-analysis-report">
+    <body class="kaori-analytics-publication kaori-reporting-v3 kaori-object-storage-analysis-report">
         {% set p = document.presentation %}
         {% import 'reports/pdf/components/analytics_publication.html' as ui %}
         {% macro footer(page_number) -%}
@@ -13,7 +13,7 @@
         <article class="page cover-page">
             <div class="cover-band">
                 {{ ui.cover_brand(p.report_id, p.classification, 'OBJECT STORAGE ANALYSIS') }}
-                {{ ui.cover_title(document.report_type_label, document.report_description) }}
+                {{ ui.cover_title('Object Storage Operational Intelligence', document.report_description) }}
             </div>
             <div class="cover-main">
                 <div class="cover-grid">
@@ -61,40 +61,15 @@
                 <div class="page-content">
                     {{ ui.page_title(section.number, section.title, section.description, document.data_cutoff) }}
                     {% if section.metrics %}
-                        <div class="metric-grid">
-                            {% for metric in section.metrics %}
-                                <div class="metric-card {{ metric.tone }}">
-                                    <span>{{ metric.label }}</span>
-                                    <strong>{{ metric.value }}</strong>
-                                    {% if metric.note %}<small>{{ metric.note }}</small>{% endif %}
-                                </div>
-                            {% endfor %}
-                        </div>
+                        {{ ui.metric_strip(section.metrics, 4) }}
                     {% endif %}
                     {% for table in section.tables %}
                         {% call ui.section(table.title, table.note or 'Canonical evidence rows for the selected Object Storage reporting boundary.') %}
-                            <table class="report-table">
-                                <thead>
-                                    <tr>
-                                        {% for column in table.columns %}
-                                            <th>{{ column }}</th>
-                                        {% endfor %}
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for row in table.rows %}
-                                        <tr>
-                                            {% for value in row %}
-                                                <td>{{ value }}</td>
-                                            {% endfor %}
-                                        </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
+                            {{ ui.technical_table(table.columns, table.rows, 'object-storage-evidence-register') }}
                         {% endcall %}
                     {% endfor %}
                     {% if section.findings %}
-                        {% call ui.section('Findings', 'Operational interpretation derived from evidence represented in this section.') %}
+                        {% call ui.section('Operational Interpretation', 'Findings derived from the governed evidence represented in this section.') %}
                             <div class="reference-notes single-column-references">
                                 {% for finding in section.findings %}
                                     {{ ui.reference_item('F' ~ loop.index, finding.title, finding.description, finding.tone|title) }}

@@ -24,6 +24,7 @@ from app.reports.export.html_pdf.document import (
     ReportSection,
 )
 from app.reports.export.html_pdf.forecast_analysis import build_forecast_analysis_presentation
+from app.reports.export.html_pdf.object_storage_analysis import build_object_storage_analysis_presentation
 from app.reports.export.html_pdf.normalization import (
     find_first_path,
     findings_from_value,
@@ -337,30 +338,11 @@ def build_report_document(
         )
     elif report.report_type == 'object_storage_analysis':
         template_name = 'reports/pdf/object_storage_analysis.html'
-        metrics_source = (
-            cast(Mapping[str, Any], payload.get('metrics_source'))
-            if isinstance(payload.get('metrics_source'), Mapping)
-            else {}
+        presentation = build_object_storage_analysis_presentation(
+            payload,
+            context=context,
+            classification=classification,
         )
-        metrics_readiness = (
-            cast(Mapping[str, Any], payload.get('metrics_readiness'))
-            if isinstance(payload.get('metrics_readiness'), Mapping)
-            else {}
-        )
-        presentation = {
-            'report_id': context.report_id,
-            'classification': classification,
-            'page_count': 1 + len(context.sections),
-            'scope_value': context.cluster_scope,
-            'source_label': sanitize_text(
-                metrics_source.get('provider_label') or metrics_source.get('label'),
-                fallback='Object Storage Evidence',
-            ),
-            'metrics_contract': sanitize_text(
-                metrics_readiness.get('label') or metrics_readiness.get('status'),
-                fallback='Evidence Boundary Recorded',
-            ),
-        }
 
     return finalize_report_document(
         report,
@@ -384,6 +366,9 @@ def _build_section(report: Any, payload: Mapping[str, Any], section_key: str, nu
 
     if section_key == 'operational_recommendations':
         return _build_recommendations_section(report, payload, number)
+
+    if section_key == 'methodology_evidence_boundary':
+        return _build_methodology_evidence_section(payload, number)
 
     value = find_first_path(payload, _SECTION_SOURCE_PATHS.get(section_key, (section_key,)))
     if value is None:
@@ -451,6 +436,26 @@ def _build_section(report: Any, payload: Mapping[str, Any], section_key: str, nu
         chart_svg=chart_svg,
         note=note,
         page_orientation='landscape' if any(len(table.columns) > 6 for table in tables) else 'portrait',
+    )
+
+
+def _build_methodology_evidence_section(payload: Mapping[str, Any], number: int) -> ReportSection:
+    evidence = payload.get('evidence_boundary')
+    evidence_mapping = cast(Mapping[str, Any], evidence) if isinstance(evidence, Mapping) else {}
+    metrics = metrics_from_mapping(evidence_mapping, limit=8)
+    return ReportSection(
+        key='methodology_evidence_boundary',
+        number=number,
+        title=SECTION_LABELS.get('methodology_evidence_boundary', 'Methodology & Evidence Boundary'),
+        description=_SECTION_DESCRIPTIONS['methodology_evidence_boundary'],
+        status_label='Recorded' if metrics else 'Limited',
+        status_tone='info' if metrics else 'warning',
+        metrics=metrics,
+        note=(
+            'Evidence ownership and cut-off are recorded for this publication.'
+            if metrics
+            else 'No structured methodology evidence was returned for the current reporting snapshot.'
+        ),
     )
 
 
