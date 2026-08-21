@@ -1,4 +1,5 @@
 {% import "components/operational_callout.html" as operational_callout %}
+{% import "components/table.html" as table_ui %}
 {% import "components/table_label.html" as table_label %}
 {% import "components/details/_detail_content.html" as detail %}
 {% set remediation_phases = ["Review Evidence", "Validate Live State", "Apply Remediation", "Verify & Close"] %}
@@ -86,12 +87,55 @@
             </section>
             <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
                 <header class="flex items-start justify-between gap-3 border-b border-outline-subtle bg-surface-elevated px-4 py-3">
-                    {{ section_heading('target', 'Scope & Evidence', 'Review the affected identifiers and committed evidence contract.') }}
-                    {{ table_label.metadata_label(item.affected_items|length ~ ' Fields', none, false, 'compact') }}
+                    {{ section_heading('target', 'Scope & Evidence', 'Identify the affected assets and review the committed evidence that triggered this recommendation.') }}
+                    {% if item.affected_assets %}
+                        {{ table_label.metadata_label((item.evidence.affected_count|default(item.affected_assets|length, true)) ~ ' Affected', none, false, 'compact') }}
+                    {% else %}
+                        {{ table_label.metadata_label(item.affected_items|length ~ ' Fields', none, false, 'compact') }}
+                    {% endif %}
                 </header>
                 <div class="p-4">
-                    {% if item.affected_items %}
-                        <dl class="grid gap-2 sm:grid-cols-2">
+                    <p class="text-xs font-semibold leading-5 text-content-primary">Affected Assets</p>
+                    <p class="mt-0.5 text-xs leading-5 text-content-muted">Concrete resources captured by the committed finding evidence.</p>
+                    {% if item.affected_assets %}
+                        <div class="mt-3 overflow-x-auto rounded-lg border border-outline-subtle">
+                            <table class="w-full min-w-full text-left text-sm text-content-secondary">
+                                <thead class="{{ table_ui.head_classes() }}">
+                                    <tr>
+                                        <th class="{{ table_ui.header_cell_classes() }}">Asset</th>
+                                        <th class="{{ table_ui.header_cell_classes() }}">Ownership & Scope</th>
+                                        <th class="{{ table_ui.header_cell_classes() }}">Runtime Context</th>
+                                        <th class="{{ table_ui.header_cell_classes(true) }}">Observed Evidence</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="{{ table_ui.body_classes() }}">
+                                    {% for asset in item.affected_assets %}
+                                        <tr class="{{ table_ui.row_classes() }}">
+                                            <td class="{{ table_ui.cell_classes() }}">
+                                                <p class="break-words text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]">{{ asset.name }}</p>
+                                                <p class="mt-0.5 text-xs leading-5 text-content-muted">{{ asset.type }}</p>
+                                            </td>
+                                            <td class="{{ table_ui.cell_classes() }}">
+                                                <p class="break-words text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]">{{ asset.namespace or '-' }}</p>
+                                                <p class="mt-0.5 break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]">{{ asset.owner or 'Ownership not recorded' }}</p>
+                                            </td>
+                                            <td class="{{ table_ui.cell_classes() }}">
+                                                <p class="break-words text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]">{{ asset.state or 'Unknown' }}</p>
+                                                <p class="mt-0.5 break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]">{{ asset.node or 'Node not recorded' }}</p>
+                                            </td>
+                                            <td class="{{ table_ui.cell_classes(true) }}">
+                                                <p class="break-words text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]">{{ asset.evidence or 'Evidence recorded in finding' }}</p>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% if item.evidence.affected_count|default(0, true)|int > item.affected_assets|length %}
+                            <p class="mt-2 text-xs leading-5 text-content-muted">Showing the {{ item.affected_assets|length }} highest-evidence assets of {{ item.evidence.affected_count }} affected resources.</p>
+                        {% endif %}
+                    {% elif item.affected_items %}
+                        <dl class="mt-3 grid gap-2 sm:grid-cols-2">
                             {% for row in item.affected_items %}
                                 {% set label = row.label if row.label is defined else row[0] %}
                                 {% set value = row.value if row.value is defined else row[1] %}
@@ -104,7 +148,23 @@
                             {% endfor %}
                         </dl>
                     {% else %}
-                        {{ detail.empty_evidence('No Additional Context', 'No additional affected-resource context was recorded for this recommendation.', 'database') }}
+                        <div class="mt-3">{{ detail.empty_evidence('No Affected Asset Detail', 'No concrete affected-resource identifiers were recorded for this recommendation.', 'database') }}</div>
+                    {% endif %}
+                </div>
+                <div class="border-t border-outline-subtle p-4">
+                    <p class="text-xs font-semibold leading-5 text-content-primary">Evidence Details</p>
+                    <p class="mt-0.5 text-xs leading-5 text-content-muted">Measured values, thresholds, and snapshot basis used to explain why the finding was created.</p>
+                    {% if item.evidence_details %}
+                        <dl class="mt-3 grid gap-2 sm:grid-cols-2">
+                            {% for row in item.evidence_details %}
+                                <div class="min-w-0 rounded-lg border border-outline-subtle bg-surface-elevated px-3 py-2.5">
+                                    <dt class="text-xs leading-5 text-content-muted">{{ row.label }}</dt>
+                                    <dd class="mt-0.5 break-words text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]">{{ row.value }}</dd>
+                                </div>
+                            {% endfor %}
+                        </dl>
+                    {% else %}
+                        <div class="mt-3">{{ detail.empty_evidence('No Quantitative Evidence Detail', 'This finding currently exposes its committed scope and rule contract without additional measured values.', 'scan-search') }}</div>
                     {% endif %}
                 </div>
                 <div class="border-t border-outline-subtle px-4 py-3">

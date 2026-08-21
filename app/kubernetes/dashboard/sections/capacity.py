@@ -71,21 +71,25 @@ def _worker_capacity_item(
             used_percent=None,
             headroom_percent=None,
             description='Ready-worker capacity evidence unavailable',
+            value='N/A',
         )
 
     headroom = safe_optional_float(section.get('headroom'))
     used_percent = max(0.0, min(100.0, 100.0 - headroom)) if headroom is not None else None
 
     if digits == 0:
-        description = f'{int(round(used))} / {int(round(capacity))} {unit} on worker nodes'
+        value = f'{int(round(used))} / {int(round(capacity))}'
+        description = f'{unit} on worker nodes'
     else:
-        description = f'{used:.{digits}f} / {capacity:.{digits}f} worker allocatable {unit}'
+        value = f'{used:.{digits}f} / {capacity:.{digits}f}'
+        description = f'worker allocatable {unit}'
 
     return CapacityItem(
         label=label,
         used_percent=round(used_percent, 2) if used_percent is not None else None,
         headroom_percent=round(headroom, 2) if headroom is not None else None,
         description=description,
+        value=value,
     )
 
 
@@ -93,13 +97,25 @@ def empty_capacity_snapshot(*, insight: str) -> CapacitySnapshot:
     return CapacitySnapshot(
         items=[
             CapacityItem(
-                label='CPU', used_percent=None, headroom_percent=None, description='Worker metric unavailable'
+                label='CPU',
+                used_percent=None,
+                headroom_percent=None,
+                description='Worker metric unavailable',
+                value='N/A',
             ),
             CapacityItem(
-                label='Memory', used_percent=None, headroom_percent=None, description='Worker metric unavailable'
+                label='Memory',
+                used_percent=None,
+                headroom_percent=None,
+                description='Worker metric unavailable',
+                value='N/A',
             ),
             CapacityItem(
-                label='Pod Capacity', used_percent=None, headroom_percent=None, description='Worker metric unavailable'
+                label='Pod Capacity',
+                used_percent=None,
+                headroom_percent=None,
+                description='Worker metric unavailable',
+                value='N/A',
             ),
         ],
         risk='Unknown',

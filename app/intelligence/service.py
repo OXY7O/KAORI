@@ -10,7 +10,9 @@ from app.common.inventory_generation import filter_current_generation
 from app.extensions.db import db
 from app.intelligence.catalog import INTELLIGENCE_CATALOG
 from app.intelligence.finding_presentation import (
+    build_affected_assets,
     build_affected_items,
+    build_evidence_details,
     build_fix_steps,
     compact_recommendation_summary,
     finding_scope_details,
@@ -198,6 +200,8 @@ def _build_recommendation_findings(catalog: list[dict[str, Any]]) -> list[dict[s
     for finding in findings:
         finding.setdefault('affected_summary', format_affected_summary(finding))
         finding.setdefault('affected_items', build_affected_items(finding))
+        finding.setdefault('affected_assets', build_affected_assets(finding))
+        finding.setdefault('evidence_details', build_evidence_details(finding))
         finding.setdefault('fix_steps', build_fix_steps(finding))
     findings.sort(key=lambda item: (_severity_rank(str(item.get('severity'))), str(item.get('title', ''))))
     return findings
@@ -264,6 +268,8 @@ def _clone_rule_as_finding(
     output['evidence'] = evidence or {}
     output.setdefault('affected_summary', format_affected_summary(output))
     output.setdefault('affected_items', build_affected_items(output))
+    output.setdefault('affected_assets', build_affected_assets(output))
+    output.setdefault('evidence_details', build_evidence_details(output))
     output.setdefault('fix_steps', build_fix_steps(output))
     return output
 
@@ -321,6 +327,83 @@ def _build_latest_image_findings(rules: dict[str, dict[str, Any]]) -> list[dict[
     return findings
 
 
+def _restart_asset(
+    *,
+    namespace: str,
+    pod_name: str,
+    restart_count: int,
+    phase: str,
+    node_name: str,
+    workload_type: str,
+    workload_name: str,
+) -> dict[str, Any]:
+    return {
+        'type': 'Pod',
+        'name': pod_name,
+        'namespace': namespace,
+        'workload_type': workload_type,
+        'workload_name': workload_name,
+        'node_name': node_name,
+        'phase': phase,
+        'restart_count': restart_count,
+        'evidence_display': f'{restart_count} restart{"" if restart_count == 1 else "s"}',
+    }
+
+
+def _restart_groups(rows: list[Any]) -> dict[tuple[str, str], list[dict[str, Any]]]:
+    groups: dict[tuple[str, str], list[dict[str, Any]]] = {}
+    for cluster_id, namespace, pod_name, restart_count, phase, node_name, workload_type, workload_name in rows:
+        resolved_namespace = str(namespace or 'default')
+        key = (str(cluster_id), resolved_namespace)
+        groups.setdefault(key, []).append(
+            _restart_asset(
+                namespace=resolved_namespace,
+                pod_name=str(pod_name or 'pod'),
+                restart_count=int(restart_count or 0),
+                phase=str(phase or 'Unknown'),
+                node_name=str(node_name or ''),
+                workload_type=str(workload_type or ''),
+                workload_name=str(workload_name or ''),
+            )
+        )
+    for assets in groups.values():
+        assets.sort(key=lambda asset: int(asset.get('restart_count') or 0), reverse=True)
+    return groups
+
+
+def _restart_evidence(
+    *,
+    cluster_id: str,
+    namespace: str,
+    assets: list[dict[str, Any]],
+    threshold: int,
+) -> dict[str, Any]:
+    affected_count = len(assets)
+    total_restarts = sum(int(asset.get('restart_count') or 0) for asset in assets)
+    highest = max(assets, key=lambda asset: int(asset.get('restart_count') or 0))
+    highest_count = int(highest.get('restart_count') or 0)
+    highest_name = str(highest.get('name') or 'pod')
+    return {
+        'cluster_id': cluster_id,
+        'namespace': namespace,
+        'affected_count': affected_count,
+        'restart_threshold': threshold,
+        'total_restart_count': total_restarts,
+        'max_restart_count': highest_count,
+        'max_restart_pod': highest_name,
+        'threshold_display': f'>= {threshold} restarts per pod',
+        'observed_total_display': (
+            f'{total_restarts} restarts across {affected_count} affected '
+            f'pod{"" if affected_count == 1 else "s"}'
+        ),
+        'max_observation_display': f'{highest_count} restarts',
+        'max_observation_asset': highest_name,
+        'evidence_window': 'Latest committed inventory snapshot',
+        'snapshot_basis': 'Current Pod Inventory generation',
+        'affected_assets': assets,
+    }
+
+
 def _build_pod_health_findings(rules: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
     unhealthy_rule = rules.get('kubernetes.pod.unhealthy_phase')
     restart_rule = rules.get('kubernetes.pod.high_restart_count')
@@ -332,6 +415,7 @@ def _build_pod_health_findings(rules: dict[str, dict[str, Any]]) -> list[dict[st
     except Exception:
         return []
 
+    restart_threshold = 5
     try:
         unhealthy_query = db.session.query(
             PodInventory.cluster_id,
@@ -347,13 +431,14 @@ def _build_pod_health_findings(rules: dict[str, dict[str, Any]]) -> list[dict[st
         restart_query = db.session.query(
             PodInventory.cluster_id,
             PodInventory.namespace,
-            func.count(PodInventory.id),
-        ).filter(PodInventory.restart_count >= 5)
-        restart_rows = (
-            filter_current_generation(restart_query, PodInventory)
-            .group_by(PodInventory.cluster_id, PodInventory.namespace)
-            .all()
-        )
+            PodInventory.pod_name,
+            PodInventory.restart_count,
+            PodInventory.phase,
+            PodInventory.node_name,
+            PodInventory.workload_type,
+            PodInventory.workload_name,
+        ).filter(PodInventory.restart_count >= restart_threshold)
+        restart_rows = filter_current_generation(restart_query, PodInventory).all()
     except Exception:
         return []
 
@@ -365,31 +450,53 @@ def _build_pod_health_findings(rules: dict[str, dict[str, Any]]) -> list[dict[st
                     unhealthy_rule,
                     finding_key=f'kubernetes.pod.unhealthy_phase:{cluster_id}:{namespace}:{phase}',
                     title=f'{count} pod{"s" if int(count) != 1 else ""} in {namespace} are {phase or "not healthy"}',
-                    summary=f'Pod inventory shows {count} pod{"s" if int(count) != 1 else ""} in phase {phase or "Unknown"}.',
+                    summary=(
+                        f'Pod inventory shows {count} pod{"s" if int(count) != 1 else ""} '
+                        f'in phase {phase or "Unknown"}.'
+                    ),
                     condition_summary='Collected pod phase is not Running or Succeeded.',
                     evidence={
                         'cluster_id': str(cluster_id),
                         'namespace': str(namespace),
                         'affected_count': int(count),
                         'phase': str(phase or 'Unknown'),
+                        'observed_total_display': f'{count} affected pod{"" if int(count) == 1 else "s"}',
+                        'snapshot_basis': 'Current Pod Inventory generation',
                     },
                 )
             )
 
     if restart_rule:
-        for cluster_id, namespace, count in restart_rows:
+        for (cluster_id, namespace), assets in _restart_groups(restart_rows).items():
+            evidence = _restart_evidence(
+                cluster_id=cluster_id,
+                namespace=namespace,
+                assets=assets,
+                threshold=restart_threshold,
+            )
+            affected_count = int(evidence['affected_count'])
+            max_restarts = int(evidence['max_restart_count'])
+            max_pod = str(evidence['max_restart_pod'])
             findings.append(
                 _clone_rule_as_finding(
                     restart_rule,
                     finding_key=f'kubernetes.pod.high_restart_count:{cluster_id}:{namespace}',
-                    title=f'{count} pod{"s" if int(count) != 1 else ""} in {namespace} have high restart count',
-                    summary=f'Pod inventory shows {count} pod{"s" if int(count) != 1 else ""} with restart count at or above 5.',
-                    condition_summary='Collected pod restart_count is greater than or equal to 5.',
-                    evidence={
-                        'cluster_id': str(cluster_id),
-                        'namespace': str(namespace),
-                        'affected_count': int(count),
-                    },
+                    title=(
+                        f'Pod {max_pod} reports {max_restarts} restarts'
+                        if affected_count == 1
+                        else f'{affected_count} pods in {namespace} have repeated restarts (max {max_restarts})'
+                    ),
+                    summary=(
+                        f'Latest committed Pod Inventory shows {affected_count} affected pod'
+                        f'{"" if affected_count == 1 else "s"}; {max_pod} has the highest observed restart count at '
+                        f'{max_restarts}, with {evidence["total_restart_count"]} total restarts '
+                        'across the affected set.'
+                    ),
+                    condition_summary=(
+                        f'Each affected pod has restart_count greater than or equal to {restart_threshold} '
+                        'in the latest committed Pod Inventory generation.'
+                    ),
+                    evidence=evidence,
                 )
             )
 

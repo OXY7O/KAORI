@@ -90,6 +90,7 @@ class CapacityItem:
     used_percent: float | None
     headroom_percent: float | None
     description: str
+    value: str = 'N/A'
 
 
 @dataclass(slots=True)

@@ -11,6 +11,78 @@ def _mapping(value: Any) -> dict[str, Any]:
     return value if isinstance(value, dict) else {}
 
 
+def _display_value(value: Any) -> str:
+    if value is None:
+        return ''
+    if isinstance(value, bool):
+        return 'Yes' if value else 'No'
+    if isinstance(value, (int, float)):
+        return str(value)
+    return _clean(value)
+
+
+def build_affected_assets(item: dict[str, Any]) -> list[dict[str, str]]:
+    evidence = _mapping(item.get('evidence'))
+    raw_assets = evidence.get('affected_assets')
+    if not isinstance(raw_assets, list):
+        return []
+
+    default_type = str(item.get('source_kind_label') or item.get('source_kind') or 'Resource')
+    assets: list[dict[str, str]] = []
+    for raw_asset in raw_assets:
+        if not isinstance(raw_asset, dict):
+            continue
+        name = _clean(raw_asset.get('name') or raw_asset.get('pod_name') or raw_asset.get('node_name'))
+        if not name:
+            continue
+        workload_type = _clean(raw_asset.get('workload_type'))
+        workload_name = _clean(raw_asset.get('workload_name'))
+        owner = ' / '.join(value for value in (workload_type, workload_name) if value)
+        assets.append(
+            {
+                'type': _clean(raw_asset.get('type')) or default_type,
+                'name': name,
+                'namespace': _clean(raw_asset.get('namespace')),
+                'owner': owner,
+                'node': _clean(raw_asset.get('node') or raw_asset.get('node_name')),
+                'state': _clean(raw_asset.get('state') or raw_asset.get('phase') or raw_asset.get('status')),
+                'evidence': _clean(raw_asset.get('evidence') or raw_asset.get('evidence_display')),
+            }
+        )
+    return assets[:20]
+
+
+def build_evidence_details(item: dict[str, Any]) -> list[dict[str, str]]:
+    evidence = _mapping(item.get('evidence'))
+    fields = (
+        ('Affected Assets', 'affected_count'),
+        ('Trigger Threshold', 'threshold_display'),
+        ('Observed Total', 'observed_total_display'),
+        ('Highest Observation', 'max_observation_display'),
+        ('Highest Impact Asset', 'max_observation_asset'),
+        ('Phase', 'phase'),
+        ('Status', 'status'),
+        ('Usage', 'usage_display'),
+        ('Quota', 'quota_display'),
+        ('Quota Utilization', 'quota_utilization_display'),
+        ('Exposure', 'exposure_display'),
+        ('Encryption', 'encryption_display'),
+        ('Forecast Window', 'forecast_window'),
+        ('Capacity ETA', 'capacity_eta_display'),
+        ('Growth / Day', 'growth_per_day_display'),
+        ('Days Remaining', 'days_remaining'),
+        ('Minimum Days Remaining', 'min_days_remaining'),
+        ('Evidence Window', 'evidence_window'),
+        ('Snapshot Basis', 'snapshot_basis'),
+    )
+    details: list[dict[str, str]] = []
+    for label, key in fields:
+        value = _display_value(evidence.get(key))
+        if value:
+            details.append({'label': label, 'value': value})
+    return details
+
+
 def compact_recommendation_summary(value: Any, *, limit: int = 180) -> str:
     text = ' '.join(str(value or '').split())
     if not text:
