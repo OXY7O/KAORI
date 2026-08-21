@@ -80,6 +80,6 @@ def test_large_metadata_collections_are_contained_and_scannable() -> None:
     assert 'rounded-xl border border-outline-subtle bg-surface-card' in metadata
     assert 'overflow-y-auto' not in metadata
     assert "special_label(entry_count_label, 'maintenance', 'tags', 'detail')" in metadata
-    assert 'grid min-w-0 gap-x-6 sm:grid-cols-2 xl:grid-cols-3' in metadata
+    assert 'grid min-w-0 gap-x-6 gap-y-0 sm:grid-cols-2 xl:grid-cols-2 2xl:grid-cols-3' in metadata
     assert 'rounded-xl border border-outline-subtle bg-surface-card' in related
     assert 'divide-y divide-outline-subtle px-4 sm:px-5' in related

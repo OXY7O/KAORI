@@ -79,7 +79,7 @@
                                         {'label': 'Publish Not-Ready', 'value': 'Enabled' if service.publish_not_ready_addresses else 'Disabled'},
                                         {'label': 'Health Check NodePort', 'value': service.health_check_node_port or 'Not Configured'}
                                         ], columns=2) }}
-                    <p class="mt-3 text-xs leading-5 text-content-muted">Traffic policies and publication configuration remain factual evidence until evaluated against an explicit governance policy.</p>
+                    {{ detail.inventory_note('Traffic policies and publication configuration remain factual evidence until evaluated against an explicit governance policy.', 'info') }}
                 {% endcall %}
             </div>
             <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">

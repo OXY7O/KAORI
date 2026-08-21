@@ -110,9 +110,21 @@ def test_configuration_key_inventory_uses_full_width_grouped_list_instead_of_til
 
     assert 'min-w-0 space-y-4 p-4 sm:p-5 lg:p-6' in configuration
     assert "metadata_collection.render('Key Inventory'" in configuration
-    assert 'grid min-w-0 gap-x-6 sm:grid-cols-2 xl:grid-cols-3' in metadata
+    assert "detail.inventory_note('Kubernetes list responses arrive transiently in the collector process. KAORI indexes key names only and does not decode, log, persist, or display value content.', 'info')" in configuration
+    assert 'grid min-w-0 gap-x-6 gap-y-0 sm:grid-cols-2 xl:grid-cols-2 2xl:grid-cols-3' in metadata
     assert 'rounded-lg border border-outline-subtle bg-surface-elevated px-3 py-2.5' not in metadata
     assert 'data-kaori-inventory-metadata-collection' in metadata
+
+
+def test_inventory_informational_notes_use_icon_note_treatment() -> None:
+    services = read('app/templates/kubernetes/inventory/services/partials/_service_detail_content.html')
+    ingress = read('app/templates/kubernetes/inventory/ingresses/partials/_ingress_detail_content.html')
+    configuration = read('app/templates/kubernetes/inventory/configuration/partials/_configuration_detail_content.html')
+
+    assert "detail.inventory_note('Traffic policies and publication configuration remain factual evidence until evaluated against an explicit governance policy.', 'info')" in services
+    assert "detail.inventory_note('A resolved Secret reference confirms only that a Secret exists in the same committed namespace snapshot. It does not validate certificate contents, expiry, key matching, or hostname coverage.', 'info')" in ingress
+    assert "detail.inventory_note('Service references are resolved only against the current committed Service Inventory. Resource backends are preserved as declarations and are not resolved by this page.', 'info')" in ingress
+    assert "detail.inventory_note('Kubernetes list responses arrive transiently in the collector process. KAORI indexes key names only and does not decode, log, persist, or display value content.', 'info')" in configuration
 
 
 def test_long_selector_and_toleration_evidence_uses_full_width_stacked_sections() -> None:

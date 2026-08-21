@@ -46,7 +46,7 @@
                                         {'label': 'Value Display', 'value': 'Never Displayed'},
                                         {'label': 'Mutation Model', 'value': item.mutation_label}
                                         ], columns=2) }}
-                    <p class="mt-3 text-xs leading-5 text-content-muted">Kubernetes list responses arrive transiently in the collector process. KAORI indexes key names only and does not decode, log, persist, or display value content.</p>
+                    {{ detail.inventory_note('Kubernetes list responses arrive transiently in the collector process. KAORI indexes key names only and does not decode, log, persist, or display value content.', 'info') }}
                 {% endcall %}
             </div>
             <div data-kaori-unified-resource-sheet
