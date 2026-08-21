@@ -15,7 +15,9 @@ def test_rule_catalog_uses_two_row_filter_layout_and_standalone_summary_box():
     assert 'catalog-summary-section' in page
     assert page.index('catalog-summary-section') < page.index("'Rule Definitions'")
     assert 'filter_compact_two_rows = true' in workspace
+    assert 'filter_include_status = true' in workspace
     assert 'if filter_compact_two_rows|default(false)' in filters
+    assert 'Availability' in filters
     assert 'Signal Source' in filters
     assert 'hx-swap-oob="outerHTML"' in results
     assert 'Rule Catalog Summary' in summary
@@ -32,7 +34,7 @@ def test_rule_catalog_rows_use_short_summary_and_standard_detail_toggle():
     assert 'def _count_active_filters(' in service
     assert service.index('def _truncate_words(') < service.index('def _base_payload(')
     assert service.index('def _count_active_filters(') < service.index('def _base_payload(')
-    assert "item['table_summary'] = _truncate_words(item.get('summary'))" in service
+    assert "item['table_summary'] = _truncate_words(item.get('summary'), limit=96)" in service
     assert 'item.table_summary or item.summary' in records
     assert 'components/details/_expandable_row.html' in records
     assert 'detail_row.toggle_button(' in records

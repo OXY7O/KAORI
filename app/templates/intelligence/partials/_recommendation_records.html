@@ -56,9 +56,7 @@
                                                         url_for('intelligence.recommendation_details', recommendation_key=item.rule_key) ,
                             item.title,
                             'Recommendation',
-                            label='Review',
-                            icon='panel-right-open',
-                            controls='resource-detail-drawer'
+                            label='Review'
                             ) }}
                         </td>
                     </tr>
@@ -94,7 +92,7 @@
                         </dd>
                     </div>
                 </dl>
-                <div class="mt-3">{{ resource_detail_modal.detail_button(item.rule_key, url_for('intelligence.recommendation_details', recommendation_key=item.rule_key) , item.title, 'Recommendation', 'w-full', label='Review', icon='panel-right-open', controls='resource-detail-drawer') }}</div>
+                <div class="mt-3">{{ resource_detail_modal.detail_button(item.rule_key, url_for('intelligence.recommendation_details', recommendation_key=item.rule_key) , item.title, 'Recommendation', 'w-full', label='Review') }}</div>
             </article>
         {% endfor %}
     </div>

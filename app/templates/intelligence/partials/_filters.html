@@ -8,6 +8,7 @@
 {% set resolved_results_target = filter_results_target|default('#recommendations-results-content') %}
 {% set resolved_workspace_target = filter_workspace_target|default('#recommendations-workspace-content') %}
 {% set resolved_indicator = filter_indicator|default('#recommendations-loading-bar') %}
+{% set resolved_active_filters = payload.active_filter_count|default(payload.result_context.active_filters|default(0), true) %}
 <form id="{{ resolved_scope }}-filter-form"
       method="get"
       action="{{ url_for(resolved_endpoint) }}"
@@ -29,7 +30,7 @@
             <p class="text-sm font-semibold leading-5 text-content-primary">{{ resolved_title }}</p>
             <p class="mt-1 text-xs leading-5 text-content-muted">{{ resolved_description }}</p>
         </div>
-        {% if payload.active_filter_count|default(0) > 0 %}
+        {% if resolved_active_filters > 0 %}
             {{ registry_ui.clear_filters_action(url_for(resolved_endpoint, per_page=payload.pagination.per_page) ,
             table_ui.action_classes(),
             hx_get=url_for(resolved_endpoint, per_page=payload.pagination.per_page),
@@ -37,7 +38,8 @@
             indicator=resolved_indicator,
             swap='outerHTML show:none focus-scroll:false',
             push_url='true',
-            sync=resolved_workspace_target ~ ':replace'
+            sync=resolved_workspace_target ~ ':replace',
+            lead=false
             ) }}
         {% endif %}
     </div>
@@ -92,6 +94,19 @@
                 {% endfor %}
             </select>
         </label>
+        {% if filter_include_status|default(false) %}
+            <label class="block">
+                <span class="{{ table_ui.filter_label_classes() }}">Availability</span>
+                <select name="status"
+                        autocomplete="off"
+                        class="{{ table_ui.filter_select_classes() }}">
+                    {% for option in payload.filter_options.statuses %}
+                        <option value="{{ option.value }}"
+                                {% if payload.filters.status == option.value %}selected{% endif %}>{{ option.label }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+        {% endif %}
         <label class="block">
             <span class="{{ table_ui.filter_label_classes() }}">Category</span>
             <select name="category"

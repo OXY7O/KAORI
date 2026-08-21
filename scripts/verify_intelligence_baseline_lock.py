@@ -299,7 +299,7 @@ def main() -> int:
     )
     require('3 Asset Domains' not in catalog_page, 'Rule Catalog Hero must not hard-code stale domain count', errors)
 
-    require('resource_detail_modal.drawer_host(' in recommendations_page, 'Recommendations drawer host missing', errors)
+    require('resource_detail_modal.host(' in recommendations_page, 'Recommendations modal host missing', errors)
     require(
         'resource_detail_modal.detail_button' in recommendation_records,
         'Recommendations shared detail button missing',

@@ -95,3 +95,5 @@ def test_recommendation_filters_disable_browser_autofill_state_restoration() -> 
 
     assert 'autocomplete="off"' in filters
     assert filters.count('autocomplete="off"') >= 8
+    assert 'resolved_active_filters' in filters
+    assert 'lead=false' in filters

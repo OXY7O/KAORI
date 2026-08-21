@@ -134,3 +134,13 @@ def test_alert_intelligence_htmx_refreshes_full_page_context_for_scope_changes()
     assert 'name="domain" value="{{ payload.domain }}"' in alerts
     assert 'name="asset" value="{{ payload.selected_asset_key }}"' in alerts
     assert 'name="source" value="{{ payload.source }}"' in alerts
+
+
+def test_alert_intelligence_correlation_stays_compact_without_nested_scroll() -> None:
+    correlation = read('app/templates/intelligence/partials/_alert_intelligence_correlation.html')
+
+    assert 'payload.recommendations[:3]' in correlation
+    assert 'payload.catalog_rules[:3]' in correlation
+    assert 'Top 3 Shown' in correlation
+    assert 'max-h-[28rem]' not in correlation
+    assert 'overflow-y-auto' not in correlation

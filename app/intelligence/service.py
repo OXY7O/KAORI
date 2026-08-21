@@ -37,9 +37,14 @@ from app.intelligence.rule_presentation import (
 )
 
 
+def _is_active_filter_value(value: str | None) -> bool:
+    normalized = clean(value).lower()
+    return normalized not in {'', 'all'}
+
+
 def _count_active_filters(filters: dict[str, str], keys: tuple[str, ...] | None = None) -> int:
     selected_keys = keys or tuple(filters.keys())
-    return sum(1 for key in selected_keys if clean(filters.get(key)))
+    return sum(1 for key in selected_keys if _is_active_filter_value(filters.get(key)))
 
 
 def _truncate_words(value: str | None, limit: int = 132) -> str:
@@ -91,12 +96,22 @@ def _base_payload(args: MultiDict[str, str], *, page_mode: str) -> dict[str, Any
         'source_kind',
         'logic_type',
         'signal_source',
+        'status',
+    ) if page_mode == 'catalog' else (
+        'q',
+        'domain',
+        'provider',
+        'severity',
+        'category',
+        'source_kind',
+        'logic_type',
+        'signal_source',
     )
     active_filter_count = _count_active_filters(filters, visible_filter_keys)
 
     if page_mode == 'catalog':
         for item in items:
-            item['table_summary'] = _truncate_words(item.get('summary'))
+            item['table_summary'] = _truncate_words(item.get('summary'), limit=96)
     else:
         for item in items:
             scope_title, scope_supporting = finding_scope_details(item)
@@ -124,6 +139,7 @@ def _base_payload(args: MultiDict[str, str], *, page_mode: str) -> dict[str, Any
 
     return {
         'page_mode': page_mode,
+        'active_filter_count': active_filter_count,
         'filters': filters,
         'filter_options': {
             'domains': DOMAIN_OPTIONS,

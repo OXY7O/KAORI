@@ -1,9 +1,9 @@
 from pathlib import Path
 
 
-def test_recommendation_detail_uses_canonical_side_drawer_hierarchy():
+def test_recommendation_detail_uses_canonical_modal_hierarchy():
     template = Path('app/templates/intelligence/partials/_recommendation_detail_content.html').read_text()
-    assert 'data-kaori-detail-variant="side-drawer"' in template
+    assert 'data-kaori-detail-variant="modal"' in template
     assert 'data-resource-detail-header' in template
     assert 'data-resource-detail-summary' in template
     assert 'Recommendation Review' in template
@@ -22,7 +22,7 @@ def test_recommendation_detail_uses_canonical_side_drawer_hierarchy():
     assert 'text-[10px]' not in template
 
 
-def test_shared_resource_detail_host_supports_drawer_without_main_layout_lock():
+def test_shared_resource_detail_host_supports_modal_without_main_layout_lock():
     component = Path('app/templates/components/resource_detail_modal.html').read_text()
     page = Path('app/templates/intelligence/recommendations.html').read_text()
     records = Path('app/templates/intelligence/partials/_recommendation_records.html').read_text()
@@ -35,10 +35,12 @@ def test_shared_resource_detail_host_supports_drawer_without_main_layout_lock():
     assert 'data-resource-detail-presentation="{{ presentation }}"' in component
     assert "presentation == 'drawer'" in component
     assert 'translate-x-full' in component
-    assert 'resource_detail_modal.drawer_host(' in page
-    assert "dialog_max_width='max-w-2xl'" in page
+    assert 'resource_detail_modal.host(' in page
+    assert "dialog_max_width='max-w-5xl'" in page
+    assert "content_driven=true" in page
     assert "label='Review'" in records
-    assert "controls='resource-detail-drawer'" in records
+    assert "icon='panel-right-open'" not in records
+    assert "controls='resource-detail-drawer'" not in records
     assert "modalHost.dataset.resourceDetailPresentation === 'drawer'" in javascript
     assert 'if (drawer)' in javascript
     assert 'unlockBackground()' in javascript
