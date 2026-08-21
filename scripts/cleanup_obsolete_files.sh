@@ -5,6 +5,8 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 
 obsolete_paths=(
+  'app/templates/storage/object_storage/inventory/overview/partials/_systems_snapshot.html'
+  'app/templates/storage/object_storage/inventory/overview/partials/_systems_snapshot_content.html'
   'app/static/js/analytics_capacity.js'
   'app/static/js/analytics_forecast.js'
   'app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_operation_feedback_oob.html'

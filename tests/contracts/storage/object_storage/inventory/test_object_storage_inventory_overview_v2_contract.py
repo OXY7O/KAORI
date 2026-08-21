@@ -7,50 +7,42 @@ def read(path: str) -> str:
     return (ROOT / path).read_text(encoding='utf-8')
 
 
-def test_object_storage_overview_matches_final_inventory_composition() -> None:
+def test_object_storage_overview_is_high_level_fleet_composition() -> None:
     index = read('app/templates/storage/object_storage/inventory/overview/index.html')
     hero = read('app/templates/storage/object_storage/inventory/overview/partials/_hero.html')
     snapshot = read('app/templates/storage/object_storage/inventory/overview/partials/_snapshot_boundary.html')
     fleet = read('app/templates/storage/object_storage/inventory/overview/partials/_fleet_posture.html')
-    catalog = read('app/templates/storage/object_storage/inventory/overview/partials/_summary_cards.html')
-    summary = read('app/templates/storage/object_storage/inventory/overview/partials/_systems_snapshot.html')
+    navigation = read('app/templates/storage/object_storage/inventory/overview/partials/_summary_cards.html')
 
-    assert 'resource_detail_modal.inventory_host(' in index
-    assert "url_for('object_storage_inventory.system_details', system_id=0)" in index
     assert '_fleet_posture.html' in index
+    assert '_summary_cards.html' in index
+    assert '_systems_snapshot.html' not in index
+    assert 'resource_detail_modal.inventory_host(' not in index
     assert 'Object Storage Overview' in hero
+    assert 'high-level committed fleet summary' in hero
     assert 'Systems Registered' in hero
     assert 'Inventory Assets' in hero
-    assert 'Inventory Records' in hero
-    assert 'Quota Evidence' in hero
+    assert 'Inventory Coverage' in hero
     assert 'Manage Storage' in hero
     assert "url_for('integrations.storage')" in hero
     assert 'object_storage_snapshot.render(overview.snapshot)' in snapshot
     assert 'Fleet Inventory Posture' in fleet
     assert 'operational_callout.render' in fleet
-    assert 'Inventory Asset Catalog' in catalog
-    assert 'inventory_asset_card.render' in catalog
-    assert 'Managed Systems Snapshot' in summary
+    assert 'Explore Object Storage Inventory' in navigation
+    assert 'Overview stops at fleet posture.' in navigation
+    assert 'inventory_asset_card.render' in navigation
 
 
-def test_overview_summary_uses_canonical_table_and_shared_resource_detail() -> None:
-    content = read('app/templates/storage/object_storage/inventory/overview/partials/_systems_snapshot_content.html')
+def test_resource_level_system_detail_is_owned_by_systems_workspace() -> None:
+    overview = read('app/templates/storage/object_storage/inventory/overview/index.html')
+    systems_index = read('app/templates/storage/object_storage/inventory/systems/index.html')
+    systems_table = read('app/templates/storage/object_storage/inventory/systems/partials/_table_content.html')
     detail = read('app/templates/storage/object_storage/inventory/systems/partials/_system_detail_content.html')
 
-    for heading in (
-        'System',
-        'Provider',
-        'Inventory Assets',
-        'Snapshot',
-        'Status',
-        'Inventory Signals',
-        'Details',
-    ):
-        assert heading in content
-    assert 'resource_detail_modal.detail_button(' in content
-    assert "url_for('object_storage_inventory.system_details', system_id=system.id)" in content
-    assert 'side_drawer.render(' not in content
-    assert 'openDrawer' not in content
+    assert 'resource_detail_modal.inventory_host(' not in overview
+    assert 'resource_detail_modal.inventory_host(' in systems_index
+    assert 'resource_detail_modal.detail_button(' in systems_table
+    assert "url_for('object_storage_inventory.system_details', system_id=system.id)" in systems_table
     assert 'data-kaori-detail-density="unified-resource-sheet"' in detail
     assert 'System Identity' in detail
     assert 'Provider Connection' in detail
@@ -59,20 +51,16 @@ def test_overview_summary_uses_canonical_table_and_shared_resource_detail() -> N
     assert 'system.guidance.title' in detail
 
 
-def test_overview_summary_uses_kaori_pagination_and_section_loader() -> None:
-    shell = read('app/templates/storage/object_storage/inventory/overview/partials/_systems_snapshot.html')
-    content = read('app/templates/storage/object_storage/inventory/overview/partials/_systems_snapshot_content.html')
+def test_overview_does_not_duplicate_system_pagination_or_detail_loading() -> None:
     routes = read('app/storage/object_storage/inventory/routes.py')
+    presentation = read('app/storage/object_storage/inventory/presentation.py')
 
-    assert "loading_bar_id='object-storage-inventory-summary-loading'" in shell
-    assert 'object-storage-inventory-summary-content' in shell
-    assert 'system_per_page' in content
-    assert 'Rows Per Page' in content
-    assert 'pagination_ui.footer_classes()' in content
-    assert 'pagination_ui.numeric_pages(' in content
-    assert 'object-storage-inventory-summary-loading' in content
-    assert "request.args.get('system_per_page', 5" in routes
-    assert "request.headers.get('HX-Target') == 'object-storage-inventory-summary-content'" in routes
+    assert 'build_overview()' in routes
+    assert "request.args.get('system_page'" not in routes
+    assert 'object-storage-inventory-summary-content' not in routes
+    assert 'def build_overview() -> dict[str, Any]:' in presentation
+    assert "'systems_pagination': pagination" not in presentation
+    assert "'systems': paged_rows" not in presentation
 
 
 def test_overview_snapshot_and_signals_are_committed_inventory_only() -> None:
@@ -89,15 +77,15 @@ def test_overview_snapshot_and_signals_are_committed_inventory_only() -> None:
     assert 'client.list_buckets' not in presentation
 
 
-def test_overview_asset_catalog_stays_vendor_neutral() -> None:
+def test_overview_inventory_navigation_stays_vendor_neutral() -> None:
     presentation = read('app/storage/object_storage/inventory/presentation.py')
-    catalog = read('app/templates/storage/object_storage/inventory/overview/partials/_summary_cards.html')
+    navigation = read('app/templates/storage/object_storage/inventory/overview/partials/_summary_cards.html')
     fleet = read('app/templates/storage/object_storage/inventory/overview/partials/_fleet_posture.html')
 
     assert "'title': 'Systems'" in presentation
     assert "'title': 'Buckets & Containers'" in presentation
-    assert 'MinIO' not in catalog
-    assert 'AStor' not in catalog
+    assert 'MinIO' not in navigation
+    assert 'AStor' not in navigation
     assert 'MinIO' not in fleet
     assert 'AStor' not in fleet
 

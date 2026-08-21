@@ -5,16 +5,19 @@ def read(path: str) -> str:
     return Path(path).read_text(encoding='utf-8')
 
 
-def test_object_storage_overview_uses_shared_inventory_modal() -> None:
-    index = read('app/templates/storage/object_storage/inventory/overview/index.html')
-    content = read('app/templates/storage/object_storage/inventory/overview/partials/_systems_snapshot_content.html')
+def test_object_storage_overview_is_summary_only_and_systems_owns_detail_modal() -> None:
+    overview = read('app/templates/storage/object_storage/inventory/overview/index.html')
+    systems_index = read('app/templates/storage/object_storage/inventory/systems/index.html')
+    systems_table = read('app/templates/storage/object_storage/inventory/systems/partials/_table_content.html')
 
-    assert 'resource_detail_modal.inventory_host(' in index
-    assert "url_for('object_storage_inventory.system_details', system_id=0)" in index
-    assert 'resource_detail_modal.detail_button(' in content
-    assert "url_for('object_storage_inventory.system_details', system_id=system.id)" in content
-    assert 'side_drawer' not in content
-    assert 'openDrawer' not in content
+    assert 'resource_detail_modal.inventory_host(' not in overview
+    assert '_systems_snapshot.html' not in overview
+    assert 'resource_detail_modal.inventory_host(' in systems_index
+    assert "url_for('object_storage_inventory.system_details', system_id=0)" in systems_index
+    assert 'resource_detail_modal.detail_button(' in systems_table
+    assert "url_for('object_storage_inventory.system_details', system_id=system.id)" in systems_table
+    assert 'side_drawer' not in systems_table
+    assert 'openDrawer' not in systems_table
 
 
 def test_provider_context_keeps_endpoint_full_width_in_unified_resource_sheet() -> None:

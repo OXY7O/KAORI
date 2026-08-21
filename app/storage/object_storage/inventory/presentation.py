@@ -386,14 +386,14 @@ def _overview_asset_catalog(total_systems: int, total_buckets: int) -> list[dict
         {
             'title': 'Systems',
             'count': total_systems,
-            'description': 'Managed object-storage systems.',
+            'description': 'Open system identity, provider readiness, endpoint, release, and committed snapshot details.',
             'endpoint': 'object_storage_inventory.systems',
             'icon': 'server',
         },
         {
             'title': 'Buckets & Containers',
             'count': total_buckets,
-            'description': 'Object-storage namespaces discovered from committed snapshots.',
+            'description': 'Open bucket and container protection, capacity, lifecycle, access, and usage evidence.',
             'endpoint': 'object_storage_inventory.buckets',
             'icon': 'container',
         },
@@ -494,7 +494,7 @@ def _overview_provider_distribution(rows: list[dict[str, Any]]) -> list[dict[str
     ]
 
 
-def build_overview(*, system_page: int = 1, system_per_page: int = 5) -> dict[str, Any]:
+def build_overview() -> dict[str, Any]:
     rows = [_system_row(system) for system in _system_query().all()]
     buckets = ObjectStorageBucket.query.all()
     total_systems, total_buckets = len(rows), len(buckets)
@@ -511,7 +511,6 @@ def build_overview(*, system_page: int = 1, system_per_page: int = 5) -> dict[st
         posture_label, posture_tone = 'Inventory Pending', 'warning'
     else:
         posture_label, posture_tone = 'Ready', 'normal'
-    paged_rows, pagination = paginate_sequence(rows, page=system_page, per_page=system_per_page)
     latest_inventory_at = max((row['last_inventory_at'] for row in rows if row['last_inventory_at']), default=None)
     return {
         'total_systems': total_systems,
@@ -531,8 +530,6 @@ def build_overview(*, system_page: int = 1, system_per_page: int = 5) -> dict[st
         'provider_distribution': _overview_provider_distribution(rows),
         'setup': _setup_state(total_systems),
         'snapshot': _overview_snapshot(rows),
-        'systems': paged_rows,
-        'systems_pagination': pagination,
     }
 
 

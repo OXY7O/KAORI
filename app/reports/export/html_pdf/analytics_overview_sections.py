@@ -96,7 +96,8 @@ def methodology_page(
     forecast_snapshot: Mapping[str, Any],
     snapshot_summary: Mapping[str, Any],
 ) -> dict[str, Any]:
-    totals = inventory.get('totals') if isinstance(inventory.get('totals'), Mapping) else {}
+    totals_value = inventory.get('totals')
+    totals = totals_value if isinstance(totals_value, Mapping) else {}
     coverage = f'{_integer(totals.get("nodes"))} Nodes / {_integer(totals.get("namespaces"))} Namespaces'
     return {
         'metrics': [

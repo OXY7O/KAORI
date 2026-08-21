@@ -12,7 +12,6 @@ REQUIRED = (
     'app/storage/object_storage/inventory/presentation.py',
     'app/templates/components/navigation/object_storage_menu.html',
     'app/templates/storage/object_storage/inventory/overview/index.html',
-    'app/templates/storage/object_storage/inventory/overview/partials/_systems_snapshot_content.html',
     'app/templates/storage/object_storage/inventory/components/_hero_blocked_context.html',
     'app/templates/storage/object_storage/inventory/components/_onboarding_banner.html',
     'app/templates/storage/object_storage/inventory/components/_snapshot_context.html',
@@ -48,9 +47,6 @@ def main() -> int:
     routes = read('app/storage/object_storage/inventory/routes.py')
     menu = read('app/templates/components/navigation/object_storage_menu.html')
     overview = read('app/templates/storage/object_storage/inventory/overview/index.html')
-    overview_content = read(
-        'app/templates/storage/object_storage/inventory/overview/partials/_systems_snapshot_content.html'
-    )
     systems_workspace = read('app/templates/storage/object_storage/inventory/systems/partials/_page_workspace.html')
     buckets_workspace = read('app/templates/storage/object_storage/inventory/buckets/partials/_page_workspace.html')
     systems_snapshot = read('app/templates/storage/object_storage/inventory/systems/partials/_snapshot_boundary.html')
@@ -94,7 +90,6 @@ def main() -> int:
         'storage/object_storage/inventory/overview/partials/_snapshot_boundary.html',
         'storage/object_storage/inventory/overview/partials/_fleet_posture.html',
         'storage/object_storage/inventory/overview/partials/_summary_cards.html',
-        'storage/object_storage/inventory/overview/partials/_systems_snapshot.html',
     ):
         if include not in overview:
             errors.append(f'Object Storage Overview composition missing: {include}')
@@ -106,22 +101,23 @@ def main() -> int:
         if token not in overview:
             errors.append(f'Object Storage setup-blocked Overview contract missing: {token}')
 
-    for token in (
+    for forbidden in (
         'resource_detail_modal.inventory_host(',
-        "url_for('object_storage_inventory.system_details', system_id=0)",
-        'Committed Object Storage Inventory snapshot · No live provider API query.',
+        '_systems_snapshot.html',
+        'object-storage-inventory-summary-content',
     ):
-        if token not in overview:
-            errors.append(f'Object Storage Overview modal-host contract missing: {token}')
-    for token in (
-        'resource_detail_modal.detail_button(',
-        "url_for('object_storage_inventory.system_details', system_id=system.id)",
+        if forbidden in overview:
+            errors.append(f'Object Storage Overview must remain fleet-summary only: {forbidden}')
+
+    for retired in (
+        'app/templates/storage/object_storage/inventory/overview/partials/_systems_snapshot.html',
+        'app/templates/storage/object_storage/inventory/overview/partials/_systems_snapshot_content.html',
     ):
-        if token not in overview_content:
-            errors.append(f'Object Storage Overview detail-button contract missing: {token}')
-    for retired in ('components/side_drawer.html', 'side_drawer.render(', 'openDrawer'):
-        if retired in overview_content:
-            errors.append(f'Object Storage Overview retains retired inline drawer: {retired}')
+        if (ROOT / retired).exists():
+            errors.append(f'Object Storage Overview retired duplicate system surface still exists: {retired}')
+        cleanup = read('scripts/cleanup_obsolete_files.sh')
+        if f"'{retired}'" not in cleanup:
+            errors.append(f'Object Storage cleanup registry missing retired Overview surface: {retired}')
 
     for source, label in ((systems_workspace, 'Systems'), (buckets_workspace, 'Buckets & Containers')):
         for token in ('inventory.setup.is_blocked', '_snapshot_boundary.html', '_onboarding_banner.html'):

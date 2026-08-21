@@ -7,10 +7,8 @@ from html import escape
 from typing import Any
 
 from app.reports.export.html_pdf.analytics_overview_sections import (
-    methodology_page as _methodology_page,
-)
-from app.reports.export.html_pdf.analytics_overview_sections import (
-    recommendation_page as _recommendation_page,
+    methodology_page,
+    recommendation_page,
 )
 from app.reports.export.html_pdf.analytics_publication_standard import (
     ANALYTICS_CANONICAL_REFERENCE,
@@ -286,8 +284,8 @@ def build_analytics_overview_presentation(
 
     reporting = _reporting(reporting_summary)
     freshness_page = _freshness_page(source_rows, snapshot_summary, freshness)
-    recommendation_page = _recommendation_page(recommendation_items)
-    methodology = _methodology_page(
+    recommendation_content = recommendation_page(recommendation_items)
+    methodology_content = methodology_page(
         source_rows=source_rows,
         inventory=inventory,
         period_label=period_label,
@@ -308,8 +306,8 @@ def build_analytics_overview_presentation(
         'reporting': reporting,
         'inventory': inventory,
         'freshness': freshness_page,
-        'recommendations': recommendation_page,
-        'methodology': methodology,
+        'recommendations': recommendation_content,
+        'methodology': methodology_content,
     }
 
 

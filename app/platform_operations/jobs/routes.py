@@ -453,7 +453,7 @@ def _manual_run_response(
     job_key: str,
     *,
     is_htmx: bool,
-    feedback: object | None = None,
+    feedback: dict[str, object] | None = None,
 ) -> ResponseReturnValue:
     if is_htmx:
         return _render_configuration_job(job_key, operation_feedback=feedback)

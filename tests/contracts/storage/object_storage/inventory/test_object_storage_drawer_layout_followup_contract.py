@@ -17,13 +17,13 @@ def test_bucket_modal_uses_shared_wide_layout_and_natural_height_detail() -> Non
     assert 'overflow-y-auto' not in detail
 
 
-def test_overview_system_details_reuse_systems_unified_resource_sheet() -> None:
-    index = read('app/templates/storage/object_storage/inventory/overview/index.html')
-    content = read('app/templates/storage/object_storage/inventory/overview/partials/_systems_snapshot_content.html')
+def test_system_details_reuse_systems_unified_resource_sheet() -> None:
+    index = read('app/templates/storage/object_storage/inventory/systems/index.html')
+    table = read('app/templates/storage/object_storage/inventory/systems/partials/_table_content.html')
     detail = read('app/templates/storage/object_storage/inventory/systems/partials/_system_detail_content.html')
 
     assert 'resource_detail_modal.inventory_host(' in index
-    assert 'resource_detail_modal.detail_button(' in content
+    assert 'resource_detail_modal.detail_button(' in table
     assert 'data-kaori-inventory-detail-layout="unified-resource-sheet"' in detail
     assert "detail.inventory_row('Compatibility Profile', system.compatibility_profile_label, nowrap=true)" in detail
     assert (

@@ -4,7 +4,7 @@
         <div class="{{ page_hero.content_classes() }}">
             {% call page_hero.intro('database-zap', 'Object Storage Inventory', 'database') %}
                 <h1 class="{{ page_hero.title_classes() }}">Object Storage Overview</h1>
-                <p class="mt-2 {{ page_hero.description_classes() }}">Review committed object-storage systems, asset coverage, and inventory posture from one operator workspace.</p>
+                <p class="mt-2 {{ page_hero.description_classes() }}">Review a high-level committed fleet summary across managed systems and inventory assets. Open Systems or Buckets &amp; Containers for resource-level detail.</p>
                 <div class="{{ page_hero.metadata_row_classes() }}">
                     {% if overview.setup.is_blocked %}
                         {{ page_hero.meta_label('database-backup', 'Committed Inventory') }}
@@ -12,7 +12,7 @@
                     {% else %}
                         {{ page_hero.meta_label('server', overview.total_systems ~ (' System Registered' if overview.total_systems == 1 else ' Systems Registered') ) }}
                         {{ page_hero.meta_label('boxes', overview.total_buckets ~ (' Inventory Asset' if overview.total_buckets == 1 else ' Inventory Assets') ) }}
-                        {{ page_hero.meta_label('database', overview.inventory_records ~ ' Inventory Records') }}
+                        {{ page_hero.meta_label('database-backup', overview.inventory_coverage ~ '% Inventory Coverage') }}
                     {% endif %}
                 </div>
             {% endcall %}
@@ -25,14 +25,14 @@
                 {% include 'storage/object_storage/inventory/components/_hero_blocked_context.html' %}
             </aside>
         {% else %}
-            {{ page_hero.context_card('Object Storage Inventory Posture',
-                        'Inventory Posture',
+            {{ page_hero.context_card('Object Storage Fleet Summary',
+                        'Fleet Summary',
                         'Fleet Posture',
                         overview.posture_label,
                         overview.posture_tone,
                         [
-                        ('database-backup', 'Quota Evidence', overview.bucket_posture.quota_assessed ~ '/' ~ overview.bucket_posture.total_assets, 'Assessed assets') ,
-            ('scan-search', 'Active Signals', overview.active_signal_count, 'System exceptions')
+                        ('database-backup', 'Quota Evidence', overview.bucket_posture.quota_assessed ~ '/' ~ overview.bucket_posture.total_assets, 'Assessed inventory assets') ,
+            ('scan-search', 'Active Signals', overview.active_signal_count, 'Fleet exceptions')
             ],
             'Manage Storage',
             url_for('integrations.storage'),

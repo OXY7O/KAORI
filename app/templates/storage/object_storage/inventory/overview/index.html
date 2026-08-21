@@ -1,7 +1,6 @@
 {% extends "layouts/app.html" %}
 {% block title %}Object Storage Overview{% endblock title %}
 {% block dashboard_content %}
-    {% import "components/resource_detail_modal.html" as resource_detail_modal %}
     <div class="space-y-6">
         {% include "storage/object_storage/inventory/overview/partials/_hero.html" %}
         {% if overview.setup.is_blocked %}
@@ -10,12 +9,6 @@
             {% include "storage/object_storage/inventory/overview/partials/_snapshot_boundary.html" %}
             {% include "storage/object_storage/inventory/overview/partials/_fleet_posture.html" %}
             {% include "storage/object_storage/inventory/overview/partials/_summary_cards.html" %}
-            {% include "storage/object_storage/inventory/overview/partials/_systems_snapshot.html" %}
         {% endif %}
     </div>
-    {{ resource_detail_modal.inventory_host('Object Storage System',
-        url_for('object_storage_inventory.system_details', system_id=0) ,
-    'Committed Object Storage Inventory snapshot · No live provider API query.',
-    'Object Storage Inventory'
-    ) }}
 {% endblock dashboard_content %}

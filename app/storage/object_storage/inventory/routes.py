@@ -41,21 +41,10 @@ def _setup_blocked_htmx(inventory: dict[str, object]) -> ResponseReturnValue | N
 @object_storage_inventory_bp.get('/')
 @permission_required('object_storage_inventory.view')
 def overview() -> ResponseReturnValue:
-    overview_context = build_overview(
-        system_page=request.args.get('system_page', 1, type=int) or 1,
-        system_per_page=request.args.get('system_per_page', 5, type=int) or 5,
-    )
+    overview_context = build_overview()
     blocked_response = _setup_blocked_htmx(overview_context)
     if blocked_response is not None:
         return blocked_response
-    if (
-        request.headers.get('HX-Request') == 'true'
-        and request.headers.get('HX-Target') == 'object-storage-inventory-summary-content'
-    ):
-        return render_template(
-            'storage/object_storage/inventory/overview/partials/_systems_snapshot_content.html',
-            overview=overview_context,
-        )
     return render_template('storage/object_storage/inventory/overview/index.html', overview=overview_context)
 
 

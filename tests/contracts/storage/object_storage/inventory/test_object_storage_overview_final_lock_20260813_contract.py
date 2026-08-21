@@ -14,6 +14,8 @@ def test_overview_final_lock_uses_fleet_posture_and_committed_snapshot_boundary(
 
     assert '_snapshot_boundary.html' in index
     assert '_fleet_posture.html' in index
+    assert '_summary_cards.html' in index
+    assert '_systems_snapshot.html' not in index
     assert 'Fleet Inventory Posture' in fleet
     assert "variant='semantic'" in fleet
     assert '_overview_bucket_posture' in presentation
@@ -38,15 +40,17 @@ def test_overview_fleet_posture_covers_quota_protection_exposure_and_usage() -> 
     assert 'Usage Collected' in presentation
 
 
-def test_overview_system_details_match_systems_final_authority_boundary() -> None:
+def test_overview_final_lock_keeps_resource_details_out_of_summary_surface() -> None:
     index = read('app/templates/storage/object_storage/inventory/overview/index.html')
-    overview = read('app/templates/storage/object_storage/inventory/overview/partials/_systems_snapshot_content.html')
+    navigation = read('app/templates/storage/object_storage/inventory/overview/partials/_summary_cards.html')
+    systems_index = read('app/templates/storage/object_storage/inventory/systems/index.html')
+    systems_table = read('app/templates/storage/object_storage/inventory/systems/partials/_table_content.html')
     detail = read('app/templates/storage/object_storage/inventory/systems/partials/_system_detail_content.html')
 
-    assert 'resource_detail_modal.inventory_host(' in index
-    assert 'resource_detail_modal.detail_button(' in overview
-    assert 'side_drawer' not in overview
-    assert 'openDrawer' not in overview
+    assert 'resource_detail_modal.inventory_host(' not in index
+    assert 'resource_detail_modal.detail_button(' not in navigation
+    assert 'resource_detail_modal.inventory_host(' in systems_index
+    assert 'resource_detail_modal.detail_button(' in systems_table
     assert 'data-kaori-inventory-detail="v10"' in detail
     assert 'Authority Boundary' in detail
     assert 'Provider configuration and live runtime health remain integration-owned.' in detail
@@ -57,8 +61,7 @@ def test_overview_final_lock_avoids_new_page_local_style_debt() -> None:
     templates = [
         read('app/templates/storage/object_storage/inventory/overview/partials/_hero.html'),
         read('app/templates/storage/object_storage/inventory/overview/partials/_fleet_posture.html'),
-        read('app/templates/storage/object_storage/inventory/overview/partials/_systems_snapshot.html'),
-        read('app/templates/storage/object_storage/inventory/overview/partials/_systems_snapshot_content.html'),
+        read('app/templates/storage/object_storage/inventory/overview/partials/_summary_cards.html'),
     ]
     source = '\n'.join(templates)
     assert 'text-[' not in source

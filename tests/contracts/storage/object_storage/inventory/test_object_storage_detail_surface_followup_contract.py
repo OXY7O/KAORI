@@ -13,14 +13,14 @@ def test_side_drawer_supports_wider_widths() -> None:
     assert 'max-w-5xl' in component
 
 
-def test_overview_system_details_use_shared_wide_inventory_modal() -> None:
-    index = read('app/templates/storage/object_storage/inventory/overview/index.html')
-    content = read('app/templates/storage/object_storage/inventory/overview/partials/_systems_snapshot_content.html')
+def test_system_inventory_owns_shared_wide_inventory_modal() -> None:
+    index = read('app/templates/storage/object_storage/inventory/systems/index.html')
+    table = read('app/templates/storage/object_storage/inventory/systems/partials/_table_content.html')
     detail = read('app/templates/storage/object_storage/inventory/systems/partials/_system_detail_content.html')
     modal = read('app/templates/components/resource_detail_modal.html')
 
     assert 'resource_detail_modal.inventory_host(' in index
-    assert 'resource_detail_modal.detail_button(' in content
+    assert 'resource_detail_modal.detail_button(' in table
     assert "'max-w-[92rem]'" in modal
     assert 'data-kaori-detail-density="unified-resource-sheet"' in detail
     assert (

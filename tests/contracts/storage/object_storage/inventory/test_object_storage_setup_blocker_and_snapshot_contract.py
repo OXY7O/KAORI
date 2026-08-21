@@ -23,7 +23,8 @@ def test_object_storage_overview_hides_inventory_evidence_while_setup_is_blocked
     assert 'storage/object_storage/inventory/components/_onboarding_banner.html' in index
     assert '_snapshot_boundary.html' in index
     assert '_fleet_posture.html' in index
-    assert '_systems_snapshot.html' in index
+    assert '_summary_cards.html' in index
+    assert '_systems_snapshot.html' not in index
     assert 'Committed Inventory' in hero
     assert 'Object Storage Setup Required' in hero
     assert 'storage/object_storage/inventory/components/_hero_blocked_context.html' in hero

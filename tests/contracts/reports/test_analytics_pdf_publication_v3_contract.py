@@ -30,6 +30,7 @@ def test_v3_registry_covers_every_analytics_pdf_template() -> None:
         'reports/pdf/top_consumers_analysis.html': 'top_consumers_analysis.css',
         'reports/pdf/alerts_anomalies.html': 'alerts_anomalies.css',
         'reports/pdf/analytics_unavailable.html': 'analytics_unavailable.css',
+        'reports/pdf/object_storage_analysis.html': 'object_storage_analysis.css',
     }
 
 
@@ -50,7 +51,7 @@ def test_publication_css_owns_typography_rhythm_and_safe_tables() -> None:
     assert 'KAORIAnalyticsPDFPublicationStandardv3.0' in compact
     assert 'font-family:"InterAnalytics","DejaVuSans",Arial,sans-serif' in compact
     assert 'font-size:8pt' in compact
-    assert 'line-height:1.46' in compact
+    assert 'line-height:1.44' in compact
     assert 'table-layout:fixed' in compact
     assert 'vertical-align:middle' in compact
     assert 'overflow-wrap:break-word' in compact

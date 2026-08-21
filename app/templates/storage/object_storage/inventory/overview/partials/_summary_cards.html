@@ -2,13 +2,13 @@
 {% import "components/operational_section_card.html" as operational_section_card %}
 {% import "components/table_label.html" as table_label %}
 {% set asset_badge %}
-    {{ table_label.metadata_label(overview.asset_catalog|length ~ ' Asset Types', icon='layers-3') }}
+    {{ table_label.metadata_label(overview.asset_catalog|length ~ ' Inventory Views', icon='layers-3') }}
 {% endset %}
 {% call operational_section_card.render(
-    'Inventory Asset Catalog',
-    'Open one object-storage asset inventory to review records collected from committed snapshots.',
+    'Explore Object Storage Inventory',
+    'Overview stops at fleet posture. Open the dedicated inventory workspace for resource-level identity, filters, evidence, and details.',
     'layout-grid',
-    id='object-storage-asset-catalog',
+    id='object-storage-inventory-navigation',
     header_badge=asset_badge,
     body_classes='p-5'
     ) %}
