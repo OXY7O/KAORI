@@ -124,6 +124,18 @@ def main() -> int:
     require('word-break:break-all' not in compact_css, 'Evidence CSS must not use break-all.', errors)
     require('font-size:7pt' in compact_css, 'Canonical report table body size must remain 7pt.', errors)
 
+    overview_css = read(PDF_CSS_ROOT / 'analytics_overview.css')
+    overview_compact = re.sub(r'\s+', '', overview_css)
+    for token in (
+        'font-size:12pt',
+        'font-size:14pt',
+        'font-size:17.5pt',
+        'max-width:100%',
+        '.report-use-advisory',
+        '.fresh-table',
+    ):
+        require(token in overview_compact, f'Missing Analytics Overview R2 typography/layout token: {token}', errors)
+
     component = read(PDF_TEMPLATE_ROOT / 'components' / 'analytics_publication.html')
     require('macro identity_register' in component, 'Shared identity_register macro is missing.', errors)
     require(
@@ -223,6 +235,7 @@ def main() -> int:
         'collision-safe',
         'same evidence series and denominator',
         'Raw ISO timestamps with microseconds are prohibited',
+        'primary narrative content uses a 12 pt reading size',
         'KAORI-{FAMILY}-{TYPE}-{YYYYMMDD}-{FINGERPRINT}',
     ):
         require(value in docs, f'Publication documentation is missing: {value}', errors)

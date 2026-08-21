@@ -94,6 +94,26 @@ The v3.0 contract is refined with the following mandatory publication rules. Thi
 - Source registers may use compact publication labels such as `Metrics Cache`, `Kubernetes Inventory`, `Analytics Snapshots`, and `Alert Cache`; the full source identity remains available elsewhere in the evidence boundary.
 - Normalize non-breaking and renderer-sensitive dash characters before publication so identifiers and `cut-off` language do not produce broken glyphs.
 
+
+### 4.2 Analytics Overview management typography profile (2026-08-21)
+
+Analytics Overview is the management-facing member of the Analytics publication family. Its primary narrative content uses a 12 pt reading size. Supporting roles scale around that anchor instead of shrinking prose to force a page fit.
+
+| Role | Analytics Overview target |
+|---|---:|
+| Page title | 17.5 pt |
+| Section heading | 14 pt |
+| Subheading / register heading | 10-11 pt |
+| Primary narrative content | 12 pt |
+| Section helper text | 9 pt |
+| Fixed comparison table | 8-8.5 pt |
+| Reference/detail body | 8-9 pt |
+| Source note | 8 pt |
+
+The 12 pt rule applies to management prose, interpretation, guidance, and full-width advisory content. Dense fixed registers may remain smaller so scalar fields can stay on one line inside the A4 content frame. Tables may never expand beyond the report content margin to preserve a larger font. Short publication labels and reference registers are preferred instead.
+
+Every major register or evidence block should have a one-sentence helper description when the heading alone does not explain the reading purpose. Full-width guidance should use the full content measure rather than an arbitrary narrow paragraph width.
+
 ## 5. Vertical rhythm
 
 | Relationship | Canonical space |

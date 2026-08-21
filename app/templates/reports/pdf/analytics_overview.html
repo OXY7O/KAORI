@@ -119,6 +119,7 @@
                                     </table>
                                     <div class="reference-notes">
                                         <h3>Finding References</h3>
+                                        <p class="reference-helper">Detailed management references explain the findings summarized above.</p>
                                         {% for item in p.executive.findings[:3] %}
                                             {% set dec = p.executive.decisions[loop.index0] if p.executive.decisions|length > loop.index0 else {} %}{{ reference_item('F' ~ loop.index, item.title, dec.description|default(item.description) , 'Management Decision') }}
                                         {% endfor %}
@@ -192,6 +193,7 @@
                                     </table>
                                     <div class="reference-notes">
                                         <h3>Capacity References</h3>
+                                        <p class="reference-helper">Reference notes explain the comparison outcome for each shared resource.</p>
                                         {% for row in p.resource_posture.capacity_rows %}{{ reference_item('C' ~ loop.index, row.resource, row.interpretation, 'Interpretation') }}{% endfor %}
                                     </div>
                                 {% endcall %}
@@ -239,6 +241,7 @@
                                     </table>
                                     <div class="reference-notes forecast-references">
                                         <h3>Forecast References</h3>
+                                        <p class="reference-helper">Reference notes explain each projected signal and its operating interpretation.</p>
                                         {% for row in p.trend_forecast.resource_rows %}{{ reference_item('P' ~ loop.index, row.resource, row.assessment, 'Assessment') }}{% endfor %}
                                     </div>
                                 {% endcall %}
@@ -307,6 +310,7 @@
                                     </table>
                                     <div class="identity-register">
                                         <h3>Complete Consumer Identities</h3>
+                                        <p class="identity-register-subtitle">Stable reference codes map to the full technical identities shown below.</p>
                                         <div class="identity-grid single-column consumer-identities">
                                             {% for item in p.top_consumers.primary[:3] %}
                                                 <div class="identity-item">
@@ -340,7 +344,7 @@
                             <div class="page-content">
                                 {{ page_title(5, 'Capacity Pressure', 'Headroom, saturation risk, and operational response.') }}
                                 {{ metric_strip(p.capacity_pressure.metrics) }}
-                                {% call ui.section('Capacity by Resource') %}
+                                {% call ui.section('Capacity by Resource','Current utilization, capacity baseline, and remaining headroom are summarized below.') %}
                                     <table class="report-table capacity-table">
                                         <thead>
                                             <tr>
@@ -387,6 +391,7 @@
                                     </table>
                                     <div class="reference-notes">
                                         <h3>Risk References</h3>
+                                        <p class="reference-helper">Reference notes describe the operational focus behind each highlighted risk item.</p>
                                         {% for item in p.capacity_pressure.risk_highlights[:3] %}{{ reference_item('R' ~ loop.index, item.title, item.summary|default(item.description) , 'Operational Focus') }}{% endfor %}
                                     </div>
                                 {% endcall %}
@@ -440,6 +445,7 @@
                                     </table>
                                     <div class="identity-register">
                                         <h3>Active Alert Identity References</h3>
+                                        <p class="identity-register-subtitle">Stable reference codes preserve complete alert identities without overloading the comparison table.</p>
                                         <div class="identity-grid">
                                             {% for item in p.alerts.alerts[:3] %}
                                                 <div class="identity-item">
@@ -515,7 +521,7 @@
                                         <p>{{ p.reporting.storage.description }}</p>
                                     {% endcall %}
                                 </div>
-                                {% call ui.section('Scheduled Reports') %}
+                                {% call ui.section('Scheduled Reports','Active schedules for the selected reporting boundary are listed below.') %}
                                     {% if p.reporting.schedules %}
                                         <table class="report-table">
                                             <thead>
@@ -541,7 +547,7 @@
                                         <p class="empty-state">No active schedule record is included in this overview output.</p>
                                     {% endif %}
                                 {% endcall %}
-                                {% call ui.section('Recent Generated Reports') %}
+                                {% call ui.section('Recent Generated Reports','The latest generated outputs for this report scope are listed with generation status.') %}
                                     <table class="report-table reports-table">
                                         <thead>
                                             <tr>
@@ -563,7 +569,7 @@
                                         </tbody>
                                     </table>
                                 {% endcall %}
-                                {% call ui.section('Reporting Assessment') %}
+                                {% call ui.section('Reporting Assessment','Operational notes summarize report-generation posture and storage readiness.') %}
                                     <p><strong>Operational Notes.</strong> {{ p.reporting.notes|join(" ") }}</p>
                                     <p class="spaced"><strong>Key Takeaway.</strong> {{ p.reporting.takeaway }}</p>
                                 {% endcall %}
@@ -575,7 +581,7 @@
                             <div class="page-content">
                                 {{ page_title(8, 'Inventory Snapshot', 'Clusters, nodes, workloads, and core Kubernetes resources.') }}
                                 {{ metric_strip(p.inventory.metrics,6) }}
-                                {% call ui.section('Resources by Cluster') %}
+                                {% call ui.section('Resources by Cluster','Cluster-level inventory counts are summarized for the selected reporting boundary.') %}
                                     <table class="report-table cluster-table">
                                         <thead>
                                             <tr>
@@ -604,7 +610,7 @@
                                         </tbody>
                                     </table>
                                 {% endcall %}
-                                {% call ui.section('Node Overview') %}
+                                {% call ui.section('Node Overview','Node readiness and fleet availability are summarized from the committed inventory snapshot.') %}
                                     <div class="readiness-grid">
                                         <div><strong>{{ p.inventory.total_nodes }}</strong><span>Total Nodes</span></div>
                                         <div><strong>{{ p.inventory.total_nodes - p.inventory.not_ready_nodes }}</strong><span>Ready</span></div>
@@ -634,7 +640,7 @@
                                 {% call ui.section('Figure 4 - Freshness Over Time','Committed source freshness trend for the selected reporting boundary.') %}
                                     <div class="freshness-chart freshness-chart-wide">{{ p.freshness.freshness_svg|safe }}</div>
                                 {% endcall %}
-                                {% call ui.section('Data Freshness by Source') %}
+                                {% call ui.section('Data Freshness by Source','Current source freshness, lag, and availability are shown for each contributing dataset.') %}
                                     <table class="report-table fresh-table">
                                         <thead>
                                             <tr>
@@ -651,14 +657,14 @@
                                                     <td>{{ row.source_short|default(row.source, true) }}</td>
                                                     <td>{{ row.type }}</td>
                                                     <td>{{ row.last_successful }}</td>
-                                                    <td>{{ row.freshness }}</td>
+                                                    <td>{{ row.freshness_short|default(row.freshness, true) }}</td>
                                                     <td>{{ status(row.status_short|default(row.status, true),row.tone) }}</td>
                                                 </tr>
                                             {% endfor %}
                                         </tbody>
                                     </table>
                                 {% endcall %}
-                                {% call ui.section('Data Quality Issues') %}
+                                {% call ui.section('Data Quality Issues','Open data-quality conditions affecting completeness or interpretation are listed below.') %}
                                     <table class="report-table quality-table">
                                         <thead>
                                             <tr>
@@ -680,7 +686,7 @@
                                         </tbody>
                                     </table>
                                 {% endcall %}
-                                {% call ui.section('Data Reliability Guidance') %}
+                                {% call ui.section('Data Reliability Guidance','Use source status and data quality together before relying on affected conclusions.', 'reliability-guidance-section') %}
                                     <p class="narrative-copy">{{ p.freshness.meaning|join(" ") }} {{ p.freshness.actions|join(" ") }}</p>
                                 {% endcall %}
                             </div>
@@ -722,7 +728,7 @@
                                         {% for row in p.recommendations['items'][:5] %}{{ reference_item('R' ~ loop.index, row.title, row.summary|default(row.description, true), 'Why It Matters') }}{% endfor %}
                                     </div>
                                 {% endcall %}
-                                {% call ui.section('Execution Governance') %}
+                                {% call ui.section('Execution Governance','Ownership, validation expectations, and execution controls for the current recommendation set are listed below.') %}
                                     <div class="detail-flow">
                                         <div>
                                             <strong>Primary Action</strong>
@@ -755,7 +761,7 @@
                             <div class="page-content">
                                 {{ page_title(11, 'Methodology & Evidence Boundary', 'Data sources, reporting rules, and evidence limits.') }}
                                 {{ metric_strip(p.methodology.metrics) }}
-                                {% call ui.section('Data Sources and Methodology') %}
+                                {% call ui.section('Data Sources and Methodology','Source boundaries, reporting settings, and interpretation rules used by this report are defined below.') %}
                                     <div class="methodology-register-layout">
                                         <div class="methodology-source-block">
                                             <h3>Data Sources and Coverage</h3>
@@ -771,7 +777,7 @@
                                                     {% for row in p.methodology.sources[:4] %}
                                                         <tr>
                                                             <td>{{ row.source_short|default(row.source, true) }}</td>
-                                                            <td class="freshness-value">{{ row.freshness }}</td>
+                                                            <td class="freshness-value">{{ row.freshness_short|default(row.freshness, true) }}</td>
                                                             <td class="collected-value">{{ row.last_successful }}</td>
                                                         </tr>
                                                     {% endfor %}
@@ -836,7 +842,7 @@
                                         </div>
                                     </div>
                                 {% endcall %}
-                                {% call ui.section('Limitations and Status Language') %}
+                                {% call ui.section('Limitations and Status Language','Operational constraints and standardized status labels are defined below for consistent interpretation.') %}
                                     <div class="limitations-status-layout">
                                         <div class="limitations-copy">
                                             <h3>Known Limitations and Operational Use</h3>
@@ -845,7 +851,6 @@
                                                     <li>{{ item }}</li>
                                                 {% endfor %}
                                             </ul>
-                                            <p>{{ p.methodology.guidance }}</p>
                                         </div>
                                         <div class="status-language-block">
                                             <h3>Status Language</h3>
@@ -861,6 +866,10 @@
                                                 {% endfor %}
                                             </div>
                                         </div>
+                                    </div>
+                                    <div class="report-use-advisory">
+                                        <strong>Operational Use</strong>
+                                        <p>{{ p.methodology.guidance }}</p>
                                     </div>
                                 {% endcall %}
                             </div>

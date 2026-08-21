@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 from collections.abc import Mapping, Sequence
+from datetime import datetime
 from html import escape
 from typing import Any
 
@@ -2024,6 +2025,30 @@ def _inventory_health_summary(
     return result
 
 
+def _publication_timestamp(value: Any) -> str:
+    text = _text(value, 'Not Available')
+    if text == 'Not Available':
+        return text
+
+    candidate = text.replace('Z', '+00:00')
+    parsed: datetime | None = None
+    try:
+        parsed = datetime.fromisoformat(candidate)
+    except ValueError:
+        for pattern in ('%Y-%m-%d %H:%M UTC', '%d/%m/%Y %H:%M UTC', '%d %b %Y %H:%M UTC'):
+            try:
+                parsed = datetime.strptime(text, pattern)
+                break
+            except ValueError:
+                continue
+
+    if parsed is None:
+        return text
+    if parsed.tzinfo is not None:
+        parsed = parsed.astimezone().replace(tzinfo=None)
+    return parsed.strftime('%d %b %Y %H:%M UTC')
+
+
 def _source_short_label(item: Mapping[str, Any]) -> str:
     label = _text(item.get('label'), '').lower()
     source = _text(item.get('source'), 'Unknown Source')
@@ -2036,6 +2061,15 @@ def _source_short_label(item: Mapping[str, Any]) -> str:
     if label == 'alerts' or 'alertmanager' in source.lower():
         return 'Alert Cache'
     return source
+
+
+def _source_freshness_short(value: str) -> str:
+    normalized = value.strip().lower()
+    if normalized in {'at report cut-off', 'at report cutoff'}:
+        return 'At cut-off'
+    if normalized == 'current generation':
+        return 'Current'
+    return value
 
 
 def _source_status_short(value: str) -> str:
@@ -2066,8 +2100,11 @@ def _source_rows(
                 'source': _text(_mapping(item).get('source'), 'Unknown Source'),
                 'source_short': _source_short_label(_mapping(item)),
                 'type': _text(_mapping(item).get('type'), 'Evidence'),
-                'last_successful': _text(_mapping(item).get('last_successful'), 'Not Available'),
+                'last_successful': _publication_timestamp(_mapping(item).get('last_successful')),
                 'freshness': _text(_mapping(item).get('freshness'), 'Not Available'),
+                'freshness_short': _source_freshness_short(
+                    _text(_mapping(item).get('freshness'), 'Not Available')
+                ),
                 'status': _text(_mapping(item).get('status'), 'Unknown'),
                 'status_short': _source_status_short(_text(_mapping(item).get('status'), 'Unknown')),
                 'tone': _tone(_mapping(item).get('tone') or _mapping(item).get('status')),
@@ -2087,37 +2124,51 @@ def _source_rows(
         {
             'label': 'Metrics',
             'source': 'Metrics Source Observation Cache',
-            'type': 'Metrics Cache',
-            'last_successful': _text(metrics_source.get('last_checked_at'), 'Not Available'),
+            'source_short': 'Metrics Cache',
+            'type': 'Metrics',
+            'last_successful': _publication_timestamp(metrics_source.get('last_checked_at')),
             'freshness': _text(metrics_source.get('response_time_ms'), 'Not Available'),
+            'freshness_short': _text(metrics_source.get('response_time_ms'), 'Not Available'),
             'status': _text(metrics_source.get('status_label') or metrics_source.get('status'), 'Unknown'),
+            'status_short': _source_status_short(
+                _text(metrics_source.get('status_label') or metrics_source.get('status'), 'Unknown')
+            ),
             'tone': _tone(metrics_source.get('status_tone') or metrics_source.get('status')),
         },
         {
             'label': 'Inventory',
             'source': 'Kubernetes Committed Inventory',
-            'type': 'Committed Snapshot',
-            'last_successful': inventory_last,
-            'freshness': 'Current generation',
+            'source_short': 'Kubernetes Inventory',
+            'type': 'Snapshot',
+            'last_successful': _publication_timestamp(inventory_last),
+            'freshness': 'Current',
+            'freshness_short': 'Current',
             'status': 'Current' if inventory_clusters else 'Not Available',
+            'status_short': 'Current' if inventory_clusters else 'Not Available',
             'tone': 'normal' if inventory_clusters else 'neutral',
         },
         {
             'label': 'Analytics',
             'source': 'Analytics Materialized Snapshots',
-            'type': 'Committed Analytics',
-            'last_successful': _text(snapshot.get('latest_generated_at'), 'Not Available'),
+            'source_short': 'Analytics Snapshots',
+            'type': 'Analytics',
+            'last_successful': _publication_timestamp(snapshot.get('latest_generated_at')),
             'freshness': _text(snapshot.get('analysis_window'), 'Not Available'),
+            'freshness_short': _source_freshness_short(_text(snapshot.get('analysis_window'), 'Not Available')),
             'status': _text(snapshot.get('status'), 'Unknown'),
+            'status_short': _source_status_short(_text(snapshot.get('status'), 'Unknown')),
             'tone': _tone(snapshot.get('tone')),
         },
         {
             'label': 'Alerts',
             'source': 'Alertmanager Observation Cache',
-            'type': 'Alert Cache',
-            'last_successful': _text(alert_detail.get('generated_at'), 'Not Available'),
-            'freshness': 'At report cut-off',
+            'source_short': 'Alert Cache',
+            'type': 'Alertmanager',
+            'last_successful': _publication_timestamp(alert_detail.get('generated_at')),
+            'freshness': 'At cut-off',
+            'freshness_short': 'At cut-off',
             'status': _status(health, 'Unknown'),
+            'status_short': _source_status_short(_status(health, 'Unknown')),
             'tone': _tone(health.get('tone') or health.get('status')),
         },
     ]

@@ -514,3 +514,59 @@ def test_analytics_overview_prioritizes_p1_before_p2_and_p3_in_management_regist
 
     assert [item['priority'] for item in recommendation_items[:3]] == ['P1', 'P2', 'P3']
     assert executive_findings[0]['title'] == 'Urgent Workload Governance'
+
+
+def test_analytics_overview_r2_management_typography_and_helper_copy_contract() -> None:
+    _, rendered_html, project_root = _rendered_html()
+    stylesheet = (project_root / 'app' / 'static' / 'reports' / 'pdf' / 'analytics_overview.css').read_text()
+
+    for helper in (
+        'Detailed management references explain the findings summarized above.',
+        'Reference notes explain the comparison outcome for each shared resource.',
+        'Reference notes explain each projected signal and its operating interpretation.',
+        'Stable reference codes map to the full technical identities shown below.',
+        'Current utilization, capacity baseline, and remaining headroom are summarized below.',
+        'Reference notes describe the operational focus behind each highlighted risk item.',
+        'Stable reference codes preserve complete alert identities without overloading the comparison table.',
+        'Active schedules for the selected reporting boundary are listed below.',
+        'The latest generated outputs for this report scope are listed with generation status.',
+        'Operational notes summarize report-generation posture and storage readiness.',
+        'Cluster-level inventory counts are summarized for the selected reporting boundary.',
+        'Node readiness and fleet availability are summarized from the committed inventory snapshot.',
+        'Current source freshness, lag, and availability are shown for each contributing dataset.',
+        'Open data-quality conditions affecting completeness or interpretation are listed below.',
+        (
+            'Ownership, validation expectations, and execution controls for the current recommendation set '
+            'are listed below.'
+        ),
+        'Source boundaries, reporting settings, and interpretation rules used by this report are defined below.',
+        'Operational constraints and standardized status labels are defined below for consistent interpretation.',
+    ):
+        assert helper in rendered_html
+
+    assert 'font-size: 12pt' in stylesheet
+    assert 'font-size: 14pt' in stylesheet
+    assert 'font-size: 17.5pt' in stylesheet
+    assert '.report-use-advisory' in stylesheet
+    assert 'max-width: 100%' in stylesheet
+
+
+def test_analytics_overview_r2_freshness_register_uses_short_publication_labels() -> None:
+    document, rendered_html, _ = _rendered_html()
+    rows = document.presentation['freshness']['sources']
+
+    assert rows[0]['source_short'] == 'Metrics Cache'
+    assert rows[1]['source_short'] == 'Kubernetes Inventory'
+    assert rows[2]['source_short'] == 'Analytics Snapshots'
+    assert rows[3]['source_short'] == 'Alert Cache'
+    assert rows[1]['status_short'] == 'Current'
+    assert 'Metrics Source Observation Cache</td>' not in rendered_html
+    assert 'Alertmanager Observation Cache</td>' not in rendered_html
+
+
+def test_analytics_overview_r2_methodology_guidance_is_full_width_advisory() -> None:
+    _, rendered_html, _ = _rendered_html()
+
+    assert 'class="report-use-advisory"' in rendered_html
+    assert rendered_html.index('class="status-language-block"') < rendered_html.index('class="report-use-advisory"')
+    assert '<strong>Operational Use</strong>' in rendered_html
