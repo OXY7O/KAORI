@@ -31,7 +31,7 @@
                 ]) }}
         <div class="min-w-0 space-y-4 p-4 sm:p-5 lg:p-6">
             <div data-kaori-unified-resource-sheet class="min-w-0 overflow-hidden rounded-2xl border border-outline-subtle bg-surface-card shadow-sm">
-                {% call detail.inventory_section('Storage Identity', 'badge-info', item.age, badge_size='detail', stretch=false, density='compact') %}
+                {% call detail.inventory_section('Storage Identity', 'badge-info', item.age, badge_size='detail', stretch=false, density='compact', description='Storage resource identity, type, scope, lifecycle age, and committed collection context.') %}
                     {{ detail.inventory_row('Cluster', item.cluster_name) }}
                     {{ detail.inventory_row('Namespace', item.namespace) }}
                     {{ detail.inventory_metadata_row('Resource Type', item.type_label) }}
@@ -40,7 +40,7 @@
                     {{ detail.inventory_row('Created', item.created_at|user_datetime if item.created_at else 'Not Reported') }}
                     {{ detail.inventory_row('Collected', item.collected_at|user_datetime) }}
                 {% endcall %}
-                {% call detail.inventory_section('Capacity & Access', 'gauge', item.capacity, badge_size='detail', stretch=false, density='compact') %}
+                {% call detail.inventory_section('Capacity & Access', 'gauge', item.capacity, badge_size='detail', stretch=false, density='compact', description='Requested or provisioned capacity, access modes, reclaim behavior, and volume-mode evidence.') %}
                     {% if item.type == 'PersistentVolumeClaim' %}
                         {{ detail.inventory_fact_grid([
                                                 {'label': 'Requested Storage', 'value': item.requested_storage},
@@ -76,7 +76,7 @@
                 {% endcall %}
             </div>
             <div data-kaori-unified-resource-sheet class="min-w-0 overflow-hidden rounded-2xl border border-outline-subtle bg-surface-card shadow-sm">
-                {% call detail.inventory_section('Binding & Lifecycle', 'link-2', item.lifecycle_label, 'status' if item.type != 'StorageClass' else 'metadata', item.lifecycle_tone, badge_size='detail', stretch=false, density='compact') %}
+                {% call detail.inventory_section('Binding & Lifecycle', 'link-2', item.lifecycle_label, 'status' if item.type != 'StorageClass' else 'metadata', item.lifecycle_tone, badge_size='detail', stretch=false, density='compact', description='Claim binding, phase, storage class relationship, and lifecycle state for this storage resource.') %}
                     {{ detail.inventory_fact_grid([
                                         {'label': 'Lifecycle', 'value': item.lifecycle_label},
                                         {'label': 'Binding Reference', 'value': item.binding_reference},
@@ -91,7 +91,7 @@
                         <div class="mt-3">{{ metadata_collection.render('Reported Conditions', item.conditions, 'activity', 'No Conditions Reported', 'No storage condition is represented in the committed snapshot.', 'Condition values remain factual until interpreted by resource kind and reason.', compact=true, mode='records') }}</div>
                     {% endif %}
                 {% endcall %}
-                {% call detail.inventory_section('Provisioning Configuration', 'settings-2', item.provisioner, badge_size='detail', stretch=false, density='compact') %}
+                {% call detail.inventory_section('Provisioning Configuration', 'settings-2', item.provisioner, badge_size='detail', stretch=false, density='compact', description='Provisioner, binding mode, expansion policy, parameters, and topology constraints for this StorageClass.') %}
                     {{ detail.inventory_fact_grid([
                                         {'label': 'Provisioner', 'value': item.provisioner},
                                         {'label': 'Binding Mode', 'value': item.binding_mode},

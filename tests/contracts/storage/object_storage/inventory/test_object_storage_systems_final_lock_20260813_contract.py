@@ -35,6 +35,7 @@ def test_system_detail_has_operational_guidance_and_authority_boundary() -> None
     assert 'system.guidance.title' in detail
     assert 'system.guidance.description' in detail
     assert "detail.inventory_section('Inventory Snapshot'" in detail
+    assert 'Registered storage system identity, environment, provider release, and compatibility profile.' in detail
     assert "job_key='object_storage.inventory.sync'" in table_card
     assert 'Manage Inventory Jobs' in table_card
 
@@ -80,5 +81,6 @@ def test_system_detail_uses_unified_resource_sheet_v10() -> None:
     assert "detail.inventory_section('System Identity'" in detail
     assert "detail.inventory_section('Provider Connection'" in detail
     assert "detail.inventory_section('Inventory Snapshot'" in detail
+    assert 'Registered storage system identity, environment, provider release, and compatibility profile.' in detail
     assert 'detail.detail_card(' not in detail
 

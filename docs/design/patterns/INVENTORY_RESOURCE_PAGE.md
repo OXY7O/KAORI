@@ -77,6 +77,8 @@ Do not add page-local modal markup, local expandable-row JavaScript, nested scro
 
 The leading resource icon, title, metadata, and primary lifecycle/readiness/collection state form one identity group. Use the shared `detail.header_identity_row()` primitive so operational state such as `Ready`, `Not Ready`, lifecycle posture, backend readiness, and collection evidence sits beside the resource title and metadata instead of floating on a second line beneath the description. The description remains the supporting line below that grouped identity. The same grouped identity primitive is reused by other Full Workspace Modal surfaces such as Access administration, Object Storage Inventory, and TLS Governance so state never drifts onto a detached second line.
 
+Within the Unified Resource Sheet, every evidence band gives the left identity rail three jobs: identify the evidence domain, explain what the domain represents in one concise sentence, and carry any section-level count/state badge on desktop. The rail uses one restrained Violet leading rule and the shared icon treatment; the right side remains the factual value surface. This avoids visually empty left blocks without introducing extra cards, typography scales, or nested scrolling.
+
 ## Architecture and ownership
 
 ```text

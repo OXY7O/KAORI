@@ -28,7 +28,7 @@
                 ]) }}
         <div class="min-w-0 space-y-4 p-4 sm:p-5 lg:p-6">
             <div data-kaori-unified-resource-sheet class="min-w-0 overflow-hidden rounded-2xl border border-outline-subtle bg-surface-card shadow-sm">
-                {% call detail.inventory_section('Service Identity', 'badge-info', service.age, badge_size='detail', stretch=false, density='compact') %}
+                {% call detail.inventory_section('Service Identity', 'badge-info', service.age, badge_size='detail', stretch=false, density='compact', description='Service identity, namespace ownership, type, lifecycle age, and collection context.') %}
                     {{ detail.inventory_row('Cluster', service.cluster_name) }}
                     {{ detail.inventory_row('Namespace', service.namespace) }}
                     {{ detail.inventory_metadata_row('Service Type', service.type) }}
@@ -39,7 +39,7 @@
                     {{ detail.inventory_row('Collected', service.collected_at|user_datetime if service.collected_at else 'Not Reported') }}
                     <div class="mt-3">{{ operational_callout.render('Access Model Context', service.type_description, 'network', 'info') }}</div>
                 {% endcall %}
-                {% call detail.inventory_section('Network Identity', 'globe-2', service.access_model, badge_size='detail', stretch=false, density='compact') %}
+                {% call detail.inventory_section('Network Identity', 'globe-2', service.access_model, badge_size='detail', stretch=false, density='compact', description='Cluster addressing, external exposure, ports, and IP-family evidence for this Service.') %}
                     {{ detail.inventory_fact_grid([
                                         {'label': 'Cluster IP', 'value': service.cluster_ip},
                                         {'label': 'Cluster IPs', 'value': service.cluster_ips|join(', ') if service.cluster_ips else ('Not Applicable' if service.type == 'Headless' else 'Not Configured')},
@@ -53,7 +53,7 @@
                 {% endcall %}
             </div>
             <div data-kaori-unified-resource-sheet class="min-w-0 overflow-hidden rounded-2xl border border-outline-subtle bg-surface-card shadow-sm">
-                {% call detail.inventory_section('Backend Registration', 'waypoints', service.backend.label, 'status', service.backend.tone, badge_size='detail', stretch=false, density='compact') %}
+                {% call detail.inventory_section('Backend Registration', 'waypoints', service.backend.label, 'status', service.backend.tone, badge_size='detail', stretch=false, density='compact', description='Endpoint and selector evidence that determines whether traffic has registered backends.') %}
                     {{ detail.inventory_fact_grid([
                                         {'label': 'Registration State', 'value': service.backend.label, 'supporting': service.backend.supporting},
                                         {'label': 'Evidence Source', 'value': 'Not Applicable' if service.type == 'ExternalName' else service.endpoint_source},
@@ -68,7 +68,7 @@
                         <div class="mt-3">{{ detail.empty_evidence('No Service Selector Configured', 'Backend registration for this Service is managed independently from Pod label selection.', 'scan-search') }}</div>
                     {% endif %}
                 {% endcall %}
-                {% call detail.inventory_section('Traffic Configuration', 'sliders-horizontal', service.ip_family_policy, badge_size='detail', stretch=false, density='compact') %}
+                {% call detail.inventory_section('Traffic Configuration', 'sliders-horizontal', service.ip_family_policy, badge_size='detail', stretch=false, density='compact', description='Traffic policy, session affinity, IP-family behavior, and publication settings.') %}
                     {{ detail.inventory_fact_grid([
                                         {'label': 'IP Family Policy', 'value': service.ip_family_policy},
                                         {'label': 'Session Affinity', 'value': service.session_affinity},

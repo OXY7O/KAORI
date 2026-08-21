@@ -26,7 +26,7 @@
                 ]) }}
         <div class="min-w-0 space-y-4 p-4 sm:p-5 lg:p-6">
             {% call detail.resource_sheet() %}
-                {% call detail.inventory_section('Identity & Location', 'badge-info') %}
+                {% call detail.inventory_section('Identity & Location', 'badge-info', description='Bucket identity, provider system, native type, location, environment, and creation context.') %}
                     <dl class="grid min-w-0 gap-x-10 sm:grid-cols-2">
                         {{ detail.inventory_technical_row('Bucket Name', bucket.name, nowrap=true, class_name='lg:col-span-2') }}
                         {{ detail.inventory_row('System', bucket.system_name, nowrap=true, class_name='lg:col-span-2') }}
@@ -37,7 +37,7 @@
                         {{ detail.inventory_row('Created', bucket.provider_created_at|user_datetime if bucket.provider_created_at else 'Not Reported', nowrap=true, class_name='lg:col-span-2') }}
                     </dl>
                 {% endcall %}
-                {% call detail.inventory_section('Snapshot Context', 'clock-3', bucket.snapshot_status_label, 'status', bucket.snapshot_status_tone) %}
+                {% call detail.inventory_section('Snapshot Context', 'clock-3', bucket.snapshot_status_label, 'status', bucket.snapshot_status_tone, description='Collection timestamp, snapshot source, state, and usage-observation recency for this bucket.') %}
                     <dl class="grid min-w-0 gap-x-10 sm:grid-cols-2">
                         {{ detail.inventory_row('Last Collected', bucket.observed_at|user_datetime, nowrap=true) }}
                         {{ detail.inventory_row('Snapshot Source', bucket.source_label) }}
@@ -45,7 +45,7 @@
                         {{ detail.inventory_row('Usage Observed', bucket.usage_observed_at|user_datetime if bucket.usage_observed_at else 'Not Observed', nowrap=true) }}
                     </dl>
                 {% endcall %}
-                {% call detail.inventory_section('Capacity & Usage', 'chart-no-axes-column') %}
+                {% call detail.inventory_section('Capacity & Usage', 'chart-no-axes-column', description='Quota, logical usage, object count, evidence source, and collection strategy for capacity reporting.') %}
                     <dl class="grid min-w-0 gap-x-10 sm:grid-cols-2">
                         {{ detail.inventory_row('Quota', bucket.quota.label) }}
                         {{ detail.inventory_status_row('Quota State', bucket.quota.state_label, bucket.quota.tone) }}
@@ -62,7 +62,7 @@
                     {{ detail.inventory_note(bucket.quota_evidence.guidance, 'gauge') }}
                     {{ detail.inventory_note('Usage collection is independent from quota collection. Prefer provider_metrics for scalable provider-native usage; use full_scan only as an explicit fallback when exact object enumeration is required.', 'chart-no-axes-column') }}
                 {% endcall %}
-                {% call detail.inventory_section('Data Protection', 'shield-check', bucket.protection.label, 'status', bucket.protection.tone) %}
+                {% call detail.inventory_section('Data Protection', 'shield-check', bucket.protection.label, 'status', bucket.protection.tone, description='Versioning, immutability, encryption, and public-exposure posture normalized from provider evidence.') %}
                     <div class="grid min-w-0 gap-x-10 sm:grid-cols-2">
                         {{ detail.inventory_status_row('Versioning', bucket.versioning.label, bucket.versioning.tone) }}
                         {{ detail.inventory_status_row('Immutability', bucket.immutability.label, bucket.immutability.tone) }}
@@ -70,7 +70,7 @@
                         {{ detail.inventory_status_row('Public Exposure', bucket.public_exposure.label, bucket.public_exposure.tone) }}
                     </div>
                 {% endcall %}
-                {% call detail.inventory_section('Lifecycle & Access', 'git-branch') %}
+                {% call detail.inventory_section('Lifecycle & Access', 'git-branch', description='Lifecycle rules, replication, access policy, and the resulting protection posture for this bucket.') %}
                     <div class="grid min-w-0 gap-x-10 sm:grid-cols-2">
                         {{ detail.inventory_status_row('Lifecycle', bucket.lifecycle.label, bucket.lifecycle.tone) }}
                         {{ detail.inventory_status_row('Replication', bucket.replication.label, bucket.replication.tone) }}
@@ -78,7 +78,7 @@
                         {{ detail.inventory_status_row('Protection Posture', bucket.protection.label, bucket.protection.tone) }}
                     </div>
                 {% endcall %}
-                {% call detail.inventory_section('Provider Context', 'database-zap') %}
+                {% call detail.inventory_section('Provider Context', 'database-zap', description='Provider compatibility, release, addressing, enrichment, quota source, and API endpoint context.') %}
                     <dl class="grid min-w-0 gap-x-10 sm:grid-cols-2">
                         {{ detail.inventory_row('Compatibility Profile', bucket.compatibility_profile_label) }}
                         {{ detail.inventory_row('Release', bucket.release_label, nowrap=true) }}
@@ -90,7 +90,7 @@
                     </dl>
                 {% endcall %}
                 {% for section in bucket.provider_detail_sections %}
-                    {% call detail.inventory_section(section.title, section.icon) %}
+                    {% call detail.inventory_section(section.title, section.icon, description=section.description|default('Provider-specific capability evidence reported by the active storage integration.')) %}
                         <dl class="grid min-w-0 gap-x-10 sm:grid-cols-2">
                             {% for row in section.rows %}
                                 {% if row.technical|default(false) %}

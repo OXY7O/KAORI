@@ -27,7 +27,7 @@
                 ]) }}
         <div class="min-w-0 space-y-4 p-4 sm:p-5 lg:p-6">
             <div data-kaori-unified-resource-sheet class="min-w-0 overflow-hidden rounded-2xl border border-outline-subtle bg-surface-card shadow-sm">
-                {% call detail.inventory_section('Object Identity', 'badge-info', item.age, badge_size='detail', stretch=false, density='compact') %}
+                {% call detail.inventory_section('Object Identity', 'badge-info', item.age, badge_size='detail', stretch=false, density='compact', description='Configuration object identity, namespace ownership, type, age, and collection context.') %}
                     {{ detail.inventory_row('Cluster', item.cluster_name) }}
                     {{ detail.inventory_row('Namespace', item.namespace) }}
                     {{ detail.inventory_metadata_row('Object Type', item.type) }}
@@ -36,7 +36,7 @@
                     {{ detail.inventory_row('Created', item.created_at|user_datetime if item.created_at else 'Not Reported') }}
                     {{ detail.inventory_row('Collected', item.collected_at|user_datetime if item.collected_at else 'Not Reported') }}
                 {% endcall %}
-                {% call detail.inventory_section('Protected Data Boundary', 'shield-check', 'Values Not Persisted', badge_size='detail', stretch=false, density='compact') %}
+                {% call detail.inventory_section('Protected Data Boundary', 'shield-check', 'Values Not Persisted', badge_size='detail', stretch=false, density='compact', description='Metadata-only evidence for keys and references; sensitive values are intentionally not persisted by KAORI.') %}
                     {{ detail.inventory_fact_grid([
                                         {'label': 'Object Collection', 'value': item.collection_state},
                                         {'label': 'Pod Reference Collection', 'value': item.pod_collection_state},
@@ -55,7 +55,7 @@
             {% if item.pod_reference_reported %}
                 {{ related_collection.inventory_render('Current Pod References', 'Pods whose committed configuration references include this object.', item.used_by, item.used_by_count, 'package-check', 'No Current Pod References', 'No Pod reference is represented in the current committed snapshot. Other consumers may still exist.', item.used_by_truncated, url_for('inventory.pods', cluster_id=item.cluster_id, namespace=item.namespace) , 'Open Pod Inventory', embedded=true) }}
             {% else %}
-                {% call detail.inventory_section('Current Pod References', 'circle-help', 'Not Reported', badge_size='detail', stretch=false, density='compact') %}
+                {% call detail.inventory_section('Current Pod References', 'circle-help', 'Not Reported', badge_size='detail', stretch=false, density='compact', description='Known Pod consumers and reference evidence associated with this configuration object.') %}
                     {{ detail.empty_evidence('Pod Reference Evidence Not Reported', 'Pod collection is recorded as ' ~ item.pod_collection_state ~ '. KAORI cannot determine current Pod references from this snapshot.', 'circle-help') }}
                 {% endcall %}
             {% endif %}

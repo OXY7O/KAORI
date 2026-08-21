@@ -24,7 +24,7 @@
                 ]) }}
         <div class="min-w-0 space-y-4 p-4 sm:p-5 lg:p-6">
             <div data-kaori-unified-resource-sheet class="min-w-0 overflow-hidden rounded-2xl border border-outline-subtle bg-surface-card shadow-sm">
-                {% call detail.inventory_section('Namespace Identity', 'badge-info', namespace.age, badge_size='detail', stretch=false, density='compact') %}
+                {% call detail.inventory_section('Namespace Identity', 'badge-info', namespace.age, badge_size='detail', stretch=false, density='compact', description='Canonical namespace identity, cluster ownership, lifecycle, and collection context.') %}
                     {{ detail.inventory_status_row('Lifecycle', namespace.lifecycle_label, namespace.lifecycle_tone, size='detail') }}
                     {{ detail.inventory_row('Age', namespace.age) }}
                     {{ detail.inventory_technical_row('UID', namespace.uid) }}
@@ -32,7 +32,7 @@
                     {{ detail.inventory_row('Collected', namespace.collected_at|user_datetime) }}
                     {{ detail.inventory_row('Cluster', namespace.cluster_name) }}
                 {% endcall %}
-                {% call detail.inventory_section('Access & Security', 'shield-check', namespace.pod_security_enforce_display, badge_size='detail', stretch=false, density='compact') %}
+                {% call detail.inventory_section('Access & Security', 'shield-check', namespace.pod_security_enforce_display, badge_size='detail', stretch=false, density='compact', description='Pod Security admission posture and access-related metadata reported for this namespace.') %}
                     {{ detail.inventory_fact_grid([
                                         ('NetworkPolicies', namespace.network_policy_count if namespace.network_policy_count is not none else 'Not Reported', '') ,
                     ('ServiceAccounts', namespace.service_account_count if namespace.service_account_count is not none else 'Not Reported', ''),
@@ -50,7 +50,7 @@
                 {% endcall %}
             </div>
             <div data-kaori-unified-resource-sheet class="min-w-0 overflow-hidden rounded-2xl border border-outline-subtle bg-surface-card shadow-sm">
-                {% call detail.inventory_section('Object Composition', 'boxes', namespace.object_counts.evidence_display, badge_size='detail', stretch=false, density='compact') %}
+                {% call detail.inventory_section('Object Composition', 'boxes', namespace.object_counts.evidence_display, badge_size='detail', stretch=false, density='compact', description='Committed workload, Pod, Service, Ingress, and configuration composition within this namespace.') %}
                     {{ detail.inventory_fact_grid([
                                         ('Workloads', namespace.object_counts.workloads, '') ,
                     ('Pods', namespace.object_counts.pods, ''),
@@ -81,7 +81,7 @@
                         {{ detail.empty_evidence('No Workload Objects Collected', 'No controller or batch workload was present in the committed snapshot.', 'layout-grid') }}
                     {% endif %}
                 {% endcall %}
-                {% call detail.inventory_section('Resource Controls', 'sliders-horizontal', namespace.control_evidence_display, badge_size='detail', stretch=false, density='compact') %}
+                {% call detail.inventory_section('Resource Controls', 'sliders-horizontal', namespace.control_evidence_display, badge_size='detail', stretch=false, density='compact', description='Quota and LimitRange evidence that constrains resource consumption in this namespace.') %}
                     {{ detail.inventory_fact_grid([
                                         ('ResourceQuota', namespace.quota_display, '') ,
                     ('LimitRange', namespace.limit_range_display, ''),

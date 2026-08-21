@@ -28,7 +28,7 @@
                 ]) }}
         <div class="min-w-0 space-y-4 p-4 sm:p-5 lg:p-6">
             <div data-kaori-unified-resource-sheet class="min-w-0 overflow-hidden rounded-2xl border border-outline-subtle bg-surface-card shadow-sm">
-                {% call detail.inventory_section('Workload Identity', 'badge-info', workload.age, badge_size='detail', stretch=false, density='compact') %}
+                {% call detail.inventory_section('Workload Identity', 'badge-info', workload.age, badge_size='detail', stretch=false, density='compact', description='Workload identity, namespace ownership, controller type, age, and snapshot collection context.') %}
                     {{ detail.inventory_row('Cluster', workload.cluster_name) }}
                     {{ detail.inventory_row('Namespace', workload.namespace) }}
                     {{ detail.inventory_metadata_row('Kind', workload.type) }}
@@ -37,7 +37,7 @@
                     {{ detail.inventory_row('Created', workload.created_at|user_datetime if workload.created_at else '-') }}
                     {{ detail.inventory_row('Collected', workload.collected_at|user_datetime) }}
                 {% endcall %}
-                {% call detail.inventory_section('Runtime State', 'activity', workload.operational_state_label, 'status', workload.operational_state_tone, badge_size='detail', stretch=false, density='compact') %}
+                {% call detail.inventory_section('Runtime State', 'activity', workload.operational_state_label, 'status', workload.operational_state_tone, badge_size='detail', stretch=false, density='compact', description='Desired and observed replica state with rollout evidence from the committed snapshot.') %}
                     {% if workload.runtime_state_rows %}
                         {{ detail.inventory_fact_grid(workload.runtime_state_rows, columns=2) }}
                     {% else %}
@@ -46,7 +46,7 @@
                 {% endcall %}
             </div>
             <div data-kaori-unified-resource-sheet class="min-w-0 overflow-hidden rounded-2xl border border-outline-subtle bg-surface-card shadow-sm">
-                {% call detail.inventory_section('Pod Template', 'container', workload.template_container_count ~ ' Containers' if workload.pod_configuration_reported else 'Not Reported', badge_size='detail', stretch=false, density='compact') %}
+                {% call detail.inventory_section('Pod Template', 'container', workload.template_container_count ~ ' Containers' if workload.pod_configuration_reported else 'Not Reported', badge_size='detail', stretch=false, density='compact', description='Container, image, resource, scheduling, and security configuration declared by the workload template.') %}
                     {% if workload.pod_configuration_reported %}
                         {{ detail.inventory_fact_grid(workload.pod_configuration_rows, columns=3) }}
                     {% else %}
@@ -112,7 +112,7 @@
                 {% endif %}
             </section>
             {% call detail.resource_sheet() %}
-                {% call detail.inventory_section('Delivery & Placement', 'route', workload.delivery_model) %}
+                {% call detail.inventory_section('Delivery & Placement', 'route', workload.delivery_model, description='Rollout strategy, service exposure, placement constraints, and delivery characteristics for this workload.') %}
                 <div class="grid gap-4 lg:grid-cols-2">
                     <div>
                         {{ detail.subsection("Delivery Configuration") }}

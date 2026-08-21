@@ -29,7 +29,7 @@
                 ]) }}
         <div class="min-w-0 space-y-4 p-4 sm:p-5 lg:p-6">
             <div data-kaori-unified-resource-sheet class="min-w-0 overflow-hidden rounded-2xl border border-outline-subtle bg-surface-card shadow-sm">
-                {% call detail.inventory_section('Pod Identity', 'badge-info', pod.age, badge_size='detail', stretch=false, density='compact') %}
+                {% call detail.inventory_section('Pod Identity', 'badge-info', pod.age, badge_size='detail', stretch=false, density='compact', description='Pod identity, namespace ownership, controller resolution, age, and collection timestamps.') %}
                     {{ detail.inventory_row('Cluster', pod.cluster_name) }}
                     {{ detail.inventory_row('Namespace', pod.namespace) }}
                     {{ detail.inventory_row('Owner', pod.owner_display) }}
@@ -38,7 +38,7 @@
                     {{ detail.inventory_row('Created', pod.created_at|user_datetime if pod.created_at else 'Not Reported') }}
                     {{ detail.inventory_row('Collected', pod.collected_at|user_datetime if pod.collected_at else 'Not Reported') }}
                 {% endcall %}
-                {% call detail.inventory_section('Runtime & Conditions', 'activity', pod.operational_state_label, 'status', pod.operational_state_tone, badge_size='detail', stretch=false, density='compact') %}
+                {% call detail.inventory_section('Runtime & Conditions', 'activity', pod.operational_state_label, 'status', pod.operational_state_tone, badge_size='detail', stretch=false, density='compact', description='Phase, readiness, restart activity, lifecycle state, and Kubernetes condition evidence.') %}
                     {{ detail.inventory_fact_grid([
                                         {'label': 'Kubernetes Phase', 'value': pod.status},
                                         {'label': 'Lifecycle State', 'value': pod.lifecycle_phase},
@@ -66,7 +66,7 @@
                 {% endcall %}
             </div>
             <div data-kaori-unified-resource-sheet class="min-w-0 overflow-hidden rounded-2xl border border-outline-subtle bg-surface-card shadow-sm">
-                {% call detail.inventory_section('Placement & Network', 'map-pin', pod.node or 'Not Scheduled', badge_size='detail', stretch=false, density='compact') %}
+                {% call detail.inventory_section('Placement & Network', 'map-pin', pod.node or 'Not Scheduled', badge_size='detail', stretch=false, density='compact', description='Node placement, Pod addressing, scheduling constraints, selectors, and toleration evidence.') %}
                     {{ detail.inventory_fact_grid(pod.placement_rows, columns=3) }}
                     <div class="mt-3">
                         {{ detail.subsection("Placement Constraints") }}
@@ -88,7 +88,7 @@
                                                 compact_pairs=true) }}
                     </div>
                 {% endcall %}
-                {% call detail.inventory_section('Pod Specification', 'settings-2', (pod.configuration.container_count ~ ' Containers') if pod.specification_evidence_reported and pod.configuration.container_count is not none else 'Not Reported', badge_size='detail', stretch=false, density='compact') %}
+                {% call detail.inventory_section('Pod Specification', 'settings-2', (pod.configuration.container_count ~ ' Containers') if pod.specification_evidence_reported and pod.configuration.container_count is not none else 'Not Reported', badge_size='detail', stretch=false, density='compact', description='QoS, restart, DNS, network, container, and security configuration from the committed Pod specification.') %}
                     {% if pod.specification_evidence_reported %}
                         {{ detail.inventory_fact_grid(pod.specification_rows, columns=3) }}
                         <p class="mt-3 text-xs leading-5 text-content-muted">QoS, restart, DNS, network, and security configuration remain factual evidence until compared with an explicit governance policy.</p>

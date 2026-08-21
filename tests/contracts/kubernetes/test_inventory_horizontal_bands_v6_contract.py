@@ -23,8 +23,11 @@ def test_inventory_v6_uses_one_horizontal_band_contract() -> None:
     assert 'data-kaori-inventory-section-layout="resource-sheet-band"' in shared
     assert 'xl:grid-cols-[14.5rem_minmax(0,1fr)]' in shared
     assert 'xl:border-r' in shared
-    assert 'bg-surface-elevated/30' in shared
+    assert 'bg-surface-elevated/35' in shared
     assert "badge_size='detail'" in shared
+    assert 'data-kaori-inventory-section-description' in shared
+    assert 'absolute inset-y-0 left-0 w-0.5 bg-kaori-primary/70' in shared
+    assert 'mt-3 hidden xl:flex' in shared
 
     for resource, filename in DETAILS.items():
         detail = read(f'app/templates/kubernetes/inventory/{resource}/partials/{filename}')
@@ -73,3 +76,28 @@ def test_factual_field_typography_remains_one_body_scale() -> None:
     assert 'text-sm font-normal leading-5 text-content-secondary' in shared
     assert 'text-left text-sm font-medium leading-5 text-content-primary' in shared
     assert "technical_classes = 'font-medium xl:whitespace-nowrap' if nowrap else 'font-medium'" in shared
+
+
+def test_unified_inventory_sections_explain_their_evidence_scope() -> None:
+    descriptions = {
+        'overview': 'Registration, environment, Kubernetes version, and connectivity context for this cluster.',
+        'namespaces': 'Canonical namespace identity, cluster ownership, lifecycle, and collection context.',
+        'workloads': 'Workload identity, namespace ownership, controller type, age, and snapshot collection context.',
+        'pods': 'Pod identity, namespace ownership, controller resolution, age, and collection timestamps.',
+        'services': 'Service identity, namespace ownership, type, lifecycle age, and collection context.',
+        'ingresses': 'Ingress identity, namespace ownership, class, lifecycle age, and collection context.',
+        'storage': 'Storage resource identity, type, scope, lifecycle age, and committed collection context.',
+        'configuration': 'Configuration object identity, namespace ownership, type, age, and collection context.',
+    }
+
+    overview = read('app/templates/kubernetes/inventory/overview/partials/_cluster_detail_content.html')
+    assert descriptions['overview'] in overview
+    for resource, filename in DETAILS.items():
+        if resource == 'nodes':
+            node = read(f'app/templates/kubernetes/inventory/{resource}/partials/{filename}')
+            assert (
+                'Canonical node identity, cluster placement, lifecycle age, and committed collection context.' in node
+            )
+            continue
+        detail = read(f'app/templates/kubernetes/inventory/{resource}/partials/{filename}')
+        assert descriptions[resource] in detail, resource

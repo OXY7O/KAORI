@@ -204,6 +204,14 @@ def main() -> int:
             errors.append(f'Object Storage System resource-sheet section missing: {token}')
 
     for token in (
+        'Registered storage system identity, environment, provider release, and compatibility profile.',
+        'Endpoint, region, addressing model, and validation timestamps for the registered provider connection.',
+        'Committed Object Storage inventory source, freshness window, collection time, and asset coverage.',
+    ):
+        if token not in system_detail:
+            errors.append(f'Object Storage System resource-sheet description missing: {token}')
+
+    for token in (
         "url_for('integrations.storage')",
         "job_key='object_storage.inventory.sync'",
         'Open Inventory Job',
@@ -222,6 +230,14 @@ def main() -> int:
     ):
         if token not in bucket_detail:
             errors.append(f'Object Storage Bucket resource-sheet section missing: {token}')
+
+    for token in (
+        'Bucket identity, provider system, native type, location, environment, and creation context.',
+        'Quota, logical usage, object count, evidence source, and collection strategy for capacity reporting.',
+        'Provider compatibility, release, addressing, enrichment, quota source, and API endpoint context.',
+    ):
+        if token not in bucket_detail:
+            errors.append(f'Object Storage Bucket resource-sheet description missing: {token}')
 
     for token in (
         'ObjectStorageSystem.query',

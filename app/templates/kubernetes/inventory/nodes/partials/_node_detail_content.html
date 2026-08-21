@@ -67,7 +67,7 @@
             <div class="min-w-0 overflow-hidden rounded-2xl border border-outline-subtle bg-surface-card shadow-sm"
                  data-kaori-node-resource-sheet
                  data-kaori-unified-resource-sheet>
-                {% call detail.inspector_section('Identity & Snapshot', 'badge-info', 'Core identity and collection context.') %}
+                {% call detail.inspector_section('Identity & Snapshot', 'badge-info', 'Canonical node identity, cluster placement, lifecycle age, and committed collection context.') %}
                     <dl class="grid min-w-0 gap-x-10 sm:grid-cols-2">
                         {{ detail.inspector_technical_row('Node Name', node.node_name, nowrap=true, class_name='lg:col-span-2') }}
                         {{ detail.inspector_technical_row('System UUID', node.system_uuid, nowrap=true, class_name='lg:col-span-2') }}
@@ -80,7 +80,7 @@
                     {{ detail.inspector_hint(node.role_description, 'server') }}
                 {% endcall %}
 
-                {% call detail.inspector_section('Connectivity & Network', 'network', 'Address and hostname evidence.', '', node.network_availability, 'status', network_tone) %}
+                {% call detail.inspector_section('Connectivity & Network', 'network', 'Node addressing, hostname, and network-scope evidence captured in the committed snapshot.', '', node.network_availability, 'status', network_tone) %}
                     <dl class="grid min-w-0 gap-x-10 sm:grid-cols-2">
                         {{ detail.inspector_technical_row('Internal IP', node.internal_ip or 'Not Reported', nowrap=true) }}
                         {{ detail.inspector_technical_row('External IP', node.external_ip or 'Not Reported', nowrap=true) }}
@@ -90,7 +90,7 @@
                     {{ detail.inspector_hint('Internal IP is the cluster address; External IP may be absent on private nodes.', 'network') }}
                 {% endcall %}
 
-                {% call detail.inspector_section('Node Capacity', 'gauge', 'Reported capacity from the committed snapshot.') %}
+                {% call detail.inspector_section('Node Capacity', 'gauge', 'Reported compute, memory, and ephemeral storage capacity; missing evidence remains explicit.') %}
                     <dl class="grid min-w-0 gap-x-10 sm:grid-cols-2">
                         {{ detail.inspector_row('CPU', node.cpu_display) }}
                         {{ detail.inspector_row('Memory', node.memory_display) }}
@@ -100,7 +100,7 @@
                     {{ detail.inspector_hint('Missing capacity values remain explicit and are never converted to zero.', 'database') }}
                 {% endcall %}
 
-                {% call detail.inspector_section('Runtime & Platform', 'terminal-square', 'Host platform and Kubernetes runtime versions.') %}
+                {% call detail.inspector_section('Runtime & Platform', 'terminal-square', 'Host OS, kernel, container runtime, and Kubernetes component versions defining the execution environment.') %}
                     <div class="grid min-w-0 gap-6 xl:grid-cols-2 xl:divide-x xl:divide-outline-subtle">
                         <div class="min-w-0 xl:pr-6">
                             <div class="mb-1 flex items-center gap-2 border-b border-outline-subtle pb-2.5">
@@ -128,7 +128,7 @@
                     </div>
                 {% endcall %}
 
-                {% call detail.inspector_section('Scheduling & Conditions', 'shield-check', 'Placement state and current Node conditions.', '', condition_posture, 'status', condition_tone) %}
+                {% call detail.inspector_section('Scheduling & Conditions', 'shield-check', 'Placement eligibility, readiness, pressure conditions, and taints that affect Node scheduling.', '', condition_posture, 'status', condition_tone) %}
                     <div class="grid min-w-0 gap-x-10 sm:grid-cols-2">
                         {{ detail.inspector_state_item('Scheduling', node.scheduling_display, scheduling_tone) }}
                         {{ detail.inspector_state_item('Readiness', node.ready_condition, readiness_tone) }}

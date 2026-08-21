@@ -25,7 +25,7 @@
                 ]) }}
         <div class="min-w-0 space-y-4 p-4 sm:p-5 lg:p-6">
             {% call detail.resource_sheet() %}
-                {% call detail.inventory_section('System Identity', 'badge-info', system.status_label, 'status', system.status_tone) %}
+                {% call detail.inventory_section('System Identity', 'badge-info', system.status_label, 'status', system.status_tone, description='Registered storage system identity, environment, provider release, and compatibility profile.') %}
                     <dl class="grid min-w-0 gap-x-10 sm:grid-cols-2">
                         {{ detail.inventory_technical_row('System ID', system.id, nowrap=true, class_name='lg:col-span-2') }}
                         {{ detail.inventory_row('Registered System', system.name, nowrap=true, class_name='lg:col-span-2') }}
@@ -35,7 +35,7 @@
                         {{ detail.inventory_row('Compatibility Profile', system.compatibility_profile_label, nowrap=true) }}
                     </dl>
                 {% endcall %}
-                {% call detail.inventory_section('Provider Connection', 'plug-zap') %}
+                {% call detail.inventory_section('Provider Connection', 'plug-zap', description='Endpoint, region, addressing model, and validation timestamps for the registered provider connection.') %}
                     <dl class="grid min-w-0 gap-x-10 sm:grid-cols-2">
                         {{ detail.inventory_technical_row('Endpoint', system.endpoint, nowrap=true, class_name='lg:col-span-2') }}
                         {{ detail.inventory_row('Region', system.region) }}
@@ -44,7 +44,7 @@
                         {{ detail.inventory_row('Last Checked', system.last_checked_at|user_datetime if system.last_checked_at else 'Not Observed', nowrap=true) }}
                     </dl>
                 {% endcall %}
-                {% call detail.inventory_section('Inventory Snapshot', 'database-backup', system.sync_status_label, 'status', system.sync_status_tone) %}
+                {% call detail.inventory_section('Inventory Snapshot', 'database-backup', system.sync_status_label, 'status', system.sync_status_tone, description='Committed Object Storage inventory source, freshness window, collection time, and asset coverage.') %}
                     <dl class="grid min-w-0 gap-x-10 sm:grid-cols-2">
                         {{ detail.inventory_row('Snapshot Source', system.snapshot_source) }}
                         {{ detail.inventory_row('Freshness Window', system.freshness_window_hours ~ ' Hours') }}

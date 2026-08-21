@@ -23,6 +23,7 @@ def test_provider_configuration_uses_full_width_resource_sheet_rows() -> None:
     detail = read('app/templates/storage/object_storage/inventory/buckets/partials/_bucket_detail_content.html')
 
     assert "detail.inventory_section('Provider Context'" in detail
+    assert 'Bucket identity, provider system, native type, location, environment, and creation context.' in detail
     assert "detail.inventory_technical_row('API Endpoint', bucket.endpoint" in detail
     assert "class_name='lg:col-span-2'" in detail
     assert 'provider_detail_sections' in detail
