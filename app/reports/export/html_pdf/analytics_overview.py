@@ -8,6 +8,8 @@ from typing import Any
 
 from app.reports.export.html_pdf.analytics_overview_sections import (
     methodology_page as _methodology_page,
+)
+from app.reports.export.html_pdf.analytics_overview_sections import (
     recommendation_page as _recommendation_page,
 )
 from app.reports.export.html_pdf.analytics_publication_standard import (

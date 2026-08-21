@@ -24,7 +24,6 @@ from app.reports.export.html_pdf.document import (
     ReportSection,
 )
 from app.reports.export.html_pdf.forecast_analysis import build_forecast_analysis_presentation
-from app.reports.export.html_pdf.object_storage_analysis import build_object_storage_analysis_presentation
 from app.reports.export.html_pdf.normalization import (
     find_first_path,
     findings_from_value,
@@ -35,6 +34,7 @@ from app.reports.export.html_pdf.normalization import (
     tables_from_value,
     tone_from_value,
 )
+from app.reports.export.html_pdf.object_storage_analysis import build_object_storage_analysis_presentation
 from app.reports.export.html_pdf.resource_utilization import build_resource_utilization_presentation
 from app.reports.export.html_pdf.storage_analysis import build_storage_analysis_presentation
 from app.reports.export.html_pdf.top_consumers_analysis import build_top_consumers_analysis_presentation
