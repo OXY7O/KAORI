@@ -5,37 +5,39 @@ def read(path: str) -> str:
     return Path(path).read_text(encoding='utf-8')
 
 
-def test_bucket_detail_modal_uses_wide_responsive_surface_without_nested_key_value_grids() -> None:
-    template = read('app/templates/storage/object_storage/inventory/buckets/partials/_table_content.html')
-    assert 'max-w-[88rem]' in template
-    assert "side_drawer.section('Asset Context'" in template
-    assert "side_drawer.section('Provider Context'" in template
-    assert template.count('<div class="space-y-3">') >= 4
-    assert 'grid gap-x-6 gap-y-3 sm:grid-cols-2' not in template
+def test_bucket_detail_uses_shared_wide_inventory_modal_and_unified_resource_sheet() -> None:
+    index = read('app/templates/storage/object_storage/inventory/buckets/index.html')
+    modal = read('app/templates/components/resource_detail_modal.html')
+    detail = read('app/templates/storage/object_storage/inventory/buckets/partials/_bucket_detail_content.html')
+
+    assert 'resource_detail_modal.inventory_host(' in index
+    assert "'max-w-[92rem]'" in modal
+    assert 'data-kaori-inventory-detail="v10"' in detail
+    assert 'data-kaori-inventory-detail-layout="unified-resource-sheet"' in detail
+    assert 'detail.resource_sheet()' in detail
+    assert 'overflow-y-auto' not in detail
+    assert 'x-teleport="body"' not in index
 
 
-def test_provider_configuration_uses_compact_evidence_tiles() -> None:
-    template = read('app/templates/storage/object_storage/inventory/buckets/partials/_table_content.html')
-    assert 'sm:grid-cols-2 xl:grid-cols-4' in template
-    assert 'rounded-lg border border-outline-subtle bg-surface-elevated' in template
-    assert "detail_row('API Endpoint', asset.endpoint, break_all=true)" in template
+def test_provider_configuration_uses_full_width_resource_sheet_rows() -> None:
+    detail = read('app/templates/storage/object_storage/inventory/buckets/partials/_bucket_detail_content.html')
+
+    assert "detail.inventory_section('Provider Context'" in detail
+    assert "detail.inventory_technical_row('API Endpoint', bucket.endpoint" in detail
+    assert "class_name='lg:col-span-2'" in detail
+    assert 'provider_detail_sections' in detail
+    assert 'rounded-lg border border-outline-subtle bg-surface-elevated' not in detail
 
 
-def test_bucket_modal_adds_kaori_operational_reading_with_semantic_guidance() -> None:
-    template = read('app/templates/storage/object_storage/inventory/buckets/partials/_table_content.html')
+def test_bucket_detail_keeps_operational_guidance_without_card_gallery() -> None:
+    detail = read('app/templates/storage/object_storage/inventory/buckets/partials/_bucket_detail_content.html')
 
-    assert 'Operational Reading' in template
-    assert 'components/operational_section_card.html' in template
-    assert 'operational_section_card.render(' in template
-    assert "'Operational Reading'," in template
-    assert 'Snapshot Guidance' in template
-    assert 'Quota Collected' in template
-    assert 'operational_callout.render(quota_reading_title' in template
-    assert 'operational_callout.render(usage_reading_title' in template
-    assert 'operational_callout.render(protection_reading_title' in template
-    assert "variant='semantic'" in template
-    assert 'asset.quota_evidence.label' in template
-    assert 'asset.quota_evidence.guidance' in template
-    assert 'Usage Collection Disabled' in template
-    assert 'Protection Review Recommended' in template
-    assert 'overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm' not in template
+    assert "detail.inventory_section('Capacity & Usage'" in detail
+    assert 'bucket.quota_evidence.label' in detail
+    assert 'bucket.quota_evidence.guidance' in detail
+    assert 'provider_metrics' in detail
+    assert 'full_scan' in detail
+    assert 'Partial Provider Evidence' in detail
+    assert "operational_callout.render('Inventory Boundary'" in detail
+    assert "operational_callout.render('Recommended Action'" in detail
+    assert 'operational_section_card.render(' not in detail

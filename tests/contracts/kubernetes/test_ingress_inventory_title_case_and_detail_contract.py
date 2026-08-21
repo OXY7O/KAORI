@@ -16,7 +16,8 @@ def test_ingress_inventory_uses_canonical_resource_page_pattern() -> None:
     table = read('app/templates/kubernetes/inventory/ingresses/partials/_table_content.html')
 
     assert (
-        "for resource in ('nodes', 'namespaces', 'configuration', 'workloads', 'pods', 'services', 'ingresses', 'storage')"
+        "for resource in ('nodes', 'namespaces', 'configuration', 'workloads', 'pods', 'services', "
+        "'ingresses', 'storage')"
         in routes
     )
     assert 'id="ingresses-page-workspace"' in workspace
@@ -42,7 +43,7 @@ def test_ingress_detail_uses_adaptive_stacks_and_factual_reference_evidence() ->
     service = read('app/kubernetes/inventory/resources/ingresses.py')
     semantics = read('app/kubernetes/inventory/resources/ingress_semantics.py')
 
-    assert 'data-kaori-detail-density="horizontal-bands"' in detail
+    assert 'data-kaori-detail-density="unified-resource-sheet"' in detail
     assert 'detail.expanded_workspace_shell_classes()' in detail
     assert 'TLS Secret References' in detail
     assert 'does not validate certificate contents, expiry, key matching, or hostname coverage' in detail

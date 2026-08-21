@@ -17,21 +17,22 @@ def test_bucket_table_prefers_quota_over_usage_metrics() -> None:
     assert 'asset.quota.label' in template
 
 
-def test_bucket_detail_modal_uses_dense_operational_information_architecture() -> None:
-    template = read('app/templates/storage/object_storage/inventory/buckets/partials/_table_content.html')
+def test_bucket_detail_uses_dense_unified_resource_sheet_information_architecture() -> None:
+    detail = read('app/templates/storage/object_storage/inventory/buckets/partials/_bucket_detail_content.html')
 
-    assert 'max-w-[88rem]' in template
-    assert 'Inventory Snapshot' in template
-    assert 'Asset Context' in template
-    assert 'Provider Context' in template
-    assert 'Protection & Access' in template
-    assert 'Lifecycle & Replication' in template
-    assert 'Used Size' in template
-    assert 'Current Objects' in template
-    assert 'Enrichment Profile' in template
-    assert 'Usage Stats Mode' in template
-    assert 'Quota Source' in template
-    assert "detail_row('API Endpoint', asset.endpoint, break_all=true)" in template
+    assert 'data-kaori-inventory-detail="v10"' in detail
+    assert 'detail.resource_sheet()' in detail
+    assert "detail.inventory_section('Snapshot Context'" in detail
+    assert "detail.inventory_section('Capacity & Usage'" in detail
+    assert "detail.inventory_section('Provider Context'" in detail
+    assert "detail.inventory_section('Data Protection'" in detail
+    assert "detail.inventory_section('Lifecycle & Access'" in detail
+    assert 'Used Size' in detail
+    assert 'Current Objects' in detail
+    assert 'Enrichment Profile' in detail
+    assert 'Usage Strategy' in detail
+    assert 'Quota Source' in detail
+    assert "detail.inventory_technical_row('API Endpoint', bucket.endpoint" in detail
 
 
 def test_quota_collection_is_minio_specific_and_optional_to_snapshot_success() -> None:
@@ -52,10 +53,10 @@ def test_quota_collection_is_minio_specific_and_optional_to_snapshot_success() -
 
 def test_usage_full_scan_remains_separate_from_quota_collection() -> None:
     client = read('app/integrations/storage/object_storage/providers/minio/client.py')
-    template = read('app/templates/storage/object_storage/inventory/buckets/partials/_table_content.html')
+    detail = read('app/templates/storage/object_storage/inventory/buckets/partials/_bucket_detail_content.html')
 
     assert 'collect_quota: bool = True' in client
     assert 'collect_usage_stats: bool = False' in client
     assert "get_paginator('list_objects_v2')" in client
-    assert 'Quota collection is independent.' in template
-    assert 'provider_metrics' in template
+    assert 'Usage collection is independent from quota collection.' in detail
+    assert 'provider_metrics' in detail

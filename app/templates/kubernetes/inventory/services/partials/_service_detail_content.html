@@ -5,9 +5,9 @@
 {% import "components/operational_callout.html" as operational_callout %}
 {% import "components/table.html" as table_ui %}
 <div data-kaori-detail-variant="full-workspace-modal"
-     data-kaori-detail-density="horizontal-bands"
-     data-kaori-inventory-detail="v6"
-     data-kaori-inventory-detail-layout="horizontal-section-stack"
+     data-kaori-detail-density="unified-resource-sheet"
+     data-kaori-inventory-detail="v10"
+     data-kaori-inventory-detail-layout="unified-resource-sheet"
      class="{{ detail.expanded_workspace_outer_classes() }}">
     <div class="{{ detail.expanded_workspace_shell_classes() }}">
         {% set detail_description = "Access, backend, port, selected Pod, and network evidence from the committed snapshot." %}
@@ -20,14 +20,14 @@
                 {{ table_label.status_indicator_label(service.backend.label, service.backend.tone, size='detail') }}
             {% endcall %}
         {% endcall %}
-        {{ detail.summary_strip([
-                ('Access Model', service.access_model, service.type) ,
-        ('Ports', service.port_count, 'Declared Service ports'),
-        ('Ready Endpoints', 'Not Applicable' if not service.endpoint_registration_applicable else (service.ready_endpoint_count if service.ready_endpoint_count is not none else 'Not Reported'), 'External DNS destination' if not service.endpoint_registration_applicable else (service.endpoint_source if service.endpoints_reported else 'Endpoint evidence unavailable')),
-        ('Selected Pods', service.pod_count if service.pod_count is not none else 'Not Applicable', 'Selector matches' if service.pod_relationship_applicable else 'No Service selector')
-        ], compact=true) }}
-        <div class="space-y-5 p-4 sm:p-5 lg:p-6">
-            <div class="space-y-5">
+        {{ detail.inspector_summary_strip([
+                {'label': 'Access Model', 'value': service.access_model, 'supporting': service.type, 'icon': 'globe-2', 'tone': 'brand'},
+                {'label': 'Ports', 'value': service.port_count, 'supporting': 'Declared Service ports', 'icon': 'plug-zap', 'tone': 'brand'},
+                {'label': 'Ready Endpoints', 'value': 'Not Applicable' if not service.endpoint_registration_applicable else (service.ready_endpoint_count if service.ready_endpoint_count is not none else 'Not Reported'), 'supporting': 'External DNS destination' if not service.endpoint_registration_applicable else (service.endpoint_source if service.endpoints_reported else 'Endpoint evidence unavailable'), 'icon': 'waypoints', 'tone': service.backend.tone},
+                {'label': 'Selected Pods', 'value': service.pod_count if service.pod_count is not none else 'Not Applicable', 'supporting': 'Selector matches' if service.pod_relationship_applicable else 'No Service selector', 'icon': 'package-check', 'tone': 'brand'}
+                ]) }}
+        <div class="min-w-0 space-y-4 p-4 sm:p-5 lg:p-6">
+            <div data-kaori-unified-resource-sheet class="min-w-0 overflow-hidden rounded-2xl border border-outline-subtle bg-surface-card shadow-sm">
                 {% call detail.inventory_section('Service Identity', 'badge-info', service.age, badge_size='detail', stretch=false, density='compact') %}
                     {{ detail.inventory_row('Cluster', service.cluster_name) }}
                     {{ detail.inventory_row('Namespace', service.namespace) }}
@@ -52,7 +52,7 @@
                     ], columns=2) }}
                 {% endcall %}
             </div>
-            <div class="space-y-5">
+            <div data-kaori-unified-resource-sheet class="min-w-0 overflow-hidden rounded-2xl border border-outline-subtle bg-surface-card shadow-sm">
                 {% call detail.inventory_section('Backend Registration', 'waypoints', service.backend.label, 'status', service.backend.tone, badge_size='detail', stretch=false, density='compact') %}
                     {{ detail.inventory_fact_grid([
                                         {'label': 'Registration State', 'value': service.backend.label, 'supporting': service.backend.supporting},
@@ -123,29 +123,29 @@
                     <div class="p-4">{{ detail.empty_evidence('No Ports Configured', 'The committed Service specification contains no port mapping.', 'plug-zap') }}</div>
                 {% endif %}
             </section>
-            <div class="grid items-start gap-4 xl:grid-cols-2">
+            <div data-kaori-unified-resource-sheet class="min-w-0 overflow-hidden rounded-2xl border border-outline-subtle bg-surface-card shadow-sm">
                 {% if not service.endpoint_registration_applicable %}
                     <section class="min-w-0 overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
                         <div class="p-4">{{ detail.empty_evidence('Endpoint Registration Not Applicable', 'ExternalName Services delegate resolution to DNS and do not use Service endpoint registration.', 'external-link') }}</div>
                     </section>
                 {% elif service.endpoints_reported %}
-                    {{ related_collection.inventory_render('Endpoint Addresses', 'Registered backend addresses from EndpointSlice or Endpoints evidence.', service.endpoint_resources, service.ready_endpoint_count + service.not_ready_endpoint_count, 'waypoints', 'No Endpoint Addresses', 'No registered backend address is represented in the committed snapshot.', service.endpoints_truncated) }}
+                    {{ related_collection.inventory_render('Endpoint Addresses', 'Registered backend addresses from EndpointSlice or Endpoints evidence.', service.endpoint_resources, service.ready_endpoint_count + service.not_ready_endpoint_count, 'waypoints', 'No Endpoint Addresses', 'No registered backend address is represented in the committed snapshot.', service.endpoints_truncated, embedded=true) }}
                 {% else %}
                     <section class="min-w-0 overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
                         <div class="p-4">{{ detail.empty_evidence('Endpoint Evidence Not Reported', 'EndpointSlice and Endpoints evidence was unavailable during the committed inventory collection.', 'database-zap') }}</div>
                     </section>
                 {% endif %}
                 {% if service.pod_relationship_applicable %}
-                    {{ related_collection.inventory_render('Selected Pods', 'Pods matching the Service selector in the current committed snapshot.', service.pods, service.pod_count, 'package-check', 'No Selected Pods', 'No committed Pod label set matches the Service selector.', service.pods_truncated, url_for('inventory.pods', cluster_id=service.cluster_id, namespace=service.namespace) , 'Open Pod Inventory') }}
+                    {{ related_collection.inventory_render('Selected Pods', 'Pods matching the Service selector in the current committed snapshot.', service.pods, service.pod_count, 'package-check', 'No Selected Pods', 'No committed Pod label set matches the Service selector.', service.pods_truncated, url_for('inventory.pods', cluster_id=service.cluster_id, namespace=service.namespace) , 'Open Pod Inventory', embedded=true) }}
                 {% else %}
                     <section class="min-w-0 overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
                         <div class="p-4">{{ detail.empty_evidence('Pod Selection Not Applicable', 'This Service does not declare a Pod selector. Backend registration is external or manually managed.', 'package-x') }}</div>
                     </section>
                 {% endif %}
             </div>
-            <div class="grid items-start gap-4 xl:grid-cols-2">
-                {{ metadata_collection.render('Service Labels', service.labels, 'tags', 'No Service Labels', 'No Service labels were reported in the committed snapshot.', 'Labels remain factual identity and selection metadata.') }}
-                {{ metadata_collection.render('Service Annotations', service.annotations, 'notebook-tabs', 'No Service Annotations', 'No Service annotations were reported in the committed snapshot.', 'Annotations may influence controller and integration behavior.') }}
+            <div data-kaori-unified-resource-sheet class="min-w-0 overflow-hidden rounded-2xl border border-outline-subtle bg-surface-card shadow-sm">
+                {{ metadata_collection.render('Service Labels', service.labels, 'tags', 'No Service Labels', 'No Service labels were reported in the committed snapshot.', 'Labels remain factual identity and selection metadata.', embedded=true) }}
+                {{ metadata_collection.render('Service Annotations', service.annotations, 'notebook-tabs', 'No Service Annotations', 'No Service annotations were reported in the committed snapshot.', 'Annotations may influence controller and integration behavior.', embedded=true) }}
             </div>
             <section class="space-y-3">
                 <h4 class="text-sm font-semibold text-content-primary">Operational Context</h4>

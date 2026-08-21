@@ -32,23 +32,24 @@ def test_bucket_container_page_keeps_one_vendor_neutral_inventory_surface() -> N
         assert heading in table
 
 
-def test_list_table_stays_canonical_while_modal_is_provider_aware() -> None:
+def test_list_table_stays_canonical_while_detail_is_provider_aware() -> None:
     index = read('app/templates/storage/object_storage/inventory/buckets/index.html')
     table = read('app/templates/storage/object_storage/inventory/buckets/partials/_table_content.html')
+    detail = read('app/templates/storage/object_storage/inventory/buckets/partials/_bucket_detail_content.html')
     presentation = read('app/storage/object_storage/inventory/presentation.py')
 
-    assert 'resource_detail_modal' not in index
-    assert 'resource_detail_modal' not in table
-    assert 'x-teleport="body"' in table
-    assert 'max-w-[88rem]' in table
-    assert 'View Details' in table
-    assert 'Inventory Snapshot' in table
-    assert 'Asset Context' in table
-    assert 'Provider Context' in table
-    assert 'Protection & Access' in table
-    assert 'Lifecycle & Replication' in table
-    assert 'Used Size' in table
-    assert 'provider_detail_sections' in table
+    assert 'resource_detail_modal.inventory_host(' in index
+    assert 'resource_detail_modal.detail_button(' in table
+    assert 'x-teleport="body"' not in table
+    assert 'openDetail' not in table
+    assert 'resource_detail_modal.detail_button(' in table
+    assert "detail.inventory_section('Snapshot Context'" in detail
+    assert "detail.inventory_section('Capacity & Usage'" in detail
+    assert "detail.inventory_section('Provider Context'" in detail
+    assert "detail.inventory_section('Data Protection'" in detail
+    assert "detail.inventory_section('Lifecycle & Access'" in detail
+    assert 'Used Size' in detail
+    assert 'provider_detail_sections' in detail
     assert '_provider_detail_sections' in presentation
     assert 'Native Provider Evidence' not in presentation
 

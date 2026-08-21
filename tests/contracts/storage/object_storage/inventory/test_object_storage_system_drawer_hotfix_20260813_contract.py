@@ -5,23 +5,26 @@ def read(path: str) -> str:
     return Path(path).read_text(encoding='utf-8')
 
 
-def test_system_drawer_alpine_expression_uses_html_safe_string_literal() -> None:
-    template = read('app/templates/storage/object_storage/inventory/systems/partials/_table_content.html')
-    expected = 'x_show="openDrawer === \'" ~ system.id ~ "\'"'
-    assert expected in template
-    assert "x_show='openDrawer === ' ~ (system.id|tojson)" not in template
-    assert "close_expression='openDrawer = null'" in template
+def test_system_detail_button_uses_canonical_async_detail_url() -> None:
+    table = read('app/templates/storage/object_storage/inventory/systems/partials/_table_content.html')
+
+    assert 'resource_detail_modal.detail_button(' in table
+    assert "url_for('object_storage_inventory.system_details', system_id=system.id)" in table
+    assert 'openDrawer' not in table
+    assert '@click=' not in table
 
 
-def test_system_drawer_button_keeps_json_safe_assignment() -> None:
-    template = read('app/templates/storage/object_storage/inventory/systems/partials/_table_content.html')
-    assert "@click='openDrawer = {{ system.id|tojson }}'" in template
+def test_system_page_uses_shared_inventory_modal_host() -> None:
+    index = read('app/templates/storage/object_storage/inventory/systems/index.html')
+
+    assert 'resource_detail_modal.inventory_host(' in index
+    assert "url_for('object_storage_inventory.system_details', system_id=0)" in index
+    assert 'Committed Object Storage Inventory snapshot · No live provider API query.' in index
 
 
-def test_drawer_visibility_and_button_assignment_use_compatible_literals() -> None:
-    template = read('app/templates/storage/object_storage/inventory/systems/partials/_table_content.html')
-    # The click assignment may safely use JSON because the HTML attribute itself uses single quotes.
-    assert "@click='openDrawer = {{ system.id|tojson }}'" in template
-    # side_drawer.render later emits x-show inside a double-quoted HTML attribute, so its
-    # Alpine expression must use single quotes around the UUID instead of embedded JSON quotes.
-    assert 'x_show="openDrawer === \'" ~ system.id ~ "\'"' in template
+def test_legacy_system_inline_drawer_is_retired() -> None:
+    table = read('app/templates/storage/object_storage/inventory/systems/partials/_table_content.html')
+
+    assert 'side_drawer.render(' not in table
+    assert 'x_show=' not in table
+    assert 'close_expression=' not in table

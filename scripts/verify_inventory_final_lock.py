@@ -209,6 +209,8 @@ def main() -> int:
             errors,
         )
     overview_page = read('app/templates/kubernetes/inventory/overview/index.html')
+    overview_content = read('app/templates/kubernetes/inventory/overview/partials/_resources_by_cluster_content.html')
+    overview_detail = read('app/templates/kubernetes/inventory/overview/partials/_cluster_detail_content.html')
     topology_page = read('app/templates/kubernetes/inventory/topology/index.html')
     for page_name, page_source in (('overview', overview_page), ('topology', topology_page)):
         blocker = page_source.find('{% if cluster_onboarding.is_blocked %}')
@@ -219,6 +221,37 @@ def main() -> int:
             f'{page_name} must hide Inventory Data Snapshot behind the onboarding blocker.',
             errors,
         )
+
+    for token in (
+        'resource_detail_modal.inventory_host(',
+        "url_for('inventory.overview_cluster_details', cluster_id=0)",
+    ):
+        require(token in overview_page, f'Inventory Overview modal-host contract missing: {token}', errors)
+    for token in (
+        'resource_detail_modal.detail_button(',
+        "url_for('inventory.overview_cluster_details', cluster_id=cluster.id)",
+    ):
+        require(token in overview_content, f'Inventory Overview detail-button contract missing: {token}', errors)
+    for retired in ('components/side_drawer.html', 'side_drawer.render(', 'openDrawer'):
+        require(retired not in overview_content, f'Inventory Overview retains retired inline drawer: {retired}', errors)
+    for token in (
+        'data-kaori-detail-density="unified-resource-sheet"',
+        'data-kaori-inventory-detail="v10"',
+        'data-kaori-inventory-detail-layout="unified-resource-sheet"',
+        'detail.inspector_summary_strip(',
+        'detail.resource_sheet()',
+        'Cluster Identity',
+        'Snapshot Context',
+        'Inventory Breakdown',
+        'Inventory Signals',
+    ):
+        require(token in overview_detail, f'Inventory Overview cluster detail V10 contract missing: {token}', errors)
+    require(
+        'def overview_cluster_details(' in routes_source
+        and 'get_inventory_overview_cluster_detail' in routes_source,
+        'Inventory Overview cluster detail route must use the committed overview read model.',
+        errors,
+    )
 
     for resource in RESOURCE_NAMES:
         hero = read(f'app/templates/kubernetes/inventory/{resource}/partials/_hero.html')
@@ -266,6 +299,31 @@ def main() -> int:
             'storage': '_storage_detail_content.html',
         }[resource]
         detail_source = read(f'app/templates/kubernetes/inventory/{resource}/partials/{detail_partial}')
+        require(
+            'data-kaori-detail-density="unified-resource-sheet"' in detail_source,
+            f'{resource} detail must use Unified Resource Sheet density.',
+            errors,
+        )
+        require(
+            'data-kaori-inventory-detail="v10"' in detail_source,
+            f'{resource} detail must declare Inventory detail V10.',
+            errors,
+        )
+        require(
+            'data-kaori-inventory-detail-layout="unified-resource-sheet"' in detail_source,
+            f'{resource} detail must use the Unified Resource Sheet layout.',
+            errors,
+        )
+        require(
+            'detail.inspector_summary_strip(' in detail_source,
+            f'{resource} detail must use the shared connected operational summary strip.',
+            errors,
+        )
+        require(
+            'data-kaori-unified-resource-sheet' in detail_source,
+            f'{resource} detail must expose one unified evidence-sheet owner.',
+            errors,
+        )
         require(
             'detail.header_identity_row()' in detail_source,
             f'{resource} detail header must group title, metadata, and primary state in one identity row.',

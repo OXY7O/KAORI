@@ -42,7 +42,8 @@ def test_configuration_inventory_uses_canonical_workspace_pattern() -> None:
     assert 'name="partial_mode" value="table_content"' in table
     assert 'Age ' not in table
     assert (
-        "for resource in ('nodes', 'namespaces', 'configuration', 'workloads', 'pods', 'services', 'ingresses', 'storage')"
+        "for resource in ('nodes', 'namespaces', 'configuration', 'workloads', 'pods', 'services', "
+        "'ingresses', 'storage')"
         in routes
     )
     assert not (ROOT / 'app/templates/kubernetes/inventory/configuration/partials/_inventory_scope.html').exists()
@@ -53,8 +54,8 @@ def test_configuration_detail_uses_protected_and_evidence_aware_boundaries() -> 
     service = read(SERVICE)
     semantics = read(SEMANTICS)
 
-    assert 'data-kaori-detail-density="horizontal-bands"' in detail
-    assert 'data-kaori-inventory-detail-layout="horizontal-section-stack"' in detail
+    assert 'data-kaori-detail-density="unified-resource-sheet"' in detail
+    assert 'data-kaori-inventory-detail-layout="unified-resource-sheet"' in detail
     assert "detail.inventory_section('Protected Data Boundary'" in detail
     assert 'Pod Reference Collection' in detail
     assert 'Pod Reference Evidence Not Reported' in detail

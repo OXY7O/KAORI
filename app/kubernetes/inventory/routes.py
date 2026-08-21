@@ -23,6 +23,7 @@ from app.kubernetes.inventory.overview import (
     get_inventory_clusters,
     get_inventory_freshness_context,
     get_inventory_overview,
+    get_inventory_overview_cluster_detail,
 )
 from app.kubernetes.inventory.resources.configuration import (
     get_configuration_detail,
@@ -255,6 +256,19 @@ def overview():
     return render_template(
         'kubernetes/inventory/overview/index.html',
         overview=overview,
+    )
+
+
+@inventory_bp.get('/overview/clusters/<string:cluster_id>/details')
+@permission_required('inventory.view')
+@_clusterless_inventory_htmx_guard
+def overview_cluster_details(cluster_id: str):
+    cluster = get_inventory_overview_cluster_detail(cluster_id)
+    if cluster is None:
+        abort(404)
+    return render_template(
+        'kubernetes/inventory/overview/partials/_cluster_detail_content.html',
+        cluster=cluster,
     )
 
 

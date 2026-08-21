@@ -69,13 +69,9 @@ def test_object_storage_inventory_keeps_kaori_table_and_pagination_standard() ->
         assert 'pagination_ui.numeric_pages(' in template
         assert 'Rows Per Page' in template
         assert 'components/states/_empty_state.html' in template
-        if template is systems:
-            assert 'side_drawer.render(' in template
-            assert 'resource_detail_modal' not in template
-        else:
-            assert 'x-teleport="body"' in template
-            assert 'max-w-[88rem]' in template
-            assert 'resource_detail_modal' not in template
+        assert 'resource_detail_modal.detail_button(' in template
+        assert 'side_drawer.render(' not in template
+        assert 'x-teleport="body"' not in template
     assert 'object-storage-systems-loading' in systems_filters
     assert 'object-storage-buckets-loading' in buckets_filters
 
@@ -83,11 +79,19 @@ def test_object_storage_inventory_keeps_kaori_table_and_pagination_standard() ->
 def test_bucket_container_detail_is_provider_aware_and_canonical() -> None:
     detail = read('app/templates/storage/object_storage/inventory/buckets/partials/_bucket_detail_content.html')
 
-    assert 'Identity & Location' in detail
-    assert 'Data Protection' in detail
-    assert 'Lifecycle & Access' in detail
+    assert 'data-kaori-detail-density="unified-resource-sheet"' in detail
+    assert 'data-kaori-inventory-detail="v10"' in detail
+    assert 'data-kaori-inventory-detail-layout="unified-resource-sheet"' in detail
+    assert 'detail.workspace_header(' in detail
+    assert 'detail.inventory_title(' in detail
+    assert 'detail.inspector_summary_strip(' in detail
+    assert 'detail.resource_sheet()' in detail
+    assert "detail.inventory_section('Identity & Location'" in detail
+    assert "detail.inventory_section('Data Protection'" in detail
+    assert "detail.inventory_section('Lifecycle & Access'" in detail
     assert 'provider_detail_sections' in detail
     assert 'Inventory Boundary' in detail
+    assert 'detail.detail_card(' not in detail
 
 
 def test_object_storage_bucket_migration_follows_minio_provider_branch() -> None:

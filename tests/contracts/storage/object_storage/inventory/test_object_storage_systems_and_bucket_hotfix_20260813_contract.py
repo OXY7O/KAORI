@@ -20,13 +20,14 @@ def test_bucket_presentation_exposes_modal_contract_fields():
     assert "'recommended_action':" in presentation
 
 
-def test_systems_page_uses_drawer_not_resource_detail_modal():
+def test_systems_page_uses_shared_resource_detail_modal() -> None:
     index = read('app/templates/storage/object_storage/inventory/systems/index.html')
     table = read('app/templates/storage/object_storage/inventory/systems/partials/_table_content.html')
-    assert 'resource_detail_modal' not in index
-    assert 'resource_detail_modal' not in table
-    assert 'side_drawer.render' in table
-    assert "width='2xl'" in table
+
+    assert 'resource_detail_modal.inventory_host(' in index
+    assert 'resource_detail_modal.detail_button(' in table
+    assert 'side_drawer.render' not in table
+    assert 'openDrawer' not in table
 
 
 def test_systems_table_uses_canonical_provider_and_snapshot_columns():
@@ -44,7 +45,8 @@ def test_systems_table_uses_canonical_provider_and_snapshot_columns():
     ):
         assert f'>{heading}<' in table
     assert 'system.endpoint_display' in table
-    assert 'Buckets & Containers' in table
+    detail = read('app/templates/storage/object_storage/inventory/systems/partials/_system_detail_content.html')
+    assert 'Buckets & Containers' in detail
 
 
 def test_systems_workspace_points_manual_sync_to_job_execution():

@@ -3,9 +3,9 @@
 {% import "components/technical_metadata_collection.html" as metadata_collection %}
 {% import "components/operational_callout.html" as operational_callout %}
 <div data-kaori-detail-variant="full-workspace-modal"
-     data-kaori-detail-density="horizontal-bands"
-     data-kaori-inventory-detail="v6"
-     data-kaori-inventory-detail-layout="horizontal-section-stack"
+     data-kaori-detail-density="unified-resource-sheet"
+     data-kaori-inventory-detail="v10"
+     data-kaori-inventory-detail-layout="unified-resource-sheet"
      class="{{ detail.expanded_workspace_outer_classes() }}">
     <div class="{{ detail.expanded_workspace_shell_classes() }}">
         {% set detail_description = "Lifecycle, controls, composition, and security evidence from the committed snapshot." %}
@@ -16,14 +16,14 @@
                 {{ table_label.status_indicator_label(namespace.lifecycle_label, namespace.lifecycle_tone, size='detail') }}
             {% endcall %}
         {% endcall %}
-        {{ detail.summary_strip([
-                ('Lifecycle', namespace.lifecycle_label, '') ,
-        ('Age', namespace.age, ''),
-        ('Tracked Objects', namespace.object_counts.tracked_total, ''),
-        ('Control Evidence', namespace.control_evidence_display, '')
-        ], compact=true) }}
-        <div class="space-y-5 p-4 sm:p-5 lg:p-6">
-            <div class="space-y-5">
+        {{ detail.inspector_summary_strip([
+                {'label': 'Lifecycle', 'value': namespace.lifecycle_label, 'supporting': 'Namespace state', 'icon': 'circle-check', 'tone': namespace.lifecycle_tone},
+                {'label': 'Age', 'value': namespace.age, 'supporting': 'Committed object age', 'icon': 'clock-3', 'tone': 'brand'},
+                {'label': 'Tracked Objects', 'value': namespace.object_counts.tracked_total, 'supporting': 'Collected resources', 'icon': 'boxes', 'tone': 'brand'},
+                {'label': 'Control Evidence', 'value': namespace.control_evidence_display, 'supporting': 'Quota, network, and PSA evidence', 'icon': 'shield-check', 'tone': 'brand'}
+                ]) }}
+        <div class="min-w-0 space-y-4 p-4 sm:p-5 lg:p-6">
+            <div data-kaori-unified-resource-sheet class="min-w-0 overflow-hidden rounded-2xl border border-outline-subtle bg-surface-card shadow-sm">
                 {% call detail.inventory_section('Namespace Identity', 'badge-info', namespace.age, badge_size='detail', stretch=false, density='compact') %}
                     {{ detail.inventory_status_row('Lifecycle', namespace.lifecycle_label, namespace.lifecycle_tone, size='detail') }}
                     {{ detail.inventory_row('Age', namespace.age) }}
@@ -49,7 +49,7 @@
                     </div>
                 {% endcall %}
             </div>
-            <div class="space-y-5">
+            <div data-kaori-unified-resource-sheet class="min-w-0 overflow-hidden rounded-2xl border border-outline-subtle bg-surface-card shadow-sm">
                 {% call detail.inventory_section('Object Composition', 'boxes', namespace.object_counts.evidence_display, badge_size='detail', stretch=false, density='compact') %}
                     {{ detail.inventory_fact_grid([
                                         ('Workloads', namespace.object_counts.workloads, '') ,
@@ -117,19 +117,22 @@
                     {% endif %}
                 {% endcall %}
             </div>
-            <div class="grid gap-4 xl:grid-cols-2">
+            <div data-kaori-unified-resource-sheet
+                 class="min-w-0 overflow-hidden rounded-2xl border border-outline-subtle bg-surface-card shadow-sm">
                 {{ metadata_collection.render('Namespace Labels',
                                 namespace.labels,
                                 'tags',
                                 'No Namespace Labels Collected',
                                 'Labels will appear when present in the committed Namespace snapshot.',
-                                'Labels support organization, selection, and policy matching.') }}
+                                'Labels support organization, selection, and policy matching.',
+                                embedded=true) }}
                 {{ metadata_collection.render('Namespace Annotations',
                                 namespace.annotations,
                                 'notebook-text',
                                 'No Namespace Annotations Collected',
                                 'Annotations will appear when present in the committed Namespace snapshot.',
-                                'Annotations may be managed by platform controllers and integrations.') }}
+                                'Annotations may be managed by platform controllers and integrations.',
+                                embedded=true) }}
             </div>
             <section class="space-y-3">
                 <h4 class="text-sm font-semibold text-content-primary">Operational Context</h4>

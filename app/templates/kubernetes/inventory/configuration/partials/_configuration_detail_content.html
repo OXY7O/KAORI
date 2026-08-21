@@ -4,9 +4,9 @@
 {% import "components/related_resource_collection.html" as related_collection %}
 {% import "components/operational_callout.html" as operational_callout %}
 <div data-kaori-detail-variant="full-workspace-modal"
-     data-kaori-detail-density="horizontal-bands"
-     data-kaori-inventory-detail="v6"
-     data-kaori-inventory-detail-layout="horizontal-section-stack"
+     data-kaori-detail-density="unified-resource-sheet"
+     data-kaori-inventory-detail="v10"
+     data-kaori-inventory-detail-layout="unified-resource-sheet"
      class="{{ detail.expanded_workspace_outer_classes() }}">
     <div class="{{ detail.expanded_workspace_shell_classes() }}">
         {% set detail_description = "Protected key metadata, collection, mutation, and current Pod reference evidence." %}
@@ -19,14 +19,14 @@
                 {{ table_label.metadata_label(item.collection_state, 'database') }}
             {% endcall %}
         {% endcall %}
-        {{ detail.summary_strip([
-                ('Object Type', item.type, item.secret_type if item.type == 'Secret' else 'ConfigMap metadata') ,
-        ('Key Count', item.key_count, 'Key names indexed'),
-        ('Mutation Model', item.mutation_label, 'Committed object configuration'),
-        ('Current Pod References', item.used_by_display, 'Committed Pod reference evidence')
-        ], compact=true) }}
-        <div class="space-y-5 p-4 sm:p-5 lg:p-6">
-            <div class="space-y-5">
+        {{ detail.inspector_summary_strip([
+                {'label': 'Object Type', 'value': item.type, 'supporting': item.secret_type if item.type == 'Secret' else 'ConfigMap metadata', 'icon': 'key-round' if item.type == 'Secret' else 'file-json-2', 'tone': 'brand'},
+                {'label': 'Key Count', 'value': item.key_count, 'supporting': 'Key names indexed', 'icon': 'list-key', 'tone': 'brand'},
+                {'label': 'Mutation Model', 'value': item.mutation_label, 'supporting': 'Committed object configuration', 'icon': 'refresh-cw', 'tone': item.mutation_tone},
+                {'label': 'Current Pod References', 'value': item.used_by_display, 'supporting': 'Committed Pod reference evidence', 'icon': 'package-check', 'tone': 'brand'}
+                ]) }}
+        <div class="min-w-0 space-y-4 p-4 sm:p-5 lg:p-6">
+            <div data-kaori-unified-resource-sheet class="min-w-0 overflow-hidden rounded-2xl border border-outline-subtle bg-surface-card shadow-sm">
                 {% call detail.inventory_section('Object Identity', 'badge-info', item.age, badge_size='detail', stretch=false, density='compact') %}
                     {{ detail.inventory_row('Cluster', item.cluster_name) }}
                     {{ detail.inventory_row('Namespace', item.namespace) }}
@@ -48,14 +48,18 @@
                     <p class="mt-3 text-xs leading-5 text-content-muted">Kubernetes list responses arrive transiently in the collector process. KAORI indexes key names only and does not decode, log, persist, or display value content.</p>
                 {% endcall %}
             </div>
-            {{ metadata_collection.render('Key Inventory', item.key_entries, 'key-round', 'No Key Names Indexed', 'The committed object contains no indexed key names.', 'Key names are indexed without persisting or displaying their values.', compact=true, mode='keys', total_count=item.key_count, truncated=item.key_entries_truncated) }}
+            <div data-kaori-unified-resource-sheet class="min-w-0 overflow-hidden rounded-2xl border border-outline-subtle bg-surface-card shadow-sm">
+                {{ metadata_collection.render('Key Inventory', item.key_entries, 'key-round', 'No Key Names Indexed', 'The committed object contains no indexed key names.', 'Key names are indexed without persisting or displaying their values.', compact=true, mode='keys', total_count=item.key_count, truncated=item.key_entries_truncated, embedded=true) }}
+            </div>
+            <div data-kaori-unified-resource-sheet class="min-w-0 overflow-hidden rounded-2xl border border-outline-subtle bg-surface-card shadow-sm">
             {% if item.pod_reference_reported %}
-                {{ related_collection.inventory_render('Current Pod References', 'Pods whose committed configuration references include this object.', item.used_by, item.used_by_count, 'package-check', 'No Current Pod References', 'No Pod reference is represented in the current committed snapshot. Other consumers may still exist.', item.used_by_truncated, url_for('inventory.pods', cluster_id=item.cluster_id, namespace=item.namespace) , 'Open Pod Inventory') }}
+                {{ related_collection.inventory_render('Current Pod References', 'Pods whose committed configuration references include this object.', item.used_by, item.used_by_count, 'package-check', 'No Current Pod References', 'No Pod reference is represented in the current committed snapshot. Other consumers may still exist.', item.used_by_truncated, url_for('inventory.pods', cluster_id=item.cluster_id, namespace=item.namespace) , 'Open Pod Inventory', embedded=true) }}
             {% else %}
                 {% call detail.inventory_section('Current Pod References', 'circle-help', 'Not Reported', badge_size='detail', stretch=false, density='compact') %}
                     {{ detail.empty_evidence('Pod Reference Evidence Not Reported', 'Pod collection is recorded as ' ~ item.pod_collection_state ~ '. KAORI cannot determine current Pod references from this snapshot.', 'circle-help') }}
                 {% endcall %}
             {% endif %}
+            </div>
             <section class="grid gap-3 xl:grid-cols-2">
                 {{ operational_callout.render('Committed Snapshot Boundary', 'This detail reports protected key-index metadata and committed Pod reference evidence. It does not query the Kubernetes API live or expose configuration values.', 'database', 'info') }}
                 {{ operational_callout.render(item.operational_context.title, item.operational_context.description, item.operational_context.icon, item.operational_context.tone, 'semantic') }}

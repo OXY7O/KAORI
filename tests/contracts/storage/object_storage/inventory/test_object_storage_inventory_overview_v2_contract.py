@@ -15,7 +15,8 @@ def test_object_storage_overview_matches_final_inventory_composition() -> None:
     catalog = read('app/templates/storage/object_storage/inventory/overview/partials/_summary_cards.html')
     summary = read('app/templates/storage/object_storage/inventory/overview/partials/_systems_snapshot.html')
 
-    assert 'resource_detail_modal' not in index
+    assert 'resource_detail_modal.inventory_host(' in index
+    assert "url_for('object_storage_inventory.system_details', system_id=0)" in index
     assert '_fleet_posture.html' in index
     assert 'Object Storage Overview' in hero
     assert 'Systems Registered' in hero
@@ -32,8 +33,9 @@ def test_object_storage_overview_matches_final_inventory_composition() -> None:
     assert 'Managed Systems Snapshot' in summary
 
 
-def test_overview_summary_uses_canonical_table_and_side_drawer() -> None:
+def test_overview_summary_uses_canonical_table_and_shared_resource_detail() -> None:
     content = read('app/templates/storage/object_storage/inventory/overview/partials/_systems_snapshot_content.html')
+    detail = read('app/templates/storage/object_storage/inventory/systems/partials/_system_detail_content.html')
 
     for heading in (
         'System',
@@ -45,20 +47,16 @@ def test_overview_summary_uses_canonical_table_and_side_drawer() -> None:
         'Details',
     ):
         assert heading in content
-    assert 'side_drawer.render(' in content
-    assert 'resource_detail_modal' not in content
-    assert 'View Details' in content
-    assert 'System Snapshot Summary' in content
-    assert 'System Identity' in content
-    assert 'Inventory Snapshot' in content
-    assert 'Provider Context' in content
-    assert 'Operational Reading' in content
-    assert 'Operational Context' in content
-    assert 'Authority Boundary' in content
-    assert 'Related Operational Workspace' in content
-    assert 'Open Provider Integration' in content
-    assert "url_for('minio.instance_detail'" in content
-    assert "url_for('jobs.configuration', job_key='object_storage.inventory.sync')" in content
+    assert 'resource_detail_modal.detail_button(' in content
+    assert "url_for('object_storage_inventory.system_details', system_id=system.id)" in content
+    assert 'side_drawer.render(' not in content
+    assert 'openDrawer' not in content
+    assert 'data-kaori-detail-density="unified-resource-sheet"' in detail
+    assert 'System Identity' in detail
+    assert 'Provider Connection' in detail
+    assert 'Inventory Snapshot' in detail
+    assert 'Authority Boundary' in detail
+    assert 'system.guidance.title' in detail
 
 
 def test_overview_summary_uses_kaori_pagination_and_section_loader() -> None:
@@ -79,7 +77,7 @@ def test_overview_summary_uses_kaori_pagination_and_section_loader() -> None:
 
 def test_overview_snapshot_and_signals_are_committed_inventory_only() -> None:
     presentation = read('app/storage/object_storage/inventory/presentation.py')
-    content = read('app/templates/storage/object_storage/inventory/overview/partials/_systems_snapshot_content.html')
+    detail = read('app/templates/storage/object_storage/inventory/systems/partials/_system_detail_content.html')
 
     assert 'OBJECT_STORAGE_INVENTORY_FRESHNESS_HOURS = 24' in presentation
     assert "'source_label': 'Committed Snapshot'" in presentation
@@ -87,7 +85,7 @@ def test_overview_snapshot_and_signals_are_committed_inventory_only() -> None:
     assert 'Inventory Not Collected' in presentation
     assert 'Stale Snapshot' in presentation
     assert 'Provider Attention' in presentation
-    assert 'This drawer reads committed Object Storage Inventory data.' in content
+    assert 'This detail reads committed Object Storage Inventory data.' in detail
     assert 'client.list_buckets' not in presentation
 
 
@@ -104,13 +102,13 @@ def test_overview_asset_catalog_stays_vendor_neutral() -> None:
     assert 'AStor' not in fleet
 
 
-def test_object_storage_drawer_uses_compact_release_and_profile_labels() -> None:
+def test_object_storage_system_detail_uses_compact_release_and_profile_labels() -> None:
     presentation = read('app/storage/object_storage/inventory/presentation.py')
-    overview = read('app/templates/storage/object_storage/inventory/overview/partials/_systems_snapshot_content.html')
+    detail = read('app/templates/storage/object_storage/inventory/systems/partials/_system_detail_content.html')
 
     assert '_release_display' in presentation
     assert '_compatibility_profile_display' in presentation
     assert "'release_label': _release_display" in presentation
     assert "'compatibility_profile_label': _compatibility_profile_display" in presentation
-    assert "detail_ui.detail_row('Release', system.release_label)" in overview
-    assert "detail_ui.detail_row('Profile', system.compatibility_profile_label)" in overview
+    assert "detail.inventory_row('Release', system.release_label, nowrap=true)" in detail
+    assert "detail.inventory_row('Compatibility Profile', system.compatibility_profile_label, nowrap=true)" in detail

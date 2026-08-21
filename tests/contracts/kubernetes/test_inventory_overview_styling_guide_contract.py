@@ -26,9 +26,11 @@ def test_inventory_overview_uses_canonical_hero_snapshot_catalog_and_table_compo
     assert "'Cluster Inventory Summary'" in table_shell
 
 
-def test_compact_cluster_table_has_details_button_and_shared_right_drawer() -> None:
+def test_compact_cluster_table_uses_shared_inventory_detail_modal() -> None:
+    index = read('app/templates/kubernetes/inventory/overview/index.html')
     content = read('app/templates/kubernetes/inventory/overview/partials/_resources_by_cluster_content.html')
-    drawer = read('app/templates/components/side_drawer.html')
+    detail = read('app/templates/kubernetes/inventory/overview/partials/_cluster_detail_content.html')
+    modal = read('app/templates/components/resource_detail_modal.html')
 
     expected_headers = (
         'Cluster',
@@ -54,40 +56,23 @@ def test_compact_cluster_table_has_details_button_and_shared_right_drawer() -> N
     for removed_header in removed_headers:
         assert removed_header not in content
 
-    assert 'View Details' in content
-    assert 'components/side_drawer.html' in content
-    assert 'Inventory Breakdown' in content
-    assert 'Inventory Context' in content
-    assert 'Cluster Snapshot Summary' in content
-    assert "'Committed Objects'" in content
-    assert 'Largest Segment' in content
-    assert 'Operational Context' in content
-    assert 'Data Boundary' in content
-    assert 'cluster.guidance.title' in content
-    assert 'Open Cluster Inventory' in content
-    assert 'role="dialog"' in drawer
-    assert 'aria-modal="true"' in drawer
-    assert '{% macro section(' in drawer
-    assert '{% macro metric(' in drawer
-    assert '{% macro context_fact(' in drawer
-    assert "density='default'" in drawer
-    assert "variant='card'" in drawer
-    assert "variant='plain'" in content
-    assert "'Committed inventory overview.'" in content
-    assert "'Platform and registration context for the selected inventory source.'" not in content
-    assert "'Collection boundary and freshness for the committed generation.'" not in content
-    assert "side_drawer.context_fact('Registered Cluster', cluster.name, 'building-2')" in content
-    assert "side_drawer.context_fact('Freshness Window', cluster.freshness_window_hours ~ ' Hours', 'timer')" in content
-    assert 'sm:grid-cols-3 sm:gap-y-0' in content
-    assert 'border-t border-outline-subtle pt-3 sm:border-l' in content
-    context = content.split("'Inventory Context',", 1)[1].split("'Inventory Breakdown',", 1)[0]
-    assert 'detail_row(' not in context
-    assert 'stacked_detail_row(' not in context
-    assert '>Cluster</h4>' not in context
-    assert '>Snapshot</h4>' not in context
-    assert context.count('side_drawer.context_fact(') == 6
-    assert 'text-sm font-semibold leading-5 text-content-primary' in drawer
-    assert 'text-xs font-medium leading-5' in drawer
+    assert 'resource_detail_modal.inventory_host(' in index
+    assert "url_for('inventory.overview_cluster_details', cluster_id=0)" in index
+    assert 'resource_detail_modal.detail_button(' in content
+    assert "url_for('inventory.overview_cluster_details', cluster_id=cluster.id)" in content
+    assert 'side_drawer' not in content
+    assert 'openDrawer' not in content
+    assert "'max-w-[92rem]'" in modal
+    assert 'data-kaori-detail-density="unified-resource-sheet"' in detail
+    assert 'data-kaori-inventory-detail="v10"' in detail
+    assert 'detail.inspector_summary_strip(' in detail
+    assert 'detail.resource_sheet()' in detail
+    assert 'Cluster Identity' in detail
+    assert 'Snapshot Context' in detail
+    assert 'Inventory Breakdown' in detail
+    assert 'Inventory Signals' in detail
+    assert 'Data Boundary' in detail
+    assert 'cluster.guidance.title' in detail
 
 
 def test_cluster_table_pagination_uses_resource_case_and_visible_rows_label() -> None:
@@ -113,37 +98,35 @@ def test_inventory_overview_uses_grouped_counts_and_fresh_health_semantics() -> 
     assert 'def _inventory_guidance(' in backend
     assert "'active_signal_count': active_signal_count" in backend
     assert "'dominant_asset': dominant_asset" in backend
+    assert 'def get_inventory_overview_cluster_detail(' in backend
 
 
-def test_snapshot_source_uses_compact_responsive_value() -> None:
-    content = read('app/templates/kubernetes/inventory/overview/partials/_resources_by_cluster_content.html')
+def test_snapshot_source_uses_unified_resource_sheet_value() -> None:
+    detail = read('app/templates/kubernetes/inventory/overview/partials/_cluster_detail_content.html')
     backend = read('app/kubernetes/inventory/overview.py')
     details_macro = read('app/templates/components/details/_detail_content.html')
 
     assert "'snapshot_source': 'Committed Snapshot'" in backend
-    assert "side_drawer.context_fact('Snapshot Source', cluster.snapshot_source, 'database')" in content
-    assert "{% macro detail_row(label, value='-', break_all=False, nowrap=False) -%}" in details_macro
-    assert 'sm:text-right' in details_macro
-    assert 'components/details/_detail_content.html' not in content
+    assert "detail.inventory_row('Snapshot Source', cluster.snapshot_source)" in detail
+    assert "{% macro inventory_row(label, value='-', break_all=False, nowrap=False, class_name='') -%}" in details_macro
+    assert 'text-left text-sm font-medium leading-5 text-content-primary' in details_macro
+    assert 'components/side_drawer.html' not in detail
 
 
-def test_inventory_signals_use_full_width_stacked_callouts() -> None:
-    content = read('app/templates/kubernetes/inventory/overview/partials/_resources_by_cluster_content.html')
+def test_inventory_signals_use_resource_sheet_rows() -> None:
+    detail = read('app/templates/kubernetes/inventory/overview/partials/_cluster_detail_content.html')
 
-    signals_section = content.split("'Inventory Signals',", 1)[1].split('{% endcall %}', 1)[0]
-    assert '<div class="grid gap-3">' in signals_section
-    assert 'sm:grid-cols-2' not in signals_section
-    assert "extra_classes='w-full'" in signals_section
+    signals_section = detail.split("detail.inventory_section('Inventory Signals'", 1)[1].split('{% endcall %}', 1)[0]
+    assert 'detail.inventory_status_row(signal.label, signal.description, signal.tone)' in signals_section
+    assert 'No active inventory signals require attention.' in signals_section
+    assert 'side_drawer' not in signals_section
 
 
-def test_snapshot_last_collected_uses_numeric_responsive_datetime() -> None:
-    content = read('app/templates/kubernetes/inventory/overview/partials/_resources_by_cluster_content.html')
-    details_macro = read('app/templates/components/details/_detail_content.html')
+def test_snapshot_last_collected_uses_user_datetime_in_resource_sheet() -> None:
+    detail = read('app/templates/kubernetes/inventory/overview/partials/_cluster_detail_content.html')
     presentation = read('app/bootstrap/presentation.py')
 
-    assert "user_datetime(date_format='day_month_numeric')" in content
-    assert "side_drawer.context_fact('Last Collected'" in content
-    assert 'nowrap=True' not in content
-    assert "value_wrap_classes = 'whitespace-nowrap' if nowrap" in details_macro
+    assert "cluster.synced_at|user_datetime if cluster.synced_at else 'Not Collected'" in detail
+    assert "detail.inventory_row('Last Collected'" in detail
     assert 'date_format: str | None = None' in presentation
     assert "date_format=date_format or preferences['date_format']" in presentation

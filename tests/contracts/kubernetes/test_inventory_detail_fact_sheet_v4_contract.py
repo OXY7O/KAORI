@@ -22,8 +22,8 @@ def test_inventory_v6_uses_horizontal_section_bands_with_natural_height() -> Non
     modal = read('app/templates/components/resource_detail_modal.html')
 
     section = shared.split('{% macro inventory_section', 1)[1].split('{%- endmacro %}', 1)[0]
-    assert 'data-kaori-inventory-section-layout="horizontal-band"' in section
-    assert 'lg:grid-cols-[14rem_minmax(0,1fr)]' in section
+    assert 'data-kaori-inventory-section-layout="resource-sheet-band"' in section
+    assert 'xl:grid-cols-[14.5rem_minmax(0,1fr)]' in section
     assert 'text-sm font-normal leading-5 text-content-secondary' in shared
     assert 'text-left text-sm font-medium leading-5 text-content-primary' in shared
     assert 'macro inventory_note(' in shared
@@ -36,8 +36,8 @@ def test_inventory_v6_uses_horizontal_section_bands_with_natural_height() -> Non
             assert 'data-kaori-inventory-detail="v10"' in detail
             assert 'data-kaori-inventory-detail-layout="unified-resource-sheet"' in detail
         else:
-            assert 'data-kaori-inventory-detail="v6"' in detail, resource
-            assert 'data-kaori-inventory-detail-layout="horizontal-section-stack"' in detail, resource
+            assert 'data-kaori-inventory-detail="v10"' in detail, resource
+            assert 'data-kaori-inventory-detail-layout="unified-resource-sheet"' in detail, resource
 
 
 def test_node_detail_uses_balanced_inspector_and_grouped_conditions() -> None:

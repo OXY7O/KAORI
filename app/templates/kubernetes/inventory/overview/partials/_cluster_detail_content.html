@@ -1,0 +1,77 @@
+{% import "components/details/_detail_content.html" as detail %}
+{% import "components/operational_callout.html" as operational_callout %}
+{% import "components/table_label.html" as table_label %}
+{% set connection_tone = 'normal' if cluster.status == 'connected' else 'critical' %}
+{% set connection_label = 'Connected' if cluster.status == 'connected' else 'Disconnected' %}
+<div data-kaori-detail-variant="full-workspace-modal"
+     data-kaori-detail-domain="kubernetes-inventory-overview"
+     data-kaori-detail-density="unified-resource-sheet"
+     data-kaori-inventory-detail="v10"
+     data-kaori-inventory-detail-layout="unified-resource-sheet"
+     class="{{ detail.expanded_workspace_outer_classes() }}">
+    <div class="{{ detail.expanded_workspace_shell_classes() }}">
+        {% set detail_description = "Committed cluster inventory coverage, snapshot state, and operational evidence." %}
+        {% call detail.workspace_header(detail_description, 'server-cog') %}
+            {% call detail.header_identity_row() %}
+                {{ detail.inventory_title(cluster.name) }}
+                {{ table_label.metadata_label(cluster.environment|environment_name(empty='Not Specified'), 'building-2') }}
+                {{ table_label.metadata_label(cluster.kubernetes_version, 'badge-check') }}
+                {{ table_label.status_indicator_label(connection_label, connection_tone, size='detail') }}
+            {% endcall %}
+        {% endcall %}
+        {{ detail.inspector_summary_strip([
+                {'label': 'Total Objects', 'value': cluster.total_objects, 'supporting': 'Committed objects', 'icon': 'database', 'tone': 'brand'},
+                {'label': 'Asset Categories', 'value': cluster.populated_asset_types ~ '/8', 'supporting': 'Collected categories', 'icon': 'layers-3', 'tone': 'brand'},
+                {'label': 'Largest Segment', 'value': cluster.dominant_asset.label, 'supporting': cluster.dominant_asset.count ~ ' Objects', 'icon': 'chart-no-axes-column', 'tone': 'brand'},
+                {'label': 'Snapshot', 'value': cluster.sync_status_label, 'supporting': 'Committed inventory state', 'icon': 'database-backup', 'tone': cluster.sync_status_tone}
+                ]) }}
+        <div class="min-w-0 space-y-4 p-4 sm:p-5 lg:p-6">
+            {% call detail.resource_sheet() %}
+                {% call detail.inventory_section('Cluster Identity', 'badge-info', connection_label, 'status', connection_tone) %}
+                    <dl class="grid min-w-0 gap-x-10 sm:grid-cols-2">
+                        {{ detail.inventory_row('Registered Cluster', cluster.name, nowrap=true, class_name='lg:col-span-2') }}
+                        {{ detail.inventory_row('Environment', cluster.environment|environment_name(empty='Not Specified')) }}
+                        {{ detail.inventory_row('Kubernetes Version', cluster.kubernetes_version, nowrap=true) }}
+                        {{ detail.inventory_status_row('Connection State', connection_label, connection_tone, class_name='lg:col-span-2') }}
+                    </dl>
+                {% endcall %}
+                {% call detail.inventory_section('Snapshot Context', 'database-backup', cluster.sync_status_label, 'status', cluster.sync_status_tone) %}
+                    <dl class="grid min-w-0 gap-x-10 sm:grid-cols-2">
+                        {{ detail.inventory_row('Last Collected', cluster.synced_at|user_datetime if cluster.synced_at else 'Not Collected', nowrap=true, class_name='lg:col-span-2') }}
+                        {{ detail.inventory_row('Freshness Window', cluster.freshness_window_hours ~ ' Hours') }}
+                        {{ detail.inventory_row('Snapshot Source', cluster.snapshot_source) }}
+                        {{ detail.inventory_status_row('Snapshot State', cluster.sync_status_label, cluster.sync_status_tone, class_name='lg:col-span-2') }}
+                    </dl>
+                    {{ detail.inventory_note('This resource sheet reads the latest committed Kubernetes inventory generation for the selected cluster.', 'database') }}
+                {% endcall %}
+                {% call detail.inventory_section('Inventory Breakdown', 'boxes') %}
+                    <dl class="grid min-w-0 gap-x-10 sm:grid-cols-2">
+                        {{ detail.inventory_row('Nodes', cluster.counts.nodes) }}
+                        {{ detail.inventory_row('Namespaces', cluster.counts.namespaces) }}
+                        {{ detail.inventory_row('Workloads', cluster.counts.workloads) }}
+                        {{ detail.inventory_row('Pods', cluster.counts.pods) }}
+                        {{ detail.inventory_row('Services', cluster.counts.services) }}
+                        {{ detail.inventory_row('Ingresses', cluster.counts.ingresses) }}
+                        {{ detail.inventory_row('Storage', cluster.counts.storage) }}
+                        {{ detail.inventory_row('Configuration', cluster.counts.configuration) }}
+                    </dl>
+                {% endcall %}
+                {% call detail.inventory_section('Inventory Signals', 'scan-search') %}
+                    {% if cluster.signals %}
+                        <div class="min-w-0">
+                            {% for signal in cluster.signals %}
+                                {{ detail.inventory_status_row(signal.label, signal.description, signal.tone) }}
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        {{ detail.inventory_status_row('Inventory Posture', 'No active inventory signals require attention.', 'normal') }}
+                    {% endif %}
+                {% endcall %}
+            {% endcall %}
+            <div class="grid min-w-0 gap-4 xl:grid-cols-12">
+                {{ operational_callout.render('Data Boundary', 'This detail reads the latest committed database snapshot. It does not query the Kubernetes API live.', icon='database', tone='info', extra_classes='xl:col-span-5') }}
+                {{ operational_callout.render(cluster.guidance.title, cluster.guidance.description, icon=cluster.guidance.icon, tone=cluster.guidance.tone, variant='semantic', extra_classes='xl:col-span-7') }}
+            </div>
+        </div>
+    </div>
+</div>

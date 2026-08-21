@@ -1,76 +1,115 @@
 {% import "components/details/_detail_content.html" as detail %}
 {% import "components/operational_callout.html" as operational_callout %}
 {% import "components/table_label.html" as table_label %}
-<div data-kaori-detail-variant="provider-aware-object-storage"
+<div data-kaori-detail-variant="full-workspace-modal"
+     data-kaori-detail-domain="object-storage"
+     data-kaori-detail-density="unified-resource-sheet"
+     data-kaori-inventory-detail="v10"
+     data-kaori-inventory-detail-layout="unified-resource-sheet"
      class="{{ detail.expanded_workspace_outer_classes() }}">
     <div class="{{ detail.expanded_workspace_shell_classes() }}">
-        <header data-resource-detail-header
-                class="{{ detail.expanded_workspace_header_classes() }}">
-            <div class="flex min-w-0 items-start gap-3">
-                <span class="{{ detail.expanded_workspace_icon_classes() }}">
-                    <i data-lucide="container" class="h-5 w-5" aria-hidden="true"></i>
-                </span>
-                <div class="min-w-0">
-                    {% call detail.header_identity_row() %}
-                        <h3 class="break-all text-base font-semibold text-content-primary">{{ bucket.name }}</h3>
-                        {{ table_label.metadata_label(bucket.provider_label) }}
-                        {{ table_label.metadata_label(bucket.native_type_label) }}
-                        {{ table_label.status_label(bucket.protection.label, bucket.protection.tone, none, 'detail') }}
-                    {% endcall %}
-                    <p class="mt-1 text-xs leading-5 text-content-muted">Canonical object-storage fields with provider-aware evidence from the latest committed Object Storage Inventory Sync snapshot.</p>
-                </div>
-            </div>
-        </header>
-        <div data-resource-detail-summary
-             class="grid gap-3 border-b border-outline-subtle bg-surface-card p-4 sm:grid-cols-2 xl:grid-cols-4">
-            {{ detail.summary_metric('System', bucket.system_name, 'Owning object-storage system.', 'server', 'brand') }}
-            {{ detail.summary_metric('Provider', bucket.provider_label, 'Detected provider family.', 'database-zap', 'brand') }}
-            {{ detail.summary_metric('Location', bucket.location, 'Provider location or region.', 'map-pin', 'brand') }}
-            {{ detail.summary_metric('Protection', bucket.protection.label, 'Normalized protection posture.', 'shield-check', bucket.protection.tone) }}
-        </div>
-        <div class="grid gap-4 p-5 md:grid-cols-2">
-            {% call detail.detail_card('Identity & Location', 'badge-info') %}
-                {{ detail.technical_row('Name', bucket.name) }}
-                {{ detail.detail_row('System', bucket.system_name) }}
-                {{ detail.detail_row('Provider', bucket.provider_label) }}
-                {{ detail.detail_row('Native Type', bucket.native_type_label) }}
-                {{ detail.detail_row('Location', bucket.location) }}
-                {{ detail.detail_row('Created', bucket.provider_created_at|user_datetime if bucket.provider_created_at else 'Not Reported') }}
+        {% set detail_description = "Canonical identity, usage, protection, lifecycle, and provider evidence from the latest committed Object Storage Inventory Sync snapshot." %}
+        {% call detail.workspace_header(detail_description, 'container') %}
+            {% call detail.header_identity_row() %}
+                {{ detail.inventory_title(bucket.name) }}
+                {{ table_label.metadata_label(bucket.system_name, 'server') }}
+                {{ table_label.metadata_label(bucket.provider_label, 'database') }}
+                {{ table_label.metadata_label(bucket.native_type_label) }}
+                {{ table_label.status_indicator_label(bucket.protection.label, bucket.protection.tone, size='detail') }}
             {% endcall %}
-            {% call detail.detail_card('Snapshot Context', 'clock-3') %}
-                {{ detail.detail_row('Last Collected', bucket.observed_at|user_datetime) }}
-                {{ detail.detail_row('Snapshot Source', bucket.source_label) }}
-                {{ detail.detail_row('Environment', bucket.environment|environment_name(empty='Not Specified') ) }}
-                {{ detail.status_row('Snapshot State', bucket.snapshot_status_label, bucket.snapshot_status_tone) }}
-            {% endcall %}
-            {% call detail.detail_card('Data Protection', 'shield-check') %}
-                {{ detail.status_row('Versioning', bucket.versioning.label, bucket.versioning.tone) }}
-                {{ detail.status_row('Immutability', bucket.immutability.label, bucket.immutability.tone) }}
-                {{ detail.status_row('Encryption', bucket.encryption.label, bucket.encryption.tone) }}
-                {{ detail.status_row('Protection Posture', bucket.protection.label, bucket.protection.tone) }}
-            {% endcall %}
-            {% call detail.detail_card('Lifecycle & Access', 'git-branch') %}
-                {{ detail.status_row('Lifecycle', bucket.lifecycle.label, bucket.lifecycle.tone) }}
-                {{ detail.status_row('Replication', bucket.replication.label, bucket.replication.tone) }}
-                {{ detail.status_row('Access Policy', bucket.access_policy.label, bucket.access_policy.tone) }}
-                {{ detail.status_row('Public Exposure', bucket.exposure.label, bucket.exposure.tone) }}
-            {% endcall %}
-        </div>
-        <div class="grid gap-4 border-t border-outline-subtle bg-surface-elevated p-5 md:grid-cols-2">
-            {% for section in bucket.provider_detail_sections %}
-                {% call detail.detail_card(section.title, section.icon) %}
-                    {% for row in section.rows %}
-                        {% if row.technical|default(false) %}
-                            {{ detail.stacked_detail_row(row.label, row.value, break_all=true) }}
-                        {% else %}
-                            {{ detail.detail_row(row.label, row.value) }}
-                        {% endif %}
-                    {% endfor %}
+        {% endcall %}
+        {{ detail.inspector_summary_strip([
+                {'label': 'Quota', 'value': bucket.quota.label, 'supporting': bucket.quota.state_label, 'icon': 'gauge', 'tone': bucket.quota.tone},
+                {'label': 'Used Size', 'value': bucket.size_label, 'supporting': 'Committed logical usage', 'icon': 'hard-drive', 'tone': 'brand'},
+                {'label': 'Current Objects', 'value': bucket.object_count_label, 'supporting': 'Committed object count', 'icon': 'files', 'tone': 'brand'},
+                {'label': 'Protection', 'value': bucket.protection.label, 'supporting': 'Normalized posture', 'icon': 'shield-check', 'tone': bucket.protection.tone}
+                ]) }}
+        <div class="min-w-0 space-y-4 p-4 sm:p-5 lg:p-6">
+            {% call detail.resource_sheet() %}
+                {% call detail.inventory_section('Identity & Location', 'badge-info') %}
+                    <dl class="grid min-w-0 gap-x-10 sm:grid-cols-2">
+                        {{ detail.inventory_technical_row('Bucket Name', bucket.name, nowrap=true, class_name='lg:col-span-2') }}
+                        {{ detail.inventory_row('System', bucket.system_name, nowrap=true, class_name='lg:col-span-2') }}
+                        {{ detail.inventory_row('Provider', bucket.provider_label) }}
+                        {{ detail.inventory_row('Native Type', bucket.native_type_label) }}
+                        {{ detail.inventory_row('Location', bucket.location) }}
+                        {{ detail.inventory_row('Environment', bucket.environment|environment_name(empty='Not Specified')) }}
+                        {{ detail.inventory_row('Created', bucket.provider_created_at|user_datetime if bucket.provider_created_at else 'Not Reported', nowrap=true, class_name='lg:col-span-2') }}
+                    </dl>
                 {% endcall %}
-            {% endfor %}
+                {% call detail.inventory_section('Snapshot Context', 'clock-3', bucket.snapshot_status_label, 'status', bucket.snapshot_status_tone) %}
+                    <dl class="grid min-w-0 gap-x-10 sm:grid-cols-2">
+                        {{ detail.inventory_row('Last Collected', bucket.observed_at|user_datetime, nowrap=true) }}
+                        {{ detail.inventory_row('Snapshot Source', bucket.source_label) }}
+                        {{ detail.inventory_status_row('Snapshot State', bucket.snapshot_status_label, bucket.snapshot_status_tone) }}
+                        {{ detail.inventory_row('Usage Observed', bucket.usage_observed_at|user_datetime if bucket.usage_observed_at else 'Not Observed', nowrap=true) }}
+                    </dl>
+                {% endcall %}
+                {% call detail.inventory_section('Capacity & Usage', 'chart-no-axes-column') %}
+                    <dl class="grid min-w-0 gap-x-10 sm:grid-cols-2">
+                        {{ detail.inventory_row('Quota', bucket.quota.label) }}
+                        {{ detail.inventory_status_row('Quota State', bucket.quota.state_label, bucket.quota.tone) }}
+                        {{ detail.inventory_row('Used Size', bucket.size_label) }}
+                        {{ detail.inventory_row('Current Objects', bucket.object_count_label) }}
+                        {{ detail.inventory_status_row('Usage Evidence', bucket.usage_state.label, bucket.usage_state.tone) }}
+                        {{ detail.inventory_row('Usage Strategy', bucket.usage_stats_mode_label) }}
+                        {{ detail.inventory_row('Usage Source', bucket.usage_collection_label) }}
+                        {{ detail.inventory_status_row('Quota Evidence', bucket.quota_evidence.label, bucket.quota_evidence.tone) }}
+                        {% if bucket.quota_evidence.supporting %}
+                            {{ detail.inventory_row('Provider Result', bucket.quota_evidence.supporting, class_name='lg:col-span-2') }}
+                        {% endif %}
+                    </dl>
+                    {{ detail.inventory_note(bucket.quota_evidence.guidance, 'gauge') }}
+                    {{ detail.inventory_note('Usage collection is independent from quota collection. Prefer provider_metrics for scalable provider-native usage; use full_scan only as an explicit fallback when exact object enumeration is required.', 'chart-no-axes-column') }}
+                {% endcall %}
+                {% call detail.inventory_section('Data Protection', 'shield-check', bucket.protection.label, 'status', bucket.protection.tone) %}
+                    <div class="grid min-w-0 gap-x-10 sm:grid-cols-2">
+                        {{ detail.inventory_status_row('Versioning', bucket.versioning.label, bucket.versioning.tone) }}
+                        {{ detail.inventory_status_row('Immutability', bucket.immutability.label, bucket.immutability.tone) }}
+                        {{ detail.inventory_status_row('Encryption', bucket.encryption.label, bucket.encryption.tone) }}
+                        {{ detail.inventory_status_row('Public Exposure', bucket.public_exposure.label, bucket.public_exposure.tone) }}
+                    </div>
+                {% endcall %}
+                {% call detail.inventory_section('Lifecycle & Access', 'git-branch') %}
+                    <div class="grid min-w-0 gap-x-10 sm:grid-cols-2">
+                        {{ detail.inventory_status_row('Lifecycle', bucket.lifecycle.label, bucket.lifecycle.tone) }}
+                        {{ detail.inventory_status_row('Replication', bucket.replication.label, bucket.replication.tone) }}
+                        {{ detail.inventory_status_row('Access Policy', bucket.access_policy.label, bucket.access_policy.tone) }}
+                        {{ detail.inventory_status_row('Protection Posture', bucket.protection.label, bucket.protection.tone) }}
+                    </div>
+                {% endcall %}
+                {% call detail.inventory_section('Provider Context', 'database-zap') %}
+                    <dl class="grid min-w-0 gap-x-10 sm:grid-cols-2">
+                        {{ detail.inventory_row('Compatibility Profile', bucket.compatibility_profile_label) }}
+                        {{ detail.inventory_row('Release', bucket.release_label, nowrap=true) }}
+                        {{ detail.inventory_row('Addressing Style', bucket.addressing_style) }}
+                        {{ detail.inventory_row('Enrichment Profile', bucket.enrichment_profile_label) }}
+                        {{ detail.inventory_row('Quota Source', bucket.quota_collection_label) }}
+                        {{ detail.inventory_row('Quota Checked', bucket.quota_checked_at|user_datetime if bucket.quota_checked_at else 'Not Observed', nowrap=true) }}
+                        {{ detail.inventory_technical_row('API Endpoint', bucket.endpoint, break_all=false, class_name='lg:col-span-2') }}
+                    </dl>
+                {% endcall %}
+                {% for section in bucket.provider_detail_sections %}
+                    {% call detail.inventory_section(section.title, section.icon) %}
+                        <dl class="grid min-w-0 gap-x-10 sm:grid-cols-2">
+                            {% for row in section.rows %}
+                                {% if row.technical|default(false) %}
+                                    {{ detail.inventory_technical_row(row.label, row.value, break_all=false, class_name='lg:col-span-2') }}
+                                {% else %}
+                                    {{ detail.inventory_row(row.label, row.value) }}
+                                {% endif %}
+                            {% endfor %}
+                        </dl>
+                    {% endcall %}
+                {% endfor %}
+            {% endcall %}
+            {% if bucket.enrichment_gaps %}
+                {{ operational_callout.render('Partial Provider Evidence', 'Some optional provider evidence could not be collected: ' ~ (bucket.enrichment_gaps|join(', ')) ~ '. The committed inventory snapshot remains usable.', icon='triangle-alert', tone='warning', variant='semantic') }}
+            {% endif %}
+            <div class="grid min-w-0 gap-4 xl:grid-cols-12">
+                {{ operational_callout.render('Inventory Boundary', bucket.data_boundary, icon='database', tone='info', extra_classes='xl:col-span-5') }}
+                {{ operational_callout.render('Recommended Action', bucket.recommended_action, icon='compass', tone='info', variant='semantic', extra_classes='xl:col-span-7') }}
+            </div>
         </div>
-        <section class="border-t border-outline-subtle bg-surface-elevated p-5">
-            {{ operational_callout.render('Inventory Boundary', 'Canonical fields support cross-provider comparison. Provider-specific evidence stays in provider-aware sections and is collected only by Object Storage Inventory Sync.', icon='info', tone='info') }}
-        </section>
     </div>
 </div>

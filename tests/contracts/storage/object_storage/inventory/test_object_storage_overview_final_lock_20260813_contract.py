@@ -38,18 +38,19 @@ def test_overview_fleet_posture_covers_quota_protection_exposure_and_usage() -> 
     assert 'Usage Collected' in presentation
 
 
-def test_overview_system_drawer_matches_systems_final_authority_boundary() -> None:
+def test_overview_system_details_match_systems_final_authority_boundary() -> None:
+    index = read('app/templates/storage/object_storage/inventory/overview/index.html')
     overview = read('app/templates/storage/object_storage/inventory/overview/partials/_systems_snapshot_content.html')
+    detail = read('app/templates/storage/object_storage/inventory/systems/partials/_system_detail_content.html')
 
-    assert "width='2xl'" in overview
-    assert 'x_show="openDrawer === \'" ~ system.id ~ "\'"' in overview
-    assert "x_show='openDrawer === ' ~ (system.id|tojson)" not in overview
-    assert 'System Snapshot Summary' in overview
-    assert 'Operational Reading' in overview
-    assert 'Authority Boundary' in overview
-    assert 'Related Operational Workspace' in overview
-    assert 'Provider configuration, validation, and runtime health remain integration-owned.' in overview
-    assert "job_key='object_storage.inventory.sync'" in overview
+    assert 'resource_detail_modal.inventory_host(' in index
+    assert 'resource_detail_modal.detail_button(' in overview
+    assert 'side_drawer' not in overview
+    assert 'openDrawer' not in overview
+    assert 'data-kaori-inventory-detail="v10"' in detail
+    assert 'Authority Boundary' in detail
+    assert 'Provider configuration and live runtime health remain integration-owned.' in detail
+    assert 'system.guidance.title' in detail
 
 
 def test_overview_final_lock_avoids_new_page_local_style_debt() -> None:

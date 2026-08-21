@@ -43,8 +43,7 @@ def test_node_v10_long_evidence_gets_full_width_when_it_needs_it() -> None:
     )
     assert (
         "detail.inspector_technical_row('Hostname / FQDN', node.hostname_address or 'Not Reported', "
-        "nowrap=true, class_name='lg:col-span-2')"
-        in node
+        "nowrap=true, class_name='lg:col-span-2')" in node
     )
     assert "detail.inspector_row('OS Image', node.os_image, nowrap=true)" in node
     assert "detail.inspector_technical_row('Kernel Version', node.kernel_version, nowrap=true)" in node

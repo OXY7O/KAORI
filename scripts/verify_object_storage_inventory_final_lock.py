@@ -12,14 +12,19 @@ REQUIRED = (
     'app/storage/object_storage/inventory/presentation.py',
     'app/templates/components/navigation/object_storage_menu.html',
     'app/templates/storage/object_storage/inventory/overview/index.html',
+    'app/templates/storage/object_storage/inventory/overview/partials/_systems_snapshot_content.html',
     'app/templates/storage/object_storage/inventory/components/_hero_blocked_context.html',
     'app/templates/storage/object_storage/inventory/components/_onboarding_banner.html',
     'app/templates/storage/object_storage/inventory/components/_snapshot_context.html',
     'migrations/versions/20260814_object_storage_rbac_split.py',
     'app/templates/storage/object_storage/inventory/systems/partials/_snapshot_boundary.html',
     'app/templates/storage/object_storage/inventory/buckets/partials/_snapshot_boundary.html',
+    'app/templates/storage/object_storage/inventory/systems/index.html',
+    'app/templates/storage/object_storage/inventory/buckets/index.html',
     'app/templates/storage/object_storage/inventory/systems/partials/_table_content.html',
     'app/templates/storage/object_storage/inventory/buckets/partials/_table_content.html',
+    'app/templates/storage/object_storage/inventory/systems/partials/_system_detail_content.html',
+    'app/templates/storage/object_storage/inventory/buckets/partials/_bucket_detail_content.html',
     'tests/contracts/storage/object_storage/inventory',
 )
 
@@ -43,15 +48,22 @@ def main() -> int:
     routes = read('app/storage/object_storage/inventory/routes.py')
     menu = read('app/templates/components/navigation/object_storage_menu.html')
     overview = read('app/templates/storage/object_storage/inventory/overview/index.html')
+    overview_content = read(
+        'app/templates/storage/object_storage/inventory/overview/partials/_systems_snapshot_content.html'
+    )
     systems_workspace = read('app/templates/storage/object_storage/inventory/systems/partials/_page_workspace.html')
     buckets_workspace = read('app/templates/storage/object_storage/inventory/buckets/partials/_page_workspace.html')
     systems_snapshot = read('app/templates/storage/object_storage/inventory/systems/partials/_snapshot_boundary.html')
     buckets_snapshot = read('app/templates/storage/object_storage/inventory/buckets/partials/_snapshot_boundary.html')
     blocker = read('app/templates/storage/object_storage/inventory/components/_hero_blocked_context.html')
     onboarding = read('app/templates/storage/object_storage/inventory/components/_onboarding_banner.html')
+    systems_index = read('app/templates/storage/object_storage/inventory/systems/index.html')
+    buckets_index = read('app/templates/storage/object_storage/inventory/buckets/index.html')
     systems = read('app/templates/storage/object_storage/inventory/systems/partials/_table_content.html')
     buckets = read('app/templates/storage/object_storage/inventory/buckets/partials/_table_content.html')
     presentation = read('app/storage/object_storage/inventory/presentation.py')
+    system_detail = read('app/templates/storage/object_storage/inventory/systems/partials/_system_detail_content.html')
+    bucket_detail = read('app/templates/storage/object_storage/inventory/buckets/partials/_bucket_detail_content.html')
 
     for endpoint in (
         "url_for('object_storage_inventory.overview')",
@@ -94,6 +106,23 @@ def main() -> int:
         if token not in overview:
             errors.append(f'Object Storage setup-blocked Overview contract missing: {token}')
 
+    for token in (
+        'resource_detail_modal.inventory_host(',
+        "url_for('object_storage_inventory.system_details', system_id=0)",
+        'Committed Object Storage Inventory snapshot · No live provider API query.',
+    ):
+        if token not in overview:
+            errors.append(f'Object Storage Overview modal-host contract missing: {token}')
+    for token in (
+        'resource_detail_modal.detail_button(',
+        "url_for('object_storage_inventory.system_details', system_id=system.id)",
+    ):
+        if token not in overview_content:
+            errors.append(f'Object Storage Overview detail-button contract missing: {token}')
+    for retired in ('components/side_drawer.html', 'side_drawer.render(', 'openDrawer'):
+        if retired in overview_content:
+            errors.append(f'Object Storage Overview retains retired inline drawer: {retired}')
+
     for source, label in ((systems_workspace, 'Systems'), (buckets_workspace, 'Buckets & Containers')):
         for token in ('inventory.setup.is_blocked', '_snapshot_boundary.html', '_onboarding_banner.html'):
             if token not in source:
@@ -124,26 +153,75 @@ def main() -> int:
         if token not in onboarding:
             errors.append(f'Object Storage onboarding ownership contract missing: {token}')
 
-    for token in (
-        'Inventory Assets',
-        'Open Provider Integration',
-        "width='2xl'",
-        'Authority Boundary',
-        "job_key='object_storage.inventory.sync'",
+    for index_source, label, endpoint in (
+        (systems_index, 'Systems', 'object_storage_inventory.system_details'),
+        (buckets_index, 'Buckets & Containers', 'object_storage_inventory.bucket_details'),
     ):
+        for token in (
+            'resource_detail_modal.inventory_host(',
+            endpoint,
+            'Committed Object Storage Inventory snapshot · No live provider API query.',
+        ):
+            if token not in index_source:
+                errors.append(f'Object Storage {label} modal-host contract missing: {token}')
+
+    for source, label, endpoint in (
+        (systems, 'Systems', 'object_storage_inventory.system_details'),
+        (buckets, 'Buckets & Containers', 'object_storage_inventory.bucket_details'),
+    ):
+        for token in ('resource_detail_modal.detail_button(', endpoint):
+            if token not in source:
+                errors.append(f'Object Storage {label} detail-button contract missing: {token}')
+        for retired in ('side_drawer.render(', 'x-teleport="body"', 'openDrawer', 'openDetail'):
+            if retired in source:
+                errors.append(f'Object Storage {label} retains retired inline detail host: {retired}')
+
+    for token in ('Inventory Assets', 'Snapshot', 'Status', 'Details'):
         if token not in systems:
-            errors.append(f'Object Storage Systems final-lock contract missing: {token}')
+            errors.append(f'Object Storage Systems table contract missing: {token}')
+
+    for token in ('Quota', 'Protection', 'Committed object-storage bucket and container inventory.'):
+        if token not in buckets:
+            errors.append(f'Buckets & Containers table contract missing: {token}')
+
+    for name, source in (('System', system_detail), ('Bucket', bucket_detail)):
+        for token in (
+            'data-kaori-detail-density="unified-resource-sheet"',
+            'data-kaori-inventory-detail="v10"',
+            'data-kaori-inventory-detail-layout="unified-resource-sheet"',
+            'detail.workspace_header(',
+            'detail.inventory_title(',
+            'detail.inspector_summary_strip(',
+            'detail.resource_sheet()',
+        ):
+            if token not in source:
+                errors.append(f'Object Storage {name} detail V10 contract missing: {token}')
+        if 'detail.detail_card(' in source:
+            errors.append(f'Object Storage {name} detail must not use legacy detail-card gallery geometry')
+
+    for token in ('System Identity', 'Provider Connection', 'Inventory Snapshot'):
+        if token not in system_detail:
+            errors.append(f'Object Storage System resource-sheet section missing: {token}')
 
     for token in (
-        'max-w-[88rem]',
-        'Operational Reading',
-        'Open Provider Integration',
-        'Quota',
-        'Protection',
-        'Committed object-storage bucket and container inventory.',
+        "url_for('integrations.storage')",
+        "job_key='object_storage.inventory.sync'",
+        'Open Inventory Job',
     ):
-        if token not in buckets:
-            errors.append(f'Buckets & Containers final-lock contract missing: {token}')
+        if token not in system_detail:
+            errors.append(f'Object Storage System operational navigation contract missing: {token}')
+
+    for token in (
+        'Identity & Location',
+        'Snapshot Context',
+        'Capacity & Usage',
+        'Data Protection',
+        'Lifecycle & Access',
+        'Provider Context',
+        'provider_detail_sections',
+    ):
+        if token not in bucket_detail:
+            errors.append(f'Object Storage Bucket resource-sheet section missing: {token}')
 
     for token in (
         'ObjectStorageSystem.query',

@@ -46,16 +46,16 @@ def test_provider_metrics_never_silently_falls_back_to_full_scan() -> None:
     assert 'list_objects_v2' not in provider_branch
 
 
-def test_bucket_modal_surfaces_usage_strategy_and_source() -> None:
+def test_bucket_detail_surfaces_usage_strategy_and_source() -> None:
     presentation = read('app/storage/object_storage/inventory/presentation.py')
-    template = read('app/templates/storage/object_storage/inventory/buckets/partials/_table_content.html')
+    detail = read('app/templates/storage/object_storage/inventory/buckets/partials/_bucket_detail_content.html')
 
     assert "return 'Provider Metrics'" in presentation
     assert "return 'MinIO Admin Data Usage v3'" in presentation
     assert "'usage_collection_label': _usage_collection_label(provider_metadata)" in presentation
-    assert "detail_ui.detail_row('Usage Source', asset.usage_collection_label)" in template
-    assert 'Prefer provider_metrics for scalable usage collection' in template
-    assert 'without enumerating every object' in template
+    assert "detail.inventory_row('Usage Source', bucket.usage_collection_label)" in detail
+    assert 'Prefer provider_metrics for scalable provider-native usage' in detail
+    assert 'full_scan only as an explicit fallback' in detail
 
 
 def test_environment_examples_keep_provider_metrics_opt_in() -> None:

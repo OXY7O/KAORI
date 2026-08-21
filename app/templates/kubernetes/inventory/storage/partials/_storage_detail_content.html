@@ -4,9 +4,9 @@
 {% import "components/related_resource_collection.html" as related_collection %}
 {% import "components/operational_callout.html" as operational_callout %}
 <div data-kaori-detail-variant="full-workspace-modal"
-     data-kaori-detail-density="horizontal-bands"
-     data-kaori-inventory-detail="v6"
-     data-kaori-inventory-detail-layout="horizontal-section-stack"
+     data-kaori-detail-density="unified-resource-sheet"
+     data-kaori-inventory-detail="v10"
+     data-kaori-inventory-detail-layout="unified-resource-sheet"
      class="{{ detail.expanded_workspace_outer_classes() }}">
     <div class="{{ detail.expanded_workspace_shell_classes() }}">
         {% set detail_description = "Provisioning, capacity, access, binding, relationship, and lifecycle evidence." %}
@@ -23,14 +23,14 @@
                 {% endif %}
             {% endcall %}
         {% endcall %}
-        {{ detail.summary_strip([
-                ('Resource Type', item.type_label, 'Kubernetes storage kind') ,
-        ('Lifecycle', item.lifecycle_label, item.binding_reference),
-        ('Capacity', item.capacity, item.capacity_supporting),
-        ('Related Resources', item.claim_count + item.pod_count if item.claims_reported and item.pods_reported else 'Not Reported', item.claim_count ~ ' claims · ' ~ item.pod_count ~ ' Pods' if item.claims_reported and item.pods_reported else 'Relationship evidence incomplete')
-        ], compact=true) }}
-        <div class="space-y-5 p-4 sm:p-5 lg:p-6">
-            <div class="space-y-5">
+        {{ detail.inspector_summary_strip([
+                {'label': 'Resource Type', 'value': item.type_label, 'supporting': 'Kubernetes storage kind', 'icon': 'database', 'tone': 'brand'},
+                {'label': 'Lifecycle', 'value': item.lifecycle_label, 'supporting': item.binding_reference, 'icon': 'link-2', 'tone': item.lifecycle_tone},
+                {'label': 'Capacity', 'value': item.capacity, 'supporting': item.capacity_supporting, 'icon': 'gauge', 'tone': 'brand'},
+                {'label': 'Related Resources', 'value': item.claim_count + item.pod_count if item.claims_reported and item.pods_reported else 'Not Reported', 'supporting': item.claim_count ~ ' claims · ' ~ item.pod_count ~ ' Pods' if item.claims_reported and item.pods_reported else 'Relationship evidence incomplete', 'icon': 'git-branch', 'tone': 'brand'}
+                ]) }}
+        <div class="min-w-0 space-y-4 p-4 sm:p-5 lg:p-6">
+            <div data-kaori-unified-resource-sheet class="min-w-0 overflow-hidden rounded-2xl border border-outline-subtle bg-surface-card shadow-sm">
                 {% call detail.inventory_section('Storage Identity', 'badge-info', item.age, badge_size='detail', stretch=false, density='compact') %}
                     {{ detail.inventory_row('Cluster', item.cluster_name) }}
                     {{ detail.inventory_row('Namespace', item.namespace) }}
@@ -75,7 +75,7 @@
                     {% endif %}
                 {% endcall %}
             </div>
-            <div class="space-y-5">
+            <div data-kaori-unified-resource-sheet class="min-w-0 overflow-hidden rounded-2xl border border-outline-subtle bg-surface-card shadow-sm">
                 {% call detail.inventory_section('Binding & Lifecycle', 'link-2', item.lifecycle_label, 'status' if item.type != 'StorageClass' else 'metadata', item.lifecycle_tone, badge_size='detail', stretch=false, density='compact') %}
                     {{ detail.inventory_fact_grid([
                                         {'label': 'Lifecycle', 'value': item.lifecycle_label},
@@ -102,33 +102,33 @@
                     ], columns=2) }}
                 {% endcall %}
             </div>
-            <div class="grid items-start gap-4 xl:grid-cols-2">
+            <div data-kaori-unified-resource-sheet class="min-w-0 overflow-hidden rounded-2xl border border-outline-subtle bg-surface-card shadow-sm">
                 {% set claims_empty_title = 'No Related Claims' if item.claims_reported else 'Claim Evidence Not Reported' %}
                 {% set claims_empty_description = 'No PersistentVolumeClaim relationship is represented for this storage object.' if item.claims_reported else 'PersistentVolumeClaim collection evidence is unavailable for this cluster.' %}
-                {{ related_collection.inventory_render('Related Claims', 'PersistentVolumeClaim references represented by the committed storage snapshot.', item.claims, item.claim_count, 'folder-check', claims_empty_title, claims_empty_description, item.claims_truncated, url_for('inventory.storage', cluster_id=item.cluster_id, type='PersistentVolumeClaim') , 'Open Claim Inventory') }}
+                {{ related_collection.inventory_render('Related Claims', 'PersistentVolumeClaim references represented by the committed storage snapshot.', item.claims, item.claim_count, 'folder-check', claims_empty_title, claims_empty_description, item.claims_truncated, url_for('inventory.storage', cluster_id=item.cluster_id, type='PersistentVolumeClaim') , 'Open Claim Inventory', embedded=true) }}
                 {% set pods_empty_title = 'No Mounted Pods' if item.pods_reported else 'Pod Mount Evidence Not Reported' %}
                 {% set pods_empty_description = 'No Pod mount relationship is represented in the committed snapshot.' if item.pods_reported else 'Pod collection evidence is unavailable for this cluster.' %}
-                {{ related_collection.inventory_render('Mounted Pods', 'Pods whose committed volume references include the related claim.', item.pods, item.pod_count, 'package', pods_empty_title, pods_empty_description, item.pods_truncated, url_for('inventory.pods', cluster_id=item.cluster_id) , 'Open Pod Inventory') }}
+                {{ related_collection.inventory_render('Mounted Pods', 'Pods whose committed volume references include the related claim.', item.pods, item.pod_count, 'package', pods_empty_title, pods_empty_description, item.pods_truncated, url_for('inventory.pods', cluster_id=item.cluster_id) , 'Open Pod Inventory', embedded=true) }}
             </div>
-            <div class="grid items-start gap-4 xl:grid-cols-2">
+            <div data-kaori-unified-resource-sheet class="min-w-0 overflow-hidden rounded-2xl border border-outline-subtle bg-surface-card shadow-sm">
                 {% if item.type == 'StorageClass' %}
-                    {{ metadata_collection.render('Provisioner Parameters', item.parameters, 'sliders-horizontal', 'No Provisioner Parameters', 'No StorageClass parameter is represented in the committed snapshot.', 'Parameters are factual provisioner configuration.', compact=true) }}
+                    {{ metadata_collection.render('Provisioner Parameters', item.parameters, 'sliders-horizontal', 'No Provisioner Parameters', 'No StorageClass parameter is represented in the committed snapshot.', 'Parameters are factual provisioner configuration.', compact=true, embedded=true) }}
                 {% endif %}
                 {% if item.type == 'PersistentVolumeClaim' %}
                     {% set selector_empty_title = 'No Claim Selector' if item.selector_reported else 'Claim Selector Not Reported' %}
                     {% set selector_empty_description = 'No PVC selector is configured in the committed snapshot.' if item.selector_reported else 'PVC specification evidence is unavailable for this committed snapshot.' %}
-                    {{ metadata_collection.render('Claim Selector', item.selector, 'list-filter', selector_empty_title, selector_empty_description, 'Selectors remain factual binding evidence.', compact=true) }}
+                    {{ metadata_collection.render('Claim Selector', item.selector, 'list-filter', selector_empty_title, selector_empty_description, 'Selectors remain factual binding evidence.', compact=true, embedded=true) }}
                 {% endif %}
                 {% if item.type in ['StorageClass', 'PersistentVolume'] %}
                     {% set mount_empty_title = 'No Mount Options' if item.mount_options_reported else 'Mount Options Not Reported' %}
                     {% set mount_empty_description = 'No mount option is configured in the committed snapshot.' if item.mount_options_reported else 'Storage specification evidence is unavailable for this committed snapshot.' %}
-                    {{ metadata_collection.render('Mount Options', item.mount_options, 'list', mount_empty_title, mount_empty_description, 'Mount options remain factual storage configuration.', compact=true) }}
+                    {{ metadata_collection.render('Mount Options', item.mount_options, 'list', mount_empty_title, mount_empty_description, 'Mount options remain factual storage configuration.', compact=true, embedded=true) }}
                 {% endif %}
                 {% if item.type == 'PersistentVolume' %}
-                    {{ metadata_collection.render('Volume Source Evidence', item.source, 'database-zap', 'Volume Source Not Reported', 'No persistent-volume source evidence is available.', 'Source values are factual provider configuration and may contain infrastructure identifiers.', compact=true) }}
+                    {{ metadata_collection.render('Volume Source Evidence', item.source, 'database-zap', 'Volume Source Not Reported', 'No persistent-volume source evidence is available.', 'Source values are factual provider configuration and may contain infrastructure identifiers.', compact=true, embedded=true) }}
                 {% endif %}
-                {{ metadata_collection.render('Storage Labels', item.labels, 'tags', 'No Storage Labels', 'No labels are represented in the committed snapshot.', 'Labels remain factual identity and controller metadata.', compact=true) }}
-                <div class="xl:col-span-2">{{ metadata_collection.render('Storage Annotations', item.annotations, 'notebook-tabs', 'No Storage Annotations', 'No annotations are represented in the committed snapshot.', 'Annotations may be managed by provisioners or storage controllers.', compact=true) }}</div>
+                {{ metadata_collection.render('Storage Labels', item.labels, 'tags', 'No Storage Labels', 'No labels are represented in the committed snapshot.', 'Labels remain factual identity and controller metadata.', compact=true, embedded=true) }}
+                {{ metadata_collection.render('Storage Annotations', item.annotations, 'notebook-tabs', 'No Storage Annotations', 'No annotations are represented in the committed snapshot.', 'Annotations may be managed by provisioners or storage controllers.', compact=true, embedded=true) }}
             </div>
             <section class="grid gap-3 xl:grid-cols-2">
                 {{ operational_callout.render('Committed Snapshot Boundary', 'This detail reports committed storage configuration and binding evidence. It does not report live filesystem usage, pressure, growth, performance, durability, or application I/O health.', 'database', 'info') }}

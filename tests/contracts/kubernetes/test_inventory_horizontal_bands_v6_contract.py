@@ -20,10 +20,10 @@ def read(relative: str) -> str:
 def test_inventory_v6_uses_one_horizontal_band_contract() -> None:
     shared = read('app/templates/components/details/_detail_content.html')
 
-    assert 'data-kaori-inventory-section-layout="horizontal-band"' in shared
-    assert 'lg:grid-cols-[14rem_minmax(0,1fr)]' in shared
-    assert 'lg:border-r' in shared
-    assert 'bg-surface-elevated/50' in shared
+    assert 'data-kaori-inventory-section-layout="resource-sheet-band"' in shared
+    assert 'xl:grid-cols-[14.5rem_minmax(0,1fr)]' in shared
+    assert 'xl:border-r' in shared
+    assert 'bg-surface-elevated/30' in shared
     assert "badge_size='detail'" in shared
 
     for resource, filename in DETAILS.items():
@@ -34,9 +34,9 @@ def test_inventory_v6_uses_one_horizontal_band_contract() -> None:
             assert 'data-kaori-inventory-detail-layout="unified-resource-sheet"' in detail
             assert 'detail.inspector_section(' in detail
             continue
-        assert 'data-kaori-detail-density="horizontal-bands"' in detail, resource
-        assert 'data-kaori-inventory-detail="v6"' in detail, resource
-        assert 'data-kaori-inventory-detail-layout="horizontal-section-stack"' in detail, resource
+        assert 'data-kaori-detail-density="unified-resource-sheet"' in detail, resource
+        assert 'data-kaori-inventory-detail="v10"' in detail, resource
+        assert 'data-kaori-inventory-detail-layout="unified-resource-sheet"' in detail, resource
         assert 'detail.inventory_section(' in detail, resource
 
 
@@ -60,7 +60,8 @@ def test_inventory_tags_use_canonical_violet_label_treatment() -> None:
 
     assert "special_label(entry_count_label, 'maintenance', 'tags', 'detail')" in metadata
     assert (
-        "special_label(total_count ~ ' ' ~ ('Resource' if total_count == 1 else 'Resources'), 'maintenance', 'git-branch', 'detail')"
+        "special_label(total_count ~ ' ' ~ ('Resource' if total_count == 1 else 'Resources'), "
+        "'maintenance', 'git-branch', 'detail')"
         in related
     )
     assert "special_label(taint_count_label, 'maintenance', 'tags', 'detail')" in node

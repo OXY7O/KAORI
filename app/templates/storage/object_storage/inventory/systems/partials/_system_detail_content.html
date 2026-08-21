@@ -2,47 +2,63 @@
 {% import "components/details/_detail_content.html" as detail %}
 {% import "components/operational_callout.html" as operational_callout %}
 <div data-kaori-detail-variant="full-workspace-modal"
+     data-kaori-detail-domain="object-storage"
+     data-kaori-detail-density="unified-resource-sheet"
+     data-kaori-inventory-detail="v10"
+     data-kaori-inventory-detail-layout="unified-resource-sheet"
      class="{{ detail.expanded_workspace_outer_classes() }}">
     <div class="{{ detail.expanded_workspace_shell_classes() }}">
-        <header data-resource-detail-header
-                class="{{ detail.expanded_workspace_header_classes() }}">
-            <div class="flex min-w-0 items-start gap-3">
-                <span class="{{ detail.expanded_workspace_icon_classes() }}"><i data-lucide="server" class="h-5 w-5"></i></span>
-                <div class="min-w-0">
-                    {% call detail.header_identity_row() %}
-                        <h3 class="text-base font-semibold text-content-primary">{{ system.name }}</h3>
-                        {{ table_label.metadata_label(system.provider_label) }}
-                        {{ table_label.status_indicator_label(system.status_label, system.status_tone, size='detail') }}
-                    {% endcall %}
-                    <p class="mt-1 text-xs leading-5 text-content-muted">Provider identity, endpoint, release, readiness, and committed bucket-discovery evidence.</p>
-                </div>
+        {% set detail_description = "Provider identity, connection, readiness, and committed inventory evidence." %}
+        {% call detail.workspace_header(detail_description, 'server') %}
+            {% call detail.header_identity_row() %}
+                {{ detail.inventory_title(system.name) }}
+                {{ table_label.metadata_label(system.provider_label, 'database') }}
+                {{ table_label.metadata_label(system.environment|environment_name(empty='Not Specified'), 'building-2') }}
+                {{ table_label.status_indicator_label(system.status_label, system.status_tone, size='detail') }}
+            {% endcall %}
+        {% endcall %}
+        {{ detail.inspector_summary_strip([
+                {'label': 'Provider', 'value': system.provider_label, 'supporting': 'Managed provider', 'icon': 'database-zap', 'tone': 'brand'},
+                {'label': 'Release', 'value': system.release_label, 'supporting': 'Detected or declared release', 'icon': 'package', 'tone': 'brand'},
+                {'label': 'Inventory Assets', 'value': system.bucket_count, 'supporting': 'Buckets & Containers', 'icon': 'boxes', 'tone': 'brand'},
+                {'label': 'Snapshot', 'value': system.sync_status_label, 'supporting': 'Committed inventory state', 'icon': 'database-backup', 'tone': system.sync_status_tone}
+                ]) }}
+        <div class="min-w-0 space-y-4 p-4 sm:p-5 lg:p-6">
+            {% call detail.resource_sheet() %}
+                {% call detail.inventory_section('System Identity', 'badge-info', system.status_label, 'status', system.status_tone) %}
+                    <dl class="grid min-w-0 gap-x-10 sm:grid-cols-2">
+                        {{ detail.inventory_technical_row('System ID', system.id, nowrap=true, class_name='lg:col-span-2') }}
+                        {{ detail.inventory_row('Registered System', system.name, nowrap=true, class_name='lg:col-span-2') }}
+                        {{ detail.inventory_row('Environment', system.environment|environment_name(empty='Not Specified')) }}
+                        {{ detail.inventory_row('Provider', system.provider_label) }}
+                        {{ detail.inventory_row('Release', system.release_label, nowrap=true) }}
+                        {{ detail.inventory_row('Compatibility Profile', system.compatibility_profile_label, nowrap=true) }}
+                    </dl>
+                {% endcall %}
+                {% call detail.inventory_section('Provider Connection', 'plug-zap') %}
+                    <dl class="grid min-w-0 gap-x-10 sm:grid-cols-2">
+                        {{ detail.inventory_technical_row('Endpoint', system.endpoint, nowrap=true, class_name='lg:col-span-2') }}
+                        {{ detail.inventory_row('Region', system.region) }}
+                        {{ detail.inventory_row('Addressing Style', system.addressing_style) }}
+                        {{ detail.inventory_row('Last Validated', system.last_validated_at|user_datetime if system.last_validated_at else 'Not Observed', nowrap=true) }}
+                        {{ detail.inventory_row('Last Checked', system.last_checked_at|user_datetime if system.last_checked_at else 'Not Observed', nowrap=true) }}
+                    </dl>
+                {% endcall %}
+                {% call detail.inventory_section('Inventory Snapshot', 'database-backup', system.sync_status_label, 'status', system.sync_status_tone) %}
+                    <dl class="grid min-w-0 gap-x-10 sm:grid-cols-2">
+                        {{ detail.inventory_row('Snapshot Source', system.snapshot_source) }}
+                        {{ detail.inventory_row('Freshness Window', system.freshness_window_hours ~ ' Hours') }}
+                        {{ detail.inventory_row('Last Collected', system.last_inventory_at|user_datetime if system.last_inventory_at else 'Not Collected', nowrap=true, class_name='lg:col-span-2') }}
+                        {{ detail.inventory_status_row('Snapshot State', system.sync_status_label, system.sync_status_tone) }}
+                        {{ detail.inventory_row('Committed Assets', system.bucket_count ~ ' Buckets & Containers') }}
+                    </dl>
+                    {{ detail.inventory_note('Inventory values come from the latest committed Object Storage Inventory Sync snapshot.', 'database') }}
+                {% endcall %}
+            {% endcall %}
+            <div class="grid min-w-0 gap-4 xl:grid-cols-12">
+                {{ operational_callout.render('Authority Boundary', 'This detail reads committed Object Storage Inventory data. Provider configuration and live runtime health remain integration-owned.', icon='database', tone='info', extra_classes='xl:col-span-5', action_href=url_for('integrations.storage'), action_label='Open Storage Integrations', action_icon='arrow-up-right') }}
+                {{ operational_callout.render(system.guidance.title, system.guidance.description, icon=system.guidance.icon, tone=system.guidance.tone, variant='semantic', extra_classes='xl:col-span-7', action_href=url_for('jobs.configuration', job_key='object_storage.inventory.sync'), action_label='Open Inventory Job', action_icon='arrow-up-right') }}
             </div>
-        </header>
-        <div data-resource-detail-summary
-             class="grid gap-3 border-b border-outline-subtle bg-surface-card p-4 sm:grid-cols-2 xl:grid-cols-4">
-            {{ detail.summary_metric('Provider', system.provider_label, 'Detected object-storage provider.', 'database', 'brand') }}
-            {{ detail.summary_metric('Buckets', system.bucket_count, 'Committed bucket records.', 'container', 'brand') }}
-            {{ detail.summary_metric('Readiness', system.status_label, 'Provider and asset posture.', 'circle-check', system.status_tone) }}
-            {{ detail.summary_metric('Region', system.region, 'Configured S3 API region.', 'map-pin', 'brand') }}
         </div>
-        <div class="grid gap-4 p-5 md:grid-cols-2">
-            {% call detail.detail_card('System Identity', 'badge-info') %}
-                {{ detail.technical_row('System ID', system.id) }}
-                {{ detail.detail_row('Environment', system.environment|environment_name(empty='Not Specified') ) }}
-                {{ detail.detail_row('Provider', system.provider_label) }}
-                {{ detail.detail_row('Release', system.release_label) }}
-                {{ detail.detail_row('Profile', system.compatibility_profile_label) }}
-            {% endcall %}
-            {% call detail.detail_card('Connection & Inventory', 'database') %}
-                {{ detail.technical_row('Endpoint', system.endpoint) }}
-                {{ detail.detail_row('Region', system.region) }}
-                {{ detail.detail_row('Addressing', system.addressing_style) }}
-                {{ detail.detail_row('Buckets', system.bucket_count) }}
-                {{ detail.detail_row('Last Inventory', system.last_inventory_at|user_datetime if system.last_inventory_at else 'Not Observed') }}
-            {% endcall %}
-        </div>
-        <section class="border-t border-outline-subtle bg-surface-elevated p-5">
-            {{ operational_callout.render('Committed Snapshot Boundary', 'This detail reads PostgreSQL inventory and provider state only. It does not query the object-storage API live.', icon='database', tone='info') }}
-        </section>
     </div>
 </div>

@@ -95,11 +95,11 @@ def test_overview_ready_counts_require_enabled_targets_and_domain_zero_targets_a
 def test_runtime_zero_states_and_lifecycle_use_canonical_kaori_state_ownership() -> None:
     runtime = read('app/templates/integrations/partials/_runtime_overview.html')
 
-    assert "empty_state_label = 'Setup Required'" in runtime
-    assert "empty_state_title = 'No Integration Targets Registered'" in runtime
-    assert "empty_state_action_label = 'Browse Providers'" in runtime
-    assert "empty_state_label = 'No Results'" in runtime
-    assert "empty_state_title = 'No Runtime Targets Match These Filters'" in runtime
+    assert 'empty_state_label = "Setup Required"' in runtime
+    assert 'empty_state_title = "No Integration Targets Registered"' in runtime
+    assert 'empty_state_action_label = "Browse Providers"' in runtime
+    assert 'empty_state_label = "No Results"' in runtime
+    assert 'empty_state_title = "No Runtime Targets Match These Filters"' in runtime
     assert 'components/states/_empty_state.html' in runtime
     assert 'Runtime Evidence Lifecycle' in runtime
     assert 'provider-neutral evidence' in runtime

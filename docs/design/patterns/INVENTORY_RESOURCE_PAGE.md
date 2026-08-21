@@ -21,7 +21,7 @@ Pagination 5 / 10 / 25 / 50
 Detail Style 2 — Full Workspace Modal
 ```
 
-Inventory Overview keeps its shared Side Drawer. Topology uses the adaptive visualization workspace with Controls/Inspector drawers below the wide breakpoint.
+Inventory Overview uses the same Full Workspace Modal and Unified Resource Sheet V10 as the resource pages. Topology remains the deliberate exception and uses the adaptive visualization workspace with Controls/Inspector drawers below the wide breakpoint.
 
 ## Hero contract
 
@@ -69,7 +69,7 @@ All resource template registry entries are rooted at `inventory/kubernetes/<reso
 
 ## Detail and progressive-disclosure contract
 
-Nodes, Namespaces, Configuration, Workloads, Pods, Services, Ingresses, and Storage use **Detail Style 2 — Full Workspace Modal** through `components/resource_detail_modal.html` and shared detail-content primitives. Inventory Overview uses the shared Side Drawer. Topology uses the adaptive explorer Inspector/Details drawer.
+Inventory Overview plus Nodes, Namespaces, Configuration, Workloads, Pods, Services, Ingresses, and Storage use **Detail Style 2 — Full Workspace Modal** through `components/resource_detail_modal.html` and Unified Resource Sheet V10 primitives. Topology remains the deliberate exception because its adaptive explorer Inspector/Details drawers are part of the graph workspace itself.
 
 Do not add page-local modal markup, local expandable-row JavaScript, nested scroll boxes, or a fourth disclosure pattern. Detail endpoints remain committed-snapshot reads and must not call Kubernetes live.
 

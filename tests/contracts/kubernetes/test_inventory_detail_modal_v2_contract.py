@@ -52,8 +52,8 @@ def test_inventory_view_details_use_v5_resource_profile_host_and_shared_resource
             assert 'detail.inspector_summary_strip(' in detail
             assert 'data-resource-detail-summary' in shared
         else:
-            assert 'data-kaori-inventory-detail="v6"' in detail, resource
-            assert 'data-kaori-inventory-detail-layout="horizontal-section-stack"' in detail, resource
+            assert 'data-kaori-inventory-detail="v10"' in detail, resource
+            assert 'data-kaori-inventory-detail-layout="unified-resource-sheet"' in detail, resource
             assert 'detail.inventory_section(' in detail, resource
             assert 'detail.inventory_fact_grid(' in detail, resource
         assert 'detail.workspace_header(' in detail, resource
@@ -77,7 +77,8 @@ def test_inventory_detail_typography_has_one_predictable_hierarchy() -> None:
     assert "size='body'" in shared
     assert "'text-sm leading-5' if size == 'body'" in technical
     assert (
-        "technical_value.render(container.image or 'Not Reported', break_all=true, class_name='font-medium', size='body')"
+        "technical_value.render(container.image or 'Not Reported', break_all=true, "
+        "class_name='font-medium', size='body')"
         in runtime
     )
     assert 'text-sm font-semibold tabular-nums text-content-primary' in runtime
@@ -106,7 +107,7 @@ def test_configuration_key_inventory_uses_full_width_grouped_list_instead_of_til
     configuration = read('app/templates/kubernetes/inventory/configuration/partials/_configuration_detail_content.html')
     metadata = read('app/templates/components/technical_metadata_collection.html')
 
-    assert 'space-y-5 p-4 sm:p-5 lg:p-6' in configuration
+    assert 'min-w-0 space-y-4 p-4 sm:p-5 lg:p-6' in configuration
     assert "metadata_collection.render('Key Inventory'" in configuration
     assert 'grid min-w-0 gap-x-6 sm:grid-cols-2 xl:grid-cols-3' in metadata
     assert 'rounded-lg border border-outline-subtle bg-surface-elevated px-3 py-2.5' not in metadata

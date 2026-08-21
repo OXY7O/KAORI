@@ -549,6 +549,15 @@ def get_inventory_overview() -> dict[str, Any]:
     }
 
 
+
+def get_inventory_overview_cluster_detail(cluster_id: str) -> dict[str, Any] | None:
+    """Return one committed cluster-inventory overview row for detail presentation."""
+    normalized_id = str(cluster_id)
+    return next(
+        (cluster for cluster in get_inventory_overview()['clusters'] if str(cluster['id']) == normalized_id),
+        None,
+    )
+
 def _count_rows(model: Any) -> int:
     query = db.session.query(func.count(model.id))
     if model is not Cluster:

@@ -5,20 +5,33 @@ def read(path: str) -> str:
     return Path(path).read_text(encoding='utf-8')
 
 
-def test_bucket_modal_uses_wide_layout_and_compact_datetime_rows():
-    template = read('app/templates/storage/object_storage/inventory/buckets/partials/_table_content.html')
-    assert 'max-w-[88rem]' in template
-    assert 'x-teleport="body"' in template
-    assert "user_datetime(date_format='day_month_numeric')" in template
+def test_bucket_modal_uses_shared_wide_layout_and_natural_height_detail() -> None:
+    index = read('app/templates/storage/object_storage/inventory/buckets/index.html')
+    detail = read('app/templates/storage/object_storage/inventory/buckets/partials/_bucket_detail_content.html')
+    modal = read('app/templates/components/resource_detail_modal.html')
+
+    assert 'resource_detail_modal.inventory_host(' in index
+    assert "'max-w-[92rem]'" in modal
+    assert 'content_driven' in modal
+    assert 'data-kaori-detail-density="unified-resource-sheet"' in detail
+    assert 'overflow-y-auto' not in detail
 
 
-def test_system_drawer_uses_wider_layout_and_endpoint_stack():
-    template = read('app/templates/storage/object_storage/inventory/overview/partials/_systems_snapshot_content.html')
-    assert "width='2xl'" in template
-    assert "detail_row('Profile', system.compatibility_profile_label)" in template
-    assert "detail_row('Endpoint', system.endpoint, break_all=true)" in template
+def test_overview_system_details_reuse_systems_unified_resource_sheet() -> None:
+    index = read('app/templates/storage/object_storage/inventory/overview/index.html')
+    content = read('app/templates/storage/object_storage/inventory/overview/partials/_systems_snapshot_content.html')
+    detail = read('app/templates/storage/object_storage/inventory/systems/partials/_system_detail_content.html')
+
+    assert 'resource_detail_modal.inventory_host(' in index
+    assert 'resource_detail_modal.detail_button(' in content
+    assert 'data-kaori-inventory-detail-layout="unified-resource-sheet"' in detail
+    assert "detail.inventory_row('Compatibility Profile', system.compatibility_profile_label, nowrap=true)" in detail
+    assert (
+        "detail.inventory_technical_row('Endpoint', system.endpoint, nowrap=true, class_name='lg:col-span-2')"
+        in detail
+    )
 
 
-def test_bucket_presentation_uses_short_snapshot_source_label():
+def test_bucket_presentation_uses_short_snapshot_source_label() -> None:
     presentation = read('app/storage/object_storage/inventory/presentation.py')
     assert "'source_label': 'Committed Snapshot'" in presentation

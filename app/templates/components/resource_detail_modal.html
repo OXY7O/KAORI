@@ -133,8 +133,8 @@
 {% macro host(resource_type, detail_url_template, footer_text='Details come from the latest committed inventory snapshot.', context_label='Inventory', dialog_max_width='max-w-[100rem]', content_driven=false) -%}
     {{ _host(resource_type, detail_url_template, footer_text, context_label, dialog_max_width, 'modal', content_driven) }}
 {%- endmacro %}
-{% macro inventory_host(resource_type, detail_url_template, footer_text='Committed Inventory snapshot · No live Kubernetes API query.') -%}
-    {{ _host(resource_type, detail_url_template, footer_text, 'Inventory', 'max-w-[92rem]', 'modal', true) }}
+{% macro inventory_host(resource_type, detail_url_template, footer_text='Committed Inventory snapshot · No live Kubernetes API query.', context_label='Inventory') -%}
+    {{ _host(resource_type, detail_url_template, footer_text, context_label, 'max-w-[92rem]', 'modal', true) }}
 {%- endmacro %}
 {% macro drawer_host(resource_type, detail_url_template, footer_text='Details come from the current committed KAORI data boundary.', context_label='Intelligence', dialog_max_width='max-w-2xl') -%}
     {{ _host(resource_type, detail_url_template, footer_text, context_label, dialog_max_width, 'drawer', false) }}

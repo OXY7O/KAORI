@@ -42,6 +42,7 @@ def test_bucket_usage_stats_are_optional_and_persisted_canonically() -> None:
     model = read('app/models/object_storage.py')
     presentation = read('app/storage/object_storage/inventory/presentation.py')
     template = read('app/templates/storage/object_storage/inventory/buckets/partials/_table_content.html')
+    detail = read('app/templates/storage/object_storage/inventory/buckets/partials/_bucket_detail_content.html')
 
     assert 'OBJECT_STORAGE_INVENTORY_USAGE_STATS_MODE' in config
     assert "{'disabled', 'provider_metrics', 'full_scan'}" in config
@@ -56,18 +57,22 @@ def test_bucket_usage_stats_are_optional_and_persisted_canonically() -> None:
     assert '>Quota<' in template
     assert '>Size<' not in template.split('<thead', 1)[1].split('</thead>', 1)[0]
     assert '>Objects<' not in template.split('<thead', 1)[1].split('</thead>', 1)[0]
-    assert 'Used Size' in template
-    assert 'Current Objects' in template
+    assert 'Used Size' in detail
+    assert 'Current Objects' in detail
 
 
-def test_bucket_detail_surface_is_modal_and_system_detail_surface_is_drawer() -> None:
+def test_bucket_and_system_detail_surfaces_share_the_inventory_modal_contract() -> None:
+    bucket_index = read('app/templates/storage/object_storage/inventory/buckets/index.html')
+    system_index = read('app/templates/storage/object_storage/inventory/systems/index.html')
     buckets = read('app/templates/storage/object_storage/inventory/buckets/partials/_table_content.html')
     systems = read('app/templates/storage/object_storage/inventory/systems/partials/_table_content.html')
-    assert 'x-teleport="body"' in buckets
-    assert 'max-w-[88rem]' in buckets
+
+    assert 'resource_detail_modal.inventory_host(' in bucket_index
+    assert 'resource_detail_modal.inventory_host(' in system_index
+    assert 'resource_detail_modal.detail_button(' in buckets
+    assert 'resource_detail_modal.detail_button(' in systems
     assert 'side_drawer.render(' not in buckets
-    assert 'side_drawer.render(' in systems
-    assert "width='2xl'" in systems
+    assert 'side_drawer.render(' not in systems
 
 
 def test_enrichment_migration_extends_current_bucket_container_head() -> None:

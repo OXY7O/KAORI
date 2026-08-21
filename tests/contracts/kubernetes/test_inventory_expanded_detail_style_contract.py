@@ -60,7 +60,7 @@ def test_all_inventory_detail_workspaces_use_modal_extractable_header_and_summar
             assert 'data-kaori-inventory-detail="v10"' in source
             assert 'data-kaori-inventory-detail-layout="unified-resource-sheet"' in source
         else:
-            assert 'data-kaori-inventory-detail="v6"' in source, resource
+            assert 'data-kaori-inventory-detail="v10"' in source, resource
         assert 'detail.expanded_workspace_outer_classes()' in source, resource
         assert 'detail.expanded_workspace_shell_classes()' in source, resource
 

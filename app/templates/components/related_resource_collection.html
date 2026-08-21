@@ -42,50 +42,107 @@
         {% endif %}
     </section>
 {%- endmacro %}
-{% macro inventory_render(title, description, resources, total_count, icon='git-branch', empty_title='No Related Resources', empty_description='No related resources are represented in the committed inventory snapshot.', truncated=false, action_href=None, action_label=None) -%}
-    <section class="min-w-0 overflow-hidden rounded-xl border border-outline-subtle bg-surface-card"
-             data-kaori-inventory-related-collection>
-        <header class="flex min-w-0 flex-wrap items-center justify-between gap-3 border-b border-outline-subtle px-4 py-3 sm:px-5">
-            <div class="flex min-w-0 items-start gap-2.5">
-                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
-                      aria-hidden="true"><i data-lucide="{{ icon }}" class="h-4 w-4"></i></span>
-                <div class="min-w-0">
-                    <h4 class="break-words text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]">{{ title }}</h4>
-                    {% if description %}
-                        <p class="mt-0.5 break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]">{{ description }}</p>
+{% macro inventory_render(title, description, resources, total_count, icon='git-branch', empty_title='No Related Resources', empty_description='No related resources are represented in the committed inventory snapshot.', truncated=false, action_href=None, action_label=None, embedded=false) -%}
+    {% if total_count == 1 %}
+        {% set total_count_label = '1 Resource' %}
+    {% else %}
+        {% set total_count_label = total_count ~ ' Resources' %}
+    {% endif %}
+    {% if embedded %}
+        <section class="min-w-0 border-b border-outline-subtle last:border-b-0"
+                 data-kaori-inventory-related-collection
+                 data-kaori-inventory-related-layout="resource-sheet-band">
+            <div class="grid min-w-0 xl:grid-cols-[14.5rem_minmax(0,1fr)]">
+                <header class="flex min-w-0 items-start justify-between gap-3 bg-surface-elevated/30 px-4 py-4 sm:px-5 xl:border-r xl:border-outline-subtle xl:px-5 xl:py-5">
+                    <div class="flex min-w-0 items-start gap-3">
+                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary ring-1 ring-inset ring-brand-outline/50"
+                              aria-hidden="true"><i data-lucide="{{ icon }}" class="h-4 w-4"></i></span>
+                        <div class="min-w-0">
+                            <h4 class="break-words text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]">{{ title }}</h4>
+                            {% if description %}<p class="mt-1 break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]">{{ description }}</p>{% endif %}
+                        </div>
+                    </div>
+                    <div class="shrink-0 xl:hidden">{{ table_label.special_label(total_count_label, 'maintenance', 'git-branch', 'detail') }}</div>
+                </header>
+                <div class="min-w-0 px-4 py-3 sm:px-5 sm:py-4 xl:px-6 xl:py-5">
+                    <div class="mb-3 hidden justify-end xl:flex">{{ table_label.special_label(total_count_label, 'maintenance', 'git-branch', 'detail') }}</div>
+                    {% if resources %}
+                        <div class="divide-y divide-outline-subtle">
+                            {% for resource in resources %}
+                                <article class="flex flex-col gap-2 py-3 sm:flex-row sm:items-start sm:justify-between">
+                                    <div class="min-w-0">
+                                        <p class="break-words text-sm font-medium leading-5 text-content-primary [overflow-wrap:anywhere]">{{ resource.name }}</p>
+                                        <p class="mt-0.5 break-words text-xs leading-5 text-content-secondary [overflow-wrap:anywhere]">{{ resource.supporting_primary }}</p>
+                                        {% if resource.supporting_secondary %}
+                                            <p class="break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]">{{ resource.supporting_secondary }}</p>
+                                        {% endif %}
+                                    </div>
+                                    {% if resource.status %}
+                                        <div class="shrink-0">{{ table_label.status_indicator_label(resource.status, resource.status_tone or 'unknown') }}</div>
+                                    {% endif %}
+                                </article>
+                            {% endfor %}
+                        </div>
+                        {% if truncated %}
+                            <p class="border-t border-outline-subtle py-3 text-xs leading-5 text-content-muted">Showing the first {{ resources|length }} related resources.</p>
+                        {% endif %}
+                    {% else %}
+                        {{ detail.empty_evidence(empty_title, empty_description, icon) }}
+                    {% endif %}
+                    {% if action_href and action_label %}
+                        <div class="mt-3 flex justify-end border-t border-outline-subtle pt-3">
+                            <a href="{{ action_href }}"
+                               class="inline-flex min-h-8 items-center justify-center gap-1.5 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-medium text-content-secondary transition-colors hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary-dark"><i data-lucide="external-link" class="h-4 w-4"></i>{{ action_label }}</a>
+                        </div>
                     {% endif %}
                 </div>
             </div>
-            {{ table_label.special_label(total_count ~ ' ' ~ ('Resource' if total_count == 1 else 'Resources'), 'maintenance', 'git-branch', 'detail') }}
-        </header>
-        {% if resources %}
-            <div class="divide-y divide-outline-subtle px-4 sm:px-5">
-                {% for resource in resources %}
-                    <article class="flex flex-col gap-2 py-3 sm:flex-row sm:items-start sm:justify-between">
-                        <div class="min-w-0">
-                            <p class="break-words text-sm font-medium leading-5 text-content-primary [overflow-wrap:anywhere]">{{ resource.name }}</p>
-                            <p class="mt-0.5 break-words text-xs leading-5 text-content-secondary [overflow-wrap:anywhere]">{{ resource.supporting_primary }}</p>
-                            {% if resource.supporting_secondary %}
-                                <p class="break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]">{{ resource.supporting_secondary }}</p>
-                            {% endif %}
-                        </div>
-                        {% if resource.status %}
-                            <div class="shrink-0">{{ table_label.status_indicator_label(resource.status, resource.status_tone or 'unknown') }}</div>
+        </section>
+    {% else %}
+        <section class="min-w-0 overflow-hidden rounded-xl border border-outline-subtle bg-surface-card"
+                 data-kaori-inventory-related-collection>
+            <header class="flex min-w-0 flex-wrap items-center justify-between gap-3 border-b border-outline-subtle px-4 py-3 sm:px-5">
+                <div class="flex min-w-0 items-start gap-2.5">
+                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                          aria-hidden="true"><i data-lucide="{{ icon }}" class="h-4 w-4"></i></span>
+                    <div class="min-w-0">
+                        <h4 class="break-words text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]">{{ title }}</h4>
+                        {% if description %}
+                            <p class="mt-0.5 break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]">{{ description }}</p>
                         {% endif %}
-                    </article>
-                {% endfor %}
-            </div>
-            {% if truncated %}
-                <p class="border-t border-outline-subtle px-4 py-3 text-xs leading-5 text-content-muted sm:px-5">Showing the first {{ resources|length }} related resources.</p>
+                    </div>
+                </div>
+                {{ table_label.special_label(total_count_label, 'maintenance', 'git-branch', 'detail') }}
+            </header>
+            {% if resources %}
+                <div class="divide-y divide-outline-subtle px-4 sm:px-5">
+                    {% for resource in resources %}
+                        <article class="flex flex-col gap-2 py-3 sm:flex-row sm:items-start sm:justify-between">
+                            <div class="min-w-0">
+                                <p class="break-words text-sm font-medium leading-5 text-content-primary [overflow-wrap:anywhere]">{{ resource.name }}</p>
+                                <p class="mt-0.5 break-words text-xs leading-5 text-content-secondary [overflow-wrap:anywhere]">{{ resource.supporting_primary }}</p>
+                                {% if resource.supporting_secondary %}
+                                    <p class="break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]">{{ resource.supporting_secondary }}</p>
+                                {% endif %}
+                            </div>
+                            {% if resource.status %}
+                                <div class="shrink-0">{{ table_label.status_indicator_label(resource.status, resource.status_tone or 'unknown') }}</div>
+                            {% endif %}
+                        </article>
+                    {% endfor %}
+                </div>
+                {% if truncated %}
+                    <p class="border-t border-outline-subtle px-4 py-3 text-xs leading-5 text-content-muted sm:px-5">Showing the first {{ resources|length }} related resources.</p>
+                {% endif %}
+            {% else %}
+                <div class="p-4 sm:p-5">{{ detail.empty_evidence(empty_title, empty_description, icon) }}</div>
             {% endif %}
-        {% else %}
-            <div class="p-4 sm:p-5">{{ detail.empty_evidence(empty_title, empty_description, icon) }}</div>
-        {% endif %}
-        {% if action_href and action_label %}
-            <footer class="flex justify-end border-t border-outline-subtle bg-surface-elevated/60 px-4 py-3 sm:px-5">
-                <a href="{{ action_href }}"
-                   class="inline-flex min-h-8 items-center justify-center gap-1.5 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-medium text-content-secondary transition-colors hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary-dark"><i data-lucide="external-link" class="h-4 w-4"></i>{{ action_label }}</a>
-            </footer>
-        {% endif %}
-    </section>
+            {% if action_href and action_label %}
+                <footer class="flex justify-end border-t border-outline-subtle bg-surface-elevated/60 px-4 py-3 sm:px-5">
+                    <a href="{{ action_href }}"
+                       class="inline-flex min-h-8 items-center justify-center gap-1.5 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-medium text-content-secondary transition-colors hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary-dark"><i data-lucide="external-link" class="h-4 w-4"></i>{{ action_label }}</a>
+                </footer>
+            {% endif %}
+        </section>
+    {% endif %}
 {%- endmacro %}

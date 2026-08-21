@@ -13,7 +13,7 @@ def test_service_and_ingress_use_shared_network_inventory_contracts() -> None:
     pattern = read('docs/design/patterns/KUBERNETES_NETWORK_INVENTORY.md')
 
     for source in (service_detail, ingress_detail):
-        assert 'data-kaori-detail-density="horizontal-bands"' in source
+        assert 'data-kaori-detail-density="unified-resource-sheet"' in source
         assert 'detail.expanded_workspace_shell_classes()' in source
         assert 'technical_metadata_collection.html' in source
         assert 'related_resource_collection.html' in source
@@ -32,11 +32,10 @@ def test_inventory_fact_grid_uses_one_grouped_boundary_without_floating_tiles() 
     assert 'macro inventory_fact_grid(rows, columns=2)' in detail
     assert 'data-kaori-inventory-fact-grid' in detail
     assert 'data-kaori-inventory-fact-grid' in detail
-    assert (
-        'rounded-lg border border-outline-subtle bg-surface-card'
-        not in detail.split('{% macro inventory_fact_grid', 1)[1].split('{%- endmacro %}', 1)[0]
-    )
-    assert 'overflow-hidden rounded-lg border border-outline-subtle bg-surface-elevated' in detail
+    fact_grid = detail.split('{% macro inventory_fact_grid', 1)[1].split('{%- endmacro %}', 1)[0]
+    assert 'rounded-lg border border-outline-subtle bg-surface-card' not in fact_grid
+    assert 'class="grid min-w-0 gap-x-10 {{ grid_classes }}"' in detail
+    assert 'rounded-lg border border-outline-subtle bg-surface-elevated' not in fact_grid
 
 
 def test_metadata_collection_avoids_nested_vertical_scroll() -> None:
@@ -46,7 +45,7 @@ def test_metadata_collection_avoids_nested_vertical_scroll() -> None:
     assert 'max-h-56 overflow-y-auto' not in metadata
     assert 'data-kaori-inventory-metadata-collection' in metadata
     assert 'max-h-56 overflow-y-auto' not in metadata
-    assert 'data-kaori-inventory-detail-layout="horizontal-section-stack"' in pod_detail
+    assert 'data-kaori-inventory-detail-layout="unified-resource-sheet"' in pod_detail
 
 
 def test_volume_source_uses_body_typography() -> None:

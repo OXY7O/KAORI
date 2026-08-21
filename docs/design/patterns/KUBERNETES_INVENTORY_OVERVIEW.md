@@ -13,7 +13,7 @@ Canonical Hero
 Inventory Data Snapshot
 Inventory Asset Catalog
 Compact Cluster Inventory Table
-└── View Details → Right-Side Drawer
+└── View Details → Full Workspace Modal · Unified Resource Sheet V10
 ```
 
 ## Ownership
@@ -56,11 +56,11 @@ Canonical columns:
 Cluster | Connection | Total Objects | Last Snapshot | Inventory Signals | Details
 ```
 
-Asset-level counts belong in the detail drawer, not in the comparison row.
+Asset-level counts belong in the detail modal, not in the comparison row.
 
-### Detail Drawer
+### Cluster Detail Modal
 
-Uses the shared Side Drawer content primitives and contains:
+Uses `components/resource_detail_modal.html` and Unified Resource Sheet V10 primitives and contains:
 
 - Cluster Snapshot Summary;
 - Cluster Identity;
@@ -68,7 +68,6 @@ Uses the shared Side Drawer content primitives and contains:
 - Inventory Breakdown;
 - Inventory Signals;
 - Operational Context;
-- `Open Cluster Inventory` action.
 
 The summary includes total objects, populated asset categories, and largest inventory segment. The final Operational Context section explains that the data is a committed database snapshot and provides one state-aware next step.
 
@@ -79,7 +78,7 @@ The summary includes total objects, populated asset categories, and largest inve
 - Healthy means connected and collected within the freshness window;
 - normal freshness is not repeated as an Inventory Signal;
 - signals represent only conditions requiring awareness;
-- state-aware drawer guidance distinguishes disconnected, never-collected, stale, signalled, and current snapshots.
+- state-aware detail guidance distinguishes disconnected, never-collected, stale, signalled, and current snapshots.
 
 ## Pagination
 
@@ -90,9 +89,9 @@ The summary includes total objects, populated asset categories, and largest inve
 - section-owned loading bar;
 - pagination replaces only table content.
 
-## Drawer Readability Refinement
+## Detail Readability Refinement
 
-Cluster detail uses concise section headers, compact identity/snapshot cards without redundant descriptions, and a divided plain-metric summary row. Technical values follow normal detail typography unless an explicit raw-copy monospace exception is requested.
+Cluster detail uses the shared full-workspace modal, one connected summary strip, and one Unified Resource Sheet. Identity, snapshot, breakdown, and signal evidence share the same horizontal-band geometry and calm proportional typography. The modal body is the single vertical scrolling context.
 
 Every metric in **Cluster Snapshot Summary** must preserve the same three-level
 hierarchy: label, primary value, and concise supporting text. `Total Objects` uses

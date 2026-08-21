@@ -17,7 +17,7 @@ def test_pod_detail_uses_full_width_horizontal_sections() -> None:
     assert 'stretch=false' in template
     assert "density='compact'" in template
     assert 'xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]' not in template
-    assert 'data-kaori-inventory-detail-layout="horizontal-section-stack"' in template
+    assert 'data-kaori-inventory-detail-layout="unified-resource-sheet"' in template
     assert 'min-h-96' not in template
     assert 'min-h-[32rem]' not in template
     assert 'min-h-[30rem]' not in template
