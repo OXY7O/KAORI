@@ -544,9 +544,9 @@ def test_analytics_overview_r2_management_typography_and_helper_copy_contract() 
     ):
         assert helper in rendered_html
 
-    assert 'font-size: 12pt' in stylesheet
-    assert 'font-size: 14pt' in stylesheet
-    assert 'font-size: 17.5pt' in stylesheet
+    assert '--aov-type-body: 7.6pt' in stylesheet
+    assert '--aov-type-section: 10.4pt' in stylesheet
+    assert '--aov-type-page: 14.6pt' in stylesheet
     assert '.report-use-advisory' in stylesheet
     assert 'max-width: 100%' in stylesheet
 

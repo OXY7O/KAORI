@@ -546,3 +546,227 @@ body.kaori-analytics-publication.kaori-reporting-v3 .page-methodology .report-us
   font-size: 12pt;
   line-height: 1.36;
 }
+
+/* V3.0-R3 typography hierarchy reset.
+ * A4 evidence tables own the smallest readable type. Narrative and headings
+ * scale upward from that baseline instead of forcing 12 pt content into fixed pages.
+ */
+body.kaori-analytics-publication.kaori-reporting-v3 {
+  --aov-type-table-dense: 5.45pt;
+  --aov-type-table: 5.9pt;
+  --aov-type-support: 6.2pt;
+  --aov-type-body: 7.6pt;
+  --aov-type-subheading: 8.3pt;
+  --aov-type-section: 10.4pt;
+  --aov-type-page: 14.6pt;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .page-title-copy h1 {
+  font-size: var(--aov-type-page);
+  line-height: 1.08;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .page-title-copy p {
+  margin-top: .9mm;
+  font-size: 7.1pt;
+  line-height: 1.28;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .cutoff span { font-size: 5.7pt; }
+body.kaori-analytics-publication.kaori-reporting-v3 .cutoff strong {
+  font-size: 6.4pt;
+  line-height: 1.2;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .content-section h2 {
+  font-size: var(--aov-type-section);
+  line-height: 1.18;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .content-section h3 {
+  font-size: var(--aov-type-subheading);
+  line-height: 1.22;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .section-subtitle {
+  margin-top: 1mm;
+  font-size: var(--aov-type-support);
+  line-height: 1.34;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .section-body {
+  margin-top: 2.3mm;
+  font-size: var(--aov-type-body);
+  line-height: 1.4;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .lead-paragraph,
+body.kaori-analytics-publication.kaori-reporting-v3 .narrative-copy,
+body.kaori-analytics-publication.kaori-reporting-v3 .reliability-guidance-section .section-body > p {
+  width: 100%;
+  max-width: none;
+  font-size: 7.8pt;
+  line-height: 1.44;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .source-note {
+  font-size: 5.8pt;
+  line-height: 1.36;
+}
+
+/* Tables are intentionally the smallest publication role. */
+body.kaori-analytics-publication.kaori-reporting-v3 .report-table {
+  width: 100%;
+  max-width: 100%;
+  font-size: var(--aov-type-table);
+  line-height: 1.24;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .report-table th,
+body.kaori-analytics-publication.kaori-reporting-v3 .report-table td {
+  padding: 1.15mm 1.2mm;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .report-table small {
+  font-size: 5.35pt;
+  line-height: 1.24;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .capacity-register,
+body.kaori-analytics-publication.kaori-reporting-v3 .capacity-table,
+body.kaori-analytics-publication.kaori-reporting-v3 .quality-table,
+body.kaori-analytics-publication.kaori-reporting-v3 .cluster-table {
+  font-size: 5.85pt;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .reports-table,
+body.kaori-analytics-publication.kaori-reporting-v3 .recommendation-register {
+  font-size: 5.7pt;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .fresh-table {
+  font-size: var(--aov-type-table-dense);
+  line-height: 1.18;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .fresh-table th,
+body.kaori-analytics-publication.kaori-reporting-v3 .fresh-table td {
+  padding-left: .95mm;
+  padding-right: .95mm;
+  white-space: nowrap;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .fresh-table td:last-child,
+body.kaori-analytics-publication.kaori-reporting-v3 .fresh-table th:last-child {
+  font-size: 5.2pt;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .forecast-register {
+  font-size: 5.75pt;
+}
+
+/* References sit between fixed tables and management prose. */
+body.kaori-analytics-publication.kaori-reporting-v3 .reference-notes > h3,
+body.kaori-analytics-publication.kaori-reporting-v3 .identity-register > h3 {
+  font-size: 8.1pt;
+  line-height: 1.2;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .reference-helper,
+body.kaori-analytics-publication.kaori-reporting-v3 .identity-register-subtitle {
+  margin: .8mm 0 1.9mm;
+  font-size: 6.15pt;
+  line-height: 1.34;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .reference-item strong,
+body.kaori-analytics-publication.kaori-reporting-v3 .identity-title {
+  font-size: 6.75pt;
+  line-height: 1.28;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .reference-item p,
+body.kaori-analytics-publication.kaori-reporting-v3 .identity-meta {
+  font-size: 6.1pt;
+  line-height: 1.36;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .reference-code { font-size: 5.9pt; }
+
+/* Metric hierarchy remains visually stronger than the evidence registers. */
+body.kaori-analytics-publication.kaori-reporting-v3 .metric > span { font-size: 5.3pt; }
+body.kaori-analytics-publication.kaori-reporting-v3 .metric > strong { font-size: 10.6pt; }
+body.kaori-analytics-publication.kaori-reporting-v3 .metric > strong.metric-medium { font-size: 8.7pt; }
+body.kaori-analytics-publication.kaori-reporting-v3 .metric > strong.metric-long { font-size: 7.2pt; }
+body.kaori-analytics-publication.kaori-reporting-v3 .metric > em { font-size: 5.6pt; }
+body.kaori-analytics-publication.kaori-reporting-v3 .readiness-grid span,
+body.kaori-analytics-publication.kaori-reporting-v3 .count-strip span { font-size: 5.8pt; }
+body.kaori-analytics-publication.kaori-reporting-v3 .readiness-grid strong,
+body.kaori-analytics-publication.kaori-reporting-v3 .count-strip strong { font-size: 10.8pt; }
+
+body.kaori-analytics-publication.kaori-reporting-v3 .detail-flow strong,
+body.kaori-analytics-publication.kaori-reporting-v3 .detail-flow p {
+  font-size: 6.15pt;
+  line-height: 1.34;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .action-list {
+  font-size: 6.35pt;
+  line-height: 1.4;
+}
+
+/* Restore comfortable section rhythm after the R2 oversized type experiment. */
+body.kaori-analytics-publication.kaori-reporting-v3 .page-executive .content-section,
+body.kaori-analytics-publication.kaori-reporting-v3 .page-resource .content-section,
+body.kaori-analytics-publication.kaori-reporting-v3 .page-trend .content-section,
+body.kaori-analytics-publication.kaori-reporting-v3 .page-consumers .content-section,
+body.kaori-analytics-publication.kaori-reporting-v3 .page-capacity-pressure .content-section,
+body.kaori-analytics-publication.kaori-reporting-v3 .page-reporting .content-section,
+body.kaori-analytics-publication.kaori-reporting-v3 .page-freshness .content-section,
+body.kaori-analytics-publication.kaori-reporting-v3 .page-recommendations .content-section {
+  margin-top: 4.5mm;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .page-alerts .content-section,
+body.kaori-analytics-publication.kaori-reporting-v3 .page-methodology .content-section {
+  margin-top: 3.7mm;
+}
+
+/* Methodology is the densest evidence page, but keeps the same hierarchy. */
+body.kaori-analytics-publication.kaori-reporting-v3 .page-methodology .content-section h2 {
+  font-size: 9.8pt;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .page-methodology .section-subtitle {
+  margin-top: .75mm;
+  font-size: 5.95pt;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .page-methodology .section-body {
+  margin-top: 1.7mm;
+  font-size: 6.7pt;
+  line-height: 1.34;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .page-methodology .content-section {
+  margin-top: 2.5mm;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .page-methodology .methodology-register-layout h3,
+body.kaori-analytics-publication.kaori-reporting-v3 .page-methodology .evidence-columns h3,
+body.kaori-analytics-publication.kaori-reporting-v3 .page-methodology .limitations-status-layout h3 {
+  margin-bottom: 1.25mm;
+  font-size: 7.5pt;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .page-methodology .sources-compact,
+body.kaori-analytics-publication.kaori-reporting-v3 .page-methodology .method-register {
+  font-size: 5.35pt;
+  line-height: 1.2;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .page-methodology .methodology-reference-grid .reference-item strong {
+  font-size: 6.25pt;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .page-methodology .methodology-reference-grid .reference-item p {
+  font-size: 5.65pt;
+  line-height: 1.28;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .page-methodology .evidence-columns ul,
+body.kaori-analytics-publication.kaori-reporting-v3 .page-methodology .limitations-copy ul {
+  font-size: 5.9pt;
+  line-height: 1.34;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .page-methodology .status-language-block > h3 {
+  margin-bottom: 2.1mm;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .page-methodology .status-legend-item strong {
+  font-size: 6pt;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .page-methodology .status-legend-item p {
+  font-size: 5.45pt;
+  line-height: 1.28;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .page-methodology .report-use-advisory {
+  margin-top: 2.6mm;
+  padding: 2.5mm 3.4mm;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .page-methodology .report-use-advisory strong {
+  margin-bottom: .75mm;
+  font-size: 7.2pt;
+}
+body.kaori-analytics-publication.kaori-reporting-v3 .page-methodology .report-use-advisory p {
+  font-size: 7.4pt;
+  line-height: 1.38;
+}

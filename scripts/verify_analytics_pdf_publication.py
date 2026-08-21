@@ -127,9 +127,10 @@ def main() -> int:
     overview_css = read(PDF_CSS_ROOT / 'analytics_overview.css')
     overview_compact = re.sub(r'\s+', '', overview_css)
     for token in (
-        'font-size:12pt',
-        'font-size:14pt',
-        'font-size:17.5pt',
+        '--aov-type-table-dense:5.45pt',
+        '--aov-type-body:7.6pt',
+        '--aov-type-section:10.4pt',
+        '--aov-type-page:14.6pt',
         'max-width:100%',
         '.report-use-advisory',
         '.fresh-table',
@@ -235,7 +236,7 @@ def main() -> int:
         'collision-safe',
         'same evidence series and denominator',
         'Raw ISO timestamps with microseconds are prohibited',
-        'primary narrative content uses a 12 pt reading size',
+        'fixed evidence tables are the smallest readable role',
         'KAORI-{FAMILY}-{TYPE}-{YYYYMMDD}-{FINGERPRINT}',
     ):
         require(value in docs, f'Publication documentation is missing: {value}', errors)

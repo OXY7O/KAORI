@@ -97,7 +97,7 @@ The v3.0 contract is refined with the following mandatory publication rules. Thi
 
 ### 4.2 Analytics Overview management typography profile (2026-08-21)
 
-Analytics Overview is the management-facing member of the Analytics publication family. Its primary narrative content uses a 12 pt reading size. Supporting roles scale around that anchor instead of shrinking prose to force a page fit.
+Analytics Overview is the management-facing member of the Analytics publication family. Typography follows a compact A4 publication scale: fixed evidence tables are the smallest readable role, then supporting copy, body narrative, subsection headings, and page headings scale upward in a stable hierarchy.
 
 | Role | Analytics Overview target |
 |---|---:|
@@ -110,7 +110,7 @@ Analytics Overview is the management-facing member of the Analytics publication 
 | Reference/detail body | 8-9 pt |
 | Source note | 8 pt |
 
-The 12 pt rule applies to management prose, interpretation, guidance, and full-width advisory content. Dense fixed registers may remain smaller so scalar fields can stay on one line inside the A4 content frame. Tables may never expand beyond the report content margin to preserve a larger font. Short publication labels and reference registers are preferred instead.
+Fixed evidence tables intentionally own the smallest readable type so scalar fields can remain on one line inside the A4 content frame. Narrative text must remain visibly larger than tables, and headings must step upward consistently. Tables may never expand beyond the report content margin to preserve a larger font. Short publication labels and reference registers are preferred instead.
 
 Every major register or evidence block should have a one-sentence helper description when the heading alone does not explain the reading purpose. Full-width guidance should use the full content measure rather than an arbitrary narrow paragraph width.
 
