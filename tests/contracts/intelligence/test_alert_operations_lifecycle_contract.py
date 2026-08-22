@@ -61,3 +61,12 @@ def test_alert_operations_permissions_split_operator_decisions_from_integration_
     assert "@permission_required('integrations.manage')" in routes
     assert "@alert_intelligence_bp.post('/routing')" in routes
     assert "@alert_intelligence_bp.post('/templates')" in routes
+
+
+def test_alert_operations_archive_links_use_canonical_data_lifecycle_endpoint() -> None:
+    overview = read('app/templates/intelligence/partials/_alert_ops_overview.html')
+    history = read('app/templates/intelligence/partials/_alert_ops_history.html')
+
+    for template in (overview, history):
+        assert "url_for('platform_operations.data_lifecycle.index', domain='alert_incident')" in template
+        assert "url_for('data_lifecycle.index'" not in template
