@@ -4,55 +4,110 @@
 {% import "components/details/_detail_content.html" as detail %}
 {% set remediation_phases = ["Review Evidence", "Validate Live State", "Apply Remediation", "Verify & Close"] %}
 {% set remediation_icons = ["scan-search", "activity", "wrench", "badge-check"] %}
-{% macro section_heading(index, icon, title, description) -%}
+{% set review_title = item.list_title|default(item.title, true) %}
+{% set review_priority = item.priority|default(item.severity_label, true) %}
+{% set review_scope = item.scope_title|default('Asset Scope', true) %}
+{% if item.recommended_action %}
+    {% set review_outcome = item.recommended_action %}
+{% else %}
+    {% set review_outcome = 'Resolve the matched condition and verify the recommendation clears after the next committed refresh.' %}
+{% endif %}
+{% if item.evidence and item.evidence.snapshot_basis %}
+    {% set snapshot_basis = item.evidence.snapshot_basis %}
+{% else %}
+    {% set snapshot_basis = 'Committed evidence snapshot' %}
+{% endif %}
+{% if item.evidence and item.evidence.bucket_name %}
+    {% set scope_context = 'Bucket' %}
+{% elif item.evidence and item.evidence.system_name %}
+    {% set scope_context = 'Object Storage System' %}
+{% elif item.evidence and item.evidence.namespace %}
+    {% set scope_context = 'Namespace' %}
+{% else %}
+    {% set scope_context = 'Affected scope' %}
+{% endif %}
+{% if item.affected_assets %}
+    {% set affected_count = item.evidence.affected_count|default(item.affected_assets|length, true) %}
+    {% set affected_type = item.affected_assets[0].type|default(item.source_kind_label, true) %}
+{% elif item.affected_items %}
+    {% set affected_count = item.evidence.affected_count|default(item.affected_items|length, true) %}
+    {% set affected_type = item.source_kind_label|default('Resource', true) %}
+{% else %}
+    {% set affected_count = 0 %}
+    {% set affected_type = item.source_kind_label|default('Resource', true) %}
+{% endif %}
+{% set affected_type_label = affected_type if affected_count|int == 1 else affected_type ~ 's' %}
+{% macro section_kicker(index, icon, title, description) -%}
     <div class="flex min-w-0 items-start gap-3">
-        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-brand-outline bg-kaori-soft text-kaori-primary"
+        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-brand-outline bg-kaori-soft text-kaori-primary"
               aria-hidden="true">
             <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
         </span>
         <div class="min-w-0">
             <div class="flex flex-wrap items-center gap-2">
                 <span class="text-xs font-semibold leading-5 text-kaori-primary">{{ index }}</span>
-                <h4 class="text-sm font-semibold leading-5 text-content-primary">{{ title }}</h4>
+                <h4 class="text-sm font-semibold leading-5 text-kaori-primary">{{ title }}</h4>
             </div>
-            <p class="mt-0.5 text-xs leading-5 text-content-muted">{{ description }}</p>
+            {% if description %}
+                <p class="mt-0.5 text-xs leading-5 text-content-muted">{{ description }}</p>
+            {% endif %}
         </div>
     </div>
 {%- endmacro %}
-{% macro context_card(label, value, icon) -%}
-    <div class="min-w-0 rounded-xl border border-outline-subtle bg-surface-elevated px-4 py-3.5">
-        <dt class="flex items-center gap-2 text-xs font-semibold leading-5 text-content-muted">
-            <i data-lucide="{{ icon }}" class="h-3.5 w-3.5 shrink-0"></i>
-            {{ label }}
-        </dt>
-        <dd class="mt-1.5 min-w-0 break-words text-sm leading-6 text-content-secondary [overflow-wrap:anywhere]">
-            {{ value }}
+{% macro reason_row(icon, label, value, warning=false) -%}
+    <div class="grid min-w-0 grid-cols-[2.75rem_minmax(0,1fr)] gap-3 py-3 first:pt-0 last:pb-0">
+        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl {{ 'bg-status-warning-soft text-status-warning-text' if warning else 'bg-kaori-soft text-kaori-primary' }}"
+              aria-hidden="true">
+            <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
+        </span>
+        <div class="min-w-0">
+            <dt class="text-xs font-semibold leading-5 text-content-primary">{{ label }}</dt>
+            <dd class="mt-0.5 break-words text-sm leading-6 text-content-secondary [overflow-wrap:anywhere]">{{ value }}</dd>
+        </div>
+    </div>
+{%- endmacro %}
+{% macro summary_metric(icon, label, value, supporting) -%}
+    <article class="min-w-0 bg-surface-card px-4 py-3.5 sm:px-5">
+        <div class="flex min-w-0 items-start gap-3">
+            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-hover text-content-muted"
+                  aria-hidden="true">
+                <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
+            </span>
+            <div class="min-w-0">
+                <p class="text-xs font-medium leading-5 text-content-muted">{{ label }}</p>
+                <div class="mt-0.5 break-words text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]">{{ value }}</div>
+                {% if supporting %}
+                    <p class="mt-0.5 break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]">
+                        {{ supporting }}
+                    </p>
+                {% endif %}
+            </div>
+        </div>
+    </article>
+{%- endmacro %}
+{% macro evidence_fact(label, value, wide=false, mono=false) -%}
+    <div class="min-w-0 bg-surface-card px-3.5 py-3 {{ 'sm:col-span-2' if wide else '' }}">
+        <dt class="text-xs font-medium leading-5 text-content-muted">{{ label }}</dt>
+        <dd class="mt-0.5 min-w-0 {{ 'font-mono text-xs' if mono else 'text-sm' }} font-semibold leading-5 text-content-primary">
+            <span class="block break-words [overflow-wrap:anywhere]"
+                  title="{{ value if value not in [None, ''] else '-' }}">{{ value if value not in [None, ''] else '-' }}</span>
         </dd>
     </div>
 {%- endmacro %}
-{% macro evidence_fact(label, value, wide=false, mono=false) -%}
-    <div class="min-w-0 rounded-xl border border-outline-subtle bg-surface-card px-3.5 py-3 {{ 'xl:col-span-2' if wide else '' }}">
-        <dt class="text-xs font-medium leading-5 text-content-muted">{{ label }}</dt>
+{% macro trace_cell(icon, label, value, mono=false, rule_key=false) -%}
+    <div class="min-w-0 px-4 py-3.5 {{ 'lg:col-span-2' if rule_key else '' }}">
+        <dt class="flex items-center gap-2 text-xs font-medium leading-5 text-content-muted">
+            <i data-lucide="{{ icon }}" class="h-3.5 w-3.5 shrink-0"></i>
+            {{ label }}
+        </dt>
         <dd class="mt-1 min-w-0 {{ 'font-mono text-xs' if mono else 'text-sm' }} font-semibold leading-5 text-content-primary">
             <span class="block break-words [overflow-wrap:anywhere]"
                   title="{{ value if value not in [None, ''] else '-' }}">{{ value if value not in [None, ''] else '-' }}</span>
         </dd>
     </div>
 {%- endmacro %}
-{% macro trace_fact(icon, label, value, mono=false, wide=false) -%}
-    <div class="min-w-0 rounded-xl border border-outline-subtle bg-surface-elevated px-4 py-3.5 {{ 'xl:col-span-3' if wide else '' }}">
-        <dt class="flex items-center gap-2 text-xs font-medium leading-5 text-content-muted">
-            <i data-lucide="{{ icon }}" class="h-3.5 w-3.5 shrink-0"></i>
-            {{ label }}
-        </dt>
-        <dd class="mt-1.5 min-w-0 {{ 'font-mono text-xs' if mono else 'text-sm' }} font-semibold leading-5 text-content-primary">
-            <span class="block break-words [overflow-wrap:anywhere]"
-                  title="{{ value if value not in [None, ''] else '-' }}">{{ value if value not in [None, ''] else '-' }}</span>
-        </dd>
-    </div>
-{%- endmacro %}
 <div data-kaori-detail-variant="modal"
-     data-kaori-recommendation-review-layout="layered-review-workspace"
+     data-kaori-recommendation-review-layout="decision-evidence-workflow"
      class="min-w-0">
     <div data-kaori-detail-shell class="min-w-0">
         <header data-resource-detail-header>
@@ -63,8 +118,12 @@
                         <i data-lucide="sparkles" class="h-5 w-5"></i>
                     </span>
                     <div class="min-w-0">
-                        <p class="text-xs font-semibold leading-5 text-kaori-primary">Recommendation Review</p>
-                        <h3 class="break-words text-lg font-semibold leading-7 text-content-primary [overflow-wrap:anywhere]">{{ item.list_title|default(item.title, true) }}</h3>
+                        <div class="flex flex-wrap items-center gap-2 text-xs font-semibold leading-5">
+                            <span class="text-kaori-primary">Recommendation Review</span>
+                            <span class="text-content-disabled" aria-hidden="true">•</span>
+                            <span class="text-content-muted">Committed Snapshot</span>
+                        </div>
+                        <h3 class="mt-0.5 break-words text-lg font-semibold leading-7 text-content-primary [overflow-wrap:anywhere]">{{ review_title }}</h3>
                         <p class="mt-1 max-w-7xl break-words text-sm leading-6 text-content-muted [overflow-wrap:anywhere]">{{ item.summary }}</p>
                         <div class="mt-2 flex flex-wrap items-center gap-1.5">
                             {{ table_label.metadata_label(item.domain_label, 'boxes') }}
@@ -76,247 +135,243 @@
                         </div>
                     </div>
                 </div>
-                <div class="shrink-0 pt-5">{{ table_label.status_label(item.severity_label, item.tone, size='compact') }}</div>
+                <div class="shrink-0 pt-5">
+                    {{ table_label.status_label(item.severity_label, item.tone, size='compact') }}
+                </div>
             </div>
         </header>
         <div data-resource-detail-summary
-             class="grid grid-cols-2 gap-px bg-outline-subtle lg:grid-cols-4">
-            <article class="min-w-0 bg-surface-card px-4 py-3.5">
-                <div class="flex items-start gap-3">
-                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
-                          aria-hidden="true"><i data-lucide="shield-alert" class="h-4 w-4"></i></span>
+             data-kaori-recommendation-summary-strip
+             class="mx-4 my-3 grid gap-px overflow-hidden rounded-xl border border-outline-subtle bg-outline-subtle sm:mx-5 sm:grid-cols-2 lg:grid-cols-4">
+            <article class="min-w-0 bg-surface-card px-4 py-3.5 sm:px-5">
+                <div class="flex min-w-0 items-start gap-3">
+                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                          aria-hidden="true"><i data-lucide="flag" class="h-4 w-4"></i></span>
                     <div class="min-w-0">
-                        <p class="text-xs font-medium leading-5 text-content-muted">Priority</p>
-                        <div class="mt-1">{{ table_label.status_label(item.priority|default(item.severity_label, true) , item.tone, size='compact') }}</div>
+                        <p class="text-xs font-medium leading-5 text-content-muted">Review Priority</p>
+                        <div class="mt-1">
+                            {{ table_label.status_label(review_priority, item.tone, size='compact') }}
+                        </div>
                     </div>
                 </div>
             </article>
-            <article class="min-w-0 bg-surface-card px-4 py-3.5">
-                <div class="flex items-start gap-3">
-                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-hover text-content-muted"
-                          aria-hidden="true"><i data-lucide="target" class="h-4 w-4"></i></span>
-                    <div class="min-w-0">
-                        <p class="text-xs font-medium leading-5 text-content-muted">Affected</p>
-                        <p class="mt-0.5 break-words text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]">
-                            {% if item.affected_assets %}
-                                {{ item.evidence.affected_count|default(item.affected_assets|length, true) }} resources
-                            {% elif item.affected_items %}
-                                {{ item.evidence.affected_count|default(item.affected_items|length, true) }} affected
-                            {% else %}
-                                Not identified
-                            {% endif %}
-                        </p>
-                    </div>
-                </div>
-            </article>
-            <article class="min-w-0 bg-surface-card px-4 py-3.5">
-                <div class="flex items-start gap-3">
-                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-hover text-content-muted"
-                          aria-hidden="true"><i data-lucide="boxes" class="h-4 w-4"></i></span>
-                    <div class="min-w-0">
-                        <p class="text-xs font-medium leading-5 text-content-muted">Affected Scope</p>
-                        <p class="mt-0.5 break-words text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]">{{ item.scope_title|default('Asset Scope', true) }}</p>
-                    </div>
-                </div>
-            </article>
-            <article class="min-w-0 bg-surface-card px-4 py-3.5">
-                <div class="flex items-start gap-3">
-                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-hover text-content-muted"
-                          aria-hidden="true"><i data-lucide="database" class="h-4 w-4"></i></span>
-                    <div class="min-w-0">
-                        <p class="text-xs font-medium leading-5 text-content-muted">Evidence Source</p>
-                        <p class="mt-0.5 break-words text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]">{{ item.signal_source_label }}</p>
-                    </div>
-                </div>
-            </article>
+            {{ summary_metric(
+                'users-round',
+                'Affected Assets',
+                affected_count ~ ' ' ~ affected_type_label,
+                affected_count ~ ' affected'
+            ) }}
+            {{ summary_metric('network', 'Affected Scope', review_scope, scope_context) }}
+            {{ summary_metric('database', 'Evidence Source', item.signal_source_label, 'Committed Snapshot') }}
         </div>
-        <div class="space-y-5 p-4 sm:p-5">
-            <section class="overflow-hidden rounded-2xl border border-outline-subtle bg-surface-card shadow-sm">
+        <div class="grid gap-4 p-4 sm:p-5 2xl:grid-cols-12">
+            <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm 2xl:col-span-7">
                 <header class="border-b border-outline-subtle bg-surface-elevated px-4 py-3.5 sm:px-5">
-                    {{ section_heading('01', 'scan-search', 'Decision Brief', 'Understand why the recommendation exists and the operator outcome before reviewing detailed evidence.') }}
+                    {{ section_kicker('01', 'scan-search', 'WHY KAORI RAISED THIS', '') }}
                 </header>
-                <div class="grid gap-px bg-outline-subtle xl:grid-cols-[minmax(0,1.4fr)_minmax(22rem,0.6fr)]">
-                    <div class="min-w-0 bg-surface-card p-4 sm:p-5">
-                        <p class="text-xs font-semibold leading-5 text-content-primary">Why KAORI Raised This</p>
-                        <p class="mt-0.5 text-xs leading-5 text-content-muted">Finding context, evaluation condition, and operational consequence.</p>
-                        <dl class="mt-3 grid gap-3 lg:grid-cols-3 xl:grid-cols-1 2xl:grid-cols-3">
-                            {{ context_card('Observed Finding', item.affected_summary|default(item.summary, true) , 'crosshair') }}
-                            {{ context_card('Detection Condition', item.condition_summary, 'binary') }}
-                            {{ context_card('Operational Impact', item.impact, 'triangle-alert') }}
-                        </dl>
-                    </div>
-                    <aside class="min-w-0 bg-kaori-mist/50 p-4 sm:p-5">
-                        <div class="flex items-center gap-2 text-xs font-semibold leading-5 text-kaori-primary">
-                            <i data-lucide="goal" class="h-4 w-4"></i>
-                            Recommended Outcome
-                        </div>
-                        <p class="mt-3 break-words text-base font-semibold leading-7 text-content-primary [overflow-wrap:anywhere]">{{ item.recommended_action or 'Resolve the matched condition and verify the recommendation clears after the next committed refresh.' }}</p>
-                        <div class="mt-4 flex flex-wrap gap-2">
-                            {{ table_label.metadata_label(item.scope_title|default('Asset Scope', true) , 'target', false, 'compact') }}
-                            {% if item.evidence and item.evidence.snapshot_basis %}
-                                {{ table_label.metadata_label(item.evidence.snapshot_basis, 'database', false, 'compact') }}
-                            {% endif %}
-                        </div>
-                    </aside>
-                </div>
+                <dl class="divide-y divide-outline-subtle px-4 sm:px-5">
+                    {{ reason_row('crosshair', 'Observed Finding', item.affected_summary|default(item.summary, true)) }}
+                    {{ reason_row('binary', 'Detection Condition', item.condition_summary) }}
+                    {{ reason_row('triangle-alert', 'Operational Impact', item.impact, true) }}
+                </dl>
             </section>
-            <section class="overflow-hidden rounded-2xl border border-outline-subtle bg-surface-card shadow-sm">
+            <aside class="overflow-hidden rounded-xl border border-brand-outline bg-kaori-mist/50 shadow-sm 2xl:col-span-5">
+                <div class="p-4 sm:p-5">
+                    <div class="flex items-start gap-3">
+                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"
+                              aria-hidden="true"><i data-lucide="goal" class="h-5 w-5"></i></span>
+                        <div class="min-w-0">
+                            <p class="text-xs font-semibold leading-5 text-kaori-primary">RECOMMENDED OUTCOME</p>
+                            <p class="mt-1.5 break-words text-base font-semibold leading-7 text-content-primary [overflow-wrap:anywhere]">{{ review_outcome }}</p>
+                        </div>
+                    </div>
+                    <div class="mt-5 grid gap-2 sm:grid-cols-3">
+                        <div class="rounded-lg border border-brand-outline bg-surface-card px-3 py-2.5">
+                            <p class="text-xs font-semibold leading-5 text-kaori-primary">Faster triage</p>
+                            <p class="mt-0.5 text-xs leading-5 text-content-muted">Start with highest-evidence assets.</p>
+                        </div>
+                        <div class="rounded-lg border border-brand-outline bg-surface-card px-3 py-2.5">
+                            <p class="text-xs font-semibold leading-5 text-kaori-primary">Safer changes</p>
+                            <p class="mt-0.5 text-xs leading-5 text-content-muted">Validate live state before remediation.</p>
+                        </div>
+                        <div class="rounded-lg border border-brand-outline bg-surface-card px-3 py-2.5">
+                            <p class="text-xs font-semibold leading-5 text-kaori-primary">Verifiable closure</p>
+                            <p class="mt-0.5 text-xs leading-5 text-content-muted">Resync evidence and confirm the finding clears.</p>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+            <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm 2xl:col-span-7">
                 <header class="flex flex-wrap items-start justify-between gap-3 border-b border-outline-subtle bg-surface-elevated px-4 py-3.5 sm:px-5">
-                    {{ section_heading('02', 'target', 'Evidence Review', 'Confirm concrete resource identity and the committed measurements that justify this recommendation.') }}
+                    {{ section_kicker(
+                        '02',
+                        'target',
+                        'EVIDENCE & AFFECTED ASSETS',
+                        'Confirm resource identity and committed evidence before changing live state.'
+                    ) }}
                     {% if item.affected_assets %}
-                        {{ table_label.metadata_label((item.evidence.affected_count|default(item.affected_assets|length, true) ) ~ ' Affected', none, false, 'compact') }}
+                        {{ table_label.metadata_label(affected_count ~ ' Affected', none, false, 'compact') }}
                     {% elif item.affected_items %}
-                        {{ table_label.metadata_label(item.affected_items|length ~ ' Evidence Fields', none, false, 'compact') }}
+                        {{ table_label.metadata_label(
+                            item.affected_items|length ~ ' Evidence Fields',
+                            none,
+                            false,
+                            'compact'
+                        ) }}
                     {% endif %}
                 </header>
-                {% if item.affected_assets %}
-                    <div class="p-4 sm:p-5">
+                <div class="grid min-w-0 gap-px bg-outline-subtle xl:grid-cols-[minmax(0,1.45fr)_minmax(20rem,0.55fr)]">
+                    <div class="min-w-0 bg-surface-card p-4 sm:p-5">
                         <div class="mb-3 flex flex-wrap items-end justify-between gap-3">
                             <div>
                                 <p class="text-xs font-semibold leading-5 text-content-primary">Affected Assets</p>
-                                <p class="mt-0.5 text-xs leading-5 text-content-muted">Highest-evidence resources are shown first so the operator can prioritize investigation.</p>
+                                <p class="mt-0.5 text-xs leading-5 text-content-muted">Concrete resources captured by the committed finding.</p>
                             </div>
-                            {% if item.evidence and item.evidence.snapshot_basis %}
-                                {{ table_label.metadata_label(item.evidence.snapshot_basis, 'database', false, 'compact') }}
+                            {% if snapshot_basis %}
+                                {{ table_label.metadata_label(snapshot_basis, 'database', false, 'compact') }}
                             {% endif %}
                         </div>
-                        <div class="overflow-hidden rounded-xl border border-outline-subtle">
-                            <table class="w-full table-fixed text-left text-sm text-content-secondary">
-                                <colgroup>
-                                    <col class="w-[24%]">
-                                    <col class="w-[30%]">
-                                    <col class="w-[22%]">
-                                    <col class="w-[24%]">
-                                </colgroup>
-                                <thead class="{{ table_ui.head_classes() }}">
-                                    <tr>
-                                        <th class="{{ table_ui.header_cell_classes() }}">Asset</th>
-                                        <th class="{{ table_ui.header_cell_classes() }}">Scope & Ownership</th>
-                                        <th class="{{ table_ui.header_cell_classes() }}">Runtime State</th>
-                                        <th class="{{ table_ui.header_cell_classes(true) }}">Observed Evidence</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="{{ table_ui.body_classes() }}">
-                                    {% for asset in item.affected_assets %}
-                                        <tr class="{{ table_ui.row_classes() }}">
-                                            <td class="{{ table_ui.cell_classes() }}">
-                                                <p class="break-words text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]">{{ asset.name }}</p>
-                                                <p class="mt-0.5 text-xs leading-5 text-content-muted">{{ asset.type }}</p>
-                                            </td>
-                                            <td class="{{ table_ui.cell_classes() }}">
-                                                <p class="break-words text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]">{{ asset.namespace or '-' }}</p>
-                                                <p class="mt-0.5 break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]">{{ asset.owner or 'Ownership not recorded' }}</p>
-                                            </td>
-                                            <td class="{{ table_ui.cell_classes() }}">
-                                                <p class="break-words text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]">{{ asset.state or 'Unknown' }}</p>
-                                                <p class="mt-0.5 break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]">{{ asset.node or 'Node not recorded' }}</p>
-                                            </td>
-                                            <td class="{{ table_ui.cell_classes(true) }}">
-                                                <p class="break-words text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]">{{ asset.evidence or 'Evidence recorded in finding' }}</p>
-                                            </td>
+                        {% if item.affected_assets %}
+                            <div class="overflow-x-auto rounded-lg border border-outline-subtle">
+                                <table class="w-full min-w-[42rem] table-fixed text-left text-sm text-content-secondary">
+                                    <colgroup>
+                                        <col class="w-[28%]">
+                                        <col class="w-[31%]">
+                                        <col class="w-[21%]">
+                                        <col class="w-[20%]">
+                                    </colgroup>
+                                    <thead class="{{ table_ui.head_classes() }}">
+                                        <tr>
+                                            <th class="{{ table_ui.header_cell_classes() }}">Asset</th>
+                                            <th class="{{ table_ui.header_cell_classes() }}">Scope & Ownership</th>
+                                            <th class="{{ table_ui.header_cell_classes() }}">Runtime State</th>
+                                            <th class="{{ table_ui.header_cell_classes(true) }}">Observed Evidence</th>
                                         </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                        {% if item.evidence.affected_count|default(0, true)|int > item.affected_assets|length %}
-                            <p class="mt-2 text-xs leading-5 text-content-muted">Showing the {{ item.affected_assets|length }} highest-evidence assets of {{ item.evidence.affected_count }} affected resources.</p>
+                                    </thead>
+                                    <tbody class="{{ table_ui.body_classes() }}">
+                                        {% for asset in item.affected_assets %}
+                                            <tr class="{{ table_ui.row_classes() }}">
+                                                <td class="{{ table_ui.cell_classes() }}">
+                                                    <p class="break-words text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]">{{ asset.name }}</p>
+                                                    <p class="mt-0.5 text-xs leading-5 text-content-muted">{{ asset.type }}</p>
+                                                </td>
+                                                <td class="{{ table_ui.cell_classes() }}">
+                                                    <p class="break-words text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]">{{ asset.namespace or '-' }}</p>
+                                                    <p class="mt-0.5 break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]">{{ asset.owner or 'Ownership not recorded' }}</p>
+                                                </td>
+                                                <td class="{{ table_ui.cell_classes() }}">
+                                                    <p class="break-words text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]">{{ asset.state or 'Unknown' }}</p>
+                                                    <p class="mt-0.5 break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]">{{ asset.node or 'Node not recorded' }}</p>
+                                                </td>
+                                                <td class="{{ table_ui.cell_classes(true) }}">
+                                                    <p class="break-words text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]">{{ asset.evidence or 'Recorded' }}</p>
+                                                </td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {% if item.evidence.affected_count|default(0, true)|int > item.affected_assets|length %}
+                                <p class="mt-2 text-xs leading-5 text-content-muted">Showing the {{ item.affected_assets|length }} highest-evidence assets of {{ item.evidence.affected_count }} affected resources.</p>
+                            {% endif %}
+                        {% elif item.affected_items %}
+                            <dl class="grid gap-px overflow-hidden rounded-lg border border-outline-subtle bg-outline-subtle sm:grid-cols-2">
+                                {% for row in item.affected_items %}
+                                    {% set label = row.label if row.label is defined else row[0] %}
+                                    {% set value = row.value if row.value is defined else row[1] %}
+                                    {{ evidence_fact(
+                                        label,
+                                        value,
+                                        label in ['Cluster', 'Rule Key', 'Snapshot Basis'],
+                                        label in ['Cluster', 'Rule Key']
+                                    ) }}
+                                {% endfor %}
+                            </dl>
+                        {% else %}
+                            {{ detail.empty_evidence('No Affected Asset Detail', 'No concrete affected-resource identifiers were recorded for this recommendation.', 'database') }}
                         {% endif %}
                     </div>
-                {% elif item.affected_items %}
-                    <div class="p-4 sm:p-5">
-                        <p class="text-xs font-semibold leading-5 text-content-primary">Affected Resource Context</p>
-                        <p class="mt-0.5 text-xs leading-5 text-content-muted">Committed identity and scope fields captured with the finding.</p>
-                        <dl class="mt-3 grid gap-2 md:grid-cols-2 xl:grid-cols-4">
-                            {% for row in item.affected_items %}
-                                {% set label = row.label if row.label is defined else row[0] %}
-                                {% set value = row.value if row.value is defined else row[1] %}
-                                {{ evidence_fact(label, value, label in ['Cluster', 'Rule Key', 'Snapshot Basis'], label in ['Cluster', 'Rule Key']) }}
-                            {% endfor %}
-                        </dl>
-                    </div>
-                {% else %}
-                    <div class="p-4 sm:p-5">{{ detail.empty_evidence('No Affected Asset Detail', 'No concrete affected-resource identifiers were recorded for this recommendation.', 'database') }}</div>
-                {% endif %}
-                <div class="border-t border-outline-subtle bg-surface-elevated/50 p-4 sm:p-5">
-                    <div>
+                    <aside class="min-w-0 bg-surface-elevated/50 p-4 sm:p-5">
                         <p class="text-xs font-semibold leading-5 text-content-primary">Evidence Details</p>
-                        <p class="mt-0.5 text-xs leading-5 text-content-muted">Thresholds, counts, observed maxima, and snapshot context behind the rule match.</p>
-                    </div>
-                    {% if item.evidence_details %}
-                        <dl class="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
-                            {% for row in item.evidence_details %}
-                                {{ evidence_fact(row.label, row.value, row.label in ['Snapshot Basis', 'Highest Impact Asset'], false) }}
-                            {% endfor %}
-                        </dl>
-                    {% else %}
-                        <div class="mt-3">{{ detail.empty_evidence('No Quantitative Evidence Detail', 'This finding exposes its committed scope and rule contract without additional measured values.', 'scan-search') }}</div>
-                    {% endif %}
+                        <p class="mt-0.5 text-xs leading-5 text-content-muted">Measured values and snapshot context behind the rule match.</p>
+                        {% if item.evidence_details %}
+                            <dl class="mt-3 grid gap-px overflow-hidden rounded-lg border border-outline-subtle bg-outline-subtle sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
+                                {% for row in item.evidence_details %}
+                                    {{ evidence_fact(
+                                        row.label,
+                                        row.value,
+                                        row.label in ['Snapshot Basis', 'Highest Impact Asset']
+                                    ) }}
+                                {% endfor %}
+                            </dl>
+                        {% else %}
+                            <div class="mt-3">{{ detail.empty_evidence('No Quantitative Evidence Detail', 'This finding exposes its committed scope and rule contract without additional measured values.', 'scan-search') }}</div>
+                        {% endif %}
+                    </aside>
                 </div>
             </section>
-            <section class="overflow-hidden rounded-2xl border border-brand-outline bg-surface-card shadow-sm">
+            <section class="overflow-hidden rounded-xl border border-brand-outline bg-surface-card shadow-sm 2xl:col-span-5">
                 <header class="flex flex-wrap items-start justify-between gap-3 border-b border-brand-outline bg-kaori-mist/50 px-4 py-3.5 sm:px-5">
-                    {{ section_heading('03', 'route', 'Remediation Workflow', 'Move from evidence review to a verified operational outcome using one predictable four-step sequence.') }}
-                    {{ table_label.status_label(item.priority|default(item.severity_label, true) , item.tone, size='compact') }}
+                    {{ section_kicker('03', 'route', 'REMEDIATION WORKFLOW', 'Review, validate, change, then verify against fresh evidence.') }}
+                    {{ table_label.metadata_label('4-step workflow', 'route', false, 'compact') }}
                 </header>
                 <div class="p-4 sm:p-5">
-                    {% set show_target_outcome = item.recommended_action and (not item.fix_steps or item.recommended_action not in item.fix_steps) %}
-                    {% if show_target_outcome %}
-                        <div class="mb-4 grid gap-2 rounded-xl border border-brand-outline bg-kaori-soft px-4 py-3 sm:grid-cols-[9rem_minmax(0,1fr)] sm:items-center">
-                            <p class="text-xs font-semibold leading-5 text-kaori-primary">Target Outcome</p>
-                            <p class="break-words text-sm font-semibold leading-6 text-content-primary [overflow-wrap:anywhere]">{{ item.recommended_action }}</p>
-                        </div>
-                    {% endif %}
+                    <div class="rounded-lg border border-brand-outline bg-kaori-soft px-3.5 py-3">
+                        <p class="text-xs font-semibold leading-5 text-kaori-primary">Target Outcome</p>
+                        <p class="mt-0.5 break-words text-sm font-medium leading-6 text-content-primary [overflow-wrap:anywhere]">{{ review_outcome }}</p>
+                    </div>
                     {% if item.fix_steps %}
-                        <ol class="grid gap-3 md:grid-cols-2 2xl:grid-cols-4">
+                        <ol class="mt-4 grid gap-3 sm:grid-cols-2 2xl:grid-cols-4">
                             {% for step in item.fix_steps %}
-                                {% set phase_label = remediation_phases[loop.index0] if loop.index0 < remediation_phases|length else 'Complete Review' %}
-                                {% set phase_icon = remediation_icons[loop.index0] if loop.index0 < remediation_icons|length else 'check' %}
-                                <li class="relative min-w-0 overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm">
-                                    <div class="h-1 bg-kaori-primary" aria-hidden="true"></div>
-                                    <div class="p-4">
-                                        <div class="flex items-start justify-between gap-3">
-                                            <div class="flex min-w-0 items-start gap-3">
-                                                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-sm font-semibold text-kaori-primary"
-                                                      aria-hidden="true">{{ loop.index }}</span>
-                                                <div class="min-w-0">
-                                                    <p class="text-xs font-semibold leading-5 text-kaori-primary">Step {{ loop.index }} of {{ item.fix_steps|length }}</p>
-                                                    <h5 class="mt-0.5 text-sm font-semibold leading-5 text-content-primary">{{ phase_label }}</h5>
-                                                </div>
-                                            </div>
-                                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-hover text-content-muted"
-                                                  aria-hidden="true">
-                                                <i data-lucide="{{ phase_icon }}" class="h-4 w-4"></i>
-                                            </span>
-                                        </div>
-                                        <p class="mt-3 break-words text-sm leading-6 text-content-secondary [overflow-wrap:anywhere]">{{ step }}</p>
+                                {% set phase_label = remediation_phases[loop.index0]
+                                    if loop.index0 < remediation_phases|length
+                                    else 'Complete Review' %}
+                                {% set phase_icon = remediation_icons[loop.index0]
+                                    if loop.index0 < remediation_icons|length
+                                    else 'check' %}
+                                <li class="min-w-0 rounded-xl border {{ 'border-brand-outline bg-kaori-mist/40' if loop.index == 2 else 'border-outline-subtle bg-surface-card' }} p-3.5">
+                                    <div class="flex items-center justify-between gap-2">
+                                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full {{ 'bg-kaori-primary text-white' if loop.index == 2 else 'bg-kaori-soft text-kaori-primary' }} text-sm font-semibold"
+                                              aria-hidden="true">{{ loop.index }}</span>
+                                        <i data-lucide="{{ phase_icon }}" class="h-4 w-4 shrink-0 text-kaori-primary"></i>
                                     </div>
+                                    <p class="mt-3 text-xs font-semibold leading-5 text-kaori-primary">Step {{ loop.index }} of {{ item.fix_steps|length }}</p>
+                                    <h5 class="mt-0.5 text-sm font-semibold leading-5 text-content-primary">{{ phase_label }}</h5>
+                                    {% if loop.index == 2 %}
+                                        <span class="mt-2 inline-flex rounded-md bg-kaori-soft px-2 py-1 text-xs font-semibold leading-4 text-kaori-primary">Safety checkpoint</span>
+                                    {% endif %}
+                                    <p class="mt-2 break-words text-xs leading-5 text-content-secondary [overflow-wrap:anywhere]">{{ step }}</p>
                                 </li>
                             {% endfor %}
                         </ol>
                     {% else %}
-                        {{ detail.empty_evidence('No Remediation Steps', 'No structured remediation sequence was recorded for this recommendation.', 'list-checks') }}
+                        <div class="mt-4">{{ detail.empty_evidence('No Remediation Steps', 'No structured remediation sequence was recorded for this recommendation.', 'list-checks') }}</div>
                     {% endif %}
-                    <div class="mt-4">
-                        {{ operational_callout.render('Verification Gate',
-                                                'Validate current ownership and live resource state before applying changes. After remediation, resync the relevant KAORI source and confirm this recommendation no longer appears.',
-                                                icon='clipboard-check',
-                                                tone='warning',
-                                                variant='neutral') }}
-                    </div>
                 </div>
             </section>
-            <section class="overflow-hidden rounded-2xl border border-outline-subtle bg-surface-card shadow-sm">
+            <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm 2xl:col-span-8">
                 <header class="border-b border-outline-subtle bg-surface-elevated px-4 py-3.5 sm:px-5">
-                    {{ section_heading('04', 'file-key-2', 'Traceability', 'Preserve the evaluator and signal boundary required to reproduce or audit the recommendation.') }}
+                    {{ section_kicker(
+                        '04',
+                        'file-key-2',
+                        'TRACEABILITY',
+                        'Canonical evaluator and signal boundary used to reproduce or audit this recommendation.'
+                    ) }}
                 </header>
-                <dl class="grid gap-3 p-4 sm:grid-cols-2 sm:p-5 xl:grid-cols-3">
-                    {{ trace_fact('database', 'Signal Source', item.signal_source_label) }}
-                    {{ trace_fact('binary', 'Logic Type', item.logic_type_label) }}
-                    {{ trace_fact('boxes', 'Domain', item.domain_label) }}
-                    {{ trace_fact('key-round', 'Rule Key', item.rule_key, true, true) }}
+                <dl class="grid divide-y divide-outline-subtle lg:grid-cols-5 lg:divide-x lg:divide-y-0">
+                    {{ trace_cell('database', 'Signal Source', item.signal_source_label) }}
+                    {{ trace_cell('binary', 'Logic Type', item.logic_type_label) }}
+                    {{ trace_cell('boxes', 'Domain', item.domain_label) }}
+                    {{ trace_cell('key-round', 'Rule Key', item.rule_key, true, true) }}
                 </dl>
             </section>
+            <aside class="2xl:col-span-4">
+                {{ operational_callout.render('Verification Gate',
+                    'Validate current ownership and live resource state before applying changes. After remediation, resync the relevant KAORI source and confirm this recommendation no longer appears.',
+                    icon='shield-check',
+                    tone='warning',
+                    variant='neutral') }}
+            </aside>
         </div>
     </div>
 </div>
