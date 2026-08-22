@@ -6,7 +6,8 @@
 {% block title %}Intelligence Overview{% endblock title %}
 {% block dashboard_content %}
     {% set hero_metrics = [
-            ('sparkles', 'Active Findings', payload.summary.findings, 'Catalog-backed recommendations'),
+            ('sparkles', 'Active Findings', payload.summary.findings, 'Committed recommendations'),
+            ('siren', 'Active Alerts', payload.alerts.active, 'Operator-owned cases'),
             ('workflow', 'Pending Governance', payload.summary.pending_automation, 'Candidates and approvals')
         ] %}
     <div class="space-y-6">
@@ -16,147 +17,163 @@
                     {% call page_hero.intro('brain-circuit', 'Infrastructure Intelligence', 'scan-search') %}
                         <h1 class="{{ page_hero.title_classes() }}">Intelligence Overview</h1>
                         <p class="mt-2 {{ page_hero.description_classes() }}">
-                            Review cross-domain findings, provider alert context, canonical rule coverage, and governed automation readiness from one operational intelligence workspace.
+                            See the operational posture of recommendations, alert lifecycle, rule coverage, and governed automation without opening record-level detail.
                         </p>
                         <div class="{{ page_hero.metadata_row_classes() }}">
-                            {{ page_hero.meta_label('boxes', 'Cross-Domain') }}
                             {{ page_hero.meta_label('database', 'Committed Evidence') }}
-                            {{ page_hero.meta_label('shield-check', 'Governed Actions') }}
+                            {{ page_hero.meta_label('layers-3', 'Cross-Domain Posture') }}
+                            {{ page_hero.meta_label('shield-check', 'Operator Governed') }}
                         </div>
                     {% endcall %}
                 </div>
-                {{ page_hero.context_card('Intelligence overview posture',
-                                'Intelligence Posture',
-                                'Current Operational Context',
+                {{ page_hero.context_card('Current Intelligence posture',
+                                'Operational Posture',
+                                'Cross-Workspace Summary',
                                 payload.posture.label,
                                 payload.posture.tone,
                                 hero_metrics,
-                                'Open Recommendations',
-                                url_for('intelligence.recommendations') ,
-                'sparkles'
-                ) }}
+                                'Open Alert Operations',
+                                url_for('alert_intelligence.index'),
+                                'siren') }}
             </div>
         </section>
+
         {% call intelligence_ui.section(
-            'Intelligence Snapshot',
-            'Aggregate posture across Recommendations, managed asset coverage, Rule Catalog, and Automation Control. Detailed records stay in their dedicated workspaces.',
-            'chart-no-axes-column-increasing'
-            ) %}
-            <div class="grid gap-px bg-outline-subtle md:grid-cols-2 xl:grid-cols-4">
-                {% for card in payload.overview_cards %}
-                    <article class="min-w-0 bg-surface-card p-4 sm:p-5">
-                        <div class="flex min-w-0 items-center gap-2.5">
-                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
-                                  aria-hidden="true">
-                                <i data-lucide="{{ card.icon }}" class="h-4 w-4"></i>
-                            </span>
-                            <h3 class="text-sm font-semibold leading-5 text-content-primary">{{ card.title }}</h3>
-                        </div>
-                        <p class="mt-4 text-xs font-medium leading-5 text-content-muted">{{ card.metric_label }}</p>
-                        <p class="mt-0.5 text-2xl font-semibold leading-8 text-content-primary">{{ card.metric_value }}</p>
-                        <dl class="mt-4 grid grid-cols-3 gap-2 border-t border-outline-subtle pt-3">
-                            {% for detail in card.details %}
-                                <div class="min-w-0">
-                                    <dt class="text-xs leading-5 text-content-muted">{{ detail.label }}</dt>
-                                    <dd class="mt-0.5 text-sm font-semibold leading-5 text-content-primary">
-                                        {{ detail.value }}
-                                    </dd>
-                                </div>
-                            {% endfor %}
-                        </dl>
-                    </article>
-                {% endfor %}
-            </div>
-        {% endcall %}
-        {% call intelligence_ui.section(
-            'Intelligence Capabilities',
-            'Move from committed evidence to interpretation, provider alert context, canonical rule guidance, and governed remediation without collapsing those responsibilities into one workflow.',
-            'brain-circuit',
+            'Operational Intelligence Snapshot',
+            'A compact cross-workspace view of operator attention, evidence coverage, alert closure, and automation governance.',
+            'activity',
             payload.posture.label,
             payload.posture.tone
             ) %}
-            <div class="grid gap-4 p-4 md:grid-cols-2 sm:p-5">
-                {% for capability in payload.capabilities %}
-                    <article class="flex min-w-0 flex-col rounded-xl border border-outline-subtle bg-surface-card p-4 shadow-sm">
-                        <div class="flex items-start justify-between gap-3">
-                            <div class="flex min-w-0 items-start gap-3">
-                                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
-                                      aria-hidden="true">
-                                    <i data-lucide="{{ capability.icon }}" class="h-4 w-4"></i>
-                                </span>
-                                <div class="min-w-0">
-                                    <p class="text-xs font-semibold uppercase tracking-wider text-content-muted">{{ capability.eyebrow }}</p>
-                                    <h3 class="mt-1 text-sm font-semibold leading-5 text-content-primary">{{ capability.title }}</h3>
+            <div class="grid gap-px bg-outline-subtle xl:grid-cols-[minmax(0,1.55fr)_minmax(22rem,0.45fr)]">
+                <div class="min-w-0 bg-surface-card p-4 sm:p-5">
+                    <div class="flex flex-col gap-3 border-b border-outline-subtle pb-4 sm:flex-row sm:items-start sm:justify-between">
+                        <div class="min-w-0">
+                            <p class="text-xs font-semibold uppercase tracking-wider text-content-muted">Operator Attention</p>
+                            <h2 class="mt-1 text-base font-semibold leading-6 text-content-primary">What needs attention now</h2>
+                            <p class="mt-1 max-w-3xl text-sm leading-6 text-content-muted">{{ payload.posture.helper }}</p>
+                        </div>
+                        <div class="shrink-0">{{ table_label.status_label(payload.posture.label, payload.posture.tone, size='compact') }}</div>
+                    </div>
+                    <div class="mt-1 divide-y divide-outline-subtle">
+                        {% for metric in payload.attention_metrics %}
+                            <article class="grid gap-3 py-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+                                <div class="flex min-w-0 items-center gap-3">
+                                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                                          aria-hidden="true">
+                                        <i data-lucide="{{ metric.icon }}" class="h-4 w-4"></i>
+                                    </span>
+                                    <div class="min-w-0">
+                                        <p class="text-sm font-semibold leading-5 text-content-primary">{{ metric.label }}</p>
+                                        <p class="mt-0.5 text-xs leading-5 text-content-muted">{{ metric.supporting }}</p>
+                                    </div>
                                 </div>
+                                <div class="flex items-center gap-3 sm:justify-end">
+                                    <p class="text-2xl font-semibold leading-8 text-content-primary">{{ metric.value }}</p>
+                                    {{ table_label.status_label(metric.status, metric.tone, size='compact') }}
+                                </div>
+                            </article>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <aside class="min-w-0 bg-surface-elevated/40 p-4 sm:p-5">
+                    <p class="text-xs font-semibold uppercase tracking-wider text-content-muted">Coverage & Readiness</p>
+                    <h2 class="mt-1 text-base font-semibold leading-6 text-content-primary">Intelligence operating context</h2>
+                    <dl class="mt-4 divide-y divide-outline-subtle border-y border-outline-subtle">
+                        {% for metric in payload.coverage_metrics %}
+                            <div class="py-3">
+                                <dt class="text-xs font-medium leading-5 text-content-muted">{{ metric.label }}</dt>
+                                <dd class="mt-1 flex min-w-0 items-baseline justify-between gap-3">
+                                    <span class="text-lg font-semibold leading-6 text-content-primary">{{ metric.value }}</span>
+                                    <span class="min-w-0 text-right text-xs leading-5 text-content-muted">{{ metric.supporting }}</span>
+                                </dd>
                             </div>
-                            <div class="shrink-0">{{ table_label.status_label(capability.status, capability.tone, size='compact') }}</div>
-                        </div>
-                        <p class="mt-3 text-sm leading-6 text-content-muted">{{ capability.description }}</p>
-                        <div class="mt-4 grid grid-cols-2 gap-3 rounded-lg border border-outline-subtle bg-surface-hover p-3">
+                        {% endfor %}
+                    </dl>
+                    <p class="mt-4 text-xs leading-5 text-content-muted">Overview uses committed KAORI state only. Provider timeouts never belong on this request path.</p>
+                </aside>
+            </div>
+        {% endcall %}
+
+        {% call intelligence_ui.section(
+            'Intelligence Workspaces',
+            'Use Overview for posture. Open a dedicated workspace only when you need record-level investigation, lifecycle actions, rule definition, or governed execution.',
+            'layout-dashboard'
+            ) %}
+            <div class="divide-y divide-outline-subtle">
+                {% for workspace in payload.workspaces %}
+                    <article class="grid gap-4 px-4 py-4 sm:px-5 lg:grid-cols-[minmax(0,1fr)_12rem_11rem] lg:items-center">
+                        <div class="flex min-w-0 items-start gap-3">
+                            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                                  aria-hidden="true">
+                                <i data-lucide="{{ workspace.icon }}" class="h-4 w-4"></i>
+                            </span>
                             <div class="min-w-0">
-                                <p class="text-xs font-medium leading-5 text-content-muted">{{ capability.metric_label }}</p>
-                                <p class="mt-0.5 text-lg font-semibold leading-6 text-content-primary">{{ capability.metric_value }}</p>
-                            </div>
-                            <div class="min-w-0 border-l border-outline-subtle pl-3">
-                                <p class="text-xs font-medium leading-5 text-content-muted">Context</p>
-                                <p class="mt-0.5 text-xs font-semibold leading-5 text-content-primary">{{ capability.supporting }}</p>
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <h3 class="text-sm font-semibold leading-5 text-content-primary">{{ workspace.title }}</h3>
+                                    {{ table_label.status_label(workspace.status, workspace.tone, size='compact') }}
+                                </div>
+                                <p class="mt-1 max-w-4xl text-sm leading-6 text-content-muted">{{ workspace.description }}</p>
                             </div>
                         </div>
-                        <a href="{{ url_for(capability.href_endpoint) }}"
-                           class="mt-4 inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm font-semibold text-content-primary transition hover:border-kaori-primary hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
-                            {{ capability.action_label }}
+                        <div class="min-w-0 lg:border-l lg:border-outline-subtle lg:pl-4">
+                            <p class="text-2xl font-semibold leading-8 text-content-primary">{{ workspace.metric }}</p>
+                            <p class="text-xs font-medium leading-5 text-content-muted">{{ workspace.metric_label }}</p>
+                            <p class="mt-0.5 text-xs leading-5 text-content-muted">{{ workspace.supporting }}</p>
+                        </div>
+                        <a href="{{ url_for(workspace.href_endpoint) }}"
+                           class="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm font-semibold text-content-primary transition hover:border-kaori-primary hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                            {{ workspace.action_label }}
                             <i data-lucide="arrow-right" class="h-4 w-4" aria-hidden="true"></i>
                         </a>
                     </article>
                 {% endfor %}
             </div>
         {% endcall %}
+
+        {% call intelligence_ui.section(
+            'Trust & Ownership Boundaries',
+            'Keep evidence, alert lifecycle, notification delivery, and infrastructure mutation under explicit owners so Intelligence stays explainable and auditable.',
+            'shield-check'
+            ) %}
+            <div class="divide-y divide-outline-subtle">
+                <div class="grid gap-3 px-4 py-4 sm:px-5 lg:grid-cols-[13rem_minmax(0,1fr)]">
+                    <div class="flex items-center gap-2 text-sm font-semibold leading-5 text-content-primary">
+                        <i data-lucide="database" class="h-4 w-4 text-kaori-primary" aria-hidden="true"></i>
+                        Evidence Boundary
+                    </div>
+                    <p class="text-sm leading-6 text-content-muted">Recommendations and Alert Intelligence read committed KAORI evidence. The Overview never calls Prometheus, Thanos, Alertmanager, or Object Storage providers directly.</p>
+                </div>
+                <div class="grid gap-3 px-4 py-4 sm:px-5 lg:grid-cols-[13rem_minmax(0,1fr)]">
+                    <div class="flex items-center gap-2 text-sm font-semibold leading-5 text-content-primary">
+                        <i data-lucide="siren" class="h-4 w-4 text-kaori-primary" aria-hidden="true"></i>
+                        Alert Lifecycle
+                    </div>
+                    <p class="text-sm leading-6 text-content-muted">Prometheus and Alertmanager own source evaluation and raw alert state. KAORI owns acknowledgement, assignment, notification policy, delivery silence, resolution evidence, postmortem, history, and archive lifecycle.</p>
+                </div>
+                <div class="grid gap-3 px-4 py-4 sm:px-5 lg:grid-cols-[13rem_minmax(0,1fr)]">
+                    <div class="flex items-center gap-2 text-sm font-semibold leading-5 text-content-primary">
+                        <i data-lucide="workflow" class="h-4 w-4 text-kaori-primary" aria-hidden="true"></i>
+                        Automation Boundary
+                    </div>
+                    <p class="text-sm leading-6 text-content-muted">Automation Control owns approvals, execution readiness, verification, and recovery. Stale or failed alert snapshots may remain visible to operators but cannot materialize new automation candidates.</p>
+                </div>
+            </div>
+        {% endcall %}
+
         {% call operational_callout.render(
-            'Recommendation Detail Lives in Recommendations',
-            'Intelligence Overview intentionally stops at aggregate posture and counts. Open Recommendations to review affected assets, evidence, severity, operational impact, and remediation details.',
+            'Overview Stops at Summary',
+            'This page intentionally presents aggregate posture only. Open the dedicated Intelligence workspace when you need affected assets, alert-case actions, notification evidence, rule logic, remediation detail, or execution controls.',
             'info',
             'info',
-            'semantic',
-            action_href=url_for('intelligence.recommendations'),
-            action_label='Open Recommendations',
-            action_icon='arrow-right'
+            'semantic'
             ) %}
             <div class="flex flex-wrap items-center gap-1.5">
                 {{ table_label.metadata_label(payload.summary.findings ~ ' Active Findings', size='compact') }}
-                {{ table_label.metadata_label(payload.summary.critical ~ ' Critical', size='compact') }}
-                {{ table_label.metadata_label(payload.summary.warning ~ ' Warning', size='compact') }}
-            </div>
-        {% endcall %}
-        {% call intelligence_ui.section(
-            'Evidence & Control Boundaries',
-            'Keep detection, interpretation, rule ownership, and infrastructure mutation explicit so Intelligence remains explainable and auditable.',
-            'shield-check'
-            ) %}
-            <div class="grid gap-4 p-4 lg:grid-cols-3 sm:p-5">
-                <article class="rounded-xl border border-outline-subtle bg-surface-hover p-4">
-                    <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
-                          aria-hidden="true">
-                        <i data-lucide="database" class="h-4 w-4"></i>
-                    </span>
-                    <h3 class="mt-3 text-sm font-semibold leading-5 text-content-primary">Committed Intelligence</h3>
-                    <p class="mt-1 text-sm leading-6 text-content-muted">Recommendations derive from committed KAORI inventory and analytics evidence. The Overview does not query infrastructure providers directly.</p>
-                </article>
-                <article class="rounded-xl border border-outline-subtle bg-surface-hover p-4">
-                    <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
-                          aria-hidden="true">
-                        <i data-lucide="radio-tower" class="h-4 w-4"></i>
-                    </span>
-                    <h3 class="mt-3 text-sm font-semibold leading-5 text-content-primary">Provider Alert Context</h3>
-                    <p class="mt-1 text-sm leading-6 text-content-muted">Alert Intelligence resolves provider alert state only when that workspace is opened; routing, grouping, silences, and inhibition remain provider-owned.</p>
-                </article>
-                <article class="rounded-xl border border-outline-subtle bg-surface-hover p-4">
-                    <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
-                          aria-hidden="true">
-                        <i data-lucide="workflow" class="h-4 w-4"></i>
-                    </span>
-                    <h3 class="mt-3 text-sm font-semibold leading-5 text-content-primary">Governed Automation</h3>
-                    <p class="mt-1 text-sm leading-6 text-content-muted">Automation Control owns review, approval, readiness, execution, verification, and recovery boundaries. Intelligence Overview never bypasses those controls.</p>
-                </article>
+                {{ table_label.metadata_label(payload.alerts.active ~ ' Active Alert Cases', size='compact') }}
+                {{ table_label.metadata_label(payload.summary.catalog_rules ~ ' Catalog Rules', size='compact') }}
+                {{ table_label.metadata_label(payload.summary.pending_automation ~ ' Pending Governance', size='compact') }}
             </div>
         {% endcall %}
     </div>
