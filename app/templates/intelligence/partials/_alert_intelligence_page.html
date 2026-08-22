@@ -1,34 +1,34 @@
 {% import "components/page_hero.html" as page_hero %}
 <div id="alert-intelligence-page-content" class="space-y-6">
     {% set hero_metrics = [
-            ('bell-ring', 'Active Cases', payload.summary.active, 'Operator-managed alert cases'),
-            ('shield-check', 'Verification Pending', payload.summary.verification_pending, 'Source resolved, closure evidence required')
-        ] %}
+        ('bell-ring', 'Active Cases', payload.summary.active, 'Operator-managed alert cases'),
+        ('shield-check', 'Verification Pending', payload.summary.verification_pending, 'Resolved source awaiting closure evidence')
+    ] %}
     <section class="{{ page_hero.shell_classes() }}">
         <div class="{{ page_hero.layout_classes() }}">
             <div class="{{ page_hero.content_classes() }}">
                 {% call page_hero.intro('siren', 'Infrastructure Intelligence', 'shield-alert') %}
                     <h1 class="{{ page_hero.title_classes() }}">Alert Intelligence</h1>
                     <p class="mt-2 {{ page_hero.description_classes() }}">
-                        Operate alert lifecycle from committed evidence: route firing notifications, acknowledge ownership, suppress noise, verify recovery, send resolved notifications, preserve operator evidence, and archive closed incidents.
+                        Manage alert routing, silences, recovery verification, and incident history from committed evidence.
                     </p>
                     <div class="{{ page_hero.metadata_row_classes() }}">
                         {{ page_hero.meta_label('boxes', payload.domain_label) }}
                         {{ page_hero.meta_label('box', payload.selected_asset_name) }}
                         {{ page_hero.meta_label('database', payload.snapshot.label) }}
-                        {{ page_hero.meta_label('send', payload.summary.channels ~ ' ready channels') }}
                     </div>
                 {% endcall %}
             </div>
-            {{ page_hero.context_card('Alert Operations posture',
-                        'Alert Operations',
-                        'Open Cases',
-                        payload.summary.active,
-                        'critical' if payload.summary.critical else ('warning' if payload.summary.active else 'normal') ,
-            hero_metrics,
-            'Manage Notification Channels',
-            url_for('notification_channels.index'),
-            'shield-alert'
+            {{ page_hero.context_card(
+                'Alert Operations posture',
+                'Alert Operations',
+                'Open Cases',
+                payload.summary.active,
+                'critical' if payload.summary.critical else ('warning' if payload.summary.active else 'normal'),
+                hero_metrics,
+                'Manage Notification Channels',
+                url_for('notification_channels.index'),
+                'shield-alert'
             ) }}
         </div>
     </section>

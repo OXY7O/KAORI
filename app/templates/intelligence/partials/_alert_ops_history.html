@@ -1,17 +1,62 @@
 {% import "components/table_label.html" as table_label %}
 {% import "components/table_primitives.html" as table_ui %}
-{% import "analytics/components/_record_pagination.html" as record_pagination %}
-{% set pagination_query = {'tab':'history','domain':payload.domain,'asset':payload.selected_asset_key,'severity':payload.filters.severity,'q':payload.filters.q} %}
+{% import "components/table_registry.html" as table_registry %}
 <div data-alert-intelligence-panel="history" class="space-y-5 p-4 sm:p-5">
-    <div class="flex flex-col gap-3 rounded-xl border border-outline-subtle bg-surface-elevated p-4 lg:flex-row lg:items-center lg:justify-between">
-        <div>
-            <h3 class="text-sm font-semibold text-content-primary">Resolved & Historical Alerts</h3>
-            <p class="mt-1 text-xs leading-5 text-content-muted">Closed cases stay searchable in PostgreSQL. Heavy timeline/evidence is archived through the shared Data Lifecycle Local/S3 backend after the hot-retention boundary.</p>
-        </div>
-        <a href="{{ url_for('platform_operations.data_lifecycle.index', domain='alert_incident') }}"
-           class="inline-flex min-h-9 items-center gap-2 rounded-lg border border-brand-outline bg-surface-card px-3 text-xs font-semibold text-kaori-primary"><i data-lucide="archive" class="h-3.5 w-3.5"></i>Alert Incident Archive Policy</a>
-    </div>
-    <div class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
+    <section id="alert-operations-history-registry" class="{{ table_ui.block_classes() }}">
+        <header class="{{ table_ui.block_header_classes() }}">
+            <div class="flex min-w-0 items-start gap-3">
+                <span class="{{ table_ui.block_icon_classes() }}" aria-hidden="true">
+                    <i data-lucide="archive" class="h-4 w-4"></i>
+                </span>
+                <div class="min-w-0">
+                    <h3 class="{{ table_ui.block_title_classes() }}">Resolved & Historical Alerts</h3>
+                    <p class="{{ table_ui.block_description_classes() }}">Closed cases remain searchable in PostgreSQL while heavy evidence follows the shared Local/S3 archive lifecycle.</p>
+                </div>
+            </div>
+            <a href="{{ url_for('platform_operations.data_lifecycle.index', domain='alert_incident') }}" class="{{ table_ui.action_classes() }}">
+                <i data-lucide="archive" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                Archive Policy
+            </a>
+        </header>
+
+        {% call table_registry.filter_form(
+            'alert_intelligence.index',
+            'alert-operations-history-registry',
+            'alert-intelligence-loading',
+            payload.history_pagination.per_page,
+            classes=table_ui.inventory_filter_bar_classes(),
+            page_param='history_page',
+            per_page_param='history_per_page'
+        ) %}
+            <input type="hidden" name="tab" value="history">
+            <input type="hidden" name="domain" value="{{ payload.domain }}">
+            <input type="hidden" name="asset" value="{{ payload.selected_asset_key }}">
+            <label>
+                <span class="{{ table_ui.filter_label_classes() }}">Search</span>
+                {{ table_ui.search_field('q', payload.filters.q, 'Search case, alert, asset, namespace...') }}
+            </label>
+            <label>
+                <span class="{{ table_ui.filter_label_classes() }}">Severity</span>
+                <select name="severity" class="{{ table_ui.filter_select_classes() }}">
+                    {% for value, label in [('all', 'All Severities'), ('critical', 'Critical'), ('warning', 'Warning'), ('info', 'Info'), ('unknown', 'Unknown')] %}
+                        <option value="{{ value }}" {% if payload.filters.severity == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            {% if payload.filters.q or payload.filters.severity != 'all' %}
+                {{ table_registry.clear_filters_action(
+                    url_for('alert_intelligence.index', tab='history', domain=payload.domain, asset=payload.selected_asset_key, history_per_page=payload.history_pagination.per_page),
+                    table_ui.action_classes(),
+                    hx_get=url_for('alert_intelligence.index', tab='history', domain=payload.domain, asset=payload.selected_asset_key, history_per_page=payload.history_pagination.per_page),
+                    target='#alert-operations-history-registry',
+                    indicator='#alert-intelligence-loading',
+                    select='#alert-operations-history-registry',
+                    push_url='true',
+                    sync='closest section:replace'
+                ) }}
+            {% endif %}
+        {% endcall %}
+
         <div class="overflow-x-auto">
             <table class="{{ table_ui.table_classes('min-w-[1100px]') }}">
                 <thead class="{{ table_ui.head_classes() }}">
@@ -30,24 +75,36 @@
                     {% for case in payload.history_cases %}
                         <tr class="{{ table_ui.row_classes() }}">
                             <td class="{{ table_ui.cell_classes() }}">
-                                <p class="text-sm font-semibold text-content-primary">{{ case.alert_name }}</p>
-                                <p class="mt-0.5 font-mono text-xs text-content-muted">{{ case.public_id }}</p>
+                                {{ table_ui.title_cell(case.alert_name, case.public_id, 'archive') }}
                             </td>
-                            <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_label(case.severity_label, case.severity_tone, size='compact') }}</td>
                             <td class="{{ table_ui.cell_classes() }}">
-                                {{ case.asset_name }}
-                                {% if case.namespace != '-' %}<p class="mt-0.5 text-xs text-content-muted">{{ case.namespace }}</p>{% endif %}
+                                {{ table_label.status_label(case.severity_label, case.severity_tone, size='compact') }}
+                            </td>
+                            <td class="{{ table_ui.cell_classes() }}">
+                                <p class="text-sm font-medium leading-5 text-content-primary">{{ case.asset_name }}</p>
+                                {% if case.namespace != '-' %}<p class="mt-0.5 text-xs leading-5 text-content-muted">{{ case.namespace }}</p>{% endif %}
                             </td>
                             <td class="{{ table_ui.cell_classes() }}">{{ case.duration }}</td>
-                            <td class="{{ table_ui.cell_classes() }}">{{ case.closed_at|user_datetime if case.closed_at else '-' }}</td>
+                            <td class="{{ table_ui.cell_classes() }}"><span class="whitespace-nowrap">{{ case.closed_at|user_datetime if case.closed_at else '-' }}</span></td>
                             <td class="{{ table_ui.cell_classes() }}">{{ case.owner }}</td>
-                            <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_label(case.postmortem_status|replace('_',' ') |title, 'warning' if case.postmortem_status in ['required','draft'] else 'normal', size='compact') }}</td>
-                            <td class="{{ table_ui.cell_classes(true) }}"><a href="{{ url_for('alert_intelligence.index', tab='history', domain=payload.domain, asset=payload.selected_asset_key, case=case.public_id) }}"
-   class="{{ table_ui.action_classes() }}">Review</a></td>
+                            <td class="{{ table_ui.cell_classes() }}">
+                                {{ table_label.status_label(case.postmortem_status|replace('_', ' ')|title, 'warning' if case.postmortem_status in ['required', 'draft'] else 'normal', size='compact') }}
+                            </td>
+                            <td class="{{ table_ui.cell_classes(true) }}">
+                                <a href="{{ url_for('alert_intelligence.index', tab='history', domain=payload.domain, asset=payload.selected_asset_key, case=case.public_id, severity=payload.filters.severity, q=payload.filters.q, history_page=payload.history_pagination.page, history_per_page=payload.history_pagination.per_page) }}" class="{{ table_ui.action_classes() }}">
+                                    <i data-lucide="panel-right-open" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                    Review
+                                </a>
+                            </td>
                         </tr>
                     {% else %}
                         <tr>
-                            <td colspan="8" class="p-0">{% set empty_state_icon = "archive" %}{% set empty_state_label = "No History" %}{% set empty_state_title = "No Closed Alert Cases in This Scope" %}{% set empty_state_description = "Cases appear here after source recovery is verified and the operator or automatic low-severity policy closes the lifecycle." %}{% set empty_state_min_height = "min-h-[180px]" %}
+                            <td colspan="8" class="p-0">
+                                {% set empty_state_icon = "archive" %}
+                                {% set empty_state_label = "No History" %}
+                                {% set empty_state_title = "No Closed Alert Cases in This Scope" %}
+                                {% set empty_state_description = "Closed and verified cases appear here with resolution evidence, postmortem status, and archive traceability." %}
+                                {% set empty_state_min_height = "min-h-[180px]" %}
                                 {% include 'components/states/_empty_state.html' %}
                             </td>
                         </tr>
@@ -55,37 +112,51 @@
                 </tbody>
             </table>
         </div>
-        {{ record_pagination.render(payload.history_pagination, 'history_page', 'history_per_page', 'alert-intelligence-page-content', '', 'alert-intelligence-loading', 'alert_intelligence.index', 'alert_intelligence.index', pagination_query, 'Historical Cases', embedded=true) }}
-    </div>
+        {% if payload.history_pagination.total_items > 0 %}
+            {{ table_registry.footer(
+                'alert_intelligence.index',
+                'alert-operations-history-registry',
+                'alert-intelligence-loading',
+                payload.history_pagination,
+                {'tab': 'history', 'domain': payload.domain, 'asset': payload.selected_asset_key, 'severity': payload.filters.severity, 'q': payload.filters.q},
+                payload.history_pagination.allowed_per_page,
+                resource_label='Historical Cases',
+                rows_aria_label='Historical cases per page',
+                control_name='alert-history',
+                page_param='history_page',
+                per_page_param='history_per_page'
+            ) }}
+        {% endif %}
+    </section>
+
     {% if payload.selected_case %}
         {% set case = payload.selected_case %}
         <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card">
-            <header class="border-b border-outline-subtle bg-surface-elevated px-4 py-4">
-                <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-                    <div>
-                        <div class="flex flex-wrap items-center gap-2">
-                            <h3 class="text-lg font-semibold leading-7 text-content-primary">{{ case.alert_name }}</h3>
-                            {{ table_label.status_label('Closed', 'normal', size='compact') }}{{ table_label.status_label(case.postmortem_status|replace('_',' ') |title, 'warning' if case.postmortem_status in ['required','draft'] else 'normal', size='compact') }}
-                        </div>
-                        <p class="mt-1 text-sm leading-6 text-content-secondary">{{ case.summary }}</p>
-                        <p class="mt-1 font-mono text-xs text-content-muted">{{ case.public_id }}</p>
+            <header class="flex flex-col gap-3 border-b border-outline-subtle bg-surface-elevated px-4 py-4 sm:flex-row sm:items-start sm:justify-between sm:px-5">
+                <div class="min-w-0">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <h3 class="text-lg font-semibold leading-7 text-content-primary">{{ case.alert_name }}</h3>
+                        {{ table_label.status_label('Closed', 'normal', size='compact') }}
+                        {{ table_label.status_label(case.postmortem_status|replace('_', ' ')|title, 'warning' if case.postmortem_status in ['required', 'draft'] else 'normal', size='compact') }}
                     </div>
-                    <a href="{{ url_for('alert_intelligence.index', tab='history', domain=payload.domain, asset=payload.selected_asset_key) }}"
-                       class="{{ table_ui.action_classes() }}">Close Review</a>
+                    <p class="mt-1 text-sm leading-6 text-content-secondary">{{ case.summary }}</p>
+                    <p class="mt-1 font-mono text-xs leading-5 text-content-muted">{{ case.public_id }}</p>
                 </div>
+                <a href="{{ url_for('alert_intelligence.index', tab='history', domain=payload.domain, asset=payload.selected_asset_key, severity=payload.filters.severity, q=payload.filters.q, history_page=payload.history_pagination.page, history_per_page=payload.history_pagination.per_page) }}" class="{{ table_ui.action_classes() }}">
+                    <i data-lucide="x" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                    Close Review
+                </a>
             </header>
-            <div class="grid gap-px bg-outline-subtle xl:grid-cols-2">
-                <div class="bg-surface-card p-4">
-                    <h4 class="text-sm font-semibold text-content-primary">Resolution Evidence</h4>
+            <div class="grid gap-px bg-outline-subtle xl:grid-cols-[minmax(0,1fr)_minmax(24rem,0.7fr)]">
+                <div class="bg-surface-card p-4 sm:p-5">
+                    <h4 class="text-sm font-semibold leading-5 text-content-primary">Resolution Evidence</h4>
                     <dl class="mt-3 divide-y divide-outline-subtle">
-                        <div class="py-2.5">
-                            <dt class="text-xs text-content-muted">Resolution Summary</dt>
-                            <dd class="mt-1 text-sm leading-6 text-content-secondary">
-                                {{ case.resolution_summary or '-' }}
-                            </dd>
+                        <div class="py-3">
+                            <dt class="text-xs font-medium leading-5 text-content-muted">Resolution Summary</dt>
+                            <dd class="mt-1 text-sm leading-6 text-content-secondary">{{ case.resolution_summary or '-' }}</dd>
                         </div>
-                        <div class="py-2.5">
-                            <dt class="text-xs text-content-muted">Remediation Steps</dt>
+                        <div class="py-3">
+                            <dt class="text-xs font-medium leading-5 text-content-muted">Remediation Steps</dt>
                             <dd class="mt-1 text-sm leading-6 text-content-secondary">
                                 <ol class="list-decimal space-y-1 pl-5">
                                     {% for step in case.remediation_steps %}
@@ -96,54 +167,43 @@
                                 </ol>
                             </dd>
                         </div>
-                        <div class="py-2.5">
-                            <dt class="text-xs text-content-muted">Verification Evidence</dt>
-                            <dd class="mt-1 text-sm leading-6 text-content-secondary">
-                                {{ case.verification_evidence or '-' }}
-                            </dd>
+                        <div class="py-3">
+                            <dt class="text-xs font-medium leading-5 text-content-muted">Verification Evidence</dt>
+                            <dd class="mt-1 text-sm leading-6 text-content-secondary">{{ case.verification_evidence or '-' }}</dd>
                         </div>
-                        <div class="grid gap-4 py-2.5 sm:grid-cols-2">
+                        <div class="grid gap-4 py-3 sm:grid-cols-2">
                             <div>
-                                <dt class="text-xs text-content-muted">Change Reference</dt>
-                                <dd class="mt-1 text-sm font-semibold text-content-primary">
-                                    {{ case.change_reference or '-' }}
-                                </dd>
+                                <dt class="text-xs font-medium leading-5 text-content-muted">Change Reference</dt>
+                                <dd class="mt-1 text-sm font-semibold leading-5 text-content-primary">{{ case.change_reference or '-' }}</dd>
                             </div>
                             <div>
-                                <dt class="text-xs text-content-muted">Ticket Reference</dt>
-                                <dd class="mt-1 text-sm font-semibold text-content-primary">
-                                    {{ case.ticket_reference or '-' }}
-                                </dd>
+                                <dt class="text-xs font-medium leading-5 text-content-muted">Ticket Reference</dt>
+                                <dd class="mt-1 text-sm font-semibold leading-5 text-content-primary">{{ case.ticket_reference or '-' }}</dd>
                             </div>
                         </div>
                     </dl>
                 </div>
-                <div class="bg-surface-elevated/40 p-4">
-                    <h4 class="text-sm font-semibold text-content-primary">Postmortem</h4>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">Critical and long-running warning incidents should capture blameless learning and concrete follow-up actions.</p>
+                <div class="bg-surface-elevated/40 p-4 sm:p-5">
+                    <h4 class="text-sm font-semibold leading-5 text-content-primary">Postmortem</h4>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Capture blameless learning and concrete follow-up for incidents that require a postmortem.</p>
                     {% if current_user.has_permission('intelligence.decisions.create') %}
-                        <form method="post"
-                              action="{{ url_for('alert_intelligence.postmortem', public_id=case.public_id) }}"
-                              class="mt-3 space-y-3">
+                        <form method="post" action="{{ url_for('alert_intelligence.postmortem', public_id=case.public_id) }}" class="mt-4 space-y-3">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <input type="hidden" name="domain" value="{{ payload.domain }}">
                             <input type="hidden" name="asset" value="{{ payload.selected_asset_key }}">
-                            {% for key,label in [('impact','Impact'),('timeline_summary','Timeline Summary'),('root_cause','Root Cause'),('trigger','Trigger'),('contributing_factors','Contributing Factors'),('recovery','Recovery'),('went_well','What Went Well'),('went_poorly','What Went Poorly'),('action_items','Action Items'),('lessons_learned','Lessons Learned')] %}
+                            {% for key, label in [('impact', 'Impact'), ('timeline_summary', 'Timeline Summary'), ('root_cause', 'Root Cause'), ('trigger', 'Trigger'), ('contributing_factors', 'Contributing Factors'), ('recovery', 'Recovery'), ('went_well', 'What Went Well'), ('went_poorly', 'What Went Poorly'), ('action_items', 'Action Items'), ('lessons_learned', 'Lessons Learned')] %}
                                 <label class="block">
-                                    <span class="text-xs font-semibold text-content-secondary">{{ label }}</span><textarea name="{{ key }}" rows="2" class="mt-1 w-full rounded-md border border-outline-default bg-surface-card px-3 py-2 text-sm">{{ case.postmortem.get(key, '') }}</textarea>
+                                    <span class="{{ table_ui.filter_label_classes() }}">{{ label }}</span>
+                                    <textarea name="{{ key }}" rows="2" class="w-full rounded-md border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary outline-none focus:border-kaori-primary focus:ring-2 focus:ring-kaori-soft">{{ case.postmortem.get(key, '') }}</textarea>
                                 </label>
                             {% endfor %}
-                            <div class="flex flex-wrap gap-2">
-                                <button name="status"
-                                        value="draft"
-                                        class="inline-flex min-h-9 items-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary">Save Draft</button>
-                                <button name="status"
-                                        value="complete"
-                                        class="inline-flex min-h-9 items-center gap-2 rounded-lg bg-kaori-primary px-3 text-xs font-semibold text-white">Complete Postmortem</button>
+                            <div class="flex flex-wrap justify-end gap-2 border-t border-outline-subtle pt-3">
+                                <button name="status" value="draft" class="{{ table_ui.action_classes() }}">Save Draft</button>
+                                <button name="status" value="complete" class="inline-flex min-h-8 items-center justify-center gap-1.5 rounded-md bg-kaori-primary px-3 text-xs font-semibold text-white hover:bg-kaori-primary-hover">Complete Postmortem</button>
                             </div>
                         </form>
                     {% else %}
-                        <div class="mt-3 rounded-lg border border-outline-subtle bg-surface-card p-3 text-sm text-content-muted">Postmortem editing requires Intelligence decision permission.</div>
+                        <div class="mt-4 rounded-lg border border-outline-subtle bg-surface-card p-3 text-sm text-content-muted">Postmortem editing requires Intelligence decision permission.</div>
                     {% endif %}
                 </div>
             </div>

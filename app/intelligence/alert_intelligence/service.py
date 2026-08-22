@@ -59,9 +59,20 @@ def get_alert_intelligence_payload(args: MultiDict[str, str]) -> dict[str, Any]:
     snapshot = _snapshot_context(domain=domain, asset_key=selected_asset_key)
     channel_summary = notification_channel_summary()
     routing = routing_policy_rows()
+    routing_page, routing_pagination = paginate_sequence(
+        routing,
+        page=args.get('routing_page', 1),
+        per_page=args.get('routing_per_page', 5),
+    )
+    selected_policy = _selected_routing_policy(args.get('policy'), routing)
     channels = notification_channel_options()
     templates = built_in_templates()
     active_silences = _active_silence_rows(domain=domain, asset_key=selected_asset_key)
+    silence_page, silence_pagination = paginate_sequence(
+        active_silences,
+        page=args.get('silence_page', 1),
+        per_page=args.get('silence_per_page', 5),
+    )
     now = datetime.now(UTC)
 
     return {
@@ -96,11 +107,14 @@ def get_alert_intelligence_payload(args: MultiDict[str, str]) -> dict[str, Any]:
         'history_cases': history_page,
         'history_pagination': history_pagination,
         'selected_case': _serialize_case_detail(selected_case) if selected_case else None,
-        'routing_policies': routing,
+        'routing_policies': routing_page,
+        'routing_pagination': routing_pagination,
+        'selected_policy': selected_policy,
         'channel_options': channels,
         'notification': channel_summary,
         'templates': templates,
-        'silences': active_silences,
+        'silences': silence_page,
+        'silence_pagination': silence_pagination,
         'owner_options': _owner_options(),
         'ownership': {
             'source': 'Prometheus/Alertmanager owns rule evaluation and raw alert state.',
@@ -307,6 +321,14 @@ def _owner_options() -> list[dict[str, Any]]:
         for row in User.query.order_by(User.username.asc(), User.id.asc()).all()
         if bool(getattr(row, 'is_active', True))
     ]
+
+
+def _selected_routing_policy(value: Any, rows: list[dict[str, Any]]) -> dict[str, Any] | None:
+    requested = str(value or '').strip()
+    if not requested.isdigit():
+        return None
+    requested_id = int(requested)
+    return next((row for row in rows if int(row.get('id') or 0) == requested_id), None)
 
 
 def _selected_case(value: Any, rows: list[AlertCase]) -> AlertCase | None:

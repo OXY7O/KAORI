@@ -14,6 +14,11 @@ def test_alert_intelligence_is_alert_operations_workspace() -> None:
     service = read('app/intelligence/alert_intelligence/service.py')
 
     assert 'Alert Operations' in page
+    assert (
+        'Manage alert routing, silences, recovery verification, and incident history from committed evidence.'
+        in page
+    )
+    assert page.count('page_hero.meta_label(') == 3
     assert '_alert_intelligence_summary.html' in page
     assert '_alert_intelligence_workspace.html' in page
     assert "_VALID_TABS = {'overview', 'active', 'routing', 'templates', 'silences', 'history'}" in service
@@ -51,7 +56,8 @@ def test_alert_operations_sections_own_distinct_operator_responsibilities() -> N
     silences = read('app/templates/intelligence/partials/_alert_ops_silences.html')
     history = read('app/templates/intelligence/partials/_alert_ops_history.html')
 
-    assert 'Lifecycle Posture' in overview
+    for required in ('Alert Operations Snapshot', 'Lifecycle Control', 'Operational Readiness', 'Ownership Boundary'):
+        assert required in overview
     assert 'Review' in active
     for required in (
         'Acknowledge',
@@ -62,12 +68,32 @@ def test_alert_operations_sections_own_distinct_operator_responsibilities() -> N
         'Verification Evidence',
     ):
         assert required in case_workspace
-    assert 'Notification Channels' in routing
+    for required in ('Routing Policies', 'Channel Readiness', 'Create Routing Policy', 'Notification Channels'):
+        assert required in routing
+    assert 'table_registry.footer' in routing
+    assert 'payload.selected_policy' in routing
     assert 'Integrations → Notification Channels' in routing
-    assert 'template.event_label' in templates
-    assert 'KAORI Delivery Silence' in silences
+    assert 'Template Registry' in templates
+    assert '<details class="group bg-surface-card">' in templates
+    assert 'Save Override' in templates
+    assert 'Active Delivery Silences' in silences
+    assert 'table_registry.footer' in silences
     for required in ('Resolved & Historical Alerts', 'Resolution Evidence', 'Postmortem'):
         assert required in history
+    assert 'table_registry.filter_form' in history
+    assert 'table_registry.footer' in history
+
+
+def test_alert_operations_registry_tables_use_canonical_five_row_pagination() -> None:
+    service = read('app/intelligence/alert_intelligence/service.py')
+
+    assert "page=args.get('routing_page', 1)" in service
+    assert "per_page=args.get('routing_per_page', 5)" in service
+    assert "page=args.get('silence_page', 1)" in service
+    assert "per_page=args.get('silence_per_page', 5)" in service
+    assert "per_page=args.get('history_per_page', 5)" in service
+    assert "'routing_pagination': routing_pagination" in service
+    assert "'silence_pagination': silence_pagination" in service
 
 
 def test_alert_intelligence_web_paths_stay_database_and_snapshot_only() -> None:

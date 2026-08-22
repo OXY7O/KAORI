@@ -1,20 +1,36 @@
 {% import "components/table_label.html" as table_label %}
 {% import "components/table_primitives.html" as table_ui %}
+{% import "components/table_registry.html" as table_registry %}
 {% import "components/operational_callout.html" as operational_callout %}
 <div data-alert-intelligence-panel="silences" class="space-y-5 p-4 sm:p-5">
-    {{ operational_callout.render('KAORI Delivery Silence',
-        'Silences here suppress KAORI repeat notifications only. Alertmanager silence, inhibition, grouping, and receiver behavior remain controlled by Alertmanager.',
-        icon='info',
+    {{ operational_callout.render(
+        'KAORI Delivery Silence',
+        'Silences here pause KAORI repeat notifications only. Alertmanager silence, inhibition, grouping, and receiver behavior remain provider-owned.',
+        icon='bell-off',
         tone='info',
-        variant='semantic') }}
-    <div class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
+        variant='semantic'
+    ) }}
+
+    <section id="alert-operations-silence-registry" class="{{ table_ui.block_classes() }}">
+        <header class="{{ table_ui.block_header_classes() }}">
+            <div class="flex min-w-0 items-start gap-3">
+                <span class="{{ table_ui.block_icon_classes() }}" aria-hidden="true">
+                    <i data-lucide="bell-off" class="h-4 w-4"></i>
+                </span>
+                <div class="min-w-0">
+                    <h3 class="{{ table_ui.block_title_classes() }}">Active Delivery Silences</h3>
+                    <p class="{{ table_ui.block_description_classes() }}">Time-bounded suppression created by operators while an alert case remains active.</p>
+                </div>
+            </div>
+            {{ table_label.metadata_label(payload.silence_pagination.total_items ~ ' Silences', 'bell-off') }}
+        </header>
         <div class="overflow-x-auto">
-            <table class="{{ table_ui.table_classes('min-w-[900px]') }}">
+            <table class="{{ table_ui.table_classes('min-w-[980px]') }}">
                 <thead class="{{ table_ui.head_classes() }}">
                     <tr>
                         <th class="{{ table_ui.header_cell_classes() }}">Alert Case</th>
-                        <th class="{{ table_ui.header_cell_classes() }}">Asset</th>
                         <th class="{{ table_ui.header_cell_classes() }}">Severity</th>
+                        <th class="{{ table_ui.header_cell_classes() }}">Asset</th>
                         <th class="{{ table_ui.header_cell_classes() }}">Reason</th>
                         <th class="{{ table_ui.header_cell_classes() }}">Created By</th>
                         <th class="{{ table_ui.header_cell_classes() }}">Expires</th>
@@ -25,22 +41,34 @@
                     {% for row in payload.silences %}
                         <tr class="{{ table_ui.row_classes() }}">
                             <td class="{{ table_ui.cell_classes() }}">
-                                <p class="text-sm font-semibold text-content-primary">{{ row.alert_name }}</p>
-                                <p class="mt-0.5 font-mono text-xs text-content-muted">{{ row.case_id }}</p>
+                                {{ table_ui.title_cell(row.alert_name, row.case_id, 'siren') }}
+                            </td>
+                            <td class="{{ table_ui.cell_classes() }}">
+                                {{ table_label.status_label(row.severity|title, 'critical' if row.severity == 'critical' else ('warning' if row.severity == 'warning' else 'info'), size='compact') }}
                             </td>
                             <td class="{{ table_ui.cell_classes() }}">{{ row.asset_name }}</td>
-                            <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_label(row.severity|title, 'critical' if row.severity == 'critical' else 'warning', size='compact') }}</td>
                             <td class="{{ table_ui.cell_classes() }}">
-                                <p class="max-w-md break-words [overflow-wrap:anywhere]">{{ row.reason }}</p>
+                                <p class="max-w-md break-words text-sm leading-5 text-content-secondary [overflow-wrap:anywhere]">{{ row.reason }}</p>
                             </td>
                             <td class="{{ table_ui.cell_classes() }}">{{ row.created_by }}</td>
-                            <td class="{{ table_ui.cell_classes() }}">{{ row.ends_at|user_datetime }}</td>
-                            <td class="{{ table_ui.cell_classes(true) }}"><a href="{{ url_for('alert_intelligence.index', tab='active', domain=payload.domain, asset=payload.selected_asset_key, case=row.case_id) }}"
-   class="{{ table_ui.action_classes() }}">Review</a></td>
+                            <td class="{{ table_ui.cell_classes() }}">
+                                <p class="whitespace-nowrap text-sm text-content-primary">{{ row.ends_at|user_datetime }}</p>
+                            </td>
+                            <td class="{{ table_ui.cell_classes(true) }}">
+                                <a href="{{ url_for('alert_intelligence.index', tab='active', domain=payload.domain, asset=payload.selected_asset_key, case=row.case_id) }}" class="{{ table_ui.action_classes() }}">
+                                    <i data-lucide="panel-right-open" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                    Review
+                                </a>
+                            </td>
                         </tr>
                     {% else %}
                         <tr>
-                            <td colspan="7" class="p-0">{% set empty_state_icon = "bell-ring" %}{% set empty_state_label = "No Active Silences" %}{% set empty_state_title = "KAORI Delivery Is Not Suppressed" %}{% set empty_state_description = "Create time-bounded delivery silences from an active alert case when an operator needs a controlled notification pause." %}{% set empty_state_min_height = "min-h-[180px]" %}
+                            <td colspan="7" class="p-0">
+                                {% set empty_state_icon = "bell-ring" %}
+                                {% set empty_state_label = "No Active Silences" %}
+                                {% set empty_state_title = "KAORI Delivery Is Not Suppressed" %}
+                                {% set empty_state_description = "Create a time-bounded silence from an active alert case when an operator needs a controlled notification pause." %}
+                                {% set empty_state_min_height = "min-h-[180px]" %}
                                 {% include 'components/states/_empty_state.html' %}
                             </td>
                         </tr>
@@ -48,5 +76,20 @@
                 </tbody>
             </table>
         </div>
-    </div>
+        {% if payload.silence_pagination.total_items > 0 %}
+            {{ table_registry.footer(
+                'alert_intelligence.index',
+                'alert-operations-silence-registry',
+                'alert-intelligence-loading',
+                payload.silence_pagination,
+                {'tab': 'silences', 'domain': payload.domain, 'asset': payload.selected_asset_key},
+                payload.silence_pagination.allowed_per_page,
+                resource_label='Silences',
+                rows_aria_label='Active silences per page',
+                control_name='alert-delivery-silences',
+                page_param='silence_page',
+                per_page_param='silence_per_page'
+            ) }}
+        {% endif %}
+    </section>
 </div>
