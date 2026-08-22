@@ -9,20 +9,17 @@ def read(path: str) -> str:
 def test_recommendation_detail_exposes_affected_assets_and_measured_evidence() -> None:
     template = read('app/templates/intelligence/partials/_recommendation_detail_content.html')
     service = read('app/intelligence/service.py')
-    evidence = read('app/intelligence/finding_evidence.py')
 
     assert 'Affected Assets' in template
     assert 'Evidence Details' in template
     assert 'Observed Evidence' in template
     assert 'item.affected_assets' in template
     assert 'item.evidence_details' in template
-    assert 'build_restart_groups' in service
-    assert 'build_restart_evidence' in service
-    assert 'Current Pod Inventory generation' in evidence
-    assert "'affected_assets': assets" in evidence
-    assert "'threshold_display': f'>= {threshold} restarts per pod'" in evidence
-    assert "'max_observation_display': f'{highest_count} restarts'" in evidence
-    assert "'max_observation_asset': highest_name" in evidence
+    assert 'Current Pod Inventory generation' in service
+    assert "'affected_assets': assets" in service
+    assert "'threshold_display': f'>= {threshold} restarts per pod'" in service
+    assert "'max_observation_display': f'{highest_count} restarts'" in service
+    assert "'max_observation_asset': highest_name" in service
 
 
 def test_recommendation_evidence_presenter_keeps_asset_identity_and_restart_evidence() -> None:

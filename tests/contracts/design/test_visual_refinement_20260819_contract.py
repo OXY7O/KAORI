@@ -24,10 +24,13 @@ def test_detail_rows_use_more_readable_value_emphasis_for_inventory_drawers() ->
     assert 'text-left text-sm font-semibold leading-5 text-content-primary' in source
 
 
-def test_workload_mapping_modal_uses_investigation_width_and_bar_reading_guide() -> None:
+def test_workload_mapping_modal_uses_workspace_width_and_bar_reading_guide() -> None:
     source = read('app/templates/kubernetes/analytics/workload/partials/_workload_mapping_section.html')
 
-    assert "size='investigation'" in source
+    assert "size='workspace'" in source
+    modal = read('app/templates/kubernetes/analytics/components/_record_detail_modal.html')
+    assert "size == 'workspace'" in modal
+    assert 'modal_width = "max-w-screen-2xl"' in modal
     assert 'xl:grid-cols-[repeat(3,minmax(0,1fr))_minmax(15rem,1.15fr)]' in source
     assert 'sm:whitespace-nowrap' in source
     assert 'How To Read The Bars' in source
