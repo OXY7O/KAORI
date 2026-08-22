@@ -108,7 +108,9 @@ def promote_recommendation_to_alert(
         base_rule_key(finding_key), observed_severity=str(finding.get('severity') or 'info')
     )
     if not policy['eligible']:
-        raise ValueError('This rule is configured as Recommendation Only. Enable Alert Escalation in Rule Catalog first.')
+        raise ValueError(
+            'This rule is configured as Recommendation Only. Enable Alert Escalation in Rule Catalog first.'
+        )
     now = datetime.now(UTC)
     state = _observe_finding(finding, policy=policy, now=now)
     case = _ensure_alert_case(
@@ -185,14 +187,12 @@ def _automatic_threshold_reached(
     first_seen = _as_utc(state.first_seen_at)
     stable_for = now - first_seen
     if str(observed_severity or '').strip().lower() == 'critical':
-        return (
-            stable_for >= timedelta(minutes=int(policy.get('critical_stability_window_minutes', 0)))
-            and int(state.occurrence_count or 0) >= int(policy.get('critical_minimum_occurrences', 1))
-        )
-    return (
-        stable_for >= timedelta(minutes=int(policy['stability_window_minutes']))
-        and int(state.occurrence_count or 0) >= int(policy['minimum_occurrences'])
-    )
+        return stable_for >= timedelta(minutes=int(policy.get('critical_stability_window_minutes', 0))) and int(
+            state.occurrence_count or 0
+        ) >= int(policy.get('critical_minimum_occurrences', 1))
+    return stable_for >= timedelta(minutes=int(policy['stability_window_minutes'])) and int(
+        state.occurrence_count or 0
+    ) >= int(policy['minimum_occurrences'])
 
 
 def _ensure_alert_case(
@@ -205,10 +205,14 @@ def _ensure_alert_case(
     automatic: bool,
 ) -> AlertCase:
     case_key = f'recommendation:{state.grouping_fingerprint}'[:96]
-    case = AlertCase.query.filter(
-        AlertCase.case_key == case_key,
-        AlertCase.workflow_state != 'closed',
-    ).order_by(AlertCase.id.desc()).first()
+    case = (
+        AlertCase.query.filter(
+            AlertCase.case_key == case_key,
+            AlertCase.workflow_state != 'closed',
+        )
+        .order_by(AlertCase.id.desc())
+        .first()
+    )
     created = case is None
     if case is None:
         case = AlertCase()
@@ -277,7 +281,11 @@ def _refresh_case_from_finding(case: AlertCase, finding: dict[str, Any], *, now:
     if previous_severity and previous_severity != next_severity:
         case.previous_severity = previous_severity
         case.severity_changed_at = now
-        event_type = 'severity_escalated' if _severity_rank(next_severity) > _severity_rank(previous_severity) else 'severity_deescalated'
+        event_type = (
+            'severity_escalated'
+            if _severity_rank(next_severity) > _severity_rank(previous_severity)
+            else 'severity_deescalated'
+        )
         if event_type == 'severity_escalated' and case.acknowledgement_expires_at is not None:
             # A higher severity is a new paging condition; an ACK at the old severity cannot suppress it.
             case.acknowledgement_expires_at = now

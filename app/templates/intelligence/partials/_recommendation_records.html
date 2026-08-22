@@ -108,7 +108,9 @@
                     </div>
                     <div>
                         <dt class="text-xs text-content-muted">Alert Handling</dt>
-                        <dd class="mt-1">{{ table_label.status_label(item.alert_handling.label, item.alert_handling.tone, size='compact') }}</dd>
+                        <dd class="mt-1">
+                            {{ table_label.status_label(item.alert_handling.label, item.alert_handling.tone, size='compact') }}
+                        </dd>
                     </div>
                 </dl>
                 <div class="mt-3">{{ resource_detail_modal.detail_button(item.rule_key, url_for('intelligence.recommendation_details', recommendation_key=item.rule_key) , item.title, 'Recommendation', 'w-full', label='Review') }}</div>

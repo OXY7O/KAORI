@@ -13,10 +13,10 @@ def test_recommendation_alert_escalation_is_durable_and_worker_owned() -> None:
 
     assert 'class RecommendationAlertPolicy' in model
     assert 'class RecommendationAlertState' in model
-    assert "source_type: Mapped[str]" in model
-    assert "source_ref: Mapped[str | None]" in model
-    assert "rule_key: Mapped[str | None]" in model
-    assert "source_types_json: Mapped[list[str]]" in model
+    assert 'source_type: Mapped[str]' in model
+    assert 'source_ref: Mapped[str | None]' in model
+    assert 'rule_key: Mapped[str | None]' in model
+    assert 'source_types_json: Mapped[list[str]]' in model
     assert "revision = '20260822_reco_alert_escalation'" in migration
     assert "down_revision = '20260822_alert_operations'" in migration
     assert "'recommendation_alert_policies'" in migration
@@ -43,6 +43,20 @@ def test_recommendations_expose_manual_promotion_and_alert_case_traceability() -
     assert 'Promote to Alert' in detail
     assert 'Promote Now' in detail
     assert 'Open Alert Case' in detail
+    for current_macro in (
+        'table_ui.head_classes()',
+        'table_ui.header_cell_classes()',
+        'table_ui.body_classes()',
+        'table_ui.cell_classes()',
+    ):
+        assert current_macro in detail
+    for retired_macro in (
+        'table_ui.thead_classes()',
+        'table_ui.th_classes()',
+        'table_ui.tbody_classes()',
+        'table_ui.td_classes()',
+    ):
+        assert retired_macro not in detail
     assert 'Open Source Recommendation' in case_workspace
     assert "case.source_type == 'recommendation'" in case_workspace
 

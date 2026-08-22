@@ -176,7 +176,6 @@ def close_case(
     _audit(case, actor_user_id, 'alert_case_closed', 'Alert case closed with resolution evidence.')
 
 
-
 def close_case_from_automation_verification(
     *,
     case_public_id: str,
@@ -236,6 +235,7 @@ def close_case_from_automation_verification(
         'Alert case closed from verified Automation Control remediation.',
     )
     return True
+
 
 def save_postmortem(
     case: AlertCase,
@@ -369,7 +369,6 @@ def expire_silences_and_notify() -> int:
     return count
 
 
-
 def mark_case_source_resolved(
     case: AlertCase,
     *,
@@ -404,7 +403,9 @@ def mark_case_source_resolved(
         return case.workflow_state
     case.workflow_state = 'closed'
     case.closed_at = current
-    case.resolution_summary = auto_resolution_summary or 'The source alert recovered without a recorded manual remediation.'
+    case.resolution_summary = (
+        auto_resolution_summary or 'The source alert recovered without a recorded manual remediation.'
+    )
     case.remediation_steps_json = [
         auto_remediation_step or 'Observed source recovery in the committed worker snapshot.'
     ]
@@ -415,6 +416,7 @@ def mark_case_source_resolved(
     case.postmortem_status = 'not_required'
     _event(case, 'auto_closed', None, 'Case auto-closed by the source-resolved policy for non-paging severity.')
     return case.workflow_state
+
 
 def get_case(public_id: str) -> AlertCase | None:
     return AlertCase.query.filter_by(public_id=str(public_id)).first()

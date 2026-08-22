@@ -37,7 +37,7 @@ def upgrade() -> None:
             'source_types_json',
             sa.JSON(),
             nullable=False,
-            server_default=sa.text("'[\"provider_alert\"]'"),
+            server_default=sa.text('\'["provider_alert"]\''),
         ),
     )
 

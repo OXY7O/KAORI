@@ -40,7 +40,6 @@ def apply_case_mutation(
     return case
 
 
-
 def save_routing_policy_command(
     *,
     policy_id: int | None,
@@ -113,10 +112,7 @@ def save_template_override_command(
     return row
 
 
-
-def reset_template_override_command(
-    *, provider_key: str, event_state: str, actor_user_id: int | None
-) -> bool:
+def reset_template_override_command(*, provider_key: str, event_state: str, actor_user_id: int | None) -> bool:
     try:
         changed = reset_template_override(provider_key=provider_key, event_state=event_state)
         if changed:
@@ -203,6 +199,7 @@ def send_template_test_command(
     if not result.success:
         raise ValueError(result.message)
     return result.message
+
 
 def _audit_governance(
     *,

@@ -88,7 +88,9 @@ class AlertCase(db.Model):
     )
     source_resolved_at: Mapped[datetime | None] = mapped_column(db.DateTime(timezone=True), nullable=True, index=True)
     acknowledged_at: Mapped[datetime | None] = mapped_column(db.DateTime(timezone=True), nullable=True)
-    acknowledgement_expires_at: Mapped[datetime | None] = mapped_column(db.DateTime(timezone=True), nullable=True, index=True)
+    acknowledgement_expires_at: Mapped[datetime | None] = mapped_column(
+        db.DateTime(timezone=True), nullable=True, index=True
+    )
     mitigating_at: Mapped[datetime | None] = mapped_column(db.DateTime(timezone=True), nullable=True)
     verification_started_at: Mapped[datetime | None] = mapped_column(db.DateTime(timezone=True), nullable=True)
     closed_at: Mapped[datetime | None] = mapped_column(db.DateTime(timezone=True), nullable=True, index=True)
@@ -188,9 +190,7 @@ class AlertRoutingPolicy(db.Model):
     enabled: Mapped[bool] = mapped_column(db.Boolean, nullable=False, default=True)
     domains_json: Mapped[list[str]] = mapped_column(db.JSON, nullable=False, default=list)
     severities_json: Mapped[list[str]] = mapped_column(db.JSON, nullable=False, default=list)
-    source_types_json: Mapped[list[str]] = mapped_column(
-        db.JSON, nullable=False, default=lambda: ['recommendation']
-    )
+    source_types_json: Mapped[list[str]] = mapped_column(db.JSON, nullable=False, default=lambda: ['recommendation'])
     matchers_json: Mapped[dict[str, str]] = mapped_column(db.JSON, nullable=False, default=dict)
     channel_ids_json: Mapped[list[int]] = mapped_column(db.JSON, nullable=False, default=list)
     repeat_interval_minutes: Mapped[int] = mapped_column(db.Integer, nullable=False, default=60)

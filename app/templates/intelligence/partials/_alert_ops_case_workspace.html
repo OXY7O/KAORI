@@ -106,7 +106,8 @@
                                 </tr>
                             {% else %}
                                 <tr>
-                                    <td colspan="6" class="p-0">{% set empty_state_icon = "send" %}{% set empty_state_label = "No Delivery Attempts" %}{% set empty_state_title = "No Channel Delivery Recorded" %}{% set empty_state_description = "Firing and resolved notification attempts will appear here after a routing policy dispatches this alert case." %}{% set empty_state_min_height = "min-h-[180px]" %}
+                                    <td colspan="6" class="p-0">
+                                        {% set empty_state_icon = "send" %}{% set empty_state_label = "No Delivery Attempts" %}{% set empty_state_title = "No Channel Delivery Recorded" %}{% set empty_state_description = "Firing and resolved notification attempts will appear here after a routing policy dispatches this alert case." %}{% set empty_state_min_height = "min-h-[180px]" %}
                                         {% include 'components/states/_empty_state.html' %}
                                     </td>
                                 </tr>

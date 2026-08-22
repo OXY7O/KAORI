@@ -32,9 +32,11 @@
                         <td class="{{ table_ui.cell_classes() }}">
                             <div class="min-w-0">
                                 <p class="max-w-md break-words text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]">{{ case.alert_name }}</p>
-                                <p class="mt-1 max-w-xl line-clamp-1 text-xs leading-5 text-content-muted">{{ case.asset_name }}
+                                <p class="mt-1 max-w-xl line-clamp-1 text-xs leading-5 text-content-muted">
+                                    {{ case.asset_name }}
                                     {% if case.namespace != '-' %}· {{ case.namespace }}{% endif %}
-                                · {{ case.summary }}</p>
+                                    · {{ case.summary }}
+                                </p>
                                 <p class="mt-1 font-mono text-xs leading-5 text-content-muted">{{ case.public_id }}</p>
                             </div>
                         </td>

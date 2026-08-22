@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from datetime import UTC, datetime
 from typing import Any
 
 from app.definitions.loader import DefinitionError
@@ -59,7 +58,6 @@ def effective_alert_policy(
     return _apply_observed_severity(policy, observed_severity)
 
 
-
 def matches_alert_handling(item: dict[str, Any], selected: str | None, *, page_mode: str) -> bool:
     if page_mode != 'recommendations':
         return True
@@ -77,6 +75,7 @@ def matches_alert_handling(item: dict[str, Any], selected: str | None, *, page_m
         return status == 'not_eligible'
     return status == normalized
 
+
 def decorate_recommendation_findings(findings: list[dict[str, Any]]) -> list[dict[str, Any]]:
     if not findings:
         return findings
@@ -91,10 +90,7 @@ def decorate_recommendation_findings(findings: list[dict[str, Any]]) -> list[dic
         for row in RecommendationAlertState.query.filter(RecommendationAlertState.finding_key.in_(finding_keys)).all()
     }
     case_ids = {row.alert_case_id for row in states.values() if row.alert_case_id is not None}
-    cases = {
-        row.id: row
-        for row in AlertCase.query.filter(AlertCase.id.in_(case_ids)).all()
-    } if case_ids else {}
+    cases = {row.id: row for row in AlertCase.query.filter(AlertCase.id.in_(case_ids)).all()} if case_ids else {}
     for item in findings:
         finding_key = str(item.get('rule_key') or '')
         rule_key = base_rule_key(finding_key)
@@ -168,7 +164,9 @@ def _definition_policy(rule: dict[str, Any]) -> dict[str, Any]:
     severity = str(rule.get('severity') or '').strip().lower()
     status = str(rule.get('status') or '').strip().lower()
     logic_type = str(rule.get('logic_type') or '').strip().lower()
-    default_eligible = status == 'available' and severity in {'warning', 'critical'} and logic_type != 'alert_enrichment'
+    default_eligible = (
+        status == 'available' and severity in {'warning', 'critical'} and logic_type != 'alert_enrichment'
+    )
     eligible = bool(configured.get('eligible', default_eligible))
     minimum_severity = str(configured.get('minimum_severity') or 'warning').strip().lower()
     if minimum_severity not in {'info', 'warning', 'critical'}:
@@ -203,12 +201,13 @@ def _definition_policy(rule: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-
 def _apply_observed_severity(policy: dict[str, Any], observed_severity: str | None) -> dict[str, Any]:
     configured_eligible = bool(policy.get('eligible'))
     if observed_severity is None:
         return {**policy, 'configured_eligible': configured_eligible, 'severity_eligible': True}
-    severity_eligible = _severity_rank(observed_severity) >= _severity_rank(str(policy.get('minimum_severity') or 'warning'))
+    severity_eligible = _severity_rank(observed_severity) >= _severity_rank(
+        str(policy.get('minimum_severity') or 'warning')
+    )
     return {
         **policy,
         'configured_eligible': configured_eligible,
@@ -219,6 +218,7 @@ def _apply_observed_severity(policy: dict[str, Any], observed_severity: str | No
 
 def _severity_rank(value: str) -> int:
     return {'info': 1, 'warning': 2, 'critical': 3}.get(str(value or '').strip().lower(), 0)
+
 
 def _handling_view(
     policy: dict[str, Any],

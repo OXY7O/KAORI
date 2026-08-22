@@ -60,7 +60,6 @@ def test_intelligence_overview_surfaces_alert_operations_posture() -> None:
         assert text in template or text in overview
 
 
-
 def test_intelligence_overview_uses_standard_kaori_hero_contract() -> None:
     template = read('app/templates/intelligence/overview.html')
 
@@ -72,6 +71,7 @@ def test_intelligence_overview_uses_standard_kaori_hero_contract() -> None:
     assert 'page_hero.context_header_status(' not in template
     assert '<aside class="{{ page_hero.aside_classes() }}"' not in template
     assert "page_hero.context_status_badge('Operational'" not in template
+
 
 def test_intelligence_overview_uses_clean_summary_information_architecture() -> None:
     template = read('app/templates/intelligence/overview.html')
@@ -160,7 +160,9 @@ def test_intelligence_overview_keeps_one_explicit_operational_boundary() -> None
 
     assert 'Operational Boundary' in template
     assert 'Overview only presents aggregate Intelligence posture.' in template
-    assert 'Provider collection and refresh remain worker-owned; this page reads committed KAORI state only.' in template
+    assert (
+        'Provider collection and refresh remain worker-owned; this page reads committed KAORI state only.' in template
+    )
     assert 'Evidence Boundary' not in template
     assert 'Alert Lifecycle' not in template
     assert 'Automation Boundary' not in template

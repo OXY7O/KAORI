@@ -56,7 +56,6 @@ def _count_active_filters(filters: dict[str, str], keys: tuple[str, ...] | None 
     return sum(1 for key in selected_keys if _is_active_filter_value(filters.get(key)))
 
 
-
 def _truncate_words(value: str | None, limit: int = 132) -> str:
     text = ' '.join(str(value or '').split())
     if len(text) <= limit:
@@ -86,7 +85,9 @@ def _base_payload(args: MultiDict[str, str], *, page_mode: str) -> dict[str, Any
     page = max(to_int(args.get('page'), 1), 1)
 
     catalog = decorate_catalog_rules([normalize_rule(rule) for rule in INTELLIGENCE_CATALOG])
-    source_items = catalog if page_mode == 'catalog' else decorate_recommendation_findings(get_active_recommendation_findings())
+    source_items = (
+        catalog if page_mode == 'catalog' else decorate_recommendation_findings(get_active_recommendation_findings())
+    )
     filtered = [
         rule
         for rule in source_items
@@ -765,9 +766,7 @@ def _apply_recommendation_payload(payload: dict[str, Any], findings: list[dict[s
                 'warning': warning,
                 'domains': len(active_domains),
                 'object_storage': sum(1 for item in findings if item.get('domain') == 'object_storage'),
-                'alert_eligible': sum(
-                    1 for item in findings if (item.get('alert_handling') or {}).get('eligible')
-                ),
+                'alert_eligible': sum(1 for item in findings if (item.get('alert_handling') or {}).get('eligible')),
                 'alert_open': sum(
                     1 for item in findings if (item.get('alert_handling') or {}).get('status') == 'escalated'
                 ),
