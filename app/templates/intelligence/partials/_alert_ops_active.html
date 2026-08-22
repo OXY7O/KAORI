@@ -1,0 +1,47 @@
+{% import "components/table_primitives.html" as table_ui %}
+{% import "components/table_label.html" as table_label %}
+<div data-alert-intelligence-panel="active" class="space-y-5 p-4 sm:p-5">
+    <form id="alert-operations-filter-form"
+          action="{{ url_for('alert_intelligence.index') }}"
+          method="get"
+          hx-get="{{ url_for('alert_intelligence.index') }}"
+          hx-target="#alert-intelligence-page-content"
+          hx-swap="outerHTML show:none focus-scroll:false"
+          hx-push-url="true"
+          hx-trigger="input changed delay:350ms from:input, change from:select"
+          hx-sync="#alert-intelligence-page-content:replace"
+          class="{{ table_ui.filter_layout_classes() }} rounded-xl border border-outline-subtle bg-surface-elevated p-4">
+        <input type="hidden" name="tab" value="active">
+        <input type="hidden" name="domain" value="{{ payload.domain }}">
+        <input type="hidden" name="asset" value="{{ payload.selected_asset_key }}">
+        <label>
+            <span class="{{ table_ui.filter_label_classes() }}">Search</span>
+            {{ table_ui.search_field('q', payload.filters.q, 'Alert, case, namespace, asset') }}
+        </label>
+        <label>
+            <span class="{{ table_ui.filter_label_classes() }}">Severity</span>
+            <select name="severity" class="{{ table_ui.filter_select_classes() }}">
+                {% for value, label in [('all','All Severities'),('critical','Critical'),('warning','Warning'),('info','Info'),('unknown','Unknown')] %}
+                    <option value="{{ value }}" {% if payload.filters.severity == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <label>
+            <span class="{{ table_ui.filter_label_classes() }}">Workflow</span>
+            <select name="workflow" class="{{ table_ui.filter_select_classes() }}">
+                {% for value, label in [('all','All Open States'),('open','Open'),('acknowledged','Acknowledged'),('mitigating','Mitigating'),('verification_pending','Verification Pending')] %}
+                    <option value="{{ value }}" {% if payload.filters.workflow == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        {% if payload.filters.q or payload.filters.severity != 'all' or payload.filters.workflow != 'all' %}
+            <a data-kaori-filter-action href="{{ url_for('alert_intelligence.index', tab='active', domain=payload.domain, asset=payload.selected_asset_key) }}" class="{{ table_ui.action_classes() }} min-h-10">Clear Filters</a>
+        {% endif %}
+    </form>
+
+    {% include 'intelligence/partials/_alert_ops_active_table.html' %}
+
+    {% if payload.selected_case %}
+        {% include 'intelligence/partials/_alert_ops_case_workspace.html' %}
+    {% endif %}
+</div>

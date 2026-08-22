@@ -13,6 +13,9 @@ categories:
   integrations:
     label: Integrations
     icon: plug-zap
+  intelligence:
+    label: Intelligence
+    icon: brain-circuit
   platform_operations:
     label: Platform Operations
     icon: workflow
@@ -51,6 +54,11 @@ routes:
       - kubernetes_runtime_
       - integration_
       - integration.
+  - category: intelligence
+    prefixes:
+      - alert_case_
+      - alert_routing_
+      - alert_notification_
   - category: settings
     exact: [user_preference, account_security]
     prefixes: [settings_]

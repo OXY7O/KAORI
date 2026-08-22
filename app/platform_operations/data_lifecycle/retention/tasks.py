@@ -137,7 +137,7 @@ def run_domain_retention_task(
 def run_scheduled_retention_task(self) -> dict[str, Any]:
     configured_domains = current_app.config.get(
         'ARCHIVE_SCHEDULED_DOMAINS',
-        ('operational_activity', 'job_execution', 'runtime_observation', 'analytics_snapshot', 'generated_report'),
+        ('operational_activity', 'job_execution', 'runtime_observation', 'analytics_snapshot', 'generated_report', 'alert_incident'),
     )
     if isinstance(configured_domains, str):
         configured_domains = tuple(
@@ -383,4 +383,5 @@ def _domain_label(domain_name: str) -> str:
         'operational_activity': 'Activity Audit',
         'job_execution': 'Job Execution',
         'generated_report': 'Generated Reports',
+        'alert_incident': 'Alert Incidents',
     }.get(domain_name, domain_name.replace('_', ' ').title())

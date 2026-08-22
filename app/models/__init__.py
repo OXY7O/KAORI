@@ -1,4 +1,11 @@
 from app.models.alertmanager import AlertmanagerInstance
+from app.models.alert_ops import (
+    AlertCase,
+    AlertCaseEvent,
+    AlertNotificationTemplate,
+    AlertRoutingPolicy,
+    AlertSilence,
+)
 from app.models.analytics import AnalyticsSnapshot
 from app.models.archive import ArchiveArtifact
 from app.models.audit import AuditEvent
@@ -95,6 +102,11 @@ __all__ = [
     'TLSCertificateUpdateEvent',
     'MetricsSource',
     'AlertmanagerInstance',
+    'AlertSilence',
+    'AlertRoutingPolicy',
+    'AlertNotificationTemplate',
+    'AlertCaseEvent',
+    'AlertCase',
     'Report',
     'ReportTemplate',
     'ReportSchedule',

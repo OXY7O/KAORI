@@ -11,6 +11,12 @@ events:
   alert_intelligence.active_alert:
     label: Alert Intelligence · Active Alert
     severity_scoped: true
+  alert_ops.firing:
+    label: Alert Operations · Firing
+    severity_scoped: true
+  alert_ops.resolved:
+    label: Alert Operations · Resolved
+    severity_scoped: true
   report.generated:
     label: Scheduled Reports · Report Ready
     severity_scoped: false

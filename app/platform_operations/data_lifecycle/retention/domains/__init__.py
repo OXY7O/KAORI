@@ -1,5 +1,6 @@
 from collections.abc import Callable
 
+from app.platform_operations.data_lifecycle.retention.domains.alert_incident import AlertIncidentArchiveDomain
 from app.platform_operations.data_lifecycle.retention.domains.analytics_snapshot import AnalyticsSnapshotArchiveDomain
 from app.platform_operations.data_lifecycle.retention.domains.generated_report import GeneratedReportArchiveDomain
 from app.platform_operations.data_lifecycle.retention.domains.job_execution import JobExecutionArchiveDomain
@@ -10,6 +11,7 @@ from app.platform_operations.data_lifecycle.retention.domains.runtime_observatio
 from app.platform_operations.data_lifecycle.retention.types import ArchiveDomain
 
 DOMAIN_FACTORIES: dict[str, Callable[[], ArchiveDomain]] = {
+    'alert_incident': AlertIncidentArchiveDomain,
     'analytics_snapshot': AnalyticsSnapshotArchiveDomain,
     'generated_report': GeneratedReportArchiveDomain,
     'operational_activity': OperationalActivityArchiveDomain,
@@ -29,6 +31,7 @@ def get_archive_domain(domain_name: str) -> ArchiveDomain:
 
 __all__ = [
     'DOMAIN_FACTORIES',
+    'AlertIncidentArchiveDomain',
     'AnalyticsSnapshotArchiveDomain',
     'GeneratedReportArchiveDomain',
     'OperationalActivityArchiveDomain',

@@ -322,6 +322,7 @@ def _domain_label(name: str) -> str:
         'runtime_observation': 'Runtime Observations',
         'analytics_snapshot': 'Analytics Snapshots',
         'generated_report': generated_report_ui.GENERATED_REPORT_LABEL,
+        'alert_incident': 'Alert Incidents',
     }.get(name, name.replace('_', ' ').title())
 
 
@@ -332,6 +333,7 @@ def _domain_icon(name: str) -> str:
         'runtime_observation': 'activity',
         'analytics_snapshot': 'chart-no-axes-combined',
         'generated_report': generated_report_ui.GENERATED_REPORT_ICON,
+        'alert_incident': 'siren',
     }.get(name, 'database')
 
 
@@ -342,6 +344,7 @@ def _domain_description(name: str) -> str:
         'runtime_observation': 'Kubernetes, Object Storage, Metrics Source, and Alertmanager runtime evidence.',
         'analytics_snapshot': 'Reusable analytics and forecast materialization snapshots.',
         'generated_report': generated_report_ui.GENERATED_REPORT_DESCRIPTION,
+        'alert_incident': 'Closed Alert Operations cases, operator evidence, notification delivery, and postmortem records.',
     }.get(name, 'KAORI operational data domain.')
 
 
@@ -394,6 +397,28 @@ def _domain_coverage(name: str) -> tuple[dict[str, str], ...]:
             },
         ),
         'generated_report': generated_report_ui.GENERATED_REPORT_COVERAGE,
+        'alert_incident': (
+            {
+                'icon': 'siren',
+                'label': 'Closed Alert Cases',
+                'description': 'Verified closed cases retain searchable identity while heavy evidence moves to governed archive storage.',
+            },
+            {
+                'icon': 'list-tree',
+                'label': 'Incident Timeline',
+                'description': 'Detection, acknowledgement, assignment, silence, remediation, source resolution, and closure evidence.',
+            },
+            {
+                'icon': 'send',
+                'label': 'Notification Delivery',
+                'description': 'Firing and resolved channel-delivery evidence is preserved with the incident archive.',
+            },
+            {
+                'icon': 'file-text',
+                'label': 'Postmortem Evidence',
+                'description': 'Required or completed postmortem context and action-item evidence remain part of the case record.',
+            },
+        ),
         'analytics_snapshot': (
             {
                 'icon': 'chart-spline',
@@ -421,6 +446,7 @@ def _domain_coverage_note(name: str) -> str | None:
         'runtime_observation': 'The policy is provider-neutral. Kubernetes, Object Storage, Metrics Source, Alertmanager, and future integrations using IntegrationRuntimeObservation share the same lifecycle boundary.',
         'analytics_snapshot': 'Cleanup applies only after a snapshot is outside both its stale-serve window and the configured hot-retention boundary.',
         'generated_report': generated_report_ui.GENERATED_REPORT_COVERAGE_NOTE,
+        'alert_incident': 'Only Closed cases are archive-eligible. KAORI preserves the case index in PostgreSQL for History search after evidence compaction.',
     }.get(name)
 
 
@@ -431,6 +457,7 @@ def _domain_exclusion_note(name: str) -> str | None:
         'runtime_observation': 'Full provider configuration and credentials are not part of runtime-observation archives.',
         'analytics_snapshot': 'Pending or still-serveable snapshots are protected from archive cleanup.',
         'generated_report': generated_report_ui.GENERATED_REPORT_EXCLUSION_NOTE,
+        'alert_incident': 'Open, acknowledged, mitigating, and verification-pending cases are never selected for archive cleanup.',
     }.get(name)
 
 
@@ -471,6 +498,10 @@ def _domain_storage_contract(
         )
     elif name == 'operational_activity':
         archive_detail = 'Activity and persistent notification evidence share the same structured archive bundle.'
+    elif name == 'alert_incident':
+        archive_detail = (
+            'Closed alert-case evidence is stored as JSONL.GZ plus manifest and checksum; the searchable case index remains in PostgreSQL.'
+        )
 
     return {
         'hot_source_label': source_label,

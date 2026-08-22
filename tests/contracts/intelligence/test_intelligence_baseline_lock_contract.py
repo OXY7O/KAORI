@@ -42,20 +42,20 @@ def test_automation_control_keeps_infrastructure_execution_fail_closed_without_b
     assert 'DOMAIN_DEFINITIONS' not in presentation
 
 
-def test_alert_intelligence_uses_supported_multi_domain_alert_sources():
+def test_alert_intelligence_uses_supported_multi_domain_alert_operations():
     module = read('app/intelligence/alert_intelligence/service.py')
-    alerts = read('app/templates/intelligence/partials/_alert_intelligence_alerts.html')
-    correlation = read('app/templates/intelligence/partials/_alert_intelligence_correlation.html')
+    lifecycle = read('app/intelligence/alert_intelligence/lifecycle.py')
+    workspace = read('app/templates/intelligence/partials/_alert_intelligence_workspace.html')
 
     assert 'load_snapshot_rows' in module
     assert 'load_alerts_by_source' not in module
     assert 'load_alert_stream' not in module
-    assert 'get_active_recommendation_findings' in module
     assert "'kubernetes'" in module
     assert "'object_storage'" in module
-    assert 'Alertmanager is preferred' in alerts
-    assert 'Metrics Source ALERTS' in alerts
-    assert 'This is contextual correlation, not a claim that every finding was caused by every alert.' in correlation
+    assert 'AlertCase' in module
+    assert 'reconcile_alert_cases' in lifecycle
+    for label in ('Active Alerts', 'Routing & Channels', 'Templates', 'Silences', 'History'):
+        assert label in workspace
 
 
 def test_intelligence_baseline_lock_is_registered_in_quality_gate():

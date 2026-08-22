@@ -7,75 +7,50 @@ def read(relative: str) -> str:
     return (ROOT / relative).read_text(encoding='utf-8')
 
 
-def test_alert_intelligence_is_asset_scoped_multi_domain_and_keeps_source_authority_explicit():
-    module = read('app/intelligence/alert_intelligence/service.py')
-    workspace = read('app/templates/intelligence/partials/_alert_intelligence_workspace.html')
-    correlation = read('app/templates/intelligence/partials/_alert_intelligence_correlation.html')
-
-    assert 'load_snapshot_rows' in module
-    assert 'load_alerts_by_source' not in module
-    assert 'load_alert_stream' not in module
-    assert "_VALID_DOMAINS = {'kubernetes', 'object_storage'}" in module
-    assert "_VALID_SOURCES = {'auto', 'alertmanager', 'metrics_source'}" in module
-    assert 'get_active_recommendation_findings' in module
-    assert "'label': 'Automatic · Alertmanager Preferred'" in module
-    assert (
-        "'detection': 'Metrics Source provides metric-derived alert-state evidence "
-        "when supported by the selected adapter.'" in module
-    )
-    assert 'Alertmanager owns grouping, inhibition, routing, silences, receivers' in module
-    assert 'Alert Source' in workspace
-    assert 'payload.source_options' in workspace
-    assert 'contextual correlation, not a claim that every finding was caused by every alert' in correlation
-
-
-def test_notification_channel_persistence_is_provider_neutral_and_secrets_are_encrypted():
+def test_alert_operations_reuses_integrations_notification_channels_without_credentials() -> None:
+    routing = read('app/intelligence/alert_intelligence/routing.py')
     model = read('app/models/notification_channel.py')
-    service = read('app/integrations/delivery/notification_channels/service.py')
-    providers = read('app/integrations/delivery/notification_channels/providers/__init__.py')
+    workspace = read('app/templates/intelligence/partials/_alert_ops_routing.html')
 
+    assert 'NotificationChannel' in routing
+    assert 'credential_payload' not in routing
     assert 'credential_payload: Mapped[str | None] = mapped_column(EncryptedText()' in model
-    assert 'destination: Mapped[str | None]' in model
-    assert 'provider_config: Mapped[dict[str, Any]]' in model
-    assert 'bot_token: Mapped' not in model
-    assert 'target_chat_id: Mapped' not in model
-    assert 'get_notification_provider(channel.provider_key)' in service
-    assert "'telegram': NotificationProviderAdapter(" in providers
+    assert 'Integrations → Notification Channels' in workspace
+    assert "url_for('notification_channels.index')" in workspace
 
 
-def test_telegram_provider_uses_fixed_bot_api_and_template_never_echoes_token():
-    provider = read('app/integrations/delivery/notification_channels/providers/telegram.py')
-    page = read('app/templates/integrations/delivery/notification_channels/providers/telegram/_form.html')
+def test_alert_operations_has_provider_specific_firing_and_resolved_templates() -> None:
+    module = read('app/intelligence/alert_intelligence/templates.py')
+    workspace = read('app/templates/intelligence/partials/_alert_ops_templates.html')
 
-    assert "_TELEGRAM_API = 'https://api.telegram.org'" in provider
-    assert "f'{_TELEGRAM_API}/bot{bot_token}/sendMessage'" in provider
-    assert "method='POST'" in provider
-    assert '_TELEGRAM_TEXT_LIMIT = 4096' in provider
-    assert "'link_preview_options'" in provider
-    assert 'type="password"' in page
-    assert 'form_channel.bot_token' not in page
-    assert 'credential_configured' in page
-
-
-def test_notification_dispatch_runs_on_existing_maintenance_queue_and_retries_failed_delivery():
-    schedule = read('app/integrations/delivery/notification_channels/config.py')
-    tasks = read('app/platform_operations/notifications/alert_delivery/tasks.py')
-    service = read('app/integrations/delivery/notification_channels/service.py')
-
-    assert "os.getenv('JOB_MAINTENANCE_CELERY_QUEUE') or 'maintenance'" in schedule
-    assert (
-        "name='app.platform_operations.notifications.alert_delivery.tasks.dispatch_alert_intelligence_notifications'"
-        in tasks
-    )
-    assert "'retried': 0" in tasks
-    assert 'notification_delivery_max_attempts()' in service
-    assert "event_type='alert_intelligence.active_alert'" in service
-    assert "delivery.status != 'failed' or delivery.attempt_count >= max_attempts" in service
+    for provider in ('telegram', 'email', 'microsoft_teams'):
+        assert f"'{provider}'" in module
+    assert module.count("'firing'") >= 3
+    assert module.count("'resolved'") >= 3
+    for variable in ('resolution_summary', 'verification_evidence', 'operator_name', 'case_id'):
+        assert variable in module
+    assert 'Built-in' in workspace
+    assert 'Override' in workspace
 
 
-def test_alert_intelligence_hero_description_is_compact_and_keeps_provider_ownership_boundary():
-    page = read('app/templates/intelligence/partials/_alert_intelligence_page.html')
+def test_firing_and_resolved_delivery_use_existing_delivery_ledger() -> None:
+    notifications = read('app/intelligence/alert_intelligence/notifications.py')
+    event_catalog = read('app/definitions/catalogs/platform_operations/notifications/outbound_delivery.yaml')
+    channel_service = read('app/integrations/delivery/notification_channels/service.py')
 
-    assert 'Correlate provider alerts with asset identity, recommendations, rule guidance' in page
-    assert 'preserving provider-owned alert lifecycle' in page
-    assert 'external alert lifecycle ownership' not in page
+    assert 'dispatch_notification_event' in notifications
+    assert 'NotificationDelivery' in notifications
+    assert "event_type = 'alert_ops.resolved' if event_state == 'resolved' else 'alert_ops.firing'" in notifications
+    assert 'alert_ops.firing:' in event_catalog
+    assert 'alert_ops.resolved:' in event_catalog
+    assert "event_type in {'alert_ops.firing', 'alert_ops.resolved'}" in channel_service
+
+
+def test_resolved_delivery_targets_only_channels_that_received_firing() -> None:
+    notifications = read('app/intelligence/alert_intelligence/notifications.py')
+
+    assert '_successful_firing_channel_ids(case)' in notifications
+    assert "NotificationDelivery.event_type == 'alert_ops.firing'" in notifications
+    assert "NotificationDelivery.status == 'sent'" in notifications
+    assert 'policy_allows_resolved(case, channel_id)' in notifications
+    assert "case.source_state == 'resolved' and case.workflow_state == 'closed'" in notifications

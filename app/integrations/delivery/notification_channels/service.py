@@ -511,12 +511,15 @@ def _channel_matches_event(
     event_type: str,
     severity: str | None = None,
 ) -> bool:
+    allowed_events = set(channel.event_types or [])
+    if event_type in {'alert_ops.firing', 'alert_ops.resolved'} and 'alert_intelligence.active_alert' in allowed_events:
+        allowed_events.add(event_type)
     if not (
         channel.enabled
         and channel.configured
         and channel.test_status == 'success'
         and domain in (channel.domains or [])
-        and event_type in (channel.event_types or [])
+        and event_type in allowed_events
     ):
         return False
     if severity is None or not event_severity_scoped(event_type):

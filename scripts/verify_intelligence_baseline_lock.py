@@ -43,9 +43,13 @@ def main() -> int:
     object_storage_recommendations = read('app/intelligence/object_storage_recommendations.py')
     alert_intelligence = read('app/intelligence/alert_intelligence/service.py')
     alert_routes = read('app/intelligence/alert_intelligence/routes.py')
+    alert_lifecycle = read('app/intelligence/alert_intelligence/lifecycle.py')
+    alert_notifications = read('app/intelligence/alert_intelligence/notifications.py')
+    alert_routing = read('app/intelligence/alert_intelligence/routing.py')
+    alert_templates = read('app/intelligence/alert_intelligence/templates.py')
     alert_workspace = read('app/templates/intelligence/partials/_alert_intelligence_workspace.html')
-    alert_alerts = read('app/templates/intelligence/partials/_alert_intelligence_alerts.html')
-    alert_correlation = read('app/templates/intelligence/partials/_alert_intelligence_correlation.html')
+    alert_active = read('app/templates/intelligence/partials/_alert_ops_active.html')
+    alert_history = read('app/templates/intelligence/partials/_alert_ops_history.html')
     alert_page_content = read('app/templates/intelligence/partials/_alert_intelligence_page.html')
     automation_routes = read('app/intelligence/automation_control/routes.py')
     automation_presentation = read('app/intelligence/automation_control/presentation.py')
@@ -107,11 +111,35 @@ def main() -> int:
             f'Alert Intelligence view permission boundary missing after {route_signature}',
             errors,
         )
-    require(
-        '@alert_intelligence_bp.post' not in alert_routes,
-        'Alert Intelligence read capability must not own mutation routes',
-        errors,
-    )
+    for route_signature in (
+        "@alert_intelligence_bp.post('/cases/<string:public_id>/acknowledge')",
+        "@alert_intelligence_bp.post('/cases/<string:public_id>/assign')",
+        "@alert_intelligence_bp.post('/cases/<string:public_id>/mitigating')",
+        "@alert_intelligence_bp.post('/cases/<string:public_id>/silence')",
+        "@alert_intelligence_bp.post('/cases/<string:public_id>/unsilence')",
+        "@alert_intelligence_bp.post('/cases/<string:public_id>/close')",
+        "@alert_intelligence_bp.post('/cases/<string:public_id>/postmortem')",
+    ):
+        position = alert_routes.index(route_signature)
+        permission_position = alert_routes.index("@permission_required('intelligence.decisions.create')", position)
+        function_position = alert_routes.index('def ', position)
+        require(
+            position < permission_position < function_position,
+            f'Alert Operations decision permission boundary missing after {route_signature}',
+            errors,
+        )
+    for route_signature in (
+        "@alert_intelligence_bp.post('/routing')",
+        "@alert_intelligence_bp.post('/templates')",
+    ):
+        position = alert_routes.index(route_signature)
+        permission_position = alert_routes.index("@permission_required('integrations.manage')", position)
+        function_position = alert_routes.index('def ', position)
+        require(
+            position < permission_position < function_position,
+            f'Alert Operations integration-governance permission boundary missing after {route_signature}',
+            errors,
+        )
 
     for required in (
         "@automation_control_bp.route('/automation-control')",
@@ -179,37 +207,60 @@ def main() -> int:
     )
     for required in (
         'load_snapshot_rows',
-        'get_active_recommendation_findings',
         'notification_channel_summary',
-        'recent_delivery_summary',
+        'routing_policy_rows',
+        'built_in_templates',
         "'kubernetes'",
         "'object_storage'",
-        "'auto'",
-        "'alertmanager'",
-        "'metrics_source'",
+        "'overview'",
+        "'active'",
+        "'routing'",
+        "'templates'",
+        "'silences'",
+        "'history'",
     ):
-        require(required in alert_intelligence, f'Alert Intelligence multi-domain contract missing: {required}', errors)
+        require(required in alert_intelligence, f'Alert Operations multi-domain contract missing: {required}', errors)
     for forbidden in ('load_alerts_by_source', 'load_alert_stream'):
         require(
-            forbidden not in alert_intelligence,
-            f'Alert Intelligence web payload must not perform live provider reads: {forbidden}',
+            forbidden not in alert_intelligence + alert_routes,
+            f'Alert Operations web request path must not perform live provider reads: {forbidden}',
             errors,
         )
     for required in (
-        'Alert Records',
-        'Correlation & Guidance',
-        'Notification Delivery',
-        'Evidence & Ownership',
+        'Overview',
+        'Active Alerts',
+        'Routing & Channels',
+        'Templates',
+        'Silences',
+        'History',
     ):
-        require(required in alert_workspace, f'Alert Intelligence workspace contract missing: {required}', errors)
-    for required in ('Alertmanager is preferred', 'Metrics Source ALERTS'):
-        require(required in alert_alerts, f'Alert Intelligence alert-source contract missing: {required}', errors)
+        require(required in alert_workspace, f'Alert Operations workspace contract missing: {required}', errors)
+    for required in ('Clear Filters', 'Workflow', 'alert-operations-filter-form'):
+        require(required in alert_active, f'Alert Operations active-alert contract missing: {required}', errors)
+    for required in ('Resolved & Historical Alerts', 'Resolution Evidence', 'Postmortem'):
+        require(required in alert_history, f'Alert Operations history contract missing: {required}', errors)
+    for required in (
+        'acknowledge_case',
+        'create_delivery_silence',
+        'close_case',
+        'save_postmortem',
+        "case.workflow_state = 'verification_pending'",
+    ):
+        require(required in alert_lifecycle, f'Alert Operations lifecycle contract missing: {required}', errors)
+    for required in (
+        "event_state='firing'",
+        "event_state='resolved'",
+        "case.workflow_state == 'closed'",
+        '_successful_firing_channel_ids',
+    ):
+        require(required in alert_notifications, f'Alert Operations notification lifecycle missing: {required}', errors)
     require(
-        'This is contextual correlation, not a claim that every finding was caused by every alert.'
-        in alert_correlation,
-        'Alert Intelligence must keep contextual correlation distinct from causal attribution',
+        'NotificationChannel' in alert_routing and 'credential_payload' not in alert_routing,
+        'Alert Operations routing must reference Integration Notification Channels without owning credentials',
         errors,
     )
+    for required in ("'telegram'", "'email'", "'microsoft_teams'", "'firing'", "'resolved'"):
+        require(required in alert_templates, f'Alert Operations provider-template contract missing: {required}', errors)
 
     recommendations_page = read('app/templates/intelligence/recommendations.html')
     catalog_page = read('app/templates/intelligence/rule_catalog.html')

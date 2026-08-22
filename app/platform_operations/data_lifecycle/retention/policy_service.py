@@ -143,6 +143,8 @@ def scheduled_domains(domain_names: list[str]) -> list[str]:
 def _default_schedule_hour(domain: str) -> int:
     if domain == 'operational_activity':
         return max(0, min(int(current_app.config.get('ACTIVITY_RETENTION_SCHEDULE_HOUR', 2)), 23))
+    if domain == 'alert_incident':
+        return max(0, min(int(current_app.config.get('ALERT_INCIDENT_RETENTION_SCHEDULE_HOUR', 4)), 23))
     if domain == 'runtime_observation':
         return max(0, min(int(current_app.config.get('RUNTIME_OBSERVATION_RETENTION_SCHEDULE_HOUR', 3)), 23))
     if domain == 'analytics_snapshot':
@@ -155,6 +157,8 @@ def _default_schedule_hour(domain: str) -> int:
 def _default_schedule_minute(domain: str) -> int:
     if domain == 'operational_activity':
         return max(0, min(int(current_app.config.get('ACTIVITY_RETENTION_SCHEDULE_MINUTE', 15)), 59))
+    if domain == 'alert_incident':
+        return max(0, min(int(current_app.config.get('ALERT_INCIDENT_RETENTION_SCHEDULE_MINUTE', 45)), 59))
     if domain == 'runtime_observation':
         return max(0, min(int(current_app.config.get('RUNTIME_OBSERVATION_RETENTION_SCHEDULE_MINUTE', 45)), 59))
     if domain == 'analytics_snapshot':

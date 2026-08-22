@@ -1,61 +1,38 @@
 {% import "intelligence/components/_workspace.html" as intelligence_ui %}
 {% import "components/content_tabs.html" as content_tabs %}
 {% import "components/table_primitives.html" as table_ui %}
-{% set tab_query = {
-    'domain': payload.domain,
-    'asset': payload.selected_asset_key,
-    'source': payload.source,
-    'severity': payload.filters.severity,
-    'state': payload.filters.state,
-    'q': payload.filters.q
-} %}
+{% set tab_query = {'domain': payload.domain, 'asset': payload.selected_asset_key} %}
 {% set workspace_tabs = [
-    (
-    'alerts',
-    'Alert Records',
-    'triangle-alert',
-    url_for('alert_intelligence.index', tab='alerts', **tab_query)
-    ),
-    (
-    'correlation',
-    'Correlation & Guidance',
-    'git-merge',
-    url_for('alert_intelligence.index', tab='correlation', **tab_query)
-    ),
-    (
-    'delivery',
-    'Notification Delivery',
-    'send',
-    url_for('alert_intelligence.index', tab='delivery', **tab_query)
-    ),
-    (
-    'evidence',
-    'Evidence & Ownership',
-    'shield-check',
-    url_for('alert_intelligence.index', tab='evidence', **tab_query)
-    )
+    ('overview', 'Overview', 'layout-dashboard', url_for('alert_intelligence.index', tab='overview', **tab_query)),
+    ('active', 'Active Alerts', 'siren', url_for('alert_intelligence.index', tab='active', **tab_query)),
+    ('routing', 'Routing & Channels', 'route', url_for('alert_intelligence.index', tab='routing', **tab_query)),
+    ('templates', 'Templates', 'file-code-2', url_for('alert_intelligence.index', tab='templates', **tab_query)),
+    ('silences', 'Silences', 'bell-off', url_for('alert_intelligence.index', tab='silences', **tab_query)),
+    ('history', 'History', 'archive', url_for('alert_intelligence.index', tab='history', **tab_query))
 ] %}
 {% call intelligence_ui.section(
-    'Alert Intelligence Workspace',
-    'Move between alert evidence, contextual guidance, delivery posture, and ownership boundaries within one managed asset context.',
-    'radio-tower',
-    payload.snapshot.label,
-    payload.snapshot.tone,
+    'Alert Operations Workspace',
+    'Manage alert ownership, delivery, suppression, recovery evidence, historical incidents, and notification policy without duplicating Notification Channel credentials.',
+    'shield-alert',
+    payload.summary.active ~ ' Active',
+    'warning' if payload.summary.active else 'normal',
     indicator_id='alert-intelligence-loading',
-    loading_label='Refreshing Alert Intelligence'
-    ) %}
-    {{ content_tabs.render_links('alert-intelligence-sections',
+    loading_label='Loading Alert Operations'
+) %}
+    {{ content_tabs.render_links(
+        'alert-operations-sections',
         workspace_tabs,
         payload.tab,
-        'Alert Intelligence Sections',
+        'Alert Operations Sections',
         embedded=true,
-        data_namespace='alert-intelligence',
+        data_namespace='alert-operations',
         hx_target='#alert-intelligence-page-content',
         hx_swap='outerHTML show:none focus-scroll:false',
         hx_push_url='true',
         hx_indicator='#alert-intelligence-loading',
         nowrap=true,
-        hx_sync='#alert-intelligence-page-content:replace') }}
+        hx_sync='#alert-intelligence-page-content:replace'
+    ) }}
     <form id="alert-intelligence-context-form"
           action="{{ url_for('alert_intelligence.index') }}"
           method="get"
@@ -66,76 +43,46 @@
           hx-indicator="#alert-intelligence-loading"
           hx-sync="#alert-intelligence-page-content:replace"
           hx-trigger="change from:select"
-          autocomplete="off"
           class="border-b border-outline-subtle bg-surface-card px-4 py-3 sm:px-5">
         <input type="hidden" name="tab" value="{{ payload.tab }}">
-        <input type="hidden" name="page" value="1">
-        <input type="hidden"
-               name="per_page"
-               value="{{ payload.pagination.per_page }}">
-        <input type="hidden" name="q" value="{{ payload.filters.q }}">
-        <input type="hidden" name="severity" value="{{ payload.filters.severity }}">
-        <input type="hidden" name="state" value="{{ payload.filters.state }}">
         <div class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-            <div class="min-w-0 lg:max-w-sm">
+            <div class="min-w-0 lg:max-w-md">
                 <p class="text-sm font-semibold leading-5 text-content-primary">Operational Context</p>
-                <p class="mt-1 text-xs leading-5 text-content-muted">
-                    Selected asset and alert source define the committed evidence context shared across every Alert Intelligence section.
-                </p>
+                <p class="mt-1 text-xs leading-5 text-content-muted">Scope changes only read KAORI database state. Provider collection and notification delivery remain worker-owned.</p>
             </div>
             <div class="{{ table_ui.filter_layout_classes() }} flex-1">
-                <label class="block">
+                <label>
                     <span class="{{ table_ui.filter_label_classes() }}">Domain</span>
-                    <select name="domain"
-                            autocomplete="off"
-                            class="{{ table_ui.filter_select_classes() }}">
+                    <select name="domain" class="{{ table_ui.filter_select_classes() }}">
                         {% for option in payload.domain_options %}
-                            <option value="{{ option.value }}"
-                                    {% if payload.domain == option.value %}selected{% endif %}>
-                                {{ option.label }} · {{ option.count }}
-                            </option>
+                            <option value="{{ option.value }}" {% if payload.domain == option.value %}selected{% endif %}>{{ option.label }} · {{ option.count }}</option>
                         {% endfor %}
                     </select>
                 </label>
-                <label class="block">
-                    <span class="{{ table_ui.filter_label_classes() }}">Asset</span>
-                    <select name="asset"
-                            autocomplete="off"
-                            class="{{ table_ui.filter_select_classes() }}">
+                <label>
+                    <span class="{{ table_ui.filter_label_classes() }}">Asset Scope</span>
+                    <select name="asset" class="{{ table_ui.filter_select_classes() }}">
                         {% for option in payload.assets %}
-                            <option value="{{ option.value }}"
-                                    {% if payload.selected_asset_key == option.value %}selected{% endif %}>
-                                {{ option.label }} · {{ option.environment }}
-                            </option>
-                        {% else %}
-                            <option value="">No managed asset available</option>
-                        {% endfor %}
-                    </select>
-                </label>
-                <label class="block">
-                    <span class="{{ table_ui.filter_label_classes() }}">Alert Source</span>
-                    <select name="source"
-                            autocomplete="off"
-                            class="{{ table_ui.filter_select_classes() }}">
-                        {% for option in payload.source_options %}
-                            <option value="{{ option.value }}"
-                                    {% if payload.source == option.value %}selected{% endif %}>{{ option.label }}</option>
+                            <option value="{{ option.value }}" {% if payload.selected_asset_key == option.value %}selected{% endif %}>{{ option.label }} · {{ option.environment }}</option>
                         {% endfor %}
                     </select>
                 </label>
             </div>
         </div>
     </form>
-    <div data-alert-intelligence-active-section="{{ payload.tab }}"
-         class="bg-surface-card">
-        {% if payload.tab == 'correlation' %}
-            {% include 'intelligence/partials/_alert_intelligence_correlation.html' %}
-        {% elif payload.tab == 'delivery' %}
-            {% include 'intelligence/partials/_alert_intelligence_delivery.html' %}
-        {% elif payload.tab == 'evidence' %}
-            {% include 'intelligence/partials/_alert_intelligence_evidence.html' %}
+    <div data-alert-intelligence-active-section="{{ payload.tab }}" class="bg-surface-card">
+        {% if payload.tab == 'active' %}
+            {% include 'intelligence/partials/_alert_ops_active.html' %}
+        {% elif payload.tab == 'routing' %}
+            {% include 'intelligence/partials/_alert_ops_routing.html' %}
+        {% elif payload.tab == 'templates' %}
+            {% include 'intelligence/partials/_alert_ops_templates.html' %}
+        {% elif payload.tab == 'silences' %}
+            {% include 'intelligence/partials/_alert_ops_silences.html' %}
+        {% elif payload.tab == 'history' %}
+            {% include 'intelligence/partials/_alert_ops_history.html' %}
         {% else %}
-            {% include 'intelligence/partials/_alert_intelligence_alerts.html' %}
+            {% include 'intelligence/partials/_alert_ops_overview.html' %}
         {% endif %}
     </div>
 {% endcall %}

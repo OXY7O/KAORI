@@ -20,7 +20,13 @@ def main() -> int:
     model = read('app/models/notification_channel.py')
     forms = read('app/integrations/delivery/notification_channels/forms.py')
     providers = read('app/integrations/delivery/notification_channels/providers/__init__.py')
-    template = read('app/templates/integrations/delivery/notification_channels/index.html')
+    template = '\n'.join(
+        (
+            read('app/templates/integrations/delivery/notification_channels/index.html'),
+            read('app/templates/integrations/delivery/notification_channels/partials/_channels_workspace.html'),
+            read('app/templates/integrations/delivery/notification_channels/partials/_channel_modals.html'),
+        )
+    )
     integration_nav = read('app/templates/components/navigation/integrations_menu.html')
     intelligence_nav = read('app/templates/components/navigation/intelligence_menu.html')
     report_notifications = read('app/reports/notifications.py')

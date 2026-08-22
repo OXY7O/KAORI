@@ -1,40 +1,15 @@
 {% import "intelligence/components/_workspace.html" as intelligence_ui %}
-{% import "components/table_label.html" as table_label %}
-{% set result = payload.result_context %}
 {% call intelligence_ui.section(
-    'Alert Intelligence Summary',
-    'Committed alert posture for the selected asset and active record filters.',
-    'chart-no-axes-column-increasing'
-    ) %}
-    <div class="p-4 sm:p-5">
-        <div class="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-            <div class="rounded-lg border border-outline-subtle bg-surface-card px-3 py-2.5">
-                <p class="text-xs font-semibold leading-4 text-content-secondary">Matching Alerts</p>
-                <p class="mt-1 text-xl font-semibold leading-6 text-content-primary">{{ result.matching_items }}</p>
-                <p class="mt-1 text-xs leading-4 text-content-muted">{{ result.source_items }} provider alert(s) before filters</p>
-            </div>
-            <div class="rounded-lg border border-outline-subtle bg-surface-card px-3 py-2.5">
-                <p class="text-xs font-semibold leading-4 text-content-secondary">Critical</p>
-                <p class="mt-1 text-xl font-semibold leading-6 text-content-primary">{{ result.critical_items }}</p>
-                <p class="mt-1 text-xs leading-4 text-content-muted">Immediate triage within matching alerts</p>
-            </div>
-            <div class="rounded-lg border border-outline-subtle bg-surface-card px-3 py-2.5">
-                <p class="text-xs font-semibold leading-4 text-content-secondary">Warning</p>
-                <p class="mt-1 text-xl font-semibold leading-6 text-content-primary">{{ result.warning_items }}</p>
-                <p class="mt-1 text-xs leading-4 text-content-muted">Attention signals within matching alerts</p>
-            </div>
-            <div class="rounded-lg border border-outline-subtle bg-surface-card px-3 py-2.5">
-                <p class="text-xs font-semibold leading-4 text-content-secondary">Recommendations</p>
-                <p class="mt-1 text-xl font-semibold leading-6 text-content-primary">{{ payload.summary.recommendations }}</p>
-                <p class="mt-1 text-xs leading-4 text-content-muted">Committed guidance for this asset scope</p>
-            </div>
-        </div>
-        <div class="mt-3 flex flex-wrap gap-1.5">
-            {{ table_label.metadata_label(payload.domain_label) }}
-            {{ table_label.metadata_label(payload.selected_asset_name) }}
-            {{ table_label.metadata_label(payload.source_status.resolved_label ~ ' Evidence') }}
-            {{ table_label.metadata_label(payload.snapshot.label) }}
-            {{ table_label.metadata_label((result.active_filters ~ ' Active Filters') if result.active_filters else 'No Active Filters') }}
-        </div>
+    'Alert Operations Summary',
+    'Fleet-level operational posture. Investigation and mutation stay in the dedicated lifecycle tabs below.',
+    'activity',
+    payload.snapshot.label,
+    payload.snapshot.tone
+) %}
+    <div class="grid divide-y divide-outline-subtle sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-4">
+        {{ intelligence_ui.metric('siren', 'Active Alerts', payload.summary.active, payload.summary.critical ~ ' critical', 'critical' if payload.summary.critical else 'info') }}
+        {{ intelligence_ui.metric('user-check', 'Acknowledged', payload.summary.acknowledged, 'Operator ownership accepted', 'info') }}
+        {{ intelligence_ui.metric('bell-off', 'Silenced', payload.summary.silenced, 'KAORI delivery silences', 'warning' if payload.summary.silenced else 'normal') }}
+        {{ intelligence_ui.metric('badge-check', 'Resolved Today', payload.summary.resolved_today, payload.summary.verification_pending ~ ' awaiting verification', 'normal' if not payload.summary.verification_pending else 'warning') }}
     </div>
 {% endcall %}
