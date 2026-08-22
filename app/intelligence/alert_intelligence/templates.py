@@ -69,7 +69,9 @@ _ENV = Environment(autoescape=False, undefined=StrictUndefined, trim_blocks=True
 def built_in_templates() -> list[dict[str, Any]]:
     overrides = {
         (row.provider_key, row.event_state): row
-        for row in AlertNotificationTemplate.query.filter_by(enabled=True).order_by(AlertNotificationTemplate.id.desc()).all()
+        for row in AlertNotificationTemplate.query.filter_by(enabled=True)
+        .order_by(AlertNotificationTemplate.id.desc())
+        .all()
     }
     result: list[dict[str, Any]] = []
     for definition in _BUILT_INS:

@@ -9,7 +9,8 @@
     'workflow': payload.filters.workflow,
     'q': payload.filters.q
 } %}
-<div id="alert-operations-active-records" class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
+<div id="alert-operations-active-records"
+     class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
     <div class="overflow-x-auto">
         <table class="{{ table_ui.table_classes('min-w-[1080px]') }}">
             <thead class="{{ table_ui.head_classes() }}">
@@ -30,7 +31,9 @@
                         <td class="{{ table_ui.cell_classes() }}">
                             <div class="min-w-0">
                                 <p class="max-w-md break-words text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]">{{ case.alert_name }}</p>
-                                <p class="mt-1 max-w-xl line-clamp-1 text-xs leading-5 text-content-muted">{{ case.asset_name }}{% if case.namespace != '-' %} · {{ case.namespace }}{% endif %} · {{ case.summary }}</p>
+                                <p class="mt-1 max-w-xl line-clamp-1 text-xs leading-5 text-content-muted">{{ case.asset_name }}
+                                    {% if case.namespace != '-' %}· {{ case.namespace }}{% endif %}
+                                · {{ case.summary }}</p>
                                 <p class="mt-1 font-mono text-xs leading-5 text-content-muted">{{ case.public_id }}</p>
                             </div>
                         </td>
@@ -49,13 +52,17 @@
                             {% endif %}
                         </td>
                         <td class="{{ table_ui.cell_classes(true) }}">
-                            <a href="{{ url_for('alert_intelligence.index', tab='active', domain=payload.domain, asset=payload.selected_asset_key, case=case.public_id) }}" class="{{ table_ui.action_classes() }}"><i data-lucide="panel-right-open" class="h-3.5 w-3.5"></i>Review</a>
+                            <a href="{{ url_for('alert_intelligence.index', tab='active', domain=payload.domain, asset=payload.selected_asset_key, case=case.public_id) }}"
+                               class="{{ table_ui.action_classes() }}"><i data-lucide="panel-right-open" class="h-3.5 w-3.5"></i>Review</a>
                         </td>
                     </tr>
                 {% else %}
-                    <tr><td colspan="8" class="p-0">
-                        {% set empty_state_icon = 'badge-check' %}{% set empty_state_label = 'No Active Alerts' %}{% set empty_state_title = 'No Open Alert Cases Match This Scope' %}{% set empty_state_description = 'KAORI will create durable alert cases when the background worker observes fresh firing evidence.' %}{% set empty_state_min_height = 'min-h-[180px]' %}{% include 'components/states/_empty_state.html' %}
-                    </td></tr>
+                    <tr>
+                        <td colspan="8" class="p-0">
+                            {% set empty_state_icon = "badge-check" %}{% set empty_state_label = "No Active Alerts" %}{% set empty_state_title = "No Open Alert Cases Match This Scope" %}{% set empty_state_description = "KAORI will create durable alert cases when the background worker observes fresh firing evidence." %}{% set empty_state_min_height = "min-h-[180px]" %}
+                            {% include 'components/states/_empty_state.html' %}
+                        </td>
+                    </tr>
                 {% endfor %}
             </tbody>
         </table>

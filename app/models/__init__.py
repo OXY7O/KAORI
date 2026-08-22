@@ -1,4 +1,3 @@
-from app.models.alertmanager import AlertmanagerInstance
 from app.models.alert_ops import (
     AlertCase,
     AlertCaseEvent,
@@ -6,6 +5,7 @@ from app.models.alert_ops import (
     AlertRoutingPolicy,
     AlertSilence,
 )
+from app.models.alertmanager import AlertmanagerInstance
 from app.models.analytics import AnalyticsSnapshot
 from app.models.archive import ArchiveArtifact
 from app.models.audit import AuditEvent

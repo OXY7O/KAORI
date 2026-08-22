@@ -121,11 +121,7 @@ def unsilence(public_id: str) -> ResponseReturnValue:
 def close(public_id: str) -> ResponseReturnValue:
     steps = [value.strip() for value in request.form.getlist('remediation_step') if value.strip()]
     if not steps:
-        steps = [
-            line.strip()
-            for line in str(request.form.get('remediation_steps') or '').splitlines()
-            if line.strip()
-        ]
+        steps = [line.strip() for line in str(request.form.get('remediation_steps') or '').splitlines() if line.strip()]
     return _case_mutation(
         public_id,
         success_title='Alert case closed',
@@ -299,4 +295,3 @@ def _parse_matchers(value: str) -> dict[str, str]:
             raise ValueError('Routing matchers must use one key=value pair per line.')
         result[key.strip()] = expected.strip().strip('"')
     return result
-

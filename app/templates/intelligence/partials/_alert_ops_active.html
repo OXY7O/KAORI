@@ -22,7 +22,8 @@
             <span class="{{ table_ui.filter_label_classes() }}">Severity</span>
             <select name="severity" class="{{ table_ui.filter_select_classes() }}">
                 {% for value, label in [('all','All Severities'),('critical','Critical'),('warning','Warning'),('info','Info'),('unknown','Unknown')] %}
-                    <option value="{{ value }}" {% if payload.filters.severity == value %}selected{% endif %}>{{ label }}</option>
+                    <option value="{{ value }}"
+                            {% if payload.filters.severity == value %}selected{% endif %}>{{ label }}</option>
                 {% endfor %}
             </select>
         </label>
@@ -30,17 +31,18 @@
             <span class="{{ table_ui.filter_label_classes() }}">Workflow</span>
             <select name="workflow" class="{{ table_ui.filter_select_classes() }}">
                 {% for value, label in [('all','All Open States'),('open','Open'),('acknowledged','Acknowledged'),('mitigating','Mitigating'),('verification_pending','Verification Pending')] %}
-                    <option value="{{ value }}" {% if payload.filters.workflow == value %}selected{% endif %}>{{ label }}</option>
+                    <option value="{{ value }}"
+                            {% if payload.filters.workflow == value %}selected{% endif %}>{{ label }}</option>
                 {% endfor %}
             </select>
         </label>
         {% if payload.filters.q or payload.filters.severity != 'all' or payload.filters.workflow != 'all' %}
-            <a data-kaori-filter-action href="{{ url_for('alert_intelligence.index', tab='active', domain=payload.domain, asset=payload.selected_asset_key) }}" class="{{ table_ui.action_classes() }} min-h-10">Clear Filters</a>
+            <a data-kaori-filter-action
+               href="{{ url_for('alert_intelligence.index', tab='active', domain=payload.domain, asset=payload.selected_asset_key) }}"
+               class="{{ table_ui.action_classes() }} min-h-10">Clear Filters</a>
         {% endif %}
     </form>
-
     {% include 'intelligence/partials/_alert_ops_active_table.html' %}
-
     {% if payload.selected_case %}
         {% include 'intelligence/partials/_alert_ops_case_workspace.html' %}
     {% endif %}

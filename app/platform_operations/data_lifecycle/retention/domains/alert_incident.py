@@ -97,7 +97,12 @@ class AlertIncidentArchiveDomain:
         try:
             for raw_id in record_ids:
                 case = db.session.get(AlertCase, int(raw_id))
-                if case is None or case.workflow_state != 'closed' or case.closed_at is None or case.closed_at >= cutoff_at:
+                if (
+                    case is None
+                    or case.workflow_state != 'closed'
+                    or case.closed_at is None
+                    or case.closed_at >= cutoff_at
+                ):
                     continue
                 AlertCaseEvent.query.filter_by(case_id=case.id).delete(synchronize_session=False)
                 AlertSilence.query.filter_by(case_id=case.id).delete(synchronize_session=False)
@@ -156,7 +161,9 @@ class AlertIncidentArchiveDomain:
             }
             for row in NotificationDelivery.query.filter(
                 NotificationDelivery.event_key.like(f'alert-case:{case.public_id}:%')
-            ).order_by(NotificationDelivery.created_at.asc()).all()
+            )
+            .order_by(NotificationDelivery.created_at.asc())
+            .all()
         ]
         return {
             'schema_version': self.schema_version,

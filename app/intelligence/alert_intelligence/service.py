@@ -86,9 +86,7 @@ def get_alert_intelligence_payload(args: MultiDict[str, str]) -> dict[str, Any]:
                 bool(case.closed_at and _as_utc(case.closed_at) >= now - timedelta(days=1)) for case in history_cases
             ),
             'delivery_failures': _delivery_failure_count(domain=domain, asset_key=selected_asset_key),
-            'postmortem_required': sum(
-                case.postmortem_status in {'required', 'draft'} for case in history_cases
-            ),
+            'postmortem_required': sum(case.postmortem_status in {'required', 'draft'} for case in history_cases),
             'routing_policies': len(routing),
             'channels': channel_summary.get('eligible', 0),
         },

@@ -220,9 +220,11 @@ def expire_silences_and_notify() -> int:
     count = 0
     for silence in rows:
         case = silence.case
-        already = AlertCaseEvent.query.filter_by(case_id=case.id, event_type='silence_expired').filter(
-            AlertCaseEvent.created_at >= silence.ends_at
-        ).first()
+        already = (
+            AlertCaseEvent.query.filter_by(case_id=case.id, event_type='silence_expired')
+            .filter(AlertCaseEvent.created_at >= silence.ends_at)
+            .first()
+        )
         if already is not None:
             continue
         _event(case, 'silence_expired', None, 'KAORI delivery silence expired while the alert is still firing.')

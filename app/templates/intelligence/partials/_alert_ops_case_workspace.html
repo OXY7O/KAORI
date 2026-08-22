@@ -22,10 +22,10 @@
                     {{ table_label.status_indicator_label(case.source_state_label, 'critical' if case.source_state == 'firing' else 'normal', size='compact') }}
                 </div>
             </div>
-            <a href="{{ url_for('alert_intelligence.index', tab='active', domain=payload.domain, asset=payload.selected_asset_key) }}" class="inline-flex min-h-9 items-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary hover:bg-surface-hover"><i data-lucide="x" class="h-3.5 w-3.5"></i>Close Review</a>
+            <a href="{{ url_for('alert_intelligence.index', tab='active', domain=payload.domain, asset=payload.selected_asset_key) }}"
+               class="inline-flex min-h-9 items-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary hover:bg-surface-hover"><i data-lucide="x" class="h-3.5 w-3.5"></i>Close Review</a>
         </div>
     </header>
-
     <div class="grid gap-px bg-outline-subtle xl:grid-cols-[minmax(0,1.45fr)_minmax(25rem,0.55fr)]">
         <div class="min-w-0 space-y-5 bg-surface-card p-4 sm:p-5">
             <section>
@@ -33,21 +33,31 @@
                 <p class="mt-1 text-xs leading-5 text-content-muted">Committed source evidence remains visible even if the provider becomes unavailable later.</p>
                 <dl class="mt-3 grid gap-x-6 divide-y divide-outline-subtle sm:grid-cols-2 sm:divide-y-0">
                     {% for label, value in [('Asset', case.asset_name),('Namespace', case.namespace),('Target', case.target),('Receiver', case.receiver),('Source State', case.source_state_label),('Workflow', case.workflow_label)] %}
-                        <div class="py-2.5"><dt class="text-xs font-medium leading-5 text-content-muted">{{ label }}</dt><dd class="mt-0.5 break-words text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]">{{ value }}</dd></div>
+                        <div class="py-2.5">
+                            <dt class="text-xs font-medium leading-5 text-content-muted">{{ label }}</dt>
+                            <dd class="mt-0.5 break-words text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]">
+                                {{ value }}
+                            </dd>
+                        </div>
                     {% endfor %}
                 </dl>
             </section>
-
             <section>
                 <div class="flex items-center justify-between gap-3">
-                    <div><h4 class="text-sm font-semibold leading-5 text-content-primary">Incident Timeline</h4><p class="mt-1 text-xs leading-5 text-content-muted">Immutable alert and operator lifecycle evidence.</p></div>
+                    <div>
+                        <h4 class="text-sm font-semibold leading-5 text-content-primary">Incident Timeline</h4>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">Immutable alert and operator lifecycle evidence.</p>
+                    </div>
                     {{ table_label.metadata_label(case.timeline|length ~ ' events', 'history') }}
                 </div>
                 <div class="mt-3 divide-y divide-outline-subtle rounded-xl border border-outline-subtle">
                     {% for event in case.timeline %}
                         <article class="grid gap-2 px-4 py-3 md:grid-cols-[9rem_minmax(0,1fr)_10rem] md:items-start">
                             <div class="text-xs font-semibold leading-5 text-kaori-primary">{{ event.label }}</div>
-                            <div class="min-w-0"><p class="break-words text-sm leading-6 text-content-secondary [overflow-wrap:anywhere]">{{ event.summary }}</p><p class="mt-0.5 text-xs leading-5 text-content-muted">{{ event.actor }}</p></div>
+                            <div class="min-w-0">
+                                <p class="break-words text-sm leading-6 text-content-secondary [overflow-wrap:anywhere]">{{ event.summary }}</p>
+                                <p class="mt-0.5 text-xs leading-5 text-content-muted">{{ event.actor }}</p>
+                            </div>
                             <time class="text-xs leading-5 text-content-muted md:text-right">{{ event.created_at|user_datetime }}</time>
                         </article>
                     {% else %}
@@ -55,17 +65,48 @@
                     {% endfor %}
                 </div>
             </section>
-
             <section>
-                <div class="flex items-center justify-between gap-3"><div><h4 class="text-sm font-semibold leading-5 text-content-primary">Notification Delivery Ledger</h4><p class="mt-1 text-xs leading-5 text-content-muted">Firing and resolved delivery attempts by configured channel.</p></div>{{ table_label.metadata_label(case.deliveries|length ~ ' deliveries', 'send') }}</div>
+                <div class="flex items-center justify-between gap-3">
+                    <div>
+                        <h4 class="text-sm font-semibold leading-5 text-content-primary">Notification Delivery Ledger</h4>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">Firing and resolved delivery attempts by configured channel.</p>
+                    </div>
+                    {{ table_label.metadata_label(case.deliveries|length ~ ' deliveries', 'send') }}
+                </div>
                 <div class="mt-3 overflow-x-auto rounded-xl border border-outline-subtle">
-                    <table class="min-w-[720px] w-full text-left text-sm"><thead class="bg-surface-elevated text-xs font-semibold text-content-muted"><tr><th class="px-3 py-2.5">Event</th><th class="px-3 py-2.5">Channel</th><th class="px-3 py-2.5">Provider</th><th class="px-3 py-2.5">Status</th><th class="px-3 py-2.5">Attempts</th><th class="px-3 py-2.5">Time</th></tr></thead><tbody class="divide-y divide-outline-subtle">
-                        {% for delivery in case.deliveries %}<tr><td class="px-3 py-2.5">{{ delivery.event_label }}</td><td class="px-3 py-2.5 font-semibold text-content-primary">{{ delivery.channel }}</td><td class="px-3 py-2.5">{{ delivery.provider }}</td><td class="px-3 py-2.5">{{ table_label.status_label(delivery.status|title, 'normal' if delivery.status == 'sent' else ('warning' if delivery.status == 'failed' else 'info'), size='compact') }}</td><td class="px-3 py-2.5">{{ delivery.attempt_count }}</td><td class="px-3 py-2.5 text-xs text-content-muted">{{ (delivery.sent_at or delivery.created_at)|user_datetime }}</td></tr>{% else %}<tr><td colspan="6" class="p-0">{% set empty_state_icon='send' %}{% set empty_state_label='No Delivery Attempts' %}{% set empty_state_title='No Channel Delivery Recorded' %}{% set empty_state_description='Firing and resolved notification attempts will appear here after a routing policy dispatches this alert case.' %}{% set empty_state_min_height='min-h-[180px]' %}{% include 'components/states/_empty_state.html' %}</td></tr>{% endfor %}
-                    </tbody></table>
+                    <table class="min-w-[720px] w-full text-left text-sm">
+                        <thead class="bg-surface-elevated text-xs font-semibold text-content-muted">
+                            <tr>
+                                <th class="px-3 py-2.5">Event</th>
+                                <th class="px-3 py-2.5">Channel</th>
+                                <th class="px-3 py-2.5">Provider</th>
+                                <th class="px-3 py-2.5">Status</th>
+                                <th class="px-3 py-2.5">Attempts</th>
+                                <th class="px-3 py-2.5">Time</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-outline-subtle">
+                            {% for delivery in case.deliveries %}
+                                <tr>
+                                    <td class="px-3 py-2.5">{{ delivery.event_label }}</td>
+                                    <td class="px-3 py-2.5 font-semibold text-content-primary">{{ delivery.channel }}</td>
+                                    <td class="px-3 py-2.5">{{ delivery.provider }}</td>
+                                    <td class="px-3 py-2.5">{{ table_label.status_label(delivery.status|title, 'normal' if delivery.status == 'sent' else ('warning' if delivery.status == 'failed' else 'info') , size='compact') }}</td>
+                                    <td class="px-3 py-2.5">{{ delivery.attempt_count }}</td>
+                                    <td class="px-3 py-2.5 text-xs text-content-muted">{{ (delivery.sent_at or delivery.created_at)|user_datetime }}</td>
+                                </tr>
+                            {% else %}
+                                <tr>
+                                    <td colspan="6" class="p-0">{% set empty_state_icon = "send" %}{% set empty_state_label = "No Delivery Attempts" %}{% set empty_state_title = "No Channel Delivery Recorded" %}{% set empty_state_description = "Firing and resolved notification attempts will appear here after a routing policy dispatches this alert case." %}{% set empty_state_min_height = "min-h-[180px]" %}
+                                        {% include 'components/states/_empty_state.html' %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
                 </div>
             </section>
         </div>
-
         <aside class="min-w-0 space-y-4 bg-surface-elevated/40 p-4 sm:p-5">
             <div>
                 <h4 class="text-sm font-semibold leading-5 text-content-primary">Operator Control</h4>
@@ -73,21 +114,148 @@
             </div>
             {% if can_operate and case.workflow_state != 'closed' %}
                 {% if case.workflow_state == 'open' %}
-                    <form method="post" action="{{ url_for('alert_intelligence.acknowledge', public_id=case.public_id) }}" class="rounded-xl border border-outline-subtle bg-surface-card p-4"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="domain" value="{{ payload.domain }}"><input type="hidden" name="asset" value="{{ payload.selected_asset_key }}"><p class="text-sm font-semibold text-content-primary">Acknowledge Alert</p><p class="mt-1 text-xs leading-5 text-content-muted">Accept operator ownership and pause normal repeat delivery while investigation is active.</p><button type="submit" class="mt-3 inline-flex min-h-9 items-center gap-2 rounded-lg bg-kaori-primary px-3 text-xs font-semibold text-white hover:bg-kaori-primary-hover"><i data-lucide="user-check" class="h-3.5 w-3.5"></i>Acknowledge</button></form>
+                    <form method="post"
+                          action="{{ url_for('alert_intelligence.acknowledge', public_id=case.public_id) }}"
+                          class="rounded-xl border border-outline-subtle bg-surface-card p-4">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="domain" value="{{ payload.domain }}">
+                        <input type="hidden" name="asset" value="{{ payload.selected_asset_key }}">
+                        <p class="text-sm font-semibold text-content-primary">Acknowledge Alert</p>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">Accept operator ownership and pause normal repeat delivery while investigation is active.</p>
+                        <button type="submit"
+                                class="mt-3 inline-flex min-h-9 items-center gap-2 rounded-lg bg-kaori-primary px-3 text-xs font-semibold text-white hover:bg-kaori-primary-hover"><i data-lucide="user-check" class="h-3.5 w-3.5"></i>Acknowledge</button>
+                    </form>
                 {% endif %}
-                <form method="post" action="{{ url_for('alert_intelligence.assign', public_id=case.public_id) }}" class="rounded-xl border border-outline-subtle bg-surface-card p-4"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="domain" value="{{ payload.domain }}"><input type="hidden" name="asset" value="{{ payload.selected_asset_key }}"><label class="block"><span class="text-xs font-semibold text-content-secondary">Owner</span><select name="owner_user_id" class="mt-1 h-10 w-full rounded-md border border-outline-default bg-surface-card px-3 text-sm"><option value="">Unassigned</option>{% for owner in payload.owner_options %}<option value="{{ owner.id }}">{{ owner.label }}</option>{% endfor %}</select></label><button type="submit" class="mt-3 inline-flex min-h-9 items-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary hover:bg-surface-hover"><i data-lucide="user-round-cog" class="h-3.5 w-3.5"></i>Update Owner</button></form>
+                <form method="post"
+                      action="{{ url_for('alert_intelligence.assign', public_id=case.public_id) }}"
+                      class="rounded-xl border border-outline-subtle bg-surface-card p-4">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="domain" value="{{ payload.domain }}">
+                    <input type="hidden" name="asset" value="{{ payload.selected_asset_key }}">
+                    <label class="block">
+                        <span class="text-xs font-semibold text-content-secondary">Owner</span>
+                        <select name="owner_user_id"
+                                class="mt-1 h-10 w-full rounded-md border border-outline-default bg-surface-card px-3 text-sm">
+                            <option value="">Unassigned</option>
+                            {% for owner in payload.owner_options %}
+                                <option value="{{ owner.id }}">{{ owner.label }}</option>
+                            {% endfor %}
+                        </select>
+                    </label>
+                    <button type="submit"
+                            class="mt-3 inline-flex min-h-9 items-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary hover:bg-surface-hover"><i data-lucide="user-round-cog" class="h-3.5 w-3.5"></i>Update Owner</button>
+                </form>
                 {% if case.workflow_state != 'mitigating' %}
-                    <form method="post" action="{{ url_for('alert_intelligence.mitigating', public_id=case.public_id) }}" class="rounded-xl border border-outline-subtle bg-surface-card p-4"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="domain" value="{{ payload.domain }}"><input type="hidden" name="asset" value="{{ payload.selected_asset_key }}"><label class="block"><span class="text-xs font-semibold text-content-secondary">Mitigation Note</span><textarea name="note" rows="2" class="mt-1 w-full rounded-md border border-outline-default bg-surface-card px-3 py-2 text-sm" placeholder="Optional investigation or remediation note"></textarea></label><button type="submit" class="mt-3 inline-flex min-h-9 items-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary hover:bg-surface-hover"><i data-lucide="wrench" class="h-3.5 w-3.5"></i>Mark Mitigating</button></form>
+                    <form method="post"
+                          action="{{ url_for('alert_intelligence.mitigating', public_id=case.public_id) }}"
+                          class="rounded-xl border border-outline-subtle bg-surface-card p-4">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="domain" value="{{ payload.domain }}">
+                        <input type="hidden" name="asset" value="{{ payload.selected_asset_key }}">
+                        <label class="block">
+                            <span class="text-xs font-semibold text-content-secondary">Mitigation Note</span><textarea name="note"
+          rows="2"
+          class="mt-1 w-full rounded-md border border-outline-default bg-surface-card px-3 py-2 text-sm"
+          placeholder="Optional investigation or remediation note"></textarea>
+                        </label>
+                        <button type="submit"
+                                class="mt-3 inline-flex min-h-9 items-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary hover:bg-surface-hover"><i data-lucide="wrench" class="h-3.5 w-3.5"></i>Mark Mitigating</button>
+                    </form>
                 {% endif %}
                 {% if case.silenced %}
-                    <form method="post" action="{{ url_for('alert_intelligence.unsilence', public_id=case.public_id) }}" class="rounded-xl border border-outline-subtle bg-status-warning-soft p-4"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="domain" value="{{ payload.domain }}"><input type="hidden" name="asset" value="{{ payload.selected_asset_key }}"><p class="text-sm font-semibold text-status-warning-text">Delivery Silenced</p><p class="mt-1 text-xs leading-5 text-status-warning-text">Repeat notifications are suppressed until {{ case.silence_until|user_datetime }}.</p><button type="submit" class="mt-3 inline-flex min-h-9 items-center gap-2 rounded-lg border border-outline-subtle bg-surface-card px-3 text-xs font-semibold text-status-warning-text"><i data-lucide="bell-ring" class="h-3.5 w-3.5"></i>Resume Delivery</button></form>
+                    <form method="post"
+                          action="{{ url_for('alert_intelligence.unsilence', public_id=case.public_id) }}"
+                          class="rounded-xl border border-outline-subtle bg-status-warning-soft p-4">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="domain" value="{{ payload.domain }}">
+                        <input type="hidden" name="asset" value="{{ payload.selected_asset_key }}">
+                        <p class="text-sm font-semibold text-status-warning-text">Delivery Silenced</p>
+                        <p class="mt-1 text-xs leading-5 text-status-warning-text">Repeat notifications are suppressed until {{ case.silence_until|user_datetime }}.</p>
+                        <button type="submit"
+                                class="mt-3 inline-flex min-h-9 items-center gap-2 rounded-lg border border-outline-subtle bg-surface-card px-3 text-xs font-semibold text-status-warning-text"><i data-lucide="bell-ring" class="h-3.5 w-3.5"></i>Resume Delivery</button>
+                    </form>
                 {% else %}
-                    <form method="post" action="{{ url_for('alert_intelligence.silence', public_id=case.public_id) }}" class="rounded-xl border border-outline-subtle bg-surface-card p-4"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="domain" value="{{ payload.domain }}"><input type="hidden" name="asset" value="{{ payload.selected_asset_key }}"><p class="text-sm font-semibold text-content-primary">Silence KAORI Delivery</p><div class="mt-3 grid gap-3"><label><span class="text-xs font-semibold text-content-secondary">Duration</span><select name="duration_minutes" class="mt-1 h-10 w-full rounded-md border border-outline-default bg-surface-card px-3 text-sm"><option value="30">30 minutes</option><option value="60" selected>1 hour</option><option value="240">4 hours</option><option value="480">8 hours</option><option value="1440">24 hours</option></select></label><label><span class="text-xs font-semibold text-content-secondary">Reason</span><textarea name="reason" rows="2" required class="mt-1 w-full rounded-md border border-outline-default bg-surface-card px-3 py-2 text-sm" placeholder="Planned rollout, investigation, maintenance..."></textarea></label></div><button type="submit" class="mt-3 inline-flex min-h-9 items-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary hover:bg-surface-hover"><i data-lucide="bell-off" class="h-3.5 w-3.5"></i>Silence Delivery</button><p class="mt-2 text-xs leading-5 text-content-muted">This suppresses KAORI channel delivery only. Alertmanager silences remain provider-owned.</p></form>
+                    <form method="post"
+                          action="{{ url_for('alert_intelligence.silence', public_id=case.public_id) }}"
+                          class="rounded-xl border border-outline-subtle bg-surface-card p-4">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="domain" value="{{ payload.domain }}">
+                        <input type="hidden" name="asset" value="{{ payload.selected_asset_key }}">
+                        <p class="text-sm font-semibold text-content-primary">Silence KAORI Delivery</p>
+                        <div class="mt-3 grid gap-3">
+                            <label>
+                                <span class="text-xs font-semibold text-content-secondary">Duration</span>
+                                <select name="duration_minutes"
+                                        class="mt-1 h-10 w-full rounded-md border border-outline-default bg-surface-card px-3 text-sm">
+                                    <option value="30">30 minutes</option>
+                                    <option value="60" selected>1 hour</option>
+                                    <option value="240">4 hours</option>
+                                    <option value="480">8 hours</option>
+                                    <option value="1440">24 hours</option>
+                                </select>
+                            </label>
+                            <label>
+                                <span class="text-xs font-semibold text-content-secondary">Reason</span><textarea name="reason"
+          rows="2"
+          required
+          class="mt-1 w-full rounded-md border border-outline-default bg-surface-card px-3 py-2 text-sm"
+          placeholder="Planned rollout, investigation, maintenance..."></textarea>
+                            </label>
+                        </div>
+                        <button type="submit"
+                                class="mt-3 inline-flex min-h-9 items-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary hover:bg-surface-hover"><i data-lucide="bell-off" class="h-3.5 w-3.5"></i>Silence Delivery</button>
+                        <p class="mt-2 text-xs leading-5 text-content-muted">This suppresses KAORI channel delivery only. Alertmanager silences remain provider-owned.</p>
+                    </form>
                 {% endif %}
             {% endif %}
-
             {% if can_operate and case.source_state == 'resolved' and case.workflow_state != 'closed' %}
-                <form method="post" action="{{ url_for('alert_intelligence.close', public_id=case.public_id) }}" class="rounded-xl border border-outline-subtle bg-status-normal-soft p-4"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="domain" value="{{ payload.domain }}"><input type="hidden" name="asset" value="{{ payload.selected_asset_key }}"><h5 class="text-sm font-semibold text-status-normal-text">Verify & Close</h5><p class="mt-1 text-xs leading-5 text-status-normal-text">Resolved notification is sent only after required operator evidence is committed.</p><div class="mt-3 space-y-3"><label class="block"><span class="text-xs font-semibold text-content-secondary">Resolution Summary</span><textarea name="resolution_summary" rows="3" required class="mt-1 w-full rounded-md border border-outline-default bg-surface-card px-3 py-2 text-sm"></textarea></label><label class="block"><span class="text-xs font-semibold text-content-secondary">Remediation / Recovery Steps</span><textarea name="remediation_steps" rows="4" required class="mt-1 w-full rounded-md border border-outline-default bg-surface-card px-3 py-2 text-sm" placeholder="One step per line"></textarea></label><label class="block"><span class="text-xs font-semibold text-content-secondary">Verification Evidence</span><textarea name="verification_evidence" rows="3" required class="mt-1 w-full rounded-md border border-outline-default bg-surface-card px-3 py-2 text-sm" placeholder="What proves the alert is safely resolved?"></textarea></label><div class="grid gap-3 sm:grid-cols-2"><label><span class="text-xs font-semibold text-content-secondary">Change Reference</span><input name="change_reference" class="mt-1 h-10 w-full rounded-md border border-outline-default bg-surface-card px-3 text-sm" placeholder="CHG-..."></label><label><span class="text-xs font-semibold text-content-secondary">Incident / Ticket</span><input name="ticket_reference" class="mt-1 h-10 w-full rounded-md border border-outline-default bg-surface-card px-3 text-sm" placeholder="INC-..."></label></div></div><button type="submit" class="mt-4 inline-flex min-h-9 items-center gap-2 rounded-lg bg-kaori-primary px-3 text-xs font-semibold text-white hover:bg-kaori-primary-hover"><i data-lucide="badge-check" class="h-3.5 w-3.5"></i>Close Case & Queue Resolved</button></form>
+                <form method="post"
+                      action="{{ url_for('alert_intelligence.close', public_id=case.public_id) }}"
+                      class="rounded-xl border border-outline-subtle bg-status-normal-soft p-4">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="domain" value="{{ payload.domain }}">
+                    <input type="hidden" name="asset" value="{{ payload.selected_asset_key }}">
+                    <h5 class="text-sm font-semibold text-status-normal-text">Verify & Close</h5>
+                    <p class="mt-1 text-xs leading-5 text-status-normal-text">Resolved notification is sent only after required operator evidence is committed.</p>
+                    <div class="mt-3 space-y-3">
+                        <label class="block">
+                            <span class="text-xs font-semibold text-content-secondary">Resolution Summary</span><textarea name="resolution_summary"
+          rows="3"
+          required
+          class="mt-1 w-full rounded-md border border-outline-default bg-surface-card px-3 py-2 text-sm"></textarea>
+                        </label>
+                        <label class="block">
+                            <span class="text-xs font-semibold text-content-secondary">Remediation / Recovery Steps</span><textarea name="remediation_steps"
+          rows="4"
+          required
+          class="mt-1 w-full rounded-md border border-outline-default bg-surface-card px-3 py-2 text-sm"
+          placeholder="One step per line"></textarea>
+                        </label>
+                        <label class="block">
+                            <span class="text-xs font-semibold text-content-secondary">Verification Evidence</span><textarea name="verification_evidence"
+          rows="3"
+          required
+          class="mt-1 w-full rounded-md border border-outline-default bg-surface-card px-3 py-2 text-sm"
+          placeholder="What proves the alert is safely resolved?"></textarea>
+                        </label>
+                        <div class="grid gap-3 sm:grid-cols-2">
+                            <label>
+                                <span class="text-xs font-semibold text-content-secondary">Change Reference</span>
+                                <input name="change_reference"
+                                       class="mt-1 h-10 w-full rounded-md border border-outline-default bg-surface-card px-3 text-sm"
+                                       placeholder="CHG-...">
+                            </label>
+                            <label>
+                                <span class="text-xs font-semibold text-content-secondary">Incident / Ticket</span>
+                                <input name="ticket_reference"
+                                       class="mt-1 h-10 w-full rounded-md border border-outline-default bg-surface-card px-3 text-sm"
+                                       placeholder="INC-...">
+                            </label>
+                        </div>
+                    </div>
+                    <button type="submit"
+                            class="mt-4 inline-flex min-h-9 items-center gap-2 rounded-lg bg-kaori-primary px-3 text-xs font-semibold text-white hover:bg-kaori-primary-hover"><i data-lucide="badge-check" class="h-3.5 w-3.5"></i>Close Case & Queue Resolved</button>
+                </form>
             {% endif %}
         </aside>
     </div>

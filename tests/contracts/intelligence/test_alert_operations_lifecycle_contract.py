@@ -26,7 +26,7 @@ def test_operator_close_requires_resolution_steps_and_verification_evidence() ->
     assert "raise ValueError('At least one remediation or recovery step is required.')" in lifecycle
     assert "raise ValueError('Verification evidence is required before closure.')" in lifecycle
     assert "if case.source_state != 'resolved'" in lifecycle
-    assert "case.postmortem_required = _requires_postmortem(case)" in lifecycle
+    assert 'case.postmortem_required = _requires_postmortem(case)' in lifecycle
 
 
 def test_kaori_silence_is_time_bounded_and_separate_from_alertmanager() -> None:

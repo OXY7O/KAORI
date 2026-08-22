@@ -18,9 +18,8 @@
     'warning' if payload.summary.active else 'normal',
     indicator_id='alert-intelligence-loading',
     loading_label='Loading Alert Operations'
-) %}
-    {{ content_tabs.render_links(
-        'alert-operations-sections',
+    ) %}
+    {{ content_tabs.render_links('alert-operations-sections',
         workspace_tabs,
         payload.tab,
         'Alert Operations Sections',
@@ -31,8 +30,7 @@
         hx_push_url='true',
         hx_indicator='#alert-intelligence-loading',
         nowrap=true,
-        hx_sync='#alert-intelligence-page-content:replace'
-    ) }}
+        hx_sync='#alert-intelligence-page-content:replace') }}
     <form id="alert-intelligence-context-form"
           action="{{ url_for('alert_intelligence.index') }}"
           method="get"
@@ -55,7 +53,8 @@
                     <span class="{{ table_ui.filter_label_classes() }}">Domain</span>
                     <select name="domain" class="{{ table_ui.filter_select_classes() }}">
                         {% for option in payload.domain_options %}
-                            <option value="{{ option.value }}" {% if payload.domain == option.value %}selected{% endif %}>{{ option.label }} · {{ option.count }}</option>
+                            <option value="{{ option.value }}"
+                                    {% if payload.domain == option.value %}selected{% endif %}>{{ option.label }} · {{ option.count }}</option>
                         {% endfor %}
                     </select>
                 </label>
@@ -63,14 +62,16 @@
                     <span class="{{ table_ui.filter_label_classes() }}">Asset Scope</span>
                     <select name="asset" class="{{ table_ui.filter_select_classes() }}">
                         {% for option in payload.assets %}
-                            <option value="{{ option.value }}" {% if payload.selected_asset_key == option.value %}selected{% endif %}>{{ option.label }} · {{ option.environment }}</option>
+                            <option value="{{ option.value }}"
+                                    {% if payload.selected_asset_key == option.value %}selected{% endif %}>{{ option.label }} · {{ option.environment }}</option>
                         {% endfor %}
                     </select>
                 </label>
             </div>
         </div>
     </form>
-    <div data-alert-intelligence-active-section="{{ payload.tab }}" class="bg-surface-card">
+    <div data-alert-intelligence-active-section="{{ payload.tab }}"
+         class="bg-surface-card">
         {% if payload.tab == 'active' %}
             {% include 'intelligence/partials/_alert_ops_active.html' %}
         {% elif payload.tab == 'routing' %}

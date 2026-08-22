@@ -103,9 +103,7 @@ def upsert_routing_policy(
     row.repeat_interval_minutes = interval
     row.send_resolved = bool(config.send_resolved)
     row.matchers_json = {
-        str(key): str(value)
-        for key, value in config.matchers.items()
-        if str(key).strip() and str(value).strip()
+        str(key): str(value) for key, value in config.matchers.items() if str(key).strip() and str(value).strip()
     }
     row.updated_by_user_id = actor_user_id
     return row

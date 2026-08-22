@@ -499,9 +499,7 @@ def _domain_storage_contract(
     elif name == 'operational_activity':
         archive_detail = 'Activity and persistent notification evidence share the same structured archive bundle.'
     elif name == 'alert_incident':
-        archive_detail = (
-            'Closed alert-case evidence is stored as JSONL.GZ plus manifest and checksum; the searchable case index remains in PostgreSQL.'
-        )
+        archive_detail = 'Closed alert-case evidence is stored as JSONL.GZ plus manifest and checksum; the searchable case index remains in PostgreSQL.'
 
     return {
         'hot_source_label': source_label,

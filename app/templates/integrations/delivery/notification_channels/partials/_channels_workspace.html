@@ -4,12 +4,7 @@
 {% import "components/loading_bar.html" as loading_bar %}
 {% import "integrations/components/_workspace.html" as integration_ui %}
 {% set selected_provider = form_channel.provider_key if form_channel else initial_provider %}
-<div x-data="{
-        configOpen: {{ 'true' if open_configuration else 'false' }},
-        guideOpen: false,
-        provider: '{{ selected_provider }}',
-        guideProvider: '{{ selected_provider or 'telegram' }}'
-     }"
+<div x-data="{ configOpen: {{ 'true' if open_configuration else 'false' }}, guideOpen: false, provider: '{{ selected_provider }}', guideProvider: '{{ selected_provider or 'telegram' }}' }"
      @keydown.escape.window="configOpen = false; guideOpen = false"
      class="space-y-5">
     <section class="{{ integration_ui.section_shell_classes() }}">
@@ -44,7 +39,6 @@
                 {% endif %}
             </div>
         </header>
-
         <div class="grid gap-px bg-outline-subtle lg:grid-cols-3">
             {% for provider in payload.providers %}
                 <article class="group bg-surface-card p-4 sm:p-5">
@@ -86,7 +80,6 @@
             {% endfor %}
         </div>
     </section>
-
     <section id="notification-channel-registry"
              class="{{ integration_ui.section_shell_classes() }}">
         {{ loading_bar.render('notification-channel-loading', label='Loading notification channels') }}
@@ -103,7 +96,6 @@
                 <span>{{ payload.summary.operational }} operational</span>
             </div>
         </header>
-
         <div class="overflow-x-auto">
             <table class="{{ table_ui.table_classes('min-w-[1120px]') }}">
                 <thead class="{{ table_ui.head_classes() }}">
@@ -142,22 +134,22 @@
                             </td>
                             <td class="{{ table_ui.cell_classes() }}">
                                 <p class="text-sm font-medium text-content-secondary">{{ channel.minimum_severity_label }}</p>
-                                <p class="mt-1 max-w-[240px] text-xs leading-5 text-content-muted">{{ channel.domain_labels|join(', ') }}</p>
+                                <p class="mt-1 max-w-[240px] text-xs leading-5 text-content-muted">{{ channel.domain_labels|join(", ") }}</p>
                             </td>
                             <td class="{{ table_ui.cell_classes() }}">
-                                <p class="max-w-[260px] text-sm leading-5 text-content-secondary">{{ channel.event_type_labels|join(', ') }}</p>
+                                <p class="max-w-[260px] text-sm leading-5 text-content-secondary">{{ channel.event_type_labels|join(", ") }}</p>
                                 {% if channel.report_schedule_count %}
                                     <p class="mt-1 text-xs leading-5 text-content-muted">{{ channel.report_schedule_count }} report schedule reference{{ '' if channel.report_schedule_count == 1 else 's' }}</p>
                                 {% endif %}
                             </td>
                             <td class="{{ table_ui.cell_classes() }}">
                                 {% set test_tone = 'normal' if channel.status in ['Ready', 'Operational'] else ('warning' if channel.status in ['Validation Failed', 'Validation Required'] else 'unknown') %}
-                                {{ table_label.status_label('Passed' if channel.status in ['Ready', 'Operational'] else ('Failed' if channel.status == 'Validation Failed' else 'Required'), test_tone, size='compact') }}
-                                <p class="mt-1 whitespace-nowrap text-xs leading-5 text-content-muted">{{ channel.last_tested_at|user_datetime('Never tested') if channel.last_tested_at else 'Never tested' }}</p>
+                                {{ table_label.status_label('Passed' if channel.status in ['Ready', 'Operational'] else ('Failed' if channel.status == 'Validation Failed' else 'Required') , test_tone, size='compact') }}
+                                <p class="mt-1 whitespace-nowrap text-xs leading-5 text-content-muted">{{ channel.last_tested_at|user_datetime("Never tested") if channel.last_tested_at else 'Never tested' }}</p>
                             </td>
                             <td class="{{ table_ui.cell_classes() }}">
                                 {{ table_label.status_label(channel.last_delivery_label, channel.last_delivery_tone, size='compact') }}
-                                <p class="mt-1 whitespace-nowrap text-xs leading-5 text-content-muted">{{ channel.last_delivery_at|user_datetime('No delivery') if channel.last_delivery_at else 'No delivery yet' }}</p>
+                                <p class="mt-1 whitespace-nowrap text-xs leading-5 text-content-muted">{{ channel.last_delivery_at|user_datetime("No delivery") if channel.last_delivery_at else 'No delivery yet' }}</p>
                             </td>
                             <td class="{{ table_ui.cell_classes(action=true) }}">
                                 {% if can_manage %}
@@ -205,19 +197,18 @@
         </div>
         {% if payload.channel_pagination.total_items > 0 %}
             {{ table_registry.footer('notification_channels.index',
-                                            'notification-channel-registry',
-                                            'notification-channel-loading',
-                                            payload.channel_pagination,
-                                            {'tab': 'channels'},
-                                            payload.channel_pagination.allowed_per_page,
-                                            resource_label='Channels',
-                                            rows_aria_label='Notification channels per page',
-                                            control_name='notification-channels',
-                                            page_param='channel_page',
-                                            per_page_param='channel_per_page') }}
+                        'notification-channel-registry',
+                        'notification-channel-loading',
+                        payload.channel_pagination,
+                        {'tab': 'channels'},
+                        payload.channel_pagination.allowed_per_page,
+                        resource_label='Channels',
+                        rows_aria_label='Notification channels per page',
+                        control_name='notification-channels',
+                        page_param='channel_page',
+                        per_page_param='channel_per_page') }}
         {% endif %}
     </section>
-
     <section class="grid gap-4 lg:grid-cols-3">
         <article class="rounded-xl border border-outline-subtle bg-surface-card p-4 shadow-sm">
             <div class="flex items-start gap-3">
@@ -250,6 +241,5 @@
             </div>
         </article>
     </section>
-
     {% include 'integrations/delivery/notification_channels/partials/_channel_modals.html' %}
 </div>

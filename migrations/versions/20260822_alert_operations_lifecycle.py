@@ -62,8 +62,14 @@ def upgrade() -> None:
         sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
         sa.Column('updated_at', sa.DateTime(timezone=True), nullable=False),
         sa.CheckConstraint("source_state IN ('firing', 'resolved')", name='ck_alert_cases_source_state'),
-        sa.CheckConstraint("workflow_state IN ('open', 'acknowledged', 'mitigating', 'verification_pending', 'closed')", name='ck_alert_cases_workflow_state'),
-        sa.CheckConstraint("postmortem_status IN ('not_required', 'required', 'draft', 'complete')", name='ck_alert_cases_postmortem_status'),
+        sa.CheckConstraint(
+            "workflow_state IN ('open', 'acknowledged', 'mitigating', 'verification_pending', 'closed')",
+            name='ck_alert_cases_workflow_state',
+        ),
+        sa.CheckConstraint(
+            "postmortem_status IN ('not_required', 'required', 'draft', 'complete')",
+            name='ck_alert_cases_postmortem_status',
+        ),
     )
     op.create_index('ix_alert_cases_active_scope', 'alert_cases', ['domain', 'asset_key', 'workflow_state'])
     op.create_index('ix_alert_cases_identity_state', 'alert_cases', ['case_key', 'workflow_state'])
@@ -137,7 +143,11 @@ def upgrade() -> None:
         sa.Column('updated_at', sa.DateTime(timezone=True), nullable=False),
         sa.CheckConstraint("event_state IN ('firing', 'resolved')", name='ck_alert_notification_templates_state'),
     )
-    op.create_index('ix_alert_notification_templates_provider_state', 'alert_notification_templates', ['provider_key', 'event_state', 'enabled'])
+    op.create_index(
+        'ix_alert_notification_templates_provider_state',
+        'alert_notification_templates',
+        ['provider_key', 'event_state', 'enabled'],
+    )
 
     bind = op.get_bind()
     policies = sa.table(

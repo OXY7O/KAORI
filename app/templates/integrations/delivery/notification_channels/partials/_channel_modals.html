@@ -1,7 +1,6 @@
 {% import "components/table_label.html" as table_label %}
 {% import "components/table_primitives.html" as table_ui %}
 {% import "integrations/components/_workspace.html" as integration_ui %}
-
 <div x-show="guideOpen"
      x-cloak
      class="fixed inset-0 z-[90] flex items-center justify-center p-2 sm:p-4 lg:p-6"
@@ -36,9 +35,9 @@
                 </button>
             </div>
         </header>
-
         <div class="shrink-0 border-b border-outline-subtle bg-surface-elevated px-4 py-3 sm:px-6">
-            <nav class="flex flex-wrap gap-2" aria-label="Notification provider setup guides">
+            <nav class="flex flex-wrap gap-2"
+                 aria-label="Notification provider setup guides">
                 {% for provider in payload.providers %}
                     <button type="button"
                             @click="guideProvider = '{{ provider.key }}'"
@@ -51,7 +50,6 @@
                 {% endfor %}
             </nav>
         </div>
-
         <div class="min-h-0 flex-1 overflow-y-auto bg-surface-page p-4 sm:p-6">
             {% for provider in payload.providers %}
                 <div x-show="guideProvider === '{{ provider.key }}'"
@@ -77,7 +75,6 @@
                                 <p class="text-sm font-semibold leading-5 text-content-primary">{{ provider.transport }}</p>
                             </div>
                         </header>
-
                         <div class="grid gap-px bg-outline-subtle lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
                             <section class="bg-surface-card p-4 sm:p-5">
                                 <div class="flex items-center gap-2">
@@ -87,13 +84,13 @@
                                 <ul class="mt-3 space-y-2.5">
                                     {% for requirement in provider.setup_requirements %}
                                         <li class="flex items-start gap-2.5 text-sm leading-6 text-content-secondary">
-                                            <span class="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-kaori-primary" aria-hidden="true"></span>
+                                            <span class="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-kaori-primary"
+                                                  aria-hidden="true"></span>
                                             <span>{{ requirement }}</span>
                                         </li>
                                     {% endfor %}
                                 </ul>
                             </section>
-
                             <section class="bg-surface-card p-4 sm:p-5">
                                 <div class="flex items-center gap-2">
                                     <i data-lucide="route" class="h-4 w-4 text-kaori-primary"></i>
@@ -112,7 +109,6 @@
                             </section>
                         </div>
                     </section>
-
                     <div class="grid gap-4 lg:grid-cols-2">
                         <section class="rounded-xl border border-outline-subtle bg-surface-card p-4 sm:p-5">
                             <div class="flex items-start gap-3">
@@ -138,7 +134,6 @@
                 </div>
             {% endfor %}
         </div>
-
         <footer class="flex shrink-0 flex-col gap-3 border-t border-outline-subtle bg-surface-card px-5 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6">
             <p class="text-xs leading-5 text-content-muted">Provider secrets never appear in Toast, Notification Deck, or Activity Audit metadata.</p>
             <div class="flex items-center gap-2">
@@ -159,7 +154,6 @@
         </footer>
     </section>
 </div>
-
 <div x-show="configOpen"
      x-cloak
      class="fixed inset-0 z-[90] flex items-center justify-center p-2 sm:p-4 lg:p-5"
@@ -183,9 +177,10 @@
               class="flex min-h-0 flex-1 flex-col">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             {% if form_channel %}
-                <input type="hidden" name="provider_key" value="{{ form_channel.provider_key }}">
+                <input type="hidden"
+                       name="provider_key"
+                       value="{{ form_channel.provider_key }}">
             {% endif %}
-
             <header class="shrink-0 border-b border-outline-subtle px-5 py-4 sm:px-6">
                 <div class="flex items-start justify-between gap-4">
                     <div class="flex min-w-0 items-start gap-3">
@@ -208,11 +203,12 @@
                         <button type="button"
                                 @click="configOpen = false"
                                 class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-outline-default bg-surface-card text-content-muted hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary-dark"
-                                aria-label="Close Channel Configuration"><i data-lucide="x" class="h-4 w-4"></i></button>
+                                aria-label="Close Channel Configuration">
+                            <i data-lucide="x" class="h-4 w-4"></i>
+                        </button>
                     {% endif %}
                 </div>
             </header>
-
             <div class="min-h-0 flex-1 overflow-y-auto bg-surface-page">
                 <section class="border-b border-outline-subtle bg-surface-card p-4 sm:p-5">
                     <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -247,7 +243,8 @@
                         </div>
                         <div>
                             <label class="{{ table_ui.filter_label_classes() }}">Minimum Alert Severity</label>
-                            <select name="minimum_severity" class="{{ table_ui.filter_select_classes() }}">
+                            <select name="minimum_severity"
+                                    class="{{ table_ui.filter_select_classes() }}">
                                 {% for option in payload.severity_options %}
                                     <option value="{{ option.value }}"
                                             {% if (form_channel.minimum_severity if form_channel else 'warning') == option.value %}selected{% endif %}>{{ option.label }}</option>
@@ -257,12 +254,12 @@
                         </div>
                     </div>
                 </section>
-
                 {% if not form_channel %}
                     <section x-show="!provider" class="p-4 sm:p-5">
                         <div class="rounded-xl border border-brand-outline bg-kaori-soft p-4">
                             <div class="flex items-start gap-3">
-                                <i data-lucide="mouse-pointer-click" class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary"></i>
+                                <i data-lucide="mouse-pointer-click"
+                                   class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary"></i>
                                 <div>
                                     <p class="text-sm font-semibold leading-5 text-content-primary">Select a provider to continue</p>
                                     <p class="mt-1 text-xs leading-5 text-content-muted">Provider-specific destination and credential fields appear here after you choose Telegram, Email, or Microsoft Teams.</p>
@@ -271,7 +268,6 @@
                         </div>
                     </section>
                 {% endif %}
-
                 {% for provider_option in payload.providers %}
                     <section x-show="provider === '{{ provider_option.key }}'"
                              x-cloak
@@ -295,7 +291,6 @@
                         {% include provider_option.form_partial %}
                     </section>
                 {% endfor %}
-
                 <section class="bg-surface-card p-4 sm:p-5">
                     <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(22rem,0.65fr)]">
                         <div>
@@ -337,11 +332,10 @@
                                value="1"
                                {% if not form_channel or form_channel.enabled %}checked{% endif %}
                                class="h-4 w-4 rounded border-outline-default text-kaori-primary">
-                        Enabled for eligible delivery after successful validation
+                        Enabled for Eligible Delivery After Successful Validation
                     </label>
                 </section>
             </div>
-
             <footer class="flex shrink-0 flex-col gap-3 border-t border-outline-subtle bg-surface-card px-5 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6">
                 <div class="flex items-center gap-2 text-xs leading-5 text-content-muted">
                     <i data-lucide="shield-check" class="h-3.5 w-3.5 text-kaori-primary"></i>

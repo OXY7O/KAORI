@@ -118,7 +118,9 @@ class AlertCaseEvent(db.Model):
     __table_args__ = (Index('ix_alert_case_events_case_created', 'case_id', 'created_at'),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    case_id: Mapped[int] = mapped_column(db.ForeignKey('alert_cases.id', ondelete='CASCADE'), nullable=False, index=True)
+    case_id: Mapped[int] = mapped_column(
+        db.ForeignKey('alert_cases.id', ondelete='CASCADE'), nullable=False, index=True
+    )
     event_type: Mapped[str] = mapped_column(db.String(80), nullable=False, index=True)
     actor_user_id: Mapped[int | None] = mapped_column(db.ForeignKey('users.id', ondelete='SET NULL'), nullable=True)
     summary: Mapped[str] = mapped_column(db.String(500), nullable=False)
@@ -138,13 +140,21 @@ class AlertSilence(db.Model):
     __table_args__ = (Index('ix_alert_silences_case_active', 'case_id', 'ends_at', 'revoked_at'),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    case_id: Mapped[int] = mapped_column(db.ForeignKey('alert_cases.id', ondelete='CASCADE'), nullable=False, index=True)
-    starts_at: Mapped[datetime] = mapped_column(db.DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC))
+    case_id: Mapped[int] = mapped_column(
+        db.ForeignKey('alert_cases.id', ondelete='CASCADE'), nullable=False, index=True
+    )
+    starts_at: Mapped[datetime] = mapped_column(
+        db.DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC)
+    )
     ends_at: Mapped[datetime] = mapped_column(db.DateTime(timezone=True), nullable=False, index=True)
     reason: Mapped[str] = mapped_column(db.String(500), nullable=False)
-    created_by_user_id: Mapped[int | None] = mapped_column(db.ForeignKey('users.id', ondelete='SET NULL'), nullable=True)
+    created_by_user_id: Mapped[int | None] = mapped_column(
+        db.ForeignKey('users.id', ondelete='SET NULL'), nullable=True
+    )
     revoked_at: Mapped[datetime | None] = mapped_column(db.DateTime(timezone=True), nullable=True)
-    revoked_by_user_id: Mapped[int | None] = mapped_column(db.ForeignKey('users.id', ondelete='SET NULL'), nullable=True)
+    revoked_by_user_id: Mapped[int | None] = mapped_column(
+        db.ForeignKey('users.id', ondelete='SET NULL'), nullable=True
+    )
     created_at: Mapped[datetime] = mapped_column(
         db.DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC)
     )
@@ -167,8 +177,12 @@ class AlertRoutingPolicy(db.Model):
     channel_ids_json: Mapped[list[int]] = mapped_column(db.JSON, nullable=False, default=list)
     repeat_interval_minutes: Mapped[int] = mapped_column(db.Integer, nullable=False, default=60)
     send_resolved: Mapped[bool] = mapped_column(db.Boolean, nullable=False, default=True)
-    created_by_user_id: Mapped[int | None] = mapped_column(db.ForeignKey('users.id', ondelete='SET NULL'), nullable=True)
-    updated_by_user_id: Mapped[int | None] = mapped_column(db.ForeignKey('users.id', ondelete='SET NULL'), nullable=True)
+    created_by_user_id: Mapped[int | None] = mapped_column(
+        db.ForeignKey('users.id', ondelete='SET NULL'), nullable=True
+    )
+    updated_by_user_id: Mapped[int | None] = mapped_column(
+        db.ForeignKey('users.id', ondelete='SET NULL'), nullable=True
+    )
     created_at: Mapped[datetime] = mapped_column(
         db.DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC)
     )
@@ -195,7 +209,9 @@ class AlertNotificationTemplate(db.Model):
     body_template: Mapped[str] = mapped_column(db.Text, nullable=False)
     enabled: Mapped[bool] = mapped_column(db.Boolean, nullable=False, default=True)
     built_in_override: Mapped[bool] = mapped_column(db.Boolean, nullable=False, default=False)
-    updated_by_user_id: Mapped[int | None] = mapped_column(db.ForeignKey('users.id', ondelete='SET NULL'), nullable=True)
+    updated_by_user_id: Mapped[int | None] = mapped_column(
+        db.ForeignKey('users.id', ondelete='SET NULL'), nullable=True
+    )
     created_at: Mapped[datetime] = mapped_column(
         db.DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC)
     )

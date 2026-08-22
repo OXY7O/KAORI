@@ -53,7 +53,14 @@ def test_alert_operations_sections_own_distinct_operator_responsibilities() -> N
 
     assert 'Lifecycle Posture' in overview
     assert 'Review' in active
-    for required in ('Acknowledge', 'Update Owner', 'Mark Mitigating', 'Silence Delivery', 'Resolution Summary', 'Verification Evidence'):
+    for required in (
+        'Acknowledge',
+        'Update Owner',
+        'Mark Mitigating',
+        'Silence Delivery',
+        'Resolution Summary',
+        'Verification Evidence',
+    ):
         assert required in case_workspace
     assert 'Notification Channels' in routing
     assert 'Integrations → Notification Channels' in routing
