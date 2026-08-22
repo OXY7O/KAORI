@@ -56,16 +56,9 @@ def get_intelligence_overview_payload() -> dict[str, Any]:
     }
 
     posture = _overview_posture(
-        registered_assets=registered_assets,
-        critical_findings=critical,
-        warning_findings=warning,
-        findings=len(findings),
-        critical_alerts=alerts['critical'],
-        active_alerts=alerts['active'],
-        verification_pending=alerts['verification_pending'],
-        delivery_failures=alerts['delivery_failures'],
-        automation_failures=automation['failures'],
-        pending_automation=automation['pending_governance'],
+        summary=summary,
+        alerts=alerts,
+        automation=automation,
     )
 
     return {
@@ -74,8 +67,8 @@ def get_intelligence_overview_payload() -> dict[str, Any]:
         'assets': assets,
         'alerts': alerts,
         'automation': automation,
-        'attention_metrics': _attention_metrics(summary=summary, alerts=alerts, automation=automation),
-        'coverage_metrics': _coverage_metrics(summary=summary, assets=assets, alerts=alerts, automation=automation),
+        'kpi_cards': _kpi_cards(summary=summary, alerts=alerts, automation=automation),
+        'posture_items': _posture_items(summary=summary, alerts=alerts, automation=automation),
         'workspaces': _workspace_rows(summary=summary, alerts=alerts, automation=automation),
     }
 
@@ -171,18 +164,11 @@ def _alert_operations_summary() -> dict[str, int]:
 
 def _overview_posture(
     *,
-    registered_assets: int,
-    critical_findings: int,
-    warning_findings: int,
-    findings: int,
-    critical_alerts: int,
-    active_alerts: int,
-    verification_pending: int,
-    delivery_failures: int,
-    automation_failures: int,
-    pending_automation: int,
+    summary: dict[str, int],
+    alerts: dict[str, int],
+    automation: dict[str, Any],
 ) -> dict[str, str]:
-    critical_total = critical_findings + critical_alerts
+    critical_total = summary['critical'] + alerts['critical']
     if critical_total:
         return {
             'label': 'Critical Review',
@@ -192,16 +178,16 @@ def _overview_posture(
                 'across Recommendations and Alert Operations.'
             ),
         }
-    if delivery_failures or automation_failures:
+    if alerts['delivery_failures'] or automation['failures']:
         return {
             'label': 'Control Attention',
             'tone': 'warning',
             'helper': (
-                f'{delivery_failures + automation_failures} delivery or automation control failure(s) '
+                f'{alerts["delivery_failures"] + automation["failures"]} delivery or automation control failure(s) '
                 'require operational review.'
             ),
         }
-    if warning_findings or verification_pending or pending_automation:
+    if summary['warning'] or alerts['verification_pending'] or automation['pending_governance']:
         return {
             'label': 'Review Required',
             'tone': 'warning',
@@ -210,16 +196,16 @@ def _overview_posture(
                 'currently require operator attention.'
             ),
         }
-    if findings or active_alerts:
+    if summary['findings'] or alerts['active']:
         return {
             'label': 'Active Intelligence',
             'tone': 'info',
             'helper': (
-                f'{findings} recommendation finding(s) and {active_alerts} active alert case(s) '
+                f'{summary["findings"]} recommendation finding(s) and {alerts["active"]} active alert case(s) '
                 'are available for operational review.'
             ),
         }
-    if registered_assets == 0:
+    if summary['registered_assets'] == 0:
         return {
             'label': 'No Managed Assets',
             'tone': 'unknown',
@@ -235,7 +221,7 @@ def _overview_posture(
     }
 
 
-def _attention_metrics(
+def _kpi_cards(
     *,
     summary: dict[str, int],
     alerts: dict[str, int],
@@ -243,67 +229,87 @@ def _attention_metrics(
 ) -> list[dict[str, Any]]:
     return [
         {
-            'label': 'Critical Recommendations',
-            'value': summary['critical'],
-            'supporting': f'{summary["warning"]} warning findings',
+            'label': 'Active Findings',
+            'value': summary['findings'],
+            'supporting': f'{summary["critical"]} critical · {summary["warning"]} warning',
             'icon': 'sparkles',
             'tone': 'critical' if summary['critical'] else ('warning' if summary['warning'] else 'normal'),
-            'status': 'Critical' if summary['critical'] else ('Review' if summary['warning'] else 'Clear'),
+            'href_endpoint': 'intelligence.recommendations',
+            'action_label': 'View Recommendations',
         },
         {
-            'label': 'Active Alert Cases',
+            'label': 'Active Alerts',
             'value': alerts['active'],
             'supporting': f'{alerts["critical"]} critical · {alerts["verification_pending"]} verify',
-            'icon': 'triangle-alert',
-            'tone': 'critical' if alerts['critical'] else ('warning' if alerts['verification_pending'] else ('info' if alerts['active'] else 'normal')),
-            'status': 'Critical' if alerts['critical'] else ('Verify' if alerts['verification_pending'] else ('Active' if alerts['active'] else 'Clear')),
+            'icon': 'bell-ring',
+            'tone': (
+                'critical'
+                if alerts['critical']
+                else ('warning' if alerts['verification_pending'] else ('info' if alerts['active'] else 'normal'))
+            ),
+            'href_endpoint': 'alert_intelligence.index',
+            'action_label': 'View Alert Intelligence',
         },
         {
-            'label': 'Delivery Failures',
-            'value': alerts['delivery_failures'],
-            'supporting': f'{alerts["silenced"]} active delivery silences',
-            'icon': 'send-horizontal',
-            'tone': 'warning' if alerts['delivery_failures'] else 'normal',
-            'status': 'Failed' if alerts['delivery_failures'] else 'Clear',
+            'label': 'Rule Coverage',
+            'value': f'{summary["available_rules"]} / {summary["catalog_rules"]}',
+            'supporting': f'{summary["reserved_rules"]} reserved · {summary["imported_rules"]} imported',
+            'icon': 'panels-top-left',
+            'tone': 'info' if summary['catalog_rules'] else 'unknown',
+            'href_endpoint': 'intelligence.catalog',
+            'action_label': 'View Rule Catalog',
         },
         {
             'label': 'Pending Governance',
             'value': automation['pending_governance'],
             'supporting': f'{automation["failures"]} execution failures',
-            'icon': 'workflow',
+            'icon': 'zap',
             'tone': 'warning' if automation['pending_governance'] or automation['failures'] else 'normal',
-            'status': 'Review' if automation['pending_governance'] or automation['failures'] else 'Clear',
+            'href_endpoint': 'automation_control.index',
+            'action_label': 'View Automation Control',
         },
     ]
 
 
-def _coverage_metrics(
+def _posture_items(
     *,
     summary: dict[str, int],
-    assets: dict[str, int],
     alerts: dict[str, int],
     automation: dict[str, Any],
 ) -> list[dict[str, Any]]:
+    critical_total = summary['critical'] + alerts['critical']
     return [
         {
-            'label': 'Managed Assets',
-            'value': summary['registered_assets'],
-            'supporting': f'{assets["kubernetes"]} Kubernetes · {assets["object_storage"]} Object Storage',
+            'label': 'Critical Attention',
+            'value': f'{summary["critical"]} recommendations · {alerts["critical"]} critical alerts',
+            'supporting': (
+                f'{critical_total} critical intelligence signal(s) need immediate review.'
+                if critical_total
+                else 'No critical intelligence signal requires immediate review.'
+            ),
+            'icon': 'circle-dot-dashed',
+            'tone': 'critical' if critical_total else 'normal',
+            'href_endpoint': 'intelligence.recommendations' if summary['critical'] else 'alert_intelligence.index',
         },
         {
-            'label': 'Rule Coverage',
-            'value': f'{summary["available_rules"]}/{summary["catalog_rules"]}',
-            'supporting': f'{summary["reserved_rules"]} reserved · {summary["imported_rules"]} imported',
+            'label': 'Evidence Freshness',
+            'value': 'Committed State',
+            'supporting': 'Overview is database-backed; provider collection and refresh stay worker-owned.',
+            'icon': 'shield-check',
+            'tone': 'info',
+            'href_endpoint': 'alert_intelligence.index',
         },
         {
-            'label': 'Resolved in 24h',
-            'value': alerts['resolved_24h'],
-            'supporting': f'{alerts["postmortem_required"]} postmortem pending',
-        },
-        {
-            'label': 'Published Runbooks',
-            'value': automation['published_runbooks'],
-            'supporting': automation['execution_label'],
+            'label': 'Automation Readiness',
+            'value': f'{automation["pending_governance"]} decisions awaiting governance',
+            'supporting': (
+                f'{automation["failures"]} execution failure(s) also require review.'
+                if automation['failures']
+                else automation['execution_label']
+            ),
+            'icon': 'circle-check-big',
+            'tone': 'warning' if automation['pending_governance'] or automation['failures'] else 'normal',
+            'href_endpoint': 'automation_control.index',
         },
     ]
 
@@ -314,73 +320,54 @@ def _workspace_rows(
     alerts: dict[str, int],
     automation: dict[str, Any],
 ) -> list[dict[str, Any]]:
-    findings = summary['findings']
-    critical = summary['critical']
-    warning = summary['warning']
-    recommendation_tone = 'critical' if critical else ('warning' if warning else ('info' if findings else 'normal'))
-    recommendation_status = (
-        f'{critical} Critical'
-        if critical
-        else (f'{warning} Warning' if warning else (f'{findings} Active' if findings else 'Clear'))
-    )
-    alert_tone = 'critical' if alerts['critical'] else ('warning' if alerts['verification_pending'] else ('info' if alerts['active'] else 'normal'))
-    alert_status = (
-        f'{alerts["critical"]} Critical'
-        if alerts['critical']
-        else (f'{alerts["verification_pending"]} Verify' if alerts['verification_pending'] else (f'{alerts["active"]} Active' if alerts['active'] else 'Clear'))
-    )
-
     return [
         {
             'key': 'recommendations',
             'title': 'Recommendations',
-            'description': 'Prioritized findings, affected assets, measured evidence, and operator remediation guidance.',
+            'description': 'Prioritized findings with affected assets, evidence, and remediation guidance.',
             'icon': 'sparkles',
-            'status': recommendation_status,
-            'tone': recommendation_tone,
-            'metric': findings,
-            'metric_label': 'active findings',
-            'supporting': f'{summary["active_domains"]} active domains',
+            'tone': 'critical' if summary['critical'] else ('warning' if summary['warning'] else 'info'),
+            'primary_value': summary['findings'],
+            'primary_label': 'active',
+            'secondary_value': summary['critical'],
+            'secondary_label': 'critical',
             'href_endpoint': 'intelligence.recommendations',
-            'action_label': 'Review Recommendations',
         },
         {
             'key': 'alerts',
             'title': 'Alert Intelligence',
-            'description': 'Own alert acknowledgement, routing, delivery silence, resolution evidence, history, and postmortem workflow.',
-            'icon': 'siren',
-            'status': alert_status,
-            'tone': alert_tone,
-            'metric': alerts['active'],
-            'metric_label': 'active cases',
-            'supporting': f'{alerts["resolved_24h"]} resolved in 24h',
+            'description': 'Alert cases, acknowledgement, routing, silences, resolution evidence, and history.',
+            'icon': 'bell-ring',
+            'tone': 'critical' if alerts['critical'] else ('warning' if alerts['verification_pending'] else 'info'),
+            'primary_value': alerts['active'],
+            'primary_label': 'active',
+            'secondary_value': alerts['verification_pending'],
+            'secondary_label': 'verify',
             'href_endpoint': 'alert_intelligence.index',
-            'action_label': 'Open Alert Operations',
         },
         {
             'key': 'catalog',
             'title': 'Rule Catalog',
-            'description': 'Canonical detection definitions, evidence boundaries, severity ownership, and operator-response contracts.',
-            'icon': 'list-checks',
-            'status': f'{summary["available_rules"]} Available',
-            'tone': 'normal' if summary['available_rules'] else 'unknown',
-            'metric': summary['catalog_rules'],
-            'metric_label': 'catalog rules',
-            'supporting': f'{summary["reserved_rules"]} reserved plan',
+            'description': 'Detection and validation rules available across managed Intelligence domains.',
+            'icon': 'panels-top-left',
+            'tone': 'info',
+            'primary_value': summary['catalog_rules'],
+            'primary_label': 'total rules',
+            'secondary_value': summary['available_rules'],
+            'secondary_label': 'available',
             'href_endpoint': 'intelligence.catalog',
-            'action_label': 'Open Rule Catalog',
         },
         {
             'key': 'automation',
             'title': 'Automation Control',
-            'description': 'Govern runbooks, approvals, execution readiness, verification, recovery, and operator accountability.',
-            'icon': 'workflow',
-            'status': str(automation['posture']['label']),
-            'tone': str(automation['posture']['tone']),
-            'metric': automation['pending_governance'],
-            'metric_label': 'pending governance',
-            'supporting': f'{automation["published_runbooks"]} published runbooks',
+            'description': 'Automation decisions, approvals, execution readiness, verification, and recovery.',
+            'icon': 'settings-2',
+            'tone': 'warning' if automation['pending_governance'] or automation['failures'] else 'normal',
+            'primary_value': automation['pending_governance'],
+            'primary_label': 'pending',
+            'secondary_value': automation['published_runbooks'],
+            'secondary_label': 'runbooks',
             'href_endpoint': 'automation_control.index',
-            'action_label': 'Open Automation Control',
         },
     ]
+

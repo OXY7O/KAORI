@@ -56,29 +56,30 @@ def test_intelligence_overview_surfaces_alert_operations_posture() -> None:
     assert "'delivery_failures': int(delivery_failures)" in overview
     assert "'postmortem_required': postmortem_required" in overview
 
-    for text in (
-        'Active Alert Cases',
-        'Delivery Failures',
-        'Resolved in 24h',
-        'postmortem pending',
-    ):
+    for text in ('Active Alerts', 'critical alerts', 'verify'):
         assert text in template or text in overview
 
 
-def test_intelligence_overview_uses_summary_first_information_architecture() -> None:
+def test_intelligence_overview_uses_clean_summary_information_architecture() -> None:
     template = read('app/templates/intelligence/overview.html')
 
     for section in (
-        'Operational Intelligence Snapshot',
-        'Operator Attention',
-        'Coverage & Readiness',
+        'Intelligence Posture',
         'Intelligence Workspaces',
-        'Trust & Ownership Boundaries',
-        'Overview Stops at Summary',
+        'Operational Boundary',
     ):
         assert section in template
 
-    assert 'Current Priorities' not in template
+    for removed_section in (
+        'Operational Intelligence Snapshot',
+        'Operator Attention',
+        'Coverage & Readiness',
+        'Trust & Ownership Boundaries',
+        'Overview Stops at Summary',
+        'Current Priorities',
+    ):
+        assert removed_section not in template
+
     assert 'payload.priorities' not in template
     assert '_recommendation_records.html' not in template
     assert '_alert_ops_active_table.html' not in template
@@ -86,7 +87,39 @@ def test_intelligence_overview_uses_summary_first_information_architecture() -> 
     assert 'Evidence Details' not in template
 
 
-def test_intelligence_overview_exposes_four_owned_workspaces_as_navigation_rows() -> None:
+def test_intelligence_overview_has_four_direct_kpi_cards() -> None:
+    overview = read('app/intelligence/overview.py')
+    template = read('app/templates/intelligence/overview.html')
+
+    assert "'kpi_cards': _kpi_cards(" in overview
+    assert 'payload.kpi_cards' in template
+
+    for label in ('Active Findings', 'Active Alerts', 'Rule Coverage', 'Pending Governance'):
+        assert f"'label': '{label}'" in overview
+
+    for action in (
+        'View Recommendations',
+        'View Alert Intelligence',
+        'View Rule Catalog',
+        'View Automation Control',
+    ):
+        assert action in overview
+
+
+def test_intelligence_overview_posture_is_compact_and_cross_workspace() -> None:
+    overview = read('app/intelligence/overview.py')
+    template = read('app/templates/intelligence/overview.html')
+
+    assert "'posture_items': _posture_items(" in overview
+    assert 'payload.posture_items' in template
+
+    for label in ('Critical Attention', 'Evidence Freshness', 'Automation Readiness'):
+        assert f"'label': '{label}'" in overview
+
+    assert 'Overview is database-backed; provider collection and refresh stay worker-owned.' in overview
+
+
+def test_intelligence_overview_exposes_four_owned_workspaces_as_simple_rows() -> None:
     overview = read('app/intelligence/overview.py')
     template = read('app/templates/intelligence/overview.html')
 
@@ -104,41 +137,20 @@ def test_intelligence_overview_exposes_four_owned_workspaces_as_navigation_rows(
     ):
         assert endpoint in overview
 
-    assert 'grid gap-4 px-4 py-4' in template
-    assert 'workspace.action_label' in template
+    assert 'workspace.primary_value' in template
+    assert 'workspace.secondary_value' in template
+    assert 'Open Workspace' in template
 
 
-def test_intelligence_overview_uses_cross_workspace_attention_and_coverage_metrics() -> None:
-    overview = read('app/intelligence/overview.py')
+def test_intelligence_overview_keeps_one_explicit_operational_boundary() -> None:
     template = read('app/templates/intelligence/overview.html')
 
-    assert "'attention_metrics': _attention_metrics(" in overview
-    assert "'coverage_metrics': _coverage_metrics(" in overview
-    assert 'payload.attention_metrics' in template
-    assert 'payload.coverage_metrics' in template
-
-    for metric in (
-        'Critical Recommendations',
-        'Active Alert Cases',
-        'Delivery Failures',
-        'Pending Governance',
-        'Managed Assets',
-        'Rule Coverage',
-        'Resolved in 24h',
-        'Published Runbooks',
-    ):
-        assert metric in overview
-
-
-def test_intelligence_overview_keeps_current_ownership_boundaries_explicit() -> None:
-    template = read('app/templates/intelligence/overview.html')
-
-    assert 'Evidence Boundary' in template
-    assert 'Alert Lifecycle' in template
-    assert 'Automation Boundary' in template
-    assert 'The Overview never calls Prometheus, Thanos, Alertmanager, or Object Storage providers directly.' in template
-    assert 'KAORI owns acknowledgement, assignment, notification policy, delivery silence, resolution evidence, postmortem, history, and archive lifecycle.' in template
-    assert 'Stale or failed alert snapshots may remain visible to operators but cannot materialize new automation candidates.' in template
+    assert 'Operational Boundary' in template
+    assert 'Overview only presents aggregate Intelligence posture.' in template
+    assert 'Provider collection and refresh remain worker-owned; this page reads committed KAORI state only.' in template
+    assert 'Evidence Boundary' not in template
+    assert 'Alert Lifecycle' not in template
+    assert 'Automation Boundary' not in template
 
 
 def test_intelligence_sidebar_and_welcome_enter_through_overview() -> None:
