@@ -22,7 +22,7 @@ def test_alert_case_supports_unknown_source_and_reversible_routing_state() -> No
         'closure_reason',
     ):
         assert field in model
-    assert 'mark_case_source_unknown' in lifecycle
+    assert 'restore_system_routing' in lifecycle
     assert 'def mark_case_source_unknown(' in case_state
     assert 'def restore_case_source_firing(' in case_state
     assert 'def suppress_case_routing(' in case_state
@@ -35,6 +35,8 @@ def test_missing_findings_only_resolve_after_fresh_source_evidence() -> None:
     assert 'fresh_keys: set[str] = set()' in source
     assert 'def _source_evidence_posture_for_finding' in source
     assert 'def _source_evidence_posture_for_state' in source
+    assert 'from app.intelligence.alert_intelligence.case_state import (' in source
+    assert 'from app.intelligence.alert_intelligence.lifecycle import mark_case_source_resolved' in source
     assert 'mark_case_source_unknown(' in source
     assert 'restore_case_source_firing(' in source
     assert "return False, 'source_deleted'" in source

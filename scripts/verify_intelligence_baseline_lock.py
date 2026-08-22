@@ -44,6 +44,7 @@ def main() -> int:
     alert_intelligence = read('app/intelligence/alert_intelligence/service.py')
     alert_routes = read('app/intelligence/alert_intelligence/routes.py')
     alert_lifecycle = read('app/intelligence/alert_intelligence/lifecycle.py')
+    alert_case_state = read('app/intelligence/alert_intelligence/case_state.py')
     alert_notifications = read('app/intelligence/alert_intelligence/notifications.py')
     alert_routing = read('app/intelligence/alert_intelligence/routing.py')
     alert_templates = read('app/intelligence/alert_intelligence/templates.py')
@@ -248,13 +249,16 @@ def main() -> int:
         'create_delivery_silence',
         'close_case',
         'save_postmortem',
+        "case.workflow_state = 'verification_pending'",
+    ):
+        require(required in alert_lifecycle, f'Alert Operations lifecycle contract missing: {required}', errors)
+    for required in (
         'mark_case_source_unknown',
         'restore_case_source_firing',
         'suppress_case_routing',
         'resume_case_routing',
-        "case.workflow_state = 'verification_pending'",
     ):
-        require(required in alert_lifecycle, f'Alert Operations lifecycle contract missing: {required}', errors)
+        require(required in alert_case_state, f'Alert Operations case-state contract missing: {required}', errors)
     for required in (
         "event_state='firing'",
         "event_state='resolved'",

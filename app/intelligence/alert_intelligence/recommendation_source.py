@@ -6,12 +6,12 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from app.extensions.db import db
-from app.intelligence.alert_intelligence.lifecycle import (
-    mark_case_source_resolved,
+from app.intelligence.alert_intelligence.case_state import (
     mark_case_source_unknown,
     restore_case_source_firing,
     set_case_policy_routing_eligibility,
 )
+from app.intelligence.alert_intelligence.lifecycle import mark_case_source_resolved
 from app.intelligence.recommendation_alerting import base_rule_key, catalog_rule, effective_alert_policy
 from app.intelligence.service import get_active_recommendation_findings
 from app.models.alert_ops import AlertCase, AlertCaseEvent, RecommendationAlertState
@@ -252,10 +252,9 @@ def _automatic_threshold_reached(
     first_seen = _as_utc(state.first_seen_at)
     stable_for = now - first_seen
     if str(observed_severity or '').strip().lower() == 'critical':
-        return (
-            stable_for >= timedelta(minutes=int(policy.get('critical_stability_window_minutes', 0)))
-            and int(state.occurrence_count or 0) >= int(policy.get('critical_minimum_occurrences', 1))
-        )
+        return stable_for >= timedelta(minutes=int(policy.get('critical_stability_window_minutes', 0))) and int(
+            state.occurrence_count or 0
+        ) >= int(policy.get('critical_minimum_occurrences', 1))
     return stable_for >= timedelta(minutes=int(policy['stability_window_minutes'])) and int(
         state.occurrence_count or 0
     ) >= int(policy['minimum_occurrences'])
@@ -361,7 +360,11 @@ def _refresh_case_from_finding(case: AlertCase, finding: dict[str, Any], *, now:
     if previous_severity and previous_severity != next_severity:
         case.previous_severity = previous_severity
         case.severity_changed_at = now
-        event_type = 'severity_escalated' if _severity_rank(next_severity) > _severity_rank(previous_severity) else 'severity_deescalated'
+        event_type = (
+            'severity_escalated'
+            if _severity_rank(next_severity) > _severity_rank(previous_severity)
+            else 'severity_deescalated'
+        )
         if event_type == 'severity_escalated' and case.acknowledgement_expires_at is not None:
             # A higher severity is a new paging condition; an ACK at the old severity cannot suppress it.
             case.acknowledgement_expires_at = now
@@ -552,10 +555,7 @@ def _optional_text(value: Any) -> str | None:
 def _source_evidence_posture_for_finding(finding: dict[str, Any]) -> tuple[bool, str]:
     evidence = finding.get('evidence') if isinstance(finding.get('evidence'), dict) else {}
     asset_key = str(
-        evidence.get('asset_key')
-        or evidence.get('cluster_id')
-        or evidence.get('object_storage_system_id')
-        or ''
+        evidence.get('asset_key') or evidence.get('cluster_id') or evidence.get('object_storage_system_id') or ''
     ).strip()
     return _source_evidence_posture(
         domain=str(finding.get('domain') or ''),
@@ -614,7 +614,7 @@ def _binding_posture(integration_type: str, asset_type: str, asset_key: str) -> 
         .order_by(IntegrationBinding.priority.asc(), IntegrationBinding.id.asc())
         .first()
     )
-    return ((True, '') if binding is not None else (False, 'source_unavailable'))
+    return (True, '') if binding is not None else (False, 'source_unavailable')
 
 
 def _source_unknown_summary(reason: str) -> str:
