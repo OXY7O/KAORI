@@ -93,7 +93,7 @@ def test_review_polish_removes_duplicate_close_and_enriches_operator_controls() 
     assert "status_label(case.delivery_label, case.delivery_tone, size='compact')" in workspace
     assert '>Routing</dt>' in workspace
     assert '>Channel</dt>' in workspace
-    assert 'Routing is active and delivery follows the matched policy cadence.' in workspace
+    assert 'Routing active; delivery follows policy cadence.' in workspace
 
 
 def test_review_evidence_and_timeline_use_horizontal_scan_layout() -> None:
@@ -130,3 +130,21 @@ def test_routes_import_routing_state_mutations_from_case_state_owner() -> None:
     assert 'suppress_case_routing' not in lifecycle_block
     assert 'withdraw_manual_alert' not in lifecycle_block
 
+
+def test_review_keeps_detail_summary_single_source_and_bounds_long_evidence_lists() -> None:
+    workspace = read('app/templates/intelligence/partials/_alert_ops_case_workspace.html')
+    service = read('app/intelligence/alert_intelligence/service.py')
+
+    assert 'Operational AlertCase for ownership, delivery control, evidence, and verified resolution.' in workspace
+    assert workspace.count('{{ case.summary }}') == 1
+    assert '>Target</p>' in workspace
+    assert "('boxes', 'Asset', case.asset_name)" in workspace
+    assert "('layers-3', 'Namespace', case.namespace)" in workspace
+    assert "timeline_recent = timeline[-5:]" in service
+    assert "timeline_older = timeline[:-5]" in service
+    assert "deliveries_recent = deliveries[:5]" in service
+    assert "deliveries_older = deliveries[5:]" in service
+    assert 'Earlier Timeline Events' in workspace
+    assert 'Earlier Delivery Attempts' in workspace
+    assert 'max-h-80' in workspace
+    assert 'max-h-72' in workspace

@@ -302,6 +302,10 @@ def _serialize_case_detail(case: AlertCase) -> dict[str, Any]:
     ]
     evidence = dict(case.evidence_json or {})
     deliveries = case_delivery_rows(case)
+    timeline_recent = timeline[-5:]
+    timeline_older = timeline[:-5]
+    deliveries_recent = deliveries[:5]
+    deliveries_older = deliveries[5:]
     delivery_target = str(deliveries[0]['channel']) if deliveries else str(case.receiver or '-')
     manual_promotion = evidence.get('promotion_mode') == 'manual' or any(
         event['event_type'] == 'recommendation_promoted'
@@ -327,7 +331,11 @@ def _serialize_case_detail(case: AlertCase) -> dict[str, Any]:
             'postmortem_required': case.postmortem_required,
             'postmortem': dict(case.postmortem_json or {}),
             'timeline': timeline,
+            'timeline_recent': timeline_recent,
+            'timeline_older': timeline_older,
             'deliveries': deliveries,
+            'deliveries_recent': deliveries_recent,
+            'deliveries_older': deliveries_older,
         }
     )
     return base
