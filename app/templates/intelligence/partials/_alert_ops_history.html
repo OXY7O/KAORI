@@ -1,7 +1,7 @@
 {% import "components/table_label.html" as table_label %}
 {% import "components/table_primitives.html" as table_ui %}
 {% import "components/table_registry.html" as table_registry %}
-<div data-alert-intelligence-panel="history" class="space-y-5 p-4 sm:p-5">
+<div data-alert-intelligence-panel="resolved" class="space-y-5 p-4 sm:p-5">
     <section id="alert-operations-history-registry" class="{{ table_ui.block_classes() }}">
         <header class="{{ table_ui.block_header_classes() }}">
             <div class="flex min-w-0 items-start gap-3">
@@ -9,8 +9,8 @@
                     <i data-lucide="archive" class="h-4 w-4"></i>
                 </span>
                 <div class="min-w-0">
-                    <h3 class="{{ table_ui.block_title_classes() }}">Resolved & Historical Alerts</h3>
-                    <p class="{{ table_ui.block_description_classes() }}">Closed cases remain searchable in PostgreSQL while heavy evidence follows the shared Local/S3 archive lifecycle.</p>
+                    <h3 class="{{ table_ui.block_title_classes() }}">Resolved Alerts</h3>
+                    <p class="{{ table_ui.block_description_classes() }}">Recovered conditions appear here immediately; verified closed cases remain searchable while heavy evidence follows the shared Local/S3 archive lifecycle.</p>
                 </div>
             </div>
             <a href="{{ url_for('platform_operations.data_lifecycle.index', domain='alert_incident') }}" class="{{ table_ui.action_classes() }}">
@@ -28,7 +28,7 @@
             page_param='history_page',
             per_page_param='history_per_page'
         ) %}
-            <input type="hidden" name="tab" value="history">
+            <input type="hidden" name="tab" value="resolved">
             <input type="hidden" name="domain" value="{{ payload.domain }}">
             <input type="hidden" name="asset" value="{{ payload.selected_asset_key }}">
             <label>
@@ -45,9 +45,9 @@
             </label>
             {% if payload.filters.q or payload.filters.severity != 'all' %}
                 {{ table_registry.clear_filters_action(
-                    url_for('alert_intelligence.index', tab='history', domain=payload.domain, asset=payload.selected_asset_key, history_per_page=payload.history_pagination.per_page),
+                    url_for('alert_intelligence.index', tab='resolved', domain=payload.domain, asset=payload.selected_asset_key, history_per_page=payload.history_pagination.per_page),
                     table_ui.action_classes(),
-                    hx_get=url_for('alert_intelligence.index', tab='history', domain=payload.domain, asset=payload.selected_asset_key, history_per_page=payload.history_pagination.per_page),
+                    hx_get=url_for('alert_intelligence.index', tab='resolved', domain=payload.domain, asset=payload.selected_asset_key, history_per_page=payload.history_pagination.per_page),
                     target='#alert-operations-history-registry',
                     indicator='#alert-intelligence-loading',
                     select='#alert-operations-history-registry',
@@ -65,7 +65,7 @@
                         <th class="{{ table_ui.header_cell_classes() }}">Severity</th>
                         <th class="{{ table_ui.header_cell_classes() }}">Scope</th>
                         <th class="{{ table_ui.header_cell_classes() }}">Duration</th>
-                        <th class="{{ table_ui.header_cell_classes() }}">Closed</th>
+                        <th class="{{ table_ui.header_cell_classes() }}">Resolved</th>
                         <th class="{{ table_ui.header_cell_classes() }}">Owner</th>
                         <th class="{{ table_ui.header_cell_classes() }}">Postmortem</th>
                         <th class="{{ table_ui.header_cell_classes(true) }}">Action</th>
@@ -85,13 +85,13 @@
                                 {% if case.namespace != '-' %}<p class="mt-0.5 text-xs leading-5 text-content-muted">{{ case.namespace }}</p>{% endif %}
                             </td>
                             <td class="{{ table_ui.cell_classes() }}">{{ case.duration }}</td>
-                            <td class="{{ table_ui.cell_classes() }}"><span class="whitespace-nowrap">{{ case.closed_at|user_datetime if case.closed_at else '-' }}</span></td>
+                            <td class="{{ table_ui.cell_classes() }}"><span class="whitespace-nowrap">{{ case.source_resolved_at|user_datetime if case.source_resolved_at else '-' }}</span></td>
                             <td class="{{ table_ui.cell_classes() }}">{{ case.owner }}</td>
                             <td class="{{ table_ui.cell_classes() }}">
-                                {{ table_label.status_label(case.postmortem_status|replace('_', ' ')|title, 'warning' if case.postmortem_status in ['required', 'draft'] else 'normal', size='compact') }}
+                                {{ table_label.status_label(case.postmortem_status|replace('_', ' ')|title, 'warning' if case.postmortem_status in ['required', 'draft'] else 'normal', size='compact') if case.workflow_state == 'closed' else table_label.status_label('Verification Pending', 'warning', size='compact') }}
                             </td>
                             <td class="{{ table_ui.cell_classes(true) }}">
-                                <a href="{{ url_for('alert_intelligence.index', tab='history', domain=payload.domain, asset=payload.selected_asset_key, case=case.public_id, severity=payload.filters.severity, q=payload.filters.q, history_page=payload.history_pagination.page, history_per_page=payload.history_pagination.per_page) }}" class="{{ table_ui.action_classes() }}">
+                                <a href="{{ url_for('alert_intelligence.index', tab='resolved', domain=payload.domain, asset=payload.selected_asset_key, case=case.public_id, severity=payload.filters.severity, source=payload.filters.source, q=payload.filters.q, history_page=payload.history_pagination.page, history_per_page=payload.history_pagination.per_page) }}" class="{{ table_ui.action_classes() }}">
                                     <i data-lucide="panel-right-open" class="h-3.5 w-3.5" aria-hidden="true"></i>
                                     Review
                                 </a>
@@ -101,9 +101,9 @@
                         <tr>
                             <td colspan="8" class="p-0">
                                 {% set empty_state_icon = "archive" %}
-                                {% set empty_state_label = "No History" %}
-                                {% set empty_state_title = "No Closed Alert Cases in This Scope" %}
-                                {% set empty_state_description = "Closed and verified cases appear here with resolution evidence, postmortem status, and archive traceability." %}
+                                {% set empty_state_label = "No Resolved Alerts" %}
+                                {% set empty_state_title = "No Resolved Alert Cases in This Scope" %}
+                                {% set empty_state_description = "Source-resolved cases appear here immediately. Verification Pending remains visible until closure evidence is committed; closed records retain postmortem and archive traceability." %}
                                 {% set empty_state_min_height = "min-h-[180px]" %}
                                 {% include 'components/states/_empty_state.html' %}
                             </td>
@@ -118,10 +118,10 @@
                 'alert-operations-history-registry',
                 'alert-intelligence-loading',
                 payload.history_pagination,
-                {'tab': 'history', 'domain': payload.domain, 'asset': payload.selected_asset_key, 'severity': payload.filters.severity, 'q': payload.filters.q},
+                {'tab': 'resolved', 'domain': payload.domain, 'asset': payload.selected_asset_key, 'severity': payload.filters.severity, 'source': payload.filters.source, 'q': payload.filters.q},
                 payload.history_pagination.allowed_per_page,
-                resource_label='Historical Cases',
-                rows_aria_label='Historical cases per page',
+                resource_label='Resolved Cases',
+                rows_aria_label='Resolved cases per page',
                 control_name='alert-history',
                 page_param='history_page',
                 per_page_param='history_per_page'
@@ -136,13 +136,13 @@
                 <div class="min-w-0">
                     <div class="flex flex-wrap items-center gap-2">
                         <h3 class="text-lg font-semibold leading-7 text-content-primary">{{ case.alert_name }}</h3>
-                        {{ table_label.status_label('Closed', 'normal', size='compact') }}
-                        {{ table_label.status_label(case.postmortem_status|replace('_', ' ')|title, 'warning' if case.postmortem_status in ['required', 'draft'] else 'normal', size='compact') }}
+                        {{ table_label.status_label(case.workflow_label, 'normal' if case.workflow_state == 'closed' else 'warning', size='compact') }}
+                        {% if case.workflow_state == 'closed' %}{{ table_label.status_label(case.postmortem_status|replace('_', ' ')|title, 'warning' if case.postmortem_status in ['required', 'draft'] else 'normal', size='compact') }}{% else %}{{ table_label.status_label('Source Resolved', 'normal', size='compact') }}{% endif %}
                     </div>
                     <p class="mt-1 text-sm leading-6 text-content-secondary">{{ case.summary }}</p>
                     <p class="mt-1 font-mono text-xs leading-5 text-content-muted">{{ case.public_id }}</p>
                 </div>
-                <a href="{{ url_for('alert_intelligence.index', tab='history', domain=payload.domain, asset=payload.selected_asset_key, severity=payload.filters.severity, q=payload.filters.q, history_page=payload.history_pagination.page, history_per_page=payload.history_pagination.per_page) }}" class="{{ table_ui.action_classes() }}">
+                <a href="{{ url_for('alert_intelligence.index', tab='resolved', domain=payload.domain, asset=payload.selected_asset_key, severity=payload.filters.severity, source=payload.filters.source, q=payload.filters.q, history_page=payload.history_pagination.page, history_per_page=payload.history_pagination.per_page) }}" class="{{ table_ui.action_classes() }}">
                     <i data-lucide="x" class="h-3.5 w-3.5" aria-hidden="true"></i>
                     Close Review
                 </a>
@@ -184,6 +184,22 @@
                     </dl>
                 </div>
                 <div class="bg-surface-elevated/40 p-4 sm:p-5">
+                    {% if case.workflow_state != 'closed' %}
+                        <h4 class="text-sm font-semibold leading-5 text-content-primary">Verification Pending</h4>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">The source condition recovered. Commit resolution, remediation, and verification evidence before closing the durable incident record.</p>
+                        {% if current_user.has_permission('intelligence.decisions.create') %}
+                            <form method="post" action="{{ url_for('alert_intelligence.close', public_id=case.public_id) }}" class="mt-4 space-y-3">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <input type="hidden" name="domain" value="{{ payload.domain }}">
+                                <input type="hidden" name="asset" value="{{ payload.selected_asset_key }}">
+                                <label class="block"><span class="{{ table_ui.filter_label_classes() }}">Resolution Summary</span><textarea name="resolution_summary" rows="3" required class="w-full rounded-md border border-outline-default bg-surface-card px-3 py-2 text-sm"></textarea></label>
+                                <label class="block"><span class="{{ table_ui.filter_label_classes() }}">Remediation / Recovery Steps</span><textarea name="remediation_steps" rows="4" required class="w-full rounded-md border border-outline-default bg-surface-card px-3 py-2 text-sm" placeholder="One step per line"></textarea></label>
+                                <label class="block"><span class="{{ table_ui.filter_label_classes() }}">Verification Evidence</span><textarea name="verification_evidence" rows="3" required class="w-full rounded-md border border-outline-default bg-surface-card px-3 py-2 text-sm"></textarea></label>
+                                <div class="grid gap-3 sm:grid-cols-2"><input name="change_reference" class="{{ table_ui.filter_input_classes() }}" placeholder="Change reference"><input name="ticket_reference" class="{{ table_ui.filter_input_classes() }}" placeholder="Incident / ticket"></div>
+                                <div class="flex justify-end"><button type="submit" class="inline-flex min-h-9 items-center gap-2 rounded-lg bg-kaori-primary px-3 text-xs font-semibold text-white hover:bg-kaori-primary-hover"><i data-lucide="badge-check" class="h-3.5 w-3.5"></i>Verify & Close</button></div>
+                            </form>
+                        {% endif %}
+                    {% else %}
                     <h4 class="text-sm font-semibold leading-5 text-content-primary">Postmortem</h4>
                     <p class="mt-1 text-xs leading-5 text-content-muted">Capture blameless learning and concrete follow-up for incidents that require a postmortem.</p>
                     {% if current_user.has_permission('intelligence.decisions.create') %}
@@ -204,6 +220,7 @@
                         </form>
                     {% else %}
                         <div class="mt-4 rounded-lg border border-outline-subtle bg-surface-card p-3 text-sm text-content-muted">Postmortem editing requires Intelligence decision permission.</div>
+                    {% endif %}
                     {% endif %}
                 </div>
             </div>

@@ -26,13 +26,16 @@ def send_telegram_message(
     timeout_seconds: int = 10,
 ) -> DeliveryResult:
     text = _render_message(message)
-    body = urlencode(
-        {
-            'chat_id': chat_id,
-            'text': text,
-            'link_preview_options': json.dumps({'is_disabled': True}, separators=(',', ':')),
-        }
-    ).encode('utf-8')
+    payload = {
+        'chat_id': chat_id,
+        'text': text,
+        'link_preview_options': json.dumps({'is_disabled': True}, separators=(',', ':')),
+    }
+    if message.content_format == 'markdown':
+        payload['parse_mode'] = 'Markdown'
+    elif message.content_format == 'html':
+        payload['parse_mode'] = 'HTML'
+    body = urlencode(payload).encode('utf-8')
     request = Request(
         f'{_TELEGRAM_API}/bot{bot_token}/sendMessage',
         data=body,
@@ -62,9 +65,14 @@ def send_telegram_message(
 
 def _render_message(message: NotificationMessage) -> str:
     severity = str(message.severity or 'info').upper()
-    content = '\n'.join(
-        line for line in [f'KAORI · {severity}', message.title, '', message.body] if line is not None
-    ).strip()
+    if message.content_format in {'markdown', 'html'}:
+        # Alert templates own markup. Avoid injecting an unescaped transport wrapper
+        # that could invalidate provider formatting.
+        content = message.body.strip()
+    else:
+        content = '\n'.join(
+            line for line in [f'KAORI · {severity}', message.title, '', message.body] if line is not None
+        ).strip()
     if not message.action_url:
         return content[:_TELEGRAM_TEXT_LIMIT]
 

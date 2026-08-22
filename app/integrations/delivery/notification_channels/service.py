@@ -118,6 +118,13 @@ def test_channel(channel: NotificationChannel, *, base_url: str = '') -> Deliver
     return result
 
 
+
+def send_channel_preview_message(channel: NotificationChannel, message: NotificationMessage) -> DeliveryResult:
+    """Send an operator-requested preview without changing channel validation state."""
+    if not channel.enabled or not channel.configured or channel.test_status != 'success':
+        return DeliveryResult(False, 'Notification Channel must be enabled, configured, and validated before Send Test.')
+    return _deliver(channel, message)
+
 def notification_channel_summary() -> dict[str, Any]:
     channels = NotificationChannel.query.order_by(NotificationChannel.id.asc()).all()
     enabled = [channel for channel in channels if channel.enabled]

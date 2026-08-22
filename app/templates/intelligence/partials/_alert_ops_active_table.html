@@ -7,6 +7,7 @@
     'asset': payload.selected_asset_key,
     'severity': payload.filters.severity,
     'workflow': payload.filters.workflow,
+    'source': payload.filters.source,
     'q': payload.filters.q
 } %}
 <div id="alert-operations-active-records"
@@ -38,7 +39,10 @@
                             </div>
                         </td>
                         <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_label(case.severity_label, case.severity_tone, size='compact') }}</td>
-                        <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_indicator_label(case.source_state_label, 'critical' if case.source_state == 'firing' else 'normal', size='compact') }}</td>
+                        <td class="{{ table_ui.cell_classes() }}">
+                            {{ table_label.status_indicator_label(case.source_state_label, 'critical' if case.source_state == 'firing' else 'normal', size='compact') }}
+                            <p class="mt-1 text-xs leading-5 text-content-muted">{{ case.source_type_label }}</p>
+                        </td>
                         <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_label(case.workflow_label, case.workflow_tone, size='compact') }}</td>
                         <td class="{{ table_ui.cell_classes() }}">{{ case.owner }}</td>
                         <td class="{{ table_ui.cell_classes() }}">{{ case.duration }}</td>
@@ -52,14 +56,14 @@
                             {% endif %}
                         </td>
                         <td class="{{ table_ui.cell_classes(true) }}">
-                            <a href="{{ url_for('alert_intelligence.index', tab='active', domain=payload.domain, asset=payload.selected_asset_key, case=case.public_id) }}"
+                            <a href="{{ url_for('alert_intelligence.index', tab='active', domain=payload.domain, asset=payload.selected_asset_key, case=case.public_id, severity=payload.filters.severity, workflow=payload.filters.workflow, source=payload.filters.source, q=payload.filters.q, page=payload.active_pagination.page, per_page=payload.active_pagination.per_page) }}"
                                class="{{ table_ui.action_classes() }}"><i data-lucide="panel-right-open" class="h-3.5 w-3.5"></i>Review</a>
                         </td>
                     </tr>
                 {% else %}
                     <tr>
                         <td colspan="8" class="p-0">
-                            {% set empty_state_icon = "badge-check" %}{% set empty_state_label = "No Active Alerts" %}{% set empty_state_title = "No Open Alert Cases Match This Scope" %}{% set empty_state_description = "KAORI will create durable alert cases when the background worker observes fresh firing evidence." %}{% set empty_state_min_height = "min-h-[180px]" %}
+                            {% set empty_state_icon = "badge-check" %}{% set empty_state_label = "No Active Alerts" %}{% set empty_state_title = "No Open Alert Cases Match This Scope" %}{% set empty_state_description = "KAORI creates durable cases from committed provider alerts and governed recommendation promotions." %}{% set empty_state_min_height = "min-h-[180px]" %}
                             {% include 'components/states/_empty_state.html' %}
                         </td>
                     </tr>

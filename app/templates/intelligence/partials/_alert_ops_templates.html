@@ -52,7 +52,7 @@
                             </div>
                         </div>
                         <div class="flex shrink-0 items-center gap-3">
-                            {{ table_label.metadata_label(template.event_label, 'send') }}
+                            {{ table_label.metadata_label(template.content_format_label, 'code-2') }}
                             <i data-lucide="chevron-down" class="h-4 w-4 text-content-muted transition-transform group-open:rotate-180" aria-hidden="true"></i>
                         </div>
                     </summary>
@@ -61,21 +61,32 @@
                             <section class="min-w-0 rounded-xl border border-outline-subtle bg-surface-card p-4">
                                 <div class="flex items-center justify-between gap-3">
                                     <div>
-                                        <h4 class="text-sm font-semibold leading-5 text-content-primary">Message Preview Source</h4>
-                                        <p class="mt-1 text-xs leading-5 text-content-muted">Rendered delivery uses these normalized case variables.</p>
+                                        <h4 class="text-sm font-semibold leading-5 text-content-primary">Rendered Preview</h4>
+                                        <p class="mt-1 text-xs leading-5 text-content-muted">Canonical KAORI evidence is rendered through the active provider format before delivery.</p>
                                     </div>
                                     {{ table_label.status_label(template.event_label, 'critical' if template.event_state == 'firing' else 'normal', size='compact') }}
                                 </div>
-                                {% if template.subject_template %}
-                                    <div class="mt-4">
-                                        <p class="text-xs font-semibold leading-5 text-content-muted">Subject</p>
-                                        <pre class="mt-1 whitespace-pre-wrap break-words rounded-lg border border-outline-subtle bg-surface-elevated p-3 font-mono text-xs leading-5 text-content-secondary">{{ template.subject_template }}</pre>
-                                    </div>
-                                {% endif %}
-                                <div class="mt-4">
-                                    <p class="text-xs font-semibold leading-5 text-content-muted">Body</p>
-                                    <pre class="mt-1 max-h-72 overflow-y-auto whitespace-pre-wrap break-words rounded-lg border border-outline-subtle bg-surface-elevated p-3 font-mono text-xs leading-5 text-content-secondary">{{ template.body_template }}</pre>
+                                <div class="mt-4 rounded-lg border border-outline-subtle bg-surface-elevated p-3">
+                                    {% if template.preview_subject %}
+                                        <p class="text-xs font-semibold leading-5 text-content-primary">{{ template.preview_subject }}</p>
+                                    {% endif %}
+                                    {% if template.content_format == 'html' %}
+                                        <div class="mt-2 break-words text-xs leading-5 text-content-secondary">{{ template.preview_body|safe }}</div>
+                                    {% else %}
+                                        <pre class="mt-2 max-h-64 overflow-y-auto whitespace-pre-wrap break-words font-sans text-xs leading-5 text-content-secondary">{{ template.preview_body }}</pre>
+                                    {% endif %}
                                 </div>
+                                <details class="mt-4 rounded-lg border border-outline-subtle bg-surface-card">
+                                    <summary class="cursor-pointer px-3 py-2.5 text-xs font-semibold leading-5 text-content-secondary">Template Source</summary>
+                                    <div class="border-t border-outline-subtle p-3">
+                                        {% if template.subject_template %}
+                                            <p class="text-xs font-semibold leading-5 text-content-muted">Subject</p>
+                                            <pre class="mt-1 whitespace-pre-wrap break-words rounded-lg bg-surface-elevated p-3 font-mono text-xs leading-5 text-content-secondary">{{ template.subject_template }}</pre>
+                                        {% endif %}
+                                        <p class="{{ 'mt-3 ' if template.subject_template else '' }}text-xs font-semibold leading-5 text-content-muted">Body</p>
+                                        <pre class="mt-1 max-h-72 overflow-y-auto whitespace-pre-wrap break-words rounded-lg bg-surface-elevated p-3 font-mono text-xs leading-5 text-content-secondary">{{ template.body_template }}</pre>
+                                    </div>
+                                </details>
                             </section>
 
                             <section class="min-w-0 rounded-xl border border-outline-subtle bg-surface-card p-4">
@@ -107,6 +118,15 @@
                                             <span class="{{ table_ui.filter_label_classes() }}">Template Name</span>
                                             <input name="name" value="{{ template.name }}" class="{{ table_ui.filter_input_classes() }}">
                                         </label>
+                                        <label class="block">
+                                            <span class="{{ table_ui.filter_label_classes() }}">Content Format</span>
+                                            <select name="content_format" class="{{ table_ui.filter_select_classes() }}">
+                                                {% for format in template.allowed_formats %}
+                                                    <option value="{{ format.value }}" {% if format.value == template.content_format %}selected{% endif %}>{{ format.label }}</option>
+                                                {% endfor %}
+                                            </select>
+                                            <span class="mt-1 block text-xs leading-5 text-content-muted">Only formats supported safely by {{ template.provider_label }} are available.</span>
+                                        </label>
                                         {% if template.subject_template %}
                                             <label class="block">
                                                 <span class="{{ table_ui.filter_label_classes() }}">Subject Template</span>
@@ -117,13 +137,46 @@
                                             <span class="{{ table_ui.filter_label_classes() }}">Body Template</span>
                                             <textarea name="body_template" rows="8" class="w-full rounded-md border border-outline-default bg-surface-card px-3 py-2 font-mono text-xs text-content-primary outline-none focus:border-kaori-primary focus:ring-2 focus:ring-kaori-soft">{{ template.body_template }}</textarea>
                                         </label>
-                                        <div class="flex justify-end">
+                                        <label class="block">
+                                            <span class="{{ table_ui.filter_label_classes() }}">Test Channel</span>
+                                            <select name="test_channel_id" class="{{ table_ui.filter_select_classes() }}">
+                                                <option value="">Select validated {{ template.provider_label }} channel</option>
+                                                {% for channel in payload.channel_options %}
+                                                    {% if channel.provider_key == template.provider_key %}
+                                                        <option value="{{ channel.id }}" {% if not channel.eligible %}disabled{% endif %}>{{ channel.name }} · {{ channel.status }}</option>
+                                                    {% endif %}
+                                                {% endfor %}
+                                            </select>
+                                            <span class="mt-1 block text-xs leading-5 text-content-muted">Send Test uses the current editor values without saving an override. Only validated channels are selectable.</span>
+                                        </label>
+                                        <div class="flex flex-wrap justify-end gap-2">
+                                            <button type="submit" formaction="{{ url_for('alert_intelligence.test_render_template') }}" class="{{ table_ui.action_classes() }}">
+                                                <i data-lucide="scan-search" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                                Test Render
+                                            </button>
+                                            <button type="submit" formaction="{{ url_for('alert_intelligence.send_template_test') }}" class="{{ table_ui.action_classes() }}">
+                                                <i data-lucide="send" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                                Send Test
+                                            </button>
                                             <button type="submit" class="inline-flex min-h-9 items-center gap-2 rounded-lg bg-kaori-primary px-3 text-xs font-semibold text-white hover:bg-kaori-primary-hover">
                                                 <i data-lucide="save" class="h-3.5 w-3.5" aria-hidden="true"></i>
                                                 Save Override
                                             </button>
                                         </div>
                                     </form>
+                                    {% if template.overridden %}
+                                        <form method="post" action="{{ url_for('alert_intelligence.reset_template') }}" class="mt-2 flex justify-end">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            <input type="hidden" name="domain" value="{{ payload.domain }}">
+                                            <input type="hidden" name="asset" value="{{ payload.selected_asset_key }}">
+                                            <input type="hidden" name="provider_key" value="{{ template.provider_key }}">
+                                            <input type="hidden" name="event_state" value="{{ template.event_state }}">
+                                            <button type="submit" class="{{ table_ui.action_classes() }}">
+                                                <i data-lucide="rotate-ccw" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                                Reset to System Template
+                                            </button>
+                                        </form>
+                                    {% endif %}
                                 {% else %}
                                     <div class="mt-5 rounded-lg border border-outline-subtle bg-surface-elevated p-3 text-xs leading-5 text-content-muted">Template overrides require Integrations management permission.</div>
                                 {% endif %}

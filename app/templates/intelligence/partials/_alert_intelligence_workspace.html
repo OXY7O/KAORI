@@ -8,11 +8,11 @@
     ('routing', 'Routing & Channels', 'route', url_for('alert_intelligence.index', tab='routing', **tab_query)),
     ('templates', 'Templates', 'file-code-2', url_for('alert_intelligence.index', tab='templates', **tab_query)),
     ('silences', 'Silences', 'bell-off', url_for('alert_intelligence.index', tab='silences', **tab_query)),
-    ('history', 'History', 'archive', url_for('alert_intelligence.index', tab='history', **tab_query))
+    ('resolved', 'Resolved', 'badge-check', url_for('alert_intelligence.index', tab='resolved', **tab_query))
 ] %}
 {% call intelligence_ui.section(
     'Alert Operations Workspace',
-    'Manage alert ownership, delivery, suppression, recovery evidence, historical incidents, and notification policy without duplicating Notification Channel credentials.',
+    'Manage alert ownership, delivery, suppression, recovery evidence, resolved incidents, and notification policy without duplicating Notification Channel credentials.',
     'shield-alert',
     payload.summary.active ~ ' Active',
     'warning' if payload.summary.active else 'normal',
@@ -46,7 +46,7 @@
         <div class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
             <div class="min-w-0 lg:max-w-md">
                 <p class="text-sm font-semibold leading-5 text-content-primary">Operational Context</p>
-                <p class="mt-1 text-xs leading-5 text-content-muted">Scope changes only read KAORI database state. Provider collection and notification delivery remain worker-owned.</p>
+                <p class="mt-1 text-xs leading-5 text-content-muted">Scope changes only read KAORI database state. Recommendation evaluation and notification delivery remain worker-owned.</p>
             </div>
             <div class="{{ table_ui.filter_layout_classes() }} flex-1">
                 <label>
@@ -80,7 +80,7 @@
             {% include 'intelligence/partials/_alert_ops_templates.html' %}
         {% elif payload.tab == 'silences' %}
             {% include 'intelligence/partials/_alert_ops_silences.html' %}
-        {% elif payload.tab == 'history' %}
+        {% elif payload.tab == 'resolved' %}
             {% include 'intelligence/partials/_alert_ops_history.html' %}
         {% else %}
             {% include 'intelligence/partials/_alert_ops_overview.html' %}

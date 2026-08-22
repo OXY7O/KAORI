@@ -2,8 +2,12 @@ from __future__ import annotations
 
 from celery import shared_task
 
-from app.intelligence.alert_intelligence.lifecycle import expire_silences_and_notify, reconcile_alert_cases
+from app.intelligence.alert_intelligence.lifecycle import (
+    expire_acknowledgements_and_notify,
+    expire_silences_and_notify,
+)
 from app.intelligence.alert_intelligence.notifications import dispatch_case_notifications
+from app.intelligence.alert_intelligence.recommendation_source import reconcile_recommendation_alert_cases
 
 
 @shared_task(
@@ -12,13 +16,19 @@ from app.intelligence.alert_intelligence.notifications import dispatch_case_noti
     reject_on_worker_lost=True,
 )
 def dispatch_alert_intelligence_notifications() -> dict[str, object]:
-    """Reconcile committed alert snapshots and dispatch governed Alert Operations notifications."""
+    """Reconcile KAORI recommendations and dispatch governed Alert Operations notifications.
 
-    reconciliation = reconcile_alert_cases()
+    External Prometheus/Alertmanager alerts remain resource-dashboard evidence for now.
+    Alert Management intentionally materializes only recommendation-origin AlertCase records.
+    """
+
+    recommendation_reconciliation = reconcile_recommendation_alert_cases()
+    expired_acknowledgements = expire_acknowledgements_and_notify()
     expired_silences = expire_silences_and_notify()
     delivery = dispatch_case_notifications()
     return {
-        'reconciliation': reconciliation,
+        'recommendation_reconciliation': recommendation_reconciliation,
+        'expired_acknowledgements': expired_acknowledgements,
         'expired_silences': expired_silences,
         'delivery': delivery,
     }

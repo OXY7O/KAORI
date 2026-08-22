@@ -712,12 +712,25 @@ rules:
   source_kind: pod
   category: reliability
   severity: warning
+  severity_bands:
+  - min_value: 5
+    max_value: 9
+    severity: info
+  - min_value: 10
+    max_value: 49
+    severity: warning
+  - min_value: 50
+    severity: critical
+  alert_escalation:
+    minimum_severity: warning
+    critical_stability_window_minutes: 0
+    critical_minimum_occurrences: 1
   priority: P2
   status: available
   logic_type: recommendation
   signal_source: kubernetes_api
-  summary: Detects pods with restart count above the operational review threshold.
-  condition_summary: Pod restart_count is greater than or equal to 5 in the latest inventory snapshot.
+  summary: Detects repeated pod restarts and derives operational severity from the highest observed restart count.
+  condition_summary: Pod restart_count is at least 5; 5-9 is Info, 10-49 is Warning, and 50 or more is Critical.
   recommended_action: Review container logs, probes, resource pressure, and recent deployment changes.
   impact: Finds unstable workloads before they become sustained incidents.
   evidence_boundary: Metrics Source can alert on restart rate; KAORI adds inventory context and investigation guidance.

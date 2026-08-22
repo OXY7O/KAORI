@@ -26,8 +26,7 @@
                             </span>
                             <div class="min-w-0">
                                 <p class="break-words text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]">{{ item.title }}</p>
-                                <p class="mt-1 line-clamp-1 break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]"
-                                   title="{{ item.summary }}">{{ item.table_summary or item.summary }}</p>
+                                <p class="mt-1 line-clamp-1 break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]" title="{{ item.summary }}">{{ item.table_summary or item.summary }}</p>
                                 <p class="mt-2 break-all font-mono text-xs font-medium leading-5 text-content-secondary">{{ item.rule_key }}</p>
                             </div>
                         </div>
@@ -48,7 +47,14 @@
                         <div class="mt-2">{{ table_label.status_label(item.severity_label, item.tone, size='compact') }}</div>
                     </td>
                     <td class="px-4 py-4">
-                        {{ table_label.status_label(item.status_label, item.status_tone, size='compact') }}
+                        <div class="flex flex-wrap gap-1.5">
+                            {{ table_label.status_label(item.status_label, item.status_tone, size='compact') }}
+                            {% if item.alert_escalation.eligible %}
+                                {{ table_label.status_label(item.alert_escalation.mode|title ~ ' Alert', 'info', size='compact') }}
+                            {% else %}
+                                {{ table_label.status_label('Recommendation Only', 'unknown', size='compact') }}
+                            {% endif %}
+                        </div>
                         <p class="mt-2 text-xs leading-5 text-content-muted">{{ 'Active evaluator or governed policy is available in the current KAORI boundary.' if item.status == 'available' else ('KAORI enriches an authoritative upstream signal for this definition.' if item.status == 'imported_signal' else 'Definition is cataloged, but enablement stays outside the current boundary.') }}</p>
                     </td>
                     <td class="px-5 py-4 text-right">

@@ -10,8 +10,11 @@ from sqlalchemy.exc import SQLAlchemyError
 from app.access.rbac.decorators import permission_required
 from app.intelligence.alert_intelligence.application import (
     apply_case_mutation,
+    reset_template_override_command,
     save_routing_policy_command,
     save_template_override_command,
+    send_template_test_command,
+    test_render_template_command,
 )
 from app.intelligence.alert_intelligence.lifecycle import (
     acknowledge_case,
@@ -24,6 +27,10 @@ from app.intelligence.alert_intelligence.lifecycle import (
 )
 from app.intelligence.alert_intelligence.routing import RoutingPolicyConfig
 from app.intelligence.alert_intelligence.service import get_alert_intelligence_payload
+from app.intelligence.recommendation_alert_commands import (
+    promote_recommendation_command,
+    save_recommendation_alert_policy_command,
+)
 from app.platform_operations.notifications.service import queue_transient_feedback
 
 alert_intelligence_bp = Blueprint(
@@ -55,7 +62,7 @@ def acknowledge(public_id: str) -> ResponseReturnValue:
     return _case_mutation(
         public_id,
         success_title='Alert acknowledged',
-        success_message='KAORI recorded operator ownership and paused normal repeat delivery for this case.',
+        success_message='KAORI recorded operator ownership. Normal repeat delivery resumes when the acknowledgement reminder window expires if the alert is still firing.',
         operation=lambda case: acknowledge_case(case, actor_user_id=_actor_user_id()),
     )
 
@@ -135,7 +142,7 @@ def close(public_id: str) -> ResponseReturnValue:
             ticket_reference=str(request.form.get('ticket_reference') or '') or None,
             actor_user_id=_actor_user_id(),
         ),
-        tab='history',
+        tab='resolved',
     )
 
 
@@ -168,8 +175,64 @@ def postmortem(public_id: str) -> ResponseReturnValue:
             complete=complete,
             actor_user_id=_actor_user_id(),
         ),
-        tab='history',
+        tab='resolved',
     )
+
+
+@alert_intelligence_bp.post('/recommendations/<path:recommendation_key>/promote')
+@permission_required('intelligence.decisions.create')
+def promote_recommendation_alert(recommendation_key: str) -> ResponseReturnValue:
+    try:
+        case = promote_recommendation_command(recommendation_key, actor_user_id=_actor_user_id())
+    except (ValueError, SQLAlchemyError) as exc:
+        queue_transient_feedback(
+            status='error',
+            title='Recommendation Not Promoted',
+            message=str(exc),
+        )
+        return redirect(url_for('intelligence.recommendations', q=recommendation_key))
+    queue_transient_feedback(
+        status='success',
+        title='Recommendation Promoted',
+        message='The finding is now managed through the Alert Intelligence lifecycle.',
+    )
+    return redirect(
+        url_for(
+            'alert_intelligence.index',
+            tab='active',
+            domain=case.domain,
+            asset=case.asset_key or 'all',
+            case=case.public_id,
+        )
+    )
+
+
+@alert_intelligence_bp.post('/recommendation-policies/<path:rule_key>')
+@permission_required('intelligence.decisions.create')
+def save_recommendation_alert_policy(rule_key: str) -> ResponseReturnValue:
+    try:
+        save_recommendation_alert_policy_command(
+            rule_key=rule_key,
+            eligible=request.form.get('eligible') == '1',
+            mode=str(request.form.get('mode') or 'manual'),
+            stability_window_minutes=int(str(request.form.get('stability_window_minutes') or '10')),
+            minimum_occurrences=int(str(request.form.get('minimum_occurrences') or '2')),
+            grouping_mode=str(request.form.get('grouping_mode') or 'finding'),
+            actor_user_id=_actor_user_id(),
+        )
+    except (ValueError, SQLAlchemyError) as exc:
+        queue_transient_feedback(
+            status='error',
+            title='Alert Escalation Policy Not Saved',
+            message=str(exc),
+        )
+    else:
+        queue_transient_feedback(
+            status='success',
+            title='Alert Escalation Policy Saved',
+            message='Recommendation findings will follow the updated Alert Intelligence promotion policy.',
+        )
+    return redirect(url_for('intelligence.catalog', q=rule_key))
 
 
 @alert_intelligence_bp.post('/routing')
@@ -186,8 +249,10 @@ def save_routing_policy() -> ResponseReturnValue:
                 enabled=request.form.get('enabled') == '1',
                 domains=request.form.getlist('domains'),
                 severities=request.form.getlist('severities'),
+                source_types=request.form.getlist('source_types'),
                 channel_ids=channel_ids,
                 repeat_interval_minutes=int(str(request.form.get('repeat_interval_minutes') or '60')),
+                acknowledgement_timeout_minutes=int(str(request.form.get('acknowledgement_timeout_minutes') or '60')),
                 send_resolved=request.form.get('send_resolved') == '1',
                 matchers=matchers,
             ),
@@ -214,6 +279,7 @@ def save_template() -> ResponseReturnValue:
             name=str(request.form.get('name') or ''),
             subject_template=str(request.form.get('subject_template') or '') or None,
             body_template=str(request.form.get('body_template') or ''),
+            content_format=str(request.form.get('content_format') or 'plain_text'),
             actor_user_id=_actor_user_id(),
         )
     except (ValueError, SQLAlchemyError) as exc:
@@ -226,6 +292,80 @@ def save_template() -> ResponseReturnValue:
         )
     return _redirect(tab='templates')
 
+
+
+@alert_intelligence_bp.post('/templates/test-render')
+@permission_required('integrations.manage')
+def test_render_template() -> ResponseReturnValue:
+    try:
+        subject, body = test_render_template_command(
+            provider_key=str(request.form.get('provider_key') or ''),
+            event_state=str(request.form.get('event_state') or ''),
+            subject_template=str(request.form.get('subject_template') or '') or None,
+            body_template=str(request.form.get('body_template') or ''),
+            content_format=str(request.form.get('content_format') or 'plain_text'),
+        )
+    except ValueError as exc:
+        queue_transient_feedback(status='error', title='Template render failed', message=str(exc))
+    else:
+        queue_transient_feedback(
+            status='success',
+            title='Template render passed',
+            message=f'Canonical sample rendered successfully: {subject[:120]} · {len(body)} body characters.',
+        )
+    return _redirect(tab='templates')
+
+
+@alert_intelligence_bp.post('/templates/send-test')
+@permission_required('integrations.manage')
+def send_template_test() -> ResponseReturnValue:
+    try:
+        channel_id = _optional_positive_int(request.form.get('test_channel_id'))
+        if channel_id is None:
+            raise ValueError('Select a validated Notification Channel before Send Test.')
+        message = send_template_test_command(
+            channel_id=channel_id,
+            provider_key=str(request.form.get('provider_key') or ''),
+            event_state=str(request.form.get('event_state') or ''),
+            subject_template=str(request.form.get('subject_template') or '') or None,
+            body_template=str(request.form.get('body_template') or ''),
+            content_format=str(request.form.get('content_format') or 'plain_text'),
+            actor_user_id=_actor_user_id(),
+        )
+    except (ValueError, SQLAlchemyError) as exc:
+        queue_transient_feedback(status='error', title='Template test not sent', message=str(exc))
+    else:
+        queue_transient_feedback(
+            status='success',
+            title='Template test delivered',
+            message=message or 'The rendered template was delivered through the selected Notification Channel.',
+        )
+    return _redirect(tab='templates')
+
+
+@alert_intelligence_bp.post('/templates/reset')
+@permission_required('integrations.manage')
+def reset_template() -> ResponseReturnValue:
+    provider_key = str(request.form.get('provider_key') or '')
+    event_state = str(request.form.get('event_state') or '')
+    try:
+        changed = reset_template_override_command(
+            provider_key=provider_key,
+            event_state=event_state,
+            actor_user_id=_actor_user_id(),
+        )
+    except (ValueError, SQLAlchemyError) as exc:
+        queue_transient_feedback(status='error', title='Template not reset', message=str(exc))
+    else:
+        queue_transient_feedback(
+            status='success',
+            title='System template restored',
+            message=(
+                'The custom override was removed and future delivery will use the KAORI system template.'
+                if changed else 'This provider event already uses the KAORI system template.'
+            ),
+        )
+    return _redirect(tab='templates')
 
 def _case_mutation(
     public_id: str,

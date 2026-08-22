@@ -2,18 +2,19 @@ from __future__ import annotations
 
 from typing import Any
 
-from app.intelligence.alert_intelligence.service import list_active_alert_events
+from app.intelligence.alert_intelligence.lifecycle import active_delivery_silence
 from app.intelligence.knowledge.candidate_review import VIEW_PERMISSION, persist_candidate
 from app.intelligence.knowledge.matching import RunbookMatchError, match_alert_to_runbook
+from app.models.alert_ops import AlertCase
 from app.models.knowledge import KnowledgeRunbookAlertBinding
 
 
 def materialize_active_alert_candidates() -> dict[str, int]:
-    """Materialize non-executable candidates from active Kubernetes alert evidence.
+    """Materialize non-executable Automation candidates from durable KAORI AlertCase records.
 
-    Notification delivery is intentionally not part of this pipeline. Both features
-    may read the same normalized alert source, but Automation Control owns matching
-    and candidate persistence independently.
+    Recommendation is the detection/advice layer. AlertCase is the operational source of
+    truth consumed here, so raw Prometheus/Alertmanager evidence cannot bypass KAORI alert
+    lifecycle, ownership, ACK, silence, routing, or incident evidence boundaries.
     """
     bindings = (
         KnowledgeRunbookAlertBinding.query.filter_by(lifecycle_status='active')
@@ -28,16 +29,28 @@ def materialize_active_alert_candidates() -> dict[str, int]:
         'duplicate': 0,
         'unmatched': 0,
         'invalid': 0,
+        'human_controlled': 0,
     }
     if not bindings:
         return totals
 
-    for event in list_active_alert_events():
+    cases = (
+        AlertCase.query.filter(
+            AlertCase.source_type == 'recommendation',
+            AlertCase.source_state == 'firing',
+            AlertCase.workflow_state != 'closed',
+        )
+        .order_by(AlertCase.first_seen_at.asc(), AlertCase.id.asc())
+        .all()
+    )
+    for case in cases:
         totals['events'] += 1
-        if event.get('domain') != 'kubernetes':
+        if case.domain != 'kubernetes':
             continue
         totals['kubernetes_events'] += 1
-        alert = _candidate_alert(event)
+        alert = _candidate_alert(case)
+        if bool(alert['evidence'].get('human_controlled')):
+            totals['human_controlled'] += 1
         try:
             candidate = match_alert_to_runbook(alert, bindings)
         except RunbookMatchError as exc:
@@ -51,7 +64,7 @@ def materialize_active_alert_candidates() -> dict[str, int]:
         existing_public_id = _candidate_public_id(candidate)
         record = persist_candidate(
             candidate,
-            severity=str(alert.get('severity') or 'info'),
+            severity=case.severity,
             actor_user_id=None,
             actor_permissions={VIEW_PERMISSION},
         )
@@ -62,28 +75,45 @@ def materialize_active_alert_candidates() -> dict[str, int]:
     return totals
 
 
-def _candidate_alert(event: dict[str, Any]) -> dict[str, Any]:
-    source = dict(event.get('alert') or {})
-    labels = dict(source.get('labels') or {})
-    alertname = str(labels.get('alertname') or source.get('name') or '').strip()
+def _candidate_alert(case: AlertCase) -> dict[str, Any]:
+    labels = dict(case.labels_json or {})
+    alertname = str(labels.get('alertname') or case.alert_name or case.rule_key or '').strip()
     if alertname:
         labels.setdefault('alertname', alertname)
-    cluster_id = str(event.get('asset_key') or '').strip()
-    namespace = str(source.get('namespace') or labels.get('namespace') or '').strip()
-    if namespace == '-':
-        namespace = ''
-    fingerprint = str(source.get('fingerprint') or labels.get('fingerprint') or '').strip()
-    evidence = dict(source.get('evidence') or {})
-    evidence.setdefault('cluster_id', cluster_id)
+    labels.setdefault('source_type', 'recommendation')
+    if case.rule_key:
+        labels.setdefault('rule_key', case.rule_key)
+    cluster_id = str(case.asset_key or '').strip()
+    namespace = str(case.namespace or labels.get('namespace') or '').strip()
+    fingerprint = str(case.fingerprint or case.case_key or '').strip()
+    silenced = active_delivery_silence(case) is not None
+    human_controlled = case.workflow_state in {'acknowledged', 'mitigating'} or silenced
+
+    evidence = dict(case.evidence_json or {})
+    evidence.update(
+        {
+            'alert_case_id': case.public_id,
+            'alert_case_source': 'kaori_alert_case',
+            'alert_case_source_state': case.source_state,
+            'alert_case_workflow_state': case.workflow_state,
+            'severity': case.severity,
+            'cluster_id': cluster_id,
+            'alert_fingerprint': fingerprint,
+            'alertname': alertname,
+            'human_controlled': human_controlled,
+            # Future autonomous execution must honor this flag. Manual reviewed execution
+            # remains possible through the existing governed Decision workflow.
+            'autonomous_execution_allowed': not human_controlled,
+        }
+    )
     if namespace:
-        evidence.setdefault('namespace', namespace)
-    if fingerprint:
-        evidence.setdefault('alert_fingerprint', fingerprint)
-    evidence.setdefault('alertname', alertname)
+        evidence['namespace'] = namespace
 
     return {
-        **source,
+        'name': case.alert_name,
         'alertname': alertname,
+        'rule_key': case.rule_key,
+        'severity': case.severity,
         'cluster_id': cluster_id,
         'namespace': namespace or None,
         'fingerprint': fingerprint or None,

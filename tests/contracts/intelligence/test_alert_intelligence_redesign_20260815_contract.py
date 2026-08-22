@@ -21,8 +21,9 @@ def test_alert_intelligence_is_alert_operations_workspace() -> None:
     assert page.count('page_hero.meta_label(') == 3
     assert '_alert_intelligence_summary.html' in page
     assert '_alert_intelligence_workspace.html' in page
-    assert "_VALID_TABS = {'overview', 'active', 'routing', 'templates', 'silences', 'history'}" in service
-    for label in ('Overview', 'Active Alerts', 'Routing & Channels', 'Templates', 'Silences', 'History'):
+    assert "'resolved'" in service
+    assert "if tab == 'history':" in service
+    for label in ('Overview', 'Active Alerts', 'Routing & Channels', 'Templates', 'Silences', 'Resolved'):
         assert label in workspace
     for label in ('Active Alerts', 'Acknowledged', 'Silenced', 'Resolved Today'):
         assert label in summary
@@ -78,7 +79,7 @@ def test_alert_operations_sections_own_distinct_operator_responsibilities() -> N
     assert 'Save Override' in templates
     assert 'Active Delivery Silences' in silences
     assert 'table_registry.footer' in silences
-    for required in ('Resolved & Historical Alerts', 'Resolution Evidence', 'Postmortem'):
+    for required in ('Resolved Alerts', 'Resolution Evidence', 'Postmortem', 'Verification Pending'):
         assert required in history
     assert 'table_registry.filter_form' in history
     assert 'table_registry.footer' in history
@@ -104,6 +105,7 @@ def test_alert_intelligence_web_paths_stay_database_and_snapshot_only() -> None:
     for forbidden in ('load_alerts_by_source', 'load_alert_stream'):
         assert forbidden not in service
         assert forbidden not in routes
-    assert 'load_snapshot_rows' in service
-    assert 'reconcile_alert_cases' in worker
+    assert "AlertCase.source_type == 'recommendation'" in service
+    assert 'reconcile_alert_cases' not in worker
+    assert 'reconcile_recommendation_alert_cases' in worker
     assert 'dispatch_case_notifications' in worker

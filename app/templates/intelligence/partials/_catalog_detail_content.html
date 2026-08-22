@@ -74,6 +74,86 @@
             </section>
         </div>
         <section class="border-t border-outline-subtle p-4 sm:p-5">
+            {{ intelligence_ui.subsection('Alert Escalation', 'Control whether active recommendation findings remain advisory or enter the governed Alert Intelligence lifecycle.', 'siren') }}
+            <div class="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(22rem,0.65fr)]">
+                <div class="rounded-lg border border-outline-subtle bg-surface-hover p-4">
+                    <div class="flex flex-wrap items-center gap-2">
+                        {{ table_label.status_label('Eligible' if item.alert_escalation.eligible else 'Recommendation Only', 'info' if item.alert_escalation.eligible else 'unknown', size='compact') }}
+                        {{ table_label.metadata_label(item.alert_escalation.mode|title, 'route') }}
+                        {{ table_label.metadata_label(item.alert_escalation.source|title ~ ' Policy', 'database') }}
+                    </div>
+                    <dl class="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                        {{ intelligence_ui.field('Stability Window', item.alert_escalation.stability_window_minutes ~ ' minutes') }}
+                        {{ intelligence_ui.field('Minimum Observations', item.alert_escalation.minimum_occurrences) }}
+                        {{ intelligence_ui.field('Alert Severity Floor', item.alert_escalation.minimum_severity|title) }}
+                        {{ intelligence_ui.field('Grouping', item.alert_escalation.grouping_mode|replace('_', ' ')|title) }}
+                    </dl>
+                    <p class="mt-4 text-xs leading-5 text-content-muted">Info findings remain recommendation-only below the rule-owned Alert Severity Floor. Manual mode permits authorized promotion only after that floor is met; Automatic mode also requires the stability window and observation count.</p>
+                </div>
+                {% if current_user.has_permission('intelligence.decisions.create') %}
+                    <form method="post"
+                          action="{{ url_for('alert_intelligence.save_recommendation_alert_policy', rule_key=item.rule_key) }}"
+                          class="rounded-lg border border-outline-subtle bg-surface-card p-4">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <label class="flex items-start gap-3">
+                            <input type="checkbox"
+                                   name="eligible"
+                                   value="1"
+                                   {% if item.alert_escalation.eligible %}checked{% endif %}
+                                   class="mt-1">
+                            <span>
+                                <span class="block text-sm font-semibold text-content-primary">Eligible for Alert Intelligence</span>
+                                <span class="mt-0.5 block text-xs leading-5 text-content-muted">Keep disabled for advisory or governance-only recommendations.</span>
+                            </span>
+                        </label>
+                        <div class="mt-4 grid gap-3 sm:grid-cols-2">
+                            <label>
+                                <span class="text-xs font-semibold text-content-secondary">Escalation Mode</span>
+                                <select name="mode"
+                                        class="mt-1 h-10 w-full rounded-md border border-outline-default bg-surface-card px-3 text-sm">
+                                    <option value="manual" {% if item.alert_escalation.mode == 'manual' %}selected{% endif %}>Manual</option>
+                                    <option value="automatic" {% if item.alert_escalation.mode == 'automatic' %}selected{% endif %}>Automatic</option>
+                                </select>
+                            </label>
+                            <label>
+                                <span class="text-xs font-semibold text-content-secondary">Grouping</span>
+                                <select name="grouping_mode"
+                                        class="mt-1 h-10 w-full rounded-md border border-outline-default bg-surface-card px-3 text-sm">
+                                    <option value="finding" {% if item.alert_escalation.grouping_mode == 'finding' %}selected{% endif %}>Finding</option>
+                                    <option value="rule_asset_scope" {% if item.alert_escalation.grouping_mode == 'rule_asset_scope' %}selected{% endif %}>Rule + Asset + Scope</option>
+                                    <option value="rule_asset" {% if item.alert_escalation.grouping_mode == 'rule_asset' %}selected{% endif %}>Rule + Asset</option>
+                                </select>
+                            </label>
+                            <label>
+                                <span class="text-xs font-semibold text-content-secondary">Stability Window</span>
+                                <input type="number"
+                                       name="stability_window_minutes"
+                                       min="0"
+                                       max="1440"
+                                       value="{{ item.alert_escalation.stability_window_minutes }}"
+                                       class="mt-1 h-10 w-full rounded-md border border-outline-default bg-surface-card px-3 text-sm">
+                            </label>
+                            <label>
+                                <span class="text-xs font-semibold text-content-secondary">Minimum Observations</span>
+                                <input type="number"
+                                       name="minimum_occurrences"
+                                       min="1"
+                                       max="100"
+                                       value="{{ item.alert_escalation.minimum_occurrences }}"
+                                       class="mt-1 h-10 w-full rounded-md border border-outline-default bg-surface-card px-3 text-sm">
+                            </label>
+                        </div>
+                        <button type="submit"
+                                class="mt-4 inline-flex min-h-9 items-center gap-2 rounded-lg bg-kaori-primary px-3 text-xs font-semibold text-white hover:bg-kaori-primary-hover">
+                            <i data-lucide="save" class="h-3.5 w-3.5"></i>Save Alert Escalation
+                        </button>
+                    </form>
+                {% else %}
+                    <div class="rounded-lg border border-outline-subtle bg-surface-card p-4 text-sm leading-6 text-content-muted">Alert escalation policy changes require Intelligence decision permission.</div>
+                {% endif %}
+            </div>
+        </section>
+        <section class="border-t border-outline-subtle p-4 sm:p-5">
             {{ intelligence_ui.subsection('Coverage Contract', 'Evidence dependencies, current provider coverage, and KAORI surfaces where this definition is visible.', 'network') }}
             <div class="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(16rem,0.8fr)]">
                 <div class="rounded-lg border border-outline-subtle bg-surface-hover p-4">

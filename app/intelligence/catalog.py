@@ -49,8 +49,63 @@ def _load_catalog() -> list[dict[str, object]]:
             rule['visible_in'] = list(string_tuple(raw.get('visible_in'), f'{path}.visible_in'))
         if 'provider_keys' in raw:
             rule['provider_keys'] = list(string_tuple(raw.get('provider_keys'), f'{path}.provider_keys'))
+        if 'severity_bands' in raw:
+            bands = require_list(raw.get('severity_bands'), f'{path}.severity_bands')
+            normalized_bands: list[dict[str, object]] = []
+            for band_index, item in enumerate(bands):
+                band_path = f'{path}.severity_bands[{band_index}]'
+                band = require_mapping(item, band_path)
+                band_severity = require_str(band, 'severity', band_path)
+                if band_severity not in _ALLOWED_SEVERITIES:
+                    raise DefinitionError(f'{band_path}.severity is unsupported: {band_severity!r}.')
+                if band.get('min_value') is None and band.get('max_value') is None:
+                    raise DefinitionError(f'{band_path} requires min_value or max_value.')
+                for bound in ('min_value', 'max_value'):
+                    if band.get(bound) is not None and not isinstance(band.get(bound), (int, float)):
+                        raise DefinitionError(f'{band_path}.{bound} must be numeric.')
+                if (
+                    band.get('min_value') is not None
+                    and band.get('max_value') is not None
+                    and float(band['min_value']) > float(band['max_value'])
+                ):
+                    raise DefinitionError(f'{band_path}.min_value cannot exceed max_value.')
+                normalized_bands.append(dict(band))
+            rule['severity_bands'] = normalized_bands
         rules.append(rule)
     return rules
+
+
+def severity_for_observed_value(rule: dict[str, object], observed_value: float | int | None) -> str:
+    """Resolve a rule-owned severity band for one observed numeric signal."""
+    bands = rule.get('severity_bands')
+    if observed_value is None or not isinstance(bands, list):
+        return str(rule.get('severity') or 'info')
+    value = float(observed_value)
+    for raw in bands:
+        if not isinstance(raw, dict):
+            continue
+        minimum = raw.get('min_value')
+        maximum = raw.get('max_value')
+        if minimum is not None and value < float(minimum):
+            continue
+        if maximum is not None and value > float(maximum):
+            continue
+        severity = str(raw.get('severity') or '').strip().lower()
+        if severity in _ALLOWED_SEVERITIES:
+            return severity
+    return str(rule.get('severity') or 'info')
+
+
+def minimum_severity_band_value(rule: dict[str, object], *, default: int) -> int:
+    """Return the lowest configured numeric threshold that produces a finding."""
+    bands = rule.get('severity_bands')
+    if not isinstance(bands, list):
+        return default
+    values: list[float] = []
+    for raw in bands:
+        if isinstance(raw, dict) and raw.get('min_value') is not None:
+            values.append(float(raw['min_value']))
+    return int(min(values)) if values else default
 
 
 INTELLIGENCE_CATALOG: list[dict[str, object]] = _load_catalog()

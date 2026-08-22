@@ -90,6 +90,19 @@
                 </select>
             </label>
         {% endif %}
+        {% if filter_include_alert_handling|default(false) %}
+            <label class="block">
+                <span class="{{ table_ui.filter_label_classes() }}">Alert Handling</span>
+                <select name="alert_handling"
+                        autocomplete="off"
+                        class="{{ table_ui.filter_select_classes() }}">
+                    {% for option in payload.filter_options.alert_handling %}
+                        <option value="{{ option.value }}"
+                                {% if payload.filters.alert_handling == option.value %}selected{% endif %}>{{ option.label }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+        {% endif %}
         <label class="block">
             <span class="{{ table_ui.filter_label_classes() }}">Category</span>
             <select name="category"

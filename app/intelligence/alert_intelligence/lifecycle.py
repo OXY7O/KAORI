@@ -43,16 +43,25 @@ def reconcile_alert_cases() -> dict[str, int]:
 
 def acknowledge_case(case: AlertCase, *, actor_user_id: int | None) -> None:
     _require_open(case)
+    from app.intelligence.alert_intelligence.routing import acknowledgement_timeout_for_case
+
     now = datetime.now(UTC)
-    if case.acknowledged_at is None:
-        case.acknowledged_at = now
+    timeout_minutes = acknowledgement_timeout_for_case(case)
+    case.acknowledged_at = now
+    case.acknowledgement_expires_at = now + timedelta(minutes=timeout_minutes)
     case.acknowledged_by_user_id = actor_user_id
     if case.owner_user_id is None:
         case.owner_user_id = actor_user_id
     if case.workflow_state == 'open':
         case.workflow_state = 'acknowledged'
-    _event(case, 'acknowledged', actor_user_id, 'Alert case acknowledged by an operator.')
-    _audit(case, actor_user_id, 'alert_case_acknowledged', 'Alert case acknowledged.')
+    _event(
+        case,
+        'acknowledged',
+        actor_user_id,
+        f'Alert case acknowledged for {timeout_minutes} minutes before reminder delivery resumes.',
+        {'acknowledgement_timeout_minutes': timeout_minutes},
+    )
+    _audit(case, actor_user_id, 'alert_case_acknowledged', 'Alert case acknowledged with a bounded reminder window.')
 
 
 def assign_case(case: AlertCase, *, owner_user_id: int | None, actor_user_id: int | None) -> None:
@@ -157,7 +166,7 @@ def close_case(
         case,
         'closed',
         actor_user_id,
-        'Alert case closed after operator verification.',
+        'Alert case closed after verified resolution evidence was committed.',
         {
             'change_reference': case.change_reference,
             'ticket_reference': case.ticket_reference,
@@ -166,6 +175,67 @@ def close_case(
     )
     _audit(case, actor_user_id, 'alert_case_closed', 'Alert case closed with resolution evidence.')
 
+
+
+def close_case_from_automation_verification(
+    *,
+    case_public_id: str,
+    execution_public_id: str,
+    action_key: str,
+    verification_summary: str,
+    verification_evidence: Mapping[str, Any],
+    actor_user_id: int | None,
+) -> bool:
+    """Commit verified Automation Control remediation into the same durable AlertCase.
+
+    Automation does not own a parallel incident lifecycle. Successful resolver verification
+    resolves and closes the originating KAORI AlertCase with deterministic evidence.
+    """
+    case = AlertCase.query.filter_by(public_id=case_public_id, source_type='recommendation').first()
+    if case is None or case.workflow_state == 'closed':
+        return False
+    now = datetime.now(UTC)
+    case.source_state = 'resolved'
+    case.source_resolved_at = case.source_resolved_at or now
+    case.workflow_state = 'closed'
+    case.closed_at = now
+    case.closed_by_user_id = actor_user_id
+    case.resolution_summary = str(verification_summary or 'Automation Control remediation verified.').strip()
+    case.remediation_steps_json = [f'Automation Control executed resolver action {action_key}.']
+    evidence = dict(verification_evidence or {})
+    case.verification_evidence = str(
+        evidence.get('summary')
+        or evidence.get('observed')
+        or verification_summary
+        or 'Resolver post-action verification succeeded.'
+    )
+    case.change_reference = f'AUTOMATION:{execution_public_id}'
+    case.postmortem_required = _requires_postmortem(case)
+    case.postmortem_status = 'required' if case.postmortem_required else 'not_required'
+    case.evidence_json = {
+        **dict(case.evidence_json or {}),
+        'automation_resolution': {
+            'execution_id': execution_public_id,
+            'action_key': action_key,
+            'verification_summary': verification_summary,
+            'verification_evidence': evidence,
+            'verified_at': now.isoformat(),
+        },
+    }
+    _event(
+        case,
+        'automation_verified_resolution',
+        actor_user_id,
+        'Automation Control remediation was verified and committed as the case resolution.',
+        {'execution_id': execution_public_id, 'action_key': action_key},
+    )
+    _audit(
+        case,
+        actor_user_id,
+        'alert_case_automation_closed',
+        'Alert case closed from verified Automation Control remediation.',
+    )
+    return True
 
 def save_postmortem(
     case: AlertCase,
@@ -203,6 +273,59 @@ def active_delivery_silence(case: AlertCase, *, now: datetime | None = None) -> 
         .order_by(AlertSilence.ends_at.desc())
         .first()
     )
+
+
+def acknowledgement_suppresses_delivery(case: AlertCase, *, now: datetime | None = None) -> bool:
+    current = now or datetime.now(UTC)
+    expires_at = case.acknowledgement_expires_at
+    if case.acknowledged_at is None or expires_at is None:
+        return False
+    return _as_utc(expires_at) > current
+
+
+def expire_acknowledgements_and_notify() -> int:
+    """Record overdue ACK ownership while leaving the case acknowledged and firing."""
+    now = datetime.now(UTC)
+    rows = AlertCase.query.filter(
+        AlertCase.source_type == 'recommendation',
+        AlertCase.source_state == 'firing',
+        AlertCase.workflow_state.in_(('acknowledged', 'mitigating')),
+        AlertCase.acknowledgement_expires_at.is_not(None),
+        AlertCase.acknowledgement_expires_at <= now,
+    ).all()
+    count = 0
+    for case in rows:
+        expires_at = _as_utc(case.acknowledgement_expires_at)
+        already = (
+            AlertCaseEvent.query.filter_by(case_id=case.id, event_type='acknowledgement_overdue')
+            .filter(AlertCaseEvent.created_at >= expires_at)
+            .first()
+        )
+        if already is not None:
+            continue
+        _event(
+            case,
+            'acknowledgement_overdue',
+            None,
+            'Acknowledgement reminder window expired while the alert is still firing.',
+            {'acknowledgement_expires_at': expires_at.isoformat()},
+        )
+        recipient = case.owner_user_id or case.acknowledged_by_user_id
+        create_notification(
+            user_id=recipient,
+            event_type='alert_case_acknowledgement_overdue',
+            status='warning',
+            title='Acknowledged Alert Still Firing',
+            message=f'{case.alert_name} remains active after its acknowledgement reminder window.',
+            detail='KAORI channel delivery is eligible again until the condition resolves, is re-acknowledged, or is silenced.',
+            action_url=f'/intelligence/alert-intelligence?tab=active&case={case.public_id}',
+            metadata={'case_id': case.public_id, 'domain': case.domain, 'asset_key': case.asset_key},
+            deck_visible=True,
+        )
+        count += 1
+    if count:
+        db.session.commit()
+    return count
 
 
 def expire_silences_and_notify() -> int:
@@ -246,6 +369,53 @@ def expire_silences_and_notify() -> int:
     return count
 
 
+
+def mark_case_source_resolved(
+    case: AlertCase,
+    *,
+    source_summary: str,
+    now: datetime | None = None,
+    auto_resolution_summary: str | None = None,
+    auto_remediation_step: str | None = None,
+    auto_verification_evidence: str | None = None,
+) -> str:
+    """Move one firing source to resolved without conflating source recovery and operator closure."""
+
+    current = now or datetime.now(UTC)
+    if case.source_state == 'resolved':
+        return case.workflow_state
+    case.source_state = 'resolved'
+    case.source_resolved_at = current
+    _event(case, 'source_resolved', None, source_summary)
+    if case.severity in _OPERATOR_VERIFICATION_SEVERITIES or case.acknowledged_at is not None:
+        case.workflow_state = 'verification_pending'
+        case.verification_started_at = current
+        recipient = case.owner_user_id or case.acknowledged_by_user_id
+        create_notification(
+            user_id=recipient,
+            event_type='alert_case_verification_required',
+            status='warning',
+            title='Resolution Verification Required',
+            message=f'{case.alert_name} is source-resolved and requires operator closure evidence.',
+            action_url=f'/intelligence/alert-intelligence?tab=resolved&case={case.public_id}',
+            metadata={'case_id': case.public_id, 'domain': case.domain, 'asset_key': case.asset_key},
+            deck_visible=True,
+        )
+        return case.workflow_state
+    case.workflow_state = 'closed'
+    case.closed_at = current
+    case.resolution_summary = auto_resolution_summary or 'The source alert recovered without a recorded manual remediation.'
+    case.remediation_steps_json = [
+        auto_remediation_step or 'Observed source recovery in the committed worker snapshot.'
+    ]
+    case.verification_evidence = (
+        auto_verification_evidence or 'Alert absent from the next fresh committed source snapshot.'
+    )
+    case.postmortem_required = False
+    case.postmortem_status = 'not_required'
+    _event(case, 'auto_closed', None, 'Case auto-closed by the source-resolved policy for non-paging severity.')
+    return case.workflow_state
+
 def get_case(public_id: str) -> AlertCase | None:
     return AlertCase.query.filter_by(public_id=str(public_id)).first()
 
@@ -279,6 +449,9 @@ def _reconcile_asset(
             case = AlertCase()
             case.case_key = case_key
             case.fingerprint = _optional_text(raw.get('fingerprint'))
+            case.source_type = 'provider_alert'
+            case.source_ref = _optional_text(raw.get('fingerprint') or case_key)
+            case.rule_key = _optional_text(raw.get('name'))
             case.domain = domain
             case.asset_type = asset_type
             case.asset_key = asset_key
@@ -303,39 +476,20 @@ def _reconcile_asset(
     open_cases = AlertCase.query.filter(
         AlertCase.domain == domain,
         AlertCase.asset_key == asset_key,
+        AlertCase.source_type == 'provider_alert',
         AlertCase.workflow_state != 'closed',
         AlertCase.source_state == 'firing',
     ).all()
     for case in open_cases:
         if case.case_key in seen:
             continue
-        case.source_state = 'resolved'
-        case.source_resolved_at = now
-        _event(case, 'source_resolved', None, 'The alert is no longer firing in the latest committed source snapshot.')
+        workflow_state = mark_case_source_resolved(
+            case,
+            now=now,
+            source_summary='The alert is no longer firing in the latest committed source snapshot.',
+        )
         stats['resolved'] += 1
-        if case.severity in _OPERATOR_VERIFICATION_SEVERITIES or case.acknowledged_at is not None:
-            case.workflow_state = 'verification_pending'
-            case.verification_started_at = now
-            recipient = case.owner_user_id or case.acknowledged_by_user_id
-            create_notification(
-                user_id=recipient,
-                event_type='alert_case_verification_required',
-                status='warning',
-                title='Resolution Verification Required',
-                message=f'{case.alert_name} is source-resolved and requires operator closure evidence.',
-                action_url=f'/intelligence/alert-intelligence?tab=active&case={case.public_id}',
-                metadata={'case_id': case.public_id, 'domain': case.domain, 'asset_key': case.asset_key},
-                deck_visible=True,
-            )
-        else:
-            case.workflow_state = 'closed'
-            case.closed_at = now
-            case.resolution_summary = 'The source alert recovered without a recorded manual remediation.'
-            case.remediation_steps_json = ['Observed source recovery in the committed worker snapshot.']
-            case.verification_evidence = 'Alert absent from the next fresh committed source snapshot.'
-            case.postmortem_required = False
-            case.postmortem_status = 'not_required'
-            _event(case, 'auto_closed', None, 'Case auto-closed by the source-resolved policy for non-paging severity.')
+        if workflow_state == 'closed':
             stats['auto_closed'] += 1
     return stats
 
@@ -347,7 +501,11 @@ def _update_case_from_row(case: AlertCase, row: Mapping[str, Any], *, now: datet
     case.target = _optional_text(row.get('target'))
     case.namespace = _optional_text(row.get('namespace'))
     case.receiver = _optional_text(row.get('receiver'))
-    case.labels_json = dict(row.get('labels')) if isinstance(row.get('labels'), Mapping) else {}
+    labels = dict(row.get('labels')) if isinstance(row.get('labels'), Mapping) else {}
+    labels.setdefault('source_type', 'provider_alert')
+    if case.rule_key:
+        labels.setdefault('rule_key', case.rule_key)
+    case.labels_json = labels
     case.evidence_json = {
         'summary': case.summary,
         'target': case.target,
@@ -438,6 +596,10 @@ def _severity(value: Any) -> str:
 def _optional_text(value: Any) -> str | None:
     normalized = str(value or '').strip()
     return normalized or None
+
+
+def _as_utc(value: datetime) -> datetime:
+    return value if value.tzinfo is not None else value.replace(tzinfo=UTC)
 
 
 def _coerce_datetime(value: Any) -> datetime | None:

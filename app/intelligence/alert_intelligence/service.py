@@ -10,7 +10,6 @@ from app.integrations.delivery.notification_channels.service import notification
 from app.intelligence.alert_intelligence.lifecycle import active_delivery_silence, get_case
 from app.intelligence.alert_intelligence.notifications import case_delivery_rows
 from app.intelligence.alert_intelligence.routing import notification_channel_options, routing_policy_rows
-from app.intelligence.alert_intelligence.snapshots import load_snapshot_rows
 from app.intelligence.alert_intelligence.templates import built_in_templates
 from app.models.alert_ops import AlertCase, AlertCaseEvent, AlertSilence
 from app.models.cluster import Cluster
@@ -19,9 +18,10 @@ from app.models.object_storage import ObjectStorageSystem
 from app.models.user import User
 
 _VALID_DOMAINS = {'kubernetes', 'object_storage'}
-_VALID_TABS = {'overview', 'active', 'routing', 'templates', 'silences', 'history'}
+_VALID_TABS = {'overview', 'active', 'routing', 'templates', 'silences', 'resolved', 'history'}
 _VALID_SEVERITIES = {'all', 'critical', 'warning', 'info', 'unknown'}
 _VALID_WORKFLOW_STATES = {'all', 'open', 'acknowledged', 'mitigating', 'verification_pending'}
+_VALID_SOURCE_TYPES = {'all', 'recommendation'}
 _DOMAIN_LABELS = {'kubernetes': 'Kubernetes', 'object_storage': 'Object Storage'}
 
 
@@ -36,15 +36,22 @@ def get_alert_intelligence_payload(args: MultiDict[str, str]) -> dict[str, Any]:
         'All Managed Assets',
     )
     tab = _choice(args.get('tab'), _VALID_TABS, 'overview')
+    if tab == 'history':
+        tab = 'resolved'  # Backward-compatible URL alias; UI semantics are source-resolution based.
     severity = _choice(args.get('severity'), _VALID_SEVERITIES, 'all')
     workflow = _choice(args.get('workflow'), _VALID_WORKFLOW_STATES, 'all')
+    source_type = _choice(args.get('source'), _VALID_SOURCE_TYPES, 'all')
     search = str(args.get('q') or '').strip()
 
     scoped_cases = _case_rows(domain=domain, asset_key=selected_asset_key)
-    active_cases = [row for row in scoped_cases if row.workflow_state != 'closed']
-    history_cases = [row for row in scoped_cases if row.workflow_state == 'closed']
-    filtered_active = _filter_cases(active_cases, severity=severity, workflow=workflow, search=search)
-    filtered_history = _filter_cases(history_cases, severity=severity, workflow='all', search=search)
+    active_cases = [row for row in scoped_cases if row.source_state == 'firing' and row.workflow_state != 'closed']
+    history_cases = [row for row in scoped_cases if row.source_state == 'resolved']
+    filtered_active = _filter_cases(
+        active_cases, severity=severity, workflow=workflow, source_type=source_type, search=search
+    )
+    filtered_history = _filter_cases(
+        history_cases, severity=severity, workflow='all', source_type=source_type, search=search
+    )
     active_page, active_pagination = paginate_sequence(
         [_serialize_case(row) for row in filtered_active],
         page=args.get('page', 1),
@@ -92,16 +99,16 @@ def get_alert_intelligence_payload(args: MultiDict[str, str]) -> dict[str, Any]:
             'critical': sum(case.severity == 'critical' for case in active_cases),
             'acknowledged': sum(case.workflow_state == 'acknowledged' for case in active_cases),
             'silenced': len(active_silences),
-            'verification_pending': sum(case.workflow_state == 'verification_pending' for case in active_cases),
+            'verification_pending': sum(case.workflow_state == 'verification_pending' for case in history_cases),
             'resolved_today': sum(
-                bool(case.closed_at and _as_utc(case.closed_at) >= now - timedelta(days=1)) for case in history_cases
+                bool(case.source_resolved_at and _as_utc(case.source_resolved_at) >= now - timedelta(days=1)) for case in history_cases
             ),
             'delivery_failures': _delivery_failure_count(domain=domain, asset_key=selected_asset_key),
             'postmortem_required': sum(case.postmortem_status in {'required', 'draft'} for case in history_cases),
             'routing_policies': len(routing),
             'channels': channel_summary.get('eligible', 0),
         },
-        'filters': {'severity': severity, 'workflow': workflow, 'q': search},
+        'filters': {'severity': severity, 'workflow': workflow, 'source': source_type, 'q': search},
         'active_cases': active_page,
         'active_pagination': active_pagination,
         'history_cases': history_page,
@@ -117,9 +124,9 @@ def get_alert_intelligence_payload(args: MultiDict[str, str]) -> dict[str, Any]:
         'silence_pagination': silence_pagination,
         'owner_options': _owner_options(),
         'ownership': {
-            'source': 'Prometheus/Alertmanager owns rule evaluation and raw alert state.',
-            'collection': 'Background workers collect provider evidence into committed KAORI snapshots.',
-            'operations': 'KAORI owns acknowledgement, assignment, delivery silences, notification policy, verification, history, and incident evidence.',
+            'source': 'KAORI Rule Catalog owns condition evaluation and severity policy for Alert Management.',
+            'collection': 'Recommendation evaluation promotes governed findings into durable KAORI Alert Cases.',
+            'operations': 'Alert Intelligence owns acknowledgement, assignment, delivery silences, routing, verification, resolved history, and incident evidence.',
             'channels': 'Integrations → Notification Channels owns provider credentials and destination configuration.',
             'archive': 'Platform Operations → Data Lifecycle owns Local/S3 archive storage and verification.',
         },
@@ -127,52 +134,60 @@ def get_alert_intelligence_payload(args: MultiDict[str, str]) -> dict[str, Any]:
 
 
 def list_active_alert_events() -> list[dict[str, Any]]:
-    """Return fresh committed alert evidence eligible for Automation Control materialization."""
+    """Compatibility projection of active KAORI AlertCase records.
 
-    events: list[dict[str, Any]] = []
-    assets: tuple[tuple[str, list[Any]], ...] = (
-        ('kubernetes', list(Cluster.query.order_by(Cluster.id.asc()).all())),
-        ('object_storage', list(ObjectStorageSystem.query.order_by(ObjectStorageSystem.id.asc()).all())),
-    )
-    for domain, rows in assets:
-        for asset in rows:
-            alert_rows, status, snapshot = load_snapshot_rows(
-                domain=domain,
-                asset_key=str(asset.id),
-                source='auto',
-            )
-            if not snapshot.get('available') or snapshot.get('serving_last_good'):
-                continue
-            if not status.get('connected'):
-                continue
-            for alert in alert_rows:
-                state = str(alert.get('status') or alert.get('state') or 'active').lower()
-                if state not in {'firing', 'pending', 'active'}:
-                    continue
-                events.append(
-                    {
-                        'domain': domain,
-                        'asset_key': str(asset.id),
-                        'asset_name': str(asset.name),
-                        'alert': dict(alert),
-                    }
-                )
-    return events
+    New Automation Control code queries AlertCase directly. This projection intentionally
+    excludes raw provider snapshots so no consumer can accidentally bypass KAORI lifecycle.
+    """
+    rows = AlertCase.query.filter(
+        AlertCase.source_type == 'recommendation',
+        AlertCase.source_state == 'firing',
+        AlertCase.workflow_state != 'closed',
+    ).order_by(AlertCase.first_seen_at.asc(), AlertCase.id.asc()).all()
+    return [
+        {
+            'domain': case.domain,
+            'asset_key': case.asset_key,
+            'asset_name': case.asset_name,
+            'alert': {
+                'name': case.alert_name,
+                'severity': case.severity,
+                'namespace': case.namespace,
+                'fingerprint': case.fingerprint or case.case_key,
+                'labels': dict(case.labels_json or {}),
+                'evidence': {**dict(case.evidence_json or {}), 'alert_case_id': case.public_id},
+                'rule_key': case.rule_key,
+            },
+        }
+        for case in rows
+    ]
 
 
 def _case_rows(*, domain: str, asset_key: str) -> list[AlertCase]:
-    query = AlertCase.query.filter(AlertCase.domain == domain)
+    query = AlertCase.query.filter(
+        AlertCase.domain == domain,
+        AlertCase.source_type == 'recommendation',
+    )
     if asset_key != 'all':
         query = query.filter(AlertCase.asset_key == asset_key)
     return query.order_by(AlertCase.first_seen_at.desc(), AlertCase.id.desc()).all()
 
 
-def _filter_cases(cases: list[AlertCase], *, severity: str, workflow: str, search: str) -> list[AlertCase]:
+def _filter_cases(
+    cases: list[AlertCase],
+    *,
+    severity: str,
+    workflow: str,
+    source_type: str,
+    search: str,
+) -> list[AlertCase]:
     rows = cases
     if severity != 'all':
         rows = [case for case in rows if case.severity == severity]
     if workflow != 'all':
         rows = [case for case in rows if case.workflow_state == workflow]
+    if source_type != 'all':
+        rows = [case for case in rows if case.source_type == source_type]
     if search:
         needle = search.casefold()
         rows = [
@@ -180,7 +195,15 @@ def _filter_cases(cases: list[AlertCase], *, severity: str, workflow: str, searc
             for case in rows
             if needle
             in ' '.join(
-                [case.public_id, case.alert_name, case.asset_name, case.namespace or '', case.summary or '']
+                [
+                    case.public_id,
+                    case.alert_name,
+                    case.asset_name,
+                    case.namespace or '',
+                    case.summary or '',
+                    case.source_ref or '',
+                    case.rule_key or '',
+                ]
             ).casefold()
         ]
     return rows
@@ -198,6 +221,10 @@ def _serialize_case(case: AlertCase) -> dict[str, Any]:
         'severity': case.severity,
         'severity_label': case.severity.title(),
         'severity_tone': _severity_tone(case.severity),
+        'source_type': case.source_type,
+        'source_type_label': 'KAORI Recommendation',
+        'source_ref': case.source_ref or '',
+        'rule_key': case.rule_key or '',
         'source_state': case.source_state,
         'source_state_label': case.source_state.replace('_', ' ').title(),
         'workflow_state': case.workflow_state,
@@ -211,6 +238,16 @@ def _serialize_case(case: AlertCase) -> dict[str, Any]:
         'summary': case.summary or '-',
         'owner': str(getattr(owner, 'username', None) or getattr(owner, 'email', None) or 'Unassigned'),
         'first_seen_at': case.first_seen_at,
+        'acknowledged_at': case.acknowledged_at,
+        'acknowledgement_expires_at': case.acknowledgement_expires_at,
+        'ack_overdue': bool(
+            case.acknowledged_at
+            and case.acknowledgement_expires_at
+            and case.source_state == 'firing'
+            and _as_utc(case.acknowledgement_expires_at) <= datetime.now(UTC)
+        ),
+        'previous_severity': case.previous_severity or '',
+        'severity_changed_at': case.severity_changed_at,
         'source_resolved_at': case.source_resolved_at,
         'closed_at': case.closed_at,
         'duration': _duration_label(duration_seconds),
@@ -259,18 +296,16 @@ def _serialize_case_detail(case: AlertCase) -> dict[str, Any]:
 
 
 def _snapshot_context(*, domain: str, asset_key: str) -> dict[str, Any]:
-    if asset_key == 'all':
-        return {
-            'available': True,
-            'label': 'Committed Case Registry',
-            'tone': 'normal',
-            'serving_last_good': False,
-            'generated_at': None,
-            'last_attempt_at': None,
-            'refresh_owner': 'Alert Operations Worker',
-        }
-    _rows, _status, snapshot = load_snapshot_rows(domain=domain, asset_key=asset_key, source='auto')
-    return snapshot
+    del domain, asset_key
+    return {
+        'available': True,
+        'label': 'KAORI Alert Case Registry',
+        'tone': 'normal',
+        'serving_last_good': False,
+        'generated_at': None,
+        'last_attempt_at': None,
+        'refresh_owner': 'Recommendation Alert Worker',
+    }
 
 
 def _active_silence_rows(*, domain: str, asset_key: str) -> list[dict[str, Any]]:

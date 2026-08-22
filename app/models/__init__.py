@@ -4,6 +4,8 @@ from app.models.alert_ops import (
     AlertNotificationTemplate,
     AlertRoutingPolicy,
     AlertSilence,
+    RecommendationAlertPolicy,
+    RecommendationAlertState,
 )
 from app.models.alertmanager import AlertmanagerInstance
 from app.models.analytics import AnalyticsSnapshot
@@ -107,6 +109,8 @@ __all__ = [
     'AlertNotificationTemplate',
     'AlertCaseEvent',
     'AlertCase',
+    'RecommendationAlertPolicy',
+    'RecommendationAlertState',
     'Report',
     'ReportTemplate',
     'ReportSchedule',

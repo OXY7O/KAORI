@@ -4,6 +4,8 @@ import smtplib
 import ssl
 from collections.abc import Mapping
 from email.message import EmailMessage
+from html import escape
+from html.parser import HTMLParser
 from email.utils import getaddresses, make_msgid
 from typing import Any
 
@@ -39,6 +41,8 @@ def send_email_message(
     email['To'] = ', '.join(recipients)
     email['Message-ID'] = make_msgid()
     email.set_content(_render_message(message))
+    if message.content_format == 'html':
+        email.add_alternative(_render_html_message(message), subtype='html')
 
     try:
         if security == 'tls':
@@ -64,11 +68,41 @@ def send_email_message(
 
 
 def _render_message(message: NotificationMessage) -> str:
-    lines = [f'KAORI · {str(message.severity or "info").upper()}', message.title, '', message.body]
+    body = _html_to_text(message.body) if message.content_format == 'html' else message.body
+    lines = [f'KAORI · {str(message.severity or "info").upper()}', message.title, '', body]
     if message.action_url:
         lines.extend(['', f'{message.action_label or "Open KAORI"}: {message.action_url}'])
     return '\n'.join(lines).strip()
 
+
+
+def _render_html_message(message: NotificationMessage) -> str:
+    title = escape(message.title)
+    severity = escape(str(message.severity or 'info').upper())
+    action = ''
+    if message.action_url:
+        action = (
+            f'<p><a href="{escape(message.action_url, quote=True)}">'
+            f'{escape(message.action_label or "Open KAORI")}</a></p>'
+        )
+    return f'<p><strong>KAORI · {severity}</strong></p><h2>{title}</h2>{message.body}{action}'
+
+
+class _TextExtractor(HTMLParser):
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.parts: list[str] = []
+
+    def handle_data(self, data: str) -> None:
+        if data.strip():
+            self.parts.append(data.strip())
+
+
+def _html_to_text(value: str) -> str:
+    parser = _TextExtractor()
+    parser.feed(value)
+    parser.close()
+    return '\n'.join(parser.parts)
 
 _EMAIL_SECURITY_MODES = {'starttls', 'tls', 'none'}
 

@@ -136,6 +136,18 @@ def verify_resolver_execution(
     elif verification.status is VerificationStatus.VERIFIED:
         journal.last_error_code = None
         journal.error_message = None
+        alert_case_id = str((decision.evidence_json or {}).get('alert_case_id') or '').strip()
+        if alert_case_id:
+            from app.intelligence.alert_intelligence.lifecycle import close_case_from_automation_verification
+
+            close_case_from_automation_verification(
+                case_public_id=alert_case_id,
+                execution_public_id=journal.public_id,
+                action_key=decision.action_key,
+                verification_summary=verification.summary,
+                verification_evidence=verification.evidence,
+                actor_user_id=journal.requested_by_user_id,
+            )
     if verification.status is not VerificationStatus.PENDING:
         _audit(
             decision,

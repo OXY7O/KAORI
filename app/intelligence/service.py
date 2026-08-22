@@ -8,7 +8,7 @@ from werkzeug.datastructures import MultiDict
 
 from app.common.inventory_generation import filter_current_generation
 from app.extensions.db import db
-from app.intelligence.catalog import INTELLIGENCE_CATALOG
+from app.intelligence.catalog import INTELLIGENCE_CATALOG, minimum_severity_band_value, severity_for_observed_value
 from app.intelligence.finding_evidence import build_restart_evidence, build_restart_groups
 from app.intelligence.finding_presentation import (
     build_affected_assets,
@@ -21,6 +21,11 @@ from app.intelligence.finding_presentation import (
     recommendation_table_title,
 )
 from app.intelligence.object_storage_recommendations import build_object_storage_recommendation_findings
+from app.intelligence.recommendation_alerting import (
+    decorate_catalog_rules,
+    decorate_recommendation_findings,
+    matches_alert_handling,
+)
 from app.intelligence.rule_presentation import (
     CATEGORY_OPTIONS,
     DOMAIN_OPTIONS,
@@ -51,6 +56,7 @@ def _count_active_filters(filters: dict[str, str], keys: tuple[str, ...] | None 
     return sum(1 for key in selected_keys if _is_active_filter_value(filters.get(key)))
 
 
+
 def _truncate_words(value: str | None, limit: int = 132) -> str:
     text = ' '.join(str(value or '').split())
     if len(text) <= limit:
@@ -69,6 +75,7 @@ def _base_payload(args: MultiDict[str, str], *, page_mode: str) -> dict[str, Any
         'source_kind': clean(args.get('source_kind')),
         'logic_type': clean(args.get('logic_type')),
         'signal_source': clean(args.get('signal_source')),
+        'alert_handling': clean(args.get('alert_handling')),
         'q': clean(args.get('q')),
     }
 
@@ -78,9 +85,13 @@ def _base_payload(args: MultiDict[str, str], *, page_mode: str) -> dict[str, Any
 
     page = max(to_int(args.get('page'), 1), 1)
 
-    catalog = [normalize_rule(rule) for rule in INTELLIGENCE_CATALOG]
-    source_items = catalog if page_mode == 'catalog' else get_active_recommendation_findings()
-    filtered = [rule for rule in source_items if matches(rule, filters)]
+    catalog = decorate_catalog_rules([normalize_rule(rule) for rule in INTELLIGENCE_CATALOG])
+    source_items = catalog if page_mode == 'catalog' else decorate_recommendation_findings(get_active_recommendation_findings())
+    filtered = [
+        rule
+        for rule in source_items
+        if matches(rule, filters) and matches_alert_handling(rule, filters.get('alert_handling'), page_mode=page_mode)
+    ]
     total_items = len(filtered)
     total_pages = max(ceil(total_items / per_page), 1)
     page = min(page, total_pages)
@@ -113,6 +124,7 @@ def _base_payload(args: MultiDict[str, str], *, page_mode: str) -> dict[str, Any
             'source_kind',
             'logic_type',
             'signal_source',
+            'alert_handling',
         )
     )
     active_filter_count = _count_active_filters(filters, visible_filter_keys)
@@ -159,6 +171,14 @@ def _base_payload(args: MultiDict[str, str], *, page_mode: str) -> dict[str, Any
             'source_kinds': SOURCE_KIND_OPTIONS,
             'logic_types': LOGIC_TYPE_OPTIONS,
             'signal_sources': SIGNAL_SOURCE_OPTIONS,
+            'alert_handling': [
+                {'value': '', 'label': 'All Alert Handling'},
+                {'value': 'manual_eligible', 'label': 'Manual Eligible'},
+                {'value': 'automatic_eligible', 'label': 'Auto Eligible'},
+                {'value': 'escalated', 'label': 'Alert Open'},
+                {'value': 'resolved', 'label': 'Resolved Alert'},
+                {'value': 'recommendation_only', 'label': 'Recommendation Only'},
+            ],
             'per_page': PER_PAGE_OPTIONS,
         },
         'items': items,
@@ -341,7 +361,7 @@ def _build_pod_health_findings(rules: dict[str, dict[str, Any]]) -> list[dict[st
     except Exception:
         return []
 
-    restart_threshold = 5
+    restart_threshold = minimum_severity_band_value(restart_rule, default=5) if restart_rule else 5
     try:
         unhealthy_query = db.session.query(
             PodInventory.cluster_id,
@@ -403,9 +423,10 @@ def _build_pod_health_findings(rules: dict[str, dict[str, Any]]) -> list[dict[st
             affected_count = int(evidence['affected_count'])
             max_restarts = int(evidence['max_restart_count'])
             max_pod = str(evidence['max_restart_pod'])
+            finding_severity = severity_for_observed_value(restart_rule, max_restarts)
             findings.append(
                 _clone_rule_as_finding(
-                    restart_rule,
+                    {**restart_rule, 'severity': finding_severity},
                     finding_key=f'kubernetes.pod.high_restart_count:{cluster_id}:{namespace}',
                     title=(
                         f'Pod {max_pod} reports {max_restarts} restarts'
@@ -649,6 +670,7 @@ def get_catalog_rule(rule_key: str) -> dict[str, Any] | None:
     for raw_rule in INTELLIGENCE_CATALOG:
         rule = normalize_rule(dict(raw_rule))
         if clean(str(rule.get('rule_key'))) == resolved_key:
+            decorate_catalog_rules([rule])
             return rule
     return None
 
@@ -669,6 +691,7 @@ def get_recommendation_finding(recommendation_key: str) -> dict[str, Any] | None
         finding['scope_supporting'] = scope_supporting
         finding['list_title'] = recommendation_table_title(finding, limit=96)
         finding['list_summary'] = recommendation_table_summary(finding, limit=72)
+        decorate_recommendation_findings([finding])
         return finding
 
     return None
@@ -742,6 +765,12 @@ def _apply_recommendation_payload(payload: dict[str, Any], findings: list[dict[s
                 'warning': warning,
                 'domains': len(active_domains),
                 'object_storage': sum(1 for item in findings if item.get('domain') == 'object_storage'),
+                'alert_eligible': sum(
+                    1 for item in findings if (item.get('alert_handling') or {}).get('eligible')
+                ),
+                'alert_open': sum(
+                    1 for item in findings if (item.get('alert_handling') or {}).get('status') == 'escalated'
+                ),
             },
             'posture': {
                 'title': 'Recommendation Posture',

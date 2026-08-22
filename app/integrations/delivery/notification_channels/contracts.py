@@ -10,6 +10,7 @@ class NotificationMessage:
     severity: str
     action_url: str | None = None
     action_label: str | None = None
+    content_format: str = 'plain_text'
 
 
 @dataclass(frozen=True, slots=True)

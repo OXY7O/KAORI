@@ -49,8 +49,10 @@ def test_firing_and_resolved_delivery_use_existing_delivery_ledger() -> None:
 def test_resolved_delivery_targets_only_channels_that_received_firing() -> None:
     notifications = read('app/intelligence/alert_intelligence/notifications.py')
 
-    assert '_successful_firing_channel_ids(case)' in notifications
+    assert '_successful_firing_channels(case)' in notifications
     assert "NotificationDelivery.event_type == 'alert_ops.firing'" in notifications
     assert "NotificationDelivery.status == 'sent'" in notifications
-    assert 'policy_allows_resolved(case, channel_id)' in notifications
+    assert "payload.get('route_send_resolved')" in notifications
+    assert 'policy_allows_resolved(case, row.channel_id)' in notifications
+    assert 'if not route_allows_resolved:' in notifications
     assert "case.source_state == 'resolved' and case.workflow_state == 'closed'" in notifications

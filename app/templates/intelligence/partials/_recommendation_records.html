@@ -6,10 +6,11 @@
     <div class="hidden lg:block">
         <table class="w-full table-fixed text-left text-sm text-content-secondary">
             <colgroup>
-                <col class="w-[34%]">
-                <col class="w-[22%]">
-                <col class="w-[22%]">
-                <col class="w-[10%]">
+                <col class="w-[30%]">
+                <col class="w-[19%]">
+                <col class="w-[17%]">
+                <col class="w-[13%]">
+                <col class="w-[9%]">
                 <col class="w-[12%]">
             </colgroup>
             <thead class="{{ table_ui.head_classes() }}">
@@ -17,6 +18,7 @@
                     <th class="{{ table_ui.header_cell_classes() }}">Recommendation</th>
                     <th class="{{ table_ui.header_cell_classes() }}">Affected Scope</th>
                     <th class="{{ table_ui.header_cell_classes() }}">Evidence</th>
+                    <th class="{{ table_ui.header_cell_classes() }}">Alert Handling</th>
                     <th class="{{ table_ui.header_cell_classes() }}">Priority</th>
                     <th class="{{ table_ui.header_cell_classes(true) }}">Details</th>
                 </tr>
@@ -29,8 +31,7 @@
                                 <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
                                       aria-hidden="true"><i data-lucide="sparkles" class="h-4 w-4"></i></span>
                                 <div class="min-w-0">
-                                    <p class="line-clamp-1 break-words text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]"
-                                       title="{{ item.list_title|default(item.title, true) }}">{{ item.list_title|default(item.title, true) }}</p>
+                                    <p class="break-words text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]">{{ item.list_title|default(item.title, true) }}</p>
                                     <p class="mt-1 line-clamp-1 break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]"
                                        title="{{ item.summary }}">{{ item.list_summary|default(item.summary, true) }}</p>
                                     <div class="mt-2 flex flex-wrap gap-1.5">
@@ -51,11 +52,23 @@
                                 <div class="mt-2">{{ table_label.metadata_label(item.evidence.provider_label, 'database') }}</div>
                             {% endif %}
                         </td>
+                        <td class="{{ table_ui.cell_classes() }}">
+                            {{ table_label.status_label(item.alert_handling.label, item.alert_handling.tone, size='compact') }}
+                            <p class="mt-1 text-xs leading-5 text-content-muted">
+                                {% if item.alert_handling.status == 'escalated' %}
+                                    Managed in Alert Intelligence
+                                {% elif item.alert_handling.eligible %}
+                                    {{ item.alert_handling.mode|title }} escalation
+                                {% else %}
+                                    No alert lifecycle
+                                {% endif %}
+                            </p>
+                        </td>
                         <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_label(item.severity_label, item.tone, size='compact') }}</td>
                         <td class="{{ table_ui.cell_classes(true) }}">
                             {{ resource_detail_modal.detail_button(item.rule_key,
                                                         url_for('intelligence.recommendation_details', recommendation_key=item.rule_key) ,
-                            item.list_title|default(item.title, true),
+                            item.title,
                             'Recommendation',
                             label='Review'
                             ) }}
@@ -73,8 +86,7 @@
                         <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
                               aria-hidden="true"><i data-lucide="sparkles" class="h-4 w-4"></i></span>
                         <div class="min-w-0">
-                            <h3 class="line-clamp-2 break-words text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]"
-                                title="{{ item.list_title|default(item.title, true) }}">{{ item.list_title|default(item.title, true) }}</h3>
+                            <h3 class="break-words text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]">{{ item.list_title|default(item.title, true) }}</h3>
                             <p class="mt-1 line-clamp-2 break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]"
                                title="{{ item.summary }}">{{ item.list_summary|default(item.summary, true) }}</p>
                         </div>
@@ -94,8 +106,12 @@
                             {{ item.signal_source_label }}
                         </dd>
                     </div>
+                    <div>
+                        <dt class="text-xs text-content-muted">Alert Handling</dt>
+                        <dd class="mt-1">{{ table_label.status_label(item.alert_handling.label, item.alert_handling.tone, size='compact') }}</dd>
+                    </div>
                 </dl>
-                <div class="mt-3">{{ resource_detail_modal.detail_button(item.rule_key, url_for('intelligence.recommendation_details', recommendation_key=item.rule_key) , item.list_title|default(item.title, true), 'Recommendation', 'w-full', label='Review') }}</div>
+                <div class="mt-3">{{ resource_detail_modal.detail_button(item.rule_key, url_for('intelligence.recommendation_details', recommendation_key=item.rule_key) , item.title, 'Recommendation', 'w-full', label='Review') }}</div>
             </article>
         {% endfor %}
     </div>

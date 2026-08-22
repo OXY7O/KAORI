@@ -47,14 +47,14 @@ def test_alert_intelligence_uses_supported_multi_domain_alert_operations():
     lifecycle = read('app/intelligence/alert_intelligence/lifecycle.py')
     workspace = read('app/templates/intelligence/partials/_alert_intelligence_workspace.html')
 
-    assert 'load_snapshot_rows' in module
+    assert "AlertCase.source_type == 'recommendation'" in module
     assert 'load_alerts_by_source' not in module
     assert 'load_alert_stream' not in module
     assert "'kubernetes'" in module
     assert "'object_storage'" in module
     assert 'AlertCase' in module
-    assert 'reconcile_alert_cases' in lifecycle
-    for label in ('Active Alerts', 'Routing & Channels', 'Templates', 'Silences', 'History'):
+    assert 'reconcile_alert_cases' in lifecycle  # retained as an unscheduled future adapter
+    for label in ('Active Alerts', 'Routing & Channels', 'Templates', 'Silences', 'Resolved'):
         assert label in workspace
 
 
