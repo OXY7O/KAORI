@@ -32,6 +32,12 @@ def test_recommendation_detail_uses_casefile_action_rail_workspace():
     assert '2xl:sticky 2xl:top-4' in template
     assert 'bg-kaori-mist/50' in template
     assert 'after:bg-brand-outline' in template
+    assert 'hidden bg-kaori-primary lg:block' not in template
+    title_index = template.index('{{ review_title }}')
+    status_index = template.index("table_label.status_label(item.severity_label, item.tone, size='compact')")
+    summary_index = template.index('{{ item.summary }}')
+    assert title_index < status_index < summary_index
+    assert 'shrink-0 pt-5">{{ table_label.status_label(item.severity_label' not in template
 
     for phase in ('Review Evidence', 'Validate Live State', 'Apply Remediation', 'Verify & Close'):
         assert phase in template

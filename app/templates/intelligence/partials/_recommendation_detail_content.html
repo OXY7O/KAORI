@@ -105,7 +105,10 @@
                             <span class="text-content-disabled" aria-hidden="true">•</span>
                             <span class="text-content-muted">Committed Evidence</span>
                         </div>
-                        <h3 class="mt-0.5 break-words text-lg font-semibold leading-7 text-content-primary [overflow-wrap:anywhere]">{{ review_title }}</h3>
+                        <div class="mt-0.5 flex flex-wrap items-center gap-2.5">
+                            <h3 class="min-w-0 break-words text-lg font-semibold leading-7 text-content-primary [overflow-wrap:anywhere]">{{ review_title }}</h3>
+                            {{ table_label.status_label(item.severity_label, item.tone, size='compact') }}
+                        </div>
                         <p class="mt-1 max-w-7xl break-words text-sm leading-6 text-content-secondary [overflow-wrap:anywhere]">{{ item.summary }}</p>
                         <div class="mt-2 flex flex-wrap items-center gap-1.5">
                             {{ table_label.metadata_label(item.domain_label, 'boxes') }}
@@ -117,7 +120,6 @@
                         </div>
                     </div>
                 </div>
-                <div class="shrink-0 pt-5">{{ table_label.status_label(item.severity_label, item.tone, size='compact') }}</div>
             </div>
         </header>
         <div data-resource-detail-summary
@@ -140,9 +142,7 @@
         <div class="grid gap-5 bg-surface-elevated/40 p-4 sm:p-5 2xl:grid-cols-12">
             <main class="min-w-0 space-y-5 2xl:col-span-8">
                 <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm">
-                    <div class="grid lg:grid-cols-[4px_minmax(0,1fr)]">
-                        <div class="hidden bg-kaori-primary lg:block" aria-hidden="true"></div>
-                        <div class="min-w-0 p-4 sm:p-5">
+                    <div class="min-w-0 p-4 sm:p-5">
                             <div class="flex flex-wrap items-start justify-between gap-3 border-b border-outline-subtle pb-3">
                                 <div class="min-w-0">
                                     <p class="text-xs font-semibold uppercase leading-5 tracking-wide text-kaori-primary">Case Brief</p>
@@ -156,7 +156,6 @@
                                 {{ narrative_row('binary', 'Detection Condition', item.condition_summary) }}
                                 {{ narrative_row('triangle-alert', 'Operational Impact', item.impact, 'warning') }}
                             </dl>
-                        </div>
                     </div>
                 </section>
                 <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm">
