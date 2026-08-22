@@ -4,9 +4,9 @@ import smtplib
 import ssl
 from collections.abc import Mapping
 from email.message import EmailMessage
+from email.utils import getaddresses, make_msgid
 from html import escape
 from html.parser import HTMLParser
-from email.utils import getaddresses, make_msgid
 from typing import Any
 
 from app.integrations.delivery.notification_channels.contracts import (

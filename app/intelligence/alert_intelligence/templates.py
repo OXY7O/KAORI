@@ -7,7 +7,6 @@ from typing import Any
 
 from jinja2 import Environment, StrictUndefined, TemplateSyntaxError, select_autoescape
 
-from app.extensions.db import db
 from app.models.alert_ops import AlertCase, AlertNotificationTemplate
 
 

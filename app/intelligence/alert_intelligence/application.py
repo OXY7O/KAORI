@@ -5,6 +5,8 @@ from collections.abc import Callable
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.extensions.db import db
+from app.integrations.delivery.notification_channels.contracts import NotificationMessage
+from app.integrations.delivery.notification_channels.service import send_channel_preview_message
 from app.intelligence.alert_intelligence.lifecycle import get_case
 from app.intelligence.alert_intelligence.routing import RoutingPolicyConfig, upsert_routing_policy
 from app.intelligence.alert_intelligence.templates import (
@@ -12,8 +14,6 @@ from app.intelligence.alert_intelligence.templates import (
     reset_template_override,
     upsert_template_override,
 )
-from app.integrations.delivery.notification_channels.contracts import NotificationMessage
-from app.integrations.delivery.notification_channels.service import send_channel_preview_message
 from app.models.alert_ops import (
     AlertCase,
     AlertNotificationTemplate,
@@ -112,7 +112,9 @@ def save_template_override_command(
     return row
 
 
-def reset_template_override_command(*, provider_key: str, event_state: str, actor_user_id: int | None) -> bool:
+def reset_template_override_command(
+    *, provider_key: str, event_state: str, actor_user_id: int | None
+) -> bool:
     try:
         changed = reset_template_override(provider_key=provider_key, event_state=event_state)
         if changed:
