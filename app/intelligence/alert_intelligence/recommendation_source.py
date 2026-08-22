@@ -6,39 +6,73 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from app.extensions.db import db
-from app.intelligence.alert_intelligence.lifecycle import mark_case_source_resolved
-from app.intelligence.recommendation_alerting import base_rule_key, effective_alert_policy
+from app.intelligence.alert_intelligence.lifecycle import (
+    mark_case_source_resolved,
+    mark_case_source_unknown,
+    restore_case_source_firing,
+    set_case_policy_routing_eligibility,
+)
+from app.intelligence.recommendation_alerting import base_rule_key, catalog_rule, effective_alert_policy
 from app.intelligence.service import get_active_recommendation_findings
 from app.models.alert_ops import AlertCase, AlertCaseEvent, RecommendationAlertState
 from app.models.audit import AuditEvent
 from app.models.cluster import Cluster
+from app.models.integration import IntegrationBinding, IntegrationInstance
 from app.models.object_storage import ObjectStorageSystem
 
 
 def reconcile_recommendation_alert_cases() -> dict[str, int]:
-    """Evaluate committed recommendation findings into governed Alert Operations cases."""
+    """Evaluate fresh recommendation findings into governed Alert Operations cases.
+
+    Missing findings only resolve cases when the underlying source is fresh. Source loss
+    transitions the case to Unknown so stale data can never masquerade as recovery.
+    """
 
     now = datetime.now(UTC)
     findings = get_active_recommendation_findings()
-    current_keys = {str(item.get('rule_key') or '') for item in findings if str(item.get('rule_key') or '')}
-    stats = {'observed': 0, 'eligible': 0, 'promoted': 0, 'updated': 0, 'resolved': 0, 'skipped': 0}
+    fresh_keys: set[str] = set()
+    stats = {
+        'observed': 0,
+        'eligible': 0,
+        'promoted': 0,
+        'updated': 0,
+        'resolved': 0,
+        'source_unknown': 0,
+        'skipped': 0,
+    }
     for finding in findings:
         finding_key = str(finding.get('rule_key') or '').strip()
         if not finding_key:
             stats['skipped'] += 1
             continue
+        available, source_reason = _source_evidence_posture_for_finding(finding)
+        if not available:
+            state = RecommendationAlertState.query.filter_by(finding_key=finding_key).first()
+            if state is not None and state.alert_case_id is not None:
+                case = db.session.get(AlertCase, state.alert_case_id)
+                if case is not None and case.workflow_state != 'closed':
+                    changed = mark_case_source_unknown(
+                        case,
+                        reason=source_reason,
+                        source_summary=_source_unknown_summary(source_reason),
+                        now=now,
+                        metadata={'recommendation_key': finding_key},
+                    )
+                    stats['source_unknown'] += int(changed)
+            stats['skipped'] += 1
+            continue
+
+        fresh_keys.add(finding_key)
         policy = effective_alert_policy(
             base_rule_key(finding_key), observed_severity=str(finding.get('severity') or 'info')
         )
         state = _observe_finding(finding, policy=policy, now=now)
         stats['observed'] += 1
+        case = db.session.get(AlertCase, state.alert_case_id) if state.alert_case_id is not None else None
+
         if not policy['eligible']:
-            # A recommendation may remain active while its dynamic severity drops below
-            # the rule-owned alerting floor (Info is recommendation-only by default).
-            # That clears the AlertCase source condition without deleting the recommendation.
-            if not policy.get('severity_eligible', True) and state.alert_case_id is not None:
-                case = db.session.get(AlertCase, state.alert_case_id)
-                if case is not None and case.workflow_state != 'closed' and case.source_state == 'firing':
+            if case is not None and case.workflow_state != 'closed':
+                if not policy.get('severity_eligible', True):
                     mark_case_source_resolved(
                         case,
                         now=now,
@@ -48,17 +82,26 @@ def reconcile_recommendation_alert_cases() -> dict[str, int]:
                         ),
                         auto_resolution_summary='The recommendation de-escalated below the alerting severity floor.',
                         auto_remediation_step='Observed the recommendation severity return below the alerting threshold.',
-                        auto_verification_evidence='Rule Catalog severity evaluation no longer classifies this condition as alert-eligible.',
+                        auto_verification_evidence=(
+                            'Rule Catalog severity evaluation no longer classifies this condition as alert-eligible.'
+                        ),
                     )
                     stats['resolved'] += 1
+                else:
+                    _refresh_case_from_finding(case, finding, now=now)
+                    set_case_policy_routing_eligibility(case, eligible=False, now=now)
+                    stats['updated'] += 1
             continue
+
         stats['eligible'] += 1
-        if state.alert_case_id is not None:
-            case = db.session.get(AlertCase, state.alert_case_id)
-            if case is not None and case.workflow_state != 'closed':
-                _refresh_case_from_finding(case, finding, now=now)
-                stats['updated'] += 1
-                continue
+        if case is not None and case.workflow_state != 'closed':
+            _refresh_case_from_finding(case, finding, now=now)
+            set_case_policy_routing_eligibility(case, eligible=True, now=now)
+            stats['updated'] += 1
+            continue
+        if state.promotion_suppressed_until_clear:
+            stats['skipped'] += 1
+            continue
         if policy['mode'] != 'automatic' or not _automatic_threshold_reached(
             state, policy=policy, now=now, observed_severity=str(finding.get('severity') or 'info')
         ):
@@ -67,12 +110,27 @@ def reconcile_recommendation_alert_cases() -> dict[str, int]:
         stats['promoted'] += 1
 
     for state in RecommendationAlertState.query.filter_by(active=True).all():
-        if state.finding_key in current_keys:
+        if state.finding_key in fresh_keys:
             continue
+        available, source_reason = _source_evidence_posture_for_state(state)
+        case = db.session.get(AlertCase, state.alert_case_id) if state.alert_case_id else None
+        if not available:
+            if case is not None and case.workflow_state != 'closed':
+                changed = mark_case_source_unknown(
+                    case,
+                    reason=source_reason,
+                    source_summary=_source_unknown_summary(source_reason),
+                    now=now,
+                    metadata={'recommendation_key': state.finding_key},
+                )
+                stats['source_unknown'] += int(changed)
+            continue
+
         state.active = False
         state.cleared_at = now
-        case = db.session.get(AlertCase, state.alert_case_id) if state.alert_case_id else None
-        if case is None or case.workflow_state == 'closed' or case.source_state == 'resolved':
+        state.promotion_suppressed_until_clear = False
+        state.promotion_suppression_reason = None
+        if case is None or case.source_state == 'resolved':
             continue
         db.session.flush()
         other_active = RecommendationAlertState.query.filter(
@@ -84,10 +142,10 @@ def reconcile_recommendation_alert_cases() -> dict[str, int]:
         mark_case_source_resolved(
             case,
             now=now,
-            source_summary='The originating KAORI recommendation cleared from the latest committed evidence.',
+            source_summary='The originating KAORI recommendation cleared from fresh committed evidence.',
             auto_resolution_summary='The originating KAORI recommendation cleared without recorded manual remediation.',
-            auto_remediation_step='Observed the recommendation clear after committed evidence refresh.',
-            auto_verification_evidence='The recommendation was absent from the latest committed Intelligence evaluation.',
+            auto_remediation_step='Observed the recommendation clear after a fresh committed evidence refresh.',
+            auto_verification_evidence='The recommendation was absent from the latest fresh Intelligence evaluation.',
         )
         stats['resolved'] += 1
     db.session.commit()
@@ -112,7 +170,12 @@ def promote_recommendation_to_alert(
             'This rule is configured as Recommendation Only. Enable Alert Escalation in Rule Catalog first.'
         )
     now = datetime.now(UTC)
+    available, source_reason = _source_evidence_posture_for_finding(finding)
+    if not available:
+        raise ValueError(_source_unknown_summary(source_reason))
     state = _observe_finding(finding, policy=policy, now=now)
+    state.promotion_suppressed_until_clear = False
+    state.promotion_suppression_reason = None
     case = _ensure_alert_case(
         finding,
         state=state,
@@ -165,6 +228,8 @@ def _observe_finding(
         state.first_seen_at = now
         state.occurrence_count = 1
         state.alert_case_id = None
+        state.promotion_suppressed_until_clear = False
+        state.promotion_suppression_reason = None
     else:
         state.occurrence_count = int(state.occurrence_count or 0) + 1
     state.rule_key = rule_key
@@ -187,9 +252,10 @@ def _automatic_threshold_reached(
     first_seen = _as_utc(state.first_seen_at)
     stable_for = now - first_seen
     if str(observed_severity or '').strip().lower() == 'critical':
-        return stable_for >= timedelta(minutes=int(policy.get('critical_stability_window_minutes', 0))) and int(
-            state.occurrence_count or 0
-        ) >= int(policy.get('critical_minimum_occurrences', 1))
+        return (
+            stable_for >= timedelta(minutes=int(policy.get('critical_stability_window_minutes', 0)))
+            and int(state.occurrence_count or 0) >= int(policy.get('critical_minimum_occurrences', 1))
+        )
     return stable_for >= timedelta(minutes=int(policy['stability_window_minutes'])) and int(
         state.occurrence_count or 0
     ) >= int(policy['minimum_occurrences'])
@@ -248,8 +314,13 @@ def _ensure_alert_case(
                 'policy_mode': policy['mode'],
                 'stability_window_minutes': policy['stability_window_minutes'],
                 'minimum_occurrences': policy['minimum_occurrences'],
+                'promotion_mode': 'automatic' if automatic else 'manual',
             },
         )
+        case.evidence_json = {
+            **dict(case.evidence_json or {}),
+            'promotion_mode': 'automatic' if automatic else 'manual',
+        }
         _audit_promotion(case, actor_user_id=actor_user_id, automatic=automatic)
     _refresh_case_from_finding(case, finding, now=now)
     state.alert_case_id = case.id
@@ -260,13 +331,22 @@ def _ensure_alert_case(
 
 def _refresh_case_from_finding(case: AlertCase, finding: dict[str, Any], *, now: datetime) -> None:
     finding_key = str(finding.get('rule_key') or '').strip()
-    source_reopened = case.source_state == 'resolved'
+    previous_source_state = case.source_state
     if finding_key:
         case.source_ref = finding_key
     case.last_seen_at = now
-    case.source_state = 'firing'
-    case.source_resolved_at = None
-    if source_reopened and case.workflow_state != 'closed':
+    if previous_source_state == 'unknown':
+        restore_case_source_firing(
+            case,
+            source_summary='Fresh source evidence is available again and confirms the recommendation is still active.',
+            now=now,
+        )
+    else:
+        case.source_state = 'firing'
+        case.source_state_reason = None
+        case.source_state_changed_at = now
+        case.source_resolved_at = None
+    if previous_source_state == 'resolved' and case.workflow_state != 'closed':
         case.workflow_state = 'open'
         case.verification_started_at = None
         _timeline(
@@ -281,11 +361,7 @@ def _refresh_case_from_finding(case: AlertCase, finding: dict[str, Any], *, now:
     if previous_severity and previous_severity != next_severity:
         case.previous_severity = previous_severity
         case.severity_changed_at = now
-        event_type = (
-            'severity_escalated'
-            if _severity_rank(next_severity) > _severity_rank(previous_severity)
-            else 'severity_deescalated'
-        )
+        event_type = 'severity_escalated' if _severity_rank(next_severity) > _severity_rank(previous_severity) else 'severity_deescalated'
         if event_type == 'severity_escalated' and case.acknowledgement_expires_at is not None:
             # A higher severity is a new paging condition; an ACK at the old severity cannot suppress it.
             case.acknowledgement_expires_at = now
@@ -314,6 +390,7 @@ def _refresh_case_from_finding(case: AlertCase, finding: dict[str, Any], *, now:
             'recommendation_key': str(finding.get('rule_key') or ''),
             'category': str(finding.get('category') or ''),
             'priority': str(finding.get('priority') or ''),
+            'signal_source': str(finding.get('signal_source') or ''),
         }
     )
     case.labels_json = labels
@@ -470,6 +547,80 @@ def _audit_promotion(case: AlertCase, *, actor_user_id: int | None, automatic: b
 def _optional_text(value: Any) -> str | None:
     normalized = str(value or '').strip()
     return normalized or None
+
+
+def _source_evidence_posture_for_finding(finding: dict[str, Any]) -> tuple[bool, str]:
+    evidence = finding.get('evidence') if isinstance(finding.get('evidence'), dict) else {}
+    asset_key = str(
+        evidence.get('asset_key')
+        or evidence.get('cluster_id')
+        or evidence.get('object_storage_system_id')
+        or ''
+    ).strip()
+    return _source_evidence_posture(
+        domain=str(finding.get('domain') or ''),
+        asset_key=asset_key,
+        signal_source=str(finding.get('signal_source') or ''),
+    )
+
+
+def _source_evidence_posture_for_state(state: RecommendationAlertState) -> tuple[bool, str]:
+    rule = catalog_rule(state.rule_key) or {}
+    return _source_evidence_posture(
+        domain=state.domain,
+        asset_key=state.asset_key,
+        signal_source=str(rule.get('signal_source') or ''),
+    )
+
+
+def _source_evidence_posture(*, domain: str, asset_key: str, signal_source: str) -> tuple[bool, str]:
+    normalized_domain = str(domain or '').strip().lower()
+    normalized_asset = str(asset_key or '').strip()
+    signal = str(signal_source or '').strip().lower()
+    if not normalized_asset:
+        return True, ''
+    if normalized_domain == 'kubernetes':
+        asset = db.session.get(Cluster, normalized_asset)
+        if asset is None:
+            return False, 'source_deleted'
+        if signal == 'alertmanager':
+            return _binding_posture('alert_source', 'kubernetes_cluster', normalized_asset)
+        if signal in {'metrics_source', 'prometheus'}:
+            return _binding_posture('metrics_source', 'kubernetes_cluster', normalized_asset)
+        return (True, '') if str(asset.status or '').lower() == 'connected' else (False, 'source_unavailable')
+    if normalized_domain == 'object_storage':
+        asset = db.session.get(ObjectStorageSystem, normalized_asset)
+        if asset is None:
+            return False, 'source_deleted'
+        if signal in {'metrics_source', 'prometheus'}:
+            return _binding_posture('metrics_source', 'object_storage_system', normalized_asset)
+        if signal == 'alertmanager':
+            return _binding_posture('alert_source', 'object_storage_system', normalized_asset)
+        return (True, '') if str(asset.status or '').lower() == 'connected' else (False, 'source_unavailable')
+    return True, ''
+
+
+def _binding_posture(integration_type: str, asset_type: str, asset_key: str) -> tuple[bool, str]:
+    binding = (
+        IntegrationBinding.query.join(IntegrationInstance)
+        .filter(
+            IntegrationInstance.integration_type == integration_type,
+            IntegrationInstance.enabled.is_(True),
+            IntegrationInstance.lifecycle_status == 'active',
+            IntegrationBinding.asset_type == asset_type,
+            IntegrationBinding.asset_key == asset_key,
+            IntegrationBinding.enabled.is_(True),
+        )
+        .order_by(IntegrationBinding.priority.asc(), IntegrationBinding.id.asc())
+        .first()
+    )
+    return ((True, '') if binding is not None else (False, 'source_unavailable'))
+
+
+def _source_unknown_summary(reason: str) -> str:
+    if reason == 'source_deleted':
+        return 'The monitored source was deleted. KAORI cannot assert firing or resolution without fresh evidence.'
+    return 'The monitored source is unavailable or not ready. KAORI is holding the alert as Unknown until fresh evidence returns.'
 
 
 def _as_utc(value: datetime) -> datetime:

@@ -10,7 +10,7 @@
                 </span>
                 <div class="min-w-0">
                     <h3 class="{{ table_ui.block_title_classes() }}">Resolved Alerts</h3>
-                    <p class="{{ table_ui.block_description_classes() }}">Recovered conditions appear here immediately; verified closed cases remain searchable while heavy evidence follows the shared Local/S3 archive lifecycle.</p>
+                    <p class="{{ table_ui.block_description_classes() }}">Recovered conditions appear here immediately. Withdrawn manual promotions and source-decommissioned cases remain as governed historical evidence instead of being deleted.</p>
                 </div>
             </div>
             <a href="{{ url_for('platform_operations.data_lifecycle.index', domain='alert_incident') }}" class="{{ table_ui.action_classes() }}">
@@ -65,7 +65,7 @@
                         <th class="{{ table_ui.header_cell_classes() }}">Severity</th>
                         <th class="{{ table_ui.header_cell_classes() }}">Scope</th>
                         <th class="{{ table_ui.header_cell_classes() }}">Duration</th>
-                        <th class="{{ table_ui.header_cell_classes() }}">Resolved</th>
+                        <th class="{{ table_ui.header_cell_classes() }}">Resolved / Closed</th>
                         <th class="{{ table_ui.header_cell_classes() }}">Owner</th>
                         <th class="{{ table_ui.header_cell_classes() }}">Postmortem</th>
                         <th class="{{ table_ui.header_cell_classes(true) }}">Action</th>
@@ -75,7 +75,7 @@
                     {% for case in payload.history_cases %}
                         <tr class="{{ table_ui.row_classes() }}">
                             <td class="{{ table_ui.cell_classes() }}">
-                                {{ table_ui.title_cell(case.alert_name, case.public_id, 'archive') }}
+                                {{ table_ui.title_cell(case.alert_name, (case.closure_label ~ ' · ' if case.closure_label else '') ~ case.public_id, 'archive') }}
                             </td>
                             <td class="{{ table_ui.cell_classes() }}">
                                 {{ table_label.status_label(case.severity_label, case.severity_tone, size='compact') }}
@@ -85,7 +85,7 @@
                                 {% if case.namespace != '-' %}<p class="mt-0.5 text-xs leading-5 text-content-muted">{{ case.namespace }}</p>{% endif %}
                             </td>
                             <td class="{{ table_ui.cell_classes() }}">{{ case.duration }}</td>
-                            <td class="{{ table_ui.cell_classes() }}"><span class="whitespace-nowrap">{{ case.source_resolved_at|user_datetime if case.source_resolved_at else '-' }}</span></td>
+                            <td class="{{ table_ui.cell_classes() }}"><span class="whitespace-nowrap">{{ (case.source_resolved_at or case.closed_at)|user_datetime if (case.source_resolved_at or case.closed_at) else '-' }}</span></td>
                             <td class="{{ table_ui.cell_classes() }}">{{ case.owner }}</td>
                             <td class="{{ table_ui.cell_classes() }}">
                                 {{ table_label.status_label(case.postmortem_status|replace('_', ' ')|title, 'warning' if case.postmortem_status in ['required', 'draft'] else 'normal', size='compact') if case.workflow_state == 'closed' else table_label.status_label('Verification Pending', 'warning', size='compact') }}
@@ -103,7 +103,7 @@
                                 {% set empty_state_icon = "archive" %}
                                 {% set empty_state_label = "No Resolved Alerts" %}
                                 {% set empty_state_title = "No Resolved Alert Cases in This Scope" %}
-                                {% set empty_state_description = "Source-resolved cases appear here immediately. Verification Pending remains visible until closure evidence is committed; closed records retain postmortem and archive traceability." %}
+                                {% set empty_state_description = "Source-resolved cases appear here immediately. Governed withdrawal and source-decommissioning outcomes remain searchable with their timeline and closure evidence." %}
                                 {% set empty_state_min_height = "min-h-[180px]" %}
                                 {% include 'components/states/_empty_state.html' %}
                             </td>
@@ -137,7 +137,8 @@
                     <div class="flex flex-wrap items-center gap-2">
                         <h3 class="text-lg font-semibold leading-7 text-content-primary">{{ case.alert_name }}</h3>
                         {{ table_label.status_label(case.workflow_label, 'normal' if case.workflow_state == 'closed' else 'warning', size='compact') }}
-                        {% if case.workflow_state == 'closed' %}{{ table_label.status_label(case.postmortem_status|replace('_', ' ')|title, 'warning' if case.postmortem_status in ['required', 'draft'] else 'normal', size='compact') }}{% else %}{{ table_label.status_label('Source Resolved', 'normal', size='compact') }}{% endif %}
+                        {% if case.closure_label %}{{ table_label.status_label(case.closure_label, 'warning' if case.closure_reason != 'resolved' else 'normal', size='compact') }}{% endif %}
+                        {% if case.workflow_state == 'closed' and case.closure_reason == 'resolved' %}{{ table_label.status_label(case.postmortem_status|replace('_', ' ')|title, 'warning' if case.postmortem_status in ['required', 'draft'] else 'normal', size='compact') }}{% elif case.workflow_state != 'closed' %}{{ table_label.status_label('Source Resolved', 'normal', size='compact') }}{% endif %}
                     </div>
                     <p class="mt-1 text-sm leading-6 text-content-secondary">{{ case.summary }}</p>
                     <p class="mt-1 font-mono text-xs leading-5 text-content-muted">{{ case.public_id }}</p>
@@ -149,7 +150,7 @@
             </header>
             <div class="grid gap-px bg-outline-subtle xl:grid-cols-[minmax(0,1fr)_minmax(24rem,0.7fr)]">
                 <div class="bg-surface-card p-4 sm:p-5">
-                    <h4 class="text-sm font-semibold leading-5 text-content-primary">Resolution Evidence</h4>
+                    <h4 class="text-sm font-semibold leading-5 text-content-primary">{{ 'Resolution Evidence' if case.closure_reason in ['', 'resolved'] else 'Closure Evidence' }}</h4>
                     <dl class="mt-3 divide-y divide-outline-subtle">
                         <div class="py-3">
                             <dt class="text-xs font-medium leading-5 text-content-muted">Resolution Summary</dt>

@@ -15,7 +15,9 @@ if TYPE_CHECKING:
 
 ALERT_CASE_OPEN_STATES = {'open', 'acknowledged', 'mitigating', 'verification_pending'}
 ALERT_CASE_WORKFLOW_STATES = ALERT_CASE_OPEN_STATES | {'closed'}
-ALERT_SOURCE_STATES = {'firing', 'resolved'}
+ALERT_SOURCE_STATES = {'firing', 'resolved', 'unknown'}
+ALERT_ROUTING_STATES = {'enabled', 'suppressed'}
+ALERT_CLOSURE_REASONS = {'resolved', 'manual_withdrawal', 'source_decommissioned'}
 ALERT_SOURCE_TYPES = {'provider_alert', 'recommendation'}
 POSTMORTEM_STATES = {'not_required', 'required', 'draft', 'complete'}
 RECOMMENDATION_ALERT_MODES = {'manual', 'automatic'}
@@ -28,12 +30,20 @@ class AlertCase(db.Model):
     __tablename__ = 'alert_cases'
     __table_args__ = (
         CheckConstraint(
-            "source_state IN ('firing', 'resolved')",
+            "source_state IN ('firing', 'resolved', 'unknown')",
             name='ck_alert_cases_source_state',
         ),
         CheckConstraint(
             "source_type IN ('provider_alert', 'recommendation')",
             name='ck_alert_cases_source_type',
+        ),
+        CheckConstraint(
+            "routing_state IN ('enabled', 'suppressed')",
+            name='ck_alert_cases_routing_state',
+        ),
+        CheckConstraint(
+            "closure_reason IS NULL OR closure_reason IN ('resolved', 'manual_withdrawal', 'source_decommissioned')",
+            name='ck_alert_cases_closure_reason',
         ),
         CheckConstraint(
             "workflow_state IN ('open', 'acknowledged', 'mitigating', 'verification_pending', 'closed')",
@@ -48,6 +58,8 @@ class AlertCase(db.Model):
         Index('ix_alert_cases_rule_state', 'rule_key', 'workflow_state'),
         Index('ix_alert_cases_identity_state', 'case_key', 'workflow_state'),
         Index('ix_alert_cases_history', 'closed_at', 'severity'),
+        Index('ix_alert_cases_source_changed', 'source_state', 'source_state_changed_at'),
+        Index('ix_alert_cases_routing_state', 'routing_state', 'routing_override_reason'),
     )
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -66,7 +78,17 @@ class AlertCase(db.Model):
     previous_severity: Mapped[str | None] = mapped_column(db.String(20), nullable=True)
     severity_changed_at: Mapped[datetime | None] = mapped_column(db.DateTime(timezone=True), nullable=True, index=True)
     source_state: Mapped[str] = mapped_column(db.String(24), nullable=False, default='firing', index=True)
+    source_state_reason: Mapped[str | None] = mapped_column(db.String(64), nullable=True)
+    source_state_changed_at: Mapped[datetime | None] = mapped_column(db.DateTime(timezone=True), nullable=True)
+    routing_state: Mapped[str] = mapped_column(db.String(24), nullable=False, default='enabled', index=True)
+    routing_override_reason: Mapped[str | None] = mapped_column(db.String(64), nullable=True, index=True)
+    routing_override_note: Mapped[str | None] = mapped_column(db.Text, nullable=True)
+    routing_override_at: Mapped[datetime | None] = mapped_column(db.DateTime(timezone=True), nullable=True)
+    routing_override_by_user_id: Mapped[int | None] = mapped_column(
+        db.ForeignKey('users.id', ondelete='SET NULL'), nullable=True
+    )
     workflow_state: Mapped[str] = mapped_column(db.String(32), nullable=False, default='open', index=True)
+    closure_reason: Mapped[str | None] = mapped_column(db.String(40), nullable=True, index=True)
     summary: Mapped[str | None] = mapped_column(db.Text, nullable=True)
     target: Mapped[str | None] = mapped_column(db.String(255), nullable=True)
     namespace: Mapped[str | None] = mapped_column(db.String(255), nullable=True)
@@ -88,9 +110,7 @@ class AlertCase(db.Model):
     )
     source_resolved_at: Mapped[datetime | None] = mapped_column(db.DateTime(timezone=True), nullable=True, index=True)
     acknowledged_at: Mapped[datetime | None] = mapped_column(db.DateTime(timezone=True), nullable=True)
-    acknowledgement_expires_at: Mapped[datetime | None] = mapped_column(
-        db.DateTime(timezone=True), nullable=True, index=True
-    )
+    acknowledgement_expires_at: Mapped[datetime | None] = mapped_column(db.DateTime(timezone=True), nullable=True, index=True)
     mitigating_at: Mapped[datetime | None] = mapped_column(db.DateTime(timezone=True), nullable=True)
     verification_started_at: Mapped[datetime | None] = mapped_column(db.DateTime(timezone=True), nullable=True)
     closed_at: Mapped[datetime | None] = mapped_column(db.DateTime(timezone=True), nullable=True, index=True)
@@ -122,6 +142,7 @@ class AlertCase(db.Model):
     owner: Mapped[User | None] = relationship('User', foreign_keys=[owner_user_id])
     acknowledged_by: Mapped[User | None] = relationship('User', foreign_keys=[acknowledged_by_user_id])
     closed_by: Mapped[User | None] = relationship('User', foreign_keys=[closed_by_user_id])
+    routing_override_by: Mapped[User | None] = relationship('User', foreign_keys=[routing_override_by_user_id])
     events: Mapped[list[AlertCaseEvent]] = relationship(
         'AlertCaseEvent', back_populates='case', cascade='all, delete-orphan', passive_deletes=True
     )
@@ -190,7 +211,9 @@ class AlertRoutingPolicy(db.Model):
     enabled: Mapped[bool] = mapped_column(db.Boolean, nullable=False, default=True)
     domains_json: Mapped[list[str]] = mapped_column(db.JSON, nullable=False, default=list)
     severities_json: Mapped[list[str]] = mapped_column(db.JSON, nullable=False, default=list)
-    source_types_json: Mapped[list[str]] = mapped_column(db.JSON, nullable=False, default=lambda: ['recommendation'])
+    source_types_json: Mapped[list[str]] = mapped_column(
+        db.JSON, nullable=False, default=lambda: ['recommendation']
+    )
     matchers_json: Mapped[dict[str, str]] = mapped_column(db.JSON, nullable=False, default=dict)
     channel_ids_json: Mapped[list[int]] = mapped_column(db.JSON, nullable=False, default=list)
     repeat_interval_minutes: Mapped[int] = mapped_column(db.Integer, nullable=False, default=60)
@@ -308,6 +331,8 @@ class RecommendationAlertState(db.Model):
     last_seen_at: Mapped[datetime] = mapped_column(db.DateTime(timezone=True), nullable=False, index=True)
     cleared_at: Mapped[datetime | None] = mapped_column(db.DateTime(timezone=True), nullable=True, index=True)
     evidence_hash: Mapped[str | None] = mapped_column(db.String(64), nullable=True)
+    promotion_suppressed_until_clear: Mapped[bool] = mapped_column(db.Boolean, nullable=False, default=False)
+    promotion_suppression_reason: Mapped[str | None] = mapped_column(db.String(64), nullable=True)
     alert_case_id: Mapped[int | None] = mapped_column(
         db.ForeignKey('alert_cases.id', ondelete='SET NULL'), nullable=True, index=True
     )

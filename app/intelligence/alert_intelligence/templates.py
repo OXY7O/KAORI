@@ -310,13 +310,8 @@ class _SafeHTMLParser(HTMLParser):
 
 def _validate_safe_html(value: str) -> None:
     parser = _SafeHTMLParser(convert_charrefs=True)
-    try:
-        parser.feed(value)
-        parser.close()
-    except ValueError:
-        raise
-    except Exception as exc:
-        raise ValueError('HTML template is not valid safe HTML.') from exc
+    parser.feed(value)
+    parser.close()
 
 
 def _default_title(case: AlertCase, event_state: str) -> str:

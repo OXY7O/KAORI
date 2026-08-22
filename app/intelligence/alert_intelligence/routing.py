@@ -145,6 +145,8 @@ def matching_routing_policies(case: AlertCase) -> list[AlertRoutingPolicy]:
 
 def firing_routes(case: AlertCase) -> list[FiringRoute]:
     """Return independent route/channel schedules; never collapse cadence across channels."""
+    if case.source_state != 'firing' or case.routing_state != 'enabled':
+        return []
     policies = matching_routing_policies(case)
     if policies:
         routes: list[FiringRoute] = []

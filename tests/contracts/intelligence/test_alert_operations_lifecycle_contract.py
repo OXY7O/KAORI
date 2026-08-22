@@ -11,7 +11,7 @@ def test_alert_case_separates_source_workflow_and_delivery_state() -> None:
     model = read('app/models/alert_ops.py')
     lifecycle = read('app/intelligence/alert_intelligence/lifecycle.py')
 
-    assert "source_state IN ('firing', 'resolved')" in model
+    assert "source_state IN ('firing', 'resolved', 'unknown')" in model
     assert "workflow_state IN ('open', 'acknowledged', 'mitigating', 'verification_pending', 'closed')" in model
     assert 'AlertSilence' in model
     assert 'AlertCaseEvent' in model

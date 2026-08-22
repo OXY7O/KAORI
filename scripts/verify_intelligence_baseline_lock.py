@@ -117,6 +117,10 @@ def main() -> int:
         "@alert_intelligence_bp.post('/cases/<string:public_id>/mitigating')",
         "@alert_intelligence_bp.post('/cases/<string:public_id>/silence')",
         "@alert_intelligence_bp.post('/cases/<string:public_id>/unsilence')",
+        "@alert_intelligence_bp.post('/cases/<string:public_id>/routing/suppress')",
+        "@alert_intelligence_bp.post('/cases/<string:public_id>/routing/resume')",
+        "@alert_intelligence_bp.post('/cases/<string:public_id>/withdraw')",
+        "@alert_intelligence_bp.post('/cases/<string:public_id>/retire-source')",
         "@alert_intelligence_bp.post('/cases/<string:public_id>/close')",
         "@alert_intelligence_bp.post('/cases/<string:public_id>/postmortem')",
     ):
@@ -206,8 +210,8 @@ def main() -> int:
         errors,
     )
     for required in (
-        'load_snapshot_rows',
         'notification_channel_summary',
+        "AlertCase.source_type == 'recommendation'",
         'routing_policy_rows',
         'built_in_templates',
         "'kubernetes'",
@@ -217,7 +221,7 @@ def main() -> int:
         "'routing'",
         "'templates'",
         "'silences'",
-        "'history'",
+        "'resolved'",
     ):
         require(required in alert_intelligence, f'Alert Operations multi-domain contract missing: {required}', errors)
     for forbidden in ('load_alerts_by_source', 'load_alert_stream'):
@@ -232,18 +236,22 @@ def main() -> int:
         'Routing & Channels',
         'Templates',
         'Silences',
-        'History',
+        'Resolved',
     ):
         require(required in alert_workspace, f'Alert Operations workspace contract missing: {required}', errors)
     for required in ('Clear Filters', 'Workflow', 'alert-operations-filter-form'):
         require(required in alert_active, f'Alert Operations active-alert contract missing: {required}', errors)
-    for required in ('Resolved & Historical Alerts', 'Resolution Evidence', 'Postmortem'):
+    for required in ('Resolved Alerts', 'Resolution Evidence', 'Closure Evidence', 'Postmortem'):
         require(required in alert_history, f'Alert Operations history contract missing: {required}', errors)
     for required in (
         'acknowledge_case',
         'create_delivery_silence',
         'close_case',
         'save_postmortem',
+        'mark_case_source_unknown',
+        'restore_case_source_firing',
+        'suppress_case_routing',
+        'resume_case_routing',
         "case.workflow_state = 'verification_pending'",
     ):
         require(required in alert_lifecycle, f'Alert Operations lifecycle contract missing: {required}', errors)
@@ -251,7 +259,7 @@ def main() -> int:
         "event_state='firing'",
         "event_state='resolved'",
         "case.workflow_state == 'closed'",
-        '_successful_firing_channel_ids',
+        '_successful_firing_channels',
     ):
         require(required in alert_notifications, f'Alert Operations notification lifecycle missing: {required}', errors)
     require(

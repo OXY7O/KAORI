@@ -42,20 +42,14 @@
                         </td>
                         <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_label(case.severity_label, case.severity_tone, size='compact') }}</td>
                         <td class="{{ table_ui.cell_classes() }}">
-                            {{ table_label.status_indicator_label(case.source_state_label, 'critical' if case.source_state == 'firing' else 'normal', size='compact') }}
+                            {{ table_label.status_indicator_label(case.source_state_label, case.source_state_tone, size='compact') }}
                             <p class="mt-1 text-xs leading-5 text-content-muted">{{ case.source_type_label }}</p>
                         </td>
                         <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_label(case.workflow_label, case.workflow_tone, size='compact') }}</td>
                         <td class="{{ table_ui.cell_classes() }}">{{ case.owner }}</td>
                         <td class="{{ table_ui.cell_classes() }}">{{ case.duration }}</td>
                         <td class="{{ table_ui.cell_classes() }}">
-                            {% if case.silenced %}
-                                {{ table_label.special_label('Silenced', 'warning', 'bell-off', size='compact') }}
-                            {% elif case.workflow_state == 'acknowledged' %}
-                                {{ table_label.metadata_label('Repeat paused', 'pause', false, 'compact') }}
-                            {% else %}
-                                {{ table_label.metadata_label('Policy managed', 'send', false, 'compact') }}
-                            {% endif %}
+                            {{ table_label.status_label(case.delivery_label, case.delivery_tone, size='compact') }}
                         </td>
                         <td class="{{ table_ui.cell_classes(true) }}">
                             <a href="{{ url_for('alert_intelligence.index', tab='active', domain=payload.domain, asset=payload.selected_asset_key, case=case.public_id, severity=payload.filters.severity, workflow=payload.filters.workflow, source=payload.filters.source, q=payload.filters.q, page=payload.active_pagination.page, per_page=payload.active_pagination.per_page) }}"
@@ -65,7 +59,7 @@
                 {% else %}
                     <tr>
                         <td colspan="8" class="p-0">
-                            {% set empty_state_icon = "badge-check" %}{% set empty_state_label = "No Active Alerts" %}{% set empty_state_title = "No Open Alert Cases Match This Scope" %}{% set empty_state_description = "KAORI creates durable cases from committed provider alerts and governed recommendation promotions." %}{% set empty_state_min_height = "min-h-[180px]" %}
+                            {% set empty_state_icon = "badge-check" %}{% set empty_state_label = "No Active Alerts" %}{% set empty_state_title = "No Open Alert Cases Match This Scope" %}{% set empty_state_description = "KAORI creates durable cases from governed recommendation promotions and preserves open cases when source evidence becomes unavailable." %}{% set empty_state_min_height = "min-h-[180px]" %}
                             {% include 'components/states/_empty_state.html' %}
                         </td>
                     </tr>

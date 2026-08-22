@@ -87,7 +87,8 @@ def _candidate_alert(case: AlertCase) -> dict[str, Any]:
     namespace = str(case.namespace or labels.get('namespace') or '').strip()
     fingerprint = str(case.fingerprint or case.case_key or '').strip()
     silenced = active_delivery_silence(case) is not None
-    human_controlled = case.workflow_state in {'acknowledged', 'mitigating'} or silenced
+    routing_suppressed = case.routing_state == 'suppressed'
+    human_controlled = case.workflow_state in {'acknowledged', 'mitigating'} or silenced or routing_suppressed
 
     evidence = dict(case.evidence_json or {})
     evidence.update(
@@ -101,6 +102,8 @@ def _candidate_alert(case: AlertCase) -> dict[str, Any]:
             'alert_fingerprint': fingerprint,
             'alertname': alertname,
             'human_controlled': human_controlled,
+            'alert_case_routing_state': case.routing_state,
+            'alert_case_routing_override_reason': case.routing_override_reason,
             # Future autonomous execution must honor this flag. Manual reviewed execution
             # remains possible through the existing governed Decision workflow.
             'autonomous_execution_allowed': not human_controlled,

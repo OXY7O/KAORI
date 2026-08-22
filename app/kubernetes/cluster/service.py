@@ -702,6 +702,17 @@ def delete_cluster(cluster: Cluster) -> dict[str, int]:
         IntegrationBinding.asset_key == cluster_id,
     ).delete(synchronize_session=False)
 
+    # Source deletion is not technical resolution. Preserve any open KAORI AlertCase
+    # as Unknown before removing the managed asset so operators retain incident evidence.
+    from app.intelligence.alert_intelligence.lifecycle import mark_asset_alert_cases_source_unknown
+
+    alert_cases_marked_unknown = mark_asset_alert_cases_source_unknown(
+        domain='kubernetes',
+        asset_key=cluster_id,
+        reason='source_deleted',
+        source_kind='kubernetes',
+    )
+
     # The Cluster relationship removes KubernetesConnection and all rows that
     # carry a real cluster FK. Flush before deleting the canonical integration
     # identity so SQLAlchemy does not attempt to delete the connection twice.
@@ -718,6 +729,7 @@ def delete_cluster(cluster: Cluster) -> dict[str, int]:
         'detached_reports': int(detached_reports or 0),
         'detached_schedules': int(detached_schedules or 0),
         'canonical_instance_deleted': int(canonical is not None),
+        'alert_cases_marked_unknown': int(alert_cases_marked_unknown),
     }
 
 

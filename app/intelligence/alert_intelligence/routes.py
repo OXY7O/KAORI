@@ -22,8 +22,12 @@ from app.intelligence.alert_intelligence.lifecycle import (
     close_case,
     create_delivery_silence,
     mark_mitigating,
+    resume_case_routing,
+    retire_source_deleted_case,
     revoke_delivery_silence,
     save_postmortem,
+    suppress_case_routing,
+    withdraw_manual_alert,
 )
 from app.intelligence.alert_intelligence.routing import RoutingPolicyConfig
 from app.intelligence.alert_intelligence.service import get_alert_intelligence_payload
@@ -120,6 +124,68 @@ def unsilence(public_id: str) -> ResponseReturnValue:
         success_title='Alert delivery resumed',
         success_message='KAORI repeat delivery is eligible again if the alert remains firing.',
         operation=lambda case: revoke_delivery_silence(case, actor_user_id=_actor_user_id()),
+    )
+
+
+@alert_intelligence_bp.post('/cases/<string:public_id>/routing/suppress')
+@permission_required('intelligence.decisions.create')
+def suppress_routing(public_id: str) -> ResponseReturnValue:
+    reason = str(request.form.get('reason') or '').strip()
+    return _case_mutation(
+        public_id,
+        success_title='Alert routing suppressed',
+        success_message='The alert remains active, but KAORI will not route channel notifications until routing is resumed.',
+        operation=lambda case: suppress_case_routing(
+            case,
+            reason='manual',
+            note=reason,
+            actor_user_id=_actor_user_id(),
+        ),
+    )
+
+
+@alert_intelligence_bp.post('/cases/<string:public_id>/routing/resume')
+@permission_required('intelligence.decisions.create')
+def resume_routing(public_id: str) -> ResponseReturnValue:
+    return _case_mutation(
+        public_id,
+        success_title='Alert routing resumed',
+        success_message='The alert is eligible for governed notification routing again while the source remains firing.',
+        operation=lambda case: resume_case_routing(case, actor_user_id=_actor_user_id()),
+    )
+
+
+@alert_intelligence_bp.post('/cases/<string:public_id>/withdraw')
+@permission_required('intelligence.decisions.create')
+def withdraw(public_id: str) -> ResponseReturnValue:
+    reason = str(request.form.get('reason') or '').strip()
+    return _case_mutation(
+        public_id,
+        success_title='Manual alert withdrawn',
+        success_message='The AlertCase was closed as Withdrawn without claiming source resolution. Automatic re-promotion stays suppressed until the finding clears.',
+        operation=lambda case: withdraw_manual_alert(
+            case,
+            reason=reason,
+            actor_user_id=_actor_user_id(),
+        ),
+        tab='resolved',
+    )
+
+
+@alert_intelligence_bp.post('/cases/<string:public_id>/retire-source')
+@permission_required('intelligence.decisions.create')
+def retire_source(public_id: str) -> ResponseReturnValue:
+    reason = str(request.form.get('reason') or '').strip()
+    return _case_mutation(
+        public_id,
+        success_title='Source-deleted alert retired',
+        success_message='The case was retained as historical evidence and closed with a Source Decommissioned disposition.',
+        operation=lambda case: retire_source_deleted_case(
+            case,
+            reason=reason,
+            actor_user_id=_actor_user_id(),
+        ),
+        tab='resolved',
     )
 
 

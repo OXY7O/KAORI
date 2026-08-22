@@ -44,8 +44,10 @@ def get_alert_intelligence_payload(args: MultiDict[str, str]) -> dict[str, Any]:
     search = str(args.get('q') or '').strip()
 
     scoped_cases = _case_rows(domain=domain, asset_key=selected_asset_key)
-    active_cases = [row for row in scoped_cases if row.source_state == 'firing' and row.workflow_state != 'closed']
-    history_cases = [row for row in scoped_cases if row.source_state == 'resolved']
+    active_cases = [
+        row for row in scoped_cases if row.source_state in {'firing', 'unknown'} and row.workflow_state != 'closed'
+    ]
+    history_cases = [row for row in scoped_cases if row.source_state == 'resolved' or row.workflow_state == 'closed']
     filtered_active = _filter_cases(
         active_cases, severity=severity, workflow=workflow, source_type=source_type, search=search
     )
@@ -96,7 +98,8 @@ def get_alert_intelligence_payload(args: MultiDict[str, str]) -> dict[str, Any]:
         'snapshot': snapshot,
         'summary': {
             'active': len(active_cases),
-            'critical': sum(case.severity == 'critical' for case in active_cases),
+            'critical': sum(case.severity == 'critical' and case.source_state == 'firing' for case in active_cases),
+            'source_unknown': sum(case.source_state == 'unknown' for case in active_cases),
             'acknowledged': sum(case.workflow_state == 'acknowledged' for case in active_cases),
             'silenced': len(active_silences),
             'verification_pending': sum(case.workflow_state == 'verification_pending' for case in history_cases),
@@ -226,7 +229,17 @@ def _serialize_case(case: AlertCase) -> dict[str, Any]:
         'source_ref': case.source_ref or '',
         'rule_key': case.rule_key or '',
         'source_state': case.source_state,
-        'source_state_label': case.source_state.replace('_', ' ').title(),
+        'source_state_label': _source_state_label(case),
+        'source_state_tone': _source_state_tone(case.source_state),
+        'source_state_reason': case.source_state_reason or '',
+        'source_state_changed_at': case.source_state_changed_at,
+        'routing_state': case.routing_state,
+        'routing_state_label': 'Suppressed' if case.routing_state == 'suppressed' else 'Enabled',
+        'routing_override_reason': case.routing_override_reason or '',
+        'routing_override_note': case.routing_override_note or '',
+        'routing_override_at': case.routing_override_at,
+        'closure_reason': case.closure_reason or '',
+        'closure_label': _closure_label(case.closure_reason),
         'workflow_state': case.workflow_state,
         'workflow_label': case.workflow_state.replace('_', ' ').title(),
         'workflow_tone': _workflow_tone(case.workflow_state),
@@ -252,6 +265,9 @@ def _serialize_case(case: AlertCase) -> dict[str, Any]:
         'closed_at': case.closed_at,
         'duration': _duration_label(duration_seconds),
         'silenced': silence is not None,
+        'delivery_state': _delivery_state(case, silence=silence),
+        'delivery_label': _delivery_label(case, silence=silence),
+        'delivery_tone': _delivery_tone(case, silence=silence),
         'silence_until': silence.ends_at if silence else None,
         'postmortem_status': case.postmortem_status,
         'archive_artifact_id': case.archive_artifact_id,
@@ -276,10 +292,20 @@ def _serialize_case_detail(case: AlertCase) -> dict[str, Any]:
         .order_by(AlertCaseEvent.created_at.asc(), AlertCaseEvent.id.asc())
         .all()
     ]
+    evidence = dict(case.evidence_json or {})
+    manual_promotion = evidence.get('promotion_mode') == 'manual' or any(
+        event['event_type'] == 'recommendation_promoted'
+        and (
+            event['metadata'].get('promotion_mode') == 'manual'
+            or 'manually promoted' in str(event['summary'] or '').lower()
+        )
+        for event in timeline
+    )
     base.update(
         {
             'labels': dict(case.labels_json or {}),
-            'evidence': dict(case.evidence_json or {}),
+            'evidence': evidence,
+            'manual_promotion': manual_promotion,
             'receiver': case.receiver or '-',
             'resolution_summary': case.resolution_summary or '',
             'remediation_steps': list(case.remediation_steps_json or []),
@@ -423,6 +449,64 @@ def _workflow_tone(state: str) -> str:
         'closed': 'normal',
     }.get(state, 'unknown')
 
+
+
+def _source_state_label(case: AlertCase) -> str:
+    if case.source_state == 'unknown':
+        if case.source_state_reason == 'source_deleted':
+            return 'Unknown · Source Deleted'
+        return 'Unknown · Source Unavailable'
+    return case.source_state.replace('_', ' ').title()
+
+
+def _source_state_tone(state: str) -> str:
+    return {'firing': 'critical', 'resolved': 'normal', 'unknown': 'warning'}.get(state, 'unknown')
+
+
+def _closure_label(reason: str | None) -> str:
+    return {
+        'resolved': 'Resolved',
+        'manual_withdrawal': 'Withdrawn',
+        'source_decommissioned': 'Source Decommissioned',
+    }.get(str(reason or ''), '')
+
+
+def _delivery_state(case: AlertCase, *, silence: AlertSilence | None) -> str:
+    if case.routing_state == 'suppressed':
+        return 'suppressed'
+    if case.source_state == 'unknown':
+        return 'held'
+    if silence is not None:
+        return 'silenced'
+    if case.workflow_state == 'acknowledged' and case.acknowledgement_expires_at:
+        if _as_utc(case.acknowledgement_expires_at) > datetime.now(UTC):
+            return 'ack_paused'
+    return 'routed'
+
+
+def _delivery_label(case: AlertCase, *, silence: AlertSilence | None) -> str:
+    state = _delivery_state(case, silence=silence)
+    if state == 'suppressed':
+        if case.routing_override_reason == 'policy_ineligible':
+            return 'Suppressed · Policy'
+        if case.routing_override_reason == 'source_deleted':
+            return 'Suppressed · Source Deleted'
+        if case.routing_override_reason == 'source_unavailable':
+            return 'Held · Source Unavailable'
+        return 'Notifications Suppressed'
+    return {
+        'held': 'Held · Source Unknown',
+        'silenced': 'Silenced',
+        'ack_paused': 'Repeat Paused',
+        'routed': 'Policy Managed',
+    }.get(state, 'Policy Managed')
+
+
+def _delivery_tone(case: AlertCase, *, silence: AlertSilence | None) -> str:
+    state = _delivery_state(case, silence=silence)
+    return {'suppressed': 'warning', 'held': 'warning', 'silenced': 'warning', 'ack_paused': 'info'}.get(
+        state, 'info'
+    )
 
 def _duration_label(seconds: int) -> str:
     minutes = seconds // 60

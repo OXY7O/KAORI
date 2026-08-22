@@ -6,6 +6,17 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from app.extensions.db import db
+from app.intelligence.alert_intelligence.case_state import (
+    mark_asset_alert_cases_source_unknown,
+    mark_case_source_unknown,
+    restore_case_source_firing,
+    restore_system_routing,
+    resume_case_routing,
+    retire_source_deleted_case,
+    set_case_policy_routing_eligibility,
+    suppress_case_routing,
+    withdraw_manual_alert,
+)
 from app.intelligence.alert_intelligence.snapshots import load_snapshot_rows
 from app.models.alert_ops import AlertCase, AlertCaseEvent, AlertSilence
 from app.models.audit import AuditEvent
@@ -158,6 +169,7 @@ def close_case(
     case.change_reference = _optional_text(change_reference)
     case.ticket_reference = _optional_text(ticket_reference)
     case.workflow_state = 'closed'
+    case.closure_reason = 'resolved'
     case.closed_at = now
     case.closed_by_user_id = actor_user_id
     case.postmortem_required = _requires_postmortem(case)
@@ -195,8 +207,11 @@ def close_case_from_automation_verification(
         return False
     now = datetime.now(UTC)
     case.source_state = 'resolved'
+    case.source_state_reason = None
+    case.source_state_changed_at = now
     case.source_resolved_at = case.source_resolved_at or now
     case.workflow_state = 'closed'
+    case.closure_reason = 'resolved'
     case.closed_at = now
     case.closed_by_user_id = actor_user_id
     case.resolution_summary = str(verification_summary or 'Automation Control remediation verified.').strip()
@@ -378,14 +393,28 @@ def mark_case_source_resolved(
     auto_remediation_step: str | None = None,
     auto_verification_evidence: str | None = None,
 ) -> str:
-    """Move one firing source to resolved without conflating source recovery and operator closure."""
+    """Move a fresh, evaluable source to resolved without conflating recovery and closure."""
 
     current = now or datetime.now(UTC)
     if case.source_state == 'resolved':
         return case.workflow_state
+    previous_state = case.source_state
     case.source_state = 'resolved'
+    case.source_state_reason = None
+    case.source_state_changed_at = current
     case.source_resolved_at = current
-    _event(case, 'source_resolved', None, source_summary)
+    restore_system_routing(case, reasons={'source_unavailable', 'source_deleted'}, now=current)
+    _event(
+        case,
+        'source_resolved',
+        None,
+        source_summary,
+        {'previous_source_state': previous_state},
+    )
+    if case.workflow_state == 'closed':
+        # A manually withdrawn case may later receive fresh evidence that the condition cleared.
+        # Preserve the historical closure outcome while recording the later source recovery.
+        return case.workflow_state
     if case.severity in _OPERATOR_VERIFICATION_SEVERITIES or case.acknowledged_at is not None:
         case.workflow_state = 'verification_pending'
         case.verification_started_at = current
@@ -402,6 +431,7 @@ def mark_case_source_resolved(
         )
         return case.workflow_state
     case.workflow_state = 'closed'
+    case.closure_reason = 'resolved'
     case.closed_at = current
     case.resolution_summary = (
         auto_resolution_summary or 'The source alert recovered without a recorded manual remediation.'
@@ -416,6 +446,7 @@ def mark_case_source_resolved(
     case.postmortem_status = 'not_required'
     _event(case, 'auto_closed', None, 'Case auto-closed by the source-resolved policy for non-paging severity.')
     return case.workflow_state
+
 
 
 def get_case(public_id: str) -> AlertCase | None:

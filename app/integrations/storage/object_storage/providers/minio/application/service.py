@@ -205,6 +205,17 @@ def delete_minio_instance(instance: MinioInstance) -> dict[str, int]:
         IntegrationBinding.asset_key == asset_key,
     ).delete(synchronize_session=False)
 
+    # Deleting the asset removes future evidence, not the historical alert condition.
+    # Hold open KAORI cases as Unknown so deletion can never be mistaken for recovery.
+    from app.intelligence.alert_intelligence.lifecycle import mark_asset_alert_cases_source_unknown
+
+    alert_cases_marked_unknown = mark_asset_alert_cases_source_unknown(
+        domain='object_storage',
+        asset_key=asset_key,
+        reason='source_deleted',
+        source_kind='object_storage',
+    )
+
     # Provider implementation records point inward to the provider-neutral asset;
     # the asset core does not expose a MinIO-specific reverse relationship. Remove
     # the implementation record explicitly, then the asset and canonical identity.
@@ -223,6 +234,7 @@ def delete_minio_instance(instance: MinioInstance) -> dict[str, int]:
         'asset_bindings': int(deleted_bindings or 0),
         'object_storage_asset_deleted': 1,
         'canonical_instance_deleted': int(canonical is not None),
+        'alert_cases_marked_unknown': int(alert_cases_marked_unknown),
     }
 
 

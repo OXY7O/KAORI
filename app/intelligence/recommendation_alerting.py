@@ -226,7 +226,11 @@ def _handling_view(
     state: RecommendationAlertState | None,
     case: AlertCase | None,
 ) -> dict[str, Any]:
-    if case is not None and case.source_state == 'resolved' and case.workflow_state != 'closed':
+    if case is not None and case.source_state == 'unknown' and case.workflow_state != 'closed':
+        status = 'source_unknown'
+        label = 'Alert · Source Unknown'
+        tone = 'warning'
+    elif case is not None and case.source_state == 'resolved' and case.workflow_state != 'closed':
         status = 'resolved_pending'
         label = 'Resolved · Verify'
         tone = 'warning'
@@ -234,6 +238,14 @@ def _handling_view(
         status = 'escalated'
         label = 'Alert Open'
         tone = 'warning' if case.severity != 'critical' else 'critical'
+    elif case is not None and case.closure_reason == 'manual_withdrawal':
+        status = 'withdrawn'
+        label = 'Alert Withdrawn'
+        tone = 'unknown'
+    elif case is not None and case.closure_reason == 'source_decommissioned':
+        status = 'retired'
+        label = 'Source Decommissioned'
+        tone = 'unknown'
     elif case is not None and case.workflow_state == 'closed':
         status = 'resolved'
         label = 'Resolved Alert'

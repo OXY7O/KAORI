@@ -114,8 +114,8 @@ def test_alert_case_workspace_exposes_only_kaori_recommendation_cases() -> None:
 
     assert "_VALID_SOURCE_TYPES = {'all', 'recommendation'}" in service
     assert "AlertCase.source_type == 'recommendation'" in service
-    assert "row.source_state == 'firing'" in service
-    assert "row.source_state == 'resolved'" in service
+    assert "row.source_state in {'firing', 'unknown'}" in service
+    assert "row.source_state == 'resolved' or row.workflow_state == 'closed'" in service
     for template in (active, history):
         assert 'Provider Alerts' not in template
 

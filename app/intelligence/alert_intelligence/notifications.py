@@ -57,9 +57,14 @@ def case_delivery_rows(case: AlertCase, *, limit: int = 20) -> list[dict[str, An
             'event_label': 'Resolved' if row.event_type == 'alert_ops.resolved' else 'Firing',
             'channel': row.channel.name,
             'provider': row.channel.provider_key.replace('_', ' ').title(),
-            'status': row.status,
+            'status': (
+                'suppressed'
+                if row.status == 'skipped' and (row.payload_json or {}).get('delivery_state') == 'suppressed'
+                else row.status
+            ),
             'attempt_count': row.attempt_count,
             'error': row.error_message or '',
+            'suppression_reason': (row.payload_json or {}).get('suppression_reason') or '',
             'created_at': row.created_at,
             'sent_at': row.sent_at,
         }
@@ -216,7 +221,61 @@ def _deliver_case_event(
             'route_send_resolved': route.send_resolved if route is not None else None,
         },
     )
+    suppression_reason = _channel_suppression_reason(channel)
+    if suppression_reason:
+        return _record_suppressed_delivery(channel=channel, event=event, reason=suppression_reason)
+    _clear_previous_suppressed_delivery(channel_id=channel.id, event_key=event.event_key)
     return dispatch_notification_event(channel_ids=[channel_id], event=event)
+
+
+def _channel_suppression_reason(channel: NotificationChannel) -> str | None:
+    if not channel.enabled:
+        return 'channel_disabled'
+    if not channel.configured:
+        return 'channel_not_configured'
+    if channel.test_status != 'success':
+        return 'channel_not_validated'
+    return None
+
+
+def _record_suppressed_delivery(
+    *,
+    channel: NotificationChannel,
+    event: NotificationEvent,
+    reason: str,
+) -> dict[str, int]:
+    delivery = NotificationDelivery.query.filter_by(channel_id=channel.id, event_key=event.event_key).first()
+    if delivery is None:
+        delivery = NotificationDelivery()
+        delivery.channel_id = channel.id
+        delivery.event_key = event.event_key
+        delivery.event_type = event.event_type
+        delivery.domain = event.domain
+        delivery.asset_type = event.asset_type
+        delivery.asset_key = str(event.asset_key)
+        delivery.severity = str(event.severity or 'info')
+        delivery.attempt_count = 0
+        db.session.add(delivery)
+    if delivery.status != 'sent':
+        delivery.status = 'skipped'
+        delivery.error_message = f'Delivery suppressed: {reason.replace("_", " ")}.'
+        delivery.payload_json = {
+            **dict(event.payload or {}),
+            'delivery_state': 'suppressed',
+            'suppression_reason': reason,
+        }
+        db.session.commit()
+    return {'successful': 0, 'failed': 0, 'skipped': 1}
+
+
+def _clear_previous_suppressed_delivery(*, channel_id: int, event_key: str) -> None:
+    delivery = NotificationDelivery.query.filter_by(channel_id=channel_id, event_key=event_key).first()
+    if delivery is None or delivery.status != 'skipped':
+        return
+    if (delivery.payload_json or {}).get('delivery_state') != 'suppressed':
+        return
+    db.session.delete(delivery)
+    db.session.flush()
 
 
 def _successful_firing_channels(case: AlertCase) -> dict[int, bool]:

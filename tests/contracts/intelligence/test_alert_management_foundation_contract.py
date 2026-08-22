@@ -73,8 +73,8 @@ def test_resolved_workspace_is_source_state_based_not_close_only() -> None:
     service = read('app/intelligence/alert_intelligence/service.py')
     workspace = read('app/templates/intelligence/partials/_alert_intelligence_workspace.html')
     resolved = read('app/templates/intelligence/partials/_alert_ops_history.html')
-    assert "row.source_state == 'firing'" in service
-    assert "row.source_state == 'resolved'" in service
+    assert "row.source_state in {'firing', 'unknown'}" in service
+    assert "row.source_state == 'resolved' or row.workflow_state == 'closed'" in service
     assert "('resolved', 'Resolved'" in workspace
     assert 'Verification Pending' in resolved
     assert 'Verify & Close' in resolved
