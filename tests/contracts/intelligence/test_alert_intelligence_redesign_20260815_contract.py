@@ -37,8 +37,10 @@ def test_active_alert_filters_are_tab_local_auto_refresh_and_keep_clear_filters(
 
     assert 'Operational Context' in workspace
     assert 'id="alert-intelligence-context-form"' in workspace
-    assert 'hx-params="tab,domain,severity,workflow,source,q"' in workspace
-    assert 'hx-params="tab,domain,asset,severity,workflow,source,q"' in workspace
+    assert 'id="alert-intelligence-domain-select"' in workspace
+    assert 'id="alert-intelligence-asset-select"' in workspace
+    assert 'hx-include=".alert-intelligence-context-persistent"' in workspace
+    assert 'hx-include=".alert-intelligence-context-persistent, #alert-intelligence-domain-select"' in workspace
     assert 'id="alert-operations-filter-form"' in active
     assert 'hx-trigger="input changed delay:350ms from:input, change from:select"' in active
     assert 'Search' in active

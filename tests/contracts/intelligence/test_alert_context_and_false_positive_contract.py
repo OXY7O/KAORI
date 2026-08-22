@@ -12,17 +12,17 @@ def test_alert_context_filters_do_not_submit_stale_cross_domain_asset() -> None:
     service = read('app/intelligence/alert_intelligence/service.py')
 
     assert 'id="alert-intelligence-context-form"' in workspace
-    assert 'id="alert-intelligence-domain-form"' not in workspace
-    assert 'id="alert-intelligence-asset-form"' not in workspace
+    assert 'id="alert-intelligence-domain-select"' in workspace
+    assert 'id="alert-intelligence-asset-select"' in workspace
     assert workspace.count('hx-trigger="change"') >= 2
-    assert workspace.count('hx-include="#alert-intelligence-context-form"') >= 2
-    assert 'hx-params="tab,domain,severity,workflow,source,q"' in workspace
-    assert 'hx-params="tab,domain,asset,severity,workflow,source,q"' in workspace
-    context_form = workspace.split('id="alert-intelligence-context-form"', 1)[1].split('</form>', 1)[0]
-    assert '<input type="hidden" name="domain"' not in context_form
-    assert 'name="domain"' in context_form
-    assert 'name="asset"' in context_form
-    assert 'sm:grid-cols-2' in context_form
+    assert 'hx-include=".alert-intelligence-context-persistent"' in workspace
+    assert 'hx-include=".alert-intelligence-context-persistent, #alert-intelligence-domain-select"' in workspace
+    assert workspace.count('hx-disabled-elt="#alert-intelligence-domain-select, #alert-intelligence-asset-select"') >= 2
+    domain_select = workspace.split('id="alert-intelligence-domain-select"', 1)[1].split('</select>', 1)[0]
+    asset_select = workspace.split('id="alert-intelligence-asset-select"', 1)[1].split('</select>', 1)[0]
+    assert 'name="asset"' not in domain_select
+    assert 'name="domain"' in asset_select or '#alert-intelligence-domain-select' in asset_select
+    assert 'table_ui.filter_layout_classes()' in workspace
     assert 'option.label }} · {{ option.count' not in workspace
     assert "{'value': 'kubernetes', 'label': 'Kubernetes'}" in service
 
@@ -37,9 +37,12 @@ def test_false_positive_is_governed_closure_without_source_resolution() -> None:
     assert "'false_positive'" in model
     assert 'def close_false_positive_alert(' in state
     assert "case.closure_reason = 'false_positive'" in state
-    assert "state.promotion_suppressed_until_clear = True" in state
+    assert 'state.promotion_suppressed_until_clear = True' in state
     assert "state.promotion_suppression_reason = 'false_positive'" in state
-    assert "case.source_state = 'resolved'" not in state.split('def close_false_positive_alert(', 1)[1].split('def retire_source_deleted_case(', 1)[0]
+    assert (
+        "case.source_state = 'resolved'"
+        not in state.split('def close_false_positive_alert(', 1)[1].split('def retire_source_deleted_case(', 1)[0]
+    )
     assert "/false-positive'" in routes
     assert 'Close as False Positive' in workspace
     assert "'false_positive': 'False Positive'" in service

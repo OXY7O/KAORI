@@ -40,25 +40,40 @@
             <form id="alert-intelligence-context-form"
                   action="{{ url_for('alert_intelligence.index') }}"
                   method="get"
-                  class="grid min-w-0 w-full gap-3 sm:grid-cols-2">
-                <input type="hidden" name="tab" value="{{ payload.tab }}">
-                <input type="hidden" name="severity" value="{{ payload.filters.severity }}">
-                <input type="hidden" name="workflow" value="{{ payload.filters.workflow }}">
-                <input type="hidden" name="source" value="{{ payload.filters.source }}">
-                <input type="hidden" name="q" value="{{ payload.filters.q }}">
+                  class="{{ table_ui.filter_layout_classes() }} min-w-0">
+                <input class="alert-intelligence-context-persistent"
+                       type="hidden"
+                       name="tab"
+                       value="{{ payload.tab }}">
+                <input class="alert-intelligence-context-persistent"
+                       type="hidden"
+                       name="severity"
+                       value="{{ payload.filters.severity }}">
+                <input class="alert-intelligence-context-persistent"
+                       type="hidden"
+                       name="workflow"
+                       value="{{ payload.filters.workflow }}">
+                <input class="alert-intelligence-context-persistent"
+                       type="hidden"
+                       name="source"
+                       value="{{ payload.filters.source }}">
+                <input class="alert-intelligence-context-persistent"
+                       type="hidden"
+                       name="q"
+                       value="{{ payload.filters.q }}">
                 <label class="min-w-0">
                     <span class="{{ table_ui.filter_label_classes() }}">Domain</span>
-                    <select name="domain"
+                    <select id="alert-intelligence-domain-select"
+                            name="domain"
                             class="{{ table_ui.filter_select_classes() }}"
                             hx-get="{{ url_for('alert_intelligence.index') }}"
                             hx-trigger="change"
-                            hx-include="#alert-intelligence-context-form"
-                            hx-params="tab,domain,severity,workflow,source,q"
+                            hx-include=".alert-intelligence-context-persistent"
                             hx-target="#alert-intelligence-page-content"
                             hx-swap="outerHTML show:none focus-scroll:false"
                             hx-push-url="true"
                             hx-indicator="#alert-intelligence-loading"
-                            hx-disabled-elt="this"
+                            hx-disabled-elt="#alert-intelligence-domain-select, #alert-intelligence-asset-select"
                             hx-sync="#alert-intelligence-page-content:replace">
                         {% for option in payload.domain_options %}
                             <option value="{{ option.value }}"
@@ -68,24 +83,30 @@
                 </label>
                 <label class="min-w-0">
                     <span class="{{ table_ui.filter_label_classes() }}">Asset Scope</span>
-                    <select name="asset"
+                    <select id="alert-intelligence-asset-select"
+                            name="asset"
                             class="{{ table_ui.filter_select_classes() }}"
                             hx-get="{{ url_for('alert_intelligence.index') }}"
                             hx-trigger="change"
-                            hx-include="#alert-intelligence-context-form"
-                            hx-params="tab,domain,asset,severity,workflow,source,q"
+                            hx-include=".alert-intelligence-context-persistent, #alert-intelligence-domain-select"
                             hx-target="#alert-intelligence-page-content"
                             hx-swap="outerHTML show:none focus-scroll:false"
                             hx-push-url="true"
                             hx-indicator="#alert-intelligence-loading"
-                            hx-disabled-elt="this"
+                            hx-disabled-elt="#alert-intelligence-domain-select, #alert-intelligence-asset-select"
                             hx-sync="#alert-intelligence-page-content:replace">
                         {% for option in payload.assets %}
                             <option value="{{ option.value }}"
-                                    {% if payload.selected_asset_key == option.value %}selected{% endif %}>{{ option.label }}{% if option.environment != 'Fleet scope' and option.environment != '-' %} · {{ option.environment }}{% endif %}</option>
+                                    {% if payload.selected_asset_key == option.value %}selected{% endif %}>
+                                {{ option.label }}
+                                {% if option.environment != 'Fleet scope' and option.environment != '-' %}· {{ option.environment }}{% endif %}
+                            </option>
                         {% endfor %}
                     </select>
                 </label>
+                <noscript>
+                    <button type="submit" class="{{ table_ui.action_classes() }}">Apply Context</button>
+                </noscript>
             </form>
         </div>
     </div>
