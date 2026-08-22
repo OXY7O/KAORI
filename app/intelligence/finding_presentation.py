@@ -113,9 +113,7 @@ def recommendation_table_title(item: dict[str, Any], *, limit: int = 96) -> str:
     evidence = _mapping(item.get('evidence'))
     rule_key = _clean(item.get('rule_key'))
     if rule_key.startswith('kubernetes.pod.high_restart_count'):
-        affected_count = (
-            evidence.get('affected_count') or evidence.get('affected_pods') or evidence.get('count')
-        )
+        affected_count = evidence.get('affected_count') or evidence.get('affected_pods') or evidence.get('count')
         namespace = _clean(evidence.get('namespace')) or 'cluster scope'
         try:
             count = int(affected_count or 0)

@@ -58,7 +58,9 @@
                             {% for detail in card.details %}
                                 <div class="min-w-0">
                                     <dt class="text-xs leading-5 text-content-muted">{{ detail.label }}</dt>
-                                    <dd class="mt-0.5 text-sm font-semibold leading-5 text-content-primary">{{ detail.value }}</dd>
+                                    <dd class="mt-0.5 text-sm font-semibold leading-5 text-content-primary">
+                                        {{ detail.value }}
+                                    </dd>
                                 </div>
                             {% endfor %}
                         </dl>

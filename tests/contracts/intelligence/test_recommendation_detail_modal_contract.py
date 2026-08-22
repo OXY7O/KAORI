@@ -1,7 +1,7 @@
 from pathlib import Path
 
 
-def test_recommendation_detail_uses_canonical_decision_evidence_workspace():
+def test_recommendation_detail_uses_canonical_layered_review_workspace():
     template = Path('app/templates/intelligence/partials/_recommendation_detail_content.html').read_text()
     assert 'data-kaori-detail-variant="modal"' in template
     assert 'data-kaori-detail-shell' in template
@@ -9,15 +9,16 @@ def test_recommendation_detail_uses_canonical_decision_evidence_workspace():
     assert 'data-resource-detail-summary' in template
     assert template.index('data-kaori-detail-shell') < template.index('data-resource-detail-header')
     assert 'Recommendation Review' in template
-    assert 'data-kaori-recommendation-review-layout="decision-evidence-workspace"' in template
+    assert 'data-kaori-recommendation-review-layout="layered-review-workspace"' in template
+    assert 'Decision Brief' in template
     assert 'Why KAORI Raised This' in template
     assert 'Recommended Outcome' in template
-    assert 'Evidence Workspace' in template
+    assert 'Evidence Review' in template
     assert 'Evidence Details' in template
-    assert 'Remediation Plan' in template
+    assert 'Remediation Workflow' in template
     assert 'Traceability' in template
     assert '{{ item.summary }}' in template
-    assert 'xl:grid-cols-[minmax(0,1.55fr)_minmax(24rem,0.45fr)]' in template
+    assert 'xl:grid-cols-[minmax(0,1.4fr)_minmax(22rem,0.6fr)]' in template
     assert 'md:grid-cols-2 2xl:grid-cols-4' in template
     assert 'xl:sticky xl:top-4' not in template
     for phase in ('Review Evidence', 'Validate Live State', 'Apply Remediation', 'Verify & Close'):
@@ -27,6 +28,13 @@ def test_recommendation_detail_uses_canonical_decision_evidence_workspace():
     assert 'absolute bottom-0 left-4 top-8 w-px' not in template
     assert 'text-[11px]' not in template
     assert 'text-[10px]' not in template
+    assert "trace_fact('key-round', 'Rule Key', item.rule_key, true, true)" in template
+    assert 'block break-words [overflow-wrap:anywhere]' in template
+    assert 'block truncate' not in template
+    assert "section_heading('01'" in template
+    assert "section_heading('02'" in template
+    assert "section_heading('03'" in template
+    assert "section_heading('04'" in template
 
 
 def test_shared_resource_detail_host_supports_modal_without_main_layout_lock():

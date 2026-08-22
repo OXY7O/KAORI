@@ -15,7 +15,6 @@ from app.intelligence.finding_presentation import (
     build_affected_items,
     build_evidence_details,
     build_fix_steps,
-    compact_recommendation_summary,
     finding_scope_details,
     format_affected_summary,
     recommendation_table_summary,
