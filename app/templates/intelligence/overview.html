@@ -5,36 +5,34 @@
 {% import "intelligence/components/_workspace.html" as intelligence_ui %}
 {% block title %}Intelligence Overview{% endblock title %}
 {% block dashboard_content %}
+    {% set hero_metrics = [
+            ('sparkles', 'Active Findings', payload.summary.findings, 'Current recommendations'),
+            ('bell-ring', 'Active Alerts', payload.alerts.active, 'Open alert cases')
+        ] %}
     <div class="space-y-6">
         <section class="{{ page_hero.shell_classes() }}">
             <div class="{{ page_hero.layout_classes() }}">
                 <div class="{{ page_hero.content_classes() }}">
                     {% call page_hero.intro('brain-circuit', 'Infrastructure Intelligence', 'scan-search') %}
-                        <div class="flex flex-wrap items-center gap-2">
-                            <h1 class="{{ page_hero.title_classes() }}">Intelligence Overview</h1>
-                            {{ page_hero.context_status_badge('Operational', 'info') }}
-                        </div>
-                        <p class="mt-2 {{ page_hero.description_classes() }}">
-                            Aggregate posture across recommendations, alerts, rules, and automation. Open a dedicated workspace for investigation, evidence, and operator actions.
-                        </p>
+                        <h1 class="{{ page_hero.title_classes() }}">Intelligence Overview</h1>
+                        <p class="mt-2 {{ page_hero.description_classes() }}">Aggregate posture across recommendations, alerts, rules, and automation. Open a dedicated workspace for investigation, evidence, and operator actions.</p>
                         <div class="{{ page_hero.metadata_row_classes() }}">
                             {{ page_hero.meta_label('database', 'Committed Evidence') }}
                             {{ page_hero.meta_label('shield-check', 'Operator Governed') }}
+                            {{ page_hero.meta_label('layout-dashboard', '4 Workspaces') }}
                         </div>
                     {% endcall %}
                 </div>
-                <aside class="{{ page_hero.aside_classes() }}" aria-label="Operational posture">
-                    <div class="{{ page_hero.context_panel_classes() }}">
-                        {{ page_hero.context_header_status(
-                            'Operational Posture',
-                            'Cross-Workspace Summary',
-                            payload.posture.label,
-                            payload.posture.tone
-                        ) }}
-                        <p class="text-sm leading-6 text-brand-foreground-muted">{{ payload.posture.helper }}</p>
-                        {{ page_hero.context_info('database', 'Summary only · committed KAORI state · no live provider calls') }}
-                    </div>
-                </aside>
+                {{ page_hero.context_card('Intelligence posture',
+                                'Intelligence Posture',
+                                'Current State',
+                                payload.posture.label,
+                                payload.posture.tone,
+                                hero_metrics,
+                                'Open Recommendations',
+                                url_for('intelligence.recommendations') ,
+                'brain-circuit'
+                ) }}
             </div>
         </section>
 
