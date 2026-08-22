@@ -107,6 +107,32 @@ def compact_recommendation_summary(value: Any, *, limit: int = 180) -> str:
     return ' '.join(words).rstrip(' ,;:-') + '.'
 
 
+def recommendation_table_title(item: dict[str, Any], *, limit: int = 96) -> str:
+    """Return a compact finding title for recommendation list and review surfaces."""
+
+    evidence = _mapping(item.get('evidence'))
+    rule_key = _clean(item.get('rule_key'))
+    if rule_key.startswith('kubernetes.pod.high_restart_count'):
+        affected_count = (
+            evidence.get('affected_count') or evidence.get('affected_pods') or evidence.get('count')
+        )
+        namespace = _clean(evidence.get('namespace')) or 'cluster scope'
+        try:
+            count = int(affected_count or 0)
+        except (TypeError, ValueError):
+            count = 0
+        if count > 0:
+            resource = 'pod' if count == 1 else 'pods'
+            verb = 'has' if count == 1 else 'have'
+            return f'{count} {resource} in {namespace} {verb} repeated restarts'
+
+    title = ' '.join(str(item.get('title') or 'Recommendation').split())
+    if len(title) <= limit:
+        return title
+    shortened = title[:limit].rsplit(' ', 1)[0].strip()
+    return f'{shortened or title[:limit].strip()}…'
+
+
 def recommendation_table_summary(item: dict[str, Any], *, limit: int = 72) -> str:
     """Return a compact operator-facing action for recommendation list rows."""
 

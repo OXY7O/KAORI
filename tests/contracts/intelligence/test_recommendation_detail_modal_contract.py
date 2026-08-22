@@ -1,7 +1,7 @@
 from pathlib import Path
 
 
-def test_recommendation_detail_uses_canonical_modal_hierarchy():
+def test_recommendation_detail_uses_canonical_decision_evidence_workspace():
     template = Path('app/templates/intelligence/partials/_recommendation_detail_content.html').read_text()
     assert 'data-kaori-detail-variant="modal"' in template
     assert 'data-kaori-detail-shell' in template
@@ -9,26 +9,22 @@ def test_recommendation_detail_uses_canonical_modal_hierarchy():
     assert 'data-resource-detail-summary' in template
     assert template.index('data-kaori-detail-shell') < template.index('data-resource-detail-header')
     assert 'Recommendation Review' in template
-    assert 'Finding Assessment' in template
-    assert 'data-kaori-recommendation-review-layout="full-width-evidence-flow"' in template
-    assert 'lg:grid-cols-3' in template
-    assert 'xl:grid-cols-[minmax(0,1.45fr)_minmax(22rem,0.55fr)]' in template
+    assert 'data-kaori-recommendation-review-layout="decision-evidence-workspace"' in template
+    assert 'Why KAORI Raised This' in template
+    assert 'Recommended Outcome' in template
+    assert 'Evidence Workspace' in template
+    assert 'Evidence Details' in template
+    assert 'Remediation Plan' in template
+    assert 'Traceability' in template
+    assert '{{ item.summary }}' in template
+    assert 'xl:grid-cols-[minmax(0,1.55fr)_minmax(24rem,0.45fr)]' in template
     assert 'md:grid-cols-2 2xl:grid-cols-4' in template
     assert 'xl:sticky xl:top-4' not in template
-    assert '{{ item.summary }}' in template
-    assert 'Scope & Evidence' in template
-    assert 'Evidence Contract' in template
-    assert 'Remediation Workflow' in template
     for phase in ('Review Evidence', 'Validate Live State', 'Apply Remediation', 'Verify & Close'):
         assert phase in template
-    assert 'Target Outcome' in template
-    assert 'Step {{ loop.index }}' in template
-    assert '{{ loop.index }}/{{ item.fix_steps|length }}' in template
+    assert 'Step {{ loop.index }} of {{ item.fix_steps|length }}' in template
     assert 'Verification Gate' in template
     assert 'absolute bottom-0 left-4 top-8 w-px' not in template
-    assert 'Target Outcome' in template
-    assert 'grid-cols-[7.5rem_minmax(0,1fr)]' in template
-    assert 'text-base font-semibold leading-6' in template
     assert 'text-[11px]' not in template
     assert 'text-[10px]' not in template
 

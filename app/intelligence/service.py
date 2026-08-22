@@ -19,6 +19,7 @@ from app.intelligence.finding_presentation import (
     finding_scope_details,
     format_affected_summary,
     recommendation_table_summary,
+    recommendation_table_title,
 )
 from app.intelligence.object_storage_recommendations import build_object_storage_recommendation_findings
 from app.intelligence.rule_presentation import (
@@ -125,6 +126,7 @@ def _base_payload(args: MultiDict[str, str], *, page_mode: str) -> dict[str, Any
             scope_title, scope_supporting = finding_scope_details(item)
             item['scope_title'] = scope_title
             item['scope_supporting'] = scope_supporting
+            item['list_title'] = recommendation_table_title(item, limit=96)
             item['list_summary'] = recommendation_table_summary(item, limit=72)
 
     result_context = {
@@ -666,6 +668,7 @@ def get_recommendation_finding(recommendation_key: str) -> dict[str, Any] | None
         scope_title, scope_supporting = finding_scope_details(finding)
         finding['scope_title'] = scope_title
         finding['scope_supporting'] = scope_supporting
+        finding['list_title'] = recommendation_table_title(finding, limit=96)
         finding['list_summary'] = recommendation_table_summary(finding, limit=72)
         return finding
 
