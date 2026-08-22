@@ -1,0 +1,255 @@
+{% import "components/table_label.html" as table_label %}
+{% import "components/table_primitives.html" as table_ui %}
+{% import "components/table_registry.html" as table_registry %}
+{% import "components/loading_bar.html" as loading_bar %}
+{% import "integrations/components/_workspace.html" as integration_ui %}
+{% set selected_provider = form_channel.provider_key if form_channel else initial_provider %}
+<div x-data="{
+        configOpen: {{ 'true' if open_configuration else 'false' }},
+        guideOpen: false,
+        provider: '{{ selected_provider }}',
+        guideProvider: '{{ selected_provider or 'telegram' }}'
+     }"
+     @keydown.escape.window="configOpen = false; guideOpen = false"
+     class="space-y-5">
+    <section class="{{ integration_ui.section_shell_classes() }}">
+        <header class="flex flex-col gap-4 border-b border-outline-subtle bg-surface-elevated px-4 py-4 sm:px-5 lg:flex-row lg:items-center lg:justify-between">
+            <div class="min-w-0">
+                <div class="flex items-center gap-2">
+                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                          aria-hidden="true">
+                        <i data-lucide="send" class="h-4 w-4"></i>
+                    </span>
+                    <div class="min-w-0">
+                        <h2 class="text-base font-semibold leading-6 text-content-primary">Channel Registry</h2>
+                        <p class="mt-0.5 text-xs leading-5 text-content-muted">Configure reusable destinations, validate delivery, and control which KAORI capabilities may use each channel.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="flex flex-wrap items-center gap-2">
+                {{ table_label.status_label(payload.posture.label, payload.posture.tone, size='compact') }}
+                <button type="button"
+                        @click="guideProvider = provider || 'telegram'; guideOpen = true"
+                        class="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary shadow-sm transition-colors hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                    <i data-lucide="book-open" class="h-3.5 w-3.5"></i>
+                    Setup Guide
+                </button>
+                {% if can_manage %}
+                    <button type="button"
+                            @click="provider = ''; configOpen = true"
+                            class="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-3.5 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                        <i data-lucide="plus" class="h-3.5 w-3.5"></i>
+                        Add Channel
+                    </button>
+                {% endif %}
+            </div>
+        </header>
+
+        <div class="grid gap-px bg-outline-subtle lg:grid-cols-3">
+            {% for provider in payload.providers %}
+                <article class="group bg-surface-card p-4 sm:p-5">
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="flex min-w-0 items-start gap-3">
+                            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-outline-subtle bg-surface-elevated text-kaori-primary transition-colors group-hover:border-brand-outline group-hover:bg-kaori-soft"
+                                  aria-hidden="true">
+                                <i data-lucide="{{ provider.icon }}" class="h-4.5 w-4.5"></i>
+                            </span>
+                            <div class="min-w-0">
+                                <h3 class="text-sm font-semibold leading-5 text-content-primary">{{ provider.label }}</h3>
+                                <p class="mt-0.5 text-xs leading-5 text-content-muted">{{ provider.transport }}</p>
+                            </div>
+                        </div>
+                        {{ table_label.status_label(provider.status, provider.tone, size='compact') }}
+                    </div>
+                    <p class="mt-3 text-sm leading-6 text-content-secondary">{{ provider.description }}</p>
+                    <div class="mt-3 flex items-center justify-between gap-3 border-t border-outline-subtle pt-3">
+                        <p class="text-xs leading-5 text-content-muted">
+                            <span class="font-semibold text-content-primary">{{ provider.configured_count }}</span>
+                            configured
+                        </p>
+                        <div class="flex items-center gap-2">
+                            <button type="button"
+                                    @click="guideProvider = '{{ provider.key }}'; guideOpen = true"
+                                    class="text-xs font-semibold text-kaori-primary hover:text-kaori-primary-dark">
+                                Guide
+                            </button>
+                            {% if can_manage %}
+                                <button type="button"
+                                        @click="provider = '{{ provider.key }}'; configOpen = true"
+                                        class="text-xs font-semibold text-kaori-primary hover:text-kaori-primary-dark">
+                                    Configure
+                                </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                </article>
+            {% endfor %}
+        </div>
+    </section>
+
+    <section id="notification-channel-registry"
+             class="{{ integration_ui.section_shell_classes() }}">
+        {{ loading_bar.render('notification-channel-loading', label='Loading notification channels') }}
+        <header class="flex flex-col gap-3 border-b border-outline-subtle px-4 py-4 sm:px-5 lg:flex-row lg:items-end lg:justify-between">
+            <div class="min-w-0">
+                <h2 class="text-sm font-semibold leading-5 text-content-primary">Configured Channels</h2>
+                <p class="mt-1 text-xs leading-5 text-content-muted">Only enabled channels with a successful Test Delivery are eligible for automatic platform delivery.</p>
+            </div>
+            <div class="flex flex-wrap items-center gap-2 text-xs text-content-muted">
+                <span>{{ payload.summary.total }} total</span>
+                <span class="h-1 w-1 rounded-full bg-outline-strong" aria-hidden="true"></span>
+                <span>{{ payload.summary.eligible }} eligible</span>
+                <span class="h-1 w-1 rounded-full bg-outline-strong" aria-hidden="true"></span>
+                <span>{{ payload.summary.operational }} operational</span>
+            </div>
+        </header>
+
+        <div class="overflow-x-auto">
+            <table class="{{ table_ui.table_classes('min-w-[1120px]') }}">
+                <thead class="{{ table_ui.head_classes() }}">
+                    <tr>
+                        <th class="{{ table_ui.header_cell_classes() }}">Channel</th>
+                        <th class="{{ table_ui.header_cell_classes() }}">Readiness</th>
+                        <th class="{{ table_ui.header_cell_classes() }}">Routing Policy</th>
+                        <th class="{{ table_ui.header_cell_classes() }}">Allowed Uses</th>
+                        <th class="{{ table_ui.header_cell_classes() }}">Last Test</th>
+                        <th class="{{ table_ui.header_cell_classes() }}">Last Delivery</th>
+                        <th class="{{ table_ui.header_cell_classes(action=true) }}">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="{{ table_ui.body_classes() }}">
+                    {% for channel in payload.channels %}
+                        <tr class="{{ table_ui.row_classes() }}">
+                            <td class="{{ table_ui.cell_classes() }}">
+                                <div class="flex min-w-0 items-start gap-3">
+                                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                                          aria-hidden="true">
+                                        <i data-lucide="{{ channel.provider_icon }}" class="h-3.5 w-3.5"></i>
+                                    </span>
+                                    <div class="min-w-0">
+                                        <p class="font-semibold text-content-primary">{{ channel.name }}</p>
+                                        <p class="mt-0.5 text-xs leading-5 text-content-muted">{{ channel.provider_label }}</p>
+                                        <p class="mt-1 max-w-[260px] break-words text-xs leading-5 text-content-secondary [overflow-wrap:anywhere]"
+                                           title="{{ channel.destination_label }}">{{ channel.destination_label }}</p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="{{ table_ui.cell_classes() }}">
+                                <div class="space-y-1.5">
+                                    {{ table_label.status_label(channel.status, channel.tone, size='compact') }}
+                                    <p class="text-xs leading-5 text-content-muted">{{ 'Enabled' if channel.enabled else 'Disabled' }}</p>
+                                </div>
+                            </td>
+                            <td class="{{ table_ui.cell_classes() }}">
+                                <p class="text-sm font-medium text-content-secondary">{{ channel.minimum_severity_label }}</p>
+                                <p class="mt-1 max-w-[240px] text-xs leading-5 text-content-muted">{{ channel.domain_labels|join(', ') }}</p>
+                            </td>
+                            <td class="{{ table_ui.cell_classes() }}">
+                                <p class="max-w-[260px] text-sm leading-5 text-content-secondary">{{ channel.event_type_labels|join(', ') }}</p>
+                                {% if channel.report_schedule_count %}
+                                    <p class="mt-1 text-xs leading-5 text-content-muted">{{ channel.report_schedule_count }} report schedule reference{{ '' if channel.report_schedule_count == 1 else 's' }}</p>
+                                {% endif %}
+                            </td>
+                            <td class="{{ table_ui.cell_classes() }}">
+                                {% set test_tone = 'normal' if channel.status in ['Ready', 'Operational'] else ('warning' if channel.status in ['Validation Failed', 'Validation Required'] else 'unknown') %}
+                                {{ table_label.status_label('Passed' if channel.status in ['Ready', 'Operational'] else ('Failed' if channel.status == 'Validation Failed' else 'Required'), test_tone, size='compact') }}
+                                <p class="mt-1 whitespace-nowrap text-xs leading-5 text-content-muted">{{ channel.last_tested_at|user_datetime('Never tested') if channel.last_tested_at else 'Never tested' }}</p>
+                            </td>
+                            <td class="{{ table_ui.cell_classes() }}">
+                                {{ table_label.status_label(channel.last_delivery_label, channel.last_delivery_tone, size='compact') }}
+                                <p class="mt-1 whitespace-nowrap text-xs leading-5 text-content-muted">{{ channel.last_delivery_at|user_datetime('No delivery') if channel.last_delivery_at else 'No delivery yet' }}</p>
+                            </td>
+                            <td class="{{ table_ui.cell_classes(action=true) }}">
+                                {% if can_manage %}
+                                    <div class="flex justify-end gap-2">
+                                        <a href="{{ url_for('notification_channels.index', tab='channels', edit=channel.id, configure=1) }}"
+                                           class="{{ table_ui.action_classes() }}">Edit</a>
+                                        <form method="post"
+                                              action="{{ url_for('notification_channels.test', channel_id=channel.id) }}">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            <button class="{{ table_ui.action_classes() }}">Test</button>
+                                        </form>
+                                        {% if channel.delete_blocked %}
+                                            <button type="button"
+                                                    disabled
+                                                    title="{{ channel.delete_reason }}"
+                                                    class="{{ table_ui.action_classes(destructive=true) }} cursor-not-allowed opacity-50">
+                                                Delete
+                                            </button>
+                                        {% else %}
+                                            <form method="post"
+                                                  action="{{ url_for('notification_channels.delete', channel_id=channel.id) }}">
+                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                <button class="{{ table_ui.action_classes(destructive=true) }}">Delete</button>
+                                            </form>
+                                        {% endif %}
+                                    </div>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="7" class="p-0">
+                                {% set empty_state_icon = "send" %}
+                                {% set empty_state_label = "Setup Required" %}
+                                {% set empty_state_tone = "warning" %}
+                                {% set empty_state_title = "No Notification Channels Configured" %}
+                                {% set empty_state_description = "Choose an available provider, follow its setup guide, then add and validate the first reusable delivery channel." %}
+                                {% set empty_state_min_height = "min-h-[190px]" %}
+                                {% include 'components/states/_empty_state.html' %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% if payload.channel_pagination.total_items > 0 %}
+            {{ table_registry.footer('notification_channels.index',
+                                            'notification-channel-registry',
+                                            'notification-channel-loading',
+                                            payload.channel_pagination,
+                                            {'tab': 'channels'},
+                                            payload.channel_pagination.allowed_per_page,
+                                            resource_label='Channels',
+                                            rows_aria_label='Notification channels per page',
+                                            control_name='notification-channels',
+                                            page_param='channel_page',
+                                            per_page_param='channel_per_page') }}
+        {% endif %}
+    </section>
+
+    <section class="grid gap-4 lg:grid-cols-3">
+        <article class="rounded-xl border border-outline-subtle bg-surface-card p-4 shadow-sm">
+            <div class="flex items-start gap-3">
+                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                      aria-hidden="true"><i data-lucide="check-check" class="h-3.5 w-3.5"></i></span>
+                <div class="min-w-0">
+                    <h3 class="text-sm font-semibold leading-5 text-content-primary">Validation Gate</h3>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">A saved channel is not automatically eligible. Test Delivery must succeed after destination or credential changes.</p>
+                </div>
+            </div>
+        </article>
+        <article class="rounded-xl border border-outline-subtle bg-surface-card p-4 shadow-sm">
+            <div class="flex items-start gap-3">
+                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                      aria-hidden="true"><i data-lucide="bell" class="h-3.5 w-3.5"></i></span>
+                <div class="min-w-0">
+                    <h3 class="text-sm font-semibold leading-5 text-content-primary">Operational Feedback</h3>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Save and test actions use the canonical toast. Test failures and blocked deletion remain visible in the Notification Deck.</p>
+                </div>
+            </div>
+        </article>
+        <article class="rounded-xl border border-outline-subtle bg-surface-card p-4 shadow-sm">
+            <div class="flex items-start gap-3">
+                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                      aria-hidden="true"><i data-lucide="scroll-text" class="h-3.5 w-3.5"></i></span>
+                <div class="min-w-0">
+                    <h3 class="text-sm font-semibold leading-5 text-content-primary">Activity Audit</h3>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Create, update, test, blocked delete, and delete outcomes are persisted without storing provider secrets.</p>
+                </div>
+            </div>
+        </article>
+    </section>
+
+    {% include 'integrations/delivery/notification_channels/partials/_channel_modals.html' %}
+</div>

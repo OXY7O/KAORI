@@ -10,7 +10,10 @@ from app.integrations.delivery.notification_channels.forms import (
     parse_channel_form,
     validate_channel_input,
 )
-from app.integrations.delivery.notification_channels.lifecycle import NotificationChannelDeletionBlocked, delete_channel
+from app.integrations.delivery.notification_channels.lifecycle import (
+    NotificationChannelDeletionBlocked,
+    delete_channel,
+)
 from app.integrations.delivery.notification_channels.service import (
     create_channel,
     get_channel,
@@ -18,7 +21,8 @@ from app.integrations.delivery.notification_channels.service import (
     test_channel,
     update_channel,
 )
-from app.platform_operations.notifications.service import record_operational_activity
+from app.platform_operations.notifications.feedback import OperationalDeliveryPolicy
+from app.platform_operations.notifications.service import create_transient_feedback, record_operational_activity
 
 _WORKSPACE_TABS = {'overview', 'channels', 'delivery'}
 
@@ -42,13 +46,17 @@ def index() -> ResponseReturnValue:
         delivery_per_page=request.args.get('delivery_per_page', default=5, type=int),
     )
     form_channel = get_channel_form_view(get_channel(edit_id)) if edit_id else None
-    feedback = str(request.args.get('feedback') or '').strip()
+    requested_provider = str(request.args.get('provider') or '').strip().lower()
+    supported_provider_keys = {str(provider['key']) for provider in payload['providers']}
+    initial_provider = requested_provider if requested_provider in supported_provider_keys else ''
+    open_configuration = bool(edit_id or request.args.get('configure') == '1')
     return render_template(
         'integrations/delivery/notification_channels/index.html',
         payload=payload,
         active_tab=active_tab,
         form_channel=form_channel,
-        feedback=feedback,
+        initial_provider=initial_provider,
+        open_configuration=open_configuration,
     )
 
 
@@ -58,13 +66,23 @@ def create() -> ResponseReturnValue:
     data = parse_channel_form(request.form)
     errors = validate_channel_input(data)
     if errors:
-        return redirect(url_for('notification_channels.index', tab='channels', feedback='; '.join(errors)))
+        _queue_configuration_feedback(errors, provider_key=data.provider_key)
+        return redirect(
+            url_for(
+                'notification_channels.index',
+                tab='channels',
+                configure=1,
+                provider=data.provider_key,
+            )
+        )
     channel = create_channel(data, user_id=int(current_user.id))
     _record_channel_activity(
         channel.id,
         'created',
         'Notification channel created',
-        f'{channel.name} is available for testing.',
+        f'{channel.name} was saved. Run Test Delivery before relying on this channel for automatic delivery.',
+        channel_name=channel.name,
+        provider_key=channel.provider_key,
     )
     return redirect(url_for('notification_channels.index', tab='channels'))
 
@@ -78,12 +96,13 @@ def update(channel_id: int) -> ResponseReturnValue:
     data = parse_channel_form(request.form, existing=channel)
     errors = validate_channel_input(data, existing=channel)
     if errors:
+        _queue_configuration_feedback(errors, provider_key=channel.provider_key)
         return redirect(
             url_for(
                 'notification_channels.index',
                 tab='channels',
                 edit=channel_id,
-                feedback='; '.join(errors),
+                configure=1,
             )
         )
     update_channel(channel, data, user_id=int(current_user.id))
@@ -91,7 +110,9 @@ def update(channel_id: int) -> ResponseReturnValue:
         channel.id,
         'updated',
         'Notification channel updated',
-        f'{channel.name} configuration was updated.',
+        f'{channel.name} configuration was updated. Re-run Test Delivery when destination or credentials changed.',
+        channel_name=channel.name,
+        provider_key=channel.provider_key,
     )
     return redirect(url_for('notification_channels.index', tab='channels'))
 
@@ -109,6 +130,8 @@ def test(channel_id: int) -> ResponseReturnValue:
         'test_succeeded' if result.success else 'test_failed',
         'Notification channel test succeeded' if result.success else 'Notification channel test failed',
         result.message,
+        channel_name=channel.name,
+        provider_key=channel.provider_key,
         status='success' if result.success else 'error',
     )
     return redirect(url_for('notification_channels.index', tab='channels'))
@@ -121,6 +144,7 @@ def delete(channel_id: int) -> ResponseReturnValue:
     if channel is None:
         abort(404)
     name = channel.name
+    provider_key = channel.provider_key
     try:
         delete_channel(channel)
     except NotificationChannelDeletionBlocked as exc:
@@ -133,8 +157,14 @@ def delete(channel_id: int) -> ResponseReturnValue:
             action_url=url_for('notification_channels.index', tab='channels'),
             action_label='Review Notification Channels',
             action_icon='shield-alert',
-            metadata={'module': 'integrations', 'channel_id': channel_id},
+            metadata={
+                'module': 'integrations',
+                'channel_id': channel_id,
+                'channel_name': name,
+                'provider_key': provider_key,
+            },
             queue_feedback=True,
+            delivery_policy=OperationalDeliveryPolicy.PERSISTENT,
         )
         return redirect(url_for('notification_channels.index', tab='channels'))
     record_operational_activity(
@@ -143,10 +173,37 @@ def delete(channel_id: int) -> ResponseReturnValue:
         status='success',
         title='Notification channel deleted',
         message=f'{name} was removed from KAORI notification delivery.',
-        metadata={'module': 'integrations', 'channel_id': channel_id},
+        action_url=url_for('notification_channels.index', tab='channels'),
+        action_label='Open Notification Channels',
+        action_icon='send',
+        metadata={
+            'module': 'integrations',
+            'channel_id': channel_id,
+            'channel_name': name,
+            'provider_key': provider_key,
+        },
         queue_feedback=True,
+        delivery_policy=OperationalDeliveryPolicy.PERSISTENT,
     )
     return redirect(url_for('notification_channels.index', tab='channels'))
+
+
+def _queue_configuration_feedback(errors: list[str], *, provider_key: str) -> None:
+    create_transient_feedback(
+        status='warning',
+        title='Notification channel configuration needs attention',
+        message='Review the highlighted channel requirements and submit the configuration again.',
+        detail=' '.join(errors),
+        action_url=url_for(
+            'notification_channels.index',
+            tab='channels',
+            configure=1,
+            provider=provider_key,
+        ),
+        action_label='Review Channel Configuration',
+        action_icon='settings-2',
+        queue_feedback=True,
+    )
 
 
 def _record_channel_activity(
@@ -155,6 +212,8 @@ def _record_channel_activity(
     title: str,
     message: str,
     *,
+    channel_name: str,
+    provider_key: str,
     status: str = 'success',
 ) -> None:
     record_operational_activity(
@@ -166,6 +225,12 @@ def _record_channel_activity(
         action_url=url_for('notification_channels.index', tab='channels'),
         action_label='Open Notification Channels',
         action_icon='send',
-        metadata={'module': 'integrations', 'channel_id': channel_id},
+        metadata={
+            'module': 'integrations',
+            'channel_id': channel_id,
+            'channel_name': channel_name,
+            'provider_key': provider_key,
+        },
         queue_feedback=True,
+        delivery_policy=OperationalDeliveryPolicy.DECK_ON_FAILURE,
     )

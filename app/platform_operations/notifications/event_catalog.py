@@ -52,7 +52,7 @@ def event_label(event_type: str) -> str:
     prefix = 'operational_activity_'
     if normalized.startswith(prefix):
         normalized = normalized[len(prefix) :]
-    return _display_event_label(normalized.replace('_', ' ').strip()) or 'Activity'
+    return _display_event_label(normalized.replace('.', ' ').replace('_', ' ').strip()) or 'Activity'
 
 
 def event_category_key(event_type: str) -> str:

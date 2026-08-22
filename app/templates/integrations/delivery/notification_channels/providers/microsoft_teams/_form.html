@@ -1,17 +1,3 @@
-<div class="mb-4 flex items-start gap-3">
-    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary shadow-sm">
-        <i data-lucide="messages-square" class="h-4 w-4"></i>
-    </span>
-    <div>
-        <p class="text-sm font-semibold text-content-primary">Microsoft Teams Workflows</p>
-        <p class="mt-1 text-xs leading-5 text-content-muted">
-            Create a Teams Workflow using “When a Teams webhook request is received”, copy its webhook URL, and keep at least one co-owner for operational continuity. KAORI does not support legacy Office 365 connector webhook URLs.
-        </p>
-        <p class="mt-1 text-xs leading-5 text-content-muted">
-            Current KAORI delivery uses the Workflow trigger configured for <span class="font-semibold text-content-secondary">Anyone</span> authentication, so no bearer token is sent. Treat the webhook URL as a secret; KAORI encrypts it at rest and never renders it back.
-        </p>
-    </div>
-</div>
 <div class="grid gap-4 sm:grid-cols-2">
     <div>
         <label class="{{ table_ui.filter_label_classes() }}">Destination Label</label>
@@ -19,6 +5,7 @@
                value="{{ form_channel.teams_destination if form_channel else '' }}"
                class="{{ table_ui.filter_input_classes() }}"
                placeholder="Platform Ops / Alert Intelligence">
+        <p class="mt-1 text-xs leading-5 text-content-muted">Human-readable Teams channel or workflow destination.</p>
     </div>
     <div>
         <label class="{{ table_ui.filter_label_classes() }}">Workflow Webhook URL</label>
@@ -27,5 +14,6 @@
                autocomplete="new-password"
                class="{{ table_ui.filter_input_classes() }}"
                placeholder="{{ 'Leave blank to keep current webhook URL' if form_channel and form_channel.credential_configured else 'https://...environment.api.powerplatform.com/...' }}">
+        <p class="mt-1 text-xs leading-5 text-content-muted">Use a Teams Workflow / Power Automate URL, not legacy Office 365 connector webhook URLs.</p>
     </div>
 </div>

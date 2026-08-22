@@ -67,6 +67,12 @@ class NotificationProviderAdapter:
     description: str
     transport: str
     configuration: str
+    setup_title: str
+    setup_summary: str
+    setup_requirements: tuple[str, ...]
+    setup_steps: tuple[str, ...]
+    security_note: str
+    validation_note: str
     form_partial: str
     form_parser: ProviderFormParser
     form_validator: ProviderFormValidator
@@ -133,6 +139,31 @@ _PROVIDERS = {
         description='Telegram Bot API delivery to a chat, group, or channel.',
         transport='Bot API',
         configuration='Bot token + chat, group, or channel destination.',
+        setup_title='Configure Telegram Bot Delivery',
+        setup_summary=(
+            'Use a dedicated Telegram bot and destination that KAORI can reach without sharing the bot token '
+            'outside the channel credential boundary.'
+        ),
+        setup_requirements=(
+            'A Telegram bot created with BotFather.',
+            'The bot token generated for that bot.',
+            'A target chat ID, group ID, or @channel username.',
+            'Posting permission for the bot in the selected destination.',
+        ),
+        setup_steps=(
+            'Create or select a dedicated KAORI notification bot in BotFather and copy its token.',
+            'Add the bot to the intended chat, group, or channel and grant the minimum permission required '
+            'to post messages.',
+            'Resolve the destination as a numeric chat ID or @channel username, then enter it in the KAORI '
+            'channel configuration.',
+            'Save the channel and run Test Delivery. Keep the channel out of automatic use until the test '
+            'status is Ready.',
+        ),
+        security_note=(
+            'Treat the bot token as a secret. KAORI stores it in the channel credential payload and never renders '
+            'the stored token back into the form.'
+        ),
+        validation_note='Test Delivery verifies both bot credentials and access to the configured destination.',
         form_partial='integrations/delivery/notification_channels/providers/telegram/_form.html',
         form_parser=parse_telegram_form,
         form_validator=validate_telegram_form,
@@ -146,6 +177,33 @@ _PROVIDERS = {
         description='SMTP delivery to one or more operational recipients.',
         transport='SMTP',
         configuration='SMTP server + sender identity + one or more recipients.',
+        setup_title='Configure SMTP Email Delivery',
+        setup_summary=(
+            'Connect KAORI to an internal relay or authenticated SMTP service, then define the sender identity '
+            'and operational recipients.'
+        ),
+        setup_requirements=(
+            'An SMTP host and port reachable from the KAORI worker runtime.',
+            'STARTTLS, TLS/SMTPS, or an explicitly trusted relay policy.',
+            'A sender email address and optional SMTP username/password.',
+            'One or more recipient addresses for the operational audience.',
+        ),
+        setup_steps=(
+            'Confirm the SMTP endpoint, port, and transport-security mode with the mail platform owner.',
+            'Configure sender identity. If the relay requires authentication, enter the SMTP username and password.',
+            'Add one or more recipients separated by commas and choose the KAORI domains and allowed uses for '
+            'this channel.',
+            'Save the channel and run Test Delivery. Verify the test message arrives before enabling the channel '
+            'for automatic delivery.',
+        ),
+        security_note=(
+            'STARTTLS is the recommended default. Store SMTP credentials only in the channel form; passwords are '
+            'encrypted at rest and are not rendered back after save.'
+        ),
+        validation_note=(
+            'Test Delivery proves SMTP connectivity, TLS negotiation, optional authentication, sender acceptance, '
+            'and recipient delivery submission.'
+        ),
         form_partial='integrations/delivery/notification_channels/providers/email/_form.html',
         form_parser=parse_email_form,
         form_validator=validate_email_form,
@@ -159,6 +217,32 @@ _PROVIDERS = {
         description='Teams Workflows / Power Automate webhook delivery.',
         transport='Teams Workflows',
         configuration='Power Automate webhook URL + human-readable Teams destination label.',
+        setup_title='Configure Microsoft Teams Workflow Delivery',
+        setup_summary=(
+            'Use a Teams Workflow / Power Automate webhook. Legacy Office 365 connector URLs are intentionally '
+            'not accepted by the KAORI adapter.'
+        ),
+        setup_requirements=(
+            'A Teams channel and a Workflow with “When a Teams webhook request is received”.',
+            'The Workflow trigger configured for Anyone authentication for the current KAORI adapter.',
+            'The HTTPS Workflow webhook URL from Power Automate.',
+            'At least one additional Workflow co-owner for operational continuity.',
+        ),
+        setup_steps=(
+            'Create the Workflow in the target Teams channel and use the Teams webhook request trigger.',
+            'Configure the trigger for Anyone authentication. The current KAORI adapter does not send a bearer token.',
+            'Copy the generated HTTPS webhook URL and enter a human-readable destination label in KAORI.',
+            'Save the channel and run Test Delivery. Confirm the message reaches the intended Teams conversation '
+            'before automatic use.',
+        ),
+        security_note=(
+            'Treat the Workflow URL as a secret because possession of the URL can permit message submission. '
+            'KAORI encrypts it at rest and never renders the stored URL back.'
+        ),
+        validation_note=(
+            'Test Delivery verifies that the Workflow endpoint accepts the KAORI message payload with a successful '
+            'HTTP response.'
+        ),
         form_partial='integrations/delivery/notification_channels/providers/microsoft_teams/_form.html',
         form_parser=parse_microsoft_teams_form,
         form_validator=validate_microsoft_teams_form,
@@ -176,7 +260,7 @@ def provider_labels() -> dict[str, str]:
     return {key: adapter.label for key, adapter in _PROVIDERS.items()}
 
 
-def provider_catalog() -> list[dict[str, str]]:
+def provider_catalog() -> list[dict[str, Any]]:
     return [
         {
             'key': adapter.key,
@@ -185,6 +269,12 @@ def provider_catalog() -> list[dict[str, str]]:
             'description': adapter.description,
             'transport': adapter.transport,
             'configuration': adapter.configuration,
+            'setup_title': adapter.setup_title,
+            'setup_summary': adapter.setup_summary,
+            'setup_requirements': list(adapter.setup_requirements),
+            'setup_steps': list(adapter.setup_steps),
+            'security_note': adapter.security_note,
+            'validation_note': adapter.validation_note,
             'form_partial': adapter.form_partial,
         }
         for adapter in _PROVIDERS.values()

@@ -4,6 +4,7 @@ import json
 from datetime import UTC, datetime
 from typing import Any
 
+from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 
 from app.common.pagination import paginate_query
@@ -158,7 +159,23 @@ def get_notification_channels_payload(
     channel_rows, channel_pagination = _channel_registry_page(page=channel_page, per_page=channel_per_page)
     delivery_rows, delivery_pagination = _delivery_registry_page(page=delivery_page, per_page=delivery_per_page)
     summary = notification_channel_summary()
-    providers = [{**item, 'status': 'Available', 'tone': 'normal'} for item in provider_catalog()]
+    provider_counts = {
+        str(provider_key): int(count)
+        for provider_key, count in (
+            db.session.query(NotificationChannel.provider_key, func.count(NotificationChannel.id))
+            .group_by(NotificationChannel.provider_key)
+            .all()
+        )
+    }
+    providers = [
+        {
+            **item,
+            'status': 'Available',
+            'tone': 'normal',
+            'configured_count': provider_counts.get(str(item['key']), 0),
+        }
+        for item in provider_catalog()
+    ]
     return {
         'summary': summary,
         'posture': {'label': summary['label'], 'tone': summary['tone']},

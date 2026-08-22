@@ -23,15 +23,18 @@ def test_notification_channel_registries_follow_kaori_rows_contract() -> None:
     routes = read('app/integrations/delivery/notification_channels/routes.py')
     service = read('app/integrations/delivery/notification_channels/service.py')
     page = read('app/templates/integrations/delivery/notification_channels/index.html')
+    channels_workspace = read(
+        'app/templates/integrations/delivery/notification_channels/partials/_channels_workspace.html'
+    )
 
     assert "request.args.get('channel_per_page', default=5, type=int)" in routes
     assert "request.args.get('delivery_per_page', default=5, type=int)" in routes
     assert 'paginate_query(query, page=page, per_page=per_page)' in service
-    assert "page_param='channel_page'" in page
-    assert "per_page_param='channel_per_page'" in page
+    assert "page_param='channel_page'" in channels_workspace
+    assert "per_page_param='channel_per_page'" in channels_workspace
     assert "page_param='delivery_page'" in page
     assert "per_page_param='delivery_per_page'" in page
-    assert 'payload.channel_pagination.allowed_per_page' in page
+    assert 'payload.channel_pagination.allowed_per_page' in channels_workspace
     assert 'payload.delivery_pagination.allowed_per_page' in page
 
 
@@ -86,7 +89,10 @@ def test_provider_registry_owns_transport_presentation_and_model_has_no_product_
 def test_provider_form_contract_is_adapter_owned_and_workspace_has_no_product_default() -> None:
     providers = read('app/integrations/delivery/notification_channels/providers/__init__.py')
     forms = read('app/integrations/delivery/notification_channels/forms.py')
-    page = read('app/templates/integrations/delivery/notification_channels/index.html')
+    channels_workspace = read(
+        'app/templates/integrations/delivery/notification_channels/partials/_channels_workspace.html'
+    )
+    channel_modals = read('app/templates/integrations/delivery/notification_channels/partials/_channel_modals.html')
 
     assert 'form_partial: str' in providers
     assert 'form_parser: ProviderFormParser' in providers
@@ -96,9 +102,9 @@ def test_provider_form_contract_is_adapter_owned_and_workspace_has_no_product_de
     assert 'errors.extend(adapter.form_validator(data))' in forms
     assert 'adapter.form_view(channel)' in forms
     assert "existing.provider_key if existing else ''" in forms
-    assert "form_channel.provider_key if form_channel else ''" in page
-    assert 'Select provider' in page
-    assert '{% include provider_option.form_partial %}' in page
+    assert 'form_channel.provider_key if form_channel else initial_provider' in channels_workspace
+    assert 'Select provider' in channel_modals
+    assert '{% include provider_option.form_partial %}' in channel_modals
 
 
 def test_delivery_event_severity_scope_is_catalog_driven() -> None:
@@ -115,7 +121,9 @@ def test_delivery_event_severity_scope_is_catalog_driven() -> None:
 def test_channel_deletion_preserves_delivery_evidence_and_schedule_references() -> None:
     lifecycle = read('app/integrations/delivery/notification_channels/lifecycle.py')
     routes = read('app/integrations/delivery/notification_channels/routes.py')
-    page = read('app/templates/integrations/delivery/notification_channels/index.html')
+    channels_workspace = read(
+        'app/templates/integrations/delivery/notification_channels/partials/_channels_workspace.html'
+    )
 
     assert 'class NotificationChannelDeletionBlocked(ValueError):' in lifecycle
     assert 'NotificationDelivery.query.filter_by(channel_id=channel_id).count()' in lifecycle
@@ -124,5 +132,32 @@ def test_channel_deletion_preserves_delivery_evidence_and_schedule_references() 
     assert 'raise NotificationChannelDeletionBlocked(usage)' in lifecycle
     assert 'except NotificationChannelDeletionBlocked as exc:' in routes
     assert "event_type='integration.notification_channel.delete_blocked'" in routes
-    assert 'channel.delete_blocked' in page
-    assert 'channel.delete_reason' in page
+    assert 'channel.delete_blocked' in channels_workspace
+    assert 'channel.delete_reason' in channels_workspace
+
+
+def test_notification_channel_feedback_separates_toast_deck_and_activity_audit() -> None:
+    routes = read('app/integrations/delivery/notification_channels/routes.py')
+    workspace = read('app/templates/integrations/delivery/notification_channels/partials/_channels_workspace.html')
+    modals = read('app/templates/integrations/delivery/notification_channels/partials/_channel_modals.html')
+
+    assert 'create_transient_feedback(' in routes
+    assert 'OperationalDeliveryPolicy.DECK_ON_FAILURE' in routes
+    assert 'OperationalDeliveryPolicy.PERSISTENT' in routes
+    assert 'queue_feedback=True' in routes
+    assert "'channel_name': channel_name" in routes
+    assert "'provider_key': provider_key" in routes
+    assert 'Operational Feedback' in workspace
+    assert 'Activity Audit' in workspace
+    assert 'Test failures and blocked deletion remain visible in the Notification Deck.' in workspace
+    assert 'Provider secrets never appear in Toast, Notification Deck, or Activity Audit metadata.' in modals
+
+
+def test_notification_channel_activity_audit_uses_integrations_category_and_readable_event_labels() -> None:
+    categories = read('app/definitions/catalogs/platform_operations/notifications/event_categories.yaml')
+    event_catalog = read('app/platform_operations/notifications/event_catalog.py')
+
+    assert '- integration.' in categories
+    assert "normalized.replace('.', ' ').replace('_', ' ')" in event_catalog
+    assert "'channel_name': channel_name" in read('app/integrations/delivery/notification_channels/routes.py')
+    assert "'provider_key': provider_key" in read('app/integrations/delivery/notification_channels/routes.py')

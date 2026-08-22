@@ -50,6 +50,7 @@ routes:
       - kubernetes_capability_
       - kubernetes_runtime_
       - integration_
+      - integration.
   - category: settings
     exact: [user_preference, account_security]
     prefixes: [settings_]

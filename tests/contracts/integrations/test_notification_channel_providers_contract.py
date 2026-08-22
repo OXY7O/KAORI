@@ -37,14 +37,20 @@ def test_microsoft_teams_uses_workflows_webhook_and_keeps_url_secret():
 
 def test_notification_channels_redesign_surfaces_delivery_governance():
     page = read('app/templates/integrations/delivery/notification_channels/index.html')
+    channels_workspace = read(
+        'app/templates/integrations/delivery/notification_channels/partials/_channels_workspace.html'
+    )
+    channel_modals = read('app/templates/integrations/delivery/notification_channels/partials/_channel_modals.html')
+    workspace = page + channels_workspace + channel_modals
     for label in (
         'Delivery Providers',
-        'Channel Configuration',
+        'Channel Registry',
         'Configured Channels',
+        'Provider Setup Guide',
         'Delivery Contract',
         'Delivery Ownership',
     ):
-        assert label in page
+        assert label in workspace
     providers = read('app/integrations/delivery/notification_channels/providers/__init__.py')
     for provider in ('Telegram', 'Email', 'Microsoft Teams'):
         assert provider in providers
@@ -55,3 +61,26 @@ def test_notification_channels_redesign_surfaces_delivery_governance():
     assert 'automation.decision_approved:' in definition
     assert 'automation.decision_rejected:' in definition
     assert 'automation.execution_failed:' in definition
+
+
+def test_provider_catalog_owns_setup_guidance_and_channel_tab_renders_one_guide_modal():
+    providers = read('app/integrations/delivery/notification_channels/providers/__init__.py')
+    modal = read('app/templates/integrations/delivery/notification_channels/partials/_channel_modals.html')
+
+    for field in (
+        'setup_title: str',
+        'setup_summary: str',
+        'setup_requirements: tuple[str, ...]',
+        'setup_steps: tuple[str, ...]',
+        'security_note: str',
+        'validation_note: str',
+    ):
+        assert field in providers
+    assert 'Provider Setup Guide' in modal
+    assert 'What You Need' in modal
+    assert 'Configuration Sequence' in modal
+    assert 'Credential & Security Boundary' in modal
+    assert 'What Test Delivery Proves' in modal
+    assert "guideProvider === '{{ provider.key }}'" in modal
+    assert 'provider.setup_steps' in modal
+    assert 'provider.setup_requirements' in modal

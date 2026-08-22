@@ -53,7 +53,7 @@ def test_reviewed_registry_empty_rows_do_not_keep_page_local_visual_shells() -> 
         'app/templates/reports/report_templates/index.html': 'No Templates Match the Current Filters',
         'app/templates/reports/schedules/index.html': 'No Schedules Match the Current Filters',
         'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_capability_registry.html': 'No Capability Records Match the Current Filters',
-        'app/templates/integrations/delivery/notification_channels/index.html': 'No Notification Channels Configured',
+        'app/templates/integrations/delivery/notification_channels/partials/_channels_workspace.html': 'No Notification Channels Configured',
     }
     for relative, title in templates.items():
         source = read(relative)
