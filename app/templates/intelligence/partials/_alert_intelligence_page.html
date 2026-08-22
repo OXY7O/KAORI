@@ -1,9 +1,9 @@
 {% import "components/page_hero.html" as page_hero %}
 <div id="alert-intelligence-page-content" class="space-y-6">
     {% set hero_metrics = [
-        ('bell-ring', 'Active Cases', payload.summary.active, 'Operator-managed alert cases'),
-        ('shield-check', 'Verification Pending', payload.summary.verification_pending, 'Resolved source awaiting closure evidence')
-    ] %}
+            ('bell-ring', 'Active Cases', payload.summary.active, 'Operator-managed alert cases'),
+            ('shield-check', 'Verification Pending', payload.summary.verification_pending, 'Resolved source awaiting closure evidence')
+        ] %}
     <section class="{{ page_hero.shell_classes() }}">
         <div class="{{ page_hero.layout_classes() }}">
             <div class="{{ page_hero.content_classes() }}">
@@ -19,16 +19,15 @@
                     </div>
                 {% endcall %}
             </div>
-            {{ page_hero.context_card(
-                'Alert Operations posture',
-                'Alert Operations',
-                'Open Cases',
-                payload.summary.active,
-                'critical' if payload.summary.critical else ('warning' if payload.summary.active else 'normal'),
-                hero_metrics,
-                'Manage Notification Channels',
-                url_for('notification_channels.index'),
-                'shield-alert'
+            {{ page_hero.context_card('Alert Operations posture',
+                        'Alert Operations',
+                        'Open Cases',
+                        payload.summary.active,
+                        'critical' if payload.summary.critical else ('warning' if payload.summary.active else 'normal') ,
+            hero_metrics,
+            'Manage Notification Channels',
+            url_for('notification_channels.index'),
+            'shield-alert'
             ) }}
         </div>
     </section>

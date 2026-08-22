@@ -76,9 +76,7 @@
                     </tr>
                     {% if review_open %}
                         <tr data-alert-case-expanded-row="{{ case.public_id }}">
-                            <td colspan="8" class="p-0">
-                                {% include 'intelligence/partials/_alert_ops_case_workspace.html' %}
-                            </td>
+                            <td colspan="8" class="p-0">{% include 'intelligence/partials/_alert_ops_case_workspace.html' %}</td>
                         </tr>
                     {% endif %}
                 {% else %}

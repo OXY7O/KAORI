@@ -4,7 +4,8 @@
 {% set can_manage = current_user.has_permission('integrations.manage') %}
 {% set selected_policy = payload.selected_policy %}
 <div data-alert-intelligence-panel="routing" class="space-y-5 p-4 sm:p-5">
-    <section id="alert-operations-routing-registry" class="{{ table_ui.block_classes() }}">
+    <section id="alert-operations-routing-registry"
+             class="{{ table_ui.block_classes() }}">
         <header class="{{ table_ui.block_header_classes() }}">
             <div class="flex min-w-0 items-start gap-3">
                 <span class="{{ table_ui.block_icon_classes() }}" aria-hidden="true">
@@ -35,7 +36,7 @@
                     {% for policy in payload.routing_policies %}
                         <tr class="{{ table_ui.row_classes() }}">
                             <td class="{{ table_ui.cell_classes() }}">
-                                {{ table_ui.title_cell(policy.name, policy.matchers|length ~ ' label matcher' ~ ('' if policy.matchers|length == 1 else 's'), 'route') }}
+                                {{ table_ui.title_cell(policy.name, policy.matchers|length ~ ' label matcher' ~ ('' if policy.matchers|length == 1 else 's') , 'route') }}
                             </td>
                             <td class="{{ table_ui.cell_classes() }}">
                                 <div class="flex max-w-xs flex-wrap gap-1.5">
@@ -43,8 +44,8 @@
                                 </div>
                             </td>
                             <td class="{{ table_ui.cell_classes() }}">
-                                <p class="text-sm font-medium leading-5 text-content-primary">{{ policy.domains|join(', ')|replace('_', ' ')|title }}</p>
-                                <p class="mt-0.5 text-xs leading-5 text-content-muted">{{ policy.severities|join(', ')|title }}</p>
+                                <p class="text-sm font-medium leading-5 text-content-primary">{{ policy.domains|join(", ") |replace('_', ' ')|title }}</p>
+                                <p class="mt-0.5 text-xs leading-5 text-content-muted">{{ policy.severities|join(", ") |title }}</p>
                             </td>
                             <td class="{{ table_ui.cell_classes() }}">
                                 <div class="flex max-w-sm flex-wrap gap-1.5">
@@ -55,7 +56,10 @@
                                     {% endfor %}
                                 </div>
                             </td>
-                            <td class="{{ table_ui.cell_classes() }}"><p>{{ policy.repeat_interval_minutes }} min repeat</p><p class="mt-0.5 text-xs text-content-muted">{{ policy.acknowledgement_timeout_minutes }} min ACK window</p></td>
+                            <td class="{{ table_ui.cell_classes() }}">
+                                <p>{{ policy.repeat_interval_minutes }} min repeat</p>
+                                <p class="mt-0.5 text-xs text-content-muted">{{ policy.acknowledgement_timeout_minutes }} min ACK window</p>
+                            </td>
                             <td class="{{ table_ui.cell_classes() }}">
                                 {{ table_label.status_label('Enabled' if policy.send_resolved else 'Disabled', 'normal' if policy.send_resolved else 'unknown', size='compact') }}
                             </td>
@@ -90,26 +94,24 @@
             </table>
         </div>
         {% if payload.routing_pagination.total_items > 0 %}
-            {{ table_registry.footer(
-                'alert_intelligence.index',
-                'alert-operations-routing-registry',
-                'alert-intelligence-loading',
-                payload.routing_pagination,
-                {'tab': 'routing', 'domain': payload.domain, 'asset': payload.selected_asset_key},
-                payload.routing_pagination.allowed_per_page,
-                resource_label='Policies',
-                rows_aria_label='Routing policies per page',
-                control_name='alert-routing-policies',
-                page_param='routing_page',
-                per_page_param='routing_per_page'
-            ) }}
+            {{ table_registry.footer('alert_intelligence.index',
+                        'alert-operations-routing-registry',
+                        'alert-intelligence-loading',
+                        payload.routing_pagination,
+                        {'tab': 'routing', 'domain': payload.domain, 'asset': payload.selected_asset_key},
+                        payload.routing_pagination.allowed_per_page,
+                        resource_label='Policies',
+                        rows_aria_label='Routing policies per page',
+                        control_name='alert-routing-policies',
+                        page_param='routing_page',
+                        per_page_param='routing_per_page') }}
         {% endif %}
     </section>
-
     <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
         <header class="flex flex-col gap-3 border-b border-outline-subtle px-4 py-4 sm:flex-row sm:items-start sm:justify-between sm:px-5">
             <div class="flex min-w-0 items-start gap-3">
-                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
+                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                      aria-hidden="true">
                     <i data-lucide="plug-zap" class="h-4 w-4"></i>
                 </span>
                 <div class="min-w-0">
@@ -117,7 +119,8 @@
                     <p class="mt-1 text-xs leading-5 text-content-muted">Credentials and destinations remain owned by Integrations → Notification Channels.</p>
                 </div>
             </div>
-            <a href="{{ url_for('notification_channels.index') }}" class="{{ table_ui.action_classes() }}">
+            <a href="{{ url_for('notification_channels.index') }}"
+               class="{{ table_ui.action_classes() }}">
                 <i data-lucide="external-link" class="h-3.5 w-3.5" aria-hidden="true"></i>
                 Manage Channels
             </a>
@@ -126,7 +129,8 @@
             {% for channel in payload.channel_options %}
                 <article class="flex items-center justify-between gap-3 bg-surface-card p-4">
                     <div class="flex min-w-0 items-center gap-3">
-                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
+                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                              aria-hidden="true">
                             <i data-lucide="{{ channel.icon }}" class="h-4 w-4"></i>
                         </span>
                         <div class="min-w-0">
@@ -141,27 +145,31 @@
             {% endfor %}
         </div>
     </section>
-
     {% if can_manage %}
-        <section id="routing-policy-editor" class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
+        <section id="routing-policy-editor"
+                 class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
             <header class="flex flex-col gap-3 border-b border-outline-subtle px-4 py-4 sm:flex-row sm:items-start sm:justify-between sm:px-5">
                 <div>
                     <h3 class="text-sm font-semibold leading-5 text-content-primary">{{ 'Edit Routing Policy' if selected_policy else 'Create Routing Policy' }}</h3>
                     <p class="mt-1 text-xs leading-5 text-content-muted">Keep matchers narrow. Provider credentials never enter this policy.</p>
                 </div>
                 {% if selected_policy %}
-                    <a href="{{ url_for('alert_intelligence.index', tab='routing', domain=payload.domain, asset=payload.selected_asset_key) }}" class="{{ table_ui.action_classes() }}">
+                    <a href="{{ url_for('alert_intelligence.index', tab='routing', domain=payload.domain, asset=payload.selected_asset_key) }}"
+                       class="{{ table_ui.action_classes() }}">
                         <i data-lucide="x" class="h-3.5 w-3.5" aria-hidden="true"></i>
                         Cancel Edit
                     </a>
                 {% endif %}
             </header>
-            <form method="post" action="{{ url_for('alert_intelligence.save_routing_policy') }}" class="space-y-5 p-4 sm:p-5">
+            <form method="post"
+                  action="{{ url_for('alert_intelligence.save_routing_policy') }}"
+                  class="space-y-5 p-4 sm:p-5">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <input type="hidden" name="domain" value="{{ payload.domain }}">
                 <input type="hidden" name="asset" value="{{ payload.selected_asset_key }}">
-                {% if selected_policy %}<input type="hidden" name="policy_id" value="{{ selected_policy.id }}">{% endif %}
-
+                {% if selected_policy %}
+                    <input type="hidden" name="policy_id" value="{{ selected_policy.id }}">
+                {% endif %}
                 <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_12rem_12rem_14rem]">
                     <label>
                         <span class="{{ table_ui.filter_label_classes() }}">Policy Name</span>
@@ -173,32 +181,41 @@
                     </label>
                     <label>
                         <span class="{{ table_ui.filter_label_classes() }}">Repeat Interval</span>
-                        <select name="repeat_interval_minutes" class="{{ table_ui.filter_select_classes() }}">
+                        <select name="repeat_interval_minutes"
+                                class="{{ table_ui.filter_select_classes() }}">
                             {% for value, label in [(5, '5 minutes'), (15, '15 minutes'), (30, '30 minutes'), (60, '60 minutes'), (120, '2 hours'), (240, '4 hours')] %}
-                                <option value="{{ value }}" {% if (selected_policy.repeat_interval_minutes if selected_policy else 60) == value %}selected{% endif %}>{{ label }}</option>
+                                <option value="{{ value }}"
+                                        {% if (selected_policy.repeat_interval_minutes if selected_policy else 60) == value %}selected{% endif %}>{{ label }}</option>
                             {% endfor %}
                         </select>
                     </label>
                     <label>
                         <span class="{{ table_ui.filter_label_classes() }}">ACK Reminder Window</span>
-                        <select name="acknowledgement_timeout_minutes" class="{{ table_ui.filter_select_classes() }}">
+                        <select name="acknowledgement_timeout_minutes"
+                                class="{{ table_ui.filter_select_classes() }}">
                             {% for value, label in [(15, '15 minutes'), (30, '30 minutes'), (60, '60 minutes'), (120, '2 hours'), (240, '4 hours')] %}
-                                <option value="{{ value }}" {% if (selected_policy.acknowledgement_timeout_minutes if selected_policy else 60) == value %}selected{% endif %}>{{ label }}</option>
+                                <option value="{{ value }}"
+                                        {% if (selected_policy.acknowledgement_timeout_minutes if selected_policy else 60) == value %}selected{% endif %}>{{ label }}</option>
                             {% endfor %}
                         </select>
                     </label>
                     <div class="grid grid-cols-2 gap-2 pt-6">
                         <label class="flex min-h-10 items-center gap-2 rounded-md border border-outline-default bg-surface-card px-3 text-sm text-content-secondary">
-                            <input type="checkbox" name="enabled" value="1" {% if not selected_policy or selected_policy.enabled %}checked{% endif %}>
+                            <input type="checkbox"
+                                   name="enabled"
+                                   value="1"
+                                   {% if not selected_policy or selected_policy.enabled %}checked{% endif %}>
                             Enabled
                         </label>
                         <label class="flex min-h-10 items-center gap-2 rounded-md border border-outline-default bg-surface-card px-3 text-sm text-content-secondary">
-                            <input type="checkbox" name="send_resolved" value="1" {% if not selected_policy or selected_policy.send_resolved %}checked{% endif %}>
+                            <input type="checkbox"
+                                   name="send_resolved"
+                                   value="1"
+                                   {% if not selected_policy or selected_policy.send_resolved %}checked{% endif %}>
                             Resolved
                         </label>
                     </div>
                 </div>
-
                 <div class="grid gap-4 xl:grid-cols-[minmax(0,1.15fr)_minmax(24rem,0.85fr)]">
                     <fieldset class="rounded-xl border border-outline-subtle bg-surface-elevated p-4">
                         <legend class="px-1 text-xs font-semibold text-content-secondary">Match Scope</legend>
@@ -216,7 +233,10 @@
                                 <div class="mt-2 space-y-2">
                                     {% for value, label in [('kubernetes', 'Kubernetes'), ('object_storage', 'Object Storage')] %}
                                         <label class="flex items-center gap-2 text-sm text-content-secondary">
-                                            <input type="checkbox" name="domains" value="{{ value }}" {% if (not selected_policy and value == 'kubernetes') or (selected_policy and value in selected_policy.domains) %}checked{% endif %}>
+                                            <input type="checkbox"
+                                                   name="domains"
+                                                   value="{{ value }}"
+                                                   {% if (not selected_policy and value == 'kubernetes') or (selected_policy and value in selected_policy.domains) %}checked{% endif %}>
                                             {{ label }}
                                         </label>
                                     {% endfor %}
@@ -227,7 +247,10 @@
                                 <div class="mt-2 space-y-2">
                                     {% for value, label in [('critical', 'Critical'), ('warning', 'Warning'), ('info', 'Info')] %}
                                         <label class="flex items-center gap-2 text-sm text-content-secondary">
-                                            <input type="checkbox" name="severities" value="{{ value }}" {% if (not selected_policy and value in ['critical', 'warning']) or (selected_policy and value in selected_policy.severities) %}checked{% endif %}>
+                                            <input type="checkbox"
+                                                   name="severities"
+                                                   value="{{ value }}"
+                                                   {% if (not selected_policy and value in ['critical', 'warning']) or (selected_policy and value in selected_policy.severities) %}checked{% endif %}>
                                             {{ label }}
                                         </label>
                                     {% endfor %}
@@ -235,7 +258,6 @@
                             </div>
                         </div>
                     </fieldset>
-
                     <fieldset class="rounded-xl border border-outline-subtle bg-surface-elevated p-4">
                         <legend class="px-1 text-xs font-semibold text-content-secondary">Notification Channels</legend>
                         <div class="grid gap-2 sm:grid-cols-2">
@@ -258,19 +280,15 @@
                         </div>
                     </fieldset>
                 </div>
-
                 <label class="block">
                     <span class="{{ table_ui.filter_label_classes() }}">Optional Label Matchers</span>
-                    <textarea name="matchers"
-                              rows="4"
-                              class="w-full rounded-md border border-outline-default bg-surface-card px-3 py-2 font-mono text-xs text-content-primary outline-none focus:border-kaori-primary focus:ring-2 focus:ring-kaori-soft"
-                              placeholder="environment=production&#10;namespace=billing">{% if selected_policy %}{% for key, value in selected_policy.matchers.items() %}{{ key }}={{ value }}{% if not loop.last %}
+                    <textarea name="matchers" rows="4" class="w-full rounded-md border border-outline-default bg-surface-card px-3 py-2 font-mono text-xs text-content-primary outline-none focus:border-kaori-primary focus:ring-2 focus:ring-kaori-soft" placeholder="environment=production&#10;namespace=billing">{% if selected_policy %}{% for key, value in selected_policy.matchers.items() %}{{ key }}={{ value }}{% if not loop.last %}
 {% endif %}{% endfor %}{% endif %}</textarea>
                     <span class="mt-1 block text-xs leading-5 text-content-muted">One exact key=value matcher per line. Leave empty to match the selected domain and severity only.</span>
                 </label>
-
                 <div class="flex items-center justify-end border-t border-outline-subtle pt-4">
-                    <button type="submit" class="inline-flex min-h-9 items-center gap-2 rounded-lg bg-kaori-primary px-3 text-xs font-semibold text-white hover:bg-kaori-primary-hover">
+                    <button type="submit"
+                            class="inline-flex min-h-9 items-center gap-2 rounded-lg bg-kaori-primary px-3 text-xs font-semibold text-white hover:bg-kaori-primary-hover">
                         <i data-lucide="save" class="h-3.5 w-3.5" aria-hidden="true"></i>
                         {{ 'Update Routing Policy' if selected_policy else 'Create Routing Policy' }}
                     </button>

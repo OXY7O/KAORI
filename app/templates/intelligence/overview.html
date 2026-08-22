@@ -35,7 +35,6 @@
                 ) }}
             </div>
         </section>
-
         <section aria-label="Intelligence key metrics"
                  class="grid overflow-hidden rounded-xl border border-outline-default bg-surface-card sm:grid-cols-2 xl:grid-cols-4">
             {% for metric in payload.kpi_cards %}
@@ -60,7 +59,6 @@
                 </article>
             {% endfor %}
         </section>
-
         {% call intelligence_ui.section(
             'Intelligence Posture',
             'Three signals summarize what needs attention, how evidence is served, and whether governed automation needs review.',
@@ -87,7 +85,6 @@
                 {% endfor %}
             </div>
         {% endcall %}
-
         {% call intelligence_ui.section(
             'Intelligence Workspaces',
             'Navigate to the workspace you need. Overview stays focused on aggregate posture and does not duplicate record-level operations.',
@@ -124,7 +121,6 @@
                 {% endfor %}
             </div>
         {% endcall %}
-
         {% call operational_callout.render(
             'Operational Boundary',
             'Overview only presents aggregate Intelligence posture. Open a dedicated workspace for affected assets, alert-case actions, notification evidence, rule logic, remediation detail, or execution controls.',

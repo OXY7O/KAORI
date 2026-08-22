@@ -88,8 +88,8 @@ def get_alert_intelligence_payload(args: MultiDict[str, str]) -> dict[str, Any]:
         'domain': domain,
         'domain_label': _DOMAIN_LABELS[domain],
         'domain_options': [
-            {'value': 'kubernetes', 'label': 'Kubernetes', 'count': len(clusters)},
-            {'value': 'object_storage', 'label': 'Object Storage', 'count': len(systems)},
+            {'value': 'kubernetes', 'label': 'Kubernetes'},
+            {'value': 'object_storage', 'label': 'Object Storage'},
         ],
         'assets': assets,
         'selected_asset_key': selected_asset_key,
@@ -577,6 +577,7 @@ def _closure_label(reason: str | None) -> str:
         'resolved': 'Resolved',
         'manual_withdrawal': 'Withdrawn',
         'source_decommissioned': 'Source Decommissioned',
+        'false_positive': 'False Positive',
     }.get(str(reason or ''), '')
 
 

@@ -21,7 +21,7 @@ def test_rule_catalog_supports_dynamic_severity_bands() -> None:
     alerting = read('app/intelligence/recommendation_alerting.py')
     source = read('app/intelligence/alert_intelligence/recommendation_source.py')
     detail = read('app/templates/intelligence/partials/_catalog_detail_content.html')
-    assert "minimum_severity: warning" in rules
+    assert 'minimum_severity: warning' in rules
     assert "configured.get('minimum_severity') or 'warning'" in alerting
     assert "observed_severity=str(finding.get('severity') or 'info')" in source
     assert 'Alert Severity Floor' in detail
@@ -29,7 +29,7 @@ def test_rule_catalog_supports_dynamic_severity_bands() -> None:
     assert 'critical_minimum_occurrences: 1' in rules
     assert "default_mode = 'automatic' if eligible else 'manual'" in alerting
     assert "observed_severity=str(finding.get('severity') or 'info')" in source
-    assert "observed_severity: str" in source
+    assert 'observed_severity: str' in source
 
 
 def test_ack_is_bounded_and_delivery_resumes_when_overdue() -> None:
@@ -127,5 +127,11 @@ def test_migration_captures_alert_management_foundation_fields() -> None:
     migration = read('migrations/versions/20260822_alert_management_foundation.py')
     assert "revision = '20260822_alert_mgmt_foundation'" in migration
     assert "down_revision = '20260822_reco_alert_escalation'" in migration
-    for field in ('previous_severity', 'severity_changed_at', 'acknowledgement_expires_at', 'acknowledgement_timeout_minutes', 'content_format'):
+    for field in (
+        'previous_severity',
+        'severity_changed_at',
+        'acknowledgement_expires_at',
+        'acknowledgement_timeout_minutes',
+        'content_format',
+    ):
         assert field in migration

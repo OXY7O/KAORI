@@ -17,7 +17,7 @@ ALERT_CASE_OPEN_STATES = {'open', 'acknowledged', 'mitigating', 'verification_pe
 ALERT_CASE_WORKFLOW_STATES = ALERT_CASE_OPEN_STATES | {'closed'}
 ALERT_SOURCE_STATES = {'firing', 'resolved', 'unknown'}
 ALERT_ROUTING_STATES = {'enabled', 'suppressed'}
-ALERT_CLOSURE_REASONS = {'resolved', 'manual_withdrawal', 'source_decommissioned'}
+ALERT_CLOSURE_REASONS = {'resolved', 'manual_withdrawal', 'source_decommissioned', 'false_positive'}
 ALERT_SOURCE_TYPES = {'provider_alert', 'recommendation'}
 POSTMORTEM_STATES = {'not_required', 'required', 'draft', 'complete'}
 RECOMMENDATION_ALERT_MODES = {'manual', 'automatic'}
@@ -42,7 +42,7 @@ class AlertCase(db.Model):
             name='ck_alert_cases_routing_state',
         ),
         CheckConstraint(
-            "closure_reason IS NULL OR closure_reason IN ('resolved', 'manual_withdrawal', 'source_decommissioned')",
+            "closure_reason IS NULL OR closure_reason IN ('resolved', 'manual_withdrawal', 'source_decommissioned', 'false_positive')",
             name='ck_alert_cases_closure_reason',
         ),
         CheckConstraint(
@@ -110,7 +110,9 @@ class AlertCase(db.Model):
     )
     source_resolved_at: Mapped[datetime | None] = mapped_column(db.DateTime(timezone=True), nullable=True, index=True)
     acknowledged_at: Mapped[datetime | None] = mapped_column(db.DateTime(timezone=True), nullable=True)
-    acknowledgement_expires_at: Mapped[datetime | None] = mapped_column(db.DateTime(timezone=True), nullable=True, index=True)
+    acknowledgement_expires_at: Mapped[datetime | None] = mapped_column(
+        db.DateTime(timezone=True), nullable=True, index=True
+    )
     mitigating_at: Mapped[datetime | None] = mapped_column(db.DateTime(timezone=True), nullable=True)
     verification_started_at: Mapped[datetime | None] = mapped_column(db.DateTime(timezone=True), nullable=True)
     closed_at: Mapped[datetime | None] = mapped_column(db.DateTime(timezone=True), nullable=True, index=True)
@@ -211,9 +213,7 @@ class AlertRoutingPolicy(db.Model):
     enabled: Mapped[bool] = mapped_column(db.Boolean, nullable=False, default=True)
     domains_json: Mapped[list[str]] = mapped_column(db.JSON, nullable=False, default=list)
     severities_json: Mapped[list[str]] = mapped_column(db.JSON, nullable=False, default=list)
-    source_types_json: Mapped[list[str]] = mapped_column(
-        db.JSON, nullable=False, default=lambda: ['recommendation']
-    )
+    source_types_json: Mapped[list[str]] = mapped_column(db.JSON, nullable=False, default=lambda: ['recommendation'])
     matchers_json: Mapped[dict[str, str]] = mapped_column(db.JSON, nullable=False, default=dict)
     channel_ids_json: Mapped[list[int]] = mapped_column(db.JSON, nullable=False, default=list)
     repeat_interval_minutes: Mapped[int] = mapped_column(db.Integer, nullable=False, default=60)

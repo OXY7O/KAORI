@@ -29,28 +29,46 @@ _FORMAT_LABELS = {'plain_text': 'Plain Text', 'markdown': 'Markdown', 'html': 'H
 
 _BUILT_INS: tuple[AlertTemplateDefinition, ...] = (
     AlertTemplateDefinition(
-        'telegram', 'firing', 'Telegram · Firing', None,
+        'telegram',
+        'firing',
+        'Telegram · Firing',
+        None,
         '🚨 FIRING · {{ severity }}\n\n{{ alert_name }}\n\nAsset\n{{ asset_name }}\n{% if namespace %}\nNamespace\n{{ namespace }}\n{% endif %}\nSummary\n{{ summary }}\n\nStarted\n{{ started_at }}\n\nCase\n{{ case_id }}{% if action_url %}\n\nOpen in KAORI\n{{ action_url }}{% endif %}',
     ),
     AlertTemplateDefinition(
-        'telegram', 'resolved', 'Telegram · Resolved', None,
+        'telegram',
+        'resolved',
+        'Telegram · Resolved',
+        None,
         '✅ RESOLVED · {{ severity }}\n\n{{ alert_name }}\n\nDuration\n{{ duration }}\n\nResolution\n{{ resolution_summary }}\n\nOperator\n{{ operator_name }}\n\nVerification\n{{ verification_evidence }}\n\nCase\n{{ case_id }}{% if action_url %}\n\nOpen Incident Record\n{{ action_url }}{% endif %}',
     ),
     AlertTemplateDefinition(
-        'email', 'firing', 'Email · Firing', '[FIRING][{{ severity }}] {{ alert_name }} — {{ asset_name }}',
+        'email',
+        'firing',
+        'Email · Firing',
+        '[FIRING][{{ severity }}] {{ alert_name }} — {{ asset_name }}',
         'Alert: {{ alert_name }}\nSeverity: {{ severity }}\nAsset: {{ asset_name }}\nScope: {{ scope }}\nStarted: {{ started_at }}\n\nSummary\n{{ summary }}\n\nEvidence\n{{ evidence_summary }}\n\nCase: {{ case_id }}\n{% if action_url %}Open in KAORI: {{ action_url }}{% endif %}',
     ),
     AlertTemplateDefinition(
-        'email', 'resolved', 'Email · Resolved', '[RESOLVED][{{ severity }}] {{ alert_name }} — {{ asset_name }}',
+        'email',
+        'resolved',
+        'Email · Resolved',
+        '[RESOLVED][{{ severity }}] {{ alert_name }} — {{ asset_name }}',
         'Alert: {{ alert_name }}\nSeverity: {{ severity }}\nAsset: {{ asset_name }}\nDuration: {{ duration }}\nResolved by: {{ operator_name }}\n\nResolution Summary\n{{ resolution_summary }}\n\nRemediation Steps\n{{ remediation_steps }}\n\nVerification Evidence\n{{ verification_evidence }}\n\nChange: {{ change_reference }}\nTicket: {{ ticket_reference }}\n\nCase: {{ case_id }}\n{% if action_url %}Open Incident Record: {{ action_url }}{% endif %}',
     ),
     AlertTemplateDefinition(
-        'microsoft_teams', 'firing', 'Microsoft Teams · Firing', None,
+        'microsoft_teams',
+        'firing',
+        'Microsoft Teams · Firing',
+        None,
         '🚨 **FIRING · {{ severity }}**\n\n**{{ alert_name }}**\n\nAsset: {{ asset_name }}\nScope: {{ scope }}\nStarted: {{ started_at }}\n\n{{ summary }}\n\nEvidence: {{ evidence_summary }}\n\nCase: {{ case_id }}{% if action_url %}\n\n{{ action_url }}{% endif %}',
         'markdown',
     ),
     AlertTemplateDefinition(
-        'microsoft_teams', 'resolved', 'Microsoft Teams · Resolved', None,
+        'microsoft_teams',
+        'resolved',
+        'Microsoft Teams · Resolved',
+        None,
         '✅ **RESOLVED · {{ severity }}**\n\n**{{ alert_name }}**\n\nDuration: {{ duration }}\nResolved by: {{ operator_name }}\n\nResolution: {{ resolution_summary }}\n\nVerification: {{ verification_evidence }}\n\nCase: {{ case_id }}{% if action_url %}\n\n{{ action_url }}{% endif %}',
         'markdown',
     ),
@@ -156,11 +174,10 @@ def upsert_template_override(
 def reset_template_override(*, provider_key: str, event_state: str) -> bool:
     if provider_key not in _PROVIDER_FORMATS or event_state not in {'firing', 'resolved'}:
         raise ValueError('Unsupported provider/event template reset target.')
-    count = AlertNotificationTemplate.query.filter_by(
-        provider_key=provider_key, event_state=event_state
-    ).delete(synchronize_session=False)
+    count = AlertNotificationTemplate.query.filter_by(provider_key=provider_key, event_state=event_state).delete(
+        synchronize_session=False
+    )
     return bool(count)
-
 
 
 def render_template_preview(
@@ -210,6 +227,7 @@ def _preview_context(event_state: str) -> dict[str, str]:
         'ticket_reference': 'INC-DEMO-001',
         'action_url': '/intelligence/alert-intelligence?tab=' + ('active' if event_state == 'firing' else 'resolved'),
     }
+
 
 def render_case_message(
     case: AlertCase,
@@ -288,8 +306,31 @@ def _validate_template(value: str, *, content_format: str) -> None:
 
 class _SafeHTMLParser(HTMLParser):
     _ALLOWED_TAGS = {
-        'p', 'br', 'strong', 'b', 'em', 'i', 'ul', 'ol', 'li', 'a', 'code', 'pre',
-        'blockquote', 'h1', 'h2', 'h3', 'h4', 'table', 'thead', 'tbody', 'tr', 'th', 'td', 'hr', 'span',
+        'p',
+        'br',
+        'strong',
+        'b',
+        'em',
+        'i',
+        'ul',
+        'ol',
+        'li',
+        'a',
+        'code',
+        'pre',
+        'blockquote',
+        'h1',
+        'h2',
+        'h3',
+        'h4',
+        'table',
+        'thead',
+        'tbody',
+        'tr',
+        'th',
+        'td',
+        'hr',
+        'span',
     }
     _ALLOWED_ATTRS = {'a': {'href', 'title'}, 'th': {'colspan', 'rowspan'}, 'td': {'colspan', 'rowspan'}}
 

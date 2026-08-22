@@ -191,6 +191,45 @@ def withdraw_manual_alert(
     _audit(case, actor_user_id, 'alert_case_withdrawn', 'Manually promoted alert withdrawn without source resolution.')
 
 
+def close_false_positive_alert(
+    case: AlertCase,
+    *,
+    reason: str,
+    actor_user_id: int | None,
+) -> None:
+    """Close a recommendation-origin case as false positive without claiming source recovery."""
+
+    _require_open(case)
+    if case.source_type != 'recommendation':
+        raise ValueError('Only KAORI recommendation alert cases can be closed as false positive.')
+    normalized_reason = str(reason or '').strip()
+    if not normalized_reason:
+        raise ValueError('False-positive disposition reason is required.')
+    now = datetime.now(UTC)
+    case.workflow_state = 'closed'
+    case.closure_reason = 'false_positive'
+    case.closed_at = now
+    case.closed_by_user_id = actor_user_id
+    case.routing_state = 'suppressed'
+    case.routing_override_reason = 'false_positive'
+    case.routing_override_note = normalized_reason[:1000]
+    case.routing_override_at = now
+    case.routing_override_by_user_id = actor_user_id
+    case.resolution_summary = 'Closed as false positive; KAORI did not record technical source recovery.'
+    case.verification_evidence = normalized_reason
+    for state in RecommendationAlertState.query.filter_by(alert_case_id=case.id).all():
+        state.promotion_suppressed_until_clear = True
+        state.promotion_suppression_reason = 'false_positive'
+    _event(
+        case,
+        'false_positive_closed',
+        actor_user_id,
+        'The alert was closed as a false positive without claiming the source condition resolved.',
+        {'reason': normalized_reason[:500]},
+    )
+    _audit(case, actor_user_id, 'alert_case_false_positive_closed', 'Alert case closed as false positive.')
+
+
 def retire_source_deleted_case(
     case: AlertCase,
     *,

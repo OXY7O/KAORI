@@ -1,11 +1,13 @@
 {% import "components/table_label.html" as table_label %}
 {% import "components/table_primitives.html" as table_ui %}
 {% set can_manage = current_user.has_permission('integrations.manage') %}
-<div data-alert-intelligence-panel="templates" class="space-y-5 p-4 sm:p-5">
+<div data-alert-intelligence-panel="templates"
+     class="space-y-5 p-4 sm:p-5">
     <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
         <header class="flex flex-col gap-3 border-b border-outline-subtle px-4 py-4 sm:flex-row sm:items-start sm:justify-between sm:px-5">
             <div class="flex min-w-0 items-start gap-3">
-                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
+                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                      aria-hidden="true">
                     <i data-lucide="braces" class="h-4 w-4"></i>
                 </span>
                 <div class="min-w-0">
@@ -21,7 +23,7 @@
                 ('Events', 'Firing + Resolved'),
                 ('Variables', 'Normalized'),
                 ('Overrides', payload.templates|selectattr('overridden')|list|length)
-            ] %}
+                ] %}
                 <div class="bg-surface-card px-4 py-3">
                     <p class="text-xs font-medium leading-5 text-content-muted">{{ label }}</p>
                     <p class="mt-0.5 text-sm font-semibold leading-5 text-content-primary">{{ value }}</p>
@@ -29,7 +31,6 @@
             {% endfor %}
         </div>
     </section>
-
     <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
         <header class="border-b border-outline-subtle bg-surface-elevated px-4 py-3.5 sm:px-5">
             <h3 class="text-sm font-semibold leading-5 text-content-primary">Template Registry</h3>
@@ -40,8 +41,10 @@
                 <details class="group bg-surface-card">
                     <summary class="flex cursor-pointer list-none items-center justify-between gap-4 px-4 py-3.5 hover:bg-surface-hover sm:px-5">
                         <div class="flex min-w-0 items-center gap-3">
-                            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
-                                <i data-lucide="{{ 'mail' if template.provider_key == 'email' else ('messages-square' if template.provider_key == 'microsoft_teams' else 'send') }}" class="h-4 w-4"></i>
+                            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                                  aria-hidden="true">
+                                <i data-lucide="{{ 'mail' if template.provider_key == 'email' else ('messages-square' if template.provider_key == 'microsoft_teams' else 'send') }}"
+                                   class="h-4 w-4"></i>
                             </span>
                             <div class="min-w-0">
                                 <div class="flex flex-wrap items-center gap-2">
@@ -53,7 +56,9 @@
                         </div>
                         <div class="flex shrink-0 items-center gap-3">
                             {{ table_label.metadata_label(template.content_format_label, 'code-2') }}
-                            <i data-lucide="chevron-down" class="h-4 w-4 text-content-muted transition-transform group-open:rotate-180" aria-hidden="true"></i>
+                            <i data-lucide="chevron-down"
+                               class="h-4 w-4 text-content-muted transition-transform group-open:rotate-180"
+                               aria-hidden="true"></i>
                         </div>
                     </summary>
                     <div class="border-t border-outline-subtle bg-surface-page p-4 sm:p-5">
@@ -88,7 +93,6 @@
                                     </div>
                                 </details>
                             </section>
-
                             <section class="min-w-0 rounded-xl border border-outline-subtle bg-surface-card p-4">
                                 <div>
                                     <h4 class="text-sm font-semibold leading-5 text-content-primary">Template Governance</h4>
@@ -106,9 +110,10 @@
                                         {% endfor %}
                                     </div>
                                 {% endif %}
-
                                 {% if can_manage %}
-                                    <form method="post" action="{{ url_for('alert_intelligence.save_template') }}" class="mt-5 space-y-3 border-t border-outline-subtle pt-4">
+                                    <form method="post"
+                                          action="{{ url_for('alert_intelligence.save_template') }}"
+                                          class="mt-5 space-y-3 border-t border-outline-subtle pt-4">
                                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                         <input type="hidden" name="domain" value="{{ payload.domain }}">
                                         <input type="hidden" name="asset" value="{{ payload.selected_asset_key }}">
@@ -116,13 +121,16 @@
                                         <input type="hidden" name="event_state" value="{{ template.event_state }}">
                                         <label class="block">
                                             <span class="{{ table_ui.filter_label_classes() }}">Template Name</span>
-                                            <input name="name" value="{{ template.name }}" class="{{ table_ui.filter_input_classes() }}">
+                                            <input name="name"
+                                                   value="{{ template.name }}"
+                                                   class="{{ table_ui.filter_input_classes() }}">
                                         </label>
                                         <label class="block">
                                             <span class="{{ table_ui.filter_label_classes() }}">Content Format</span>
                                             <select name="content_format" class="{{ table_ui.filter_select_classes() }}">
                                                 {% for format in template.allowed_formats %}
-                                                    <option value="{{ format.value }}" {% if format.value == template.content_format %}selected{% endif %}>{{ format.label }}</option>
+                                                    <option value="{{ format.value }}"
+                                                            {% if format.value == template.content_format %}selected{% endif %}>{{ format.label }}</option>
                                                 {% endfor %}
                                             </select>
                                             <span class="mt-1 block text-xs leading-5 text-content-muted">Only formats supported safely by {{ template.provider_label }} are available.</span>
@@ -130,12 +138,16 @@
                                         {% if template.subject_template %}
                                             <label class="block">
                                                 <span class="{{ table_ui.filter_label_classes() }}">Subject Template</span>
-                                                <input name="subject_template" value="{{ template.subject_template }}" class="{{ table_ui.filter_input_classes() }} font-mono text-xs">
+                                                <input name="subject_template"
+                                                       value="{{ template.subject_template }}"
+                                                       class="{{ table_ui.filter_input_classes() }} font-mono text-xs">
                                             </label>
                                         {% endif %}
                                         <label class="block">
                                             <span class="{{ table_ui.filter_label_classes() }}">Body Template</span>
-                                            <textarea name="body_template" rows="8" class="w-full rounded-md border border-outline-default bg-surface-card px-3 py-2 font-mono text-xs text-content-primary outline-none focus:border-kaori-primary focus:ring-2 focus:ring-kaori-soft">{{ template.body_template }}</textarea>
+                                            <textarea name="body_template"
+                                                      rows="8"
+                                                      class="w-full rounded-md border border-outline-default bg-surface-card px-3 py-2 font-mono text-xs text-content-primary outline-none focus:border-kaori-primary focus:ring-2 focus:ring-kaori-soft">{{ template.body_template }}</textarea>
                                         </label>
                                         <label class="block">
                                             <span class="{{ table_ui.filter_label_classes() }}">Test Channel</span>
@@ -143,29 +155,37 @@
                                                 <option value="">Select validated {{ template.provider_label }} channel</option>
                                                 {% for channel in payload.channel_options %}
                                                     {% if channel.provider_key == template.provider_key %}
-                                                        <option value="{{ channel.id }}" {% if not channel.eligible %}disabled{% endif %}>{{ channel.name }} · {{ channel.status }}</option>
+                                                        <option value="{{ channel.id }}"
+                                                                {% if not channel.eligible %}disabled{% endif %}>{{ channel.name }} · {{ channel.status }}</option>
                                                     {% endif %}
                                                 {% endfor %}
                                             </select>
                                             <span class="mt-1 block text-xs leading-5 text-content-muted">Send Test uses the current editor values without saving an override. Only validated channels are selectable.</span>
                                         </label>
                                         <div class="flex flex-wrap justify-end gap-2">
-                                            <button type="submit" formaction="{{ url_for('alert_intelligence.test_render_template') }}" class="{{ table_ui.action_classes() }}">
+                                            <button type="submit"
+                                                    formaction="{{ url_for('alert_intelligence.test_render_template') }}"
+                                                    class="{{ table_ui.action_classes() }}">
                                                 <i data-lucide="scan-search" class="h-3.5 w-3.5" aria-hidden="true"></i>
                                                 Test Render
                                             </button>
-                                            <button type="submit" formaction="{{ url_for('alert_intelligence.send_template_test') }}" class="{{ table_ui.action_classes() }}">
+                                            <button type="submit"
+                                                    formaction="{{ url_for('alert_intelligence.send_template_test') }}"
+                                                    class="{{ table_ui.action_classes() }}">
                                                 <i data-lucide="send" class="h-3.5 w-3.5" aria-hidden="true"></i>
                                                 Send Test
                                             </button>
-                                            <button type="submit" class="inline-flex min-h-9 items-center gap-2 rounded-lg bg-kaori-primary px-3 text-xs font-semibold text-white hover:bg-kaori-primary-hover">
+                                            <button type="submit"
+                                                    class="inline-flex min-h-9 items-center gap-2 rounded-lg bg-kaori-primary px-3 text-xs font-semibold text-white hover:bg-kaori-primary-hover">
                                                 <i data-lucide="save" class="h-3.5 w-3.5" aria-hidden="true"></i>
                                                 Save Override
                                             </button>
                                         </div>
                                     </form>
                                     {% if template.overridden %}
-                                        <form method="post" action="{{ url_for('alert_intelligence.reset_template') }}" class="mt-2 flex justify-end">
+                                        <form method="post"
+                                              action="{{ url_for('alert_intelligence.reset_template') }}"
+                                              class="mt-2 flex justify-end">
                                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                             <input type="hidden" name="domain" value="{{ payload.domain }}">
                                             <input type="hidden" name="asset" value="{{ payload.selected_asset_key }}">

@@ -134,7 +134,9 @@ def test_worker_registration_preflight_accepts_task_on_target_queue() -> None:
             'celery@analytics': ['app.storage.object_storage.analytics.tasks.materialize_object_storage_analytics']
         },
     )
-    app.extensions['celery'] = SimpleNamespace(control=SimpleNamespace(inspect=lambda timeout, destination=None: inspector))
+    app.extensions['celery'] = SimpleNamespace(
+        control=SimpleNamespace(inspect=lambda timeout, destination=None: inspector)
+    )
 
     with app.app_context():
         dispatcher.ensure_task_registered_for_queue(task=task, queue_name='analytics-batch')
@@ -149,7 +151,9 @@ def test_worker_registration_preflight_rejects_stale_worker_registry() -> None:
         active_queues=lambda: {'celery@analytics': [{'name': 'analytics-batch'}]},
         registered=lambda: {'celery@analytics': ['app.kubernetes.analytics.tasks.materialize_analytics_snapshots']},
     )
-    app.extensions['celery'] = SimpleNamespace(control=SimpleNamespace(inspect=lambda timeout, destination=None: inspector))
+    app.extensions['celery'] = SimpleNamespace(
+        control=SimpleNamespace(inspect=lambda timeout, destination=None: inspector)
+    )
 
     with app.app_context():
         try:

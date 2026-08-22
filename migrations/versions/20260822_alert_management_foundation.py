@@ -37,7 +37,7 @@ def upgrade() -> None:
         'source_types_json',
         existing_type=sa.JSON(),
         existing_nullable=False,
-        server_default=sa.text("'[\"recommendation\"]'"),
+        server_default=sa.text('\'["recommendation"]\''),
     )
     routing = sa.table(
         'alert_routing_policies',
@@ -69,7 +69,7 @@ def downgrade() -> None:
         'source_types_json',
         existing_type=sa.JSON(),
         existing_nullable=False,
-        server_default=sa.text("'[\"provider_alert\"]'"),
+        server_default=sa.text('\'["provider_alert"]\''),
     )
     op.drop_column('alert_routing_policies', 'acknowledgement_timeout_minutes')
 

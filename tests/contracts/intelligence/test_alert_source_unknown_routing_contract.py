@@ -72,6 +72,16 @@ def test_manual_routing_can_stop_resume_and_withdraw_without_deleting_history() 
     assert '{% if case.manual_promotion %}' in ui
 
 
+def test_false_positive_can_close_any_recommendation_case_without_claiming_resolution() -> None:
+    case_state = read('app/intelligence/alert_intelligence/case_state.py')
+    routes = read('app/intelligence/alert_intelligence/routes.py')
+
+    assert 'def close_false_positive_alert(' in case_state
+    assert "case.closure_reason = 'false_positive'" in case_state
+    assert "state.promotion_suppression_reason = 'false_positive'" in case_state
+    assert "/false-positive'" in routes
+
+
 def test_source_delete_is_unknown_not_resolved_and_can_be_retired() -> None:
     case_state = read('app/intelligence/alert_intelligence/case_state.py')
     cluster = read('app/kubernetes/cluster/service.py')

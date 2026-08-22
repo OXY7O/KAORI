@@ -3,15 +3,13 @@
 {% import "components/table_registry.html" as table_registry %}
 {% import "components/operational_callout.html" as operational_callout %}
 <div data-alert-intelligence-panel="silences" class="space-y-5 p-4 sm:p-5">
-    {{ operational_callout.render(
-        'KAORI Delivery Silence',
+    {{ operational_callout.render('KAORI Delivery Silence',
         'Silences here pause KAORI repeat notifications only. Alertmanager silence, inhibition, grouping, and receiver behavior remain provider-owned.',
         icon='bell-off',
         tone='info',
-        variant='semantic'
-    ) }}
-
-    <section id="alert-operations-silence-registry" class="{{ table_ui.block_classes() }}">
+        variant='semantic') }}
+    <section id="alert-operations-silence-registry"
+             class="{{ table_ui.block_classes() }}">
         <header class="{{ table_ui.block_header_classes() }}">
             <div class="flex min-w-0 items-start gap-3">
                 <span class="{{ table_ui.block_icon_classes() }}" aria-hidden="true">
@@ -40,11 +38,9 @@
                 <tbody class="{{ table_ui.body_classes() }}">
                     {% for row in payload.silences %}
                         <tr class="{{ table_ui.row_classes() }}">
+                            <td class="{{ table_ui.cell_classes() }}">{{ table_ui.title_cell(row.alert_name, row.case_id, 'siren') }}</td>
                             <td class="{{ table_ui.cell_classes() }}">
-                                {{ table_ui.title_cell(row.alert_name, row.case_id, 'siren') }}
-                            </td>
-                            <td class="{{ table_ui.cell_classes() }}">
-                                {{ table_label.status_label(row.severity|title, 'critical' if row.severity == 'critical' else ('warning' if row.severity == 'warning' else 'info'), size='compact') }}
+                                {{ table_label.status_label(row.severity|title, 'critical' if row.severity == 'critical' else ('warning' if row.severity == 'warning' else 'info') , size='compact') }}
                             </td>
                             <td class="{{ table_ui.cell_classes() }}">{{ row.asset_name }}</td>
                             <td class="{{ table_ui.cell_classes() }}">
@@ -55,7 +51,8 @@
                                 <p class="whitespace-nowrap text-sm text-content-primary">{{ row.ends_at|user_datetime }}</p>
                             </td>
                             <td class="{{ table_ui.cell_classes(true) }}">
-                                <a href="{{ url_for('alert_intelligence.index', tab='active', domain=payload.domain, asset=payload.selected_asset_key, case=row.case_id) }}" class="{{ table_ui.action_classes() }}">
+                                <a href="{{ url_for('alert_intelligence.index', tab='active', domain=payload.domain, asset=payload.selected_asset_key, case=row.case_id) }}"
+                                   class="{{ table_ui.action_classes() }}">
                                     <i data-lucide="panel-right-open" class="h-3.5 w-3.5" aria-hidden="true"></i>
                                     Review
                                 </a>
@@ -77,19 +74,17 @@
             </table>
         </div>
         {% if payload.silence_pagination.total_items > 0 %}
-            {{ table_registry.footer(
-                'alert_intelligence.index',
-                'alert-operations-silence-registry',
-                'alert-intelligence-loading',
-                payload.silence_pagination,
-                {'tab': 'silences', 'domain': payload.domain, 'asset': payload.selected_asset_key},
-                payload.silence_pagination.allowed_per_page,
-                resource_label='Silences',
-                rows_aria_label='Active silences per page',
-                control_name='alert-delivery-silences',
-                page_param='silence_page',
-                per_page_param='silence_per_page'
-            ) }}
+            {{ table_registry.footer('alert_intelligence.index',
+                        'alert-operations-silence-registry',
+                        'alert-intelligence-loading',
+                        payload.silence_pagination,
+                        {'tab': 'silences', 'domain': payload.domain, 'asset': payload.selected_asset_key},
+                        payload.silence_pagination.allowed_per_page,
+                        resource_label='Silences',
+                        rows_aria_label='Active silences per page',
+                        control_name='alert-delivery-silences',
+                        page_param='silence_page',
+                        per_page_param='silence_per_page') }}
         {% endif %}
     </section>
 </div>

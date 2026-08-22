@@ -11,8 +11,12 @@
     <input type="hidden" name="workflow" value="{{ payload.filters.workflow }}">
     <input type="hidden" name="source" value="{{ payload.filters.source }}">
     <input type="hidden" name="q" value="{{ payload.filters.q }}">
-    <input type="hidden" name="page" value="{{ payload.active_pagination.page }}">
-    <input type="hidden" name="per_page" value="{{ payload.active_pagination.per_page }}">
+    <input type="hidden"
+           name="page"
+           value="{{ payload.active_pagination.page }}">
+    <input type="hidden"
+           name="per_page"
+           value="{{ payload.active_pagination.per_page }}">
 {%- endmacro %}
 {% macro htmx_form_attrs(endpoint) -%}
     hx-post="{{ endpoint }}"
@@ -74,7 +78,6 @@
             </div>
         </div>
     </header>
-
     {% if case.source_state == 'unknown' %}
         <div class="border-b border-outline-default bg-status-warning-soft px-4 py-3 sm:px-5">
             <div class="flex items-start gap-3">
@@ -92,7 +95,6 @@
             </div>
         </div>
     {% endif %}
-
     <dl class="grid border-b border-outline-subtle bg-surface-card sm:grid-cols-3 xl:grid-cols-6">
         {% for icon, label, value, helper in [
             ('activity', 'Source State', case.source_state_label, case.source_type_label),
@@ -101,17 +103,21 @@
             ('user-round', 'Owner', case.owner, 'Current ownership'),
             ('clock-3', 'Age', case.duration, 'Since first observation'),
             ('radio', 'Channel', case.delivery_target, 'Latest delivery target')
-        ] %}
+            ] %}
             <div class="border-b border-outline-subtle px-4 py-3 last:border-b-0 sm:border-b-0 sm:border-r sm:last:border-r-0">
                 <dt class="flex items-center gap-2 text-xs font-medium leading-5 text-content-muted">
-                    <i data-lucide="{{ icon }}" class="h-3.5 w-3.5 text-kaori-primary" aria-hidden="true"></i>{{ label }}
+                    <i data-lucide="{{ icon }}"
+                       class="h-3.5 w-3.5 text-kaori-primary"
+                       aria-hidden="true"></i>{{ label }}
                 </dt>
-                <dd class="mt-1 truncate text-sm font-semibold leading-5 text-content-primary" title="{{ value }}">{{ value }}</dd>
+                <dd class="mt-1 truncate text-sm font-semibold leading-5 text-content-primary"
+                    title="{{ value }}">
+                    {{ value }}
+                </dd>
                 <p class="mt-0.5 truncate text-xs leading-5 text-content-muted">{{ helper }}</p>
             </div>
         {% endfor %}
     </dl>
-
     {% if can_operate and case.workflow_state != 'closed' %}
         <section class="border-b border-outline-subtle px-4 py-4 sm:px-5">
             <div class="flex flex-col gap-2 lg:flex-row lg:items-end lg:justify-between">
@@ -123,7 +129,7 @@
                         </span>
                         <div>
                             <h4 class="text-sm font-semibold leading-5 text-content-primary">Operator Actions</h4>
-                            <p class="mt-0.5 text-xs leading-5 text-content-muted">Actions update this expanded row through HTMX; the Active Alerts page is not reloaded.</p>
+                            <p class="mt-0.5 text-xs leading-5 text-content-muted">Manage ownership, delivery, and remediation without leaving this alert.</p>
                         </div>
                     </div>
                 </div>
@@ -131,7 +137,6 @@
                     {{ table_label.status_label('ACK Overdue', 'warning', size='compact') }}
                 {% endif %}
             </div>
-
             <div class="mt-4 overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
                 <div class="grid divide-y divide-outline-subtle xl:grid-cols-4 xl:divide-x xl:divide-y-0">
                     <div class="p-4">
@@ -139,7 +144,7 @@
                         {% if case.workflow_state == 'open' %}
                             <form method="post"
                                   action="{{ url_for('alert_intelligence.acknowledge', public_id=case.public_id) }}"
-                                  {{ htmx_form_attrs(url_for('alert_intelligence.acknowledge', public_id=case.public_id)) }}
+                                  {{ htmx_form_attrs(url_for('alert_intelligence.acknowledge', public_id=case.public_id) ) }}
                                   class="mt-2">
                                 {{ mutation_context() }}
                                 <button type="submit"
@@ -155,12 +160,11 @@
                             <p class="mt-2 text-xs leading-5 text-content-muted">Current operator workflow is already beyond the initial open state.</p>
                         {% endif %}
                     </div>
-
                     <div class="p-4">
                         <p class="text-xs font-semibold uppercase leading-5 tracking-wide text-content-muted">Assignee</p>
                         <form method="post"
                               action="{{ url_for('alert_intelligence.assign', public_id=case.public_id) }}"
-                              {{ htmx_form_attrs(url_for('alert_intelligence.assign', public_id=case.public_id)) }}
+                              {{ htmx_form_attrs(url_for('alert_intelligence.assign', public_id=case.public_id) ) }}
                               class="mt-2">
                             {{ mutation_context() }}
                             <div class="flex gap-2">
@@ -180,13 +184,12 @@
                         </form>
                         <p class="mt-2 text-xs leading-5 text-content-muted">Assign the operator responsible for follow-up.</p>
                     </div>
-
                     <div class="p-4">
                         <p class="text-xs font-semibold uppercase leading-5 tracking-wide text-content-muted">Mitigation</p>
                         {% if case.workflow_state != 'mitigating' %}
                             <form method="post"
                                   action="{{ url_for('alert_intelligence.mitigating', public_id=case.public_id) }}"
-                                  {{ htmx_form_attrs(url_for('alert_intelligence.mitigating', public_id=case.public_id)) }}
+                                  {{ htmx_form_attrs(url_for('alert_intelligence.mitigating', public_id=case.public_id) ) }}
                                   class="mt-2 space-y-2">
                                 {{ mutation_context() }}
                                 <input name="note"
@@ -203,7 +206,6 @@
                             <p class="mt-2 text-xs leading-5 text-content-muted">The timeline records when active remediation began.</p>
                         {% endif %}
                     </div>
-
                     <div class="p-4">
                         <div class="flex items-center justify-between gap-2">
                             <p class="text-xs font-semibold uppercase leading-5 tracking-wide text-content-muted">Delivery Control</p>
@@ -212,18 +214,24 @@
                         <dl class="mt-2 grid grid-cols-2 gap-x-4 gap-y-2">
                             <div class="min-w-0">
                                 <dt class="text-xs leading-5 text-content-muted">Routing</dt>
-                                <dd class="truncate text-sm font-semibold leading-5 text-content-primary" title="{{ case.routing_state_label }}">{{ case.routing_state_label }}</dd>
+                                <dd class="truncate text-sm font-semibold leading-5 text-content-primary"
+                                    title="{{ case.routing_state_label }}">
+                                    {{ case.routing_state_label }}
+                                </dd>
                             </div>
                             <div class="min-w-0">
                                 <dt class="text-xs leading-5 text-content-muted">Channel</dt>
-                                <dd class="truncate text-sm font-semibold leading-5 text-content-primary" title="{{ case.delivery_target }}">{{ case.delivery_target }}</dd>
+                                <dd class="truncate text-sm font-semibold leading-5 text-content-primary"
+                                    title="{{ case.delivery_target }}">
+                                    {{ case.delivery_target }}
+                                </dd>
                             </div>
                         </dl>
                         <div class="mt-2 flex flex-wrap gap-2">
                             {% if case.routing_state == 'suppressed' and case.routing_override_reason == 'manual' and case.source_state == 'firing' %}
                                 <form method="post"
                                       action="{{ url_for('alert_intelligence.resume_routing', public_id=case.public_id) }}"
-                                      {{ htmx_form_attrs(url_for('alert_intelligence.resume_routing', public_id=case.public_id)) }}>
+                                      {{ htmx_form_attrs(url_for('alert_intelligence.resume_routing', public_id=case.public_id) ) }}>
                                     {{ mutation_context() }}
                                     <button type="submit" class="{{ table_ui.action_classes() }}">
                                         <i data-lucide="send" class="h-3.5 w-3.5"></i>Resume Routing
@@ -233,7 +241,7 @@
                             {% if case.silenced %}
                                 <form method="post"
                                       action="{{ url_for('alert_intelligence.unsilence', public_id=case.public_id) }}"
-                                      {{ htmx_form_attrs(url_for('alert_intelligence.unsilence', public_id=case.public_id)) }}>
+                                      {{ htmx_form_attrs(url_for('alert_intelligence.unsilence', public_id=case.public_id) ) }}>
                                     {{ mutation_context() }}
                                     <button type="submit" class="{{ table_ui.action_classes() }}">
                                         <i data-lucide="bell-ring" class="h-3.5 w-3.5"></i>Resume Delivery
@@ -248,13 +256,12 @@
                         {% endif %}
                     </div>
                 </div>
-
                 {% if case.source_state == 'firing' or not case.silenced %}
                     <div class="grid border-t border-outline-subtle lg:grid-cols-2 lg:divide-x lg:divide-outline-subtle">
                         {% if case.routing_state == 'enabled' and case.source_state == 'firing' %}
                             <form method="post"
                                   action="{{ url_for('alert_intelligence.suppress_routing', public_id=case.public_id) }}"
-                                  {{ htmx_form_attrs(url_for('alert_intelligence.suppress_routing', public_id=case.public_id)) }}
+                                  {{ htmx_form_attrs(url_for('alert_intelligence.suppress_routing', public_id=case.public_id) ) }}
                                   class="p-4">
                                 {{ mutation_context() }}
                                 <div class="flex items-center gap-2">
@@ -279,11 +286,10 @@
                                 <p class="mt-2 text-xs leading-5 text-content-muted">{{ case.delivery_label }}. System-held routing cannot be manually resumed until source and policy conditions permit it.</p>
                             </div>
                         {% endif %}
-
                         {% if not case.silenced %}
                             <form method="post"
                                   action="{{ url_for('alert_intelligence.silence', public_id=case.public_id) }}"
-                                  {{ htmx_form_attrs(url_for('alert_intelligence.silence', public_id=case.public_id)) }}
+                                  {{ htmx_form_attrs(url_for('alert_intelligence.silence', public_id=case.public_id) ) }}
                                   class="p-4">
                                 {{ mutation_context() }}
                                 <div class="flex items-center gap-2">
@@ -322,7 +328,6 @@
             </div>
         </section>
     {% endif %}
-
     <section class="border-b border-outline-subtle px-4 py-4 sm:px-5">
         <div class="flex items-start gap-3">
             <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
@@ -340,12 +345,17 @@
                 ('waypoints', 'Source Type', case.evidence.get('source_type', case.source_type)),
                 ('file-key-2', 'Rule Key', case.evidence.get('rule_key', case.rule_key or '-')),
                 ('list-checks', 'Recommendation Count', case.evidence.get('recommendation_count', 1))
-            ] %}
+                ] %}
                 <div class="min-w-0 border-b border-outline-subtle px-3 py-3 md:border-b-0 md:border-r md:last:border-r-0">
                     <dt class="flex items-center gap-2 text-xs font-medium leading-5 text-content-muted">
-                        <i data-lucide="{{ icon }}" class="h-3.5 w-3.5 text-kaori-primary" aria-hidden="true"></i>{{ label }}
+                        <i data-lucide="{{ icon }}"
+                           class="h-3.5 w-3.5 text-kaori-primary"
+                           aria-hidden="true"></i>{{ label }}
                     </dt>
-                    <dd class="mt-1 truncate text-sm font-semibold leading-5 text-content-primary" title="{{ value }}">{{ value }}</dd>
+                    <dd class="mt-1 truncate text-sm font-semibold leading-5 text-content-primary"
+                        title="{{ value }}">
+                        {{ value }}
+                    </dd>
                 </div>
             {% endfor %}
         </dl>
@@ -360,9 +370,13 @@
                 {% for icon, label, value in [('boxes', 'Asset', case.asset_name), ('layers-3', 'Namespace', case.namespace)] %}
                     <div class="rounded-xl border border-outline-subtle bg-surface-card p-3">
                         <dt class="flex items-center gap-2 text-xs font-medium leading-5 text-content-muted">
-                            <i data-lucide="{{ icon }}" class="h-3.5 w-3.5 text-kaori-primary" aria-hidden="true"></i>{{ label }}
+                            <i data-lucide="{{ icon }}"
+                               class="h-3.5 w-3.5 text-kaori-primary"
+                               aria-hidden="true"></i>{{ label }}
                         </dt>
-                        <dd class="mt-1 break-words text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]">{{ value }}</dd>
+                        <dd class="mt-1 break-words text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]">
+                            {{ value }}
+                        </dd>
                     </div>
                 {% endfor %}
             </dl>
@@ -380,7 +394,6 @@
             {% endfor %}
         </div>
     </section>
-
     <section class="border-b border-outline-subtle px-4 py-4 sm:px-5">
         <div class="flex items-center justify-between gap-3">
             <div class="flex items-start gap-3">
@@ -399,7 +412,8 @@
             {% for event in case.timeline_recent %}
                 {% set event_icon_classes = 'bg-status-critical-soft text-status-critical-text' if event.tone == 'critical' else ('bg-status-warning-soft text-status-warning-text' if event.tone == 'warning' else ('bg-status-normal-soft text-status-normal-text' if event.tone == 'normal' else 'bg-kaori-soft text-kaori-primary')) %}
                 <article class="grid gap-3 py-3 md:grid-cols-[2.25rem_13rem_minmax(0,1fr)_10rem] md:items-start">
-                    <span class="flex h-8 w-8 items-center justify-center rounded-lg {{ event_icon_classes }}" aria-hidden="true">
+                    <span class="flex h-8 w-8 items-center justify-center rounded-lg {{ event_icon_classes }}"
+                          aria-hidden="true">
                         <i data-lucide="{{ event.icon }}" class="h-4 w-4"></i>
                     </span>
                     <div class="whitespace-nowrap text-xs font-semibold leading-5 text-kaori-primary">{{ event.label }}</div>
@@ -434,7 +448,6 @@
             </details>
         {% endif %}
     </section>
-
     <section class="border-b border-outline-subtle px-4 py-4 sm:px-5">
         <div class="flex items-center justify-between gap-3">
             <div class="flex items-start gap-3">
@@ -467,7 +480,7 @@
                             <td class="{{ table_ui.cell_classes() }}">{{ delivery.event_label }}</td>
                             <td class="{{ table_ui.cell_classes() }}"><span class="font-semibold text-content-primary">{{ delivery.channel }}</span></td>
                             <td class="{{ table_ui.cell_classes() }}">{{ delivery.provider }}</td>
-                            <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_label(delivery.status|title, 'normal' if delivery.status == 'sent' else ('critical' if delivery.status == 'failed' else ('warning' if delivery.status == 'suppressed' else 'info')), size='compact') }}</td>
+                            <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_label(delivery.status|title, 'normal' if delivery.status == 'sent' else ('critical' if delivery.status == 'failed' else ('warning' if delivery.status == 'suppressed' else 'info') ), size='compact') }}</td>
                             <td class="{{ table_ui.cell_classes() }}">{{ delivery.attempt_count }}</td>
                             <td class="{{ table_ui.cell_classes(true) }}"><span class="whitespace-nowrap text-xs text-content-muted">{{ (delivery.sent_at or delivery.created_at)|user_datetime }}</span></td>
                         </tr>
@@ -496,7 +509,7 @@
                                     <td class="{{ table_ui.cell_classes() }}">{{ delivery.event_label }}</td>
                                     <td class="{{ table_ui.cell_classes() }}"><span class="font-semibold text-content-primary">{{ delivery.channel }}</span></td>
                                     <td class="{{ table_ui.cell_classes() }}">{{ delivery.provider }}</td>
-                                    <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_label(delivery.status|title, 'normal' if delivery.status == 'sent' else ('critical' if delivery.status == 'failed' else ('warning' if delivery.status == 'suppressed' else 'info')), size='compact') }}</td>
+                                    <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_label(delivery.status|title, 'normal' if delivery.status == 'sent' else ('critical' if delivery.status == 'failed' else ('warning' if delivery.status == 'suppressed' else 'info') ), size='compact') }}</td>
                                     <td class="{{ table_ui.cell_classes() }}">{{ delivery.attempt_count }}</td>
                                     <td class="{{ table_ui.cell_classes(true) }}"><span class="whitespace-nowrap text-xs text-content-muted">{{ (delivery.sent_at or delivery.created_at)|user_datetime }}</span></td>
                                 </tr>
@@ -507,7 +520,37 @@
             </details>
         {% endif %}
     </section>
-
+    {% if can_operate and case.workflow_state != 'closed' and case.source_type == 'recommendation' and case.source_state == 'firing' %}
+        <section class="border-b border-outline-subtle px-4 py-4 sm:px-5">
+            <div class="flex items-start gap-3">
+                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-status-warning-soft text-status-warning-text"
+                      aria-hidden="true">
+                    <i data-lucide="circle-x" class="h-4 w-4"></i>
+                </span>
+                <div>
+                    <h4 class="text-sm font-semibold leading-5 text-content-primary">False Positive Disposition</h4>
+                    <p class="mt-0.5 text-xs leading-5 text-content-muted">Close a non-actionable alert without claiming source recovery. The same finding will not re-promote until it clears.</p>
+                </div>
+            </div>
+            <form method="post"
+                  action="{{ url_for('alert_intelligence.false_positive', public_id=case.public_id) }}"
+                  {{ htmx_form_attrs(url_for('alert_intelligence.false_positive', public_id=case.public_id) ) }}
+                  class="mt-3 flex flex-col gap-2 lg:flex-row lg:items-end">
+                {{ mutation_context() }}
+                <label class="min-w-0 flex-1">
+                    <span class="{{ table_ui.filter_label_classes() }}">Reason</span>
+                    <input name="reason"
+                           required
+                           class="{{ table_ui.filter_input_classes() }}"
+                           placeholder="Why is this alert a false positive?">
+                </label>
+                <button type="submit"
+                        class="{{ table_ui.action_classes() }} min-h-10 shrink-0">
+                    <i data-lucide="circle-x" class="h-3.5 w-3.5"></i>Close as False Positive
+                </button>
+            </form>
+        </section>
+    {% endif %}
     {% if can_operate and case.workflow_state != 'closed' and case.source_type == 'recommendation' and (case.manual_promotion or (case.source_state == 'unknown' and case.source_state_reason == 'source_deleted')) %}
         <section class="border-b border-outline-subtle px-4 py-4 sm:px-5">
             <div class="flex items-start gap-3">
@@ -524,7 +567,7 @@
                 {% if case.manual_promotion %}
                     <form method="post"
                           action="{{ url_for('alert_intelligence.withdraw', public_id=case.public_id) }}"
-                          {{ htmx_form_attrs(url_for('alert_intelligence.withdraw', public_id=case.public_id)) }}
+                          {{ htmx_form_attrs(url_for('alert_intelligence.withdraw', public_id=case.public_id) ) }}
                           class="p-4">
                         {{ mutation_context() }}
                         <p class="text-sm font-semibold text-content-primary">Withdraw Manual Alert</p>
@@ -543,7 +586,7 @@
                 {% if case.source_state == 'unknown' and case.source_state_reason == 'source_deleted' %}
                     <form method="post"
                           action="{{ url_for('alert_intelligence.retire_source', public_id=case.public_id) }}"
-                          {{ htmx_form_attrs(url_for('alert_intelligence.retire_source', public_id=case.public_id)) }}
+                          {{ htmx_form_attrs(url_for('alert_intelligence.retire_source', public_id=case.public_id) ) }}
                           class="p-4">
                         {{ mutation_context() }}
                         <p class="text-sm font-semibold text-content-primary">Retire Source-Deleted Case</p>
@@ -562,12 +605,12 @@
             </div>
         </section>
     {% endif %}
-
     {% if can_operate and case.source_state == 'resolved' and case.workflow_state != 'closed' %}
         <section class="px-4 py-4 sm:px-5">
             <div class="rounded-xl border border-outline-default bg-status-normal-soft p-4">
                 <div class="flex items-start gap-3">
-                    <i data-lucide="badge-check" class="mt-0.5 h-4 w-4 text-status-normal-text"></i>
+                    <i data-lucide="badge-check"
+                       class="mt-0.5 h-4 w-4 text-status-normal-text"></i>
                     <div>
                         <h4 class="text-sm font-semibold text-status-normal-text">Verification & Closure</h4>
                         <p class="mt-0.5 text-xs leading-5 text-status-normal-text">Commit Resolution Summary and Verification Evidence before resolved delivery is queued.</p>
@@ -575,7 +618,7 @@
                 </div>
                 <form method="post"
                       action="{{ url_for('alert_intelligence.close', public_id=case.public_id) }}"
-                      {{ htmx_form_attrs(url_for('alert_intelligence.close', public_id=case.public_id)) }}
+                      {{ htmx_form_attrs(url_for('alert_intelligence.close', public_id=case.public_id) ) }}
                       class="mt-4 grid gap-3 lg:grid-cols-2">
                     {{ mutation_context() }}
                     <label>

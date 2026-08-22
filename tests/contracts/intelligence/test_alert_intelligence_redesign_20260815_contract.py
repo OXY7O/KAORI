@@ -36,7 +36,8 @@ def test_active_alert_filters_are_tab_local_auto_refresh_and_keep_clear_filters(
     active = read('app/templates/intelligence/partials/_alert_ops_active.html')
 
     assert 'Operational Context' in workspace
-    assert 'id="alert-intelligence-context-form"' in workspace
+    assert 'id="alert-intelligence-domain-form"' in workspace
+    assert 'id="alert-intelligence-asset-form"' in workspace
     assert 'id="alert-operations-filter-form"' in active
     assert 'hx-trigger="input changed delay:350ms from:input, change from:select"' in active
     assert 'Search' in active

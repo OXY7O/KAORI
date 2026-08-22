@@ -75,7 +75,6 @@ def _render_message(message: NotificationMessage) -> str:
     return '\n'.join(lines).strip()
 
 
-
 def _render_html_message(message: NotificationMessage) -> str:
     title = escape(message.title)
     severity = escape(str(message.severity or 'info').upper())
@@ -103,6 +102,7 @@ def _html_to_text(value: str) -> str:
     parser.feed(value)
     parser.close()
     return '\n'.join(parser.parts)
+
 
 _EMAIL_SECURITY_MODES = {'starttls', 'tls', 'none'}
 

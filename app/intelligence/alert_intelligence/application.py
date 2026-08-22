@@ -112,9 +112,7 @@ def save_template_override_command(
     return row
 
 
-def reset_template_override_command(
-    *, provider_key: str, event_state: str, actor_user_id: int | None
-) -> bool:
+def reset_template_override_command(*, provider_key: str, event_state: str, actor_user_id: int | None) -> bool:
     try:
         changed = reset_template_override(provider_key=provider_key, event_state=event_state)
         if changed:

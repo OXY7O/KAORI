@@ -31,45 +31,67 @@
         hx_indicator='#alert-intelligence-loading',
         nowrap=true,
         hx_sync='#alert-intelligence-page-content:replace') }}
-    <form id="alert-intelligence-context-form"
-          action="{{ url_for('alert_intelligence.index') }}"
-          method="get"
-          hx-get="{{ url_for('alert_intelligence.index') }}"
-          hx-target="#alert-intelligence-page-content"
-          hx-swap="outerHTML show:none focus-scroll:false"
-          hx-push-url="true"
-          hx-indicator="#alert-intelligence-loading"
-          hx-sync="#alert-intelligence-page-content:replace"
-          hx-trigger="change from:select"
-          class="border-b border-outline-subtle bg-surface-card px-4 py-3 sm:px-5">
-        <input type="hidden" name="tab" value="{{ payload.tab }}">
+    <div class="border-b border-outline-subtle bg-surface-card px-4 py-3 sm:px-5">
         <div class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
             <div class="min-w-0 lg:max-w-md">
                 <p class="text-sm font-semibold leading-5 text-content-primary">Operational Context</p>
-                <p class="mt-1 text-xs leading-5 text-content-muted">Scope changes only read KAORI database state. Recommendation evaluation and notification delivery remain worker-owned.</p>
+                <p class="mt-1 text-xs leading-5 text-content-muted">Choose the managed domain and asset scope used by this Alert Operations workspace.</p>
             </div>
             <div class="{{ table_ui.filter_layout_classes() }} flex-1">
-                <label>
-                    <span class="{{ table_ui.filter_label_classes() }}">Domain</span>
-                    <select name="domain" class="{{ table_ui.filter_select_classes() }}">
-                        {% for option in payload.domain_options %}
-                            <option value="{{ option.value }}"
-                                    {% if payload.domain == option.value %}selected{% endif %}>{{ option.label }} · {{ option.count }}</option>
-                        {% endfor %}
-                    </select>
-                </label>
-                <label>
-                    <span class="{{ table_ui.filter_label_classes() }}">Asset Scope</span>
-                    <select name="asset" class="{{ table_ui.filter_select_classes() }}">
-                        {% for option in payload.assets %}
-                            <option value="{{ option.value }}"
-                                    {% if payload.selected_asset_key == option.value %}selected{% endif %}>{{ option.label }} · {{ option.environment }}</option>
-                        {% endfor %}
-                    </select>
-                </label>
+                <form id="alert-intelligence-domain-form"
+                      action="{{ url_for('alert_intelligence.index') }}"
+                      method="get"
+                      class="min-w-0">
+                    <input type="hidden" name="tab" value="{{ payload.tab }}">
+                    <label>
+                        <span class="{{ table_ui.filter_label_classes() }}">Domain</span>
+                        <select name="domain"
+                                class="{{ table_ui.filter_select_classes() }}"
+                                hx-get="{{ url_for('alert_intelligence.index') }}"
+                                hx-trigger="change"
+                                hx-include="closest form"
+                                hx-target="#alert-intelligence-page-content"
+                                hx-swap="outerHTML show:none focus-scroll:false"
+                                hx-push-url="true"
+                                hx-indicator="#alert-intelligence-loading"
+                                hx-sync="#alert-intelligence-page-content:replace">
+                            {% for option in payload.domain_options %}
+                                <option value="{{ option.value }}"
+                                        {% if payload.domain == option.value %}selected{% endif %}>{{ option.label }}</option>
+                            {% endfor %}
+                        </select>
+                    </label>
+                </form>
+                <form id="alert-intelligence-asset-form"
+                      action="{{ url_for('alert_intelligence.index') }}"
+                      method="get"
+                      class="min-w-0">
+                    <input type="hidden" name="tab" value="{{ payload.tab }}">
+                    <input type="hidden" name="domain" value="{{ payload.domain }}">
+                    <label>
+                        <span class="{{ table_ui.filter_label_classes() }}">Asset Scope</span>
+                        <select name="asset"
+                                class="{{ table_ui.filter_select_classes() }}"
+                                hx-get="{{ url_for('alert_intelligence.index') }}"
+                                hx-trigger="change"
+                                hx-include="closest form"
+                                hx-target="#alert-intelligence-page-content"
+                                hx-swap="outerHTML show:none focus-scroll:false"
+                                hx-push-url="true"
+                                hx-indicator="#alert-intelligence-loading"
+                                hx-sync="#alert-intelligence-page-content:replace">
+                            {% for option in payload.assets %}
+                                <option value="{{ option.value }}"
+                                        {% if payload.selected_asset_key == option.value %}selected{% endif %}>{{ option.label }}
+                                    {% if option.environment != 'Fleet scope' and option.environment != '-' %}· {{ option.environment }}{% endif %}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </label>
+                </form>
             </div>
         </div>
-    </form>
+    </div>
     <div data-alert-intelligence-active-section="{{ payload.tab }}"
          class="bg-surface-card">
         {% if payload.tab == 'active' %}

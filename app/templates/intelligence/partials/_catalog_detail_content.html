@@ -86,7 +86,7 @@
                         {{ intelligence_ui.field('Stability Window', item.alert_escalation.stability_window_minutes ~ ' minutes') }}
                         {{ intelligence_ui.field('Minimum Observations', item.alert_escalation.minimum_occurrences) }}
                         {{ intelligence_ui.field('Alert Severity Floor', item.alert_escalation.minimum_severity|title) }}
-                        {{ intelligence_ui.field('Grouping', item.alert_escalation.grouping_mode|replace('_', ' ')|title) }}
+                        {{ intelligence_ui.field('Grouping', item.alert_escalation.grouping_mode|replace('_', ' ') |title) }}
                     </dl>
                     <p class="mt-4 text-xs leading-5 text-content-muted">Info findings remain recommendation-only below the rule-owned Alert Severity Floor. Manual mode permits authorized promotion only after that floor is met; Automatic mode also requires the stability window and observation count.</p>
                 </div>
@@ -111,17 +111,22 @@
                                 <span class="text-xs font-semibold text-content-secondary">Escalation Mode</span>
                                 <select name="mode"
                                         class="mt-1 h-10 w-full rounded-md border border-outline-default bg-surface-card px-3 text-sm">
-                                    <option value="manual" {% if item.alert_escalation.mode == 'manual' %}selected{% endif %}>Manual</option>
-                                    <option value="automatic" {% if item.alert_escalation.mode == 'automatic' %}selected{% endif %}>Automatic</option>
+                                    <option value="manual"
+                                            {% if item.alert_escalation.mode == 'manual' %}selected{% endif %}>Manual</option>
+                                    <option value="automatic"
+                                            {% if item.alert_escalation.mode == 'automatic' %}selected{% endif %}>Automatic</option>
                                 </select>
                             </label>
                             <label>
                                 <span class="text-xs font-semibold text-content-secondary">Grouping</span>
                                 <select name="grouping_mode"
                                         class="mt-1 h-10 w-full rounded-md border border-outline-default bg-surface-card px-3 text-sm">
-                                    <option value="finding" {% if item.alert_escalation.grouping_mode == 'finding' %}selected{% endif %}>Finding</option>
-                                    <option value="rule_asset_scope" {% if item.alert_escalation.grouping_mode == 'rule_asset_scope' %}selected{% endif %}>Rule + Asset + Scope</option>
-                                    <option value="rule_asset" {% if item.alert_escalation.grouping_mode == 'rule_asset' %}selected{% endif %}>Rule + Asset</option>
+                                    <option value="finding"
+                                            {% if item.alert_escalation.grouping_mode == 'finding' %}selected{% endif %}>Finding</option>
+                                    <option value="rule_asset_scope"
+                                            {% if item.alert_escalation.grouping_mode == 'rule_asset_scope' %}selected{% endif %}>Rule + Asset + Scope</option>
+                                    <option value="rule_asset"
+                                            {% if item.alert_escalation.grouping_mode == 'rule_asset' %}selected{% endif %}>Rule + Asset</option>
                                 </select>
                             </label>
                             <label>

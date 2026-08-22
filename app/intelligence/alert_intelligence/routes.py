@@ -17,6 +17,7 @@ from app.intelligence.alert_intelligence.application import (
     test_render_template_command,
 )
 from app.intelligence.alert_intelligence.case_state import (
+    close_false_positive_alert,
     resume_case_routing,
     retire_source_deleted_case,
     suppress_case_routing,
@@ -169,6 +170,23 @@ def withdraw(public_id: str) -> ResponseReturnValue:
         success_title='Manual alert withdrawn',
         success_message='The AlertCase was closed as Withdrawn without claiming source resolution. Automatic re-promotion stays suppressed until the finding clears.',
         operation=lambda case: withdraw_manual_alert(
+            case,
+            reason=reason,
+            actor_user_id=_actor_user_id(),
+        ),
+        tab='resolved',
+    )
+
+
+@alert_intelligence_bp.post('/cases/<string:public_id>/false-positive')
+@permission_required('intelligence.decisions.create')
+def false_positive(public_id: str) -> ResponseReturnValue:
+    reason = str(request.form.get('reason') or '').strip()
+    return _case_mutation(
+        public_id,
+        success_title='Alert closed as false positive',
+        success_message='The case was closed without claiming source recovery. Re-promotion remains suppressed until the finding clears.',
+        operation=lambda case: close_false_positive_alert(
             case,
             reason=reason,
             actor_user_id=_actor_user_id(),

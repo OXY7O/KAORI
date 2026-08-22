@@ -370,4 +370,3 @@ def _workspace_rows(
             'href_endpoint': 'automation_control.index',
         },
     ]
-
