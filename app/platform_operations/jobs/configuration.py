@@ -19,9 +19,9 @@ def _policy_status(policy: JobPolicy) -> dict[str, str]:
     if not policy.enabled:
         return {'label': 'Disabled', 'tone': 'disabled', 'icon': 'circle-pause'}
     if policy.last_dispatch_status == 'failed':
-        return {'label': 'Dispatch Failed', 'tone': 'critical', 'icon': 'circle-x'}
+        return {'label': 'Last Dispatch Failed', 'tone': 'critical', 'icon': 'circle-x'}
     if policy.last_dispatch_status == 'blocked':
-        return {'label': 'Dispatch Blocked', 'tone': 'warning', 'icon': 'shield-alert'}
+        return {'label': 'Last Dispatch Blocked', 'tone': 'warning', 'icon': 'shield-alert'}
     return {'label': 'Enabled', 'tone': 'normal', 'icon': 'circle-check'}
 
 
@@ -233,8 +233,15 @@ def build_job_configuration_live_context(*, selected_job_key: str) -> dict[str, 
             **_execution_presentation(definition, {}),
         }
         active_job_keys = {(definition.job_type, definition.operation)}
+    catalog_row = _catalog_row(definition, policy, active_job_keys=active_job_keys)
+    if not active_job_keys:
+        catalog_row['status'] = dict(
+            selected_context.get('configuration_state')
+            or selected_context.get('execution_state')
+            or _policy_status(policy)
+        )
     return {
-        'job_catalog': [_catalog_row(definition, policy, active_job_keys=active_job_keys)],
+        'job_catalog': [catalog_row],
         'selected_job_key': definition.key,
         'selected_job': selected_context,
         'configuration_refreshed_at': present_user_datetime(datetime.now(UTC), empty='Just Now'),
@@ -279,6 +286,15 @@ def build_job_configuration_context(*, selected_job_key: str | None = None) -> d
     selected_definition = definition_by_key[selected_key]
     selected_policy = policy_by_key[selected_key]
     selected_context = _selected_job_context(selected_definition, selected_policy)
+    if (selected_definition.job_type, selected_definition.operation) not in active_job_keys:
+        for item in catalog:
+            if item['key'] == selected_key:
+                item['status'] = dict(
+                    selected_context.get('configuration_state')
+                    or selected_context.get('execution_state')
+                    or _policy_status(selected_policy)
+                )
+                break
     summary = build_job_configuration_summary_context(active_execution_count=len(active_job_keys))
     return {
         'job_catalog': catalog,

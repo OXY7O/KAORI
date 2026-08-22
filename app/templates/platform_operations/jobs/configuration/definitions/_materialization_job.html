@@ -106,6 +106,9 @@
                             <dd class="mt-1 font-semibold text-content-primary">
                                 {{ policy.last_dispatched_at|user_datetime if policy.last_dispatched_at else 'Never Dispatched' }}
                             </dd>
+                            <dd class="mt-1 text-xs text-content-muted">
+                                Result: {{ (policy.last_dispatch_status or 'not_dispatched')|replace('_', ' ')|title }}
+                            </dd>
                         </div>
                         <div class="px-4 py-3">
                             <dt class="font-semibold text-content-muted">Next Scheduled</dt>
