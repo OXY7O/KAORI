@@ -365,6 +365,11 @@ def _evidence_facts(evidence: dict[str, Any], *, limit: int = 4) -> list[dict[st
         'asset_key',
         'promotion_mode',
         'automation_resolution',
+        'source',
+        'source_type',
+        'rule_key',
+        'recommendation_key',
+        'recommendation_count',
     }
     for key, value in evidence.items():
         if key in consumed or key in excluded or isinstance(value, (dict, list, tuple, set)):

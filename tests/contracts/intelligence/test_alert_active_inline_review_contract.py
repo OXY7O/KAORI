@@ -79,3 +79,54 @@ def test_operator_actions_preserve_no_javascript_fallback_and_htmx_updates() -> 
     assert "if _active_records_htmx_request():" in routes
     assert "return _active_records_response(case_id=case.public_id)" in routes
     assert "operation_feedback_oob.html" in read('app/templates/intelligence/partials/_alert_ops_active_table.html')
+
+
+def test_review_polish_removes_duplicate_close_and_enriches_operator_controls() -> None:
+    table = read('app/templates/intelligence/partials/_alert_ops_active_table.html')
+    workspace = read('app/templates/intelligence/partials/_alert_ops_case_workspace.html')
+
+    assert "metadata_label('Reviewing', 'panel-top')" in table
+    assert "{{ 'Close' if review_open else 'Review' }}" not in table
+    assert 'Close Review' in workspace
+    assert 'Take ownership and pause repeats during the ACK window.' in workspace
+    assert 'Assign the operator responsible for follow-up.' in workspace
+    assert "status_label(case.delivery_label, case.delivery_tone, size='compact')" in workspace
+    assert '>Routing</dt>' in workspace
+    assert '>Channel</dt>' in workspace
+    assert 'Routing is active and delivery follows the matched policy cadence.' in workspace
+
+
+def test_review_evidence_and_timeline_use_horizontal_scan_layout() -> None:
+    workspace = read('app/templates/intelligence/partials/_alert_ops_case_workspace.html')
+    service = read('app/intelligence/alert_intelligence/service.py')
+
+    for label in ('Source', 'Source Type', 'Rule Key', 'Recommendation Count'):
+        assert f"'{label}'" in workspace
+    assert 'md:grid-cols-4' in workspace
+    assert "case.evidence.get('recommendation_count', 1)" in workspace
+    assert 'md:grid-cols-[2.25rem_13rem_minmax(0,1fr)_10rem]' in workspace
+    assert 'whitespace-nowrap text-xs font-semibold leading-5 text-kaori-primary' in workspace
+    for key in ("'source'", "'source_type'", "'rule_key'", "'recommendation_count'"):
+        assert key in service
+
+
+def test_routes_import_routing_state_mutations_from_case_state_owner() -> None:
+    routes = read('app/intelligence/alert_intelligence/routes.py')
+
+    assert 'from app.intelligence.alert_intelligence.case_state import (' in routes
+    for name in (
+        'resume_case_routing',
+        'retire_source_deleted_case',
+        'suppress_case_routing',
+        'withdraw_manual_alert',
+    ):
+        assert name in routes
+    lifecycle_block = (
+        routes.split('from app.intelligence.alert_intelligence.lifecycle import (', 1)[1]
+        .split(')', 1)[0]
+    )
+    assert 'resume_case_routing' not in lifecycle_block
+    assert 'retire_source_deleted_case' not in lifecycle_block
+    assert 'suppress_case_routing' not in lifecycle_block
+    assert 'withdraw_manual_alert' not in lifecycle_block
+

@@ -16,18 +16,20 @@ from app.intelligence.alert_intelligence.application import (
     send_template_test_command,
     test_render_template_command,
 )
+from app.intelligence.alert_intelligence.case_state import (
+    resume_case_routing,
+    retire_source_deleted_case,
+    suppress_case_routing,
+    withdraw_manual_alert,
+)
 from app.intelligence.alert_intelligence.lifecycle import (
     acknowledge_case,
     assign_case,
     close_case,
     create_delivery_silence,
     mark_mitigating,
-    resume_case_routing,
-    retire_source_deleted_case,
     revoke_delivery_silence,
     save_postmortem,
-    suppress_case_routing,
-    withdraw_manual_alert,
 )
 from app.intelligence.alert_intelligence.routing import RoutingPolicyConfig
 from app.intelligence.alert_intelligence.service import get_alert_intelligence_payload
