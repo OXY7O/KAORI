@@ -49,6 +49,9 @@ alert_intelligence_bp = Blueprint(
 def index() -> ResponseReturnValue:
     payload = get_alert_intelligence_payload(request.args)
     if request.headers.get('HX-Request') == 'true':
+        target = str(request.headers.get('HX-Target') or '').strip()
+        if target == 'alert-operations-active-records':
+            return render_template('intelligence/partials/_alert_ops_active_table.html', payload=payload)
         return render_template('intelligence/partials/_alert_intelligence_page.html', payload=payload)
     return render_template('intelligence/alert_intelligence.html', payload=payload)
 
@@ -359,7 +362,6 @@ def save_template() -> ResponseReturnValue:
     return _redirect(tab='templates')
 
 
-
 @alert_intelligence_bp.post('/templates/test-render')
 @permission_required('integrations.manage')
 def test_render_template() -> ResponseReturnValue:
@@ -428,10 +430,12 @@ def reset_template() -> ResponseReturnValue:
             title='System template restored',
             message=(
                 'The custom override was removed and future delivery will use the KAORI system template.'
-                if changed else 'This provider event already uses the KAORI system template.'
+                if changed
+                else 'This provider event already uses the KAORI system template.'
             ),
         )
     return _redirect(tab='templates')
+
 
 def _case_mutation(
     public_id: str,
@@ -445,6 +449,8 @@ def _case_mutation(
         case = apply_case_mutation(public_id, operation=operation)
     except (ValueError, SQLAlchemyError) as exc:
         queue_transient_feedback(status='error', title='Alert operation not applied', message=str(exc))
+        if _active_records_htmx_request():
+            return _active_records_response(case_id=public_id)
         return _redirect(tab='active', case_id=public_id)
     if case is None:
         queue_transient_feedback(
@@ -452,9 +458,31 @@ def _case_mutation(
             title='Alert case unavailable',
             message='The selected alert case no longer exists.',
         )
+        if _active_records_htmx_request():
+            return _active_records_response()
         return _redirect(tab=tab)
     queue_transient_feedback(status='success', title=success_title, message=success_message)
+    if _active_records_htmx_request():
+        return _active_records_response(case_id=case.public_id)
     return _redirect(tab=tab, case_id=case.public_id)
+
+
+def _active_records_htmx_request() -> bool:
+    return (
+        request.headers.get('HX-Request') == 'true'
+        and str(request.headers.get('HX-Target') or '').strip() == 'alert-operations-active-records'
+    )
+
+
+def _active_records_response(*, case_id: str | None = None) -> ResponseReturnValue:
+    args = request.form.copy()
+    args['tab'] = 'active'
+    if case_id:
+        args['case'] = case_id
+    else:
+        args.pop('case', None)
+    payload = get_alert_intelligence_payload(args)
+    return render_template('intelligence/partials/_alert_ops_active_table.html', payload=payload)
 
 
 def _redirect(*, tab: str, case_id: str | None = None) -> ResponseReturnValue:

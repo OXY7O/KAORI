@@ -104,7 +104,8 @@ def get_alert_intelligence_payload(args: MultiDict[str, str]) -> dict[str, Any]:
             'silenced': len(active_silences),
             'verification_pending': sum(case.workflow_state == 'verification_pending' for case in history_cases),
             'resolved_today': sum(
-                bool(case.source_resolved_at and _as_utc(case.source_resolved_at) >= now - timedelta(days=1)) for case in history_cases
+                bool(case.source_resolved_at and _as_utc(case.source_resolved_at) >= now - timedelta(days=1))
+                for case in history_cases
             ),
             'delivery_failures': _delivery_failure_count(domain=domain, asset_key=selected_asset_key),
             'postmortem_required': sum(case.postmortem_status in {'required', 'draft'} for case in history_cases),
@@ -142,11 +143,15 @@ def list_active_alert_events() -> list[dict[str, Any]]:
     New Automation Control code queries AlertCase directly. This projection intentionally
     excludes raw provider snapshots so no consumer can accidentally bypass KAORI lifecycle.
     """
-    rows = AlertCase.query.filter(
-        AlertCase.source_type == 'recommendation',
-        AlertCase.source_state == 'firing',
-        AlertCase.workflow_state != 'closed',
-    ).order_by(AlertCase.first_seen_at.asc(), AlertCase.id.asc()).all()
+    rows = (
+        AlertCase.query.filter(
+            AlertCase.source_type == 'recommendation',
+            AlertCase.source_state == 'firing',
+            AlertCase.workflow_state != 'closed',
+        )
+        .order_by(AlertCase.first_seen_at.asc(), AlertCase.id.asc())
+        .all()
+    )
     return [
         {
             'domain': case.domain,
@@ -249,6 +254,7 @@ def _serialize_case(case: AlertCase) -> dict[str, Any]:
         'namespace': case.namespace or '-',
         'target': case.target or '-',
         'summary': case.summary or '-',
+        'owner_user_id': case.owner_user_id,
         'owner': str(getattr(owner, 'username', None) or getattr(owner, 'email', None) or 'Unassigned'),
         'first_seen_at': case.first_seen_at,
         'acknowledged_at': case.acknowledged_at,
@@ -281,6 +287,8 @@ def _serialize_case_detail(case: AlertCase) -> dict[str, Any]:
         {
             'event_type': event.event_type,
             'label': event.event_type.replace('_', ' ').title(),
+            'icon': _timeline_event_icon(event.event_type),
+            'tone': _timeline_event_tone(event.event_type),
             'summary': event.summary,
             'actor': str(
                 getattr(event.actor, 'username', None) or getattr(event.actor, 'email', None) or 'KAORI Worker'
@@ -293,6 +301,8 @@ def _serialize_case_detail(case: AlertCase) -> dict[str, Any]:
         .all()
     ]
     evidence = dict(case.evidence_json or {})
+    deliveries = case_delivery_rows(case)
+    delivery_target = str(deliveries[0]['channel']) if deliveries else str(case.receiver or '-')
     manual_promotion = evidence.get('promotion_mode') == 'manual' or any(
         event['event_type'] == 'recommendation_promoted'
         and (
@@ -305,8 +315,10 @@ def _serialize_case_detail(case: AlertCase) -> dict[str, Any]:
         {
             'labels': dict(case.labels_json or {}),
             'evidence': evidence,
+            'evidence_facts': _evidence_facts(evidence),
             'manual_promotion': manual_promotion,
             'receiver': case.receiver or '-',
+            'delivery_target': delivery_target,
             'resolution_summary': case.resolution_summary or '',
             'remediation_steps': list(case.remediation_steps_json or []),
             'verification_evidence': case.verification_evidence or '',
@@ -315,10 +327,95 @@ def _serialize_case_detail(case: AlertCase) -> dict[str, Any]:
             'postmortem_required': case.postmortem_required,
             'postmortem': dict(case.postmortem_json or {}),
             'timeline': timeline,
-            'deliveries': case_delivery_rows(case),
+            'deliveries': deliveries,
         }
     )
     return base
+
+
+def _evidence_facts(evidence: dict[str, Any], *, limit: int = 4) -> list[dict[str, str]]:
+    preferred = (
+        ('affected_count', 'Affected Assets', 'boxes'),
+        ('max_restart_count', 'Highest Restart Count', 'rotate-ccw'),
+        ('total_restart_count', 'Total Restarts', 'activity'),
+        ('max_restart_pod', 'Highest Impact Pod', 'box'),
+        ('threshold_display', 'Rule Threshold', 'gauge'),
+        ('observed_total_display', 'Observed Total', 'chart-no-axes-column'),
+        ('max_observation_display', 'Peak Observation', 'triangle-alert'),
+        ('snapshot_basis', 'Snapshot Basis', 'database'),
+        ('evidence_window', 'Evidence Window', 'clock-3'),
+        ('usage_percent', 'Usage', 'gauge'),
+        ('current_usage_percent', 'Current Usage', 'gauge'),
+    )
+    rows: list[dict[str, str]] = []
+    consumed: set[str] = set()
+    for key, label, icon in preferred:
+        value = evidence.get(key)
+        if value in (None, '', [], {}):
+            continue
+        rows.append({'label': label, 'value': str(value), 'icon': icon})
+        consumed.add(key)
+        if len(rows) >= limit:
+            return rows
+
+    excluded = {
+        'affected_assets',
+        'cluster_id',
+        'object_storage_system_id',
+        'asset_key',
+        'promotion_mode',
+        'automation_resolution',
+    }
+    for key, value in evidence.items():
+        if key in consumed or key in excluded or isinstance(value, (dict, list, tuple, set)):
+            continue
+        rendered = str(value).strip()
+        if not rendered or len(rendered) > 96:
+            continue
+        rows.append(
+            {
+                'label': key.replace('_', ' ').title(),
+                'value': rendered,
+                'icon': 'database',
+            }
+        )
+        if len(rows) >= limit:
+            break
+    return rows
+
+
+def _timeline_event_icon(event_type: str) -> str:
+    normalized = str(event_type or '').strip().lower()
+    if 'severity_escalated' in normalized:
+        return 'triangle-alert'
+    if 'resolved' in normalized or 'closed' in normalized:
+        return 'badge-check'
+    if 'acknowledged' in normalized or 'assigned' in normalized:
+        return 'user-check'
+    if 'mitigat' in normalized:
+        return 'wrench'
+    if 'silence' in normalized:
+        return 'bell-off'
+    if 'routing' in normalized:
+        return 'route'
+    if 'notif' in normalized or 'delivery' in normalized:
+        return 'send-horizontal'
+    if 'source' in normalized and 'unknown' in normalized:
+        return 'circle-help'
+    if 'recommendation' in normalized or 'promoted' in normalized:
+        return 'sparkles'
+    return 'activity'
+
+
+def _timeline_event_tone(event_type: str) -> str:
+    normalized = str(event_type or '').strip().lower()
+    if 'severity_escalated' in normalized or 'failed' in normalized:
+        return 'critical'
+    if any(token in normalized for token in ('unknown', 'silence', 'suppress', 'mitigat', 'overdue')):
+        return 'warning'
+    if any(token in normalized for token in ('resolved', 'closed', 'resumed', 'restored')):
+        return 'normal'
+    return 'info'
 
 
 def _snapshot_context(*, domain: str, asset_key: str) -> dict[str, Any]:
@@ -450,7 +547,6 @@ def _workflow_tone(state: str) -> str:
     }.get(state, 'unknown')
 
 
-
 def _source_state_label(case: AlertCase) -> str:
     if case.source_state == 'unknown':
         if case.source_state_reason == 'source_deleted':
@@ -504,9 +600,8 @@ def _delivery_label(case: AlertCase, *, silence: AlertSilence | None) -> str:
 
 def _delivery_tone(case: AlertCase, *, silence: AlertSilence | None) -> str:
     state = _delivery_state(case, silence=silence)
-    return {'suppressed': 'warning', 'held': 'warning', 'silenced': 'warning', 'ack_paused': 'info'}.get(
-        state, 'info'
-    )
+    return {'suppressed': 'warning', 'held': 'warning', 'silenced': 'warning', 'ack_paused': 'info'}.get(state, 'info')
+
 
 def _duration_label(seconds: int) -> str:
     minutes = seconds // 60
