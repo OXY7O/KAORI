@@ -1,6 +1,5 @@
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[4]
 CONFIGURATION = ROOT / 'app/platform_operations/jobs/configuration.py'
 MATERIALIZATION = ROOT / 'app/templates/platform_operations/jobs/configuration/definitions/_materialization_job.html'

@@ -8,6 +8,10 @@ def test_recommendation_detail_uses_canonical_modal_hierarchy():
     assert 'data-resource-detail-summary' in template
     assert 'Recommendation Review' in template
     assert 'Finding Assessment' in template
+    assert 'data-kaori-recommendation-review-layout="evidence-action"' in template
+    assert 'xl:grid-cols-[minmax(0,1.55fr)_minmax(22rem,0.85fr)]' in template
+    assert 'xl:sticky xl:top-4' in template
+    assert '{{ item.summary }}' in template
     assert 'Scope & Evidence' in template
     assert 'Evidence Contract' in template
     assert 'Remediation Workflow' in template
@@ -36,8 +40,8 @@ def test_shared_resource_detail_host_supports_modal_without_main_layout_lock():
     assert "presentation == 'drawer'" in component
     assert 'translate-x-full' in component
     assert 'resource_detail_modal.host(' in page
-    assert "dialog_max_width='max-w-5xl'" in page
-    assert 'content_driven=true' in page
+    assert "dialog_max_width='max-w-7xl'" in page
+    assert 'content_driven=false' in page
     assert "label='Review'" in records
     assert "icon='panel-right-open'" not in records
     assert "controls='resource-detail-drawer'" not in records

@@ -6,8 +6,8 @@
     <div class="hidden lg:block">
         <table class="w-full table-fixed text-left text-sm text-content-secondary">
             <colgroup>
-                <col class="w-[36%]">
-                <col class="w-[20%]">
+                <col class="w-[34%]">
+                <col class="w-[22%]">
                 <col class="w-[22%]">
                 <col class="w-[10%]">
                 <col class="w-[12%]">
@@ -30,14 +30,11 @@
                                       aria-hidden="true"><i data-lucide="sparkles" class="h-4 w-4"></i></span>
                                 <div class="min-w-0">
                                     <p class="break-words text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]">{{ item.title }}</p>
-                                    <p class="mt-1 line-clamp-2 break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]">{{ item.list_summary|default(item.summary, true) }}</p>
+                                    <p class="mt-1 line-clamp-1 break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]"
+                                       title="{{ item.summary }}">{{ item.list_summary|default(item.summary, true) }}</p>
                                     <div class="mt-2 flex flex-wrap gap-1.5">
                                         {{ table_label.metadata_label(item.domain_label, 'boxes') }}
                                         {{ table_label.metadata_label(item.category_label, 'tag') }}
-                                        {{ table_label.metadata_label(item.source_kind_label, 'scan-search') }}
-                                        {% if item.evidence and item.evidence.provider_label %}
-                                            {{ table_label.metadata_label(item.evidence.provider_label, 'database') }}
-                                        {% endif %}
                                     </div>
                                 </div>
                             </div>
@@ -49,6 +46,9 @@
                         <td class="{{ table_ui.cell_classes() }}">
                             <p class="text-sm font-semibold leading-5 text-content-primary">{{ item.signal_source_label }}</p>
                             <p class="mt-1 text-xs leading-5 text-content-muted">{{ item.logic_type_label }}</p>
+                            {% if item.evidence and item.evidence.provider_label %}
+                                <div class="mt-2">{{ table_label.metadata_label(item.evidence.provider_label, 'database') }}</div>
+                            {% endif %}
                         </td>
                         <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_label(item.severity_label, item.tone, size='compact') }}</td>
                         <td class="{{ table_ui.cell_classes(true) }}">
@@ -73,7 +73,8 @@
                               aria-hidden="true"><i data-lucide="sparkles" class="h-4 w-4"></i></span>
                         <div class="min-w-0">
                             <h3 class="break-words text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]">{{ item.title }}</h3>
-                            <p class="mt-1 line-clamp-2 break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]">{{ item.list_summary|default(item.summary, true) }}</p>
+                            <p class="mt-1 line-clamp-2 break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]"
+                               title="{{ item.summary }}">{{ item.list_summary|default(item.summary, true) }}</p>
                         </div>
                     </div>
                     {{ table_label.status_label(item.severity_label, item.tone, size='compact') }}

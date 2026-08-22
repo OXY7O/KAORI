@@ -9,6 +9,7 @@ from werkzeug.datastructures import MultiDict
 from app.common.inventory_generation import filter_current_generation
 from app.extensions.db import db
 from app.intelligence.catalog import INTELLIGENCE_CATALOG
+from app.intelligence.finding_evidence import build_restart_evidence, build_restart_groups
 from app.intelligence.finding_presentation import (
     build_affected_assets,
     build_affected_items,
@@ -117,13 +118,13 @@ def _base_payload(args: MultiDict[str, str], *, page_mode: str) -> dict[str, Any
 
     if page_mode == 'catalog':
         for item in items:
-            item['table_summary'] = _truncate_words(item.get('summary'), limit=72)
+            item['table_summary'] = _truncate_words(item.get('summary'), limit=64)
     else:
         for item in items:
             scope_title, scope_supporting = finding_scope_details(item)
             item['scope_title'] = scope_title
             item['scope_supporting'] = scope_supporting
-            item['list_summary'] = compact_recommendation_summary(item.get('summary'))
+            item['list_summary'] = compact_recommendation_summary(item.get('summary'), limit=96)
 
     result_context = {
         'matching_items': total_items,
@@ -327,82 +328,6 @@ def _build_latest_image_findings(rules: dict[str, dict[str, Any]]) -> list[dict[
     return findings
 
 
-def _restart_asset(
-    *,
-    namespace: str,
-    pod_name: str,
-    restart_count: int,
-    phase: str,
-    node_name: str,
-    workload_type: str,
-    workload_name: str,
-) -> dict[str, Any]:
-    return {
-        'type': 'Pod',
-        'name': pod_name,
-        'namespace': namespace,
-        'workload_type': workload_type,
-        'workload_name': workload_name,
-        'node_name': node_name,
-        'phase': phase,
-        'restart_count': restart_count,
-        'evidence_display': f'{restart_count} restart{"" if restart_count == 1 else "s"}',
-    }
-
-
-def _restart_groups(rows: list[Any]) -> dict[tuple[str, str], list[dict[str, Any]]]:
-    groups: dict[tuple[str, str], list[dict[str, Any]]] = {}
-    for cluster_id, namespace, pod_name, restart_count, phase, node_name, workload_type, workload_name in rows:
-        resolved_namespace = str(namespace or 'default')
-        key = (str(cluster_id), resolved_namespace)
-        groups.setdefault(key, []).append(
-            _restart_asset(
-                namespace=resolved_namespace,
-                pod_name=str(pod_name or 'pod'),
-                restart_count=int(restart_count or 0),
-                phase=str(phase or 'Unknown'),
-                node_name=str(node_name or ''),
-                workload_type=str(workload_type or ''),
-                workload_name=str(workload_name or ''),
-            )
-        )
-    for assets in groups.values():
-        assets.sort(key=lambda asset: int(asset.get('restart_count') or 0), reverse=True)
-    return groups
-
-
-def _restart_evidence(
-    *,
-    cluster_id: str,
-    namespace: str,
-    assets: list[dict[str, Any]],
-    threshold: int,
-) -> dict[str, Any]:
-    affected_count = len(assets)
-    total_restarts = sum(int(asset.get('restart_count') or 0) for asset in assets)
-    highest = max(assets, key=lambda asset: int(asset.get('restart_count') or 0))
-    highest_count = int(highest.get('restart_count') or 0)
-    highest_name = str(highest.get('name') or 'pod')
-    return {
-        'cluster_id': cluster_id,
-        'namespace': namespace,
-        'affected_count': affected_count,
-        'restart_threshold': threshold,
-        'total_restart_count': total_restarts,
-        'max_restart_count': highest_count,
-        'max_restart_pod': highest_name,
-        'threshold_display': f'>= {threshold} restarts per pod',
-        'observed_total_display': (
-            f'{total_restarts} restarts across {affected_count} affected pod{"" if affected_count == 1 else "s"}'
-        ),
-        'max_observation_display': f'{highest_count} restarts',
-        'max_observation_asset': highest_name,
-        'evidence_window': 'Latest committed inventory snapshot',
-        'snapshot_basis': 'Current Pod Inventory generation',
-        'affected_assets': assets,
-    }
-
-
 def _build_pod_health_findings(rules: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
     unhealthy_rule = rules.get('kubernetes.pod.unhealthy_phase')
     restart_rule = rules.get('kubernetes.pod.high_restart_count')
@@ -466,8 +391,8 @@ def _build_pod_health_findings(rules: dict[str, dict[str, Any]]) -> list[dict[st
             )
 
     if restart_rule:
-        for (cluster_id, namespace), assets in _restart_groups(restart_rows).items():
-            evidence = _restart_evidence(
+        for (cluster_id, namespace), assets in build_restart_groups(restart_rows).items():
+            evidence = build_restart_evidence(
                 cluster_id=cluster_id,
                 namespace=namespace,
                 assets=assets,
@@ -740,7 +665,7 @@ def get_recommendation_finding(recommendation_key: str) -> dict[str, Any] | None
         scope_title, scope_supporting = finding_scope_details(finding)
         finding['scope_title'] = scope_title
         finding['scope_supporting'] = scope_supporting
-        finding['list_summary'] = compact_recommendation_summary(finding.get('summary'))
+        finding['list_summary'] = compact_recommendation_summary(finding.get('summary'), limit=96)
         return finding
 
     return None
