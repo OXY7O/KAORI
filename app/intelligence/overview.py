@@ -5,11 +5,7 @@ from typing import Any
 from app.common.automation_execution import execution_enabled
 from app.extensions.db import db
 from app.intelligence.catalog import INTELLIGENCE_CATALOG
-from app.intelligence.finding_presentation import (
-    compact_recommendation_summary,
-    finding_scope_details,
-)
-from app.intelligence.rule_presentation import domain_label, normalize_rule
+from app.intelligence.rule_presentation import normalize_rule
 from app.intelligence.service import get_active_recommendation_findings
 from app.models.cluster import Cluster
 from app.models.intelligence import IntelligenceDecision, IntelligenceDecisionCandidate, IntelligenceExecutionJournal
@@ -35,6 +31,10 @@ def get_intelligence_overview_payload() -> dict[str, Any]:
     imported_rules = sum(1 for rule in catalog if rule.get('status') == 'imported_signal')
 
     automation = _automation_summary()
+    assets = {
+        'kubernetes': clusters,
+        'object_storage': storage_systems,
+    }
     summary = {
         'findings': len(findings),
         'critical': critical,
@@ -61,12 +61,13 @@ def get_intelligence_overview_payload() -> dict[str, Any]:
     return {
         'posture': posture,
         'summary': summary,
-        'assets': {
-            'kubernetes': clusters,
-            'object_storage': storage_systems,
-        },
+        'assets': assets,
         'automation': automation,
-        'priorities': [_priority_row(item) for item in findings[:5]],
+        'overview_cards': _overview_cards(
+            summary=summary,
+            assets=assets,
+            automation=automation,
+        ),
         'capabilities': _capability_rows(summary=summary, automation=automation),
     }
 
@@ -153,19 +154,65 @@ def _overview_posture(
     }
 
 
-def _priority_row(item: dict[str, Any]) -> dict[str, str]:
-    scope_title, scope_supporting = finding_scope_details(item)
-    domain = str(item.get('domain') or '')
-    return {
-        'key': str(item.get('rule_key') or ''),
-        'title': str(item.get('title') or 'Recommendation'),
-        'summary': compact_recommendation_summary(item.get('summary')),
-        'severity': str(item.get('severity') or 'info'),
-        'priority': str(item.get('priority') or '-'),
-        'domain': domain_label(domain) if domain else 'Cross-Domain',
-        'scope_title': scope_title,
-        'scope_supporting': scope_supporting,
-    }
+def _overview_cards(
+    *,
+    summary: dict[str, int],
+    assets: dict[str, int],
+    automation: dict[str, Any],
+) -> list[dict[str, Any]]:
+    findings = summary['findings']
+    critical = summary['critical']
+    warning = summary['warning']
+    return [
+        {
+            'key': 'recommendations',
+            'title': 'Recommendations',
+            'icon': 'sparkles',
+            'metric_label': 'Active Findings',
+            'metric_value': findings,
+            'details': [
+                {'label': 'Critical', 'value': critical},
+                {'label': 'Warning', 'value': warning},
+                {'label': 'Active Domains', 'value': summary['active_domains']},
+            ],
+        },
+        {
+            'key': 'coverage',
+            'title': 'Managed Coverage',
+            'icon': 'boxes',
+            'metric_label': 'Managed Assets',
+            'metric_value': summary['registered_assets'],
+            'details': [
+                {'label': 'Kubernetes', 'value': assets['kubernetes']},
+                {'label': 'Object Storage', 'value': assets['object_storage']},
+                {'label': 'Supported Domains', 'value': summary['available_domains']},
+            ],
+        },
+        {
+            'key': 'catalog',
+            'title': 'Rule Catalog',
+            'icon': 'list-checks',
+            'metric_label': 'Catalog Rules',
+            'metric_value': summary['catalog_rules'],
+            'details': [
+                {'label': 'Available', 'value': summary['available_rules']},
+                {'label': 'Reserved', 'value': summary['reserved_rules']},
+                {'label': 'Imported Signals', 'value': summary['imported_rules']},
+            ],
+        },
+        {
+            'key': 'automation',
+            'title': 'Automation Control',
+            'icon': 'workflow',
+            'metric_label': 'Pending Governance',
+            'metric_value': automation['pending_governance'],
+            'details': [
+                {'label': 'Awaiting Approval', 'value': automation['awaiting_approval']},
+                {'label': 'Execution Failures', 'value': automation['failures']},
+                {'label': 'Published Runbooks', 'value': automation['published_runbooks']},
+            ],
+        },
+    ]
 
 
 def _capability_rows(

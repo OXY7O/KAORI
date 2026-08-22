@@ -78,3 +78,51 @@ def test_intelligence_sidebar_and_welcome_enter_through_overview() -> None:
     assert "('intelligence.view', 'intelligence.index')" in welcome
     assert "'intelligence.index': 'Overview'" in navigation
     assert "endpoint.startswith(('intelligence.', 'alert_intelligence.', 'automation_control.'))" in navigation
+
+
+def test_intelligence_overview_surfaces_cross_workspace_summary_numbers() -> None:
+    overview = read('app/intelligence/overview.py')
+    template = read('app/templates/intelligence/overview.html')
+
+    assert "'overview_cards': _overview_cards(" in overview
+    for title in ('Recommendations', 'Managed Coverage', 'Rule Catalog', 'Automation Control'):
+        assert f"'title': '{title}'" in overview
+
+    for metric in (
+        'Active Findings',
+        'Critical',
+        'Warning',
+        'Active Domains',
+        'Managed Assets',
+        'Kubernetes',
+        'Object Storage',
+        'Supported Domains',
+        'Catalog Rules',
+        'Available',
+        'Reserved',
+        'Imported Signals',
+        'Pending Governance',
+        'Awaiting Approval',
+        'Execution Failures',
+        'Published Runbooks',
+    ):
+        assert metric in overview
+
+    assert 'Intelligence Snapshot' in template
+    assert 'payload.overview_cards' in template
+    assert 'card.metric_value' in template
+    assert 'card.details' in template
+
+
+def test_intelligence_overview_does_not_render_recommendation_records() -> None:
+    overview = read('app/intelligence/overview.py')
+    template = read('app/templates/intelligence/overview.html')
+
+    assert "'priorities':" not in overview
+    assert 'def _priority_row(' not in overview
+    assert 'payload.priorities' not in template
+    assert 'Current Priorities' not in template
+    assert 'Recommendation Detail Lives in Recommendations' in template
+    assert 'Intelligence Overview intentionally stops at aggregate posture and counts.' in template
+    assert 'operational_callout.render(' in template
+    assert "action_href=url_for('intelligence.recommendations')" in template
