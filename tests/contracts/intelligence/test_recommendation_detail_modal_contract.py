@@ -1,7 +1,7 @@
 from pathlib import Path
 
 
-def test_recommendation_detail_uses_approved_decision_evidence_workflow():
+def test_recommendation_detail_uses_casefile_action_rail_workspace():
     template = Path('app/templates/intelligence/partials/_recommendation_detail_content.html').read_text()
 
     assert 'data-kaori-detail-variant="modal"' in template
@@ -9,42 +9,40 @@ def test_recommendation_detail_uses_approved_decision_evidence_workflow():
     assert 'data-resource-detail-header' in template
     assert 'data-resource-detail-summary' in template
     assert template.index('data-kaori-detail-shell') < template.index('data-resource-detail-header')
-    assert 'data-kaori-recommendation-review-layout="decision-evidence-workflow"' in template
+    assert 'data-kaori-recommendation-review-layout="casefile-action-rail"' in template
+    assert 'data-kaori-recommendation-status-rail' in template
     assert 'Recommendation Review' in template
-    assert 'Committed Snapshot' in template
+    assert 'Committed Evidence' in template
     assert '{{ item.summary }}' in template
 
     for section in (
-        'WHY KAORI RAISED THIS',
-        'RECOMMENDED OUTCOME',
-        'EVIDENCE & AFFECTED ASSETS',
-        'REMEDIATION WORKFLOW',
-        'TRACEABILITY',
+        'Case Brief',
+        'Affected Resources',
+        'Evidence Ledger',
+        'Operator Direction',
+        'Remediation Path',
+        'Traceability',
         'Verification Gate',
     ):
         assert section in template
 
     assert '2xl:grid-cols-12' in template
-    assert '2xl:col-span-7' in template
-    assert '2xl:col-span-5' in template
     assert '2xl:col-span-8' in template
     assert '2xl:col-span-4' in template
-    assert 'data-kaori-recommendation-summary-strip' in template
-    assert 'Faster triage' in template
-    assert 'Safer changes' in template
-    assert 'Verifiable closure' in template
+    assert '2xl:sticky 2xl:top-4' in template
+    assert 'bg-kaori-mist/50' in template
+    assert 'after:bg-brand-outline' in template
 
     for phase in ('Review Evidence', 'Validate Live State', 'Apply Remediation', 'Verify & Close'):
         assert phase in template
-    assert 'Step {{ loop.index }} of {{ item.fix_steps|length }}' in template
-    assert "table_label.metadata_label('4-step workflow'" in template
+    assert 'Safety checkpoint' in template
 
 
 def test_recommendation_detail_preserves_long_identifiers_without_truncation():
     template = Path('app/templates/intelligence/partials/_recommendation_detail_content.html').read_text()
 
     assert 'Rule Key' in template
-    assert "trace_cell('key-round', 'Rule Key', item.rule_key, true, true)" in template
+    assert 'break-all' in template
     assert 'break-words [overflow-wrap:anywhere]' in template
     assert 'block truncate' not in template
     assert 'line-clamp-' not in template
@@ -52,7 +50,7 @@ def test_recommendation_detail_preserves_long_identifiers_without_truncation():
     assert 'text-[10px]' not in template
 
 
-def test_shared_resource_detail_host_supports_approved_wide_review_modal():
+def test_shared_resource_detail_host_supports_wide_review_modal():
     component = Path('app/templates/components/resource_detail_modal.html').read_text()
     page = Path('app/templates/intelligence/recommendations.html').read_text()
     records = Path('app/templates/intelligence/partials/_recommendation_records.html').read_text()
