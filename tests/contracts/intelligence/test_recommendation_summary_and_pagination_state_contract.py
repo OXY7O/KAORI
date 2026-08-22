@@ -6,11 +6,13 @@ def test_recommendation_list_uses_presentation_owned_compact_summary():
     presentation = Path('app/intelligence/finding_presentation.py').read_text()
     records = Path('app/templates/intelligence/partials/_recommendation_records.html').read_text()
     assert 'def compact_recommendation_summary' in presentation
+    assert 'def recommendation_table_summary' in presentation
     assert "for marker in (' Examples:', ' Example:', ' Examples include:')" in presentation
-    assert "item['list_summary'] = compact_recommendation_summary(item.get('summary'), limit=96)" in service
+    assert "item['list_summary'] = recommendation_table_summary(item, limit=72)" in service
     assert 'item.list_summary|default(item.summary, true)' in records
     assert 'line-clamp-1' in records
     assert 'title="{{ item.summary }}"' in records
+    assert "action = _clean(item.get('recommended_action'))" in presentation
 
 
 def test_pagination_and_filters_have_separate_htmx_ownership():

@@ -4,8 +4,10 @@ from pathlib import Path
 def test_recommendation_detail_uses_canonical_modal_hierarchy():
     template = Path('app/templates/intelligence/partials/_recommendation_detail_content.html').read_text()
     assert 'data-kaori-detail-variant="modal"' in template
+    assert 'data-kaori-detail-shell' in template
     assert 'data-resource-detail-header' in template
     assert 'data-resource-detail-summary' in template
+    assert template.index('data-kaori-detail-shell') < template.index('data-resource-detail-header')
     assert 'Recommendation Review' in template
     assert 'Finding Assessment' in template
     assert 'data-kaori-recommendation-review-layout="evidence-action"' in template

@@ -107,6 +107,25 @@ def compact_recommendation_summary(value: Any, *, limit: int = 180) -> str:
     return ' '.join(words).rstrip(' ,;:-') + '.'
 
 
+def recommendation_table_summary(item: dict[str, Any], *, limit: int = 72) -> str:
+    """Return a compact operator-facing action for recommendation list rows."""
+
+    action = _clean(item.get('recommended_action'))
+    if action:
+        first_sentence = action.split('. ', 1)[0].strip().rstrip('.')
+        if len(first_sentence) <= limit:
+            return first_sentence + '.'
+        first_clause = first_sentence.split(' and ', 1)[0].strip().rstrip(' ,;:-')
+        if 28 <= len(first_clause) <= limit:
+            return first_clause + '.'
+        return compact_recommendation_summary(first_sentence, limit=limit)
+
+    condition = _clean(item.get('condition_summary'))
+    if condition:
+        return compact_recommendation_summary(condition, limit=limit)
+    return compact_recommendation_summary(item.get('summary'), limit=limit)
+
+
 def finding_scope_details(finding: dict[str, Any]) -> tuple[str, str]:
     evidence = _mapping(finding.get('evidence'))
     source_label = str(finding.get('source_kind_label') or 'Resource')
