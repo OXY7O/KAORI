@@ -3,7 +3,7 @@
 {% set result = payload.result_context %}
 {% call intelligence_ui.section(
     'Alert Intelligence Summary',
-    'Current alert posture for the selected asset and active record filters.',
+    'Committed alert posture for the selected asset and active record filters.',
     'chart-no-axes-column-increasing'
     ) %}
     <div class="p-4 sm:p-5">
@@ -33,6 +33,7 @@
             {{ table_label.metadata_label(payload.domain_label) }}
             {{ table_label.metadata_label(payload.selected_asset_name) }}
             {{ table_label.metadata_label(payload.source_status.resolved_label ~ ' Evidence') }}
+            {{ table_label.metadata_label(payload.snapshot.label) }}
             {{ table_label.metadata_label((result.active_filters ~ ' Active Filters') if result.active_filters else 'No Active Filters') }}
         </div>
     </div>

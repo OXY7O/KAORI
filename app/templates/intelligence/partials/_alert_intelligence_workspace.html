@@ -39,8 +39,8 @@
     'Alert Intelligence Workspace',
     'Move between alert evidence, contextual guidance, delivery posture, and ownership boundaries within one managed asset context.',
     'radio-tower',
-    payload.source_status.label,
-    'normal' if payload.source_status.connected else 'warning',
+    payload.snapshot.label,
+    payload.snapshot.tone,
     indicator_id='alert-intelligence-loading',
     loading_label='Refreshing Alert Intelligence'
     ) %}
@@ -80,7 +80,7 @@
             <div class="min-w-0 lg:max-w-sm">
                 <p class="text-sm font-semibold leading-5 text-content-primary">Operational Context</p>
                 <p class="mt-1 text-xs leading-5 text-content-muted">
-                    Selected asset and alert source define the evidence context shared across every Alert Intelligence section.
+                    Selected asset and alert source define the committed evidence context shared across every Alert Intelligence section.
                 </p>
             </div>
             <div class="{{ table_ui.filter_layout_classes() }} flex-1">

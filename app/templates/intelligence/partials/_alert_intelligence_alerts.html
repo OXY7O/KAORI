@@ -14,15 +14,38 @@
                 'radio-tower') }}
         <dl class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {{ intelligence_ui.field('Policy', payload.source|title, supporting='Configured source selection') }}
-            {{ intelligence_ui.field('Resolved Source', payload.source_status.resolved_label, supporting='Provider evidence used for this request') }}
-            {{ intelligence_ui.field('Runtime', payload.source_status.label, supporting='Current source connectivity posture') }}
-            {{ intelligence_ui.field('Lifecycle Authority', 'Alertmanager', supporting='Grouping, silences, inhibition, routing, receivers') }}
+            {{ intelligence_ui.field('Resolved Source', payload.source_status.resolved_label, supporting='Provider captured by the background worker') }}
+            {{ intelligence_ui.field('Snapshot State', payload.snapshot.label, supporting='Page requests never wait for provider connectivity') }}
+            {{ intelligence_ui.field('Last Successful', payload.snapshot.generated_at|user_datetime if payload.snapshot.generated_at else 'Not Available', supporting='Committed evidence timestamp') }}
         </dl>
+        <p class="mt-3 text-xs leading-5 text-content-muted">
+            <span class="font-semibold text-content-secondary">Lifecycle Authority:</span> Alertmanager continues to own grouping, silences, inhibition, routing, and receivers. KAORI serves committed worker evidence here.
+        </p>
+        {% if payload.snapshot.serving_last_good %}
+            <div class="mt-4">
+                {{ operational_callout.render('Last Good Snapshot Active',
+                                'The latest background refresh is stale, still running, or failed. KAORI is preserving the last committed alert evidence so this workspace remains fast and usable while the analytics worker retries provider collection.',
+                                'database-backup',
+                                'warning') }}
+            </div>
+        {% elif not payload.snapshot.available %}
+            <div class="mt-4">
+                {{ operational_callout.render('Worker Data Required',
+                                'No committed alert snapshot is available yet. Enable or run the registered Analytics Data Refresh job for this asset; the page will remain provider-independent.',
+                                'database-zap',
+                                'warning') }}
+            </div>
+        {% endif %}
         {% if payload.source_status.fallback_used %}
             <div class="mt-4">{{ operational_callout.render('Fallback Evidence Active', payload.source_status.fallback_reason, 'git-branch', 'warning') }}</div>
         {% endif %}
-        {% if payload.source_status.error %}
-            <div class="mt-4">{{ operational_callout.render('Alert Evidence Unavailable', payload.source_status.error, 'triangle-alert', 'critical') }}</div>
+        {% if payload.source_status.error and payload.snapshot.available %}
+            <div class="mt-4">
+                {{ operational_callout.render('Snapshot Source Limitation',
+                                'The committed snapshot recorded limited provider evidence. Background materialization owns connectivity checks and retries; this page does not contact the provider directly.',
+                                'triangle-alert',
+                                'warning') }}
+            </div>
         {% endif %}
     </div>
     <form id="alert-intelligence-filter-form"

@@ -178,8 +178,7 @@ def main() -> int:
         errors,
     )
     for required in (
-        'load_alerts_by_source',
-        'load_alert_stream',
+        'load_snapshot_rows',
         'get_active_recommendation_findings',
         'notification_channel_summary',
         'recent_delivery_summary',
@@ -190,6 +189,12 @@ def main() -> int:
         "'metrics_source'",
     ):
         require(required in alert_intelligence, f'Alert Intelligence multi-domain contract missing: {required}', errors)
+    for forbidden in ('load_alerts_by_source', 'load_alert_stream'):
+        require(
+            forbidden not in alert_intelligence,
+            f'Alert Intelligence web payload must not perform live provider reads: {forbidden}',
+            errors,
+        )
     for required in (
         'Alert Records',
         'Correlation & Guidance',

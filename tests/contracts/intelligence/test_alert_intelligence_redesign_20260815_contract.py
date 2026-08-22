@@ -47,7 +47,7 @@ def test_alert_intelligence_workspace_places_tabs_before_compact_operational_con
     assert 'id="alert-intelligence-context-form"' in workspace
     assert 'hx-trigger="change from:select"' in workspace
     assert (
-        'Selected asset and alert source define the evidence context shared across every Alert Intelligence section.'
+        'Selected asset and alert source define the committed evidence context shared across every Alert Intelligence section.'
         in workspace
     )
     assert 'bg-surface-hover px-4 py-4 sm:px-5' not in workspace
@@ -66,7 +66,7 @@ def test_alert_intelligence_tabs_are_section_owned_and_informative() -> None:
     for label in ('Alert Records', 'Correlation & Guidance', 'Notification Delivery', 'Evidence & Ownership'):
         assert label in workspace
 
-    for required in ('Alert Source Context', 'Resolved Source', 'Runtime', 'Lifecycle Authority'):
+    for required in ('Alert Source Context', 'Resolved Source', 'Snapshot State', 'Last Successful', 'Lifecycle Authority'):
         assert required in alerts
     for required in ('Active Recommendations', 'Catalog Rules', 'Relationship', 'Contextual Only'):
         assert required in correlation

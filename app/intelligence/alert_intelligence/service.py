@@ -10,12 +10,11 @@ from app.integrations.delivery.notification_channels.service import (
     notification_channel_summary,
     recent_delivery_summary,
 )
+from app.intelligence.alert_intelligence.snapshots import load_snapshot_rows
 from app.intelligence.catalog import INTELLIGENCE_CATALOG
 from app.intelligence.service import get_active_recommendation_findings
-from app.kubernetes.analytics.alerts.sources import load_alerts_by_source
 from app.models.cluster import Cluster
 from app.models.object_storage import ObjectStorageSystem
-from app.storage.object_storage.analytics.alert_sources import load_alert_stream
 
 _VALID_DOMAINS = {'kubernetes', 'object_storage'}
 _VALID_SOURCES = {'auto', 'alertmanager', 'metrics_source'}
@@ -34,7 +33,7 @@ def get_alert_intelligence_payload(args: MultiDict[str, str]) -> dict[str, Any]:
     selected_asset = _resolve_asset(domain, selected_asset_key, clusters=clusters, systems=systems)
     source = _choice(args.get('source'), _VALID_SOURCES, 'auto')
     tab = _choice(args.get('tab'), _VALID_TABS, 'alerts')
-    rows, source_status = _load_rows(domain, selected_asset, source=source)
+    rows, source_status, snapshot = _load_rows(domain, selected_asset, source=source)
     severity = _choice(args.get('severity'), _VALID_SEVERITIES, 'all')
     state = _choice(args.get('state'), _VALID_STATES, 'all')
     search = str(args.get('q') or '').strip()
@@ -52,7 +51,7 @@ def get_alert_intelligence_payload(args: MultiDict[str, str]) -> dict[str, Any]:
     )
     catalog_rules = _alert_intelligence_rules(domain)
     notification_summary = notification_channel_summary()
-    posture = _posture(rows, source_status)
+    posture = _posture(rows, source_status, snapshot)
     selected_asset_name = str(getattr(selected_asset, 'name', '') or 'No Asset Selected')
     return {
         'domain': domain,
@@ -73,6 +72,7 @@ def get_alert_intelligence_payload(args: MultiDict[str, str]) -> dict[str, Any]:
             {'value': 'metrics_source', 'label': 'Metrics Source'},
         ],
         'source_status': source_status,
+        'snapshot': snapshot,
         'posture': posture,
         'summary': {
             'active': len(rows),
@@ -128,8 +128,8 @@ def list_active_alert_events() -> list[dict[str, Any]]:
     """Return active alert events across supported domains for notification dispatch."""
     events: list[dict[str, Any]] = []
     for cluster in Cluster.query.order_by(Cluster.id.asc()).all():
-        rows, status = _load_rows('kubernetes', cluster, source='auto')
-        if not status.get('connected'):
+        rows, status, snapshot = _load_rows('kubernetes', cluster, source='auto')
+        if not status.get('connected') or snapshot.get('serving_last_good'):
             continue
         recommendations = get_active_recommendation_findings(domain='kubernetes', asset_key=cluster.id, limit=5)
         for row in rows:
@@ -145,8 +145,8 @@ def list_active_alert_events() -> list[dict[str, Any]]:
                     }
                 )
     for system in ObjectStorageSystem.query.order_by(ObjectStorageSystem.id.asc()).all():
-        rows, status = _load_rows('object_storage', system, source='auto')
-        if not status.get('connected'):
+        rows, status, snapshot = _load_rows('object_storage', system, source='auto')
+        if not status.get('connected') or snapshot.get('serving_last_good'):
             continue
         recommendations = get_active_recommendation_findings(domain='object_storage', asset_key=system.id, limit=5)
         for row in rows:
@@ -211,24 +211,25 @@ def _load_rows(
     asset: Cluster | ObjectStorageSystem | None,
     *,
     source: str,
-) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+) -> tuple[list[dict[str, Any]], dict[str, Any], dict[str, Any]]:
     if asset is None:
-        return [], {
-            'selected_source': source,
-            'resolved_source': 'none',
-            'label': 'No Asset Available',
-            'configured': False,
-            'connected': False,
-            'fallback_used': False,
-            'fallback_reason': None,
-            'error': 'No asset is available in the selected domain.',
-        }
-    if domain == 'kubernetes':
-        raw_rows, status = load_alerts_by_source(cluster=asset, source=source)  # type: ignore[arg-type]
-        rows = [_normalize_kubernetes_row(row) for row in raw_rows]
-        return rows, _normalize_source_status(status)
-    stream = load_alert_stream(asset, selected_source=source)  # type: ignore[arg-type]
-    return [_normalize_object_storage_row(row) for row in stream.get('rows') or []], _normalize_source_status(stream)
+        raw_rows, raw_status, snapshot = load_snapshot_rows(
+            domain=domain,
+            asset_key='',
+            source=source,
+        )
+    else:
+        raw_rows, raw_status, snapshot = load_snapshot_rows(
+            domain=domain,
+            asset_key=str(asset.id),
+            source=source,
+        )
+    rows = (
+        [_normalize_kubernetes_row(row) for row in raw_rows]
+        if domain == 'kubernetes'
+        else [_normalize_object_storage_row(dict(row)) for row in raw_rows]
+    )
+    return rows, _normalize_source_status(raw_status), snapshot
 
 
 def _normalize_kubernetes_row(row: Mapping[str, Any]) -> dict[str, Any]:
@@ -309,15 +310,23 @@ def _filter_rows(rows: list[dict[str, Any]], *, severity: str, state: str, searc
     return filtered
 
 
-def _posture(rows: list[dict[str, Any]], source_status: dict[str, Any]) -> dict[str, str]:
-    if not source_status.get('connected'):
-        return {'label': 'Evidence Unavailable', 'tone': 'unknown'}
+def _posture(
+    rows: list[dict[str, Any]],
+    source_status: dict[str, Any],
+    snapshot: Mapping[str, Any],
+) -> dict[str, str]:
+    if not snapshot.get('available'):
+        return {'label': 'Worker Data Required', 'tone': 'unknown'}
     if any(row.get('severity') == 'critical' for row in rows):
         return {'label': 'Critical', 'tone': 'critical'}
     if any(row.get('severity') == 'warning' for row in rows):
         return {'label': 'Attention', 'tone': 'warning'}
     if rows:
         return {'label': 'Active', 'tone': 'info'}
+    if snapshot.get('serving_last_good'):
+        return {'label': 'No Alerts · Last Good Snapshot', 'tone': 'warning'}
+    if not source_status.get('connected'):
+        return {'label': 'No Alert Evidence', 'tone': 'unknown'}
     return {'label': 'No Active Alerts', 'tone': 'normal'}
 
 

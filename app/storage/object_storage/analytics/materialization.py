@@ -110,6 +110,47 @@ def read_analytics_snapshot(*, system_id: str, time_range: str) -> tuple[dict[st
     return payload, state
 
 
+def read_latest_known_analytics_snapshot(
+    *,
+    system_id: str,
+) -> tuple[dict[str, Any] | None, dict[str, Any]]:
+    """Return the newest committed operational payload for continuity views.
+
+    Alert evidence inside an Object Storage operational snapshot is collected by the
+    background worker and is independent from the page's analytics time-range filter.
+    This reader therefore chooses the newest committed payload across ranges and keeps
+    it available after expiry while explicitly marking it as last-known evidence.
+    """
+
+    snapshot = (
+        ObjectStorageAnalyticsSnapshot.query.filter_by(object_storage_system_id=str(system_id))
+        .filter(
+            ObjectStorageAnalyticsSnapshot.payload_json.is_not(None),
+            ObjectStorageAnalyticsSnapshot.generated_at.is_not(None),
+        )
+        .order_by(
+            ObjectStorageAnalyticsSnapshot.generated_at.desc(),
+            ObjectStorageAnalyticsSnapshot.id.desc(),
+        )
+        .first()
+    )
+    state = analytics_snapshot_state(snapshot)
+    state['time_range'] = snapshot.time_range if snapshot is not None else None
+    state['last_known_available'] = bool(snapshot is not None and isinstance(snapshot.payload_json, dict))
+    if snapshot is None or not isinstance(snapshot.payload_json, dict):
+        return None, state
+
+    payload = _decode_snapshot_value(snapshot.payload_json)
+    if not isinstance(payload, dict) or payload.get('schema') != ANALYTICS_SNAPSHOT_SCHEMA:
+        return None, {
+            **state,
+            'last_known_available': False,
+            'label': 'Snapshot Contract Invalid',
+            'tone': 'critical',
+        }
+    return payload, state
+
+
 def mark_analytics_pending(
     *,
     system_id: str,

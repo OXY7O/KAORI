@@ -87,6 +87,60 @@ def read_snapshot(
     return SnapshotResult(context, snapshot, 'stale' if now > expires_at else 'fresh', now > expires_at)
 
 
+def read_last_known_snapshot(
+    *,
+    cluster_id: str,
+    dataset_key: str,
+    parameters: dict[str, Any] | None,
+) -> SnapshotResult:
+    """Read the last committed payload even after its normal stale-grace window.
+
+    This reader is intended for read-only continuity surfaces such as Intelligence.
+    It never performs provider I/O and never treats old evidence as current; callers
+    must surface the returned state and timestamps alongside the preserved payload.
+    """
+
+    snapshot = get_snapshot(
+        cluster_id=cluster_id,
+        dataset_key=dataset_key,
+        parameters=parameters,
+    )
+    if snapshot is None or snapshot.payload_json is None or snapshot.generated_at is None:
+        return SnapshotResult(None, snapshot, snapshot.status if snapshot else 'missing', False)
+
+    context = decode_value(snapshot.payload_json)
+    if not isinstance(context, dict):
+        current_app.logger.error('Analytics snapshot %s did not decode to a context mapping.', snapshot.id)
+        return SnapshotResult(None, snapshot, 'invalid', False)
+    if context.get('dependency_blocker'):
+        current_app.logger.warning(
+            'Analytics snapshot %s contains a dependency blocker and cannot be served as last-known evidence.',
+            snapshot.id,
+        )
+        return SnapshotResult(None, snapshot, 'blocked', False)
+
+    dataset = get_dataset(dataset_key)
+    now = utcnow()
+    generated_at = _as_utc(snapshot.generated_at)
+    expires_at = (
+        _as_utc(snapshot.expires_at)
+        if snapshot.expires_at
+        else generated_at + timedelta(minutes=dataset.freshness_minutes)
+    )
+    stale_deadline = expires_at + timedelta(minutes=snapshot.stale_grace_minutes or dataset.stale_grace_minutes)
+    if snapshot.status == 'failed':
+        state = 'failed'
+    elif snapshot.status == 'pending':
+        state = 'refreshing'
+    elif now <= expires_at:
+        state = 'fresh'
+    elif now <= stale_deadline:
+        state = 'stale'
+    else:
+        state = 'expired'
+    return SnapshotResult(context, snapshot, state, now > expires_at)
+
+
 def mark_snapshot_pending(
     *,
     cluster_id: str,

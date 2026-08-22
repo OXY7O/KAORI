@@ -47,8 +47,9 @@ def test_alert_intelligence_uses_supported_multi_domain_alert_sources():
     alerts = read('app/templates/intelligence/partials/_alert_intelligence_alerts.html')
     correlation = read('app/templates/intelligence/partials/_alert_intelligence_correlation.html')
 
-    assert 'load_alerts_by_source' in module
-    assert 'load_alert_stream' in module
+    assert 'load_snapshot_rows' in module
+    assert 'load_alerts_by_source' not in module
+    assert 'load_alert_stream' not in module
     assert 'get_active_recommendation_findings' in module
     assert "'kubernetes'" in module
     assert "'object_storage'" in module

@@ -12,8 +12,9 @@ def test_alert_intelligence_is_asset_scoped_multi_domain_and_keeps_source_author
     workspace = read('app/templates/intelligence/partials/_alert_intelligence_workspace.html')
     correlation = read('app/templates/intelligence/partials/_alert_intelligence_correlation.html')
 
-    assert 'load_alerts_by_source' in module
-    assert 'load_alert_stream' in module
+    assert 'load_snapshot_rows' in module
+    assert 'load_alerts_by_source' not in module
+    assert 'load_alert_stream' not in module
     assert "_VALID_DOMAINS = {'kubernetes', 'object_storage'}" in module
     assert "_VALID_SOURCES = {'auto', 'alertmanager', 'metrics_source'}" in module
     assert 'get_active_recommendation_findings' in module
