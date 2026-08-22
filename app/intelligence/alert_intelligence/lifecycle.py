@@ -6,17 +6,7 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from app.extensions.db import db
-from app.intelligence.alert_intelligence.case_state import (
-    mark_asset_alert_cases_source_unknown,
-    mark_case_source_unknown,
-    restore_case_source_firing,
-    restore_system_routing,
-    resume_case_routing,
-    retire_source_deleted_case,
-    set_case_policy_routing_eligibility,
-    suppress_case_routing,
-    withdraw_manual_alert,
-)
+from app.intelligence.alert_intelligence.case_state import restore_system_routing
 from app.intelligence.alert_intelligence.snapshots import load_snapshot_rows
 from app.models.alert_ops import AlertCase, AlertCaseEvent, AlertSilence
 from app.models.audit import AuditEvent
@@ -446,7 +436,6 @@ def mark_case_source_resolved(
     case.postmortem_status = 'not_required'
     _event(case, 'auto_closed', None, 'Case auto-closed by the source-resolved policy for non-paging severity.')
     return case.workflow_state
-
 
 
 def get_case(public_id: str) -> AlertCase | None:
