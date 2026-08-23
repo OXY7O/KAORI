@@ -537,7 +537,14 @@ def delete_routing_policy(policy_id: int) -> ResponseReturnValue:
     try:
         changed = delete_routing_policy_command(policy_id=policy_id, actor_user_id=_actor_user_id())
     except SQLAlchemyError as exc:
-        _queue_intelligence_activity(event_type='alert_routing_policy_delete_failed', status='error', title='Routing policy not deleted', message=str(exc), delivery_policy='deck_on_failure', metadata={'policy_id': policy_id})
+        _queue_intelligence_activity(
+            event_type='alert_routing_policy_delete_failed',
+            status='error',
+            title='Routing policy not deleted',
+            message=str(exc),
+            delivery_policy='deck_on_failure',
+            metadata={'policy_id': policy_id},
+        )
     else:
         _queue_intelligence_activity(
             event_type='alert_routing_policy_deleted' if changed else 'alert_routing_policy_unavailable',
@@ -576,7 +583,13 @@ def save_routing_policy() -> ResponseReturnValue:
             actor_user_id=_actor_user_id(),
         )
     except (ValueError, SQLAlchemyError) as exc:
-        _queue_intelligence_activity(event_type='alert_routing_policy_update_failed', status='error', title='Routing policy not saved', message=str(exc), delivery_policy='deck_on_failure')
+        _queue_intelligence_activity(
+            event_type='alert_routing_policy_update_failed',
+            status='error',
+            title='Routing policy not saved',
+            message=str(exc),
+            delivery_policy='deck_on_failure',
+        )
     else:
         _queue_intelligence_activity(
             event_type='alert_routing_policy_updated',
@@ -601,7 +614,13 @@ def save_template() -> ResponseReturnValue:
             actor_user_id=_actor_user_id(),
         )
     except (ValueError, SQLAlchemyError) as exc:
-        _queue_intelligence_activity(event_type='alert_notification_template_save_failed', status='error', title='Template not saved', message=str(exc), delivery_policy='deck_on_failure')
+        _queue_intelligence_activity(
+            event_type='alert_notification_template_save_failed',
+            status='error',
+            title='Template not saved',
+            message=str(exc),
+            delivery_policy='deck_on_failure',
+        )
     else:
         _queue_intelligence_activity(
             event_type='alert_notification_template_saved',
@@ -624,7 +643,13 @@ def test_render_template() -> ResponseReturnValue:
             content_format=str(request.form.get('content_format') or 'plain_text'),
         )
     except ValueError as exc:
-        _queue_intelligence_activity(event_type='alert_notification_template_render_failed', status='error', title='Template render failed', message=str(exc), delivery_policy='deck_on_failure')
+        _queue_intelligence_activity(
+            event_type='alert_notification_template_render_failed',
+            status='error',
+            title='Template render failed',
+            message=str(exc),
+            delivery_policy='deck_on_failure',
+        )
     else:
         _queue_intelligence_activity(
             event_type='alert_notification_template_rendered',
@@ -652,7 +677,13 @@ def send_template_test() -> ResponseReturnValue:
             actor_user_id=_actor_user_id(),
         )
     except (ValueError, SQLAlchemyError) as exc:
-        _queue_intelligence_activity(event_type='alert_notification_template_test_failed', status='error', title='Template test not sent', message=str(exc), delivery_policy='deck_on_failure')
+        _queue_intelligence_activity(
+            event_type='alert_notification_template_test_failed',
+            status='error',
+            title='Template test not sent',
+            message=str(exc),
+            delivery_policy='deck_on_failure',
+        )
     else:
         _queue_intelligence_activity(
             event_type='alert_notification_template_test_delivered',
@@ -675,7 +706,14 @@ def reset_template() -> ResponseReturnValue:
             actor_user_id=_actor_user_id(),
         )
     except (ValueError, SQLAlchemyError) as exc:
-        _queue_intelligence_activity(event_type='alert_notification_template_reset_failed', status='error', title='Template not reset', message=str(exc), delivery_policy='deck_on_failure', metadata={'provider_key': provider_key, 'event_state': event_state})
+        _queue_intelligence_activity(
+            event_type='alert_notification_template_reset_failed',
+            status='error',
+            title='Template not reset',
+            message=str(exc),
+            delivery_policy='deck_on_failure',
+            metadata={'provider_key': provider_key, 'event_state': event_state},
+        )
     else:
         _queue_intelligence_activity(
             event_type='alert_notification_template_reset',

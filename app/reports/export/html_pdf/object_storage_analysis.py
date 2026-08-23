@@ -261,10 +261,34 @@ def build_object_storage_analysis_presentation(
             _metric('Quota Coverage', quota_coverage, 'Observed Buckets', _tone(bucket_analysis.get('quota_tone'))),
         ),
         'rows': (
-            {'ref': 'C1', 'dimension': 'Utilization', 'value': _text(capacity.get('utilization')), 'status': 'Current', 'tone': 'normal'},
-            {'ref': 'C2', 'dimension': 'Buckets in Scope', 'value': bucket_count, 'status': 'Committed', 'tone': 'normal'},
-            {'ref': 'C3', 'dimension': 'Quota Configured', 'value': _text(bucket_analysis.get('quota_configured_count'), '0'), 'status': 'Observed', 'tone': 'normal'},
-            {'ref': 'C4', 'dimension': 'Quota Pressure', 'value': _text(bucket_analysis.get('quota_pressure_count'), '0'), 'status': 'Review' if _text(bucket_analysis.get('quota_pressure_count'), '0') != '0' else 'Clear', 'tone': 'warning' if _text(bucket_analysis.get('quota_pressure_count'), '0') != '0' else 'normal'},
+            {
+                'ref': 'C1',
+                'dimension': 'Utilization',
+                'value': _text(capacity.get('utilization')),
+                'status': 'Current',
+                'tone': 'normal',
+            },
+            {
+                'ref': 'C2',
+                'dimension': 'Buckets in Scope',
+                'value': bucket_count,
+                'status': 'Committed',
+                'tone': 'normal',
+            },
+            {
+                'ref': 'C3',
+                'dimension': 'Quota Configured',
+                'value': _text(bucket_analysis.get('quota_configured_count'), '0'),
+                'status': 'Observed',
+                'tone': 'normal',
+            },
+            {
+                'ref': 'C4',
+                'dimension': 'Quota Pressure',
+                'value': _text(bucket_analysis.get('quota_pressure_count'), '0'),
+                'status': 'Review' if _text(bucket_analysis.get('quota_pressure_count'), '0') != '0' else 'Clear',
+                'tone': 'warning' if _text(bucket_analysis.get('quota_pressure_count'), '0') != '0' else 'normal',
+            },
         ),
         'interpretation': (
             f'Quota evidence covers {quota_coverage} of committed bucket scope. '
@@ -282,10 +306,30 @@ def build_object_storage_analysis_presentation(
             _metric('Offline Nodes', offline_nodes, 'Node Availability', _tone(performance.get('node_tone'))),
         ),
         'rows': (
-            {'ref': 'P1', 'signal': 'Request Demand', 'value': request_rate, 'assessment': _text(performance.get('request_trend_status'), 'Current')},
-            {'ref': 'P2', 'signal': 'Error Ratio', 'value': error_ratio, 'assessment': _text(performance.get('reliability_status'), 'Review')},
-            {'ref': 'P3', 'signal': 'Queue', 'value': _text(performance.get('waiting_display') or performance.get('waiting'), 'N/A'), 'assessment': _text(performance.get('queue_status'), 'Review')},
-            {'ref': 'P4', 'signal': 'Traffic', 'value': _text(performance.get('total_traffic_display') or performance.get('traffic'), 'N/A'), 'assessment': 'Observed'},
+            {
+                'ref': 'P1',
+                'signal': 'Request Demand',
+                'value': request_rate,
+                'assessment': _text(performance.get('request_trend_status'), 'Current'),
+            },
+            {
+                'ref': 'P2',
+                'signal': 'Error Ratio',
+                'value': error_ratio,
+                'assessment': _text(performance.get('reliability_status'), 'Review'),
+            },
+            {
+                'ref': 'P3',
+                'signal': 'Queue',
+                'value': _text(performance.get('waiting_display') or performance.get('waiting'), 'N/A'),
+                'assessment': _text(performance.get('queue_status'), 'Review'),
+            },
+            {
+                'ref': 'P4',
+                'signal': 'Traffic',
+                'value': _text(performance.get('total_traffic_display') or performance.get('traffic'), 'N/A'),
+                'assessment': 'Observed',
+            },
         ),
         'interpretation': (
             f'Current request demand is {request_rate} with an observed error ratio of {error_ratio}. '
@@ -298,13 +342,38 @@ def build_object_storage_analysis_presentation(
             _metric('Growth / Day', forecast.get('growth_per_day'), forecast_state, 'info'),
             _metric('Projected 7d', forecast.get('projected_7d'), 'Planning', 'info'),
             _metric('Projected 30d', forecast.get('projected_30d'), 'Planning', 'info'),
-            _metric('Capacity ETA', forecast.get('days_to_capacity'), 'Planning Horizon', 'warning' if 'N/A' not in _text(forecast.get('days_to_capacity')) else 'muted'),
+            _metric(
+                'Capacity ETA',
+                forecast.get('days_to_capacity'),
+                'Planning Horizon',
+                'warning' if 'N/A' not in _text(forecast.get('days_to_capacity')) else 'muted',
+            ),
         ),
         'rows': (
-            {'ref': 'F1', 'dimension': 'Current Usage', 'value': _text(capacity.get('usage_total') or summary.get('usage')), 'assessment': 'Committed'},
-            {'ref': 'F2', 'dimension': '7-day Projection', 'value': _text(forecast.get('projected_7d')), 'assessment': 'Planning'},
-            {'ref': 'F3', 'dimension': '30-day Projection', 'value': _text(forecast.get('projected_30d')), 'assessment': 'Planning'},
-            {'ref': 'F4', 'dimension': 'Capacity ETA', 'value': _text(forecast.get('days_to_capacity')), 'assessment': forecast_state},
+            {
+                'ref': 'F1',
+                'dimension': 'Current Usage',
+                'value': _text(capacity.get('usage_total') or summary.get('usage')),
+                'assessment': 'Committed',
+            },
+            {
+                'ref': 'F2',
+                'dimension': '7-day Projection',
+                'value': _text(forecast.get('projected_7d')),
+                'assessment': 'Planning',
+            },
+            {
+                'ref': 'F3',
+                'dimension': '30-day Projection',
+                'value': _text(forecast.get('projected_30d')),
+                'assessment': 'Planning',
+            },
+            {
+                'ref': 'F4',
+                'dimension': 'Capacity ETA',
+                'value': _text(forecast.get('days_to_capacity')),
+                'assessment': forecast_state,
+            },
         ),
         'interpretation': (
             'Forecast values are planning evidence only. Validate current demand, approved growth, and live capacity '
@@ -328,8 +397,12 @@ def build_object_storage_analysis_presentation(
 
     risk_page = {
         'metrics': (
-            _metric('Critical Findings', str(critical_count), 'Operational Risk', 'critical' if critical_count else 'normal'),
-            _metric('Warning Findings', str(warning_count), 'Requires Review', 'warning' if warning_count else 'normal'),
+            _metric(
+                'Critical Findings', str(critical_count), 'Operational Risk', 'critical' if critical_count else 'normal'
+            ),
+            _metric(
+                'Warning Findings', str(warning_count), 'Requires Review', 'warning' if warning_count else 'normal'
+            ),
             _metric('Other Review', str(review_count), 'Evidence Review', 'warning' if review_count else 'normal'),
             _metric('Actions', str(len(recommendations)), 'Management Follow-up', 'info'),
         ),
@@ -349,7 +422,11 @@ def build_object_storage_analysis_presentation(
             _metric('Alert Source', evidence_boundary.get('alert_source'), 'Provider Context', 'info'),
         ),
         'sources': (
-            {'source': _text(evidence_boundary.get('inventory_source')), 'freshness': 'Snapshot', 'last_collected': _text(evidence_boundary.get('inventory_cutoff'), context.data_cutoff)},
+            {
+                'source': _text(evidence_boundary.get('inventory_source')),
+                'freshness': 'Snapshot',
+                'last_collected': _text(evidence_boundary.get('inventory_cutoff'), context.data_cutoff),
+            },
             {'source': source_label, 'freshness': context.period_label, 'last_collected': context.data_cutoff},
             {'source': 'Object Storage Forecast', 'freshness': forecast_state, 'last_collected': context.data_cutoff},
         ),

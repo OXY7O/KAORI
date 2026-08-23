@@ -37,9 +37,18 @@ def main() -> int:
     main_template = read('app/templates/intelligence/automation_control.html')
     overview = read('app/templates/intelligence/partials/automation_control/_overview.html')
     runbooks = read('app/templates/intelligence/partials/automation_control/_runbooks.html')
+    binding_configuration_modal = read(
+        'app/templates/intelligence/partials/automation_control/_binding_configuration_modal.html'
+    )
     decisions = read('app/templates/intelligence/partials/automation_control/_decisions.html')
     operations = read('app/templates/intelligence/partials/automation_control/_operations.html')
+    execution_configuration_modal = read(
+        'app/templates/intelligence/partials/automation_control/_execution_configuration_modal.html'
+    )
     readiness = read('app/templates/intelligence/partials/automation_control/_readiness.html')
+    readiness_configuration_modal = read(
+        'app/templates/intelligence/partials/automation_control/_readiness_configuration_modal.html'
+    )
     notification_forms = read('app/integrations/delivery/notification_channels/forms.py')
     notification_service = read('app/integrations/delivery/notification_channels/service.py')
     notification_catalog = read('app/definitions/catalogs/platform_operations/notifications/outbound_delivery.yaml')
@@ -237,10 +246,14 @@ def main() -> int:
         'System Runbook Catalog',
         'Activate System Runbook',
         'Binding Configuration',
-        'Create Binding',
         'Custom Authoring Locked',
     ):
         require(required in runbooks, f'System Runbook Catalog UI missing: {required}', errors)
+    require(
+        'Create Binding' in binding_configuration_modal,
+        'Binding Configuration modal missing governed Create Binding action',
+        errors,
+    )
     for forbidden in ('Create Runbook', 'Create Revision', 'Publish Revision'):
         require(
             forbidden not in runbooks,
@@ -310,22 +323,34 @@ def main() -> int:
     for required in ('Candidate Review Queue', 'Persisted Decisions', 'Maker-Checker', 'Queue Execution'):
         require(required in decisions, f'Decision workflow UI missing: {required}', errors)
     for required in (
-        'Governance Configuration',
+        'Execution Configuration',
         'Deployment Policies',
         'Safety Controls',
         'Execution Journal',
-        'Post-action Verification',
+        'Verification Summary',
         'Dead-Letter Review',
     ):
         require(required in operations, f'Execution Control UI missing: {required}', errors)
+    require(
+        'Governance Boundary' in execution_configuration_modal
+        and 'Deployment &amp; Safety Controls' in execution_configuration_modal,
+        'Execution Configuration modal must preserve the governance boundary and safety-control contract',
+        errors,
+    )
     for required in (
         'Production Enablement Gate',
-        'Readiness Configuration',
+        'Readiness Evidence',
         'Record Evidence',
         'Controlled Rollout Sequence',
         'Apply Stage',
     ):
         require(required in readiness, f'Production Readiness UI missing: {required}', errors)
+    require(
+        'Record Readiness Evidence' in readiness_configuration_modal
+        and 'Record Evidence' in readiness_configuration_modal,
+        'Readiness Evidence modal must expose governed evidence recording',
+        errors,
+    )
 
     require(
         "action_key = 'kubernetes.deployment.restart'" in overview_logic,

@@ -34,9 +34,13 @@ def test_every_primary_intelligence_page_uses_reference_posture_directly_below_h
     automation = read('app/templates/intelligence/automation_control.html')
 
     assert overview.index('page_hero.shell_classes()') < overview.index('intelligence_ui.posture_panel(')
-    assert overview.index('intelligence_ui.posture_panel(') < overview.index("{% call intelligence_ui.section(\n            'Intelligence Posture'")
+    assert overview.index('intelligence_ui.posture_panel(') < overview.index(
+        "{% call intelligence_ui.section(\n            'Intelligence Posture'"
+    )
 
-    assert recommendations.index('page_hero.shell_classes()') < recommendations.index('_recommendation_workspace_info.html')
+    assert recommendations.index('page_hero.shell_classes()') < recommendations.index(
+        '_recommendation_workspace_info.html'
+    )
     assert 'intelligence_ui.posture_panel(' in recommendation_summary
 
     assert rule_catalog.index('page_hero.shell_classes()') < rule_catalog.index('catalog-summary-section')

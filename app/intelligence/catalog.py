@@ -78,9 +78,7 @@ def _load_catalog() -> list[dict[str, object]]:
                 allowed_scopes = ['finding_keys', 'rule_asset']
             default_scope = str(exception.get('default_scope_mode') or 'finding_keys').strip()
             if enabled and default_scope not in allowed_scopes:
-                raise DefinitionError(
-                    f'{exception_path}.default_scope_mode must be one of the allowed scope modes.'
-                )
+                raise DefinitionError(f'{exception_path}.default_scope_mode must be one of the allowed scope modes.')
             guidance = str(exception.get('guidance') or '').strip()
             rule['risk_exception'] = {
                 'enabled': enabled,

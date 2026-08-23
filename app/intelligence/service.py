@@ -438,9 +438,7 @@ def _build_workload_resource_governance_findings(
             findings.append(
                 _clone_rule_as_finding(
                     source_rule,
-                    finding_key=(
-                        f'{rule_key}:{cluster_id}:{namespace}:{workload_type.lower()}:{workload_name}'
-                    ),
+                    finding_key=(f'{rule_key}:{cluster_id}:{namespace}:{workload_type.lower()}:{workload_name}'),
                     title=f'{workload_type} {workload_name} is missing {display_name}',
                     summary=(
                         f'{workload_type} {workload_name} in namespace {namespace} has {count} container'
@@ -663,8 +661,7 @@ def _build_tls_certificate_findings(rules: dict[str, dict[str, Any]]) -> list[di
                     ),
                     'recommended_action': recommended_action,
                     'impact': str(
-                        source_rule.get('impact')
-                        or 'Protects HTTPS availability and certificate governance readiness.'
+                        source_rule.get('impact') or 'Protects HTTPS availability and certificate governance readiness.'
                     ),
                     'visible_in': ['Recommendations', 'Kubernetes TLS Secret', 'TLS Secret Update', 'Reports'],
                     'evidence': {

@@ -328,7 +328,6 @@ def _ensure_alert_case(
         .order_by(AlertCase.id.desc())
         .first()
     )
-    created = case is None
     if case is None:
         case = AlertCase()
         case.case_key = case_key
@@ -545,11 +544,7 @@ def _remove_accepted_risk_source(case: AlertCase, finding_key: str) -> None:
     if not isinstance(raw, list):
         return
     normalized_key = str(finding_key or '')
-    rows = [
-        row
-        for row in raw
-        if not (isinstance(row, dict) and str(row.get('finding_key') or '') == normalized_key)
-    ]
+    rows = [row for row in raw if not (isinstance(row, dict) and str(row.get('finding_key') or '') == normalized_key)]
     if len(rows) == len(raw):
         return
     if rows:
@@ -723,19 +718,14 @@ def _refresh_grouped_case(case: AlertCase, *, grouping_mode: str, now: datetime)
         for source in sources.values()
         if isinstance(source, dict) and str(source.get('target') or '').strip()
     ]
-    severities = [
-        _severity(source.get('severity'))
-        for source in sources.values()
-        if isinstance(source, dict)
-    ]
+    severities = [_severity(source.get('severity')) for source in sources.values() if isinstance(source, dict)]
     next_severity = max(severities or [case.severity or 'info'], key=_severity_rank)
     _apply_case_severity(case, next_severity, now=now)
     count = len(sources)
     case.source_ref = str(case.rule_key or '') or case.source_ref
     case.alert_name = rule_title[:255]
     case.summary = (
-        f'{count} active recommendation finding{"s" if count != 1 else ""} match {rule_title} '
-        f'on {case.asset_name}.'
+        f'{count} active recommendation finding{"s" if count != 1 else ""} match {rule_title} on {case.asset_name}.'
     )
     case.target = f'{count} affected resource{"s" if count != 1 else ""}'
     if grouping_mode == 'rule_asset':

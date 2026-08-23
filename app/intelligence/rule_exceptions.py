@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 from collections import defaultdict
+from collections.abc import Iterable
 from datetime import UTC, datetime, timedelta
-from typing import Any, Iterable
+from typing import Any
 
 from app.extensions.db import db
 from app.models.alert_ops import RuleException
@@ -21,10 +22,7 @@ def base_rule_key(finding_key: str) -> str:
 def finding_asset_key(finding: dict[str, Any]) -> str:
     evidence = _evidence(finding)
     return str(
-        evidence.get('asset_key')
-        or evidence.get('cluster_id')
-        or evidence.get('object_storage_system_id')
-        or ''
+        evidence.get('asset_key') or evidence.get('cluster_id') or evidence.get('object_storage_system_id') or ''
     ).strip()
 
 
@@ -193,7 +191,6 @@ def revoke_rule_exception(
     row.revocation_reason = normalized_reason
 
 
-
 def notify_expiring_rule_exceptions(*, now: datetime | None = None) -> int:
     current = _as_utc(now or datetime.now(UTC))
     rows = [
@@ -240,6 +237,7 @@ def notify_expiring_rule_exceptions(*, now: datetime | None = None) -> int:
         created += 1
     return created
 
+
 def rule_exception_is_active(row: RuleException, *, now: datetime | None = None) -> bool:
     current = _as_utc(now or datetime.now(UTC))
     starts_at = _as_utc(row.starts_at)
@@ -270,9 +268,7 @@ def build_rule_exception_view(
     current = _as_utc(now or datetime.now(UTC))
     normalized_rule = str(rule_key or '').strip()
     rule_findings = [
-        finding
-        for finding in findings
-        if base_rule_key(str(finding.get('rule_key') or '')) == normalized_rule
+        finding for finding in findings if base_rule_key(str(finding.get('rule_key') or '')) == normalized_rule
     ]
     rows = (
         RuleException.query.filter_by(rule_key=normalized_rule)
@@ -352,10 +348,7 @@ def _serialize_exception(
         finding
         for finding in findings
         if finding_asset_key(finding) == row.asset_key
-        and (
-            row.scope_mode == 'rule_asset'
-            or str(finding.get('rule_key') or '') in set(row.finding_keys_json or [])
-        )
+        and (row.scope_mode == 'rule_asset' or str(finding.get('rule_key') or '') in set(row.finding_keys_json or []))
     ]
     owner = row.owner
     owner_label = str(getattr(owner, 'username', None) or getattr(owner, 'email', None) or 'Unassigned')

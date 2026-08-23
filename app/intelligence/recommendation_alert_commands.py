@@ -5,11 +5,11 @@ from datetime import UTC, datetime, timedelta
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.extensions.db import db
-from app.intelligence.catalog import risk_exception_policy
 from app.intelligence.alert_intelligence.recommendation_source import (
     apply_rule_exception_to_active_findings,
     promote_recommendation_to_alert,
 )
+from app.intelligence.catalog import risk_exception_policy
 from app.intelligence.recommendation_alerting import (
     base_rule_key,
     catalog_rule,
@@ -138,9 +138,7 @@ def create_rule_exception_command(
         unknown = selected_keys - active_keys
         if unknown:
             raise ValueError('One or more selected findings no longer belong to the selected active asset scope.')
-        covered_findings = [
-            finding for finding in rule_findings if str(finding.get('rule_key') or '') in selected_keys
-        ]
+        covered_findings = [finding for finding in rule_findings if str(finding.get('rule_key') or '') in selected_keys]
     elif normalized_scope == 'rule_asset':
         covered_findings = list(rule_findings)
         selected_keys = set()
@@ -230,4 +228,3 @@ def revoke_rule_exception_command(
         db.session.rollback()
         raise
     return row, released
-

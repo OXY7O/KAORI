@@ -305,9 +305,7 @@ def close_accepted_risk_alert(
     case.resolution_summary = (
         'Closed under a time-bounded accepted-risk exception; KAORI did not record technical source recovery.'
     )
-    case.verification_evidence = (
-        f'{reference}: {normalized_reason}' if reference else normalized_reason
-    )[:4000]
+    case.verification_evidence = (f'{reference}: {normalized_reason}' if reference else normalized_reason)[:4000]
     _event(
         case,
         'accepted_risk_applied',

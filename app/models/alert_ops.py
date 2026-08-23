@@ -17,7 +17,14 @@ ALERT_CASE_OPEN_STATES = {'open', 'acknowledged', 'mitigating', 'verification_pe
 ALERT_CASE_WORKFLOW_STATES = ALERT_CASE_OPEN_STATES | {'closed'}
 ALERT_SOURCE_STATES = {'firing', 'resolved', 'unknown'}
 ALERT_ROUTING_STATES = {'enabled', 'suppressed'}
-ALERT_CLOSURE_REASONS = {'resolved', 'manual_withdrawal', 'source_decommissioned', 'false_positive', 'accepted_risk', 'superseded'}
+ALERT_CLOSURE_REASONS = {
+    'resolved',
+    'manual_withdrawal',
+    'source_decommissioned',
+    'false_positive',
+    'accepted_risk',
+    'superseded',
+}
 ALERT_SOURCE_TYPES = {'provider_alert', 'recommendation'}
 POSTMORTEM_STATES = {'not_required', 'required', 'draft', 'complete'}
 RECOMMENDATION_ALERT_MODES = {'manual', 'automatic'}

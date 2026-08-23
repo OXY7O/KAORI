@@ -31,7 +31,12 @@ def test_selected_findings_uses_clear_grouped_cards_and_explicit_risk_owner() ->
     assert 'data-kaori-selected-findings' in detail
     selected = detail[detail.index('data-kaori-selected-findings') :]
     assert 'bg-surface-card' in selected
-    assert 'bg-surface-page' not in selected[: selected.index('Create Accepted Risk') if 'Create Accepted Risk' in selected else len(selected)]
+    assert (
+        'bg-surface-page'
+        not in selected[
+            : selected.index('Create Accepted Risk') if 'Create Accepted Risk' in selected else len(selected)
+        ]
+    )
     assert 'asset.uncovered_count' in selected
     assert 'asset.excepted_count' in selected
     assert 'Already covered' in selected
@@ -47,12 +52,12 @@ def test_work_inbox_is_one_shared_deck_not_a_second_drawer() -> None:
     constants = read('app/platform_operations/notifications/constants.py')
 
     assert shell.count('id="notification-deck"') == 1
-    assert 'openNotificationDeck(\'inbox\')' in shell
+    assert "openNotificationDeck('inbox')" in shell
     assert 'message-square-text' in shell
     assert 'Work Inbox' in shell
     assert 'notification-deck-inbox-content' in shell
-    assert "Notification.event_type.in_(WORK_INBOX_EVENT_TYPES)" in queries
-    assert "Notification.event_type.notin_(WORK_INBOX_EVENT_TYPES)" in queries
+    assert 'Notification.event_type.in_(WORK_INBOX_EVENT_TYPES)' in queries
+    assert 'Notification.event_type.notin_(WORK_INBOX_EVENT_TYPES)' in queries
     for event_type in (
         'alert_case_assigned',
         'alert_case_acknowledgement_overdue',

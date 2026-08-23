@@ -38,8 +38,8 @@ def test_risk_exception_is_definition_driven_and_visible_only_for_enabled_rules(
     commands = read('app/intelligence/recommendation_alert_commands.py')
     assert '{% if item.risk_exception.enabled %}' in detail
     assert "if bool(exception_policy.get('enabled')):" in service
-    assert "Accepted risk is not enabled for this Rule Catalog definition." in commands
-    assert "The selected accepted-risk scope is not allowed by this Rule Catalog definition." in commands
+    assert 'Accepted risk is not enabled for this Rule Catalog definition.' in commands
+    assert 'The selected accepted-risk scope is not allowed by this Rule Catalog definition.' in commands
 
 
 def test_requested_exception_policies_are_iac_owned_in_rules_yaml() -> None:
