@@ -64,7 +64,7 @@ from app.intelligence.workflow import (
     issue_persisted_execution_token,
     reject_decision,
 )
-from app.platform_operations.notifications.service import queue_transient_feedback
+from app.platform_operations.notifications.service import record_operational_activity
 
 automation_control_bp = Blueprint(
     'automation_control',
@@ -574,7 +574,9 @@ def _handle_execution_action(
     operation: Callable[[], object],
 ) -> ResponseReturnValue:
     if not execution_enabled():
-        queue_transient_feedback(
+        record_operational_activity(
+            user_id=_actor_user_id(),
+            event_type='automation_control_execution_blocked',
             status='warning',
             title='Infrastructure Execution Disabled',
             message='KAORI did not cross the resolver execution boundary.',
@@ -582,6 +584,10 @@ def _handle_execution_action(
                 'Governance configuration remains available. Set AUTOMATION_EXECUTION_ENABLED only after '
                 'the production-readiness blockers are clear.'
             ),
+            action_url=url_for('automation_control.index', workspace=workspace),
+            metadata={'module': 'Intelligence', 'workspace': workspace},
+            queue_feedback=True,
+            delivery_policy='deck_on_failure',
         )
         return redirect(url_for('automation_control.index', workspace=workspace))
     return _handle_control_operation(
@@ -608,14 +614,30 @@ def _handle_control_operation(
     except Exception:
         rollback_automation_control()
         current_app.logger.exception('Automation Control operation failed in workspace %s.', workspace)
-        queue_transient_feedback(
+        record_operational_activity(
+            user_id=_actor_user_id(),
+            event_type=f'automation_control_{workspace}_update_failed',
             status='error',
             title=failure_title,
             message=failure_message,
             detail='Review the application log and Activity Audit for the failure context before retrying.',
+            action_url=url_for('automation_control.index', workspace=workspace),
+            metadata={'module': 'Intelligence', 'workspace': workspace},
+            queue_feedback=True,
+            delivery_policy='deck_on_failure',
         )
     else:
-        queue_transient_feedback(status='success', title=success_title, message=success_message)
+        record_operational_activity(
+            user_id=_actor_user_id(),
+            event_type=f'automation_control_{workspace}_updated',
+            status='success',
+            title=success_title,
+            message=success_message,
+            action_url=url_for('automation_control.index', workspace=workspace),
+            metadata={'module': 'Intelligence', 'workspace': workspace},
+            queue_feedback=True,
+            delivery_policy='audit_only',
+        )
     return redirect(url_for('automation_control.index', workspace=workspace))
 
 

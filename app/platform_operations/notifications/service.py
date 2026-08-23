@@ -370,5 +370,5 @@ def mark_notification_read(*, notification_id: int, user_id: int) -> None:
     _mark_notification_read(notification_id=notification_id, user_id=user_id)
 
 
-def mark_all_notifications_read(*, user_id: int) -> None:
-    _mark_all_notifications_read(user_id=user_id)
+def mark_all_notifications_read(*, user_id: int, scope: str = 'all') -> None:
+    _mark_all_notifications_read(user_id=user_id, scope=scope)

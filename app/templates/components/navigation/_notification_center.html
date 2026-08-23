@@ -1,10 +1,24 @@
 {% set center = activity_center|default({}) %}
 {% set active_count = center.get('active_count', 0) %}
 {% set unread_count = center.get('unread_count', 0) %}
+{% set inbox_unread_count = center.get('inbox_unread_count', 0) %}
 <div id="notification-center"
      class="contents"
      data-notification-deck-root
      data-snapshot-url="{{ url_for('notifications.panel_snapshot') }}">
+    <button @click="openNotificationDeck('inbox')"
+            type="button"
+            class="relative inline-flex h-10 w-10 items-center justify-center rounded-xl border border-outline-default bg-surface-card text-content-secondary shadow-sm transition hover:border-kaori-primary/30 hover:bg-kaori-soft hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus"
+            aria-label="Open work inbox"
+            aria-controls="notification-deck"
+            :aria-expanded="notificationDeckOpen && notificationDeckTab === 'inbox' ? 'true' : 'false'"
+            title="Work Inbox">
+        <i data-lucide="message-square-text" class="h-5 w-5"></i>
+        <span id="work-inbox-badge"
+              class="absolute -right-1 -top-1 inline-flex min-h-5 min-w-5 items-center justify-center rounded-md bg-kaori-primary px-1 text-xs font-semibold text-white ring-2 ring-surface-card {% if inbox_unread_count == 0 %}hidden{% endif %}">
+            {{ '9+' if inbox_unread_count > 9 else inbox_unread_count }}
+        </span>
+    </button>
     <button @click="openNotificationDeck({{ "'notifications'" if unread_count else "'activity'" }})"
             type="button"
             class="relative inline-flex h-10 w-10 items-center justify-center rounded-xl border border-outline-default bg-surface-card text-content-secondary shadow-sm transition hover:border-kaori-primary/30 hover:bg-kaori-soft hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus"
@@ -47,8 +61,8 @@
                             <i data-lucide="bell" class="h-4.5 w-4.5"></i>
                         </span>
                         <div class="min-w-0">
-                            <h2 class="text-base font-semibold text-content-primary leading-6">Notifications</h2>
-                            <p class="mt-0.5 truncate text-xs text-content-muted">Active work and persistent updates</p>
+                            <h2 class="text-base font-semibold text-content-primary leading-6">Notification Deck</h2>
+                            <p class="mt-0.5 truncate text-xs text-content-muted">Assigned work, active work, and persistent updates</p>
                         </div>
                     </div>
                     <div class="flex items-center gap-2">
@@ -76,6 +90,17 @@
                                   class="inline-flex min-h-5 min-w-5 items-center justify-center rounded-md bg-surface-card px-1.5 text-xs font-semibold text-kaori-primary">{{ active_count }}</span>
                         </button>
                         <button type="button"
+                                @click="notificationDeckTab = 'inbox'"
+                                :class="notificationDeckTab === 'inbox' ? 'bg-surface-card text-kaori-primary shadow-sm dark:text-kaori-accent' : 'text-content-secondary hover:text-content-primary'"
+                                :aria-selected="(notificationDeckTab === 'inbox').toString()"
+                                aria-controls="notification-deck-inbox"
+                                role="tab"
+                                class="inline-flex min-h-9 flex-1 items-center justify-center gap-2 rounded-lg px-3 text-xs font-semibold transition">
+                            Inbox
+                            <span id="notification-deck-inbox-count"
+                                  class="inline-flex min-h-5 min-w-5 items-center justify-center rounded-md bg-surface-card px-1.5 text-xs font-semibold text-kaori-primary">{{ inbox_unread_count }}</span>
+                        </button>
+                        <button type="button"
                                 @click="notificationDeckTab = 'notifications'"
                                 :class="notificationDeckTab === 'notifications' ? 'bg-surface-card text-kaori-primary shadow-sm dark:text-kaori-accent' : 'text-content-secondary hover:text-content-primary'"
                                 :aria-selected="(notificationDeckTab === 'notifications').toString()"
@@ -96,6 +121,16 @@
                              class="space-y-2"
                              data-notification-deck-panel>
                         {% include "platform_operations/notifications/partials/_notification_deck_activity.html" %}
+                    </section>
+                    <section id="notification-deck-inbox"
+                             x-cloak
+                             :class="notificationDeckTab === 'inbox' ? 'block' : 'hidden'"
+                             role="tabpanel"
+                             class="space-y-2"
+                             data-notification-deck-panel>
+                        <div id="notification-deck-inbox-content">
+                            {% include "platform_operations/notifications/partials/_notification_deck_inbox.html" %}
+                        </div>
                     </section>
                     <section id="notification-deck-notifications"
                              x-cloak
@@ -121,7 +156,15 @@
                            class="mt-0.5 truncate"
                            x-text="`Updated ${notificationDeckLastChecked}`"></p>
                     </div>
-                    <a href="{{ url_for('notifications.center', view='notifications') }}"
+                    <a x-cloak
+                       x-show="notificationDeckTab === 'inbox'"
+                       href="{{ url_for('notifications.center', view='notifications', category='intelligence') }}"
+                       @click="notificationDeckOpen = false"
+                       class="inline-flex shrink-0 items-center gap-1 text-xs font-semibold text-kaori-primary hover:text-kaori-primary-hover">
+                        View Intelligence <i data-lucide="arrow-right" class="h-3.5 w-3.5"></i>
+                    </a>
+                    <a x-show="notificationDeckTab !== 'inbox'"
+                       href="{{ url_for('notifications.center', view='notifications') }}"
                        @click="notificationDeckOpen = false"
                        class="inline-flex shrink-0 items-center gap-1 text-xs font-semibold text-kaori-primary hover:text-kaori-primary-hover">
                         View All <i data-lucide="arrow-right" class="h-3.5 w-3.5"></i>

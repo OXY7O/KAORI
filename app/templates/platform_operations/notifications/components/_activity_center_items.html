@@ -42,12 +42,12 @@
         </div>
     </article>
 {%- endmacro %}
-{% macro notification_item(notification, surface='panel', target='#notification-center', compact=false, swap='outerHTML', page=none, per_page=none) -%}
+{% macro notification_item(notification, surface='panel', target='#notification-center', compact=false, swap='outerHTML', page=none, per_page=none, view='notifications') -%}
     {% set is_success = notification.status == 'success' %}
     {% set is_warning = notification.status == 'warning' %}
     {% set is_error = notification.status == 'error' %}
     {% set read_url = url_for('notifications.mark_read', notification_id=notification.id, surface=surface, page=page, per_page=per_page) if page and per_page else url_for('notifications.mark_read', notification_id=notification.id, surface=surface) %}
-    {% set read_hx_url = url_for('notifications.mark_read', notification_id=notification.id, surface=surface, view=request.args.get('view', 'notifications'), page=page, per_page=per_page) if page and per_page else url_for('notifications.mark_read', notification_id=notification.id, surface=surface, view=request.args.get('view', 'notifications')) %}
+    {% set read_hx_url = url_for('notifications.mark_read', notification_id=notification.id, surface=surface, view=view, page=page, per_page=per_page) if page and per_page else url_for('notifications.mark_read', notification_id=notification.id, surface=surface, view=view) %}
     <article class="rounded-xl border p-3 transition {% if not notification.is_read %}border-outline-strong bg-surface-subtle{% else %}border-outline-subtle bg-surface-card{% endif %}">
         <div class="flex items-start gap-3">
             <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg {% if is_success %}bg-status-normal-soft text-status-normal-text{% elif is_warning %}bg-status-warning-soft text-status-warning-text{% elif is_error %}bg-status-critical-soft text-status-critical-text{% else %}bg-status-info-soft text-status-info-text{% endif %}">

@@ -6,6 +6,9 @@ from typing import Any, Iterable
 
 from app.extensions.db import db
 from app.models.alert_ops import RuleException
+from app.models.notification import Notification
+from app.models.user import User
+from app.platform_operations.notifications.service import create_notification
 
 _EXPIRING_WINDOW = timedelta(days=7)
 _VALID_SCOPE_MODES = {'rule_asset', 'finding_keys'}
@@ -110,6 +113,7 @@ def create_rule_exception(
     risk_reference: str | None,
     expires_at: datetime,
     actor_user_id: int | None,
+    owner_user_id: int | None = None,
     now: datetime | None = None,
 ) -> RuleException:
     current = _as_utc(now or datetime.now(UTC))
@@ -163,7 +167,7 @@ def create_rule_exception(
     row.finding_keys_json = keys if normalized_scope == 'finding_keys' else []
     row.reason = normalized_reason
     row.risk_reference = normalized_reference
-    row.owner_user_id = actor_user_id
+    row.owner_user_id = owner_user_id if owner_user_id is not None else actor_user_id
     row.created_by_user_id = actor_user_id
     row.starts_at = current
     row.expires_at = expiry
@@ -187,6 +191,53 @@ def revoke_rule_exception(
     row.revoked_by_user_id = actor_user_id
     row.revocation_reason = normalized_reason
 
+
+
+def notify_expiring_rule_exceptions(*, now: datetime | None = None) -> int:
+    current = _as_utc(now or datetime.now(UTC))
+    rows = [
+        row
+        for row in RuleException.query.filter(
+            RuleException.revoked_at.is_(None),
+            RuleException.starts_at <= current,
+            RuleException.expires_at > current,
+            RuleException.expires_at <= current + _EXPIRING_WINDOW,
+        )
+        .order_by(RuleException.expires_at.asc(), RuleException.id.asc())
+        .all()
+        if row.owner_user_id is not None
+    ]
+    created = 0
+    for row in rows:
+        reference = str(row.risk_reference or row.public_id)
+        message = f'{reference} expires within 7 days and still owns accepted-risk follow-up.'
+        already = Notification.query.filter_by(
+            user_id=row.owner_user_id,
+            event_type='rule_exception_expiring',
+            message=message,
+        ).first()
+        if already is not None:
+            continue
+        create_notification(
+            user_id=row.owner_user_id,
+            event_type='rule_exception_expiring',
+            status='warning',
+            title='Accepted Risk Expiring Soon',
+            message=message,
+            detail='Review remediation progress, extend through a new governed decision if justified, or allow the exception to expire so active findings become alert-eligible again.',
+            action_url=f'/intelligence/catalog?q={row.rule_key}',
+            metadata={
+                'module': 'Intelligence',
+                'rule_key': row.rule_key,
+                'rule_exception_id': row.public_id,
+                'risk_reference': reference,
+                'expires_at': row.expires_at.isoformat(),
+                'work_inbox': True,
+            },
+            deck_visible=True,
+        )
+        created += 1
+    return created
 
 def rule_exception_is_active(row: RuleException, *, now: datetime | None = None) -> bool:
     current = _as_utc(now or datetime.now(UTC))
@@ -277,6 +328,14 @@ def build_rule_exception_view(
         'active_ids': active_ids,
         'exceptions': serialized,
         'assets': asset_rows,
+        'owner_options': [
+            {
+                'id': user.id,
+                'label': user.display_label,
+            }
+            for user in User.query.order_by(User.username.asc(), User.id.asc()).all()
+            if user.is_active
+        ],
         'has_candidates': bool(asset_rows),
     }
 

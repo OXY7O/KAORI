@@ -27,6 +27,7 @@ notifications_bp = Blueprint(
 )
 
 _ALLOWED_CENTER_VIEWS = frozenset({'activity', 'notifications'})
+_ALLOWED_PANEL_VIEWS = frozenset({'inbox', 'notifications'})
 
 
 def _count_value(value: object) -> int:
@@ -78,6 +79,14 @@ def _render_notifications_panel(*, emit_oob: bool = True) -> ResponseReturnValue
     )
 
 
+def _render_inbox_panel(*, emit_oob: bool = True) -> ResponseReturnValue:
+    return _fragment_response(
+        'platform_operations/notifications/partials/_notification_deck_inbox.html',
+        activity_center=_navigation_context(),
+        emit_oob=emit_oob,
+    )
+
+
 def _render_status_snapshot() -> ResponseReturnValue:
     """Return one database snapshot; never wait for queued workers to finish."""
     context = _navigation_context()
@@ -85,9 +94,15 @@ def _render_status_snapshot() -> ResponseReturnValue:
         {
             'active_count': _count_value(context.get('active_count', 0)),
             'unread_count': _count_value(context.get('unread_count', 0)),
+            'inbox_unread_count': _count_value(context.get('inbox_unread_count', 0)),
             'activity_html': render_template(
                 'platform_operations/notifications/partials/_notification_deck_activity_jobs.html',
                 activity_center=context,
+            ),
+            'inbox_html': render_template(
+                'platform_operations/notifications/partials/_notification_deck_inbox.html',
+                activity_center=context,
+                emit_oob=False,
             ),
             'notifications_html': render_template(
                 'platform_operations/notifications/partials/_notification_deck_notifications.html',
@@ -131,6 +146,11 @@ def _render_mutation_response() -> ResponseReturnValue:
             response.headers['HX-Trigger-After-Swap'] = 'kaori:notifications-changed'
             response.headers['Cache-Control'] = 'no-store, max-age=0'
             return response
+        panel_view = request.args.get('view', 'notifications').strip().lower()
+        if panel_view not in _ALLOWED_PANEL_VIEWS:
+            panel_view = 'notifications'
+        if panel_view == 'inbox':
+            return _render_inbox_panel()
         return _render_notifications_panel()
 
     next_url = (request.form.get('next') or request.referrer or '').strip()
@@ -175,7 +195,9 @@ def mark_read(notification_id: int) -> ResponseReturnValue:
 @notifications_bp.post('/read-all')
 @login_required
 def mark_all_read() -> ResponseReturnValue:
+    scope = request.args.get('scope', request.form.get('scope', 'all')).strip().lower()
     mark_all_notifications_read(
         user_id=current_user.id,
+        scope=scope,
     )
     return _render_mutation_response()

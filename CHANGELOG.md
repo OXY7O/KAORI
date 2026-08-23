@@ -5,6 +5,9 @@ All notable KAORI changes are recorded here. KAORI uses Semantic Versioning for 
 ## [Unreleased]
 
 ### Changed
+- Added a shared Notification Deck Work Inbox for delegated AlertCase and Accepted Risk ownership, including expiry/revocation follow-up, while keeping general notification badges separate.
+- Routed Intelligence mutations through canonical Activity Audit + Toast delivery policies, with warning/error outcomes promoted to the Notification Deck and direct responsibility delivered persistently to Work Inbox.
+- Clarified Rule Catalog Alert Escalation controls and redesigned Selected Findings as clear grouped cards with explicit Risk Owner assignment.
 - Added Rule Catalog Accepted Risk / Rule Exception governance with mandatory expiry, owner/audit evidence, asset-wide or selected-finding scope, and revocation.
 - Added grouped recommendation-to-alert promotion for Object Storage bucket encryption findings so one rule/asset AlertCase can represent many affected buckets while preserving child finding evidence.
 - Added accepted-risk lifecycle handling so covered findings remain visible as non-compliant evidence, are suppressed from AlertCase promotion while the exception is active, and automatically return to normal eligibility after expiry or revocation.

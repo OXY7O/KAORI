@@ -23,6 +23,7 @@ from app.platform_operations.notifications.constants import (
     ACTIVITY_PER_PAGE_OPTIONS,
     ALLOWED_STATUSES,
     NAVIGATION_NOTIFICATION_LIMIT,
+    WORK_INBOX_EVENT_TYPES,
 )
 from app.platform_operations.notifications.event_catalog import (
     CATEGORY_LABELS,
@@ -71,6 +72,18 @@ def _user_notification_query(user_id: int):
     )
 
 
+def _general_notification_query(user_id: int):
+    return _user_notification_query(user_id).filter(
+        Notification.event_type.notin_(WORK_INBOX_EVENT_TYPES),
+    )
+
+
+def _work_inbox_query(user_id: int):
+    return _user_notification_query(user_id).filter(
+        Notification.event_type.in_(WORK_INBOX_EVENT_TYPES),
+    )
+
+
 def _user_job_query(user_id: int):
     return JobExecution.query.filter(
         or_(
@@ -96,14 +109,27 @@ def get_activity_center_context(
         1,
         min(notification_limit, 50),
     )
-    base_query = _user_notification_query(user_id)
+    base_query = _general_notification_query(user_id)
+    inbox_query = _work_inbox_query(user_id)
     unread_count = base_query.filter(
         Notification.read_at.is_(None),
     ).count()
+    inbox_unread_count = inbox_query.filter(
+        Notification.read_at.is_(None),
+    ).count()
     total_count = base_query.count()
+    inbox_total_count = inbox_query.count()
 
     history_notifications = (
         base_query.order_by(
+            Notification.created_at.desc(),
+            Notification.id.desc(),
+        )
+        .limit(normalized_notification_limit)
+        .all()
+    )
+    inbox_notifications = (
+        inbox_query.order_by(
             Notification.created_at.desc(),
             Notification.id.desc(),
         )
@@ -153,6 +179,13 @@ def get_activity_center_context(
         )
         for notification in attention_notifications
     ]
+    inbox_items = [
+        _serialize_notification(
+            notification,
+            include_metadata=False,
+        )
+        for notification in inbox_notifications
+    ]
 
     presented_jobs = [present_job_execution(job) for job in active_jobs]
     queued_jobs = [job for job in presented_jobs if job['status'] == 'queued']
@@ -169,10 +202,13 @@ def get_activity_center_context(
         'items': history_items,
         'history_items': history_items,
         'attention_items': attention_items,
+        'inbox_items': inbox_items,
         'active_jobs': presented_jobs,
         'active_count': active_count,
         'attention_count': attention_count,
         'unread_count': unread_count,
+        'inbox_unread_count': inbox_unread_count,
+        'inbox_total_count': inbox_total_count,
         'total_count': total_count,
         'display_limit': normalized_notification_limit,
         'job_display_limit': normalized_job_limit,
@@ -445,14 +481,21 @@ def mark_notification_read(
 def mark_all_notifications_read(
     *,
     user_id: int,
+    scope: str = 'all',
 ) -> None:
     now = datetime.now(UTC)
-
-    Notification.query.filter(
+    query = Notification.query.filter(
         Notification.user_id == user_id,
         Notification.deck_visible.is_(True),
         Notification.read_at.is_(None),
-    ).update(
+    )
+    normalized_scope = str(scope or 'all').strip().lower()
+    if normalized_scope == 'inbox':
+        query = query.filter(Notification.event_type.in_(WORK_INBOX_EVENT_TYPES))
+    elif normalized_scope == 'notifications':
+        query = query.filter(Notification.event_type.notin_(WORK_INBOX_EVENT_TYPES))
+
+    query.update(
         {
             Notification.read_at: now,
         },

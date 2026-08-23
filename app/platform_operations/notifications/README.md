@@ -57,11 +57,12 @@ never be replaced by polling.
 
 The deck uses one read-only status endpoint:
 
-- `/notifications/panel/snapshot` returns Activity cards, Notification cards, unread
-  count, and active-job count from one database snapshot.
+- `/notifications/panel/snapshot` returns Active Work cards, Work Inbox cards,
+  general Notification cards, both unread counts, and active-job count from one database snapshot.
 
-The browser writes only into `#notification-deck-active-job-list` and
-`#notification-deck-notifications-content`. The bell, drawer, tabs, selected state,
+The browser writes only into `#notification-deck-active-job-list`,
+`#notification-deck-inbox-content`, and `#notification-deck-notifications-content`.
+The top-bar triggers, drawer, tabs, selected state,
 local foreground activities, and footer remain mounted. The endpoint uses
 `Cache-Control: no-store`, and notification mutation responses retain HTMX out-of-band
 badge synchronization.
@@ -89,31 +90,36 @@ Personal preference saves generate the standard immediate toast and durable Acti
 
 KAORI uses one synchronized source across:
 
-- one persistent top-bar notification bell;
-- the right-side Notification Deck; and
-- `/notifications/`, the full personal notification page.
+- one top-bar **Work Inbox** message trigger for delegated operational responsibility;
+- one persistent top-bar notification bell for general operational updates;
+- the shared right-side Notification Deck; and
+- `/notifications/`, the full personal notification page and Activity Audit evidence source.
 
-Do not add a second Activity icon to the top bar. The bell badge represents unread
-`Notification` rows only. A small violet dot on the bell indicates that one or more
-`JobExecution` or local foreground operations are active; it does not change the unread
-badge count. Both indicators are absolutely positioned so header width never changes.
+Do not add a second drawer or a second Activity icon. The message and bell triggers open
+one shared Notification Deck. The message badge counts unread direct-work events such as
+AlertCase assignment, verification follow-up, and Accepted Risk ownership/expiry. The
+bell badge counts unread general Deck-visible notifications and intentionally excludes
+Work Inbox events, preventing duplicate badge counts. A small violet dot on the bell
+continues to indicate active `JobExecution` or local foreground operations.
 
-The bell opens a full-height slide-over deck from the right with two sections:
+The shared deck has three sections:
 
 - **Active Work** shows canonical jobs and short-lived in-browser HTMX operations.
-- **Notifications** shows the same persistent records used by the full Notification Center page.
+- **Inbox** shows delegated/actionable responsibility assigned directly to the current user.
+- **Notifications** shows general persistent operational updates.
 
 Opening the deck does not mark records as read. Records become read only through an
-explicit item action or **Mark all read**. Background refresh replaces only the inner contents of the stable Activity and
-Notifications sections. It never replaces the bell, navbar, slider shell, tabs, or
-Alpine state, so polling cannot make controls flicker or leave a blank panel.
+explicit item action or **Mark all read** within the selected scope. Background refresh
+replaces only the inner contents of the stable Active Work, Inbox, and Notifications
+sections. It never replaces the top-bar triggers, navbar, slider shell, tabs, or Alpine
+state, so polling cannot make controls flicker or leave a blank panel.
 
 ## Operational delivery policy
 
 KAORI separates three responsibilities:
 
 - **Operational toast** provides immediate feedback for the request currently being performed.
-- **Notification Deck** is a persistent operational inbox for outcomes that remain actionable after navigation.
+- **Notification Deck** is the persistent operational surface; delegated responsibility is routed to **Work Inbox**, while general actionable outcomes stay under **Notifications**.
 - **Activity Audit** is the authoritative historical record and includes Deck-visible and audit-only events.
 
 `OperationalDeliveryPolicy` defines persistence visibility:

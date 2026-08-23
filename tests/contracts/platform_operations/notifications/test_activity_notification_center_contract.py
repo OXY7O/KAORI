@@ -11,6 +11,10 @@ def test_topbar_uses_one_stable_bell_and_viewport_slider() -> None:
     shell = read('app/templates/components/navigation/_notification_center.html')
 
     assert shell.count('aria-label="Open notification deck"') == 1
+    assert shell.count('aria-label="Open work inbox"') == 1
+    assert shell.count('id="notification-deck"') == 1
+    assert 'data-lucide="message-square-text"' in shell
+    assert 'work-inbox-badge' in shell
     assert 'data-lucide="bell"' in shell
     assert 'notification-bell-badge' in shell
     assert 'notification-running-indicator' in shell
@@ -119,9 +123,12 @@ def test_snapshot_updates_stable_slots_without_replacing_deck() -> None:
 
     for needle in (
         "document.getElementById('notification-deck-active-job-list')",
+        "document.getElementById('notification-deck-inbox-content')",
         "document.getElementById('notification-deck-notifications-content')",
         'activityTarget.innerHTML = payload.activity_html',
+        'inboxTarget.innerHTML = payload.inbox_html',
         'notificationsTarget.innerHTML = payload.notifications_html',
+        'window.htmx?.process(inboxTarget)',
         'window.htmx?.process(notificationsTarget)',
         'window.renderLocalOperationalActivities?.()',
     ):
@@ -135,7 +142,9 @@ def test_snapshot_updates_stable_slots_without_replacing_deck() -> None:
         'def _render_status_snapshot()',
         "'active_count': _count_value(context.get('active_count', 0))",
         "'unread_count': _count_value(context.get('unread_count', 0))",
+        "'inbox_unread_count': _count_value(context.get('inbox_unread_count', 0))",
         "'activity_html': render_template(",
+        "'inbox_html': render_template(",
         "'notifications_html': render_template(",
         "response.headers['Cache-Control'] = 'no-store, max-age=0'",
     ):
@@ -199,19 +208,27 @@ def test_notification_mutations_target_only_stable_notification_content() -> Non
     notifications = read(
         'app/templates/platform_operations/notifications/partials/_notification_deck_notifications.html'
     )
+    inbox = read('app/templates/platform_operations/notifications/partials/_notification_deck_inbox.html')
     routes = read('app/platform_operations/notifications/routes.py')
 
     assert 'hx-swap="{{ swap }}"' in component
     assert "target='#notification-deck-notifications-content'" in notifications
     assert 'hx-target="#notification-deck-notifications-content"' in notifications
     assert 'hx-swap="innerHTML"' in notifications
+    assert "target='#notification-deck-inbox-content'" in inbox
+    assert 'hx-target="#notification-deck-inbox-content"' in inbox
+    assert "scope='inbox'" in inbox
+    assert "scope='notifications'" in notifications
+    assert 'return _render_inbox_panel()' in routes
     assert 'return _render_notifications_panel()' in routes
 
 
 def test_oob_badges_remain_available_for_notification_mutations() -> None:
     oob = read('app/templates/platform_operations/notifications/partials/_notification_deck_oob.html')
 
-    assert oob.count('hx-swap-oob="outerHTML"') == 4
+    assert oob.count('hx-swap-oob="outerHTML"') == 6
+    assert 'work-inbox-badge' in oob
+    assert 'notification-deck-inbox-count' in oob
     assert 'notification-bell-badge' in oob
     assert 'notification-running-indicator' in oob
     assert 'notification-deck-active-count' in oob

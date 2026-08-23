@@ -60,6 +60,8 @@ routes:
       - alert_routing_
       - alert_notification_
       - recommendation_alert_
+      - rule_exception_
+      - automation_control_
   - category: settings
     exact: [user_preference, account_security]
     prefixes: [settings_]

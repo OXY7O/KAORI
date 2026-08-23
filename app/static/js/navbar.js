@@ -70,6 +70,12 @@ document.addEventListener('alpine:init', () => {
                 activityTarget.innerHTML = payload.activity_html
             }
 
+            const inboxTarget = document.getElementById('notification-deck-inbox-content')
+            if (inboxTarget && typeof payload.inbox_html === 'string') {
+                inboxTarget.innerHTML = payload.inbox_html
+                window.htmx?.process(inboxTarget)
+            }
+
             const notificationsTarget = document.getElementById('notification-deck-notifications-content')
             if (notificationsTarget && typeof payload.notifications_html === 'string') {
                 notificationsTarget.innerHTML = payload.notifications_html
@@ -78,9 +84,12 @@ document.addEventListener('alpine:init', () => {
 
             const activeCount = Number(payload.active_count || 0)
             const unreadCount = Number(payload.unread_count || 0)
+            const inboxUnreadCount = Number(payload.inbox_unread_count || 0)
             const bellBadge = document.getElementById('notification-bell-badge')
+            const inboxBadge = document.getElementById('work-inbox-badge')
             const runningIndicator = document.getElementById('notification-running-indicator')
             const activeBadge = document.getElementById('notification-deck-active-count')
+            const inboxCountBadge = document.getElementById('notification-deck-inbox-count')
             const unreadBadge = document.getElementById('notification-deck-unread-count')
 
             if (bellBadge) {
@@ -88,10 +97,18 @@ document.addEventListener('alpine:init', () => {
                 bellBadge.classList.toggle('hidden', unreadCount === 0)
             }
 
+            if (inboxBadge) {
+                inboxBadge.textContent = inboxUnreadCount > 9 ? '9+' : String(inboxUnreadCount)
+                inboxBadge.classList.toggle('hidden', inboxUnreadCount === 0)
+            }
+
             runningIndicator?.classList.toggle('hidden', activeCount === 0)
 
             if (activeBadge) {
                 activeBadge.textContent = String(activeCount)
+            }
+            if (inboxCountBadge) {
+                inboxCountBadge.textContent = String(inboxUnreadCount)
             }
             if (unreadBadge) {
                 unreadBadge.textContent = String(unreadCount)

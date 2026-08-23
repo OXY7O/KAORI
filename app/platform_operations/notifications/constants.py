@@ -19,5 +19,17 @@ ACTIVITY_CENTER_ACTIVE_JOB_STATUSES = (
     'cancel_requested',
 )
 ACTIVITY_CENTER_ATTENTION_STATUSES = ('warning', 'error')
+
+WORK_INBOX_EVENT_TYPES = frozenset(
+    {
+        'alert_case_assigned',
+        'alert_case_acknowledgement_overdue',
+        'alert_case_silence_expired',
+        'alert_case_verification_required',
+        'rule_exception_assigned',
+        'rule_exception_expiring',
+        'rule_exception_revoked',
+    }
+)
 ACTIVITY_PER_PAGE_OPTIONS = (5, 10, 25, 50)
 OPERATIONAL_FEEDBACK_SESSION_KEY = 'operational_feedback'

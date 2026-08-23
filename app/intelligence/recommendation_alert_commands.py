@@ -27,6 +27,7 @@ from app.models.alert_ops import (
     RuleException,
 )
 from app.models.audit import AuditEvent
+from app.models.user import User
 
 
 def promote_recommendation_command(
@@ -100,6 +101,7 @@ def create_rule_exception_command(
     risk_reference: str | None,
     expires_in_days: int,
     actor_user_id: int | None,
+    owner_user_id: int | None = None,
 ) -> tuple[RuleException, dict[str, int]]:
     rule = catalog_rule(rule_key)
     if rule is None:
@@ -138,6 +140,12 @@ def create_rule_exception_command(
     else:
         raise ValueError('Exception scope must be Entire Asset or Selected Findings.')
 
+    resolved_owner_user_id = owner_user_id if owner_user_id is not None else actor_user_id
+    if resolved_owner_user_id is not None:
+        owner = User.query.filter_by(id=resolved_owner_user_id).first()
+        if owner is None or not owner.is_active:
+            raise ValueError('Select an active user as the accepted-risk owner.')
+
     days = max(1, min(int(expires_in_days or 0), 3650))
     now = datetime.now(UTC)
     try:
@@ -151,6 +159,7 @@ def create_rule_exception_command(
             risk_reference=risk_reference,
             expires_at=now + timedelta(days=days),
             actor_user_id=actor_user_id,
+            owner_user_id=resolved_owner_user_id,
             now=now,
         )
         db.session.flush()
@@ -169,6 +178,7 @@ def create_rule_exception_command(
             'covered_findings': stats['covered'],
             'cases_closed': stats['cases_closed'],
             'risk_reference': row.risk_reference,
+            'owner_user_id': row.owner_user_id,
             'expires_at': row.expires_at.isoformat(),
         }
         db.session.add(audit)

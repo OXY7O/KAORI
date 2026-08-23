@@ -8,6 +8,7 @@ from app.intelligence.alert_intelligence.lifecycle import (
 )
 from app.intelligence.alert_intelligence.notifications import dispatch_case_notifications
 from app.intelligence.alert_intelligence.recommendation_source import reconcile_recommendation_alert_cases
+from app.intelligence.rule_exceptions import notify_expiring_rule_exceptions
 
 
 @shared_task(
@@ -25,10 +26,12 @@ def dispatch_alert_intelligence_notifications() -> dict[str, object]:
     recommendation_reconciliation = reconcile_recommendation_alert_cases()
     expired_acknowledgements = expire_acknowledgements_and_notify()
     expired_silences = expire_silences_and_notify()
+    expiring_rule_exceptions = notify_expiring_rule_exceptions()
     delivery = dispatch_case_notifications()
     return {
         'recommendation_reconciliation': recommendation_reconciliation,
         'expired_acknowledgements': expired_acknowledgements,
         'expired_silences': expired_silences,
+        'expiring_rule_exceptions': expiring_rule_exceptions,
         'delivery': delivery,
     }
