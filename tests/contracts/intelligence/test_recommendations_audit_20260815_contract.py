@@ -31,7 +31,8 @@ def test_recommendation_summary_is_a_standalone_filter_aware_section_above_works
     assert 'Recommendation Summary' in info
     for token in ('scan-search', 'ship-wheel', 'database-zap', 'triangle-alert'):
         assert token in info
-    assert 'intelligence_ui.section' in info
+    assert 'intelligence_ui.posture_panel' in info
+    assert 'intelligence_ui.posture_metric' in info
     assert 'id="recommendation-summary-section"' in info
     assert 'hx-swap-oob="outerHTML"' in info
     assert 'operational_callout.render' not in info

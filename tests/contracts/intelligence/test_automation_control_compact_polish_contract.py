@@ -8,7 +8,8 @@ def read(path: str) -> str:
 def test_automation_control_summary_matches_alert_operations_snapshot_language():
     main = read('app/templates/intelligence/automation_control.html')
     assert 'Automation Control Summary' in main
-    assert 'intelligence_ui.section' in main
+    assert 'intelligence_ui.posture_panel' in main
+    assert 'intelligence_ui.posture_metric' in main
     for label in ('Decision Candidates', 'Awaiting Approval', 'Active Executions', 'Execution Failures'):
         assert label in main
     assert 'resource_detail_modal.host' in main

@@ -1,5 +1,6 @@
 {% import "components/table_label.html" as table_label %}
 {% import "components/loading_bar.html" as loading_bar %}
+{% import "components/table_primitives.html" as table_ui %}
 {#
   KAORI productive typography contract for Intelligence workspaces.
   - Page titles remain owned by page_hero.
@@ -32,6 +33,60 @@
         </header>
         {{ caller() }}
     </section>
+{%- endmacro %}
+{% macro posture_panel(title, description, icon='activity', badge_text='', badge_tone='info', footer_text='', actions=(), extra='') -%}
+    <section data-kaori-intelligence-posture="reference-summary"
+             class="{{ table_ui.block_classes() }} {{ extra }}">
+        <header class="flex flex-col gap-3 border-b border-outline-subtle px-4 py-4 sm:flex-row sm:items-start sm:justify-between sm:px-5">
+            <div class="flex min-w-0 items-start gap-3">
+                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                      aria-hidden="true">
+                    <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
+                </span>
+                <div class="min-w-0">
+                    <h2 class="text-base font-semibold leading-6 text-content-primary">{{ title }}</h2>
+                    {% if description %}
+                        <p class="mt-1 max-w-4xl text-sm leading-6 text-content-secondary">{{ description }}</p>
+                    {% endif %}
+                </div>
+            </div>
+            {% if badge_text %}
+                <div class="shrink-0">{{ table_label.status_label(badge_text, badge_tone, size='compact') }}</div>
+            {% endif %}
+        </header>
+        {{ caller() }}
+        {% if footer_text or actions %}
+            <footer class="flex flex-col gap-3 border-t border-outline-subtle px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+                {% if footer_text %}
+                    <p class="max-w-5xl text-xs leading-5 text-content-muted">{{ footer_text }}</p>
+                {% else %}
+                    <span></span>
+                {% endif %}
+                {% if actions %}
+                    <div class="flex shrink-0 flex-wrap items-center gap-2">
+                        {% for action in actions %}
+                            <a href="{{ action[2] }}"
+                               class="inline-flex min-h-8 items-center justify-center gap-1.5 rounded-md border border-brand-outline bg-kaori-soft px-2.5 text-xs font-medium text-kaori-primary-dark transition-colors hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                                <i data-lucide="{{ action[0] }}" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                {{ action[1] }}
+                            </a>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </footer>
+        {% endif %}
+    </section>
+{%- endmacro %}
+{% macro posture_metric(icon, label, value, description='') -%}
+    <article data-kaori-posture-metric
+             class="min-w-0 px-4 py-4 xl:px-5">
+        <div class="flex items-center justify-between gap-3">
+            <p class="text-xs font-semibold leading-5 text-content-muted">{{ label }}</p>
+            <i data-lucide="{{ icon }}" class="h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+        </div>
+        <p class="mt-1 text-2xl font-semibold leading-7 tracking-tight text-content-primary">{{ value }}</p>
+        {% if description %}<p class="mt-1 text-xs leading-5 text-content-muted">{{ description }}</p>{% endif %}
+    </article>
 {%- endmacro %}
 {% macro metric(icon, label, value, description='', tone='maintenance') -%}
     {% set icon_classes = 'bg-status-critical-soft text-status-critical' if tone == 'critical' else ('bg-status-warning-soft text-status-warning' if tone == 'warning' else ('bg-status-normal-soft text-status-normal' if tone == 'normal' else ('bg-status-info-soft text-status-info' if tone == 'info' else 'bg-kaori-soft text-kaori-primary'))) %}

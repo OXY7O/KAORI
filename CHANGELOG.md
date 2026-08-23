@@ -5,6 +5,7 @@ All notable KAORI changes are recorded here. KAORI uses Semantic Versioning for 
 ## [Unreleased]
 
 ### Changed
+- Standardized every primary Intelligence summary directly below the hero on the Generated Reporting Posture visual grammar: clear header, compact status, four divided metrics, and contextual footer actions.
 - Polished Rule Catalog detail UX with a pre-save Alert Escalation tips box, a clearer Operator Response workspace, and a compact Accepted Risk explainer.
 - Scoped Rule Catalog Accepted Risk to definition-owned rules only, added TLS/vendor, namespace quota, CPU/memory request, and memory-limit exception policies, and added inventory-backed findings for namespace quota and workload resource posture.
 - Compacted Rule Definition row descriptions to one-line catalog summaries while preserving full rule descriptions in expanded detail.

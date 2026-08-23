@@ -5,12 +5,13 @@ def read(path: str) -> str:
     return Path(path).read_text(encoding='utf-8')
 
 
-def test_shared_summary_surfaces_follow_automation_control_pattern() -> None:
+def test_shared_summary_surfaces_follow_reporting_posture_pattern() -> None:
     recommendation = read('app/templates/intelligence/partials/_recommendation_workspace_info.html')
     catalog = read('app/templates/intelligence/partials/_catalog_summary.html')
     alert_summary = read('app/templates/intelligence/partials/_alert_intelligence_summary.html')
     for template in (recommendation, catalog, alert_summary):
-        assert 'intelligence_ui.section(' in template
+        assert 'intelligence_ui.posture_panel(' in template
+        assert 'intelligence_ui.posture_metric(' in template
         assert 'grid divide-y divide-outline-subtle sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-4' in template
 
 

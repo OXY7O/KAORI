@@ -38,18 +38,23 @@
                 ) }}
             </div>
         </section>
-        {% call intelligence_ui.section(
+        {% call intelligence_ui.posture_panel(
             'Automation Control Summary',
             'Governance posture across decision review, controlled execution, failures, and production readiness.',
             'workflow',
             control.posture.label,
-            control.posture.tone
+            control.posture.tone,
+            'Governance remains writable while infrastructure execution stays independently gated and fail-closed.',
+            actions=[
+                ('shield-check', 'Production Readiness', url_for('automation_control.index', workspace='readiness')),
+                ('book-open-check', 'Runbooks', url_for('automation_control.index', workspace='runbooks'))
+            ]
             ) %}
             <div class="grid divide-y divide-outline-subtle sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-4">
-                {{ intelligence_ui.metric('clipboard-clock', 'Decision Candidates', payload.counts.pending_candidates, 'Awaiting accountable review', 'warning' if payload.counts.pending_candidates else 'normal') }}
-                {{ intelligence_ui.metric('badge-check', 'Awaiting Approval', payload.counts.awaiting_approval, 'Maker-checker review queue', 'warning' if payload.counts.awaiting_approval else 'normal') }}
-                {{ intelligence_ui.metric('activity', 'Active Executions', payload.counts.running, 'Queued, running, or retry-wait', 'warning' if payload.counts.running else 'normal') }}
-                {{ intelligence_ui.metric('triangle-alert', 'Execution Failures', payload.counts.failures, 'Failed or dead-letter evidence', 'critical' if payload.counts.failures else 'normal') }}
+                {{ intelligence_ui.posture_metric('clipboard-clock', 'Decision Candidates', payload.counts.pending_candidates, 'Awaiting accountable review') }}
+                {{ intelligence_ui.posture_metric('badge-check', 'Awaiting Approval', payload.counts.awaiting_approval, 'Maker-checker review queue') }}
+                {{ intelligence_ui.posture_metric('activity', 'Active Executions', payload.counts.running, 'Queued, running, or retry-wait') }}
+                {{ intelligence_ui.posture_metric('triangle-alert', 'Execution Failures', payload.counts.failures, 'Failed or dead-letter evidence') }}
             </div>
         {% endcall %}
         <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card">

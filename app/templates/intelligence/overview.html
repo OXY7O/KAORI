@@ -35,30 +35,25 @@
                 ) }}
             </div>
         </section>
-        <section aria-label="Intelligence key metrics"
-                 class="grid overflow-hidden rounded-xl border border-outline-default bg-surface-card sm:grid-cols-2 xl:grid-cols-4">
-            {% for metric in payload.kpi_cards %}
-                {% set icon_classes = 'bg-status-critical-soft text-status-critical' if metric.tone == 'critical' else ('bg-status-warning-soft text-status-warning' if metric.tone == 'warning' else ('bg-status-normal-soft text-status-normal' if metric.tone == 'normal' else 'bg-status-info-soft text-status-info')) %}
-                <article class="flex min-w-0 flex-col border-b border-outline-subtle sm:border-r xl:border-b-0 last:border-b-0 sm:[&:nth-child(2n)]:border-r-0 xl:[&:nth-child(2n)]:border-r xl:last:border-r-0">
-                    <div class="flex flex-1 items-start gap-3 px-4 py-4 sm:px-5">
-                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg {{ icon_classes }}"
-                              aria-hidden="true">
-                            <i data-lucide="{{ metric.icon }}" class="h-5 w-5"></i>
-                        </span>
-                        <div class="min-w-0">
-                            <p class="text-2xl font-semibold leading-8 text-content-primary">{{ metric.value }}</p>
-                            <h2 class="mt-0.5 text-sm font-semibold leading-5 text-content-primary">{{ metric.label }}</h2>
-                            <p class="mt-1 text-xs leading-5 text-content-muted">{{ metric.supporting }}</p>
-                        </div>
-                    </div>
-                    <a href="{{ url_for(metric.href_endpoint) }}"
-                       class="flex min-h-10 items-center justify-between gap-2 border-t border-outline-subtle px-4 text-xs font-semibold text-kaori-primary transition hover:bg-kaori-soft sm:px-5">
-                        <span>{{ metric.action_label }}</span>
-                        <i data-lucide="chevron-right" class="h-4 w-4" aria-hidden="true"></i>
-                    </a>
-                </article>
-            {% endfor %}
-        </section>
+        {% call intelligence_ui.posture_panel(
+            'Intelligence Summary',
+            'Current cross-workspace posture for recommendations, alert operations, rule coverage, and governed automation.',
+            'chart-no-axes-column-increasing',
+            payload.posture.label,
+            payload.posture.tone,
+            payload.posture.helper,
+            actions=[
+                ('sparkles', 'Recommendations', url_for('intelligence.recommendations')),
+                ('siren', 'Alert Intelligence', url_for('alert_intelligence.index'))
+            ]
+            ) %}
+            <div aria-label="Intelligence key metrics"
+                 class="grid divide-y divide-outline-subtle sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-4">
+                {% for metric in payload.kpi_cards %}
+                    {{ intelligence_ui.posture_metric(metric.icon, metric.label, metric.value, metric.supporting) }}
+                {% endfor %}
+            </div>
+        {% endcall %}
         {% call intelligence_ui.section(
             'Intelligence Posture',
             'Three signals summarize what needs attention, how evidence is served, and whether governed automation needs review.',

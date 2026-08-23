@@ -9,23 +9,24 @@
 {% set warning_items = payload.result_context.warning_items|default(0, true) %}
 <div id="recommendation-summary-section"
      {% if recommendation_summary_oob|default(false) %}hx-swap-oob="outerHTML"{% endif %}>
-    {% call intelligence_ui.section(
+    {% set summary_footer = payload.scope_label ~ ' · ' ~ ((active_filters ~ ' active filters') if active_filters else 'no active filters') ~ ' · Committed Evidence only.' %}
+    {% call intelligence_ui.posture_panel(
         'Recommendation Summary',
         'Current evidence-backed recommendation posture for the active filter scope.',
-        'chart-no-axes-column-increasing'
+        'chart-no-axes-column-increasing',
+        payload.posture.label,
+        payload.posture.tone,
+        summary_footer,
+        actions=[
+            ('book-open-check', 'Rule Catalog', url_for('intelligence.catalog')),
+            ('siren', 'Alert Intelligence', url_for('alert_intelligence.index'))
+        ]
         ) %}
         <div class="grid divide-y divide-outline-subtle sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-4">
-            {{ intelligence_ui.metric('scan-search', 'Matching Findings', matching_items, source_items ~ ' active finding(s) before filters', 'info') }}
-            {{ intelligence_ui.metric('ship-wheel', 'Kubernetes', kubernetes_items, 'Committed Kubernetes finding(s)', 'normal') }}
-            {{ intelligence_ui.metric('database-zap', 'Object Storage', object_storage_items, 'Committed Object Storage finding(s)', 'warning') }}
-            {{ intelligence_ui.metric('triangle-alert', 'Priority', critical_items ~ ' Critical · ' ~ warning_items ~ ' Warning', 'Priority across matching findings', 'critical' if critical_items else ('warning' if warning_items else 'normal') ) }}
-        </div>
-        <div class="border-t border-outline-subtle px-4 py-3 sm:px-5">
-            <div class="flex flex-wrap gap-1.5">
-                {{ table_label.metadata_label(payload.scope_label) }}
-                {{ table_label.metadata_label((active_filters ~ ' Active Filters') if active_filters else 'No Active Filters') }}
-                {{ table_label.metadata_label("Committed Evidence") }}
-            </div>
+            {{ intelligence_ui.posture_metric('scan-search', 'Matching Findings', matching_items, source_items ~ ' active finding(s) before filters') }}
+            {{ intelligence_ui.posture_metric('ship-wheel', 'Kubernetes', kubernetes_items, 'Committed Kubernetes finding(s)') }}
+            {{ intelligence_ui.posture_metric('database-zap', 'Object Storage', object_storage_items, 'Committed Object Storage finding(s)') }}
+            {{ intelligence_ui.posture_metric('triangle-alert', 'Priority', critical_items ~ ' Critical · ' ~ warning_items ~ ' Warning', 'Priority across matching findings') }}
         </div>
     {% endcall %}
 </div>

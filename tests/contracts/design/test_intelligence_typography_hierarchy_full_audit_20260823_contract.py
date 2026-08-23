@@ -61,7 +61,7 @@ def test_each_intelligence_page_uses_primary_section_hierarchy() -> None:
 
     assert "'Rule Catalog Summary'" in rule_summary
     assert "'Rule Definitions'" in rule_catalog
-    assert 'intelligence_ui.section(' in rule_summary
+    assert 'intelligence_ui.posture_panel(' in rule_summary
 
     assert "'Automation Control Summary'" in automation
     assert '<h2 class="{{ table_ui.block_title_classes() }}">Automation Control Workspace</h2>' in automation
