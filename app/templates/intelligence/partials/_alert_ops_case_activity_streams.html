@@ -10,7 +10,6 @@
             <p class="mt-0.5 text-xs leading-5 text-content-muted">Recent lifecycle and channel activity stays compact here; older evidence remains expandable with bounded internal scrolling.</p>
         </div>
     </div>
-
     <div class="mt-4 grid gap-4 xl:grid-cols-2">
         <article class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
             <header class="flex items-center justify-between gap-3 border-b border-outline-subtle px-4 py-3.5">
@@ -50,7 +49,8 @@
             {% if case.timeline_older %}
                 <details class="group border-t border-outline-subtle">
                     <summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-xs font-semibold text-kaori-primary hover:bg-surface-hover">
-                        <span class="inline-flex items-center gap-2"><i data-lucide="chevron-down" class="h-3.5 w-3.5 transition group-open:rotate-180"></i>Earlier Timeline Events</span>
+                        <span class="inline-flex items-center gap-2"><i data-lucide="chevron-down"
+   class="h-3.5 w-3.5 transition group-open:rotate-180"></i>Earlier Timeline Events</span>
                         <span class="text-content-muted">{{ case.timeline_older|length }} more</span>
                     </summary>
                     <div class="max-h-72 divide-y divide-outline-subtle overflow-y-auto border-t border-outline-subtle px-4">
@@ -67,7 +67,6 @@
                 </details>
             {% endif %}
         </article>
-
         <article class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
             <header class="flex items-center justify-between gap-3 border-b border-outline-subtle px-4 py-3.5">
                 <div class="flex min-w-0 items-center gap-2.5">
@@ -107,7 +106,8 @@
             {% if case.deliveries_older %}
                 <details class="group border-t border-outline-subtle">
                     <summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-xs font-semibold text-kaori-primary hover:bg-surface-hover">
-                        <span class="inline-flex items-center gap-2"><i data-lucide="chevron-down" class="h-3.5 w-3.5 transition group-open:rotate-180"></i>Earlier Delivery Attempts</span>
+                        <span class="inline-flex items-center gap-2"><i data-lucide="chevron-down"
+   class="h-3.5 w-3.5 transition group-open:rotate-180"></i>Earlier Delivery Attempts</span>
                         <span class="text-content-muted">{{ case.deliveries_older|length }} more</span>
                     </summary>
                     <div class="max-h-72 divide-y divide-outline-subtle overflow-y-auto border-t border-outline-subtle px-4">

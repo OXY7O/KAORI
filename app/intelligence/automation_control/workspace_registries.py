@@ -324,9 +324,7 @@ def _journal_query(*, journal_q: str, journal_status: str) -> Any:
     return query.order_by(IntelligenceExecutionJournal.updated_at.desc(), IntelligenceExecutionJournal.id.desc())
 
 
-def _filter_delivery_rows(
-    rows: Sequence[Mapping[str, Any]], *, query: str, status: str
-) -> list[Mapping[str, Any]]:
+def _filter_delivery_rows(rows: Sequence[Mapping[str, Any]], *, query: str, status: str) -> list[Mapping[str, Any]]:
     filtered = list(rows)
     if query:
         needle = query.casefold()

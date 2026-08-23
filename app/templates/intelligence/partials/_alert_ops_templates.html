@@ -6,7 +6,8 @@
     <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
         <div class="px-4 py-4 sm:px-5">
             <div class="flex min-w-0 items-start gap-3">
-                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true"><i data-lucide="braces" class="h-4 w-4"></i></span>
+                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                      aria-hidden="true"><i data-lucide="braces" class="h-4 w-4"></i></span>
                 <div class="min-w-0">
                     <h3 class="{{ table_ui.block_title_classes() }}">Notification Templates</h3>
                     <p class="{{ table_ui.block_description_classes() }}">Control how firing and resolved Alert Cases are rendered for each provider while preserving one normalized evidence contract.</p>
@@ -18,10 +19,11 @@
                     ('radio', 'Providers', payload.templates|map(attribute='provider_key')|unique|list|length, 'Telegram, Teams, Email, and future adapters', 'info'),
                     ('pencil-line', 'Overrides', payload.templates|selectattr('overridden')|list|length, 'Custom provider/event templates', 'warning' if payload.templates|selectattr('overridden')|list|length else 'normal'),
                     ('send', 'Eligible Channels', payload.notification.eligible, 'Validated channels available for Send Test', 'normal' if payload.notification.eligible else 'warning')
-                ] %}
+                    ] %}
                     <article class="bg-surface-elevated p-4">
                         <div class="flex items-center justify-between gap-3">
-                            <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true"><i data-lucide="{{ icon }}" class="h-4 w-4"></i></span>
+                            <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                                  aria-hidden="true"><i data-lucide="{{ icon }}" class="h-4 w-4"></i></span>
                             {{ table_label.status_indicator_label('Attention' if tone == 'warning' and value else 'Ready', tone, size='compact') }}
                         </div>
                         <p class="mt-3 text-2xl font-semibold leading-none text-content-primary">{{ value }}</p>
@@ -32,7 +34,9 @@
             </div>
             <div class="mt-4 rounded-xl border border-kaori-primary/20 bg-kaori-soft px-4 py-3">
                 <div class="flex items-start gap-3">
-                    <i data-lucide="wand-sparkles" class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+                    <i data-lucide="wand-sparkles"
+                       class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary"
+                       aria-hidden="true"></i>
                     <div>
                         <p class="text-xs font-semibold uppercase tracking-wide text-kaori-primary">Template Guidance</p>
                         <p class="mt-1 text-xs leading-5 text-content-secondary">Start from the immutable system template, use Preview and Test Render before saving an override, then use Send Test only through a validated channel owned by the matching provider.</p>

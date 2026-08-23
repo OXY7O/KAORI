@@ -1,5 +1,5 @@
-from pathlib import Path
 import re
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
 
@@ -81,7 +81,10 @@ def test_all_intelligence_primary_surfaces_keep_canonical_title_and_description_
     catalog_summary = read('app/templates/intelligence/partials/_catalog_summary.html')
     assert "'Rule Catalog Summary'" in catalog_summary
     assert 'intelligence_ui.section(' in catalog_summary
-    assert 'Review the current catalog scope before scanning definitions, evaluator readiness, and imported-signal coverage.' in catalog_summary
+    assert (
+        'Review the current catalog scope before scanning definitions, evaluator readiness, and imported-signal coverage.'
+        in catalog_summary
+    )
 
     recommendation_summary = read('app/templates/intelligence/partials/_recommendation_workspace_info.html')
     alert_summary = read('app/templates/intelligence/partials/_alert_intelligence_summary.html')

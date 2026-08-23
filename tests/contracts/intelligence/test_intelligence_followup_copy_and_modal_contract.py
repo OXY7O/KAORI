@@ -34,9 +34,18 @@ def test_copy_is_shortened_on_routing_catalog_and_automation_control() -> None:
     catalog_page = read('app/templates/intelligence/rule_catalog.html')
     automation = read('app/intelligence/automation_control/overview.py')
 
-    assert 'Control which validated Notification Channels receive promoted Alert Cases, how often alerts repeat, and when verified recovery is delivered.' in routing
-    assert 'Review the current catalog scope before scanning definitions, evaluator readiness, and imported-signal coverage.' in catalog_summary
-    assert 'Search rule ownership, provider coverage, evaluator readiness, source boundaries, severity, and operator response.' in catalog_page
+    assert (
+        'Control which validated Notification Channels receive promoted Alert Cases, how often alerts repeat, and when verified recovery is delivered.'
+        in routing
+    )
+    assert (
+        'Review the current catalog scope before scanning definitions, evaluator readiness, and imported-signal coverage.'
+        in catalog_summary
+    )
+    assert (
+        'Search rule ownership, provider coverage, evaluator readiness, source boundaries, severity, and operator response.'
+        in catalog_page
+    )
     assert 'Governance stays writable while infrastructure execution remains fail-closed.' in automation
     assert 'lifecycle events are covered; ' in automation
 

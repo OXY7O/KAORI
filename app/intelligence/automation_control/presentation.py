@@ -9,9 +9,8 @@ from app.common.automation_execution import execution_enabled
 from app.common.pagination import PER_PAGE_OPTIONS, build_pagination_window
 from app.common.presentation import present_key_label, present_user_datetime
 from app.extensions.db import db
-from app.integrations.delivery.notification_channels.service import list_event_channel_options, recent_delivery_summary
+from app.integrations.delivery.notification_channels.service import list_event_channel_options
 from app.integrations.resolver_bootstrap import SUPPORTED_RESOLVER_ACTIONS, get_resolver_registry
-from app.intelligence.automation_control.notifications import DECISION_NOTIFICATION_EVENTS
 from app.intelligence.automation_control.overview import build_automation_overview
 from app.intelligence.automation_control.workspace_registries import (
     populate_decisions_workspace,
@@ -69,20 +68,26 @@ def build_automation_control_context(query_args: Mapping[str, Any]) -> dict[str,
         payload.update(_overview_activity(cluster_names))
     elif workspace == 'runbooks':
         populate_runbooks_workspace(
-            payload, query_args, registry_rows,
+            payload,
+            query_args,
+            registry_rows,
             catalog_builder=_system_runbook_catalog_rows,
             runbook_presenter=_runbook_row,
             binding_presenter=_binding_row,
         )
     elif workspace == 'decisions':
         populate_decisions_workspace(
-            payload, query_args, cluster_names,
+            payload,
+            query_args,
+            cluster_names,
             candidate_presenter=_candidate_row,
             decision_presenter=_decision_row,
         )
     elif workspace == 'operations':
         populate_operations_workspace(
-            payload, query_args, cluster_names,
+            payload,
+            query_args,
+            cluster_names,
             policy_presenter=_policy_row,
             journal_presenter=_journal_row,
             control_presenter=_control_row,
@@ -90,7 +95,9 @@ def build_automation_control_context(query_args: Mapping[str, Any]) -> dict[str,
         )
     else:
         populate_readiness_workspace(
-            payload, query_args, cluster_names,
+            payload,
+            query_args,
+            cluster_names,
             readiness_presenter=_readiness_row,
         )
     return payload

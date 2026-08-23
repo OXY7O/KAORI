@@ -44,7 +44,7 @@
             'workflow',
             control.posture.label,
             control.posture.tone
-        ) %}
+            ) %}
             <div class="grid divide-y divide-outline-subtle sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-4">
                 {{ intelligence_ui.metric('clipboard-clock', 'Decision Candidates', payload.counts.pending_candidates, 'Awaiting accountable review', 'warning' if payload.counts.pending_candidates else 'normal') }}
                 {{ intelligence_ui.metric('badge-check', 'Awaiting Approval', payload.counts.awaiting_approval, 'Maker-checker review queue', 'warning' if payload.counts.awaiting_approval else 'normal') }}
@@ -109,13 +109,12 @@
                 {% endif %}
             </div>
         </section>
-        {{ resource_detail_modal.host(
-            'Automation Control',
-            url_for('automation_control.binding_configuration_modal'),
-            footer_text='Governance configuration is committed through existing Automation Control service boundaries.',
-            context_label='Automation Control',
-            dialog_max_width='max-w-[92rem]',
-            content_driven=true
+        {{ resource_detail_modal.host('Automation Control',
+                url_for('automation_control.binding_configuration_modal') ,
+        footer_text='Governance configuration is committed through existing Automation Control service boundaries.',
+        context_label='Automation Control',
+        dialog_max_width='max-w-[92rem]',
+        content_driven=true
         ) }}
     </div>
 {% endblock dashboard_content %}

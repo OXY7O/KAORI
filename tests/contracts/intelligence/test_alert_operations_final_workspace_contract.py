@@ -16,13 +16,18 @@ def test_active_queue_owns_loading_filter_actions_and_modal_review() -> None:
     assert "loading_bar.render('alert-operations-active-loading'" in active
     active_header = active.split('id="alert-operations-active-registry"', 1)[1].split('</header>', 1)[0]
     assert "loading_bar.render('alert-operations-active-loading'" in active_header
-    assert active.index("loading_bar.render('alert-operations-active-loading'") < active.index('id="alert-operations-filter-form"')
+    assert active.index("loading_bar.render('alert-operations-active-loading'") < active.index(
+        'id="alert-operations-filter-form"'
+    )
     assert "metadata_label(payload.active_pagination.total_items ~ ' Alert Cases'" in active
     assert 'Clear Filters' in active
     assert 'data-resource-detail-toggle' in table
     assert 'data-alert-case-expanded-row=' not in table
     assert "resource_detail_modal.host('Alert Operations'" in page
-    assert "record_pagination.render(payload.active_pagination, 'page', 'per_page', 'alert-operations-active-registry'" in table
+    assert (
+        "record_pagination.render(payload.active_pagination, 'page', 'per_page', 'alert-operations-active-registry'"
+        in table
+    )
 
 
 def test_alert_case_asset_namespace_metadata_has_no_vertical_divider() -> None:
@@ -47,7 +52,7 @@ def test_routing_workspace_is_table_led_and_crud_uses_modal() -> None:
     assert 'overflow-x-auto' not in routing
     assert 'Policy Details' in routing
     assert 'data-resource-detail-toggle' in routing
-    assert "alert_intelligence.routing_policy_details" in routing
+    assert 'alert_intelligence.routing_policy_details' in routing
     assert 'max-h-[30rem]' in routing
     assert 'Channel Readiness' in routing
     assert 'Use Channel Defaults or Create a Governed Policy' in routing
@@ -61,7 +66,7 @@ def test_routing_workspace_is_table_led_and_crud_uses_modal() -> None:
     assert 'Policy Checklist' in editor
     assert 'bg-status-critical' in editor
     assert 'Delete Policy' in editor
-    assert "def routing_policy_details(policy_ref: str)" in routes
+    assert 'def routing_policy_details(policy_ref: str)' in routes
     assert 'def delete_routing_policy(policy_id: int)' in routes
     assert 'def delete_routing_policy_command' in application
 
@@ -162,8 +167,8 @@ def test_case_modal_uses_persistent_summary_host_and_shared_activity_streams() -
     for template in (active, resolved):
         assert 'hx-swap-oob="innerHTML:#resource-detail-modal-summary"' in template
         assert 'sticky top-0 z-20' not in template
-    assert "_alert_ops_case_activity_streams.html" in active
-    assert "_alert_ops_case_activity_streams.html" in resolved
+    assert '_alert_ops_case_activity_streams.html' in active
+    assert '_alert_ops_case_activity_streams.html' in resolved
     assert 'Incident Timeline' in activity
     assert 'Notification Delivery Ledger' in activity
     assert 'Earlier Timeline Events' in activity

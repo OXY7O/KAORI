@@ -9,9 +9,14 @@
 {% set can_approve_decisions = current_user.has_permission('intelligence.decisions.approve') %}
 {% set can_execute_decisions = current_user.has_permission('intelligence.decisions.execute') %}
 {% set filters = payload.automation_filters %}
-
 <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
-    <header class="flex flex-col gap-3 border-b border-outline-subtle px-4 py-4 sm:flex-row sm:items-start sm:justify-between sm:px-5"><div><h3 class="text-base font-semibold leading-6 text-content-primary">Decision Review Snapshot</h3><p class="mt-1 text-sm leading-6 text-content-secondary">Current review queue, approval posture, executable decisions, and decision-notification readiness.</p></div>{{ table_label.status_label('Review Required' if payload.counts.pending_candidates or payload.counts.awaiting_approval else 'Queue Clear','warning' if payload.counts.pending_candidates or payload.counts.awaiting_approval else 'normal',size='compact') }}</header>
+    <header class="flex flex-col gap-3 border-b border-outline-subtle px-4 py-4 sm:flex-row sm:items-start sm:justify-between sm:px-5">
+        <div>
+            <h3 class="text-base font-semibold leading-6 text-content-primary">Decision Review Snapshot</h3>
+            <p class="mt-1 text-sm leading-6 text-content-secondary">Current review queue, approval posture, executable decisions, and decision-notification readiness.</p>
+        </div>
+        {{ table_label.status_label('Review Required' if payload.counts.pending_candidates or payload.counts.awaiting_approval else 'Queue Clear','warning' if payload.counts.pending_candidates or payload.counts.awaiting_approval else 'normal',size='compact') }}
+    </header>
     <div class="grid divide-y divide-outline-subtle sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-4">
         {{ intelligence_ui.metric('clipboard-clock','Candidates',payload.counts.pending_candidates,'Awaiting operator review','warning' if payload.counts.pending_candidates else 'normal') }}
         {{ intelligence_ui.metric('badge-check','Awaiting Approval',payload.counts.awaiting_approval,'Maker-checker queue','warning' if payload.counts.awaiting_approval else 'normal') }}
@@ -20,32 +25,273 @@
     </div>
     <div class="border-t border-outline-subtle px-4 py-3 sm:px-5">{{ operational_callout.render('Decision Contract','Governance Workflow Enabled. Candidates are evidence, not execution requests; promotion persists an immutable decision and Execution Handoff remains independently gated.',icon='shield-check',tone='info',variant='semantic') }}</div>
 </section>
-
-<section id="automation-candidate-registry" class="{{ table_ui.block_classes() }}">
-    <header class="border-b border-outline-subtle px-5 py-4 sm:px-6"><div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"><div class="flex gap-3"><span class="{{ table_ui.block_icon_classes() }}"><i data-lucide="clipboard-clock" class="h-4 w-4"></i></span><div><h3 class="{{ table_ui.block_title_classes() }}">Candidate Review Queue</h3><p class="{{ table_ui.block_description_classes() }}">Reviewable evidence matched to published runbooks. Open a row for evidence detail and promote/dismiss actions.</p></div></div><div class="flex gap-2">{% if filters.candidate_q or filters.candidate_status != 'all' %}{{ table_registry.clear_filters_link('automation_control.index','automation-candidate-registry','automation-candidate-loading',payload.candidate_pagination.per_page,table_ui.action_classes(),query_params={'workspace':'decisions'},page_param='candidate_page',per_page_param='candidate_per_page') }}{% endif %}{{ table_label.metadata_label(payload.candidate_pagination.total_items ~ ' Candidates','clipboard-clock') }}</div></div>{{ loading_bar.render('automation-candidate-loading', label='Refreshing Candidate Queue') }}</header>
-    <div class="{{ table_ui.inventory_filter_bar_classes() }}">{% call table_registry.filter_form('automation_control.index','automation-candidate-registry','automation-candidate-loading',payload.candidate_pagination.per_page,page_param='candidate_page',per_page_param='candidate_per_page') %}<input type="hidden" name="workspace" value="decisions"><label><span class="{{ table_ui.filter_label_classes() }}">Search</span>{{ table_ui.search_field('candidate_q',filters.candidate_q,'Rule or candidate') }}</label><label><span class="{{ table_ui.filter_label_classes() }}">Status</span><select name="candidate_status" class="{{ table_ui.filter_select_classes() }}">{% for value,label in [('all','All Statuses'),('pending','Pending'),('promoted','Promoted'),('dismissed','Dismissed'),('expired','Expired')] %}<option value="{{ value }}" {% if filters.candidate_status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>{% endcall %}</div>
-    <table class="{{ table_ui.table_classes() }} table-fixed"><thead class="{{ table_ui.head_classes() }}"><tr><th class="w-[28%] px-4 py-3">Rule / Candidate</th><th class="w-[18%] px-4 py-3">Scope</th><th class="w-[18%] px-4 py-3">Runbook</th><th class="w-[12%] px-4 py-3">Severity</th><th class="w-[12%] px-4 py-3">Status</th><th class="w-[12%] px-4 py-3 text-right">Details</th></tr></thead><tbody class="{{ table_ui.body_classes() }}">
-        {% for row in payload.candidate_rows %}{% set target='candidate-detail-' ~ row.id %}{% set rid=target ~ '-row' %}<tr class="{{ table_ui.row_classes() }}"><td class="px-4 py-3">{{ table_ui.title_cell(row.rule_key,row.public_id,'clipboard-clock') }}</td><td class="px-4 py-3"><p class="truncate text-sm font-semibold text-content-primary">{{ row.cluster }}</p><p class="truncate text-xs text-content-muted">{{ row.namespace }}</p></td><td class="px-4 py-3"><p class="truncate text-sm font-semibold text-content-primary">{{ row.runbook_key }}</p><p class="text-xs text-content-muted">{{ row.runbook_version }}</p></td><td class="px-4 py-3">{{ table_label.status_label(row.severity|title,'critical' if row.severity=='critical' else ('warning' if row.severity=='warning' else 'info'),size='compact') }}</td><td class="px-4 py-3">{{ table_label.status_label(row.status|title,'warning' if row.status=='pending' else 'normal',size='compact') }}</td><td class="px-4 py-3 text-right">{{ detail_row.toggle_button('automation-candidates',row.id,'',target,rid,open_label='View More',close_label='Close') }}</td></tr>
-        {% call detail_row.static_detail_row(rid,target,6,'w-full min-w-0') %}<div class="grid gap-4 p-4 lg:grid-cols-[minmax(0,1fr)_auto] sm:p-5"><dl class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">{{ intelligence_ui.field('Resolver',row.resolver_key,true) }}{{ intelligence_ui.field('Proposed Action',row.action_key,true) }}{{ intelligence_ui.field('Approval Policy',row.approval_policy|replace('_',' ')|title) }}{{ intelligence_ui.field('Expires',row.expires_at) }}</dl>{% if row.status=='pending' and can_review_candidates %}<div class="flex flex-wrap items-end gap-2"><form method="post" action="{{ url_for('automation_control.promote_automation_candidate', candidate_id=row.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="inline-flex min-h-9 items-center gap-2 rounded-lg bg-kaori-primary px-3 text-xs font-semibold text-white hover:bg-kaori-primary-hover"><i data-lucide="arrow-up-right" class="h-3.5 w-3.5"></i>Promote to Decision</button></form><form method="post" action="{{ url_for('automation_control.dismiss_automation_candidate', candidate_id=row.id) }}" class="flex gap-2"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input name="reason" required placeholder="Dismissal reason" class="{{ table_ui.filter_input_classes() }} max-w-56"><button class="{{ table_ui.action_classes(true) }}">Dismiss</button></form></div>{% endif %}</div>{% endcall %}
-        {% else %}<tr><td colspan="6" class="px-5 py-8">{{ intelligence_ui.empty_state('Decision Queue Clear','No candidate currently requires review.','circle-check','Queue Clear','normal') }}</td></tr>{% endfor %}
-    </tbody></table>
+<section id="automation-candidate-registry"
+         class="{{ table_ui.block_classes() }}">
+    <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div class="flex gap-3">
+                <span class="{{ table_ui.block_icon_classes() }}"><i data-lucide="clipboard-clock" class="h-4 w-4"></i></span>
+                <div>
+                    <h3 class="{{ table_ui.block_title_classes() }}">Candidate Review Queue</h3>
+                    <p class="{{ table_ui.block_description_classes() }}">Reviewable evidence matched to published runbooks. Open a row for evidence detail and promote/dismiss actions.</p>
+                </div>
+            </div>
+            <div class="flex gap-2">
+                {% if filters.candidate_q or filters.candidate_status != 'all' %}{{ table_registry.clear_filters_link('automation_control.index','automation-candidate-registry','automation-candidate-loading',payload.candidate_pagination.per_page,table_ui.action_classes() ,query_params={'workspace':'decisions'},page_param='candidate_page',per_page_param='candidate_per_page') }}{% endif %}
+            {{ table_label.metadata_label(payload.candidate_pagination.total_items ~ ' Candidates','clipboard-clock') }}</div>
+        </div>
+        {{ loading_bar.render('automation-candidate-loading', label='Refreshing Candidate Queue') }}
+    </header>
+    <div class="{{ table_ui.inventory_filter_bar_classes() }}">
+        {% call table_registry.filter_form('automation_control.index','automation-candidate-registry','automation-candidate-loading',payload.candidate_pagination.per_page,page_param='candidate_page',per_page_param='candidate_per_page') %}
+            <input type="hidden" name="workspace" value="decisions">
+            <label><span class="{{ table_ui.filter_label_classes() }}">Search</span>{{ table_ui.search_field('candidate_q',filters.candidate_q,'Rule or candidate') }}</label>
+            <label>
+                <span class="{{ table_ui.filter_label_classes() }}">Status</span>
+                <select name="candidate_status"
+                        class="{{ table_ui.filter_select_classes() }}">
+                    {% for value,label in [('all','All Statuses'),('pending','Pending'),('promoted','Promoted'),('dismissed','Dismissed'),('expired','Expired')] %}
+                        <option value="{{ value }}"
+                                {% if filters.candidate_status == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+        {% endcall %}
+    </div>
+    <table class="{{ table_ui.table_classes() }} table-fixed">
+        <thead class="{{ table_ui.head_classes() }}">
+            <tr>
+                <th class="w-[28%] px-4 py-3">Rule / Candidate</th>
+                <th class="w-[18%] px-4 py-3">Scope</th>
+                <th class="w-[18%] px-4 py-3">Runbook</th>
+                <th class="w-[12%] px-4 py-3">Severity</th>
+                <th class="w-[12%] px-4 py-3">Status</th>
+                <th class="w-[12%] px-4 py-3 text-right">Details</th>
+            </tr>
+        </thead>
+        <tbody class="{{ table_ui.body_classes() }}">
+            {% for row in payload.candidate_rows %}
+                {% set target = 'candidate-detail-' ~ row.id %}{% set rid = target ~ '-row' %}
+                <tr class="{{ table_ui.row_classes() }}">
+                    <td class="px-4 py-3">{{ table_ui.title_cell(row.rule_key,row.public_id,'clipboard-clock') }}</td>
+                    <td class="px-4 py-3">
+                        <p class="truncate text-sm font-semibold text-content-primary">{{ row.cluster }}</p>
+                        <p class="truncate text-xs text-content-muted">{{ row.namespace }}</p>
+                    </td>
+                    <td class="px-4 py-3">
+                        <p class="truncate text-sm font-semibold text-content-primary">{{ row.runbook_key }}</p>
+                        <p class="text-xs text-content-muted">{{ row.runbook_version }}</p>
+                    </td>
+                    <td class="px-4 py-3">{{ table_label.status_label(row.severity|title,'critical' if row.severity=='critical' else ('warning' if row.severity=='warning' else 'info') ,size='compact') }}</td>
+                    <td class="px-4 py-3">{{ table_label.status_label(row.status|title,'warning' if row.status=='pending' else 'normal',size='compact') }}</td>
+                    <td class="px-4 py-3 text-right">{{ detail_row.toggle_button('automation-candidates',row.id,'',target,rid,open_label='View More',close_label='Close') }}</td>
+                </tr>
+                {% call detail_row.static_detail_row(rid,target,6,'w-full min-w-0') %}
+                    <div class="grid gap-4 p-4 lg:grid-cols-[minmax(0,1fr)_auto] sm:p-5">
+                        <dl class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                            {{ intelligence_ui.field('Resolver',row.resolver_key,true) }}{{ intelligence_ui.field('Proposed Action',row.action_key,true) }}{{ intelligence_ui.field('Approval Policy',row.approval_policy|replace('_',' ') |title) }}{{ intelligence_ui.field('Expires',row.expires_at) }}
+                        </dl>
+                        {% if row.status=='pending' and can_review_candidates %}
+                            <div class="flex flex-wrap items-end gap-2">
+                                <form method="post"
+                                      action="{{ url_for('automation_control.promote_automation_candidate', candidate_id=row.id) }}">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button class="inline-flex min-h-9 items-center gap-2 rounded-lg bg-kaori-primary px-3 text-xs font-semibold text-white hover:bg-kaori-primary-hover"><i data-lucide="arrow-up-right" class="h-3.5 w-3.5"></i>Promote to Decision</button>
+                                </form>
+                                <form method="post"
+                                      action="{{ url_for('automation_control.dismiss_automation_candidate', candidate_id=row.id) }}"
+                                      class="flex gap-2">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <input name="reason"
+                                           required
+                                           placeholder="Dismissal reason"
+                                           class="{{ table_ui.filter_input_classes() }} max-w-56">
+                                    <button class="{{ table_ui.action_classes(true) }}">Dismiss</button>
+                                </form>
+                            </div>
+                        {% endif %}
+                    </div>
+                {% endcall %}
+            {% else %}
+                <tr>
+                    <td colspan="6" class="px-5 py-8">{{ intelligence_ui.empty_state('Decision Queue Clear', 'No candidate currently requires review.', 'circle-check', 'Queue Clear', 'normal') }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
     {{ table_registry.footer('automation_control.index','automation-candidate-registry','automation-candidate-loading',payload.candidate_pagination,{'workspace':'decisions','candidate_q':filters.candidate_q,'candidate_status':filters.candidate_status},payload.per_page_options,resource_label='Candidates',control_name='automation-candidates',page_param='candidate_page',per_page_param='candidate_per_page') }}
 </section>
-
-<section id="automation-decision-registry" class="{{ table_ui.block_classes() }}">
-    <header class="border-b border-outline-subtle px-5 py-4 sm:px-6"><div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"><div class="flex gap-3"><span class="{{ table_ui.block_icon_classes() }}"><i data-lucide="badge-check" class="h-4 w-4"></i></span><div><h3 class="{{ table_ui.block_title_classes() }}">Persisted Decisions</h3><p class="{{ table_ui.block_description_classes() }}">Immutable policy and approval outcomes used for execution authorization.</p></div></div><div class="flex gap-2">{% if filters.decision_q or filters.decision_status != 'all' %}{{ table_registry.clear_filters_link('automation_control.index','automation-decision-registry','automation-decision-loading',payload.decision_pagination.per_page,table_ui.action_classes(),query_params={'workspace':'decisions'},page_param='decision_page',per_page_param='decision_per_page') }}{% endif %}{{ table_label.metadata_label(payload.decision_pagination.total_items ~ ' Decisions','badge-check') }}</div></div>{{ loading_bar.render('automation-decision-loading',label='Refreshing Decisions') }}</header>
-    <div class="{{ table_ui.inventory_filter_bar_classes() }}">{% call table_registry.filter_form('automation_control.index','automation-decision-registry','automation-decision-loading',payload.decision_pagination.per_page,page_param='decision_page',per_page_param='decision_per_page') %}<input type="hidden" name="workspace" value="decisions"><label><span class="{{ table_ui.filter_label_classes() }}">Search</span>{{ table_ui.search_field('decision_q',filters.decision_q,'Rule or action') }}</label><label><span class="{{ table_ui.filter_label_classes() }}">Status</span><select name="decision_status" class="{{ table_ui.filter_select_classes() }}">{% for value,label in [('all','All Statuses'),('ready','Ready'),('pending_approval','Pending Approval'),('approved','Approved'),('rejected','Rejected'),('expired','Expired'),('dispatched','Dispatched')] %}<option value="{{ value }}" {% if filters.decision_status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>{% endcall %}</div>
-    <table class="{{ table_ui.table_classes() }} table-fixed"><thead class="{{ table_ui.head_classes() }}"><tr><th class="w-[26%] px-4 py-3">Decision</th><th class="w-[18%] px-4 py-3">Scope</th><th class="w-[18%] px-4 py-3">Action</th><th class="w-[14%] px-4 py-3">Policy</th><th class="w-[12%] px-4 py-3">Status</th><th class="w-[12%] px-4 py-3 text-right">Details</th></tr></thead><tbody class="{{ table_ui.body_classes() }}">
-        {% for row in payload.decision_rows %}{% set target='decision-detail-' ~ row.id %}{% set rid=target ~ '-row' %}<tr class="{{ table_ui.row_classes() }}"><td class="px-4 py-3">{{ table_ui.title_cell(row.rule_key,row.public_id,'badge-check') }}</td><td class="px-4 py-3"><p class="truncate text-sm font-semibold text-content-primary">{{ row.cluster }}</p><p class="truncate text-xs text-content-muted">{{ row.namespace }}</p></td><td class="px-4 py-3"><p class="truncate font-mono text-xs font-semibold text-content-primary">{{ row.action_key }}</p><p class="truncate text-xs text-content-muted">{{ row.runbook_key }}</p></td><td class="px-4 py-3"><p class="text-sm font-semibold text-content-primary">{{ row.policy|replace('_',' ')|title }}</p><p class="text-xs text-content-muted">{{ 'Approval Required' if row.approval_required else 'No Approval' }}</p></td><td class="px-4 py-3">{{ table_label.status_label(row.status|replace('_',' ')|title,'critical' if row.status in ['rejected','expired'] else ('warning' if row.status=='pending_approval' else 'info'),size='compact') }}</td><td class="px-4 py-3 text-right">{{ detail_row.toggle_button('automation-decisions',row.id,'',target,rid,open_label='View More',close_label='Close') }}</td></tr>
-        {% call detail_row.static_detail_row(rid,target,6,'w-full min-w-0') %}<div class="grid gap-4 p-4 lg:grid-cols-[minmax(0,1fr)_auto] sm:p-5"><dl class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">{{ intelligence_ui.field('Evidence Hash',row.evidence_hash,true) }}{{ intelligence_ui.field('Expires',row.expires_at) }}{{ intelligence_ui.field('Approval Outcome',row.approval_outcome|title if row.approval_outcome else '-') }}{{ intelligence_ui.field('Reviewed By',row.approval_actor) }}</dl><div class="flex flex-wrap items-end gap-2">{% if row.status=='pending_approval' and can_approve_decisions and row.created_by_user_id != current_user.id %}<form method="post" action="{{ url_for('automation_control.approve_automation_decision', decision_id=row.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="inline-flex min-h-9 items-center gap-2 rounded-lg bg-kaori-primary px-3 text-xs font-semibold text-white">Approve Decision</button></form><form method="post" action="{{ url_for('automation_control.reject_automation_decision', decision_id=row.id) }}" class="flex gap-2"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input name="reason" required placeholder="Rejection reason" class="{{ table_ui.filter_input_classes() }} max-w-52"><button class="{{ table_ui.action_classes(true) }}">Reject Decision</button></form>{% elif row.status=='pending_approval' and can_approve_decisions and row.created_by_user_id == current_user.id %}<span class="text-xs font-semibold text-content-muted">Maker-Checker Required</span>{% endif %}{% if row.status in ['ready','approved'] and can_execute_decisions %}<form method="post" action="{{ url_for('automation_control.execute_automation_decision', decision_id=row.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button {% if not payload.execution_enabled %}disabled aria-disabled="true"{% endif %} class="inline-flex min-h-9 items-center gap-2 rounded-lg px-3 text-xs font-semibold {{ 'bg-kaori-primary text-white' if payload.execution_enabled else 'cursor-not-allowed border border-outline-subtle bg-surface-muted text-content-muted' }}">{{ 'Queue Execution' if payload.execution_enabled else 'Execution Disabled' }}</button></form>{% endif %}</div></div>{% endcall %}
-        {% else %}<tr><td colspan="6" class="px-5 py-8">{{ intelligence_ui.empty_state('No Persisted Decisions','No immutable decision has been recorded.','badge-check') }}</td></tr>{% endfor %}
-    </tbody></table>
+<section id="automation-decision-registry"
+         class="{{ table_ui.block_classes() }}">
+    <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div class="flex gap-3">
+                <span class="{{ table_ui.block_icon_classes() }}"><i data-lucide="badge-check" class="h-4 w-4"></i></span>
+                <div>
+                    <h3 class="{{ table_ui.block_title_classes() }}">Persisted Decisions</h3>
+                    <p class="{{ table_ui.block_description_classes() }}">Immutable policy and approval outcomes used for execution authorization.</p>
+                </div>
+            </div>
+            <div class="flex gap-2">
+                {% if filters.decision_q or filters.decision_status != 'all' %}{{ table_registry.clear_filters_link('automation_control.index','automation-decision-registry','automation-decision-loading',payload.decision_pagination.per_page,table_ui.action_classes() ,query_params={'workspace':'decisions'},page_param='decision_page',per_page_param='decision_per_page') }}{% endif %}
+            {{ table_label.metadata_label(payload.decision_pagination.total_items ~ ' Decisions','badge-check') }}</div>
+        </div>
+        {{ loading_bar.render('automation-decision-loading',label='Refreshing Decisions') }}
+    </header>
+    <div class="{{ table_ui.inventory_filter_bar_classes() }}">
+        {% call table_registry.filter_form('automation_control.index','automation-decision-registry','automation-decision-loading',payload.decision_pagination.per_page,page_param='decision_page',per_page_param='decision_per_page') %}
+            <input type="hidden" name="workspace" value="decisions">
+            <label><span class="{{ table_ui.filter_label_classes() }}">Search</span>{{ table_ui.search_field('decision_q',filters.decision_q,'Rule or action') }}</label>
+            <label>
+                <span class="{{ table_ui.filter_label_classes() }}">Status</span>
+                <select name="decision_status" class="{{ table_ui.filter_select_classes() }}">
+                    {% for value,label in [('all','All Statuses'),('ready','Ready'),('pending_approval','Pending Approval'),('approved','Approved'),('rejected','Rejected'),('expired','Expired'),('dispatched','Dispatched')] %}
+                        <option value="{{ value }}"
+                                {% if filters.decision_status == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+        {% endcall %}
+    </div>
+    <table class="{{ table_ui.table_classes() }} table-fixed">
+        <thead class="{{ table_ui.head_classes() }}">
+            <tr>
+                <th class="w-[26%] px-4 py-3">Decision</th>
+                <th class="w-[18%] px-4 py-3">Scope</th>
+                <th class="w-[18%] px-4 py-3">Action</th>
+                <th class="w-[14%] px-4 py-3">Policy</th>
+                <th class="w-[12%] px-4 py-3">Status</th>
+                <th class="w-[12%] px-4 py-3 text-right">Details</th>
+            </tr>
+        </thead>
+        <tbody class="{{ table_ui.body_classes() }}">
+            {% for row in payload.decision_rows %}
+                {% set target = 'decision-detail-' ~ row.id %}{% set rid = target ~ '-row' %}
+                <tr class="{{ table_ui.row_classes() }}">
+                    <td class="px-4 py-3">{{ table_ui.title_cell(row.rule_key,row.public_id,'badge-check') }}</td>
+                    <td class="px-4 py-3">
+                        <p class="truncate text-sm font-semibold text-content-primary">{{ row.cluster }}</p>
+                        <p class="truncate text-xs text-content-muted">{{ row.namespace }}</p>
+                    </td>
+                    <td class="px-4 py-3">
+                        <p class="truncate font-mono text-xs font-semibold text-content-primary">{{ row.action_key }}</p>
+                        <p class="truncate text-xs text-content-muted">{{ row.runbook_key }}</p>
+                    </td>
+                    <td class="px-4 py-3">
+                        <p class="text-sm font-semibold text-content-primary">{{ row.policy|replace('_', ' ') |title }}</p>
+                        <p class="text-xs text-content-muted">{{ 'Approval Required' if row.approval_required else 'No Approval' }}</p>
+                    </td>
+                    <td class="px-4 py-3">{{ table_label.status_label(row.status|replace('_',' ') |title,'critical' if row.status in ['rejected','expired'] else ('warning' if row.status=='pending_approval' else 'info'),size='compact') }}</td>
+                    <td class="px-4 py-3 text-right">{{ detail_row.toggle_button('automation-decisions',row.id,'',target,rid,open_label='View More',close_label='Close') }}</td>
+                </tr>
+                {% call detail_row.static_detail_row(rid,target,6,'w-full min-w-0') %}
+                    <div class="grid gap-4 p-4 lg:grid-cols-[minmax(0,1fr)_auto] sm:p-5">
+                        <dl class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                            {{ intelligence_ui.field('Evidence Hash',row.evidence_hash,true) }}{{ intelligence_ui.field('Expires',row.expires_at) }}{{ intelligence_ui.field('Approval Outcome',row.approval_outcome|title if row.approval_outcome else '-') }}{{ intelligence_ui.field('Reviewed By',row.approval_actor) }}
+                        </dl>
+                        <div class="flex flex-wrap items-end gap-2">
+                            {% if row.status=='pending_approval' and can_approve_decisions and row.created_by_user_id != current_user.id %}
+                                <form method="post"
+                                      action="{{ url_for('automation_control.approve_automation_decision', decision_id=row.id) }}">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button class="inline-flex min-h-9 items-center gap-2 rounded-lg bg-kaori-primary px-3 text-xs font-semibold text-white">Approve Decision</button>
+                                </form>
+                                <form method="post"
+                                      action="{{ url_for('automation_control.reject_automation_decision', decision_id=row.id) }}"
+                                      class="flex gap-2">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <input name="reason"
+                                           required
+                                           placeholder="Rejection reason"
+                                           class="{{ table_ui.filter_input_classes() }} max-w-52">
+                                    <button class="{{ table_ui.action_classes(true) }}">Reject Decision</button>
+                                </form>
+                            {% elif row.status=='pending_approval' and can_approve_decisions and row.created_by_user_id == current_user.id %}
+                                <span class="text-xs font-semibold text-content-muted">Maker-Checker Required</span>
+                            {% endif %}
+                            {% if row.status in ['ready','approved'] and can_execute_decisions %}
+                                <form method="post"
+                                      action="{{ url_for('automation_control.execute_automation_decision', decision_id=row.id) }}">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button {% if not payload.execution_enabled %}disabled aria-disabled="true"{% endif %}
+                                            class="inline-flex min-h-9 items-center gap-2 rounded-lg px-3 text-xs font-semibold {{ 'bg-kaori-primary text-white' if payload.execution_enabled else 'cursor-not-allowed border border-outline-subtle bg-surface-muted text-content-muted' }}">{{ 'Queue Execution' if payload.execution_enabled else 'Execution Disabled' }}</button>
+                                </form>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endcall %}
+            {% else %}
+                <tr>
+                    <td colspan="6" class="px-5 py-8">{{ intelligence_ui.empty_state('No Persisted Decisions', 'No immutable decision has been recorded.', 'badge-check') }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
     {{ table_registry.footer('automation_control.index','automation-decision-registry','automation-decision-loading',payload.decision_pagination,{'workspace':'decisions','decision_q':filters.decision_q,'decision_status':filters.decision_status},payload.per_page_options,resource_label='Decisions',control_name='automation-decisions',page_param='decision_page',per_page_param='decision_per_page') }}
 </section>
-
-<section id="automation-decision-delivery-registry" class="{{ table_ui.block_classes() }}">
-    <header class="border-b border-outline-subtle px-5 py-4 sm:px-6"><div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"><div class="flex gap-3"><span class="{{ table_ui.block_icon_classes() }}"><i data-lucide="send" class="h-4 w-4"></i></span><div><h3 class="{{ table_ui.block_title_classes() }}">Approval Notification Delivery</h3><p class="{{ table_ui.block_description_classes() }}">Asynchronous decision-lifecycle delivery evidence. Transport never changes the recorded approval outcome.</p></div></div><div class="flex gap-2">{% if filters.delivery_q or filters.delivery_status != 'all' %}{{ table_registry.clear_filters_link('automation_control.index','automation-decision-delivery-registry','automation-decision-delivery-loading',payload.delivery_pagination.per_page,table_ui.action_classes(),query_params={'workspace':'decisions'},page_param='delivery_page',per_page_param='delivery_per_page') }}{% endif %}{{ table_label.metadata_label(payload.delivery_pagination.total_items ~ ' Deliveries','send') }}</div></div>{{ loading_bar.render('automation-decision-delivery-loading',label='Refreshing Notification Delivery') }}</header>
-    <div class="{{ table_ui.inventory_filter_bar_classes() }}">{% call table_registry.filter_form('automation_control.index','automation-decision-delivery-registry','automation-decision-delivery-loading',payload.delivery_pagination.per_page,page_param='delivery_page',per_page_param='delivery_per_page') %}<input type="hidden" name="workspace" value="decisions"><label><span class="{{ table_ui.filter_label_classes() }}">Search</span>{{ table_ui.search_field('delivery_q',filters.delivery_q,'Event or channel') }}</label><label><span class="{{ table_ui.filter_label_classes() }}">Status</span><select name="delivery_status" class="{{ table_ui.filter_select_classes() }}">{% for value,label in [('all','All Statuses'),('sent','Sent'),('failed','Failed'),('queued','Queued'),('skipped','Skipped')] %}<option value="{{ value }}" {% if filters.delivery_status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>{% endcall %}</div>
-    <table class="{{ table_ui.table_classes() }} table-fixed"><thead class="{{ table_ui.head_classes() }}"><tr><th class="w-[28%] px-4 py-3">Event</th><th class="w-[22%] px-4 py-3">Channel</th><th class="w-[16%] px-4 py-3">Provider</th><th class="w-[16%] px-4 py-3">Severity</th><th class="w-[18%] px-4 py-3">Status</th></tr></thead><tbody class="{{ table_ui.body_classes() }}">{% for row in payload.decision_delivery_rows %}<tr class="{{ table_ui.row_classes() }}"><td class="px-4 py-3">{{ table_ui.title_cell(row.event_label,row.asset_key or '-', 'send') }}</td><td class="px-4 py-3 text-sm font-semibold text-content-primary">{{ row.channel_name }}</td><td class="px-4 py-3 text-sm text-content-secondary">{{ row.provider }}</td><td class="px-4 py-3">{{ table_label.status_label(row.severity|title,'critical' if row.severity=='critical' else ('warning' if row.severity=='warning' else 'info'),size='compact') }}</td><td class="px-4 py-3">{{ table_label.status_label(row.status|title,'normal' if row.status=='sent' else ('warning' if row.status=='failed' else 'unknown'),size='compact') }}{% if row.error_message %}<p class="mt-1 truncate text-xs text-content-muted" title="{{ row.error_message }}">{{ row.error_message }}</p>{% endif %}</td></tr>{% else %}<tr><td colspan="5" class="px-5 py-8">{{ intelligence_ui.empty_state('No Decision Notifications','No approval lifecycle notification has been dispatched yet.','send') }}</td></tr>{% endfor %}</tbody></table>
+<section id="automation-decision-delivery-registry"
+         class="{{ table_ui.block_classes() }}">
+    <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div class="flex gap-3">
+                <span class="{{ table_ui.block_icon_classes() }}"><i data-lucide="send" class="h-4 w-4"></i></span>
+                <div>
+                    <h3 class="{{ table_ui.block_title_classes() }}">Approval Notification Delivery</h3>
+                    <p class="{{ table_ui.block_description_classes() }}">Asynchronous decision-lifecycle delivery evidence. Transport never changes the recorded approval outcome.</p>
+                </div>
+            </div>
+            <div class="flex gap-2">
+                {% if filters.delivery_q or filters.delivery_status != 'all' %}{{ table_registry.clear_filters_link('automation_control.index','automation-decision-delivery-registry','automation-decision-delivery-loading',payload.delivery_pagination.per_page,table_ui.action_classes() ,query_params={'workspace':'decisions'},page_param='delivery_page',per_page_param='delivery_per_page') }}{% endif %}
+            {{ table_label.metadata_label(payload.delivery_pagination.total_items ~ ' Deliveries','send') }}</div>
+        </div>
+        {{ loading_bar.render('automation-decision-delivery-loading',label='Refreshing Notification Delivery') }}
+    </header>
+    <div class="{{ table_ui.inventory_filter_bar_classes() }}">
+        {% call table_registry.filter_form('automation_control.index','automation-decision-delivery-registry','automation-decision-delivery-loading',payload.delivery_pagination.per_page,page_param='delivery_page',per_page_param='delivery_per_page') %}
+            <input type="hidden" name="workspace" value="decisions">
+            <label><span class="{{ table_ui.filter_label_classes() }}">Search</span>{{ table_ui.search_field('delivery_q',filters.delivery_q,'Event or channel') }}</label>
+            <label>
+                <span class="{{ table_ui.filter_label_classes() }}">Status</span>
+                <select name="delivery_status" class="{{ table_ui.filter_select_classes() }}">
+                    {% for value,label in [('all','All Statuses'),('sent','Sent'),('failed','Failed'),('queued','Queued'),('skipped','Skipped')] %}
+                        <option value="{{ value }}"
+                                {% if filters.delivery_status == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+        {% endcall %}
+    </div>
+    <table class="{{ table_ui.table_classes() }} table-fixed">
+        <thead class="{{ table_ui.head_classes() }}">
+            <tr>
+                <th class="w-[28%] px-4 py-3">Event</th>
+                <th class="w-[22%] px-4 py-3">Channel</th>
+                <th class="w-[16%] px-4 py-3">Provider</th>
+                <th class="w-[16%] px-4 py-3">Severity</th>
+                <th class="w-[18%] px-4 py-3">Status</th>
+            </tr>
+        </thead>
+        <tbody class="{{ table_ui.body_classes() }}">
+            {% for row in payload.decision_delivery_rows %}
+                <tr class="{{ table_ui.row_classes() }}">
+                    <td class="px-4 py-3">{{ table_ui.title_cell(row.event_label,row.asset_key or '-', 'send') }}</td>
+                    <td class="px-4 py-3 text-sm font-semibold text-content-primary">{{ row.channel_name }}</td>
+                    <td class="px-4 py-3 text-sm text-content-secondary">{{ row.provider }}</td>
+                    <td class="px-4 py-3">{{ table_label.status_label(row.severity|title,'critical' if row.severity=='critical' else ('warning' if row.severity=='warning' else 'info') ,size='compact') }}</td>
+                    <td class="px-4 py-3">
+                        {{ table_label.status_label(row.status|title,'normal' if row.status=='sent' else ('warning' if row.status=='failed' else 'unknown') ,size='compact') }}
+                        {% if row.error_message %}
+                            <p class="mt-1 truncate text-xs text-content-muted"
+                               title="{{ row.error_message }}">{{ row.error_message }}</p>
+                        {% endif %}
+                    </td>
+                </tr>
+            {% else %}
+                <tr>
+                    <td colspan="5" class="px-5 py-8">{{ intelligence_ui.empty_state('No Decision Notifications', 'No approval lifecycle notification has been dispatched yet.', 'send') }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
     {{ table_registry.footer('automation_control.index','automation-decision-delivery-registry','automation-decision-delivery-loading',payload.delivery_pagination,{'workspace':'decisions','delivery_q':filters.delivery_q,'delivery_status':filters.delivery_status},payload.per_page_options,resource_label='Deliveries',control_name='automation-decision-delivery',page_param='delivery_page',per_page_param='delivery_per_page') }}
 </section>

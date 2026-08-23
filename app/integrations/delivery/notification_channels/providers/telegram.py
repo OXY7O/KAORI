@@ -101,6 +101,7 @@ def _render_action_link(*, label: str, url: str, content_format: str) -> str:
         return f'🔗 [{safe_label}]({url})'
     return f'🔗 {label}: {url}'
 
+
 def _truncate(value: str, limit: int) -> str:
     if limit <= 0:
         return ''

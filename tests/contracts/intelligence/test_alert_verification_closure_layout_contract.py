@@ -18,7 +18,8 @@ def test_resolved_verification_closure_is_a_compact_governed_card() -> None:
     ):
         assert marker in modal
 
-    assert 'overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm' in modal
+    assert 'overflow-hidden rounded-xl border border-outline-default bg-surface-card' in modal
+    assert 'overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm' not in modal
     assert 'lg:grid-cols-12' in modal
     assert 'lg:col-span-6' in modal
     assert 'lg:col-span-8' in modal
@@ -40,7 +41,9 @@ def test_verification_closure_keeps_status_near_header_and_action_in_footer() ->
 def test_verification_closure_copy_and_fields_are_operationally_compact() -> None:
     modal = read('app/templates/intelligence/partials/_alert_ops_resolved_case_modal.html')
 
-    assert 'Confirm recovery evidence, record the remediation, then close the case and queue resolved delivery.' in modal
+    assert (
+        'Confirm recovery evidence, record the remediation, then close the case and queue resolved delivery.' in modal
+    )
     assert 'What resolved the alert and what changed?' in modal
     assert 'What evidence confirms the source recovered?' in modal
     assert 'One step per line' in modal

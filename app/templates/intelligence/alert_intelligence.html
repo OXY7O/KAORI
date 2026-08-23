@@ -4,10 +4,10 @@
 {% block dashboard_content %}
     {% include 'intelligence/partials/_alert_intelligence_page.html' %}
     {{ resource_detail_modal.host('Alert Operations',
-        url_for('alert_intelligence.case_details', public_id='0'),
-        footer_text='Alert Operations evidence and governance actions use the current committed KAORI data boundary.',
-        context_label='Alert Operations',
-        dialog_max_width='max-w-screen-2xl',
-        content_driven=true
+        url_for('alert_intelligence.case_details', public_id='0') ,
+    footer_text='Alert Operations evidence and governance actions use the current committed KAORI data boundary.',
+    context_label='Alert Operations',
+    dialog_max_width='max-w-screen-2xl',
+    content_driven=true
     ) }}
 {% endblock dashboard_content %}

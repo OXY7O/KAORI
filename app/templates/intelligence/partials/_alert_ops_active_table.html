@@ -10,7 +10,8 @@
     'source': payload.filters.source,
     'q': payload.filters.q
 } %}
-<div id="alert-operations-active-records" class="overflow-hidden bg-surface-card">
+<div id="alert-operations-active-records"
+     class="overflow-hidden bg-surface-card">
     <div class="overflow-x-auto">
         <table class="{{ table_ui.table_classes('min-w-[1080px]') }}">
             <thead class="{{ table_ui.head_classes() }}">
@@ -28,7 +29,8 @@
             <tbody class="{{ table_ui.body_classes() }}">
                 {% for case in payload.active_cases %}
                     {% set review_url = url_for('alert_intelligence.case_details', public_id=case.public_id, tab='active', domain=payload.domain, asset=payload.selected_asset_key, severity=payload.filters.severity, workflow=payload.filters.workflow, source=payload.filters.source, q=payload.filters.q, page=payload.active_pagination.page, per_page=payload.active_pagination.per_page) %}
-                    <tr id="alert-case-row-{{ case.public_id }}" class="{{ table_ui.row_classes() }}">
+                    <tr id="alert-case-row-{{ case.public_id }}"
+                        class="{{ table_ui.row_classes() }}">
                         <td class="{{ table_ui.cell_classes() }}">
                             <div class="min-w-0">
                                 <p class="max-w-lg break-words text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]">{{ case.alert_name }}</p>

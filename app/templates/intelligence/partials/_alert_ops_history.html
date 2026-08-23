@@ -6,7 +6,8 @@
     <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
         <div class="px-4 py-4 sm:px-5">
             <div class="flex min-w-0 items-start gap-3">
-                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true"><i data-lucide="badge-check" class="h-4 w-4"></i></span>
+                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                      aria-hidden="true"><i data-lucide="badge-check" class="h-4 w-4"></i></span>
                 <div class="min-w-0">
                     <h3 class="{{ table_ui.block_title_classes() }}">Resolved Alert Posture</h3>
                     <p class="{{ table_ui.block_description_classes() }}">Recovered and governed closure outcomes remain searchable with operator evidence before lifecycle archival.</p>
@@ -18,10 +19,11 @@
                     ('shield-check', 'Verification Pending', payload.summary.verification_pending, 'Recovered source awaiting closure evidence', 'warning' if payload.summary.verification_pending else 'normal'),
                     ('circle-check-big', 'Closed', payload.summary.closed, 'Cases with verified closure evidence', 'normal'),
                     ('circle-x', 'False Positive', payload.summary.false_positive, 'Governed non-actionable dispositions', 'info')
-                ] %}
+                    ] %}
                     <article class="bg-surface-elevated p-4">
                         <div class="flex items-center justify-between gap-3">
-                            <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true"><i data-lucide="{{ icon }}" class="h-4 w-4"></i></span>
+                            <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                                  aria-hidden="true"><i data-lucide="{{ icon }}" class="h-4 w-4"></i></span>
                             {{ table_label.status_indicator_label('Attention' if tone == 'warning' and value else 'Recorded', tone, size='compact') }}
                         </div>
                         <p class="mt-3 text-2xl font-semibold leading-none text-content-primary">{{ value }}</p>
@@ -32,7 +34,9 @@
             </div>
             <div class="mt-4 rounded-xl border border-kaori-primary/20 bg-kaori-soft px-4 py-3">
                 <div class="flex items-start gap-3">
-                    <i data-lucide="info" class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+                    <i data-lucide="info"
+                       class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary"
+                       aria-hidden="true"></i>
                     <div>
                         <p class="text-xs font-semibold uppercase tracking-wide text-kaori-primary">Evidence Retention</p>
                         <p class="mt-1 text-xs leading-5 text-content-secondary">Resolved cases stay searchable for verification, incident learning, and audit evidence before Data Lifecycle moves eligible closed records to Local/S3 archive storage.</p>
@@ -64,9 +68,8 @@
                 </div>
                 <div class="flex shrink-0 flex-wrap items-center justify-end gap-2"
                      data-kaori-table-header-actions>
-                {% if payload.filters.q or payload.filters.severity != 'all' %}
-                    {{ table_registry.clear_filters_action(
-                        url_for('alert_intelligence.index', tab='resolved', domain=payload.domain, asset=payload.selected_asset_key, history_per_page=payload.history_pagination.per_page),
+                    {% if payload.filters.q or payload.filters.severity != 'all' %}
+                        {{ table_registry.clear_filters_action(url_for('alert_intelligence.index', tab='resolved', domain=payload.domain, asset=payload.selected_asset_key, history_per_page=payload.history_pagination.per_page) ,
                         table_ui.action_classes(),
                         hx_get=url_for('alert_intelligence.index', tab='resolved', domain=payload.domain, asset=payload.selected_asset_key, history_per_page=payload.history_pagination.per_page),
                         target='#alert-operations-history-registry',
@@ -74,12 +77,13 @@
                         select='#alert-operations-history-registry',
                         push_url='true',
                         sync='closest section:replace'
-                    ) }}
-                {% endif %}
-                <a href="{{ url_for('platform_operations.data_lifecycle.index', domain='alert_incident') }}" class="{{ table_ui.action_classes() }}">
-                    <i data-lucide="archive" class="h-3.5 w-3.5" aria-hidden="true"></i>
-                    Archive Policy
-                </a>
+                        ) }}
+                    {% endif %}
+                    <a href="{{ url_for('platform_operations.data_lifecycle.index', domain='alert_incident') }}"
+                       class="{{ table_ui.action_classes() }}">
+                        <i data-lucide="archive" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                        Archive Policy
+                    </a>
                 </div>
             </div>
             {{ loading_bar.render('alert-operations-history-loading', label='Refreshing Resolved Alerts') }}
@@ -190,5 +194,4 @@
                         per_page_param='history_per_page') }}
         {% endif %}
     </section>
-
 </div>

@@ -6,7 +6,6 @@ def read(path: str) -> str:
 
 
 def test_multi_registry_presentation_has_independent_filters_and_pagination():
-    presentation = read('app/intelligence/automation_control/presentation.py')
     registries = read('app/intelligence/automation_control/workspace_registries.py')
     for token in (
         'catalog_pagination',
@@ -22,8 +21,16 @@ def test_multi_registry_presentation_has_independent_filters_and_pagination():
     ):
         assert token in registries
     for token in (
-        'catalog_q', 'runbook_q', 'binding_q', 'candidate_q', 'decision_q', 'delivery_q',
-        'policy_q', 'journal_q', 'dead_q', 'readiness_q',
+        'catalog_q',
+        'runbook_q',
+        'binding_q',
+        'candidate_q',
+        'decision_q',
+        'delivery_q',
+        'policy_q',
+        'journal_q',
+        'dead_q',
+        'readiness_q',
     ):
         assert token in registries
 
@@ -46,7 +53,13 @@ def test_simplification_keeps_every_primary_mutation_endpoint_reachable_from_ui(
     assert 'activate_automation_system_runbook' in runbooks
     assert 'update_automation_binding_status' in runbooks
     assert 'create_automation_binding' in binding_modal
-    for token in ('promote_automation_candidate','dismiss_automation_candidate','approve_automation_decision','reject_automation_decision','execute_automation_decision'):
+    for token in (
+        'promote_automation_candidate',
+        'dismiss_automation_candidate',
+        'approve_automation_decision',
+        'reject_automation_decision',
+        'execute_automation_decision',
+    ):
         assert token in decisions
     assert 'update_automation_deployment_policy' in execution_modal
     assert 'update_automation_operational_control' in execution_modal

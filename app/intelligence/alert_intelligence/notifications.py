@@ -21,6 +21,7 @@ from app.intelligence.alert_intelligence.templates import render_case_message
 from app.models.alert_ops import AlertCase, AlertCaseEvent
 from app.models.notification_channel import NotificationChannel, NotificationDelivery
 
+
 def _notification_action_url(path: str) -> str | None:
     base_url = str(current_app.config.get('KAORI_PUBLIC_BASE_URL') or '').strip().rstrip('/')
     if base_url:

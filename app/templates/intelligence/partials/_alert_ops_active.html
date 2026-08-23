@@ -5,7 +5,8 @@
     <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
         <div class="px-4 py-4 sm:px-5">
             <div class="flex min-w-0 items-start gap-3">
-                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
+                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                      aria-hidden="true">
                     <i data-lucide="shield-alert" class="h-4 w-4"></i>
                 </span>
                 <div class="min-w-0">
@@ -19,10 +20,11 @@
                     ('triangle-alert', 'Critical Now', payload.summary.critical, 'Critical cases currently firing', 'critical' if payload.summary.critical else 'normal'),
                     ('circle-help', 'Source Unknown', payload.summary.source_unknown, 'Waiting for fresh source evidence', 'warning' if payload.summary.source_unknown else 'normal'),
                     ('user-check', 'Acknowledged', payload.summary.acknowledged, 'Cases already owned by an operator', 'info' if payload.summary.acknowledged else 'normal')
-                ] %}
+                    ] %}
                     <article class="bg-surface-elevated p-4">
                         <div class="flex items-center justify-between gap-3">
-                            <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
+                            <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                                  aria-hidden="true">
                                 <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
                             </span>
                             {{ table_label.status_indicator_label('Attention' if value else 'Clear', tone, size='compact') }}
@@ -36,14 +38,17 @@
             <div class="mt-4 grid gap-3 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-center">
                 <div class="rounded-xl border border-kaori-primary/20 bg-kaori-soft px-4 py-3">
                     <div class="flex items-start gap-3">
-                        <i data-lucide="lightbulb" class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+                        <i data-lucide="lightbulb"
+                           class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary"
+                           aria-hidden="true"></i>
                         <div class="min-w-0">
                             <p class="text-xs font-semibold uppercase tracking-wide text-kaori-primary">Triage Guidance</p>
                             <p class="mt-1 text-xs leading-5 text-content-secondary">Prioritize Critical or Source Unknown cases, acknowledge ownership, then Review evidence and remediation.</p>
                         </div>
                     </div>
                 </div>
-                <div class="flex flex-wrap items-center gap-2" aria-label="Active alert quick views">
+                <div class="flex flex-wrap items-center gap-2"
+                     aria-label="Active alert quick views">
                     <span class="text-xs font-semibold text-content-muted">Quick Views</span>
                     <a href="{{ url_for('alert_intelligence.index', tab='active', domain=payload.domain, asset=payload.selected_asset_key) }}"
                        hx-get="{{ url_for('alert_intelligence.index', tab='active', domain=payload.domain, asset=payload.selected_asset_key) }}"
@@ -81,7 +86,6 @@
             </div>
         </div>
     </section>
-
     {% set active_registry_url = url_for('alert_intelligence.index', tab='active', domain=payload.domain, asset=payload.selected_asset_key, severity=payload.filters.severity, workflow=payload.filters.workflow, source=payload.filters.source, q=payload.filters.q, page=payload.active_pagination.page, per_page=payload.active_pagination.per_page) %}
     <section id="alert-operations-active-registry"
              class="{{ table_ui.block_classes() }}"
@@ -141,7 +145,9 @@
                 <input type="hidden" name="domain" value="{{ payload.domain }}">
                 <input type="hidden" name="asset" value="{{ payload.selected_asset_key }}">
                 <input type="hidden" name="page" value="1">
-                <input type="hidden" name="per_page" value="{{ payload.active_pagination.per_page }}">
+                <input type="hidden"
+                       name="per_page"
+                       value="{{ payload.active_pagination.per_page }}">
                 <label>
                     <span class="{{ table_ui.filter_label_classes() }}">Search</span>
                     {{ table_ui.search_field('q', payload.filters.q, 'Alert or case') }}
@@ -150,7 +156,8 @@
                     <span class="{{ table_ui.filter_label_classes() }}">Severity</span>
                     <select name="severity" class="{{ table_ui.filter_select_classes() }}">
                         {% for value, label in [('all','All Severities'),('critical','Critical'),('warning','Warning'),('info','Info'),('unknown','Unknown')] %}
-                            <option value="{{ value }}" {% if payload.filters.severity == value %}selected{% endif %}>{{ label }}</option>
+                            <option value="{{ value }}"
+                                    {% if payload.filters.severity == value %}selected{% endif %}>{{ label }}</option>
                         {% endfor %}
                     </select>
                 </label>
@@ -158,7 +165,8 @@
                     <span class="{{ table_ui.filter_label_classes() }}">Workflow</span>
                     <select name="workflow" class="{{ table_ui.filter_select_classes() }}">
                         {% for value, label in [('all','All Open States'),('open','Open'),('acknowledged','Acknowledged'),('mitigating','Mitigating')] %}
-                            <option value="{{ value }}" {% if payload.filters.workflow == value %}selected{% endif %}>{{ label }}</option>
+                            <option value="{{ value }}"
+                                    {% if payload.filters.workflow == value %}selected{% endif %}>{{ label }}</option>
                         {% endfor %}
                     </select>
                 </label>
