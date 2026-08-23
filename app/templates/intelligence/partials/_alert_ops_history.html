@@ -43,17 +43,18 @@
     </section>
     <section id="alert-operations-history-registry"
              class="{{ table_ui.block_classes() }}">
-        <header class="{{ table_ui.block_header_classes() }}">
-            <div class="flex min-w-0 items-start gap-3">
-                <span class="{{ table_ui.block_icon_classes() }}" aria-hidden="true">
-                    <i data-lucide="archive" class="h-4 w-4"></i>
-                </span>
-                <div class="min-w-0">
-                    <h3 class="{{ table_ui.block_title_classes() }}">Resolved Alerts</h3>
-                    <p class="{{ table_ui.block_description_classes() }}">Recovered conditions appear here immediately. Withdrawn manual promotions and source-decommissioned cases remain as governed historical evidence instead of being deleted.</p>
+        <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div class="flex min-w-0 items-start gap-3">
+                    <span class="{{ table_ui.block_icon_classes() }}" aria-hidden="true">
+                        <i data-lucide="archive" class="h-4 w-4"></i>
+                    </span>
+                    <div class="min-w-0">
+                        <h3 class="{{ table_ui.block_title_classes() }}">Resolved Alerts</h3>
+                        <p class="{{ table_ui.block_description_classes() }}">Recovered, withdrawn, and source-retired cases remain here as governed historical evidence.</p>
+                    </div>
                 </div>
-            </div>
-            <div class="flex shrink-0 flex-wrap items-center justify-end gap-2">
+                <div class="flex shrink-0 flex-wrap items-center justify-end gap-2">
                 {% if payload.filters.q or payload.filters.severity != 'all' %}
                     {{ table_registry.clear_filters_action(
                         url_for('alert_intelligence.index', tab='resolved', domain=payload.domain, asset=payload.selected_asset_key, history_per_page=payload.history_pagination.per_page),
@@ -70,9 +71,10 @@
                     <i data-lucide="archive" class="h-3.5 w-3.5" aria-hidden="true"></i>
                     Archive Policy
                 </a>
+                </div>
             </div>
+            {{ loading_bar.render('alert-operations-history-loading', label='Refreshing Resolved Alerts') }}
         </header>
-        {{ loading_bar.render('alert-operations-history-loading', label='Refreshing Resolved Alerts') }}
         {% call table_registry.filter_form(
             'alert_intelligence.index',
             'alert-operations-history-registry',
@@ -135,9 +137,17 @@
                                 {{ table_label.status_label(case.postmortem_status|replace('_', ' ') |title, 'warning' if case.postmortem_status in ['required', 'draft'] else 'normal', size='compact') if case.workflow_state == 'closed' else table_label.status_label('Verification Pending', 'warning', size='compact') }}
                             </td>
                             <td class="{{ table_ui.cell_classes(true) }}">
-                                <a href="{{ url_for('alert_intelligence.index', tab='resolved', domain=payload.domain, asset=payload.selected_asset_key, case=case.public_id, severity=payload.filters.severity, source=payload.filters.source, q=payload.filters.q, history_page=payload.history_pagination.page, history_per_page=payload.history_pagination.per_page) }}"
+                                {% set review_url = url_for('alert_intelligence.case_details', public_id=case.public_id, tab='resolved', domain=payload.domain, asset=payload.selected_asset_key, severity=payload.filters.severity, source=payload.filters.source, q=payload.filters.q, history_page=payload.history_pagination.page, history_per_page=payload.history_pagination.per_page) %}
+                                <a href="{{ review_url }}"
+                                   data-resource-detail-toggle
+                                   data-detail-id="{{ case.public_id }}"
+                                   data-detail-url="{{ review_url }}"
+                                   data-detail-name="{{ case.alert_name }}"
+                                   data-detail-type="Resolved Alert Case"
+                                   aria-haspopup="dialog"
+                                   aria-controls="resource-detail-modal"
                                    class="{{ table_ui.action_classes() }}">
-                                    <i data-lucide="panel-right-open" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                    <i data-lucide="panel-top-open" class="h-3.5 w-3.5" aria-hidden="true"></i>
                                     Review
                                 </a>
                             </td>
@@ -171,149 +181,5 @@
                         per_page_param='history_per_page') }}
         {% endif %}
     </section>
-    {% if payload.selected_case %}
-        {% set case = payload.selected_case %}
-        <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card">
-            <header class="flex flex-col gap-3 border-b border-outline-subtle bg-surface-elevated px-4 py-4 sm:flex-row sm:items-start sm:justify-between sm:px-5">
-                <div class="min-w-0">
-                    <div class="flex flex-wrap items-center gap-2">
-                        <h3 class="text-lg font-semibold leading-7 text-content-primary">{{ case.alert_name }}</h3>
-                        {{ table_label.status_label(case.workflow_label, 'normal' if case.workflow_state == 'closed' else 'warning', size='compact') }}
-                        {% if case.closure_label %}{{ table_label.status_label(case.closure_label, 'warning' if case.closure_reason != 'resolved' else 'normal', size='compact') }}{% endif %}
-                        {% if case.workflow_state == 'closed' and case.closure_reason == 'resolved' %}
-                            {{ table_label.status_label(case.postmortem_status|replace('_', ' ') |title, 'warning' if case.postmortem_status in ['required', 'draft'] else 'normal', size='compact') }}
-                        {% elif case.workflow_state != 'closed' %}
-                            {{ table_label.status_label('Source Resolved', 'normal', size='compact') }}
-                        {% endif %}
-                    </div>
-                    <p class="mt-1 text-sm leading-6 text-content-secondary">{{ case.summary }}</p>
-                    <p class="mt-1 font-mono text-xs leading-5 text-content-muted">{{ case.public_id }}</p>
-                </div>
-                <a href="{{ url_for('alert_intelligence.index', tab='resolved', domain=payload.domain, asset=payload.selected_asset_key, severity=payload.filters.severity, source=payload.filters.source, q=payload.filters.q, history_page=payload.history_pagination.page, history_per_page=payload.history_pagination.per_page) }}"
-                   class="{{ table_ui.action_classes() }}">
-                    <i data-lucide="x" class="h-3.5 w-3.5" aria-hidden="true"></i>
-                    Close Review
-                </a>
-            </header>
-            <div class="grid gap-px bg-outline-subtle xl:grid-cols-[minmax(0,1fr)_minmax(24rem,0.7fr)]">
-                <div class="bg-surface-card p-4 sm:p-5">
-                    <h4 class="text-sm font-semibold leading-5 text-content-primary">{{ 'Resolution Evidence' if case.closure_reason in ['', 'resolved'] else 'Closure Evidence' }}</h4>
-                    <dl class="mt-3 divide-y divide-outline-subtle">
-                        <div class="py-3">
-                            <dt class="text-xs font-medium leading-5 text-content-muted">Resolution Summary</dt>
-                            <dd class="mt-1 text-sm leading-6 text-content-secondary">
-                                {{ case.resolution_summary or '-' }}
-                            </dd>
-                        </div>
-                        <div class="py-3">
-                            <dt class="text-xs font-medium leading-5 text-content-muted">Remediation Steps</dt>
-                            <dd class="mt-1 text-sm leading-6 text-content-secondary">
-                                <ol class="list-decimal space-y-1 pl-5">
-                                    {% for step in case.remediation_steps %}
-                                        <li>{{ step }}</li>
-                                    {% else %}
-                                        <li>No manual remediation recorded.</li>
-                                    {% endfor %}
-                                </ol>
-                            </dd>
-                        </div>
-                        <div class="py-3">
-                            <dt class="text-xs font-medium leading-5 text-content-muted">Verification Evidence</dt>
-                            <dd class="mt-1 text-sm leading-6 text-content-secondary">
-                                {{ case.verification_evidence or '-' }}
-                            </dd>
-                        </div>
-                        <div class="grid gap-4 py-3 sm:grid-cols-2">
-                            <div>
-                                <dt class="text-xs font-medium leading-5 text-content-muted">Change Reference</dt>
-                                <dd class="mt-1 text-sm font-semibold leading-5 text-content-primary">
-                                    {{ case.change_reference or '-' }}
-                                </dd>
-                            </div>
-                            <div>
-                                <dt class="text-xs font-medium leading-5 text-content-muted">Ticket Reference</dt>
-                                <dd class="mt-1 text-sm font-semibold leading-5 text-content-primary">
-                                    {{ case.ticket_reference or '-' }}
-                                </dd>
-                            </div>
-                        </div>
-                    </dl>
-                </div>
-                <div class="bg-surface-elevated/40 p-4 sm:p-5">
-                    {% if case.workflow_state != 'closed' %}
-                        <h4 class="text-sm font-semibold leading-5 text-content-primary">Verification Pending</h4>
-                        <p class="mt-1 text-xs leading-5 text-content-muted">The source condition recovered. Commit resolution, remediation, and verification evidence before closing the durable incident record.</p>
-                        {% if current_user.has_permission('intelligence.decisions.create') %}
-                            <form method="post"
-                                  action="{{ url_for('alert_intelligence.close', public_id=case.public_id) }}"
-                                  class="mt-4 space-y-3">
-                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                <input type="hidden" name="domain" value="{{ payload.domain }}">
-                                <input type="hidden" name="asset" value="{{ payload.selected_asset_key }}">
-                                <label class="block">
-                                    <span class="{{ table_ui.filter_label_classes() }}">Resolution Summary</span><textarea name="resolution_summary"
-          rows="3"
-          required
-          class="w-full rounded-md border border-outline-default bg-surface-card px-3 py-2 text-sm"></textarea>
-                                </label>
-                                <label class="block">
-                                    <span class="{{ table_ui.filter_label_classes() }}">Remediation / Recovery Steps</span><textarea name="remediation_steps"
-          rows="4"
-          required
-          class="w-full rounded-md border border-outline-default bg-surface-card px-3 py-2 text-sm"
-          placeholder="One step per line"></textarea>
-                                </label>
-                                <label class="block">
-                                    <span class="{{ table_ui.filter_label_classes() }}">Verification Evidence</span><textarea name="verification_evidence"
-          rows="3"
-          required
-          class="w-full rounded-md border border-outline-default bg-surface-card px-3 py-2 text-sm"></textarea>
-                                </label>
-                                <div class="grid gap-3 sm:grid-cols-2">
-                                    <input name="change_reference"
-                                           class="{{ table_ui.filter_input_classes() }}"
-                                           placeholder="Change reference">
-                                    <input name="ticket_reference"
-                                           class="{{ table_ui.filter_input_classes() }}"
-                                           placeholder="Incident / ticket">
-                                </div>
-                                <div class="flex justify-end">
-                                    <button type="submit"
-                                            class="inline-flex min-h-9 items-center gap-2 rounded-lg bg-kaori-primary px-3 text-xs font-semibold text-white hover:bg-kaori-primary-hover"><i data-lucide="badge-check" class="h-3.5 w-3.5"></i>Verify & Close</button>
-                                </div>
-                            </form>
-                        {% endif %}
-                    {% else %}
-                        <h4 class="text-sm font-semibold leading-5 text-content-primary">Postmortem</h4>
-                        <p class="mt-1 text-xs leading-5 text-content-muted">Capture blameless learning and concrete follow-up for incidents that require a postmortem.</p>
-                        {% if current_user.has_permission('intelligence.decisions.create') %}
-                            <form method="post"
-                                  action="{{ url_for('alert_intelligence.postmortem', public_id=case.public_id) }}"
-                                  class="mt-4 space-y-3">
-                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                <input type="hidden" name="domain" value="{{ payload.domain }}">
-                                <input type="hidden" name="asset" value="{{ payload.selected_asset_key }}">
-                                {% for key, label in [('impact', 'Impact'), ('timeline_summary', 'Timeline Summary'), ('root_cause', 'Root Cause'), ('trigger', 'Trigger'), ('contributing_factors', 'Contributing Factors'), ('recovery', 'Recovery'), ('went_well', 'What Went Well'), ('went_poorly', 'What Went Poorly'), ('action_items', 'Action Items'), ('lessons_learned', 'Lessons Learned')] %}
-                                    <label class="block">
-                                        <span class="{{ table_ui.filter_label_classes() }}">{{ label }}</span>
-                                        <textarea name="{{ key }}"
-                                                  rows="2"
-                                                  class="w-full rounded-md border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary outline-none focus:border-kaori-primary focus:ring-2 focus:ring-kaori-soft">{{ case.postmortem.get(key, '') }}</textarea>
-                                    </label>
-                                {% endfor %}
-                                <div class="flex flex-wrap justify-end gap-2 border-t border-outline-subtle pt-3">
-                                    <button name="status" value="draft" class="{{ table_ui.action_classes() }}">Save Draft</button>
-                                    <button name="status"
-                                            value="complete"
-                                            class="inline-flex min-h-8 items-center justify-center gap-1.5 rounded-md bg-kaori-primary px-3 text-xs font-semibold text-white hover:bg-kaori-primary-hover">Complete Postmortem</button>
-                                </div>
-                            </form>
-                        {% else %}
-                            <div class="mt-4 rounded-lg border border-outline-subtle bg-surface-card p-3 text-sm text-content-muted">Postmortem editing requires Intelligence decision permission.</div>
-                        {% endif %}
-                    {% endif %}
-                </div>
-            </div>
-        </section>
-    {% endif %}
+
 </div>

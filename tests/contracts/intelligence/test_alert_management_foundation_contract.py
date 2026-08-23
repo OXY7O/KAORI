@@ -73,11 +73,13 @@ def test_resolved_workspace_is_source_state_based_not_close_only() -> None:
     service = read('app/intelligence/alert_intelligence/service.py')
     workspace = read('app/templates/intelligence/partials/_alert_intelligence_workspace.html')
     resolved = read('app/templates/intelligence/partials/_alert_ops_history.html')
+    resolved_modal = read('app/templates/intelligence/partials/_alert_ops_resolved_case_modal.html')
     assert "row.source_state in {'firing', 'unknown'}" in service
     assert "row.source_state == 'resolved' or row.workflow_state == 'closed'" in service
     assert "('resolved', 'Resolved'" in workspace
-    assert 'Verification Pending' in resolved
-    assert 'Verify & Close' in resolved
+    assert 'Verification Pending' in resolved_modal
+    assert 'Verify & Close' in resolved_modal
+    assert 'data-resource-detail-toggle' in resolved
 
 
 def test_notification_templates_are_provider_format_aware_and_resettable() -> None:

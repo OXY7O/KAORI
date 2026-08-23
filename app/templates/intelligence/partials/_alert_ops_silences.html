@@ -12,37 +12,40 @@
         variant='semantic'
     ) }}
     <section id="alert-operations-silence-registry" class="{{ table_ui.block_classes() }}">
-        <header class="{{ table_ui.block_header_classes() }}">
-            <div class="flex min-w-0 items-start gap-3">
-                <span class="{{ table_ui.block_icon_classes() }}" aria-hidden="true"><i data-lucide="bell-off" class="h-4 w-4"></i></span>
-                <div class="min-w-0">
-                    <h3 class="{{ table_ui.block_title_classes() }}">Active Delivery Silences</h3>
-                    <p class="{{ table_ui.block_description_classes() }}">Review time-bounded notification suppression in the current operational scope. The underlying AlertCase remains active until its source state changes.</p>
+        <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div class="flex min-w-0 items-start gap-3">
+                    <span class="{{ table_ui.block_icon_classes() }}" aria-hidden="true"><i data-lucide="bell-off" class="h-4 w-4"></i></span>
+                    <div class="min-w-0">
+                        <h3 class="{{ table_ui.block_title_classes() }}">Active Delivery Silences</h3>
+                        <p class="{{ table_ui.block_description_classes() }}">Review time-bounded notification suppression in the current operational scope. The underlying AlertCase remains active until its source state changes.</p>
+                    </div>
+                </div>
+                <div class="flex shrink-0 flex-wrap items-center justify-end gap-2">
+                    {% if payload.silence_filters.q or payload.silence_filters.severity != 'all' %}
+                        {{ table_registry.clear_filters_action(
+                            url_for('alert_intelligence.index', tab='silences', domain=payload.domain, asset=payload.selected_asset_key, silence_per_page=payload.silence_pagination.per_page),
+                            table_ui.action_classes(),
+                            hx_get=url_for('alert_intelligence.index', tab='silences', domain=payload.domain, asset=payload.selected_asset_key, silence_per_page=payload.silence_pagination.per_page),
+                            target='#alert-operations-silence-registry',
+                            indicator='#alert-operations-silence-loading',
+                            select='#alert-operations-silence-registry',
+                            push_url='true',
+                            sync='closest section:replace'
+                        ) }}
+                    {% endif %}
+                    {{ table_label.metadata_label(payload.silence_pagination.total_items ~ ' Silences', 'bell-off') }}
                 </div>
             </div>
-            <div class="flex shrink-0 flex-wrap items-center justify-end gap-2">
-                {% if payload.silence_filters.q or payload.silence_filters.severity != 'all' %}
-                    {{ table_registry.clear_filters_action(
-                        url_for('alert_intelligence.index', tab='silences', domain=payload.domain, asset=payload.selected_asset_key, silence_per_page=payload.silence_pagination.per_page),
-                        table_ui.action_classes(),
-                        hx_get=url_for('alert_intelligence.index', tab='silences', domain=payload.domain, asset=payload.selected_asset_key, silence_per_page=payload.silence_pagination.per_page),
-                        target='#alert-operations-silence-registry',
-                        indicator='#alert-operations-silence-loading',
-                        select='#alert-operations-silence-registry',
-                        push_url='true',
-                        sync='closest section:replace'
-                    ) }}
-                {% endif %}
-                {{ table_label.metadata_label(payload.silence_pagination.total_items ~ ' Silences', 'bell-off') }}
-            </div>
+            {{ loading_bar.render('alert-operations-silence-loading', label='Refreshing Active Delivery Silences') }}
         </header>
-        {{ loading_bar.render('alert-operations-silence-loading', label='Refreshing Active Delivery Silences') }}
+        <div class="{{ table_ui.inventory_filter_bar_classes() }}">
         {% call table_registry.filter_form(
             'alert_intelligence.index',
             'alert-operations-silence-registry',
             'alert-operations-silence-loading',
             payload.silence_pagination.per_page,
-            classes=table_ui.inventory_filter_bar_classes(),
+            classes='',
             page_param='silence_page',
             per_page_param='silence_per_page'
         ) %}
@@ -62,17 +65,18 @@
                 </select>
             </label>
         {% endcall %}
+        </div>
         <div class="min-w-0 overflow-hidden">
             <table class="{{ table_ui.table_classes('w-full table-fixed') }}">
                 <thead class="{{ table_ui.head_classes() }}">
                     <tr>
-                        <th class="{{ table_ui.header_cell_classes() }} w-[27%]">Alert Case</th>
+                        <th class="{{ table_ui.header_cell_classes() }} w-[24%]">Alert Case</th>
                         <th class="{{ table_ui.header_cell_classes() }} w-[10%]">Severity</th>
-                        <th class="{{ table_ui.header_cell_classes() }} w-[17%]">Asset</th>
-                        <th class="{{ table_ui.header_cell_classes() }} w-[22%]">Reason</th>
-                        <th class="{{ table_ui.header_cell_classes() }} w-[12%]">Created By</th>
-                        <th class="{{ table_ui.header_cell_classes() }} w-[8%]">Expires</th>
-                        <th class="{{ table_ui.header_cell_classes(true) }} w-[4%]">Action</th>
+                        <th class="{{ table_ui.header_cell_classes() }} w-[14%]">Asset</th>
+                        <th class="{{ table_ui.header_cell_classes() }} w-[20%]">Reason</th>
+                        <th class="{{ table_ui.header_cell_classes() }} w-[11%]">Created By</th>
+                        <th class="{{ table_ui.header_cell_classes() }} w-[11%]">Expires</th>
+                        <th class="{{ table_ui.header_cell_classes(true) }} w-[10%]">Action</th>
                     </tr>
                 </thead>
                 <tbody class="{{ table_ui.body_classes() }}">

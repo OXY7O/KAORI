@@ -14,6 +14,8 @@ def test_active_queue_owns_loading_filter_actions_and_modal_review() -> None:
 
     assert 'Active Alert Queue' in active
     assert "loading_bar.render('alert-operations-active-loading'" in active
+    active_header = active.split('id="alert-operations-active-registry"', 1)[1].split('</header>', 1)[0]
+    assert "loading_bar.render('alert-operations-active-loading'" in active_header
     assert active.index("loading_bar.render('alert-operations-active-loading'") < active.index('id="alert-operations-filter-form"')
     assert "metadata_label(payload.active_pagination.total_items ~ ' Alert Cases'" in active
     assert 'Clear Filters' in active
@@ -37,8 +39,13 @@ def test_routing_workspace_is_table_led_and_crud_uses_modal() -> None:
     assert "alert_intelligence.routing_policy_details" in routing
     assert 'max-h-[30rem]' in routing
     assert 'Channel Readiness' in routing
+    assert routing.index('Channel Readiness') < routing.index('Policy Registry')
+    assert routing.count('class="{{ table_ui.action_classes() }}"') >= 2
     assert 'data-kaori-detail-variant="modal"' in editor
+    assert 'Governed Routing Boundary' in editor
     assert 'Matcher tip:' in editor
+    assert 'Policy Checklist' in editor
+    assert 'bg-status-critical' in editor
     assert 'Delete Policy' in editor
     assert "def routing_policy_details(policy_ref: str)" in routes
     assert 'def delete_routing_policy(policy_id: int)' in routes
@@ -50,6 +57,8 @@ def test_silence_registry_has_full_kaori_filter_loading_and_pagination_contract(
     service = read('app/intelligence/alert_intelligence/service.py')
 
     assert "loading_bar.render('alert-operations-silence-loading'" in template
+    silence_header = template.split('id="alert-operations-silence-registry"', 1)[1].split('</header>', 1)[0]
+    assert "loading_bar.render('alert-operations-silence-loading'" in silence_header
     assert 'table_registry.filter_form' in template
     assert 'silence_q' in template
     assert 'silence_severity' in template
@@ -73,6 +82,9 @@ def test_resolved_workspace_adds_posture_and_keeps_clear_next_to_archive_policy(
     assert "'resolved_total': len(history_cases)" in service
     assert "'closed': sum(case.workflow_state == 'closed' for case in history_cases)" in service
     assert "'false_positive': sum(case.closure_reason == 'false_positive' for case in history_cases)" in service
+    assert 'data-resource-detail-toggle' in template
+    assert 'alert_intelligence.case_details' in template
+    assert 'Close Review' not in template
 
 
 def test_notification_templates_have_posture_and_guidance_before_registry() -> None:
@@ -85,3 +97,27 @@ def test_notification_templates_have_posture_and_guidance_before_registry() -> N
     assert '<details class="group bg-surface-card">' in template
     assert 'Rendered Preview' in template
     assert 'Save Override' in template
+
+
+def test_context_loading_is_isolated_from_tab_and_registry_loading() -> None:
+    workspace = read('app/templates/intelligence/partials/_alert_intelligence_workspace.html')
+
+    context_form = workspace.split('id="alert-intelligence-context-form"', 1)[1].split('</form>', 1)[0]
+    assert 'hx-indicator="#alert-intelligence-context-loading"' in context_form
+    assert 'hx-indicator="#alert-intelligence-loading"' not in context_form
+    assert "loading_bar.render('alert-intelligence-context-loading'" in workspace
+    assert "hx_indicator='#alert-intelligence-loading'" in workspace
+
+
+def test_resolved_case_review_uses_dedicated_modal_content_and_modal_refresh_contract() -> None:
+    history = read('app/templates/intelligence/partials/_alert_ops_history.html')
+    modal = read('app/templates/intelligence/partials/_alert_ops_resolved_case_modal.html')
+    routes = read('app/intelligence/alert_intelligence/routes.py')
+
+    assert 'data-resource-detail-toggle' in history
+    assert "tab='resolved'" in history
+    assert 'data-kaori-detail-variant="modal"' in modal
+    for required in ('Verification Pending', 'Resolution Evidence', 'Recovery Context', 'Postmortem & Learning', 'Incident Timeline', 'Notification Delivery'):
+        assert required in modal
+    assert "if payload.get('tab') == 'resolved'" in routes
+    assert "requested_tab = str(tab or request.form.get('tab') or 'active')" in routes

@@ -21,6 +21,8 @@ def test_active_alert_review_opens_focused_modal_without_expanding_table_rows() 
     assert "{% include 'intelligence/partials/_alert_ops_case_workspace.html' %}" not in table
     assert 'data-kaori-detail-variant="modal"' in workspace
     assert 'data-resource-detail-header' in workspace
+    assert 'id="alert-case-modal-content-{{ case.public_id }}"' in workspace
+    assert '</section>\n</div>\n{% endif %}\n<div id="alert-case-modal-content' not in workspace
     assert 'hx-target="#alert-case-modal-content-{{ case.public_id }}"' in workspace
     assert 'Manage ownership, delivery, and remediation without leaving this alert.' in workspace
 
@@ -75,7 +77,7 @@ def test_operator_actions_preserve_no_javascript_fallback_and_htmx_updates() -> 
         assert f"htmx_form_attrs(url_for('{action}'" in workspace
     assert 'def _modal_case_htmx_request()' in routes
     assert 'def _modal_case_response(' in routes
-    assert "return _modal_case_response(case_id=case.public_id)" in routes
+    assert "return _modal_case_response(case_id=case.public_id, tab=tab)" in routes
     assert "operation_feedback_oob.html" in read('app/templates/intelligence/partials/_alert_ops_active_table.html')
 
 

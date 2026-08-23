@@ -70,8 +70,13 @@ def case_details(public_id: str) -> ResponseReturnValue:
     payload = get_alert_intelligence_payload(args)
     if payload.get('selected_case') is None:
         return ('Alert case not found.', 404)
+    template = (
+        'intelligence/partials/_alert_ops_resolved_case_modal.html'
+        if payload.get('tab') == 'resolved'
+        else 'intelligence/partials/_alert_ops_case_workspace.html'
+    )
     return render_template(
-        'intelligence/partials/_alert_ops_case_workspace.html',
+        template,
         payload=payload,
         modal_refresh=False,
     )
@@ -540,7 +545,7 @@ def _case_mutation(
         return _redirect(tab=tab)
     queue_transient_feedback(status='success', title=success_title, message=success_message)
     if _modal_case_htmx_request():
-        return _modal_case_response(case_id=case.public_id)
+        return _modal_case_response(case_id=case.public_id, tab=tab)
     if _active_records_htmx_request():
         return _active_records_response(case_id=case.public_id)
     return _redirect(tab=tab, case_id=case.public_id)
@@ -554,15 +559,21 @@ def _modal_case_htmx_request() -> bool:
     )
 
 
-def _modal_case_response(*, case_id: str) -> ResponseReturnValue:
+def _modal_case_response(*, case_id: str, tab: str | None = None) -> ResponseReturnValue:
     args = request.form.copy()
     args['case'] = case_id
-    args['tab'] = 'active'
+    requested_tab = str(tab or request.form.get('tab') or 'active').strip().lower()
+    args['tab'] = 'resolved' if requested_tab == 'resolved' else 'active'
     payload = get_alert_intelligence_payload(args)
     if payload.get('selected_case') is None:
         return ('Alert case unavailable.', 404)
+    template = (
+        'intelligence/partials/_alert_ops_resolved_case_modal.html'
+        if payload.get('tab') == 'resolved'
+        else 'intelligence/partials/_alert_ops_case_workspace.html'
+    )
     return render_template(
-        'intelligence/partials/_alert_ops_case_workspace.html',
+        template,
         payload=payload,
         modal_refresh=True,
     )

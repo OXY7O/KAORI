@@ -31,7 +31,7 @@
                            data-detail-type="Routing Policy"
                            aria-haspopup="dialog"
                            aria-controls="resource-detail-modal"
-                           class="inline-flex min-h-9 items-center gap-2 rounded-lg bg-kaori-primary px-3 text-xs font-semibold text-white hover:bg-kaori-primary-hover">
+                           class="{{ table_ui.action_classes() }}">
                             <i data-lucide="plus" class="h-3.5 w-3.5" aria-hidden="true"></i>
                             New Policy
                         </a>
@@ -70,20 +70,60 @@
         </div>
     </section>
 
-    <section id="alert-operations-routing-registry" class="{{ table_ui.block_classes() }}">
-        <header class="{{ table_ui.block_header_classes() }}">
+    <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
+        <header class="flex flex-col gap-3 border-b border-outline-subtle px-4 py-4 sm:flex-row sm:items-start sm:justify-between sm:px-5">
             <div class="flex min-w-0 items-start gap-3">
-                <span class="{{ table_ui.block_icon_classes() }}" aria-hidden="true">
-                    <i data-lucide="list-tree" class="h-4 w-4"></i>
+                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
+                    <i data-lucide="plug-zap" class="h-4 w-4"></i>
                 </span>
                 <div class="min-w-0">
-                    <h3 class="{{ table_ui.block_title_classes() }}">Policy Registry</h3>
-                    <p class="{{ table_ui.block_description_classes() }}">Review routing ownership at a glance. Expand a policy only when you need matcher, channel, and delivery-behavior detail.</p>
+                    <h3 class="text-sm font-semibold leading-5 text-content-primary">Channel Readiness</h3>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">A compact routing view of Notification Channels. Credentials, validation, and destination management remain in Integrations → Notification Channels.</p>
                 </div>
             </div>
-            {{ table_label.metadata_label(payload.routing_pagination.total_items ~ ' Policies', 'route') }}
+            <div class="flex flex-wrap items-center gap-2">
+                {{ table_label.metadata_label(payload.channel_options|length ~ ' Channels', 'send') }}
+                <a href="{{ url_for('notification_channels.index') }}" class="{{ table_ui.action_classes() }}">Manage Channels</a>
+            </div>
         </header>
-        {{ loading_bar.render('alert-operations-routing-loading', label='Refreshing Routing Policies') }}
+        <div class="max-h-[30rem] divide-y divide-outline-subtle overflow-y-auto">
+            {% for channel in payload.channel_options %}
+                <article class="grid gap-3 px-4 py-3.5 sm:px-5 lg:grid-cols-[minmax(0,1.2fr)_minmax(12rem,0.8fr)_auto] lg:items-center">
+                    <div class="flex min-w-0 items-center gap-3">
+                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true"><i data-lucide="{{ channel.icon }}" class="h-4 w-4"></i></span>
+                        <div class="min-w-0">
+                            <p class="truncate text-sm font-semibold text-content-primary">{{ channel.name }}</p>
+                            <p class="mt-0.5 truncate text-xs text-content-muted">{{ channel.provider }} · {{ channel.destination }}</p>
+                        </div>
+                    </div>
+                    <p class="text-xs leading-5 text-content-muted">{{ 'Validated and available for governed routing.' if channel.eligible else 'Unavailable until channel validation and provider readiness succeed.' }}</p>
+                    <div class="flex items-center gap-2 lg:justify-end">
+                        {{ table_label.status_label(channel.status, 'normal' if channel.eligible else 'warning', size='compact') }}
+                        {{ table_label.status_indicator_label('Eligible' if channel.eligible else 'Unavailable', 'normal' if channel.eligible else 'warning', size='compact') }}
+                    </div>
+                </article>
+            {% else %}
+                <div class="p-5 text-sm text-content-muted">No Notification Channels are configured.</div>
+            {% endfor %}
+        </div>
+    </section>
+
+    <section id="alert-operations-routing-registry" class="{{ table_ui.block_classes() }}">
+        <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div class="flex min-w-0 items-start gap-3">
+                    <span class="{{ table_ui.block_icon_classes() }}" aria-hidden="true">
+                        <i data-lucide="list-tree" class="h-4 w-4"></i>
+                    </span>
+                    <div class="min-w-0">
+                        <h3 class="{{ table_ui.block_title_classes() }}">Policy Registry</h3>
+                        <p class="{{ table_ui.block_description_classes() }}">Review routing ownership at a glance. Expand a policy only when you need matcher, channel, and delivery-behavior detail.</p>
+                    </div>
+                </div>
+                {{ table_label.metadata_label(payload.routing_pagination.total_items ~ ' Policies', 'route') }}
+            </div>
+            {{ loading_bar.render('alert-operations-routing-loading', label='Refreshing Routing Policies') }}
+        </header>
         <div class="min-w-0 overflow-hidden">
             <table class="{{ table_ui.table_classes('w-full table-fixed') }}">
                 <thead class="{{ table_ui.head_classes() }}">
@@ -202,41 +242,5 @@
         {% endif %}
     </section>
 
-    <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
-        <header class="flex flex-col gap-3 border-b border-outline-subtle px-4 py-4 sm:flex-row sm:items-start sm:justify-between sm:px-5">
-            <div class="flex min-w-0 items-start gap-3">
-                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
-                    <i data-lucide="plug-zap" class="h-4 w-4"></i>
-                </span>
-                <div class="min-w-0">
-                    <h3 class="text-sm font-semibold leading-5 text-content-primary">Channel Readiness</h3>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">A compact routing view of Notification Channels. Credentials, validation, and destination management remain in Integrations → Notification Channels.</p>
-                </div>
-            </div>
-            <div class="flex flex-wrap items-center gap-2">
-                {{ table_label.metadata_label(payload.channel_options|length ~ ' Channels', 'send') }}
-                <a href="{{ url_for('notification_channels.index') }}" class="{{ table_ui.action_classes() }}">Manage Channels</a>
-            </div>
-        </header>
-        <div class="max-h-[30rem] divide-y divide-outline-subtle overflow-y-auto">
-            {% for channel in payload.channel_options %}
-                <article class="grid gap-3 px-4 py-3.5 sm:px-5 lg:grid-cols-[minmax(0,1.2fr)_minmax(12rem,0.8fr)_auto] lg:items-center">
-                    <div class="flex min-w-0 items-center gap-3">
-                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true"><i data-lucide="{{ channel.icon }}" class="h-4 w-4"></i></span>
-                        <div class="min-w-0">
-                            <p class="truncate text-sm font-semibold text-content-primary">{{ channel.name }}</p>
-                            <p class="mt-0.5 truncate text-xs text-content-muted">{{ channel.provider }} · {{ channel.destination }}</p>
-                        </div>
-                    </div>
-                    <p class="text-xs leading-5 text-content-muted">{{ 'Validated and available for governed routing.' if channel.eligible else 'Unavailable until channel validation and provider readiness succeed.' }}</p>
-                    <div class="flex items-center gap-2 lg:justify-end">
-                        {{ table_label.status_label(channel.status, 'normal' if channel.eligible else 'warning', size='compact') }}
-                        {{ table_label.status_indicator_label('Eligible' if channel.eligible else 'Unavailable', 'normal' if channel.eligible else 'warning', size='compact') }}
-                    </div>
-                </article>
-            {% else %}
-                <div class="p-5 text-sm text-content-muted">No Notification Channels are configured.</div>
-            {% endfor %}
-        </div>
-    </section>
+
 </div>

@@ -1,0 +1,222 @@
+{% import "components/table_label.html" as table_label %}
+{% import "components/table_primitives.html" as table_ui %}
+{% set case = payload.selected_case %}
+{% set can_operate = current_user.has_permission('intelligence.decisions.create') %}
+{% set modal_refresh = modal_refresh|default(false) %}
+{% macro mutation_context() -%}
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="tab" value="resolved">
+    <input type="hidden" name="domain" value="{{ payload.domain }}">
+    <input type="hidden" name="asset" value="{{ payload.selected_asset_key }}">
+    <input type="hidden" name="severity" value="{{ payload.filters.severity }}">
+    <input type="hidden" name="source" value="{{ payload.filters.source }}">
+    <input type="hidden" name="q" value="{{ payload.filters.q }}">
+    <input type="hidden" name="history_page" value="{{ payload.history_pagination.page }}">
+    <input type="hidden" name="history_per_page" value="{{ payload.history_pagination.per_page }}">
+{%- endmacro %}
+{% macro htmx_form_attrs(endpoint) -%}
+    hx-post="{{ endpoint }}"
+    hx-target="#alert-case-modal-content-{{ case.public_id }}"
+    hx-swap="outerHTML show:none focus-scroll:false"
+    hx-indicator="[data-resource-detail-loading-bar]"
+    hx-sync="#alert-case-modal-content-{{ case.public_id }}:replace"
+{%- endmacro %}
+{% if not modal_refresh %}
+<div data-kaori-detail-variant="modal">
+<section class="bg-surface-card">
+    <header data-resource-detail-header class="border-b border-outline-subtle bg-surface-card px-5 py-4 sm:px-6">
+        <div class="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+            <div class="min-w-0">
+                <div class="flex flex-wrap items-center gap-2">
+                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-status-normal-soft text-status-normal-text" aria-hidden="true"><i data-lucide="badge-check" class="h-4 w-4"></i></span>
+                    <div class="min-w-0">
+                        <div class="flex flex-wrap items-center gap-2">
+                            <span class="text-xs font-semibold leading-5 text-status-normal-text">Resolved Alert Case</span>
+                            <span class="font-mono text-xs leading-5 text-content-muted">{{ case.public_id }}</span>
+                        </div>
+                        <div class="mt-0.5 flex flex-wrap items-center gap-2">
+                            <h2 class="break-words text-xl font-semibold leading-7 text-content-primary [overflow-wrap:anywhere]">{{ case.alert_name }}</h2>
+                            {{ table_label.status_label(case.severity_label, case.severity_tone, size='compact') }}
+                            {{ table_label.status_label(case.workflow_label, 'normal' if case.workflow_state == 'closed' else 'warning', size='compact') }}
+                            {% if case.closure_label %}{{ table_label.status_label(case.closure_label, 'warning' if case.closure_reason not in ['', 'resolved'] else 'normal', size='compact') }}{% endif %}
+                        </div>
+                    </div>
+                </div>
+                <p class="mt-3 max-w-6xl text-sm leading-6 text-content-secondary">Review recovery evidence, closure disposition, delivery history, and post-incident learning for this durable Alert Case.</p>
+            </div>
+        </div>
+    </header>
+    <div data-resource-detail-summary class="grid border-b border-outline-subtle bg-surface-elevated sm:grid-cols-2 xl:grid-cols-5">
+        {% for icon, label, value, helper in [
+            ('boxes', 'Asset', case.asset_name, case.namespace if case.namespace != '-' else case.asset_type),
+            ('circle-check-big', 'Disposition', case.closure_label or 'Source Resolved', 'Governed case outcome'),
+            ('user-round', 'Owner', case.owner, 'Final or current owner'),
+            ('clock-3', 'Duration', case.duration, 'First observation to recovery/closure'),
+            ('archive', 'Archive', 'Archived' if case.archive_artifact_id else 'Hot History', 'Data Lifecycle posture')
+        ] %}
+            <div class="border-b border-outline-subtle px-4 py-3 last:border-b-0 sm:border-b-0 sm:border-r sm:last:border-r-0">
+                <dt class="flex items-center gap-2 text-xs font-medium leading-5 text-content-muted"><i data-lucide="{{ icon }}" class="h-3.5 w-3.5 text-kaori-primary" aria-hidden="true"></i>{{ label }}</dt>
+                <dd class="mt-1 truncate text-sm font-semibold leading-5 text-content-primary" title="{{ value }}">{{ value }}</dd>
+                <p class="mt-0.5 truncate text-xs leading-5 text-content-muted">{{ helper }}</p>
+            </div>
+        {% endfor %}
+    </div>
+{% endif %}
+<div id="alert-case-modal-content-{{ case.public_id }}" class="min-w-0 bg-surface-page">
+    {% if case.workflow_state != 'closed' %}
+        <section class="border-b border-outline-subtle bg-status-normal-soft px-5 py-4 sm:px-6">
+            <div class="flex items-start gap-3">
+                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-surface-card text-status-normal-text" aria-hidden="true"><i data-lucide="shield-check" class="h-4 w-4"></i></span>
+                <div class="min-w-0">
+                    <h3 class="text-sm font-semibold text-status-normal-text">Verification Pending</h3>
+                    <p class="mt-1 text-xs leading-5 text-status-normal-text">The source condition recovered. Commit resolution, recovery steps, and verification evidence before this case is closed and resolved delivery is queued.</p>
+                </div>
+            </div>
+            {% if can_operate %}
+                <form method="post"
+                      action="{{ url_for('alert_intelligence.close', public_id=case.public_id) }}"
+                      {{ htmx_form_attrs(url_for('alert_intelligence.close', public_id=case.public_id)) }}
+                      class="mt-4 grid gap-3 lg:grid-cols-2">
+                    {{ mutation_context() }}
+                    <label>
+                        <span class="{{ table_ui.filter_label_classes() }}">Resolution Summary</span>
+                        <textarea name="resolution_summary" rows="3" required class="w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary"></textarea>
+                    </label>
+                    <label>
+                        <span class="{{ table_ui.filter_label_classes() }}">Verification Evidence</span>
+                        <textarea name="verification_evidence" rows="3" required class="w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary"></textarea>
+                    </label>
+                    <label class="lg:col-span-2">
+                        <span class="{{ table_ui.filter_label_classes() }}">Remediation / Recovery Steps</span>
+                        <textarea name="remediation_steps" rows="3" required class="w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary" placeholder="One step per line"></textarea>
+                    </label>
+                    <div class="grid gap-3 sm:grid-cols-2 lg:col-span-2">
+                        <input name="change_reference" class="{{ table_ui.filter_input_classes() }}" placeholder="Change reference">
+                        <input name="ticket_reference" class="{{ table_ui.filter_input_classes() }}" placeholder="Incident / ticket">
+                    </div>
+                    <div class="flex justify-end lg:col-span-2">
+                        <button type="submit" class="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover"><i data-lucide="badge-check" class="h-4 w-4"></i>Verify & Close</button>
+                    </div>
+                </form>
+            {% endif %}
+        </section>
+    {% endif %}
+
+    <section class="grid gap-4 border-b border-outline-subtle px-5 py-4 sm:px-6 xl:grid-cols-[minmax(0,1.2fr)_minmax(22rem,0.8fr)]">
+        <div class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
+            <header class="border-b border-outline-subtle bg-surface-elevated px-4 py-3.5">
+                <div class="flex items-start gap-3">
+                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true"><i data-lucide="file-check-2" class="h-4 w-4"></i></span>
+                    <div><h3 class="text-sm font-semibold text-content-primary">{{ 'Resolution Evidence' if case.closure_reason in ['', 'resolved'] else 'Closure Evidence' }}</h3><p class="mt-1 text-xs leading-5 text-content-muted">Committed operator evidence remains attached to this historical Alert Case.</p></div>
+                </div>
+            </header>
+            <dl class="divide-y divide-outline-subtle px-4">
+                <div class="py-3">
+                    <dt class="text-xs font-medium text-content-muted">Disposition</dt>
+                    <dd class="mt-1 text-sm font-semibold text-content-primary">{{ case.closure_label or 'Source Resolved' }}</dd>
+                </div>
+                <div class="py-3">
+                    <dt class="text-xs font-medium text-content-muted">Resolution Summary</dt>
+                    <dd class="mt-1 text-sm leading-6 text-content-secondary">{{ case.resolution_summary or case.summary or '-' }}</dd>
+                </div>
+                <div class="py-3">
+                    <dt class="text-xs font-medium text-content-muted">Remediation / Recovery Steps</dt>
+                    <dd class="mt-1 text-sm leading-6 text-content-secondary">
+                        <ol class="list-decimal space-y-1 pl-5">
+                            {% for step in case.remediation_steps %}<li>{{ step }}</li>{% else %}<li>No manual remediation recorded.</li>{% endfor %}
+                        </ol>
+                    </dd>
+                </div>
+                <div class="py-3">
+                    <dt class="text-xs font-medium text-content-muted">Verification Evidence</dt>
+                    <dd class="mt-1 text-sm leading-6 text-content-secondary">{{ case.verification_evidence or '-' }}</dd>
+                </div>
+                <div class="grid gap-3 py-3 sm:grid-cols-2">
+                    <div><dt class="text-xs font-medium text-content-muted">Change Reference</dt><dd class="mt-1 text-sm font-semibold text-content-primary">{{ case.change_reference or '-' }}</dd></div>
+                    <div><dt class="text-xs font-medium text-content-muted">Ticket Reference</dt><dd class="mt-1 text-sm font-semibold text-content-primary">{{ case.ticket_reference or '-' }}</dd></div>
+                </div>
+            </dl>
+        </div>
+
+        <div class="space-y-4">
+            <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
+                <header class="border-b border-outline-subtle bg-surface-elevated px-4 py-3.5"><h3 class="text-sm font-semibold text-content-primary">Recovery Context</h3></header>
+                <dl class="divide-y divide-outline-subtle px-4">
+                    <div class="flex items-center justify-between gap-4 py-3"><dt class="text-xs text-content-muted">Source State</dt><dd>{{ table_label.status_indicator_label(case.source_state_label, case.source_state_tone, size='compact') }}</dd></div>
+                    <div class="flex items-center justify-between gap-4 py-3"><dt class="text-xs text-content-muted">Resolved / Closed</dt><dd class="text-xs font-semibold text-content-primary">{{ (case.closed_at or case.source_resolved_at)|user_datetime if (case.closed_at or case.source_resolved_at) else '-' }}</dd></div>
+                    <div class="flex items-center justify-between gap-4 py-3"><dt class="text-xs text-content-muted">Delivery Target</dt><dd class="truncate text-xs font-semibold text-content-primary">{{ case.delivery_target }}</dd></div>
+                    <div class="flex items-center justify-between gap-4 py-3"><dt class="text-xs text-content-muted">Postmortem</dt><dd>{{ table_label.status_label(case.postmortem_status|replace('_', ' ')|title, 'warning' if case.postmortem_status in ['required', 'draft'] else 'normal', size='compact') }}</dd></div>
+                </dl>
+            </section>
+
+            {% if case.workflow_state == 'closed' %}
+                <details class="group overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
+                    <summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3.5 text-sm font-semibold text-content-primary">
+                        <span class="inline-flex items-center gap-2"><i data-lucide="book-open-check" class="h-4 w-4 text-kaori-primary"></i>Postmortem & Learning</span>
+                        <i data-lucide="chevron-down" class="h-4 w-4 text-content-muted transition group-open:rotate-180"></i>
+                    </summary>
+                    <div class="border-t border-outline-subtle p-4">
+                        {% if can_operate %}
+                            <form method="post"
+                                  action="{{ url_for('alert_intelligence.postmortem', public_id=case.public_id) }}"
+                                  {{ htmx_form_attrs(url_for('alert_intelligence.postmortem', public_id=case.public_id)) }}
+                                  class="space-y-3">
+                                {{ mutation_context() }}
+                                <div class="grid gap-3 sm:grid-cols-2">
+                                    {% for key, label in [('impact', 'Impact'), ('root_cause', 'Root Cause'), ('recovery', 'Recovery'), ('lessons_learned', 'Lessons Learned')] %}
+                                        <label><span class="{{ table_ui.filter_label_classes() }}">{{ label }}</span><textarea name="{{ key }}" rows="2" class="w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary">{{ case.postmortem.get(key, '') }}</textarea></label>
+                                    {% endfor %}
+                                </div>
+                                {% for key in ['timeline_summary', 'trigger', 'contributing_factors', 'went_well', 'went_poorly', 'action_items'] %}<input type="hidden" name="{{ key }}" value="{{ case.postmortem.get(key, '') }}">{% endfor %}
+                                <div class="flex flex-wrap justify-end gap-2 border-t border-outline-subtle pt-3">
+                                    <button name="status" value="draft" class="{{ table_ui.action_classes() }}">Save Draft</button>
+                                    <button name="status" value="complete" class="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-3 text-xs font-semibold text-white hover:bg-kaori-primary-hover">Complete Postmortem</button>
+                                </div>
+                            </form>
+                        {% else %}
+                            <p class="text-sm text-content-muted">Postmortem editing requires Intelligence decision permission.</p>
+                        {% endif %}
+                    </div>
+                </details>
+            {% endif %}
+        </div>
+    </section>
+
+    <section class="grid gap-4 px-5 py-4 sm:px-6 xl:grid-cols-2">
+        <div class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
+            <header class="flex items-center justify-between gap-3 border-b border-outline-subtle bg-surface-elevated px-4 py-3.5"><h3 class="text-sm font-semibold text-content-primary">Incident Timeline</h3>{{ table_label.metadata_label(case.timeline|length ~ ' Events', 'history') }}</header>
+            <div class="divide-y divide-outline-subtle px-4">
+                {% for event in case.timeline_recent %}
+                    <article class="grid gap-2 py-3 sm:grid-cols-[2rem_minmax(0,1fr)_9rem] sm:items-start">
+                        <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true"><i data-lucide="{{ event.icon }}" class="h-3.5 w-3.5"></i></span>
+                        <div class="min-w-0"><p class="text-xs font-semibold text-content-primary">{{ event.label }}</p><p class="mt-0.5 text-xs leading-5 text-content-muted">{{ event.summary }}</p></div>
+                        <p class="text-right text-xs text-content-muted">{{ event.created_at|user_datetime }}</p>
+                    </article>
+                {% else %}<p class="py-4 text-sm text-content-muted">No timeline evidence recorded.</p>{% endfor %}
+            </div>
+            {% if case.timeline_older %}
+                <details class="group border-t border-outline-subtle"><summary class="cursor-pointer px-4 py-3 text-xs font-semibold text-kaori-primary">Earlier Timeline Events · {{ case.timeline_older|length }}</summary><div class="max-h-72 divide-y divide-outline-subtle overflow-y-auto px-4">{% for event in case.timeline_older %}<div class="py-2.5 text-xs text-content-secondary"><span class="font-semibold">{{ event.label }}</span> · {{ event.summary }}</div>{% endfor %}</div></details>
+            {% endif %}
+        </div>
+
+        <div class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
+            <header class="flex items-center justify-between gap-3 border-b border-outline-subtle bg-surface-elevated px-4 py-3.5"><h3 class="text-sm font-semibold text-content-primary">Notification Delivery</h3>{{ table_label.metadata_label(case.deliveries|length ~ ' Attempts', 'send') }}</header>
+            <div class="divide-y divide-outline-subtle px-4">
+                {% for delivery in case.deliveries_recent %}
+                    <div class="grid gap-2 py-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center"><div class="min-w-0"><p class="truncate text-xs font-semibold text-content-primary">{{ delivery.channel }} · {{ delivery.provider }}</p><p class="mt-0.5 text-xs text-content-muted">{{ delivery.event_label }} · {{ delivery.sent_at|user_datetime if delivery.sent_at else delivery.created_at|user_datetime }}</p></div>{{ table_label.status_label(delivery.status|title, 'normal' if delivery.status == 'sent' else ('critical' if delivery.status == 'failed' else 'warning'), size='compact') }}</div>
+                {% else %}<p class="py-4 text-sm text-content-muted">No notification delivery evidence recorded.</p>{% endfor %}
+            </div>
+            {% if case.deliveries_older %}
+                <details class="group border-t border-outline-subtle"><summary class="cursor-pointer px-4 py-3 text-xs font-semibold text-kaori-primary">Earlier Delivery Attempts · {{ case.deliveries_older|length }}</summary><div class="max-h-72 divide-y divide-outline-subtle overflow-y-auto px-4">{% for delivery in case.deliveries_older %}<div class="flex items-center justify-between gap-3 py-2.5 text-xs"><span class="truncate text-content-secondary">{{ delivery.channel }} · {{ delivery.event_label }}</span><span class="text-content-muted">{{ delivery.status|title }}</span></div>{% endfor %}</div></details>
+            {% endif %}
+        </div>
+    </section>
+</div>
+{% if not modal_refresh %}
+</section>
+</div>
+{% endif %}
+{% if modal_refresh %}
+    {% set operation_feedback = load_operational_feedback() %}
+    {% include 'components/operation_feedback_oob.html' %}
+{% endif %}

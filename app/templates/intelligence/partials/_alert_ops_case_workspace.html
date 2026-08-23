@@ -11,6 +11,7 @@
     <input type="hidden" name="workflow" value="{{ payload.filters.workflow }}">
     <input type="hidden" name="source" value="{{ payload.filters.source }}">
     <input type="hidden" name="q" value="{{ payload.filters.q }}">
+    <input type="hidden" name="tab" value="{{ payload.tab }}">
     <input type="hidden" name="page" value="{{ payload.active_pagination.page }}">
     <input type="hidden" name="per_page" value="{{ payload.active_pagination.per_page }}">
 {%- endmacro %}
@@ -67,8 +68,6 @@
             </div>
         </div>
     </header>
-</section>
-</div>
 {% endif %}
 <div id="alert-case-modal-content-{{ case.public_id }}" class="min-w-0 bg-surface-card">
 
@@ -647,6 +646,10 @@
         </section>
     {% endif %}
 </div>
+{% if not modal_refresh %}
+</section>
+</div>
+{% endif %}
 
 {% if modal_refresh %}
     {% set operation_feedback = load_operational_feedback() %}

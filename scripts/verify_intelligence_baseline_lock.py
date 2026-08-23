@@ -51,6 +51,7 @@ def main() -> int:
     alert_workspace = read('app/templates/intelligence/partials/_alert_intelligence_workspace.html')
     alert_active = read('app/templates/intelligence/partials/_alert_ops_active.html')
     alert_history = read('app/templates/intelligence/partials/_alert_ops_history.html')
+    alert_resolved_modal = read('app/templates/intelligence/partials/_alert_ops_resolved_case_modal.html')
     alert_page_content = read('app/templates/intelligence/partials/_alert_intelligence_page.html')
     automation_routes = read('app/intelligence/automation_control/routes.py')
     automation_presentation = read('app/intelligence/automation_control/presentation.py')
@@ -242,8 +243,9 @@ def main() -> int:
         require(required in alert_workspace, f'Alert Operations workspace contract missing: {required}', errors)
     for required in ('Clear Filters', 'Workflow', 'alert-operations-filter-form'):
         require(required in alert_active, f'Alert Operations active-alert contract missing: {required}', errors)
-    for required in ('Resolved Alerts', 'Resolution Evidence', 'Closure Evidence', 'Postmortem'):
-        require(required in alert_history, f'Alert Operations history contract missing: {required}', errors)
+    require('Resolved Alerts' in alert_history, 'Alert Operations history contract missing: Resolved Alerts', errors)
+    for required in ('Resolution Evidence', 'Closure Evidence', 'Postmortem & Learning', 'Verification Pending'):
+        require(required in alert_resolved_modal, f'Alert Operations resolved modal contract missing: {required}', errors)
     for required in (
         'acknowledge_case',
         'create_delivery_silence',

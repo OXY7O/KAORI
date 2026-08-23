@@ -1,6 +1,7 @@
 {% import "intelligence/components/_workspace.html" as intelligence_ui %}
 {% import "components/content_tabs.html" as content_tabs %}
 {% import "components/table_primitives.html" as table_ui %}
+{% import "components/loading_bar.html" as loading_bar %}
 {% set tab_query = {'domain': payload.domain, 'asset': payload.selected_asset_key} %}
 {% set workspace_tabs = [
     ('overview', 'Overview', 'layout-dashboard', url_for('alert_intelligence.index', tab='overview', **tab_query)),
@@ -40,6 +41,13 @@
             <form id="alert-intelligence-context-form"
                   action="{{ url_for('alert_intelligence.index') }}"
                   method="get"
+                  hx-get="{{ url_for('alert_intelligence.index') }}"
+                  hx-trigger="change"
+                  hx-target="#alert-intelligence-page-content"
+                  hx-swap="outerHTML show:none focus-scroll:false"
+                  hx-push-url="true"
+                  hx-indicator="#alert-intelligence-context-loading"
+                  hx-sync="#alert-intelligence-page-content:replace"
                   class="{{ table_ui.filter_layout_classes() }} min-w-0">
                 <input class="alert-intelligence-context-persistent"
                        type="hidden"
@@ -65,19 +73,12 @@
                     <span class="{{ table_ui.filter_label_classes() }}">Domain</span>
                     <select id="alert-intelligence-domain-select"
                             name="domain"
-                            class="{{ table_ui.filter_select_classes() }}"
-                            hx-get="{{ url_for('alert_intelligence.index') }}"
-                            hx-trigger="change"
-                            hx-include=".alert-intelligence-context-persistent"
-                            hx-target="#alert-intelligence-page-content"
-                            hx-swap="outerHTML show:none focus-scroll:false"
-                            hx-push-url="true"
-                            hx-indicator="#alert-intelligence-loading"
-                            hx-disabled-elt="#alert-intelligence-domain-select, #alert-intelligence-asset-select"
-                            hx-sync="#alert-intelligence-page-content:replace">
+                            class="{{ table_ui.filter_select_classes() }}">
                         {% for option in payload.domain_options %}
                             <option value="{{ option.value }}"
-                                    {% if payload.domain == option.value %}selected{% endif %}>{{ option.label }}</option>
+                                    {% if payload.domain == option.value %}selected{% endif %}>
+                                {{ option.label }}
+                            </option>
                         {% endfor %}
                     </select>
                 </label>
@@ -85,16 +86,7 @@
                     <span class="{{ table_ui.filter_label_classes() }}">Asset Scope</span>
                     <select id="alert-intelligence-asset-select"
                             name="asset"
-                            class="{{ table_ui.filter_select_classes() }}"
-                            hx-get="{{ url_for('alert_intelligence.index') }}"
-                            hx-trigger="change"
-                            hx-include=".alert-intelligence-context-persistent, #alert-intelligence-domain-select"
-                            hx-target="#alert-intelligence-page-content"
-                            hx-swap="outerHTML show:none focus-scroll:false"
-                            hx-push-url="true"
-                            hx-indicator="#alert-intelligence-loading"
-                            hx-disabled-elt="#alert-intelligence-domain-select, #alert-intelligence-asset-select"
-                            hx-sync="#alert-intelligence-page-content:replace">
+                            class="{{ table_ui.filter_select_classes() }}">
                         {% for option in payload.assets %}
                             <option value="{{ option.value }}"
                                     {% if payload.selected_asset_key == option.value %}selected{% endif %}>
@@ -108,6 +100,9 @@
                     <button type="submit" class="{{ table_ui.action_classes() }}">Apply Context</button>
                 </noscript>
             </form>
+            <div class="lg:col-start-2">
+                {{ loading_bar.render('alert-intelligence-context-loading', label='Refreshing Operational Context') }}
+            </div>
         </div>
     </div>
     <div data-alert-intelligence-active-section="{{ payload.tab }}"

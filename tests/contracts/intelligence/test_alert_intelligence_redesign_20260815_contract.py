@@ -99,8 +99,11 @@ def test_alert_operations_sections_own_distinct_operator_responsibilities() -> N
     assert 'Save Override' in templates
     assert 'Active Delivery Silences' in silences
     assert 'table_registry.footer' in silences
-    for required in ('Resolved Alerts', 'Resolution Evidence', 'Postmortem', 'Verification Pending'):
+    for required in ('Resolved Alerts', 'Resolved Alert Posture', 'Evidence Retention'):
         assert required in history
+    resolved_modal = read('app/templates/intelligence/partials/_alert_ops_resolved_case_modal.html')
+    for required in ('Resolution Evidence', 'Postmortem & Learning', 'Verification Pending', 'Incident Timeline', 'Notification Delivery'):
+        assert required in resolved_modal
     assert 'table_registry.filter_form' in history
     assert 'table_registry.footer' in history
 
