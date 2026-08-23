@@ -28,7 +28,7 @@
                 ] %}
                     <div class="min-w-0 px-4 py-3">
                         <dt class="flex items-center gap-2 text-xs font-medium text-content-muted"><i data-lucide="{{ icon }}" class="h-3.5 w-3.5 text-kaori-primary"></i>{{ label }}</dt>
-                        <dd class="mt-1 text-sm font-semibold text-content-primary">{{ value }}</dd>
+                        <dd class="mt-1 text-sm font-semibold leading-5 text-content-primary">{{ value }}</dd>
                         <p class="mt-0.5 text-xs leading-5 text-content-muted">{{ helper }}</p>
                     </div>
                 {% endfor %}
@@ -43,7 +43,7 @@
                         <div class="flex items-start gap-3">
                             <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="book-key" class="h-4 w-4"></i></span>
                             <div>
-                                <h4 class="text-sm font-semibold text-content-primary">Binding Identity</h4>
+                                <h4 class="text-sm font-semibold leading-5 text-content-primary">Binding Identity</h4>
                                 <p class="mt-0.5 text-xs leading-5 text-content-muted">Choose the immutable System Runbook revision and assign a stable binding key for operator use.</p>
                             </div>
                         </div>
@@ -59,7 +59,7 @@
                         <div class="flex items-start gap-3">
                             <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="scan-search" class="h-4 w-4"></i></span>
                             <div>
-                                <h4 class="text-sm font-semibold text-content-primary">Evidence Selector</h4>
+                                <h4 class="text-sm font-semibold leading-5 text-content-primary">Evidence Selector</h4>
                                 <p class="mt-0.5 text-xs leading-5 text-content-muted">Prefer a Rule Key for internal KAORI coverage. Alertname remains available for exact upstream matching.</p>
                             </div>
                         </div>
@@ -77,7 +77,7 @@
                         <div class="flex items-start gap-3">
                             <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="braces" class="h-4 w-4"></i></span>
                             <div>
-                                <h4 class="text-sm font-semibold text-content-primary">Evidence Mapping</h4>
+                                <h4 class="text-sm font-semibold leading-5 text-content-primary">Evidence Mapping</h4>
                                 <p class="mt-0.5 text-xs leading-5 text-content-muted">Persist exact label selectors and evidence mapping without changing the source-controlled runbook contract.</p>
                             </div>
                         </div>

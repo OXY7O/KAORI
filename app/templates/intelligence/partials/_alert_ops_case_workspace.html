@@ -153,7 +153,7 @@
                                 <p class="mt-2 text-xs leading-5 text-content-muted">Take ownership and pause repeats during the ACK window.</p>
                             </form>
                         {% else %}
-                            <div class="mt-2 flex items-center gap-2 text-sm font-semibold text-content-primary">
+                            <div class="mt-2 flex items-center gap-2 text-sm font-semibold leading-5 text-content-primary">
                                 <i data-lucide="badge-check" class="h-4 w-4 text-kaori-primary"></i>{{ case.workflow_label }}
                             </div>
                             <p class="mt-2 text-xs leading-5 text-content-muted">Current operator workflow is already beyond the initial open state.</p>
@@ -201,7 +201,7 @@
                                 </button>
                             </form>
                         {% else %}
-                            <div class="mt-2 flex items-center gap-2 text-sm font-semibold text-content-primary">
+                            <div class="mt-2 flex items-center gap-2 text-sm font-semibold leading-5 text-content-primary">
                                 <i data-lucide="wrench" class="h-4 w-4 text-status-warning-text"></i>Mitigation In Progress
                             </div>
                             <p class="mt-2 text-xs leading-5 text-content-muted">The timeline records when active remediation began.</p>
@@ -263,7 +263,7 @@
                                 {{ mutation_context() }}
                                 <div class="flex items-center gap-2">
                                     <i data-lucide="route-off" class="h-4 w-4 text-content-muted"></i>
-                                    <p class="text-sm font-semibold text-content-primary">Stop Routing</p>
+                                    <p class="text-sm font-semibold leading-5 text-content-primary">Stop Routing</p>
                                 </div>
                                 <div class="mt-2 flex flex-col gap-2 sm:flex-row">
                                     <input name="reason"
@@ -278,7 +278,7 @@
                             <div class="p-4">
                                 <div class="flex items-center gap-2">
                                     <i data-lucide="route-off" class="h-4 w-4 text-status-warning-text"></i>
-                                    <p class="text-sm font-semibold text-content-primary">Routing Held</p>
+                                    <p class="text-sm font-semibold leading-5 text-content-primary">Routing Held</p>
                                 </div>
                                 <p class="mt-2 text-xs leading-5 text-content-muted">{{ case.delivery_label }}. System-held routing cannot be manually resumed until source and policy conditions permit it.</p>
                             </div>
@@ -292,7 +292,7 @@
                                 {{ mutation_context() }}
                                 <div class="flex items-center gap-2">
                                     <i data-lucide="bell-off" class="h-4 w-4 text-content-muted"></i>
-                                    <p class="text-sm font-semibold text-content-primary">Silence Delivery</p>
+                                    <p class="text-sm font-semibold leading-5 text-content-primary">Silence Delivery</p>
                                 </div>
                                 <div class="mt-2 grid gap-2 sm:grid-cols-[9rem_minmax(0,1fr)_auto]">
                                     <select name="duration_minutes"
@@ -316,7 +316,7 @@
                             <div class="p-4">
                                 <div class="flex items-center gap-2">
                                     <i data-lucide="bell-off" class="h-4 w-4 text-status-warning-text"></i>
-                                    <p class="text-sm font-semibold text-content-primary">Delivery Silenced</p>
+                                    <p class="text-sm font-semibold leading-5 text-content-primary">Delivery Silenced</p>
                                 </div>
                                 <p class="mt-2 text-xs leading-5 text-content-muted">Active until {{ case.silence_until|user_datetime }} unless resumed earlier.</p>
                             </div>
@@ -433,7 +433,7 @@
                           {{ htmx_form_attrs(url_for('alert_intelligence.withdraw', public_id=case.public_id)) }}
                           class="p-4">
                         {{ mutation_context() }}
-                        <p class="text-sm font-semibold text-content-primary">Withdraw Manual Alert</p>
+                        <p class="text-sm font-semibold leading-5 text-content-primary">Withdraw Manual Alert</p>
                         <p class="mt-1 text-xs leading-5 text-content-muted">Close a mistaken manual promotion without claiming the source condition resolved.</p>
                         <div class="mt-3 flex flex-col gap-2 sm:flex-row">
                             <input name="reason"
@@ -452,7 +452,7 @@
                           {{ htmx_form_attrs(url_for('alert_intelligence.retire_source', public_id=case.public_id)) }}
                           class="p-4">
                         {{ mutation_context() }}
-                        <p class="text-sm font-semibold text-content-primary">Retire Source-Deleted Case</p>
+                        <p class="text-sm font-semibold leading-5 text-content-primary">Retire Source-Deleted Case</p>
                         <p class="mt-1 text-xs leading-5 text-content-muted">Commit decommissioning context while retaining the AlertCase as historical evidence.</p>
                         <div class="mt-3 flex flex-col gap-2 sm:flex-row">
                             <input name="reason"
@@ -475,7 +475,7 @@
                 <div class="flex items-start gap-3">
                     <i data-lucide="badge-check" class="mt-0.5 h-4 w-4 text-status-normal-text"></i>
                     <div>
-                        <h4 class="text-sm font-semibold text-status-normal-text">Verification & Closure</h4>
+                        <h4 class="text-sm font-semibold leading-5 text-status-normal-text">Verification & Closure</h4>
                         <p class="mt-0.5 text-xs leading-5 text-status-normal-text">Commit Resolution Summary and Verification Evidence before resolved delivery is queued.</p>
                     </div>
                 </div>

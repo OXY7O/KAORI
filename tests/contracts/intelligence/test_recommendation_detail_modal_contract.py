@@ -30,7 +30,8 @@ def test_recommendation_detail_uses_casefile_action_rail_workspace():
     assert '2xl:col-span-8' in template
     assert '2xl:col-span-4' in template
     assert '2xl:sticky 2xl:top-4' in template
-    assert 'bg-kaori-mist/50' in template
+    assert 'bg-kaori-mist/50' not in template
+    assert 'bg-surface-card' in template
     assert 'after:bg-brand-outline' in template
     assert 'hidden bg-kaori-primary lg:block' not in template
     title_index = template.index('{{ review_title }}')

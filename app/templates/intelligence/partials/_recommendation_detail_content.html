@@ -149,7 +149,7 @@
                             <div class="min-w-0">
                                 <p class="text-xs font-semibold uppercase leading-5 tracking-wide text-kaori-primary">Case Brief</p>
                                 <h4 class="mt-0.5 text-base font-semibold leading-6 text-content-primary">Why this recommendation exists</h4>
-                                <p class="mt-1 text-xs leading-5 text-content-muted">Read the matched condition and operational consequence before changing the live resource.</p>
+                                <p class="mt-1 text-sm leading-6 text-content-secondary">Read the matched condition and operational consequence before changing the live resource.</p>
                             </div>
                             {{ table_label.metadata_label(item.rule_key|default('Canonical Rule', true) , 'file-key-2', false, 'compact') }}
                         </div>
@@ -165,7 +165,7 @@
                         <div class="min-w-0">
                             <p class="text-xs font-semibold uppercase leading-5 tracking-wide text-kaori-primary">Affected Resources</p>
                             <h4 class="mt-0.5 text-base font-semibold leading-6 text-content-primary">Scope captured by committed evidence</h4>
-                            <p class="mt-1 text-xs leading-5 text-content-muted">Resource identity stays separate from measurements so the operator can confirm exactly what will be investigated.</p>
+                            <p class="mt-1 text-sm leading-6 text-content-secondary">Resource identity stays separate from measurements so the operator can confirm exactly what will be investigated.</p>
                         </div>
                         {{ table_label.metadata_label(affected_count ~ ' affected', 'target', false, 'compact') }}
                     </header>
@@ -229,7 +229,7 @@
                         <p class="text-xs font-semibold uppercase leading-5 tracking-wide text-kaori-primary">Evidence Ledger</p>
                         <p class="mt-0.5 text-xs font-medium leading-5 text-content-muted">Evidence Details</p>
                         <h4 class="mt-0.5 text-base font-semibold leading-6 text-content-primary">Measurements that justify the recommendation</h4>
-                        <p class="mt-1 text-xs leading-5 text-content-muted">Thresholds, observed values, and snapshot basis are presented as an audit ledger rather than repeated cards.</p>
+                        <p class="mt-1 text-sm leading-6 text-content-secondary">Thresholds, observed values, and snapshot basis are presented as an audit ledger rather than repeated cards.</p>
                     </header>
                     {% if item.evidence_details %}
                         <dl class="grid gap-x-8 divide-y divide-outline-subtle px-4 sm:px-5 lg:grid-cols-2 lg:divide-y-0">
@@ -279,7 +279,7 @@
                                 </div>
                                 {{ table_label.status_label(item.alert_handling.label, item.alert_handling.tone, size='compact') }}
                             </div>
-                            <p class="mt-1 text-xs leading-5 text-content-muted">Alert Intelligence owns acknowledgement, silences, channel delivery, recovery verification, and history after promotion.</p>
+                            <p class="mt-1 text-sm leading-6 text-content-secondary">Alert Intelligence owns acknowledgement, silences, channel delivery, recovery verification, and history after promotion.</p>
                         </header>
                         <div class="space-y-3 p-4 sm:p-5">
                             {% if item.alert_handling.status == 'escalated' and item.alert_handling.case_public_id %}
@@ -327,7 +327,7 @@
                         <header class="border-b border-outline-subtle px-4 py-3.5 sm:px-5">
                             <p class="text-xs font-semibold uppercase leading-5 tracking-wide text-kaori-primary">Remediation Path</p>
                             <h4 class="mt-0.5 text-base font-semibold leading-6 text-content-primary">From evidence to verified closure</h4>
-                            <p class="mt-1 text-xs leading-5 text-content-muted">A single connected sequence keeps the operator focused on the next decision, not on separate cards.</p>
+                            <p class="mt-1 text-sm leading-6 text-content-secondary">A single connected sequence keeps the operator focused on the next decision, not on separate cards.</p>
                         </header>
                         {% if item.fix_steps %}
                             <ol class="px-4 py-2 sm:px-5">
@@ -373,7 +373,7 @@
                     <div class="border-b border-outline-subtle bg-surface-elevated px-4 py-3.5 sm:px-5 lg:border-b-0 lg:border-r">
                         <p class="text-xs font-semibold uppercase leading-5 tracking-wide text-kaori-primary">Traceability</p>
                         <h4 class="mt-0.5 text-base font-semibold leading-6 text-content-primary">Reproduce the decision</h4>
-                        <p class="mt-1 text-xs leading-5 text-content-muted">Canonical source, evaluator, domain, and rule identity used to create this recommendation.</p>
+                        <p class="mt-1 text-sm leading-6 text-content-secondary">Canonical source, evaluator, domain, and rule identity used to create this recommendation.</p>
                     </div>
                     <div class="min-w-0 px-4 py-3.5 sm:px-5">
                         <dl class="grid gap-4 sm:grid-cols-3">

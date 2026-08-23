@@ -5,7 +5,7 @@
         <header data-resource-detail-header>
             <div class="flex min-w-0 items-start gap-3.5">
                 <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-brand-outline bg-kaori-soft text-kaori-primary" aria-hidden="true"><i data-lucide="sliders-horizontal" class="h-5 w-5"></i></span>
-                <div class="min-w-0"><div class="flex flex-wrap items-center gap-2 text-xs font-semibold"><span class="text-kaori-primary">Execution Configuration</span><span class="text-content-disabled">•</span><span class="text-content-muted">Governance Boundary</span></div><h3 class="mt-1 text-lg font-semibold text-content-primary">Deployment &amp; Safety Controls</h3><p class="mt-1 text-sm leading-6 text-content-secondary">Prepare allowlists and execution safeguards. Infrastructure mutation remains independently gated by Automation Execution.</p></div>
+                <div class="min-w-0"><div class="flex flex-wrap items-center gap-2 text-xs font-semibold"><span class="text-kaori-primary">Execution Configuration</span><span class="text-content-disabled">•</span><span class="text-content-muted">Governance Boundary</span></div><h3 class="mt-1 text-lg font-semibold leading-7 text-content-primary">Deployment &amp; Safety Controls</h3><p class="mt-1 text-sm leading-6 text-content-secondary">Prepare allowlists and execution safeguards. Infrastructure mutation remains independently gated by Automation Execution.</p></div>
             </div>
         </header>
         <div data-resource-detail-summary class="mx-4 my-3 overflow-hidden rounded-xl border border-outline-subtle bg-surface-card sm:mx-5">
@@ -15,14 +15,14 @@
                     ('list-tree', 'Resolver Actions', payload.registry_rows|length, 'Registered in this process'),
                     ('boxes', 'Clusters', payload.clusters|length, 'Available policy scopes'),
                     ('fingerprint', 'Registry Fingerprint', payload.registry_fingerprint[:12] if payload.registry_fingerprint else 'Current', 'Policy compatibility evidence')
-                ] %}<div class="min-w-0 px-4 py-3"><dt class="flex items-center gap-2 text-xs font-medium text-content-muted"><i data-lucide="{{ icon }}" class="h-3.5 w-3.5 text-kaori-primary"></i>{{ label }}</dt><dd class="mt-1 text-sm font-semibold text-content-primary">{{ value }}</dd><p class="mt-0.5 text-xs leading-5 text-content-muted">{{ helper }}</p></div>{% endfor %}
+                ] %}<div class="min-w-0 px-4 py-3"><dt class="flex items-center gap-2 text-xs font-medium text-content-muted"><i data-lucide="{{ icon }}" class="h-3.5 w-3.5 text-kaori-primary"></i>{{ label }}</dt><dd class="mt-1 text-sm font-semibold leading-5 text-content-primary">{{ value }}</dd><p class="mt-0.5 text-xs leading-5 text-content-muted">{{ helper }}</p></div>{% endfor %}
             </dl>
         </div>
         <div class="grid gap-5 p-4 lg:grid-cols-2 sm:p-5">
             <form method="post" action="{{ url_for('automation_control.update_automation_deployment_policy') }}" class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-elevated">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="border-b border-outline-subtle px-4 py-3">
-                    <div class="flex items-start gap-3"><span class="flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="shield-check" class="h-4 w-4"></i></span><div><h4 class="text-sm font-semibold text-content-primary">Deployment Allowlist</h4><p class="mt-0.5 text-xs leading-5 text-content-muted">Bind one resolver action to a controlled cluster and namespace scope.</p></div></div>
+                    <div class="flex items-start gap-3"><span class="flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="shield-check" class="h-4 w-4"></i></span><div><h4 class="text-sm font-semibold leading-5 text-content-primary">Deployment Allowlist</h4><p class="mt-0.5 text-xs leading-5 text-content-muted">Bind one resolver action to a controlled cluster and namespace scope.</p></div></div>
                 </div>
                 <div class="grid gap-4 p-4 sm:grid-cols-2">
                     <label><span class="{{ table_ui.filter_label_classes() }}">Cluster</span><select name="cluster_id" required class="{{ table_ui.filter_select_classes() }}">{% for cluster in payload.clusters %}<option value="{{ cluster.id }}">{{ cluster.name }}</option>{% endfor %}</select></label>
@@ -50,7 +50,7 @@
             <form method="post" action="{{ url_for('automation_control.update_automation_operational_control') }}" class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-elevated">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="border-b border-outline-subtle px-4 py-3">
-                    <div class="flex items-start gap-3"><span class="flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="shield-alert" class="h-4 w-4"></i></span><div><h4 class="text-sm font-semibold text-content-primary">Safety Control</h4><p class="mt-0.5 text-xs leading-5 text-content-muted">Runtime control values are revalidated by the worker before execution admission.</p></div></div>
+                    <div class="flex items-start gap-3"><span class="flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="shield-alert" class="h-4 w-4"></i></span><div><h4 class="text-sm font-semibold leading-5 text-content-primary">Safety Control</h4><p class="mt-0.5 text-xs leading-5 text-content-muted">Runtime control values are revalidated by the worker before execution admission.</p></div></div>
                 </div>
                 <div class="grid gap-4 p-4 sm:grid-cols-2">
                     <label class="sm:col-span-2"><span class="{{ table_ui.filter_label_classes() }}">Scope</span><select name="cluster_id" class="{{ table_ui.filter_select_classes() }}"><option value="">Global</option>{% for cluster in payload.clusters %}<option value="{{ cluster.id }}">{{ cluster.name }}</option>{% endfor %}</select></label>
