@@ -3,7 +3,7 @@
 {% set resolved_scope = filter_scope|default('recommendation') %}
 {% set resolved_title = filter_title|default('Recommendation Filters') %}
 {% set resolved_description = filter_description|default('Results refresh automatically when search or scope filters change.') %}
-{% set resolved_search_placeholder = search_placeholder|default('Search recommendation, evidence, or action') %}
+{% set resolved_search_placeholder = search_placeholder|default('Recommendation') %}
 {% set resolved_results_target = filter_results_target|default('#recommendations-results-content') %}
 {% set resolved_indicator = filter_indicator|default('#recommendations-loading-bar') %}
 <form id="{{ resolved_scope }}-filter-form"

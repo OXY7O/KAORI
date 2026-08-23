@@ -23,53 +23,51 @@
     hx-sync="#alert-case-modal-content-{{ case.public_id }}:replace"
 {%- endmacro %}
 {% if not modal_refresh %}
-<div data-kaori-detail-variant="modal">
+<div data-kaori-detail-variant="modal"
+     data-kaori-alert-review-layout="recommendation-inspired"
+     class="min-w-0">
 <section id="alert-case-review-{{ case.public_id }}"
          data-alert-case-review="{{ case.public_id }}"
-         class="bg-surface-card">
-    <header data-resource-detail-header class="border-b border-outline-subtle bg-surface-card px-4 py-4 sm:px-5">
-        <div class="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-            <div class="min-w-0">
-                <div class="flex flex-wrap items-center gap-2">
-                    <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
-                          aria-hidden="true">
-                        <i data-lucide="siren" class="h-4 w-4"></i>
-                    </span>
-                    <div class="min-w-0">
-                        <div class="flex flex-wrap items-center gap-2">
-                            <span class="text-xs font-semibold leading-5 text-kaori-primary">Alert Case</span>
-                            <span class="font-mono text-xs leading-5 text-content-muted">{{ case.public_id }}</span>
-                        </div>
-                        <div class="mt-0.5 flex flex-wrap items-center gap-2">
-                            <h3 class="break-words text-lg font-semibold leading-7 text-content-primary [overflow-wrap:anywhere]">{{ case.alert_name }}</h3>
-                            {{ table_label.status_label(case.severity_label, case.severity_tone, size='compact') }}
-                            {{ table_label.status_label(case.workflow_label, case.workflow_tone, size='compact') }}
-                            {{ table_label.status_indicator_label(case.source_state_label, case.source_state_tone, size='compact') }}
-                        </div>
+         data-kaori-detail-shell
+         class="min-w-0 bg-surface-card">
+    <header data-resource-detail-header>
+        <div class="flex min-w-0 items-start justify-between gap-5">
+            <div class="flex min-w-0 items-start gap-3.5">
+                <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-brand-outline bg-kaori-soft text-kaori-primary"
+                      aria-hidden="true">
+                    <i data-lucide="siren" class="h-5 w-5"></i>
+                </span>
+                <div class="min-w-0">
+                    <div class="flex flex-wrap items-center gap-2 text-xs font-semibold leading-5">
+                        <span class="text-kaori-primary">Alert Case Review</span>
+                        <span class="text-content-disabled" aria-hidden="true">•</span>
+                        <span class="text-content-muted">Committed Evidence</span>
+                    </div>
+                    <div class="mt-0.5 flex flex-wrap items-center gap-2.5">
+                        <h3 class="min-w-0 break-words text-lg font-semibold leading-7 text-content-primary [overflow-wrap:anywhere]">{{ case.alert_name }}</h3>
+                        {{ table_label.status_label(case.severity_label, case.severity_tone, size='compact') }}
+                        {{ table_label.status_label(case.workflow_label, case.workflow_tone, size='compact') }}
+                        {{ table_label.status_indicator_label(case.source_state_label, case.source_state_tone, size='compact') }}
+                    </div>
+                    <p class="mt-1 max-w-7xl break-words text-sm leading-6 text-content-secondary [overflow-wrap:anywhere]">Operational AlertCase for ownership, delivery control, evidence, and verified resolution.</p>
+                    <div class="mt-2 flex flex-wrap items-center gap-1.5">
+                        {{ table_label.metadata_label(case.source_type_label, 'sparkles') }}
+                        {{ table_label.metadata_label(case.asset_name, 'boxes') }}
+                        {% if case.namespace != '-' %}{{ table_label.metadata_label(case.namespace, 'layers-3') }}{% endif %}
+                        {{ table_label.metadata_label(case.public_id, 'file-key-2') }}
+                        {% if case.source_type == 'recommendation' and case.source_ref %}
+                            <a href="{{ url_for('intelligence.recommendations', q=case.source_ref) }}"
+                               class="inline-flex min-h-7 items-center gap-1.5 rounded-md border border-brand-outline bg-surface-card px-2.5 text-xs font-semibold text-kaori-primary hover:bg-kaori-soft">
+                                <i data-lucide="sparkles" class="h-3.5 w-3.5"></i>Open Source Recommendation
+                            </a>
+                        {% endif %}
                     </div>
                 </div>
-                <p class="mt-3 max-w-6xl text-sm leading-6 text-content-secondary">Operational AlertCase for ownership, delivery control, evidence, and verified resolution.</p>
-                <div class="mt-3 flex flex-wrap gap-1.5">
-                    {{ table_label.metadata_label(case.source_type_label, 'sparkles') }}
-                    {{ table_label.metadata_label(case.asset_name, 'boxes') }}
-                    {% if case.namespace != '-' %}{{ table_label.metadata_label(case.namespace, 'layers-3') }}{% endif %}
-                    {{ table_label.metadata_label(case.duration, 'clock-3') }}
-                    {{ table_label.status_label(case.delivery_label, case.delivery_tone, size='compact') }}
-                </div>
-            </div>
-            <div class="flex shrink-0 flex-wrap items-center gap-2">
-                {% if case.source_type == 'recommendation' and case.source_ref %}
-                    <a href="{{ url_for('intelligence.recommendations', q=case.source_ref) }}"
-                       class="inline-flex min-h-9 items-center gap-2 rounded-lg border border-brand-outline bg-surface-card px-3 text-xs font-semibold text-kaori-primary hover:bg-kaori-soft">
-                        <i data-lucide="sparkles" class="h-3.5 w-3.5"></i>Open Source Recommendation
-                    </a>
-                {% endif %}
-
             </div>
         </div>
     </header>
 {% endif %}
-<div id="alert-case-modal-content-{{ case.public_id }}" class="min-w-0 bg-surface-card">
+<div id="alert-case-modal-content-{{ case.public_id }}" class="min-w-0 bg-surface-elevated/40">
 
     {% if case.source_state == 'unknown' %}
         <div class="border-b border-outline-default bg-status-warning-soft px-4 py-3 sm:px-5">
@@ -89,7 +87,8 @@
         </div>
     {% endif %}
 
-    <dl class="sticky top-0 z-20 grid border-b border-outline-subtle bg-surface-card/95 shadow-sm backdrop-blur sm:grid-cols-3 xl:grid-cols-6">
+    <dl data-resource-detail-summary
+        class="sticky top-0 z-20 mx-4 my-3 grid overflow-hidden rounded-xl border border-outline-subtle bg-surface-card/95 shadow-sm backdrop-blur sm:mx-5 sm:grid-cols-3 xl:grid-cols-6">
         {% for icon, label, value, helper in [
             ('activity', 'Source State', case.source_state_label, case.source_type_label),
             ('git-branch', 'Workflow', case.workflow_label, 'Operator lifecycle'),

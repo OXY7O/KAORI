@@ -137,3 +137,28 @@ def test_migration_captures_alert_management_foundation_fields() -> None:
         'content_format',
     ):
         assert field in migration
+
+
+def test_telegram_system_templates_use_clickable_html_actions_and_visual_hierarchy() -> None:
+    templates = read('app/intelligence/alert_intelligence/templates.py')
+    telegram = read('app/integrations/delivery/notification_channels/providers/telegram.py')
+    notifications = read('app/intelligence/alert_intelligence/notifications.py')
+
+    assert "'Telegram · Firing'" in templates
+    assert "'Telegram · Resolved'" in templates
+    assert "'html',\n    )," in templates
+    for token in ('🚨 <b>FIRING', '✅ <b>RESOLVED', '🏷 <b>Asset</b>', '🧾 <b>Summary</b>', '<code>{{ case_id }}</code>'):
+        assert token in templates
+    assert "payload['parse_mode'] = 'HTML'" in telegram
+    assert 'def _render_action_link' in telegram
+    assert '<a href=' in telegram
+    assert "action_label='View Resolved Case' if event_state == 'resolved' else 'Review Alert'" in notifications
+
+
+def test_intelligence_search_placeholders_are_compact() -> None:
+    filters = read('app/templates/intelligence/partials/_filters.html')
+    catalog = read('app/templates/intelligence/partials/_catalog_workspace.html')
+
+    assert "search_placeholder|default('Recommendation')" in filters
+    assert '{% set search_placeholder = "Rule key" %}' in catalog
+    assert 'Recommendation or action' not in filters

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from html import escape
 from typing import Any
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
@@ -75,15 +76,30 @@ def _render_message(message: NotificationMessage) -> str:
         ).strip()
     if not message.action_url:
         return content[:_TELEGRAM_TEXT_LIMIT]
+    if message.action_url in content or escape(message.action_url, quote=True) in content:
+        return content[:_TELEGRAM_TEXT_LIMIT]
 
     action_label = message.action_label or 'Open KAORI'
-    action = f'{action_label}: {message.action_url}'
+    action = _render_action_link(
+        label=action_label,
+        url=message.action_url,
+        content_format=message.content_format,
+    )
     separator = '\n\n'
     content_limit = max(_TELEGRAM_TEXT_LIMIT - len(separator) - len(action), 0)
     if len(content) > content_limit:
         content = _truncate(content, content_limit)
     rendered = f'{content}{separator}{action}' if content else action
     return rendered[:_TELEGRAM_TEXT_LIMIT]
+
+
+def _render_action_link(*, label: str, url: str, content_format: str) -> str:
+    if content_format == 'html':
+        return f'🔗 <a href="{escape(url, quote=True)}"><b>{escape(label)}</b></a>'
+    if content_format == 'markdown':
+        safe_label = label.replace('[', '').replace(']', '')
+        return f'🔗 [{safe_label}]({url})'
+    return f'🔗 {label}: {url}'
 
 
 def _truncate(value: str, limit: int) -> str:

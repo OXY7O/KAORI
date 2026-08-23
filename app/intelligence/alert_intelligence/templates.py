@@ -33,14 +33,29 @@ _BUILT_INS: tuple[AlertTemplateDefinition, ...] = (
         'firing',
         'Telegram · Firing',
         None,
-        '🚨 FIRING · {{ severity }}\n\n{{ alert_name }}\n\nAsset\n{{ asset_name }}\n{% if namespace %}\nNamespace\n{{ namespace }}\n{% endif %}\nSummary\n{{ summary }}\n\nStarted\n{{ started_at }}\n\nCase\n{{ case_id }}{% if action_url %}\n\nOpen in KAORI\n{{ action_url }}{% endif %}',
+        '🚨 <b>FIRING · {{ severity }}</b>\n'
+        '<b>{{ alert_name }}</b>\n\n'
+        '🏷 <b>Asset</b>\n{{ asset_name }}\n'
+        '{% if namespace %}📍 <b>Namespace</b>\n{{ namespace }}\n{% else %}📍 <b>Scope</b>\n{{ scope }}\n{% endif %}'
+        '🧾 <b>Summary</b>\n{{ summary }}\n\n'
+        '🕒 <b>Started</b>  {{ started_at }}\n'
+        '🆔 <b>Case</b>  <code>{{ case_id }}</code>',
+        'html',
     ),
     AlertTemplateDefinition(
         'telegram',
         'resolved',
         'Telegram · Resolved',
         None,
-        '✅ RESOLVED · {{ severity }}\n\n{{ alert_name }}\n\nDuration\n{{ duration }}\n\nResolution\n{{ resolution_summary }}\n\nOperator\n{{ operator_name }}\n\nVerification\n{{ verification_evidence }}\n\nCase\n{{ case_id }}{% if action_url %}\n\nOpen Incident Record\n{{ action_url }}{% endif %}',
+        '✅ <b>RESOLVED · {{ severity }}</b>\n'
+        '<b>{{ alert_name }}</b>\n\n'
+        '🏷 <b>Asset</b>  {{ asset_name }}\n'
+        '⏱ <b>Duration</b>  {{ duration }}\n'
+        '👤 <b>Closed By</b>  {{ operator_name }}\n\n'
+        '🛠 <b>Resolution</b>\n{{ resolution_summary }}\n\n'
+        '🔎 <b>Verification</b>\n{{ verification_evidence }}\n\n'
+        '🆔 <b>Case</b>  <code>{{ case_id }}</code>',
+        'html',
     ),
     AlertTemplateDefinition(
         'email',
@@ -227,7 +242,6 @@ def _preview_context(event_state: str) -> dict[str, str]:
         'ticket_reference': 'INC-DEMO-001',
         'action_url': '/intelligence/alert-intelligence?tab=' + ('active' if event_state == 'firing' else 'resolved'),
     }
-
 
 def render_case_message(
     case: AlertCase,

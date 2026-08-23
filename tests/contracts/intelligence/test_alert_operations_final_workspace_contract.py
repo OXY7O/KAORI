@@ -178,3 +178,21 @@ def test_context_filter_owns_only_context_loading_lifecycle() -> None:
     assert 'hx-disinherit="hx-indicator"' in context_form
     assert '#alert-operations-active-loading' not in context_form
     assert '#alert-operations-silence-loading' not in context_form
+
+
+def test_alert_intelligence_modals_follow_recommendation_review_visual_language() -> None:
+    active = read('app/templates/intelligence/partials/_alert_ops_case_workspace.html')
+    resolved = read('app/templates/intelligence/partials/_alert_ops_resolved_case_modal.html')
+    routing = read('app/templates/intelligence/partials/_alert_ops_routing_editor_modal.html')
+
+    for template in (active, resolved):
+        assert 'data-kaori-alert-review-layout="recommendation-inspired"' in template
+        assert 'data-kaori-detail-shell' in template
+        assert 'border border-brand-outline bg-kaori-soft text-kaori-primary' in template
+        assert 'Committed Evidence' in template
+        assert 'rounded-xl border border-outline-subtle bg-surface-card/95 shadow-sm backdrop-blur' in template
+    assert 'Alert Case Review' in active
+    assert 'Resolved Case Review' in resolved
+    assert 'data-kaori-routing-modal-layout="recommendation-inspired"' in routing
+    assert 'data-kaori-detail-shell' in routing
+    assert 'Governed Delivery' in routing

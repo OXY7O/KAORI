@@ -22,34 +22,45 @@
     hx-sync="#alert-case-modal-content-{{ case.public_id }}:replace"
 {%- endmacro %}
 {% if not modal_refresh %}
-<div data-kaori-detail-variant="modal">
-<section class="bg-surface-card">
-    <header data-resource-detail-header class="border-b border-outline-subtle bg-surface-card px-4 py-4 sm:px-5">
-        <div class="flex min-w-0 items-start gap-3">
-            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"
-                  aria-hidden="true">
-                <i data-lucide="badge-check" class="h-4 w-4"></i>
-            </span>
-            <div class="min-w-0">
-                <div class="flex flex-wrap items-center gap-2">
-                    <span class="text-xs font-semibold leading-5 text-kaori-primary">Resolved Alert Case</span>
-                    <span class="font-mono text-xs leading-5 text-content-muted">{{ case.public_id }}</span>
+<div data-kaori-detail-variant="modal"
+     data-kaori-alert-review-layout="recommendation-inspired"
+     class="min-w-0">
+<section data-kaori-detail-shell class="min-w-0 bg-surface-card">
+    <header data-resource-detail-header>
+        <div class="flex min-w-0 items-start justify-between gap-5">
+            <div class="flex min-w-0 items-start gap-3.5">
+                <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-brand-outline bg-kaori-soft text-kaori-primary"
+                      aria-hidden="true">
+                    <i data-lucide="badge-check" class="h-5 w-5"></i>
+                </span>
+                <div class="min-w-0">
+                    <div class="flex flex-wrap items-center gap-2 text-xs font-semibold leading-5">
+                        <span class="text-kaori-primary">Resolved Case Review</span>
+                        <span class="text-content-disabled" aria-hidden="true">•</span>
+                        <span class="text-content-muted">Committed Evidence</span>
+                    </div>
+                    <div class="mt-0.5 flex flex-wrap items-center gap-2.5">
+                        <h3 class="min-w-0 break-words text-lg font-semibold leading-7 text-content-primary [overflow-wrap:anywhere]">{{ case.alert_name }}</h3>
+                        {{ table_label.status_label(case.severity_label, case.severity_tone, size='compact') }}
+                        {{ table_label.status_label(case.workflow_label, 'normal' if case.workflow_state == 'closed' else 'warning', size='compact') }}
+                        {% if case.closure_label %}
+                            {{ table_label.status_label(case.closure_label, 'warning' if case.closure_reason not in ['', 'resolved'] else 'normal', size='compact') }}
+                        {% endif %}
+                    </div>
+                    <p class="mt-1 max-w-7xl break-words text-sm leading-6 text-content-secondary [overflow-wrap:anywhere]">Review recovery, verification, delivery history, and retained incident evidence.</p>
+                    <div class="mt-2 flex flex-wrap items-center gap-1.5">
+                        {{ table_label.metadata_label(case.asset_name, 'boxes') }}
+                        {% if case.namespace != '-' %}{{ table_label.metadata_label(case.namespace, 'layers-3') }}{% endif %}
+                        {{ table_label.metadata_label(case.public_id, 'file-key-2') }}
+                        {{ table_label.status_label('Archived' if case.archive_artifact_id else 'Hot History', 'info' if case.archive_artifact_id else 'unknown', size='compact') }}
+                    </div>
                 </div>
-                <div class="mt-0.5 flex flex-wrap items-center gap-2">
-                    <h3 class="break-words text-lg font-semibold leading-7 text-content-primary [overflow-wrap:anywhere]">{{ case.alert_name }}</h3>
-                    {{ table_label.status_label(case.severity_label, case.severity_tone, size='compact') }}
-                    {{ table_label.status_label(case.workflow_label, 'normal' if case.workflow_state == 'closed' else 'warning', size='compact') }}
-                    {% if case.closure_label %}
-                        {{ table_label.status_label(case.closure_label, 'warning' if case.closure_reason not in ['', 'resolved'] else 'normal', size='compact') }}
-                    {% endif %}
-                </div>
-                <p class="mt-2 max-w-6xl text-sm leading-6 text-content-secondary">Review recovery, closure evidence, delivery history, and post-incident learning for this durable Alert Case.</p>
             </div>
         </div>
     </header>
 {% endif %}
-<div id="alert-case-modal-content-{{ case.public_id }}" class="min-w-0 bg-surface-card">
-    <dl class="sticky top-0 z-20 grid border-b border-outline-subtle bg-surface-card/95 shadow-sm backdrop-blur sm:grid-cols-3 xl:grid-cols-6">
+<div id="alert-case-modal-content-{{ case.public_id }}" class="min-w-0 bg-surface-elevated/40">
+    <dl class="sticky top-0 z-20 mx-4 my-3 grid overflow-hidden rounded-xl border border-outline-subtle bg-surface-card/95 shadow-sm backdrop-blur sm:mx-5 sm:grid-cols-3 xl:grid-cols-6">
         {% for icon, label, value, helper in [
             ('activity', 'Source State', case.source_state_label, 'Recovered source truth'),
             ('git-branch', 'Workflow', case.workflow_label, 'Closure lifecycle'),

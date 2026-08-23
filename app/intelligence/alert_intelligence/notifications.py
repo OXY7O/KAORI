@@ -203,7 +203,7 @@ def _deliver_case_event(
             body=body,
             severity=case.severity,
             action_url=action_url,
-            action_label='Open Incident Record' if event_state == 'resolved' else 'Open Active Alert',
+            action_label='View Resolved Case' if event_state == 'resolved' else 'Review Alert',
             content_format=content_format,
         ),
         payload={
