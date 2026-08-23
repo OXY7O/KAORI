@@ -9,6 +9,7 @@
 {% set can_manage_execution = current_user.has_permission('intelligence.decisions.execute') %}
 {% set filters = payload.automation_filters %}
 
+<div class="space-y-5">
 <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
     <header class="flex flex-col gap-3 border-b border-outline-subtle px-4 py-4 sm:flex-row sm:items-start sm:justify-between sm:px-5"><div><h3 class="text-sm font-semibold text-content-primary">Execution Posture Snapshot</h3><p class="mt-1 text-xs leading-5 text-content-muted">Current execution queue, resolver registry, terminal failures, and safety boundary.</p></div>{{ table_label.status_label(payload.overview_state.posture.label,payload.overview_state.posture.tone,size='compact') }}</header>
     <div class="grid divide-y divide-outline-subtle sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-5">
@@ -49,3 +50,4 @@
     <table class="{{ table_ui.table_classes() }} table-fixed"><thead class="{{ table_ui.head_classes() }}"><tr><th class="w-[34%] px-4 py-3">Action / Journal</th><th class="w-[24%] px-4 py-3">Scope</th><th class="w-[18%] px-4 py-3">Attempts</th><th class="w-[24%] px-4 py-3">Updated</th></tr></thead><tbody class="{{ table_ui.body_classes() }}">{% for row in payload.dead_letter_rows %}<tr class="{{ table_ui.row_classes() }}"><td class="px-4 py-3">{{ table_ui.title_cell(row.action_key,row.public_id,'triangle-alert') }}{% if row.error != '-' %}<p class="mt-1 line-clamp-1 text-xs text-status-critical-text" title="{{ row.error }}">{{ row.error }}</p>{% endif %}</td><td class="px-4 py-3"><p class="text-sm font-semibold text-content-primary">{{ row.cluster }}</p><p class="text-xs text-content-muted">{{ row.namespace }}</p></td><td class="px-4 py-3 text-sm font-semibold text-content-primary">{{ row.attempts }}</td><td class="px-4 py-3 text-xs text-content-muted">{{ row.updated_at }}</td></tr>{% else %}<tr><td colspan="4" class="px-5 py-8">{{ intelligence_ui.empty_state('No Dead-Letter Journals','No terminal resolver failure currently requires review.','circle-check','Clear','normal') }}</td></tr>{% endfor %}</tbody></table>
     {{ table_registry.footer('automation_control.index','automation-dead-letter-registry','automation-dead-letter-loading',payload.dead_pagination,{'workspace':'operations','dead_q':filters.dead_q},payload.per_page_options,resource_label='Records',control_name='automation-dead-letters',page_param='dead_page',per_page_param='dead_per_page') }}
 </section>
+</div>

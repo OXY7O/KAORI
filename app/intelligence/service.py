@@ -14,6 +14,7 @@ from app.intelligence.finding_presentation import (
     build_affected_items,
     build_evidence_details,
     build_fix_steps,
+    compact_recommendation_summary,
     finding_scope_details,
     format_affected_summary,
     recommendation_table_summary,
@@ -62,6 +63,19 @@ def _truncate_words(value: str | None, limit: int = 132) -> str:
         return text
     shortened = text[:limit].rsplit(' ', 1)[0].strip()
     return f'{shortened or text[:limit].strip()}…'
+
+def _catalog_table_summary(value: str | None, limit: int = 96) -> str:
+    text = ' '.join(str(value or '').split())
+    if not text:
+        return 'Catalog evidence is available in View Rule.'
+    for marker in (' Examples:', ' Example:', ' Examples include:'):
+        if marker in text:
+            text = text.split(marker, 1)[0].rstrip(' .') + '.'
+            break
+    first_sentence = text.split('. ', 1)[0].strip()
+    if 24 <= len(first_sentence) <= limit:
+        return first_sentence.rstrip('.') + '.'
+    return compact_recommendation_summary(text, limit=limit)
 
 
 def _base_payload(args: MultiDict[str, str], *, page_mode: str) -> dict[str, Any]:
@@ -132,7 +146,7 @@ def _base_payload(args: MultiDict[str, str], *, page_mode: str) -> dict[str, Any
 
     if page_mode == 'catalog':
         for item in items:
-            item['table_summary'] = _truncate_words(item.get('summary'), limit=16)
+            item['table_summary'] = _catalog_table_summary(item.get('summary'), limit=96)
     else:
         for item in items:
             scope_title, scope_supporting = finding_scope_details(item)

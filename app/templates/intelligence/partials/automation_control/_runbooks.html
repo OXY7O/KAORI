@@ -10,6 +10,7 @@
 {% set can_publish_runbooks = current_user.has_permission('knowledge.runbooks.publish') %}
 {% set filters = payload.automation_filters %}
 
+<div class="space-y-5">
 <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
     <header class="flex flex-col gap-3 border-b border-outline-subtle px-4 py-4 sm:flex-row sm:items-start sm:justify-between sm:px-5">
         <div class="min-w-0">
@@ -94,3 +95,4 @@
 {% if not payload.custom_runbook_authoring_enabled %}
     {{ operational_callout.render('Custom Authoring Locked','Use tested System Runbooks and governed bindings. Legacy custom records remain audit-only until authoring simulation and regression controls are production-ready.',icon='lock-keyhole',tone='unknown',variant='semantic') }}
 {% endif %}
+</div>
