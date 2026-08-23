@@ -152,7 +152,7 @@ def _capacity_risk_guidance(
     if risk == 'Low':
         return (
             f'{resource} is the highest worker-node signal at {utilization:.0f}%, with sufficient headroom for current demand.',
-            'No immediate scaling action is required. Continue monitoring trends and keep workload requests, limits, and capacity baselines current.',
+            'No immediate scaling required. Keep trends, workload requests and limits, and capacity baselines current.',
         )
     return (
         'Worker capacity risk is unknown because the required utilization or allocatable metrics are incomplete.',

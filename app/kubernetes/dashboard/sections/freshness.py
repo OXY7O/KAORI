@@ -21,7 +21,7 @@ def build_data_freshness(
         metrics_source_status = 'Ready' if has_metrics_source_data else 'Unavailable'
         metrics_source_tone = 'normal' if has_metrics_source_data else 'unknown'
         metrics_source_value = (
-            'Committed analytics snapshot available' if has_metrics_source_data else 'No committed analytics snapshot'
+            'Committed analytics available' if has_metrics_source_data else 'No committed analytics snapshot'
         )
         metrics_source_description = (
             'Metrics Source-backed utilization, capacity, consumer, and forecast data for the selected cluster.'
@@ -100,7 +100,7 @@ def build_data_freshness(
             ),
             icon='file-text',
             description=(
-                'Generated reports are retained operational artifacts, separate from current Kubernetes health signals.'
+                'Generated reports are retained artifacts, separate from current Kubernetes health.'
             ),
         ),
     ]

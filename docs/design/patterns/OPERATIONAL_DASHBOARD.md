@@ -1,14 +1,14 @@
-# KAORI Operational Dashboard Pattern v1.3
+# KAORI Operational Dashboard Pattern v1.4
 
 **Status:** Locked reference pattern
-**Reference implementation:** Kubernetes Operations Dashboard
-**Canonical page:** `app/templates/kubernetes/dashboard/partials/_content.html`
+**Reference implementations:** Kubernetes Operations Dashboard and Object Storage Operations Dashboard
+**Canonical pages:** `app/templates/kubernetes/dashboard/partials/_content.html` and `app/templates/storage/object_storage/dashboard/partials/_content.html`
 
 ## Purpose
 
 This pattern defines a read-only, snapshot-backed operational dashboard that combines scope, operational indicators, peer workspace tabs, tables, charts, and visible action guidance without creating page-local styling systems.
 
-The Kubernetes Operations Dashboard is the visual and technical reference for future KAORI operational dashboards. New dashboards may change domain content, but they must preserve the composition, data-boundary, interaction, accessibility, and style-ownership rules in this document.
+The Kubernetes Operations Dashboard and Object Storage Operations Dashboard are the locked visual and technical references for future KAORI operational dashboards. Domain content may change, but Hero geometry, Operational Signal Overview, integrated workspace tabs, peer-grid composition, data boundaries, interaction, accessibility, wording discipline, and style ownership must remain consistent.
 
 ## Canonical composition
 
@@ -20,7 +20,7 @@ Operational Signal Overview
 └── Operational KPI grid
 Tab Style 1 — Integrated Workspace Tabs
 ├── Operations Overview
-│   ├── Cluster Health table
+│   ├── Domain health table
 │   └── Inventory / Data Freshness peer grid
 ├── Capacity & Demand
 │   ├── Capacity / Forecast peer grid
@@ -31,6 +31,8 @@ Tab Style 1 — Integrated Workspace Tabs
 └── Reporting
     └── Reporting Summary / Guidance peer grid
 ```
+
+Kubernetes maps the health table to clusters and Object Storage maps it to registered systems. Future dashboards may substitute a domain-specific health register, but the page hierarchy and peer relationships stay the same. The domain may choose whole-tab or inner-section lazy loading as long as visible layout, local loading ownership, URL-backed tabs, and failure isolation preserve this contract.
 
 ## Visual contract
 
@@ -126,6 +128,14 @@ Do not use:
 - `Select a Cluster for Live Signals`
 - `AlertManager`
 - generic reporting guidance that assumes every artifact is PDF
+
+## Dashboard family consistency
+
+- Kubernetes and Object Storage use the same four workspace tabs, outer `space-y-5` rhythm, Hero placement, Operational Signal Overview placement, peer-grid proportions, and section-card hierarchy.
+- Domain-specific wording changes nouns and evidence semantics only; it must not create a different dashboard visual grammar.
+- Interpretation cards should be concise. Do not add a generic `What This Summary Means` box when the section title, description, status, and evidence already establish meaning.
+- Future Server/VM, HCI, network, backup, or other operational dashboards must start from this pattern rather than copying one-off page-local layout.
+- Reusable layout changes must be made through shared components or the canonical dashboard structure and protected by family-level contract tests.
 
 ## Maintainability and performance contract
 

@@ -5,7 +5,7 @@
 {% import "components/table_label.html" as table_label %}
 {% call operational_section_card.render(
     'Capacity Snapshot',
-    'Worker-node CPU, memory, and pod headroom. Control-plane nodes are excluded.',
+    'Worker-node CPU, memory, and pod headroom; control-plane nodes excluded.',
     'gauge',
     id='dashboard-capacity-snapshot',
     action_href=url_for('analytics.capacity'),
@@ -80,7 +80,7 @@
                     </div>
                 </div>
             </div>
-            {% set capacity_action_rows = [[('scan-search', 'Validate', 'Confirm cluster scope and snapshot freshness'), ('gauge', 'Assess', 'Review utilization, headroom, and forecast risk'), ('list-filter', 'Prioritize', 'Identify the node or workload driving pressure')], [('wrench', 'Act', 'Apply the approved capacity or workload adjustment'), ('circle-check-big', 'Verify', 'Confirm headroom and projected risk improve'), ('clipboard-check', 'Record', 'Capture the change and operational evidence')]] %}
+            {% set capacity_action_rows = [[('scan-search', 'Validate', 'Confirm cluster scope and snapshot freshness'), ('gauge', 'Assess', 'Review utilization, headroom, and forecast risk'), ('list-filter', 'Prioritize', 'Identify the node or workload driving pressure')], [('wrench', 'Act', 'Apply the approved capacity or workload change'), ('circle-check-big', 'Verify', 'Confirm headroom and projected risk improve'), ('clipboard-check', 'Record', 'Capture the change and operational evidence')]] %}
             {{ operational_callout.render('Capacity Action Flow',
                         'Turn the current recommendation into a controlled change and verification sequence.',
                         icon='list-checks',

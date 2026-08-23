@@ -168,6 +168,7 @@ def test_dashboard_copy_uses_canonical_casing() -> None:
     assert 'Continue With Reporting' not in all_source
     assert 'How To Read' not in all_source
     assert 'What To Do' not in all_source
+    assert 'What This Summary Means' not in all_source
     assert 'Cluster Signals Available' in all_source
     assert 'Select a Cluster for Detailed Signals' in all_source
     assert 'approved output' in all_source
@@ -247,7 +248,7 @@ def test_dashboard_pattern_is_locked_by_documentation_and_quality_gate() -> None
     audit = read('docs/design/audits/KUBERNETES_OPERATIONS_DASHBOARD_ALIGNMENT_AUDIT_2026_08.md')
     quality_gate = read('scripts/quality_gate.sh')
 
-    assert '# KAORI Operational Dashboard Pattern v1.3' in standard
+    assert '# KAORI Operational Dashboard Pattern v1.4' in standard
     assert '**Status:** Locked reference pattern' in standard
     assert 'No visual redesign is required' in audit
     assert 'python scripts/verify_operational_dashboard_standard.py' in quality_gate

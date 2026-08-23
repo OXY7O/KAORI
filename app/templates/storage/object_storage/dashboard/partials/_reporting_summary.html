@@ -4,7 +4,7 @@
 {% set source_available = reporting.source_status|default('Unavailable', true)|lower == 'available' %}
 {% call operational_section_card.render(
     'Reporting Summary',
-    'Object Storage report output, reusable definitions, schedules, and recent generation activity.',
+    'Object Storage report output, definitions, schedules, and recent generation activity.',
     'file-chart-column',
     action_href=url_for('reports.overview'),
     action_label='Open Reports Workspace',

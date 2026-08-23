@@ -58,7 +58,7 @@ The `analytics.materialize` policy includes both dashboard and full-page alert d
 
 ## Styling and workspace composition
 
-The Kubernetes Operations Dashboard is the reference implementation for `docs/design/patterns/OPERATIONAL_DASHBOARD.md` v1.3.
+The Kubernetes Operations Dashboard is the reference implementation for `docs/design/patterns/OPERATIONAL_DASHBOARD.md` v1.4.
 
 - Hero: `components/page_hero.html`.
 - KPI cards: `components/operational_metric_card.html`.

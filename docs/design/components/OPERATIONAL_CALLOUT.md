@@ -8,7 +8,7 @@
 
 ### Neutral
 
-Use for explanatory context such as “What This Summary Means” or the introduction to an action flow.
+Use for explicit evidence boundaries, warnings, or the introduction to an action flow. Operational dashboards should avoid a generic “What This Summary Means” callout when the section title and evidence already establish meaning.
 
 - neutral elevated outer surface;
 - semantic icon tile;

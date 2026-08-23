@@ -10,6 +10,12 @@ HERO = DASHBOARD_DIR / 'partials' / '_hero.html'
 BLOCKED_HERO = ROOT / 'app' / 'templates' / 'components' / 'cluster' / '_hero_blocked_context.html'
 SIGNAL_OVERVIEW = DASHBOARD_DIR / 'partials' / '_signal_overview.html'
 REPORTING_GUIDANCE = DASHBOARD_DIR / 'partials' / '_reporting_guidance.html'
+OBJECT_DASHBOARD_DIR = ROOT / 'app' / 'templates' / 'storage' / 'object_storage' / 'dashboard'
+OBJECT_CONTENT = OBJECT_DASHBOARD_DIR / 'partials' / '_content.html'
+OBJECT_HERO = OBJECT_DASHBOARD_DIR / 'partials' / '_hero.html'
+OBJECT_SIGNAL_OVERVIEW = OBJECT_DASHBOARD_DIR / 'partials' / '_signal_overview.html'
+OBJECT_ALERT_GUIDANCE = OBJECT_DASHBOARD_DIR / 'partials' / '_alert_response_guidance.html'
+OBJECT_REPORTING_GUIDANCE = OBJECT_DASHBOARD_DIR / 'partials' / '_reporting_guidance.html'
 WORKSPACE_TABS = ROOT / 'app' / 'templates' / 'components' / 'workspace_tabs.html'
 METRIC_CARD = ROOT / 'app' / 'templates' / 'components' / 'operational_metric_card.html'
 KPI_CARDS = DASHBOARD_DIR / 'partials' / '_kpi_cards.html'
@@ -19,6 +25,7 @@ SERVICE = ROOT / 'app' / 'kubernetes' / 'dashboard' / 'service.py'
 README = ROOT / 'app' / 'kubernetes' / 'dashboard' / 'README.md'
 STANDARD = ROOT / 'docs' / 'design' / 'patterns' / 'OPERATIONAL_DASHBOARD.md'
 AUDIT = ROOT / 'docs' / 'design' / 'audits' / 'KUBERNETES_OPERATIONS_DASHBOARD_ALIGNMENT_AUDIT_2026_08.md'
+FAMILY_AUDIT = ROOT / 'docs' / 'design' / 'audits' / 'OPERATIONAL_DASHBOARD_FAMILY_ALIGNMENT_AUDIT_2026_08_24.md'
 QUALITY_GATE = ROOT / 'scripts' / 'quality_gate.sh'
 FEATURE_COVERAGE = ROOT / 'scripts' / 'verify_feature_test_coverage.py'
 CHARACTERIZATION = ROOT / 'tests' / 'kubernetes' / 'dashboard' / 'test_kubernetes_dashboard_characterization.py'
@@ -136,6 +143,11 @@ def verify() -> None:
     blocked_hero = _read(BLOCKED_HERO)
     signal_overview = _read(SIGNAL_OVERVIEW)
     reporting_guidance = _read(REPORTING_GUIDANCE)
+    object_content = _read(OBJECT_CONTENT)
+    object_hero = _read(OBJECT_HERO)
+    object_signal_overview = _read(OBJECT_SIGNAL_OVERVIEW)
+    object_alert_guidance = _read(OBJECT_ALERT_GUIDANCE)
+    object_reporting_guidance = _read(OBJECT_REPORTING_GUIDANCE)
     workspace_tabs = _read(WORKSPACE_TABS)
     metric_card = _read(METRIC_CARD)
     kpi_cards = _read(KPI_CARDS)
@@ -145,6 +157,7 @@ def verify() -> None:
     readme = _read(README)
     standard = _read(STANDARD)
     audit = _read(AUDIT)
+    family_audit = _read(FAMILY_AUDIT)
     quality_gate = _read(QUALITY_GATE)
     feature_coverage = _read(FEATURE_COVERAGE)
     characterization = _read(CHARACTERIZATION)
@@ -244,6 +257,60 @@ def verify() -> None:
         ('approved output', 'stored artifact', 'Controlled Reporting Flow', 'Reporting Tip'),
         'format-neutral reporting guidance',
     )
+    _require(
+        object_content,
+        (
+            'storage/object_storage/dashboard/partials/_hero.html',
+            'storage/object_storage/dashboard/partials/_signal_overview.html',
+            "('overview', 'Operations Overview', 'activity')",
+            "('capacity', 'Capacity & Demand', 'gauge')",
+            "('signals', 'Signals & Actions', 'bell-ring')",
+            "('reporting', 'Reporting', 'file-text')",
+            'workspace_tabs.render(',
+            'moveTab(currentTab, direction, prefix)',
+            "url.searchParams.set('tab', tab)",
+            "window.history.replaceState({}, '', url)",
+            'id="object-storage-dashboard-panel-{{ tab_key }}"',
+            'hx-trigger="revealed"',
+            'class="mt-5 space-y-5"',
+        ),
+        'Object Storage dashboard family composition',
+    )
+    _require(
+        object_hero,
+        (
+            'page_hero.shell_classes()',
+            "page_hero.context_header('Dashboard Context', 'Operational Signal Scope', 'scan-search')",
+            'Object Storage Operations Dashboard',
+        ),
+        'Object Storage canonical hero',
+    )
+    _require(
+        object_signal_overview,
+        (
+            'Operational Signal Overview',
+            'System Signals Available',
+            'Select a System for Detailed Signals',
+            'hx-include="#object-storage-dashboard-active-tab"',
+            'hx-push-url="true"',
+        ),
+        'Object Storage scope and signal wording',
+    )
+    for dashboard_dir in (DASHBOARD_DIR, OBJECT_DASHBOARD_DIR):
+        dashboard_source = '\n'.join(
+            path.read_text(encoding='utf-8') for path in sorted(dashboard_dir.rglob('*.html'))
+        )
+        if 'What This Summary Means' in dashboard_source:
+            raise AssertionError(
+                f'{dashboard_dir.relative_to(ROOT)} still contains the retired generic summary explanation box'
+            )
+        if 'text-[' in dashboard_source or 'tracking-[' in dashboard_source:
+            raise AssertionError(f'{dashboard_dir.relative_to(ROOT)} contains arbitrary typography')
+        if '#' in ''.join(
+            token for token in dashboard_source.split() if token.startswith(('bg-[#', 'text-[#', 'border-[#'))
+        ):
+            raise AssertionError(f'{dashboard_dir.relative_to(ROOT)} contains page-local color values')
+
 
     for stale in STALE_COPY:
         dashboard_source = '\n'.join(path.read_text(encoding='utf-8') for path in sorted(DASHBOARD_DIR.rglob('*.html')))
@@ -344,7 +411,7 @@ def verify() -> None:
         readme,
         (
             'read-only operational projection over committed KAORI data',
-            'OPERATIONAL_DASHBOARD.md` v1.3',
+            'OPERATIONAL_DASHBOARD.md` v1.4',
             'Arrow Left/Right, Home, and End keyboard navigation',
             'artifact-format neutral',
             'Web requests must not query Kubernetes, Metrics Source, or Alertmanager directly',
@@ -355,12 +422,14 @@ def verify() -> None:
     _require(
         standard,
         (
-            '# KAORI Operational Dashboard Pattern v1.3',
+            '# KAORI Operational Dashboard Pattern v1.4',
             'Context Icon Box',
             'Maintainability and performance contract',
             'Layered release evidence',
             '**Status:** Locked reference pattern',
             'Kubernetes Operations Dashboard',
+            'Object Storage Operations Dashboard',
+            'Dashboard family consistency',
             'Identity → Scope → Indicators → Peer analysis → Interpretation → Action',
             'Web requests read committed database rows and worker snapshots only',
             'Arrow Left/Right wrap through tabs',
@@ -385,6 +454,18 @@ def verify() -> None:
             'behavioral characterization',
         ),
         'dashboard alignment audit',
+    )
+
+    _require(
+        family_audit,
+        (
+            'Kubernetes Operations Dashboard',
+            'Object Storage Operations Dashboard',
+            'same four workspace tabs',
+            'What This Summary Means',
+            'future operational dashboards',
+        ),
+        'operational dashboard family alignment audit',
     )
 
     if 'python scripts/verify_operational_dashboard_standard.py' not in quality_gate:
@@ -456,7 +537,7 @@ def verify() -> None:
         'KAORI operational dashboard standard passed: canonical composition, snapshot-only web boundary, '
         'authorization-first lazy sections, URL-backed keyboard-accessible tabs, shared style ownership, '
         'format-neutral reporting guidance, top-consumer snapshot semantics, behavioral release evidence, '
-        'documentation, audit, and quality-gate enforcement match v1.3.'
+        'documentation, family alignment, audit, and quality-gate enforcement match v1.4.'
     )
 
 

@@ -6,13 +6,9 @@
     'Alert Interpretation & Response',
     'Meaning, triage order, and controlled response flow for active Kubernetes alerts.',
     'book-open-check',
-    body_classes='space-y-4 p-5',
+    body_classes='space-y-5 p-5',
     extra_classes='h-full'
     ) %}
-    {{ operational_callout.render('What This Summary Means',
-        'Alerts Summary is a committed worker snapshot of active Alertmanager signals, with Metrics Source used only as the configured fallback. Alert counts indicate operational signals and severity; they do not automatically confirm impact or authorize remediation.',
-        icon='info',
-        tone='info') }}
     <div class="grid gap-2 sm:grid-cols-3">
         {{ operational_callout.render('Critical',
                 'Potential active impact. Start incident triage and establish ownership.',

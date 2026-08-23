@@ -62,24 +62,28 @@ def test_dashboard_route_and_service_are_snapshot_only() -> None:
 
 def test_dashboard_matches_kubernetes_operational_layout_concept() -> None:
     content = read('app/templates/storage/object_storage/dashboard/partials/_content.html')
+    hero = read('app/templates/storage/object_storage/dashboard/partials/_hero.html')
+    signal_overview = read('app/templates/storage/object_storage/dashboard/partials/_signal_overview.html')
     kubernetes_content = read('app/templates/kubernetes/dashboard/partials/_content.html')
 
     for label in ('Operations Overview', 'Capacity & Demand', 'Signals & Actions', 'Reporting'):
         assert label in content
         assert label in kubernetes_content
     assert 'components/workspace_tabs.html' in content
-    assert 'components/operational_section_card.html' in content
+    assert 'storage/object_storage/dashboard/partials/_hero.html' in content
+    assert 'storage/object_storage/dashboard/partials/_signal_overview.html' in content
     assert (
         'hx-get="{{ url_for(\'object_storage_dashboard.section\', section=tab_key) }}?{{ dashboard_query }}"' in content
     )
     assert 'hx-trigger="revealed"' in content
     assert (
-        "hx-get=\"{{ url_for('object_storage_dashboard.section', section='kpi_cards') }}?{{ dashboard_query }}\""
-        in content
+        'hx-get="{{ url_for(\'object_storage_dashboard.section\', section=\'kpi_cards\') }}?{{ dashboard_query }}"'
+        in signal_overview
     )
-    assert 'hx-trigger="load"' in content
-    assert 'All Systems' in content
-    assert 'No live provider query on page load' in content
+    assert 'hx-trigger="load"' in signal_overview
+    assert 'All Systems' in signal_overview
+    assert 'No live provider query on page load' in hero
+    assert 'class="mt-5 space-y-5"' in content
 
 
 def test_dashboard_sections_are_object_storage_specific_and_committed_evidence_owned() -> None:
