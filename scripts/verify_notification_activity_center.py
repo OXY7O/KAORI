@@ -15,6 +15,7 @@ required_files = (
     'app/templates/components/navigation/_notification_center.html',
     'app/templates/platform_operations/notifications/partials/_notification_deck_activity.html',
     'app/templates/platform_operations/notifications/partials/_notification_deck_activity_jobs.html',
+    'app/templates/platform_operations/notifications/partials/_notification_deck_inbox.html',
     'app/templates/platform_operations/notifications/partials/_notification_deck_notifications.html',
     'app/templates/platform_operations/notifications/partials/_notification_deck_oob.html',
     'app/templates/platform_operations/notifications/components/_activity_center_items.html',
@@ -38,6 +39,7 @@ navbar = read('app/templates/components/navigation/navbar.html')
 navbar_js = read('app/static/js/navbar.js')
 activity = read('app/templates/platform_operations/notifications/partials/_notification_deck_activity.html')
 activity_jobs = read('app/templates/platform_operations/notifications/partials/_notification_deck_activity_jobs.html')
+inbox = read('app/templates/platform_operations/notifications/partials/_notification_deck_inbox.html')
 notifications = read('app/templates/platform_operations/notifications/partials/_notification_deck_notifications.html')
 oob = read('app/templates/platform_operations/notifications/partials/_notification_deck_oob.html')
 component = read('app/templates/platform_operations/notifications/components/_activity_center_items.html')
@@ -56,7 +58,9 @@ for needle in (
     'x-teleport="body"',
     'data-notification-deck-dialog',
     'id="notification-deck-activity"',
+    'id="notification-deck-inbox"',
     'id="notification-deck-notifications"',
+    'work-inbox-badge',
     'data-notification-deck-root',
     "url_for('notifications.panel_snapshot')",
     'notification-bell-badge',
@@ -69,8 +73,10 @@ for needle in (
     'role="tablist"',
     'rounded-xl border border-outline-default bg-surface-hover p-1',
     "notificationDeckTab === 'activity'",
+    "notificationDeckTab === 'inbox'",
     'bg-surface-card text-kaori-primary shadow-sm dark:text-kaori-accent',
     ":class=\"notificationDeckTab === 'activity' ? 'block' : 'hidden'\"",
+    ":class=\"notificationDeckTab === 'inbox' ? 'block' : 'hidden'\"",
     'Auto refresh every 15 seconds',
     'Connection issue · retrying automatically',
     'Updated ${notificationDeckLastChecked}',
@@ -115,8 +121,14 @@ for needle in (
     if needle not in navbar_js:
         raise SystemExit(f'Navbar runtime is missing bounded automatic snapshot lifecycle: {needle}')
 
-if '@kaori:notifications-changed.window="if ($event.detail?.tab' not in navbar:
-    raise SystemExit('Navbar template is missing the Notification Deck change-event bridge.')
+for needle in (
+    '@kaori:notifications-changed.window=',
+    "['activity', 'inbox', 'notifications'].includes($event.detail?.tab)",
+    'notificationDeckTab = $event.detail.tab',
+    'queueNotificationDeckRefresh()',
+):
+    if needle not in navbar:
+        raise SystemExit(f'Navbar template is missing the Notification Deck change-event bridge: {needle}')
 
 for forbidden in (
     "response.headers['HX-Trigger']",
@@ -180,10 +192,15 @@ for forbidden in (
 
 for needle in (
     "document.getElementById('notification-deck-active-job-list')",
+    "document.getElementById('notification-deck-inbox-content')",
     "document.getElementById('notification-deck-notifications-content')",
     'activityTarget.innerHTML = payload.activity_html',
+    'inboxTarget.innerHTML = payload.inbox_html',
+    'window.htmx?.process(inboxTarget)',
     'notificationsTarget.innerHTML = payload.notifications_html',
     'window.htmx?.process(notificationsTarget)',
+    "document.getElementById('work-inbox-badge')",
+    "document.getElementById('notification-deck-inbox-count')",
     'window.renderLocalOperationalActivities?.()',
 ):
     if needle not in navbar_js:
@@ -197,7 +214,9 @@ for needle in (
     'never wait for queued workers to finish',
     "'active_count': _count_value(context.get('active_count', 0))",
     "'unread_count': _count_value(context.get('unread_count', 0))",
+    "'inbox_unread_count': _count_value(context.get('inbox_unread_count', 0))",
     "'activity_html': render_template(",
+    "'inbox_html': render_template(",
     "'notifications_html': render_template(",
     "@notifications_bp.get('/panel/snapshot')",
     'return _render_status_snapshot()',
@@ -294,8 +313,18 @@ for needle in (
     if needle not in readme:
         raise SystemExit(f'Notification refresh standard is not documented: {needle}')
 
-if oob.count('hx-swap-oob="outerHTML"') != 4:
-    raise SystemExit('OOB badge fragment must remain available for mutation responses.')
+for needle in (
+    'id="work-inbox-badge"',
+    'id="notification-bell-badge"',
+    'id="notification-running-indicator"',
+    'id="notification-deck-active-count"',
+    'id="notification-deck-inbox-count"',
+    'id="notification-deck-unread-count"',
+):
+    if needle not in oob:
+        raise SystemExit(f'OOB badge fragment is missing current Notification Deck state: {needle}')
+if oob.count('hx-swap-oob="outerHTML"') != 6:
+    raise SystemExit('OOB badge fragment must expose all six current mutation-response targets.')
 if 'showOperationalProgressToast' in layout:
     raise SystemExit('Legacy operational progress toast remains active in app layout.')
 for legacy_path in (

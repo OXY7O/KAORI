@@ -48,3 +48,10 @@ def test_notification_activity_verifier_tracks_current_shared_tab_and_progress_g
     assert 'framed_workspace_tabs.render_navigation(' in verifier
     assert 'rounded-xl border border-kaori-primary/20 bg-kaori-soft p-1' not in verifier
     assert 'w-1/3 rounded-full bg-kaori-primary/60' not in verifier
+    assert "['activity', 'inbox', 'notifications'].includes($event.detail?.tab)" in verifier
+    assert 'notificationDeckTab = $event.detail.tab' in verifier
+    assert 'queueNotificationDeckRefresh()' in verifier
+    assert "'inbox_html': render_template(" in verifier
+    assert "document.getElementById('notification-deck-inbox-content')" in verifier
+    assert "document.getElementById('work-inbox-badge')" in verifier
+    assert "oob.count('hx-swap-oob=\"outerHTML\"') != 6" in verifier
