@@ -148,7 +148,7 @@ def _base_payload(args: MultiDict[str, str], *, page_mode: str) -> dict[str, Any
 
     if page_mode == 'catalog':
         for item in items:
-            item['table_summary'] = _catalog_table_summary(item.get('summary'), limit=72)
+            item['table_summary'] = _catalog_table_summary(item.get('catalog_summary') or item.get('summary'), limit=56)
     else:
         for item in items:
             scope_title, scope_supporting = finding_scope_details(item)
@@ -230,6 +230,8 @@ def _build_recommendation_findings(catalog: list[dict[str, Any]]) -> list[dict[s
     rules = {str(rule.get('rule_key')): rule for rule in catalog}
     findings: list[dict[str, Any]] = []
 
+    findings.extend(_build_namespace_quota_findings(rules))
+    findings.extend(_build_workload_resource_governance_findings(rules))
     findings.extend(_build_latest_image_findings(rules))
     findings.extend(build_kubernetes_runtime_recommendation_findings(rules))
     findings.extend(_build_storage_binding_findings(rules))
@@ -312,6 +314,155 @@ def _clone_rule_as_finding(
     output.setdefault('evidence_details', build_evidence_details(output))
     output.setdefault('fix_steps', build_fix_steps(output))
     return output
+
+
+def _cluster_name_map(cluster_ids: set[str]) -> dict[str, str]:
+    if not cluster_ids:
+        return {}
+    try:
+        from app.models import Cluster
+    except Exception:
+        return {}
+    try:
+        rows = Cluster.query.filter(Cluster.id.in_(cluster_ids)).all()
+    except Exception:
+        return {}
+    return {str(row.id): str(row.name or row.id) for row in rows}
+
+
+def _build_namespace_quota_findings(rules: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
+    rule = rules.get('kubernetes.namespace.missing_quota')
+    if not rule:
+        return []
+    try:
+        from app.models import NamespaceInventory, ResourceQuotaInventory
+    except Exception:
+        return []
+    try:
+        namespaces = filter_current_generation(db.session.query(NamespaceInventory), NamespaceInventory).all()
+        quota_rows = filter_current_generation(
+            db.session.query(ResourceQuotaInventory.cluster_id, ResourceQuotaInventory.namespace),
+            ResourceQuotaInventory,
+        ).all()
+    except Exception:
+        return []
+
+    quota_namespaces = {(str(cluster_id), str(namespace)) for cluster_id, namespace in quota_rows}
+    cluster_names = _cluster_name_map({str(row.cluster_id) for row in namespaces})
+    findings: list[dict[str, Any]] = []
+    for row in namespaces:
+        cluster_id = str(row.cluster_id)
+        namespace = str(row.namespace or 'default')
+        if (cluster_id, namespace) in quota_namespaces:
+            continue
+        cluster_name = cluster_names.get(cluster_id, cluster_id)
+        findings.append(
+            _clone_rule_as_finding(
+                rule,
+                finding_key=f'kubernetes.namespace.missing_quota:{cluster_id}:{namespace}',
+                title=f'Namespace {namespace} has no ResourceQuota',
+                summary=(
+                    f'Namespace {namespace} in {cluster_name} has no ResourceQuota in the latest committed '
+                    'Kubernetes inventory.'
+                ),
+                condition_summary=(
+                    'No ResourceQuota object is present for this namespace in the current inventory generation.'
+                ),
+                evidence={
+                    'cluster_id': cluster_id,
+                    'cluster_name': cluster_name,
+                    'namespace': namespace,
+                    'affected_count': 1,
+                    'quota_count': 0,
+                },
+            )
+        )
+    return findings
+
+
+def _build_workload_resource_governance_findings(
+    rules: dict[str, dict[str, Any]],
+) -> list[dict[str, Any]]:
+    rule_specs = (
+        ('kubernetes.workload.missing_cpu_requests', 'requests', 'cpu', 'CPU request'),
+        ('kubernetes.workload.missing_memory_requests', 'requests', 'memory', 'memory request'),
+        ('kubernetes.workload.missing_memory_limits', 'limits', 'memory', 'memory limit'),
+    )
+    enabled = [spec for spec in rule_specs if rules.get(spec[0])]
+    if not enabled:
+        return []
+    try:
+        from app.models import WorkloadInventory
+    except Exception:
+        return []
+    try:
+        workloads = filter_current_generation(db.session.query(WorkloadInventory), WorkloadInventory).all()
+    except Exception:
+        return []
+
+    cluster_names = _cluster_name_map({str(row.cluster_id) for row in workloads})
+    findings: list[dict[str, Any]] = []
+    for row in workloads:
+        details = row.details if isinstance(row.details, dict) else {}
+        pod_template = details.get('pod_template') if isinstance(details, dict) else None
+        if not isinstance(pod_template, dict) or not bool(pod_template.get('reported')):
+            continue
+        containers = [item for item in list(pod_template.get('containers') or []) if isinstance(item, dict)]
+        if not containers or any(not isinstance(item.get('resources'), dict) for item in containers):
+            # Older inventory generations do not carry resource declarations. Skip rather than infer missing values.
+            continue
+
+        cluster_id = str(row.cluster_id)
+        cluster_name = cluster_names.get(cluster_id, cluster_id)
+        namespace = str(row.namespace or 'default')
+        workload_name = str(row.name or 'workload')
+        workload_type = str(row.workload_type or 'Workload')
+        for rule_key, resource_group, resource_name, display_name in enabled:
+            source_rule = rules.get(rule_key)
+            if source_rule is None:
+                continue
+            missing = []
+            for container in containers:
+                resources = container.get('resources') if isinstance(container.get('resources'), dict) else {}
+                values = resources.get(resource_group) if isinstance(resources, dict) else {}
+                values = values if isinstance(values, dict) else {}
+                if str(values.get(resource_name) or '').strip():
+                    continue
+                missing.append(str(container.get('name') or 'container'))
+            if not missing:
+                continue
+            count = len(missing)
+            preview = ', '.join(missing[:3])
+            if count > 3:
+                preview = f'{preview}, +{count - 3} more'
+            findings.append(
+                _clone_rule_as_finding(
+                    source_rule,
+                    finding_key=(
+                        f'{rule_key}:{cluster_id}:{namespace}:{workload_type.lower()}:{workload_name}'
+                    ),
+                    title=f'{workload_type} {workload_name} is missing {display_name}',
+                    summary=(
+                        f'{workload_type} {workload_name} in namespace {namespace} has {count} container'
+                        f'{"s" if count != 1 else ""} without {display_name}. Affected: {preview}.'
+                    ),
+                    condition_summary=(
+                        f'One or more workload containers do not define resources.{resource_group}.{resource_name} '
+                        'in the latest committed workload inventory.'
+                    ),
+                    evidence={
+                        'cluster_id': cluster_id,
+                        'cluster_name': cluster_name,
+                        'namespace': namespace,
+                        'workload_name': workload_name,
+                        'workload_type': workload_type,
+                        'affected_count': count,
+                        'missing_containers': missing[:10],
+                        'resource_field': f'resources.{resource_group}.{resource_name}',
+                    },
+                )
+            )
+    return findings
 
 
 def _build_latest_image_findings(rules: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
@@ -428,100 +579,105 @@ def _build_tls_certificate_findings(rules: dict[str, dict[str, Any]]) -> list[di
 
     try:
         rows = (
-            db.session.query(
-                TLSCertificateInventory.cluster_id,
-                TLSCertificateInventory.namespace,
-                TLSCertificateInventory.status,
-                func.count(TLSCertificateInventory.id),
-                func.min(TLSCertificateInventory.days_remaining),
+            TLSCertificateInventory.query.filter(
+                TLSCertificateInventory.status.in_(['expired', 'critical', 'warning', 'invalid'])
             )
-            .filter(TLSCertificateInventory.status.in_(['expired', 'critical', 'warning', 'invalid']))
-            .group_by(
-                TLSCertificateInventory.cluster_id,
-                TLSCertificateInventory.namespace,
-                TLSCertificateInventory.status,
+            .order_by(
+                TLSCertificateInventory.cluster_id.asc(),
+                TLSCertificateInventory.namespace.asc(),
+                TLSCertificateInventory.days_remaining.asc().nullslast(),
+                TLSCertificateInventory.secret_name.asc(),
             )
             .all()
         )
     except Exception:
         return []
 
+    cluster_names = _cluster_name_map({str(row.cluster_id) for row in rows})
     findings: list[dict[str, Any]] = []
-    for cluster_id, namespace, status, count, min_days_remaining in rows:
-        status_value = str(status or 'unknown')
+    for row in rows:
+        status_value = str(row.status or 'unknown')
         if status_value == 'expired':
             source_rule = expired_rule
             severity = 'critical'
             priority = 'P1'
             title_status = 'expired'
-            recommended_action = 'Renew the certificate immediately, update the affected existing Kubernetes TLS Secret, then validate the Ingress endpoint certificate chain.'
+            recommended_action = (
+                'Renew the certificate immediately, update the affected existing Kubernetes TLS Secret, '
+                'then validate the Ingress endpoint certificate chain.'
+            )
         elif status_value == 'invalid':
             source_rule = invalid_rule
             severity = 'critical'
             priority = 'P1'
             title_status = 'invalid'
-            recommended_action = 'Replace the invalid TLS Secret data with a valid certificate and matching private key, then resync TLS inventory.'
+            recommended_action = (
+                'Replace the invalid TLS Secret data with a valid certificate and matching private key, '
+                'then resync TLS inventory.'
+            )
         elif status_value == 'critical':
             source_rule = expiring_rule
             severity = 'critical'
             priority = 'P1'
             title_status = 'critically close to expiry'
-            recommended_action = 'Prioritize renewal during the next safe maintenance window and use TLS Secret Update to validate and apply the replacement certificate.'
+            recommended_action = (
+                'Prioritize renewal during the next safe maintenance window and use TLS Secret Update '
+                'to validate and apply the replacement certificate.'
+            )
         else:
             source_rule = expiring_rule
             severity = 'warning'
             priority = 'P2'
             title_status = 'approaching expiry'
-            recommended_action = 'Prepare the renewed certificate pair and schedule update before the certificate enters the critical expiry window.'
+            recommended_action = (
+                'Prepare the renewed certificate pair and schedule update before the certificate enters '
+                'the critical expiry window.'
+            )
 
         if not source_rule:
             continue
 
-        try:
-            example = (
-                TLSCertificateInventory.query.filter(
-                    TLSCertificateInventory.cluster_id == cluster_id,
-                    TLSCertificateInventory.namespace == namespace,
-                    TLSCertificateInventory.status == status_value,
-                )
-                .order_by(TLSCertificateInventory.days_remaining.asc().nullslast())
-                .first()
-            )
-        except Exception:
-            example = None
-
-        secret_label = 'TLS Secret' if int(count) == 1 else 'TLS Secrets'
-        namespace_label = namespace or 'cluster scope'
-        example_secret = str(getattr(example, 'secret_name', '') or '')
-        issuer = str(getattr(example, 'issuer', '') or '')
-        days_remaining = getattr(example, 'days_remaining', None)
-        affected_hosts = list(getattr(example, 'ingress_hosts', None) or [])[:3] if example else []
-
+        cluster_id = str(row.cluster_id)
+        cluster_name = cluster_names.get(cluster_id, cluster_id)
+        namespace = str(row.namespace or 'default')
+        secret_name = str(row.secret_name or 'tls-secret')
+        days_remaining = row.days_remaining
+        affected_hosts = list(row.ingress_hosts or [])[:5]
+        source_rule_key = str(source_rule.get('rule_key') or '')
         findings.append(
             normalize_rule(
                 {
                     **source_rule,
-                    'rule_key': f'kubernetes.tls_secret.{status_value}:{cluster_id}:{namespace}',
-                    'title': f'{count} {secret_label} {title_status} in {namespace_label}',
+                    'rule_key': f'{source_rule_key}:{cluster_id}:{namespace}:{secret_name}',
+                    'title': f'TLS Secret {secret_name} is {title_status}',
                     'severity': severity,
                     'priority': priority,
                     'status': 'available',
-                    'summary': f'TLS Secret inventory shows {count} {secret_label.lower()} with {status_value} certificate posture in namespace {namespace_label}.',
-                    'condition_summary': f'Collected TLS Secret status is {status_value}; minimum remaining lifetime is {min_days_remaining if min_days_remaining is not None else "unknown"} day(s).',
+                    'summary': (
+                        f'TLS Secret {secret_name} in namespace {namespace} reports {status_value} certificate '
+                        f'posture with {days_remaining if days_remaining is not None else "unknown"} day(s) remaining.'
+                    ),
+                    'condition_summary': (
+                        f'Collected TLS Secret {secret_name} status is {status_value}; remaining certificate '
+                        f'lifetime is {days_remaining if days_remaining is not None else "unknown"} day(s).'
+                    ),
                     'recommended_action': recommended_action,
                     'impact': str(
-                        source_rule.get('impact') or 'Protects HTTPS availability and certificate governance readiness.'
+                        source_rule.get('impact')
+                        or 'Protects HTTPS availability and certificate governance readiness.'
                     ),
                     'visible_in': ['Recommendations', 'Kubernetes TLS Secret', 'TLS Secret Update', 'Reports'],
                     'evidence': {
-                        'cluster_id': str(cluster_id),
-                        'namespace': str(namespace_label),
-                        'affected_count': int(count),
+                        'cluster_id': cluster_id,
+                        'cluster_name': cluster_name,
+                        'namespace': namespace,
+                        'secret_name': secret_name,
+                        'affected_count': 1,
                         'status': status_value,
-                        'example_secret': example_secret,
-                        'issuer': issuer,
-                        'days_remaining': days_remaining if days_remaining is not None else min_days_remaining,
+                        'issuer': str(row.issuer or ''),
+                        'days_remaining': days_remaining,
                         'affected_hosts': ', '.join(affected_hosts),
+                        'fingerprint_sha256': str(row.fingerprint_sha256 or ''),
                     },
                 }
             )
@@ -557,10 +713,16 @@ def get_catalog_rule(rule_key: str) -> dict[str, Any] | None:
         rule = normalize_rule(dict(raw_rule))
         if clean(str(rule.get('rule_key'))) == resolved_key:
             decorate_catalog_rules([rule])
-            rule['rule_exceptions'] = build_rule_exception_view(
-                resolved_key,
-                get_active_recommendation_findings(),
-            )
+            exception_policy = rule.get('risk_exception') if isinstance(rule.get('risk_exception'), dict) else {}
+            if bool(exception_policy.get('enabled')):
+                exception_view = build_rule_exception_view(
+                    resolved_key,
+                    get_active_recommendation_findings(),
+                )
+                exception_view['policy'] = dict(exception_policy)
+                rule['rule_exceptions'] = exception_view
+            else:
+                rule['rule_exceptions'] = None
             return rule
     return None
 

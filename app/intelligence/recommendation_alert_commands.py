@@ -5,6 +5,7 @@ from datetime import UTC, datetime, timedelta
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.extensions.db import db
+from app.intelligence.catalog import risk_exception_policy
 from app.intelligence.alert_intelligence.recommendation_source import (
     apply_rule_exception_to_active_findings,
     promote_recommendation_to_alert,
@@ -108,6 +109,9 @@ def create_rule_exception_command(
         raise ValueError('The selected Intelligence rule does not exist.')
     if str(rule.get('status') or '') != 'available':
         raise ValueError('Accepted risk can only be recorded for an available KAORI rule.')
+    exception_policy = risk_exception_policy(rule_key)
+    if not bool(exception_policy.get('enabled')):
+        raise ValueError('Accepted risk is not enabled for this Rule Catalog definition.')
 
     normalized_asset = str(asset_key or '').strip()
     if not normalized_asset:
@@ -123,6 +127,9 @@ def create_rule_exception_command(
         raise ValueError('No active findings for this rule are currently attached to the selected asset.')
 
     normalized_scope = str(scope_mode or '').strip().lower()
+    allowed_scopes = {str(value) for value in exception_policy.get('allowed_scope_modes', [])}
+    if normalized_scope not in allowed_scopes:
+        raise ValueError('The selected accepted-risk scope is not allowed by this Rule Catalog definition.')
     selected_keys = {str(value or '').strip() for value in finding_keys if str(value or '').strip()}
     active_keys = {str(finding.get('rule_key') or '') for finding in rule_findings}
     if normalized_scope == 'finding_keys':

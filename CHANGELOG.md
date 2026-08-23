@@ -5,6 +5,8 @@ All notable KAORI changes are recorded here. KAORI uses Semantic Versioning for 
 ## [Unreleased]
 
 ### Changed
+- Scoped Rule Catalog Accepted Risk to definition-owned rules only, added TLS/vendor, namespace quota, CPU/memory request, and memory-limit exception policies, and added inventory-backed findings for namespace quota and workload resource posture.
+- Compacted Rule Definition row descriptions to one-line catalog summaries while preserving full rule descriptions in expanded detail.
 - Added a shared Notification Deck Work Inbox for delegated AlertCase and Accepted Risk ownership, including expiry/revocation follow-up, while keeping general notification badges separate.
 - Routed Intelligence mutations through canonical Activity Audit + Toast delivery policies, with warning/error outcomes promoted to the Notification Deck and direct responsibility delivered persistently to Work Inbox.
 - Clarified Rule Catalog Alert Escalation controls and redesigned Selected Findings as clear grouped cards with explicit Risk Owner assignment.

@@ -37,8 +37,13 @@ def test_rule_catalog_rows_use_short_summary_and_standard_detail_toggle():
     assert 'def _count_active_filters(' in service
     assert service.index('def _truncate_words(') < service.index('def _base_payload(')
     assert service.index('def _count_active_filters(') < service.index('def _base_payload(')
-    assert "item['table_summary'] = _catalog_table_summary(item.get('summary'), limit=72)" in service
+    assert (
+        "item['table_summary'] = _catalog_table_summary(item.get('catalog_summary') or item.get('summary'), limit=56)"
+        in service
+    )
     assert 'item.table_summary or item.summary' in records
+    assert 'mt-1 truncate text-xs leading-5 text-content-muted' in records
+    assert 'line-clamp-2' not in records
     assert 'components/details/_expandable_row.html' in records
     assert 'detail_row.toggle_button(' in records
 

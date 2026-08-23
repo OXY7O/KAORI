@@ -111,25 +111,39 @@ def _pod_template_details(template_spec) -> dict:
 
     regular_containers = list(_model_value(template_spec, 'containers', default=[]) or [])
     init_containers = list(_model_value(template_spec, 'init_containers', 'initContainers', default=[]) or [])
-    containers: list[dict[str, str]] = []
+    containers: list[dict[str, Any]] = []
 
     for container in regular_containers:
+        resources = _model_value(container, 'resources')
+        requests = _model_value(resources, 'requests', default={}) or {}
+        limits = _model_value(resources, 'limits', default={}) or {}
         containers.append(
             {
                 'name': _string_value(_model_value(container, 'name')),
                 'image': _string_value(_model_value(container, 'image')),
                 'pull_policy': _string_value(_model_value(container, 'image_pull_policy', 'imagePullPolicy')),
                 'kind': 'Container',
+                'resources': {
+                    'requests': {str(key): str(value) for key, value in dict(requests).items()},
+                    'limits': {str(key): str(value) for key, value in dict(limits).items()},
+                },
             }
         )
 
     for container in init_containers:
+        resources = _model_value(container, 'resources')
+        requests = _model_value(resources, 'requests', default={}) or {}
+        limits = _model_value(resources, 'limits', default={}) or {}
         containers.append(
             {
                 'name': _string_value(_model_value(container, 'name')),
                 'image': _string_value(_model_value(container, 'image')),
                 'pull_policy': _string_value(_model_value(container, 'image_pull_policy', 'imagePullPolicy')),
                 'kind': 'Init container',
+                'resources': {
+                    'requests': {str(key): str(value) for key, value in dict(requests).items()},
+                    'limits': {str(key): str(value) for key, value in dict(limits).items()},
+                },
             }
         )
 

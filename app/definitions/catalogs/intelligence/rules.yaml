@@ -11,6 +11,18 @@ rules:
   status: available
   logic_type: governance_check
   signal_source: kubernetes_api
+  alert_escalation:
+    eligible: false
+    mode: manual
+    grouping_mode: rule_asset_scope
+  risk_exception:
+    enabled: true
+    default_scope_mode: finding_keys
+    allowed_scope_modes:
+    - finding_keys
+    - rule_asset
+    guidance: Use a time-bounded exception for platform, vendor, or system workloads that cannot adopt the resource policy yet; prefer Selected Findings so unrelated workloads remain actionable.
+  catalog_summary: Flags workloads missing CPU requests.
   summary: Detects containers that run without CPU requests, reducing scheduler quality and capacity reporting accuracy.
   condition_summary: A workload has one or more containers where resources.requests.cpu is not defined.
   recommended_action: Set CPU requests from recent p95 usage, then review namespace quota and workload criticality.
@@ -36,6 +48,18 @@ rules:
   status: available
   logic_type: governance_check
   signal_source: kubernetes_api
+  alert_escalation:
+    eligible: false
+    mode: manual
+    grouping_mode: rule_asset_scope
+  risk_exception:
+    enabled: true
+    default_scope_mode: finding_keys
+    allowed_scope_modes:
+    - finding_keys
+    - rule_asset
+    guidance: Use a time-bounded exception for platform, vendor, or system workloads that cannot adopt the resource policy yet; prefer Selected Findings so unrelated workloads remain actionable.
+  catalog_summary: Flags workloads missing memory requests.
   summary: Detects workloads without memory requests so placement and memory capacity posture can be reported clearly.
   condition_summary: A workload has one or more containers where resources.requests.memory is not defined.
   recommended_action: Define memory requests based on observed usage and application baseline requirements.
@@ -49,6 +73,42 @@ rules:
   - Recommendations
   - Capacity Analysis
   - Workload Analysis
+  - Reports
+- rule_key: kubernetes.workload.missing_memory_limits
+  title: Workloads Without Memory Limits
+  domain: kubernetes
+  source_kind: workload
+  category: governance
+  severity: warning
+  priority: P2
+  status: available
+  logic_type: governance_check
+  signal_source: kubernetes_api
+  alert_escalation:
+    eligible: false
+    mode: manual
+    grouping_mode: rule_asset_scope
+  risk_exception:
+    enabled: true
+    default_scope_mode: finding_keys
+    allowed_scope_modes:
+    - finding_keys
+    - rule_asset
+    guidance: Use a time-bounded exception for platform, vendor, or system workloads where memory limits cannot yet be enforced; prefer Selected Findings to avoid masking unrelated workloads.
+  catalog_summary: Flags workloads missing memory limits.
+  summary: Detects workloads with containers that do not declare memory limits where bounded memory policy is expected.
+  condition_summary: A workload has one or more containers where resources.limits.memory is not defined.
+  recommended_action: Define memory limits from observed peak usage and workload failure tolerance, then validate rollout and OOM behavior.
+  impact: Reduces unbounded memory risk while preserving explicit exceptions for system and vendor-managed workloads.
+  evidence_boundary: KAORI evaluates committed Kubernetes workload configuration. Metrics Source can inform sizing, but does not determine whether the memory limit field is configured.
+  supported_sources:
+  - Kubernetes API
+  - Workload Inventory
+  - Optional Metrics Source usage metrics
+  visible_in:
+  - Recommendations
+  - Workload Analysis
+  - Capacity Analysis
   - Reports
 - rule_key: kubernetes.workload.latest_image_tag
   title: Container Image Uses Latest Tag
@@ -84,6 +144,14 @@ rules:
   status: available
   logic_type: governance_check
   signal_source: kubernetes_api
+  risk_exception:
+    enabled: true
+    default_scope_mode: finding_keys
+    allowed_scope_modes:
+    - finding_keys
+    - rule_asset
+    guidance: Use Selected Findings for namespaces such as kube-system or vendor-managed namespaces that intentionally operate without ResourceQuota; keep tenant namespaces actionable.
+  catalog_summary: Flags namespaces without ResourceQuota.
   summary: Identifies namespaces without quota guardrails for multi-tenant capacity governance.
   condition_summary: A namespace has no ResourceQuota object or no effective quota baseline.
   recommended_action: Define namespace quota and limit range based on tenant or workload class.
@@ -107,6 +175,16 @@ rules:
   status: available
   logic_type: governance_check
   signal_source: kubernetes_api
+  alert_escalation:
+    grouping_mode: rule_asset_scope
+  risk_exception:
+    enabled: true
+    default_scope_mode: finding_keys
+    allowed_scope_modes:
+    - finding_keys
+    - rule_asset
+    guidance: Use only for documented internal or vendor-managed TLS conditions with a named risk owner and expiry; certificate truth remains visible and is not marked compliant.
+  catalog_summary: Flags expired Kubernetes TLS certificates.
   summary: Detects Kubernetes TLS Secrets whose certificate validity has already passed and can break HTTPS traffic served
     by Ingress.
   condition_summary: A collected Kubernetes TLS Secret has not_after in the past or days_remaining is less than or equal to
@@ -135,6 +213,16 @@ rules:
   status: available
   logic_type: governance_check
   signal_source: kubernetes_api
+  alert_escalation:
+    grouping_mode: rule_asset_scope
+  risk_exception:
+    enabled: true
+    default_scope_mode: finding_keys
+    allowed_scope_modes:
+    - finding_keys
+    - rule_asset
+    guidance: Use only for documented internal or vendor-managed TLS conditions with a named risk owner and expiry; certificate truth remains visible and is not marked compliant.
+  catalog_summary: Flags Kubernetes TLS certificates nearing expiry.
   summary: Detects Kubernetes TLS Secrets that are approaching expiry and should be renewed before the operational risk window
     closes.
   condition_summary: A collected Kubernetes TLS Secret has status warning or critical based on remaining certificate lifetime.
@@ -409,8 +497,16 @@ rules:
   status: available
   logic_type: governance_check
   signal_source: object_storage_inventory
+  risk_exception:
+    enabled: true
+    default_scope_mode: rule_asset
+    allowed_scope_modes:
+    - finding_keys
+    - rule_asset
+    guidance: Use Entire Asset when one storage-system constraint applies to all affected buckets, or Selected Findings when only specific buckets are temporarily accepted.
   alert_escalation:
     grouping_mode: rule_asset
+  catalog_summary: Flags buckets without configured encryption.
   summary: Identifies Object Storage buckets whose committed encryption evidence reports no configured encryption policy.
   condition_summary: The latest committed bucket inventory reports encryption_state as not_configured.
   recommended_action: Validate the data-classification requirement, enable the approved server-side encryption policy when

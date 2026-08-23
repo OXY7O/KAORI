@@ -45,6 +45,7 @@ def finding_target_label(finding: dict[str, Any]) -> str:
         evidence.get('bucket_name')
         or evidence.get('workload_name')
         or evidence.get('pod_name')
+        or evidence.get('secret_name')
         or evidence.get('namespace')
         or finding.get('affected_summary')
         or finding.get('title')

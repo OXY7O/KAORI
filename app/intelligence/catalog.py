@@ -6,6 +6,7 @@ from app.definitions.validation import require_list, require_mapping, require_st
 _ALLOWED_DOMAINS = {'kubernetes', 'object_storage', 'server', 'hci'}
 _ALLOWED_SEVERITIES = {'critical', 'warning', 'info'}
 _ALLOWED_STATUSES = {'available', 'reserved', 'imported_signal'}
+_ALLOWED_RISK_EXCEPTION_SCOPES = {'rule_asset', 'finding_keys'}
 
 
 def _load_catalog() -> list[dict[str, object]]:
@@ -49,6 +50,44 @@ def _load_catalog() -> list[dict[str, object]]:
             rule['visible_in'] = list(string_tuple(raw.get('visible_in'), f'{path}.visible_in'))
         if 'provider_keys' in raw:
             rule['provider_keys'] = list(string_tuple(raw.get('provider_keys'), f'{path}.provider_keys'))
+        if 'catalog_summary' in raw:
+            rule['catalog_summary'] = require_str(raw, 'catalog_summary', path)
+        raw_exception = raw.get('risk_exception')
+        if raw_exception is None:
+            rule['risk_exception'] = {
+                'enabled': False,
+                'default_scope_mode': 'finding_keys',
+                'allowed_scope_modes': [],
+                'guidance': '',
+            }
+        else:
+            exception_path = f'{path}.risk_exception'
+            exception = require_mapping(raw_exception, exception_path)
+            enabled = exception.get('enabled', False)
+            if not isinstance(enabled, bool):
+                raise DefinitionError(f'{exception_path}.enabled must be true or false.')
+            allowed_scopes = list(
+                string_tuple(exception.get('allowed_scope_modes', []), f'{exception_path}.allowed_scope_modes')
+            )
+            unsupported_scopes = sorted(set(allowed_scopes) - _ALLOWED_RISK_EXCEPTION_SCOPES)
+            if unsupported_scopes:
+                raise DefinitionError(
+                    f'{exception_path}.allowed_scope_modes contains unsupported values: {unsupported_scopes!r}.'
+                )
+            if enabled and not allowed_scopes:
+                allowed_scopes = ['finding_keys', 'rule_asset']
+            default_scope = str(exception.get('default_scope_mode') or 'finding_keys').strip()
+            if enabled and default_scope not in allowed_scopes:
+                raise DefinitionError(
+                    f'{exception_path}.default_scope_mode must be one of the allowed scope modes.'
+                )
+            guidance = str(exception.get('guidance') or '').strip()
+            rule['risk_exception'] = {
+                'enabled': enabled,
+                'default_scope_mode': default_scope,
+                'allowed_scope_modes': allowed_scopes,
+                'guidance': guidance,
+            }
         if 'severity_bands' in raw:
             bands = require_list(raw.get('severity_bands'), f'{path}.severity_bands')
             normalized_bands: list[dict[str, object]] = []
@@ -106,6 +145,23 @@ def minimum_severity_band_value(rule: dict[str, object], *, default: int) -> int
         if isinstance(raw, dict) and raw.get('min_value') is not None:
             values.append(float(raw['min_value']))
     return int(min(values)) if values else default
+
+
+def risk_exception_policy(rule_key: str) -> dict[str, object]:
+    normalized = str(rule_key or '').strip()
+    for rule in INTELLIGENCE_CATALOG:
+        if str(rule.get('rule_key') or '').strip() != normalized:
+            continue
+        raw = rule.get('risk_exception')
+        if isinstance(raw, dict):
+            return dict(raw)
+        break
+    return {
+        'enabled': False,
+        'default_scope_mode': 'finding_keys',
+        'allowed_scope_modes': [],
+        'guidance': '',
+    }
 
 
 INTELLIGENCE_CATALOG: list[dict[str, object]] = _load_catalog()

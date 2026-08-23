@@ -126,11 +126,16 @@ def decorate_catalog_rules(rules: list[dict[str, Any]]) -> list[dict[str, Any]]:
         row.rule_key: row
         for row in RecommendationAlertPolicy.query.filter(RecommendationAlertPolicy.rule_key.in_(keys)).all()
     }
-    exception_counts = active_exception_counts(keys)
+    exception_keys = {
+        str(rule.get('rule_key') or '')
+        for rule in rules
+        if isinstance(rule.get('risk_exception'), dict) and bool(rule['risk_exception'].get('enabled'))
+    }
+    exception_counts = active_exception_counts(exception_keys)
     for rule in rules:
         key = str(rule.get('rule_key') or '')
         rule['alert_escalation'] = effective_alert_policy(key, override=overrides.get(key))
-        rule['active_exception_count'] = int(exception_counts.get(key, 0))
+        rule['active_exception_count'] = int(exception_counts.get(key, 0)) if key in exception_keys else 0
     return rules
 
 
