@@ -80,6 +80,36 @@ def index() -> ResponseReturnValue:
     return render_template('intelligence/automation_control.html', payload=payload)
 
 
+@automation_control_bp.get('/automation-control/modals/binding')
+@permission_required('knowledge.runbooks.manage')
+def binding_configuration_modal() -> ResponseReturnValue:
+    payload = build_automation_control_context({'workspace': 'runbooks'})
+    return render_template(
+        'intelligence/partials/automation_control/_binding_configuration_modal.html',
+        payload=payload,
+    )
+
+
+@automation_control_bp.get('/automation-control/modals/execution-configuration')
+@permission_required('intelligence.decisions.execute')
+def execution_configuration_modal() -> ResponseReturnValue:
+    payload = build_automation_control_context({'workspace': 'operations'})
+    return render_template(
+        'intelligence/partials/automation_control/_execution_configuration_modal.html',
+        payload=payload,
+    )
+
+
+@automation_control_bp.get('/automation-control/modals/readiness')
+@permission_required('intelligence.decisions.execute')
+def readiness_configuration_modal() -> ResponseReturnValue:
+    payload = build_automation_control_context({'workspace': 'readiness'})
+    return render_template(
+        'intelligence/partials/automation_control/_readiness_configuration_modal.html',
+        payload=payload,
+    )
+
+
 @automation_control_bp.post('/automation-control/system-runbooks/<string:runbook_key>/activate')
 @permission_required('knowledge.runbooks.publish')
 def activate_automation_system_runbook(runbook_key: str) -> ResponseReturnValue:

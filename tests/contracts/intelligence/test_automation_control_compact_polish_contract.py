@@ -5,53 +5,46 @@ def read(path: str) -> str:
     return Path(path).read_text()
 
 
-def test_automation_control_compact_navigation_is_present_in_every_workspace():
-    components = read('app/templates/intelligence/partials/automation_control/_components.html')
-    assert 'macro workspace_nav' in components
-    assert 'macro record_details' in components
-    assert 'border-outline-subtle' in components
-    assert 'group-open:rotate-180' in components
-
-    for name in ('_overview.html', '_runbooks.html', '_decisions.html', '_operations.html', '_readiness.html'):
-        template = read(f'app/templates/intelligence/partials/automation_control/{name}')
-        assert 'automation_ui.workspace_nav' in template
-
-    for name in ('_runbooks.html', '_decisions.html', '_operations.html', '_readiness.html'):
-        template = read(f'app/templates/intelligence/partials/automation_control/{name}')
-        assert 'automation_ui.record_details' in template
+def test_automation_control_summary_matches_alert_operations_snapshot_language():
+    main = read('app/templates/intelligence/automation_control.html')
+    assert 'Automation Control Summary' in main
+    assert 'intelligence_ui.section' in main
+    for label in ('Decision Candidates', 'Awaiting Approval', 'Active Executions', 'Execution Failures'):
+        assert label in main
+    assert 'resource_detail_modal.host' in main
 
 
-def test_rule_catalog_list_copy_is_compact_but_rule_detail_remains_available():
-    service = read('app/intelligence/service.py')
-    records = read('app/templates/intelligence/partials/_catalog_records.html')
-
-    assert "item['table_summary'] = _truncate_words(item.get('summary'), limit=16)" in service
-    assert 'Ready in the current KAORI boundary.' in records
-    assert 'Enriched from an upstream signal.' in records
-    assert 'Cataloged only; enabled outside this boundary.' in records
-    assert 'catalog_rule_details' in records
-    assert 'View Rule' in records
-
-
-def test_visual_compaction_does_not_remove_runbook_or_binding_operations():
+def test_runbook_workspace_is_table_first_and_binding_configuration_is_modal():
     runbooks = read('app/templates/intelligence/partials/automation_control/_runbooks.html')
-    for token in (
-        'activate_automation_system_runbook',
-        'create_automation_binding',
-        'update_automation_binding_status',
-        'Activate System Runbook',
-        'Create Binding',
-        'Disable Binding',
-        'Enable Binding',
-        'csrf_token',
+    routes = read('app/intelligence/automation_control/routes.py')
+    modal = read('app/templates/intelligence/partials/automation_control/_binding_configuration_modal.html')
+
+    assert 'Runbook & Binding Snapshot' in runbooks
+    for registry in (
+        'automation-runbook-catalog-registry',
+        'automation-runbook-library-registry',
+        'automation-bindings-registry',
     ):
-        assert token in runbooks
+        assert registry in runbooks
+    assert runbooks.count('table_registry.filter_form') >= 3
+    assert runbooks.count('table_registry.footer') >= 3
+    assert 'detail_row.static_detail_row' in runbooks
+    assert 'binding_configuration_modal' in runbooks
+    assert "@automation_control_bp.get('/automation-control/modals/binding')" in routes
+    assert 'create_automation_binding' in modal
+    assert 'csrf_token' in modal
 
 
-def test_visual_compaction_does_not_remove_candidate_decision_or_execution_operations():
+def test_decision_workspace_uses_three_canonical_registries_without_removing_actions():
     decisions = read('app/templates/intelligence/partials/automation_control/_decisions.html')
-    operations = read('app/templates/intelligence/partials/automation_control/_operations.html')
-
+    for registry in (
+        'automation-candidate-registry',
+        'automation-decision-registry',
+        'automation-decision-delivery-registry',
+    ):
+        assert registry in decisions
+    assert decisions.count('table_registry.filter_form') >= 3
+    assert decisions.count('table_registry.footer') >= 3
     for token in (
         'promote_automation_candidate',
         'dismiss_automation_candidate',
@@ -63,32 +56,39 @@ def test_visual_compaction_does_not_remove_candidate_decision_or_execution_opera
     ):
         assert token in decisions
 
-    for token in (
-        'update_automation_deployment_policy',
-        'update_automation_operational_control',
-        'Global Kill Switch',
-        'Maintenance Mode',
-        'Deployment Policies',
-        'Execution Journal',
-        'Dead-Letter Review',
-        'csrf_token',
-    ):
-        assert token in operations
+
+def test_execution_workspace_moves_forms_to_modal_but_keeps_runtime_controls():
+    operations = read('app/templates/intelligence/partials/automation_control/_operations.html')
+    modal = read('app/templates/intelligence/partials/automation_control/_execution_configuration_modal.html')
+    routes = read('app/intelligence/automation_control/routes.py')
+
+    assert 'Execution Posture Snapshot' in operations
+    assert 'execution_configuration_modal' in operations
+    for registry in ('automation-policy-registry', 'automation-journal-registry', 'automation-dead-letter-registry'):
+        assert registry in operations
+    assert 'update_automation_deployment_policy' in modal
+    assert 'update_automation_operational_control' in modal
+    for token in ('Global Kill Switch', 'Maintenance Mode', 'concurrency_limit', 'rate_limit_per_minute', 'csrf_token'):
+        assert token in modal
+    assert "@automation_control_bp.get('/automation-control/modals/execution-configuration')" in routes
 
 
-def test_visual_compaction_does_not_remove_readiness_controls():
+def test_readiness_workspace_moves_evidence_form_to_modal_and_keeps_stage_control():
     readiness = read('app/templates/intelligence/partials/automation_control/_readiness.html')
-    for token in (
-        'record_automation_readiness',
-        'advance_automation_readiness',
-        'target_stage',
-        'Production Enablement Gate',
-        'Controlled Rollout Sequence',
-        'Readiness Evidence Contract',
-        'Readiness Records',
-        'csrf_token',
-    ):
-        assert token in readiness
+    modal = read('app/templates/intelligence/partials/automation_control/_readiness_configuration_modal.html')
+    routes = read('app/intelligence/automation_control/routes.py')
+
+    assert 'Production Enablement Gate' in readiness
+    assert 'automation-readiness-registry' in readiness
+    assert 'table_registry.filter_form' in readiness
+    assert 'table_registry.footer' in readiness
+    assert 'advance_automation_readiness' in readiness
+    assert 'target_stage' in readiness
+    assert 'readiness_configuration_modal' in readiness
+    assert 'record_automation_readiness' in modal
+    assert 'required_checks' in modal
+    assert 'csrf_token' in modal
+    assert "@automation_control_bp.get('/automation-control/modals/readiness')" in routes
 
 
 def test_permission_and_fail_closed_execution_boundaries_are_unchanged():

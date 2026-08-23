@@ -13,6 +13,12 @@ from app.integrations.delivery.notification_channels.service import list_event_c
 from app.integrations.resolver_bootstrap import SUPPORTED_RESOLVER_ACTIONS, get_resolver_registry
 from app.intelligence.automation_control.notifications import DECISION_NOTIFICATION_EVENTS
 from app.intelligence.automation_control.overview import build_automation_overview
+from app.intelligence.automation_control.workspace_registries import (
+    populate_decisions_workspace,
+    populate_operations_workspace,
+    populate_readiness_workspace,
+    populate_runbooks_workspace,
+)
 from app.intelligence.knowledge.service import custom_runbook_authoring_enabled
 from app.intelligence.knowledge.system_catalog import is_system_runbook_key, list_system_runbooks
 from app.intelligence.resolver.production_readiness import REQUIRED_CHECKS, STAGE_ORDER, assess_readiness
@@ -40,18 +46,67 @@ def build_automation_control_context(query_args: Mapping[str, Any]) -> dict[str,
     workspace = str(query_args.get('workspace') or 'overview').strip().lower()
     if workspace not in WORKSPACE_KEYS:
         workspace = 'overview'
-    page = query_args.get('page', 1)
-    per_page = query_args.get('per_page', 5)
 
     clusters = Cluster.query.order_by(Cluster.name.asc(), Cluster.id.asc()).all()
     cluster_names = {str(cluster.id): cluster.name for cluster in clusters}
     registry_rows, registry_fingerprint = _registry_rows()
-
     infrastructure_execution_enabled = execution_enabled()
     overview_state = build_automation_overview(
         execution_enabled=infrastructure_execution_enabled,
         registry_rows=registry_rows,
     )
+    payload = _base_payload(
+        workspace=workspace,
+        clusters=clusters,
+        cluster_names=cluster_names,
+        registry_rows=registry_rows,
+        registry_fingerprint=registry_fingerprint,
+        infrastructure_execution_enabled=infrastructure_execution_enabled,
+        overview_state=overview_state,
+    )
+
+    if workspace == 'overview':
+        payload.update(_overview_activity(cluster_names))
+    elif workspace == 'runbooks':
+        populate_runbooks_workspace(
+            payload, query_args, registry_rows,
+            catalog_builder=_system_runbook_catalog_rows,
+            runbook_presenter=_runbook_row,
+            binding_presenter=_binding_row,
+        )
+    elif workspace == 'decisions':
+        populate_decisions_workspace(
+            payload, query_args, cluster_names,
+            candidate_presenter=_candidate_row,
+            decision_presenter=_decision_row,
+        )
+    elif workspace == 'operations':
+        populate_operations_workspace(
+            payload, query_args, cluster_names,
+            policy_presenter=_policy_row,
+            journal_presenter=_journal_row,
+            control_presenter=_control_row,
+            metrics_builder=_resolver_metrics,
+        )
+    else:
+        populate_readiness_workspace(
+            payload, query_args, cluster_names,
+            readiness_presenter=_readiness_row,
+        )
+    return payload
+
+
+def _base_payload(
+    *,
+    workspace: str,
+    clusters: Sequence[Cluster],
+    cluster_names: Mapping[str, str],
+    registry_rows: list[dict[str, Any]],
+    registry_fingerprint: str,
+    infrastructure_execution_enabled: bool,
+    overview_state: Mapping[str, Any],
+) -> dict[str, Any]:
+    workspace_rows = _workspace_rows(workspace)
     counts = {
         'runbooks': KnowledgeRunbook.query.count(),
         'published_revisions': KnowledgeRunbookRevision.query.filter_by(publication_status='published').count(),
@@ -61,11 +116,9 @@ def build_automation_control_context(query_args: Mapping[str, Any]) -> dict[str,
         ).count(),
         'dead_letters': IntelligenceExecutionJournal.query.filter_by(orchestration_status='dead_letter').count(),
         'readiness_records': ResolverProductionReadinessRecord.query.count(),
-        **overview_state['counts'],
+        **dict(overview_state['counts']),
     }
-
-    workspace_rows = _workspace_rows(workspace)
-    payload: dict[str, Any] = {
+    return {
         'workspace': workspace,
         'workspaces': workspace_rows,
         'workspace_tabs': _workspace_tabs(),
@@ -84,8 +137,8 @@ def build_automation_control_context(query_args: Mapping[str, Any]) -> dict[str,
         'global_control': ResolverOperationalControl.query.filter_by(cluster_id=None).one_or_none(),
         'system_runbook_catalog': [],
         'custom_runbook_authoring_enabled': custom_runbook_authoring_enabled(current_app.config),
+        'published_revisions': [],
         'runbook_rows': [],
-        'revision_rows': [],
         'binding_rows': [],
         'candidate_rows': [],
         'decision_rows': [],
@@ -96,104 +149,10 @@ def build_automation_control_context(query_args: Mapping[str, Any]) -> dict[str,
         'policy_rows': [],
         'control_rows': [],
         'readiness_rows': [],
+        'automation_filters': {},
         'pagination': None,
         'resource_label': 'items',
     }
-
-    if workspace == 'overview':
-        payload.update(_overview_activity(cluster_names))
-    elif workspace == 'runbooks':
-        payload['system_runbook_catalog'] = _system_runbook_catalog_rows(registry_rows)
-        query = KnowledgeRunbook.query.order_by(KnowledgeRunbook.updated_at.desc(), KnowledgeRunbook.id.desc())
-        records, pagination = _paginate_query(query, page=page, per_page=per_page)
-        payload['runbook_rows'] = [_runbook_row(record) for record in records]
-        payload['revision_rows'] = [
-            _revision_row(record)
-            for record in KnowledgeRunbookRevision.query.order_by(
-                KnowledgeRunbookRevision.created_at.desc(), KnowledgeRunbookRevision.id.desc()
-            )
-            .limit(10)
-            .all()
-        ]
-        payload['binding_rows'] = [
-            _binding_row(record)
-            for record in KnowledgeRunbookAlertBinding.query.order_by(
-                KnowledgeRunbookAlertBinding.priority.asc(), KnowledgeRunbookAlertBinding.id.desc()
-            )
-            .limit(10)
-            .all()
-        ]
-        published_query = (
-            KnowledgeRunbookRevision.query.join(KnowledgeRunbook)
-            .filter(KnowledgeRunbookRevision.publication_status == 'published')
-            .order_by(KnowledgeRunbookRevision.published_at.desc(), KnowledgeRunbookRevision.id.desc())
-        )
-        if not payload['custom_runbook_authoring_enabled']:
-            system_keys = [item.runbook_key for item in list_system_runbooks()]
-            published_query = published_query.filter(KnowledgeRunbook.runbook_key.in_(system_keys))
-        payload['published_revisions'] = published_query.all()
-        payload['pagination'] = pagination
-        payload['resource_label'] = 'runbooks'
-    elif workspace == 'decisions':
-        query = IntelligenceDecisionCandidate.query.order_by(
-            IntelligenceDecisionCandidate.created_at.desc(), IntelligenceDecisionCandidate.id.desc()
-        )
-        records, pagination = _paginate_query(query, page=page, per_page=per_page)
-        payload['candidate_rows'] = [_candidate_row(record, cluster_names) for record in records]
-        payload['decision_rows'] = [
-            _decision_row(record, cluster_names)
-            for record in IntelligenceDecision.query.order_by(
-                IntelligenceDecision.created_at.desc(), IntelligenceDecision.id.desc()
-            )
-            .limit(10)
-            .all()
-        ]
-        payload['decision_delivery_rows'] = recent_delivery_summary(
-            limit=8,
-            event_types=DECISION_NOTIFICATION_EVENTS,
-        )
-        payload['pagination'] = pagination
-        payload['resource_label'] = 'candidates'
-    elif workspace == 'operations':
-        query = ResolverDeploymentPolicy.query.order_by(
-            ResolverDeploymentPolicy.updated_at.desc(), ResolverDeploymentPolicy.id.desc()
-        )
-        records, pagination = _paginate_query(query, page=page, per_page=per_page)
-        payload['policy_rows'] = [_policy_row(record, cluster_names) for record in records]
-        payload['control_rows'] = [
-            _control_row(record, cluster_names)
-            for record in ResolverOperationalControl.query.order_by(
-                ResolverOperationalControl.cluster_id.asc().nullsfirst(), ResolverOperationalControl.id.asc()
-            ).all()
-        ]
-        payload['journal_rows'] = [
-            _journal_row(record, cluster_names)
-            for record in IntelligenceExecutionJournal.query.order_by(
-                IntelligenceExecutionJournal.updated_at.desc(), IntelligenceExecutionJournal.id.desc()
-            )
-            .limit(10)
-            .all()
-        ]
-        payload['dead_letter_rows'] = [
-            _journal_row(record, cluster_names)
-            for record in IntelligenceExecutionJournal.query.filter_by(orchestration_status='dead_letter')
-            .order_by(IntelligenceExecutionJournal.updated_at.desc(), IntelligenceExecutionJournal.id.desc())
-            .limit(10)
-            .all()
-        ]
-        payload['metrics'] = _resolver_metrics()
-        payload['pagination'] = pagination
-        payload['resource_label'] = 'deployment policies'
-    else:
-        query = ResolverProductionReadinessRecord.query.order_by(
-            ResolverProductionReadinessRecord.updated_at.desc(), ResolverProductionReadinessRecord.id.desc()
-        )
-        records, pagination = _paginate_query(query, page=page, per_page=per_page)
-        payload['readiness_rows'] = [_readiness_row(record, cluster_names) for record in records]
-        payload['pagination'] = pagination
-        payload['resource_label'] = 'readiness records'
-
-    return payload
 
 
 def _overview_activity(cluster_names: Mapping[str, str]) -> dict[str, Any]:

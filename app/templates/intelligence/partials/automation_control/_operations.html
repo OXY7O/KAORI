@@ -1,283 +1,51 @@
-{% import "components/operational_callout.html" as operational_callout %}
+{% import "components/loading_bar.html" as loading_bar %}
 {% import "components/table_label.html" as table_label %}
+{% import "components/table_primitives.html" as table_ui %}
+{% import "components/table_registry.html" as table_registry %}
+{% import "components/details/_expandable_row.html" as detail_row %}
+{% import "components/resource_detail_modal.html" as resource_detail_modal %}
+{% import "components/operational_callout.html" as operational_callout %}
 {% import "intelligence/components/_workspace.html" as intelligence_ui %}
-{% import "intelligence/partials/automation_control/_components.html" as automation_ui %}
-{% import "intelligence/components/_pagination.html" as intelligence_pagination %}
-{{ automation_ui.workspace_nav([
-    ('execution-posture', 'Posture', 'server-cog'),
-    ('governance-config', 'Configuration', 'sliders-horizontal'),
-    ('deployment-policies', 'Policies', 'shield-check'),
-    ('execution-journal', 'Journal', 'scroll-text'),
-    ('dead-letter-review', 'Dead Letter', 'triangle-alert')
-]) }}
-{% call automation_ui.section(
-    'Execution Posture',
-    'Execution Control separates resolver registration, deployment policy, safety controls, orchestration state, and terminal failure evidence.',
-    'server-cog',
-    payload.overview_state.posture.label,
-    payload.overview_state.posture.tone,
-    anchor='execution-posture'
-    ) %}
-    <div class="grid gap-px bg-outline-subtle sm:grid-cols-2 xl:grid-cols-5">
-        {{ intelligence_ui.metric('clock-3', 'Queued', payload.metrics.queued, 'Waiting for resolver execution', 'warning' if payload.metrics.queued else 'normal') }}
-        {{ intelligence_ui.metric('activity', 'Running', payload.metrics.running, 'Currently leased execution journals', 'warning' if payload.metrics.running else 'normal') }}
-        {{ intelligence_ui.metric('rotate-cw', 'Retry Wait', payload.metrics.retry_wait, 'Eligible for controlled retry', 'warning' if payload.metrics.retry_wait else 'normal') }}
-        {{ intelligence_ui.metric('circle-check', 'Completed', payload.metrics.completed, 'Completed orchestration journals', 'normal') }}
-        {{ intelligence_ui.metric('triangle-alert', 'Dead Letter', payload.metrics.dead_letter, 'Terminal execution failures', 'critical' if payload.metrics.dead_letter else 'normal') }}
-    </div>
-    <div class="border-t border-outline-subtle p-4 sm:p-5">
-        {{ operational_callout.render('Infrastructure Execution Boundary',
-                'Runbook, deployment-policy, safety-control, and readiness governance remain writable. Only authorization, execution dispatch, verification, and provider mutation cross the default-deny execution boundary; dead letters are immutable and require fresh evidence for a new attempt.',
-                icon='lock-keyhole',
-                tone='unknown',
-                variant='semantic') }}
-    </div>
-{% endcall %}
 {% set can_manage_execution = current_user.has_permission('intelligence.decisions.execute') %}
-{% if can_manage_execution %}
-    {% call automation_ui.section(
-        'Governance Configuration',
-        'Prepare deployment allowlists and resolver safety controls without crossing the execution boundary. These settings are revalidated again by the worker at execution time.',
-        'sliders-horizontal'
-    ,
-    anchor='governance-config'
-    ) %}
-        <div class="grid gap-4 p-4 xl:grid-cols-2 sm:p-5">
-            <form method="post"
-                  action="{{ url_for('automation_control.update_automation_deployment_policy') }}"
-                  class="space-y-3 rounded-lg border border-outline-subtle bg-surface-hover p-4">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <div>{{ intelligence_ui.subsection('Deployment Allowlist', 'Bind one registered action to an explicit Kubernetes cluster and namespace set.', 'shield-check') }}</div>
-                <div class="grid gap-3 sm:grid-cols-2">
-                    <label class="block">
-                        <span class="text-xs font-semibold text-content-secondary">Cluster</span>
-                        <select name="cluster_id"
-                                required
-                                class="mt-1 min-h-9 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary">
-                            {% for cluster in payload.clusters %}<option value="{{ cluster.id }}">{{ cluster.name }}</option>{% endfor %}
-                        </select>
-                    </label>
-                    <label class="block">
-                        <span class="text-xs font-semibold text-content-secondary">Action</span>
-                        <select name="action_key"
-                                required
-                                class="mt-1 min-h-9 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary">
-                            {% for item in payload.registry_rows %}
-                                <option value="{{ item.action_key }}">{{ item.action_key }}</option>
-                            {% endfor %}
-                        </select>
-                    </label>
-                    <label class="block">
-                        <span class="text-xs font-semibold text-content-secondary">Lifecycle</span>
-                        <select name="lifecycle_status"
-                                class="mt-1 min-h-9 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary">
-                            <option value="active">Active</option>
-                            <option value="disabled">Disabled</option>
-                        </select>
-                    </label>
-                    <label class="block">
-                        <span class="text-xs font-semibold text-content-secondary">Allowed Namespaces (CSV)</span>
-                        <input name="allowed_namespaces"
-                               required
-                               placeholder="apps,platform"
-                               class="mt-1 min-h-9 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary">
-                    </label>
-                </div>
-                <label class="block">
-                    <span class="text-xs font-semibold text-content-secondary">Required Registry Fingerprint</span>
-                    <input name="required_registry_fingerprint"
-                           value="{{ payload.registry_fingerprint }}"
-                           class="mt-1 min-h-9 w-full rounded-lg border border-outline-default bg-surface-card px-3 font-mono text-xs text-content-primary">
-                </label>
-                <button type="submit"
-                        {% if not payload.clusters or not payload.registry_rows %}disabled aria-disabled="true"{% endif %}
-                        class="inline-flex min-h-9 items-center gap-2 rounded-lg bg-kaori-primary px-3 text-xs font-semibold text-white hover:bg-kaori-primary-hover disabled:cursor-not-allowed disabled:opacity-50"><i data-lucide="save" class="h-3.5 w-3.5"></i>Save Deployment Policy</button>
-            </form>
-            <form method="post"
-                  action="{{ url_for('automation_control.update_automation_operational_control') }}"
-                  class="space-y-3 rounded-lg border border-outline-subtle bg-surface-hover p-4">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <div>{{ intelligence_ui.subsection('Safety Control', 'Global or cluster scope. Global maintenance and kill switch are hard execution blockers.', 'shield-alert') }}</div>
-                <label class="block">
-                    <span class="text-xs font-semibold text-content-secondary">Scope</span>
-                    <select name="cluster_id"
-                            class="mt-1 min-h-9 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary">
-                        <option value="">Global</option>
-                        {% for cluster in payload.clusters %}<option value="{{ cluster.id }}">{{ cluster.name }}</option>{% endfor %}
-                    </select>
-                </label>
-                <div class="grid gap-3 sm:grid-cols-2">
-                    <label class="flex min-h-9 items-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary">
-                        <input type="checkbox"
-                               name="global_kill_switch"
-                               class="h-4 w-4 rounded border-outline-default text-kaori-primary">
-                        Global Kill Switch
-                    </label>
-                    <label class="flex min-h-9 items-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary">
-                        <input type="checkbox"
-                               name="maintenance_mode"
-                               class="h-4 w-4 rounded border-outline-default text-kaori-primary">
-                        Maintenance Mode
-                    </label>
-                    <label class="block">
-                        <span class="text-xs font-semibold text-content-secondary">Concurrency</span>
-                        <input type="number"
-                               min="1"
-                               name="concurrency_limit"
-                               value="1"
-                               class="mt-1 min-h-9 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary">
-                    </label>
-                    <label class="block">
-                        <span class="text-xs font-semibold text-content-secondary">Rate / minute</span>
-                        <input type="number"
-                               min="1"
-                               name="rate_limit_per_minute"
-                               value="10"
-                               class="mt-1 min-h-9 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary">
-                    </label>
-                    <label class="block">
-                        <span class="text-xs font-semibold text-content-secondary">Failure Threshold</span>
-                        <input type="number"
-                               min="1"
-                               name="circuit_failure_threshold"
-                               value="3"
-                               class="mt-1 min-h-9 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary">
-                    </label>
-                    <label class="block">
-                        <span class="text-xs font-semibold text-content-secondary">Cooldown Seconds</span>
-                        <input type="number"
-                               min="1"
-                               name="circuit_cooldown_seconds"
-                               value="300"
-                               class="mt-1 min-h-9 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary">
-                    </label>
-                </div>
-                <p class="text-xs leading-5 text-content-muted">The global kill-switch checkbox is only applied when Scope is Global. Cluster controls may set maintenance, concurrency, rate, and circuit-breaker thresholds.</p>
-                <button type="submit"
-                        class="inline-flex min-h-9 items-center gap-2 rounded-lg bg-kaori-primary px-3 text-xs font-semibold text-white hover:bg-kaori-primary-hover"><i data-lucide="shield-check" class="h-3.5 w-3.5"></i>Save Safety Control</button>
-            </form>
-        </div>
-    {% endcall %}
-{% endif %}
-<section class="grid gap-4 xl:grid-cols-2">
-    {% call automation_ui.panel(
-        'Resolver Registry',
-        'Only actions registered in the active process registry are eligible for deployment policy or future execution.',
-        'list-tree',
-        payload.registry_rows|length ~ ' Registered',
-        'info'
-        ) %}
-        <div class="grid gap-3 p-4 sm:p-5">
-            {% for row in payload.registry_rows %}
-                {% call automation_ui.record_details(row.action_key, row.profiles|join(', ') or 'No compatibility profile', icon='server-cog', status_text='Registered', status_tone='normal') %}
-                    <dl class="mt-3 grid gap-3 sm:grid-cols-2">
-                        {{ intelligence_ui.field('Capabilities', row.capabilities|join(', ') or '-') }}
-                        {{ intelligence_ui.field('Automated Rollback', 'Required' if row.rollback_required else 'Not Required') }}
-                        {{ intelligence_ui.field('Post-action Verification', 'Required' if row.verification_required else 'Not Required') }}
-                    </dl>
-                {% endcall %}
-            {% else %}
-                {{ intelligence_ui.empty_state('No Resolver Actions Registered', 'The active resolver registry does not expose an allowlisted action.', 'list-tree') }}
-            {% endfor %}
-        </div>
-    {% endcall %}
-    {% call automation_ui.panel(
-        'Safety Controls',
-        'Global and cluster-specific kill switch, maintenance, concurrency, rate-limit, and circuit-breaker evidence.',
-        'shield-alert'
-        ) %}
-        <div class="grid gap-3 p-4 sm:p-5">
-            {% for row in payload.control_rows %}
-                {% set control_tone = 'critical' if row.kill_switch else ('maintenance' if row.maintenance_mode else 'normal') %}
-                {% set control_status = 'Kill Switch Active' if row.kill_switch else ('Maintenance' if row.maintenance_mode else 'Normal') %}
-                {% call automation_ui.record_details(row.scope, 'Concurrency ' ~ row.concurrency_limit ~ ' · Rate ' ~ row.rate_limit ~ '/min', icon='shield-alert', status_text=control_status, status_tone=control_tone) %}
-                    <dl class="mt-3 grid gap-3 sm:grid-cols-2">
-                        {{ intelligence_ui.field('Failure Threshold', row.failure_threshold) }}
-                        {{ intelligence_ui.field('Cooldown', row.cooldown_seconds ~ ' seconds') }}
-                        {{ intelligence_ui.field('Circuit', row.circuit_open_until) }}
-                        {{ intelligence_ui.field('Updated', row.updated_at) }}
-                    </dl>
-                {% endcall %}
-            {% else %}
-                {{ intelligence_ui.empty_state('No Operational Controls Recorded', 'No global or cluster-specific resolver safety control exists.', 'shield-alert') }}
-            {% endfor %}
-        </div>
-    {% endcall %}
+{% set filters = payload.automation_filters %}
+
+<section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
+    <header class="flex flex-col gap-3 border-b border-outline-subtle px-4 py-4 sm:flex-row sm:items-start sm:justify-between sm:px-5"><div><h3 class="text-sm font-semibold text-content-primary">Execution Posture Snapshot</h3><p class="mt-1 text-xs leading-5 text-content-muted">Current execution queue, resolver registry, terminal failures, and safety boundary.</p></div>{{ table_label.status_label(payload.overview_state.posture.label,payload.overview_state.posture.tone,size='compact') }}</header>
+    <div class="grid divide-y divide-outline-subtle sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-5">
+        {{ intelligence_ui.metric('clock-3','Queued',payload.metrics.queued,'Waiting for worker admission','warning' if payload.metrics.queued else 'normal') }}
+        {{ intelligence_ui.metric('activity','Running',payload.metrics.running,'Currently leased journals','warning' if payload.metrics.running else 'normal') }}
+        {{ intelligence_ui.metric('rotate-cw','Retry Wait',payload.metrics.retry_wait,'Controlled retry window','warning' if payload.metrics.retry_wait else 'normal') }}
+        {{ intelligence_ui.metric('circle-check','Completed',payload.metrics.completed,'Terminal successful journals','normal') }}
+        {{ intelligence_ui.metric('triangle-alert','Dead Letter',payload.metrics.dead_letter,'Immutable terminal failures','critical' if payload.metrics.dead_letter else 'normal') }}
+    </div>
+    <div class="border-t border-outline-subtle px-4 py-3 sm:px-5"><div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><p class="text-xs leading-5 text-content-muted">Deployment policy, readiness, safety control, and one-time authorization are revalidated before infrastructure mutation.</p>{% if can_manage_execution %}{{ resource_detail_modal.detail_button('automation-execution-config',url_for('automation_control.execution_configuration_modal'),'Execution Configuration','Automation Control',label='Configure Execution',icon='sliders-horizontal') }}{% endif %}</div></div>
 </section>
-{% call automation_ui.section(
-    'Deployment Policies',
-    'Scoped allowlists bind registered resolver actions to Kubernetes clusters and explicit namespaces. A stored policy is not an execution request.',
-    'shield-check',
-    payload.overview_state.counts.active_policies ~ ' Active',
-    'normal' if payload.overview_state.counts.active_policies else 'unknown',
-    anchor='deployment-policies'
-    ) %}
-    <div class="grid gap-3 p-4 sm:p-5">
-        {% for row in payload.policy_rows %}
-            {% call automation_ui.record_details(row.action_key, row.cluster, icon='shield-check', status_text=row.status|title, status_tone='normal' if row.status == 'active' else 'unknown') %}
-                <dl class="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                    {{ intelligence_ui.field('Namespaces', row.namespaces|join(', ') or 'None') }}
-                    {{ intelligence_ui.field('Registry Fingerprint', row.fingerprint, true) }}
-                    {{ intelligence_ui.field('Updated', row.updated_at) }}
-                </dl>
-            {% endcall %}
-        {% else %}
-            {{ intelligence_ui.empty_state('No Deployment Policies', 'No cluster and resolver-action allowlist has been recorded.', 'shield-check') }}
-        {% endfor %}
+
+<details class="group overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
+    <summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-4 sm:px-5"><div class="flex items-start gap-3"><span class="flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="shield-check" class="h-4 w-4"></i></span><div><h3 class="text-sm font-semibold text-content-primary">Resolver & Safety Reference</h3><p class="mt-1 text-xs text-content-muted">Registered action contracts and operational controls. Collapsed by default to keep the execution workspace focused.</p></div></div><div class="flex items-center gap-2">{{ table_label.metadata_label(payload.registry_rows|length ~ ' Actions','list-tree') }}{{ table_label.metadata_label(payload.control_rows|length ~ ' Controls','shield-alert') }}<i data-lucide="chevron-down" class="h-4 w-4 text-content-muted transition group-open:rotate-180"></i></div></summary>
+    <div class="grid gap-4 border-t border-outline-subtle p-4 xl:grid-cols-2 sm:p-5">
+        <section class="overflow-hidden rounded-xl border border-outline-subtle"><header class="border-b border-outline-subtle px-4 py-3"><h4 class="text-sm font-semibold text-content-primary">Resolver Registry</h4></header><table class="{{ table_ui.table_classes() }} table-fixed"><thead class="{{ table_ui.head_classes() }}"><tr><th class="w-[40%] px-4 py-3">Action</th><th class="w-[35%] px-4 py-3">Profiles</th><th class="w-[25%] px-4 py-3">Guards</th></tr></thead><tbody class="{{ table_ui.body_classes() }}">{% for row in payload.registry_rows %}<tr><td class="px-4 py-3 font-mono text-xs font-semibold text-content-primary">{{ row.action_key }}</td><td class="px-4 py-3 text-xs text-content-secondary">{{ row.profiles|join(', ') or '-' }}</td><td class="px-4 py-3"><div class="flex flex-wrap gap-1">{{ table_label.status_label('Verify' if row.verification_required else 'No Verify','info',size='compact') }}{{ table_label.status_label('Rollback' if row.rollback_required else 'No Rollback','warning' if row.rollback_required else 'unknown',size='compact') }}</div></td></tr>{% else %}<tr><td colspan="3" class="px-4 py-6 text-sm text-content-muted">No resolver actions registered.</td></tr>{% endfor %}</tbody></table></section>
+        <section class="overflow-hidden rounded-xl border border-outline-subtle"><header class="border-b border-outline-subtle px-4 py-3"><h4 class="text-sm font-semibold text-content-primary">Safety Controls</h4></header><table class="{{ table_ui.table_classes() }} table-fixed"><thead class="{{ table_ui.head_classes() }}"><tr><th class="w-[34%] px-4 py-3">Scope</th><th class="w-[24%] px-4 py-3">State</th><th class="w-[22%] px-4 py-3">Limits</th><th class="w-[20%] px-4 py-3">Circuit</th></tr></thead><tbody class="{{ table_ui.body_classes() }}">{% for row in payload.control_rows %}<tr><td class="px-4 py-3 text-sm font-semibold text-content-primary">{{ row.scope }}</td><td class="px-4 py-3">{{ table_label.status_label('Kill Switch' if row.kill_switch else ('Maintenance' if row.maintenance_mode else 'Normal'),'critical' if row.kill_switch else ('warning' if row.maintenance_mode else 'normal'),size='compact') }}</td><td class="px-4 py-3 text-xs text-content-secondary">{{ row.concurrency_limit }} concurrent · {{ row.rate_limit }}/min</td><td class="px-4 py-3 text-xs text-content-secondary">{{ row.circuit_open_until }}</td></tr>{% else %}<tr><td colspan="4" class="px-4 py-6 text-sm text-content-muted">No operational controls recorded.</td></tr>{% endfor %}</tbody></table></section>
     </div>
-    {% set query_params = {"workspace": "operations"} %}
-    {{ intelligence_pagination.render(payload, 'automation_control.index', query_params, resource_label='Deployment Policies', per_page_options=payload.per_page_options) }}
-{% endcall %}
-{% call automation_ui.section(
-    'Execution Journal',
-    'Authorization, queue, lease, retry, resolver result, and terminal orchestration state remain auditable as separate execution evidence.',
-    'scroll-text',
-    anchor='execution-journal'
-    ) %}
-    <div class="grid gap-3 p-4 sm:p-5">
-        {% for row in payload.journal_rows %}
-            {% set journal_tone = 'critical' if row.orchestration_status == 'dead_letter' or row.status == 'failed' else ('warning' if row.orchestration_status in ['queued', 'running', 'retry_wait'] else 'normal') %}
-            {% call automation_ui.record_details(row.action_key, row.public_id, icon='scroll-text', status_text=row.orchestration_status|replace('_',' ')|title, status_tone=journal_tone) %}
-                <dl class="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
-                    {{ intelligence_ui.field('Scope', row.cluster ~ ' / ' ~ row.namespace) }}
-                    {{ intelligence_ui.field('Execution Result', row.status|replace('_',' ') |title) }}
-                    {{ intelligence_ui.field('Dry Run', 'Accepted' if row.dry_run_allowed is sameas true else ('Blocked' if row.dry_run_allowed is sameas false else 'Not Started') ) }}
-                    {{ intelligence_ui.field('Verification', row.verification_status|replace('_',' ') |title) }}
-                    {{ intelligence_ui.field('Recovery Mode', row.recovery_mode|replace('_',' ') |title) }}
-                    {{ intelligence_ui.field('Attempts', row.attempts) }}
-                    {{ intelligence_ui.field('Updated', row.updated_at) }}
-                </dl>
-                {% if row.verification_summary != '-' %}
-                    <p class="mt-3 text-xs leading-5 text-content-muted">Verification: {{ row.verification_summary }}</p>
-                {% endif %}
-                {% if row.error != '-' %}
-                    <div class="mt-3">{{ operational_callout.render('Execution Diagnostic', row.error, icon='triangle-alert', tone='critical', variant='semantic') }}</div>
-                {% endif %}
-            {% endcall %}
-        {% else %}
-            {{ intelligence_ui.empty_state('No Execution Journals', 'No resolver execution authorization or dispatch evidence has been recorded.', 'scroll-text') }}
-        {% endfor %}
-    </div>
-{% endcall %}
-{% call automation_ui.section(
-    'Dead-Letter Review',
-    'Terminal orchestration failures remain immutable for diagnosis. KAORI does not replay a consumed one-time authorization; retry requires fresh evidence, a new candidate/decision, and any required approval.',
-    'triangle-alert',
-    payload.metrics.dead_letter ~ ' Records',
-    'critical' if payload.metrics.dead_letter else 'normal',
-    anchor='dead-letter-review'
-    ) %}
-    <div class="grid gap-3 p-4 sm:p-5">
-        {% for row in payload.dead_letter_rows %}
-            {% call automation_ui.record_details(row.action_key, row.error, icon='triangle-alert', status_text='Dead Letter', status_tone='critical') %}
-                <dl class="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                    {{ intelligence_ui.field('Scope', row.cluster ~ ' / ' ~ row.namespace) }}
-                    {{ intelligence_ui.field('Attempts', row.attempts) }}
-                    {{ intelligence_ui.field('Updated', row.updated_at) }}
-                </dl>
-            {% endcall %}
-        {% else %}
-            {{ intelligence_ui.empty_state('No Dead-Letter Journals', 'No terminal resolver execution failure currently requires review.', 'circle-check') }}
-        {% endfor %}
-    </div>
-{% endcall %}
+</details>
+
+<section id="automation-policy-registry" class="{{ table_ui.block_classes() }}">
+    <header class="border-b border-outline-subtle px-5 py-4 sm:px-6"><div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"><div class="flex gap-3"><span class="{{ table_ui.block_icon_classes() }}"><i data-lucide="shield-check" class="h-4 w-4"></i></span><div><h3 class="{{ table_ui.block_title_classes() }}">Deployment Policies</h3><p class="{{ table_ui.block_description_classes() }}">Scoped allowlists binding registered resolver actions to cluster and namespace boundaries.</p></div></div><div class="flex gap-2">{% if filters.policy_q or filters.policy_status != 'all' %}{{ table_registry.clear_filters_link('automation_control.index','automation-policy-registry','automation-policy-loading',payload.policy_pagination.per_page,table_ui.action_classes(),query_params={'workspace':'operations'},page_param='policy_page',per_page_param='policy_per_page') }}{% endif %}{{ table_label.metadata_label(payload.policy_pagination.total_items ~ ' Policies','shield-check') }}</div></div>{{ loading_bar.render('automation-policy-loading',label='Refreshing Deployment Policies') }}</header>
+    <div class="{{ table_ui.inventory_filter_bar_classes() }}">{% call table_registry.filter_form('automation_control.index','automation-policy-registry','automation-policy-loading',payload.policy_pagination.per_page,page_param='policy_page',per_page_param='policy_per_page') %}<input type="hidden" name="workspace" value="operations"><label><span class="{{ table_ui.filter_label_classes() }}">Search</span>{{ table_ui.search_field('policy_q',filters.policy_q,'Action key') }}</label><label><span class="{{ table_ui.filter_label_classes() }}">Status</span><select name="policy_status" class="{{ table_ui.filter_select_classes() }}"><option value="all" {% if filters.policy_status=='all' %}selected{% endif %}>All Statuses</option><option value="active" {% if filters.policy_status=='active' %}selected{% endif %}>Active</option><option value="disabled" {% if filters.policy_status=='disabled' %}selected{% endif %}>Disabled</option></select></label>{% endcall %}</div>
+    <table class="{{ table_ui.table_classes() }} table-fixed"><thead class="{{ table_ui.head_classes() }}"><tr><th class="w-[30%] px-4 py-3">Action</th><th class="w-[20%] px-4 py-3">Cluster</th><th class="w-[25%] px-4 py-3">Namespaces</th><th class="w-[12%] px-4 py-3">Status</th><th class="w-[13%] px-4 py-3">Updated</th></tr></thead><tbody class="{{ table_ui.body_classes() }}">{% for row in payload.policy_rows %}<tr class="{{ table_ui.row_classes() }}"><td class="px-4 py-3">{{ table_ui.title_cell(row.action_key,row.fingerprint,'shield-check') }}</td><td class="px-4 py-3 text-sm font-semibold text-content-primary">{{ row.cluster }}</td><td class="px-4 py-3"><p class="truncate text-sm text-content-secondary" title="{{ row.namespaces|join(', ') }}">{{ row.namespaces|join(', ') or 'None' }}</p></td><td class="px-4 py-3">{{ table_label.status_label(row.status|title,'normal' if row.status=='active' else 'unknown',size='compact') }}</td><td class="px-4 py-3 text-xs text-content-muted">{{ row.updated_at }}</td></tr>{% else %}<tr><td colspan="5" class="px-5 py-8">{{ intelligence_ui.empty_state('No Deployment Policies','Configure an allowlist when a resolver action is ready for scoped admission.','shield-check') }}</td></tr>{% endfor %}</tbody></table>
+    {{ table_registry.footer('automation_control.index','automation-policy-registry','automation-policy-loading',payload.policy_pagination,{'workspace':'operations','policy_q':filters.policy_q,'policy_status':filters.policy_status},payload.per_page_options,resource_label='Policies',control_name='automation-policies',page_param='policy_page',per_page_param='policy_per_page') }}
+</section>
+
+<section id="automation-journal-registry" class="{{ table_ui.block_classes() }}">
+    <header class="border-b border-outline-subtle px-5 py-4 sm:px-6"><div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"><div class="flex gap-3"><span class="{{ table_ui.block_icon_classes() }}"><i data-lucide="scroll-text" class="h-4 w-4"></i></span><div><h3 class="{{ table_ui.block_title_classes() }}">Execution Journal</h3><p class="{{ table_ui.block_description_classes() }}">Authorization, queue, retry, resolver, verification, and recovery evidence for each governed execution.</p></div></div><div class="flex gap-2">{% if filters.journal_q or filters.journal_status != 'all' %}{{ table_registry.clear_filters_link('automation_control.index','automation-journal-registry','automation-journal-loading',payload.journal_pagination.per_page,table_ui.action_classes(),query_params={'workspace':'operations'},page_param='journal_page',per_page_param='journal_per_page') }}{% endif %}{{ table_label.metadata_label(payload.journal_pagination.total_items ~ ' Journals','scroll-text') }}</div></div>{{ loading_bar.render('automation-journal-loading',label='Refreshing Execution Journal') }}</header>
+    <div class="{{ table_ui.inventory_filter_bar_classes() }}">{% call table_registry.filter_form('automation_control.index','automation-journal-registry','automation-journal-loading',payload.journal_pagination.per_page,page_param='journal_page',per_page_param='journal_per_page') %}<input type="hidden" name="workspace" value="operations"><label><span class="{{ table_ui.filter_label_classes() }}">Search</span>{{ table_ui.search_field('journal_q',filters.journal_q,'Action or journal') }}</label><label><span class="{{ table_ui.filter_label_classes() }}">Status</span><select name="journal_status" class="{{ table_ui.filter_select_classes() }}">{% for value,label in [('all','All Statuses'),('queued','Queued'),('running','Running'),('retry_wait','Retry Wait'),('completed','Completed'),('dead_letter','Dead Letter')] %}<option value="{{ value }}" {% if filters.journal_status==value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>{% endcall %}</div>
+    <table class="{{ table_ui.table_classes() }} table-fixed"><thead class="{{ table_ui.head_classes() }}"><tr><th class="w-[28%] px-4 py-3">Execution</th><th class="w-[20%] px-4 py-3">Scope</th><th class="w-[14%] px-4 py-3">State</th><th class="w-[14%] px-4 py-3">Verification</th><th class="w-[12%] px-4 py-3">Attempts</th><th class="w-[12%] px-4 py-3 text-right">Details</th></tr></thead><tbody class="{{ table_ui.body_classes() }}">{% for row in payload.journal_rows %}{% set target='journal-detail-' ~ row.id %}{% set rid=target ~ '-row' %}<tr class="{{ table_ui.row_classes() }}"><td class="px-4 py-3">{{ table_ui.title_cell(row.action_key,row.public_id,'scroll-text') }}</td><td class="px-4 py-3"><p class="truncate text-sm font-semibold text-content-primary">{{ row.cluster }}</p><p class="truncate text-xs text-content-muted">{{ row.namespace }}</p></td><td class="px-4 py-3">{{ table_label.status_label(row.orchestration_status|replace('_',' ')|title,'critical' if row.orchestration_status=='dead_letter' else ('warning' if row.orchestration_status in ['queued','running','retry_wait'] else 'normal'),size='compact') }}</td><td class="px-4 py-3 text-sm text-content-secondary">{{ row.verification_status|replace('_',' ')|title }}</td><td class="px-4 py-3 text-sm font-semibold text-content-primary">{{ row.attempts }}</td><td class="px-4 py-3 text-right">{{ detail_row.toggle_button('automation-journals',row.id,'',target,rid,open_label='View More',close_label='Close') }}</td></tr>{% call detail_row.static_detail_row(rid,target,6,'w-full min-w-0') %}<div class="grid gap-4 p-4 sm:grid-cols-2 xl:grid-cols-4 sm:p-5">{{ intelligence_ui.field('Execution Result',row.status|replace('_',' ')|title) }}{{ intelligence_ui.field('Dry Run','Accepted' if row.dry_run_allowed is sameas true else ('Blocked' if row.dry_run_allowed is sameas false else 'Not Started')) }}{{ intelligence_ui.field('Recovery Mode',row.recovery_mode|replace('_',' ')|title) }}{{ intelligence_ui.field('Updated',row.updated_at) }}{% if row.verification_summary != '-' %}<div class="sm:col-span-2 xl:col-span-4">{{ intelligence_ui.field('Verification Summary',row.verification_summary) }}</div>{% endif %}{% if row.error != '-' %}<div class="sm:col-span-2 xl:col-span-4">{{ operational_callout.render('Execution Diagnostic',row.error,icon='triangle-alert',tone='critical',variant='semantic') }}</div>{% endif %}</div>{% endcall %}{% else %}<tr><td colspan="6" class="px-5 py-8">{{ intelligence_ui.empty_state('No Execution Journals','No resolver authorization or dispatch evidence has been recorded.','scroll-text') }}</td></tr>{% endfor %}</tbody></table>
+    {{ table_registry.footer('automation_control.index','automation-journal-registry','automation-journal-loading',payload.journal_pagination,{'workspace':'operations','journal_q':filters.journal_q,'journal_status':filters.journal_status},payload.per_page_options,resource_label='Journals',control_name='automation-journals',page_param='journal_page',per_page_param='journal_per_page') }}
+</section>
+
+<section id="automation-dead-letter-registry" class="{{ table_ui.block_classes() }}">
+    <header class="border-b border-outline-subtle px-5 py-4 sm:px-6"><div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"><div class="flex gap-3"><span class="{{ table_ui.block_icon_classes() }}"><i data-lucide="triangle-alert" class="h-4 w-4"></i></span><div><h3 class="{{ table_ui.block_title_classes() }}">Dead-Letter Review</h3><p class="{{ table_ui.block_description_classes() }}">Immutable terminal failures. Retry requires fresh evidence and a new decision lifecycle.</p></div></div><div class="flex gap-2">{% if filters.dead_q %}{{ table_registry.clear_filters_link('automation_control.index','automation-dead-letter-registry','automation-dead-letter-loading',payload.dead_pagination.per_page,table_ui.action_classes(),query_params={'workspace':'operations'},page_param='dead_page',per_page_param='dead_per_page') }}{% endif %}{{ table_label.metadata_label(payload.dead_pagination.total_items ~ ' Records','triangle-alert') }}</div></div>{{ loading_bar.render('automation-dead-letter-loading',label='Refreshing Dead Letters') }}</header>
+    <div class="{{ table_ui.inventory_filter_bar_classes() }}">{% call table_registry.filter_form('automation_control.index','automation-dead-letter-registry','automation-dead-letter-loading',payload.dead_pagination.per_page,page_param='dead_page',per_page_param='dead_per_page') %}<input type="hidden" name="workspace" value="operations"><label><span class="{{ table_ui.filter_label_classes() }}">Search</span>{{ table_ui.search_field('dead_q',filters.dead_q,'Action or journal') }}</label>{% endcall %}</div>
+    <table class="{{ table_ui.table_classes() }} table-fixed"><thead class="{{ table_ui.head_classes() }}"><tr><th class="w-[34%] px-4 py-3">Action / Journal</th><th class="w-[24%] px-4 py-3">Scope</th><th class="w-[18%] px-4 py-3">Attempts</th><th class="w-[24%] px-4 py-3">Updated</th></tr></thead><tbody class="{{ table_ui.body_classes() }}">{% for row in payload.dead_letter_rows %}<tr class="{{ table_ui.row_classes() }}"><td class="px-4 py-3">{{ table_ui.title_cell(row.action_key,row.public_id,'triangle-alert') }}{% if row.error != '-' %}<p class="mt-1 line-clamp-1 text-xs text-status-critical-text" title="{{ row.error }}">{{ row.error }}</p>{% endif %}</td><td class="px-4 py-3"><p class="text-sm font-semibold text-content-primary">{{ row.cluster }}</p><p class="text-xs text-content-muted">{{ row.namespace }}</p></td><td class="px-4 py-3 text-sm font-semibold text-content-primary">{{ row.attempts }}</td><td class="px-4 py-3 text-xs text-content-muted">{{ row.updated_at }}</td></tr>{% else %}<tr><td colspan="4" class="px-5 py-8">{{ intelligence_ui.empty_state('No Dead-Letter Journals','No terminal resolver failure currently requires review.','circle-check','Clear','normal') }}</td></tr>{% endfor %}</tbody></table>
+    {{ table_registry.footer('automation_control.index','automation-dead-letter-registry','automation-dead-letter-loading',payload.dead_pagination,{'workspace':'operations','dead_q':filters.dead_q},payload.per_page_options,resource_label='Records',control_name='automation-dead-letters',page_param='dead_page',per_page_param='dead_per_page') }}
+</section>

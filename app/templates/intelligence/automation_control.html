@@ -2,6 +2,7 @@
 {% import "components/page_hero.html" as page_hero %}
 {% import "components/content_tabs.html" as content_tabs %}
 {% import "components/table_label.html" as table_label %}
+{% import "components/resource_detail_modal.html" as resource_detail_modal %}
 {% import "intelligence/components/_workspace.html" as intelligence_ui %}
 {% block title %}Automation Control{% endblock title %}
 {% block dashboard_content %}
@@ -36,33 +37,20 @@
                 ) }}
             </div>
         </section>
-        <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card">
-            <header class="border-b border-outline-subtle px-4 py-4 sm:px-5">
-                <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                    <div class="flex min-w-0 items-start gap-3">
-                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
-                              aria-hidden="true">
-                            <i data-lucide="gauge" class="h-4 w-4"></i>
-                        </span>
-                        <div class="min-w-0">
-                            <h2 class="text-sm font-semibold leading-5 text-content-primary">Automation Control Summary</h2>
-                            <p class="mt-1 max-w-4xl text-xs leading-5 text-content-muted">Current governance queue, execution activity, and failure posture across the controlled automation lifecycle.</p>
-                        </div>
-                    </div>
-                    <div class="flex shrink-0 flex-wrap gap-2">
-                        {{ table_label.status_label(control.posture.label, control.posture.tone, size='compact') }}
-                        {{ table_label.metadata_label('Human Approval', 'user-check') }}
-                        {{ table_label.metadata_label('System Runbooks', 'library') }}
-                    </div>
-                </div>
-            </header>
-            <div class="grid gap-px bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4">
-                {{ intelligence_ui.metric('clipboard-clock', 'Decision Candidates', payload.counts.pending_candidates, 'Awaiting operator review', 'warning' if payload.counts.pending_candidates else 'normal') }}
-                {{ intelligence_ui.metric('badge-check', 'Awaiting Approval', payload.counts.awaiting_approval, 'Accountable approval queue', 'warning' if payload.counts.awaiting_approval else 'normal') }}
+        {% call intelligence_ui.section(
+            'Automation Control Summary',
+            'Governance posture across decision review, controlled execution, failures, and production readiness.',
+            'workflow',
+            control.posture.label,
+            control.posture.tone
+        ) %}
+            <div class="grid divide-y divide-outline-subtle sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-4">
+                {{ intelligence_ui.metric('clipboard-clock', 'Decision Candidates', payload.counts.pending_candidates, 'Awaiting accountable review', 'warning' if payload.counts.pending_candidates else 'normal') }}
+                {{ intelligence_ui.metric('badge-check', 'Awaiting Approval', payload.counts.awaiting_approval, 'Maker-checker review queue', 'warning' if payload.counts.awaiting_approval else 'normal') }}
                 {{ intelligence_ui.metric('activity', 'Active Executions', payload.counts.running, 'Queued, running, or retry-wait', 'warning' if payload.counts.running else 'normal') }}
                 {{ intelligence_ui.metric('triangle-alert', 'Execution Failures', payload.counts.failures, 'Failed or dead-letter evidence', 'critical' if payload.counts.failures else 'normal') }}
             </div>
-        </section>
+        {% endcall %}
         <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card">
             <header class="px-4 py-4 sm:px-5">
                 <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -118,5 +106,13 @@
                 {% endif %}
             </div>
         </section>
+        {{ resource_detail_modal.host(
+            'Automation Control',
+            url_for('automation_control.binding_configuration_modal'),
+            footer_text='Governance configuration is committed through existing Automation Control service boundaries.',
+            context_label='Automation Control',
+            dialog_max_width='max-w-[92rem]',
+            content_driven=true
+        ) }}
     </div>
 {% endblock dashboard_content %}

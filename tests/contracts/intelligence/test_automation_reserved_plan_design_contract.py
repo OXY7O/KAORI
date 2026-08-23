@@ -23,19 +23,17 @@ def test_automation_control_uses_factual_governance_only_state_while_execution_i
         assert 'fieldset disabled' not in content
 
 
-def test_runbook_workspace_uses_validated_system_catalog_and_environment_bindings():
+def test_runbook_workspace_uses_validated_system_catalog_tables_and_modal_binding():
     runbooks = read('app/templates/intelligence/partials/automation_control/_runbooks.html')
-    assert 'Runbook & Binding Posture' in runbooks
+    modal = read('app/templates/intelligence/partials/automation_control/_binding_configuration_modal.html')
+    assert 'Runbook & Binding Snapshot' in runbooks
     assert 'System Runbook Catalog' in runbooks
     assert 'Activate System Runbook' in runbooks
-    assert 'Binding Configuration' in runbooks
     assert 'Activated Runbook Library' in runbooks
     assert 'Alert & Rule Bindings' in runbooks
-    assert 'Custom Authoring Locked' in runbooks
-    assert 'Create Binding' in runbooks
+    assert 'New Binding' in runbooks
+    assert 'Create Binding' in modal
     assert 'Create Runbook' not in runbooks
     assert 'Create Revision' not in runbooks
     assert 'Publish Revision' not in runbooks
-    assert 'automation_ui.record_details' in runbooks
-    assert 'automation_ui.workspace_nav' in runbooks
     assert '<fieldset' not in runbooks
