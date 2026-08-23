@@ -6,10 +6,18 @@
 {% set can_manage_runbooks = current_user.has_permission('knowledge.runbooks.manage') %}
 {% set can_publish_runbooks = current_user.has_permission('knowledge.runbooks.publish') %}
 {% set catalog_active = payload.system_runbook_catalog | selectattr('activated') | list | length %}
+{{ automation_ui.workspace_nav([
+    ('runbook-posture', 'Posture', 'book-open-check'),
+    ('system-catalog', 'System Catalog', 'library'),
+    ('binding-config', 'Binding Configuration', 'link'),
+    ('runbook-library', 'Runbooks', 'book-open-check'),
+    ('bindings', 'Bindings', 'link')
+]) }}
 {% call automation_ui.section(
     'Runbook & Binding Posture',
     'KAORI System Runbooks are source-controlled, validated operational contracts. Users activate tested runbooks and configure environment-specific bindings; infrastructure execution remains independently gated.',
-    'book-open-check'
+    'book-open-check',
+    anchor='runbook-posture'
     ) %}
     <div class="grid gap-px bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4">
         {{ intelligence_ui.metric('library', 'System Catalog', payload.system_runbook_catalog|length, 'Validated runbooks shipped by KAORI', 'info') }}
@@ -28,11 +36,12 @@
 {% call automation_ui.section(
     'System Runbook Catalog',
     'Choose only KAORI-tested operational procedures whose resolver and verification contracts are supported by this build. Runtime execution registration remains a separate production gate.',
-    'library'
+    'library',
+    anchor='system-catalog'
     ) %}
     <div class="grid gap-3 p-4 sm:p-5">
         {% for row in payload.system_runbook_catalog %}
-            {% call intelligence_ui.record(row.title, row.description, icon='book-key', status_text=row.status, status_tone=row.tone) %}
+            {% call automation_ui.record_details(row.title, row.description, icon='book-key', status_text=row.status, status_tone=row.tone) %}
                 <div class="mt-3 flex flex-wrap gap-2">
                     {{ table_label.metadata_label('System Managed', 'shield-check') }}
                     {{ table_label.metadata_label(row.maturity|replace('_',' ') |title, 'badge-check') }}
@@ -104,7 +113,9 @@
         'Binding Configuration',
         'Bind a published System Runbook revision to authoritative alert/rule evidence and an explicit environment scope. A binding creates review candidates only; it never executes the resolver directly.',
         'link'
-        ) %}
+    ,
+    anchor='binding-config'
+    ) %}
         <form method="post"
               action="{{ url_for('automation_control.create_automation_binding') }}"
               class="grid gap-4 p-4 sm:p-5">
@@ -192,11 +203,13 @@
         'Activated Runbook Library',
         'Materialized runbook identities retained in KAORI. System records are source-controlled; legacy custom records are audit-only while custom authoring is locked.',
         'book-open-check'
-        ) %}
+    ,
+    anchor='runbook-library'
+    ) %}
         <div class="grid gap-3 p-4 sm:p-5">
             {% for row in payload.runbook_rows %}
                 {% set runbook_tone = 'normal' if row.status == 'active' and row.published_count else ('warning' if row.status == 'active' else 'unknown') %}
-                {% call intelligence_ui.record(row.title, row.description, icon='book-open-check', status_text=row.status|replace('_',' ')|title, status_tone=runbook_tone) %}
+                {% call automation_ui.record_details(row.title, row.description, icon='book-open-check', status_text=row.status|replace('_',' ')|title, status_tone=runbook_tone) %}
                     <div class="mt-3 flex flex-wrap gap-2">
                         {{ table_label.metadata_label('System Managed' if row.source == 'system' else 'Legacy Custom · Read Only', 'shield-check' if row.source == 'system' else 'archive') }}
                     </div>
@@ -219,10 +232,12 @@
         'Alert & Rule Bindings',
         'Bindings connect authoritative rule or alert selectors to a published System Runbook revision. They produce review candidates, never direct resolver execution.',
         'link'
-        ) %}
+    ,
+    anchor='bindings'
+    ) %}
         <div class="grid gap-3 p-4 sm:p-5">
             {% for row in payload.binding_rows %}
-                {% call intelligence_ui.record(row.binding_key, row.selector, icon='link', status_text=row.status|replace('_',' ')|title, status_tone='normal' if row.status == 'active' else 'unknown') %}
+                {% call automation_ui.record_details(row.binding_key, row.selector, icon='link', status_text=row.status|replace('_',' ')|title, status_tone='normal' if row.status == 'active' else 'unknown') %}
                     <dl class="mt-3 grid gap-3 sm:grid-cols-2">
                         {{ intelligence_ui.field('Revision', row.runbook_key ~ ' · ' ~ row.version) }}
                         {{ intelligence_ui.field('Scope', row.cluster_id ~ ' / ' ~ row.namespace) }}

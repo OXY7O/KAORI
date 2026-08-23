@@ -3,12 +3,18 @@
 {% import "intelligence/components/_workspace.html" as intelligence_ui %}
 {% import "intelligence/partials/automation_control/_components.html" as automation_ui %}
 {% set control = payload.overview_state %}
+{{ automation_ui.workspace_nav([
+    ('control-path', 'Control Path', 'route'),
+    ('safety-readiness', 'Safety & Readiness', 'shield-check'),
+    ('current-activity', 'Current Activity', 'activity')
+]) }}
 {% call automation_ui.section(
     'Control Path',
     'Evidence advances through deterministic runbook matching, accountable decision review, execution admission, and independent verification. No later stage bypasses an earlier gate.',
     'route',
     control.posture.label,
-    control.posture.tone
+    control.posture.tone,
+    anchor='control-path'
     ) %}
     <div class="space-y-4 px-4 pb-5 sm:px-5">
         <div>
@@ -77,7 +83,8 @@
 {% call automation_ui.section(
     'Safety & Readiness',
     'Execution state, safety blocks, readiness evidence, and lifecycle delivery are reported independently instead of collapsing into one Ready status.',
-    'shield-check'
+    'shield-check',
+    anchor='safety-readiness'
     ) %}
     <div class="grid gap-px border-t border-outline-subtle bg-outline-subtle sm:grid-cols-2 xl:grid-cols-5">
         {% set guardrails = [
@@ -110,7 +117,8 @@
 {% call automation_ui.section(
     'Current Activity',
     'Decision review and execution evidence remain separate so authorization state cannot be mistaken for remediation success.',
-    'activity'
+    'activity',
+    anchor='current-activity'
     ) %}
     <div class="grid gap-4 px-4 pb-5 xl:grid-cols-2 sm:px-5">
         {% call automation_ui.panel('Decision Review', 'Latest candidates awaiting accountable review.', 'clipboard-check', payload.counts.pending_candidates ~ ' Pending', 'warning' if payload.counts.pending_candidates else 'normal') %}

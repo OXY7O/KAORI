@@ -6,10 +6,17 @@
 {% set can_review_candidates = current_user.has_permission('intelligence.decisions.create') %}
 {% set can_approve_decisions = current_user.has_permission('intelligence.decisions.approve') %}
 {% set can_execute_decisions = current_user.has_permission('intelligence.decisions.execute') %}
+{{ automation_ui.workspace_nav([
+    ('decision-contract', 'Decision Contract', 'clipboard-check'),
+    ('candidate-queue', 'Candidate Queue', 'clipboard-clock'),
+    ('persisted-decisions', 'Persisted Decisions', 'badge-check'),
+    ('decision-notifications', 'Notifications', 'send')
+]) }}
 {% call automation_ui.section(
     'Decision Contract',
     'A candidate is review evidence, not an execution request. Promotion creates an immutable decision snapshot; approval remains a separate accountable outcome.',
-    'clipboard-check'
+    'clipboard-check',
+    anchor='decision-contract'
     ) %}
     {% set stages = [('1', 'Candidate', 'Non-executable evidence matched to a published runbook.', 'clipboard-clock'), ('2', 'Policy Review', 'Scope, runbook revision, evidence hash, expiry, and approval policy are checked.', 'shield-check'), ('3', 'Approval', 'An accountable approval or rejection is persisted when required.', 'badge-check'), ('4', 'Execution Eligibility', 'Only approved, unexpired, policy-allowed decisions may cross into Execution Control.', 'key-round')] %}
     <ol class="grid gap-0 px-4 pb-5 md:grid-cols-2 xl:grid-cols-4 sm:px-5">
@@ -45,12 +52,13 @@
     'Reviewable candidates ordered by creation time. Candidate state remains independent from execution state.',
     'clipboard-clock',
     payload.counts.pending_candidates ~ ' Pending',
-    'warning' if payload.counts.pending_candidates else 'normal'
+    'warning' if payload.counts.pending_candidates else 'normal',
+    anchor='candidate-queue'
     ) %}
     <div class="grid gap-3 p-4 sm:p-5">
         {% for row in payload.candidate_rows %}
             {% set candidate_tone = 'warning' if row.status == 'pending' else ('normal' if row.status == 'promoted' else 'unknown') %}
-            {% call intelligence_ui.record(row.rule_key, row.public_id, icon='clipboard-clock', status_text=row.status|replace('_',' ')|title, status_tone=candidate_tone) %}
+            {% call automation_ui.record_details(row.rule_key, row.public_id, icon='clipboard-clock', status_text=row.status|replace('_',' ')|title, status_tone=candidate_tone) %}
                 <div class="mt-3 flex flex-wrap gap-2">
                     {{ table_label.status_label(row.severity|title, 'critical' if row.severity == 'critical' else ('warning' if row.severity == 'warning' else 'info') , size='compact') }}
                     {{ table_label.metadata_label(row.cluster, 'boxes') }}
@@ -117,12 +125,13 @@
     'Immutable decisions preserve the evidence identity, policy outcome, approval requirement, accountable outcome, scope, and expiry used for execution authorization.',
     'badge-check',
     payload.counts.awaiting_approval ~ ' Awaiting Approval',
-    'warning' if payload.counts.awaiting_approval else 'normal'
+    'warning' if payload.counts.awaiting_approval else 'normal',
+    anchor='persisted-decisions'
     ) %}
     <div class="grid gap-3 p-4 sm:p-5">
         {% for row in payload.decision_rows %}
             {% set decision_tone = 'critical' if row.status in ['rejected', 'expired'] else ('warning' if row.status == 'pending_approval' else ('info' if row.status in ['ready', 'approved'] else 'normal')) %}
-            {% call intelligence_ui.record(row.rule_key, row.action_key, icon='badge-check', status_text=row.status|replace('_',' ')|title, status_tone=decision_tone) %}
+            {% call automation_ui.record_details(row.rule_key, row.action_key, icon='badge-check', status_text=row.status|replace('_',' ')|title, status_tone=decision_tone) %}
                 <div class="mt-3 flex flex-wrap gap-2">
                     {{ table_label.status_label(row.severity|title, 'critical' if row.severity == 'critical' else ('warning' if row.severity == 'warning' else 'info') , size='compact') }}
                     {{ table_label.metadata_label('Approval Required' if row.approval_required else 'Approval Not Required', 'user-check') }}
@@ -212,7 +221,8 @@
 {% call automation_ui.section(
     'Approval Notification Delivery',
     'Decision lifecycle notifications are queued after the governance transaction commits. Provider delivery is asynchronous and never changes the recorded approval outcome.',
-    'send'
+    'send',
+    anchor='decision-notifications'
     ) %}
     <div class="grid gap-px bg-outline-subtle sm:grid-cols-3">
         {{ intelligence_ui.metric('bell-ring', 'Approval Required', payload.decision_notification.approval_required.label, payload.decision_notification.approval_required.helper, payload.decision_notification.approval_required.tone) }}
@@ -235,7 +245,7 @@
     <div class="grid gap-3 border-t border-outline-subtle p-4 sm:p-5">
         {% for row in payload.decision_delivery_rows %}
             {% set delivery_tone = 'normal' if row.status == 'sent' else ('warning' if row.status == 'failed' else 'unknown') %}
-            {% call intelligence_ui.record(row.event_label, row.channel_name ~ ' · ' ~ row.provider, icon='send', status_text=row.status|title, status_tone=delivery_tone) %}
+            {% call automation_ui.record_details(row.event_label, row.channel_name ~ ' · ' ~ row.provider, icon='send', status_text=row.status|title, status_tone=delivery_tone) %}
                 <dl class="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                     {{ intelligence_ui.field('Domain', row.domain) }}
                     {{ intelligence_ui.field('Severity', row.severity|title) }}

@@ -132,7 +132,7 @@ def _base_payload(args: MultiDict[str, str], *, page_mode: str) -> dict[str, Any
 
     if page_mode == 'catalog':
         for item in items:
-            item['table_summary'] = _truncate_words(item.get('summary'), limit=64)
+            item['table_summary'] = _truncate_words(item.get('summary'), limit=16)
     else:
         for item in items:
             scope_title, scope_supporting = finding_scope_details(item)
@@ -348,6 +348,7 @@ def _build_latest_image_findings(rules: dict[str, dict[str, Any]]) -> list[dict[
         )
 
     return findings
+
 
 
 def _build_storage_binding_findings(rules: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:

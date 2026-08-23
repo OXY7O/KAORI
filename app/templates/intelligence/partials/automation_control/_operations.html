@@ -3,12 +3,20 @@
 {% import "intelligence/components/_workspace.html" as intelligence_ui %}
 {% import "intelligence/partials/automation_control/_components.html" as automation_ui %}
 {% import "intelligence/components/_pagination.html" as intelligence_pagination %}
+{{ automation_ui.workspace_nav([
+    ('execution-posture', 'Posture', 'server-cog'),
+    ('governance-config', 'Configuration', 'sliders-horizontal'),
+    ('deployment-policies', 'Policies', 'shield-check'),
+    ('execution-journal', 'Journal', 'scroll-text'),
+    ('dead-letter-review', 'Dead Letter', 'triangle-alert')
+]) }}
 {% call automation_ui.section(
     'Execution Posture',
     'Execution Control separates resolver registration, deployment policy, safety controls, orchestration state, and terminal failure evidence.',
     'server-cog',
     payload.overview_state.posture.label,
-    payload.overview_state.posture.tone
+    payload.overview_state.posture.tone,
+    anchor='execution-posture'
     ) %}
     <div class="grid gap-px bg-outline-subtle sm:grid-cols-2 xl:grid-cols-5">
         {{ intelligence_ui.metric('clock-3', 'Queued', payload.metrics.queued, 'Waiting for resolver execution', 'warning' if payload.metrics.queued else 'normal') }}
@@ -31,7 +39,9 @@
         'Governance Configuration',
         'Prepare deployment allowlists and resolver safety controls without crossing the execution boundary. These settings are revalidated again by the worker at execution time.',
         'sliders-horizontal'
-        ) %}
+    ,
+    anchor='governance-config'
+    ) %}
         <div class="grid gap-4 p-4 xl:grid-cols-2 sm:p-5">
             <form method="post"
                   action="{{ url_for('automation_control.update_automation_deployment_policy') }}"
@@ -159,7 +169,7 @@
         ) %}
         <div class="grid gap-3 p-4 sm:p-5">
             {% for row in payload.registry_rows %}
-                {% call intelligence_ui.record(row.action_key, row.profiles|join(', ') or 'No compatibility profile', icon='server-cog', status_text='Registered', status_tone='normal') %}
+                {% call automation_ui.record_details(row.action_key, row.profiles|join(', ') or 'No compatibility profile', icon='server-cog', status_text='Registered', status_tone='normal') %}
                     <dl class="mt-3 grid gap-3 sm:grid-cols-2">
                         {{ intelligence_ui.field('Capabilities', row.capabilities|join(', ') or '-') }}
                         {{ intelligence_ui.field('Automated Rollback', 'Required' if row.rollback_required else 'Not Required') }}
@@ -180,7 +190,7 @@
             {% for row in payload.control_rows %}
                 {% set control_tone = 'critical' if row.kill_switch else ('maintenance' if row.maintenance_mode else 'normal') %}
                 {% set control_status = 'Kill Switch Active' if row.kill_switch else ('Maintenance' if row.maintenance_mode else 'Normal') %}
-                {% call intelligence_ui.record(row.scope, 'Concurrency ' ~ row.concurrency_limit ~ ' · Rate ' ~ row.rate_limit ~ '/min', icon='shield-alert', status_text=control_status, status_tone=control_tone) %}
+                {% call automation_ui.record_details(row.scope, 'Concurrency ' ~ row.concurrency_limit ~ ' · Rate ' ~ row.rate_limit ~ '/min', icon='shield-alert', status_text=control_status, status_tone=control_tone) %}
                     <dl class="mt-3 grid gap-3 sm:grid-cols-2">
                         {{ intelligence_ui.field('Failure Threshold', row.failure_threshold) }}
                         {{ intelligence_ui.field('Cooldown', row.cooldown_seconds ~ ' seconds') }}
@@ -199,11 +209,12 @@
     'Scoped allowlists bind registered resolver actions to Kubernetes clusters and explicit namespaces. A stored policy is not an execution request.',
     'shield-check',
     payload.overview_state.counts.active_policies ~ ' Active',
-    'normal' if payload.overview_state.counts.active_policies else 'unknown'
+    'normal' if payload.overview_state.counts.active_policies else 'unknown',
+    anchor='deployment-policies'
     ) %}
     <div class="grid gap-3 p-4 sm:p-5">
         {% for row in payload.policy_rows %}
-            {% call intelligence_ui.record(row.action_key, row.cluster, icon='shield-check', status_text=row.status|title, status_tone='normal' if row.status == 'active' else 'unknown') %}
+            {% call automation_ui.record_details(row.action_key, row.cluster, icon='shield-check', status_text=row.status|title, status_tone='normal' if row.status == 'active' else 'unknown') %}
                 <dl class="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                     {{ intelligence_ui.field('Namespaces', row.namespaces|join(', ') or 'None') }}
                     {{ intelligence_ui.field('Registry Fingerprint', row.fingerprint, true) }}
@@ -220,12 +231,13 @@
 {% call automation_ui.section(
     'Execution Journal',
     'Authorization, queue, lease, retry, resolver result, and terminal orchestration state remain auditable as separate execution evidence.',
-    'scroll-text'
+    'scroll-text',
+    anchor='execution-journal'
     ) %}
     <div class="grid gap-3 p-4 sm:p-5">
         {% for row in payload.journal_rows %}
             {% set journal_tone = 'critical' if row.orchestration_status == 'dead_letter' or row.status == 'failed' else ('warning' if row.orchestration_status in ['queued', 'running', 'retry_wait'] else 'normal') %}
-            {% call intelligence_ui.record(row.action_key, row.public_id, icon='scroll-text', status_text=row.orchestration_status|replace('_',' ')|title, status_tone=journal_tone) %}
+            {% call automation_ui.record_details(row.action_key, row.public_id, icon='scroll-text', status_text=row.orchestration_status|replace('_',' ')|title, status_tone=journal_tone) %}
                 <dl class="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
                     {{ intelligence_ui.field('Scope', row.cluster ~ ' / ' ~ row.namespace) }}
                     {{ intelligence_ui.field('Execution Result', row.status|replace('_',' ') |title) }}
@@ -252,11 +264,12 @@
     'Terminal orchestration failures remain immutable for diagnosis. KAORI does not replay a consumed one-time authorization; retry requires fresh evidence, a new candidate/decision, and any required approval.',
     'triangle-alert',
     payload.metrics.dead_letter ~ ' Records',
-    'critical' if payload.metrics.dead_letter else 'normal'
+    'critical' if payload.metrics.dead_letter else 'normal',
+    anchor='dead-letter-review'
     ) %}
     <div class="grid gap-3 p-4 sm:p-5">
         {% for row in payload.dead_letter_rows %}
-            {% call intelligence_ui.record(row.action_key, row.error, icon='triangle-alert', status_text='Dead Letter', status_tone='critical') %}
+            {% call automation_ui.record_details(row.action_key, row.error, icon='triangle-alert', status_text='Dead Letter', status_tone='critical') %}
                 <dl class="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                     {{ intelligence_ui.field('Scope', row.cluster ~ ' / ' ~ row.namespace) }}
                     {{ intelligence_ui.field('Attempts', row.attempts) }}

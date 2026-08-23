@@ -36,5 +36,6 @@ def test_runbook_workspace_uses_validated_system_catalog_and_environment_binding
     assert 'Create Runbook' not in runbooks
     assert 'Create Revision' not in runbooks
     assert 'Publish Revision' not in runbooks
-    assert '<details' not in runbooks
+    assert 'automation_ui.record_details' in runbooks
+    assert 'automation_ui.workspace_nav' in runbooks
     assert '<fieldset' not in runbooks

@@ -56,7 +56,7 @@
                                 {{ table_label.status_label('Recommendation Only', 'unknown', size='compact') }}
                             {% endif %}
                         </div>
-                        <p class="mt-2 text-xs leading-5 text-content-muted">{{ 'Active evaluator or governed policy is available in the current KAORI boundary.' if item.status == 'available' else ('KAORI enriches an authoritative upstream signal for this definition.' if item.status == 'imported_signal' else 'Definition is cataloged, but enablement stays outside the current boundary.') }}</p>
+                        <p class="mt-2 text-xs leading-5 text-content-muted">{{ 'Ready in the current KAORI boundary.' if item.status == 'available' else ('Enriched from an upstream signal.' if item.status == 'imported_signal' else 'Cataloged only; enabled outside this boundary.') }}</p>
                     </td>
                     <td class="px-5 py-4 text-right">
                         {{ detail_row.toggle_button('rule-catalog',
