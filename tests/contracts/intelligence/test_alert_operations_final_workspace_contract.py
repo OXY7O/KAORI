@@ -25,6 +25,16 @@ def test_active_queue_owns_loading_filter_actions_and_modal_review() -> None:
     assert "record_pagination.render(payload.active_pagination, 'page', 'per_page', 'alert-operations-active-registry'" in table
 
 
+def test_alert_case_asset_namespace_metadata_has_no_vertical_divider() -> None:
+    workspace = read('app/templates/intelligence/partials/_alert_ops_case_workspace.html')
+
+    asset_namespace = workspace.split(
+        "{% for icon, label, value in [('boxes', 'Asset', case.asset_name), ('layers-3', 'Namespace', case.namespace)] %}",
+        1,
+    )[1].split('{% endfor %}', 1)[0]
+    assert 'border-r' not in asset_namespace
+
+
 def test_routing_workspace_is_table_led_and_crud_uses_modal() -> None:
     routing = read('app/templates/intelligence/partials/_alert_ops_routing.html')
     editor = read('app/templates/intelligence/partials/_alert_ops_routing_editor_modal.html')
@@ -40,6 +50,7 @@ def test_routing_workspace_is_table_led_and_crud_uses_modal() -> None:
     assert "alert_intelligence.routing_policy_details" in routing
     assert 'max-h-[30rem]' in routing
     assert 'Channel Readiness' in routing
+    assert 'Use Channel Defaults or Create a Governed Policy' in routing
     assert routing.index('Channel Readiness') < routing.index('Policy Registry')
     assert routing.count('class="{{ table_ui.action_classes() }}"') >= 2
     assert 'data-kaori-detail-variant="modal"' in editor
@@ -125,6 +136,10 @@ def test_resolved_case_review_uses_dedicated_modal_content_and_modal_refresh_con
     assert 'data-kaori-detail-variant="modal"' in modal
     for required in ('Verification & Closure', 'Verification Pending', 'Resolution Evidence', 'Postmortem & Learning'):
         assert required in modal
+    assert 'Resolution Summary' in modal
+    assert 'Recovery Steps & References' in modal
+    assert 'xl:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]' in modal
+    assert 'rounded-xl border border-outline-subtle bg-surface-card' in modal
     for required in ('Incident Timeline', 'Notification Delivery Ledger'):
         assert required in activity
     assert "if payload.get('tab') == 'resolved'" in routes
@@ -193,6 +208,47 @@ def test_context_filter_owns_only_context_loading_lifecycle() -> None:
     assert '#alert-operations-silence-loading' not in context_form
     assert "indicator_id='alert-intelligence-loading'" not in workspace
     assert "hx_indicator='#alert-intelligence-loading'" not in workspace
+
+
+def test_active_queue_filter_does_not_listen_to_operational_context_selects() -> None:
+    active = read('app/templates/intelligence/partials/_alert_ops_active.html')
+    active_form = active.split('id="alert-operations-filter-form"', 1)[1].split('</form>', 1)[0]
+
+    assert 'hx-trigger="change, input changed delay:350ms"' in active_form
+    assert 'from:select' not in active_form
+    assert 'from:input' not in active_form
+    assert 'hx-indicator="#alert-operations-active-loading"' in active_form
+
+
+def test_alert_intelligence_section_headers_use_canonical_text_hierarchy() -> None:
+    templates = (
+        'app/templates/intelligence/partials/_alert_ops_overview.html',
+        'app/templates/intelligence/partials/_alert_ops_active.html',
+        'app/templates/intelligence/partials/_alert_ops_routing.html',
+        'app/templates/intelligence/partials/_alert_ops_templates.html',
+        'app/templates/intelligence/partials/_alert_ops_history.html',
+        'app/templates/intelligence/partials/_alert_intelligence_workspace.html',
+    )
+    for relative in templates:
+        template = read(relative)
+        assert 'table_ui.block_title_classes()' in template, relative
+        assert 'table_ui.block_description_classes()' in template, relative
+
+    table_primitives = read('app/templates/components/table_primitives.html')
+    assert 'text-base font-semibold text-content-primary' in table_primitives
+    assert 'mt-1 text-sm leading-6 text-content-secondary' in table_primitives
+
+    overview = read('app/templates/intelligence/partials/_alert_ops_overview.html')
+    for title in ('Alert Operations Snapshot', 'Lifecycle Control', 'Operational Readiness'):
+        assert f'<h3 class="{{{{ table_ui.block_title_classes() }}}}">{title}</h3>' in overview
+
+    routing = read('app/templates/intelligence/partials/_alert_ops_routing.html')
+    for title in ('Routing & Channels', 'Channel Readiness', 'Policy Registry'):
+        assert f'<h3 class="{{{{ table_ui.block_title_classes() }}}}">{title}</h3>' in routing
+
+    templates_source = read('app/templates/intelligence/partials/_alert_ops_templates.html')
+    for title in ('Notification Templates', 'Template Registry'):
+        assert f'<h3 class="{{{{ table_ui.block_title_classes() }}}}">{title}</h3>' in templates_source
 
 
 def test_alert_intelligence_modals_follow_recommendation_review_visual_language() -> None:

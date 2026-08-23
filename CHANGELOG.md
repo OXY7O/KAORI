@@ -1,16 +1,7 @@
-# Changelog
-
-## 2026-08-23 — Automation Control follow-up polish
-
-### Updated
-- Simplified Rule Catalog table summaries using compact sentence-level summaries.
-- Added section spacing between stacked registry tables in Automation Control workspaces.
-- Redesigned Binding Configuration modal with boxed identity, selector, and evidence mapping sections.
-- Redesigned Execution Configuration modal into distinct Deployment Allowlist and Safety Control cards.
-- Redesigned Record Readiness Evidence modal into boxed scope and validation sections.
-
-### Safety
-- No migrations added.
-- No route names changed.
-- No form field names changed.
-- No governance or execution gate controls removed.
+2026-08-23
+- aligned Recommendation Summary and Rule Catalog Summary with Automation Control Summary styling
+- shortened requested Alert Operations, Rule Catalog, and Automation Control copy
+- simplified Operator Direction surface styling
+- improved Telegram alert spacing and absolute-link fallback
+- refreshed Resolved Alert modal presentation
+- updated contract coverage for the follow-up changes

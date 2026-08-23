@@ -71,3 +71,27 @@ def test_intelligence_operational_context_and_queue_share_primary_heading_scale(
     assert '<h3 class="{{ table_ui.block_title_classes() }}">Active Alert Queue</h3>' in active
     assert '<h2 class="{{ table_ui.block_title_classes() }}">Automation Control Workspace</h2>' in automation
     assert '<h3 class="{{ table_ui.block_title_classes() }}">{{ payload.active_workspace.label }}</h3>' in automation
+
+
+def test_all_intelligence_primary_surfaces_keep_canonical_title_and_description_scale() -> None:
+    table_primitives = read('app/templates/components/table_primitives.html')
+    assert 'text-base font-semibold text-content-primary' in table_primitives
+    assert 'mt-1 text-sm leading-6 text-content-secondary' in table_primitives
+
+    catalog_summary = read('app/templates/intelligence/partials/_catalog_summary.html')
+    assert "'Rule Catalog Summary'" in catalog_summary
+    assert 'intelligence_ui.section(' in catalog_summary
+    assert 'Review the current catalog scope before scanning definitions, evaluator readiness, and imported-signal coverage.' in catalog_summary
+
+    recommendation_summary = read('app/templates/intelligence/partials/_recommendation_workspace_info.html')
+    alert_summary = read('app/templates/intelligence/partials/_alert_intelligence_summary.html')
+    automation = read('app/templates/intelligence/automation_control.html')
+    overview = read('app/templates/intelligence/overview.html')
+    rule_catalog = read('app/templates/intelligence/rule_catalog.html')
+
+    assert "'Recommendation Summary'" in recommendation_summary
+    assert "'Alert Operations Summary'" in alert_summary
+    assert '<h2 class="{{ table_ui.block_title_classes() }}">Automation Control Workspace</h2>' in automation
+    assert "'Intelligence Posture'" in overview
+    assert "'Intelligence Workspaces'" in overview
+    assert "'Rule Definitions'" in rule_catalog

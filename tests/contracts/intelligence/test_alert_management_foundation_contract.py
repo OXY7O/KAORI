@@ -159,6 +159,7 @@ def test_telegram_system_templates_use_clickable_html_actions_and_visual_hierarc
     assert 'def _render_action_link' in telegram
     assert '<a href=' in telegram
     assert "action_label='View Resolved Case' if event_state == 'resolved' else 'Review Alert'" in notifications
+    assert 'def _notification_action_url(path: str) -> str | None:' in notifications
 
 
 def test_intelligence_search_placeholders_are_compact() -> None:

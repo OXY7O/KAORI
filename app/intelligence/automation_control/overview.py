@@ -98,7 +98,7 @@ def build_automation_overview(*, execution_enabled: bool, registry_rows: Sequenc
             'helper': (
                 'Infrastructure execution may proceed only after every downstream admission gate passes.'
                 if execution_enabled
-                else 'Governance preparation remains writable while infrastructure execution stays fail-closed.'
+                else 'Governance stays writable while infrastructure execution remains fail-closed.'
             ),
         },
         'guardrails': {
@@ -229,8 +229,8 @@ def _notification_readiness() -> dict[str, str | int]:
             'label': 'Operational',
             'tone': 'normal',
             'helper': (
-                f'All {len(required)} Automation Control lifecycle events are covered; '
-                f'{len(operational)} channel(s) have successful delivery evidence.'
+                f'All {len(required)} lifecycle events are covered; '
+                f'{len(operational)} channel(s) have delivery evidence.'
             ),
             'eligible': len(channels),
             'operational': len(operational),

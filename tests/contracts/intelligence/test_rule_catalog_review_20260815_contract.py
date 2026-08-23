@@ -21,6 +21,7 @@ def test_rule_catalog_uses_two_row_filter_layout_and_standalone_summary_box():
     assert 'Signal Source' in filters
     assert 'hx-swap-oob="outerHTML"' in results
     assert 'Rule Catalog Summary' in summary
+    assert 'layout-dashboard' in summary
     assert 'clear_filters_action' in results
     assert "target='#catalog-workspace-content'" in results
     assert 'Matching Rules' in summary
@@ -36,7 +37,7 @@ def test_rule_catalog_rows_use_short_summary_and_standard_detail_toggle():
     assert 'def _count_active_filters(' in service
     assert service.index('def _truncate_words(') < service.index('def _base_payload(')
     assert service.index('def _count_active_filters(') < service.index('def _base_payload(')
-    assert "item['table_summary'] = _truncate_words(item.get('summary'), limit=16)" in service
+    assert "item['table_summary'] = _catalog_table_summary(item.get('summary'), limit=72)" in service
     assert 'item.table_summary or item.summary' in records
     assert 'components/details/_expandable_row.html' in records
     assert 'detail_row.toggle_button(' in records

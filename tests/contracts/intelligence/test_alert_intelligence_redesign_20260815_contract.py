@@ -54,7 +54,8 @@ def test_active_alert_filters_are_tab_local_auto_refresh_and_keep_clear_filters(
     assert 'Triage Guidance' in active
     assert 'bg-kaori-soft' in active
     assert 'Quick Views' in active
-    assert 'hx-trigger="input changed delay:350ms from:input, change from:select"' in active
+    assert 'hx-trigger="change, input changed delay:350ms"' in active
+    assert 'from:select' not in active.split('id="alert-operations-filter-form"', 1)[1].split('</form>', 1)[0]
     assert 'Search' in active
     assert 'Severity' in active
     assert 'Workflow' in active

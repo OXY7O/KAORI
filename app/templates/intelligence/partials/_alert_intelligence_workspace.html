@@ -13,12 +13,10 @@
 ] %}
 {% call intelligence_ui.section(
     'Alert Operations Workspace',
-    'Manage alert ownership, delivery, suppression, recovery evidence, resolved incidents, and notification policy without duplicating Notification Channel credentials.',
+    'Manage alert ownership, delivery, suppression, recovery evidence, resolved incidents, and policy without duplicating Notification Channel credentials.',
     'shield-alert',
     payload.summary.active ~ ' Active',
-    'warning' if payload.summary.active else 'normal',
-    indicator_id='alert-intelligence-loading',
-    loading_label='Loading Alert Operations'
+    'warning' if payload.summary.active else 'normal'
     ) %}
     {{ content_tabs.render_links('alert-operations-sections',
         workspace_tabs,
@@ -29,11 +27,10 @@
         hx_target='#alert-intelligence-page-content',
         hx_swap='outerHTML show:none focus-scroll:false',
         hx_push_url='true',
-        hx_indicator='#alert-intelligence-loading',
         nowrap=true,
         hx_sync='#alert-intelligence-page-content:replace') }}
-    <div class="border-b border-outline-subtle bg-surface-card px-4 py-3 sm:px-5">
-        <div class="grid w-full gap-4 lg:grid-cols-[minmax(18rem,0.8fr)_minmax(0,2.2fr)] lg:items-end">
+    <div class="border-b border-outline-subtle bg-surface-card px-4 py-4 sm:px-5">
+        <div class="space-y-3">
             <div class="min-w-0">
                 <h3 class="{{ table_ui.block_title_classes() }}">Operational Context</h3>
                 <p class="{{ table_ui.block_description_classes() }}">Choose the managed domain and asset scope used by this Alert Operations workspace.</p>
@@ -44,11 +41,13 @@
                   hx-get="{{ url_for('alert_intelligence.index') }}"
                   hx-trigger="change"
                   hx-target="#alert-intelligence-page-content"
+                  hx-select="#alert-intelligence-page-content"
                   hx-swap="outerHTML show:none focus-scroll:false"
                   hx-push-url="true"
                   hx-indicator="#alert-intelligence-context-loading"
-                  hx-sync="#alert-intelligence-page-content:replace"
-                  class="{{ table_ui.filter_layout_classes() }} min-w-0">
+                  hx-sync="this:replace"
+                  hx-disinherit="hx-indicator"
+                  class="{{ table_ui.filter_layout_classes() }}">
                 <input class="alert-intelligence-context-persistent"
                        type="hidden"
                        name="tab"
@@ -100,9 +99,7 @@
                     <button type="submit" class="{{ table_ui.action_classes() }}">Apply Context</button>
                 </noscript>
             </form>
-            <div class="lg:col-start-2">
-                {{ loading_bar.render('alert-intelligence-context-loading', label='Refreshing Operational Context') }}
-            </div>
+            {{ loading_bar.render('alert-intelligence-context-loading', label='Refreshing Operational Context') }}
         </div>
     </div>
     <div data-alert-intelligence-active-section="{{ payload.tab }}"

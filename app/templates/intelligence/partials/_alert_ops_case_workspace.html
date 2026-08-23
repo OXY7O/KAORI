@@ -362,7 +362,7 @@
                     <dd class="mt-1 break-words text-sm font-semibold leading-6 text-content-primary [overflow-wrap:anywhere]">{{ case.target }}</dd>
                 </div>
                 {% for icon, label, value in [('boxes', 'Asset', case.asset_name), ('layers-3', 'Namespace', case.namespace)] %}
-                    <div class="min-w-0 px-4 py-3 sm:border-r sm:last:border-r-0">
+                    <div class="min-w-0 px-4 py-3">
                         <dt class="flex items-center gap-2 text-xs font-medium leading-5 text-content-muted"><i data-lucide="{{ icon }}" class="h-3.5 w-3.5 text-kaori-primary" aria-hidden="true"></i>{{ label }}</dt>
                         <dd class="mt-1 break-words text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]">{{ value }}</dd>
                     </div>

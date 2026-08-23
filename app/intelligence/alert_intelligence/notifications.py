@@ -21,6 +21,16 @@ from app.intelligence.alert_intelligence.templates import render_case_message
 from app.models.alert_ops import AlertCase, AlertCaseEvent
 from app.models.notification_channel import NotificationChannel, NotificationDelivery
 
+def _notification_action_url(path: str) -> str | None:
+    base_url = str(current_app.config.get('KAORI_PUBLIC_BASE_URL') or '').strip().rstrip('/')
+    if base_url:
+        return f'{base_url}{path}'
+    server_name = str(current_app.config.get('SERVER_NAME') or '').strip()
+    if server_name:
+        scheme = str(current_app.config.get('PREFERRED_URL_SCHEME') or 'https').strip() or 'https'
+        return f'{scheme}://{server_name}{path}'
+    return None
+
 
 def dispatch_case_notifications() -> dict[str, int]:
     """Dispatch recommendation-origin firing/repeat/resolved notifications from durable alert cases."""
@@ -181,9 +191,8 @@ def _deliver_case_event(
     if channel is None:
         return {'successful': 0, 'failed': 0, 'skipped': 1}
     action_tab = 'resolved' if event_state == 'resolved' else 'active'
-    base_url = str(current_app.config.get('KAORI_PUBLIC_BASE_URL') or '').rstrip('/')
     action_path = f'/intelligence/alert-intelligence?tab={action_tab}&case={case.public_id}'
-    action_url = f'{base_url}{action_path}' if base_url else action_path
+    action_url = _notification_action_url(action_path)
     title, body, content_format = render_case_message(
         case,
         provider_key=channel.provider_key,

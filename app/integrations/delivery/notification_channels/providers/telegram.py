@@ -95,12 +95,11 @@ def _render_message(message: NotificationMessage) -> str:
 
 def _render_action_link(*, label: str, url: str, content_format: str) -> str:
     if content_format == 'html':
-        return f'🔗 <a href="{escape(url, quote=True)}"><b>{escape(label)}</b></a>'
+        return f'🔗 <a href="{escape(url, quote=True)}"><b>{escape(label)}</b></a>\n<i>Open in KAORI</i>'
     if content_format == 'markdown':
         safe_label = label.replace('[', '').replace(']', '')
         return f'🔗 [{safe_label}]({url})'
     return f'🔗 {label}: {url}'
-
 
 def _truncate(value: str, limit: int) -> str:
     if limit <= 0:

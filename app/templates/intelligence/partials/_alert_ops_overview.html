@@ -1,12 +1,13 @@
 {% import "components/table_label.html" as table_label %}
 {% import "components/operational_callout.html" as operational_callout %}
+{% import "components/table_primitives.html" as table_ui %}
 {% import "intelligence/components/_workspace.html" as intelligence_ui %}
 <div data-alert-intelligence-panel="overview" class="space-y-5 p-4 sm:p-5">
     <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
         <header class="flex flex-col gap-3 border-b border-outline-subtle px-4 py-4 sm:flex-row sm:items-start sm:justify-between sm:px-5">
             <div class="min-w-0">
-                <h3 class="text-base font-semibold leading-6 text-content-primary">Alert Operations Snapshot</h3>
-                <p class="mt-1 text-sm leading-6 text-content-secondary">Current operator workload across alert lifecycle, delivery, verification, and postmortem governance.</p>
+                <h3 class="{{ table_ui.block_title_classes() }}">Alert Operations Snapshot</h3>
+                <p class="{{ table_ui.block_description_classes() }}">Current operator workload across alert lifecycle, delivery, verification, and postmortem governance.</p>
             </div>
             {{ table_label.status_label(
                 'Attention Required' if payload.summary.active or payload.summary.delivery_failures or payload.summary.postmortem_required else 'Operationally Clear',
@@ -49,8 +50,8 @@
     <div class="grid gap-4 xl:grid-cols-[minmax(0,1.35fr)_minmax(22rem,0.65fr)]">
         <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
             <header class="border-b border-outline-subtle px-4 py-4 sm:px-5">
-                <h3 class="text-base font-semibold leading-6 text-content-primary">Lifecycle Control</h3>
-                <p class="mt-1 text-sm leading-6 text-content-secondary">Source recovery and operator closure remain separate so resolved alerts still receive verification evidence.</p>
+                <h3 class="{{ table_ui.block_title_classes() }}">Lifecycle Control</h3>
+                <p class="{{ table_ui.block_description_classes() }}">Source recovery and operator closure remain separate so resolved alerts still receive verification evidence.</p>
             </header>
             <div class="grid gap-px bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4">
                 {% for icon, label, value, supporting, tone in [
@@ -81,8 +82,8 @@
                         <i data-lucide="shield-check" class="h-4 w-4"></i>
                     </span>
                     <div class="min-w-0">
-                        <h3 class="text-base font-semibold leading-6 text-content-primary">Operational Readiness</h3>
-                        <p class="mt-1 text-sm leading-6 text-content-secondary">Dependencies used by Alert Operations without duplicating provider ownership.</p>
+                        <h3 class="{{ table_ui.block_title_classes() }}">Operational Readiness</h3>
+                        <p class="{{ table_ui.block_description_classes() }}">Alert Operations dependencies without duplicating provider ownership.</p>
                     </div>
                 </div>
             </header>
