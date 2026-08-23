@@ -521,7 +521,6 @@ def _active_silence_rows(
     ]
 
 
-
 def _filter_routing_policies(
     rows: list[dict[str, Any]],
     *,

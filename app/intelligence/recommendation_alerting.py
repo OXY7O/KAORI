@@ -64,7 +64,10 @@ def matches_alert_handling(item: dict[str, Any], selected: str | None, *, page_m
     normalized = str(selected or '').strip().lower()
     if not normalized:
         return True
-    handling = item.get('alert_handling') if isinstance(item.get('alert_handling'), dict) else {}
+    raw_handling = item.get('alert_handling')
+    handling: dict[str, Any] = (
+        {str(key): value for key, value in raw_handling.items()} if isinstance(raw_handling, dict) else {}
+    )
     status = str(handling.get('status') or '')
     mode = str(handling.get('mode') or '')
     if normalized == 'manual_eligible':

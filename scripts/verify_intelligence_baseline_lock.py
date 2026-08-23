@@ -245,7 +245,9 @@ def main() -> int:
         require(required in alert_active, f'Alert Operations active-alert contract missing: {required}', errors)
     require('Resolved Alerts' in alert_history, 'Alert Operations history contract missing: Resolved Alerts', errors)
     for required in ('Resolution Evidence', 'Closure Evidence', 'Postmortem & Learning', 'Verification Pending'):
-        require(required in alert_resolved_modal, f'Alert Operations resolved modal contract missing: {required}', errors)
+        require(
+            required in alert_resolved_modal, f'Alert Operations resolved modal contract missing: {required}', errors
+        )
     for required in (
         'acknowledge_case',
         'create_delivery_silence',

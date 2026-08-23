@@ -147,7 +147,13 @@ def test_telegram_system_templates_use_clickable_html_actions_and_visual_hierarc
     assert "'Telegram · Firing'" in templates
     assert "'Telegram · Resolved'" in templates
     assert "'html',\n    )," in templates
-    for token in ('🚨 <b>FIRING', '✅ <b>RESOLVED', '🏷 <b>Asset</b>', '🧾 <b>Summary</b>', '<code>{{ case_id }}</code>'):
+    for token in (
+        '🚨 <b>FIRING',
+        '✅ <b>RESOLVED',
+        '🏷 <b>Asset</b>',
+        '🧾 <b>Summary</b>',
+        '<code>{{ case_id }}</code>',
+    ):
         assert token in templates
     assert "payload['parse_mode'] = 'HTML'" in telegram
     assert 'def _render_action_link' in telegram

@@ -231,9 +231,7 @@ def runtime_signal_payloads() -> tuple[dict[str, dict[str, Any]], set[str]]:
 
     fresh: dict[str, dict[str, Any]] = {}
     unavailable: set[str] = set()
-    rows = AlertSignalSnapshot.query.filter_by(
-        domain='kubernetes', signal_key=KUBERNETES_RUNTIME_HEALTH_SIGNAL
-    ).all()
+    rows = AlertSignalSnapshot.query.filter_by(domain='kubernetes', signal_key=KUBERNETES_RUNTIME_HEALTH_SIGNAL).all()
     for row in rows:
         result = read_kubernetes_runtime_signal(str(row.asset_key))
         if result['state'] == 'fresh' and isinstance(result['payload'], dict):

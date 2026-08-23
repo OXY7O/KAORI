@@ -523,7 +523,10 @@ def _update_case_from_row(case: AlertCase, row: Mapping[str, Any], *, now: datet
     case.target = _optional_text(row.get('target'))
     case.namespace = _optional_text(row.get('namespace'))
     case.receiver = _optional_text(row.get('receiver'))
-    labels = dict(row.get('labels')) if isinstance(row.get('labels'), Mapping) else {}
+    raw_labels = row.get('labels')
+    labels: dict[str, Any] = (
+        {str(key): value for key, value in raw_labels.items()} if isinstance(raw_labels, Mapping) else {}
+    )
     labels.setdefault('source_type', 'provider_alert')
     if case.rule_key:
         labels.setdefault('rule_key', case.rule_key)
@@ -551,7 +554,10 @@ def _case_key(domain: str, asset_key: str, row: Mapping[str, Any]) -> str:
     if fingerprint:
         identity = f'{domain}|{asset_key}|{fingerprint}'
     else:
-        labels = row.get('labels') if isinstance(row.get('labels'), Mapping) else {}
+        raw_labels = row.get('labels')
+        labels: dict[str, Any] = (
+            {str(key): value for key, value in raw_labels.items()} if isinstance(raw_labels, Mapping) else {}
+        )
         identity = '|'.join(
             [
                 domain,

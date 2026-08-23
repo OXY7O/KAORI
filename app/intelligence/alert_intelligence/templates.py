@@ -243,6 +243,7 @@ def _preview_context(event_state: str) -> dict[str, str]:
         'action_url': '/intelligence/alert-intelligence?tab=' + ('active' if event_state == 'firing' else 'resolved'),
     }
 
+
 def render_case_message(
     case: AlertCase,
     *,

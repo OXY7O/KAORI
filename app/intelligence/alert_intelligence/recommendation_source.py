@@ -378,7 +378,7 @@ def _refresh_case_from_finding(case: AlertCase, finding: dict[str, Any], *, now:
         )
     case.severity = next_severity
     case.summary = str(finding.get('summary') or finding.get('condition_summary') or '').strip() or None
-    evidence = finding.get('evidence') if isinstance(finding.get('evidence'), dict) else {}
+    evidence = _finding_evidence(finding)
     case.namespace = _optional_text(evidence.get('namespace'))
     case.target = _optional_text(
         evidence.get('bucket_name')
@@ -403,9 +403,12 @@ def _refresh_case_from_finding(case: AlertCase, finding: dict[str, Any], *, now:
 
 def _attach_recommendation_source(case: AlertCase, finding: dict[str, Any]) -> None:
     evidence = dict(case.evidence_json or {})
-    sources = dict(evidence.get('recommendation_sources') or {})
+    raw_sources = evidence.get('recommendation_sources')
+    sources: dict[str, Any] = (
+        {str(source_key): value for source_key, value in raw_sources.items()} if isinstance(raw_sources, dict) else {}
+    )
     key = str(finding.get('rule_key') or '')
-    source_evidence = finding.get('evidence') if isinstance(finding.get('evidence'), dict) else {}
+    source_evidence = _finding_evidence(finding)
     sources[key] = {
         'title': str(finding.get('title') or ''),
         'summary': str(finding.get('summary') or ''),
@@ -446,7 +449,7 @@ def _grouping_fingerprint(
 
 
 def _scope_identity(finding: dict[str, Any]) -> str:
-    evidence = finding.get('evidence') if isinstance(finding.get('evidence'), dict) else {}
+    evidence = _finding_evidence(finding)
     return str(
         evidence.get('namespace')
         or evidence.get('bucket_id')
@@ -459,13 +462,13 @@ def _scope_identity(finding: dict[str, Any]) -> str:
 
 
 def _asset_key(finding: dict[str, Any]) -> str:
-    evidence = finding.get('evidence') if isinstance(finding.get('evidence'), dict) else {}
+    evidence = _finding_evidence(finding)
     value = evidence.get('asset_key') or evidence.get('cluster_id') or evidence.get('object_storage_system_id')
     return str(value or 'unknown')
 
 
 def _asset_name(finding: dict[str, Any], *, domain: str, asset_key: str) -> str:
-    evidence = finding.get('evidence') if isinstance(finding.get('evidence'), dict) else {}
+    evidence = _finding_evidence(finding)
     explicit = evidence.get('system_name') or evidence.get('cluster_name')
     if explicit:
         return str(explicit)
@@ -484,7 +487,7 @@ def _asset_name(finding: dict[str, Any], *, domain: str, asset_key: str) -> str:
 
 
 def _namespace(finding: dict[str, Any]) -> str | None:
-    evidence = finding.get('evidence') if isinstance(finding.get('evidence'), dict) else {}
+    evidence = _finding_evidence(finding)
     return _optional_text(evidence.get('namespace'))
 
 
@@ -494,7 +497,7 @@ def _evidence_hash(finding: dict[str, Any]) -> str:
         'severity': finding.get('severity'),
         'summary': finding.get('summary'),
         'condition_summary': finding.get('condition_summary'),
-        'evidence': finding.get('evidence') if isinstance(finding.get('evidence'), dict) else {},
+        'evidence': _finding_evidence(finding),
     }
     encoded = json.dumps(payload, sort_keys=True, separators=(',', ':'), default=str).encode('utf-8')
     return hashlib.sha256(encoded).hexdigest()
@@ -548,13 +551,20 @@ def _audit_promotion(case: AlertCase, *, actor_user_id: int | None, automatic: b
     db.session.add(event)
 
 
+def _finding_evidence(finding: dict[str, Any]) -> dict[str, Any]:
+    raw = finding.get('evidence')
+    if not isinstance(raw, dict):
+        return {}
+    return {str(key): value for key, value in raw.items()}
+
+
 def _optional_text(value: Any) -> str | None:
     normalized = str(value or '').strip()
     return normalized or None
 
 
 def _source_evidence_posture_for_finding(finding: dict[str, Any]) -> tuple[bool, str]:
-    evidence = finding.get('evidence') if isinstance(finding.get('evidence'), dict) else {}
+    evidence = _finding_evidence(finding)
     asset_key = str(
         evidence.get('asset_key') or evidence.get('cluster_id') or evidence.get('object_storage_system_id') or ''
     ).strip()

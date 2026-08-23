@@ -76,7 +76,7 @@
             </tbody>
         </table>
     </div>
-    {{ record_pagination.render(payload.active_pagination, 'page', 'per_page', 'alert-intelligence-page-content', 'alert-operations-filter-form', 'alert-operations-active-loading', 'alert_intelligence.index', 'alert_intelligence.index', pagination_query, 'Alert Cases', embedded=true) }}
+    {{ record_pagination.render(payload.active_pagination, 'page', 'per_page', 'alert-operations-active-registry', 'alert-operations-filter-form', 'alert-operations-active-loading', 'alert_intelligence.index', 'alert_intelligence.index', pagination_query, 'Alert Cases', embedded=true) }}
 </div>
 {% if request.headers.get('HX-Request') == 'true' %}
     {% set operation_feedback = load_operational_feedback() %}

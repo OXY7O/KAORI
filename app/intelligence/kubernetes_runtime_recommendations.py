@@ -39,8 +39,7 @@ def _clone_rule_as_finding(
 
 def _runtime_signal_context(*rules: dict[str, Any] | None) -> tuple[dict[str, dict[str, Any]], set[str]]:
     enabled = any(
-        str((rule or {}).get('alert_signal_profile') or '') == KUBERNETES_RUNTIME_HEALTH_PROFILE
-        for rule in rules
+        str((rule or {}).get('alert_signal_profile') or '') == KUBERNETES_RUNTIME_HEALTH_PROFILE for rule in rules
     )
     return runtime_signal_payloads() if enabled else ({}, set())
 
@@ -272,9 +271,7 @@ def _node_readiness_findings(rules: dict[str, dict[str, Any]]) -> list[dict[str,
     counts = _inventory_node_counts(fast_clusters | unavailable_clusters)
     for cluster_id, payload in fast_payloads.items():
         count = sum(
-            1
-            for node in list(payload.get('nodes') or [])
-            if isinstance(node, dict) and not bool(node.get('ready'))
+            1 for node in list(payload.get('nodes') or []) if isinstance(node, dict) and not bool(node.get('ready'))
         )
         if count:
             counts[str(cluster_id)] = count

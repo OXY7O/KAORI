@@ -207,7 +207,7 @@ def delete_minio_instance(instance: MinioInstance) -> dict[str, int]:
 
     # Deleting the asset removes future evidence, not the historical alert condition.
     # Hold open KAORI cases as Unknown so deletion can never be mistaken for recovery.
-    from app.intelligence.alert_intelligence.lifecycle import mark_asset_alert_cases_source_unknown
+    from app.intelligence.alert_intelligence.case_state import mark_asset_alert_cases_source_unknown
 
     alert_cases_marked_unknown = mark_asset_alert_cases_source_unknown(
         domain='object_storage',

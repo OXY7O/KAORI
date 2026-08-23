@@ -377,7 +377,9 @@ def delete_routing_policy(policy_id: int) -> ResponseReturnValue:
         queue_transient_feedback(
             status='success' if changed else 'warning',
             title='Routing policy deleted' if changed else 'Routing policy unavailable',
-            message='The routing policy was removed from governed delivery.' if changed else 'The selected policy no longer exists.',
+            message='The routing policy was removed from governed delivery.'
+            if changed
+            else 'The selected policy no longer exists.',
         )
     return _redirect(tab='routing')
 
@@ -551,12 +553,10 @@ def _case_mutation(
     return _redirect(tab=tab, case_id=case.public_id)
 
 
-
 def _modal_case_htmx_request() -> bool:
-    return (
-        request.headers.get('HX-Request') == 'true'
-        and str(request.headers.get('HX-Target') or '').strip().startswith('alert-case-modal-content-')
-    )
+    return request.headers.get('HX-Request') == 'true' and str(
+        request.headers.get('HX-Target') or ''
+    ).strip().startswith('alert-case-modal-content-')
 
 
 def _modal_case_response(*, case_id: str, tab: str | None = None) -> ResponseReturnValue:

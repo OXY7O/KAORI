@@ -350,7 +350,6 @@ def _build_latest_image_findings(rules: dict[str, dict[str, Any]]) -> list[dict[
     return findings
 
 
-
 def _build_storage_binding_findings(rules: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
     rule = rules.get('kubernetes.storage.binding_state')
     if not rule:

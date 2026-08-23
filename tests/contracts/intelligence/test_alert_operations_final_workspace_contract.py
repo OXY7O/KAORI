@@ -22,6 +22,7 @@ def test_active_queue_owns_loading_filter_actions_and_modal_review() -> None:
     assert 'data-resource-detail-toggle' in table
     assert 'data-alert-case-expanded-row=' not in table
     assert "resource_detail_modal.host('Alert Operations'" in page
+    assert "record_pagination.render(payload.active_pagination, 'page', 'per_page', 'alert-operations-active-registry'" in table
 
 
 def test_routing_workspace_is_table_led_and_crud_uses_modal() -> None:
@@ -108,7 +109,9 @@ def test_context_loading_is_isolated_from_tab_and_registry_loading() -> None:
     assert 'hx-indicator="#alert-intelligence-context-loading"' in context_form
     assert 'hx-indicator="#alert-intelligence-loading"' not in context_form
     assert "loading_bar.render('alert-intelligence-context-loading'" in workspace
-    assert "hx_indicator='#alert-intelligence-loading'" in workspace
+    assert "indicator_id='alert-intelligence-loading'" not in workspace
+    assert "hx_indicator='#alert-intelligence-loading'" not in workspace
+    assert 'table_ui.filter_layout_classes()' in context_form
 
 
 def test_resolved_case_review_uses_dedicated_modal_content_and_modal_refresh_contract() -> None:
@@ -176,8 +179,11 @@ def test_context_filter_owns_only_context_loading_lifecycle() -> None:
     assert 'hx-indicator="#alert-intelligence-context-loading"' in context_form
     assert 'hx-sync="this:replace"' in context_form
     assert 'hx-disinherit="hx-indicator"' in context_form
+    assert 'hx-select="#alert-intelligence-page-content"' in context_form
     assert '#alert-operations-active-loading' not in context_form
     assert '#alert-operations-silence-loading' not in context_form
+    assert "indicator_id='alert-intelligence-loading'" not in workspace
+    assert "hx_indicator='#alert-intelligence-loading'" not in workspace
 
 
 def test_alert_intelligence_modals_follow_recommendation_review_visual_language() -> None:
