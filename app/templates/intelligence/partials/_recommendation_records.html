@@ -57,6 +57,8 @@
                             <p class="mt-1 text-xs leading-5 text-content-muted">
                                 {% if item.alert_handling.status == 'escalated' %}
                                     Managed in Alert Intelligence
+                                {% elif item.alert_handling.status == 'exception_active' %}
+                                    Detection retained · promotion suppressed
                                 {% elif item.alert_handling.eligible %}
                                     {{ item.alert_handling.mode|title }} escalation
                                 {% else %}

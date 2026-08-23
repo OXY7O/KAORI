@@ -27,6 +27,7 @@ from app.intelligence.recommendation_alerting import (
     decorate_recommendation_findings,
     matches_alert_handling,
 )
+from app.intelligence.rule_exceptions import build_rule_exception_view
 from app.intelligence.rule_presentation import (
     CATEGORY_OPTIONS,
     DOMAIN_OPTIONS,
@@ -193,6 +194,7 @@ def _base_payload(args: MultiDict[str, str], *, page_mode: str) -> dict[str, Any
                 {'value': 'automatic_eligible', 'label': 'Auto Eligible'},
                 {'value': 'escalated', 'label': 'Alert Open'},
                 {'value': 'resolved', 'label': 'Resolved Alert'},
+                {'value': 'accepted_risk', 'label': 'Accepted Risk'},
                 {'value': 'recommendation_only', 'label': 'Recommendation Only'},
             ],
             'per_page': PER_PAGE_OPTIONS,
@@ -555,6 +557,10 @@ def get_catalog_rule(rule_key: str) -> dict[str, Any] | None:
         rule = normalize_rule(dict(raw_rule))
         if clean(str(rule.get('rule_key'))) == resolved_key:
             decorate_catalog_rules([rule])
+            rule['rule_exceptions'] = build_rule_exception_view(
+                resolved_key,
+                get_active_recommendation_findings(),
+            )
             return rule
     return None
 

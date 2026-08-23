@@ -128,6 +128,7 @@ def get_alert_intelligence_payload(args: MultiDict[str, str]) -> dict[str, Any]:
             'resolved_total': len(history_cases),
             'closed': sum(case.workflow_state == 'closed' for case in history_cases),
             'false_positive': sum(case.closure_reason == 'false_positive' for case in history_cases),
+            'accepted_risk': sum(case.closure_reason == 'accepted_risk' for case in history_cases),
             'delivery_failures': _delivery_failure_count(domain=domain, asset_key=selected_asset_key),
             'postmortem_required': sum(case.postmortem_status in {'required', 'draft'} for case in history_cases),
             'routing_policies': len(all_routing),
@@ -366,6 +367,7 @@ def _serialize_case_detail(case: AlertCase) -> dict[str, Any]:
 
 def _evidence_facts(evidence: dict[str, Any], *, limit: int = 4) -> list[dict[str, str]]:
     preferred = (
+        ('accepted_risk_count', 'Accepted Risk Findings', 'shield-check'),
         ('affected_count', 'Affected Assets', 'boxes'),
         ('max_restart_count', 'Highest Restart Count', 'rotate-ccw'),
         ('total_restart_count', 'Total Restarts', 'activity'),
@@ -659,6 +661,8 @@ def _closure_label(reason: str | None) -> str:
         'manual_withdrawal': 'Withdrawn',
         'source_decommissioned': 'Source Decommissioned',
         'false_positive': 'False Positive',
+        'accepted_risk': 'Accepted Risk',
+        'superseded': 'Superseded',
     }.get(str(reason or ''), '')
 
 
@@ -684,6 +688,10 @@ def _delivery_label(case: AlertCase, *, silence: AlertSilence | None) -> str:
             return 'Suppressed · Source Deleted'
         if case.routing_override_reason == 'source_unavailable':
             return 'Held · Source Unavailable'
+        if case.routing_override_reason == 'accepted_risk':
+            return 'Suppressed · Accepted Risk'
+        if case.routing_override_reason == 'grouping_changed':
+            return 'Suppressed · Superseded'
         return 'Notifications Suppressed'
     return {
         'held': 'Held · Source Unknown',
@@ -695,6 +703,10 @@ def _delivery_label(case: AlertCase, *, silence: AlertSilence | None) -> str:
 
 def _delivery_tone(case: AlertCase, *, silence: AlertSilence | None) -> str:
     state = _delivery_state(case, silence=silence)
+    if state == 'suppressed' and case.routing_override_reason == 'accepted_risk':
+        return 'info'
+    if state == 'suppressed' and case.routing_override_reason == 'grouping_changed':
+        return 'unknown'
     return {'suppressed': 'warning', 'held': 'warning', 'silenced': 'warning', 'ack_paused': 'info'}.get(state, 'info')
 
 

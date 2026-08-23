@@ -38,6 +38,7 @@ _BUILT_INS: tuple[AlertTemplateDefinition, ...] = (
         '🏷 <b>Asset</b>\n{{ asset_name }}\n'
         '{% if namespace %}📍 <b>Namespace</b>\n{{ namespace }}\n{% else %}📍 <b>Scope</b>\n{{ scope }}\n{% endif %}'
         '🧾 <b>Summary</b>\n{{ summary }}\n\n'
+        '{% if affected_summary %}📦 <b>Affected</b>\n{{ affected_summary }}\n\n{% endif %}'
         '🕒 <b>Started</b>  {{ started_at }}\n'
         '🆔 <b>Case</b>  <code>{{ case_id }}</code>',
         'html',
@@ -230,6 +231,7 @@ def _preview_context(event_state: str) -> dict[str, str]:
         'scope': 'payments / api',
         'namespace': 'payments',
         'summary': 'Pod restart count crossed the governed Rule Catalog threshold.',
+        'affected_summary': '',
         'started_at': '2026-08-22 12:00 UTC',
         'resolved_at': '2026-08-22 12:18 UTC',
         'duration': '18m',
@@ -280,6 +282,17 @@ def _template_context(case: AlertCase, *, action_url: str | None) -> dict[str, s
     owner = case.closed_by or case.owner or case.acknowledged_by
     operator_name = str(getattr(owner, 'username', None) or getattr(owner, 'email', None) or 'KAORI')
     evidence = case.evidence_json or {}
+    affected_preview = [str(value) for value in evidence.get('affected_preview', []) if str(value).strip()]
+    affected_count = int(evidence.get('recommendation_count') or 0)
+    affected_summary = ''
+    if affected_count > 1:
+        visible = affected_preview[:5]
+        preview_lines = '\n'.join(f'• {value}' for value in visible)
+        remaining = max(affected_count - len(visible), 0)
+        suffix = f'\n• +{remaining} more' if remaining else ''
+        affected_summary = f'{affected_count} active findings'
+        if preview_lines:
+            affected_summary = f'{affected_summary}\n{preview_lines}{suffix}'
     return {
         'case_id': case.public_id,
         'alert_name': case.alert_name,
@@ -288,6 +301,7 @@ def _template_context(case: AlertCase, *, action_url: str | None) -> dict[str, s
         'scope': case.namespace or case.target or case.asset_name,
         'namespace': case.namespace or '',
         'summary': case.summary or '-',
+        'affected_summary': affected_summary,
         'started_at': _display_datetime(case.first_seen_at),
         'resolved_at': _display_datetime(case.source_resolved_at) if case.source_resolved_at else '-',
         'duration': _duration_label(duration_seconds),

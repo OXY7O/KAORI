@@ -5,7 +5,12 @@ from typing import Any
 from app.definitions.loader import DefinitionError
 from app.extensions.db import db
 from app.intelligence.catalog import INTELLIGENCE_CATALOG
-from app.models.alert_ops import AlertCase, RecommendationAlertPolicy, RecommendationAlertState
+from app.intelligence.rule_exceptions import (
+    active_exception_counts,
+    active_rule_exceptions,
+    matching_rule_exception,
+)
+from app.models.alert_ops import AlertCase, RecommendationAlertPolicy, RecommendationAlertState, RuleException
 
 _DEFAULT_STABILITY_MINUTES = 10
 _DEFAULT_MINIMUM_OCCURRENCES = 2
@@ -76,6 +81,8 @@ def matches_alert_handling(item: dict[str, Any], selected: str | None, *, page_m
         return status == 'eligible' and mode == 'automatic'
     if normalized == 'recommendation_only':
         return status == 'not_eligible'
+    if normalized == 'accepted_risk':
+        return status == 'exception_active'
     return status == normalized
 
 
@@ -94,6 +101,7 @@ def decorate_recommendation_findings(findings: list[dict[str, Any]]) -> list[dic
     }
     case_ids = {row.alert_case_id for row in states.values() if row.alert_case_id is not None}
     cases = {row.id: row for row in AlertCase.query.filter(AlertCase.id.in_(case_ids)).all()} if case_ids else {}
+    exceptions = active_rule_exceptions(rule_keys)
     for item in findings:
         finding_key = str(item.get('rule_key') or '')
         rule_key = base_rule_key(finding_key)
@@ -104,8 +112,9 @@ def decorate_recommendation_findings(findings: list[dict[str, Any]]) -> list[dic
         )
         state = states.get(finding_key)
         case = cases.get(state.alert_case_id) if state and state.alert_case_id else None
+        exception = matching_rule_exception(item, rows=exceptions)
         item['base_rule_key'] = rule_key
-        item['alert_handling'] = _handling_view(policy, state=state, case=case)
+        item['alert_handling'] = _handling_view(policy, state=state, case=case, exception=exception)
     return findings
 
 
@@ -117,9 +126,11 @@ def decorate_catalog_rules(rules: list[dict[str, Any]]) -> list[dict[str, Any]]:
         row.rule_key: row
         for row in RecommendationAlertPolicy.query.filter(RecommendationAlertPolicy.rule_key.in_(keys)).all()
     }
+    exception_counts = active_exception_counts(keys)
     for rule in rules:
         key = str(rule.get('rule_key') or '')
         rule['alert_escalation'] = effective_alert_policy(key, override=overrides.get(key))
+        rule['active_exception_count'] = int(exception_counts.get(key, 0))
     return rules
 
 
@@ -228,8 +239,13 @@ def _handling_view(
     *,
     state: RecommendationAlertState | None,
     case: AlertCase | None,
+    exception: RuleException | None,
 ) -> dict[str, Any]:
-    if case is not None and case.source_state == 'unknown' and case.workflow_state != 'closed':
+    if exception is not None:
+        status = 'exception_active'
+        label = 'Accepted Risk'
+        tone = 'info'
+    elif case is not None and case.source_state == 'unknown' and case.workflow_state != 'closed':
         status = 'source_unknown'
         label = 'Alert · Source Unknown'
         tone = 'warning'
@@ -270,6 +286,9 @@ def _handling_view(
         'case_workflow_state': case.workflow_state if case is not None else None,
         'occurrence_count': int(state.occurrence_count) if state is not None else 0,
         'first_seen_at': state.first_seen_at if state is not None else None,
+        'exception_public_id': exception.public_id if exception is not None else None,
+        'exception_reference': exception.risk_reference if exception is not None else None,
+        'exception_expires_at': exception.expires_at if exception is not None else None,
     }
 
 

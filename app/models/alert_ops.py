@@ -17,11 +17,12 @@ ALERT_CASE_OPEN_STATES = {'open', 'acknowledged', 'mitigating', 'verification_pe
 ALERT_CASE_WORKFLOW_STATES = ALERT_CASE_OPEN_STATES | {'closed'}
 ALERT_SOURCE_STATES = {'firing', 'resolved', 'unknown'}
 ALERT_ROUTING_STATES = {'enabled', 'suppressed'}
-ALERT_CLOSURE_REASONS = {'resolved', 'manual_withdrawal', 'source_decommissioned', 'false_positive'}
+ALERT_CLOSURE_REASONS = {'resolved', 'manual_withdrawal', 'source_decommissioned', 'false_positive', 'accepted_risk', 'superseded'}
 ALERT_SOURCE_TYPES = {'provider_alert', 'recommendation'}
 POSTMORTEM_STATES = {'not_required', 'required', 'draft', 'complete'}
 RECOMMENDATION_ALERT_MODES = {'manual', 'automatic'}
 RECOMMENDATION_ALERT_GROUPING_MODES = {'finding', 'rule_asset_scope', 'rule_asset'}
+RULE_EXCEPTION_SCOPE_MODES = {'rule_asset', 'finding_keys'}
 
 
 class AlertCase(db.Model):
@@ -42,7 +43,7 @@ class AlertCase(db.Model):
             name='ck_alert_cases_routing_state',
         ),
         CheckConstraint(
-            "closure_reason IS NULL OR closure_reason IN ('resolved', 'manual_withdrawal', 'source_decommissioned', 'false_positive')",
+            "closure_reason IS NULL OR closure_reason IN ('resolved', 'manual_withdrawal', 'source_decommissioned', 'false_positive', 'accepted_risk', 'superseded')",
             name='ck_alert_cases_closure_reason',
         ),
         CheckConstraint(
@@ -309,6 +310,56 @@ class RecommendationAlertPolicy(db.Model):
     updated_by: Mapped[User | None] = relationship('User', foreign_keys=[updated_by_user_id])
 
 
+class RuleException(db.Model):
+    """Time-bounded accepted-risk exception for one canonical Intelligence rule and asset."""
+
+    __tablename__ = 'rule_exceptions'
+    __table_args__ = (
+        CheckConstraint(
+            "scope_mode IN ('rule_asset', 'finding_keys')",
+            name='ck_rule_exceptions_scope_mode',
+        ),
+        Index('ix_rule_exceptions_rule_asset', 'rule_key', 'asset_key'),
+        Index('ix_rule_exceptions_expiry', 'expires_at', 'revoked_at'),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    public_id: Mapped[str] = mapped_column(db.String(64), nullable=False, unique=True, default=lambda: str(uuid4()))
+    rule_key: Mapped[str] = mapped_column(db.String(255), nullable=False, index=True)
+    domain: Mapped[str] = mapped_column(db.String(80), nullable=False, index=True)
+    asset_key: Mapped[str] = mapped_column(db.String(255), nullable=False, index=True)
+    scope_mode: Mapped[str] = mapped_column(db.String(32), nullable=False, default='finding_keys')
+    finding_keys_json: Mapped[list[str]] = mapped_column(db.JSON, nullable=False, default=list)
+    reason: Mapped[str] = mapped_column(db.Text, nullable=False)
+    risk_reference: Mapped[str | None] = mapped_column(db.String(255), nullable=True, index=True)
+    owner_user_id: Mapped[int | None] = mapped_column(db.ForeignKey('users.id', ondelete='SET NULL'), nullable=True)
+    created_by_user_id: Mapped[int | None] = mapped_column(
+        db.ForeignKey('users.id', ondelete='SET NULL'), nullable=True
+    )
+    revoked_by_user_id: Mapped[int | None] = mapped_column(
+        db.ForeignKey('users.id', ondelete='SET NULL'), nullable=True
+    )
+    starts_at: Mapped[datetime] = mapped_column(
+        db.DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC), index=True
+    )
+    expires_at: Mapped[datetime] = mapped_column(db.DateTime(timezone=True), nullable=False, index=True)
+    revoked_at: Mapped[datetime | None] = mapped_column(db.DateTime(timezone=True), nullable=True, index=True)
+    revocation_reason: Mapped[str | None] = mapped_column(db.Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        db.DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC)
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        db.DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+    )
+
+    owner: Mapped[User | None] = relationship('User', foreign_keys=[owner_user_id])
+    created_by: Mapped[User | None] = relationship('User', foreign_keys=[created_by_user_id])
+    revoked_by: Mapped[User | None] = relationship('User', foreign_keys=[revoked_by_user_id])
+
+
 class RecommendationAlertState(db.Model):
     """Worker-owned observation state used for stability, recurrence, and clear detection."""
 
@@ -333,6 +384,9 @@ class RecommendationAlertState(db.Model):
     evidence_hash: Mapped[str | None] = mapped_column(db.String(64), nullable=True)
     promotion_suppressed_until_clear: Mapped[bool] = mapped_column(db.Boolean, nullable=False, default=False)
     promotion_suppression_reason: Mapped[str | None] = mapped_column(db.String(64), nullable=True)
+    rule_exception_id: Mapped[int | None] = mapped_column(
+        db.ForeignKey('rule_exceptions.id', ondelete='SET NULL'), nullable=True, index=True
+    )
     alert_case_id: Mapped[int | None] = mapped_column(
         db.ForeignKey('alert_cases.id', ondelete='SET NULL'), nullable=True, index=True
     )
@@ -347,3 +401,4 @@ class RecommendationAlertState(db.Model):
     )
 
     alert_case: Mapped[AlertCase | None] = relationship('AlertCase', foreign_keys=[alert_case_id])
+    rule_exception: Mapped[RuleException | None] = relationship('RuleException', foreign_keys=[rule_exception_id])

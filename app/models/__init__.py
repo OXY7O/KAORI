@@ -6,6 +6,7 @@ from app.models.alert_ops import (
     AlertSilence,
     RecommendationAlertPolicy,
     RecommendationAlertState,
+    RuleException,
 )
 from app.models.alert_signal import AlertSignalSnapshot
 from app.models.alertmanager import AlertmanagerInstance
@@ -113,6 +114,7 @@ __all__ = [
     'AlertCase',
     'RecommendationAlertPolicy',
     'RecommendationAlertState',
+    'RuleException',
     'Report',
     'ReportTemplate',
     'ReportSchedule',

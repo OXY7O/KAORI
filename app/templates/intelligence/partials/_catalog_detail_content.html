@@ -158,6 +158,175 @@
                 {% endif %}
             </div>
         </section>
+        <section class="border-t border-outline-subtle p-4 sm:p-5" data-kaori-rule-exceptions>
+            {{ intelligence_ui.subsection('Risk Exceptions', 'Record time-bounded accepted risk without changing the rule truth or marking active findings as resolved.', 'shield-check') }}
+            <div class="mt-4 overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
+                <div class="grid divide-y divide-outline-subtle sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-4">
+                    {{ intelligence_ui.metric('shield-check', 'Active Exceptions', item.rule_exceptions.active_count, 'Time-bounded governance records', 'info' if item.rule_exceptions.active_count else 'normal') }}
+                    {{ intelligence_ui.metric('list-checks', 'Covered Findings', item.rule_exceptions.covered_findings, 'Detection remains visible', 'info' if item.rule_exceptions.covered_findings else 'normal') }}
+                    {{ intelligence_ui.metric('triangle-alert', 'Actionable Findings', item.rule_exceptions.uncovered_findings, 'Still eligible for alert promotion', 'warning' if item.rule_exceptions.uncovered_findings else 'normal') }}
+                    {{ intelligence_ui.metric('clock-alert', 'Expiring Soon', item.rule_exceptions.expiring_count, 'Expires within 7 days', 'warning' if item.rule_exceptions.expiring_count else 'normal') }}
+                </div>
+                <div class="border-t border-outline-subtle px-4 py-3 sm:px-5">
+                    <p class="text-xs leading-5 text-content-muted">Accepted Risk suppresses AlertCase promotion only while the exception is active. The recommendation finding remains non-compliant evidence and becomes alert-eligible again after expiry or revocation.</p>
+                </div>
+            </div>
+
+            {% if item.rule_exceptions.exceptions %}
+                <div class="mt-4 overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
+                    <div class="border-b border-outline-subtle px-4 py-3.5 sm:px-5">
+                        <h5 class="text-sm font-semibold leading-5 text-content-primary">Exception Registry</h5>
+                        <p class="mt-0.5 text-xs leading-5 text-content-muted">Active, expired, and revoked accepted-risk evidence for this canonical rule.</p>
+                    </div>
+                    <div class="divide-y divide-outline-subtle">
+                        {% for exception in item.rule_exceptions.exceptions %}
+                            <article class="grid gap-3 px-4 py-4 sm:px-5 xl:grid-cols-[minmax(0,1fr)_minmax(18rem,0.55fr)]">
+                                <div class="min-w-0">
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        {{ table_label.status_label(exception.status_label, exception.tone, size='compact') }}
+                                        {{ table_label.metadata_label(exception.scope_label, 'target') }}
+                                        {{ table_label.metadata_label(exception.covered_count ~ ' Finding(s)', 'list-checks') }}
+                                    </div>
+                                    <p class="mt-2 text-sm font-semibold leading-5 text-content-primary">{{ exception.asset_name }}</p>
+                                    <p class="mt-1 text-sm leading-6 text-content-secondary">{{ exception.reason }}</p>
+                                    <div class="mt-2 flex flex-wrap gap-1.5">
+                                        {{ table_label.metadata_label(exception.risk_reference, 'file-key-2') }}
+                                        {{ table_label.metadata_label('Owner · ' ~ exception.owner, 'user-round') }}
+                                        {{ table_label.metadata_label('Expires · ' ~ (exception.expires_at|user_datetime), 'calendar-clock') }}
+                                    </div>
+                                </div>
+                                {% if exception.active and current_user.has_permission('intelligence.decisions.create') %}
+                                    <form method="post"
+                                          action="{{ url_for('alert_intelligence.revoke_rule_exception_for_rule', exception_public_id=exception.public_id) }}"
+                                          class="rounded-lg border border-outline-subtle bg-surface-page p-3">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <input type="hidden" name="rule_key" value="{{ item.rule_key }}">
+                                        <label>
+                                            <span class="text-xs font-semibold text-content-secondary">Revocation Reason</span>
+                                            <input name="reason"
+                                                   required
+                                                   class="mt-1 h-9 w-full rounded-md border border-outline-default bg-surface-card px-3 text-xs text-content-primary"
+                                                   placeholder="Why is this risk acceptance no longer valid?">
+                                        </label>
+                                        <button type="submit" class="mt-2 inline-flex min-h-9 items-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary hover:bg-surface-hover">
+                                            <i data-lucide="shield-off" class="h-3.5 w-3.5"></i>Revoke Exception
+                                        </button>
+                                    </form>
+                                {% elif exception.revocation_reason %}
+                                    <div class="rounded-lg border border-outline-subtle bg-surface-page p-3">
+                                        <p class="text-xs font-semibold text-content-secondary">Revocation Evidence</p>
+                                        <p class="mt-1 text-xs leading-5 text-content-muted">{{ exception.revocation_reason }}</p>
+                                    </div>
+                                {% endif %}
+                            </article>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
+
+            {% if current_user.has_permission('intelligence.decisions.create') %}
+                <form method="post"
+                      action="{{ url_for('alert_intelligence.create_rule_exception_for_rule', rule_key=item.rule_key) }}"
+                      class="mt-4 overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="border-b border-outline-subtle px-4 py-3.5 sm:px-5">
+                        <div class="flex items-start gap-3">
+                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
+                                <i data-lucide="shield-plus" class="h-4 w-4"></i>
+                            </span>
+                            <div>
+                                <h5 class="text-sm font-semibold leading-5 text-content-primary">Create Accepted Risk</h5>
+                                <p class="mt-0.5 text-xs leading-5 text-content-muted">Use Entire Asset for one shared condition such as 20+ unencrypted buckets, or Selected Findings when only part of the asset is temporarily accepted.</p>
+                            </div>
+                        </div>
+                    </div>
+                    {% if item.rule_exceptions.has_candidates %}
+                        <div class="grid gap-4 p-4 sm:p-5 xl:grid-cols-2">
+                            <div class="space-y-4">
+                                <div class="grid gap-3 sm:grid-cols-2">
+                                    <label>
+                                        <span class="text-xs font-semibold text-content-secondary">Asset</span>
+                                        <select name="asset_key" required class="mt-1 h-10 w-full rounded-md border border-outline-default bg-surface-card px-3 text-sm text-content-primary">
+                                            <option value="">Select asset</option>
+                                            {% for asset in item.rule_exceptions.assets %}
+                                                <option value="{{ asset.asset_key }}">{{ asset.asset_name }} · {{ asset.finding_count }} finding(s)</option>
+                                            {% endfor %}
+                                        </select>
+                                    </label>
+                                    <label>
+                                        <span class="text-xs font-semibold text-content-secondary">Exception Scope</span>
+                                        <select name="scope_mode" class="mt-1 h-10 w-full rounded-md border border-outline-default bg-surface-card px-3 text-sm text-content-primary">
+                                            <option value="rule_asset">Entire Asset</option>
+                                            <option value="finding_keys">Selected Findings</option>
+                                        </select>
+                                    </label>
+                                    <label>
+                                        <span class="text-xs font-semibold text-content-secondary">Expires In</span>
+                                        <select name="expires_in_days" class="mt-1 h-10 w-full rounded-md border border-outline-default bg-surface-card px-3 text-sm text-content-primary">
+                                            <option value="30">30 days</option>
+                                            <option value="90" selected>90 days</option>
+                                            <option value="180">180 days</option>
+                                            <option value="365">365 days</option>
+                                        </select>
+                                    </label>
+                                    <label>
+                                        <span class="text-xs font-semibold text-content-secondary">Risk / Change Reference</span>
+                                        <input name="risk_reference"
+                                               class="mt-1 h-10 w-full rounded-md border border-outline-default bg-surface-card px-3 text-sm text-content-primary"
+                                               placeholder="RISK-2026-017">
+                                    </label>
+                                </div>
+                                <label class="block">
+                                    <span class="text-xs font-semibold text-content-secondary">Accepted-Risk Reason</span>
+                                    <textarea name="reason"
+                                              rows="4"
+                                              required
+                                              class="mt-1 w-full resize-y rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm leading-6 text-content-primary"
+                                              placeholder="Why can this control not be implemented yet, and what condition allows the temporary acceptance?"></textarea>
+                                </label>
+                                <p class="text-xs leading-5 text-content-muted">The creating operator becomes the risk owner. Expiry is mandatory; permanent suppressions are intentionally not supported.</p>
+                            </div>
+                            <div class="overflow-hidden rounded-lg border border-outline-subtle bg-surface-page">
+                                <div class="border-b border-outline-subtle px-3 py-2.5">
+                                    <p class="text-xs font-semibold text-content-secondary">Selected Findings</p>
+                                    <p class="mt-0.5 text-xs leading-5 text-content-muted">Used only when Exception Scope is Selected Findings. Choose findings from the same asset selected on the left.</p>
+                                </div>
+                                <div class="max-h-72 divide-y divide-outline-subtle overflow-y-auto">
+                                    {% for asset in item.rule_exceptions.assets %}
+                                        <div class="px-3 py-2.5">
+                                            <p class="text-xs font-semibold text-content-primary">{{ asset.asset_name }}</p>
+                                            <div class="mt-2 space-y-2">
+                                                {% for finding in asset.findings %}
+                                                    <label class="flex items-start gap-2 text-xs leading-5 text-content-secondary">
+                                                        <input type="checkbox"
+                                                               name="finding_keys"
+                                                               value="{{ finding.finding_key }}"
+                                                               {% if finding.excepted %}disabled{% endif %}
+                                                               class="mt-0.5">
+                                                        <span class="min-w-0">
+                                                            <span class="block break-words font-medium text-content-primary">{{ finding.target }}</span>
+                                                            <span class="block text-content-muted">{{ finding.severity }}{% if finding.excepted %} · already covered{% endif %}</span>
+                                                        </span>
+                                                    </label>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between gap-3 border-t border-outline-subtle bg-surface-page px-4 py-3 sm:px-5">
+                            <p class="text-xs leading-5 text-content-muted">Detection remains active; only AlertCase promotion is governed by the exception.</p>
+                            <button type="submit" class="inline-flex min-h-9 shrink-0 items-center gap-2 rounded-lg bg-kaori-primary px-4 text-xs font-semibold text-white hover:bg-kaori-primary-hover">
+                                <i data-lucide="shield-check" class="h-3.5 w-3.5"></i>Create Accepted Risk
+                            </button>
+                        </div>
+                    {% else %}
+                        <div class="px-4 py-5 text-sm leading-6 text-content-muted sm:px-5">No active recommendation findings currently exist for this rule, so there is no concrete asset scope to accept.</div>
+                    {% endif %}
+                </form>
+            {% endif %}
+        </section>
         <section class="border-t border-outline-subtle p-4 sm:p-5">
             {{ intelligence_ui.subsection('Coverage Contract', 'Evidence dependencies, current provider coverage, and KAORI surfaces where this definition is visible.', 'network') }}
             <div class="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(16rem,0.8fr)]">

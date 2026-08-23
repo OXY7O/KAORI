@@ -288,6 +288,24 @@
                                    class="inline-flex min-h-9 items-center gap-2 rounded-lg bg-kaori-primary px-3 text-xs font-semibold text-white hover:bg-kaori-primary-hover">
                                     <i data-lucide="siren" class="h-3.5 w-3.5"></i>Open Alert Case
                                 </a>
+                            {% elif item.alert_handling.status == 'exception_active' %}
+                                <div class="rounded-lg border border-outline-subtle bg-surface-page p-3">
+                                    <div class="flex items-start gap-2.5">
+                                        <i data-lucide="shield-check" class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary"></i>
+                                        <div class="min-w-0">
+                                            <p class="text-sm font-semibold leading-5 text-content-primary">Accepted Risk Active</p>
+                                            <p class="mt-1 text-sm leading-6 text-content-secondary">The finding remains active evidence, but AlertCase promotion is suppressed until the time-bounded exception expires or is revoked.</p>
+                                            <div class="mt-2 flex flex-wrap gap-1.5">
+                                                {% if item.alert_handling.exception_reference %}{{ table_label.metadata_label(item.alert_handling.exception_reference, 'file-key-2') }}{% endif %}
+                                                {% if item.alert_handling.exception_expires_at %}{{ table_label.metadata_label('Expires · ' ~ (item.alert_handling.exception_expires_at|user_datetime), 'calendar-clock') }}{% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <a href="{{ url_for('intelligence.catalog', q=item.base_rule_key) }}"
+                                   class="inline-flex min-h-9 items-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary hover:bg-surface-hover">
+                                    <i data-lucide="book-open-check" class="h-3.5 w-3.5"></i>Review Rule Exception
+                                </a>
                             {% elif item.alert_handling.eligible %}
                                 <dl class="grid gap-3 sm:grid-cols-2">
                                     <div>

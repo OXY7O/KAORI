@@ -5,6 +5,9 @@ All notable KAORI changes are recorded here. KAORI uses Semantic Versioning for 
 ## [Unreleased]
 
 ### Changed
+- Added Rule Catalog Accepted Risk / Rule Exception governance with mandatory expiry, owner/audit evidence, asset-wide or selected-finding scope, and revocation.
+- Added grouped recommendation-to-alert promotion for Object Storage bucket encryption findings so one rule/asset AlertCase can represent many affected buckets while preserving child finding evidence.
+- Added accepted-risk lifecycle handling so covered findings remain visible as non-compliant evidence, are suppressed from AlertCase promotion while the exception is active, and automatically return to normal eligibility after expiry or revocation.
 - Finalized KAORI Intelligence UI hierarchy across Recommendations, Alert Operations, Rule Catalog, and Automation Control.
 - Stabilized Alert Operations loading scope, resolved-case closure workflow, notification routing, and Telegram alert presentation.
 - Completed Intelligence typography, contract, Ruff, and djLint quality cleanup for release readiness.
@@ -13,7 +16,8 @@ All notable KAORI changes are recorded here. KAORI uses Semantic Versioning for 
 - Redesigned Binding Configuration, Execution Configuration, and Record Readiness Evidence modals with clearer section hierarchy while preserving governance boundaries.
 
 ### Security
-- No migration, route-name, form-field, or execution-gate ownership changes are introduced by the Intelligence UI cleanup.
+- Accepted-risk exceptions are durable, time-bounded, permission-gated, owner/audit-backed governance records; they never rewrite source truth or claim technical recovery.
+- Added the `rule_exceptions` migration and recommendation-state exception linkage while preserving default-deny execution boundaries.
 
 ## [2.3.0] - 2026-08-18
 

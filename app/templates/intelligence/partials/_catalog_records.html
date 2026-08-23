@@ -55,6 +55,9 @@
                             {% else %}
                                 {{ table_label.status_label('Recommendation Only', 'unknown', size='compact') }}
                             {% endif %}
+                            {% if item.active_exception_count %}
+                                {{ table_label.status_label(item.active_exception_count ~ ' Accepted Risk', 'info', size='compact') }}
+                            {% endif %}
                         </div>
                         <p class="mt-2 text-xs leading-5 text-content-muted">{{ 'Ready in the current KAORI boundary.' if item.status == 'available' else ('Enriched from an upstream signal.' if item.status == 'imported_signal' else 'Cataloged only; enabled outside this boundary.') }}</p>
                     </td>

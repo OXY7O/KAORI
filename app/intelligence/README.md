@@ -76,6 +76,19 @@ evidence before reserved capabilities are promoted to Available or mutation exec
 enabled.
 
 
+## Rule Exception / Accepted Risk governance
+
+Rule Catalog owns time-bounded Accepted Risk governance for active recommendation findings. An exception records a canonical rule, asset scope, reason, risk/change reference, owner, expiry, and revocation evidence. It never changes the underlying recommendation truth: a non-compliant finding remains visible and searchable while AlertCase promotion is suppressed only for the active exception window.
+
+Two scopes are supported:
+
+- `rule_asset`: covers all current and future active findings for the same canonical rule and asset until expiry. This is the preferred scope for one shared constraint, such as many unencrypted buckets on the same Object Storage system.
+- `finding_keys`: covers only explicitly selected active finding identities on one asset, allowing partial acceptance while uncovered findings remain actionable.
+
+Overlapping active exception scopes are rejected so one finding cannot have ambiguous accepted-risk ownership. Expiry is mandatory, permanent exceptions are intentionally unsupported, and revocation releases covered findings back to normal alert eligibility on the next reconciliation cycle.
+
+Alert Intelligence consumes this governance state; it does not redefine it. Recommendation evidence remains child-granular, while alert promotion may use the Rule Catalog grouping policy. `rule_asset` grouping creates one AlertCase per canonical rule and asset, preserves each child recommendation in `recommendation_sources`, derives severity from the highest active child, and shrinks or closes the case as individual findings clear or become covered by Accepted Risk. Existing finding-level cases are closed as `superseded` when a grouping policy change rehomes their active findings into the new grouped identity; this disposition does not claim source recovery.
+
 ## Object Storage recommendation ownership
 
 Object Storage recommendations reuse the central Intelligence catalog and finding lifecycle; they do

@@ -36,7 +36,9 @@ from app.intelligence.alert_intelligence.lifecycle import (
 from app.intelligence.alert_intelligence.routing import RoutingPolicyConfig
 from app.intelligence.alert_intelligence.service import get_alert_intelligence_payload
 from app.intelligence.recommendation_alert_commands import (
+    create_rule_exception_command,
     promote_recommendation_command,
+    revoke_rule_exception_command,
     save_recommendation_alert_policy_command,
 )
 from app.platform_operations.notifications.service import queue_transient_feedback
@@ -343,6 +345,65 @@ def save_recommendation_alert_policy(rule_key: str) -> ResponseReturnValue:
             status='success',
             title='Alert Escalation Policy Saved',
             message='Recommendation findings will follow the updated Alert Intelligence promotion policy.',
+        )
+    return redirect(url_for('intelligence.catalog', q=rule_key))
+
+
+@alert_intelligence_bp.post('/rule-exceptions/<path:rule_key>')
+@permission_required('intelligence.decisions.create')
+def create_rule_exception_for_rule(rule_key: str) -> ResponseReturnValue:
+    try:
+        row, stats = create_rule_exception_command(
+            rule_key=rule_key,
+            asset_key=str(request.form.get('asset_key') or ''),
+            scope_mode=str(request.form.get('scope_mode') or 'finding_keys'),
+            finding_keys=[str(value) for value in request.form.getlist('finding_keys')],
+            reason=str(request.form.get('reason') or ''),
+            risk_reference=str(request.form.get('risk_reference') or '') or None,
+            expires_in_days=int(str(request.form.get('expires_in_days') or '90')),
+            actor_user_id=_actor_user_id(),
+        )
+    except (ValueError, SQLAlchemyError) as exc:
+        queue_transient_feedback(
+            status='error',
+            title='Accepted Risk Not Created',
+            message=str(exc),
+        )
+    else:
+        reference = str(row.risk_reference or row.public_id)
+        queue_transient_feedback(
+            status='success',
+            title='Accepted Risk Created',
+            message=(
+                f'{reference} covers {stats["covered"]} active finding(s); '
+                f'{stats["cases_closed"]} fully covered Alert Case(s) were closed.'
+            ),
+        )
+    return redirect(url_for('intelligence.catalog', q=rule_key))
+
+
+@alert_intelligence_bp.post('/rule-exceptions/<string:exception_public_id>/revoke')
+@permission_required('intelligence.decisions.create')
+def revoke_rule_exception_for_rule(exception_public_id: str) -> ResponseReturnValue:
+    rule_key = str(request.form.get('rule_key') or '')
+    try:
+        row, released = revoke_rule_exception_command(
+            exception_public_id,
+            reason=str(request.form.get('reason') or ''),
+            actor_user_id=_actor_user_id(),
+        )
+        rule_key = row.rule_key
+    except (ValueError, SQLAlchemyError) as exc:
+        queue_transient_feedback(
+            status='error',
+            title='Accepted Risk Not Revoked',
+            message=str(exc),
+        )
+    else:
+        queue_transient_feedback(
+            status='success',
+            title='Accepted Risk Revoked',
+            message=f'{released} active finding(s) return to normal alert eligibility on the next reconcile.',
         )
     return redirect(url_for('intelligence.catalog', q=rule_key))
 

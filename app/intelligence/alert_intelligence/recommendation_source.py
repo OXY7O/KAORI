@@ -7,15 +7,18 @@ from typing import Any
 
 from app.extensions.db import db
 from app.intelligence.alert_intelligence.case_state import (
+    close_accepted_risk_alert,
     mark_case_source_unknown,
     restore_case_source_firing,
     set_case_policy_routing_eligibility,
+    supersede_recommendation_alert,
 )
 from app.intelligence.alert_intelligence.lifecycle import mark_case_source_resolved
 from app.intelligence.alert_signals.service import alert_signal_source_posture
 from app.intelligence.recommendation_alerting import base_rule_key, catalog_rule, effective_alert_policy
+from app.intelligence.rule_exceptions import active_rule_exceptions, matching_rule_exception
 from app.intelligence.service import get_active_recommendation_findings
-from app.models.alert_ops import AlertCase, AlertCaseEvent, RecommendationAlertState
+from app.models.alert_ops import AlertCase, AlertCaseEvent, RecommendationAlertState, RuleException
 from app.models.audit import AuditEvent
 from app.models.cluster import Cluster
 from app.models.integration import IntegrationBinding, IntegrationInstance
@@ -32,6 +35,10 @@ def reconcile_recommendation_alert_cases() -> dict[str, int]:
     now = datetime.now(UTC)
     findings = get_active_recommendation_findings()
     fresh_keys: set[str] = set()
+    active_exceptions = active_rule_exceptions(
+        {base_rule_key(str(finding.get('rule_key') or '')) for finding in findings},
+        now=now,
+    )
     stats = {
         'observed': 0,
         'eligible': 0,
@@ -39,6 +46,7 @@ def reconcile_recommendation_alert_cases() -> dict[str, int]:
         'updated': 0,
         'resolved': 0,
         'source_unknown': 0,
+        'accepted_risk': 0,
         'skipped': 0,
     }
     for finding in findings:
@@ -70,6 +78,21 @@ def reconcile_recommendation_alert_cases() -> dict[str, int]:
         state = _observe_finding(finding, policy=policy, now=now)
         stats['observed'] += 1
         case = db.session.get(AlertCase, state.alert_case_id) if state.alert_case_id is not None else None
+        case = _rehome_state_for_grouping(state, case=case, now=now)
+        exception = matching_rule_exception(finding, rows=active_exceptions, now=now)
+        if exception is not None:
+            _apply_rule_exception_to_state(
+                finding,
+                state=state,
+                case=case,
+                exception=exception,
+                policy=policy,
+                now=now,
+            )
+            stats['accepted_risk'] += 1
+            continue
+        if state.rule_exception_id is not None:
+            state.rule_exception_id = None
 
         if not policy['eligible']:
             if case is not None and case.workflow_state != 'closed':
@@ -89,14 +112,24 @@ def reconcile_recommendation_alert_cases() -> dict[str, int]:
                     )
                     stats['resolved'] += 1
                 else:
-                    _refresh_case_from_finding(case, finding, now=now)
+                    _refresh_case_from_finding(
+                        case,
+                        finding,
+                        now=now,
+                        grouping_mode=str(policy['grouping_mode']),
+                    )
                     set_case_policy_routing_eligibility(case, eligible=False, now=now)
                     stats['updated'] += 1
             continue
 
         stats['eligible'] += 1
         if case is not None and case.workflow_state != 'closed':
-            _refresh_case_from_finding(case, finding, now=now)
+            _refresh_case_from_finding(
+                case,
+                finding,
+                now=now,
+                grouping_mode=str(policy['grouping_mode']),
+            )
             set_case_policy_routing_eligibility(case, eligible=True, now=now)
             stats['updated'] += 1
             continue
@@ -131,6 +164,7 @@ def reconcile_recommendation_alert_cases() -> dict[str, int]:
         state.cleared_at = now
         state.promotion_suppressed_until_clear = False
         state.promotion_suppression_reason = None
+        state.rule_exception_id = None
         if case is None or case.source_state == 'resolved':
             continue
         db.session.flush()
@@ -139,6 +173,14 @@ def reconcile_recommendation_alert_cases() -> dict[str, int]:
             RecommendationAlertState.active.is_(True),
         ).first()
         if other_active is not None:
+            policy = effective_alert_policy(state.rule_key)
+            state.alert_case_id = None
+            _remove_recommendation_source(
+                case,
+                state.finding_key,
+                grouping_mode=str(policy.get('grouping_mode') or 'finding'),
+                now=now,
+            )
             continue
         mark_case_source_resolved(
             case,
@@ -174,6 +216,13 @@ def promote_recommendation_to_alert(
     available, source_reason = _source_evidence_posture_for_finding(finding)
     if not available:
         raise ValueError(_source_unknown_summary(source_reason))
+    exception = matching_rule_exception(finding, now=now)
+    if exception is not None:
+        reference = str(exception.risk_reference or exception.public_id)
+        raise ValueError(
+            f'This recommendation is covered by accepted risk {reference} until '
+            f'{_as_utc(exception.expires_at).date().isoformat()}.'
+        )
     state = _observe_finding(finding, policy=policy, now=now)
     state.promotion_suppressed_until_clear = False
     state.promotion_suppression_reason = None
@@ -288,7 +337,11 @@ def _ensure_alert_case(
         case.source_ref = state.finding_key
         case.rule_key = state.rule_key
         case.domain = state.domain
-        case.asset_type = str(finding.get('source_kind') or 'resource')
+        case.asset_type = _case_asset_type(
+            finding,
+            domain=state.domain,
+            grouping_mode=str(policy['grouping_mode']),
+        )
         case.asset_key = state.asset_key
         case.asset_name = _asset_name(finding, domain=state.domain, asset_key=state.asset_key)
         case.alert_name = str(finding.get('title') or finding.get('list_title') or state.rule_key)[:255]
@@ -322,14 +375,204 @@ def _ensure_alert_case(
             'promotion_mode': 'automatic' if automatic else 'manual',
         }
         _audit_promotion(case, actor_user_id=actor_user_id, automatic=automatic)
-    _refresh_case_from_finding(case, finding, now=now)
+    _refresh_case_from_finding(
+        case,
+        finding,
+        now=now,
+        grouping_mode=str(policy['grouping_mode']),
+    )
     state.alert_case_id = case.id
-    if not created:
-        _attach_recommendation_source(case, finding)
     return case
 
 
-def _refresh_case_from_finding(case: AlertCase, finding: dict[str, Any], *, now: datetime) -> None:
+def _rehome_state_for_grouping(
+    state: RecommendationAlertState,
+    *,
+    case: AlertCase | None,
+    now: datetime,
+) -> AlertCase | None:
+    if case is None:
+        return None
+    desired_case_key = f'recommendation:{state.grouping_fingerprint}'[:96]
+    if case.case_key == desired_case_key:
+        return case
+    state.alert_case_id = None
+    if case.workflow_state == 'closed':
+        return None
+    db.session.flush()
+    remaining = RecommendationAlertState.query.filter(
+        RecommendationAlertState.alert_case_id == case.id,
+        RecommendationAlertState.active.is_(True),
+    ).first()
+    if remaining is None:
+        supersede_recommendation_alert(
+            case,
+            reason=(
+                f'Rule Catalog grouping changed from {case.case_key} to {desired_case_key}; '
+                'the active finding will be attached to the new grouped AlertCase identity.'
+            ),
+            now=now,
+        )
+    else:
+        previous_grouping = str((case.labels_json or {}).get('grouping_mode') or 'finding')
+        _remove_recommendation_source(
+            case,
+            state.finding_key,
+            grouping_mode=previous_grouping,
+            now=now,
+        )
+    return None
+
+
+def apply_rule_exception_to_active_findings(
+    exception: RuleException,
+    findings: list[dict[str, Any]],
+    *,
+    now: datetime | None = None,
+) -> dict[str, int]:
+    """Apply a newly created exception immediately to already observed recommendation states."""
+
+    current = now or datetime.now(UTC)
+    stats = {'covered': 0, 'detached': 0, 'cases_closed': 0}
+    for finding in findings:
+        if matching_rule_exception(finding, rows=[exception], now=current) is None:
+            continue
+        stats['covered'] += 1
+        finding_key = str(finding.get('rule_key') or '').strip()
+        state = RecommendationAlertState.query.filter_by(finding_key=finding_key, active=True).first()
+        if state is None:
+            continue
+        case = db.session.get(AlertCase, state.alert_case_id) if state.alert_case_id is not None else None
+        policy = effective_alert_policy(
+            base_rule_key(finding_key),
+            observed_severity=str(finding.get('severity') or 'info'),
+        )
+        closed = _apply_rule_exception_to_state(
+            finding,
+            state=state,
+            case=case,
+            exception=exception,
+            policy=policy,
+            now=current,
+        )
+        stats['detached'] += int(case is not None and state.alert_case_id is None)
+        stats['cases_closed'] += int(closed)
+    return stats
+
+
+def _apply_rule_exception_to_state(
+    finding: dict[str, Any],
+    *,
+    state: RecommendationAlertState,
+    case: AlertCase | None,
+    exception: RuleException,
+    policy: dict[str, Any],
+    now: datetime,
+) -> bool:
+    state.rule_exception_id = exception.id
+    if case is None:
+        return False
+    _record_accepted_risk_source(case, finding, exception=exception)
+    state.alert_case_id = None
+    if case.workflow_state == 'closed':
+        return False
+    db.session.flush()
+    remaining = RecommendationAlertState.query.filter(
+        RecommendationAlertState.alert_case_id == case.id,
+        RecommendationAlertState.active.is_(True),
+    ).first()
+    if remaining is None:
+        _remove_recommendation_source(
+            case,
+            str(finding.get('rule_key') or state.finding_key),
+            grouping_mode=str(policy.get('grouping_mode') or 'finding'),
+            now=now,
+        )
+        accepted_count = int((case.evidence_json or {}).get('accepted_risk_count') or 1)
+        case.summary = (
+            f'{accepted_count} active recommendation finding'
+            f'{"s" if accepted_count != 1 else ""} are covered by time-bounded accepted risk.'
+        )
+        case.target = f'{accepted_count} accepted-risk finding' + ('s' if accepted_count != 1 else '')
+        close_accepted_risk_alert(
+            case,
+            exception_public_id=exception.public_id,
+            exception_reason=exception.reason,
+            risk_reference=exception.risk_reference,
+            actor_user_id=exception.created_by_user_id,
+            now=now,
+        )
+        return True
+    _remove_recommendation_source(
+        case,
+        str(finding.get('rule_key') or state.finding_key),
+        grouping_mode=str(policy.get('grouping_mode') or 'finding'),
+        now=now,
+    )
+    return False
+
+
+def _record_accepted_risk_source(
+    case: AlertCase,
+    finding: dict[str, Any],
+    *,
+    exception: RuleException,
+) -> None:
+    evidence = dict(case.evidence_json or {})
+    raw = evidence.get('accepted_risk_sources')
+    rows = list(raw) if isinstance(raw, list) else []
+    finding_key = str(finding.get('rule_key') or '')
+    if not any(isinstance(row, dict) and row.get('finding_key') == finding_key for row in rows):
+        source_evidence = _finding_evidence(finding)
+        rows.append(
+            {
+                'finding_key': finding_key,
+                'target': _source_target(source_evidence, finding),
+                'exception_public_id': exception.public_id,
+                'risk_reference': exception.risk_reference or '',
+            }
+        )
+    evidence['accepted_risk_sources'] = rows
+    evidence['accepted_risk_count'] = len(rows)
+    evidence['accepted_risk_exception'] = exception.public_id
+    evidence['accepted_risk_reference'] = exception.risk_reference or ''
+    case.evidence_json = evidence
+
+
+def _remove_accepted_risk_source(case: AlertCase, finding_key: str) -> None:
+    evidence = dict(case.evidence_json or {})
+    raw = evidence.get('accepted_risk_sources')
+    if not isinstance(raw, list):
+        return
+    normalized_key = str(finding_key or '')
+    rows = [
+        row
+        for row in raw
+        if not (isinstance(row, dict) and str(row.get('finding_key') or '') == normalized_key)
+    ]
+    if len(rows) == len(raw):
+        return
+    if rows:
+        evidence['accepted_risk_sources'] = rows
+        evidence['accepted_risk_count'] = len(rows)
+        latest = next((row for row in reversed(rows) if isinstance(row, dict)), {})
+        evidence['accepted_risk_exception'] = str(latest.get('exception_public_id') or '')
+        evidence['accepted_risk_reference'] = str(latest.get('risk_reference') or '')
+    else:
+        evidence.pop('accepted_risk_sources', None)
+        evidence.pop('accepted_risk_count', None)
+        evidence.pop('accepted_risk_exception', None)
+        evidence.pop('accepted_risk_reference', None)
+    case.evidence_json = evidence
+
+
+def _refresh_case_from_finding(
+    case: AlertCase,
+    finding: dict[str, Any],
+    *,
+    now: datetime,
+    grouping_mode: str = 'finding',
+) -> None:
     finding_key = str(finding.get('rule_key') or '').strip()
     previous_source_state = case.source_state
     if finding_key:
@@ -356,7 +599,39 @@ def _refresh_case_from_finding(case: AlertCase, finding: dict[str, Any], *, now:
             actor_user_id=None,
             metadata={'recommendation_key': case.source_ref, 'rule_key': case.rule_key},
         )
+
     next_severity = _severity(finding.get('severity'))
+    evidence = _finding_evidence(finding)
+    if grouping_mode == 'finding':
+        _apply_case_severity(case, next_severity, now=now)
+        case.summary = str(finding.get('summary') or finding.get('condition_summary') or '').strip() or None
+        case.namespace = _optional_text(evidence.get('namespace'))
+        case.target = _optional_text(
+            evidence.get('bucket_name')
+            or evidence.get('workload_name')
+            or evidence.get('pod_name')
+            or finding.get('affected_summary')
+        )
+
+    labels = dict(case.labels_json or {})
+    labels.update(
+        {
+            'source_type': 'recommendation',
+            'rule_key': base_rule_key(str(finding.get('rule_key') or '')),
+            'recommendation_key': str(finding.get('rule_key') or ''),
+            'category': str(finding.get('category') or ''),
+            'priority': str(finding.get('priority') or ''),
+            'signal_source': str(finding.get('signal_source') or ''),
+            'grouping_mode': grouping_mode,
+        }
+    )
+    case.labels_json = labels
+    _attach_recommendation_source(case, finding)
+    if grouping_mode != 'finding':
+        _refresh_grouped_case(case, grouping_mode=grouping_mode, now=now)
+
+
+def _apply_case_severity(case: AlertCase, next_severity: str, *, now: datetime) -> None:
     previous_severity = case.severity
     if previous_severity and previous_severity != next_severity:
         case.previous_severity = previous_severity
@@ -367,7 +642,6 @@ def _refresh_case_from_finding(case: AlertCase, finding: dict[str, Any], *, now:
             else 'severity_deescalated'
         )
         if event_type == 'severity_escalated' and case.acknowledgement_expires_at is not None:
-            # A higher severity is a new paging condition; an ACK at the old severity cannot suppress it.
             case.acknowledgement_expires_at = now
         _timeline(
             case,
@@ -377,37 +651,17 @@ def _refresh_case_from_finding(case: AlertCase, finding: dict[str, Any], *, now:
             metadata={'previous_severity': previous_severity, 'current_severity': next_severity},
         )
     case.severity = next_severity
-    case.summary = str(finding.get('summary') or finding.get('condition_summary') or '').strip() or None
-    evidence = _finding_evidence(finding)
-    case.namespace = _optional_text(evidence.get('namespace'))
-    case.target = _optional_text(
-        evidence.get('bucket_name')
-        or evidence.get('workload_name')
-        or evidence.get('pod_name')
-        or finding.get('affected_summary')
-    )
-    labels = dict(case.labels_json or {})
-    labels.update(
-        {
-            'source_type': 'recommendation',
-            'rule_key': base_rule_key(str(finding.get('rule_key') or '')),
-            'recommendation_key': str(finding.get('rule_key') or ''),
-            'category': str(finding.get('category') or ''),
-            'priority': str(finding.get('priority') or ''),
-            'signal_source': str(finding.get('signal_source') or ''),
-        }
-    )
-    case.labels_json = labels
-    _attach_recommendation_source(case, finding)
 
 
 def _attach_recommendation_source(case: AlertCase, finding: dict[str, Any]) -> None:
+    finding_key = str(finding.get('rule_key') or '')
+    _remove_accepted_risk_source(case, finding_key)
     evidence = dict(case.evidence_json or {})
     raw_sources = evidence.get('recommendation_sources')
     sources: dict[str, Any] = (
         {str(source_key): value for source_key, value in raw_sources.items()} if isinstance(raw_sources, dict) else {}
     )
-    key = str(finding.get('rule_key') or '')
+    key = finding_key
     source_evidence = _finding_evidence(finding)
     sources[key] = {
         'title': str(finding.get('title') or ''),
@@ -415,6 +669,8 @@ def _attach_recommendation_source(case: AlertCase, finding: dict[str, Any]) -> N
         'condition_summary': str(finding.get('condition_summary') or ''),
         'recommended_action': str(finding.get('recommended_action') or ''),
         'affected_summary': str(finding.get('affected_summary') or ''),
+        'severity': _severity(finding.get('severity')),
+        'target': _source_target(source_evidence, finding),
         'evidence': dict(source_evidence),
     }
     evidence.update(
@@ -429,6 +685,85 @@ def _attach_recommendation_source(case: AlertCase, finding: dict[str, Any]) -> N
         }
     )
     case.evidence_json = evidence
+
+
+def _remove_recommendation_source(
+    case: AlertCase,
+    finding_key: str,
+    *,
+    grouping_mode: str,
+    now: datetime,
+) -> None:
+    evidence = dict(case.evidence_json or {})
+    raw_sources = evidence.get('recommendation_sources')
+    if not isinstance(raw_sources, dict):
+        return
+    sources = {str(key): value for key, value in raw_sources.items()}
+    sources.pop(str(finding_key or ''), None)
+    evidence['recommendation_sources'] = sources
+    evidence['recommendation_count'] = len(sources)
+    if not sources:
+        evidence['affected_items'] = []
+        evidence['affected_preview'] = []
+    case.evidence_json = evidence
+    if sources and grouping_mode != 'finding':
+        _refresh_grouped_case(case, grouping_mode=grouping_mode, now=now)
+
+
+def _refresh_grouped_case(case: AlertCase, *, grouping_mode: str, now: datetime) -> None:
+    evidence = dict(case.evidence_json or {})
+    raw_sources = evidence.get('recommendation_sources')
+    if not isinstance(raw_sources, dict) or not raw_sources:
+        return
+    sources = {str(key): value for key, value in raw_sources.items()}
+    rule = catalog_rule(str(case.rule_key or '')) or {}
+    rule_title = str(rule.get('title') or case.rule_key or 'Recommendation Alert').strip()
+    targets = [
+        str(source.get('target') or '').strip()
+        for source in sources.values()
+        if isinstance(source, dict) and str(source.get('target') or '').strip()
+    ]
+    severities = [
+        _severity(source.get('severity'))
+        for source in sources.values()
+        if isinstance(source, dict)
+    ]
+    next_severity = max(severities or [case.severity or 'info'], key=_severity_rank)
+    _apply_case_severity(case, next_severity, now=now)
+    count = len(sources)
+    case.source_ref = str(case.rule_key or '') or case.source_ref
+    case.alert_name = rule_title[:255]
+    case.summary = (
+        f'{count} active recommendation finding{"s" if count != 1 else ""} match {rule_title} '
+        f'on {case.asset_name}.'
+    )
+    case.target = f'{count} affected resource{"s" if count != 1 else ""}'
+    if grouping_mode == 'rule_asset':
+        case.namespace = None
+    evidence.update(
+        {
+            'summary': case.summary,
+            'recommendation_key': case.source_ref,
+            'recommendation_count': count,
+            'grouping_mode': grouping_mode,
+            'affected_items': targets,
+            'affected_preview': targets[:5],
+        }
+    )
+    case.evidence_json = evidence
+
+
+def _source_target(source_evidence: dict[str, Any], finding: dict[str, Any]) -> str:
+    return str(
+        source_evidence.get('bucket_name')
+        or source_evidence.get('workload_name')
+        or source_evidence.get('pod_name')
+        or source_evidence.get('namespace')
+        or finding.get('affected_summary')
+        or finding.get('title')
+        or finding.get('rule_key')
+        or 'Finding'
+    ).strip()
 
 
 def _grouping_fingerprint(
@@ -465,6 +800,15 @@ def _asset_key(finding: dict[str, Any]) -> str:
     evidence = _finding_evidence(finding)
     value = evidence.get('asset_key') or evidence.get('cluster_id') or evidence.get('object_storage_system_id')
     return str(value or 'unknown')
+
+
+def _case_asset_type(finding: dict[str, Any], *, domain: str, grouping_mode: str) -> str:
+    if grouping_mode == 'rule_asset':
+        return {
+            'kubernetes': 'kubernetes_cluster',
+            'object_storage': 'object_storage_system',
+        }.get(str(domain or '').strip().lower(), 'asset')
+    return str(finding.get('source_kind') or 'resource')
 
 
 def _asset_name(finding: dict[str, Any], *, domain: str, asset_key: str) -> str:

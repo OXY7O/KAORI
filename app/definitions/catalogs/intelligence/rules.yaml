@@ -409,6 +409,8 @@ rules:
   status: available
   logic_type: governance_check
   signal_source: object_storage_inventory
+  alert_escalation:
+    grouping_mode: rule_asset
   summary: Identifies Object Storage buckets whose committed encryption evidence reports no configured encryption policy.
   condition_summary: The latest committed bucket inventory reports encryption_state as not_configured.
   recommended_action: Validate the data-classification requirement, enable the approved server-side encryption policy when

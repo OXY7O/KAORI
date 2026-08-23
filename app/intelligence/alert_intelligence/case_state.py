@@ -230,6 +230,103 @@ def close_false_positive_alert(
     _audit(case, actor_user_id, 'alert_case_false_positive_closed', 'Alert case closed as false positive.')
 
 
+def supersede_recommendation_alert(
+    case: AlertCase,
+    *,
+    reason: str,
+    actor_user_id: int | None = None,
+    now: datetime | None = None,
+) -> None:
+    """Close an old recommendation AlertCase after its grouping identity changes."""
+
+    _require_open(case)
+    if case.source_type != 'recommendation':
+        raise ValueError('Only KAORI recommendation alert cases can be superseded by regrouping.')
+    normalized_reason = str(reason or '').strip()
+    if not normalized_reason:
+        raise ValueError('Supersede reason is required.')
+    current = now or datetime.now(UTC)
+    case.workflow_state = 'closed'
+    case.closure_reason = 'superseded'
+    case.closed_at = current
+    case.closed_by_user_id = actor_user_id
+    case.routing_state = 'suppressed'
+    case.routing_override_reason = 'grouping_changed'
+    case.routing_override_note = normalized_reason[:1000]
+    case.routing_override_at = current
+    case.routing_override_by_user_id = actor_user_id
+    case.resolution_summary = (
+        'Superseded by a new grouped AlertCase identity; KAORI did not record technical source recovery.'
+    )
+    case.verification_evidence = normalized_reason[:4000]
+    _event(
+        case,
+        'recommendation_grouping_superseded',
+        actor_user_id,
+        'This Alert Case was superseded after the Rule Catalog grouping policy changed.',
+        {'reason': normalized_reason[:500]},
+    )
+    _audit(
+        case,
+        actor_user_id,
+        'alert_case_grouping_superseded',
+        'Recommendation alert case superseded by grouped promotion identity.',
+    )
+
+
+def close_accepted_risk_alert(
+    case: AlertCase,
+    *,
+    exception_public_id: str,
+    exception_reason: str,
+    risk_reference: str | None,
+    actor_user_id: int | None,
+    now: datetime | None = None,
+) -> None:
+    """Close a recommendation alert because all active child findings are covered by accepted risk."""
+
+    _require_open(case)
+    if case.source_type != 'recommendation':
+        raise ValueError('Only KAORI recommendation alert cases can be closed under accepted risk.')
+    normalized_reason = str(exception_reason or '').strip()
+    if not normalized_reason:
+        raise ValueError('Accepted-risk reason is required.')
+    current = now or datetime.now(UTC)
+    reference = str(risk_reference or '').strip()
+    case.workflow_state = 'closed'
+    case.closure_reason = 'accepted_risk'
+    case.closed_at = current
+    case.closed_by_user_id = actor_user_id
+    case.routing_state = 'suppressed'
+    case.routing_override_reason = 'accepted_risk'
+    case.routing_override_note = normalized_reason[:1000]
+    case.routing_override_at = current
+    case.routing_override_by_user_id = actor_user_id
+    case.resolution_summary = (
+        'Closed under a time-bounded accepted-risk exception; KAORI did not record technical source recovery.'
+    )
+    case.verification_evidence = (
+        f'{reference}: {normalized_reason}' if reference else normalized_reason
+    )[:4000]
+    _event(
+        case,
+        'accepted_risk_applied',
+        actor_user_id,
+        'All active recommendation findings in this Alert Case are covered by an accepted-risk exception.',
+        {
+            'exception_public_id': exception_public_id,
+            'risk_reference': reference,
+            'reason': normalized_reason[:500],
+        },
+    )
+    _audit(
+        case,
+        actor_user_id,
+        'alert_case_accepted_risk',
+        'Alert case closed under a time-bounded accepted-risk exception.',
+    )
+
+
 def retire_source_deleted_case(
     case: AlertCase,
     *,
