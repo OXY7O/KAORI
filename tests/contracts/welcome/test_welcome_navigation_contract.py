@@ -119,6 +119,12 @@ def test_welcome_catalog_matches_current_primary_navigation_domains() -> None:
     for title in expected_titles:
         assert f"'title': '{title}'" in shortcuts
 
+    assert (
+        "Review operational posture, capacity and growth risk, active alerts, leading resource consumers, "
+        in shortcuts
+    )
+    assert "and prioritized actions across connected Kubernetes clusters." in shortcuts
+
     assert "'title': 'Kubernetes Cluster'" not in shortcuts
     assert "('jobs.view', 'platform_operations.overview.index')" in shortcuts
     assert "('jobs.configure', 'platform_operations.overview.index')" in shortcuts
