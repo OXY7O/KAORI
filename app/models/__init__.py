@@ -1,4 +1,3 @@
-from app.models.alert_signal import AlertSignalSnapshot
 from app.models.alert_ops import (
     AlertCase,
     AlertCaseEvent,
@@ -8,6 +7,7 @@ from app.models.alert_ops import (
     RecommendationAlertPolicy,
     RecommendationAlertState,
 )
+from app.models.alert_signal import AlertSignalSnapshot
 from app.models.alertmanager import AlertmanagerInstance
 from app.models.analytics import AnalyticsSnapshot
 from app.models.archive import ArchiveArtifact

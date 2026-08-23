@@ -9,7 +9,6 @@ from werkzeug.datastructures import MultiDict
 from app.common.inventory_generation import filter_current_generation
 from app.extensions.db import db
 from app.intelligence.catalog import INTELLIGENCE_CATALOG
-from app.intelligence.kubernetes_runtime_recommendations import build_kubernetes_runtime_recommendation_findings
 from app.intelligence.finding_presentation import (
     build_affected_assets,
     build_affected_items,
@@ -20,6 +19,7 @@ from app.intelligence.finding_presentation import (
     recommendation_table_summary,
     recommendation_table_title,
 )
+from app.intelligence.kubernetes_runtime_recommendations import build_kubernetes_runtime_recommendation_findings
 from app.intelligence.object_storage_recommendations import build_object_storage_recommendation_findings
 from app.intelligence.recommendation_alerting import (
     decorate_catalog_rules,

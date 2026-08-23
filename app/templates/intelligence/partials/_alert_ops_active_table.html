@@ -11,8 +11,7 @@
     'q': payload.filters.q
 } %}
 {% set selected_case_id = payload.selected_case.public_id if payload.selected_case else '' %}
-<div id="alert-operations-active-records"
-     class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
+<div id="alert-operations-active-records" class="overflow-hidden bg-surface-card">
     <div class="overflow-x-auto">
         <table class="{{ table_ui.table_classes('min-w-[1080px]') }}">
             <thead class="{{ table_ui.head_classes() }}">
@@ -65,7 +64,7 @@
                                    hx-target="#alert-operations-active-records"
                                    hx-swap="outerHTML show:none focus-scroll:false"
                                    hx-push-url="true"
-                                   hx-indicator="#alert-intelligence-loading"
+                                   hx-indicator="#alert-operations-active-loading"
                                    hx-sync="#alert-operations-active-records:replace"
                                    class="{{ table_ui.action_classes() }}"
                                    aria-controls="alert-case-review-{{ case.public_id }}">
@@ -76,7 +75,9 @@
                     </tr>
                     {% if review_open %}
                         <tr data-alert-case-expanded-row="{{ case.public_id }}">
-                            <td colspan="8" class="p-0">{% include 'intelligence/partials/_alert_ops_case_workspace.html' %}</td>
+                            <td colspan="8" class="p-0">
+                                {% include 'intelligence/partials/_alert_ops_case_workspace.html' %}
+                            </td>
                         </tr>
                     {% endif %}
                 {% else %}
@@ -90,7 +91,7 @@
             </tbody>
         </table>
     </div>
-    {{ record_pagination.render(payload.active_pagination, 'page', 'per_page', 'alert-intelligence-page-content', 'alert-operations-filter-form', 'alert-intelligence-loading', 'alert_intelligence.index', 'alert_intelligence.index', pagination_query, 'Alert Cases', embedded=true) }}
+    {{ record_pagination.render(payload.active_pagination, 'page', 'per_page', 'alert-intelligence-page-content', 'alert-operations-filter-form', 'alert-operations-active-loading', 'alert_intelligence.index', 'alert_intelligence.index', pagination_query, 'Alert Cases', embedded=true) }}
 </div>
 {% if request.headers.get('HX-Request') == 'true' %}
     {% set operation_feedback = load_operational_feedback() %}

@@ -39,9 +39,21 @@ def test_active_alert_filters_are_tab_local_auto_refresh_and_keep_clear_filters(
     assert 'id="alert-intelligence-context-form"' in workspace
     assert 'id="alert-intelligence-domain-select"' in workspace
     assert 'id="alert-intelligence-asset-select"' in workspace
-    assert 'hx-include=".alert-intelligence-context-persistent"' in workspace
-    assert 'hx-include=".alert-intelligence-context-persistent, #alert-intelligence-domain-select"' in workspace
+    context_form = workspace.split('id="alert-intelligence-context-form"', 1)[1].split('</form>', 1)[0]
+    assert 'hx-get="{{ url_for(\'alert_intelligence.index\') }}"' in context_form
+    assert 'hx-trigger="change"' in context_form
+    assert 'name="domain"' in context_form
+    assert 'name="asset"' in context_form
+    assert 'hx-disabled-elt=' not in context_form
+    assert 'hx-include=' not in context_form
     assert 'id="alert-operations-filter-form"' in active
+    assert 'id="alert-operations-active-registry"' in active
+    assert 'alert-operations-active-loading' in active
+    assert 'loading_bar.render' in active
+    assert 'Active Alert Triage' in active
+    assert 'Triage Guidance' in active
+    assert 'bg-kaori-soft' in active
+    assert 'Quick Views' in active
     assert 'hx-trigger="input changed delay:350ms from:input, change from:select"' in active
     assert 'Search' in active
     assert 'Severity' in active
@@ -72,8 +84,13 @@ def test_alert_operations_sections_own_distinct_operator_responsibilities() -> N
         'Verification Evidence',
     ):
         assert required in case_workspace
-    for required in ('Routing Policies', 'Channel Readiness', 'Create Routing Policy', 'Notification Channels'):
+    for required in ('Routing Policies', 'Policy Registry', 'Channel Readiness', 'Create Routing Policy', 'Notification Channels'):
         assert required in routing
+    assert "table_ui.table_classes('min-w-[1180px]')" in routing
+    assert 'Policy Details' in routing
+    assert '<details class="group border-t border-outline-subtle">' in routing
+    assert 'Routing Eligibility' in routing
+    assert 'Policy Checklist' in routing
     assert 'table_registry.footer' in routing
     assert 'payload.selected_policy' in routing
     assert 'Integrations → Notification Channels' in routing
