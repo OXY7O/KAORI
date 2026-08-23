@@ -92,7 +92,9 @@
                     {{ 'Execution gate enabled' if payload.execution_enabled else 'Execution gate disabled' }}
                 </div>
             </div>
-            <div data-automation-control-active-workspace="{{ payload.workspace }}">
+            <div data-automation-control-active-workspace="{{ payload.workspace }}"
+                 {% if payload.workspace != 'overview' %}data-automation-control-workspace-canvas{% endif %}
+                 class="{% if payload.workspace != 'overview' %}space-y-6 bg-surface-page p-4 sm:p-5{% endif %}">
                 {% if payload.workspace == 'overview' %}
                     {% include 'intelligence/partials/automation_control/_overview.html' %}
                 {% elif payload.workspace == 'runbooks' %}

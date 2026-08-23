@@ -68,3 +68,19 @@ def test_tables_use_kaori_registry_standard_and_static_expandable_rows_for_long_
     assert 'detail_row.static_detail_row' in decisions
     assert 'detail_row.static_detail_row' in operations
     assert 'detail_row.static_detail_row' in readiness
+
+
+def test_non_overview_workspaces_share_one_padded_canvas_and_do_not_own_outer_spacing():
+    page = read('app/templates/intelligence/automation_control.html')
+    assert 'data-automation-control-workspace-canvas' in page
+    assert "payload.workspace != 'overview'" in page
+    assert 'space-y-6 bg-surface-page p-4 sm:p-5' in page
+
+    for path in (
+        'app/templates/intelligence/partials/automation_control/_runbooks.html',
+        'app/templates/intelligence/partials/automation_control/_decisions.html',
+        'app/templates/intelligence/partials/automation_control/_operations.html',
+        'app/templates/intelligence/partials/automation_control/_readiness.html',
+    ):
+        template = read(path)
+        assert '<div class="space-y-5">' not in template
