@@ -39,7 +39,7 @@
                         <i data-lucide="lightbulb" class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
                         <div class="min-w-0">
                             <p class="text-xs font-semibold uppercase tracking-wide text-kaori-primary">Triage Guidance</p>
-                            <p class="mt-1 text-xs leading-5 text-content-secondary">Start with Critical or Source Unknown cases, acknowledge ownership before investigation, and use Review inline to manage routing, silence, mitigation evidence, and verified closure.</p>
+                            <p class="mt-1 text-xs leading-5 text-content-secondary">Start with Critical or Source Unknown cases, acknowledge ownership before investigation, and open Review for focused evidence, routing, silence, mitigation, and verified closure.</p>
                         </div>
                     </div>
                 </div>
@@ -93,19 +93,25 @@
                     <p class="{{ table_ui.block_description_classes() }}">Filter the active queue by alert text, severity, or operator workflow. Results refresh inline while preserving the current operational context.</p>
                 </div>
             </div>
-            {% if payload.filters.q or payload.filters.severity != 'all' or payload.filters.workflow != 'all' %}
-                <a data-kaori-filter-action
-                   href="{{ url_for('alert_intelligence.index', tab='active', domain=payload.domain, asset=payload.selected_asset_key) }}"
-                   hx-get="{{ url_for('alert_intelligence.index', tab='active', domain=payload.domain, asset=payload.selected_asset_key) }}"
-                   hx-target="#alert-operations-active-registry"
-                   hx-select="#alert-operations-active-registry"
-                   hx-swap="outerHTML"
-                   hx-push-url="true"
-                   hx-indicator="#alert-operations-active-loading"
-                   class="{{ table_ui.action_classes() }}">Clear Filters</a>
-            {% endif %}
-            {{ loading_bar.render('alert-operations-active-loading', label='Refreshing Active Alert Queue') }}
+            <div class="flex shrink-0 flex-wrap items-center justify-end gap-2">
+                {% if payload.filters.q or payload.filters.severity != 'all' or payload.filters.workflow != 'all' %}
+                    <a data-kaori-filter-action
+                       href="{{ url_for('alert_intelligence.index', tab='active', domain=payload.domain, asset=payload.selected_asset_key) }}"
+                       hx-get="{{ url_for('alert_intelligence.index', tab='active', domain=payload.domain, asset=payload.selected_asset_key) }}"
+                       hx-target="#alert-operations-active-registry"
+                       hx-select="#alert-operations-active-registry"
+                       hx-swap="outerHTML"
+                       hx-push-url="true"
+                       hx-indicator="#alert-operations-active-loading"
+                       class="{{ table_ui.action_classes() }}">
+                        <i data-lucide="x" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                        Clear Filters
+                    </a>
+                {% endif %}
+                {{ table_label.metadata_label(payload.active_pagination.total_items ~ ' Alert Cases', 'list-filter') }}
+            </div>
         </header>
+        {{ loading_bar.render('alert-operations-active-loading', label='Refreshing Active Alert Queue') }}
         <div class="{{ table_ui.filter_bar_classes() }}">
             <form id="alert-operations-filter-form"
                   action="{{ url_for('alert_intelligence.index') }}"

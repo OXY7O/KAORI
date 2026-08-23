@@ -7,24 +7,21 @@ def read(relative: str) -> str:
     return (ROOT / relative).read_text(encoding='utf-8')
 
 
-def test_active_alert_review_expands_inline_without_full_page_reload() -> None:
+def test_active_alert_review_opens_focused_modal_without_expanding_table_rows() -> None:
     routes = read('app/intelligence/alert_intelligence/routes.py')
-    active = read('app/templates/intelligence/partials/_alert_ops_active.html')
+    page = read('app/templates/intelligence/alert_intelligence.html')
     table = read('app/templates/intelligence/partials/_alert_ops_active_table.html')
     workspace = read('app/templates/intelligence/partials/_alert_ops_case_workspace.html')
 
-    assert "target == 'alert-operations-active-records'" in routes
-    assert '_alert_ops_active_table.html' in routes
-    assert 'def _active_records_htmx_request()' in routes
-    assert 'def _active_records_response(' in routes
-    assert "{% include 'intelligence/partials/_alert_ops_case_workspace.html' %}" not in active
-    assert 'data-alert-case-expanded-row=' in table
-    assert "{% include 'intelligence/partials/_alert_ops_case_workspace.html' %}" in table
-    assert 'hx-target="#alert-operations-active-records"' in table
-    assert 'hx-swap="outerHTML show:none focus-scroll:false"' in table
-    assert 'hx-push-url="true"' in table
-    assert 'data-alert-case-review=' in workspace
-    assert 'hx-target="#alert-operations-active-records"' in workspace
+    assert "def case_details(public_id: str)" in routes
+    assert "resource_detail_modal.host('Alert Operations'" in page
+    assert 'data-resource-detail-toggle' in table
+    assert 'data-detail-type="Alert Case"' in table
+    assert 'data-alert-case-expanded-row=' not in table
+    assert "{% include 'intelligence/partials/_alert_ops_case_workspace.html' %}" not in table
+    assert 'data-kaori-detail-variant="modal"' in workspace
+    assert 'data-resource-detail-header' in workspace
+    assert 'hx-target="#alert-case-modal-content-{{ case.public_id }}"' in workspace
     assert 'Manage ownership, delivery, and remediation without leaving this alert.' in workspace
 
 
@@ -42,7 +39,7 @@ def test_alert_review_uses_full_width_stacked_incident_workspace() -> None:
     workspace = read('app/templates/intelligence/partials/_alert_ops_case_workspace.html')
     service = read('app/intelligence/alert_intelligence/service.py')
 
-    assert 'xl:grid-cols-[minmax(0,1.45fr)_minmax(25rem,0.55fr)]' not in workspace
+    assert "xl:grid-cols-[minmax(0,1.45fr)_minmax(25rem,0.55fr)]" not in workspace
     assert '<aside' not in workspace
     for label in (
         'Operator Actions',
@@ -76,18 +73,19 @@ def test_operator_actions_preserve_no_javascript_fallback_and_htmx_updates() -> 
     ):
         assert f"action=\"{{{{ url_for('{action}'" in workspace
         assert f"htmx_form_attrs(url_for('{action}'" in workspace
-    assert 'if _active_records_htmx_request():' in routes
-    assert 'return _active_records_response(case_id=case.public_id)' in routes
-    assert 'operation_feedback_oob.html' in read('app/templates/intelligence/partials/_alert_ops_active_table.html')
+    assert 'def _modal_case_htmx_request()' in routes
+    assert 'def _modal_case_response(' in routes
+    assert "return _modal_case_response(case_id=case.public_id)" in routes
+    assert "operation_feedback_oob.html" in read('app/templates/intelligence/partials/_alert_ops_active_table.html')
 
 
-def test_review_polish_removes_duplicate_close_and_enriches_operator_controls() -> None:
+def test_review_polish_uses_single_modal_close_and_enriches_operator_controls() -> None:
     table = read('app/templates/intelligence/partials/_alert_ops_active_table.html')
     workspace = read('app/templates/intelligence/partials/_alert_ops_case_workspace.html')
 
-    assert "metadata_label('Reviewing', 'panel-top')" in table
-    assert "{{ 'Close' if review_open else 'Review' }}" not in table
-    assert 'Close Review' in workspace
+    assert "metadata_label('Reviewing', 'panel-top')" not in table
+    assert 'Close Review' not in workspace
+    assert 'data-resource-detail-toggle' in table
     assert 'Take ownership and pause repeats during the ACK window.' in workspace
     assert 'Assign the operator responsible for follow-up.' in workspace
     assert "status_label(case.delivery_label, case.delivery_tone, size='compact')" in workspace
@@ -121,7 +119,10 @@ def test_routes_import_routing_state_mutations_from_case_state_owner() -> None:
         'withdraw_manual_alert',
     ):
         assert name in routes
-    lifecycle_block = routes.split('from app.intelligence.alert_intelligence.lifecycle import (', 1)[1].split(')', 1)[0]
+    lifecycle_block = (
+        routes.split('from app.intelligence.alert_intelligence.lifecycle import (', 1)[1]
+        .split(')', 1)[0]
+    )
     assert 'resume_case_routing' not in lifecycle_block
     assert 'retire_source_deleted_case' not in lifecycle_block
     assert 'suppress_case_routing' not in lifecycle_block
@@ -137,10 +138,10 @@ def test_review_keeps_detail_summary_single_source_and_bounds_long_evidence_list
     assert '>Target</p>' in workspace
     assert "('boxes', 'Asset', case.asset_name)" in workspace
     assert "('layers-3', 'Namespace', case.namespace)" in workspace
-    assert 'timeline_recent = timeline[-5:]' in service
-    assert 'timeline_older = timeline[:-5]' in service
-    assert 'deliveries_recent = deliveries[:5]' in service
-    assert 'deliveries_older = deliveries[5:]' in service
+    assert "timeline_recent = timeline[-5:]" in service
+    assert "timeline_older = timeline[:-5]" in service
+    assert "deliveries_recent = deliveries[:5]" in service
+    assert "deliveries_older = deliveries[5:]" in service
     assert 'Earlier Timeline Events' in workspace
     assert 'Earlier Delivery Attempts' in workspace
     assert 'max-h-80' in workspace

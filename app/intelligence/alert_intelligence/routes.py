@@ -10,6 +10,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from app.access.rbac.decorators import permission_required
 from app.intelligence.alert_intelligence.application import (
     apply_case_mutation,
+    delete_routing_policy_command,
     reset_template_override_command,
     save_routing_policy_command,
     save_template_override_command,
@@ -57,6 +58,23 @@ def index() -> ResponseReturnValue:
             return render_template('intelligence/partials/_alert_ops_active_table.html', payload=payload)
         return render_template('intelligence/partials/_alert_intelligence_page.html', payload=payload)
     return render_template('intelligence/alert_intelligence.html', payload=payload)
+
+
+@alert_intelligence_bp.get('/cases/<string:public_id>/details')
+@permission_required('intelligence.view')
+def case_details(public_id: str) -> ResponseReturnValue:
+    args = request.args.copy()
+    args['case'] = public_id
+    if not args.get('tab'):
+        args['tab'] = 'active'
+    payload = get_alert_intelligence_payload(args)
+    if payload.get('selected_case') is None:
+        return ('Alert case not found.', 404)
+    return render_template(
+        'intelligence/partials/_alert_ops_case_workspace.html',
+        payload=payload,
+        modal_refresh=False,
+    )
 
 
 @alert_intelligence_bp.get('/records')
@@ -324,6 +342,41 @@ def save_recommendation_alert_policy(rule_key: str) -> ResponseReturnValue:
     return redirect(url_for('intelligence.catalog', q=rule_key))
 
 
+@alert_intelligence_bp.get('/routing/<string:policy_ref>/details')
+@permission_required('integrations.manage')
+def routing_policy_details(policy_ref: str) -> ResponseReturnValue:
+    args = request.args.copy()
+    args['tab'] = 'routing'
+    if policy_ref != 'new':
+        if not policy_ref.isdigit():
+            return ('Routing policy not found.', 404)
+        args['policy'] = policy_ref
+    payload = get_alert_intelligence_payload(args)
+    if policy_ref != 'new' and payload.get('selected_policy') is None:
+        return ('Routing policy not found.', 404)
+    return render_template(
+        'intelligence/partials/_alert_ops_routing_editor_modal.html',
+        payload=payload,
+        selected_policy=payload.get('selected_policy'),
+    )
+
+
+@alert_intelligence_bp.post('/routing/<int:policy_id>/delete')
+@permission_required('integrations.manage')
+def delete_routing_policy(policy_id: int) -> ResponseReturnValue:
+    try:
+        changed = delete_routing_policy_command(policy_id=policy_id, actor_user_id=_actor_user_id())
+    except SQLAlchemyError as exc:
+        queue_transient_feedback(status='error', title='Routing policy not deleted', message=str(exc))
+    else:
+        queue_transient_feedback(
+            status='success' if changed else 'warning',
+            title='Routing policy deleted' if changed else 'Routing policy unavailable',
+            message='The routing policy was removed from governed delivery.' if changed else 'The selected policy no longer exists.',
+        )
+    return _redirect(tab='routing')
+
+
 @alert_intelligence_bp.post('/routing')
 @permission_required('integrations.manage')
 def save_routing_policy() -> ResponseReturnValue:
@@ -469,6 +522,8 @@ def _case_mutation(
         case = apply_case_mutation(public_id, operation=operation)
     except (ValueError, SQLAlchemyError) as exc:
         queue_transient_feedback(status='error', title='Alert operation not applied', message=str(exc))
+        if _modal_case_htmx_request():
+            return _modal_case_response(case_id=public_id)
         if _active_records_htmx_request():
             return _active_records_response(case_id=public_id)
         return _redirect(tab='active', case_id=public_id)
@@ -478,13 +533,39 @@ def _case_mutation(
             title='Alert case unavailable',
             message='The selected alert case no longer exists.',
         )
+        if _modal_case_htmx_request():
+            return ('Alert case unavailable.', 404)
         if _active_records_htmx_request():
             return _active_records_response()
         return _redirect(tab=tab)
     queue_transient_feedback(status='success', title=success_title, message=success_message)
+    if _modal_case_htmx_request():
+        return _modal_case_response(case_id=case.public_id)
     if _active_records_htmx_request():
         return _active_records_response(case_id=case.public_id)
     return _redirect(tab=tab, case_id=case.public_id)
+
+
+
+def _modal_case_htmx_request() -> bool:
+    return (
+        request.headers.get('HX-Request') == 'true'
+        and str(request.headers.get('HX-Target') or '').strip().startswith('alert-case-modal-content-')
+    )
+
+
+def _modal_case_response(*, case_id: str) -> ResponseReturnValue:
+    args = request.form.copy()
+    args['case'] = case_id
+    args['tab'] = 'active'
+    payload = get_alert_intelligence_payload(args)
+    if payload.get('selected_case') is None:
+        return ('Alert case unavailable.', 404)
+    return render_template(
+        'intelligence/partials/_alert_ops_case_workspace.html',
+        payload=payload,
+        modal_refresh=True,
+    )
 
 
 def _active_records_htmx_request() -> bool:

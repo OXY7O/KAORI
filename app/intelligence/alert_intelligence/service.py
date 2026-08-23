@@ -42,6 +42,8 @@ def get_alert_intelligence_payload(args: MultiDict[str, str]) -> dict[str, Any]:
     workflow = _choice(args.get('workflow'), _VALID_WORKFLOW_STATES, 'all')
     source_type = _choice(args.get('source'), _VALID_SOURCE_TYPES, 'all')
     search = str(args.get('q') or '').strip()
+    silence_search = str(args.get('silence_q') or '').strip()
+    silence_severity = _choice(args.get('silence_severity'), _VALID_SEVERITIES, 'all')
 
     scoped_cases = _case_rows(domain=domain, asset_key=selected_asset_key)
     active_cases = [
@@ -76,7 +78,12 @@ def get_alert_intelligence_payload(args: MultiDict[str, str]) -> dict[str, Any]:
     selected_policy = _selected_routing_policy(args.get('policy'), routing)
     channels = notification_channel_options()
     templates = built_in_templates()
-    active_silences = _active_silence_rows(domain=domain, asset_key=selected_asset_key)
+    active_silences = _active_silence_rows(
+        domain=domain,
+        asset_key=selected_asset_key,
+        search=silence_search,
+        severity=silence_severity,
+    )
     silence_page, silence_pagination = paginate_sequence(
         active_silences,
         page=args.get('silence_page', 1),
@@ -107,12 +114,16 @@ def get_alert_intelligence_payload(args: MultiDict[str, str]) -> dict[str, Any]:
                 bool(case.source_resolved_at and _as_utc(case.source_resolved_at) >= now - timedelta(days=1))
                 for case in history_cases
             ),
+            'resolved_total': len(history_cases),
+            'closed': sum(case.workflow_state == 'closed' for case in history_cases),
+            'false_positive': sum(case.closure_reason == 'false_positive' for case in history_cases),
             'delivery_failures': _delivery_failure_count(domain=domain, asset_key=selected_asset_key),
             'postmortem_required': sum(case.postmortem_status in {'required', 'draft'} for case in history_cases),
             'routing_policies': len(routing),
             'channels': channel_summary.get('eligible', 0),
         },
         'filters': {'severity': severity, 'workflow': workflow, 'source': source_type, 'q': search},
+        'silence_filters': {'q': silence_search, 'severity': silence_severity},
         'active_cases': active_page,
         'active_pagination': active_pagination,
         'history_cases': history_page,
@@ -444,7 +455,13 @@ def _snapshot_context(*, domain: str, asset_key: str) -> dict[str, Any]:
     }
 
 
-def _active_silence_rows(*, domain: str, asset_key: str) -> list[dict[str, Any]]:
+def _active_silence_rows(
+    *,
+    domain: str,
+    asset_key: str,
+    search: str = '',
+    severity: str = 'all',
+) -> list[dict[str, Any]]:
     now = datetime.now(UTC)
     query = AlertSilence.query.join(AlertCase, AlertCase.id == AlertSilence.case_id).filter(
         AlertCase.domain == domain,
@@ -454,7 +471,10 @@ def _active_silence_rows(*, domain: str, asset_key: str) -> list[dict[str, Any]]
     )
     if asset_key != 'all':
         query = query.filter(AlertCase.asset_key == asset_key)
-    return [
+    if severity != 'all':
+        query = query.filter(AlertCase.severity == severity)
+    rows = query.order_by(AlertSilence.ends_at.asc()).all()
+    result = [
         {
             'id': row.id,
             'case_id': row.case.public_id,
@@ -468,7 +488,24 @@ def _active_silence_rows(*, domain: str, asset_key: str) -> list[dict[str, Any]]
                 getattr(row.created_by, 'username', None) or getattr(row.created_by, 'email', None) or 'Unknown'
             ),
         }
-        for row in query.order_by(AlertSilence.ends_at.asc()).all()
+        for row in rows
+    ]
+    needle = search.casefold().strip()
+    if not needle:
+        return result
+    return [
+        row
+        for row in result
+        if needle
+        in ' '.join(
+            [
+                str(row['case_id']),
+                str(row['alert_name']),
+                str(row['asset_name']),
+                str(row['reason']),
+                str(row['created_by']),
+            ]
+        ).casefold()
     ]
 
 

@@ -85,6 +85,7 @@ def test_alert_routing_is_locked_to_kaori_recommendation_cases_for_current_scope
     routing = read('app/intelligence/alert_intelligence/routing.py')
     routes = read('app/intelligence/alert_intelligence/routes.py')
     template = read('app/templates/intelligence/partials/_alert_ops_routing.html')
+    editor = read('app/templates/intelligence/partials/_alert_ops_routing_editor_modal.html')
 
     assert "KAORI_ALERT_SOURCE_TYPE = 'recommendation'" in routing
     assert 'source_types: list[str]' in routing  # schema stays future-ready
@@ -92,7 +93,7 @@ def test_alert_routing_is_locked_to_kaori_recommendation_cases_for_current_scope
     assert 'if case.source_type != KAORI_ALERT_SOURCE_TYPE' in routing
     assert "source_types=request.form.getlist('source_types')" in routes
     assert 'KAORI Recommendations' in template
-    assert 'name="source_types" value="recommendation"' in template
+    assert 'name="source_types" value="recommendation"' in editor
     assert 'Provider Alerts' not in template
 
 

@@ -10,7 +10,6 @@
     'source': payload.filters.source,
     'q': payload.filters.q
 } %}
-{% set selected_case_id = payload.selected_case.public_id if payload.selected_case else '' %}
 <div id="alert-operations-active-records" class="overflow-hidden bg-surface-card">
     <div class="overflow-x-auto">
         <table class="{{ table_ui.table_classes('min-w-[1080px]') }}">
@@ -28,11 +27,8 @@
             </thead>
             <tbody class="{{ table_ui.body_classes() }}">
                 {% for case in payload.active_cases %}
-                    {% set review_open = selected_case_id == case.public_id %}
-                    {% set review_url = url_for('alert_intelligence.index', tab='active', domain=payload.domain, asset=payload.selected_asset_key, case=case.public_id, severity=payload.filters.severity, workflow=payload.filters.workflow, source=payload.filters.source, q=payload.filters.q, page=payload.active_pagination.page, per_page=payload.active_pagination.per_page) %}
-                    <tr id="alert-case-row-{{ case.public_id }}"
-                        class="{{ table_ui.row_classes() }} {% if review_open %}bg-kaori-soft/30{% endif %}"
-                        aria-expanded="{{ 'true' if review_open else 'false' }}">
+                    {% set review_url = url_for('alert_intelligence.case_details', public_id=case.public_id, tab='active', domain=payload.domain, asset=payload.selected_asset_key, severity=payload.filters.severity, workflow=payload.filters.workflow, source=payload.filters.source, q=payload.filters.q, page=payload.active_pagination.page, per_page=payload.active_pagination.per_page) %}
+                    <tr id="alert-case-row-{{ case.public_id }}" class="{{ table_ui.row_classes() }}">
                         <td class="{{ table_ui.cell_classes() }}">
                             <div class="min-w-0">
                                 <p class="max-w-lg break-words text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]">{{ case.alert_name }}</p>
@@ -56,30 +52,19 @@
                             {{ table_label.status_label(case.delivery_label, case.delivery_tone, size='compact') }}
                         </td>
                         <td class="{{ table_ui.cell_classes(true) }}">
-                            {% if review_open %}
-                                {{ table_label.metadata_label('Reviewing', 'panel-top') }}
-                            {% else %}
-                                <a href="{{ review_url }}"
-                                   hx-get="{{ review_url }}"
-                                   hx-target="#alert-operations-active-records"
-                                   hx-swap="outerHTML show:none focus-scroll:false"
-                                   hx-push-url="true"
-                                   hx-indicator="#alert-operations-active-loading"
-                                   hx-sync="#alert-operations-active-records:replace"
-                                   class="{{ table_ui.action_classes() }}"
-                                   aria-controls="alert-case-review-{{ case.public_id }}">
-                                    <i data-lucide="chevron-down" class="h-3.5 w-3.5"></i>Review
-                                </a>
-                            {% endif %}
+                            <a href="{{ review_url }}"
+                               data-resource-detail-toggle
+                               data-detail-id="{{ case.public_id }}"
+                               data-detail-url="{{ review_url }}"
+                               data-detail-name="{{ case.alert_name }}"
+                               data-detail-type="Alert Case"
+                               aria-haspopup="dialog"
+                               aria-controls="resource-detail-modal"
+                               class="{{ table_ui.action_classes() }}">
+                                <i data-lucide="panel-top-open" class="h-3.5 w-3.5"></i>Review
+                            </a>
                         </td>
                     </tr>
-                    {% if review_open %}
-                        <tr data-alert-case-expanded-row="{{ case.public_id }}">
-                            <td colspan="8" class="p-0">
-                                {% include 'intelligence/partials/_alert_ops_case_workspace.html' %}
-                            </td>
-                        </tr>
-                    {% endif %}
                 {% else %}
                     <tr>
                         <td colspan="8" class="p-0">

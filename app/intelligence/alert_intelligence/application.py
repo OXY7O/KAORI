@@ -77,6 +77,29 @@ def save_routing_policy_command(
     return row
 
 
+
+def delete_routing_policy_command(*, policy_id: int, actor_user_id: int | None) -> bool:
+    row = AlertRoutingPolicy.query.filter_by(id=policy_id).first()
+    if row is None:
+        return False
+    try:
+        target_id = str(row.id)
+        policy_name = row.name
+        db.session.delete(row)
+        _audit_governance(
+            actor_user_id=actor_user_id,
+            action='alert_routing_policy_deleted',
+            target_id=target_id,
+            summary='Alert routing policy deleted.',
+            metadata={'name': policy_name},
+        )
+        db.session.commit()
+    except SQLAlchemyError:
+        db.session.rollback()
+        raise
+    return True
+
+
 def save_template_override_command(
     *,
     provider_key: str,
@@ -112,7 +135,9 @@ def save_template_override_command(
     return row
 
 
-def reset_template_override_command(*, provider_key: str, event_state: str, actor_user_id: int | None) -> bool:
+def reset_template_override_command(
+    *, provider_key: str, event_state: str, actor_user_id: int | None
+) -> bool:
     try:
         changed = reset_template_override(provider_key=provider_key, event_state=event_state)
         if changed:

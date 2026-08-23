@@ -84,16 +84,16 @@ def test_alert_operations_sections_own_distinct_operator_responsibilities() -> N
         'Verification Evidence',
     ):
         assert required in case_workspace
-    for required in ('Routing Policies', 'Policy Registry', 'Channel Readiness', 'Create Routing Policy', 'Notification Channels'):
+    for required in ('Routing & Channels', 'Policy Registry', 'Channel Readiness', 'Routing Guidance', 'New Policy'):
         assert required in routing
-    assert "table_ui.table_classes('min-w-[1180px]')" in routing
+    assert "table_ui.table_classes('w-full table-fixed')" in routing
+    assert 'overflow-x-auto' not in routing
     assert 'Policy Details' in routing
-    assert '<details class="group border-t border-outline-subtle">' in routing
-    assert 'Routing Eligibility' in routing
-    assert 'Policy Checklist' in routing
+    assert '<details class="group py-2.5">' in routing
+    assert 'data-resource-detail-toggle' in routing
+    assert 'alert_intelligence.routing_policy_details' in routing
     assert 'table_registry.footer' in routing
-    assert 'payload.selected_policy' in routing
-    assert 'Integrations → Notification Channels' in routing
+    assert 'max-h-[30rem]' in routing
     assert 'Template Registry' in templates
     assert '<details class="group bg-surface-card">' in templates
     assert 'Save Override' in templates
