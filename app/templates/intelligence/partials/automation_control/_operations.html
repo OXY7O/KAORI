@@ -10,7 +10,7 @@
 {% set filters = payload.automation_filters %}
 
 <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
-    <header class="flex flex-col gap-3 border-b border-outline-subtle px-4 py-4 sm:flex-row sm:items-start sm:justify-between sm:px-5"><div><h3 class="text-sm font-semibold text-content-primary">Execution Posture Snapshot</h3><p class="mt-1 text-xs leading-5 text-content-muted">Current execution queue, resolver registry, terminal failures, and safety boundary.</p></div>{{ table_label.status_label(payload.overview_state.posture.label,payload.overview_state.posture.tone,size='compact') }}</header>
+    <header class="flex flex-col gap-3 border-b border-outline-subtle px-4 py-4 sm:flex-row sm:items-start sm:justify-between sm:px-5"><div><h3 class="text-base font-semibold leading-6 text-content-primary">Execution Posture Snapshot</h3><p class="mt-1 text-sm leading-6 text-content-secondary">Current execution queue, resolver registry, terminal failures, and safety boundary.</p></div>{{ table_label.status_label(payload.overview_state.posture.label,payload.overview_state.posture.tone,size='compact') }}</header>
     <div class="grid divide-y divide-outline-subtle sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-5">
         {{ intelligence_ui.metric('clock-3','Queued',payload.metrics.queued,'Waiting for worker admission','warning' if payload.metrics.queued else 'normal') }}
         {{ intelligence_ui.metric('activity','Running',payload.metrics.running,'Currently leased journals','warning' if payload.metrics.running else 'normal') }}

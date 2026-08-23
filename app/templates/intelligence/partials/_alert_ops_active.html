@@ -9,8 +9,8 @@
                     <i data-lucide="shield-alert" class="h-4 w-4"></i>
                 </span>
                 <div class="min-w-0">
-                    <h3 class="text-sm font-semibold leading-5 text-content-primary">Active Alert Triage</h3>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">Prioritize open Alert Cases in the selected scope before taking ownership, suppressing delivery, or starting remediation.</p>
+                    <h3 class="{{ table_ui.block_title_classes() }}">Active Alert Triage</h3>
+                    <p class="{{ table_ui.block_description_classes() }}">Prioritize open Alert Cases in the selected scope before taking ownership, suppressing delivery, or starting remediation.</p>
                 </div>
             </div>
             <div class="mt-4 grid divide-y divide-outline-subtle overflow-hidden rounded-xl border border-outline-subtle bg-surface-elevated sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-4">
@@ -39,7 +39,7 @@
                         <i data-lucide="lightbulb" class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
                         <div class="min-w-0">
                             <p class="text-xs font-semibold uppercase tracking-wide text-kaori-primary">Triage Guidance</p>
-                            <p class="mt-1 text-xs leading-5 text-content-secondary">Prioritize Critical or Source Unknown cases, acknowledge ownership, then Review evidence and remediation.</p>
+                            <p class="mt-1 text-xs leading-5 text-content-secondary">Start with Critical or Source Unknown cases, acknowledge ownership first, then open Review for focused evidence and verified closure.</p>
                         </div>
                     </div>
                 </div>
@@ -82,16 +82,7 @@
         </div>
     </section>
 
-    {% set active_registry_url = url_for('alert_intelligence.index', tab='active', domain=payload.domain, asset=payload.selected_asset_key, severity=payload.filters.severity, workflow=payload.filters.workflow, source=payload.filters.source, q=payload.filters.q, page=payload.active_pagination.page, per_page=payload.active_pagination.per_page) %}
-    <section id="alert-operations-active-registry"
-             class="{{ table_ui.block_classes() }}"
-             hx-get="{{ active_registry_url }}"
-             hx-trigger="alertCaseChanged from:body"
-             hx-target="this"
-             hx-select="#alert-operations-active-registry"
-             hx-swap="outerHTML"
-             hx-indicator="#alert-operations-active-loading"
-             hx-sync="this:replace">
+    <section id="alert-operations-active-registry" class="{{ table_ui.block_classes() }}">
         <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
             <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div class="flex min-w-0 items-start gap-3">
@@ -103,8 +94,7 @@
                         <p class="{{ table_ui.block_description_classes() }}">Filter the active queue by alert text, severity, or operator workflow. Results refresh inline while preserving the current operational context.</p>
                     </div>
                 </div>
-                <div class="flex shrink-0 flex-wrap items-center justify-end gap-2"
-                     data-kaori-table-header-actions>
+                <div class="flex shrink-0 flex-wrap items-center justify-end gap-2">
                     {% if payload.filters.q or payload.filters.severity != 'all' or payload.filters.workflow != 'all' %}
                         <a data-kaori-filter-action
                            href="{{ url_for('alert_intelligence.index', tab='active', domain=payload.domain, asset=payload.selected_asset_key) }}"

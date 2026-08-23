@@ -64,7 +64,7 @@ def _truncate_words(value: str | None, limit: int = 132) -> str:
     shortened = text[:limit].rsplit(' ', 1)[0].strip()
     return f'{shortened or text[:limit].strip()}…'
 
-def _catalog_table_summary(value: str | None, limit: int = 96) -> str:
+def _catalog_table_summary(value: str | None, limit: int = 72) -> str:
     text = ' '.join(str(value or '').split())
     if not text:
         return 'Catalog evidence is available in View Rule.'
@@ -146,7 +146,7 @@ def _base_payload(args: MultiDict[str, str], *, page_mode: str) -> dict[str, Any
 
     if page_mode == 'catalog':
         for item in items:
-            item['table_summary'] = _catalog_table_summary(item.get('summary'), limit=96)
+            item['table_summary'] = _catalog_table_summary(item.get('summary'), limit=72)
     else:
         for item in items:
             scope_title, scope_supporting = finding_scope_details(item)

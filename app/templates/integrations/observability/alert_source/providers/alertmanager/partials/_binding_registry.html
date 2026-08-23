@@ -19,8 +19,8 @@
                 {{ integration_ui.palette_icon("boxes", "brand", size="md") }}
                 <div class="min-w-0">
                     <h3 id="alertmanager-bound-scopes-title"
-                        class="text-sm font-semibold text-content-primary">Consumer Binding Registry</h3>
-                    <p class="mt-1 text-xs leading-5 text-content-secondary">Keep binding posture and actions visible. Open View More for alert identity, consumer profile, resolver preference, and the latest binding-owned validation evidence.</p>
+                        class="text-base font-semibold leading-6 text-content-primary">Consumer Binding Registry</h3>
+                    <p class="mt-1 text-sm leading-6 text-content-secondary">Keep binding posture and actions visible. Open View More for alert identity, consumer profile, resolver preference, and the latest binding-owned validation evidence.</p>
                 </div>
             </div>
             {{ table_label.metadata_label(binding_rows|length ~ (" Binding" if binding_rows|length == 1 else " Bindings") , "link-2") }}

@@ -31,9 +31,19 @@
                     <label><span class="{{ table_ui.filter_label_classes() }}">Allowed Namespaces</span><input name="allowed_namespaces" required placeholder="apps,platform" class="{{ table_ui.filter_input_classes() }}"></label>
                     <label class="sm:col-span-2"><span class="{{ table_ui.filter_label_classes() }}">Required Registry Fingerprint</span><input name="required_registry_fingerprint" value="{{ payload.registry_fingerprint }}" class="{{ table_ui.filter_input_classes() }} font-mono text-xs"></label>
                 </div>
-                <div class="flex items-center justify-between gap-3 border-t border-outline-subtle bg-surface-card px-4 py-3">
-                    <p class="text-xs leading-5 text-content-muted">Deployment scope is explicit and must match the current resolver registry fingerprint.</p>
-                    <button type="submit" {% if not payload.clusters or not payload.registry_rows %}disabled aria-disabled="true"{% endif %} class="inline-flex min-h-10 items-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white hover:bg-kaori-primary-hover disabled:opacity-50"><i data-lucide="save" class="h-4 w-4"></i>Save Deployment Policy</button>
+                <div class="border-t border-outline-subtle bg-surface-card px-4 py-4">
+                    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div class="rounded-xl border border-kaori-primary/20 bg-kaori-soft px-3.5 py-3">
+                            <div class="flex items-start gap-2.5">
+                                <i data-lucide="info" class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary"></i>
+                                <div>
+                                    <p class="text-xs font-semibold uppercase tracking-wide text-kaori-primary">Policy Tip</p>
+                                    <p class="mt-1 text-xs leading-5 text-content-secondary">Save only when cluster scope, namespaces, and registry fingerprint already match the intended resolver action.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <button type="submit" {% if not payload.clusters or not payload.registry_rows %}disabled aria-disabled="true"{% endif %} class="inline-flex min-h-10 min-w-[14rem] items-center justify-center gap-2 whitespace-nowrap rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white hover:bg-kaori-primary-hover disabled:opacity-50"><i data-lucide="save" class="h-4 w-4"></i>Save Deployment Policy</button>
+                    </div>
                 </div>
             </form>
 

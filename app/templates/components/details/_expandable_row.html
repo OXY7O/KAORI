@@ -11,8 +11,8 @@
             data-detail-state="closed"
             aria-controls="{{ row_id }}"
             aria-expanded="false"
-            class="group inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary shadow-sm transition-colors hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-offset-1 {{ class_name }}">
-        <span class="flex h-6 w-6 items-center justify-center rounded-md bg-surface-hover text-content-muted transition-colors group-hover:bg-surface-card group-hover:text-kaori-primary"
+            class="group inline-flex min-h-10 items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-outline-default bg-surface-card px-3.5 text-xs font-semibold text-content-secondary shadow-sm transition-all hover:-translate-y-px hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-offset-1 {{ class_name }}">
+        <span class="flex h-6 w-6 items-center justify-center rounded-lg bg-surface-hover text-content-muted transition-colors group-hover:bg-surface-card group-hover:text-kaori-primary"
               data-detail-leading-icon>
             <i data-lucide="eye" class="h-3.5 w-3.5"></i>
         </span>
@@ -23,9 +23,9 @@
     </button>
 {%- endmacro %}
 {% macro detail_row(row_id, target_id, colspan, content_classes='w-full min-w-0 overflow-x-auto') -%}
-    <tr id="{{ row_id }}" class="hidden border-0 bg-kaori-mist/40">
+    <tr id="{{ row_id }}" class="hidden border-0 bg-surface-page/70">
         <td colspan="{{ colspan }}"
-            class="w-full border-y border-brand-outline/40 p-0 leading-none align-top">
+            class="w-full border-y border-outline-subtle bg-surface-page/70 p-0 leading-none align-top">
             <div id="{{ target_id }}"
                  data-detail-content
                  data-open="false"
@@ -34,9 +34,9 @@
     </tr>
 {%- endmacro %}
 {% macro static_detail_row(row_id, target_id, colspan, content_classes='w-full min-w-0 overflow-x-auto') -%}
-    <tr id="{{ row_id }}" class="hidden border-0 bg-kaori-mist/40">
+    <tr id="{{ row_id }}" class="hidden border-0 bg-surface-page/70">
         <td colspan="{{ colspan }}"
-            class="w-full border-y border-brand-outline/40 p-0 leading-none align-top">
+            class="w-full border-y border-outline-subtle bg-surface-page/70 p-0 leading-none align-top">
             <div id="{{ target_id }}"
                  data-detail-content
                  data-detail-static="true"

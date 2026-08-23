@@ -19,8 +19,8 @@
                 <div class="flex min-w-0 items-start gap-3">
                     {{ integration_ui.palette_icon('gauge', 'brand', size='md') }}
                     <div class="min-w-0">
-                        <h3 class="text-sm font-semibold text-content-primary">{{ title }}</h3>
-                        <p class="mt-1 text-xs leading-5 text-content-secondary">{{ description }}</p>
+                        <h3 class="text-base font-semibold leading-6 text-content-primary">{{ title }}</h3>
+                        <p class="mt-1 text-sm leading-6 text-content-secondary">{{ description }}</p>
                     </div>
                 </div>
                 <div class="shrink-0">{{ integration_status(readiness, readiness|replace('_', ' ') |title, display='text') }}</div>

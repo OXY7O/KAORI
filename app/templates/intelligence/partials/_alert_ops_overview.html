@@ -5,42 +5,52 @@
     <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
         <header class="flex flex-col gap-3 border-b border-outline-subtle px-4 py-4 sm:flex-row sm:items-start sm:justify-between sm:px-5">
             <div class="min-w-0">
-                <h3 class="text-sm font-semibold leading-5 text-content-primary">Alert Operations Snapshot</h3>
-                <p class="mt-1 text-xs leading-5 text-content-muted">Current operator workload across alert lifecycle, delivery, verification, and postmortem governance.</p>
+                <h3 class="text-base font-semibold leading-6 text-content-primary">Alert Operations Snapshot</h3>
+                <p class="mt-1 text-sm leading-6 text-content-secondary">Current operator workload across alert lifecycle, delivery, verification, and postmortem governance.</p>
             </div>
-            {{ table_label.status_label('Attention Required' if payload.summary.active or payload.summary.delivery_failures or payload.summary.postmortem_required else 'Operationally Clear',
-                        'warning' if payload.summary.active or payload.summary.delivery_failures or payload.summary.postmortem_required else 'normal',
-                        size='compact') }}
+            {{ table_label.status_label(
+                'Attention Required' if payload.summary.active or payload.summary.delivery_failures or payload.summary.postmortem_required else 'Operationally Clear',
+                'warning' if payload.summary.active or payload.summary.delivery_failures or payload.summary.postmortem_required else 'normal',
+                size='compact'
+            ) }}
         </header>
         <div class="grid divide-y divide-outline-subtle sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-4">
-            {{ intelligence_ui.metric('siren',
-                        'Open Cases',
-                        payload.summary.active,
-                        payload.summary.critical ~ ' critical',
-                        'critical' if payload.summary.critical else ('warning' if payload.summary.active else 'normal') 
+            {{ intelligence_ui.metric(
+                'siren',
+                'Open Cases',
+                payload.summary.active,
+                payload.summary.critical ~ ' critical',
+                'critical' if payload.summary.critical else ('warning' if payload.summary.active else 'normal')
             ) }}
-            {{ intelligence_ui.metric('badge-check',
-                        'Verification Pending',
-                        payload.summary.verification_pending,
-                        'Resolved source awaiting evidence',
-                        'warning' if payload.summary.verification_pending else 'normal') }}
-            {{ intelligence_ui.metric('send-horizontal',
-                        'Delivery Failures',
-                        payload.summary.delivery_failures,
-                        'Firing or resolved delivery',
-                        'warning' if payload.summary.delivery_failures else 'normal') }}
-            {{ intelligence_ui.metric('file-warning',
-                        'Postmortem Required',
-                        payload.summary.postmortem_required,
-                        'Closed cases awaiting learning record',
-                        'warning' if payload.summary.postmortem_required else 'normal') }}
+            {{ intelligence_ui.metric(
+                'badge-check',
+                'Verification Pending',
+                payload.summary.verification_pending,
+                'Resolved source awaiting evidence',
+                'warning' if payload.summary.verification_pending else 'normal'
+            ) }}
+            {{ intelligence_ui.metric(
+                'send-horizontal',
+                'Delivery Failures',
+                payload.summary.delivery_failures,
+                'Firing or resolved delivery',
+                'warning' if payload.summary.delivery_failures else 'normal'
+            ) }}
+            {{ intelligence_ui.metric(
+                'file-warning',
+                'Postmortem Required',
+                payload.summary.postmortem_required,
+                'Closed cases awaiting learning record',
+                'warning' if payload.summary.postmortem_required else 'normal'
+            ) }}
         </div>
     </section>
+
     <div class="grid gap-4 xl:grid-cols-[minmax(0,1.35fr)_minmax(22rem,0.65fr)]">
         <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
             <header class="border-b border-outline-subtle px-4 py-4 sm:px-5">
-                <h3 class="text-sm font-semibold leading-5 text-content-primary">Lifecycle Control</h3>
-                <p class="mt-1 text-xs leading-5 text-content-muted">Source recovery and operator closure remain separate so resolved alerts still receive verification evidence.</p>
+                <h3 class="text-base font-semibold leading-6 text-content-primary">Lifecycle Control</h3>
+                <p class="mt-1 text-sm leading-6 text-content-secondary">Source recovery and operator closure remain separate so resolved alerts still receive verification evidence.</p>
             </header>
             <div class="grid gap-px bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4">
                 {% for icon, label, value, supporting, tone in [
@@ -48,11 +58,10 @@
                     ('bell-off', 'Silenced', payload.summary.silenced, 'KAORI delivery paused', 'warning' if payload.summary.silenced else 'normal'),
                     ('circle-check-big', 'Resolved Today', payload.summary.resolved_today, 'Verified and closed', 'normal'),
                     ('route', 'Routing Policies', payload.summary.routing_policies, 'Governed delivery rules', 'info')
-                    ] %}
+                ] %}
                     <article class="bg-surface-card p-4">
                         <div class="flex items-center justify-between gap-3">
-                            <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
-                                  aria-hidden="true">
+                            <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
                                 <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
                             </span>
                             {{ table_label.status_indicator_label('Active' if value else 'Clear', tone, size='compact') }}
@@ -64,37 +73,31 @@
                 {% endfor %}
             </div>
         </section>
+
         <aside class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
             <header class="border-b border-outline-subtle px-4 py-4 sm:px-5">
                 <div class="flex items-start gap-3">
-                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
-                          aria-hidden="true">
+                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
                         <i data-lucide="shield-check" class="h-4 w-4"></i>
                     </span>
                     <div class="min-w-0">
-                        <h3 class="text-sm font-semibold leading-5 text-content-primary">Operational Readiness</h3>
-                        <p class="mt-1 text-xs leading-5 text-content-muted">Dependencies used by Alert Operations without duplicating provider ownership.</p>
+                        <h3 class="text-base font-semibold leading-6 text-content-primary">Operational Readiness</h3>
+                        <p class="mt-1 text-sm leading-6 text-content-secondary">Dependencies used by Alert Operations without duplicating provider ownership.</p>
                     </div>
                 </div>
             </header>
             <dl class="divide-y divide-outline-subtle px-4 sm:px-5">
                 <div class="flex items-center justify-between gap-4 py-3">
                     <dt class="text-xs font-medium leading-5 text-content-muted">Notification Channels</dt>
-                    <dd class="text-sm font-semibold leading-5 text-content-primary">
-                        {{ payload.summary.channels }} validated
-                    </dd>
+                    <dd class="text-sm font-semibold leading-5 text-content-primary">{{ payload.summary.channels }} validated</dd>
                 </div>
                 <div class="flex items-center justify-between gap-4 py-3">
                     <dt class="text-xs font-medium leading-5 text-content-muted">Routing Policies</dt>
-                    <dd class="text-sm font-semibold leading-5 text-content-primary">
-                        {{ payload.summary.routing_policies }} configured
-                    </dd>
+                    <dd class="text-sm font-semibold leading-5 text-content-primary">{{ payload.summary.routing_policies }} configured</dd>
                 </div>
                 <div class="flex items-center justify-between gap-4 py-3">
                     <dt class="text-xs font-medium leading-5 text-content-muted">Archive</dt>
-                    <dd class="text-sm font-semibold leading-5 text-content-primary">
-                        Local / S3
-                    </dd>
+                    <dd class="text-sm font-semibold leading-5 text-content-primary">Local / S3</dd>
                 </div>
             </dl>
             <div class="flex flex-wrap gap-2 border-t border-outline-subtle px-4 py-3 sm:px-5">
@@ -111,16 +114,22 @@
             </div>
         </aside>
     </div>
-    {{ operational_callout.render('Ownership Boundary',
+
+    {{ operational_callout.render(
+        'Ownership Boundary',
         'Prometheus and Alertmanager own source evaluation, grouping, inhibition, and provider-native silences. KAORI owns operator workflow, governed channel delivery, evidence, history, and archive.',
         icon='shield',
         tone='info',
-        variant='semantic') }}
+        variant='semantic'
+    ) }}
+
     {% if payload.snapshot.serving_last_good %}
-        {{ operational_callout.render('Last Good Snapshot Active',
-                'The latest provider refresh is stale or failed. Existing alert cases remain available from committed KAORI evidence while workers retry collection.',
-                icon='history',
-                tone='warning',
-                variant='semantic') }}
+        {{ operational_callout.render(
+            'Last Good Snapshot Active',
+            'The latest provider refresh is stale or failed. Existing alert cases remain available from committed KAORI evidence while workers retry collection.',
+            icon='history',
+            tone='warning',
+            variant='semantic'
+        ) }}
     {% endif %}
 </div>

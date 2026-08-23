@@ -39,8 +39,8 @@
             <header class="flex items-start gap-3 border-b border-outline-subtle px-4 py-3.5">
                 <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary dark:text-kaori-accent"><i data-lucide="layers-3" class="h-4 w-4"></i></span>
                 <div class="min-w-0">
-                    <h3 class="text-sm font-semibold text-content-primary">Lifecycle Coverage</h3>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">Records covered by this retention, archive, and cleanup policy.</p>
+                    <h3 class="text-base font-semibold leading-6 text-content-primary">Lifecycle Coverage</h3>
+                    <p class="mt-1 text-sm leading-6 text-content-secondary">Records covered by this retention, archive, and cleanup policy.</p>
                 </div>
             </header>
             <div class="grid gap-3 p-4 sm:grid-cols-2 {% if lifecycle.coverage|length >= 3 %}xl:grid-cols-3{% endif %}">
@@ -74,8 +74,8 @@
                     <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary dark:text-kaori-accent"><i data-lucide="database-backup" class="h-4 w-4"></i></span>
                     <div class="min-w-0">
                         <h3 id="data-lifecycle-storage-boundary-title"
-                            class="text-sm font-semibold text-content-primary">Storage Boundary</h3>
-                        <p class="mt-1 text-xs leading-5 text-content-muted">Hot source storage remains domain-owned; verified cold archives use the shared Data Lifecycle archive target.</p>
+                            class="text-base font-semibold leading-6 text-content-primary">Storage Boundary</h3>
+                        <p class="mt-1 text-sm leading-6 text-content-secondary">Hot source storage remains domain-owned; verified cold archives use the shared Data Lifecycle archive target.</p>
                     </div>
                 </div>
                 <a href="{{ url_for('platform_operations.data_lifecycle.index', tab='storage') }}"

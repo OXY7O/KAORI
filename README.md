@@ -1,82 +1,12 @@
-# KAORI
+KAORI Automation Control follow-up patch
 
-**Knowledge, Automation, Operations, Resilience & Intelligence**
+This patch applies a focused polish pass on top of the Automation Control table/modal redesign:
 
-KAORI is an operations and observability platform for Kubernetes environments. It combines inventory snapshots, Prometheus and Alertmanager integrations, operational analytics, governance controls, reports, recommendations, and controlled remediation workflows.
+- Rule Catalog row summaries now use concise global summaries instead of awkward hard truncation.
+- Added visual spacing between registry/table blocks across Runbooks, Decisions, Execution, and Readiness tabs.
+- Reworked the Binding Configuration, Execution Configuration, and Record Readiness Evidence modals into boxed, sectioned layouts with clearer hierarchy.
+- Preserved existing routes, forms, field names, CSRF handling, and governance behavior.
 
-## Core Stack
+Apply from the project root:
 
-- Flask, Jinja, HTMX, and Alpine.js
-- PostgreSQL with SQLAlchemy and Alembic
-- Redis and Celery
-- Kubernetes, Prometheus, and Alertmanager provider adapters
-- Tailwind CSS with locally built frontend assets
-
-## Run KAORI
-
-Start with [`docs/RUNNING.md`](docs/RUNNING.md) for local and production startup. The supported development path is the VS Code Dev Container described in [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md).
-
-Local development inside the Dev Container:
-
-```bash
-cp .env.example .env
-bash scripts/init_db.sh --bootstrap-admin
-npm run watch-css
-flask --app run:app run --host=0.0.0.0 --port=5000 --debug
-```
-
-## Development
-
-Initialize a fresh development database:
-
-```bash
-bash scripts/init_db.sh
-```
-
-Run the concise general release audit first:
-
-```bash
-python scripts/verify_final_release.py
-```
-
-Run the complete release gate before publishing:
-
-```bash
-python scripts/verify_final_release.py --all
-```
-
-Add `--runtime` when release workers/services are running and live readiness must be proven. The general runner keeps successful titles short (`PASS — KAORI <Area>`) and prints complete child diagnostics only on failure. It validates release-surface coverage before delegating to the canonical static, test, and frontend gates.
-
-## Test Taxonomy
-
-- `tests/<domain>/`: permanent functional behavior
-- `tests/contracts/`: architecture and ownership contracts
-- `tests/migrations/`: migration behavior
-- `tests/debug/`: temporary diagnostics excluded from release
-
-See [`tests/README.md`](tests/README.md) for the canonical marker and location rules.
-
-## Architecture Documentation
-
-Start with:
-
-- [`docs/architecture/README.md`](docs/architecture/README.md)
-- [`docs/architecture/module-structure.md`](docs/architecture/module-structure.md)
-- [`docs/architecture/quality-gates.md`](docs/architecture/quality-gates.md)
-- [`docs/architecture/RELEASE_SURFACE_COVERAGE.md`](docs/architecture/RELEASE_SURFACE_COVERAGE.md)
-- [`docs/architecture/job-execution-foundation.md`](docs/architecture/job-execution-foundation.md)
-- [`docs/RUNNING.md`](docs/RUNNING.md)
-- [`docs/TESTING.md`](docs/TESTING.md)
-- [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md)
-- [`docs/deployment/ENVIRONMENT_CONFIGURATION.md`](docs/deployment/ENVIRONMENT_CONFIGURATION.md)
-- [`docs/deployment/RELEASE_GOVERNANCE.md`](docs/deployment/RELEASE_GOVERNANCE.md)
-- [`CHANGELOG.md`](CHANGELOG.md)
-- [`KAORI 2.3.0 Release Notes`](docs/releases/KAORI_2_3_0.md)
-
-## Source Archives
-
-Do not ZIP a working directory. Build a clean source archive from a clean Git checkout:
-
-```bash
-bash scripts/build_source_archive.sh
-```
+  unzip -o KAORI_automation_control_followup_polish_20260823.zip -d .
