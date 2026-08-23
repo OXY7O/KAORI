@@ -54,4 +54,4 @@ def test_notification_activity_verifier_tracks_current_shared_tab_and_progress_g
     assert "'inbox_html': render_template(" in verifier
     assert "document.getElementById('notification-deck-inbox-content')" in verifier
     assert "document.getElementById('work-inbox-badge')" in verifier
-    assert "oob.count('hx-swap-oob=\"outerHTML\"') != 6" in verifier
+    assert 'oob.count(\'hx-swap-oob="outerHTML"\') != 6' in verifier
