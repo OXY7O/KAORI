@@ -148,39 +148,74 @@
             </span>
             <div class="min-w-0">
                 <h4 class="text-sm font-semibold leading-5 text-content-primary">{{ 'Resolution Evidence' if case.closure_reason in ['', 'resolved'] else 'Closure Evidence' }}</h4>
-                <p class="mt-0.5 text-xs leading-5 text-content-muted">Committed recovery and operator evidence remains searchable with this historical case.</p>
+                <p class="mt-0.5 text-xs leading-5 text-content-muted">Committed recovery and operator evidence stays searchable with this historical case.</p>
             </div>
         </div>
-        <dl class="mt-4 grid overflow-hidden rounded-xl border border-outline-subtle bg-surface-card md:grid-cols-4">
-            {% for icon, label, value in [
-                ('boxes', 'Asset', case.asset_name),
-                ('layers-3', 'Namespace', case.namespace),
-                ('radio', 'Delivery Target', case.delivery_target),
-                ('book-open-check', 'Postmortem', case.postmortem_status|replace('_', ' ')|title)
+        <div class="mt-4 grid gap-3 lg:grid-cols-2 xl:grid-cols-4">
+            {% for icon, label, value, helper in [
+                ('boxes', 'Asset', case.asset_name, 'Managed asset context'),
+                ('layers-3', 'Namespace', case.namespace, 'Affected scope'),
+                ('radio', 'Delivery Target', case.delivery_target, 'Latest resolved delivery target'),
+                ('book-open-check', 'Postmortem', case.postmortem_status|replace('_', ' ')|title, 'Learning follow-up posture')
             ] %}
-                <div class="min-w-0 border-b border-outline-subtle px-3 py-3 md:border-b-0 md:border-r md:last:border-r-0">
-                    <dt class="flex items-center gap-2 text-xs font-medium leading-5 text-content-muted"><i data-lucide="{{ icon }}" class="h-3.5 w-3.5 text-kaori-primary" aria-hidden="true"></i>{{ label }}</dt>
+                <div class="min-w-0 rounded-xl border border-outline-subtle bg-surface-card px-3.5 py-3">
+                    <dt class="flex items-center gap-2 text-xs font-medium leading-5 text-content-muted"><i data-lucide="{{ icon }}" class="h-3.5 w-3.5 shrink-0 text-kaori-primary" aria-hidden="true"></i>{{ label }}</dt>
                     <dd class="mt-1 truncate text-sm font-semibold leading-5 text-content-primary" title="{{ value }}">{{ value }}</dd>
+                    <p class="mt-0.5 truncate text-xs leading-5 text-content-muted">{{ helper }}</p>
                 </div>
             {% endfor %}
-        </dl>
-        <div class="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1.2fr)_minmax(20rem,0.8fr)]">
-            <div class="min-w-0">
-                <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Resolution Summary</p>
-                <p class="mt-1 text-sm leading-6 text-content-secondary">{{ case.resolution_summary or case.summary or '-' }}</p>
-                <p class="mt-4 text-xs font-semibold uppercase tracking-wide text-content-muted">Verification Evidence</p>
-                <p class="mt-1 text-sm leading-6 text-content-secondary">{{ case.verification_evidence or '-' }}</p>
-            </div>
-            <div class="min-w-0 border-t border-outline-subtle pt-4 xl:border-l xl:border-t-0 xl:pl-4 xl:pt-0">
-                <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Remediation / Recovery Steps</p>
-                <ol class="mt-2 list-decimal space-y-1 pl-5 text-sm leading-6 text-content-secondary">
-                    {% for step in case.remediation_steps %}<li>{{ step }}</li>{% else %}<li>No manual remediation recorded.</li>{% endfor %}
-                </ol>
+        </div>
+        <div class="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1.12fr)_minmax(20rem,0.88fr)]">
+            <article class="min-w-0 rounded-2xl border border-outline-subtle bg-surface-card p-4">
+                <div class="flex items-start gap-3">
+                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary" aria-hidden="true">
+                        <i data-lucide="clipboard-list" class="h-4 w-4"></i>
+                    </span>
+                    <div class="min-w-0">
+                        <h5 class="text-sm font-semibold leading-5 text-content-primary">Resolution Summary</h5>
+                        <p class="mt-0.5 text-xs leading-5 text-content-muted">What was confirmed, fixed, or intentionally closed for this historical case.</p>
+                    </div>
+                </div>
+                <div class="mt-3 rounded-xl border border-outline-subtle bg-surface-elevated px-3.5 py-3">
+                    <p class="text-sm leading-6 text-content-secondary">{{ case.resolution_summary or case.summary or 'No resolution summary recorded.' }}</p>
+                </div>
+                <div class="mt-4 rounded-xl border border-dashed border-brand-outline bg-kaori-soft/40 px-3.5 py-3">
+                    <div class="flex items-start gap-2.5">
+                        <i data-lucide="shield-check" class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+                        <div class="min-w-0">
+                            <p class="text-xs font-semibold uppercase tracking-wide text-kaori-primary">Verification Evidence</p>
+                            <p class="mt-1 text-sm leading-6 text-content-secondary">{{ case.verification_evidence or 'No explicit verification evidence recorded.' }}</p>
+                        </div>
+                    </div>
+                </div>
+            </article>
+            <article class="min-w-0 rounded-2xl border border-outline-subtle bg-surface-card p-4">
+                <div class="flex items-start gap-3">
+                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary" aria-hidden="true">
+                        <i data-lucide="wrench" class="h-4 w-4"></i>
+                    </span>
+                    <div class="min-w-0">
+                        <h5 class="text-sm font-semibold leading-5 text-content-primary">Recovery Steps & References</h5>
+                        <p class="mt-0.5 text-xs leading-5 text-content-muted">Recovery notes and change records retained with the resolved case.</p>
+                    </div>
+                </div>
+                <div class="mt-3 rounded-xl border border-outline-subtle bg-surface-elevated px-3.5 py-3">
+                    <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Remediation / Recovery Steps</p>
+                    <ol class="mt-2 list-decimal space-y-1.5 pl-5 text-sm leading-6 text-content-secondary">
+                        {% for step in case.remediation_steps %}<li>{{ step }}</li>{% else %}<li>No manual remediation recorded.</li>{% endfor %}
+                    </ol>
+                </div>
                 <dl class="mt-4 grid gap-3 sm:grid-cols-2">
-                    <div><dt class="text-xs text-content-muted">Change Reference</dt><dd class="mt-1 text-sm font-semibold text-content-primary">{{ case.change_reference or '-' }}</dd></div>
-                    <div><dt class="text-xs text-content-muted">Ticket Reference</dt><dd class="mt-1 text-sm font-semibold text-content-primary">{{ case.ticket_reference or '-' }}</dd></div>
+                    <div class="rounded-xl border border-outline-subtle bg-surface-elevated px-3.5 py-3">
+                        <dt class="text-xs font-semibold uppercase tracking-wide text-content-muted">Change Reference</dt>
+                        <dd class="mt-1 break-words text-sm font-semibold leading-6 text-content-primary [overflow-wrap:anywhere]">{{ case.change_reference or 'Not recorded' }}</dd>
+                    </div>
+                    <div class="rounded-xl border border-outline-subtle bg-surface-elevated px-3.5 py-3">
+                        <dt class="text-xs font-semibold uppercase tracking-wide text-content-muted">Ticket Reference</dt>
+                        <dd class="mt-1 break-words text-sm font-semibold leading-6 text-content-primary [overflow-wrap:anywhere]">{{ case.ticket_reference or 'Not recorded' }}</dd>
+                    </div>
                 </dl>
-            </div>
+            </article>
         </div>
     </section>
 
