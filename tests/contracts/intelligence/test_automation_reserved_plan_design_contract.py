@@ -26,7 +26,7 @@ def test_automation_control_uses_factual_governance_only_state_while_execution_i
 def test_runbook_workspace_uses_validated_system_catalog_tables_and_modal_binding():
     runbooks = read('app/templates/intelligence/partials/automation_control/_runbooks.html')
     modal = read('app/templates/intelligence/partials/automation_control/_binding_configuration_modal.html')
-    assert 'Runbook & Binding Snapshot' in runbooks
+    assert 'Runbook &amp; Binding Snapshot' in runbooks
     assert 'System Runbook Catalog' in runbooks
     assert 'Activate System Runbook' in runbooks
     assert 'Activated Runbook Library' in runbooks

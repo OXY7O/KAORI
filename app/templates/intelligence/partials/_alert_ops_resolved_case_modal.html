@@ -90,53 +90,93 @@
 {% endif %}
 <div id="alert-case-modal-content-{{ case.public_id }}" class="min-w-0 bg-surface-page">
     {% if case.workflow_state != 'closed' %}
-        <section class="border-b border-outline-subtle px-4 py-4 sm:px-5">
-            <div class="flex items-start gap-3">
-                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-status-normal-soft text-status-normal-text"
-                      aria-hidden="true">
-                    <i data-lucide="shield-check" class="h-4 w-4"></i>
-                </span>
-                <div class="min-w-0 flex-1">
-                    <div class="flex flex-wrap items-center gap-2">
-                        <h4 class="text-sm font-semibold leading-5 text-content-primary">Verification & Closure</h4>
-                        {{ table_label.status_label('Verification Pending', 'warning', size='compact') }}
+        <section class="border-b border-outline-subtle px-4 py-4 sm:px-5"
+                 data-alert-verification-closure>
+            <div class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+                <header class="flex flex-col gap-3 border-b border-outline-subtle px-4 py-3.5 sm:flex-row sm:items-start sm:justify-between sm:px-5">
+                    <div class="flex min-w-0 items-start gap-3">
+                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-status-normal-soft text-status-normal-text"
+                              aria-hidden="true">
+                            <i data-lucide="shield-check" class="h-4 w-4"></i>
+                        </span>
+                        <div class="min-w-0">
+                            <h4 class="text-sm font-semibold leading-5 text-content-primary">Verification & Closure</h4>
+                            <p class="mt-0.5 max-w-4xl text-xs leading-5 text-content-muted">Confirm recovery evidence, record the remediation, then close the case and queue resolved delivery.</p>
+                        </div>
                     </div>
-                    <p class="mt-0.5 text-xs leading-5 text-content-muted">The source recovered. Commit the resolution and verification evidence before closing the case and queuing resolved delivery.</p>
-                </div>
+                    <div class="shrink-0">{{ table_label.status_label('Verification Pending', 'warning', size='compact') }}</div>
+                </header>
+                {% if can_operate %}
+                    <form method="post"
+                          action="{{ url_for('alert_intelligence.close', public_id=case.public_id) }}"
+                          {{ htmx_form_attrs(url_for('alert_intelligence.close', public_id=case.public_id)) }}>
+                        {{ mutation_context() }}
+                        <div class="grid gap-4 p-4 sm:p-5 lg:grid-cols-12"
+                             data-alert-verification-fields>
+                            <label class="lg:col-span-6">
+                                <span class="{{ table_ui.filter_label_classes() }}">Resolution Summary</span>
+                                <textarea name="resolution_summary"
+                                          rows="4"
+                                          required
+                                          class="mt-1 w-full resize-y rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm leading-6 text-content-primary focus:border-kaori-primary focus:outline-none focus:ring-2 focus:ring-kaori-primary/20"
+                                          placeholder="What resolved the alert and what changed?"></textarea>
+                            </label>
+                            <label class="lg:col-span-6">
+                                <span class="{{ table_ui.filter_label_classes() }}">Verification Evidence</span>
+                                <textarea name="verification_evidence"
+                                          rows="4"
+                                          required
+                                          class="mt-1 w-full resize-y rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm leading-6 text-content-primary focus:border-kaori-primary focus:outline-none focus:ring-2 focus:ring-kaori-primary/20"
+                                          placeholder="What evidence confirms the source recovered?"></textarea>
+                            </label>
+                            <label class="lg:col-span-8">
+                                <span class="{{ table_ui.filter_label_classes() }}">Remediation / Recovery Steps</span>
+                                <textarea name="remediation_steps"
+                                          rows="4"
+                                          required
+                                          class="mt-1 w-full resize-y rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm leading-6 text-content-primary focus:border-kaori-primary focus:outline-none focus:ring-2 focus:ring-kaori-primary/20"
+                                          placeholder="One step per line"></textarea>
+                            </label>
+                            <div class="rounded-lg border border-outline-subtle bg-surface-page p-3 sm:p-4 lg:col-span-4"
+                                 data-alert-verification-references>
+                                <div class="flex items-start gap-2.5">
+                                    <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary"
+                                          aria-hidden="true">
+                                        <i data-lucide="link-2" class="h-3.5 w-3.5"></i>
+                                    </span>
+                                    <div class="min-w-0">
+                                        <p class="text-sm font-semibold leading-5 text-content-primary">Operational References</p>
+                                        <p class="mt-0.5 text-xs leading-5 text-content-muted">Optional change and incident references retained with closure evidence.</p>
+                                    </div>
+                                </div>
+                                <div class="mt-3 space-y-3">
+                                    <label class="block">
+                                        <span class="{{ table_ui.filter_label_classes() }}">Change Reference</span>
+                                        <input name="change_reference"
+                                               class="{{ table_ui.filter_input_classes() }}"
+                                               placeholder="CHG-12345">
+                                    </label>
+                                    <label class="block">
+                                        <span class="{{ table_ui.filter_label_classes() }}">Incident / Ticket</span>
+                                        <input name="ticket_reference"
+                                               class="{{ table_ui.filter_input_classes() }}"
+                                               placeholder="INC-12345">
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        <footer class="flex flex-col gap-3 border-t border-outline-subtle bg-surface-page px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between sm:px-5"
+                                data-alert-verification-actions>
+                            <p class="max-w-3xl text-xs leading-5 text-content-muted">Closure commits the evidence, preserves the incident history, and enables the resolved notification path.</p>
+                            <button type="submit"
+                                    class="inline-flex min-h-9 shrink-0 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-xs font-semibold text-white shadow-sm hover:bg-kaori-primary-hover">
+                                <i data-lucide="badge-check" class="h-3.5 w-3.5"></i>
+                                Verify & Close
+                            </button>
+                        </footer>
+                    </form>
+                {% endif %}
             </div>
-            {% if can_operate %}
-                <form method="post"
-                      action="{{ url_for('alert_intelligence.close', public_id=case.public_id) }}"
-                      {{ htmx_form_attrs(url_for('alert_intelligence.close', public_id=case.public_id)) }}
-                      class="mt-4 grid gap-3 lg:grid-cols-2">
-                    {{ mutation_context() }}
-                    <label>
-                        <span class="{{ table_ui.filter_label_classes() }}">Resolution Summary</span>
-                        <textarea name="resolution_summary" rows="3" required class="w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary"></textarea>
-                    </label>
-                    <label>
-                        <span class="{{ table_ui.filter_label_classes() }}">Verification Evidence</span>
-                        <textarea name="verification_evidence" rows="3" required class="w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary"></textarea>
-                    </label>
-                    <label class="lg:col-span-2">
-                        <span class="{{ table_ui.filter_label_classes() }}">Remediation / Recovery Steps</span>
-                        <textarea name="remediation_steps" rows="3" required class="w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary" placeholder="One step per line"></textarea>
-                    </label>
-                    <label>
-                        <span class="{{ table_ui.filter_label_classes() }}">Change Reference</span>
-                        <input name="change_reference" class="{{ table_ui.filter_input_classes() }}" placeholder="Optional change reference">
-                    </label>
-                    <label>
-                        <span class="{{ table_ui.filter_label_classes() }}">Incident / Ticket</span>
-                        <input name="ticket_reference" class="{{ table_ui.filter_input_classes() }}" placeholder="Optional incident or ticket">
-                    </label>
-                    <div class="flex justify-end lg:col-span-2">
-                        <button type="submit" class="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white hover:bg-kaori-primary-hover">
-                            <i data-lucide="badge-check" class="h-4 w-4"></i>Verify & Close
-                        </button>
-                    </div>
-                </form>
-            {% endif %}
         </section>
     {% endif %}
 

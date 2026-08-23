@@ -19,7 +19,7 @@ def test_runbook_workspace_is_table_first_and_binding_configuration_is_modal():
     routes = read('app/intelligence/automation_control/routes.py')
     modal = read('app/templates/intelligence/partials/automation_control/_binding_configuration_modal.html')
 
-    assert 'Runbook & Binding Snapshot' in runbooks
+    assert 'Runbook &amp; Binding Snapshot' in runbooks
     for registry in (
         'automation-runbook-catalog-registry',
         'automation-runbook-library-registry',
