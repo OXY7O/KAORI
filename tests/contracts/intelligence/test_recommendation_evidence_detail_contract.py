@@ -8,7 +8,7 @@ def read(path: str) -> str:
 
 def test_recommendation_detail_exposes_affected_assets_and_measured_evidence() -> None:
     template = read('app/templates/intelligence/partials/_recommendation_detail_content.html')
-    service = read('app/intelligence/service.py')
+    runtime = read('app/intelligence/kubernetes_runtime_recommendations.py')
     evidence = read('app/intelligence/finding_evidence.py')
 
     assert 'Affected Assets' in template
@@ -16,8 +16,8 @@ def test_recommendation_detail_exposes_affected_assets_and_measured_evidence() -
     assert 'Observed Evidence' in template
     assert 'item.affected_assets' in template
     assert 'item.evidence_details' in template
-    assert 'build_restart_groups' in service
-    assert 'build_restart_evidence' in service
+    assert 'build_restart_groups' in runtime
+    assert 'build_restart_evidence' in runtime
     assert 'Current Pod Inventory generation' in evidence
     assert "'affected_assets': assets" in evidence
     assert "'threshold_display': f'>= {threshold} restarts per pod'" in evidence

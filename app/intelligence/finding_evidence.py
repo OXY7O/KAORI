@@ -53,6 +53,8 @@ def build_restart_evidence(
     namespace: str,
     assets: list[dict[str, Any]],
     threshold: int,
+    evidence_window: str = 'Latest committed inventory snapshot',
+    snapshot_basis: str = 'Current Pod Inventory generation',
 ) -> dict[str, Any]:
     affected_count = len(assets)
     total_restarts = sum(int(asset.get('restart_count') or 0) for asset in assets)
@@ -73,7 +75,7 @@ def build_restart_evidence(
         ),
         'max_observation_display': f'{highest_count} restarts',
         'max_observation_asset': highest_name,
-        'evidence_window': 'Latest committed inventory snapshot',
-        'snapshot_basis': 'Current Pod Inventory generation',
+        'evidence_window': evidence_window,
+        'snapshot_basis': snapshot_basis,
         'affected_assets': assets,
     }

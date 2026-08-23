@@ -694,6 +694,7 @@ rules:
   status: available
   logic_type: recommendation
   signal_source: kubernetes_api
+  alert_signal_profile: kubernetes_runtime_health
   summary: Detects pods that are not Running or Succeeded from collected pod inventory state.
   condition_summary: Pod phase is Pending, Failed, Unknown, or another non-healthy runtime state.
   recommended_action: Review pod events, image pulls, scheduling constraints, probes, and rollout activity.
@@ -729,6 +730,7 @@ rules:
   status: available
   logic_type: recommendation
   signal_source: kubernetes_api
+  alert_signal_profile: kubernetes_runtime_health
   summary: Detects repeated pod restarts and derives operational severity from the highest observed restart count.
   condition_summary: Pod restart_count is at least 5; 5-9 is Info, 10-49 is Warning, and 50 or more is Critical.
   recommended_action: Review container logs, probes, resource pressure, and recent deployment changes.
@@ -753,6 +755,7 @@ rules:
   status: available
   logic_type: recommendation
   signal_source: kubernetes_api
+  alert_signal_profile: kubernetes_runtime_health
   summary: Detects nodes outside Ready state from collected node inventory.
   condition_summary: Node status is not Ready.
   recommended_action: Check kubelet, container runtime, disk pressure, network reachability, and recent node events.

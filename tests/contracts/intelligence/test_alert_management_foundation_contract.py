@@ -10,14 +10,14 @@ def read(relative: str) -> str:
 def test_rule_catalog_supports_dynamic_severity_bands() -> None:
     catalog = read('app/intelligence/catalog.py')
     rules = read('app/definitions/catalogs/intelligence/rules.yaml')
-    service = read('app/intelligence/service.py')
+    runtime = read('app/intelligence/kubernetes_runtime_recommendations.py')
     assert 'severity_bands' in rules
     assert 'min_value: 5' in rules and 'severity: info' in rules
     assert 'min_value: 10' in rules and 'severity: warning' in rules
     assert 'min_value: 50' in rules and 'severity: critical' in rules
     assert 'def severity_for_observed_value' in catalog
     assert 'def minimum_severity_band_value' in catalog
-    assert 'severity_for_observed_value(restart_rule, max_restarts)' in service
+    assert 'severity_for_observed_value(rule, max_restarts)' in runtime
     alerting = read('app/intelligence/recommendation_alerting.py')
     source = read('app/intelligence/alert_intelligence/recommendation_source.py')
     detail = read('app/templates/intelligence/partials/_catalog_detail_content.html')

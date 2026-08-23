@@ -6,6 +6,7 @@ from celery.schedules import crontab
 from dotenv import dotenv_values
 
 from app.integrations.delivery.notification_channels.config import build_notification_beat_schedule
+from app.intelligence.alert_signals.config import build_alert_signal_beat_schedule
 
 BASE_DIR = Path(__file__).resolve().parents[2]
 
@@ -90,6 +91,7 @@ def _build_maintenance_beat_schedule() -> dict[str, dict[str, object]]:
             },
         }
     schedule.update(build_notification_beat_schedule())
+    schedule.update(build_alert_signal_beat_schedule())
     if _env_bool('JOB_RECOVERY_ENABLED', True):
         schedule['job-execution-recovery'] = {
             'task': 'app.platform_operations.jobs.tasks.reconcile_stale_jobs',
@@ -340,6 +342,7 @@ class Config:
         'enable_utc': True,
         'imports': (
             'app.platform_operations.notifications.alert_delivery.tasks',
+            'app.intelligence.alert_signals.tasks',
             'app.intelligence.automation_control.tasks',
             'app.kubernetes.analytics.tasks',
             'app.storage.object_storage.analytics.tasks',
@@ -405,6 +408,9 @@ class Config:
                 'queue': JOB_MAINTENANCE_CELERY_QUEUE,
             },
             'app.platform_operations.notifications.alert_delivery.tasks.dispatch_alert_intelligence_notifications': {
+                'queue': JOB_MAINTENANCE_CELERY_QUEUE,
+            },
+            'app.intelligence.alert_signals.tasks.refresh_alert_signals': {
                 'queue': JOB_MAINTENANCE_CELERY_QUEUE,
             },
             'app.intelligence.automation_control.tasks.dispatch_automation_decision_notification': {

@@ -12,6 +12,7 @@ from app.intelligence.alert_intelligence.case_state import (
     set_case_policy_routing_eligibility,
 )
 from app.intelligence.alert_intelligence.lifecycle import mark_case_source_resolved
+from app.intelligence.alert_signals.service import alert_signal_source_posture
 from app.intelligence.recommendation_alerting import base_rule_key, catalog_rule, effective_alert_policy
 from app.intelligence.service import get_active_recommendation_findings
 from app.models.alert_ops import AlertCase, AlertCaseEvent, RecommendationAlertState
@@ -561,6 +562,7 @@ def _source_evidence_posture_for_finding(finding: dict[str, Any]) -> tuple[bool,
         domain=str(finding.get('domain') or ''),
         asset_key=asset_key,
         signal_source=str(finding.get('signal_source') or ''),
+        alert_signal_profile=str(finding.get('alert_signal_profile') or ''),
     )
 
 
@@ -570,10 +572,17 @@ def _source_evidence_posture_for_state(state: RecommendationAlertState) -> tuple
         domain=state.domain,
         asset_key=state.asset_key,
         signal_source=str(rule.get('signal_source') or ''),
+        alert_signal_profile=str(rule.get('alert_signal_profile') or ''),
     )
 
 
-def _source_evidence_posture(*, domain: str, asset_key: str, signal_source: str) -> tuple[bool, str]:
+def _source_evidence_posture(
+    *,
+    domain: str,
+    asset_key: str,
+    signal_source: str,
+    alert_signal_profile: str = '',
+) -> tuple[bool, str]:
     normalized_domain = str(domain or '').strip().lower()
     normalized_asset = str(asset_key or '').strip()
     signal = str(signal_source or '').strip().lower()
@@ -587,7 +596,14 @@ def _source_evidence_posture(*, domain: str, asset_key: str, signal_source: str)
             return _binding_posture('alert_source', 'kubernetes_cluster', normalized_asset)
         if signal in {'metrics_source', 'prometheus'}:
             return _binding_posture('metrics_source', 'kubernetes_cluster', normalized_asset)
-        return (True, '') if str(asset.status or '').lower() == 'connected' else (False, 'source_unavailable')
+        if str(asset.status or '').lower() != 'connected':
+            return False, 'source_unavailable'
+        fast_posture = alert_signal_source_posture(
+            domain=normalized_domain,
+            asset_key=normalized_asset,
+            profile=alert_signal_profile,
+        )
+        return fast_posture if fast_posture is not None else (True, '')
     if normalized_domain == 'object_storage':
         asset = db.session.get(ObjectStorageSystem, normalized_asset)
         if asset is None:

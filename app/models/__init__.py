@@ -1,3 +1,4 @@
+from app.models.alert_signal import AlertSignalSnapshot
 from app.models.alert_ops import (
     AlertCase,
     AlertCaseEvent,
@@ -55,6 +56,7 @@ from app.models.secret_reveal import SecretRevealNamespacePolicy, SecretRevealRe
 from app.models.user import User
 
 __all__ = [
+    'AlertSignalSnapshot',
     'AnalyticsSnapshot',
     'ArchiveArtifact',
     'AuditEvent',

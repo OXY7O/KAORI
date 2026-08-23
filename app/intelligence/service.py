@@ -8,8 +8,8 @@ from werkzeug.datastructures import MultiDict
 
 from app.common.inventory_generation import filter_current_generation
 from app.extensions.db import db
-from app.intelligence.catalog import INTELLIGENCE_CATALOG, minimum_severity_band_value, severity_for_observed_value
-from app.intelligence.finding_evidence import build_restart_evidence, build_restart_groups
+from app.intelligence.catalog import INTELLIGENCE_CATALOG
+from app.intelligence.kubernetes_runtime_recommendations import build_kubernetes_runtime_recommendation_findings
 from app.intelligence.finding_presentation import (
     build_affected_assets,
     build_affected_items,
@@ -214,8 +214,7 @@ def _build_recommendation_findings(catalog: list[dict[str, Any]]) -> list[dict[s
     findings: list[dict[str, Any]] = []
 
     findings.extend(_build_latest_image_findings(rules))
-    findings.extend(_build_pod_health_findings(rules))
-    findings.extend(_build_node_readiness_findings(rules))
+    findings.extend(build_kubernetes_runtime_recommendation_findings(rules))
     findings.extend(_build_storage_binding_findings(rules))
     findings.extend(_build_tls_certificate_findings(rules))
     findings.extend(build_object_storage_recommendation_findings(rules))
@@ -350,136 +349,6 @@ def _build_latest_image_findings(rules: dict[str, dict[str, Any]]) -> list[dict[
 
     return findings
 
-
-def _build_pod_health_findings(rules: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
-    unhealthy_rule = rules.get('kubernetes.pod.unhealthy_phase')
-    restart_rule = rules.get('kubernetes.pod.high_restart_count')
-    if not unhealthy_rule and not restart_rule:
-        return []
-
-    try:
-        from app.models.inventory import PodInventory
-    except Exception:
-        return []
-
-    restart_threshold = minimum_severity_band_value(restart_rule, default=5) if restart_rule else 5
-    try:
-        unhealthy_query = db.session.query(
-            PodInventory.cluster_id,
-            PodInventory.namespace,
-            PodInventory.phase,
-            func.count(PodInventory.id),
-        ).filter(PodInventory.phase.notin_(['Running', 'Succeeded']))
-        unhealthy_rows = (
-            filter_current_generation(unhealthy_query, PodInventory)
-            .group_by(PodInventory.cluster_id, PodInventory.namespace, PodInventory.phase)
-            .all()
-        )
-        restart_query = db.session.query(
-            PodInventory.cluster_id,
-            PodInventory.namespace,
-            PodInventory.pod_name,
-            PodInventory.restart_count,
-            PodInventory.phase,
-            PodInventory.node_name,
-            PodInventory.workload_type,
-            PodInventory.workload_name,
-        ).filter(PodInventory.restart_count >= restart_threshold)
-        restart_rows = filter_current_generation(restart_query, PodInventory).all()
-    except Exception:
-        return []
-
-    findings: list[dict[str, Any]] = []
-    if unhealthy_rule:
-        for cluster_id, namespace, phase, count in unhealthy_rows:
-            findings.append(
-                _clone_rule_as_finding(
-                    unhealthy_rule,
-                    finding_key=f'kubernetes.pod.unhealthy_phase:{cluster_id}:{namespace}:{phase}',
-                    title=f'{count} pod{"s" if int(count) != 1 else ""} in {namespace} are {phase or "not healthy"}',
-                    summary=(
-                        f'Pod inventory shows {count} pod{"s" if int(count) != 1 else ""} '
-                        f'in phase {phase or "Unknown"}.'
-                    ),
-                    condition_summary='Collected pod phase is not Running or Succeeded.',
-                    evidence={
-                        'cluster_id': str(cluster_id),
-                        'namespace': str(namespace),
-                        'affected_count': int(count),
-                        'phase': str(phase or 'Unknown'),
-                        'observed_total_display': f'{count} affected pod{"" if int(count) == 1 else "s"}',
-                        'snapshot_basis': 'Current Pod Inventory generation',
-                    },
-                )
-            )
-
-    if restart_rule:
-        for (cluster_id, namespace), assets in build_restart_groups(restart_rows).items():
-            evidence = build_restart_evidence(
-                cluster_id=cluster_id,
-                namespace=namespace,
-                assets=assets,
-                threshold=restart_threshold,
-            )
-            affected_count = int(evidence['affected_count'])
-            max_restarts = int(evidence['max_restart_count'])
-            max_pod = str(evidence['max_restart_pod'])
-            finding_severity = severity_for_observed_value(restart_rule, max_restarts)
-            findings.append(
-                _clone_rule_as_finding(
-                    {**restart_rule, 'severity': finding_severity},
-                    finding_key=f'kubernetes.pod.high_restart_count:{cluster_id}:{namespace}',
-                    title=(
-                        f'Pod {max_pod} reports {max_restarts} restarts'
-                        if affected_count == 1
-                        else f'{affected_count} pods in {namespace} have repeated restarts (max {max_restarts})'
-                    ),
-                    summary=(
-                        f'Latest committed Pod Inventory shows {affected_count} affected pod'
-                        f'{"" if affected_count == 1 else "s"}; {max_pod} has the highest observed restart count at '
-                        f'{max_restarts}, with {evidence["total_restart_count"]} total restarts '
-                        'across the affected set.'
-                    ),
-                    condition_summary=(
-                        f'Each affected pod has restart_count greater than or equal to {restart_threshold} '
-                        'in the latest committed Pod Inventory generation.'
-                    ),
-                    evidence=evidence,
-                )
-            )
-
-    return findings
-
-
-def _build_node_readiness_findings(rules: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
-    rule = rules.get('kubernetes.node.not_ready')
-    if not rule:
-        return []
-
-    try:
-        from app.models.inventory import NodeInventory
-    except Exception:
-        return []
-
-    try:
-        query = db.session.query(NodeInventory.cluster_id, func.count(NodeInventory.id)).filter(
-            NodeInventory.status != 'Ready'
-        )
-        rows = filter_current_generation(query, NodeInventory).group_by(NodeInventory.cluster_id).all()
-    except Exception:
-        return []
-
-    return [
-        _clone_rule_as_finding(
-            rule,
-            finding_key=f'kubernetes.node.not_ready:{cluster_id}',
-            title=f'{count} node{"s" if int(count) != 1 else ""} are not Ready',
-            summary=f'Node inventory shows {count} node{"s" if int(count) != 1 else ""} outside Ready state.',
-            condition_summary='Collected node status is not Ready.',
-            evidence={'cluster_id': str(cluster_id), 'affected_count': int(count)},
-        )
-        for cluster_id, count in rows
-    ]
 
 
 def _build_storage_binding_findings(rules: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:

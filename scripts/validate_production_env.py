@@ -243,6 +243,9 @@ def main() -> int:
     if _is_true('INTEGRATION_RUNTIME_MONITORING_ENABLED', True):
         _validate_int_range(errors, 'INTEGRATION_RUNTIME_MONITORING_INTERVAL_MINUTES', 1, 60)
 
+    if _is_true('ALERT_SIGNAL_EVALUATION_ENABLED', True):
+        _validate_int_range(errors, 'ALERT_SIGNAL_EVALUATION_INTERVAL_MINUTES', 1, 60)
+        _validate_int_range(errors, 'ALERT_SIGNAL_FRESHNESS_MINUTES', 2, 120)
     if _is_true('ALERT_INTELLIGENCE_NOTIFICATION_ENABLED', True):
         _validate_int_range(errors, 'ALERT_INTELLIGENCE_NOTIFICATION_INTERVAL_MINUTES', 1, 60)
     _validate_int_range(errors, 'NOTIFICATION_DELIVERY_TIMEOUT_SECONDS', 1, 60)
