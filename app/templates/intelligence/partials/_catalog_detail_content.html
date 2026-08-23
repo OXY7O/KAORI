@@ -59,18 +59,44 @@
             </section>
             <section class="p-4 sm:p-5">
                 {{ intelligence_ui.subsection('Operator Response', 'The intended review path, remediation outcome, and execution posture.', 'route') }}
-                <div class="mt-4 rounded-lg border border-brand-outline bg-kaori-soft px-4 py-3.5">
-                    <p class="text-xs font-medium leading-5 text-kaori-primary">Recommended Action</p>
-                    <p class="mt-1 text-sm font-semibold leading-6 text-content-primary">{{ item.recommended_action }}</p>
+                <div class="mt-4 overflow-hidden rounded-xl border border-outline-subtle bg-surface-card"
+                     data-kaori-operator-response>
+                    <div class="grid lg:grid-cols-[minmax(0,1.2fr)_minmax(18rem,0.8fr)] lg:divide-x lg:divide-outline-subtle">
+                        <div class="p-4 sm:p-5">
+                            <div class="flex items-start justify-between gap-3">
+                                <div class="flex min-w-0 items-start gap-3">
+                                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                                          aria-hidden="true">
+                                        <i data-lucide="route" class="h-4 w-4"></i>
+                                    </span>
+                                    <div class="min-w-0">
+                                        <p class="text-xs font-semibold leading-5 text-kaori-primary">Recommended Action</p>
+                                        <p class="mt-1 text-sm font-semibold leading-6 text-content-primary">{{ item.recommended_action }}</p>
+                                    </div>
+                                </div>
+                                {{ table_label.status_label(item.priority, item.tone, size='compact') }}
+                            </div>
+                            <div class="mt-4 flex items-start gap-2.5 rounded-lg border border-outline-subtle bg-surface-elevated px-3 py-2.5">
+                                <i data-lucide="list-checks" class="mt-0.5 h-3.5 w-3.5 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+                                <p class="text-xs leading-5 text-content-muted">Review the committed evidence first, apply the recommended remediation through the owning workflow, then confirm the signal clears before treating the finding as recovered.</p>
+                            </div>
+                        </div>
+                        <div class="bg-surface-elevated p-4 sm:p-5">
+                            <div class="flex items-center gap-2">
+                                <i data-lucide="badge-info" class="h-4 w-4 text-kaori-primary" aria-hidden="true"></i>
+                                <p class="text-sm font-semibold leading-5 text-content-primary">Response Context</p>
+                            </div>
+                            <dl class="mt-3 grid gap-x-4 gap-y-3 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
+                                {{ intelligence_ui.field('Evaluator State', item.status_label) }}
+                                {{ intelligence_ui.field('Rule Type', item.logic_type_label) }}
+                                {{ intelligence_ui.field('Signal Source', item.signal_source_label) }}
+                                {{ intelligence_ui.field('Provider Coverage', item.provider_label) }}
+                                {{ intelligence_ui.field('Canonical Domain', item.domain_label) }}
+                                {{ intelligence_ui.field('Priority', item.priority) }}
+                            </dl>
+                        </div>
+                    </div>
                 </div>
-                <dl class="mt-4 grid gap-3 sm:grid-cols-2">
-                    {{ intelligence_ui.field('Priority', item.priority) }}
-                    {{ intelligence_ui.field('Evaluator State', item.status_label) }}
-                    {{ intelligence_ui.field('Rule Type', item.logic_type_label) }}
-                    {{ intelligence_ui.field('Signal Source', item.signal_source_label) }}
-                    {{ intelligence_ui.field('Provider Coverage', item.provider_label) }}
-                    {{ intelligence_ui.field('Canonical Domain', item.domain_label) }}
-                </dl>
             </section>
         </div>
         <section class="border-t border-outline-subtle p-4 sm:p-5">
@@ -178,6 +204,23 @@
                                        class="mt-1 h-10 w-full rounded-md border border-outline-default bg-surface-card px-3 text-sm">
                             </label>
                         </div>
+                        <div class="mt-4 rounded-lg border border-outline-subtle bg-surface-elevated px-3 py-3"
+                             data-kaori-alert-escalation-tips>
+                            <div class="flex items-start gap-2.5">
+                                <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary"
+                                      aria-hidden="true">
+                                    <i data-lucide="lightbulb" class="h-3.5 w-3.5"></i>
+                                </span>
+                                <div class="min-w-0">
+                                    <p class="text-xs font-semibold leading-5 text-content-primary">Before saving this escalation</p>
+                                    <ul class="mt-1 space-y-1 text-xs leading-5 text-content-muted">
+                                        <li><span class="font-semibold text-content-secondary">Mode:</span> use Manual while ownership or routing is still being validated; use Automatic only for signals safe to promote without operator initiation.</li>
+                                        <li><span class="font-semibold text-content-secondary">Grouping:</span> choose the narrowest useful scope; Rule + Asset is best for many findings sharing one operational cause.</li>
+                                        <li><span class="font-semibold text-content-secondary">Noise control:</span> increase Stability Window or Minimum Observations for flapping or short-lived findings.</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
                         <button type="submit"
                                 class="mt-4 inline-flex min-h-9 items-center gap-2 rounded-lg bg-kaori-primary px-3 text-xs font-semibold text-white hover:bg-kaori-primary-hover">
                             <i data-lucide="save" class="h-3.5 w-3.5"></i>Save Alert Escalation
@@ -198,9 +241,11 @@
                         {{ intelligence_ui.metric('triangle-alert', 'Actionable Findings', item.rule_exceptions.uncovered_findings, 'Still eligible for alert promotion', 'warning' if item.rule_exceptions.uncovered_findings else 'normal') }}
                         {{ intelligence_ui.metric('clock-alert', 'Expiring Soon', item.rule_exceptions.expiring_count, 'Expires within 7 days', 'warning' if item.rule_exceptions.expiring_count else 'normal') }}
                     </div>
-                    <div class="border-t border-outline-subtle px-4 py-3 sm:px-5">
-                        <p class="text-xs leading-5 text-content-muted">Accepted Risk suppresses AlertCase promotion only while the exception is active. The recommendation finding remains non-compliant evidence and becomes alert-eligible again after expiry or revocation.</p>
-                    </div>
+                </div>
+                <div class="mt-2 flex max-w-3xl items-start gap-2 rounded-md border border-outline-subtle bg-surface-card px-2.5 py-2"
+                     data-kaori-risk-exception-info>
+                    <i data-lucide="info" class="mt-0.5 h-3.5 w-3.5 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+                    <p class="text-xs leading-5 text-content-muted">Accepted Risk only suppresses AlertCase promotion while active; findings remain non-compliant and become eligible again after expiry or revocation.</p>
                 </div>
 
                 {% if item.rule_exceptions.exceptions %}
