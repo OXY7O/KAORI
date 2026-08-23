@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from flask import Blueprint, redirect, render_template, request, url_for
+from flask import Blueprint, make_response, redirect, render_template, request, url_for
 from flask.typing import ResponseReturnValue
 from flask_login import current_user
 from sqlalchemy.exc import SQLAlchemyError
@@ -572,11 +572,15 @@ def _modal_case_response(*, case_id: str, tab: str | None = None) -> ResponseRet
         if payload.get('tab') == 'resolved'
         else 'intelligence/partials/_alert_ops_case_workspace.html'
     )
-    return render_template(
-        template,
-        payload=payload,
-        modal_refresh=True,
+    response = make_response(
+        render_template(
+            template,
+            payload=payload,
+            modal_refresh=True,
+        )
     )
+    response.headers['HX-Trigger'] = 'alertCaseChanged'
+    return response
 
 
 def _active_records_htmx_request() -> bool:

@@ -19,7 +19,7 @@
                 </div>
             </div>
         </header>
-        <div class="min-w-0 bg-surface-page p-4 sm:p-5">
+        <div class="min-w-0 bg-surface-card p-4 sm:p-5">
             {% if can_manage %}
                 <form method="post" action="{{ url_for('alert_intelligence.save_routing_policy') }}" class="space-y-4">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -28,22 +28,15 @@
                     <input type="hidden" name="source_types" value="recommendation">
                     {% if selected_policy %}<input type="hidden" name="policy_id" value="{{ selected_policy.id }}">{% endif %}
 
-                    <div class="rounded-xl border border-kaori-primary/20 bg-kaori-soft px-4 py-3">
-                        <div class="flex items-start gap-3">
-                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary" aria-hidden="true">
-                                <i data-lucide="shield-check" class="h-4 w-4"></i>
-                            </span>
-                            <div class="min-w-0">
-                                <p class="text-xs font-semibold uppercase tracking-wide text-kaori-primary">Governed Routing Boundary</p>
-                                <p class="mt-1 text-xs leading-5 text-content-secondary">This policy routes durable KAORI Alert Cases only. Credentials stay in Notification Channels, while this form owns scope, cadence, resolved delivery, and destination selection.</p>
-                            </div>
-                        </div>
-                    </div>
-
                     <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
-                        <header class="border-b border-kaori-primary/15 bg-kaori-soft px-4 py-3.5">
-                            <h3 class="text-sm font-semibold leading-5 text-content-primary">Identity & Cadence</h3>
-                            <p class="mt-1 text-xs leading-5 text-content-muted">Name the policy and define how frequently active alerts repeat and when ACK reminders resume delivery.</p>
+                        <header class="border-b border-outline-subtle bg-surface-card px-4 py-3.5">
+                            <div class="flex items-start gap-3">
+                                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true"><i data-lucide="timer-reset" class="h-4 w-4"></i></span>
+                                <div>
+                                    <h3 class="text-sm font-semibold leading-5 text-content-primary">Identity & Cadence</h3>
+                                    <p class="mt-1 text-xs leading-5 text-content-muted">Name the policy and define repeat cadence and ACK reminder behavior.</p>
+                                </div>
+                            </div>
                         </header>
                         <div class="grid gap-4 p-4 xl:grid-cols-[minmax(0,1.4fr)_12rem_12rem_18rem]">
                             <label>
@@ -80,9 +73,14 @@
                     </section>
 
                     <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
-                        <header class="border-b border-kaori-primary/15 bg-kaori-soft px-4 py-3.5">
-                            <h3 class="text-sm font-semibold leading-5 text-content-primary">Match Scope & Channels</h3>
-                            <p class="mt-1 text-xs leading-5 text-content-muted">Routing applies only after a governed recommendation becomes a durable Alert Case.</p>
+                        <header class="border-b border-outline-subtle bg-surface-card px-4 py-3.5">
+                            <div class="flex items-start gap-3">
+                                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true"><i data-lucide="waypoints" class="h-4 w-4"></i></span>
+                                <div>
+                                    <h3 class="text-sm font-semibold leading-5 text-content-primary">Match Scope & Channels</h3>
+                                    <p class="mt-1 text-xs leading-5 text-content-muted">Choose the domains, severities, and validated destinations owned by this route.</p>
+                                </div>
+                            </div>
                         </header>
                         <div class="grid gap-6 p-4 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
                             <div class="grid gap-5 sm:grid-cols-2">
@@ -146,11 +144,11 @@
                                     <span class="font-semibold text-kaori-primary">Matcher tip:</span> Use one exact <code class="font-mono">key=value</code> matcher per line. Leave this empty to route every alert that matches the selected domain and severity.
                                 </div>
                             </label>
-                            <aside class="bg-surface-elevated/50 p-4">
+                            <aside class="p-4">
                                 <div class="flex items-start gap-3">
                                     <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true"><i data-lucide="list-checks" class="h-4 w-4"></i></span>
                                     <div>
-                                        <p class="text-xs font-semibold uppercase tracking-wide text-kaori-primary">Policy Checklist</p>
+                                        <p class="text-sm font-semibold leading-5 text-content-primary">Policy Checklist</p>
                                         <p class="mt-1 text-xs leading-5 text-content-muted">Confirm these four routing decisions before saving.</p>
                                     </div>
                                 </div>
@@ -161,7 +159,7 @@
                                         ('badge-check', 'Recovery', 'Resolved delivery is enabled only when useful.'),
                                         ('tags', 'Matchers', 'Extra labels are used only when scope is still broad.')
                                     ] %}
-                                        <div class="flex items-start gap-2.5 rounded-lg border border-outline-subtle bg-surface-card px-3 py-2.5">
+                                        <div class="flex items-start gap-2.5 border-b border-outline-subtle py-2.5 last:border-b-0">
                                             <i data-lucide="{{ icon }}" class="mt-0.5 h-3.5 w-3.5 shrink-0 text-kaori-primary" aria-hidden="true"></i>
                                             <div class="min-w-0">
                                                 <p class="text-xs font-semibold text-content-primary">{{ title }}</p>

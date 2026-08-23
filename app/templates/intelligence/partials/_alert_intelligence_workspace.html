@@ -47,7 +47,8 @@
                   hx-swap="outerHTML show:none focus-scroll:false"
                   hx-push-url="true"
                   hx-indicator="#alert-intelligence-context-loading"
-                  hx-sync="#alert-intelligence-page-content:replace"
+                  hx-sync="this:replace"
+                  hx-disinherit="hx-indicator"
                   class="{{ table_ui.filter_layout_classes() }} min-w-0">
                 <input class="alert-intelligence-context-persistent"
                        type="hidden"

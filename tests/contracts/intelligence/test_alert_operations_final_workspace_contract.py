@@ -42,7 +42,9 @@ def test_routing_workspace_is_table_led_and_crud_uses_modal() -> None:
     assert routing.index('Channel Readiness') < routing.index('Policy Registry')
     assert routing.count('class="{{ table_ui.action_classes() }}"') >= 2
     assert 'data-kaori-detail-variant="modal"' in editor
-    assert 'Governed Routing Boundary' in editor
+    assert 'Identity & Cadence' in editor
+    assert 'Match Scope & Channels' in editor
+    assert 'bg-kaori-soft text-kaori-primary' in editor
     assert 'Matcher tip:' in editor
     assert 'Policy Checklist' in editor
     assert 'bg-status-critical' in editor
@@ -116,8 +118,63 @@ def test_resolved_case_review_uses_dedicated_modal_content_and_modal_refresh_con
 
     assert 'data-resource-detail-toggle' in history
     assert "tab='resolved'" in history
+    activity = read('app/templates/intelligence/partials/_alert_ops_case_activity_streams.html')
     assert 'data-kaori-detail-variant="modal"' in modal
-    for required in ('Verification Pending', 'Resolution Evidence', 'Recovery Context', 'Postmortem & Learning', 'Incident Timeline', 'Notification Delivery'):
+    for required in ('Verification & Closure', 'Verification Pending', 'Resolution Evidence', 'Postmortem & Learning'):
         assert required in modal
+    for required in ('Incident Timeline', 'Notification Delivery Ledger'):
+        assert required in activity
     assert "if payload.get('tab') == 'resolved'" in routes
     assert "requested_tab = str(tab or request.form.get('tab') or 'active')" in routes
+
+
+def test_case_modal_uses_sticky_posture_and_shared_activity_streams() -> None:
+    active = read('app/templates/intelligence/partials/_alert_ops_case_workspace.html')
+    resolved = read('app/templates/intelligence/partials/_alert_ops_resolved_case_modal.html')
+    activity = read('app/templates/intelligence/partials/_alert_ops_case_activity_streams.html')
+
+    assert 'sticky top-0 z-20' in active
+    assert 'sticky top-0 z-20' in resolved
+    assert "_alert_ops_case_activity_streams.html" in active
+    assert "_alert_ops_case_activity_streams.html" in resolved
+    assert 'Incident Timeline' in activity
+    assert 'Notification Delivery Ledger' in activity
+    assert 'Earlier Timeline Events' in activity
+    assert 'Earlier Delivery Attempts' in activity
+    assert 'max-h-72' in activity
+
+
+def test_routing_registry_has_canonical_filters() -> None:
+    routing = read('app/templates/intelligence/partials/_alert_ops_routing.html')
+    service = read('app/intelligence/alert_intelligence/service.py')
+
+    assert 'table_registry.filter_form' in routing
+    assert 'routing_q' in routing
+    assert 'routing_domain' in routing
+    assert 'routing_status' in routing
+    assert 'table_registry.clear_filters_action' in routing
+    assert "'routing_filters': {'q': routing_search, 'domain': routing_domain, 'status': routing_status}" in service
+    assert 'def _filter_routing_policies(' in service
+
+
+def test_modal_case_mutations_refresh_visible_registry_via_htmx_event() -> None:
+    routes = read('app/intelligence/alert_intelligence/routes.py')
+    active = read('app/templates/intelligence/partials/_alert_ops_active.html')
+    silences = read('app/templates/intelligence/partials/_alert_ops_silences.html')
+    resolved = read('app/templates/intelligence/partials/_alert_ops_history.html')
+
+    assert "response.headers['HX-Trigger'] = 'alertCaseChanged'" in routes
+    assert 'hx-trigger="alertCaseChanged from:body"' in active
+    assert 'hx-trigger="alertCaseChanged from:body"' in silences
+    assert 'hx-trigger="alertCaseChanged from:body"' in resolved
+
+
+def test_context_filter_owns_only_context_loading_lifecycle() -> None:
+    workspace = read('app/templates/intelligence/partials/_alert_intelligence_workspace.html')
+    context_form = workspace.split('id="alert-intelligence-context-form"', 1)[1].split('</form>', 1)[0]
+
+    assert 'hx-indicator="#alert-intelligence-context-loading"' in context_form
+    assert 'hx-sync="this:replace"' in context_form
+    assert 'hx-disinherit="hx-indicator"' in context_form
+    assert '#alert-operations-active-loading' not in context_form
+    assert '#alert-operations-silence-loading' not in context_form

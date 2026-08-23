@@ -23,6 +23,8 @@ _VALID_SEVERITIES = {'all', 'critical', 'warning', 'info', 'unknown'}
 _VALID_WORKFLOW_STATES = {'all', 'open', 'acknowledged', 'mitigating', 'verification_pending'}
 _VALID_SOURCE_TYPES = {'all', 'recommendation'}
 _DOMAIN_LABELS = {'kubernetes': 'Kubernetes', 'object_storage': 'Object Storage'}
+_VALID_ROUTING_DOMAINS = {'all', 'kubernetes', 'object_storage'}
+_VALID_ROUTING_STATUSES = {'all', 'enabled', 'disabled'}
 
 
 def get_alert_intelligence_payload(args: MultiDict[str, str]) -> dict[str, Any]:
@@ -44,6 +46,9 @@ def get_alert_intelligence_payload(args: MultiDict[str, str]) -> dict[str, Any]:
     search = str(args.get('q') or '').strip()
     silence_search = str(args.get('silence_q') or '').strip()
     silence_severity = _choice(args.get('silence_severity'), _VALID_SEVERITIES, 'all')
+    routing_search = str(args.get('routing_q') or '').strip()
+    routing_domain = _choice(args.get('routing_domain'), _VALID_ROUTING_DOMAINS, 'all')
+    routing_status = _choice(args.get('routing_status'), _VALID_ROUTING_STATUSES, 'all')
 
     scoped_cases = _case_rows(domain=domain, asset_key=selected_asset_key)
     active_cases = [
@@ -69,13 +74,19 @@ def get_alert_intelligence_payload(args: MultiDict[str, str]) -> dict[str, Any]:
     selected_case = _selected_case(args.get('case'), scoped_cases)
     snapshot = _snapshot_context(domain=domain, asset_key=selected_asset_key)
     channel_summary = notification_channel_summary()
-    routing = routing_policy_rows()
+    all_routing = routing_policy_rows()
+    routing = _filter_routing_policies(
+        all_routing,
+        search=routing_search,
+        domain=routing_domain,
+        status=routing_status,
+    )
     routing_page, routing_pagination = paginate_sequence(
         routing,
         page=args.get('routing_page', 1),
         per_page=args.get('routing_per_page', 5),
     )
-    selected_policy = _selected_routing_policy(args.get('policy'), routing)
+    selected_policy = _selected_routing_policy(args.get('policy'), all_routing)
     channels = notification_channel_options()
     templates = built_in_templates()
     active_silences = _active_silence_rows(
@@ -119,11 +130,12 @@ def get_alert_intelligence_payload(args: MultiDict[str, str]) -> dict[str, Any]:
             'false_positive': sum(case.closure_reason == 'false_positive' for case in history_cases),
             'delivery_failures': _delivery_failure_count(domain=domain, asset_key=selected_asset_key),
             'postmortem_required': sum(case.postmortem_status in {'required', 'draft'} for case in history_cases),
-            'routing_policies': len(routing),
+            'routing_policies': len(all_routing),
             'channels': channel_summary.get('eligible', 0),
         },
         'filters': {'severity': severity, 'workflow': workflow, 'source': source_type, 'q': search},
         'silence_filters': {'q': silence_search, 'severity': silence_severity},
+        'routing_filters': {'q': routing_search, 'domain': routing_domain, 'status': routing_status},
         'active_cases': active_page,
         'active_pagination': active_pagination,
         'history_cases': history_page,
@@ -504,6 +516,39 @@ def _active_silence_rows(
                 str(row['asset_name']),
                 str(row['reason']),
                 str(row['created_by']),
+            ]
+        ).casefold()
+    ]
+
+
+
+def _filter_routing_policies(
+    rows: list[dict[str, Any]],
+    *,
+    search: str,
+    domain: str,
+    status: str,
+) -> list[dict[str, Any]]:
+    result = rows
+    if domain != 'all':
+        result = [row for row in result if domain in {str(value) for value in row.get('domains', [])}]
+    if status != 'all':
+        enabled = status == 'enabled'
+        result = [row for row in result if bool(row.get('enabled')) is enabled]
+    needle = search.casefold().strip()
+    if not needle:
+        return result
+    return [
+        row
+        for row in result
+        if needle
+        in ' '.join(
+            [
+                str(row.get('name') or ''),
+                ' '.join(str(value) for value in row.get('domains', [])),
+                ' '.join(str(value) for value in row.get('severities', [])),
+                ' '.join(str(channel.get('name') or '') for channel in row.get('channels', [])),
+                ' '.join(f'{key}={value}' for key, value in dict(row.get('matchers') or {}).items()),
             ]
         ).casefold()
     ]

@@ -39,18 +39,15 @@ def test_active_alert_list_keeps_long_evidence_out_of_scan_view() -> None:
 
 def test_alert_review_uses_full_width_stacked_incident_workspace() -> None:
     workspace = read('app/templates/intelligence/partials/_alert_ops_case_workspace.html')
+    activity = read('app/templates/intelligence/partials/_alert_ops_case_activity_streams.html')
     service = read('app/intelligence/alert_intelligence/service.py')
 
     assert "xl:grid-cols-[minmax(0,1.45fr)_minmax(25rem,0.55fr)]" not in workspace
     assert '<aside' not in workspace
-    for label in (
-        'Operator Actions',
-        'Operational Evidence',
-        'Incident Brief',
-        'Incident Timeline',
-        'Notification Delivery Ledger',
-    ):
+    for label in ('Operator Actions', 'Operational Evidence', 'Incident Brief'):
         assert label in workspace
+    for label in ('Incident Timeline', 'Notification Delivery Ledger'):
+        assert label in activity
     assert "'evidence_facts': _evidence_facts(evidence)" in service
     assert "'icon': _timeline_event_icon(event.event_type)" in service
     assert "'tone': _timeline_event_tone(event.event_type)" in service
@@ -104,8 +101,9 @@ def test_review_evidence_and_timeline_use_horizontal_scan_layout() -> None:
         assert f"'{label}'" in workspace
     assert 'md:grid-cols-4' in workspace
     assert "case.evidence.get('recommendation_count', 1)" in workspace
-    assert 'md:grid-cols-[2.25rem_13rem_minmax(0,1fr)_10rem]' in workspace
-    assert 'whitespace-nowrap text-xs font-semibold leading-5 text-kaori-primary' in workspace
+    activity = read('app/templates/intelligence/partials/_alert_ops_case_activity_streams.html')
+    assert 'sm:grid-cols-[2rem_minmax(0,1fr)_9rem]' in activity
+    assert 'Notification Delivery Ledger' in activity
     for key in ("'source'", "'source_type'", "'rule_key'", "'recommendation_count'"):
         assert key in service
 
@@ -133,18 +131,18 @@ def test_routes_import_routing_state_mutations_from_case_state_owner() -> None:
 
 def test_review_keeps_detail_summary_single_source_and_bounds_long_evidence_lists() -> None:
     workspace = read('app/templates/intelligence/partials/_alert_ops_case_workspace.html')
+    activity = read('app/templates/intelligence/partials/_alert_ops_case_activity_streams.html')
     service = read('app/intelligence/alert_intelligence/service.py')
 
     assert 'Operational AlertCase for ownership, delivery control, evidence, and verified resolution.' in workspace
     assert workspace.count('{{ case.summary }}') == 1
-    assert '>Target</p>' in workspace
+    assert '>Target</dt>' in workspace
     assert "('boxes', 'Asset', case.asset_name)" in workspace
     assert "('layers-3', 'Namespace', case.namespace)" in workspace
     assert "timeline_recent = timeline[-5:]" in service
     assert "timeline_older = timeline[:-5]" in service
     assert "deliveries_recent = deliveries[:5]" in service
     assert "deliveries_older = deliveries[5:]" in service
-    assert 'Earlier Timeline Events' in workspace
-    assert 'Earlier Delivery Attempts' in workspace
-    assert 'max-h-80' in workspace
-    assert 'max-h-72' in workspace
+    assert 'Earlier Timeline Events' in activity
+    assert 'Earlier Delivery Attempts' in activity
+    assert 'max-h-72' in activity

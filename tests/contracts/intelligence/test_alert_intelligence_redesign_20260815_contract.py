@@ -102,8 +102,11 @@ def test_alert_operations_sections_own_distinct_operator_responsibilities() -> N
     for required in ('Resolved Alerts', 'Resolved Alert Posture', 'Evidence Retention'):
         assert required in history
     resolved_modal = read('app/templates/intelligence/partials/_alert_ops_resolved_case_modal.html')
-    for required in ('Resolution Evidence', 'Postmortem & Learning', 'Verification Pending', 'Incident Timeline', 'Notification Delivery'):
+    activity = read('app/templates/intelligence/partials/_alert_ops_case_activity_streams.html')
+    for required in ('Resolution Evidence', 'Postmortem & Learning', 'Verification & Closure'):
         assert required in resolved_modal
+    for required in ('Incident Timeline', 'Notification Delivery Ledger'):
+        assert required in activity
     assert 'table_registry.filter_form' in history
     assert 'table_registry.footer' in history
 

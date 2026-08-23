@@ -11,7 +11,16 @@
         tone='info',
         variant='semantic'
     ) }}
-    <section id="alert-operations-silence-registry" class="{{ table_ui.block_classes() }}">
+    {% set silence_registry_url = url_for('alert_intelligence.index', tab='silences', domain=payload.domain, asset=payload.selected_asset_key, silence_q=payload.silence_filters.q, silence_severity=payload.silence_filters.severity, silence_page=payload.silence_pagination.page, silence_per_page=payload.silence_pagination.per_page) %}
+    <section id="alert-operations-silence-registry"
+             class="{{ table_ui.block_classes() }}"
+             hx-get="{{ silence_registry_url }}"
+             hx-trigger="alertCaseChanged from:body"
+             hx-target="this"
+             hx-select="#alert-operations-silence-registry"
+             hx-swap="outerHTML"
+             hx-indicator="#alert-operations-silence-loading"
+             hx-sync="this:replace">
         <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
             <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div class="flex min-w-0 items-start gap-3">
@@ -21,7 +30,8 @@
                         <p class="{{ table_ui.block_description_classes() }}">Review time-bounded notification suppression in the current operational scope. The underlying AlertCase remains active until its source state changes.</p>
                     </div>
                 </div>
-                <div class="flex shrink-0 flex-wrap items-center justify-end gap-2">
+                <div class="flex shrink-0 flex-wrap items-center justify-end gap-2"
+                     data-kaori-table-header-actions>
                     {% if payload.silence_filters.q or payload.silence_filters.severity != 'all' %}
                         {{ table_registry.clear_filters_action(
                             url_for('alert_intelligence.index', tab='silences', domain=payload.domain, asset=payload.selected_asset_key, silence_per_page=payload.silence_pagination.per_page),

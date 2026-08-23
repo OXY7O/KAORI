@@ -120,10 +120,60 @@
                         <p class="{{ table_ui.block_description_classes() }}">Review routing ownership at a glance. Expand a policy only when you need matcher, channel, and delivery-behavior detail.</p>
                     </div>
                 </div>
-                {{ table_label.metadata_label(payload.routing_pagination.total_items ~ ' Policies', 'route') }}
+                <div class="flex shrink-0 flex-wrap items-center justify-end gap-2"
+                     data-kaori-table-header-actions>
+                    {% if payload.routing_filters.q or payload.routing_filters.domain != 'all' or payload.routing_filters.status != 'all' %}
+                        {{ table_registry.clear_filters_action(
+                            url_for('alert_intelligence.index', tab='routing', domain=payload.domain, asset=payload.selected_asset_key, routing_per_page=payload.routing_pagination.per_page),
+                            table_ui.action_classes(),
+                            hx_get=url_for('alert_intelligence.index', tab='routing', domain=payload.domain, asset=payload.selected_asset_key, routing_per_page=payload.routing_pagination.per_page),
+                            target='#alert-operations-routing-registry',
+                            indicator='#alert-operations-routing-loading',
+                            select='#alert-operations-routing-registry',
+                            push_url='true',
+                            sync='closest section:replace'
+                        ) }}
+                    {% endif %}
+                    {{ table_label.metadata_label(payload.routing_pagination.total_items ~ ' Policies', 'route') }}
+                </div>
             </div>
             {{ loading_bar.render('alert-operations-routing-loading', label='Refreshing Routing Policies') }}
         </header>
+        <div class="{{ table_ui.inventory_filter_bar_classes() }}">
+            {% call table_registry.filter_form(
+                'alert_intelligence.index',
+                'alert-operations-routing-registry',
+                'alert-operations-routing-loading',
+                payload.routing_pagination.per_page,
+                classes='',
+                page_param='routing_page',
+                per_page_param='routing_per_page'
+            ) %}
+                <input type="hidden" name="tab" value="routing">
+                <input type="hidden" name="domain" value="{{ payload.domain }}">
+                <input type="hidden" name="asset" value="{{ payload.selected_asset_key }}">
+                <label>
+                    <span class="{{ table_ui.filter_label_classes() }}">Search</span>
+                    {{ table_ui.search_field('routing_q', payload.routing_filters.q, 'Policy or channel') }}
+                </label>
+                <label>
+                    <span class="{{ table_ui.filter_label_classes() }}">Policy Domain</span>
+                    <select name="routing_domain" class="{{ table_ui.filter_select_classes() }}">
+                        {% for value, label in [('all', 'All Domains'), ('kubernetes', 'Kubernetes'), ('object_storage', 'Object Storage')] %}
+                            <option value="{{ value }}" {% if payload.routing_filters.domain == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+                <label>
+                    <span class="{{ table_ui.filter_label_classes() }}">Status</span>
+                    <select name="routing_status" class="{{ table_ui.filter_select_classes() }}">
+                        {% for value, label in [('all', 'All Statuses'), ('enabled', 'Enabled'), ('disabled', 'Disabled')] %}
+                            <option value="{{ value }}" {% if payload.routing_filters.status == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+            {% endcall %}
+        </div>
         <div class="min-w-0 overflow-hidden">
             <table class="{{ table_ui.table_classes('w-full table-fixed') }}">
                 <thead class="{{ table_ui.head_classes() }}">
@@ -231,7 +281,7 @@
                 'alert-operations-routing-registry',
                 'alert-operations-routing-loading',
                 payload.routing_pagination,
-                {'tab': 'routing', 'domain': payload.domain, 'asset': payload.selected_asset_key},
+                {'tab': 'routing', 'domain': payload.domain, 'asset': payload.selected_asset_key, 'routing_q': payload.routing_filters.q, 'routing_domain': payload.routing_filters.domain, 'routing_status': payload.routing_filters.status},
                 payload.routing_pagination.allowed_per_page,
                 resource_label='Policies',
                 rows_aria_label='Routing policies per page',
