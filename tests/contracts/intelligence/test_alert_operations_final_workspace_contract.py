@@ -131,13 +131,22 @@ def test_resolved_case_review_uses_dedicated_modal_content_and_modal_refresh_con
     assert "requested_tab = str(tab or request.form.get('tab') or 'active')" in routes
 
 
-def test_case_modal_uses_sticky_posture_and_shared_activity_streams() -> None:
+def test_case_modal_uses_persistent_summary_host_and_shared_activity_streams() -> None:
     active = read('app/templates/intelligence/partials/_alert_ops_case_workspace.html')
     resolved = read('app/templates/intelligence/partials/_alert_ops_resolved_case_modal.html')
+    routing = read('app/templates/intelligence/partials/_alert_ops_routing_editor_modal.html')
+    recommendation = read('app/templates/intelligence/partials/_recommendation_detail_content.html')
+    modal_host = read('app/templates/components/resource_detail_modal.html')
     activity = read('app/templates/intelligence/partials/_alert_ops_case_activity_streams.html')
 
-    assert 'sticky top-0 z-20' in active
-    assert 'sticky top-0 z-20' in resolved
+    assert 'id="resource-detail-modal-summary"' in modal_host
+    assert 'data-resource-detail-summary-host' in modal_host
+    assert 'data-resource-detail-summary' in recommendation
+    for template in (active, resolved, routing):
+        assert 'data-resource-detail-summary' in template
+    for template in (active, resolved):
+        assert 'hx-swap-oob="innerHTML:#resource-detail-modal-summary"' in template
+        assert 'sticky top-0 z-20' not in template
     assert "_alert_ops_case_activity_streams.html" in active
     assert "_alert_ops_case_activity_streams.html" in resolved
     assert 'Incident Timeline' in activity
@@ -196,7 +205,8 @@ def test_alert_intelligence_modals_follow_recommendation_review_visual_language(
         assert 'data-kaori-detail-shell' in template
         assert 'border border-brand-outline bg-kaori-soft text-kaori-primary' in template
         assert 'Committed Evidence' in template
-        assert 'rounded-xl border border-outline-subtle bg-surface-card/95 shadow-sm backdrop-blur' in template
+        assert 'data-kaori-alert-status-rail' in template
+        assert 'data-resource-detail-summary' in template
     assert 'Alert Case Review' in active
     assert 'Resolved Case Review' in resolved
     assert 'data-kaori-routing-modal-layout="recommendation-inspired"' in routing
