@@ -114,6 +114,19 @@ Fixed evidence tables intentionally own the smallest readable type so scalar fie
 
 Every major register or evidence block should have a one-sentence helper description when the heading alone does not explain the reading purpose. Full-width guidance should use the full content measure rather than an arbitrary narrow paragraph width.
 
+### 4.3 Management readability and canvas safety (2026-08-24)
+
+Production Analytics PDFs must be readable by technical operators and management without requiring the reader to decode dense inventory structures. Analytics Overview is the visual reference for content hierarchy, spacing, concise registers, reference legends, and management interpretation.
+
+- Major content blocks require approximately one to one-and-a-half paragraph of visual separation. Internal label-to-value spacing may remain tighter, but adjacent primary sections must never look attached.
+- Every page follows a visible hierarchy: page heading, one-line purpose, summary metrics when useful, primary evidence block, concise comparison register, reference/detail block, and management interpretation or decision.
+- Start from the canonical type scale. When a page is dense, reduce data volume or move detail into a reference block before reducing font size. The smallest table role remains the documented minimum.
+- Fixed comparison tables should keep scalar values, short statuses, dates, and reference codes on one line whenever practical. Long technical identities and explanations move to a stable reference code and a separate reference register.
+- No table, chart, legend, label, or narrative may exceed the A4 content frame or reserved footer boundary. Content must be rearranged, split, summarized, or reduced before it is allowed to cross the canvas margin.
+- Multi-series charts reserve a dedicated right-side label gutter. Endpoint labels are anchored inside that gutter and may use leader lines; they never overlap plotted data or extend beyond the SVG view box.
+- If a table would become an inventory dump, the analytics report is a management and operational summary: retain only the decision-relevant top rows and aggregate posture. The inventory publication owns exhaustive object-level detail.
+- Charts, labels, registers, reference notes, and management conclusions must remain visually separate. A chart legend may replace repeated long labels when that improves the reading path.
+
 ## 5. Vertical rhythm
 
 | Relationship | Canonical space |

@@ -48,12 +48,13 @@ def test_all_analytics_templates_use_shared_publication_primitives() -> None:
         assert 'page_title(' in source or 'ui.page_title(' in source, filename
         assert 'footer(' in source or 'ui.footer(' in source, filename
         assert 'ui.section(' in source, filename
+        assert 'Methodology' in source, filename
+        assert 'Evidence Boundary' in source, filename
         if filename == 'object_storage_analysis.html':
-            assert 'document.sections' in source
-            assert 'Operational Interpretation' in source
-        else:
-            assert 'Methodology' in source, filename
-            assert 'Evidence Boundary' in source, filename
+            assert 'document.sections' not in source
+            assert 'ui.cover_title(p.report_title' in source
+            assert 'Consumer Identity References' in source
+            assert 'Object Storage Inventory' in source
 
 
 def test_all_analytics_builders_declare_the_same_layout_contract() -> None:
@@ -109,10 +110,13 @@ def test_object_storage_analytics_uses_overview_reference_grammar() -> None:
     reference = (PROJECT_ROOT / 'app' / 'reports' / 'reference.py').read_text(encoding='utf-8')
 
     assert 'kaori-reporting-v3' in template
-    assert 'Object Storage Operational Intelligence' in template
-    assert 'ui.metric_strip(section.metrics, 4)' in template
-    assert 'ui.technical_table(' in template
-    assert 'PDF specialization v3.0' in stylesheet
+    assert 'ui.cover_title(p.report_title' in template
+    assert 'ui.metric_strip(p.executive.metrics, 4)' in template
+    assert 'single-line-register' in template
+    assert 'Consumer Identity References' in template
+    assert 'Object Storage Inventory' in template
+    assert 'ui.technical_table(' not in template
+    assert 'Overview PDF specialization v3.1' in stylesheet
     assert "'presentation_version': 'v3.0-object-storage-overview-standard'" in presentation
     assert 'build_object_storage_analysis_presentation' in builder
     assert "section_key == 'methodology_evidence_boundary'" in builder

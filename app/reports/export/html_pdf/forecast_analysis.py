@@ -744,8 +744,9 @@ def _source_rows(
 
 def _combined_chart_svg(resources: Mapping[str, Mapping[str, Any]]) -> str:
     width, height = 800, 238
-    left, top, chart_w, chart_h = 58.0, 24.0, 650.0, 160.0
-    label_x = 746.0
+    left, top, chart_w, chart_h = 58.0, 24.0, 520.0, 160.0
+    label_line_x = 626.0
+    label_x = width - 18.0
     parts = [
         f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {width} {height}" role="img" aria-label="Forecast portfolio chart">',
         '<rect width="800" height="238" fill="#F8FAFC"/>',
@@ -796,10 +797,10 @@ def _combined_chart_svg(resources: Mapping[str, Mapping[str, Any]]) -> str:
         end_x, color, text = endpoint_meta[key]
         data_y = dict(endpoint_labels)[key]
         parts.append(
-            f'<path d="M {end_x + 3:.1f} {data_y:.1f} L {label_x - 8:.1f} {label_y:.1f}" fill="none" stroke="{color}" stroke-width="1" opacity=".75"/>'
+            f'<path d="M {end_x + 3:.1f} {data_y:.1f} L {label_line_x:.1f} {label_y:.1f}" fill="none" stroke="{color}" stroke-width="1" opacity=".75"/>'
         )
         parts.append(
-            f'<text x="{label_x:.1f}" y="{label_y + 4:.1f}" font-size="10.5" font-weight="700" fill="{color}">{escape(text)}</text>'
+            f'<text x="{label_x:.1f}" y="{label_y + 4:.1f}" text-anchor="end" font-size="10.5" font-weight="700" fill="{color}">{escape(text)}</text>'
         )
 
     parts.extend(

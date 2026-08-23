@@ -299,8 +299,8 @@ def build_storage_analysis_presentation(
                     'tone': 'warning',
                 },
             ),
-            'pv_rows': _pv_records(pv_rows)[:3],
-            'pvc_rows': _pvc_records(pvc_rows)[:3],
+            'pv_rows': _pv_records(pv_rows)[:2],
+            'pvc_rows': _pvc_records(pvc_rows)[:2],
             'decision': (
                 'Use inventory to establish object scope and lifecycle. Do not infer claim free space or expansion readiness from object counts alone.'
             ),

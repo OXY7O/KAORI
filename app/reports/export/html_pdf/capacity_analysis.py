@@ -727,7 +727,7 @@ def _capacity_forecast_chart_svg(
         )
 
     width, height = 760, 250
-    left, right, top, bottom = 58, 98, 22, 40
+    left, right, top, bottom = 58, 165, 22, 40
     inner_w = width - left - right
     inner_h = height - top - bottom
     split_x = left + inner_w * 0.68
@@ -738,7 +738,7 @@ def _capacity_forecast_chart_svg(
     svg: list[str] = [
         f'<svg viewBox="0 0 {width} {height}" role="img" aria-label="Capacity projection outlook">',
         '<style>.axis{font:11px Inter,sans-serif;fill:#64748B}</style>',
-        '<rect x="1" y="1" width="718" height="248" fill="#FFFFFF" stroke="#E2E8F0"/>',
+        f'<rect x="1" y="1" width="{width - 2}" height="{height - 2}" fill="#FFFFFF" stroke="#E2E8F0"/>',
     ]
     for tick in (0, 25, 50, 70, 85):
         y = point(tick, left)[1]
@@ -797,14 +797,15 @@ def _capacity_forecast_chart_svg(
         min_gap=17,
     )
     point_y = dict(endpoint_labels)
-    label_x = width - 76
+    label_line_x = width - 166
+    label_x = width - 18
     for key, label_y in resolved_labels.items():
         end_x, color, projected = endpoint_meta[key]
         svg.append(
-            f'<path d="M {end_x + 3:.1f} {point_y[key]:.1f} L {label_x - 7:.1f} {label_y:.1f}" fill="none" stroke="{color}" stroke-width="1" opacity=".75"/>'
+            f'<path d="M {end_x + 3:.1f} {point_y[key]:.1f} L {label_line_x:.1f} {label_y:.1f}" fill="none" stroke="{color}" stroke-width="1" opacity=".75"/>'
         )
         svg.append(
-            f'<text x="{label_x:.1f}" y="{label_y + 4:.1f}" style="font:11px Inter,sans-serif;font-weight:700;fill:{color}">{key.title()} {projected:.1f}%</text>'
+            f'<text x="{label_x:.1f}" y="{label_y + 4:.1f}" text-anchor="end" style="font:11px Inter,sans-serif;font-weight:700;fill:{color}">{key.title()} {projected:.1f}%</text>'
         )
 
     svg.extend(

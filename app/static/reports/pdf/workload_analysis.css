@@ -114,3 +114,12 @@
 .page-workload-governance .content-section { margin-top: 4.8mm; }
 .page-workload-mapping .identity-item,
 .page-workload-configuration .identity-item { padding-top: 1.6mm; padding-bottom: 1.6mm; }
+
+/* Keep compact comparison registers single-line; complete identities stay in reference blocks. */
+.signal-table th:first-child,
+.signal-table td:first-child { width: 12%; white-space: nowrap; }
+.signal-table th:nth-child(2) { width: 46%; }
+.signal-table th:nth-child(3) { width: 25%; }
+.signal-table th:nth-child(4) { width: 17%; }
+.signal-table th,
+.signal-table td { white-space: nowrap; }
