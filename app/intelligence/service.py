@@ -64,6 +64,7 @@ def _truncate_words(value: str | None, limit: int = 132) -> str:
     shortened = text[:limit].rsplit(' ', 1)[0].strip()
     return f'{shortened or text[:limit].strip()}…'
 
+
 def _catalog_table_summary(value: str | None, limit: int = 72) -> str:
     text = ' '.join(str(value or '').split())
     if not text:

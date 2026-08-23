@@ -107,7 +107,8 @@
             </div>
             <div class="flex gap-2">
                 {% if filters.readiness_q or filters.readiness_stage != 'all' %}{{ table_registry.clear_filters_link('automation_control.index','automation-readiness-registry','automation-readiness-loading',payload.readiness_pagination.per_page,table_ui.action_classes() ,query_params={'workspace':'readiness'},page_param='readiness_page',per_page_param='readiness_per_page') }}{% endif %}
-            {{ table_label.metadata_label(payload.readiness_pagination.total_items ~ ' Records','shield-check') }}</div>
+                {{ table_label.metadata_label(payload.readiness_pagination.total_items ~ ' Records','shield-check') }}
+            </div>
         </div>
         {{ loading_bar.render('automation-readiness-loading',label='Refreshing Readiness Records') }}
     </header>

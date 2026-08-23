@@ -46,7 +46,9 @@
                             <select name="cluster_id"
                                     required
                                     class="{{ table_ui.filter_select_classes() }}">
-                                {% for cluster in payload.clusters %}<option value="{{ cluster.id }}">{{ cluster.name }}</option>{% endfor %}
+                                {% for cluster in payload.clusters %}
+                                    <option value="{{ cluster.id }}">{{ cluster.name }}</option>
+                                {% endfor %}
                             </select>
                         </label>
                         <label>

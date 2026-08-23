@@ -116,7 +116,8 @@
             </div>
             <div class="flex gap-2">
                 {% if filters.policy_q or filters.policy_status != 'all' %}{{ table_registry.clear_filters_link('automation_control.index','automation-policy-registry','automation-policy-loading',payload.policy_pagination.per_page,table_ui.action_classes() ,query_params={'workspace':'operations'},page_param='policy_page',per_page_param='policy_per_page') }}{% endif %}
-            {{ table_label.metadata_label(payload.policy_pagination.total_items ~ ' Policies','shield-check') }}</div>
+                {{ table_label.metadata_label(payload.policy_pagination.total_items ~ ' Policies','shield-check') }}
+            </div>
         </div>
         {{ loading_bar.render('automation-policy-loading',label='Refreshing Deployment Policies') }}
     </header>
@@ -180,7 +181,8 @@
             </div>
             <div class="flex gap-2">
                 {% if filters.journal_q or filters.journal_status != 'all' %}{{ table_registry.clear_filters_link('automation_control.index','automation-journal-registry','automation-journal-loading',payload.journal_pagination.per_page,table_ui.action_classes() ,query_params={'workspace':'operations'},page_param='journal_page',per_page_param='journal_per_page') }}{% endif %}
-            {{ table_label.metadata_label(payload.journal_pagination.total_items ~ ' Journals','scroll-text') }}</div>
+                {{ table_label.metadata_label(payload.journal_pagination.total_items ~ ' Journals','scroll-text') }}
+            </div>
         </div>
         {{ loading_bar.render('automation-journal-loading',label='Refreshing Execution Journal') }}
     </header>
@@ -257,7 +259,8 @@
             </div>
             <div class="flex gap-2">
                 {% if filters.dead_q %}{{ table_registry.clear_filters_link('automation_control.index','automation-dead-letter-registry','automation-dead-letter-loading',payload.dead_pagination.per_page,table_ui.action_classes() ,query_params={'workspace':'operations'},page_param='dead_page',per_page_param='dead_per_page') }}{% endif %}
-            {{ table_label.metadata_label(payload.dead_pagination.total_items ~ ' Records','triangle-alert') }}</div>
+                {{ table_label.metadata_label(payload.dead_pagination.total_items ~ ' Records','triangle-alert') }}
+            </div>
         </div>
         {{ loading_bar.render('automation-dead-letter-loading',label='Refreshing Dead Letters') }}
     </header>

@@ -143,7 +143,8 @@
             </div>
             <div class="flex items-center gap-2">
                 {% if filters.runbook_q or filters.runbook_status != 'all' %}{{ table_registry.clear_filters_link('automation_control.index','automation-runbook-library-registry','automation-runbook-library-loading',payload.runbook_pagination.per_page,table_ui.action_classes() ,query_params={'workspace':'runbooks'},page_param='runbook_page',per_page_param='runbook_per_page') }}{% endif %}
-            {{ table_label.metadata_label(payload.runbook_pagination.total_items ~ ' Records','book-open-check') }}</div>
+                {{ table_label.metadata_label(payload.runbook_pagination.total_items ~ ' Records','book-open-check') }}
+            </div>
         </div>
         {{ loading_bar.render('automation-runbook-library-loading', label='Refreshing Activated Runbooks') }}
     </header>
@@ -208,7 +209,8 @@
             </div>
             <div class="flex items-center gap-2">
                 {% if filters.binding_q or filters.binding_status != 'all' %}{{ table_registry.clear_filters_link('automation_control.index','automation-bindings-registry','automation-bindings-loading',payload.binding_pagination.per_page,table_ui.action_classes() ,query_params={'workspace':'runbooks'},page_param='binding_page',per_page_param='binding_per_page') }}{% endif %}
-            {{ table_label.metadata_label(payload.binding_pagination.total_items ~ ' Bindings','link') }}</div>
+                {{ table_label.metadata_label(payload.binding_pagination.total_items ~ ' Bindings','link') }}
+            </div>
         </div>
         {{ loading_bar.render('automation-bindings-loading', label='Refreshing Bindings') }}
     </header>

@@ -38,7 +38,8 @@
             </div>
             <div class="flex gap-2">
                 {% if filters.candidate_q or filters.candidate_status != 'all' %}{{ table_registry.clear_filters_link('automation_control.index','automation-candidate-registry','automation-candidate-loading',payload.candidate_pagination.per_page,table_ui.action_classes() ,query_params={'workspace':'decisions'},page_param='candidate_page',per_page_param='candidate_per_page') }}{% endif %}
-            {{ table_label.metadata_label(payload.candidate_pagination.total_items ~ ' Candidates','clipboard-clock') }}</div>
+                {{ table_label.metadata_label(payload.candidate_pagination.total_items ~ ' Candidates','clipboard-clock') }}
+            </div>
         </div>
         {{ loading_bar.render('automation-candidate-loading', label='Refreshing Candidate Queue') }}
     </header>
@@ -134,7 +135,8 @@
             </div>
             <div class="flex gap-2">
                 {% if filters.decision_q or filters.decision_status != 'all' %}{{ table_registry.clear_filters_link('automation_control.index','automation-decision-registry','automation-decision-loading',payload.decision_pagination.per_page,table_ui.action_classes() ,query_params={'workspace':'decisions'},page_param='decision_page',per_page_param='decision_per_page') }}{% endif %}
-            {{ table_label.metadata_label(payload.decision_pagination.total_items ~ ' Decisions','badge-check') }}</div>
+                {{ table_label.metadata_label(payload.decision_pagination.total_items ~ ' Decisions','badge-check') }}
+            </div>
         </div>
         {{ loading_bar.render('automation-decision-loading',label='Refreshing Decisions') }}
     </header>
@@ -242,7 +244,8 @@
             </div>
             <div class="flex gap-2">
                 {% if filters.delivery_q or filters.delivery_status != 'all' %}{{ table_registry.clear_filters_link('automation_control.index','automation-decision-delivery-registry','automation-decision-delivery-loading',payload.delivery_pagination.per_page,table_ui.action_classes() ,query_params={'workspace':'decisions'},page_param='delivery_page',per_page_param='delivery_per_page') }}{% endif %}
-            {{ table_label.metadata_label(payload.delivery_pagination.total_items ~ ' Deliveries','send') }}</div>
+                {{ table_label.metadata_label(payload.delivery_pagination.total_items ~ ' Deliveries','send') }}
+            </div>
         </div>
         {{ loading_bar.render('automation-decision-delivery-loading',label='Refreshing Notification Delivery') }}
     </header>
