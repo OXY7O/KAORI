@@ -294,6 +294,20 @@ def _finding_asset_key(finding: dict[str, Any]) -> str:
     )
 
 
+def _cluster_name_map(cluster_ids: set[str]) -> dict[str, str]:
+    if not cluster_ids:
+        return {}
+    try:
+        from app.models import Cluster
+    except ImportError:
+        return {}
+    try:
+        rows = Cluster.query.filter(Cluster.id.in_(cluster_ids)).all()
+    except SQLAlchemyError:
+        return {}
+    return {str(row.id): str(row.name or row.id) for row in rows}
+
+
 def _build_tls_certificate_findings(rules: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
     expired_rule = rules.get('kubernetes.tls_secret.expired')
     expiring_rule = rules.get('kubernetes.tls_secret.expiring_soon')

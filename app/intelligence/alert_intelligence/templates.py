@@ -276,8 +276,16 @@ def render_case_message(
 
 
 def _affected_summary(evidence: dict[str, object]) -> str:
-    preview = [str(value) for value in evidence.get('affected_preview', []) if str(value).strip()]
-    count = int(evidence.get('recommendation_count') or 0)
+    preview_value = evidence.get('affected_preview')
+    preview = [str(value) for value in preview_value if str(value).strip()] if isinstance(preview_value, list) else []
+    count_value = evidence.get('recommendation_count')
+    count = (
+        count_value
+        if isinstance(count_value, int)
+        else int(count_value)
+        if isinstance(count_value, str) and count_value.isdigit()
+        else 0
+    )
     if count <= 1:
         return ''
     visible = preview[:5]
