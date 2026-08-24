@@ -93,8 +93,8 @@ def test_dashboard_copy_is_compact_and_snapshot_safe() -> None:
     assert 'Validate reporting activity and follow the governed KAORI workflow.' in object_reporting
     assert "operational_callout.render('Reporting Control'" in kubernetes_reporting
     assert "operational_callout.render('Reporting Control'" in object_reporting
-    assert kubernetes_reporting.index("Reporting Control") < kubernetes_reporting.index("Controlled Reporting Flow")
-    assert object_reporting.index("Reporting Control") < object_reporting.index("Controlled Reporting Flow")
+    assert kubernetes_reporting.index('Reporting Control') < kubernetes_reporting.index('Controlled Reporting Flow')
+    assert object_reporting.index('Reporting Control') < object_reporting.index('Controlled Reporting Flow')
     assert 'Committed capacity, usage, headroom, and response path for this Object Storage system.' in object_capacity
     assert (
         'Capacity uses the committed Object Storage Analytics snapshot; no live provider query is issued.'
