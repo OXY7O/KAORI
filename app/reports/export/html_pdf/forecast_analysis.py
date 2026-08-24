@@ -27,7 +27,6 @@ _FORECAST_PAGE_TITLES = (
     'Methodology and Evidence Boundary',
 )
 
-_RESOURCE_ORDER = ('cpu', 'memory', 'pods', 'storage')
 _RESOURCE_META = {
     'cpu': {'label': 'CPU', 'color': '#2563EB'},
     'memory': {'label': 'Memory', 'color': '#7C3AED'},
@@ -55,7 +54,7 @@ def build_forecast_analysis_presentation(
     cluster = _mapping(payload.get('cluster'))
     forecast_payload = _mapping(payload.get('forecast_payload'))
     items = _resource_map(forecast_payload)
-    resources = {key: _resource_presentation(key, _mapping(items.get(key))) for key in _RESOURCE_ORDER}
+    resources = {key: _resource_presentation(key, _mapping(items.get(key))) for key in _RESOURCE_META}
     available = [item for item in resources.values() if item['available']]
     highest = max(available, key=lambda item: _float(item.get('peak_projected_percent')) or 0.0) if available else None
     warning_count = sum(
@@ -147,14 +146,14 @@ def build_forecast_analysis_presentation(
                 ),
                 _metric(
                     'Forecast Coverage',
-                    f'{coverage_count} / {len(_RESOURCE_ORDER)}',
+                    f'{coverage_count} / {len(_RESOURCE_META)}',
                     'Committed Resources',
-                    'normal' if coverage_count == len(_RESOURCE_ORDER) else 'warning',
+                    'normal' if coverage_count == len(_RESOURCE_META) else 'warning',
                 ),
             ),
             'status': forecast_status,
             'tone': forecast_tone,
-            'resources': tuple(resources[key] for key in _RESOURCE_ORDER),
+            'resources': tuple(resources[key] for key in _RESOURCE_META),
             'interpretation_title': _executive_title(highest, warning_count, critical_count),
             'interpretation_body': _executive_body(highest, warning_count, critical_count, horizon),
             'interpretation_note': (
@@ -174,7 +173,7 @@ def build_forecast_analysis_presentation(
                 for item in resources.values()
             ),
             'chart_svg': combined_chart,
-            'rows': tuple(_portfolio_row(resources[key], idx + 1) for idx, key in enumerate(_RESOURCE_ORDER)),
+            'rows': tuple(_portfolio_row(resources[key], idx + 1) for idx, key in enumerate(_RESOURCE_META)),
             'interpretation': _portfolio_interpretation(resources, horizon),
         },
         'cpu': _resource_page(resources['cpu'], 'CPU'),
@@ -237,12 +236,12 @@ def build_forecast_analysis_presentation(
                 ),
                 _metric(
                     'Evidence Gaps',
-                    str(len(_RESOURCE_ORDER) - coverage_count),
-                    'Requires Review' if coverage_count < len(_RESOURCE_ORDER) else 'Clear',
-                    'warning' if coverage_count < len(_RESOURCE_ORDER) else 'normal',
+                    str(len(_RESOURCE_META) - coverage_count),
+                    'Requires Review' if coverage_count < len(_RESOURCE_META) else 'Clear',
+                    'warning' if coverage_count < len(_RESOURCE_META) else 'normal',
                 ),
             ),
-            'rows': tuple(_exposure_row(resources[key], idx + 1) for idx, key in enumerate(_RESOURCE_ORDER)),
+            'rows': tuple(_exposure_row(resources[key], idx + 1) for idx, key in enumerate(_RESOURCE_META)),
             'confidence_title': _confidence_title(resources),
             'confidence_body': _confidence_body(resources),
             'boundary_title': 'Committed observations define the forecast boundary.',
@@ -931,7 +930,7 @@ def _confidence_body(resources: Mapping[str, Mapping[str, Any]]) -> str:
 def _executive_status(warning_count: int, critical_count: int, coverage_count: int) -> str:
     if critical_count:
         return 'Critical Review'
-    if warning_count or coverage_count < len(_RESOURCE_ORDER):
+    if warning_count or coverage_count < len(_RESOURCE_META):
         return 'Review Required'
     if coverage_count:
         return 'Normal'
@@ -941,7 +940,7 @@ def _executive_status(warning_count: int, critical_count: int, coverage_count: i
 def _executive_tone(warning_count: int, critical_count: int, coverage_count: int) -> str:
     if critical_count:
         return 'critical'
-    if warning_count or coverage_count < len(_RESOURCE_ORDER):
+    if warning_count or coverage_count < len(_RESOURCE_META):
         return 'warning'
     return 'normal' if coverage_count else 'muted'
 

@@ -132,19 +132,7 @@ def _management_summary(
     )
 
 
-def build_object_storage_analysis_presentation(
-    payload: Mapping[str, Any],
-    *,
-    context: ReportDocumentContext,
-    classification: str,
-) -> dict[str, Any]:
-    """Build the management-first Object Storage Analytics Overview contract.
-
-    The analytical PDF intentionally avoids reproducing Object Storage inventory rows.
-    Long bucket identities are represented through stable references and a compact
-    top-consumer register. Detailed bucket evidence remains in Object Storage Inventory.
-    """
-
+def _analysis_state(payload: Mapping[str, Any]) -> dict[str, Any]:
     system = _mapping(payload.get('system') or payload.get('selected_system'))
     summary = _mapping(payload.get('summary'))
     capacity = _mapping(payload.get('capacity_usage'))
@@ -156,7 +144,6 @@ def build_object_storage_analysis_presentation(
     metrics_readiness = _mapping(payload.get('metrics_readiness'))
     evidence_boundary = _mapping(payload.get('evidence_boundary'))
     signal_posture = _mapping(payload.get('signal_posture'))
-
     consumers = _consumer_rows(_sequence(payload.get('top_consumers') or payload.get('bucket_rows')))
     risk_rows = [
         _risk_item(_mapping(item), index)
@@ -164,17 +151,6 @@ def build_object_storage_analysis_presentation(
         if isinstance(item, Mapping)
     ]
     critical_count, warning_count, review_count = _risk_counts(risk_rows)
-
-    bucket_count = _text(bucket_analysis.get('bucket_count') or summary.get('buckets'), '0')
-    quota_coverage = _text(bucket_analysis.get('quota_evidence_coverage_display'))
-    top_share = _text(bucket_analysis.get('top_usage_share_display'))
-    concentration = _text(bucket_analysis.get('concentration_label'), 'Unknown')
-    concentration_tone = _tone(bucket_analysis.get('concentration_tone'))
-    request_rate = _text(performance.get('request_rate_display') or performance.get('request_rate'), 'N/A')
-    error_ratio = _text(performance.get('error_ratio_display') or performance.get('error_ratio'), 'N/A')
-    success_ratio = _text(performance.get('success_ratio_display') or performance.get('success_ratio'), 'N/A')
-    offline_nodes = _text(performance.get('offline_nodes_display') or performance.get('offline_nodes'), 'N/A')
-
     recommendations = tuple(
         {
             'ref': f'A{index}',
@@ -186,21 +162,50 @@ def build_object_storage_analysis_presentation(
         }
         for index, item in enumerate(ANALYTICS_REPORT_RECOMMENDATIONS.get('object_storage_analysis', ()), start=1)
     )
+    return {
+        'system': system,
+        'summary': summary,
+        'capacity': capacity,
+        'bucket_analysis': bucket_analysis,
+        'performance': performance,
+        'forecast': forecast,
+        'evidence_boundary': evidence_boundary,
+        'signal_posture': signal_posture,
+        'consumers': consumers,
+        'risk_rows': risk_rows,
+        'critical_count': critical_count,
+        'warning_count': warning_count,
+        'review_count': review_count,
+        'recommendations': recommendations,
+        'bucket_count': _text(bucket_analysis.get('bucket_count') or summary.get('buckets'), '0'),
+        'quota_coverage': _text(bucket_analysis.get('quota_evidence_coverage_display')),
+        'top_share': _text(bucket_analysis.get('top_usage_share_display')),
+        'concentration': _text(bucket_analysis.get('concentration_label'), 'Unknown'),
+        'concentration_tone': _tone(bucket_analysis.get('concentration_tone')),
+        'request_rate': _text(performance.get('request_rate_display') or performance.get('request_rate'), 'N/A'),
+        'error_ratio': _text(performance.get('error_ratio_display') or performance.get('error_ratio'), 'N/A'),
+        'success_ratio': _text(performance.get('success_ratio_display') or performance.get('success_ratio'), 'N/A'),
+        'offline_nodes': _text(performance.get('offline_nodes_display') or performance.get('offline_nodes'), 'N/A'),
+        'metrics_contract': _text(
+            metrics_readiness.get('label') or metrics_readiness.get('status'), 'Evidence Boundary Recorded'
+        ),
+        'source_label': _text(
+            metrics_source.get('provider_label') or metrics_source.get('label'), 'Object Storage Evidence'
+        ),
+        'forecast_state': _text(
+            forecast_materialization.get('label') or forecast_materialization.get('status'), 'Not Available'
+        ),
+    }
 
-    metrics_contract = _text(
-        metrics_readiness.get('label') or metrics_readiness.get('status'),
-        'Evidence Boundary Recorded',
-    )
-    source_label = _text(
-        metrics_source.get('provider_label') or metrics_source.get('label'),
-        'Object Storage Evidence',
-    )
-    forecast_state = _text(
-        forecast_materialization.get('label') or forecast_materialization.get('status'),
-        'Not Available',
-    )
 
-    common = {
+def _common_presentation(
+    state: Mapping[str, Any],
+    *,
+    context: ReportDocumentContext,
+    classification: str,
+) -> dict[str, Any]:
+    system = _mapping(state.get('system'))
+    return {
         'presentation_version': 'v3.0-object-storage-overview-standard',
         'publication_family': ANALYTICS_PUBLICATION_FAMILY,
         'publication_standard': ANALYTICS_PUBLICATION_STANDARD,
@@ -228,37 +233,57 @@ def build_object_storage_analysis_presentation(
         'data_cutoff': context.data_cutoff,
         'generated_at': context.generated_at_label,
         'generated_by': context.generated_by_label,
-        'source_label': source_label,
-        'metrics_contract': metrics_contract,
+        'source_label': state['source_label'],
+        'metrics_contract': state['metrics_contract'],
         'environment': _text(system.get('environment'), 'Not Available'),
     }
 
-    executive = {
+
+def _executive_page(state: Mapping[str, Any]) -> dict[str, Any]:
+    capacity = _mapping(state.get('capacity'))
+    summary = _mapping(state.get('summary'))
+    bucket_analysis = _mapping(state.get('bucket_analysis'))
+    performance = _mapping(state.get('performance'))
+    forecast = _mapping(state.get('forecast'))
+    signal_posture = _mapping(state.get('signal_posture'))
+    return {
         'metrics': (
             _metric('Capacity', capacity.get('capacity_total') or summary.get('capacity'), 'Committed', 'normal'),
             _metric('Usage', capacity.get('usage_total') or summary.get('usage'), 'Observed', 'normal'),
             _metric('Headroom', capacity.get('headroom'), 'Remaining', _tone(capacity.get('capacity_posture'))),
-            _metric('Buckets', bucket_count, 'Committed Scope', 'normal'),
+            _metric('Buckets', state['bucket_count'], 'Committed Scope', 'normal'),
         ),
         'headline': _text(
-            signal_posture.get('detail'),
-            'Current Object Storage evidence is available for management review.',
+            signal_posture.get('detail'), 'Current Object Storage evidence is available for management review.'
         ),
         'summary': _management_summary(capacity, bucket_analysis, performance, forecast),
         'posture_rows': (
             {'ref': 'E1', 'dimension': 'Capacity', 'value': _text(capacity.get('utilization')), 'state': 'Utilization'},
-            {'ref': 'E2', 'dimension': 'Quota Coverage', 'value': quota_coverage, 'state': 'Governance'},
-            {'ref': 'E3', 'dimension': 'Request Reliability', 'value': error_ratio, 'state': 'Error Ratio'},
-            {'ref': 'E4', 'dimension': 'Consumer Concentration', 'value': top_share, 'state': concentration},
+            {'ref': 'E2', 'dimension': 'Quota Coverage', 'value': state['quota_coverage'], 'state': 'Governance'},
+            {'ref': 'E3', 'dimension': 'Request Reliability', 'value': state['error_ratio'], 'state': 'Error Ratio'},
+            {
+                'ref': 'E4',
+                'dimension': 'Consumer Concentration',
+                'value': state['top_share'],
+                'state': state['concentration'],
+            },
         ),
     }
 
-    capacity_page = {
+
+def _capacity_page(state: Mapping[str, Any]) -> dict[str, Any]:
+    capacity = _mapping(state.get('capacity'))
+    summary = _mapping(state.get('summary'))
+    bucket_analysis = _mapping(state.get('bucket_analysis'))
+    quota_pressure = _text(bucket_analysis.get('quota_pressure_count'), '0')
+    return {
         'metrics': (
             _metric('Capacity Total', capacity.get('capacity_total') or summary.get('capacity'), 'Committed', 'normal'),
             _metric('Usage Total', capacity.get('usage_total') or summary.get('usage'), 'Observed', 'normal'),
             _metric('Headroom', capacity.get('headroom'), 'Remaining', 'normal'),
-            _metric('Quota Coverage', quota_coverage, 'Observed Buckets', _tone(bucket_analysis.get('quota_tone'))),
+            _metric(
+                'Quota Coverage', state['quota_coverage'], 'Observed Buckets', _tone(bucket_analysis.get('quota_tone'))
+            ),
         ),
         'rows': (
             {
@@ -271,7 +296,7 @@ def build_object_storage_analysis_presentation(
             {
                 'ref': 'C2',
                 'dimension': 'Buckets in Scope',
-                'value': bucket_count,
+                'value': state['bucket_count'],
                 'status': 'Committed',
                 'tone': 'normal',
             },
@@ -285,37 +310,40 @@ def build_object_storage_analysis_presentation(
             {
                 'ref': 'C4',
                 'dimension': 'Quota Pressure',
-                'value': _text(bucket_analysis.get('quota_pressure_count'), '0'),
-                'status': 'Review' if _text(bucket_analysis.get('quota_pressure_count'), '0') != '0' else 'Clear',
-                'tone': 'warning' if _text(bucket_analysis.get('quota_pressure_count'), '0') != '0' else 'normal',
+                'value': quota_pressure,
+                'status': 'Review' if quota_pressure != '0' else 'Clear',
+                'tone': 'warning' if quota_pressure != '0' else 'normal',
             },
         ),
         'interpretation': (
-            f'Quota evidence covers {quota_coverage} of committed bucket scope. '
-            f'Consumer concentration is {concentration.lower()}, with the largest bucket representing {top_share} of known usage.'
+            f'Quota evidence covers {state["quota_coverage"]} of committed bucket scope. '
+            f'Consumer concentration is {str(state["concentration"]).lower()}, with the largest bucket representing {state["top_share"]} of known usage.'
         ),
-        'concentration': concentration,
-        'concentration_tone': concentration_tone,
+        'concentration': state['concentration'],
+        'concentration_tone': state['concentration_tone'],
     }
 
-    reliability_page = {
+
+def _reliability_page(state: Mapping[str, Any]) -> dict[str, Any]:
+    performance = _mapping(state.get('performance'))
+    return {
         'metrics': (
-            _metric('Request Rate', request_rate, 'Current Demand', 'info'),
-            _metric('Error Ratio', error_ratio, 'Reliability', _tone(performance.get('reliability_tone'))),
-            _metric('Success Ratio', success_ratio, 'Successful Requests', 'normal'),
-            _metric('Offline Nodes', offline_nodes, 'Node Availability', _tone(performance.get('node_tone'))),
+            _metric('Request Rate', state['request_rate'], 'Current Demand', 'info'),
+            _metric('Error Ratio', state['error_ratio'], 'Reliability', _tone(performance.get('reliability_tone'))),
+            _metric('Success Ratio', state['success_ratio'], 'Successful Requests', 'normal'),
+            _metric('Offline Nodes', state['offline_nodes'], 'Node Availability', _tone(performance.get('node_tone'))),
         ),
         'rows': (
             {
                 'ref': 'P1',
                 'signal': 'Request Demand',
-                'value': request_rate,
+                'value': state['request_rate'],
                 'assessment': _text(performance.get('request_trend_status'), 'Current'),
             },
             {
                 'ref': 'P2',
                 'signal': 'Error Ratio',
-                'value': error_ratio,
+                'value': state['error_ratio'],
                 'assessment': _text(performance.get('reliability_status'), 'Review'),
             },
             {
@@ -332,14 +360,19 @@ def build_object_storage_analysis_presentation(
             },
         ),
         'interpretation': (
-            f'Current request demand is {request_rate} with an observed error ratio of {error_ratio}. '
-            f'Offline-node evidence is {offline_nodes}; queue and node state must remain separate from capacity posture.'
+            f'Current request demand is {state["request_rate"]} with an observed error ratio of {state["error_ratio"]}. '
+            f'Offline-node evidence is {state["offline_nodes"]}; queue and node state must remain separate from capacity posture.'
         ),
     }
 
-    forecast_page = {
+
+def _forecast_page(state: Mapping[str, Any]) -> dict[str, Any]:
+    forecast = _mapping(state.get('forecast'))
+    capacity = _mapping(state.get('capacity'))
+    summary = _mapping(state.get('summary'))
+    return {
         'metrics': (
-            _metric('Growth / Day', forecast.get('growth_per_day'), forecast_state, 'info'),
+            _metric('Growth / Day', forecast.get('growth_per_day'), state['forecast_state'], 'info'),
             _metric('Projected 7d', forecast.get('projected_7d'), 'Planning', 'info'),
             _metric('Projected 30d', forecast.get('projected_30d'), 'Planning', 'info'),
             _metric(
@@ -372,7 +405,7 @@ def build_object_storage_analysis_presentation(
                 'ref': 'F4',
                 'dimension': 'Capacity ETA',
                 'value': _text(forecast.get('days_to_capacity')),
-                'assessment': forecast_state,
+                'assessment': state['forecast_state'],
             },
         ),
         'interpretation': (
@@ -381,21 +414,31 @@ def build_object_storage_analysis_presentation(
         ),
     }
 
-    consumer_page = {
+
+def _consumer_page(state: Mapping[str, Any]) -> dict[str, Any]:
+    consumers = list(state['consumers'])
+    return {
         'metrics': (
-            _metric('Buckets', bucket_count, 'Committed Scope', 'normal'),
-            _metric('Largest Share', top_share, concentration, concentration_tone),
+            _metric('Buckets', state['bucket_count'], 'Committed Scope', 'normal'),
+            _metric('Largest Share', state['top_share'], state['concentration'], state['concentration_tone']),
             _metric('Top Consumer', consumers[0]['usage'] if consumers else 'Not Available', 'Displayed Usage', 'info'),
             _metric('Displayed Set', str(len(consumers)), 'Top Consumers', 'normal' if consumers else 'muted'),
         ),
         'rows': consumers,
         'interpretation': (
-            f'The largest bucket represents {top_share} of known usage. The analytical PDF shows only the top '
+            f'The largest bucket represents {state["top_share"]} of known usage. The analytical PDF shows only the top '
             'consumer set; complete bucket inventory remains in Object Storage Inventory.'
         ),
     }
 
-    risk_page = {
+
+def _risk_page(state: Mapping[str, Any]) -> dict[str, Any]:
+    risk_rows = list(state['risk_rows'])
+    recommendations = tuple(state['recommendations'])
+    critical_count = int(state['critical_count'])
+    warning_count = int(state['warning_count'])
+    review_count = int(state['review_count'])
+    return {
         'metrics': (
             _metric(
                 'Critical Findings', str(critical_count), 'Operational Risk', 'critical' if critical_count else 'normal'
@@ -414,11 +457,14 @@ def build_object_storage_analysis_presentation(
         ),
     }
 
-    methodology_page = {
+
+def _methodology_page(state: Mapping[str, Any], *, context: ReportDocumentContext) -> dict[str, Any]:
+    evidence_boundary = _mapping(state.get('evidence_boundary'))
+    return {
         'metrics': (
             _metric('Inventory Source', evidence_boundary.get('inventory_source'), 'Committed', 'normal'),
-            _metric('Metrics Source', source_label, metrics_contract, 'info'),
-            _metric('Forecast State', forecast_state, 'Materialized Evidence', 'info'),
+            _metric('Metrics Source', state['source_label'], state['metrics_contract'], 'info'),
+            _metric('Forecast State', state['forecast_state'], 'Materialized Evidence', 'info'),
             _metric('Alert Source', evidence_boundary.get('alert_source'), 'Provider Context', 'info'),
         ),
         'sources': (
@@ -427,8 +473,12 @@ def build_object_storage_analysis_presentation(
                 'freshness': 'Snapshot',
                 'last_collected': _text(evidence_boundary.get('inventory_cutoff'), context.data_cutoff),
             },
-            {'source': source_label, 'freshness': context.period_label, 'last_collected': context.data_cutoff},
-            {'source': 'Object Storage Forecast', 'freshness': forecast_state, 'last_collected': context.data_cutoff},
+            {'source': state['source_label'], 'freshness': context.period_label, 'last_collected': context.data_cutoff},
+            {
+                'source': 'Object Storage Forecast',
+                'freshness': state['forecast_state'],
+                'last_collected': context.data_cutoff,
+            },
         ),
         'rules': (
             {'ref': 'M1', 'rule': 'Reporting Period', 'setting': context.period_label},
@@ -448,13 +498,22 @@ def build_object_storage_analysis_presentation(
         ),
     }
 
+
+def build_object_storage_analysis_presentation(
+    payload: Mapping[str, Any],
+    *,
+    context: ReportDocumentContext,
+    classification: str,
+) -> dict[str, Any]:
+    """Build the management-first Object Storage Analytics Overview contract."""
+    state = _analysis_state(payload)
     return {
-        **common,
-        'executive': executive,
-        'capacity': capacity_page,
-        'reliability': reliability_page,
-        'forecast': forecast_page,
-        'consumers': consumer_page,
-        'risk': risk_page,
-        'methodology': methodology_page,
+        **_common_presentation(state, context=context, classification=classification),
+        'executive': _executive_page(state),
+        'capacity': _capacity_page(state),
+        'reliability': _reliability_page(state),
+        'forecast': _forecast_page(state),
+        'consumers': _consumer_page(state),
+        'risk': _risk_page(state),
+        'methodology': _methodology_page(state, context=context),
     }

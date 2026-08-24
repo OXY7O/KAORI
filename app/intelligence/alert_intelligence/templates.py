@@ -275,6 +275,19 @@ def render_case_message(
     return subject or _default_title(case, event_state), body, content_format
 
 
+def _affected_summary(evidence: dict[str, object]) -> str:
+    preview = [str(value) for value in evidence.get('affected_preview', []) if str(value).strip()]
+    count = int(evidence.get('recommendation_count') or 0)
+    if count <= 1:
+        return ''
+    visible = preview[:5]
+    preview_lines = '\n'.join(f'• {value}' for value in visible)
+    remaining = max(count - len(visible), 0)
+    suffix = f'\n• +{remaining} more' if remaining else ''
+    summary = f'{count} active findings'
+    return f'{summary}\n{preview_lines}{suffix}' if preview_lines else summary
+
+
 def _template_context(case: AlertCase, *, action_url: str | None) -> dict[str, str]:
     now = case.closed_at or case.source_resolved_at or case.last_seen_at
     duration_seconds = max(int((now - case.first_seen_at).total_seconds()), 0)
@@ -282,17 +295,7 @@ def _template_context(case: AlertCase, *, action_url: str | None) -> dict[str, s
     owner = case.closed_by or case.owner or case.acknowledged_by
     operator_name = str(getattr(owner, 'username', None) or getattr(owner, 'email', None) or 'KAORI')
     evidence = case.evidence_json or {}
-    affected_preview = [str(value) for value in evidence.get('affected_preview', []) if str(value).strip()]
-    affected_count = int(evidence.get('recommendation_count') or 0)
-    affected_summary = ''
-    if affected_count > 1:
-        visible = affected_preview[:5]
-        preview_lines = '\n'.join(f'• {value}' for value in visible)
-        remaining = max(affected_count - len(visible), 0)
-        suffix = f'\n• +{remaining} more' if remaining else ''
-        affected_summary = f'{affected_count} active findings'
-        if preview_lines:
-            affected_summary = f'{affected_summary}\n{preview_lines}{suffix}'
+    affected_summary = _affected_summary(evidence)
     return {
         'case_id': case.public_id,
         'alert_name': case.alert_name,

@@ -9,6 +9,40 @@ _ALLOWED_STATUSES = {'available', 'reserved', 'imported_signal'}
 _ALLOWED_RISK_EXCEPTION_SCOPES = {'rule_asset', 'finding_keys'}
 
 
+def _normalize_risk_exception(raw_exception: object, *, path: str) -> dict[str, object]:
+    if raw_exception is None:
+        return {
+            'enabled': False,
+            'default_scope_mode': 'finding_keys',
+            'allowed_scope_modes': [],
+            'guidance': '',
+        }
+    exception_path = f'{path}.risk_exception'
+    exception = require_mapping(raw_exception, exception_path)
+    enabled = exception.get('enabled', False)
+    if not isinstance(enabled, bool):
+        raise DefinitionError(f'{exception_path}.enabled must be true or false.')
+    allowed_scopes = list(
+        string_tuple(exception.get('allowed_scope_modes', []), f'{exception_path}.allowed_scope_modes')
+    )
+    unsupported_scopes = sorted(set(allowed_scopes) - _ALLOWED_RISK_EXCEPTION_SCOPES)
+    if unsupported_scopes:
+        raise DefinitionError(
+            f'{exception_path}.allowed_scope_modes contains unsupported values: {unsupported_scopes!r}.'
+        )
+    if enabled and not allowed_scopes:
+        allowed_scopes = ['finding_keys', 'rule_asset']
+    default_scope = str(exception.get('default_scope_mode') or 'finding_keys').strip()
+    if enabled and default_scope not in allowed_scopes:
+        raise DefinitionError(f'{exception_path}.default_scope_mode must be one of the allowed scope modes.')
+    return {
+        'enabled': enabled,
+        'default_scope_mode': default_scope,
+        'allowed_scope_modes': allowed_scopes,
+        'guidance': str(exception.get('guidance') or '').strip(),
+    }
+
+
 def _load_catalog() -> list[dict[str, object]]:
     document = load_definition_document('intelligence/rules.yaml', expected_kind='intelligence_rules')
     raw_rules = [
@@ -52,40 +86,7 @@ def _load_catalog() -> list[dict[str, object]]:
             rule['provider_keys'] = list(string_tuple(raw.get('provider_keys'), f'{path}.provider_keys'))
         if 'catalog_summary' in raw:
             rule['catalog_summary'] = require_str(raw, 'catalog_summary', path)
-        raw_exception = raw.get('risk_exception')
-        if raw_exception is None:
-            rule['risk_exception'] = {
-                'enabled': False,
-                'default_scope_mode': 'finding_keys',
-                'allowed_scope_modes': [],
-                'guidance': '',
-            }
-        else:
-            exception_path = f'{path}.risk_exception'
-            exception = require_mapping(raw_exception, exception_path)
-            enabled = exception.get('enabled', False)
-            if not isinstance(enabled, bool):
-                raise DefinitionError(f'{exception_path}.enabled must be true or false.')
-            allowed_scopes = list(
-                string_tuple(exception.get('allowed_scope_modes', []), f'{exception_path}.allowed_scope_modes')
-            )
-            unsupported_scopes = sorted(set(allowed_scopes) - _ALLOWED_RISK_EXCEPTION_SCOPES)
-            if unsupported_scopes:
-                raise DefinitionError(
-                    f'{exception_path}.allowed_scope_modes contains unsupported values: {unsupported_scopes!r}.'
-                )
-            if enabled and not allowed_scopes:
-                allowed_scopes = ['finding_keys', 'rule_asset']
-            default_scope = str(exception.get('default_scope_mode') or 'finding_keys').strip()
-            if enabled and default_scope not in allowed_scopes:
-                raise DefinitionError(f'{exception_path}.default_scope_mode must be one of the allowed scope modes.')
-            guidance = str(exception.get('guidance') or '').strip()
-            rule['risk_exception'] = {
-                'enabled': enabled,
-                'default_scope_mode': default_scope,
-                'allowed_scope_modes': allowed_scopes,
-                'guidance': guidance,
-            }
+        rule['risk_exception'] = _normalize_risk_exception(raw.get('risk_exception'), path=path)
         if 'severity_bands' in raw:
             bands = require_list(raw.get('severity_bands'), f'{path}.severity_bands')
             normalized_bands: list[dict[str, object]] = []

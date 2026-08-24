@@ -25,7 +25,6 @@ _RESOURCE_UTILIZATION_PAGE_TITLES = (
     'Recommendation Plan',
     'Methodology and Evidence Boundary',
 )
-
 _RESOURCE_COLORS = {
     'cpu': '#2563EB',
     'memory': '#7C3AED',

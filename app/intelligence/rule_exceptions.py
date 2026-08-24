@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 from collections.abc import Iterable
+from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
@@ -101,57 +102,93 @@ def matching_rule_exception(
     return None
 
 
-def create_rule_exception(
+@dataclass(frozen=True, slots=True)
+class RuleExceptionCreateSpec:
+    rule_key: str
+    domain: str
+    asset_key: str
+    scope_mode: str
+    finding_keys: tuple[str, ...]
+    reason: str
+    risk_reference: str | None
+    expires_at: datetime
+
+
+@dataclass(frozen=True, slots=True)
+class _NormalizedRuleExceptionCreateSpec:
+    rule_key: str
+    domain: str
+    asset_key: str
+    scope_mode: str
+    finding_keys: tuple[str, ...]
+    reason: str
+    risk_reference: str | None
+    expires_at: datetime
+
+
+def _normalize_create_spec(spec: RuleExceptionCreateSpec) -> _NormalizedRuleExceptionCreateSpec:
+    return _NormalizedRuleExceptionCreateSpec(
+        rule_key=str(spec.rule_key or '').strip(),
+        domain=str(spec.domain or '').strip().lower(),
+        asset_key=str(spec.asset_key or '').strip(),
+        scope_mode=str(spec.scope_mode or '').strip().lower(),
+        finding_keys=tuple(
+            sorted({str(value or '').strip() for value in spec.finding_keys if str(value or '').strip()})
+        ),
+        reason=' '.join(str(spec.reason or '').split()),
+        risk_reference=str(spec.risk_reference or '').strip() or None,
+        expires_at=_as_utc(spec.expires_at),
+    )
+
+
+def _validate_create_spec(spec: _NormalizedRuleExceptionCreateSpec, *, current: datetime) -> None:
+    if not spec.rule_key or not spec.domain or not spec.asset_key:
+        raise ValueError('Rule, domain, and asset are required for an accepted-risk exception.')
+    if spec.scope_mode not in _VALID_SCOPE_MODES:
+        raise ValueError('Exception scope must be Entire Asset or Selected Findings.')
+    if spec.scope_mode == 'finding_keys' and not spec.finding_keys:
+        raise ValueError('Select at least one active finding for a scoped accepted-risk exception.')
+    if not spec.reason:
+        raise ValueError('Accepted-risk reason is required.')
+    if spec.expires_at <= current:
+        raise ValueError('Accepted-risk expiry must be in the future.')
+    if spec.expires_at > current + timedelta(days=3650):
+        raise ValueError('Accepted-risk expiry cannot be more than 10 years in the future.')
+    if spec.risk_reference and len(spec.risk_reference) > 255:
+        raise ValueError('Risk / change reference cannot exceed 255 characters.')
+
+
+def _overlapping_exception(
+    spec: _NormalizedRuleExceptionCreateSpec,
     *,
-    rule_key: str,
-    domain: str,
-    asset_key: str,
-    scope_mode: str,
-    finding_keys: Iterable[str],
-    reason: str,
-    risk_reference: str | None,
-    expires_at: datetime,
+    current: datetime,
+) -> RuleException | None:
+    selected_keys = set(spec.finding_keys)
+    for row in active_rule_exceptions((spec.rule_key,), now=current):
+        if row.asset_key != spec.asset_key:
+            continue
+        overlaps = (
+            spec.scope_mode == 'rule_asset'
+            or row.scope_mode == 'rule_asset'
+            or bool(set(row.finding_keys_json or []) & selected_keys)
+        )
+        if overlaps:
+            return row
+    return None
+
+
+def create_rule_exception(
+    spec: RuleExceptionCreateSpec,
+    *,
     actor_user_id: int | None,
     owner_user_id: int | None = None,
     now: datetime | None = None,
 ) -> RuleException:
     current = _as_utc(now or datetime.now(UTC))
-    normalized_rule = str(rule_key or '').strip()
-    normalized_domain = str(domain or '').strip().lower()
-    normalized_asset = str(asset_key or '').strip()
-    normalized_scope = str(scope_mode or '').strip().lower()
-    normalized_reason = ' '.join(str(reason or '').split())
-    normalized_reference = str(risk_reference or '').strip() or None
-    expiry = _as_utc(expires_at)
-    keys = sorted({str(value or '').strip() for value in finding_keys if str(value or '').strip()})
-
-    if not normalized_rule or not normalized_domain or not normalized_asset:
-        raise ValueError('Rule, domain, and asset are required for an accepted-risk exception.')
-    if normalized_scope not in _VALID_SCOPE_MODES:
-        raise ValueError('Exception scope must be Entire Asset or Selected Findings.')
-    if normalized_scope == 'finding_keys' and not keys:
-        raise ValueError('Select at least one active finding for a scoped accepted-risk exception.')
-    if not normalized_reason:
-        raise ValueError('Accepted-risk reason is required.')
-    if expiry <= current:
-        raise ValueError('Accepted-risk expiry must be in the future.')
-    if expiry > current + timedelta(days=3650):
-        raise ValueError('Accepted-risk expiry cannot be more than 10 years in the future.')
-    if normalized_reference and len(normalized_reference) > 255:
-        raise ValueError('Risk / change reference cannot exceed 255 characters.')
-
-    conflicts = [
-        row
-        for row in active_rule_exceptions((normalized_rule,), now=current)
-        if row.asset_key == normalized_asset
-        and (
-            normalized_scope == 'rule_asset'
-            or row.scope_mode == 'rule_asset'
-            or bool(set(row.finding_keys_json or []) & set(keys))
-        )
-    ]
-    if conflicts:
-        conflict = conflicts[0]
+    normalized = _normalize_create_spec(spec)
+    _validate_create_spec(normalized, current=current)
+    conflict = _overlapping_exception(normalized, current=current)
+    if conflict is not None:
         reference = str(conflict.risk_reference or conflict.public_id)
         raise ValueError(
             f'Accepted risk {reference} already overlaps this rule and asset scope. '
@@ -159,17 +196,17 @@ def create_rule_exception(
         )
 
     row = RuleException()
-    row.rule_key = normalized_rule
-    row.domain = normalized_domain
-    row.asset_key = normalized_asset
-    row.scope_mode = normalized_scope
-    row.finding_keys_json = keys if normalized_scope == 'finding_keys' else []
-    row.reason = normalized_reason
-    row.risk_reference = normalized_reference
+    row.rule_key = normalized.rule_key
+    row.domain = normalized.domain
+    row.asset_key = normalized.asset_key
+    row.scope_mode = normalized.scope_mode
+    row.finding_keys_json = list(normalized.finding_keys) if normalized.scope_mode == 'finding_keys' else []
+    row.reason = normalized.reason
+    row.risk_reference = normalized.risk_reference
     row.owner_user_id = owner_user_id if owner_user_id is not None else actor_user_id
     row.created_by_user_id = actor_user_id
     row.starts_at = current
-    row.expires_at = expiry
+    row.expires_at = normalized.expires_at
     db.session.add(row)
     return row
 

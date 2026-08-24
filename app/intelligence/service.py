@@ -3,11 +3,9 @@ from __future__ import annotations
 from math import ceil
 from typing import Any
 
-from sqlalchemy import func
+from sqlalchemy.exc import SQLAlchemyError
 from werkzeug.datastructures import MultiDict
 
-from app.common.inventory_generation import filter_current_generation
-from app.extensions.db import db
 from app.intelligence.catalog import INTELLIGENCE_CATALOG
 from app.intelligence.finding_presentation import (
     build_affected_assets,
@@ -26,6 +24,18 @@ from app.intelligence.recommendation_alerting import (
     decorate_catalog_rules,
     decorate_recommendation_findings,
     matches_alert_handling,
+)
+from app.intelligence.recommendation_builders import (
+    build_latest_image_findings as _build_latest_image_findings,
+)
+from app.intelligence.recommendation_builders import (
+    build_namespace_quota_findings as _build_namespace_quota_findings,
+)
+from app.intelligence.recommendation_builders import (
+    build_storage_binding_findings as _build_storage_binding_findings,
+)
+from app.intelligence.recommendation_builders import (
+    build_workload_resource_governance_findings as _build_workload_resource_governance_findings_impl,
 )
 from app.intelligence.rule_exceptions import build_rule_exception_view
 from app.intelligence.rule_presentation import (
@@ -80,6 +90,13 @@ def _catalog_table_summary(value: str | None, limit: int = 72) -> str:
     return compact_recommendation_summary(text, limit=limit)
 
 
+def _visible_filter_keys(page_mode: str) -> tuple[str, ...]:
+    common = ('q', 'domain', 'provider', 'severity', 'category', 'source_kind', 'logic_type', 'signal_source')
+    if page_mode == 'catalog':
+        return (*common, 'status')
+    return (*common, 'alert_handling')
+
+
 def _base_payload(args: MultiDict[str, str], *, page_mode: str) -> dict[str, Any]:
     filters = {
         'domain': clean(args.get('domain')),
@@ -119,31 +136,7 @@ def _base_payload(args: MultiDict[str, str], *, page_mode: str) -> dict[str, Any
     start_item = start_index + 1 if total_items else 0
     end_item = min(end_index, total_items) if total_items else 0
     item_label = 'catalog rules' if page_mode == 'catalog' else 'recommendations'
-    visible_filter_keys = (
-        (
-            'q',
-            'domain',
-            'provider',
-            'severity',
-            'category',
-            'source_kind',
-            'logic_type',
-            'signal_source',
-            'status',
-        )
-        if page_mode == 'catalog'
-        else (
-            'q',
-            'domain',
-            'provider',
-            'severity',
-            'category',
-            'source_kind',
-            'logic_type',
-            'signal_source',
-            'alert_handling',
-        )
-    )
+    visible_filter_keys = _visible_filter_keys(page_mode)
     active_filter_count = _count_active_filters(filters, visible_filter_keys)
 
     if page_mode == 'catalog':
@@ -219,6 +212,19 @@ def _base_payload(args: MultiDict[str, str], *, page_mode: str) -> dict[str, Any
     }
 
 
+_WORKLOAD_RESOURCE_RULE_SPECS = (
+    ('kubernetes.workload.missing_cpu_requests', 'requests', 'cpu', 'CPU request'),
+    ('kubernetes.workload.missing_memory_requests', 'requests', 'memory', 'memory request'),
+    ('kubernetes.workload.missing_memory_limits', 'limits', 'memory', 'memory limit'),
+)
+
+
+def _build_workload_resource_governance_findings(
+    rules: dict[str, dict[str, Any]],
+) -> list[dict[str, Any]]:
+    return _build_workload_resource_governance_findings_impl(rules, rule_specs=_WORKLOAD_RESOURCE_RULE_SPECS)
+
+
 def _build_recommendation_findings(catalog: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """Evaluate currently available catalog rules into actionable findings.
 
@@ -288,281 +294,6 @@ def _finding_asset_key(finding: dict[str, Any]) -> str:
     )
 
 
-def _clone_rule_as_finding(
-    rule: dict[str, Any],
-    *,
-    finding_key: str,
-    title: str,
-    summary: str,
-    condition_summary: str,
-    recommended_action: str | None = None,
-    impact: str | None = None,
-    evidence: dict[str, Any] | None = None,
-) -> dict[str, Any]:
-    output = dict(rule)
-    output['rule_key'] = finding_key
-    output['title'] = title
-    output['summary'] = summary
-    output['condition_summary'] = condition_summary
-    output['recommended_action'] = recommended_action or str(rule.get('recommended_action') or '')
-    output['impact'] = impact or str(rule.get('impact') or '')
-    output['status'] = 'available'
-    output['evidence'] = evidence or {}
-    output.setdefault('affected_summary', format_affected_summary(output))
-    output.setdefault('affected_items', build_affected_items(output))
-    output.setdefault('affected_assets', build_affected_assets(output))
-    output.setdefault('evidence_details', build_evidence_details(output))
-    output.setdefault('fix_steps', build_fix_steps(output))
-    return output
-
-
-def _cluster_name_map(cluster_ids: set[str]) -> dict[str, str]:
-    if not cluster_ids:
-        return {}
-    try:
-        from app.models import Cluster
-    except Exception:
-        return {}
-    try:
-        rows = Cluster.query.filter(Cluster.id.in_(cluster_ids)).all()
-    except Exception:
-        return {}
-    return {str(row.id): str(row.name or row.id) for row in rows}
-
-
-def _build_namespace_quota_findings(rules: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
-    rule = rules.get('kubernetes.namespace.missing_quota')
-    if not rule:
-        return []
-    try:
-        from app.models import NamespaceInventory, ResourceQuotaInventory
-    except Exception:
-        return []
-    try:
-        namespaces = filter_current_generation(db.session.query(NamespaceInventory), NamespaceInventory).all()
-        quota_rows = filter_current_generation(
-            db.session.query(ResourceQuotaInventory.cluster_id, ResourceQuotaInventory.namespace),
-            ResourceQuotaInventory,
-        ).all()
-    except Exception:
-        return []
-
-    quota_namespaces = {(str(cluster_id), str(namespace)) for cluster_id, namespace in quota_rows}
-    cluster_names = _cluster_name_map({str(row.cluster_id) for row in namespaces})
-    findings: list[dict[str, Any]] = []
-    for row in namespaces:
-        cluster_id = str(row.cluster_id)
-        namespace = str(row.namespace or 'default')
-        if (cluster_id, namespace) in quota_namespaces:
-            continue
-        cluster_name = cluster_names.get(cluster_id, cluster_id)
-        findings.append(
-            _clone_rule_as_finding(
-                rule,
-                finding_key=f'kubernetes.namespace.missing_quota:{cluster_id}:{namespace}',
-                title=f'Namespace {namespace} has no ResourceQuota',
-                summary=(
-                    f'Namespace {namespace} in {cluster_name} has no ResourceQuota in the latest committed '
-                    'Kubernetes inventory.'
-                ),
-                condition_summary=(
-                    'No ResourceQuota object is present for this namespace in the current inventory generation.'
-                ),
-                evidence={
-                    'cluster_id': cluster_id,
-                    'cluster_name': cluster_name,
-                    'namespace': namespace,
-                    'affected_count': 1,
-                    'quota_count': 0,
-                },
-            )
-        )
-    return findings
-
-
-def _build_workload_resource_governance_findings(
-    rules: dict[str, dict[str, Any]],
-) -> list[dict[str, Any]]:
-    rule_specs = (
-        ('kubernetes.workload.missing_cpu_requests', 'requests', 'cpu', 'CPU request'),
-        ('kubernetes.workload.missing_memory_requests', 'requests', 'memory', 'memory request'),
-        ('kubernetes.workload.missing_memory_limits', 'limits', 'memory', 'memory limit'),
-    )
-    enabled = [spec for spec in rule_specs if rules.get(spec[0])]
-    if not enabled:
-        return []
-    try:
-        from app.models import WorkloadInventory
-    except Exception:
-        return []
-    try:
-        workloads = filter_current_generation(db.session.query(WorkloadInventory), WorkloadInventory).all()
-    except Exception:
-        return []
-
-    cluster_names = _cluster_name_map({str(row.cluster_id) for row in workloads})
-    findings: list[dict[str, Any]] = []
-    for row in workloads:
-        details = row.details if isinstance(row.details, dict) else {}
-        pod_template = details.get('pod_template') if isinstance(details, dict) else None
-        if not isinstance(pod_template, dict) or not bool(pod_template.get('reported')):
-            continue
-        containers = [item for item in list(pod_template.get('containers') or []) if isinstance(item, dict)]
-        if not containers or any(not isinstance(item.get('resources'), dict) for item in containers):
-            # Older inventory generations do not carry resource declarations. Skip rather than infer missing values.
-            continue
-
-        cluster_id = str(row.cluster_id)
-        cluster_name = cluster_names.get(cluster_id, cluster_id)
-        namespace = str(row.namespace or 'default')
-        workload_name = str(row.name or 'workload')
-        workload_type = str(row.workload_type or 'Workload')
-        for rule_key, resource_group, resource_name, display_name in enabled:
-            source_rule = rules.get(rule_key)
-            if source_rule is None:
-                continue
-            missing = []
-            for container in containers:
-                resources = container.get('resources') if isinstance(container.get('resources'), dict) else {}
-                values = resources.get(resource_group) if isinstance(resources, dict) else {}
-                values = values if isinstance(values, dict) else {}
-                if str(values.get(resource_name) or '').strip():
-                    continue
-                missing.append(str(container.get('name') or 'container'))
-            if not missing:
-                continue
-            count = len(missing)
-            preview = ', '.join(missing[:3])
-            if count > 3:
-                preview = f'{preview}, +{count - 3} more'
-            findings.append(
-                _clone_rule_as_finding(
-                    source_rule,
-                    finding_key=(f'{rule_key}:{cluster_id}:{namespace}:{workload_type.lower()}:{workload_name}'),
-                    title=f'{workload_type} {workload_name} is missing {display_name}',
-                    summary=(
-                        f'{workload_type} {workload_name} in namespace {namespace} has {count} container'
-                        f'{"s" if count != 1 else ""} without {display_name}. Affected: {preview}.'
-                    ),
-                    condition_summary=(
-                        f'One or more workload containers do not define resources.{resource_group}.{resource_name} '
-                        'in the latest committed workload inventory.'
-                    ),
-                    evidence={
-                        'cluster_id': cluster_id,
-                        'cluster_name': cluster_name,
-                        'namespace': namespace,
-                        'workload_name': workload_name,
-                        'workload_type': workload_type,
-                        'affected_count': count,
-                        'missing_containers': missing[:10],
-                        'resource_field': f'resources.{resource_group}.{resource_name}',
-                    },
-                )
-            )
-    return findings
-
-
-def _build_latest_image_findings(rules: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
-    rule = rules.get('kubernetes.workload.latest_image_tag')
-    if not rule:
-        return []
-
-    try:
-        from app.models.inventory import PodInventory
-    except Exception:
-        return []
-
-    findings: list[dict[str, Any]] = []
-    try:
-        rows = filter_current_generation(db.session.query(PodInventory), PodInventory).all()
-    except Exception:
-        return []
-
-    affected: dict[tuple[str, str], set[str]] = {}
-    examples: dict[tuple[str, str], list[str]] = {}
-    for row in rows:
-        images = list(getattr(row, 'container_images', None) or []) + list(
-            getattr(row, 'init_container_images', None) or []
-        )
-        mutable_images = [image for image in images if _is_mutable_image_reference(str(image))]
-        if not mutable_images:
-            continue
-        key = (str(getattr(row, 'cluster_id', '')), str(getattr(row, 'namespace', 'default') or 'default'))
-        affected.setdefault(key, set()).add(str(getattr(row, 'pod_name', 'pod')))
-        examples.setdefault(key, [])
-        for image in mutable_images:
-            if image not in examples[key] and len(examples[key]) < 3:
-                examples[key].append(image)
-
-    for (cluster_id, namespace), pods in affected.items():
-        count = len(pods)
-        example_text = ', '.join(examples.get((cluster_id, namespace), [])) or 'mutable image reference'
-        findings.append(
-            _clone_rule_as_finding(
-                rule,
-                finding_key=f'{rule["rule_key"]}:{cluster_id}:{namespace}',
-                title=f'{count} pod{"s" if count != 1 else ""} use mutable image references in {namespace}',
-                summary=(
-                    f'{count} pod{"s" if count != 1 else ""} in namespace {namespace} use :latest or unpinned image references. '
-                    f'Examples: {example_text}.'
-                ),
-                condition_summary='A collected pod image ends with :latest or has no immutable tag/digest.',
-                recommended_action='Pin affected images to immutable tags or digests, then sync inventory again to verify traceability.',
-                evidence={'cluster_id': cluster_id, 'namespace': namespace, 'affected_pods': count},
-            )
-        )
-
-    return findings
-
-
-def _build_storage_binding_findings(rules: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
-    rule = rules.get('kubernetes.storage.binding_state')
-    if not rule:
-        return []
-
-    try:
-        from app.models.inventory import StorageInventory
-    except Exception:
-        return []
-
-    try:
-        query = db.session.query(
-            StorageInventory.cluster_id,
-            StorageInventory.namespace,
-            StorageInventory.status,
-            func.count(StorageInventory.id),
-        ).filter(StorageInventory.status.notin_(['Bound', 'Available']))
-        rows = (
-            filter_current_generation(query, StorageInventory)
-            .group_by(StorageInventory.cluster_id, StorageInventory.namespace, StorageInventory.status)
-            .all()
-        )
-    except Exception:
-        return []
-
-    findings: list[dict[str, Any]] = []
-    for cluster_id, namespace, status, count in rows:
-        namespace_label = str(namespace or 'cluster scope')
-        status_label = str(status or 'Unknown')
-        findings.append(
-            _clone_rule_as_finding(
-                rule,
-                finding_key=f'kubernetes.storage.binding_state:{cluster_id}:{namespace}:{status}',
-                title=f'{count} storage object{"s" if int(count) != 1 else ""} need review in {namespace_label}',
-                summary=f'Storage inventory shows {count} object{"s" if int(count) != 1 else ""} with status {status_label}.',
-                condition_summary='Collected storage object status is not Bound or Available.',
-                evidence={
-                    'cluster_id': str(cluster_id),
-                    'namespace': namespace_label,
-                    'affected_count': int(count),
-                    'status': status_label,
-                },
-            )
-        )
-    return findings
-
-
 def _build_tls_certificate_findings(rules: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
     expired_rule = rules.get('kubernetes.tls_secret.expired')
     expiring_rule = rules.get('kubernetes.tls_secret.expiring_soon')
@@ -572,7 +303,7 @@ def _build_tls_certificate_findings(rules: dict[str, dict[str, Any]]) -> list[di
 
     try:
         from app.models import TLSCertificateInventory
-    except Exception:
+    except ImportError:
         return []
 
     try:
@@ -588,7 +319,7 @@ def _build_tls_certificate_findings(rules: dict[str, dict[str, Any]]) -> list[di
             )
             .all()
         )
-    except Exception:
+    except SQLAlchemyError:
         return []
 
     cluster_names = _cluster_name_map({str(row.cluster_id) for row in rows})
@@ -681,13 +412,6 @@ def _build_tls_certificate_findings(rules: dict[str, dict[str, Any]]) -> list[di
         )
 
     return findings
-
-
-def _is_mutable_image_reference(image: str) -> bool:
-    if not image or '@sha256:' in image:
-        return False
-    image_without_registry_port = image.rsplit('/', 1)[-1]
-    return ':' not in image_without_registry_port or image.endswith(':latest')
 
 
 def _severity_rank(value: str) -> int:

@@ -32,7 +32,6 @@ _RESOURCE_UNITS = {
     'pods': 'pods',
     'storage': 'GiB',
 }
-
 _RESOURCE_LABELS = {
     'cpu': 'CPU',
     'memory': 'Memory',

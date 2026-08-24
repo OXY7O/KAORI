@@ -4,18 +4,13 @@ from typing import Any
 
 from flask import Blueprint, make_response, redirect, render_template, request, url_for
 from flask.typing import ResponseReturnValue
-from flask_login import current_user
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.access.rbac.decorators import permission_required
 from app.intelligence.alert_intelligence.application import (
     apply_case_mutation,
     delete_routing_policy_command,
-    reset_template_override_command,
     save_routing_policy_command,
-    save_template_override_command,
-    send_template_test_command,
-    test_render_template_command,
 )
 from app.intelligence.alert_intelligence.case_state import (
     close_false_positive_alert,
@@ -33,9 +28,40 @@ from app.intelligence.alert_intelligence.lifecycle import (
     revoke_delivery_silence,
     save_postmortem,
 )
+from app.intelligence.alert_intelligence.route_utils import (
+    active_records_htmx_request as _active_records_htmx_request,
+)
+from app.intelligence.alert_intelligence.route_utils import (
+    active_records_response as _active_records_response,
+)
+from app.intelligence.alert_intelligence.route_utils import (
+    actor_user_id as _actor_user_id,
+)
+from app.intelligence.alert_intelligence.route_utils import (
+    case_details_response as _case_details_response,
+)
+from app.intelligence.alert_intelligence.route_utils import (
+    index_response as _index_response,
+)
+from app.intelligence.alert_intelligence.route_utils import (
+    optional_positive_int as _optional_positive_int,
+)
+from app.intelligence.alert_intelligence.route_utils import (
+    parse_matchers as _parse_matchers,
+)
+from app.intelligence.alert_intelligence.route_utils import (
+    redirect_to_workspace as _redirect,
+)
 from app.intelligence.alert_intelligence.routing import RoutingPolicyConfig
 from app.intelligence.alert_intelligence.service import get_alert_intelligence_payload
+from app.intelligence.alert_intelligence.template_route_support import (
+    handle_reset_template,
+    handle_save_template,
+    handle_send_template_test,
+    handle_test_render_template,
+)
 from app.intelligence.recommendation_alert_commands import (
+    CreateRuleExceptionCommand,
     create_rule_exception_command,
     promote_recommendation_command,
     revoke_rule_exception_command,
@@ -53,35 +79,13 @@ alert_intelligence_bp = Blueprint(
 @alert_intelligence_bp.get('')
 @permission_required('intelligence.view')
 def index() -> ResponseReturnValue:
-    payload = get_alert_intelligence_payload(request.args)
-    if request.headers.get('HX-Request') == 'true':
-        target = str(request.headers.get('HX-Target') or '').strip()
-        if target == 'alert-operations-active-records':
-            return render_template('intelligence/partials/_alert_ops_active_table.html', payload=payload)
-        return render_template('intelligence/partials/_alert_intelligence_page.html', payload=payload)
-    return render_template('intelligence/alert_intelligence.html', payload=payload)
+    return _index_response()
 
 
 @alert_intelligence_bp.get('/cases/<string:public_id>/details')
 @permission_required('intelligence.view')
 def case_details(public_id: str) -> ResponseReturnValue:
-    args = request.args.copy()
-    args['case'] = public_id
-    if not args.get('tab'):
-        args['tab'] = 'active'
-    payload = get_alert_intelligence_payload(args)
-    if payload.get('selected_case') is None:
-        return ('Alert case not found.', 404)
-    template = (
-        'intelligence/partials/_alert_ops_resolved_case_modal.html'
-        if payload.get('tab') == 'resolved'
-        else 'intelligence/partials/_alert_ops_case_workspace.html'
-    )
-    return render_template(
-        template,
-        payload=payload,
-        modal_refresh=False,
-    )
+    return _case_details_response(public_id)
 
 
 @alert_intelligence_bp.get('/records')
@@ -398,15 +402,17 @@ def create_rule_exception_for_rule(rule_key: str) -> ResponseReturnValue:
     try:
         owner_user_id = _optional_positive_int(request.form.get('owner_user_id'))
         row, stats = create_rule_exception_command(
-            rule_key=rule_key,
-            asset_key=str(request.form.get('asset_key') or ''),
-            scope_mode=str(request.form.get('scope_mode') or 'finding_keys'),
-            finding_keys=[str(value) for value in request.form.getlist('finding_keys')],
-            reason=str(request.form.get('reason') or ''),
-            risk_reference=str(request.form.get('risk_reference') or '') or None,
-            expires_in_days=int(str(request.form.get('expires_in_days') or '90')),
-            actor_user_id=actor_user_id,
-            owner_user_id=owner_user_id,
+            CreateRuleExceptionCommand(
+                rule_key=rule_key,
+                asset_key=str(request.form.get('asset_key') or ''),
+                scope_mode=str(request.form.get('scope_mode') or 'finding_keys'),
+                finding_keys=tuple(str(value) for value in request.form.getlist('finding_keys')),
+                reason=str(request.form.get('reason') or ''),
+                risk_reference=str(request.form.get('risk_reference') or '') or None,
+                expires_in_days=int(str(request.form.get('expires_in_days') or '90')),
+                actor_user_id=actor_user_id,
+                owner_user_id=owner_user_id,
+            )
         )
     except (ValueError, SQLAlchemyError) as exc:
         _queue_intelligence_activity(
@@ -603,129 +609,32 @@ def save_routing_policy() -> ResponseReturnValue:
 @alert_intelligence_bp.post('/templates')
 @permission_required('integrations.manage')
 def save_template() -> ResponseReturnValue:
-    try:
-        save_template_override_command(
-            provider_key=str(request.form.get('provider_key') or ''),
-            event_state=str(request.form.get('event_state') or ''),
-            name=str(request.form.get('name') or ''),
-            subject_template=str(request.form.get('subject_template') or '') or None,
-            body_template=str(request.form.get('body_template') or ''),
-            content_format=str(request.form.get('content_format') or 'plain_text'),
-            actor_user_id=_actor_user_id(),
-        )
-    except (ValueError, SQLAlchemyError) as exc:
-        _queue_intelligence_activity(
-            event_type='alert_notification_template_save_failed',
-            status='error',
-            title='Template not saved',
-            message=str(exc),
-            delivery_policy='deck_on_failure',
-        )
-    else:
-        _queue_intelligence_activity(
-            event_type='alert_notification_template_saved',
-            status='success',
-            title='Notification template saved',
-            message='Future Alert Operations delivery will use the updated provider template.',
-        )
+    handle_save_template(queue_activity=_queue_intelligence_activity, actor_user_id=_actor_user_id())
     return _redirect(tab='templates')
 
 
 @alert_intelligence_bp.post('/templates/test-render')
 @permission_required('integrations.manage')
 def test_render_template() -> ResponseReturnValue:
-    try:
-        subject, body = test_render_template_command(
-            provider_key=str(request.form.get('provider_key') or ''),
-            event_state=str(request.form.get('event_state') or ''),
-            subject_template=str(request.form.get('subject_template') or '') or None,
-            body_template=str(request.form.get('body_template') or ''),
-            content_format=str(request.form.get('content_format') or 'plain_text'),
-        )
-    except ValueError as exc:
-        _queue_intelligence_activity(
-            event_type='alert_notification_template_render_failed',
-            status='error',
-            title='Template render failed',
-            message=str(exc),
-            delivery_policy='deck_on_failure',
-        )
-    else:
-        _queue_intelligence_activity(
-            event_type='alert_notification_template_rendered',
-            status='success',
-            title='Template render passed',
-            message=f'Canonical sample rendered successfully: {subject[:120]} · {len(body)} body characters.',
-        )
+    handle_test_render_template(queue_activity=_queue_intelligence_activity)
     return _redirect(tab='templates')
 
 
 @alert_intelligence_bp.post('/templates/send-test')
 @permission_required('integrations.manage')
 def send_template_test() -> ResponseReturnValue:
-    try:
-        channel_id = _optional_positive_int(request.form.get('test_channel_id'))
-        if channel_id is None:
-            raise ValueError('Select a validated Notification Channel before Send Test.')
-        message = send_template_test_command(
-            channel_id=channel_id,
-            provider_key=str(request.form.get('provider_key') or ''),
-            event_state=str(request.form.get('event_state') or ''),
-            subject_template=str(request.form.get('subject_template') or '') or None,
-            body_template=str(request.form.get('body_template') or ''),
-            content_format=str(request.form.get('content_format') or 'plain_text'),
-            actor_user_id=_actor_user_id(),
-        )
-    except (ValueError, SQLAlchemyError) as exc:
-        _queue_intelligence_activity(
-            event_type='alert_notification_template_test_failed',
-            status='error',
-            title='Template test not sent',
-            message=str(exc),
-            delivery_policy='deck_on_failure',
-        )
-    else:
-        _queue_intelligence_activity(
-            event_type='alert_notification_template_test_delivered',
-            status='success',
-            title='Template test delivered',
-            message=message or 'The rendered template was delivered through the selected Notification Channel.',
-        )
+    handle_send_template_test(
+        queue_activity=_queue_intelligence_activity,
+        actor_user_id=_actor_user_id(),
+        channel_id=_optional_positive_int(request.form.get('test_channel_id')),
+    )
     return _redirect(tab='templates')
 
 
 @alert_intelligence_bp.post('/templates/reset')
 @permission_required('integrations.manage')
 def reset_template() -> ResponseReturnValue:
-    provider_key = str(request.form.get('provider_key') or '')
-    event_state = str(request.form.get('event_state') or '')
-    try:
-        changed = reset_template_override_command(
-            provider_key=provider_key,
-            event_state=event_state,
-            actor_user_id=_actor_user_id(),
-        )
-    except (ValueError, SQLAlchemyError) as exc:
-        _queue_intelligence_activity(
-            event_type='alert_notification_template_reset_failed',
-            status='error',
-            title='Template not reset',
-            message=str(exc),
-            delivery_policy='deck_on_failure',
-            metadata={'provider_key': provider_key, 'event_state': event_state},
-        )
-    else:
-        _queue_intelligence_activity(
-            event_type='alert_notification_template_reset',
-            status='success',
-            title='System template restored',
-            message=(
-                'The custom override was removed and future delivery will use the KAORI system template.'
-                if changed
-                else 'This provider event already uses the KAORI system template.'
-            ),
-            metadata={'provider_key': provider_key, 'event_state': event_state},
-        )
+    handle_reset_template(queue_activity=_queue_intelligence_activity, actor_user_id=_actor_user_id())
     return _redirect(tab='templates')
 
 
@@ -825,35 +734,6 @@ def _modal_case_response(*, case_id: str, tab: str | None = None) -> ResponseRet
     return response
 
 
-def _active_records_htmx_request() -> bool:
-    return (
-        request.headers.get('HX-Request') == 'true'
-        and str(request.headers.get('HX-Target') or '').strip() == 'alert-operations-active-records'
-    )
-
-
-def _active_records_response(*, case_id: str | None = None) -> ResponseReturnValue:
-    args = request.form.copy()
-    args['tab'] = 'active'
-    if case_id:
-        args['case'] = case_id
-    else:
-        args.pop('case', None)
-    payload = get_alert_intelligence_payload(args)
-    return render_template('intelligence/partials/_alert_ops_active_table.html', payload=payload)
-
-
-def _redirect(*, tab: str, case_id: str | None = None) -> ResponseReturnValue:
-    values: dict[str, Any] = {
-        'tab': tab,
-        'domain': str(request.form.get('domain') or request.args.get('domain') or 'kubernetes'),
-        'asset': str(request.form.get('asset') or request.args.get('asset') or 'all'),
-    }
-    if case_id:
-        values['case'] = case_id
-    return redirect(url_for('alert_intelligence.index', **values))
-
-
 def _queue_intelligence_activity(
     *,
     event_type: str,
@@ -906,38 +786,3 @@ def _notify_alert_case_assignment(case, owner_user_id: int | None) -> None:
         queue_feedback=False,
         delivery_policy='persistent',
     )
-
-
-def _actor_user_id() -> int | None:
-    value = getattr(current_user, 'id', None)
-    try:
-        return int(value) if value is not None else None
-    except (TypeError, ValueError):
-        return None
-
-
-def _optional_positive_int(value: Any) -> int | None:
-    if value in (None, ''):
-        return None
-    try:
-        parsed = int(str(value))
-    except ValueError as exc:
-        raise ValueError('Selected user or record identifier is invalid.') from exc
-    if parsed < 1:
-        raise ValueError('Selected user or record identifier is invalid.')
-    return parsed
-
-
-def _parse_matchers(value: str) -> dict[str, str]:
-    result: dict[str, str] = {}
-    for line in value.splitlines():
-        normalized = line.strip()
-        if not normalized:
-            continue
-        if '=' not in normalized:
-            raise ValueError('Routing matchers must use one key=value pair per line.')
-        key, expected = normalized.split('=', 1)
-        if not key.strip() or not expected.strip():
-            raise ValueError('Routing matchers must use one key=value pair per line.')
-        result[key.strip()] = expected.strip().strip('"')
-    return result

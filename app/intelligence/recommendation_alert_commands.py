@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 
 from sqlalchemy.exc import SQLAlchemyError
@@ -16,6 +17,7 @@ from app.intelligence.recommendation_alerting import (
     upsert_recommendation_alert_policy,
 )
 from app.intelligence.rule_exceptions import (
+    RuleExceptionCreateSpec,
     create_rule_exception,
     finding_asset_key,
     revoke_rule_exception,
@@ -92,87 +94,105 @@ def save_recommendation_alert_policy_command(
     return row
 
 
-def create_rule_exception_command(
-    *,
-    rule_key: str,
-    asset_key: str,
-    scope_mode: str,
-    finding_keys: list[str],
-    reason: str,
-    risk_reference: str | None,
-    expires_in_days: int,
-    actor_user_id: int | None,
-    owner_user_id: int | None = None,
-) -> tuple[RuleException, dict[str, int]]:
-    rule = catalog_rule(rule_key)
-    if rule is None:
-        raise ValueError('The selected Intelligence rule does not exist.')
-    if str(rule.get('status') or '') != 'available':
-        raise ValueError('Accepted risk can only be recorded for an available KAORI rule.')
-    exception_policy = risk_exception_policy(rule_key)
-    if not bool(exception_policy.get('enabled')):
-        raise ValueError('Accepted risk is not enabled for this Rule Catalog definition.')
+@dataclass(frozen=True, slots=True)
+class CreateRuleExceptionCommand:
+    rule_key: str
+    asset_key: str
+    scope_mode: str
+    finding_keys: tuple[str, ...]
+    reason: str
+    risk_reference: str | None
+    expires_in_days: int
+    actor_user_id: int | None
+    owner_user_id: int | None = None
 
-    normalized_asset = str(asset_key or '').strip()
+
+def _covered_rule_findings(
+    command: CreateRuleExceptionCommand,
+    *,
+    allowed_scopes: set[str],
+) -> tuple[str, str, set[str], list[dict[str, object]]]:
+    normalized_asset = str(command.asset_key or '').strip()
     if not normalized_asset:
         raise ValueError('Select the asset covered by this accepted-risk exception.')
-    all_findings = get_active_recommendation_findings()
     rule_findings = [
         finding
-        for finding in all_findings
-        if base_rule_key(str(finding.get('rule_key') or '')) == rule_key
+        for finding in get_active_recommendation_findings()
+        if base_rule_key(str(finding.get('rule_key') or '')) == command.rule_key
         and finding_asset_key(finding) == normalized_asset
     ]
     if not rule_findings:
         raise ValueError('No active findings for this rule are currently attached to the selected asset.')
 
-    normalized_scope = str(scope_mode or '').strip().lower()
+    normalized_scope = str(command.scope_mode or '').strip().lower()
+    if normalized_scope not in allowed_scopes:
+        raise ValueError('The selected accepted-risk scope is not allowed by this Rule Catalog definition.')
+    selected_keys = {str(value or '').strip() for value in command.finding_keys if str(value or '').strip()}
+    if normalized_scope == 'rule_asset':
+        return normalized_asset, normalized_scope, set(), list(rule_findings)
+    if normalized_scope != 'finding_keys':
+        raise ValueError('Exception scope must be Entire Asset or Selected Findings.')
+    if not selected_keys:
+        raise ValueError('Select at least one active finding for the exception.')
+    active_keys = {str(finding.get('rule_key') or '') for finding in rule_findings}
+    if selected_keys - active_keys:
+        raise ValueError('One or more selected findings no longer belong to the selected active asset scope.')
+    covered = [finding for finding in rule_findings if str(finding.get('rule_key') or '') in selected_keys]
+    return normalized_asset, normalized_scope, selected_keys, covered
+
+
+def _resolve_owner_user_id(command: CreateRuleExceptionCommand) -> int | None:
+    owner_user_id = command.owner_user_id if command.owner_user_id is not None else command.actor_user_id
+    if owner_user_id is None:
+        return None
+    owner = User.query.filter_by(id=owner_user_id).first()
+    if owner is None or not owner.is_active:
+        raise ValueError('Select an active user as the accepted-risk owner.')
+    return owner_user_id
+
+
+def create_rule_exception_command(
+    command: CreateRuleExceptionCommand,
+) -> tuple[RuleException, dict[str, int]]:
+    rule = catalog_rule(command.rule_key)
+    if rule is None:
+        raise ValueError('The selected Intelligence rule does not exist.')
+    if str(rule.get('status') or '') != 'available':
+        raise ValueError('Accepted risk can only be recorded for an available KAORI rule.')
+    exception_policy = risk_exception_policy(command.rule_key)
+    if not bool(exception_policy.get('enabled')):
+        raise ValueError('Accepted risk is not enabled for this Rule Catalog definition.')
+
     raw_allowed_scopes = exception_policy.get('allowed_scope_modes')
     allowed_scope_values = raw_allowed_scopes if isinstance(raw_allowed_scopes, list) else []
     allowed_scopes = {str(value) for value in allowed_scope_values}
-    if normalized_scope not in allowed_scopes:
-        raise ValueError('The selected accepted-risk scope is not allowed by this Rule Catalog definition.')
-    selected_keys = {str(value or '').strip() for value in finding_keys if str(value or '').strip()}
-    active_keys = {str(finding.get('rule_key') or '') for finding in rule_findings}
-    if normalized_scope == 'finding_keys':
-        if not selected_keys:
-            raise ValueError('Select at least one active finding for the exception.')
-        unknown = selected_keys - active_keys
-        if unknown:
-            raise ValueError('One or more selected findings no longer belong to the selected active asset scope.')
-        covered_findings = [finding for finding in rule_findings if str(finding.get('rule_key') or '') in selected_keys]
-    elif normalized_scope == 'rule_asset':
-        covered_findings = list(rule_findings)
-        selected_keys = set()
-    else:
-        raise ValueError('Exception scope must be Entire Asset or Selected Findings.')
-
-    resolved_owner_user_id = owner_user_id if owner_user_id is not None else actor_user_id
-    if resolved_owner_user_id is not None:
-        owner = User.query.filter_by(id=resolved_owner_user_id).first()
-        if owner is None or not owner.is_active:
-            raise ValueError('Select an active user as the accepted-risk owner.')
-
-    days = max(1, min(int(expires_in_days or 0), 3650))
+    normalized_asset, normalized_scope, selected_keys, covered_findings = _covered_rule_findings(
+        command,
+        allowed_scopes=allowed_scopes,
+    )
+    owner_user_id = _resolve_owner_user_id(command)
+    days = max(1, min(int(command.expires_in_days or 0), 3650))
     now = datetime.now(UTC)
     try:
         row = create_rule_exception(
-            rule_key=rule_key,
-            domain=str(rule.get('domain') or ''),
-            asset_key=normalized_asset,
-            scope_mode=normalized_scope,
-            finding_keys=selected_keys,
-            reason=reason,
-            risk_reference=risk_reference,
-            expires_at=now + timedelta(days=days),
-            actor_user_id=actor_user_id,
-            owner_user_id=resolved_owner_user_id,
+            RuleExceptionCreateSpec(
+                rule_key=command.rule_key,
+                domain=str(rule.get('domain') or ''),
+                asset_key=normalized_asset,
+                scope_mode=normalized_scope,
+                finding_keys=tuple(sorted(selected_keys)),
+                reason=command.reason,
+                risk_reference=command.risk_reference,
+                expires_at=now + timedelta(days=days),
+            ),
+            actor_user_id=command.actor_user_id,
+            owner_user_id=owner_user_id,
             now=now,
         )
         db.session.flush()
         stats = apply_rule_exception_to_active_findings(row, covered_findings, now=now)
         audit = AuditEvent()
-        audit.actor_user_id = actor_user_id
+        audit.actor_user_id = command.actor_user_id
         audit.target_type = 'rule_exception'
         audit.target_id = row.public_id
         audit.action = 'rule_exception_created'
