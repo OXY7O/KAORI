@@ -2,7 +2,7 @@
 {% set current_user_role = current_user.role_name|default('Viewer', true)|replace('_', ' ')|title %}
 <header class="sticky top-0 z-30 kaori-app-shell border-b border-outline-subtle bg-surface-shell backdrop-blur-xl transition-colors duration-300"
         x-data="kaoriNavbar"
-        @kaori:notifications-changed.window="if (['activity', 'inbox', 'notifications'].includes($event.detail?.tab)) { notificationDeckTab = $event.detail.tab } queueNotificationDeckRefresh()"
+        @kaori:notifications-changed.window="if ($event.detail?.tab === 'activity' || $event.detail?.tab === 'notifications') { notificationDeckTab = $event.detail.tab } queueNotificationDeckRefresh()"
         @keydown.escape.window="closeMenus()">
     <div class="flex h-16 items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
         <!-- Left: sidebar control and current page context -->
@@ -147,14 +147,14 @@
                             </span>
                             <i data-lucide="chevron-right" class="h-4 w-4 text-content-disabled"></i>
                         </a>
-                        <a href="{{ url_for('analytics.alerts') }}"
+                        <a href="{{ url_for('alert_intelligence.index') }}"
                            class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-xs text-content-secondary transition hover:bg-surface-hover">
                             <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-status-warning-soft text-status-warning-text">
                                 <i data-lucide="bell-ring" class="h-4 w-4"></i>
                             </span>
                             <span class="min-w-0 flex-1">
                                 <span class="block font-semibold text-content-primary">Alert Center</span>
-                                <span class="mt-0.5 block text-xs text-content-muted">Review active alert and anomaly signals.</span>
+                                <span class="mt-0.5 block text-xs text-content-muted">Review active alert operations in Alert Intelligence.</span>
                             </span>
                             <i data-lucide="chevron-right" class="h-4 w-4 text-content-disabled"></i>
                         </a>
