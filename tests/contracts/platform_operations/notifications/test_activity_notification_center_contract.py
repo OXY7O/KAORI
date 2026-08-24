@@ -223,6 +223,20 @@ def test_notification_mutations_target_only_stable_notification_content() -> Non
     assert 'return _render_notifications_panel()' in routes
 
 
+
+def test_notification_item_accepts_explicit_panel_view_for_snapshot_fragments() -> None:
+    component = read('app/templates/platform_operations/notifications/components/_activity_center_items.html')
+    inbox = read('app/templates/platform_operations/notifications/partials/_notification_deck_inbox.html')
+    notifications = read(
+        'app/templates/platform_operations/notifications/partials/_notification_deck_notifications.html'
+    )
+
+    assert 'per_page=none, view=none' in component
+    assert "mutation_view = view or request.args.get('view', 'notifications')" in component
+    assert 'view=mutation_view' in component
+    assert "view='inbox'" in inbox
+    assert "view='notifications'" in notifications
+
 def test_oob_badges_remain_available_for_notification_mutations() -> None:
     oob = read('app/templates/platform_operations/notifications/partials/_notification_deck_oob.html')
 
