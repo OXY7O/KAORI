@@ -127,7 +127,9 @@ def create_rule_exception_command(
         raise ValueError('No active findings for this rule are currently attached to the selected asset.')
 
     normalized_scope = str(scope_mode or '').strip().lower()
-    allowed_scopes = {str(value) for value in exception_policy.get('allowed_scope_modes', [])}
+    raw_allowed_scopes = exception_policy.get('allowed_scope_modes')
+    allowed_scope_values = raw_allowed_scopes if isinstance(raw_allowed_scopes, list) else []
+    allowed_scopes = {str(value) for value in allowed_scope_values}
     if normalized_scope not in allowed_scopes:
         raise ValueError('The selected accepted-risk scope is not allowed by this Rule Catalog definition.')
     selected_keys = {str(value or '').strip() for value in finding_keys if str(value or '').strip()}

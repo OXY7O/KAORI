@@ -710,7 +710,8 @@ def get_catalog_rule(rule_key: str) -> dict[str, Any] | None:
         rule = normalize_rule(dict(raw_rule))
         if clean(str(rule.get('rule_key'))) == resolved_key:
             decorate_catalog_rules([rule])
-            exception_policy = rule.get('risk_exception') if isinstance(rule.get('risk_exception'), dict) else {}
+            raw_exception_policy = rule.get('risk_exception')
+            exception_policy = raw_exception_policy if isinstance(raw_exception_policy, dict) else {}
             if bool(exception_policy.get('enabled')):
                 exception_view = build_rule_exception_view(
                     resolved_key,
