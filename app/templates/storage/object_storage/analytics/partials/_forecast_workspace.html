@@ -1,5 +1,5 @@
 {% import "components/content_tabs.html" as content_tabs %}
-{% set forecast_tabs = [('outlook', 'Forecast Outlook', 'chart-spline'), ('trend', 'Usage Trend', 'chart-no-axes-combined'), ('buckets', 'Bucket Forecasts', 'container'), ('worker', 'Worker & Method', 'cpu'), ('evidence', 'Evidence', 'list-checks')] %}
+{% set forecast_tabs = [('outlook', 'Forecast Outlook', 'chart-spline'), ('trend', 'Usage Trend', 'chart-no-axes-combined'), ('buckets', 'Bucket Forecasts', 'container'), ('worker', 'Worker & Method', 'cpu'), ('recommendations', 'Recommendations', 'list-checks'), ('evidence', 'Evidence', 'list-checks')] %}
 <section id="object-storage-forecast-workspace"
          data-analytics-tabset
          data-analytics-tabset-id="object-storage-forecast-content"
@@ -65,6 +65,14 @@
              class="space-y-4">
             {% include "storage/object_storage/analytics/partials/_forecast_worker_status.html" %}
             {% include "storage/object_storage/analytics/partials/_forecast_methodology.html" %}
+        </div>
+        <div id="object-storage-forecast-content-panel-recommendations"
+             role="tabpanel"
+             aria-labelledby="object-storage-forecast-content-tab-recommendations"
+             data-analytics-tab-panel="recommendations"
+             hidden
+             class="space-y-4">
+            {% include "storage/object_storage/analytics/partials/_recommendations_workspace.html" %}
         </div>
         <div id="object-storage-forecast-content-panel-evidence"
              role="tabpanel"

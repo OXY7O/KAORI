@@ -11,15 +11,13 @@
                 <p class="mt-1 text-sm leading-6 text-content-muted">
                     {% if page_key == 'alerts' %}
                         Select the managed system and committed alert view. Automatic prefers worker-collected Alertmanager evidence and falls back to metrics-backed alert evidence from the same analytics snapshot.
-                    {% elif page_key == 'recommendations' %}
-                        Select the managed system. Recommendations are read-only central Intelligence findings from committed Object Storage evidence.
                     {% else %}
                         Select the managed system and analysis window. Pages read worker-materialized analytics snapshots; operational Metrics Source and alert-provider queries run only on the background analytics worker.
                     {% endif %}
                 </p>
             </div>
         </div>
-        {{ loading_bar.render('object-storage-analytics-refresh-indicator', label='Loading Committed Alert Snapshot' if page_key == 'alerts' else ('Loading Recommendations' if page_key == 'recommendations' else 'Loading Committed Analytics Snapshot') ) }}
+        {{ loading_bar.render('object-storage-analytics-refresh-indicator', label='Loading Committed Alert Snapshot' if page_key == 'alerts' else 'Loading Committed Analytics Snapshot') }}
     </header>
     <div class="space-y-5 p-5 sm:p-6">
         <form id="object-storage-analytics-controls"
@@ -60,7 +58,6 @@
                                 {% if selected_alert_source == 'metrics_source' %}selected{% endif %}>Metrics Source</option>
                     </select>
                 </label>
-            {% elif page_key == 'recommendations' %}
             {% elif page_key == 'forecast' %}
                 <label class="block" for="object-storage-history-window-filter">
                     <span class="{{ table_ui.filter_label_classes() }}">History Window</span>
@@ -87,46 +84,7 @@
                 </label>
             {% endif %}
         </form>
-        {% if page_key == 'recommendations' %}
-            <div class="grid gap-4 md:grid-cols-3">
-                <article class="{{ analysis_surface.readiness_shell_classes() }} p-4">
-                    <div class="flex items-start justify-between gap-3">
-                        <div class="flex min-w-0 items-start gap-3">
-                            <span class="{{ analysis_surface.semantic_icon_classes('normal' if inventory_observed_at else 'warning') }}"><i data-lucide="database" class="h-4 w-4"></i></span>
-                            <div class="min-w-0">
-                                <p class="text-sm font-semibold text-content-primary">Committed Inventory</p>
-                                <p class="mt-1 text-xs leading-5 text-content-muted">{{ inventory_observed_at|user_datetime("Not Collected") }}</p>
-                            </div>
-                        </div>
-                        {{ table_label.status_label('Collected' if inventory_observed_at else 'Not Collected', 'normal' if inventory_observed_at else 'warning') }}
-                    </div>
-                </article>
-                <article class="{{ analysis_surface.readiness_shell_classes() }} p-4">
-                    <div class="flex items-start justify-between gap-3">
-                        <div class="flex min-w-0 items-start gap-3">
-                            <span class="{{ analysis_surface.semantic_icon_classes('normal') }}"><i data-lucide="brain-circuit" class="h-4 w-4"></i></span>
-                            <div class="min-w-0">
-                                <p class="text-sm font-semibold text-content-primary">Recommendation Source</p>
-                                <p class="mt-1 text-xs leading-5 text-content-muted">Central Intelligence catalog and finding lifecycle</p>
-                            </div>
-                        </div>
-                        {{ table_label.status_label('Central Intelligence', 'normal') }}
-                    </div>
-                </article>
-                <article class="{{ analysis_surface.readiness_shell_classes() }} p-4">
-                    <div class="flex items-start justify-between gap-3">
-                        <div class="flex min-w-0 items-start gap-3">
-                            <span class="{{ analysis_surface.semantic_icon_classes(recommendation_summary.tone) }}"><i data-lucide="sparkles" class="h-4 w-4"></i></span>
-                            <div class="min-w-0">
-                                <p class="text-sm font-semibold text-content-primary">Active Findings</p>
-                                <p class="mt-1 text-xs leading-5 text-content-muted">{{ recommendation_summary.total }} findings · {{ recommendation_summary.critical }} Critical · {{ recommendation_summary.warning }} Warning</p>
-                            </div>
-                        </div>
-                        {{ table_label.status_label(recommendation_summary.highest, recommendation_summary.tone) }}
-                    </div>
-                </article>
-            </div>
-        {% elif page_key == 'alerts' %}
+        {% if page_key == 'alerts' %}
             <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                 <article class="{{ analysis_surface.readiness_shell_classes() }} p-4">
                     <div class="flex items-start justify-between gap-3">

@@ -133,7 +133,11 @@ def main() -> int:
     ):
         assert f'def {endpoint}' in routes
         assert "@permission_required('object_storage_analytics.view')" in routes
-        if endpoint not in {'object_storage_bucket_table', 'object_storage_alert_table'}:
+        if endpoint not in {
+            'object_storage_recommendations',
+            'object_storage_bucket_table',
+            'object_storage_alert_table',
+        }:
             assert f'analytics.{endpoint}' in menu
 
     assert 'profile_key: object-storage-metrics-v1' in metrics_catalog

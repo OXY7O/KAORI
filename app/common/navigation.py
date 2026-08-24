@@ -52,7 +52,6 @@ _ENDPOINT_LABELS: dict[str, str] = {
     'analytics.object_storage_performance': 'Performance',
     'analytics.object_storage_forecast': 'Forecast',
     'analytics.object_storage_top_consumers': 'Top Consumers',
-    'analytics.object_storage_recommendations': 'Recommendations',
     'analytics.object_storage_alerts': 'Alerts & Anomalies',
     # Intelligence
     'intelligence.index': 'Overview',

@@ -1,5 +1,5 @@
 {% import "components/content_tabs.html" as content_tabs %}
-{% set performance_tabs = [('reliability', 'Request Health', 'scan-heart'), ('traffic', 'Traffic & Trend', 'arrow-left-right'), ('buckets', 'Bucket Activity', 'container'), ('evidence', 'Evidence', 'list-checks')] %}
+{% set performance_tabs = [('reliability', 'Request Health', 'scan-heart'), ('traffic', 'Traffic & Trend', 'arrow-left-right'), ('buckets', 'Bucket Activity', 'container'), ('recommendations', 'Recommendations', 'list-checks'), ('evidence', 'Evidence', 'list-checks')] %}
 <section id="object-storage-performance-workspace"
          data-analytics-tabset
          data-analytics-tabset-id="object-storage-performance-content"
@@ -44,6 +44,14 @@
              data-analytics-tab-panel="buckets"
              hidden
              class="space-y-4">{% include "storage/object_storage/analytics/partials/_bucket_table.html" %}</div>
+        <div id="object-storage-performance-content-panel-recommendations"
+             role="tabpanel"
+             aria-labelledby="object-storage-performance-content-tab-recommendations"
+             data-analytics-tab-panel="recommendations"
+             hidden
+             class="space-y-4">
+            {% include "storage/object_storage/analytics/partials/_recommendations_workspace.html" %}
+        </div>
         <div id="object-storage-performance-content-panel-evidence"
              role="tabpanel"
              aria-labelledby="object-storage-performance-content-tab-evidence"

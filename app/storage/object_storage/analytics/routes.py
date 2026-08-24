@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from flask import render_template, request
+from flask import redirect, render_template, request, url_for
 from flask.typing import ResponseReturnValue
 
 from app.access.rbac.decorators import permission_required
@@ -46,7 +46,9 @@ def object_storage_top_consumers() -> ResponseReturnValue:
 
 @permission_required('object_storage_analytics.view')
 def object_storage_recommendations() -> ResponseReturnValue:
-    return _render('recommendations')
+    query = request.args.to_dict(flat=True)
+    query['tab'] = 'recommendations'
+    return redirect(url_for('analytics.object_storage_overview', **query))
 
 
 @permission_required('object_storage_analytics.view')

@@ -2,16 +2,17 @@
 {% import "components/recommendation_pager.html" as recommendation_pager %}
 {% import "components/resource_detail_modal.html" as resource_detail_modal %}
 {% import "components/table_label.html" as table_label %}
-<section class="{{ analysis_surface.snapshot_shell_classes() }}"
-         data-object-storage-analytics-recommendations="central-intelligence">
-    <header class="{{ analysis_surface.snapshot_header_classes() }}">
+<div class="space-y-4"
+     data-object-storage-analytics-recommendations="central-intelligence"
+     data-object-storage-recommendation-context="{{ recommendation_context_key }}">
+    <header class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div class="flex min-w-0 items-start gap-3">
             <span class="{{ analysis_surface.snapshot_header_icon_classes() }}">
-                <i data-lucide="sparkles" class="h-4 w-4"></i>
+                <i data-lucide="list-checks" class="h-5 w-5"></i>
             </span>
             <div class="min-w-0">
-                <h2 class="text-base font-semibold text-content-primary">Object Storage Recommendations</h2>
-                <p class="mt-1 text-xs leading-5 text-content-secondary">Intelligence owns recommendation evaluation; this Analytics view only projects central findings for the selected system.</p>
+                <h3 class="text-lg font-semibold text-content-primary">{{ recommendation_context_label }} Recommendations</h3>
+                <p class="mt-1 text-sm leading-6 text-content-muted">Intelligence owns recommendation evaluation; this Analytics tab only projects central findings relevant to the current workspace and selected system.</p>
             </div>
         </div>
         <div class="flex flex-wrap items-center gap-2">
@@ -20,7 +21,9 @@
         </div>
     </header>
     {% if recommendations %}
-        <div data-kaori-recommendation-pager data-page-size="3">
+        <div class="{{ analysis_surface.evidence_shell_classes() }}"
+             data-kaori-recommendation-pager
+             data-page-size="3">
             <div class="divide-y divide-outline-subtle">
                 {% for item in recommendations %}
                     <article class="flex flex-col gap-4 bg-surface-card px-4 py-4 sm:px-5 lg:flex-row lg:items-center lg:justify-between"
@@ -39,7 +42,7 @@
                                         {{ table_label.metadata_label(item.evidence.provider_label, 'database', size='compact') }}
                                     {% endif %}
                                 </div>
-                                <h3 class="mt-2 text-sm font-semibold text-content-primary">{{ item.title }}</h3>
+                                <h4 class="mt-2 text-sm font-semibold text-content-primary">{{ item.title }}</h4>
                                 <p class="mt-1 text-xs leading-5 text-content-secondary">{{ item.summary }}</p>
                                 {% if item.alert_handling %}
                                     <div class="mt-2">{{ table_label.status_label(item.alert_handling.label, item.alert_handling.tone, size='compact') }}</div>
@@ -55,15 +58,13 @@
             <div class="bg-surface-hover">{{ recommendation_pager.controls(recommendations|length, 'Recommendations', 3) }}</div>
         </div>
     {% else %}
-        <div class="p-5 sm:p-6">
-            {% set empty_state_icon = "circle-check-2" %}
-            {% set empty_state_label = "No Action Required" %}
-            {% set empty_state_tone = "normal" %}
-            {% set empty_state_title = "No Active Recommendations" %}
-            {% set empty_state_description = "Central Intelligence has no active Object Storage finding for the selected system." %}
-            {% set empty_state_variant = "panel" %}
-            {% set empty_state_min_height = "min-h-[160px]" %}
-            {% include 'components/states/_empty_state.html' %}
-        </div>
+        {% set empty_state_icon = "circle-check-2" %}
+        {% set empty_state_label = "No Action Required" %}
+        {% set empty_state_tone = "normal" %}
+        {% set empty_state_title = "No Active " ~ recommendation_context_label ~ " Recommendations" %}
+        {% set empty_state_description = "Central Intelligence has no active finding for this workspace and selected Object Storage system." %}
+        {% set empty_state_variant = "panel" %}
+        {% set empty_state_min_height = "min-h-[160px]" %}
+        {% include 'components/states/_empty_state.html' %}
     {% endif %}
-</section>
+</div>

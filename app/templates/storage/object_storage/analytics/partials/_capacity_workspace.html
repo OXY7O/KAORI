@@ -1,5 +1,5 @@
 {% import "components/content_tabs.html" as content_tabs %}
-{% set capacity_tabs = [('summary', 'Summary', 'database'), ('trend', 'Usage Trend', 'chart-no-axes-combined'), ('quota', 'Quota & Buckets', 'gauge'), ('evidence', 'Evidence', 'list-checks')] %}
+{% set capacity_tabs = [('summary', 'Summary', 'database'), ('trend', 'Usage Trend', 'chart-no-axes-combined'), ('quota', 'Quota & Buckets', 'gauge'), ('recommendations', 'Recommendations', 'list-checks'), ('evidence', 'Evidence', 'list-checks')] %}
 <section id="object-storage-capacity-workspace"
          data-analytics-tabset
          data-analytics-tabset-id="object-storage-capacity-content"
@@ -41,6 +41,14 @@
              class="space-y-4">
             {% include "storage/object_storage/analytics/partials/_capacity_pressure.html" %}
             {% include "storage/object_storage/analytics/partials/_bucket_table.html" %}
+        </div>
+        <div id="object-storage-capacity-content-panel-recommendations"
+             role="tabpanel"
+             aria-labelledby="object-storage-capacity-content-tab-recommendations"
+             data-analytics-tab-panel="recommendations"
+             hidden
+             class="space-y-4">
+            {% include "storage/object_storage/analytics/partials/_recommendations_workspace.html" %}
         </div>
         <div id="object-storage-capacity-content-panel-evidence"
              role="tabpanel"

@@ -1,5 +1,5 @@
 {% import "components/content_tabs.html" as content_tabs %}
-{% set overview_tabs = [('capacity', 'Capacity', 'database'), ('performance', 'Performance', 'activity'), ('consumers', 'Consumers', 'layers-3'), ('forecast', 'Forecast', 'chart-spline'), ('evidence', 'Evidence', 'list-checks')] %}
+{% set overview_tabs = [('capacity', 'Capacity', 'database'), ('performance', 'Performance', 'activity'), ('consumers', 'Consumers', 'layers-3'), ('forecast', 'Forecast', 'chart-spline'), ('recommendations', 'Recommendations', 'list-checks'), ('evidence', 'Evidence', 'list-checks')] %}
 <section id="object-storage-overview-workspace"
          data-analytics-tabset
          data-analytics-tabset-id="object-storage-overview-content"
@@ -53,6 +53,14 @@
              hidden
              class="space-y-4">
             {% include "storage/object_storage/analytics/partials/_overview_forecast_snapshot.html" %}
+        </div>
+        <div id="object-storage-overview-content-panel-recommendations"
+             role="tabpanel"
+             aria-labelledby="object-storage-overview-content-tab-recommendations"
+             data-analytics-tab-panel="recommendations"
+             hidden
+             class="space-y-4">
+            {% include "storage/object_storage/analytics/partials/_recommendations_workspace.html" %}
         </div>
         <div id="object-storage-overview-content-panel-evidence"
              role="tabpanel"

@@ -1,5 +1,5 @@
 {% import "components/content_tabs.html" as content_tabs %}
-{% set alert_tabs = [('overview', 'Alert Overview', 'radar'), ('records', 'Alert Records', 'bell-ring'), ('signals', 'Metric Signals', 'list-tree'), ('evidence', 'Evidence', 'list-checks')] %}
+{% set alert_tabs = [('overview', 'Alert Overview', 'radar'), ('records', 'Alert Records', 'bell-ring'), ('signals', 'Metric Signals', 'list-tree'), ('recommendations', 'Recommendations', 'list-checks'), ('evidence', 'Evidence', 'list-checks')] %}
 <section id="object-storage-alerts-workspace"
          data-analytics-tabset
          data-analytics-tabset-id="object-storage-alerts-content"
@@ -40,6 +40,14 @@
              hidden
              class="space-y-4">
             {% include "storage/object_storage/analytics/partials/_alerts_signal_records.html" %}
+        </div>
+        <div id="object-storage-alerts-content-panel-recommendations"
+             role="tabpanel"
+             aria-labelledby="object-storage-alerts-content-tab-recommendations"
+             data-analytics-tab-panel="recommendations"
+             hidden
+             class="space-y-4">
+            {% include "storage/object_storage/analytics/partials/_recommendations_workspace.html" %}
         </div>
         <div id="object-storage-alerts-content-panel-evidence"
              role="tabpanel"

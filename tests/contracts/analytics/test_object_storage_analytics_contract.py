@@ -65,7 +65,16 @@ def test_object_storage_analytics_exposes_kubernetes_style_surface_set() -> None
         'object_storage_alerts',
     ):
         assert f"endpoint='{endpoint}'" in routes
+    for endpoint in (
+        'object_storage_overview',
+        'object_storage_capacity',
+        'object_storage_performance',
+        'object_storage_forecast',
+        'object_storage_top_consumers',
+        'object_storage_alerts',
+    ):
         assert f'analytics.{endpoint}' in menu
+    assert 'analytics.object_storage_recommendations' not in menu
 
 
 def test_object_storage_analytics_uses_dedicated_rbac_and_sidebar_visibility() -> None:

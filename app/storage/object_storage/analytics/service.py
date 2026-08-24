@@ -115,12 +115,6 @@ PAGES: dict[str, PageDefinition] = {
         'users',
         'Object Storage Analytics',
     ),
-    'recommendations': PageDefinition(
-        'Recommendations',
-        'Review central Intelligence findings for the selected Object Storage system from committed evidence.',
-        'sparkles',
-        'Object Storage Analytics',
-    ),
     'alerts': PageDefinition(
         'Alerts & Anomalies',
         'Review active alerts from Alertmanager or Metrics Source alongside metric-derived operating signals.',
@@ -739,9 +733,7 @@ def get_object_storage_analytics_context(page_key: str, query_args: Any) -> dict
         context['dependency_blocker'] = inventory_required_blocker(system)
         return context
 
-    if page_key == 'recommendations':
-        context.update(build_recommendation_context(system))
-        return context
+    context.update(build_recommendation_context(system, page_key=page_key))
 
     payload = _attach_committed_analytics_snapshot(context, system=system, time_range=time_range)
     if payload is None:

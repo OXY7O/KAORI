@@ -16,7 +16,7 @@ The concise general release entrypoint is:
 python scripts/verify_final_release.py
 ```
 
-It first proves that all current sidebar/navigation surfaces and registered Flask blueprints have explicit release ownership. The canonical registry is `scripts/release_surface_registry.py`; `scripts/verify_release_surface_coverage.py` fails when a menu link, menu template, Blueprint, verifier, or evidence path is unowned. The current contract covers 62 navigation links and 27 registered blueprints, including non-navigation Authentication, Notification Center, Runtime Health, and nested Cluster Management ownership under Integrations → Kubernetes.
+It first proves that all current sidebar/navigation surfaces and registered Flask blueprints have explicit release ownership. The canonical registry is `scripts/release_surface_registry.py`; `scripts/verify_release_surface_coverage.py` fails when a menu link, menu template, Blueprint, verifier, or evidence path is unowned. The current contract covers 61 navigation links and 27 registered blueprints, including non-navigation Authentication, Notification Center, Runtime Health, and nested Cluster Management ownership under Integrations → Kubernetes.
 
 For the complete release gate use:
 
