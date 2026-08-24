@@ -45,7 +45,7 @@ def test_reveal_tabs_switch_client_side_with_server_navigation_fallback() -> Non
     tabs = read('app/templates/components/content_tabs.html')
 
     assert '@click.prevent="setTab(' in tabs
-    assert "href=\"{{ tab_href }}\"" in tabs
+    assert 'href="{{ tab_href }}"' in tabs
     assert 'data-kaori-tab-fallback="server-navigation"' in tabs
     assert "reveal_view='new'" in page
     assert "reveal_view='mine'" in page

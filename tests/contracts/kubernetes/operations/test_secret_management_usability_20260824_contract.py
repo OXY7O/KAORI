@@ -23,7 +23,7 @@ def test_protected_reveal_uses_shared_analytics_content_tab_style_with_fallback(
     assert 'data-kaori-tab-control="alpine-url-fallback"' in tabs
     assert 'data-kaori-tab-fallback="server-navigation"' in tabs
     assert '@click.prevent="setTab(' in tabs
-    assert "href=\"{{ tab_href }}\"" in tabs
+    assert 'href="{{ tab_href }}"' in tabs
 
 
 def test_protected_reveal_empty_cluster_copy_is_compact() -> None:
@@ -40,10 +40,18 @@ def test_secret_surfaces_remain_semantic_token_owned() -> None:
     for forbidden in ('text-[', 'leading-[', 'tracking-[', 'font-extrabold', 'font-black'):
         assert forbidden not in source
     for raw_family in (
-        'bg-red-', 'text-red-', 'border-red-',
-        'bg-blue-', 'text-blue-', 'border-blue-',
-        'bg-violet-', 'text-violet-', 'border-violet-',
-        'bg-gray-', 'text-gray-', 'border-gray-',
+        'bg-red-',
+        'text-red-',
+        'border-red-',
+        'bg-blue-',
+        'text-blue-',
+        'border-blue-',
+        'bg-violet-',
+        'text-violet-',
+        'border-violet-',
+        'bg-gray-',
+        'text-gray-',
+        'border-gray-',
     ):
         assert raw_family not in source
 
@@ -57,3 +65,21 @@ def test_protected_reveal_standard_docs_match_the_reviewed_tab_style() -> None:
     assert 'Protected Secret Reveal' in registry
     assert 'render_controlled_links()' in content_tabs
     assert 'Protected Reveal uses Tab Style 4:' in pattern
+
+
+def test_tls_rotate_copy_and_fingerprint_space_are_balanced() -> None:
+    page = read('app/templates/kubernetes/operations/secrets/tls_rotate.html')
+    routes = read('app/kubernetes/operations/secrets/tls_routes.py')
+    assert (
+        'Validate replacement certificate material, key matching, and target coverage before rotating one live TLS Secret.'
+        in page
+    )
+    assert (
+        'Validate replacement certificate material, key matching, and target coverage before rotating one live TLS Secret.'
+        in routes
+    )
+    assert (
+        'Validate parsing, key matching, host coverage, and the replacement before Update TLS Secret is enabled.' in page
+    )
+    assert 'lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]' in page
+    assert 'lg:grid-cols-[minmax(0,1.45fr)_minmax(18rem,0.55fr)]' not in page

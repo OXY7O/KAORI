@@ -256,7 +256,7 @@ def main() -> int:
     require(
         '@click.prevent="setTab(' in reveal_tabs
         and 'data-kaori-tab-fallback="server-navigation"' in reveal_tabs
-        and "href=\"{{ tab_href }}\"" in reveal_tabs,
+        and 'href="{{ tab_href }}"' in reveal_tabs,
         'Protected Reveal Content Tabs must switch through Alpine while retaining server-navigation fallback.',
         errors,
     )
