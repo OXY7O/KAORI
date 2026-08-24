@@ -115,7 +115,7 @@ def test_alert_records_use_shared_view_more_modals_and_controlled_wrapping() -> 
         assert 'tracking-[' not in row
 
     assert 'data-kaori-alert-evidence-modal' in alert_row
-    assert "size='investigation'" in alert_row
+    assert "size='expanded'" in alert_row
     assert 'lg:grid-cols-[minmax(0,1.25fr)_minmax(320px,0.95fr)]' in alert_row
     assert 'Signal Context' in alert_row
     assert 'Triage Decision' in alert_row

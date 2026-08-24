@@ -78,7 +78,7 @@
             <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                     <h4 class="{{ analysis_surface.section_title_classes() }}">Historical Signal Behavior</h4>
-                    <p class="{{ analysis_surface.section_description_classes() }}">Compare timestamp-aligned movement across the selected observation window before changing capacity or workload placement.</p>
+                    <p class="{{ analysis_surface.section_description_classes() }}">Compare aligned trends across the selected window before changing capacity or workload placement.</p>
                 </div>
                 {{ chart_legend.render([('CPU', 'bg-kaori-primary') , ('Memory', 'bg-status-normal'), ('Pods', 'bg-status-pending')], 'Utilization Trend Legend') }}
             </div>

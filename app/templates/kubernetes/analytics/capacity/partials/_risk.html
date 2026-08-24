@@ -15,7 +15,7 @@
             <header class="flex items-center justify-between gap-3 border-b border-outline-subtle px-4 py-3 sm:px-5">
                 <div>
                     <h4 class="{{ analysis_surface.section_title_classes() }}">Resource Risk Queue</h4>
-                    <p class="{{ analysis_surface.section_description_classes() }}">Lower headroom receives higher operational priority. Unavailable evidence remains Unknown instead of being treated as zero utilization.</p>
+                    <p class="{{ analysis_surface.section_description_classes() }}">Lower headroom gets higher priority; unavailable evidence stays Unknown.</p>
                 </div>
                 {{ table_label.metadata_label(risk_summary|length ~ ' Resources') }}
             </header>

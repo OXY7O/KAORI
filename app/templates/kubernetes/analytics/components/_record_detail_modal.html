@@ -9,6 +9,7 @@
   - standard: anomaly evidence and ordinary record review,
   - wide: dense evidence matrices such as Workload and Top Consumers,
   - investigation: operational triage workspaces that need wider evidence context,
+  - expanded: dense alert and quota review that benefits from a 7xl canvas,
   - workspace: dense analytical workspaces that need the widest canonical record-detail canvas.
 
   The modal is content-sized. max-height is only a guardrail; short content
@@ -18,8 +19,10 @@
     {% set modal_width = 'max-w-5xl' if size == 'wide' else 'max-w-4xl' %}
     {% if size == 'investigation' %}
         {% set modal_width = "max-w-6xl" %}
+    {% elif size == 'expanded' %}
+        {% set modal_width = "max-w-7xl" %}
     {% elif size == 'workspace' %}
-        {% set modal_width = "max-w-screen-2xl" %}
+        {% set modal_width = "max-w-[112rem]" %}
     {% endif %}
     <template x-teleport="body">
         <div x-show="detailOpen"

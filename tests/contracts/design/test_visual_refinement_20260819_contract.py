@@ -30,8 +30,8 @@ def test_workload_mapping_modal_uses_workspace_width_and_bar_reading_guide() -> 
     assert "size='workspace'" in source
     modal = read('app/templates/kubernetes/analytics/components/_record_detail_modal.html')
     assert "size == 'workspace'" in modal
-    assert 'modal_width = "max-w-screen-2xl"' in modal
-    assert 'xl:grid-cols-[repeat(3,minmax(0,1fr))_minmax(15rem,1.15fr)]' in source
+    assert 'modal_width = "max-w-[112rem]"' in modal
+    assert 'xl:grid-cols-[repeat(3,minmax(0,1fr))_minmax(18rem,1.25fr)]' in source
     assert 'sm:whitespace-nowrap' in source
     assert 'How To Read The Bars' in source
     assert 'Green stays below 75%' in source

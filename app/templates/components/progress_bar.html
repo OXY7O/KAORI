@@ -127,9 +127,26 @@
                     {{ job.progress_stage or job.progress_message }}
                 </p>
                 {% if job.progress_target %}
-                    <p class="mt-0.5 break-words text-xs leading-5 text-content-muted">
-                        <span class="font-medium text-content-secondary">Current:</span> {{ job.progress_target }}
-                    </p>
+                    {% if compact %}
+                        {% set target_parts = job.progress_target.split(' · ') %}
+                        <div class="mt-1.5 text-xs leading-5 text-content-muted">
+                            <p class="font-medium text-content-secondary">Current</p>
+                            <ul class="mt-1 space-y-1" aria-label="Current work context">
+                                {% for target_part in target_parts %}
+                                    {% if target_part|trim %}
+                                        <li class="flex min-w-0 items-start gap-2">
+                                            <span class="mt-2 h-1 w-1 shrink-0 rounded-full bg-outline-strong" aria-hidden="true"></span>
+                                            <span class="min-w-0 break-words">{{ target_part|trim }}</span>
+                                        </li>
+                                    {% endif %}
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    {% else %}
+                        <p class="mt-0.5 break-words text-xs leading-5 text-content-muted">
+                            <span class="font-medium text-content-secondary">Current:</span> {{ job.progress_target }}
+                        </p>
+                    {% endif %}
                 {% endif %}
             </div>
             <span class="shrink-0 text-xs font-semibold text-kaori-primary dark:text-kaori-accent">{{ job.progress_label }}</span>

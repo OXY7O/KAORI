@@ -48,7 +48,7 @@
                     <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                         <div>
                             <p class="text-xs font-medium text-content-secondary">Node Filesystem · {{ storage_summary.node_filesystem.scope_label|default("All Nodes") }}</p>
-                            <p class="mt-1 text-xs text-content-muted">Aggregate uses nodes with paired filesystem capacity and available-byte evidence.</p>
+                            <p class="mt-1 text-xs text-content-muted">Aggregate includes only nodes with paired capacity and available-byte evidence.</p>
                         </div>
                         <div class="flex items-center gap-2">
                             {{ table_label.status_label(filesystem_coverage_label, 'normal' if filesystem.evidence_complete else 'unknown', size='compact') }}
@@ -76,7 +76,7 @@
                     <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                         <div>
                             <p class="text-xs font-medium text-content-secondary">PVC Volume Usage · {{ pvc.scope_label }}</p>
-                            <p class="mt-1 text-xs text-content-muted">Observed usage is calculated only from claims with paired capacity and used-byte evidence.</p>
+                            <p class="mt-1 text-xs text-content-muted">Usage includes only claims with paired capacity and used-byte evidence.</p>
                         </div>
                         <div class="flex items-center gap-2">
                             {{ table_label.status_label(pvc_coverage_label, 'normal' if pvc.pressure_evidence_complete else 'unknown', size='compact') }}

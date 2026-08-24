@@ -59,8 +59,8 @@
                         <div class="{{ analysis_surface.evidence_shell_classes() }}">
                             <div class="{{ analysis_surface.metric_grid_classes(4) }}">
                                 {% for label, value, helper, icon in [
-                                    ('Latest Daily Average', item.latest_daily_average_display, (('Latest committed daily average uses ' ~ item.latest_daily_average_percent ~ '% of the ' ~ item.capacity_display ~ ' capacity baseline defined as ' ~ item.capacity_label ~ '.') if item.latest_daily_average_percent is not none else item.empty_reason), 'gauge'),
-                                    ('Projected Horizon Value', item.projected_display, (('At the selected ' ~ selected_forecast_horizon ~ ' horizon, projected demand reaches ' ~ item.projected_percent ~ '% of the documented capacity baseline.') if item.projected_percent is not none else item.empty_reason), 'scan-line'),
+                                    ('Latest Daily Average', item.latest_daily_average_display, (('Latest daily average: ' ~ item.latest_daily_average_percent ~ '% of ' ~ item.capacity_display ~ ' · ' ~ item.capacity_label ~ '.') if item.latest_daily_average_percent is not none else item.empty_reason), 'gauge'),
+                                    ('Projected Horizon Value', item.projected_display, (('At ' ~ selected_forecast_horizon ~ ', projected demand reaches ' ~ item.projected_percent ~ '% of the capacity baseline.') if item.projected_percent is not none else item.empty_reason), 'scan-line'),
                                     ('Weekly Trend', item.weekly_trend_display, 'Trend direction is derived from the selected forecast model and committed daily history for this resource.', 'trending-up'),
                                     ('Historical Signal Quality', item.signal_quality, item.signal_quality_reason, 'shield-check')
                                     ] %}
@@ -91,8 +91,12 @@
                                 <div class="space-y-4 p-4">
                                     <div>
                                         <p class="{{ analysis_surface.metric_label_classes() }}">Peak Projected Utilization</p>
-                                        <p class="mt-1 text-3xl font-bold {{ 'text-content-primary' if item.projected_percent is not none else analysis_surface.unavailable_value_classes() }}">{{ (item.peak_projected_percent ~ '%') if item.peak_projected_percent is not none else 'N/A' }}</p>
-                                        <p class="mt-1 text-xs leading-5 text-content-muted">{{ item.peak_projected_display }} peak of {{ item.capacity_display }} · horizon endpoint {{ item.projected_display }} · {{ item.capacity_label }}</p>
+                                        <p class="mt-1 text-3xl font-semibold tabular-nums {{ 'text-content-primary' if item.projected_percent is not none else analysis_surface.unavailable_value_classes() }}">{{ (item.peak_projected_percent ~ '%') if item.peak_projected_percent is not none else 'N/A' }}</p>
+                                        <ul class="mt-2 space-y-1 text-xs leading-5 text-content-muted" aria-label="Projected capacity details">
+                                            <li class="flex items-start gap-2"><span class="mt-2 h-1 w-1 shrink-0 rounded-full bg-outline-strong" aria-hidden="true"></span><span><span class="font-medium text-content-secondary">Peak:</span> {{ item.peak_projected_display }} of {{ item.capacity_display }}</span></li>
+                                            <li class="flex items-start gap-2"><span class="mt-2 h-1 w-1 shrink-0 rounded-full bg-outline-strong" aria-hidden="true"></span><span><span class="font-medium text-content-secondary">Horizon endpoint:</span> {{ item.projected_display }}</span></li>
+                                            <li class="flex items-start gap-2"><span class="mt-2 h-1 w-1 shrink-0 rounded-full bg-outline-strong" aria-hidden="true"></span><span><span class="font-medium text-content-secondary">Baseline:</span> {{ item.capacity_label }}</span></li>
+                                        </ul>
                                         {% if item.peak_projected_percent is not none %}
                                             {{ progress_bar.semantic_bar(item.peak_projected_percent, tone, track_classes='mt-4 h-2 overflow-hidden rounded-full bg-surface-hover', label=item.label ~ ' projected utilization status') }}
                                         {% endif %}
@@ -127,7 +131,7 @@
                                 {{ forecast_chart.render('forecast-resource-chart-' ~ resource_key,
                                                                 'forecast-chart-data',
                                                                 item.label ~ ' Historical and Projected Utilization',
-                                                                'Daily historical averages are solid; the selected model projection is dashed. Values are shown against the documented capacity baseline.',
+                                                                'Historical averages are solid; projections are dashed against the capacity baseline.',
                                                                 mode='resource',
                                                                 resource_key=resource_key,
                                                                 resource_label=item.label) }}

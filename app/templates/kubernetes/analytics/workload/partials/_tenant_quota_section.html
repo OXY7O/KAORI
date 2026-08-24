@@ -38,12 +38,14 @@
         </div>
     </section>
     <section class="{{ analysis_surface.snapshot_shell_classes() }}">
-        <header class="{{ analysis_surface.snapshot_header_classes() }}">
-            <div class="flex min-w-0 items-start gap-3">
-                <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="list-filter" class="h-4 w-4"></i></span>
-                <div class="min-w-0">
-                    <h3 class="text-base font-semibold text-content-primary">Tenant Quota Records</h3>
-                    <p class="mt-1 text-sm leading-6 text-content-secondary">Filter namespace quota evidence independently from the overview posture and scope metrics.</p>
+        <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div class="flex min-w-0 items-start gap-3">
+                    <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="list-filter" class="h-4 w-4"></i></span>
+                    <div class="min-w-0">
+                        <h3 class="text-base font-semibold text-content-primary">Tenant Quota Records</h3>
+                        <p class="mt-1 text-sm leading-6 text-content-secondary">Filter namespace quota evidence independently from the overview posture and scope metrics.</p>
+                    </div>
                 </div>
             </div>
             {{ loading_bar.render(indicator_id, label='Refreshing Tenant Quota Analysis') }}
@@ -151,7 +153,7 @@
                             row.workloads ~ ' Active Pods · ' ~ row.quota_object_count ~ ' ResourceQuota Objects',
                             icon='badge-gauge',
                             footer_text='Quota boundaries, observed allocation, and runtime demand come from the latest committed Workload Analysis snapshot.',
-                            size='wide'
+                            size='expanded'
                             ) %}
                             <div class="space-y-5">
                                 <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card">
@@ -159,7 +161,7 @@
                                         <div class="min-w-0">
                                             <p class="{{ analysis_surface.metric_label_classes() }}">Tenant Governance Posture</p>
                                             <h3 class="mt-1 text-base font-semibold text-content-primary">Effective Quota Boundary and Runtime Demand</h3>
-                                            <p class="mt-1 text-xs leading-5 text-content-secondary">Review the most restrictive ResourceQuota boundary, observed allocation, and active-Pod demand before approving tenant changes.</p>
+                                            <p class="mt-1 text-xs leading-5 text-content-secondary">Review the tightest ResourceQuota, allocation, and active-Pod demand before tenant changes.</p>
                                         </div>
                                         <div class="flex flex-wrap gap-1.5">
                                             {{ table_label.status_indicator_label(row.quota_status.label, row.quota_status.tone, size='compact') }}

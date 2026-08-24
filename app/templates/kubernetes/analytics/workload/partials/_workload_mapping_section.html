@@ -197,7 +197,7 @@
                                                 <p class="mt-1 text-xs leading-5 text-content-secondary">Current usage and selected-window peak are evaluated against the configured CPU request.</p>
                                             </div>
                                         </header>
-                                        <div class="grid gap-px bg-outline-subtle sm:grid-cols-2 xl:grid-cols-[repeat(3,minmax(0,1fr))_minmax(15rem,1.15fr)]">
+                                        <div class="grid gap-px bg-outline-subtle sm:grid-cols-2 xl:grid-cols-[repeat(3,minmax(0,1fr))_minmax(18rem,1.25fr)]">
                                             {% for label, value in [('Request', row.cpu_request), ('Limit', row.cpu_limit), ('Current Usage', row.cpu_current), ('Selected-Window Pod Peak Sum', row.cpu_peak_sum)] %}
                                                 <div class="min-w-0 bg-surface-card px-4 py-3">
                                                     <p class="{{ analysis_surface.metric_label_classes() }} {% if label == 'Selected-Window Pod Peak Sum' %}sm:whitespace-nowrap{% endif %}">{{ label }}</p>
@@ -240,7 +240,7 @@
                                                 <p class="mt-1 text-xs leading-5 text-content-secondary">Working-set usage and selected-window peak are evaluated against the configured memory request.</p>
                                             </div>
                                         </header>
-                                        <div class="grid gap-px bg-outline-subtle sm:grid-cols-2 xl:grid-cols-[repeat(3,minmax(0,1fr))_minmax(15rem,1.15fr)]">
+                                        <div class="grid gap-px bg-outline-subtle sm:grid-cols-2 xl:grid-cols-[repeat(3,minmax(0,1fr))_minmax(18rem,1.25fr)]">
                                             {% for label, value in [('Request', row.memory_request), ('Limit', row.memory_limit), ('Current Usage', row.memory_current), ('Selected-Window Pod Peak Sum', row.memory_peak_sum)] %}
                                                 <div class="min-w-0 bg-surface-card px-4 py-3">
                                                     <p class="{{ analysis_surface.metric_label_classes() }} {% if label == 'Selected-Window Pod Peak Sum' %}sm:whitespace-nowrap{% endif %}">{{ label }}</p>
