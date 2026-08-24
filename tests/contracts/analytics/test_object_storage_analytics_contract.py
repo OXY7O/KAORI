@@ -393,7 +393,6 @@ def test_object_storage_bucket_records_use_shared_kaori_table_contract() -> None
 
 def test_object_storage_overview_matches_kubernetes_overview_hero_and_tab_contract() -> None:
     index = read('app/templates/storage/object_storage/analytics/index.html')
-    service = read('app/storage/object_storage/analytics/service.py')
     pages = read('app/storage/object_storage/analytics/pages.py')
     hero = read('app/templates/storage/object_storage/analytics/partials/_hero.html')
     hero_posture = read('app/templates/storage/object_storage/analytics/partials/_hero_posture.html')
@@ -455,7 +454,6 @@ def test_object_storage_overview_matches_kubernetes_overview_hero_and_tab_contra
 
 def test_object_storage_capacity_and_performance_match_shared_analytics_hero_and_tab_contract() -> None:
     index = read('app/templates/storage/object_storage/analytics/index.html')
-    service = read('app/storage/object_storage/analytics/service.py')
     pages = read('app/storage/object_storage/analytics/pages.py')
     hero_posture = read('app/templates/storage/object_storage/analytics/partials/_hero_posture.html')
     controls = read('app/templates/storage/object_storage/analytics/partials/_controls.html')

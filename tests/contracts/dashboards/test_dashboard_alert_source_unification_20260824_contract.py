@@ -20,7 +20,7 @@ def test_dashboard_family_reads_recommendation_origin_alert_cases_from_alert_int
     assert 'active_recommendation_alert_cases' in kubernetes
     assert "domain='kubernetes'" in kubernetes
     assert 'def _kaori_alert_snapshot(' in kubernetes
-    assert "dashboard.alerts_snapshot, _ = _alerts_signal(selected)" not in kubernetes
+    assert 'dashboard.alerts_snapshot, _ = _alerts_signal(selected)' not in kubernetes
 
     assert 'active_recommendation_alert_cases' in object_storage
     assert "domain='object_storage'" in object_storage
@@ -31,7 +31,9 @@ def test_dashboard_family_explains_kaori_alert_intelligence_as_primary_alert_sou
     kubernetes = read('app/templates/kubernetes/dashboard/partials/_alerts_summary.html')
     kubernetes_guidance = read('app/templates/kubernetes/dashboard/partials/_alert_response_guidance.html')
     object_storage = read('app/templates/storage/object_storage/dashboard/partials/_alerts_summary.html')
-    object_storage_guidance = read('app/templates/storage/object_storage/dashboard/partials/_alert_response_guidance.html')
+    object_storage_guidance = read(
+        'app/templates/storage/object_storage/dashboard/partials/_alert_response_guidance.html'
+    )
 
     for content in (kubernetes, object_storage):
         assert 'KAORI Alert Intelligence' in content

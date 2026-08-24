@@ -43,7 +43,11 @@ def test_dashboard_alert_response_footer_reports_data_owner_not_internal_promoti
     )
     for path in templates:
         source = read(path)
-        assert 'Alert Data Source' in source, path
-        assert 'KAORI Alert Intelligence · Active AlertCase records' in source, path
+        assert 'operational_callout.render(' in source, path
+        assert "'Alert Data Source'" in source, path
+        assert "'KAORI Alert Intelligence · Active AlertCase records.'" in source, path
+        assert "icon='brain-circuit'" in source, path
+        assert "tone='info'" in source, path
+        assert "variant='semantic'" in source, path
         assert 'Recommendation-origin durable alert cases' not in source, path
         assert 'Raw source alerts remain in Analytics' not in source, path

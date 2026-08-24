@@ -208,6 +208,7 @@ git commit -m "test: lock operational data semantics"
 ```python
 MAX_DASHBOARD_RECOMMENDATIONS = 5
 
+
 def get_dashboard_recommendation_findings(
     *,
     domain: str,

@@ -136,7 +136,6 @@ def _alerts_signal(cluster: Any):
     ), result
 
 
-
 def _alerts_snapshot_from_cases(cases: list[Any]) -> AlertsSnapshot:
     return AlertsSnapshot(
         critical=sum(str(case.severity or '').lower() == 'critical' for case in cases),

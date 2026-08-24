@@ -76,7 +76,6 @@ from app.storage.object_storage.analytics.runtime import (
     waiting_metrics_source,
 )
 
-
 FORECAST_HISTORY_WINDOWS = (
     {'value': '7d', 'label': 'Last 7 Days'},
     {'value': '30d', 'label': 'Last 30 Days'},
@@ -686,7 +685,6 @@ def get_object_storage_analytics_context(page_key: str, query_args: Any) -> dict
     if system.inventory_observed_at is None:
         context['dependency_blocker'] = inventory_required_blocker(system)
         return context
-
 
     payload = _attach_committed_analytics_snapshot(context, system=system, time_range=time_range)
     if payload is None:
