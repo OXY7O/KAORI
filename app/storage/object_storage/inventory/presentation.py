@@ -473,7 +473,7 @@ def _overview_fleet_readings(posture: dict[str, Any]) -> list[dict[str, str]]:
         {
             'title': f'{usage_collected}/{total} Usage Collected' if total else 'No Usage Evidence',
             'description': (
-                'Used size and current object count are optional inventory evidence collected by the configured usage strategy.'
+                'Used size and object count are optional usage evidence.'
                 if total
                 else 'No committed bucket or container assets are available for usage collection.'
             ),
@@ -562,6 +562,7 @@ def build_systems(filters: SystemFilters) -> dict[str, Any]:
         'total_systems': len(rows),
         'ready_systems': sum(1 for row in rows if row['status_tone'] == 'normal'),
         'blocked_systems': sum(1 for row in rows if row['status_tone'] == 'critical'),
+        'attention_systems': sum(1 for row in rows if row['status_tone'] in {'critical', 'warning', 'unknown'}),
         'inventoried_systems': sum(1 for row in rows if row['last_inventory_at'] is not None),
         'setup': _setup_state(len(all_rows)),
         'snapshot': _overview_snapshot(all_rows),

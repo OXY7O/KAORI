@@ -5,7 +5,7 @@
     ('boxes', 'Assets in Scope', inventory.total_assets, 'Buckets and containers matching the active filters.', 'brand'),
     ('container', 'Buckets', inventory.total_buckets, 'Bucket-native object-storage namespaces.', 'brand'),
     ('box', 'Containers', inventory.total_containers, 'Container-native object-storage namespaces.', 'brand'),
-    ('clock-3', 'Latest Snapshot', latest_label, 'Most recent committed inventory observation in scope.', 'normal' if inventory.latest_observed_at else 'unknown')
+    ('clock-3', 'Latest Snapshot', latest_label, 'Latest committed inventory observation.', 'normal' if inventory.latest_observed_at else 'unknown')
 ] %}
 {% call operational_section_card.render(
     'Object Storage Namespace Posture',

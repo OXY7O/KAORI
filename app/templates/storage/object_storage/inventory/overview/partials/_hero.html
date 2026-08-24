@@ -4,7 +4,7 @@
         <div class="{{ page_hero.content_classes() }}">
             {% call page_hero.intro('database-zap', 'Object Storage Inventory', 'database') %}
                 <h1 class="{{ page_hero.title_classes() }}">Object Storage Overview</h1>
-                <p class="mt-2 {{ page_hero.description_classes() }}">Review a high-level committed fleet summary across managed systems and inventory assets. Open Systems or Buckets &amp; Containers for resource-level detail.</p>
+                <p class="mt-2 {{ page_hero.description_classes() }}">Review committed fleet posture across managed systems and inventory assets.</p>
                 <div class="{{ page_hero.metadata_row_classes() }}">
                     {% if overview.setup.is_blocked %}
                         {{ page_hero.meta_label('database-backup', 'Committed Inventory') }}

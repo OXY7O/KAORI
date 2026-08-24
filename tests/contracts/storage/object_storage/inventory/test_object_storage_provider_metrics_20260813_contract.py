@@ -54,8 +54,8 @@ def test_bucket_detail_surfaces_usage_strategy_and_source() -> None:
     assert "return 'MinIO Admin Data Usage v3'" in presentation
     assert "'usage_collection_label': _usage_collection_label(provider_metadata)" in presentation
     assert "detail.inventory_row('Usage Source', bucket.usage_collection_label)" in detail
-    assert 'Prefer provider_metrics for scalable provider-native usage' in detail
-    assert 'full_scan only as an explicit fallback' in detail
+    assert 'Prefer provider_metrics' in detail
+    assert 'use full_scan only for exact object enumeration' in detail
 
 
 def test_environment_examples_keep_provider_metrics_opt_in() -> None:

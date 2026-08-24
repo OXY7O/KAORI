@@ -253,7 +253,7 @@ def _overview_snapshot(rows: list[dict[str, Any]]) -> dict[str, Any]:
         description = 'Register a Storage integration to establish committed object-storage inventory.'
     elif has_exceptions:
         status, tone = 'Review Snapshot', 'warning'
-        description = 'Committed inventory is available, with snapshot or provider conditions requiring review.'
+        description = 'Committed inventory is available; snapshot or provider conditions need review.'
     else:
         status, tone = 'Current', 'normal'
         description = 'All managed object-storage systems have current committed inventory.'

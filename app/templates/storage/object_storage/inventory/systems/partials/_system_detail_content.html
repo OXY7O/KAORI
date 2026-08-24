@@ -27,7 +27,7 @@
             {% call detail.resource_sheet() %}
                 {% call detail.inventory_section('System Identity', 'badge-info', system.status_label, 'status', system.status_tone, description='Registered storage system identity, environment, provider release, and compatibility profile.') %}
                     <dl class="grid min-w-0 gap-x-10 sm:grid-cols-2">
-                        {{ detail.inventory_technical_row('System ID', system.id, nowrap=true, class_name='lg:col-span-2') }}
+                        {{ detail.inventory_technical_row('System ID', system.id, nowrap=true, class_name='lg:col-span-2', copyable=true) }}
                         {{ detail.inventory_row('Registered System', system.name, nowrap=true, class_name='lg:col-span-2') }}
                         {{ detail.inventory_row('Environment', system.environment|environment_name(empty='Not Specified') ) }}
                         {{ detail.inventory_row('Provider', system.provider_label) }}

@@ -60,7 +60,7 @@
                         {% endif %}
                     </dl>
                     {{ detail.inventory_note(bucket.quota_evidence.guidance, 'gauge') }}
-                    {{ detail.inventory_note('Usage collection is independent from quota collection. Prefer provider_metrics for scalable provider-native usage; use full_scan only as an explicit fallback when exact object enumeration is required.', 'chart-no-axes-column') }}
+                    {{ detail.inventory_note('Usage is collected separately from quota. Prefer provider_metrics; use full_scan only for exact object enumeration.', 'chart-no-axes-column') }}
                 {% endcall %}
                 {% call detail.inventory_section('Data Protection', 'shield-check', bucket.protection.label, 'status', bucket.protection.tone, description='Versioning, immutability, encryption, and public-exposure posture normalized from provider evidence.') %}
                     <div class="grid min-w-0 gap-x-10 sm:grid-cols-2">
