@@ -35,7 +35,7 @@
                     {{ detail.inventory_row('Namespace', pod.namespace) }}
                     {{ detail.inventory_row('Owner', pod.owner_display) }}
                     {{ detail.inventory_row('Age', pod.age) }}
-                    {{ detail.inventory_technical_row('Kubernetes UID', pod.uid) }}
+                    {{ detail.inventory_technical_row('Kubernetes UID', pod.uid, copyable=true) }}
                     {{ detail.inventory_row('Created', pod.created_at|user_datetime if pod.created_at else 'Not Reported') }}
                     {{ detail.inventory_row('Collected', pod.collected_at|user_datetime if pod.collected_at else 'Not Reported') }}
                 {% endcall %}

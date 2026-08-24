@@ -65,4 +65,4 @@ def test_node_scheduling_and_namespace_security_use_available_space() -> None:
     assert 'sm:grid-cols-2' in node
     assert 'Scheduling Taints' in node
     assert 'Control Interpretation' in namespace
-    assert 'Default ServiceAccount presence is shown separately' in namespace
+    assert 'Default ServiceAccount presence is reported separately as access-baseline evidence' in namespace

@@ -69,7 +69,7 @@
                 {% call detail.inspector_section('Identity & Snapshot', 'badge-info', 'Canonical node identity, cluster placement, lifecycle age, and committed collection context.') %}
                     <dl class="grid min-w-0 gap-x-10 sm:grid-cols-2">
                         {{ detail.inspector_technical_row('Node Name', node.node_name, nowrap=true, class_name='lg:col-span-2') }}
-                        {{ detail.inspector_technical_row('System UUID', node.system_uuid, nowrap=true, class_name='lg:col-span-2') }}
+                        {{ detail.inspector_technical_row('System UUID', node.system_uuid, nowrap=true, class_name='lg:col-span-2', copyable=true) }}
                         {{ detail.inspector_row('Cluster', node.cluster_name, nowrap=true, class_name='lg:col-span-2') }}
                         {{ detail.inspector_row('Environment', environment_display) }}
                         {{ detail.inspector_row('Role', node.role_display) }}
@@ -80,8 +80,8 @@
                 {% endcall %}
                 {% call detail.inspector_section('Connectivity & Network', 'network', 'Node addressing, hostname, and network-scope evidence captured in the committed snapshot.', '', node.network_availability, 'status', network_tone) %}
                     <dl class="grid min-w-0 gap-x-10 sm:grid-cols-2">
-                        {{ detail.inspector_technical_row('Internal IP', node.internal_ip or 'Not Reported', nowrap=true) }}
-                        {{ detail.inspector_technical_row('External IP', node.external_ip or 'Not Reported', nowrap=true) }}
+                        {{ detail.inspector_technical_row('Internal IP', node.internal_ip or 'Not Reported', nowrap=true, copyable=true) }}
+                        {{ detail.inspector_technical_row('External IP', node.external_ip or 'Not Reported', nowrap=true, copyable=true) }}
                         {{ detail.inspector_technical_row('Hostname / FQDN', node.hostname_address or 'Not Reported', nowrap=true, class_name='lg:col-span-2') }}
                         {{ detail.inspector_row('Network Scope', node.network_scope, class_name='lg:col-span-2') }}
                     </dl>

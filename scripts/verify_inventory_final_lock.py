@@ -262,6 +262,38 @@ def main() -> int:
         errors,
     )
 
+    require(
+        'macro inventory_band_grid_classes()' in detail_primitives
+        and 'xl:grid-cols-[minmax(0,1fr)_minmax(0,3fr)]' in detail_primitives,
+        'Shared Inventory resource-sheet bands must align the description rail to the four-column summary header.',
+        errors,
+    )
+    require(
+        'macro inventory_copy_button(label)' in detail_primitives
+        and 'data-kaori-copy-button' in detail_primitives
+        and 'data-kaori-copy-source' in detail_primitives,
+        'Shared Inventory detail primitives must provide accessible copy controls for technical identifiers.',
+        errors,
+    )
+
+    namespace_detail = read('app/templates/kubernetes/inventory/namespaces/partials/_namespace_detail_content.html')
+    require(
+        'Unset namespace controls remain neutral until evaluated against an explicit governance policy.' in namespace_detail
+        and 'data-kaori-reported-quota' in namespace_detail
+        and 'Hard Limit' in namespace_detail,
+        'Namespace detail must keep concise governance wording and the clear Reported Quotas box contract.',
+        errors,
+    )
+    ingress_backend = read('app/kubernetes/inventory/resources/ingresses.py')
+    ingress_detail = read('app/templates/kubernetes/inventory/ingresses/partials/_ingress_detail_content.html')
+    require(
+        'def _host_access_rows(' in ingress_backend
+        and 'data-kaori-ingress-dns-access' in ingress_detail
+        and 'rel="noopener noreferrer"' in ingress_detail,
+        'Ingress detail must expose governed direct-open actions for concrete declared DNS hosts.',
+        errors,
+    )
+
     for resource in RESOURCE_NAMES:
         hero = read(f'app/templates/kubernetes/inventory/{resource}/partials/_hero.html')
         table = read(f'app/templates/kubernetes/inventory/{resource}/partials/_table_content.html')
@@ -366,6 +398,7 @@ def main() -> int:
 
     standard = read('docs/design/patterns/INVENTORY_RESOURCE_PAGE.md')
     audit = read('docs/design/audits/KUBERNETES_INVENTORY_FINAL_RECHECK_2026_08.md')
+    usability_audit = read('docs/design/audits/KUBERNETES_INVENTORY_USABILITY_AUDIT_2026_08_24.md')
     require(
         '# Inventory Resource Page Pattern v1.3' in standard,
         'Inventory Resource Page standard must be v1.3.',
@@ -381,6 +414,15 @@ def main() -> int:
     require(
         'Final Recheck' in audit and 'L0–L7' in audit,
         'Inventory final audit must document layered release evidence.',
+        errors,
+    )
+
+    require(
+        'Kubernetes Inventory Usability Audit' in usability_audit
+        and 'resource-sheet description rail' in usability_audit
+        and 'copy action' in usability_audit
+        and 'Ingress DNS access' in usability_audit,
+        'Inventory usability audit must document geometry, copy controls, and DNS action boundaries.',
         errors,
     )
 

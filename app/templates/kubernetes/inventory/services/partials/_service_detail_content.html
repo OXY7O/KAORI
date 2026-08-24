@@ -34,7 +34,7 @@
                     {{ detail.inventory_row('Namespace', service.namespace) }}
                     {{ detail.inventory_metadata_row('Service Type', service.type) }}
                     {{ detail.inventory_row('Age', service.age) }}
-                    {{ detail.inventory_technical_row('Kubernetes UID', service.uid) }}
+                    {{ detail.inventory_technical_row('Kubernetes UID', service.uid, copyable=true) }}
                     {{ detail.inventory_row('Generation', service.generation) }}
                     {{ detail.inventory_row('Created', service.created_at|user_datetime if service.created_at else 'Not Reported') }}
                     {{ detail.inventory_row('Collected', service.collected_at|user_datetime if service.collected_at else 'Not Reported') }}
@@ -42,7 +42,7 @@
                 {% endcall %}
                 {% call detail.inventory_section('Network Identity', 'globe-2', service.access_model, badge_size='detail', stretch=false, density='compact', description='Cluster addressing, external exposure, ports, and IP-family evidence for this Service.') %}
                     {{ detail.inventory_fact_grid([
-                                        {'label': 'Cluster IP', 'value': service.cluster_ip},
+                                        {'label': 'Cluster IP', 'value': service.cluster_ip, 'copyable': true},
                                         {'label': 'Cluster IPs', 'value': service.cluster_ips|join(', ') if service.cluster_ips else ('Not Applicable' if service.type == 'Headless' else 'Not Configured')},
                     {'label': 'Declared External IPs', 'value': service.declared_external_ips|join(', ') if service.declared_external_ips else 'Not Configured'},
                     {'label': 'Load Balancer Addresses', 'value': service.load_balancer_addresses|join(', ') if service.load_balancer_addresses else (('No Address Assigned' if service.load_balancer_status_reported else 'Not Reported') if service.type == 'LoadBalancer' else 'Not Applicable')},

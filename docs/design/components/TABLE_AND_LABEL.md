@@ -198,7 +198,7 @@ Inputs and selects:
 - pointer cursor for selects and filter buttons;
 - muted, not-allowed disabled state.
 
-Search placeholders are resource-specific, such as `Search Pods` or `Search Integration Targets`. A filter or search change resets the table to page 1 and preserves all other relevant state.
+Dense Inventory filter rows use the short field label `Search` and a concise domain-specific placeholder, for example `Name, IP, owner, or node`. Other workspaces may retain a resource-specific search label when the surrounding context is ambiguous. A filter or search change resets the table to page 1 and preserves all other relevant state.
 
 ## 12. Sorting
 

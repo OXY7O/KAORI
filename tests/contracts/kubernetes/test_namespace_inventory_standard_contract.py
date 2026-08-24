@@ -57,7 +57,7 @@ def test_namespace_psa_copy_does_not_infer_cluster_defaults() -> None:
 
     assert "return normalized.title() if normalized else 'Not Explicitly Set'" in backend
     assert "'Inherited'" not in backend[backend.index('def _psa_label') :]
-    assert 'does not infer a cluster-level Pod Security Admission default' in detail
+    assert 'does not infer cluster-level Pod Security Admission defaults' in detail
 
 
 def test_namespace_compact_table_keeps_age_in_detail_only() -> None:

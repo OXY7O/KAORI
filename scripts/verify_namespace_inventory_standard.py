@@ -153,7 +153,7 @@ def main() -> int:
         errors,
     )
     require(
-        'does not infer a cluster-level Pod Security Admission default' in detail,
+        'does not infer cluster-level Pod Security Admission defaults' in detail,
         'Detail copy must avoid unsupported PSA inheritance.',
         errors,
     )

@@ -79,8 +79,8 @@ def _placement_context(pod: PodInventory, details: dict[str, Any], spec_reported
 
     rows = [
         {'label': 'Node', 'value': pod.node_name or 'Not Scheduled'},
-        {'label': 'Pod IP', 'value': pod.pod_ip or unknown},
-        {'label': 'Host IP', 'value': details.get('host_ip') or unknown},
+        {'label': 'Pod IP', 'value': pod.pod_ip or unknown, 'copyable': True},
+        {'label': 'Host IP', 'value': details.get('host_ip') or unknown, 'copyable': True},
         {'label': 'Scheduler', 'value': (placement.get('scheduler') or unknown) if spec_reported else unknown},
         {
             'label': 'Priority Class',

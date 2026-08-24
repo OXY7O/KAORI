@@ -507,6 +507,34 @@ def _detail_reference_context(ingress: IngressInventory, details: dict[str, Any]
     }
 
 
+def _host_access_rows(
+    hosts: list[str],
+    tls_entries: list[dict[str, Any]],
+) -> list[dict[str, str | None]]:
+    tls_hosts = {
+        str(host).strip()
+        for entry in tls_entries
+        if isinstance(entry, dict)
+        for host in (entry.get('hosts') or [])
+        if str(host or '').strip()
+    }
+    rows: list[dict[str, str | None]] = []
+    for raw_host in hosts:
+        host = str(raw_host or '').strip()
+        if not host:
+            continue
+        direct = '*' not in host and '/' not in host and ' ' not in host
+        scheme = 'https' if host in tls_hosts else 'http'
+        rows.append(
+            {
+                'host': host,
+                'url': f'{scheme}://{host}' if direct else None,
+                'scheme': scheme.upper() if direct else 'Wildcard',
+            }
+        )
+    return rows
+
+
 def _present_ingress_detail(
     ingress: IngressInventory,
     cluster_name: str,
@@ -534,6 +562,7 @@ def _present_ingress_detail(
         'host_label': host_label,
         'host_supporting': host_supporting,
         'hosts': hosts,
+        'host_access_rows': _host_access_rows(hosts, context['tls_entries']),
         'host_count': host_count,
         'hostless_rule_count': int(details.get('hostless_rule_count') or 0),
         'addresses': publication['addresses'],

@@ -37,7 +37,7 @@ def test_node_v10_long_evidence_gets_full_width_when_it_needs_it() -> None:
         "detail.inspector_technical_row('Node Name', node.node_name, nowrap=true, class_name='lg:col-span-2')" in node
     )
     assert (
-        "detail.inspector_technical_row('System UUID', node.system_uuid, nowrap=true, class_name='lg:col-span-2')"
+        "detail.inspector_technical_row('System UUID', node.system_uuid, nowrap=true, class_name='lg:col-span-2', copyable=true)"
         in node
     )
     assert (
@@ -66,17 +66,20 @@ def test_node_v10_uses_one_body_typeface_without_nested_scroll() -> None:
     assert 'embedded=true' in node
 
 
-def test_node_v10_header_keeps_context_quiet_and_copy_free() -> None:
+def test_node_v10_header_keeps_context_quiet_while_detail_values_may_be_copyable() -> None:
     node = read('app/templates/kubernetes/inventory/nodes/partials/_node_detail_content.html')
+    header = node.split('detail.inspector_summary_strip(', 1)[0]
 
-    assert 'detail.header_identity_row()' in node
-    assert '>Cluster<' in node
-    assert '>Role<' in node
-    assert '>Environment<' in node
-    assert '>Status<' in node
-    assert 'status_dot_classes' in node
-    assert 'clipboard' not in node
-    assert 'copy' not in node.lower()
+    assert 'detail.header_identity_row()' in header
+    assert '>Cluster<' in header
+    assert '>Role<' in header
+    assert '>Environment<' in header
+    assert '>Status<' in header
+    assert 'status_dot_classes' in header
+    assert 'clipboard' not in header
+    assert 'copyable=true' not in header.lower()
+    assert "inspector_technical_row('System UUID', node.system_uuid" in node
+    assert "inspector_technical_row('Internal IP', node.internal_ip" in node
 
 
 def test_node_v10_preserves_snapshot_and_operational_boundaries() -> None:

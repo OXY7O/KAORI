@@ -34,7 +34,7 @@
                     {{ detail.inventory_row('Namespace', workload.namespace) }}
                     {{ detail.inventory_metadata_row('Kind', workload.type) }}
                     {{ detail.inventory_row('Age', workload.age) }}
-                    {{ detail.inventory_technical_row('UID', workload.uid) }}
+                    {{ detail.inventory_technical_row('UID', workload.uid, copyable=true) }}
                     {{ detail.inventory_row('Created', workload.created_at|user_datetime if workload.created_at else '-') }}
                     {{ detail.inventory_row('Collected', workload.collected_at|user_datetime) }}
                 {% endcall %}

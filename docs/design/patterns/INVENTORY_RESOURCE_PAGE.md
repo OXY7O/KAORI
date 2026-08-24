@@ -77,6 +77,14 @@ Do not add page-local modal markup, local expandable-row JavaScript, nested scro
 
 The leading resource icon, title, metadata, and primary lifecycle/readiness/collection state form one identity group. Use the shared `detail.header_identity_row()` primitive so operational state such as `Ready`, `Not Ready`, lifecycle posture, backend readiness, and collection evidence sits beside the resource title and metadata instead of floating on a second line beneath the description. The description remains the supporting line below that grouped identity. The same grouped identity primitive is reused by other Full Workspace Modal surfaces such as Access administration, Object Storage Inventory, and TLS Governance so state never drifts onto a detached second line.
 
+### Full Workspace Modal resource-sheet symmetry and utility actions
+
+The four-column summary strip is the alignment reference for the evidence sheet below it. At `xl`, the descriptive rail uses the first quarter of the sheet and the evidence body uses the remaining three quarters. `detail.inventory_band_grid_classes()` owns this geometry and must also be reused by embedded metadata and related-resource collections; page-local fixed rail widths are not permitted.
+
+Technical identifiers that operators frequently transfer into operational tooling may expose the shared icon-only copy control. Kubernetes UID/UID, System UUID, and concrete IP addresses are approved examples. The action must have an accessible name, use the global Clipboard behavior, and disappear for unavailable values.
+
+Dense resource filters use the canonical `Search` field label with a concise domain-specific placeholder. Ingress DNS host actions may open only a concrete declared host using `http` or `https` derived from committed TLS declaration. Wildcard host declarations remain reference-only, and a direct-open action never implies DNS resolution, reachability, or service health.
+
 ## Architecture and ownership
 
 ```text

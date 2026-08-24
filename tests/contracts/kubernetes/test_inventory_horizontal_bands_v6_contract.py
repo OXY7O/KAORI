@@ -21,7 +21,7 @@ def test_inventory_v6_uses_one_horizontal_band_contract() -> None:
     shared = read('app/templates/components/details/_detail_content.html')
 
     assert 'data-kaori-inventory-section-layout="resource-sheet-band"' in shared
-    assert 'xl:grid-cols-[20rem_minmax(0,1fr)]' in shared
+    assert 'xl:grid-cols-[minmax(0,1fr)_minmax(0,3fr)]' in shared
     assert 'xl:border-r' in shared
     assert 'bg-surface-elevated/35' in shared
     assert "badge_size='detail'" in shared

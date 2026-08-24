@@ -36,7 +36,7 @@
                     {{ detail.inventory_row('Cluster', item.cluster_name) }}
                     {{ detail.inventory_row('Namespace', item.namespace) }}
                     {{ detail.inventory_metadata_row('Resource Type', item.type_label) }}
-                    {{ detail.inventory_technical_row('Kubernetes UID', item.uid) }}
+                    {{ detail.inventory_technical_row('Kubernetes UID', item.uid, copyable=true) }}
                     {{ detail.inventory_row('Age', item.age) }}
                     {{ detail.inventory_row('Created', item.created_at|user_datetime if item.created_at else 'Not Reported') }}
                     {{ detail.inventory_row('Collected', item.collected_at|user_datetime) }}
