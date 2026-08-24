@@ -48,7 +48,7 @@ Protected Reveal registries / TLS
 
 ### Protected Reveal workspace contract
 
-Protected Secret Reveal uses **Tab Style 1 — Integrated Workspace Tabs** because `New Request`, `My Requests`, and `Approvals` are peer workspaces rather than local component views.
+Protected Secret Reveal uses **Tab Style 4 — Content Tabs**, matching the established Kubernetes Analytics compact workspace treatment while preserving the protected page-owned state and server-navigation fallback.
 
 ```text
 New Request
@@ -132,7 +132,7 @@ The modal is the final human confirmation. It does not replace the signed receip
 
 ## Protected Secret Reveal
 
-Protected Reveal uses Tab Style 3:
+Protected Reveal uses Tab Style 4:
 
 ```text
 New Request | My Requests | Approvals

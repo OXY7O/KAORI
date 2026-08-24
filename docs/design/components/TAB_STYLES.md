@@ -20,15 +20,15 @@ A new style is justified only when the content relationship or interaction model
 |---|---|
 | Semantic key | `integrated-workspace` |
 | Component | `components/workspace_tabs.html` |
-| References | Kubernetes Operations Dashboard; Protected Secret Reveal |
+| References | Kubernetes Operations Dashboard |
 | Content relationship | Peer sections within one workspace and one active scope |
 | Surface | Integrated divider; no separate card shell |
 | State | Stored in the URL and preserved through HTMX scope changes |
 | Layout | Horizontal tabs with narrow-screen overflow |
 
-Use Tab Style 1 for operational dashboards, analytics workspaces, and peer task/status/approval views such as Protected Secret Reveal, where each tab is a full workspace perspective on the same governed context.
+Use Tab Style 1 for operational dashboards and other peer workspace domains where the tab bar is part of the workspace hierarchy.
 
-For server-rendered peer workspaces that need URL persistence, use the canonical Alpine `render()` contract with an optional fifth `href` tuple value. Alpine owns instant tab switching and URL synchronization; the real `href` is only a progressive server-navigation fallback if Alpine is unavailable. Panels bind visibility to `activeTab`, while the server-selected view remains the initial state on refresh. Do not add a second custom JavaScript tab controller beside Integrated Workspace Tabs.
+For server-rendered peer workspaces that need URL persistence, use the canonical URL-backed workspace contract. Do not duplicate tab styling or introduce a second page-local state owner.
 
 ## Tab Style 2 — Framed Workspace Tabs
 
@@ -66,13 +66,13 @@ Compact toolbar tabsets stay content-width by default. Bounded inspectors may us
 |---|---|
 | Semantic key | `content-tabs` |
 | Component | `components/content_tabs.html` |
-| References | Kubernetes/Object Storage Analytics and Alert Intelligence |
+| References | Kubernetes/Object Storage Analytics, Alert Intelligence, and Protected Secret Reveal |
 | Content relationship | Several closely related content views inside one established workspace |
 | Surface | Compact rounded controls within or directly under the workspace header |
 | State | Consumer-owned buttons or server/URL-owned links; one owner per tabset |
 | Layout | Wrap by default; approved one-row overflow mode for dense compact navigation |
 
-Use Tab Style 4 for compact intra-workspace content navigation. The component owns visual active/inactive class tokens. Client-owned tabsets use `render_buttons()` with their controller; URL/server-owned section navigation uses `render_links()` and native link semantics. Internal dataset, snapshot, DOM-target, or loader identifiers must never be passed through as visible badges. Dense navigation may use the documented no-wrap mode only with concise user-facing labels. The detailed contract lives in `CONTENT_TABS.md`.
+Use Tab Style 4 for compact intra-workspace content navigation. The component owns visual active/inactive class tokens. Client-owned tabsets use `render_buttons()` with their controller; URL/server-owned section navigation uses `render_links()`; security-sensitive controlled views that require instant switching plus a real navigation fallback use `render_controlled_links()`. Internal dataset, snapshot, DOM-target, or loader identifiers must never be passed through as visible badges. Dense navigation may use the documented no-wrap mode only with concise user-facing labels. The detailed contract lives in `CONTENT_TABS.md`.
 
 ## Future Styles
 
@@ -83,4 +83,4 @@ Never name implementation files `tab_style_3.html` or similar. File and componen
 
 ### Progressive Enhancement Contract
 
-Controlled Integrated Workspace Tabs used for security-sensitive peer workspaces such as Protected Reveal must retain a server-navigation fallback. The rendered tab owns a real `href` to the same workspace with its server-owned view parameter, while JavaScript may intercept only after a valid tab/panel pair is confirmed. A controller failure must never leave a visible but inert tab.
+Security-sensitive controlled tabs such as Protected Reveal must retain a server-navigation fallback. The rendered Content Tab owns a real `href` to the same workspace with its server-owned view parameter, while Alpine may intercept for instant switching. A controller failure must never leave a visible but inert tab.

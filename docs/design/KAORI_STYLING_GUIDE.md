@@ -750,7 +750,7 @@ ConfigMap and Secret Delete require the canonical final destructive confirmation
 
 ### Protected Reveal
 
-Use Tab Style 3 for `New Request`, `My Requests`, and `Approvals`. Only the active registry panel may poll. Numeric pagination owns its endpoint, filters, HTMX target, and loading boundary.
+Use Tab Style 4 — Content Tabs for `New Request`, `My Requests`, and `Approvals`, matching the reviewed Kubernetes Analytics compact treatment. Protected Reveal uses the controlled progressive-link mode so each tab retains a real server-navigation fallback while Alpine owns instant switching, URL state, and keyboard movement. Only the active registry panel may poll. Numeric pagination owns its endpoint, filters, HTMX target, and loading boundary.
 
 ### Inventory modal technical text
 

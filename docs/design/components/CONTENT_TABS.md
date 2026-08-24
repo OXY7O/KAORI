@@ -9,7 +9,7 @@ Content Tabs are the canonical compact tab treatment for switching several close
 - Review label: **Tab Style 4 — Content Tabs**
 - Semantic key: `content-tabs`
 - Component owner: `app/templates/components/content_tabs.html`
-- Primary references: Kubernetes/Object Storage Analytics content workspaces and Alert Intelligence long-form sections.
+- Primary references: Kubernetes/Object Storage Analytics content workspaces, Alert Intelligence long-form sections, and Protected Secret Reveal.
 
 ## When to Use
 
@@ -21,7 +21,7 @@ Use Content Tabs when all views:
 - may have four or more peer content views;
 - do not require the stronger page-level hierarchy of Integrated or Framed Workspace Tabs.
 
-Do not use Content Tabs for a security-sensitive multi-step peer workspace such as Protected Secret Reveal, for a full Integration parent workspace, or for a two-view local visualization toggle.
+Do not use Content Tabs for a full Integration parent workspace or a two-view local visualization toggle. Protected Secret Reveal is an approved security-sensitive exception because it preserves a real URL fallback while adopting the established Analytics visual treatment.
 
 ## Geometry
 
@@ -67,6 +67,13 @@ The Analytics controller owns:
 - native `hidden` state for panels;
 - optional URL/session persistence;
 - one-time lazy HTMX activation through `kaori:analytics-tab-activated`.
+
+
+### Controlled progressive-link mode
+
+`render_controlled_links()` is the approved mode for Protected Secret Reveal. It reuses the same Content Tabs geometry and active/inactive classes, while the page-owned Alpine controller keeps instant switching, URL synchronization, roving keyboard focus, and panel visibility. Every tab also keeps a real `href` with the server-owned view parameter, so the workspace remains navigable if Alpine is unavailable.
+
+The controlled mode must not duplicate Tailwind state classes in the consuming page. The shared component remains the visual owner; the page owns only the security-sensitive view state and lifecycle.
 
 ### Server-owned link mode
 

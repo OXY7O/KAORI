@@ -222,15 +222,26 @@ def main() -> int:
         errors,
     )
 
+    secret_create = read('app/templates/kubernetes/operations/secrets/create.html')
+    require(
+        'grid gap-5 md:grid-cols-2' in secret_create and 'lg:grid-cols-2 xl:grid-cols-4' not in secret_create,
+        'Secret Create Target & Identity must use the reviewed two-column, two-row field geometry.',
+        errors,
+    )
     reveal_page = read('app/templates/kubernetes/operations/secrets/reveal.html')
-    reveal_tabs = read('app/templates/components/workspace_tabs.html')
+    reveal_tabs = read('app/templates/components/content_tabs.html')
+    require(
+        'No eligible cluster. Review readiness or policy.' in reveal_page,
+        'Protected Reveal empty-cluster guidance must use the compact reviewed wording.',
+        errors,
+    )
     reveal_script = read('app/static/js/secret_reveal_workspace.js')
     reveal_routes = read('app/kubernetes/operations/secrets/reveal_routes.py')
     reveal_service = read('app/kubernetes/operations/secrets/reveal_service.py')
     reveal_step_up = read('app/templates/kubernetes/operations/secrets/_reveal_step_up.html')
     for token in (
-        'components/workspace_tabs.html',
-        'workspace_tabs.render(reveal_tabs',
+        'components/content_tabs.html',
+        'content_tabs.render_controlled_links',
         "activeTab: '{{ active_reveal_view }}'",
         'setTab(tab)',
         "url.searchParams.set('reveal_view', tab)",
@@ -239,14 +250,14 @@ def main() -> int:
         require(token in reveal_page, f'Protected Reveal workspace tab contract missing: {token}', errors)
     require(
         'components/segmented_tabs.html' not in reveal_page,
-        'Protected Reveal peer workspaces must use Integrated Workspace Tabs, not Compact Segmented Tabs.',
+        'Protected Reveal must use the approved Analytics-derived Content Tabs treatment, not Compact Segmented Tabs.',
         errors,
     )
     require(
         '@click.prevent="setTab(' in reveal_tabs
         and 'data-kaori-tab-fallback="server-navigation"' in reveal_tabs
-        and 'href="{{ tab_href }}"' in reveal_tabs,
-        'Integrated Workspace Tabs must switch through Alpine while retaining server-navigation fallback.',
+        and "href=\"{{ tab_href }}\"" in reveal_tabs,
+        'Protected Reveal Content Tabs must switch through Alpine while retaining server-navigation fallback.',
         errors,
     )
     for token in (

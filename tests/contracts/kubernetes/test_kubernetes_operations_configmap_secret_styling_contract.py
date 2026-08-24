@@ -95,7 +95,8 @@ def test_secret_create_uses_reusable_choice_and_entry_components() -> None:
     assert 'entry_editor.row_classes' in source
     assert 'components/structured_entry_editor.html' in configmap_editor
     assert 'Target & Identity' in source
-    assert 'xl:grid-cols-4' in source
+    assert 'grid gap-5 md:grid-cols-2' in source
+    assert 'lg:grid-cols-2 xl:grid-cols-4' not in source
 
 
 def test_operation_permission_and_classification_are_separate() -> None:

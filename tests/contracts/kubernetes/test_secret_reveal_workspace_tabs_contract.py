@@ -7,17 +7,18 @@ def read(relative: str) -> str:
     return (ROOT / relative).read_text(encoding='utf-8')
 
 
-def test_protected_reveal_uses_integrated_workspace_tabs() -> None:
+def test_protected_reveal_uses_analytics_content_tab_treatment() -> None:
     page = read('app/templates/kubernetes/operations/secrets/reveal.html')
-    tabs = read('app/templates/components/workspace_tabs.html')
+    tabs = read('app/templates/components/content_tabs.html')
 
-    assert 'components/workspace_tabs.html' in page
-    assert 'workspace_tabs.render(reveal_tabs' in page
+    assert 'components/content_tabs.html' in page
+    assert 'content_tabs.render_controlled_links' in page
     assert "reveal_view='new'" in page
     assert "reveal_view='mine'" in page
     assert 'data-kaori-tab-fallback="server-navigation"' in tabs
     assert 'components/segmented_tabs.html' not in page
-    assert 'data-kaori-tab-variant="integrated-workspace"' in tabs
+    assert 'data-kaori-tab-variant="content-tabs-controlled"' in tabs
+    assert 'data-kaori-tab-control="alpine-url-fallback"' in tabs
     assert "('new', 'New Request'" in page
     assert "('mine', 'My Requests'" in page
     assert "('approvals', 'Approvals'" in page
@@ -41,10 +42,10 @@ def test_reveal_tab_state_uses_canonical_alpine_workspace_controller() -> None:
 
 def test_reveal_tabs_switch_client_side_with_server_navigation_fallback() -> None:
     page = read('app/templates/kubernetes/operations/secrets/reveal.html')
-    tabs = read('app/templates/components/workspace_tabs.html')
+    tabs = read('app/templates/components/content_tabs.html')
 
     assert '@click.prevent="setTab(' in tabs
-    assert 'href="{{ tab_href }}"' in tabs
+    assert "href=\"{{ tab_href }}\"" in tabs
     assert 'data-kaori-tab-fallback="server-navigation"' in tabs
     assert "reveal_view='new'" in page
     assert "reveal_view='mine'" in page

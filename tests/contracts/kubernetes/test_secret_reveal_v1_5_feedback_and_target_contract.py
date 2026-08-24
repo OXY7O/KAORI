@@ -62,4 +62,4 @@ def test_protected_reveal_explains_empty_namespace_and_cluster_states() -> None:
     assert 'Enable a namespace policy under Platform Operations → Secret Reveal first.' in target
     assert 'Protected Reveal globally disabled' in page
     assert 'KUBERNETES_SECRET_REVEAL_ENABLED=true' in page
-    assert 'No eligible cluster. Check readiness or enable a policy.' in page
+    assert 'No eligible cluster. Review readiness or policy.' in page
