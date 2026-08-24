@@ -2,7 +2,7 @@
 {% set current_user_role = current_user.role_name|default('Viewer', true)|replace('_', ' ')|title %}
 <header class="sticky top-0 z-30 kaori-app-shell border-b border-outline-subtle bg-surface-shell backdrop-blur-xl transition-colors duration-300"
         x-data="kaoriNavbar"
-        @kaori:notifications-changed.window="if ($event.detail?.tab === 'activity' || $event.detail?.tab === 'notifications') { notificationDeckTab = $event.detail.tab } queueNotificationDeckRefresh()"
+        @kaori:notifications-changed.window="if ($event.detail?.tab && ['activity', 'inbox', 'notifications'].includes($event.detail?.tab)) { notificationDeckTab = $event.detail.tab === 'inbox' ? 'activity' : $event.detail.tab } queueNotificationDeckRefresh()"
         @keydown.escape.window="closeMenus()">
     <div class="flex h-16 items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
         <!-- Left: sidebar control and current page context -->

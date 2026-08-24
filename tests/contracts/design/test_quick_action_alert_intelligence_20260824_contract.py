@@ -16,3 +16,12 @@ def test_alert_center_quick_action_routes_to_alert_intelligence() -> None:
     assert "url_for('alert_intelligence.index')" in action
     assert "url_for('analytics.alerts')" not in action
     assert 'Review active alert operations in Alert Intelligence.' in action
+
+
+def test_notification_deck_change_event_bridge_keeps_inbox_compatibility() -> None:
+    navbar = read('app/templates/components/navigation/navbar.html')
+
+    assert '@kaori:notifications-changed.window="if ($event.detail?.tab' in navbar
+    assert "['activity', 'inbox', 'notifications'].includes($event.detail?.tab)" in navbar
+    assert "$event.detail.tab === 'inbox' ? 'activity' : $event.detail.tab" in navbar
+    assert 'queueNotificationDeckRefresh()' in navbar
