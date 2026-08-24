@@ -1,8 +1,10 @@
+{% import "components/navigation/_global_search.html" as global_search %}
 {% set breadcrumb_items = navigation_breadcrumb|default([], true) %}
 {% set current_user_role = current_user.role_name|default('Viewer', true)|replace('_', ' ')|title %}
 <header class="sticky top-0 z-30 kaori-app-shell border-b border-outline-subtle bg-surface-shell backdrop-blur-xl transition-colors duration-300"
         x-data="kaoriNavbar"
         @kaori:notifications-changed.window="if ($event.detail?.tab && ['activity', 'inbox', 'notifications'].includes($event.detail?.tab)) { notificationDeckTab = $event.detail.tab } queueNotificationDeckRefresh()"
+        @keydown.window="handleGlobalSearchShortcut($event)"
         @keydown.escape.window="closeMenus()">
     <div class="flex h-16 items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
         <!-- Left: sidebar control and current page context -->
@@ -41,22 +43,13 @@
                 {% endfor %}
             </nav>
         </div>
-        <!-- Center: future global search placeholder -->
+        <!-- Center: Global Search -->
         <div class="hidden min-w-0 flex-1 justify-center xl:flex">
-            <button type="button"
-                    class="flex h-10 w-full max-w-md items-center justify-between rounded-xl border border-outline-default bg-surface-page px-3 text-left text-xs text-content-disabled transition hover:border-kaori-primary/25 hover:bg-surface-card"
-                    title="Global search placeholder for a future sprint">
-                <span class="flex items-center gap-2">
-                    <i data-lucide="search" class="h-4 w-4"></i>
-                    <span>Search Kubernetes clusters, namespaces, reports...</span>
-                </span>
-                <span class="rounded-lg border border-outline-default bg-surface-card px-1.5 py-0.5 text-xs font-semibold text-content-muted">
-                    Soon
-                </span>
-            </button>
+            {{ global_search.desktop_trigger() }}
         </div>
         <!-- Right: actions -->
         <div class="flex flex-shrink-0 items-center gap-2 sm:gap-3">
+            {{ global_search.mobile_trigger() }}
             <!-- Quick actions -->
             <div class="relative">
                 <button @click="toggleQuickActions()"
@@ -235,4 +228,5 @@
     <template x-teleport="body">
         {% include "components/navigation/_about_modal.html" %}
     </template>
+    {{ global_search.dialog() }}
 </header>
