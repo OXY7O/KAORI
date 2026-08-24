@@ -13,13 +13,13 @@
                         'warning' if payload.summary.active or payload.summary.delivery_failures or payload.summary.postmortem_required else 'normal',
                         size='compact') }}
         </header>
+        {% set open_case_tone = 'critical' if payload.summary.critical else 'warning' if payload.summary.active else 'normal' %}
         <div class="grid divide-y divide-outline-subtle sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-4">
             {{ intelligence_ui.metric('siren',
                         'Open Cases',
                         payload.summary.active,
                         payload.summary.critical ~ ' critical',
-                        'critical' if payload.summary.critical else ('warning' if payload.summary.active else 'normal')
-            ) }}
+                        open_case_tone) }}
             {{ intelligence_ui.metric('badge-check',
                         'Verification Pending',
                         payload.summary.verification_pending,

@@ -18,6 +18,25 @@ def test_inventory_resource_sheet_bands_align_with_four_column_summary_header() 
     assert 'class="{{ detail.inventory_band_grid_classes() }}"' in metadata
     assert 'class="{{ detail.inventory_band_grid_classes() }}"' in related
     assert 'xl:grid-cols-[20rem_minmax(0,1fr)]' not in shared
+    assert 'data-kaori-inventory-summary-alignment="shared-gutter"' in shared
+    assert 'mx-4 mt-5' in shared
+    assert 'sm:mx-5' in shared
+    assert 'lg:mx-6' in shared
+
+    detail_files = {
+        'overview': '_cluster_detail_content.html',
+        'nodes': '_node_detail_content.html',
+        'namespaces': '_namespace_detail_content.html',
+        'workloads': '_workload_detail_content.html',
+        'pods': '_pod_detail_content.html',
+        'services': '_service_detail_content.html',
+        'ingresses': '_ingress_detail_content.html',
+        'storage': '_storage_detail_content.html',
+        'configuration': '_configuration_detail_content.html',
+    }
+    for resource, filename in detail_files.items():
+        source = read(f'app/templates/kubernetes/inventory/{resource}/partials/{filename}')
+        assert 'p-4 sm:p-5 lg:p-6' in source, resource
 
 
 def test_inventory_copy_controls_are_shared_and_used_for_identifiers_and_addresses() -> None:

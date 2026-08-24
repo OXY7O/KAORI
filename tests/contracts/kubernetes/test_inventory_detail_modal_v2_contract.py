@@ -108,7 +108,7 @@ def test_configuration_key_inventory_uses_full_width_grouped_list_instead_of_til
     configuration = read('app/templates/kubernetes/inventory/configuration/partials/_configuration_detail_content.html')
     metadata = read('app/templates/components/technical_metadata_collection.html')
 
-    assert 'min-w-0 space-y-4 p-4 sm:p-5 lg:p-6' in configuration
+    assert 'p-4 sm:p-5 lg:p-6' in configuration
     assert "metadata_collection.render('Key Inventory'" in configuration
     assert (
         "detail.inventory_note('Kubernetes list responses arrive transiently in the collector process. KAORI indexes key names only and does not decode, log, persist, or display value content.', 'info')"

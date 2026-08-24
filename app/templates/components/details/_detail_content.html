@@ -373,7 +373,8 @@
 {% macro inspector_summary_strip(items) -%}
     <div data-resource-detail-summary
          data-kaori-node-inspector-summary
-         class="mt-5 grid overflow-hidden border border-outline-subtle bg-surface-card sm:grid-cols-2 lg:mt-6 xl:grid-cols-4">
+         data-kaori-inventory-summary-alignment="shared-gutter"
+         class="mx-4 mt-5 grid overflow-hidden border border-outline-subtle bg-surface-card sm:mx-5 sm:grid-cols-2 lg:mx-6 lg:mt-6 xl:grid-cols-4">
         {% for item in items %}
             {% set tone = item.tone if item.tone is defined else 'brand' %}
             {% set icon_classes = 'bg-status-normal-soft text-status-normal-text' if tone == 'normal' else ('bg-status-warning-soft text-status-warning-text' if tone == 'warning' else ('bg-status-critical-soft text-status-critical-text' if tone == 'critical' else 'bg-kaori-soft text-kaori-primary')) %}
@@ -405,9 +406,7 @@
             <article class="min-w-0 border-b border-outline-subtle px-5 py-3.5 sm:border-r xl:border-b-0 xl:last:border-r-0">
                 <p class="text-xs font-medium leading-4 text-content-muted">{{ label }}</p>
                 <p class="mt-1 break-words text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]">{{ value }}</p>
-                {% if description %}
-                    <p class="mt-0.5 text-xs leading-4 text-content-muted">{{ description }}</p>
-                {% endif %}
+                {% if description %}<p class="mt-0.5 text-xs leading-4 text-content-muted">{{ description }}</p>{% endif %}
             </article>
         {% endfor %}
     </div>
@@ -432,8 +431,6 @@
 {% macro subsection(title, description=None) -%}
     <div class="mb-3">
         <h5 class="text-sm font-semibold leading-5 text-content-primary">{{ title }}</h5>
-        {% if description %}
-            <p class="mt-1 text-xs leading-5 text-content-muted">{{ description }}</p>
-        {% endif %}
+        {% if description %}<p class="mt-1 text-xs leading-5 text-content-muted">{{ description }}</p>{% endif %}
     </div>
 {%- endmacro %}
