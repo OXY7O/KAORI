@@ -47,6 +47,8 @@ from app.storage.object_storage.analytics.materialization import (
     get_forecast_snapshot,
     read_analytics_snapshot,
 )
+from app.storage.object_storage.analytics.overview_alerts import build_overview_alert_summary
+from app.storage.object_storage.analytics.recommendations import apply_recommendation_context, empty_recommendation_context
 from app.storage.object_storage.analytics.presentation import (
     PerformanceEvidence,
     build_bucket_analysis,
@@ -63,10 +65,6 @@ from app.storage.object_storage.analytics.presentation import (
     utilization_percent,
     utilization_tone,
 )
-from app.storage.object_storage.analytics.recommendations import (
-    build_recommendation_context,
-    empty_recommendation_context,
-)
 from app.storage.object_storage.analytics.runtime import (
     EvidenceReader,
     runtime_source_state,
@@ -74,7 +72,6 @@ from app.storage.object_storage.analytics.runtime import (
     waiting_metrics_readiness,
     waiting_metrics_source,
 )
-
 
 @dataclass(frozen=True)
 class PageDefinition:
@@ -620,6 +617,7 @@ def _base_context(page_key: str, query_args: Any) -> tuple[dict[str, Any], Objec
             'detail': 'Select an Object Storage system.',
         },
         'alert_table': None,
+        'overview_alerts': None,
         **empty_recommendation_context(),
         'metrics': {},
         'bucket_table': None,
@@ -733,7 +731,6 @@ def get_object_storage_analytics_context(page_key: str, query_args: Any) -> dict
         context['dependency_blocker'] = inventory_required_blocker(system)
         return context
 
-    context.update(build_recommendation_context(system, page_key=page_key))
 
     payload = _attach_committed_analytics_snapshot(context, system=system, time_range=time_range)
     if payload is None:
@@ -741,6 +738,7 @@ def get_object_storage_analytics_context(page_key: str, query_args: Any) -> dict
 
     if page_key == 'alerts':
         _apply_alert_snapshot_context(context, payload=payload, system=system, query_args=query_args)
+        apply_recommendation_context(context, page_key='alerts')
         return context
 
     page_metrics_value = payload.get('page_metrics')
@@ -755,6 +753,12 @@ def get_object_storage_analytics_context(page_key: str, query_args: Any) -> dict
         )
         return context
     context['metrics'] = metrics
+
+    if page_key == 'overview':
+        context['overview_alerts'] = build_overview_alert_summary(
+            payload=payload,
+            selected_source=context['selected_alert_source'],
+        )
 
     if page_key in {'overview', 'forecast'}:
         history_window = '30d' if page_key == 'overview' else context['selected_forecast_history_window']
@@ -776,6 +780,9 @@ def get_object_storage_analytics_context(page_key: str, query_args: Any) -> dict
             system=system,
             time_range=time_range,
         )
+
+    if page_key in {'capacity', 'performance', 'forecast', 'top_consumers'}:
+        apply_recommendation_context(context, page_key=page_key)
     return context
 
 

@@ -133,11 +133,7 @@ def main() -> int:
     ):
         assert f'def {endpoint}' in routes
         assert "@permission_required('object_storage_analytics.view')" in routes
-        if endpoint not in {
-            'object_storage_recommendations',
-            'object_storage_bucket_table',
-            'object_storage_alert_table',
-        }:
+        if endpoint not in {'object_storage_recommendations', 'object_storage_bucket_table', 'object_storage_alert_table'}:
             assert f'analytics.{endpoint}' in menu
 
     assert 'profile_key: object-storage-metrics-v1' in metrics_catalog
@@ -180,11 +176,12 @@ def main() -> int:
     assert 'minio-alerts-v1' not in alertmanager_catalog
     assert "validation_profile = 'object-storage-alerts-v1'" in alertmanager_profile_migration
     assert "validation_status = 'validation_required'" in alertmanager_profile_migration
-    assert 'Active Alerts' in alerts_summary
+    assert 'Provider Alerts' in alerts_summary
+    assert 'Anomaly Signals' in alerts_summary
     assert 'Alert Reading' in alerts_summary
-    assert 'Provider alerts and metric signals are separate' in alerts_summary
-    assert 'Metric-Derived Signal Detail' in alerts_signals
-    assert 'Active Alert Records' in alert_records
+    assert 'Provider alerts and anomaly signals are separate' in alerts_summary
+    assert 'Anomaly Signal Detail' in alerts_signals
+    assert 'Provider Alert Records' in alert_records
     assert 'registry_ui.clear_filters_action(' in alert_records
     assert 'Alertmanager Authority' in alert_source_evidence
     assert 'Alert Lifecycle & Routing' in boundary
@@ -380,7 +377,7 @@ def main() -> int:
     assert "'Usage Concentration'" in hero_posture
 
     assert 'data-analytics-tabset-id="object-storage-alerts-content"' in alerts_workspace
-    for label in ('Alert Overview', 'Alert Records', 'Metric Signals', 'Evidence'):
+    for label in ('Alert Overview', 'Provider Alerts', 'Anomaly Signals', 'Recommendations', 'Evidence'):
         assert f"'{label}'" in alerts_workspace
     assert '_alerts_summary.html' in alerts_workspace
     assert '_alerts_signal_records.html' in alerts_workspace

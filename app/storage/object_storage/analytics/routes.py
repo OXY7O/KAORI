@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from urllib.parse import urlencode
+
 from flask import redirect, render_template, request, url_for
 from flask.typing import ResponseReturnValue
 
@@ -46,9 +48,12 @@ def object_storage_top_consumers() -> ResponseReturnValue:
 
 @permission_required('object_storage_analytics.view')
 def object_storage_recommendations() -> ResponseReturnValue:
-    query = request.args.to_dict(flat=True)
-    query['tab'] = 'recommendations'
-    return redirect(url_for('analytics.object_storage_overview', **query))
+    params = {'domain': 'object_storage'}
+    system_id = str(request.args.get('system_id') or '').strip()
+    if system_id:
+        params['asset'] = system_id
+    target = url_for('intelligence.recommendations')
+    return redirect(f'{target}?{urlencode(params)}')
 
 
 @permission_required('object_storage_analytics.view')

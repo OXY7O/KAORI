@@ -17,14 +17,13 @@ def test_object_storage_dashboard_uses_kaori_alert_cases_not_raw_source_rows() -
     assert "AlertCase.source_type == 'recommendation'" in shared
     assert "AlertCase.source_state.in_(('firing', 'unknown'))" in shared
     assert "AlertCase.workflow_state != 'closed'" in shared
-    assert "'source_label': 'KAORI Alert Intelligence'" in service
+    assert "'source_label': 'Alert Intelligence'" in service
     assert "'source_detail': 'Recommendation-origin durable alert cases'" in service
     assert 'KAORI-processed recommendation-origin alert cases.' in alerts
     assert "url_for('alert_intelligence.index'" in alerts
-    assert "endpoint='alert_intelligence.index'" in read('app/storage/object_storage/dashboard/presentation.py')
     actions = read('app/templates/storage/object_storage/dashboard/partials/_recommended_actions.html')
-    assert "action.endpoint == 'alert_intelligence.index'" in actions
-    assert "domain='object_storage'" in actions
+    assert "url_for('intelligence.recommendation_details'" in actions
+    assert 'get_dashboard_recommendation_findings' in service
     assert 'Active Alertmanager and Metrics Source Object Storage alert signals.' not in alerts
     assert 'Alert evidence is unavailable in the committed analytics snapshot.' not in alerts
     assert 'Select an Object Storage system to view KAORI alert cases.' in alerts

@@ -215,3 +215,37 @@ def test_dashboard_index_requires_permission_before_building_context(monkeypatch
     assert response == ({'forbidden': 'dashboard.view'}, 403)
     assert state['permission_checks'] == ['dashboard.view']
     assert state['overview_calls'] == []
+
+
+def test_dashboard_recommendation_helper_caps_central_findings_at_five(monkeypatch) -> None:
+    calls: list[dict[str, Any]] = []
+
+    for package in ('app', 'app.intelligence'):
+        module = ModuleType(package)
+        module.__path__ = []
+        monkeypatch.setitem(sys.modules, package, module)
+
+    service = ModuleType('app.intelligence.service')
+
+    def get_active_recommendation_findings(**kwargs: Any) -> list[dict[str, Any]]:
+        calls.append(kwargs)
+        return [{'rule_key': f'rule-{index}'} for index in range(int(kwargs['limit']))]
+
+    service.get_active_recommendation_findings = get_active_recommendation_findings
+    monkeypatch.setitem(sys.modules, service.__name__, service)
+
+    module_name = 'app.intelligence.dashboard_recommendations'
+    spec = importlib.util.spec_from_file_location(module_name, ROOT / 'app/intelligence/dashboard_recommendations.py')
+    assert spec and spec.loader
+    module = importlib.util.module_from_spec(spec)
+    monkeypatch.setitem(sys.modules, module_name, module)
+    spec.loader.exec_module(module)
+
+    findings = module.get_dashboard_recommendation_findings(
+        domain='kubernetes',
+        asset_key='cluster-1',
+        limit=50,
+    )
+
+    assert len(findings) == 5
+    assert calls == [{'domain': 'kubernetes', 'asset_key': 'cluster-1', 'limit': 5}]

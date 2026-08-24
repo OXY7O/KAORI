@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-from app.intelligence.recommendation_engine import build_dashboard_recommendations
+from app.intelligence.dashboard_recommendations import get_dashboard_recommendation_findings
 from app.kubernetes.dashboard.schema import RecommendationItem
 from app.kubernetes.dashboard.utils import recommendation_href, recommendation_icon
 
 
 def build_recommendations(*, selected_cluster_id: str | None) -> list[RecommendationItem]:
-    cards = build_dashboard_recommendations(selected_cluster_id=selected_cluster_id)
+    cards = get_dashboard_recommendation_findings(domain='kubernetes', asset_key=selected_cluster_id)
 
     return [
         RecommendationItem(

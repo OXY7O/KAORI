@@ -34,7 +34,7 @@
                     <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="bar-chart-3" class="h-4 w-4"></i></span>
                     <div class="min-w-0">
                         <h2 class="text-base font-semibold text-content-primary">Consumer Rankings</h2>
-                        <p class="mt-1 text-sm leading-6 text-content-secondary">Compare absolute consumption, selected-scope contribution, denominator context, and operational priority without treating heterogeneous resource units as directly comparable.</p>
+                        <p class="mt-1 text-sm leading-6 text-content-secondary">Compare consumption, scope contribution, denominator context, and priority without comparing unlike resource units.</p>
                     </div>
                 </div>
                 <div class="flex flex-wrap gap-2">
@@ -91,7 +91,7 @@
             <div class="{{ analysis_surface.interpretation_grid_classes() }}">
                 {{ analysis_surface.interpretation_callout('How To Read',
                                 'Separate Consumption, Contribution, And Pressure',
-                                'Consumption = largest users; Contribution = scope share; Pressure = usage vs capacity.',
+                                'Consumption ranks the largest users; Contribution shows each consumer’s share of the selected scope; Pressure compares observed usage with available capacity.',
                                 icon='list-ordered',
                                 role='insight') }}
                 {{ analysis_surface.interpretation_callout('Recommended Review Path',

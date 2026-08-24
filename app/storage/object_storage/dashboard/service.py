@@ -8,6 +8,7 @@ from sqlalchemy.orm import selectinload
 
 from app.common.pagination import paginate_sequence
 from app.intelligence.alert_intelligence.dashboard_cases import active_recommendation_alert_cases
+from app.intelligence.dashboard_recommendations import get_dashboard_recommendation_findings
 from app.models import Report, ReportSchedule, ReportTemplate
 from app.models.object_storage import ObjectStorageSystem
 from app.storage.object_storage.analytics.alert_sources import (
@@ -22,11 +23,7 @@ from app.storage.object_storage.analytics.materialization import (
     read_analytics_snapshot,
 )
 from app.storage.object_storage.analytics.presentation import format_bytes, format_number
-from app.storage.object_storage.dashboard.presentation import (
-    build_forecast_view,
-    build_recommended_actions,
-    build_top_consumers_view,
-)
+from app.storage.object_storage.dashboard.presentation import build_forecast_view, build_top_consumers_view
 
 _DASHBOARD_TIME_RANGE = '24h'
 _DASHBOARD_FORECAST_WINDOW = '30d'
@@ -392,7 +389,7 @@ def _alerts(selected: ObjectStorageSystem | None) -> dict[str, Any]:
             'warning': 0,
             'info': 0,
             'total': 0,
-            'source_label': 'KAORI Alert Intelligence',
+            'source_label': 'Alert Intelligence',
             'source_detail': 'Recommendation-origin durable alert cases',
             'rows': [],
         }
@@ -403,7 +400,9 @@ def _alerts(selected: ObjectStorageSystem | None) -> dict[str, Any]:
             'severity': case.severity,
             'summary': case.summary or case.target or 'KAORI recommendation alert case.',
             'state': (
-                'Source Unknown' if case.source_state == 'unknown' else case.workflow_state.replace('_', ' ').title()
+                'Source Unknown'
+                if case.source_state == 'unknown'
+                else case.workflow_state.replace('_', ' ').title()
             ),
             'case_id': case.public_id,
         }
@@ -415,10 +414,32 @@ def _alerts(selected: ObjectStorageSystem | None) -> dict[str, Any]:
         'warning': int(posture['warning']),
         'info': int(posture['info']),
         'total': int(posture['total']),
-        'source_label': 'KAORI Alert Intelligence',
+        'source_label': 'Alert Intelligence',
         'source_detail': 'Recommendation-origin durable alert cases',
         'rows': rows,
     }
+
+
+def _recommended_actions(selected: ObjectStorageSystem | None) -> list[dict[str, str]]:
+    if selected is None:
+        return []
+    findings = get_dashboard_recommendation_findings(
+        domain='object_storage',
+        asset_key=str(selected.id),
+    )
+    return [
+        {
+            'title': str(item.get('title') or 'Review recommendation'),
+            'description': str(item.get('recommended_action') or item.get('summary') or ''),
+            'category': str(item.get('category_label') or item.get('category') or 'Operations'),
+            'severity': str(item.get('severity') or 'info'),
+            'priority': str(item.get('priority') or 'P3'),
+            'source': str(item.get('signal_source_label') or item.get('signal_source') or 'Intelligence'),
+            'rule_key': str(item.get('rule_key') or ''),
+            'icon': 'sparkles',
+        }
+        for item in findings
+    ]
 
 
 def _forecast(selected: ObjectStorageSystem | None) -> dict[str, Any]:
@@ -532,12 +553,7 @@ def get_dashboard_section(
         dashboard['forecast'] = _forecast(selected)
         dashboard['capacity'] = _capacity(selected)
         dashboard['top_consumers'] = _top_consumers(selected)
-        dashboard['recommended_actions'] = build_recommended_actions(
-            alerts=dashboard['alerts'],
-            capacity=dashboard['capacity'],
-            forecast=dashboard['forecast'],
-            top_consumers=dashboard['top_consumers'],
-        )
+        dashboard['recommended_actions'] = _recommended_actions(selected)
     elif section == 'reporting':
         dashboard['reporting'] = _reporting(selected)
         dashboard['freshness'] = _freshness(selected, systems)

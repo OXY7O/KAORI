@@ -259,7 +259,8 @@ def test_signals_and_reporting_match_kubernetes_dashboard_composition() -> None:
     assert 'Controlled Response Flow' in response
     assert 'Recommended Actions' in actions
     assert 'dashboard-recommended-actions' in kubernetes_signals
-    assert "dashboard['recommended_actions'] = build_recommended_actions(" in service
+    assert "dashboard['recommended_actions'] = _recommended_actions(selected)" in service
+    assert 'get_dashboard_recommendation_findings' in service
 
     assert "peer_content_grid.column_classes('primary', 'seven-five')" in reporting
     assert "peer_content_grid.column_classes('secondary', 'seven-five')" in reporting

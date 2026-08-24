@@ -1,9 +1,8 @@
 {% import "analytics/components/_analysis_surfaces.html" as analysis_surface %}
 {% import "components/recommendation_pager.html" as recommendation_pager %}
-{% import "components/resource_detail_modal.html" as resource_detail_modal %}
 {% import "components/table_label.html" as table_label %}
 <div class="space-y-4"
-     data-object-storage-analytics-recommendations="central-intelligence"
+     data-object-storage-analytics-recommendations="contextual-evidence"
      data-object-storage-recommendation-context="{{ recommendation_context_key }}">
     <header class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div class="flex min-w-0 items-start gap-3">
@@ -12,57 +11,52 @@
             </span>
             <div class="min-w-0">
                 <h3 class="text-lg font-semibold text-content-primary">{{ recommendation_context_label }} Recommendations</h3>
-                <p class="mt-1 text-sm leading-6 text-content-muted">Intelligence owns recommendation evaluation; this Analytics tab only projects central findings relevant to the current workspace and selected system.</p>
+                <p class="mt-1 text-sm leading-6 text-content-muted">Contextual guidance derived from the committed evidence for this analytics workspace, selected system, and active observation window.</p>
             </div>
         </div>
         <div class="flex flex-wrap items-center gap-2">
-            {{ table_label.metadata_label(recommendation_summary.total ~ ' Findings', 'sparkles', size='compact') }}
+            {{ table_label.metadata_label(recommendation_summary.total ~ ' Guidance Items', 'sparkles', size='compact') }}
             {{ table_label.status_label(recommendation_summary.highest, recommendation_summary.tone, size='compact') }}
         </div>
     </header>
-    {% if recommendations %}
+    {% if recommendation_cards %}
         <div class="{{ analysis_surface.evidence_shell_classes() }}"
              data-kaori-recommendation-pager
              data-page-size="3">
             <div class="divide-y divide-outline-subtle">
-                {% for item in recommendations %}
+                {% for item in recommendation_cards %}
                     <article class="flex flex-col gap-4 bg-surface-card px-4 py-4 sm:px-5 lg:flex-row lg:items-center lg:justify-between"
                              data-kaori-recommendation-item
                              {% if loop.index > 3 %}hidden{% endif %}>
                         <div class="flex min-w-0 items-start gap-3">
                             <span class="{{ analysis_surface.snapshot_header_icon_classes() }}">
-                                <i data-lucide="sparkles" class="h-4 w-4"></i>
+                                <i data-lucide="{{ item.icon }}" class="h-4 w-4"></i>
                             </span>
                             <div class="min-w-0">
                                 <div class="flex flex-wrap items-center gap-2">
-                                    {{ table_label.status_label(item.severity_label, item.tone, size='compact') }}
-                                    {{ table_label.metadata_label(item.category_label, 'tag', size='compact') }}
-                                    {{ table_label.metadata_label(item.signal_source_label, 'database-zap', size='compact') }}
-                                    {% if item.evidence and item.evidence.provider_label %}
-                                        {{ table_label.metadata_label(item.evidence.provider_label, 'database', size='compact') }}
-                                    {% endif %}
+                                    {{ table_label.status_label('Priority: ' ~ item.priority, item.tone, size='compact') }}
+                                    {{ table_label.metadata_label('Derived From: ' ~ item.source_label, 'database-zap', size='compact') }}
                                 </div>
                                 <h4 class="mt-2 text-sm font-semibold text-content-primary">{{ item.title }}</h4>
-                                <p class="mt-1 text-xs leading-5 text-content-secondary">{{ item.summary }}</p>
-                                {% if item.alert_handling %}
-                                    <div class="mt-2">{{ table_label.status_label(item.alert_handling.label, item.alert_handling.tone, size='compact') }}</div>
-                                {% endif %}
+                                <p class="mt-1 text-xs leading-5 text-content-secondary">{{ item.description }}</p>
                             </div>
                         </div>
-                        <div class="shrink-0">
-                            {{ resource_detail_modal.detail_button(item.rule_key, url_for('intelligence.recommendation_details', recommendation_key=item.rule_key) , item.title, 'Recommendation', label='Review') }}
-                        </div>
+                        <a href="{{ url_for(request.endpoint, system_id=system.id, time_range=selected_time_range, history_window=selected_forecast_history_window, source=selected_alert_source, tab=item.target_tab) }}"
+                           class="inline-flex min-h-9 shrink-0 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary transition hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary-dark">
+                            <i data-lucide="scan-search" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                            Review Evidence
+                        </a>
                     </article>
                 {% endfor %}
             </div>
-            <div class="bg-surface-hover">{{ recommendation_pager.controls(recommendations|length, 'Recommendations', 3) }}</div>
+            <div class="bg-surface-hover">{{ recommendation_pager.controls(recommendation_cards|length, 'Recommendations', 3) }}</div>
         </div>
     {% else %}
         {% set empty_state_icon = "circle-check-2" %}
         {% set empty_state_label = "No Action Required" %}
         {% set empty_state_tone = "normal" %}
-        {% set empty_state_title = "No Active " ~ recommendation_context_label ~ " Recommendations" %}
-        {% set empty_state_description = "Central Intelligence has no active finding for this workspace and selected Object Storage system." %}
+        {% set empty_state_title = "No " ~ recommendation_context_label ~ " Recommendation" %}
+        {% set empty_state_description = "Current committed analytics evidence does not produce contextual guidance for this workspace." %}
         {% set empty_state_variant = "panel" %}
         {% set empty_state_min_height = "min-h-[160px]" %}
         {% include 'components/states/_empty_state.html' %}

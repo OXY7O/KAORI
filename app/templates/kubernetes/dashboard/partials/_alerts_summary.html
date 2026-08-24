@@ -118,7 +118,7 @@
                     <div>
                         <dt class="text-content-muted">Source</dt>
                         <dd class="mt-1 break-words whitespace-normal text-sm font-semibold leading-5 text-content-primary">
-                            KAORI Alert Intelligence
+                            Alert Intelligence
                         </dd>
                     </div>
                 </dl>
@@ -129,9 +129,7 @@
                 {% else %}
                     {{ table_label.status_indicator_label('Alert Scope Unavailable', 'warning') }}
                 {% endif %}
-                {% if dashboard.alerts_snapshot.items %}
-                    {{ table_label.metadata_label('Top ' ~ dashboard.alerts_snapshot.items|length ~ ' Cases', icon='list-filter') }}
-                {% endif %}
+                {{ table_label.metadata_label('KAORI Alert Intelligence', icon='brain-circuit') }}
             </div>
         </div>
     {% endif %}

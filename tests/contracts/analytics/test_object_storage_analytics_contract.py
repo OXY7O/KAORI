@@ -167,7 +167,10 @@ def test_object_storage_metrics_readiness_is_validation_owned_and_provider_quali
     assert 'self.client.series(metrics)' in audit
     assert 'self.client.query(definition.expression)' in audit
     assert 'Operational Metrics Contract' in readiness_template
-    assert 'Runtime reachability and samples are evaluated when the worker commits a snapshot.' in readiness_template
+    assert (
+        'Runtime reachability and samples are evaluated when the worker commits a snapshot.'
+        in readiness_template
+    )
 
 
 def test_object_storage_query_profile_classifies_required_recommended_and_optional_evidence() -> None:
@@ -266,10 +269,11 @@ def test_object_storage_analysis_distinguishes_operational_domains_and_provenanc
 
     assert 'Storage Consumer Leaders' in consumer_storage
     assert 'Request Activity Leaders' in consumer_activity
-    assert 'Active Alerts' in alerts_summary
+    assert 'Provider Alerts' in alerts_summary
+    assert 'Anomaly Signals' in alerts_summary
     assert 'Alert Reading' in alerts_summary
-    assert 'Provider alerts and metric signals are separate' in alerts_summary
-    assert 'Active Alert Records' in alert_records
+    assert 'Provider alerts and anomaly signals are separate' in alerts_summary
+    assert 'Provider Alert Records' in alert_records
     assert 'Metrics Source ALERTS provides narrower rule-state evidence.' in alert_records
     assert 'Alertmanager Authority' in alert_source_evidence
     assert 'Highest Error Ratio' in consumer_activity
@@ -516,7 +520,7 @@ def test_object_storage_forecast_consumers_and_alerts_use_shared_tab_workspace_c
     assert "'Usage Concentration'" in hero_posture
 
     assert 'data-analytics-tabset-id="object-storage-alerts-content"' in alerts_workspace
-    for label in ('Alert Overview', 'Alert Records', 'Metric Signals', 'Evidence'):
+    for label in ('Alert Overview', 'Provider Alerts', 'Anomaly Signals', 'Recommendations', 'Evidence'):
         assert f"'{label}'" in alerts_workspace
     assert "'Alert Posture'" in hero_posture
     assert "'Active Alert State'" in hero_posture

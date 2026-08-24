@@ -106,14 +106,14 @@
                 <div>
                     <dt class="text-content-muted">Source</dt>
                     <dd class="mt-1 break-words whitespace-normal text-sm font-semibold leading-5 text-content-primary">
-                        {{ dashboard.alerts.source_label }}
+                        Alert Intelligence
                     </dd>
                 </div>
             </dl>
         </div>
         <div class="mt-3 flex flex-wrap gap-2">
             {{ table_label.status_indicator_label('KAORI Alert Cases Available' if dashboard.alerts.available else 'Alert Scope Required', 'normal' if dashboard.alerts.available else 'warning') }}
-            {{ table_label.metadata_label(dashboard.alerts.source_label, icon='brain-circuit') }}
+            {{ table_label.metadata_label('KAORI Alert Intelligence', icon='brain-circuit') }}
         </div>
     </div>
 {% endcall %}

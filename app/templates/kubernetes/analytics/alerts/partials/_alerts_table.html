@@ -4,7 +4,7 @@
 {% import "components/table_label.html" as table_label %}
 {% import "components/table_registry.html" as registry_ui %}
 {% import "components/table.html" as table_ui %}
-{% call evidence_list.shell('Active Alert Records') %}
+{% call evidence_list.shell('Active Alert Records', embedded=true) %}
     <div id="alerts-table-container">
         <header class="border-b border-outline-subtle px-4 py-4 sm:px-5">
             <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">

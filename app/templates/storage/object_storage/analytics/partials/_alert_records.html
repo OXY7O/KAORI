@@ -9,7 +9,7 @@
     <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
         <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
             <div class="min-w-0">
-                <h2 class="text-base font-semibold text-content-primary">Active Alert Records</h2>
+                <h2 class="text-base font-semibold text-content-primary">Provider Alert Records</h2>
                 <p class="mt-1 max-w-4xl text-sm leading-6 text-content-muted">
                     Automatic prefers Alertmanager for receiver, silence, and inhibition lifecycle data; Metrics Source ALERTS provides narrower rule-state evidence.
                 </p>
@@ -29,7 +29,7 @@
                 {% endif %}
             </div>
         </div>
-        {{ loading_bar.render('object-storage-alert-records-loading', label='Refreshing Active Alerts') }}
+        {{ loading_bar.render('object-storage-alert-records-loading', label='Refreshing Provider Alerts') }}
     </header>
     {% if dependency_blocker %}
         <div class="p-5 sm:p-6">{% include "storage/object_storage/analytics/partials/_dependency_notice.html" %}</div>
@@ -37,7 +37,7 @@
         <div class="p-5 sm:p-6">
             {% set blocked_state_icon = "triangle-alert" %}
             {% set blocked_state_label = "Source Unavailable" %}
-            {% set blocked_state_title = "Alert Records Unavailable" %}
+            {% set blocked_state_title = "Provider Alerts Unavailable" %}
             {% set blocked_state_description = alert_source.detail %}
             {% set blocked_state_tone = "warning" %}
             {% set blocked_state_variant = "table" %}
@@ -144,7 +144,7 @@
                     <div class="p-0">
                         {% set empty_state_icon = "bell-off" %}
                         {% set empty_state_label = "No Results" %}
-                        {% set empty_state_title = "No Alert Records Match the Current Filters" %}
+                        {% set empty_state_title = "No Provider Alerts Match the Current Filters" %}
                         {% set empty_state_description = "Adjust the alert source or local filters to review another set of Object Storage alert evidence." %}
                         {% set empty_state_min_height = "min-h-[160px]" %}
                         {% include 'components/states/_empty_state.html' %}

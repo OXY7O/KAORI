@@ -10,6 +10,12 @@ from app.storage.object_storage.analytics.analysis import (
     summarize_trend,
 )
 
+from app.storage.object_storage.analytics.recommendations import (
+    build_capacity_recommendations,
+    build_forecast_recommendations,
+    build_performance_recommendations,
+)
+
 
 def test_headroom_prefers_direct_metric_and_derives_when_absent() -> None:
     direct, direct_source = derive_headroom(100.0, 35.0, 65.0)
@@ -76,3 +82,69 @@ def test_forecast_posture_keeps_linear_projection_as_planning_boundary() -> None
     assert forecast_posture(1.0, 20.0).tone == 'critical'
     assert forecast_posture(1.0, 60.0).tone == 'warning'
     assert forecast_posture(1.0, 120.0).tone == 'normal'
+
+
+def test_capacity_recommendations_change_with_headroom_pressure() -> None:
+    normal = build_capacity_recommendations(
+        {
+            'utilization': 40.0,
+            'capacity_usage': {
+                'capacity_evidence_available': True,
+                'quota_critical_count': 0,
+                'quota_warning_count': 0,
+                'quota_unknown_count': 0,
+            },
+            'usage_trend_summary': {'direction': 'stable'},
+        }
+    )
+    pressured = build_capacity_recommendations(
+        {
+            'utilization': 96.0,
+            'capacity_usage': {
+                'capacity_evidence_available': True,
+                'quota_critical_count': 1,
+                'quota_warning_count': 0,
+                'quota_unknown_count': 0,
+            },
+            'usage_trend_summary': {'direction': 'increasing'},
+        }
+    )
+
+    assert pressured != normal
+    assert any(item['priority'] in {'P1', 'P2'} for item in pressured)
+    assert any(item['source_label'] == 'Capacity & Usage' for item in pressured)
+
+
+def test_performance_recommendations_change_with_error_pressure() -> None:
+    normal = build_performance_recommendations(
+        {
+            'error_ratio': 0.5,
+            'waiting': 0.0,
+            'offline_nodes': 0.0,
+            'performance': {'bucket_count': 1, 'bucket_request_evidence_count': 1},
+        }
+    )
+    pressured = build_performance_recommendations(
+        {
+            'error_ratio': 8.0,
+            'waiting': 3.0,
+            'offline_nodes': 0.0,
+            'performance': {'bucket_count': 1, 'bucket_request_evidence_count': 1},
+        }
+    )
+
+    assert pressured != normal
+    assert any(item['priority'] in {'P1', 'P2'} for item in pressured)
+    assert any(item['source_label'] == 'Request Health' for item in pressured)
+
+
+def test_forecast_recommendations_keep_missing_materialization_unknown() -> None:
+    cards = build_forecast_recommendations(
+        {'forecast': {}, 'forecast_posture': {'tone': 'unknown'}},
+        {'usable': False},
+    )
+
+    assert len(cards) == 1
+    assert cards[0]['tone'] == 'unknown'
+    assert cards[0]['is_actionable'] is False
+    assert cards[0]['source_label'] == 'Forecast Worker'

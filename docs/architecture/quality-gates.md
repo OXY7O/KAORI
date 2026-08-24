@@ -28,6 +28,16 @@ Add `--runtime` when live worker/runtime readiness must also pass. Successful ge
 
 The release workflow calls the same gate through `.github/workflows/quality.yml`. A production image must not be published until every required phase succeeds.
 
+## Operational Data Semantics Guard
+
+Cross-surface source ownership is locked by:
+
+```bash
+python scripts/verify_operational_data_semantics.py
+```
+
+The verifier prevents Inventory, Dashboard, Analytics, Intelligence Recommendations, Provider Alerts, Anomaly Signals, and Alert Intelligence AlertCases from drifting into each other. Inventory remains factual asset truth; Dashboard consumes KAORI summaries; Analytics owns provider evidence and contextual recommendations; Intelligence owns durable recommendations; Alert Intelligence owns durable AlertCases.
+
 ## Gate Structure
 
 ### Static and Architecture Gate

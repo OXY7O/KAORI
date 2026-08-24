@@ -81,8 +81,9 @@ def test_object_storage_alert_and_metric_evidence_paths_remain_independent() -> 
     assert 'alerts_degraded' in service
     assert "ALERT_SOURCE_OPTIONS = ('auto', 'alertmanager', 'metrics_source')" in alerts
     assert 'Metrics Source Fallback Active' in alerts
-    assert 'Alert Records' in workspace
-    assert 'Metric Signals' in workspace
+    assert 'Provider Alerts' in workspace
+    assert 'Anomaly Signals' in workspace
+    assert 'Recommendations' in workspace
 
 
 def test_object_storage_htmx_record_fragments_fail_closed_on_dependency_loss() -> None:

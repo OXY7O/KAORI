@@ -3,7 +3,7 @@
         <div class="flex min-w-0 items-start gap-3">
             <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="list-tree" class="h-5 w-5"></i></span>
             <div class="min-w-0">
-                <h2 class="text-base font-semibold text-content-primary">Metric-Derived Signal Detail</h2>
+                <h2 class="text-base font-semibold text-content-primary">Anomaly Signal Detail</h2>
                 <p class="mt-1 text-sm leading-6 text-content-secondary">Inspect the current evaluation result for each supported operating boundary. Unknown means evidence is insufficient, not healthy.</p>
             </div>
         </div>
@@ -26,8 +26,8 @@
         {% else %}
             {% set empty_state_icon = "list-tree" %}
             {% set empty_state_label = "No Data" %}
-            {% set empty_state_title = "No Metric-Derived Signal Definitions" %}
-            {% set empty_state_description = "No metric-derived signal definition is available for the selected Object Storage scope." %}
+            {% set empty_state_title = "No Anomaly Signal Definitions" %}
+            {% set empty_state_description = "No anomaly signal definition is available for the selected Object Storage scope." %}
             {% set empty_state_min_height = "min-h-[160px]" %}
             {% include 'components/states/_empty_state.html' %}
         {% endfor %}

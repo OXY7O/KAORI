@@ -46,7 +46,7 @@ def test_reviewed_product_surfaces_use_the_canonical_state_components() -> None:
 def test_reviewed_registry_empty_rows_do_not_keep_page_local_visual_shells() -> None:
     templates = {
         'app/templates/integrations/storage/object_storage/providers/minio/partials/_capability_registry.html': 'No Capability Records Match the Current Filters',
-        'app/templates/storage/object_storage/analytics/partials/_alert_records.html': 'No Alert Records Match the Current Filters',
+        'app/templates/storage/object_storage/analytics/partials/_alert_records.html': 'No Provider Alerts Match the Current Filters',
         'app/templates/storage/object_storage/analytics/partials/_bucket_table.html': 'No Bucket Records Match the Current Filters',
         'app/templates/intelligence/partials/_alert_intelligence_records.html': 'No Alert Records Match the Current Filters',
         'app/templates/reports/generated/index.html': 'No Generated Reports Match the Current Filters',
