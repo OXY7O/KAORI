@@ -34,13 +34,15 @@ def test_inventory_copy_controls_are_shared_and_used_for_identifiers_and_address
     assert 'macro inventory_copy_button(label)' in shared
     assert 'data-kaori-copy-button' in shared
     assert 'data-kaori-copy-source' in shared
-    assert "data-lucide=\"copy\" data-kaori-copy-icon" in shared
+    assert 'data-lucide="copy"' in shared
+    assert 'data-kaori-copy-icon' in shared
     assert "inventory_technical_row('UID', namespace.uid, copyable=true)" in namespace
     assert "inventory_technical_row('UID', workload.uid, copyable=true)" in workload
     assert "inventory_technical_row('Kubernetes UID', pod.uid, copyable=true)" in pod
     assert "inventory_technical_row('Kubernetes UID', service.uid, copyable=true)" in service
     assert "inventory_technical_row('Kubernetes UID', ingress.uid, copyable=true)" in ingress
     assert "inventory_technical_row('Kubernetes UID', item.uid, copyable=true)" in storage
+    assert "macro inspector_technical_row(label, value='-', nowrap=false, class_name='', copyable=false)" in shared
     assert "inspector_technical_row('System UUID', node.system_uuid" in node
     assert 'copyable=true' in node
     assert "'label': 'Pod IP', 'value': pod.pod_ip or unknown, 'copyable': True" in pod_detail
