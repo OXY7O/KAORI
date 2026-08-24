@@ -25,11 +25,11 @@
                 </h2>
                 <p class="mt-1 max-w-4xl text-sm leading-6 text-content-muted">
                     {% if trend_mode == 'forecast' %}
-                        Historical usage comes from the committed forecasting-worker snapshot. The solid line is observed history and the dashed line extends the current linear baseline to 30 days.
+                        Committed forecast history is solid; the linear 30-day projection is dashed.
                     {% elif trend_mode == 'performance' %}
                         {{ metrics_source.provider_label }} range evidence for {{ selected_time_range }}. Request demand and error activity remain separate series so higher traffic is not automatically classified as unhealthy.
                     {% else %}
-                        {{ metrics_source.provider_label }} range evidence for {{ selected_time_range }}. Use the slope and window change to understand direction; Inventory remains a separate point-in-time authority.
+                        {{ metrics_source.provider_label }} {{ selected_time_range }} range. Use slope and change for direction; Inventory remains point-in-time.
                     {% endif %}
                 </p>
             </div>
@@ -44,7 +44,11 @@
         {% if trend %}
             <div class="relative h-[340px] rounded-lg border border-outline-subtle bg-surface-card p-3"
                  data-object-storage-chart-container>
-                <canvas data-object-storage-chart width="1200" height="340"></canvas>
+                <canvas data-object-storage-chart
+                        role="img"
+                        aria-label="{{ 'Request and error trend' if trend_mode == 'performance' else ('Storage usage forecast' if trend_mode == 'forecast' else 'Storage usage trend') }} chart"
+                        width="1200"
+                        height="340"></canvas>
             </div>
             {% if trend_mode != 'performance' %}
                 <div class="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">

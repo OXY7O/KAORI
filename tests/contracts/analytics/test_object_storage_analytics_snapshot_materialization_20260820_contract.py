@@ -37,7 +37,7 @@ def test_operational_snapshot_lifecycle_preserves_last_usable_payload_and_schema
     assert 'def fail_analytics_snapshot(' in materialization
     assert 'def analytics_snapshot_due(' in materialization
     assert "'Refreshing · Last Snapshot Available'" in materialization
-    assert "'Stale · Refresh Failed'" in materialization
+    assert "'Stale · Failed'" in materialization
     assert "'Snapshot Contract Invalid'" in materialization
     assert "payload.get('schema') != ANALYTICS_SNAPSHOT_SCHEMA" in materialization
 
@@ -139,9 +139,9 @@ def test_ui_explains_snapshot_authority_and_three_stage_readiness() -> None:
     assert blocker.count('dependency_grid_classes = "lg:grid-cols-3"') == 2
     assert "3: 'Analytics Snapshot'" in blocked_hero
     assert 'readiness_step_count = 3' in blocked_hero
-    assert 'The page reads one committed worker snapshot' in boundary
+    assert 'This page uses one committed worker snapshot' in boundary
     assert 'worker collection query failed' in boundary
-    assert 'evaluated separately by the analytics worker when it commits a snapshot' in readiness
+    assert 'evaluated when the worker commits a snapshot' in readiness
 
 
 def test_readme_records_two_worker_owners_and_no_live_page_query_contract() -> None:

@@ -158,7 +158,7 @@ def test_object_storage_metrics_readiness_is_validation_owned_and_provider_quali
     assert 'self.client.query(definition.expression)' in audit
     assert 'Operational Metrics Contract' in readiness_template
     assert (
-        'Runtime reachability and current samples are evaluated separately by the analytics worker'
+        'Runtime reachability and samples are evaluated when the worker commits a snapshot.'
         in readiness_template
     )
 
@@ -263,7 +263,7 @@ def test_object_storage_analysis_distinguishes_operational_domains_and_provenanc
     assert 'Alert Reading' in alerts_summary
     assert 'Provider alerts and metric signals are separate' in alerts_summary
     assert 'Active Alert Records' in alert_records
-    assert 'Metrics Source fallback uses scoped ALERTS evidence' in alert_records
+    assert 'Metrics Source ALERTS provides narrower rule-state evidence.' in alert_records
     assert 'Alertmanager Authority' in alert_source_evidence
     assert 'Highest Error Ratio' in consumer_activity
     assert 'Inventory &amp; Operational Reconciliation' in reconciliation
@@ -271,7 +271,7 @@ def test_object_storage_analysis_distinguishes_operational_domains_and_provenanc
     assert 'row.usage_source' in bucket_table
     assert 'Bucket Capacity Records' in bucket_table
     assert 'progress_bar.semantic_bar(row.quota_utilization' in bucket_table
-    assert 'committed Inventory remains an explicit field-level fallback' in bucket_table
+    assert 'Inventory is an explicit field-level fallback where supported.' in bucket_table
 
 
 def test_object_storage_performance_chart_keeps_request_and_error_series_separate() -> None:

@@ -85,7 +85,7 @@ def test_forecast_workspaces_show_system_graph_and_bucket_watch_without_new_job_
     assert "('buckets', 'Bucket Forecasts', 'container')" in forecast_workspace
     assert '_bucket_forecasts.html' in forecast_workspace
     assert 'Bucket Forecast Watch' in bucket_forecasts
-    assert 'planning watch signals, not active Alertmanager alerts' in bucket_forecasts
+    assert 'These are planning signals, not active alerts.' in bucket_forecasts
     assert 'data-object-storage-bucket-forecast-chart-panel' in bucket_forecasts
     assert 'data-object-storage-bucket-forecast-chart' in bucket_forecasts
     assert '_bucket_forecast_table.html' in bucket_forecasts

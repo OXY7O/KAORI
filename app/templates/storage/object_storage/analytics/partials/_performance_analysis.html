@@ -10,7 +10,7 @@
                     <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Request Reliability &amp; Demand</p>
                     <h2 class="mt-1 text-base font-semibold text-content-primary">Request Path Operating Boundary</h2>
                     <p class="mt-1 max-w-4xl text-sm leading-6 text-content-muted">
-                        Evaluate current S3 demand and request reliability first, then correlate queue pressure, inflight work, storage-node availability, and throughput before declaring the request path healthy.
+                        Review S3 demand and reliability, then correlate queues, inflight work, node availability, and throughput.
                     </p>
                 </div>
             </div>
@@ -94,12 +94,12 @@
                 {{ table_label.status_label(metrics.performance.node_status, metrics.performance.node_tone) }}
             </div>
             <p class="mt-4 text-xs leading-5 text-content-secondary">
-                Inflight requests describe active work and are not classified as pressure without a provider-specific concurrency boundary. Waiting requests and offline-node evidence drive the operational posture directly.
+                Inflight requests show active work, not pressure without a provider concurrency limit. Waiting requests and offline nodes drive posture.
             </p>
         </article>
     </div>
     <div class="{{ analysis_surface.interpretation_grid_classes() }}">
         {{ analysis_surface.interpretation_callout('Performance Reading', metrics.performance_posture.headline, metrics.performance_posture.detail, icon='scan-heart', role='status', tone=metrics.performance_posture.tone) }}
-        {{ analysis_surface.interpretation_callout('Evidence Coverage', metrics.performance.evidence_coverage_display ~ ' of core request-path signals available', metrics.performance.evidence_available_count ~ ' of ' ~ metrics.performance.evidence_total_count ~ ' core performance signals are available. Missing evidence remains unknown and is never converted into a healthy conclusion.', icon='shield-check', role='evidence') }}
+        {{ analysis_surface.interpretation_callout('Evidence Coverage', metrics.performance.evidence_coverage_display ~ ' of core request-path signals available', metrics.performance.evidence_available_count ~ ' of ' ~ metrics.performance.evidence_total_count ~ ' signals available. Missing evidence stays Unknown.', icon='shield-check', role='evidence') }}
     </div>
 </section>

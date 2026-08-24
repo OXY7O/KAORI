@@ -47,8 +47,7 @@ def test_system_id_reuses_shared_accessible_copy_interaction() -> None:
     app_layout = read('app/templates/layouts/app.html')
 
     assert (
-        "detail.inventory_technical_row('System ID', system.id, nowrap=true, "
-        "class_name='lg:col-span-2', copyable=true)"
+        "detail.inventory_technical_row('System ID', system.id, nowrap=true, class_name='lg:col-span-2', copyable=true)"
     ) in detail
     assert 'data-kaori-copy-button' in shared_detail
     assert 'aria-label="Copy {{ label }}"' in shared_detail
@@ -82,8 +81,7 @@ def test_system_posture_counts_all_provider_attention_without_downgrading_blocke
     hero = read('app/templates/storage/object_storage/inventory/systems/partials/_hero.html')
 
     assert (
-        "'attention_systems': sum(1 for row in rows if row['status_tone'] in "
-        "{'critical', 'warning', 'unknown'})"
+        "'attention_systems': sum(1 for row in rows if row['status_tone'] in {'critical', 'warning', 'unknown'})"
     ) in presentation
     assert "'Blocked' if inventory.blocked_systems" in hero
     assert "'critical' if inventory.blocked_systems" in hero

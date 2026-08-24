@@ -47,7 +47,15 @@ def test_requested_analytics_guidance_is_concise_without_losing_evidence_boundar
         'Daily historical averages are solid; the selected model projection is dashed.',
     ):
         assert verbose not in '\n'.join(
-            (forecast_snapshot, utilization_trend, utilization_overview, capacity_risk, storage_overview, tenant, forecast)
+            (
+                forecast_snapshot,
+                utilization_trend,
+                utilization_overview,
+                capacity_risk,
+                storage_overview,
+                tenant,
+                forecast,
+            )
         )
 
 

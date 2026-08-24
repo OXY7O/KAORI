@@ -20,11 +20,11 @@
                 </h2>
                 <p class="mt-1 max-w-4xl text-sm leading-6 text-content-muted">
                     {% if page_key == 'capacity' %}
-                        Review bucket usage, share of system consumption, object population, and quota pressure. Metrics are preferred; committed Inventory supplies quota and point-in-time usage fallback when live bucket metrics are absent.
+                        Review bucket usage, system share, objects, and quota pressure. Metrics are preferred; Inventory is the explicit fallback when bucket metrics are absent.
                     {% elif page_key == 'performance' %}
-                        Review bucket-level request demand and error pressure from operational metrics. Request fields never fall back to Inventory; when a value is unavailable, the source label distinguishes missing bucket series, unscraped metrics, and runtime query failure.
+                        Review bucket request and error pressure. Request metrics never fall back to Inventory; source labels identify missing series, unscraped metrics, or query failure.
                     {% else %}
-                        Review ranked storage, object, request, and error evidence for consumer triage. Operational metrics remain the preferred source; committed Inventory remains an explicit field-level fallback where supported.
+                        Review ranked storage, objects, requests, and errors. Metrics are preferred; Inventory is an explicit field-level fallback where supported.
                     {% endif %}
                 </p>
             </div>

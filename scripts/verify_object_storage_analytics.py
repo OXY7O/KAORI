@@ -153,7 +153,7 @@ def main() -> int:
     assert 'self.client.query(definition.expression)' in audit
     assert "readiness_tier='optional'" in profile
     assert 'Operational Metrics Contract' in readiness
-    assert 'Full Validation records whether each canonical metric family' in readiness
+    assert 'Full Validation checks metric families, labels, and queries for this binding.' in readiness
     assert 'Readiness By Evidence Domain' in readiness
 
     for metric in (

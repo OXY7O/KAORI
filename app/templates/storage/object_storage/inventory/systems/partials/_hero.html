@@ -28,7 +28,7 @@
             {{ page_hero.context_card('Object Storage Systems Posture',
                         'System Posture',
                         'Committed Inventory Coverage',
-                        ('No Systems' if inventory.total_systems == 0 else ('Blocked' if inventory.blocked_systems else ('Attention Required' if inventory.attention_systems else 'Ready')) ),
+                        ('No Systems' if inventory.total_systems == 0 else ('Blocked' if inventory.blocked_systems else ('Attention Required' if inventory.attention_systems else 'Ready') ) ),
             ('unknown' if inventory.total_systems == 0 else ('critical' if inventory.blocked_systems else ('warning' if inventory.attention_systems else 'normal'))),
             [
             ('database-backup', 'Inventoried', inventory.inventoried_systems, 'Systems with committed inventory'),
