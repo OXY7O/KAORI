@@ -8,10 +8,6 @@ from hashlib import sha256
 from types import MappingProxyType
 from typing import Any, Protocol
 
-from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.client import KubernetesClient
-from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.resolver import (
-    resolve_kubernetes_for_cluster,
-)
 from app.common.resolver_contracts import (
     DryRunResult,
     ResolverContext,
@@ -20,6 +16,10 @@ from app.common.resolver_contracts import (
     ResolverResultStatus,
     VerificationResult,
     VerificationStatus,
+)
+from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.client import KubernetesClient
+from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.resolver import (
+    resolve_kubernetes_for_cluster,
 )
 
 ACTION_KEY = 'kubernetes.deployment.restart'

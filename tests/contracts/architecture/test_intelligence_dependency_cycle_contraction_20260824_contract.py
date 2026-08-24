@@ -19,9 +19,7 @@ def test_cluster_lifecycle_uses_shared_alert_case_source_state_boundary() -> Non
 
 
 def test_provider_resolver_adapter_depends_on_shared_contract_not_intelligence_domain() -> None:
-    adapter = read(
-        'app/integrations/orchestration/container_orchestrator/adapters/kubernetes_api/resolver_adapter.py'
-    )
+    adapter = read('app/integrations/orchestration/container_orchestrator/adapters/kubernetes_api/resolver_adapter.py')
     bootstrap = read('app/integrations/resolver_bootstrap.py')
     shared_contract = read('app/common/resolver_contracts.py')
     shared_registry = read('app/common/resolver_registry.py')

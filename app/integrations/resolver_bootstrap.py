@@ -7,12 +7,12 @@ from dataclasses import dataclass
 
 from flask import Flask
 
+from app.common.resolver_contracts import ResolverError
+from app.common.resolver_registry import ResolverRegistry
 from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.resolver_adapter import (
     KubernetesDeploymentRestartAdapter,
     NamespaceGuardrail,
 )
-from app.common.resolver_contracts import ResolverError
-from app.common.resolver_registry import ResolverRegistry
 
 EXTENSION_KEY = 'kaori_resolver_registry'
 FINGERPRINT_KEY = 'kaori_resolver_registry_fingerprint'

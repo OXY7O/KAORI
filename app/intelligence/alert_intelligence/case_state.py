@@ -4,14 +4,17 @@ from collections.abc import Mapping
 from datetime import UTC, datetime
 from typing import Any
 
+from app.common.alert_case_source_state import SYSTEM_ROUTING_SUPPRESSION_REASONS
 from app.common.alert_case_source_state import (
-    SYSTEM_ROUTING_SUPPRESSION_REASONS,
     mark_asset_alert_cases_source_unknown as _mark_asset_alert_cases_source_unknown,
+)
+from app.common.alert_case_source_state import (
     mark_case_source_unknown as _mark_case_source_unknown,
 )
 from app.extensions.db import db
 from app.models.alert_ops import AlertCase, AlertCaseEvent, RecommendationAlertState
 from app.models.audit import AuditEvent
+
 
 def mark_case_source_unknown(
     case: AlertCase,
