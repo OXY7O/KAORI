@@ -77,7 +77,7 @@ def test_dashboard_matches_kubernetes_operational_layout_concept() -> None:
     )
     assert 'hx-trigger="revealed"' in content
     assert (
-        'hx-get="{{ url_for(\'object_storage_dashboard.section\', section=\'kpi_cards\') }}?{{ dashboard_query }}"'
+        "hx-get=\"{{ url_for('object_storage_dashboard.section', section='kpi_cards') }}?{{ dashboard_query }}\""
         in signal_overview
     )
     assert 'hx-trigger="load"' in signal_overview
@@ -266,5 +266,6 @@ def test_signals_and_reporting_match_kubernetes_dashboard_composition() -> None:
     assert 'Reporting Summary' in reporting_summary
     assert 'Recent Report Activity' in reporting_summary
     assert 'Reporting Interpretation & Next Steps' in reporting_guidance
+    assert 'Reporting Control' in reporting_guidance
     assert 'Controlled Reporting Flow' in reporting_guidance
     assert 'Controlled Reporting Flow' in kubernetes_reporting

@@ -87,7 +87,7 @@
                             {% elif total_alerts > 0 %}
                                 The alert source is available with informational signals only.
                             {% elif dashboard.alerts_snapshot.source_status != 'Available' %}
-                                Alert collection is unavailable. KAORI retains configured integrations and retries automatically.
+                                Alert collection unavailable. KAORI retains integrations and retries automatically.
                             {% else %}
                                 No active alert was returned by the selected alert source.
                             {% endif %}

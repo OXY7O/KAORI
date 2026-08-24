@@ -254,7 +254,7 @@ def verify() -> None:
 
     _require(
         reporting_guidance,
-        ('approved output', 'stored artifact', 'Controlled Reporting Flow', 'Reporting Tip'),
+        ('approved output', 'stored artifact', 'Reporting Control', 'Controlled Reporting Flow', 'Reporting Tip'),
         'format-neutral reporting guidance',
     )
     _require(
@@ -296,10 +296,29 @@ def verify() -> None:
         ),
         'Object Storage scope and signal wording',
     )
-    for dashboard_dir in (DASHBOARD_DIR, OBJECT_DASHBOARD_DIR):
-        dashboard_source = '\n'.join(
-            path.read_text(encoding='utf-8') for path in sorted(dashboard_dir.rglob('*.html'))
+    _require(
+        object_alert_guidance,
+        (
+            'Developing capacity, request-path, or availability risk. Investigate before escalation.',
+            'Low-risk operational signal. Validate relevance, recurrence, and scope.',
+        ),
+        'Object Storage compact alert guidance',
+    )
+    _require(
+        object_reporting_guidance,
+        ('Reporting Control', 'Controlled Reporting Flow', 'Reporting Tip'),
+        'Object Storage reporting control',
+    )
+    if reporting_guidance.index('Reporting Control') >= reporting_guidance.index('Controlled Reporting Flow'):
+        raise AssertionError('Kubernetes reporting guidance must place Reporting Control before the controlled flow')
+    if object_reporting_guidance.index('Reporting Control') >= object_reporting_guidance.index(
+        'Controlled Reporting Flow'
+    ):
+        raise AssertionError(
+            'Object Storage reporting guidance must place Reporting Control before the controlled flow'
         )
+    for dashboard_dir in (DASHBOARD_DIR, OBJECT_DASHBOARD_DIR):
+        dashboard_source = '\n'.join(path.read_text(encoding='utf-8') for path in sorted(dashboard_dir.rglob('*.html')))
         if 'What This Summary Means' in dashboard_source:
             raise AssertionError(
                 f'{dashboard_dir.relative_to(ROOT)} still contains the retired generic summary explanation box'
@@ -310,7 +329,6 @@ def verify() -> None:
             token for token in dashboard_source.split() if token.startswith(('bg-[#', 'text-[#', 'border-[#'))
         ):
             raise AssertionError(f'{dashboard_dir.relative_to(ROOT)} contains page-local color values')
-
 
     for stale in STALE_COPY:
         dashboard_source = '\n'.join(path.read_text(encoding='utf-8') for path in sorted(DASHBOARD_DIR.rglob('*.html')))

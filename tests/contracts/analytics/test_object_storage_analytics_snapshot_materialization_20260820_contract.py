@@ -37,7 +37,7 @@ def test_operational_snapshot_lifecycle_preserves_last_usable_payload_and_schema
     assert 'def fail_analytics_snapshot(' in materialization
     assert 'def analytics_snapshot_due(' in materialization
     assert "'Refreshing · Last Snapshot Available'" in materialization
-    assert "'Stale · Last Refresh Failed'" in materialization
+    assert "'Stale · Refresh Failed'" in materialization
     assert "'Snapshot Contract Invalid'" in materialization
     assert "payload.get('schema') != ANALYTICS_SNAPSHOT_SCHEMA" in materialization
 

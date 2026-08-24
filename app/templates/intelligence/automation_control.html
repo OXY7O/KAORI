@@ -46,8 +46,8 @@
             control.posture.tone,
             'Governance remains writable while infrastructure execution stays independently gated and fail-closed.',
             actions=[
-                ('shield-check', 'Production Readiness', url_for('automation_control.index', workspace='readiness')),
-                ('book-open-check', 'Runbooks', url_for('automation_control.index', workspace='runbooks'))
+            ('shield-check', 'Production Readiness', url_for('automation_control.index', workspace='readiness')),
+            ('book-open-check', 'Runbooks', url_for('automation_control.index', workspace='runbooks'))
             ]
             ) %}
             <div class="grid divide-y divide-outline-subtle sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-4">

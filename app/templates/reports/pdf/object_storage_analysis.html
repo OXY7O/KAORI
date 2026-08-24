@@ -27,13 +27,21 @@
                         <h2>Reporting Boundary</h2>
                         <dl class="context-list">
                             <dt>Object Storage System</dt>
-                            <dd>{{ p.scope_value }}</dd>
+                            <dd>
+                                {{ p.scope_value }}
+                            </dd>
                             <dt>Environment</dt>
-                            <dd>{{ p.environment }}</dd>
+                            <dd>
+                                {{ p.environment }}
+                            </dd>
                             <dt>Reporting Period</dt>
-                            <dd>{{ p.period_label }}</dd>
+                            <dd>
+                                {{ p.period_label }}
+                            </dd>
                             <dt>Data Cut-off</dt>
-                            <dd>{{ p.data_cutoff }}</dd>
+                            <dd>
+                                {{ p.data_cutoff }}
+                            </dd>
                         </dl>
                     </section>
                     <section>
@@ -53,7 +61,6 @@
             </div>
             {{ footer(1) }}
         </article>
-
         <article class="page page-object-storage-executive">
             {{ report_header() }}
             <div class="page-content">
@@ -66,11 +73,21 @@
                     {% call ui.section('Operating Posture', 'Concise cross-domain comparison for management review.') %}
                         <table class="report-table object-storage-overview-register single-line-register">
                             <thead>
-                                <tr><th>Ref.</th><th>Dimension</th><th>Value</th><th>State</th></tr>
+                                <tr>
+                                    <th>Ref.</th>
+                                    <th>Dimension</th>
+                                    <th>Value</th>
+                                    <th>State</th>
+                                </tr>
                             </thead>
                             <tbody>
                                 {% for item in p.executive.posture_rows %}
-                                    <tr><td class="ref">{{ item.ref }}</td><td>{{ item.dimension }}</td><td>{{ item.value }}</td><td>{{ item.state }}</td></tr>
+                                    <tr>
+                                        <td class="ref">{{ item.ref }}</td>
+                                        <td>{{ item.dimension }}</td>
+                                        <td>{{ item.value }}</td>
+                                        <td>{{ item.state }}</td>
+                                    </tr>
                                 {% endfor %}
                             </tbody>
                         </table>
@@ -82,7 +99,6 @@
             </div>
             {{ footer(2) }}
         </article>
-
         <article class="page page-object-storage-capacity">
             {{ report_header() }}
             <div class="page-content">
@@ -91,10 +107,22 @@
                 <div class="two-column object-storage-analysis-split">
                     {% call ui.section('Capacity & Quota Register', 'Decision fields stay on one line; detail remains in the inventory workbook.') %}
                         <table class="report-table object-storage-posture-register single-line-register">
-                            <thead><tr><th>Ref.</th><th>Dimension</th><th>Value</th><th>Status</th></tr></thead>
+                            <thead>
+                                <tr>
+                                    <th>Ref.</th>
+                                    <th>Dimension</th>
+                                    <th>Value</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
                             <tbody>
                                 {% for item in p.capacity.rows %}
-                                    <tr><td class="ref">{{ item.ref }}</td><td>{{ item.dimension }}</td><td>{{ item.value }}</td><td class="status {{ item.tone }}">{{ item.status }}</td></tr>
+                                    <tr>
+                                        <td class="ref">{{ item.ref }}</td>
+                                        <td>{{ item.dimension }}</td>
+                                        <td>{{ item.value }}</td>
+                                        <td class="status {{ item.tone }}">{{ item.status }}</td>
+                                    </tr>
                                 {% endfor %}
                             </tbody>
                         </table>
@@ -109,7 +137,6 @@
             </div>
             {{ footer(3) }}
         </article>
-
         <article class="page page-object-storage-reliability">
             {{ report_header() }}
             <div class="page-content">
@@ -118,10 +145,22 @@
                 <div class="two-column object-storage-analysis-split">
                     {% call ui.section('Reliability Register', 'Comparable operational signals remain concise and one-line.') %}
                         <table class="report-table object-storage-reliability-register single-line-register">
-                            <thead><tr><th>Ref.</th><th>Signal</th><th>Value</th><th>Assessment</th></tr></thead>
+                            <thead>
+                                <tr>
+                                    <th>Ref.</th>
+                                    <th>Signal</th>
+                                    <th>Value</th>
+                                    <th>Assessment</th>
+                                </tr>
+                            </thead>
                             <tbody>
                                 {% for item in p.reliability.rows %}
-                                    <tr><td class="ref">{{ item.ref }}</td><td>{{ item.signal }}</td><td>{{ item.value }}</td><td>{{ item.assessment }}</td></tr>
+                                    <tr>
+                                        <td class="ref">{{ item.ref }}</td>
+                                        <td>{{ item.signal }}</td>
+                                        <td>{{ item.value }}</td>
+                                        <td>{{ item.assessment }}</td>
+                                    </tr>
                                 {% endfor %}
                             </tbody>
                         </table>
@@ -136,7 +175,6 @@
             </div>
             {{ footer(4) }}
         </article>
-
         <article class="page page-object-storage-forecast">
             {{ report_header() }}
             <div class="page-content">
@@ -144,10 +182,22 @@
                 {{ ui.metric_strip(p.forecast.metrics, 4) }}
                 {% call ui.section('Forecast Register', 'Projection values are planning evidence, not autonomous change triggers.') %}
                     <table class="report-table object-storage-forecast-register single-line-register">
-                        <thead><tr><th>Ref.</th><th>Dimension</th><th>Value</th><th>Assessment</th></tr></thead>
+                        <thead>
+                            <tr>
+                                <th>Ref.</th>
+                                <th>Dimension</th>
+                                <th>Value</th>
+                                <th>Assessment</th>
+                            </tr>
+                        </thead>
                         <tbody>
                             {% for item in p.forecast.rows %}
-                                <tr><td class="ref">{{ item.ref }}</td><td>{{ item.dimension }}</td><td>{{ item.value }}</td><td>{{ item.assessment }}</td></tr>
+                                <tr>
+                                    <td class="ref">{{ item.ref }}</td>
+                                    <td>{{ item.dimension }}</td>
+                                    <td>{{ item.value }}</td>
+                                    <td>{{ item.assessment }}</td>
+                                </tr>
                             {% endfor %}
                         </tbody>
                     </table>
@@ -161,7 +211,6 @@
             </div>
             {{ footer(5) }}
         </article>
-
         <article class="page page-object-storage-consumers">
             {{ report_header() }}
             <div class="page-content">
@@ -169,12 +218,28 @@
                 {{ ui.metric_strip(p.consumers.metrics, 4) }}
                 {% call ui.section('Top Consumer Register', 'Stable references keep long bucket identities out of the comparison table.') %}
                     <table class="report-table object-storage-consumer-register single-line-register">
-                        <thead><tr><th>Ref.</th><th>Usage</th><th>Share</th><th>Objects</th><th>Quota</th></tr></thead>
+                        <thead>
+                            <tr>
+                                <th>Ref.</th>
+                                <th>Usage</th>
+                                <th>Share</th>
+                                <th>Objects</th>
+                                <th>Quota</th>
+                            </tr>
+                        </thead>
                         <tbody>
                             {% for item in p.consumers.rows %}
-                                <tr><td class="ref">{{ item.ref }}</td><td>{{ item.usage }}</td><td>{{ item.share }}</td><td>{{ item.objects }}</td><td>{{ item.quota }}</td></tr>
+                                <tr>
+                                    <td class="ref">{{ item.ref }}</td>
+                                    <td>{{ item.usage }}</td>
+                                    <td>{{ item.share }}</td>
+                                    <td>{{ item.objects }}</td>
+                                    <td>{{ item.quota }}</td>
+                                </tr>
                             {% else %}
-                                <tr><td colspan="5" class="empty-row">No committed top-consumer evidence is available.</td></tr>
+                                <tr>
+                                    <td colspan="5" class="empty-row">No committed top-consumer evidence is available.</td>
+                                </tr>
                             {% endfor %}
                         </tbody>
                     </table>
@@ -185,7 +250,10 @@
                             {% for item in p.consumers.rows %}
                                 <div class="identity-item">
                                     <span class="reference-code">{{ item.ref }}</span>
-                                    <div class="identity-copy"><strong class="identity-title technical-identity">{{ item.name }}</strong><p class="identity-meta"><b>Usage.</b> {{ item.usage }} &nbsp; <b>Share.</b> {{ item.share }}</p></div>
+                                    <div class="identity-copy">
+                                        <strong class="identity-title technical-identity">{{ item.name }}</strong>
+                                        <p class="identity-meta"><b>Usage.</b> {{ item.usage }} &nbsp; <b>Share.</b> {{ item.share }}</p>
+                                    </div>
                                 </div>
                             {% endfor %}
                         </div>
@@ -197,7 +265,6 @@
             </div>
             {{ footer(6) }}
         </article>
-
         <article class="page page-object-storage-risk">
             {{ report_header() }}
             <div class="page-content">
@@ -206,12 +273,24 @@
                 <div class="two-column object-storage-risk-split">
                     {% call ui.section('Risk Register', 'Only the leading committed risk signals are shown in the analytical publication.') %}
                         <table class="report-table object-storage-risk-register single-line-register">
-                            <thead><tr><th>Ref.</th><th>Severity</th><th>Finding</th></tr></thead>
+                            <thead>
+                                <tr>
+                                    <th>Ref.</th>
+                                    <th>Severity</th>
+                                    <th>Finding</th>
+                                </tr>
+                            </thead>
                             <tbody>
                                 {% for item in p.risk.rows %}
-                                    <tr><td class="ref">{{ item.ref }}</td><td class="status {{ item.tone }}">{{ item.severity }}</td><td>{{ item.title }}</td></tr>
+                                    <tr>
+                                        <td class="ref">{{ item.ref }}</td>
+                                        <td class="status {{ item.tone }}">{{ item.severity }}</td>
+                                        <td>{{ item.title }}</td>
+                                    </tr>
                                 {% else %}
-                                    <tr><td colspan="3" class="empty-row">No committed risk signal requires escalation at the cut-off.</td></tr>
+                                    <tr>
+                                        <td colspan="3" class="empty-row">No committed risk signal requires escalation at the cut-off.</td>
+                                    </tr>
                                 {% endfor %}
                             </tbody>
                         </table>
@@ -223,10 +302,22 @@
                     {% endcall %}
                     {% call ui.section('Management Actions', 'Prioritized actions remain concise; ownership is explicit.') %}
                         <table class="report-table object-storage-action-register single-line-register">
-                            <thead><tr><th>Ref.</th><th>Priority</th><th>Action</th><th>Status</th></tr></thead>
+                            <thead>
+                                <tr>
+                                    <th>Ref.</th>
+                                    <th>Priority</th>
+                                    <th>Action</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
                             <tbody>
                                 {% for item in p.risk.recommendations %}
-                                    <tr><td class="ref">{{ item.ref }}</td><td>{{ item.priority }}</td><td>{{ item.title }}</td><td class="status {{ item.tone }}">{{ item.status }}</td></tr>
+                                    <tr>
+                                        <td class="ref">{{ item.ref }}</td>
+                                        <td>{{ item.priority }}</td>
+                                        <td>{{ item.title }}</td>
+                                        <td class="status {{ item.tone }}">{{ item.status }}</td>
+                                    </tr>
                                 {% endfor %}
                             </tbody>
                         </table>
@@ -238,7 +329,6 @@
             </div>
             {{ footer(7) }}
         </article>
-
         <article class="page page-object-storage-methodology">
             {{ report_header() }}
             <div class="page-content">

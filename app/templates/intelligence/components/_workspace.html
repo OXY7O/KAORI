@@ -78,14 +78,17 @@
     </section>
 {%- endmacro %}
 {% macro posture_metric(icon, label, value, description='') -%}
-    <article data-kaori-posture-metric
-             class="min-w-0 px-4 py-4 xl:px-5">
+    <article data-kaori-posture-metric class="min-w-0 px-4 py-4 xl:px-5">
         <div class="flex items-center justify-between gap-3">
             <p class="text-xs font-semibold leading-5 text-content-muted">{{ label }}</p>
-            <i data-lucide="{{ icon }}" class="h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+            <i data-lucide="{{ icon }}"
+               class="h-4 w-4 shrink-0 text-kaori-primary"
+               aria-hidden="true"></i>
         </div>
         <p class="mt-1 text-2xl font-semibold leading-7 tracking-tight text-content-primary">{{ value }}</p>
-        {% if description %}<p class="mt-1 text-xs leading-5 text-content-muted">{{ description }}</p>{% endif %}
+        {% if description %}
+            <p class="mt-1 text-xs leading-5 text-content-muted">{{ description }}</p>
+        {% endif %}
     </article>
 {%- endmacro %}
 {% macro metric(icon, label, value, description='', tone='maintenance') -%}

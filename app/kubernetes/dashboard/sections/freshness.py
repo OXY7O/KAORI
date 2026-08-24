@@ -99,8 +99,6 @@ def build_data_freshness(
                 else 'No generated report artifacts'
             ),
             icon='file-text',
-            description=(
-                'Generated reports are retained artifacts, separate from current Kubernetes health.'
-            ),
+            description=('Generated reports are retained artifacts, separate from current Kubernetes health.'),
         ),
     ]

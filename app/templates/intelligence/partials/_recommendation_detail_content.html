@@ -291,13 +291,14 @@
                             {% elif item.alert_handling.status == 'exception_active' %}
                                 <div class="rounded-lg border border-outline-subtle bg-surface-page p-3">
                                     <div class="flex items-start gap-2.5">
-                                        <i data-lucide="shield-check" class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary"></i>
+                                        <i data-lucide="shield-check"
+                                           class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary"></i>
                                         <div class="min-w-0">
                                             <p class="text-sm font-semibold leading-5 text-content-primary">Accepted Risk Active</p>
                                             <p class="mt-1 text-sm leading-6 text-content-secondary">The finding remains active evidence, but AlertCase promotion is suppressed until the time-bounded exception expires or is revoked.</p>
                                             <div class="mt-2 flex flex-wrap gap-1.5">
                                                 {% if item.alert_handling.exception_reference %}{{ table_label.metadata_label(item.alert_handling.exception_reference, 'file-key-2') }}{% endif %}
-                                                {% if item.alert_handling.exception_expires_at %}{{ table_label.metadata_label('Expires · ' ~ (item.alert_handling.exception_expires_at|user_datetime), 'calendar-clock') }}{% endif %}
+                                                {% if item.alert_handling.exception_expires_at %}{{ table_label.metadata_label('Expires · ' ~ (item.alert_handling.exception_expires_at|user_datetime) , 'calendar-clock') }}{% endif %}
                                             </div>
                                         </div>
                                     </div>

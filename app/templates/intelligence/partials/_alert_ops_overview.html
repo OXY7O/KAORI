@@ -19,7 +19,7 @@
                         payload.summary.active,
                         payload.summary.critical ~ ' critical',
                         'critical' if payload.summary.critical else ('warning' if payload.summary.active else 'normal')
-                        ) }}
+            ) }}
             {{ intelligence_ui.metric('badge-check',
                         'Verification Pending',
                         payload.summary.verification_pending,

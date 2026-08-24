@@ -75,7 +75,7 @@ def analytics_snapshot_state(snapshot: ObjectStorageAnalyticsSnapshot | None) ->
     if snapshot.status == 'pending':
         label, tone = ('Refreshing · Last Snapshot Available', 'info') if has_payload else ('Refreshing', 'pending')
     elif snapshot.status == 'failed':
-        label, tone = ('Stale · Last Refresh Failed', 'warning') if has_payload else ('Worker Failed', 'critical')
+        label, tone = ('Stale · Refresh Failed', 'warning') if has_payload else ('Worker Failed', 'critical')
     elif not has_payload:
         label, tone = 'Worker Data Required', 'warning'
     elif expires_at is not None and now <= expires_at:
@@ -335,7 +335,7 @@ def forecast_snapshot_state(snapshot: ObjectStorageForecastSnapshot | None) -> d
     if snapshot.status == 'pending':
         label, tone = 'Refreshing', 'pending'
     elif snapshot.status == 'failed':
-        label, tone = ('Stale · Last Refresh Failed', 'warning') if has_payload else ('Worker Failed', 'critical')
+        label, tone = ('Stale · Refresh Failed', 'warning') if has_payload else ('Worker Failed', 'critical')
     elif not has_payload:
         label, tone = 'Worker Data Required', 'warning'
     elif expires_at is not None and now <= expires_at:

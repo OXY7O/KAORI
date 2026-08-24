@@ -77,6 +77,9 @@ def test_dashboard_copy_is_compact_and_snapshot_safe() -> None:
     kubernetes_alerts = read('app/templates/kubernetes/dashboard/partials/_alerts_summary.html')
     kubernetes_reporting = read('app/templates/kubernetes/dashboard/partials/_reporting_guidance.html')
     object_capacity = read('app/templates/storage/object_storage/dashboard/partials/_capacity.html')
+    object_alert_guidance = read(
+        'app/templates/storage/object_storage/dashboard/partials/_alert_response_guidance.html'
+    )
     object_reporting = read('app/templates/storage/object_storage/dashboard/partials/_reporting_guidance.html')
     object_summary = read('app/templates/storage/object_storage/dashboard/partials/_reporting_summary.html')
 
@@ -84,11 +87,24 @@ def test_dashboard_copy_is_compact_and_snapshot_safe() -> None:
     assert 'Generated reports are retained artifacts, separate from current Kubernetes health.' in freshness
     assert 'No immediate scaling required.' in capacity
     assert 'Worker-node CPU, memory, and pod headroom; control-plane nodes excluded.' in kubernetes_capacity
-    assert 'Apply the approved capacity or workload change' in kubernetes_capacity
-    assert 'Alert collection is unavailable. KAORI retains configured integrations and retries automatically.' in kubernetes_alerts
+    assert 'Apply the approved capacity/workload change' in kubernetes_capacity
+    assert 'Alert collection unavailable. KAORI retains integrations and retries automatically.' in kubernetes_alerts
     assert 'Validate reporting activity and follow the governed KAORI workflow.' in kubernetes_reporting
     assert 'Validate reporting activity and follow the governed KAORI workflow.' in object_reporting
-    assert 'Committed capacity, usage, headroom, and response path for the selected Object Storage system.' in object_capacity
+    assert "operational_callout.render('Reporting Control'" in kubernetes_reporting
+    assert "operational_callout.render('Reporting Control'" in object_reporting
+    assert kubernetes_reporting.index("Reporting Control") < kubernetes_reporting.index("Controlled Reporting Flow")
+    assert object_reporting.index("Reporting Control") < object_reporting.index("Controlled Reporting Flow")
+    assert 'Committed capacity, usage, headroom, and response path for this Object Storage system.' in object_capacity
+    assert (
+        'Capacity uses the committed Object Storage Analytics snapshot; no live provider query is issued.'
+        in object_capacity
+    )
+    assert (
+        'Developing capacity, request-path, or availability risk. Investigate before escalation.'
+        in object_alert_guidance
+    )
+    assert 'Low-risk operational signal. Validate relevance, recurrence, and scope.' in object_alert_guidance
     assert 'Object Storage report output, definitions, schedules, and recent generation activity.' in object_summary
 
     forbidden = (
@@ -96,9 +112,18 @@ def test_dashboard_copy_is_compact_and_snapshot_safe() -> None:
         'Generated reports are retained operational artifacts, separate from current Kubernetes health signals.',
         'Worker-node CPU, memory, and pod headroom. Control-plane nodes are excluded.',
         'Apply the approved capacity or workload adjustment',
+        'Apply the approved capacity or workload change',
         'Alert collection is temporarily unavailable.',
+        'Alert collection is unavailable. KAORI retains configured integrations and retries automatically.',
         'continue through the controlled KAORI reporting workflow',
         'Committed usable capacity, usage, headroom, and the controlled response path',
+        'Committed capacity, usage, headroom, and response path for the selected Object Storage system.',
+        (
+            'Capacity values come from the committed Object Storage Analytics snapshot. '
+            'Dashboard rendering does not issue live provider queries.'
+        ),
+        'Capacity, request-path, or availability risk is developing. Investigate before escalation.',
+        'Operational context or low-risk signal. Validate relevance, recurrence, and affected scope.',
         'Object Storage report output, reusable definitions',
     )
     all_source = '\n'.join(
@@ -109,6 +134,7 @@ def test_dashboard_copy_is_compact_and_snapshot_safe() -> None:
             kubernetes_alerts,
             kubernetes_reporting,
             object_capacity,
+            object_alert_guidance,
             object_reporting,
             object_summary,
         )

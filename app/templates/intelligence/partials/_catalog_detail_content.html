@@ -77,13 +77,17 @@
                                 {{ table_label.status_label(item.priority, item.tone, size='compact') }}
                             </div>
                             <div class="mt-4 flex items-start gap-2.5 rounded-lg border border-outline-subtle bg-surface-elevated px-3 py-2.5">
-                                <i data-lucide="list-checks" class="mt-0.5 h-3.5 w-3.5 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+                                <i data-lucide="list-checks"
+                                   class="mt-0.5 h-3.5 w-3.5 shrink-0 text-kaori-primary"
+                                   aria-hidden="true"></i>
                                 <p class="text-xs leading-5 text-content-muted">Review the committed evidence first, apply the recommended remediation through the owning workflow, then confirm the signal clears before treating the finding as recovered.</p>
                             </div>
                         </div>
                         <div class="bg-surface-elevated p-4 sm:p-5">
                             <div class="flex items-center gap-2">
-                                <i data-lucide="badge-info" class="h-4 w-4 text-kaori-primary" aria-hidden="true"></i>
+                                <i data-lucide="badge-info"
+                                   class="h-4 w-4 text-kaori-primary"
+                                   aria-hidden="true"></i>
                                 <p class="text-sm font-semibold leading-5 text-content-primary">Response Context</p>
                             </div>
                             <dl class="mt-3 grid gap-x-4 gap-y-3 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
@@ -128,19 +132,27 @@
                         <dl class="grid gap-px bg-outline-subtle sm:grid-cols-2">
                             <div class="bg-surface-card px-3 py-3">
                                 <dt class="text-xs font-semibold text-content-primary">Escalation Mode</dt>
-                                <dd class="mt-1 text-xs leading-5 text-content-muted">Manual waits for an authorized operator to promote an eligible finding. Automatic promotes only after every configured rule threshold is satisfied.</dd>
+                                <dd class="mt-1 text-xs leading-5 text-content-muted">
+                                    Manual waits for an authorized operator to promote an eligible finding. Automatic promotes only after every configured rule threshold is satisfied.
+                                </dd>
                             </div>
                             <div class="bg-surface-card px-3 py-3">
                                 <dt class="text-xs font-semibold text-content-primary">Grouping</dt>
-                                <dd class="mt-1 text-xs leading-5 text-content-muted">Controls how eligible findings share Alert Cases: one case per Finding, Rule + Asset + Scope, or one aggregated Rule + Asset case.</dd>
+                                <dd class="mt-1 text-xs leading-5 text-content-muted">
+                                    Controls how eligible findings share Alert Cases: one case per Finding, Rule + Asset + Scope, or one aggregated Rule + Asset case.
+                                </dd>
                             </div>
                             <div class="bg-surface-card px-3 py-3">
                                 <dt class="text-xs font-semibold text-content-primary">Stability Window</dt>
-                                <dd class="mt-1 text-xs leading-5 text-content-muted">Minimum continuous time an automatic finding must remain eligible before KAORI can promote it, reducing short-lived alert noise.</dd>
+                                <dd class="mt-1 text-xs leading-5 text-content-muted">
+                                    Minimum continuous time an automatic finding must remain eligible before KAORI can promote it, reducing short-lived alert noise.
+                                </dd>
                             </div>
                             <div class="bg-surface-card px-3 py-3">
                                 <dt class="text-xs font-semibold text-content-primary">Minimum Observations</dt>
-                                <dd class="mt-1 text-xs leading-5 text-content-muted">Minimum committed evaluation count required for automatic promotion so one isolated observation cannot immediately create an Alert Case.</dd>
+                                <dd class="mt-1 text-xs leading-5 text-content-muted">
+                                    Minimum committed evaluation count required for automatic promotion so one isolated observation cannot immediately create an Alert Case.
+                                </dd>
                             </div>
                         </dl>
                         <p class="border-t border-outline-subtle px-3 py-2.5 text-xs leading-5 text-content-muted">Info findings remain recommendation-only below the rule-owned Alert Severity Floor. Manual promotion is allowed only after that floor is met; Automatic mode additionally enforces the Stability Window and Minimum Observations.</p>
@@ -232,7 +244,8 @@
             </div>
         </section>
         {% if item.risk_exception.enabled %}
-            <section class="border-t border-outline-subtle p-4 sm:p-5" data-kaori-rule-exceptions>
+            <section class="border-t border-outline-subtle p-4 sm:p-5"
+                     data-kaori-rule-exceptions>
                 {{ intelligence_ui.subsection('Risk Exceptions', 'Record time-bounded accepted risk without changing the rule truth or marking active findings as resolved.', 'shield-check') }}
                 <div class="mt-4 overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
                     <div class="grid divide-y divide-outline-subtle sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-4">
@@ -244,10 +257,11 @@
                 </div>
                 <div class="mt-2 flex max-w-3xl items-start gap-2 rounded-md border border-outline-subtle bg-surface-card px-2.5 py-2"
                      data-kaori-risk-exception-info>
-                    <i data-lucide="info" class="mt-0.5 h-3.5 w-3.5 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+                    <i data-lucide="info"
+                       class="mt-0.5 h-3.5 w-3.5 shrink-0 text-kaori-primary"
+                       aria-hidden="true"></i>
                     <p class="text-xs leading-5 text-content-muted">Accepted Risk only suppresses AlertCase promotion while active; findings remain non-compliant and become eligible again after expiry or revocation.</p>
                 </div>
-
                 {% if item.rule_exceptions.exceptions %}
                     <div class="mt-4 overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
                         <div class="border-b border-outline-subtle px-4 py-3.5 sm:px-5">
@@ -268,7 +282,7 @@
                                         <div class="mt-2 flex flex-wrap gap-1.5">
                                             {{ table_label.metadata_label(exception.risk_reference, 'file-key-2') }}
                                             {{ table_label.metadata_label('Owner · ' ~ exception.owner, 'user-round') }}
-                                            {{ table_label.metadata_label('Expires · ' ~ (exception.expires_at|user_datetime), 'calendar-clock') }}
+                                            {{ table_label.metadata_label('Expires · ' ~ (exception.expires_at|user_datetime) , 'calendar-clock') }}
                                         </div>
                                     </div>
                                     {% if exception.active and current_user.has_permission('intelligence.decisions.create') %}
@@ -284,7 +298,8 @@
                                                        class="mt-1 h-9 w-full rounded-md border border-outline-default bg-surface-card px-3 text-xs text-content-primary"
                                                        placeholder="Why is this risk acceptance no longer valid?">
                                             </label>
-                                            <button type="submit" class="mt-2 inline-flex min-h-9 items-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary hover:bg-surface-hover">
+                                            <button type="submit"
+                                                    class="mt-2 inline-flex min-h-9 items-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary hover:bg-surface-hover">
                                                 <i data-lucide="shield-off" class="h-3.5 w-3.5"></i>Revoke Exception
                                             </button>
                                         </form>
@@ -299,7 +314,6 @@
                         </div>
                     </div>
                 {% endif %}
-
                 {% if current_user.has_permission('intelligence.decisions.create') %}
                     <form method="post"
                           action="{{ url_for('alert_intelligence.create_rule_exception_for_rule', rule_key=item.rule_key) }}"
@@ -307,7 +321,8 @@
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <div class="border-b border-outline-subtle px-4 py-3.5 sm:px-5">
                             <div class="flex items-start gap-3">
-                                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
+                                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                                      aria-hidden="true">
                                     <i data-lucide="shield-plus" class="h-4 w-4"></i>
                                 </span>
                                 <div>
@@ -322,7 +337,9 @@
                                     <div class="grid gap-3 sm:grid-cols-2">
                                         <label>
                                             <span class="text-xs font-semibold text-content-secondary">Asset</span>
-                                            <select name="asset_key" required class="mt-1 h-10 w-full rounded-md border border-outline-default bg-surface-card px-3 text-sm text-content-primary">
+                                            <select name="asset_key"
+                                                    required
+                                                    class="mt-1 h-10 w-full rounded-md border border-outline-default bg-surface-card px-3 text-sm text-content-primary">
                                                 <option value="">Select asset</option>
                                                 {% for asset in item.rule_exceptions.assets %}
                                                     <option value="{{ asset.asset_key }}">{{ asset.asset_name }} · {{ asset.finding_count }} finding(s)</option>
@@ -331,7 +348,8 @@
                                         </label>
                                         <label>
                                             <span class="text-xs font-semibold text-content-secondary">Exception Scope</span>
-                                            <select name="scope_mode" class="mt-1 h-10 w-full rounded-md border border-outline-default bg-surface-card px-3 text-sm text-content-primary">
+                                            <select name="scope_mode"
+                                                    class="mt-1 h-10 w-full rounded-md border border-outline-default bg-surface-card px-3 text-sm text-content-primary">
                                                 {% if 'rule_asset' in item.risk_exception.allowed_scope_modes %}
                                                     <option value="rule_asset"
                                                             {% if item.risk_exception.default_scope_mode == 'rule_asset' %}selected{% endif %}>Entire Asset</option>
@@ -344,7 +362,8 @@
                                         </label>
                                         <label>
                                             <span class="text-xs font-semibold text-content-secondary">Expires In</span>
-                                            <select name="expires_in_days" class="mt-1 h-10 w-full rounded-md border border-outline-default bg-surface-card px-3 text-sm text-content-primary">
+                                            <select name="expires_in_days"
+                                                    class="mt-1 h-10 w-full rounded-md border border-outline-default bg-surface-card px-3 text-sm text-content-primary">
                                                 <option value="30">30 days</option>
                                                 <option value="90" selected>90 days</option>
                                                 <option value="180">180 days</option>
@@ -421,7 +440,7 @@
                                                             <span class="min-w-0 flex-1">
                                                                 <span class="block break-words text-xs font-semibold leading-5 text-content-primary">{{ finding.target }}</span>
                                                                 <span class="mt-1 flex flex-wrap items-center gap-1.5">
-                                                                    {{ table_label.status_label(finding.severity, 'critical' if finding.severity|lower == 'critical' else ('warning' if finding.severity|lower == 'warning' else 'info'), size='compact') }}
+                                                                    {{ table_label.status_label(finding.severity, 'critical' if finding.severity|lower == 'critical' else ('warning' if finding.severity|lower == 'warning' else 'info') , size='compact') }}
                                                                     {% if finding.excepted %}
                                                                         <span class="inline-flex items-center gap-1 text-xs text-content-muted"><i data-lucide="shield-check" class="h-3 w-3"></i>Already covered</span>
                                                                     {% else %}
@@ -439,7 +458,8 @@
                             </div>
                             <div class="flex items-center justify-between gap-3 border-t border-outline-subtle bg-surface-card px-4 py-3 sm:px-5">
                                 <p class="text-xs leading-5 text-content-muted">Detection remains active; only AlertCase promotion is governed by the exception.</p>
-                                <button type="submit" class="inline-flex min-h-9 shrink-0 items-center gap-2 rounded-lg bg-kaori-primary px-4 text-xs font-semibold text-white hover:bg-kaori-primary-hover">
+                                <button type="submit"
+                                        class="inline-flex min-h-9 shrink-0 items-center gap-2 rounded-lg bg-kaori-primary px-4 text-xs font-semibold text-white hover:bg-kaori-primary-hover">
                                     <i data-lucide="shield-check" class="h-3.5 w-3.5"></i>Create Accepted Risk
                                 </button>
                             </div>

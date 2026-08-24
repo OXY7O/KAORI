@@ -67,6 +67,7 @@ The Hero establishes identity and readiness. The Operational Signal Overview own
 - Detailed capacity, forecast, consumer, and alert signals require a selected cluster.
 - UI copy must use `snapshot`, `committed`, `available`, or `detailed signals`; it must not imply that the page performs live provider queries.
 - Reporting guidance must remain format-neutral because Analytics supports PDF/CSV and Inventory supports XLSX/CSV.
+- Reporting guidance must place a compact **Reporting Control** information block before the Controlled Reporting Flow. It states the selected scope, committed-evidence boundary, and review requirement; it is not a generic tip.
 
 ## Cluster setup blocker
 

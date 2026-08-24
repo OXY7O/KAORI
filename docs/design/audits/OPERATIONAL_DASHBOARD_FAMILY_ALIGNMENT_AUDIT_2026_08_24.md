@@ -31,6 +31,8 @@ Verbose operational copy was shortened without changing evidence meaning. The da
 
 The generic **What This Summary Means** callout is removed from both Alert Response and Reporting guidance. The section title, description, status, evidence, and controlled flow already establish interpretation; repeating a generic explanation added visual weight without adding a new decision boundary.
 
+Both Reporting guidance panels now place a compact **Reporting Control** information block immediately before the controlled flow. It clarifies scope and committed-evidence review without introducing another tip-style surface.
+
 ## Structural code review
 
 Object Storage now mirrors the Kubernetes composition more directly through dedicated `_hero.html`, `_signal_overview.html`, and `_content.html` partial ownership. This avoids an oversized content template and makes the family contract obvious for future maintainers.
